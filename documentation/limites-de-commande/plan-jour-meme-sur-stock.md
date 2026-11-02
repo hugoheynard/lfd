@@ -1,250 +1,348 @@
-# Plan — le jour même des particuliers, sur le stock déclaré (version simple)
+# Le circuit du jour J — commander pour aujourd'hui, sur le stock de la vitrine
 
-> **Partiel, 2026-10-21.** J1 est bâti par la **réception du réassort** (voir
-> §7) ; J2 à J4 ne le sont pas. Demandé par Hugo le 2026-10-21 :
-> « comment je règle, moi, le jour même pour le particulier ? » → « prépare le
-> plan, version simple ». C'est la ligne « aujourd'hui » du modèle
-> ([`schema-des-reglages.md`](schema-des-reglages.md) §0) : **demain se commande
-> avant l'heure limite ; aujourd'hui se prend dans le stock.**
+> **Dossier unique du circuit, rassemblé le 2026-11-02** (Hugo : « j'ai besoin
+> qu'on rassemble toutes les informations sur ce circuit »). Il remplace le plan
+> du 2026-10-21 (« le jour même des particuliers, version simple ») et le plan
+> du retrait immédiat au comptoir écrit le matin même — tous deux dans
+> l'historique git, leur contenu repris ici. Les faits du code ont été relus le
+> 2026-11-02 ; chaque affirmation sur un autre fichier porte son chemin.
+>
+> **État** : **J1 est bâti** (le stock du jour, par la réception du réassort —
+> §7). **Rien du circuit lui-même** (J2 à J4, le retrait immédiat) ne l'est. Le
+> dessin de J2 a été contredit deux fois par `vitruve` le 2026-11-02 (§9) : il
+> est **à reprendre** avant tout bâti, en commençant par l'inventaire des
+> lecteurs (§9.1). Touche l'**argent** et un **stock** : `vitruve` à chaque
+> version.
 
-## 0. Ce qui existe (ouvert le 2026-10-21)
+## 1. Le modèle — une phrase
 
-- **Le réglage « jour même »** (`order_cutoff_settings.same_day_allowed`, page
-  Réglages › Commandes › Jour même, droit `lfc_order_settings`) : lu à la
-  passation par `SameDayOrderReader` dans `OrderPlanGate`
-  (`b2b/orders/application/services/order-plan-gate.service.ts`) et par
-  `/fulfillment-days`. **Il ne peut plus rien ouvrir** : la journée d'aujourd'hui
-  a fermé hier à l'heure limite générale, et son plan est figé. Il ne connaît ni
-  la clientèle ni le stock.
-- **La commande « hors plan »** : `Order.receiveOffPlan` — aujourd'hui réservée
-  à la saisie de l'équipe, après l'arrêt du plan.
-- **La clientèle** est connue à la passation (`CustomerAudiences`, `audience`
-  dans `OrderDrafting`) : particulier (`public`) ou pro.
-- **Rien ne s'encaisse au comptoir** : un particulier règle en ligne, par carte.
-- **Aucun stock** n'existe dans le système : ni par article, ni par jour.
+**Demain se commande avant l'heure limite ; aujourd'hui se prend dans le
+stock** ([`schema-des-reglages.md`](schema-des-reglages.md) §0, Hugo,
+2026-10-21). L'heure limite protège le plan du fournil ; une commande du jour
+n'entre pas dans un plan déjà figé : elle puise dans ce qui est déjà en vitrine.
 
-## 1. Ce qu'on bâtit
+Deux portes sur le même circuit :
 
-**Chaque matin, le comptoir déclare ce qu'il y a en vitrine pour la vente en
-ligne du jour : des articles et des quantités. Les particuliers peuvent
-commander « pour aujourd'hui » sur ces articles, dans ces quantités, jusqu'à une
-heure de fin. Chaque commande décompte le stock déclaré.**
+|              | Particulier (J2–J4)                                                        | Pro au comptoir — « Retrait immédiat »                                                                                                    |
+| ------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Demandé      | 2026-10-21 (« comment je règle, moi, le jour même pour le particulier ? ») | 2026-11-02 (« dans Comptoir › Nouvelle commande pro, un bouton Retrait immédiat : ajout au compte, pris sur le stock dispo en boutique ») |
+| Qui passe    | le client, en ligne                                                        | l'équipe, au comptoir                                                                                                                     |
+| Point        | celui qu'il choisit                                                        | celui du comptoir                                                                                                                         |
+| Règlement    | carte en ligne                                                             | **au compte**, à facturer au mois                                                                                                         |
+| Remise       | au comptoir, geste normal                                                  | au comptoir, geste normal, aussitôt                                                                                                       |
+| Acheminement | retrait seulement (la livraison du jour est hors périmètre)                | retrait                                                                                                                                   |
 
-- **Le stock du jour** : une liste (article, quantité offerte) pour une journée,
-  posée et corrigée par le comptoir ; pas de stock « réel » (les ventes au
-  comptoir sans commande ne sont pas suivies).
-- **Le reste** (le stock estimé) = reçu − ce que les commandes **« jour même
-  sur stock »** (J2) en ont pris, commandes annulées exclues. Calculé, jamais
-  écrit à la main. Les commandes déjà passées pour ce jour **ne s'y
-  soustraient pas** : passées la veille avant l'heure limite, elles sont dans
-  le plan du fournil, fabriquées pour elles, et ne puisent pas dans la vitrine
-  (Hugo, 2026-10-21). Tant que J2 n'existe pas, le stock estimé **est** le
-  reçu. Depuis le lot R2 du réassort (2026-10-21), « le reçu » est la
-  **somme des reçus du jour au point**, tous confondus : chaque réassort
-  réceptionné, plus le réassort sans commande (voir §7).
-- **L'heure de fin du jour même** : un réglage, « jusqu'à 16 h » par exemple ;
-  passé, « aujourd'hui » n'est plus proposé.
-- **Qui** : les particuliers seulement (`public`). Un pro commande pour demain.
-- **Où ça va** : la commande du jour n'entre pas dans le plan (il est figé) ;
-  elle est reçue **hors plan**, servie depuis la vitrine au comptoir (retrait) —
-  la livraison du jour même est hors périmètre.
-- **Le réglage « jour même » actuel** devient l'interrupteur de ce circuit :
-  « commandes du jour sur stock pour les particuliers : oui / non » + l'heure de
-  fin, sur sa page.
+Le retrait immédiat **n'est pas un type de commande** (Hugo, 2026-11-02) :
+c'est un **raccourci** qui pré-règle une commande du circuit — retrait,
+aujourd'hui, au point du comptoir, créneau en cours, au compte — puis laisse
+la commande suivre les gestes normaux. Hugo veut en garder la **trace** :
+combien de fois le raccourci a servi, et pour quelle clientèle.
 
-## 2. Les règles
+## 2. L'écran du comptoir (décidé le 2026-11-02)
 
-- **L'heure limite générale ne s'applique pas au jour J** de ce circuit : elle
-  protège le plan, et la commande du jour n'y entre pas. Ce qui limite J :
-  l'interrupteur, l'heure de fin, le stock restant.
-- **Le stock est vérifié à la passation, sous verrou** : deux paniers qui se
-  disputent le dernier croissant ne passent pas tous les deux (un verrou sur
-  (journée, article), comme le plan l'est par journée).
-- **Un article absent de la liste du jour** n'est pas commandable pour
-  aujourd'hui, même s'il l'est pour demain.
-- **Panier mixte** : un panier « pour aujourd'hui » ne contient que des articles
-  du stock du jour ; sinon le jour proposé est demain.
-- **Annulation** d'une commande du jour : elle rend la quantité au stock (le reste
-  est recalculé).
-- **Paiement** : carte en ligne, comme toute commande de particulier ; un
-  paiement abandonné ne garde pas le stock au-delà de la durée de vie du panier
-  payé (à trancher : Q3).
+Dans la saisie ouverte depuis le comptoir (`comptes-clients/:id/nouvelle-commande`,
+origine `counter`, `apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/order-entry-origin.ts`),
+le choix d'acheminement devient deux temps :
 
-## 3. Les lots
+- **« Retrait immédiat »**, à gauche ;
+- **« Commande programmée »**, à droite, qui regroupe les « Retrait » et
+  « Livraison » d'aujourd'hui.
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                          | Agent     |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **J1** | Serveur : la table du stock du jour (journée, article, quantité offerte), sa saisie par le comptoir (droit à trancher, Q1), le reste calculé, le réglage « jour même » réécrit (oui/non + heure de fin) ; migration additive                                                     | batisseur |
-| **J2** | Serveur : la passation « pour aujourd'hui » d'un particulier — garde de stock sous verrou, réception hors plan, `/fulfillment-days` propose aujourd'hui au public quand le circuit est ouvert ; e2e (course au dernier article, panier mixte, heure de fin, annulation qui rend) | batisseur |
-| **J3** | Back-office : l'écran du comptoir « Stock du jour » (poser, corriger, voir ce qui est commandé et ce qui reste) ; la page Jour même                                                                                                                                              | pablo     |
-| **J4** | Boutique : « Aujourd'hui » dans le choix du jour pour un particulier, le reste affiché sur la vignette (« plus que 3 »), les articles hors stock grisés pour aujourd'hui                                                                                                         | pablo     |
+D'abord la nature de la commande (tout de suite, ou pour une date), ensuite
+son acheminement. Hors comptoir, la saisie du Commercial ne change pas.
 
-## 4. Hors périmètre
+## 3. Les règles décidées
 
-- Le stock en temps réel (ventes au comptoir sans commande).
-- La livraison le jour même.
-- Le jour même pour les pros.
+Du 2026-10-21, toujours valables :
 
-## 5. Questions
+- **Q1** — le **comptoir** déclare le stock du jour.
+- **Q2** — le stock offert : part réservée au web ou toute la vitrine — **un
+  réglage en admin** pour le moment.
+- **Q3** — un paiement par carte en cours **tient la quantité 15 minutes** ; un
+  paiement abandonné la rend. ⚠️ À rapprocher de l'existant (§4.6) : une
+  commande boutique non réglée expire aujourd'hui à **30** minutes.
+- **Q4** — le stock du jour **est le réassort reçu** au point ce jour-là, que le
+  comptoir corrige. Sans réassort reçu ni déclaration, « aujourd'hui » n'est
+  pas proposé — **jamais un stock inventé**.
+- **Panier mixte** : un panier « pour aujourd'hui » ne contient que des
+  articles du stock du jour ; sinon le jour proposé est demain.
+- **Un article absent du stock du jour** n'est pas commandable pour aujourd'hui.
+- **L'heure de fin** du jour même est un réglage (« jusqu'à 16 h ») ; passée,
+  aujourd'hui n'est plus proposé.
+- **Les commandes déjà passées pour ce jour ne se soustraient pas du stock** :
+  passées la veille avant l'heure limite, elles sont au plan, fabriquées pour
+  elles, et ne puisent pas dans la vitrine.
+- **Annuler** une commande du jour rend sa quantité au stock.
 
-- **Q1** — Qui déclare le stock du jour : le comptoir (droit du comptoir), ou
-  aussi le fournil ?
-- **Q2** — Le stock offert en ligne est-il TOUT ce qui est en vitrine, ou une
-  part réservée à la vente en ligne (le reste pour le comptoir) ?
-- **Q3** — Un paiement par carte en cours garde-t-il la quantité (combien de
-  temps), ou le stock est-il décompté seulement au paiement réussi ?
-- **Q4** — Le stock non déclaré à 9 h : « aujourd'hui » n'est pas proposé du
-  tout, ou on reprend la liste de la veille ?
-- **Q5** — Une seule heure de fin pour tous les points de retrait ?
+Du 2026-11-02 :
 
-## 6. Décisions (Hugo, 2026-10-21)
+- Le retrait immédiat est un **raccourci** sur ce circuit, pas un mode
+  d'acheminement neuf ; il passe par les **gestes normaux** (passation, remise
+  au comptoir, BL, facture).
+- **Le règlement par défaut d'une saisie de l'équipe devrait toujours être
+  « au compte, à facturer »** — à concilier avec l'objection 4 du §9.1.
+- **Garder la donnée** du raccourci : combien de fois, quelle clientèle.
 
-- **Q1** — Le **comptoir** déclare le stock du jour.
-- **Q2** — Part réservée au web ou toute la vitrine : **le choix est donné en
-  admin** pour le moment (un réglage du circuit : « le stock déclaré est une
-  part réservée à la vente en ligne » / « c'est toute la vitrine »).
-- **Q3** — Un paiement par carte en cours **tient la quantité 15 minutes** ; un
-  paiement abandonné la rend.
-- **Q4** — Le stock du jour **s'aligne sur le réassort reçu** : ce que le
-  réapprovisionnement du site a apporté ce jour-là est le stock offert, que le
-  comptoir corrige. ⚠️ Le réapprovisionnement **n'est pas bâti** (plan
-  doc-first [`../reassort-boutiques/plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md),
-  2026-10-14 ; la page « Réassort boutique » du comptoir est vide, vérifié le
-  2026-10-21). Conséquence pour l'ordre des lots : tant qu'il n'existe pas, le
-  comptoir déclare à la main (J1) ; le jour où le réassort est reçu en base, la
-  déclaration du jour est **pré-remplie** par lui. Sans réassort reçu ni
-  déclaration, « aujourd'hui » n'est pas proposé — jamais un stock inventé.
-- **Q5** — ouverte.
+## 4. Ce que fait le code aujourd'hui (relu le 2026-11-02)
 
-## 7. Ce qui est bâti (2026-10-21)
+### 4.1 Le réglage « jour même »
 
-**J1, sous la forme de la réception du réassort** (demande de Hugo du
-2026-10-21 : « commençons par faire la page [Réassort boutique] ; des lignes
-produit et des quantités, et éventuellement un stock »).
+- `order_cutoff_settings.same_day_allowed` (défaut `false`, ligne absente =
+  non autorisé), page **Réglages › Commandes › Jour même**
+  (`reglages/commandes/same-day-page/`), droit `lfc_order_settings`
+  ([`reglages-generaux.md`](reglages-generaux.md) §4).
+- Non autorisé : aujourd'hui n'est pas proposé par la boutique, et toute
+  passation qui vise une journée non postérieure à aujourd'hui est refusée
+  (`orders.same_day_closed`, `ensureNotTooSoon`,
+  `order-plan-gate.service.ts:46-53`) — client, invité et équipe.
+- Autorisé : il n'ouvre aujourd'hui **que tant que le plan n'est pas arrêté** —
+  presque jamais, puisque l'arrêt d'aujourd'hui tombe la veille au soir. Il ne
+  connaît ni la clientèle ni le stock.
+- `/fulfillment-days` (`list-fulfillment-days.handler.ts:70-79`) retire
+  aujourd'hui des jours proposés sauf si le réglage l'ouvre.
+
+### 4.2 La passation pour aujourd'hui, plan arrêté
+
+- **Un client** est refusé deux fois : `ensureDayOpen`
+  (`order-drafting.service.ts:201-208`) lève `ProductionPlanClosedError`, puis
+  `holdPlan` (l. 220-226) appelle `Order.receiveOffPlan`
+  (`domain/entities/order.ts:290-295`), qui la lève aussi pour un client.
+- **L'équipe** est reçue « hors plan » : `receiveOffPlan` pose `placedOffPlan`,
+  qui n'est **qu'un badge** (`prisma-admin-order-list.reader.ts:170`). Ce qui
+  sort vraiment une commande du compte à produire est son **statut** :
+  `planWhere` = `status: "placed"` et règlement ni refusé ni en vol
+  (`plan-filter.ts:47-48`, `production-plan.ts:135`).
+- **L'heure limite générale s'applique aussi à l'équipe**
+  (`order-cutoff-gate.service.ts:46-69`, aucune branche staff) ; seule une
+  **dérogation** la lève. Après la limite, une saisie pour aujourd'hui est
+  refusée.
+- Aucun contrôle de **créneau passé** dans la passation (seul le jour l'est).
+
+### 4.3 Après la passation — ce qui marche déjà
+
+Pour une **saisie de l'équipe au compte**, pour aujourd'hui, plan arrêté :
+
+- **Le fournil ne la produit pas** : elle n'est pas dans l'instantané de la
+  clôture ; un **retirage** l'absorberait, mais il n'est jamais automatique
+  (seul appelant : `production-worksheet.controller.ts:218`).
+- **Elle entre dans la file du comptoir** : `expectedOnWhere`
+  (`handover-order.query.ts:120-125`) ne lit que le jour et `status ≠ draft`.
+- **Le comptoir la remet par son geste normal**, sans colisage : au rang 1,
+  « préparée » est toujours vrai (`handover/domain/services/handover.ts:28-45`) ;
+  le seul refus est un règlement non clos (`isSettled` = `paid` ou
+  `not_required`).
+- **Son BL naît à la remise** : `mark-order-fulfilled.handler.ts:120-122`
+  (« créé plein s'il manquait (remise hors plan) ») — le BL-1 ordinaire, lui,
+  naît à l'arrêt du plan (`delivery-note-planner.ts`).
+- **Son règlement se clôt à la remise** : `OrderBillingCloser`
+  (`order-billing-closer.ts`, `order-billing.ts:92-102`) pose `settledOn` et
+  les montants facturables ; elle entre alors dans la facture du mois
+  (`billableOrderWhere`, `billable-order-criterion.ts:84-90`).
+- La remise publie `OrderHandedOver` : fidélité, croissance et BL suivent.
+
+Pour une **saisie au lien de paiement** non payée : ni file, ni retirage, ni
+remise (règlement non clos), ni facture.
+
+### 4.4 Le règlement d'une saisie de l'équipe
+
+- À l'écran : `draft.store.ts:78` part sur **`'link'`** ; choix radio dans le
+  panier (`panier-commande.ts:136`).
+- Au contrat : la soumission (`packages/contracts/src/admin-order.ts:115-123`)
+  exige `settlement`, **sans défaut, délibérément** (« un défaut silencieux la
+  prendrait à la place du commercial ») ; le brouillon a `.default("link")`
+  (l. 236).
+- Au serveur : « au compte » exige un crédit accordé
+  (`place-order-for-customer.handler.ts:137-138`, `AccountSettlementNotGrantedError`).
+- ⚠️ Le commentaire de `order-settlement.ts:88-90` (« le chemin du
+  back-office » pour `settlement` absent) est **périmé** : le back-office passe
+  par `place-order-for-customer.handler.ts`, qui exige le choix.
+
+### 4.5 Le stock du jour (J1, §7)
+
+- La somme des **reçus de réassort réceptionnés** du jour au point
+  (`estimateStock`, `b2b/resupply/domain/estimated-stock.ts:30`), fonction pure
+  qui prend les reçus en paramètre. Son JSDoc promet déjà « moins ce que les
+  commandes jour même en ont pris » et renvoie le port à J2 : **aucune commande
+  ne le décompte** aujourd'hui.
+- Lu par l'onglet **Stock** de la Supervision (`day-stock.ts:60,133`) et par la
+  **réception** (`get-resupply-receipt.handler.ts:59`).
+- **Aucun verrou** côté réassort : `correct-received-resupply-line.handler.ts`
+  fait `load` / `save` ; le seul verrou est `ResupplyPlanGate.hold`, sur la
+  journée de production. Un réassort déjà réceptionné ne s'annule plus
+  (`cancel-site-resupply.handler.ts`) ; seule la correction de ligne fait
+  baisser un reçu.
+
+### 4.6 L'expiration d'une commande boutique non réglée
+
+- 30 minutes (`UNSETTLED_SHOP_ORDER_TTL_MINUTES`), **au plus 35** en pratique
+  (`unsettled-shop-order-expiry.ts:9-10`).
+- Pas d'annulation quand le paiement est `in_progress` / `already_paid`, ni
+  quand Stripe est `unavailable` (`unsettled-shop-order-expiry.service.ts:36-42`) :
+  la commande reste alors sans limite de durée.
+
+### 4.7 L'origine et la clientèle d'une commande
+
+- Pas de colonne d'origine : elle est **dérivée** (`order-origin.ts:25-33` :
+  `placedByStaffId` → `back_office`, abonnement → `recurring`, sinon
+  `self_service`). Le comptoir et le Commercial ne se distinguent pas au
+  serveur (l'origine `counter` n'existe qu'à l'écran).
+- La commande porte `clientele` (pro / public, figée), `companyId`,
+  `buyerKind` (`guest` / `registered`), `placedByStaffId`.
+- Le fait `order.placed` (`journal-facts/orders-production.ts:330-341`) ne
+  porte ni l'origine, ni le staff, ni la clientèle.
+
+## 5. Ce qu'il faut bâtir — le dessin
+
+> Dessin du 2026-11-02, **contredit** (§9) : la direction, pas encore un plan
+> qui tient.
+
+- **Une commande « sur stock »** : pour aujourd'hui, au point, chaque ligne
+  prise dans le stock du jour de ce point. **Une marque à la passation**
+  (`drawnFromStock`, colonne additive), et non un mode d'acheminement : elle
+  reste un retrait pour la file, la remise, le BL et la facture.
+- **Le reste** = reçus réceptionnés − lignes des commandes sur stock non
+  annulées, du jour, au point ; **un seul calcul**, servi par un port que le
+  contexte des commandes implémente, lu par la Supervision, la réception et la
+  passation.
+- **Garde sous verrou** à la passation, et le même verrou pour les corrections
+  de réception.
+- **Pas d'heure limite générale** pour elle ; ce qui la limite : l'interrupteur,
+  l'heure de fin, le reste.
+- **Le raccourci** du comptoir pose en plus `entryShortcut: "immediate_pickup"`
+  (le compte que veut Hugo) et impose `settlement: "account"` au serveur.
+
+Lots proposés : **J2a** (la marque, le reste, le verrou), **J2b** (la passation
+d'un particulier), **J2c** (la saisie de l'équipe et le raccourci), **J3/J4**
+(les écrans de la boutique et du comptoir).
+
+## 6. Questions ouvertes
+
+- **Q3 bis** — Le stock tenu par un paiement en cours : 15 minutes (décision du
+  21 octobre) ou les 30 déjà en place ? Et que faire des commandes que
+  l'expiration ne sait pas annuler (§4.6) ?
+- **Q5** — Une seule heure de fin pour tous les points ?
+- **Q6** — Un pro **en ligne** peut-il commander pour aujourd'hui sur stock, ou
+  seulement par le comptoir ? À trancher avant J2b : sans garde, la passation
+  sur stock serait ouverte aux pros par défaut.
+- **Q7** — Un pro **sans crédit au compte**, au comptoir : refusé, ou basculé
+  sur le lien de paiement ?
+- **Q8** — Sans stock reçu au point aujourd'hui : « Retrait immédiat » est
+  grisé (proposé), ou la saisie est libre ?
+- **Q9** — La **remise de retrait** du point s'applique-t-elle au retrait
+  immédiat ? Proposé : oui, c'est un retrait au point.
+- **Q10** — Le stock offert au retrait immédiat : tout le reçu du jour (la
+  caisse n'est pas suivie), corrigeable à la main ? Proposé : oui.
+- **Q11** — Annuler une commande du jour **déjà remise** : avoir, état neuf, ou
+  pas d'annulation ? Le domaine refuse aujourd'hui (`order-cancellation.ts:234`).
+
+## 7. Ce qui est bâti — J1, le stock du jour (2026-10-21)
+
+**J1, sous la forme de la réception du réassort** (Hugo, 2026-10-21 :
+« commençons par faire la page [Réassort boutique] ; des lignes produit et des
+quantités, et éventuellement un stock »).
 
 - **L'agrégat `ResupplyReceipt`** (`apps/lfd-api/src/b2b/resupply/`) : ce que
-  la vitrine d'un point de retrait a reçu pour une journée — une par (site,
-  journée), des lignes (SKU produit, libellé figé lu au catalogue publié de la
-  boutique, quantité reçue entière ≥ 0). C'est la partie **reçue** du futur
-  `SiteResupply` (modèle B, [`plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md)
-  §9) : deux agrégats, parce que demander et recevoir ont deux auteurs et deux
-  moments. Aucun prix, aucune dépendance au modèle `Order`.
-- **Un article en double est refusé** (409, « corrigez sa quantité ») plutôt
-  qu'additionné : une seconde saisie est plus souvent un doublon qu'un second
-  arrivage.
-- **Le stock estimé** est calculé à la lecture (`estimateStock`) et vaut le
-  reçu ; aucun port de décompte n'est posé d'avance — J2 l'ajoutera.
-
-⚠️ **Refait au lot R2 du réassort, le 2026-10-21**
-([`../reassort-boutiques/README.md`](../reassort-boutiques/README.md)) : la
-réception n'est plus une liste par (site, journée) mais **un reçu par
-réassort envoyé**, réceptionné d'un geste (« Réceptionner »), plus au plus un
-**réassort sans commande** par (site, journée) — la saisie ligne par ligne
-décrite ci-dessus, où le refus du doublon reste vrai. Le **stock estimé du
-jour est la somme des reçus réceptionnés** du jour au point, tous reçus
-confondus ; un réassort envoyé mais pas encore réceptionné n'y compte pas.
-Migration `20261021230000_un_recu_par_reassort`.
-
+  la vitrine d'un point a reçu — des lignes (SKU, libellé figé lu au catalogue
+  publié, quantité reçue entière ≥ 0). Aucun prix, aucune dépendance au modèle
+  `Order`.
+- **Refait au lot R2 du réassort** ([`../reassort-boutiques/README.md`](../reassort-boutiques/README.md)) :
+  un reçu **par réassort envoyé**, réceptionné d'un geste, plus au plus un
+  **réassort sans commande** par (site, journée), saisi ligne par ligne (un
+  article en double est refusé, 409). Migration `20261021230000_un_recu_par_reassort`.
+- **Le stock estimé du jour est la somme des reçus réceptionnés** au point ; un
+  réassort envoyé mais pas encore réceptionné n'y compte pas.
 - **Routes** `/admin/resupply-receipts` sous `handover_counter` (Q1 : le
-  comptoir), table `resupply_receipt` + `resupply_receipt_line` (migration
+  comptoir), tables `resupply_receipt` + `resupply_receipt_line` (migration
   additive `20261021150000`), verrou optimiste par version.
-- **L'écran** : Comptoir › Réassort boutique — point de retrait, journée
-  (aujourd'hui par défaut), lignes reçues et stock estimé ; ajouter, corriger,
-  retirer.
-- **La limite du réassort** (Hugo : « la limite ou absence de limite [du
-  réassort] devrait être définie dans les réglages limites ») : Réglages ›
-  Commandes › Heure limite, carte « Réassort boutique : soumis à l'heure
-  limite / sans limite » (`order_cutoff_settings.resupply_subject_to_cutoff`,
-  oui par défaut). Sans effet à son ajout ; opposée depuis le lot R1
-  (2026-10-21) au réassort commandé « Pour demain »
-  ([`../reassort-boutiques/README.md`](../reassort-boutiques/README.md)).
+- **L'écran** : Comptoir › Réassort boutique — point, journée (aujourd'hui par
+  défaut), lignes reçues et stock estimé.
+- **La limite du réassort** : Réglages › Commandes › Heure limite, carte
+  « Réassort boutique : soumis à l'heure limite / sans limite »
+  (`order_cutoff_settings.resupply_subject_to_cutoff`, oui par défaut).
 
-Reste de J1 : le réglage « jour même » réécrit (oui/non + heure de fin) et le
-choix Q2 (part réservée / toute la vitrine) — non bâtis.
+## 8. Hors périmètre
 
-## 8. J2 refait sur le code du 2026-11-02 — une seule passation « sur stock », deux clientèles
+- Le stock en temps réel (ventes en caisse sans commande).
+- La livraison le jour même.
 
-> 📐 **Plan du 2026-11-02**, Hugo : « est-ce qu'on essaye de voir le b2c jour J
-> déjà, ça va peut-être débloquer quelque chose » — le retrait immédiat d'un
-> pro au comptoir ([`../comptoir/plan-retrait-immediat.md`](../comptoir/plan-retrait-immediat.md))
-> est le même circuit. Touche l'**argent** et un **stock** : `vitruve` avant le
-> bâti. Rien n'est bâti.
+## 9. Les contradictions de `vitruve` (2026-11-02) — ce qui ne tient pas encore
 
-### 8.1 Ce que le code fait aujourd'hui (ouvert le 2026-11-02)
+### 9.1 Sur le dessin du §5
 
-- **Une saisie de l'équipe pour aujourd'hui, plan arrêté, au compte, suit
-  déjà tout le chemin** : `receiveOffPlan` la reçoit, elle entre dans la file
-  du comptoir (`expectedOnWhere` ne lit que le jour), le comptoir la remet sans
-  colisage (rang 1, `handover.ts:43`), son BL naît **à la remise**
-  (`mark-order-fulfilled.handler.ts:120-122`, « créé plein s'il manquait »), le
-  solde se clôt et elle entre dans la facture du mois.
-- **Ce qui la bloque** : l'heure limite générale s'applique aussi à l'équipe
-  (`order-cutoff-gate.service.ts`, aucune branche staff, une dérogation seule
-  la lève) ; aucun décompte du stock ; le règlement par défaut de la saisie est
-  le **lien** (`draft.store.ts:78`), et une commande au lien non payée n'entre
-  ni dans la file ni dans un retirage.
-- **Le réglage « jour même »** (`sameDayAllowed`) ouvre aujourd'hui dans
-  `/fulfillment-days` et dans `ensureNotTooSoon` tant que le plan n'est pas
-  arrêté — c'est-à-dire presque jamais pour aujourd'hui.
-- **Le stock estimé** (`estimateStock`, `b2b/resupply/domain/estimated-stock.ts`)
-  promet déjà « moins ce que les commandes jour même en ont pris » et renvoie
-  le port à J2. Il est lu par la Supervision (onglet Stock) et la réception.
-- **Une commande boutique non réglée** expire à 30 minutes
-  (`UNSETTLED_SHOP_ORDER_TTL_MINUTES`).
+**Bloquants** :
 
-### 8.2 La règle
+1. **Sortir la commande du plan ne suffit pas.** `planWhere` ne sert qu'à
+   `prisma-expected-production.reader.ts:68`, `prisma-pending-orders.reader.ts:45`,
+   `prisma-day-orders.source.ts:57` et `prisma-order.repository.ts:341`.
+   D'autres lecteurs verraient la commande sur stock comme une commande à
+   produire :
+   - **le dossier du jour** et ses fiches (`prisma-order.reader.ts:316-325`, « la
+     CINQUIÈME surface de production ») — un bon imprimé pour ce qui est déjà
+     en vitrine ;
+   - **les échéances du fournil** (`prisma-deadline-orders.reader.ts:30-34`, lu par
+     `due-thresholds.service.ts`) ;
+   - **l'heure d'arrivée des transferts** (`prisma-site-arrival-orders.reader.ts:27-31`,
+     lu par `commerce-transfer-sites.service.ts`) ;
+   - **la Supervision** (`prisma-day-supervision.reader.ts:56-58`), dont
+     `awaitingProduction` nourrit `OvenWaitingOrdersReader` — « attend le
+     four » sur la fiche.
 
-**Une commande « sur stock »** est une commande pour **aujourd'hui**, au
-**point** choisi, dont chaque ligne est prise dans le **stock du jour** de ce
-point. Elle ne passe jamais par le plan :
+   → **Inventaire lecteur par lecteur, chacun avec sa décision, avant tout bâti.**
 
-- elle est **marquée à la passation** (`drawnFromStock`, colonne additive) —
-  c'est la marque, pas le mode d'acheminement : elle reste un **retrait** pour
-  tous les lecteurs (file du comptoir, remise, BL, facture), qui n'ont rien à
-  changer ;
-- elle est **exclue du plan pour de bon** : `planWhere` (et donc tout
-  retirage) l'écarte par sa marque — sans quoi un retirage relancé ferait
-  cuire ce qui est déjà en vitrine ;
-- **l'heure limite générale ne s'applique pas** à elle (§2) ; ce qui la limite :
-  l'interrupteur du circuit, l'**heure de fin** du jour même, le **reste** ;
-- le **reste** = reçus réceptionnés du jour au point − lignes des commandes
-  sur stock non annulées de ce jour à ce point. Il est servi par **un port**
-  que le contexte des commandes implémente (`StockDrawsReader`), lu par
-  `estimateStock` : Supervision, réception et passation lisent **le même**
-  reste ;
-- **sous verrou** (journée, point) à la passation, et le même verrou pris par
-  la correction et l'annulation d'un reçu de réassort, qui peuvent faire
-  baisser le reçu : un reçu ne descend pas sous ce qui en a été pris (refus
-  « déjà vendu : N »).
+2. **La passation d'un particulier n'a pas de chemin** : `ensureDayOpen` et
+   `receiveOffPlan` la refusent sur un plan arrêté, `OrderCutoffGate.ensure`
+   aussi après la limite ; le dessin ne dit pas où (l'agrégat devrait décider),
+   ni si elle prend encore le verrou de journée (`PlanAdmissionDesk.admit`), ni
+   ce que devient une commande sur stock passée **avant** l'arrêt.
+3. **Le verrou (journée, point) n'existe pas** (§4.5) : à créer, avec son
+   mécanisme, son propriétaire et **son ordre d'acquisition** face au verrou de
+   journée que la passation prend déjà en premier — sinon interblocage possible.
+4. **Le défaut « au compte »** renverse une décision écrite au contrat
+   (`admin-order.ts:115-117`), **change silencieusement les brouillons stockés**
+   (`default("link")`, l. 236), et refusera tout pro sans crédit (Q7).
 
-### 8.3 Les deux clientèles
+**Sérieux** : le reste tenu sans borne par les commandes que l'expiration ne
+sait pas annuler (§4.6) ; le reste ne dit pas s'il compte une commande au
+paiement refusé (par statut ou par règlement — deux restes divergents) ;
+`estimateStock` est pure, il faut dire quel service lit le port et lui passe
+les prélèvements ; la marque est **irréversible** une fois écrite, et une
+révision de jour ne doit pas pouvoir déplacer une commande sur stock vers
+demain ; Q6 bloque J2b.
 
-|           | Particulier (J2)                                               | Pro au comptoir (retrait immédiat)                                                                             |
-| --------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Qui passe | le client, en ligne                                            | l'équipe, au comptoir, par le raccourci « Retrait immédiat »                                                   |
-| Point     | celui qu'il choisit                                            | celui du comptoir                                                                                              |
-| Règlement | carte en ligne ; non réglée, elle expire et **rend son stock** | **au compte**, imposé par le serveur (`settlement: "account"`)                                                 |
-| Remise    | au comptoir, geste normal                                      | au comptoir, geste normal, aussitôt                                                                            |
-| Marque    | `drawnFromStock`                                               | `drawnFromStock` + `entryShortcut: "immediate_pickup"` (le compte de Hugo : combien de fois, quelle clientèle) |
+### 9.2 Sur la première version du retrait immédiat (un mode `immediate_pickup`)
 
-Le règlement par défaut d'une saisie de l'équipe devient **au compte** pour
-toutes les saisies (Hugo, 2026-11-02), le lien restant un choix.
+Abandonnée pour la raison même du §1 (un raccourci, pas un type) ; ses leçons
+restent :
 
-### 8.4 Les lots
+1. Un **mode d'acheminement neuf** ne s'exclut de rien « par construction » :
+   les adaptateurs ramènent tout ce qui n'est pas `delivery` à `pickup`, et il
+   casserait chaque `z.enum` du contrat (`packages/contracts/src/order.ts:85`,
+   journal compris) — environ 190 fichiers citent le mode, et c'est
+   irréversible dès qu'une ligne est écrite.
+2. **« Hors plan » n'exclut rien** (§4.2).
+3. **La remise n'appartient pas au commerce** : elle est gravée par le bloc
+   `handover/` (`confirm-handover.handler.ts`) et publie `OrderHandedOver` ;
+   le canal n'expose aucun port d'écriture → passer par le **geste réel**.
+4. **La facture** sélectionne par `billableOrderWhere`, sur `settledOn` et les
+   montants posés à la remise (§4.3).
+5. **Une commande remise ne s'annule pas** (Q11).
 
-| Lot       | Contenu                                                                                                                                                                                                                                                                                                          |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **J2a**   | Serveur, sans écran : la marque `drawnFromStock` (migration additive), le port `StockDrawsReader` et le reste dans `estimateStock`, l'exclusion de `planWhere`, le verrou partagé avec les corrections de réception ; e2e (le reste baisse, un retirage n'absorbe pas, la correction sous le vendu est refusée)  |
-| **J2b**   | Serveur : la passation sur stock d'un particulier — heure de fin (réglage), interrupteur, pas d'heure limite, garde du reste, l'expiration qui rend ; `/fulfillment-days` propose aujourd'hui quand le point a du stock ; e2e (course au dernier article, panier mixte refusé, heure de fin, paiement abandonné) |
-| **J2c**   | Serveur : la saisie sur stock de l'équipe et son raccourci (`entryShortcut`, au compte imposé), le défaut « au compte » des saisies ; e2e (remise au comptoir, BL créé, facture du mois)                                                                                                                         |
-| **J3/J4** | Écrans : le choix « aujourd'hui » de la boutique avec le reste ; au comptoir, « Retrait immédiat » / « Commande programmée »                                                                                                                                                                                     |
+## 10. Les documents voisins
 
-### 8.5 Questions pour Hugo
-
-- **Q3 bis** — Le stock tenu par un paiement en cours : la décision du
-  2026-10-21 dit **15 minutes**, une commande boutique non réglée expire
-  aujourd'hui à **30**. Une seule durée (30, déjà en place) ou 15 pour le jour
-  même seulement ?
-- **Q5** (ouverte) — Une seule heure de fin pour tous les points ?
-- **Q6** — Un pro **en ligne** (pas au comptoir) peut-il commander pour
-  aujourd'hui sur stock, ou seulement par le comptoir ?
+- [`schema-des-reglages.md`](schema-des-reglages.md) — le modèle de tous les
+  réglages de commande ; d'où vient « aujourd'hui se prend dans le stock ».
+- [`reglages-generaux.md`](reglages-generaux.md) §4 — le réglage « jour même »,
+  à l'état réel.
+- [`plan-une-seule-heure.md`](plan-une-seule-heure.md) §6 — le jour même sur sa
+  propre page.
+- [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md) — ce que l'arrêt
+  fait aux commandes du jour ; l'arrêt d'aujourd'hui qui tombe le jour même.
+- [`../commandes/passation/plan-premier-jour-commandable.md`](../commandes/passation/plan-premier-jour-commandable.md)
+  — `/fulfillment-days`, le premier jour proposé.
+- [`../commandes/passation/plan-reglages-commandes.md`](../commandes/passation/plan-reglages-commandes.md)
+  — la décision d'origine (« le jour même est un réglage ») et la réception
+  hors plan de l'équipe (lot O3).
+- [`../reassort-boutiques/plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md)
+  — le réassort, d'où vient le stock du jour.
+- [`../comptoir/architecture-commande-au-comptoir.md`](../comptoir/architecture-commande-au-comptoir.md)
+  — la saisie au comptoir.
