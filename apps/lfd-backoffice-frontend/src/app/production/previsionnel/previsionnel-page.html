@@ -123,27 +123,9 @@
             tooltip="Semaine suivante"
             (clicked)="shift(1)"
           />
-          <button
-            foldButton
-            emphasis="outline"
-            size="sm"
-            icon="print"
-            class="pv-open-dossier"
-            (click)="view.set('dossier')"
-          >
-            Dossier du jour
-          </button>
-          <!-- Une journée dans la même table, une colonne par tranche (2026-11-01). -->
-          <button
-            foldButton
-            emphasis="outline"
-            size="sm"
-            icon="clock"
-            data-open-tranches
-            (click)="view.set('tranches')"
-          >
-            Journée par tranche
-          </button>
+          <!-- Le dossier du jour et la journée par tranche s'ouvrent par la
+               colonne de leur jour : les deux boutons d'ici, qui ouvraient
+               « demain » sans le dire, sont retirés (Hugo, 2026-11-02). -->
           <!--
             **Arrêter le plan**, sur la ligne des autres gestes et en accent plein
             (Hugo, 2026-10-06) : c'est l'action de l'écran le soir. Un seul bouton,
@@ -351,7 +333,7 @@
           [columns]="columns()"
           [footRows]="footRows"
           [rayons]="rayons()"
-          columnAction="Par tranche horaire"
+          [columnActions]="columnActions"
           (columnEntered)="enterDay($event)"
         />
       }

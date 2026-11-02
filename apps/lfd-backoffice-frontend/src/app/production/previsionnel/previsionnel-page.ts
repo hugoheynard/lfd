@@ -45,6 +45,7 @@ import {
   windowEnd,
 } from './previsionnel-range';
 import { batchWithOrders, capitalized } from './batch-wording';
+import type { ForecastColumnAction, ForecastColumnEntry } from './forecast-table/forecast-table';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -200,9 +201,19 @@ export class PrevisionnelPage {
    */
   protected readonly trancheDate = signal(isoDay(new Date()));
 
-  /** « Par tranche horaire » sous une colonne de la semaine : entrer dans sa journée. */
-  protected enterDay(date: string): void {
-    this.trancheDate.set(date);
+  /** Sous chaque colonne de la semaine : entrer dans la journée de ce jour. */
+  protected readonly columnActions: readonly ForecastColumnAction[] = [
+    { id: 'tranches', label: 'Par tranche horaire', icon: 'clock' },
+    { id: 'dossier', label: 'Dossier du jour', icon: 'print' },
+  ];
+
+  protected enterDay(entry: ForecastColumnEntry): void {
+    if (entry.action === 'dossier') {
+      this.dossierDate.set(entry.key);
+      this.view.set('dossier');
+      return;
+    }
+    this.trancheDate.set(entry.key);
     this.view.set('tranches');
   }
 

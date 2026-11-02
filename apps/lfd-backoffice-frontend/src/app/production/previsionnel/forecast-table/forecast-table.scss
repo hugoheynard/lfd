@@ -575,6 +575,12 @@
 
 /* Entrer dans la journée de la colonne : sous son état, à la largeur de la
    colonne. Le libellé passe à la ligne plutôt que de déborder sur la voisine. */
+.pv-day-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .pv-day-enter {
   align-self: stretch;
   min-width: 0;

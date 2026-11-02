@@ -355,18 +355,23 @@ describe('ForecastTable', () => {
   });
 
   /** Hugo, 2026-11-02 : entrer dans une journée depuis sa colonne, sans sélecteur de date. */
-  it('le bouton sous une colonne rend la clé de CETTE colonne', () => {
+  it('chaque bouton sous une colonne rend son action et la clé de CETTE colonne', () => {
     const fixture = mount();
-    fixture.componentRef.setInput('columnAction', 'Par tranche');
-    const entered: string[] = [];
-    fixture.componentInstance.columnEntered.subscribe((key) => entered.push(key));
+    fixture.componentRef.setInput('columnActions', [
+      { id: 'tranches', label: 'Par tranche horaire', icon: 'clock' },
+      { id: 'dossier', label: 'Dossier du jour', icon: 'print' },
+    ]);
+    const entered: unknown[] = [];
+    fixture.componentInstance.columnEntered.subscribe((entry) => entered.push(entry));
     fixture.detectChanges();
 
     const buttons = [
       ...fixture.nativeElement.querySelectorAll('.pv-day-enter'),
     ] as HTMLButtonElement[];
-    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Par tranche', 'Par tranche']);
-    buttons[1]?.click();
-    expect(entered).toEqual(['2026-09-04']);
+    expect(buttons).toHaveLength(4);
+    fixture.nativeElement
+      .querySelectorAll('[data-column-action="dossier"]')[1]
+      ?.dispatchEvent(new MouseEvent('click'));
+    expect(entered).toEqual([{ action: 'dossier', key: '2026-09-04' }]);
   });
 });

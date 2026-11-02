@@ -9,7 +9,8 @@ import { ProductionService } from '../../production.service';
 
 /**
  * **L'en-tête du prévisionnel** (2026-10-06) : le rattrapage passe avant le
- * titre, et le dossier du jour s'ouvre par un bouton au lieu d'un onglet.
+ * titre, et le dossier du jour s'ouvre par le bouton de la colonne de son jour
+ * (2026-11-02) — plus par un bouton au-dessus, qui ouvrait « demain » sans le dire.
  */
 
 /** Une journée relative à maintenant, `AAAA-MM-JJ` en heure locale (CLAUDE.md §5). */
@@ -33,12 +34,29 @@ function openDay(date: string): ProductionForecastView['days'][number] {
   };
 }
 
+/** Une ligne : sans pièce, la grille cède à l'état vide et ses colonnes avec. */
 const FORECAST: ProductionForecastView = {
   days: [openDay(dayIn(0)), openDay(dayIn(1))],
-  lines: [],
+  lines: [
+    {
+      sku: 'PAIN-1',
+      productName: 'Baguette',
+      saleUnit: 'piece',
+      quantities: [10, 10],
+      resupplyQuantities: [0, 0],
+      totalUnits: 20,
+    },
+  ],
   peakDate: dayIn(0),
-  totalUnits: 0,
+  totalUnits: 20,
 };
+
+/** « Dossier du jour » sous la colonne `index`. */
+function openDossier(el: HTMLElement, index: number): void {
+  (
+    el.querySelectorAll('[data-column-action="dossier"]')[index] as HTMLButtonElement | undefined
+  )?.click();
+}
 
 async function render(): Promise<ComponentFixture<PrevisionnelPage>> {
   TestBed.configureTestingModule({
@@ -87,11 +105,11 @@ describe('l’en-tête du prévisionnel', () => {
     expect(el.textContent).not.toContain('mur');
   });
 
-  it('ouvre le dossier par son bouton, et en revient', async () => {
+  it('ouvre le dossier par le bouton d’une colonne, et en revient', async () => {
     const fixture = await render();
     const el = fixture.nativeElement as HTMLElement;
 
-    buttonNamed(el, 'Dossier du jour')?.click();
+    openDossier(el, 0);
     fixture.detectChanges();
     expect(el.querySelector('app-dossier-du-jour')).not.toBeNull();
     expect(buttonNamed(el, 'Semaine suivante')).toBeUndefined();
@@ -99,7 +117,7 @@ describe('l’en-tête du prévisionnel', () => {
     buttonNamed(el, 'Retour au prévisionnel')?.click();
     fixture.detectChanges();
     expect(el.querySelector('app-dossier-du-jour')).toBeNull();
-    expect(buttonNamed(el, 'Dossier du jour')).toBeDefined();
+    expect(el.querySelectorAll('[data-column-action="dossier"]')).toHaveLength(2);
   });
 
   it('titre le dossier par SA journée, et suit quand on la change', async () => {
@@ -110,7 +128,8 @@ describe('l’en-tête du prévisionnel', () => {
         new Date(`${date}T00:00:00`),
       );
 
-    buttonNamed(el, 'Dossier du jour')?.click();
+    // La colonne de demain ouvre le dossier de demain.
+    openDossier(el, 1);
     fixture.detectChanges();
     expect(el.querySelector('.pv-title')?.textContent?.trim()).toBe(
       `Le tirage du ${label(dayIn(1))}`,

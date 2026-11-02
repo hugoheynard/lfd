@@ -1,8 +1,26 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { FoldBadgeComponent, FoldButtonComponent, FoldSurfaceDirective } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  FoldButtonComponent,
+  type FoldIconName,
+  FoldSurfaceDirective,
+} from 'fold-ng';
 
 import type { ForecastCell, ForecastRayon } from '../previsionnel-matrix';
 import type { ForecastColumn, ForecastColumnTone, ForecastFootRow } from '../forecast-column';
+
+/** Un bouton sous chaque colonne : ce qu'il ouvre, et ce qu'il dit. */
+export interface ForecastColumnAction {
+  readonly id: string;
+  readonly label: string;
+  readonly icon: FoldIconName;
+}
+
+/** Le clic d'un bouton de colonne. */
+export interface ForecastColumnEntry {
+  readonly action: string;
+  readonly key: string;
+}
 
 /**
  * Au-delà de ce nombre de références, la grille passe en **densité réduite**.
@@ -58,11 +76,13 @@ export class ForecastTable {
   readonly footRows = input.required<readonly ForecastFootRow[]>();
 
   /**
-   * Le libellé du bouton d'entrée sous chaque colonne (« Par tranche horaire ») —
-   * `null` : pas de bouton. Le clic rend la clé de la colonne.
+   * Les boutons d'entrée sous chaque colonne (« Par tranche horaire »,
+   * « Dossier du jour ») — vide : aucun. Le clic rend l'action et la clé de la
+   * colonne : c'est la colonne qui dit de quelle journée il s'agit (Hugo,
+   * 2026-11-02), plus un sélecteur de date au-dessus de la table.
    */
-  readonly columnAction = input<string | null>(null);
-  readonly columnEntered = output<string>();
+  readonly columnActions = input<readonly ForecastColumnAction[]>([]);
+  readonly columnEntered = output<ForecastColumnEntry>();
 
   /** Le nom de la grille, pour les lecteurs d'écran. */
   readonly label = input('Prévisionnel de production');
