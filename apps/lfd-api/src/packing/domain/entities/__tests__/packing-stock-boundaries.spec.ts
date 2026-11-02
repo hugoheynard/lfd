@@ -31,7 +31,7 @@ describe("PackingStock — frontières de l'invariant", () => {
   it.each([-3, 1.5])("refuse un mouvement de bac de %s pièce(s), sans rien toucher", (quantity) => {
     const held = stock(10, 0, 4);
     for (const move of [
-      () => held.take(quantity, "Croissant"),
+      () => held.take(quantity, "Croissant", "piece"),
       () => held.takeForResupply("rs-1", quantity, "Croissant", "piece"),
       () => held.release(quantity),
       () => held.releaseFromResupply("rs-1", quantity, "piece"),
@@ -43,20 +43,22 @@ describe("PackingStock — frontières de l'invariant", () => {
 
   it("un mouvement de zéro pièce est admis et ne change rien", () => {
     const held = stock(10, 0, 4);
-    held.take(0, "Croissant");
+    held.take(0, "Croissant", "piece");
     held.release(0);
     expect(held.toSnapshot().packed).toBe(4);
   });
 
   it("un libre à zéro refuse une seule pièce, et la pièce suivante au cran près passe", () => {
-    expect(() => stock(10, 0, 10).take(1, "Croissant")).toThrow(/Il manque 1 « Croissant »/);
-    expect(() => stock(10, 0, 9).take(1, "Croissant")).not.toThrow();
+    expect(() => stock(10, 0, 10).take(1, "Croissant", "piece")).toThrow(
+      /Il manque 1 « Croissant »/,
+    );
+    expect(() => stock(10, 0, 9).take(1, "Croissant", "piece")).not.toThrow();
   });
 
   it("l'envoi en boutique compte dans le plafond : le bac ne reprend pas ce qui est parti", () => {
     const held = stock(10, 0, 4, 6);
     expect(held.free).toBe(0);
-    expect(() => held.take(1, "Croissant")).toThrow(LineNotProducedYetError);
+    expect(() => held.take(1, "Croissant", "piece")).toThrow(LineNotProducedYetError);
     expectInvariant(held);
   });
 

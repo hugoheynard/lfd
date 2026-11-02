@@ -84,6 +84,7 @@ describe("le dossier du jour, au poids", () => {
         saleUnit: "weight",
         orderCount: 2,
         resupplyQuantity: 0,
+        resupplyCount: 0,
       },
     ]);
     expect(dossier.pieces).toBe(44);

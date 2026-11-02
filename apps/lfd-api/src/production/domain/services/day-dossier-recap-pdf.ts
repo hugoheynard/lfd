@@ -27,9 +27,13 @@ function plural(count: number, word: string): string {
   return `${String(count)} ${word}${count > 1 ? "s" : ""}`;
 }
 
-/** « dont 18 réassort » — le détail, jamais le chiffre principal. */
-function resupplyPart(quantity: number): string {
-  return `dont ${String(quantity)} réassort`;
+/**
+ * « dont 18 réassort » ou « dont 1,25 kg réassort » — le détail, jamais le
+ * chiffre principal. Le rayon le dit en pièces (un réassort au poids pour
+ * une), la ligne dans son unité : des grammes ne s'ajoutent pas à des pièces.
+ */
+function resupplyPart(figure: string): string {
+  return `dont ${figure} réassort`;
 }
 
 /**
@@ -73,7 +77,7 @@ export function drawRecapGroup(
   y += 5 * MM;
   put(doc, plural(group.quantity, "pièce"), LEFT, y, { size: 22, bold: true });
   if (group.resupplyQuantity > 0) {
-    putRight(doc, resupplyPart(group.resupplyQuantity), RIGHT, y + 3 * MM, 11);
+    putRight(doc, resupplyPart(String(group.resupplyQuantity)), RIGHT, y + 3 * MM, 11);
   }
   y += 10 * MM;
   rule(doc, y, 1.5);
@@ -104,7 +108,13 @@ export function drawRecapGroup(
     }
     if (line.resupplyQuantity > 0) {
       y += 5 * MM;
-      put(doc, resupplyPart(line.resupplyQuantity), LEFT + 20 * MM, y, { size: 9 });
+      put(
+        doc,
+        resupplyPart(lineFigure({ quantity: line.resupplyQuantity, saleUnit: line.saleUnit })),
+        LEFT + 20 * MM,
+        y,
+        { size: 9 },
+      );
     }
     y += 6 * MM;
     rule(doc, y, 0.6, ROW_GRAY);

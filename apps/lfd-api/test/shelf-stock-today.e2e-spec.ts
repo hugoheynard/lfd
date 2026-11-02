@@ -7,7 +7,7 @@
  * mur du catalogue (sur mesure compris) ; et que l'audience d'un client
  * reconnu se décide au serveur, depuis sa société, sans paramètre.
  */
-import type { ShelfStockTodayView } from "@lfd/contracts";
+import type { FulfillmentDayView, ShelfStockTodayView } from "@lfd/contracts";
 import { instantToLocal, localToInstant } from "@lfd/contracts";
 
 import { WEIGHED_GRAVLAX } from "../src/dev/seeding/delivery-day.seed.js";
@@ -221,5 +221,50 @@ describe("le reste d'aujourd'hui servi à la boutique (L7b)", () => {
 
   it("refuse une lecture sans point", async () => {
     await ctx.http().get("/shelf-stock/today").expect(400);
+  });
+});
+
+/** La journée proposée au point de la boutique, par une lecture des jours. */
+function dayAtShop(days: readonly FulfillmentDayView[]): string | null {
+  return days.find((entry) => entry.pickupAddressId === siteId)?.date ?? null;
+}
+
+/**
+ * Bâti des restes (même plan, 2026-11-02) : `/fulfillment-days` choisissait la
+ * porte du circuit d'après l'audience ANNONCÉE ; un pro reconnu qui envoyait
+ * `audience=public` lisait le réglage des particuliers. Le client reconnu lit
+ * `/fulfillment-days/mine`, dont la porte vient de sa société.
+ */
+describe("les journées d'un client reconnu (bâti des restes)", () => {
+  it("régression : un pro reconnu ne se voit pas proposer aujourd'hui par le réglage des particuliers", async () => {
+    // La saisie qui arrête le plan passe par la porte du comptoir (pros) :
+    // les pros se ferment après l'arrêt.
+    await openSameDay();
+    await closeToday();
+    await openSameDay({ sameDayProAllowed: false });
+
+    const announcedPublic = jsonBody<readonly FulfillmentDayView[]>(
+      await ctx.http().get("/fulfillment-days").query({ audience: "public" }).expect(200),
+    );
+    expect(dayAtShop(announcedPublic)).toBe(day);
+
+    const mine = jsonBody<readonly FulfillmentDayView[]>(
+      await ctx.asSub(PRO_SUB).get("/fulfillment-days/mine").expect(200),
+    );
+    expect(dayAtShop(mine)).not.toBe(day);
+  });
+
+  it("la porte pro ouverte en ligne : le pro reconnu se voit proposer aujourd'hui", async () => {
+    await openSameDay({ sameDayPublicAllowed: false });
+    await closeToday();
+
+    const mine = jsonBody<readonly FulfillmentDayView[]>(
+      await ctx.asSub(PRO_SUB).get("/fulfillment-days/mine").query({ skus: CROISSANT }).expect(200),
+    );
+    expect(dayAtShop(mine)).toBe(day);
+  });
+
+  it("sans connexion, la variante reconnue est refusée", async () => {
+    await ctx.http().get("/fulfillment-days/mine").expect(401);
   });
 });

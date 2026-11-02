@@ -16,20 +16,20 @@ function stock(received: number, returned = 0, packed = 0): PackingStock {
 describe("PackingStock — au bac ≤ reçu − rendu", () => {
   it("met au bac ce que la réserve couvre", () => {
     const held = stock(12);
-    held.take(12, "Croissant");
+    held.take(12, "Croissant", "piece");
     expect(held.toSnapshot()).toMatchObject({ packed: 12, received: 12 });
     expect(held.free).toBe(0);
   });
 
   it("refuse ce qu'elle ne couvre pas, en disant combien il manque — le message de l'ancien poste", () => {
     const held = stock(12, 0, 4);
-    expect(() => held.take(10, "Croissant")).toThrow(LineNotProducedYetError);
-    expect(() => held.take(10, "Croissant")).toThrow(/Il manque 2 « Croissant »/);
+    expect(() => held.take(10, "Croissant", "piece")).toThrow(LineNotProducedYetError);
+    expect(() => held.take(10, "Croissant", "piece")).toThrow(/Il manque 2 « Croissant »/);
     expect(held.packed).toBe(4);
   });
 
   it("ce qui est rendu au fournil ne peut plus aller au bac", () => {
-    expect(() => stock(12, 5).take(8, "Croissant")).toThrow(LineNotProducedYetError);
+    expect(() => stock(12, 5).take(8, "Croissant", "piece")).toThrow(LineNotProducedYetError);
   });
 
   it("ressortir du bac rend les pièces disponibles", () => {
@@ -63,7 +63,28 @@ describe("PackingStock.giveBack — le colisage décide d'un retour", () => {
    * libre — 423 reçus, 346 posés, 77 se posent, pas un de plus.
    */
   it("pose exactement le libre que l'écran annonce, et refuse la pièce de trop", () => {
-    expect(() => stock(423, 0, 346).take(77, "Croissant")).not.toThrow();
-    expect(() => stock(423, 0, 346).take(78, "Croissant")).toThrow(/Il manque 1 « Croissant »/);
+    expect(() => stock(423, 0, 346).take(77, "Croissant", "piece")).not.toThrow();
+    expect(() => stock(423, 0, 346).take(78, "Croissant", "piece")).toThrow(
+      /Il manque 1 « Croissant »/,
+    );
+  });
+});
+
+/**
+ * Régression : la mise au bac d'une commande ne passait pas l'unité — un
+ * gravlax au poids manquant de 1 250 g se disait « Il manque 1250 », et un
+ * mouvement fractionnaire parlait de pièces (bâti des restes du circuit du
+ * jour J, 2026-11-02).
+ */
+describe("PackingStock — la mise au bac d'une commande au poids", () => {
+  it("prend des grammes, et le manque se dit « 1,25 kg »", () => {
+    const held = stock(3_750);
+    held.take(2_500, "Gravlax", "weight");
+    expect(held.packed).toBe(2_500);
+    expect(() => held.take(2_500, "Gravlax", "weight")).toThrow(/Il manque 1,25 kg « Gravlax »/);
+  });
+
+  it("un mouvement fractionnaire se refuse en grammes", () => {
+    expect(() => stock(3_750).take(1.5, "Gravlax", "weight")).toThrow(/entier de grammes/);
   });
 });

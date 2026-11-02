@@ -221,7 +221,7 @@ describe("OnReturnRequested — une DEMANDE (journée `packing`, K2)", () => {
     const { handed, returned, durable, shadow, stocks } = setup();
     await handed.handle(delivery(new HandedToPackingEvent("b1", DAY, "CRO", 12, AT).durableFact()));
     const held = await stocks.lock(DAY, "CRO");
-    held.take(5, "Croissant");
+    held.take(5, "Croissant", "piece");
     await stocks.save(held);
 
     await returned.handle(delivery(ask("return-x", 12)));
@@ -245,7 +245,7 @@ describe("OnReturnRequested — une DEMANDE (journée `packing`, K2)", () => {
     const { handed, returned, durable, stocks } = setup();
     await handed.handle(delivery(new HandedToPackingEvent("b1", DAY, "CRO", 12, AT).durableFact()));
     const held = await stocks.lock(DAY, "CRO");
-    held.take(12, "Croissant");
+    held.take(12, "Croissant", "piece");
     await stocks.save(held);
 
     await returned.handle(delivery(ask("return-x", 12)));

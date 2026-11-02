@@ -29,11 +29,10 @@ export class OrderShelfTodaySites extends ShelfTodaySites {
   async sellingToday(question: ShelfTodayQuestion): Promise<ReadonlySet<string>> {
     const settings = await this.sites.forDay(question.day, question.siteIds);
     const now = instantToLocal(this.clock.now()).time;
-    const door = question.audience === "pro" ? "pro_online" : "public_online";
     const selling = new Set<string>();
     for (const siteId of question.siteIds) {
       const site = settings.get(siteId) ?? null;
-      if (pickupLeftToday(door, site, now) && (await this.stocks(siteId, question))) {
+      if (pickupLeftToday(question.door, site, now) && (await this.stocks(siteId, question))) {
         selling.add(siteId);
       }
     }

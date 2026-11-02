@@ -107,16 +107,19 @@ export class PackingStock {
   }
 
   /**
-   * Des pièces entrent dans un bac.
+   * Des pièces — ou des grammes, au poids — entrent dans le bac d'une
+   * commande. `unit` est celle de la ligne, comme pour `takeForResupply` :
+   * les refus disent « grammes » et « 1,25 kg », jamais « 1250 » pièces.
    *
+   * @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire.
    * @throws {LineNotProducedYetError} la réserve ne les couvre pas — le refus
    *   dit combien il en manque, comme l'ancien poste.
    */
-  take(quantity: number, productName: string): void {
-    this.ensureMovable(quantity);
+  take(quantity: number, productName: string, unit: SaleUnit): void {
+    this.ensureMovable(quantity, unit);
     const missing = shortfall(this.free, quantity);
     if (missing > 0) {
-      throw new LineNotProducedYetError(productName, missing);
+      throw new LineNotProducedYetError(productName, missing, unit);
     }
     this.packedValue += quantity;
   }

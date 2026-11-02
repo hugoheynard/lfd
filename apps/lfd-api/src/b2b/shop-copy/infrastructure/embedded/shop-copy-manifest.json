@@ -2004,13 +2004,6 @@
           "variables": ["n"]
         },
         {
-          "key": "product.proDiscount",
-          "fr": "Prix pro −{pct} %",
-          "en": "Trade price −{pct}%",
-          "it": "Prezzo pro −{pct} %",
-          "variables": ["pct"]
-        },
-        {
           "key": "product.offerAtPickupPoint",
           "fr": "{discount} avec retrait à {place}",
           "en": "{discount} with pickup at {place}",

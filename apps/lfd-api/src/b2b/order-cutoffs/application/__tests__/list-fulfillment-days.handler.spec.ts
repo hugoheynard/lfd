@@ -55,7 +55,7 @@ class FixedShelfSites extends ShelfTodaySites {
   }
 }
 import { ListFulfillmentDaysHandler } from "../list-fulfillment-days.handler.js";
-import { ListFulfillmentDaysQuery } from "../list-fulfillment-days.query.js";
+import { anonymousCaller, ListFulfillmentDaysQuery } from "../list-fulfillment-days.query.js";
 
 /**
  * D6 : un panier qui porte une bûche ne se voit proposer que des jours de
@@ -161,20 +161,22 @@ describe("ListFulfillmentDaysHandler — les opérations datées", () => {
   });
 
   it("un panier d'articles courants de l'opération n'est pas contraint", async () => {
-    const days = await handler().execute(new ListFulfillmentDaysQuery(["VIE-001-1"], "public"));
+    const days = await handler().execute(
+      new ListFulfillmentDaysQuery(["VIE-001-1"], anonymousCaller("public")),
+    );
     expect(days[0]?.date).toBe(nextFulfillmentDay([], NOW));
   });
 
   it("un panier qui porte la bûche ne propose que les jours de retrait de Noël", async () => {
     const days = await handler().execute(
-      new ListFulfillmentDaysQuery(["VIE-001-1", "PAT-002-1"], "public"),
+      new ListFulfillmentDaysQuery(["VIE-001-1", "PAT-002-1"], anonymousCaller("public")),
     );
     expect(days).toEqual([{ pickupAddressId: null, date: "2026-12-20", orderUntil: null }]);
   });
 
   it("ne propose aucun jour quand l'opération n'est pas ouverte à cette clientèle", async () => {
     const days = await handler([{ ...NOEL, audience: "pro" }]).execute(
-      new ListFulfillmentDaysQuery(["PAT-002-1"], "public"),
+      new ListFulfillmentDaysQuery(["PAT-002-1"], anonymousCaller("public")),
     );
     expect(days).toEqual([{ pickupAddressId: null, date: null, orderUntil: null }]);
   });
@@ -278,7 +280,7 @@ describe("ListFulfillmentDaysHandler — l'heure limite annoncée", () => {
 
   it("rend la limite du jour d'opération quand le panier déplace la journée", async () => {
     const days = await handler([NOEL], { rules: [veille23h] }).execute(
-      new ListFulfillmentDaysQuery(["PAT-002-1"], "public"),
+      new ListFulfillmentDaysQuery(["PAT-002-1"], anonymousCaller("public")),
     );
     expect(days).toEqual([
       { pickupAddressId: null, date: "2026-12-20", orderUntil: "2026-12-19T22:00:00.000Z" },
@@ -318,7 +320,7 @@ describe("ListFulfillmentDaysHandler — aujourd'hui sur la vitrine (L4)", () =>
       sameDayAllowed: { sameDayPublicAllowed: true },
       points: [point("village"), point("labo")],
       shelf,
-    }).execute(new ListFulfillmentDaysQuery(["VIE-001-1"], "public"));
+    }).execute(new ListFulfillmentDaysQuery(["VIE-001-1"], anonymousCaller("public")));
 
     expect(days).toEqual([
       { pickupAddressId: null, date: TOMORROW, orderUntil: null },
@@ -326,7 +328,7 @@ describe("ListFulfillmentDaysHandler — aujourd'hui sur la vitrine (L4)", () =>
       { pickupAddressId: "labo", date: TOMORROW, orderUntil: null },
     ]);
     expect(shelf.asked).toEqual([
-      { day: TODAY, audience: "public", siteIds: ["village", "labo"], cartSkus: ["VIE-001-1"] },
+      { day: TODAY, door: "public_online", siteIds: ["village", "labo"], cartSkus: ["VIE-001-1"] },
     ]);
   });
 
@@ -338,7 +340,7 @@ describe("ListFulfillmentDaysHandler — aujourd'hui sur la vitrine (L4)", () =>
       sameDayAllowed: { sameDayProAllowed: true },
       points: [point("village")],
       shelf,
-    }).execute(new ListFulfillmentDaysQuery([], "pro"));
+    }).execute(new ListFulfillmentDaysQuery([], anonymousCaller("pro")));
 
     expect(days.map((day) => day.date)).toEqual([TOMORROW, TOMORROW]);
     expect(shelf.asked).toEqual([]);
@@ -361,8 +363,52 @@ describe("ListFulfillmentDaysHandler — aujourd'hui sur la vitrine (L4)", () =>
       plans: new FixedClosedPlans([TODAY]),
       points: [point("village")],
       shelf: new FixedShelfSites(["village"]),
-    }).execute(new ListFulfillmentDaysQuery(["PAT-002-1"], "public"));
+    }).execute(new ListFulfillmentDaysQuery(["PAT-002-1"], anonymousCaller("public")));
 
     expect(days.map((day) => day.date)).toEqual(["2026-12-20", "2026-12-20"]);
+  });
+
+  /**
+   * Régression : la porte suivait l'audience ANNONCÉE — un pro reconnu qui
+   * envoyait `audience=public` lisait le réglage des particuliers et se voyait
+   * proposer aujourd'hui que sa passation refusait (bâti des restes, 2026-11-02).
+   */
+  it("un client reconnu d'une société suit la porte pro, quoi qu'il annonce", async () => {
+    const shelf = new FixedShelfSites(["village"]);
+    const days = await handler([], {
+      plans: new FixedClosedPlans([TODAY]),
+      // Les particuliers ouverts, les pros fermés.
+      sameDayAllowed: { sameDayPublicAllowed: true },
+      points: [point("village")],
+      shelf,
+    }).execute(new ListFulfillmentDaysQuery([], { kind: "acting", companyId: "co-1" }));
+
+    expect(days.map((day) => day.date)).toEqual([TOMORROW, TOMORROW]);
+    expect(shelf.asked).toEqual([]);
+  });
+
+  it("un client reconnu sans société passe par la porte des particuliers", async () => {
+    const shelf = new FixedShelfSites(["village"]);
+    await handler([], {
+      plans: new FixedClosedPlans([TODAY]),
+      sameDayAllowed: { sameDayPublicAllowed: true },
+      points: [point("village")],
+      shelf,
+    }).execute(new ListFulfillmentDaysQuery([], { kind: "acting", companyId: null }));
+
+    expect(shelf.asked.map((question) => question.door)).toEqual(["public_online"]);
+  });
+
+  it("un pro reconnu, porte pro ouverte en ligne, interroge la vitrine par la porte pro", async () => {
+    const shelf = new FixedShelfSites(["village"]);
+    const days = await handler([], {
+      plans: new FixedClosedPlans([TODAY]),
+      sameDayAllowed: { sameDayProAllowed: true, sameDayProOnline: true },
+      points: [point("village")],
+      shelf,
+    }).execute(new ListFulfillmentDaysQuery([], { kind: "acting", companyId: "co-1" }));
+
+    expect(days.map((day) => day.date)).toEqual([TOMORROW, TODAY]);
+    expect(shelf.asked.map((question) => question.door)).toEqual(["pro_online"]);
   });
 });

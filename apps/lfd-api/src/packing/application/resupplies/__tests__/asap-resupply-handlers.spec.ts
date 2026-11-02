@@ -75,7 +75,7 @@ const enter = (resupplyId: string, quantity: number) =>
 /** Une commande met au bac, par l'agrégat — le geste de `AllocateToContainer`. */
 async function orderTakes(stocks: InMemoryStocks, quantity: number): Promise<void> {
   const stock = await stocks.lock(DAY, "CRO");
-  stock.take(quantity, "Croissant");
+  stock.take(quantity, "Croissant", "piece");
   await stocks.save(stock);
 }
 

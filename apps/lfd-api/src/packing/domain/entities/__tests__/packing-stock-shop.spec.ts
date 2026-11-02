@@ -65,7 +65,7 @@ describe("PackingStock.sendToShop — une sortie de réserve", () => {
   it("ce qui est parti en boutique ne va plus au bac", () => {
     const held = stock({ received: 10, sentToShop: 8 });
 
-    expect(() => held.take(3, "Croissant")).toThrow(LineNotProducedYetError);
+    expect(() => held.take(3, "Croissant", "piece")).toThrow(LineNotProducedYetError);
     expect(held.giveBack(5)).toBe(2);
   });
 

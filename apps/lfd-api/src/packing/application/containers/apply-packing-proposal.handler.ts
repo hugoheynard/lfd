@@ -149,7 +149,7 @@ export class ApplyPackingProposalHandler implements ICommandHandler<
       for (const { sku, quantity } of proposed.lines) {
         const line = sheet.lineToTouch(sku);
         const pieces = sheet.allocate(containerId, sku, quantity, mark);
-        stocks.get(sku)?.take(pieces, line.productName);
+        stocks.get(sku)?.take(pieces, line.productName, line.saleUnit);
         await this.events.publishTraced(
           new PackingContainerMovedEvent(
             "filled",

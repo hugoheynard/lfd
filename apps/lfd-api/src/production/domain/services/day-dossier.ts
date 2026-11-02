@@ -43,8 +43,13 @@ export interface DossierRecapLine {
   readonly saleUnit: SaleUnit;
   /** Sur combien de commandes il se répartit : 240 en 3 fois n'est pas 240 en 40. */
   readonly orderCount: number;
-  /** Dont réassort — un détail du total, jamais à part de lui. */
+  /**
+   * Dont réassort — un détail du total, jamais à part de lui ; dans l'unité de
+   * la ligne (des grammes au poids).
+   */
   readonly resupplyQuantity: number;
+  /** Sur combien de lignes de réassort : un réassort au poids compte pour une pièce (P6). */
+  readonly resupplyCount: number;
 }
 
 /** Un rayon du récapitulatif — la fiche de poste. */
@@ -52,6 +57,12 @@ export interface DossierRecapGroup {
   readonly label: string;
   /** Le total du rayon en pièces, réassorts compris — un article au poids compte pour un. */
   readonly quantity: number;
+  /**
+   * Dont réassort, en PIÈCES : un article au poids y compte pour une ligne de
+   * réassort, jamais ses grammes — pièces et grammes ne s'additionnent pas
+   * (P6, `documentation/pricing/vente-au-poids.md`). Les grammes se lisent
+   * sur la ligne.
+   */
   readonly resupplyQuantity: number;
   readonly lines: readonly DossierRecapLine[];
   /**
@@ -75,7 +86,7 @@ export interface DayDossier {
   readonly resupplySheets: readonly ProductionResupplySnapshot[];
   /** Toutes les pièces à enfourner, réassorts compris. */
   readonly pieces: number;
-  /** Dont réassort. */
+  /** Dont réassort, en pièces — la même règle que le rayon. */
   readonly resupplyPieces: number;
 }
 
@@ -85,6 +96,7 @@ interface Tally {
   quantity: number;
   orderCount: number;
   resupplyQuantity: number;
+  resupplyCount: number;
 }
 
 /** Monte le dossier d'une journée à partir de ses commandes et réassorts figés. */
@@ -133,6 +145,7 @@ function talliesOf(
       quantity: 0,
       orderCount: 0,
       resupplyQuantity: 0,
+      resupplyCount: 0,
     };
     bySku.set(sku, tally);
     tally.quantity += quantity;
@@ -140,6 +153,7 @@ function talliesOf(
       tally.orderCount += 1;
     } else {
       tally.resupplyQuantity += quantity;
+      tally.resupplyCount += 1;
     }
   };
   for (const order of orders) {
@@ -204,19 +218,30 @@ function groupOf(
   return {
     label,
     quantity: sorted.reduce((sum, line) => sum + recapPieces(line), 0),
-    resupplyQuantity: sorted.reduce((sum, line) => sum + line.resupplyQuantity, 0),
+    resupplyQuantity: sorted.reduce((sum, line) => sum + recapResupplyPieces(line), 0),
     lines: sorted,
   };
 }
 
 /**
  * Ce qu'un produit du récapitulatif pèse en pièces : ses pièces, ou — au
- * poids — une par commande qui le porte (P6). C'est la règle ligne à ligne de
- * `linePieces` sommée sur l'article, sans quoi l'en-tête du dossier et
- * l'e-mail (`dossierCountsOf`, qui compte ligne à ligne) diraient deux totaux.
+ * poids — une par commande et une par réassort qui le portent (P6). C'est la
+ * règle ligne à ligne de `linePieces` sommée sur l'article, sans quoi
+ * l'en-tête du dossier et l'e-mail (`dossierCountsOf`, qui compte ligne à
+ * ligne, réassorts compris) diraient deux totaux.
  */
 export function recapPieces(line: DossierRecapLine): number {
-  return line.saleUnit === "weight" ? line.orderCount : line.quantity;
+  return line.saleUnit === "weight" ? line.orderCount + line.resupplyCount : line.quantity;
+}
+
+/**
+ * La part de réassort d'un produit, en pièces : ses pièces de réassort, ou —
+ * au poids — une par ligne de réassort. Régression : « dont N de réassort »
+ * additionnait les grammes d'un réassort au poids aux pièces du rayon
+ * (bâti des restes du circuit du jour J, 2026-11-02).
+ */
+export function recapResupplyPieces(line: DossierRecapLine): number {
+  return line.saleUnit === "weight" ? line.resupplyCount : line.resupplyQuantity;
 }
 
 /** Ordre des codes, indépendant de la langue de l'hôte. */

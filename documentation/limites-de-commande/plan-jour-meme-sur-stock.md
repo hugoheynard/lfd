@@ -848,6 +848,36 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
   au poids dans « dont N de réassort » de son rayon — au serveur
   (`day-dossier.ts`) comme à l'écran, qui le recopie.
 
+### Le bâti des restes (2026-11-02)
+
+- **Les pas rapides au poids** : au lieu d'être masqués, ils deviennent
+  ±100 g, 500 g, 1 kg (`shared/quantity-steps/` du back-office, constantes
+  nommées), dits par `saleQuantity` — table et dialogue mobile du réassort
+  boutique, carte de réassort du fournil. Les vues de réassort ne portent pas
+  `weightStepGrams` : pas fixes, pièces inchangées.
+- **API — les jours d'un client reconnu** : `/fulfillment-days` choisissait
+  la porte du circuit d'après l'`audience` annoncée ; un pro reconnu qui
+  envoyait `audience=public` lisait le réglage des particuliers. Nouvelle
+  route murée `GET /fulfillment-days/mine?skus=…` (`MyFulfillmentDaysController`,
+  `@ActingCompany()`, aucun paramètre d'audience) : la porte vient de la
+  société (`sameDayDoorOf`, comme la passation), et la clientèle des
+  opérations datées de la même porte. `ListFulfillmentDaysQuery` porte un
+  `FulfillmentDaysCaller` (`anonymous` / `acting`, la forme de L7b) ;
+  `ShelfTodayQuestion` porte la `door`, plus l'audience. La route publique
+  reste pour l'anonyme, qui ne s'élargit qu'à la porte pro en ligne. **Le
+  front ne l'appelle pas encore** : un client reconnu doit lire
+  `/fulfillment-days/mine` (mêmes `skus`, sans `audience`).
+- **API — le dossier du jour** : « dont N de réassort » d'un rayon et du lot
+  compte un réassort au poids pour une pièce (`recapResupplyPieces`, nouveau
+  `DossierRecapLine.resupplyCount`), jamais ses grammes ; le total du rayon
+  aussi (`recapPieces` = commandes + réassorts au poids), ce qui l'aligne sur
+  l'e-mail (`dossierCountsOf`). La ligne dit « dont 1,25 kg réassort ».
+  `DOSSIER_LAYOUT_VERSION` → `v13`. L'écran (`production-recap.ts`) recopie
+  encore l'ancienne somme.
+- **API — le colisage** : `PackingStock.take()` prend l'unité de la ligne
+  (`SheetLine.saleUnit`), comme `reserve`/`takeForResupply` : le manque se dit
+  « 1,25 kg », un mouvement fractionnaire « entier de grammes ».
+
 ### Le bâti de L4 (2026-11-02)
 
 - **La marque se décide au serveur** (`ShelfCircuit.decide`,

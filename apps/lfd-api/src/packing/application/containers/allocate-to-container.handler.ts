@@ -63,7 +63,7 @@ export class AllocateToContainerHandler implements ICommandHandler<
         by: command.staffUserId,
       });
       const stock = await this.stocks.lock(command.serviceDay, command.sku);
-      stock.take(pieces, line.productName);
+      stock.take(pieces, line.productName, line.saleUnit);
       await this.stocks.save(stock);
       await this.sheets.save(sheet);
       await this.events.publishTraced(

@@ -49,7 +49,7 @@ describe("OrderShelfTodaySites", () => {
 
     const selling = await sitesWith(stock).sellingToday({
       day: TODAY,
-      audience: "public",
+      door: "public_online",
       siteIds: ["a", "b", "c"],
       cartSkus: ["VIE-001-1"],
     });
@@ -62,7 +62,7 @@ describe("OrderShelfTodaySites", () => {
 
     const selling = await sitesWith(stock).sellingToday({
       day: TODAY,
-      audience: "public",
+      door: "public_online",
       siteIds: ["a"],
       cartSkus: ["VIE-001-1", "PAT-002-1"],
     });
@@ -75,7 +75,7 @@ describe("OrderShelfTodaySites", () => {
 
     const selling = await sitesWith(stock).sellingToday({
       day: TODAY,
-      audience: "public",
+      door: "public_online",
       siteIds: ["a", "c"],
       cartSkus: [],
     });
@@ -88,7 +88,7 @@ describe("OrderShelfTodaySites", () => {
 
     const selling = await sitesWith(stock).sellingToday({
       day: TODAY,
-      audience: "pro",
+      door: "pro_online",
       siteIds: ["a"],
       cartSkus: [],
     });

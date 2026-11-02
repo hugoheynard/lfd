@@ -6,10 +6,18 @@ import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { ListFulfillmentDaysQuery } from "../application/list-fulfillment-days.query.js";
+import {
+  anonymousCaller,
+  ListFulfillmentDaysQuery,
+} from "../application/list-fulfillment-days.query.js";
 
 /** Les SKU du panier, séparés par des virgules — la borne d'un devis (cent lignes). */
-const cartSkusQuerySchema = z.string().max(4000).optional();
+export const cartSkusQuerySchema = z.string().max(4000).optional();
+
+/** Le panier lu dans `?skus=` : vide = aucun panier. */
+export function cartSkusOf(skus: string | undefined): readonly string[] {
+  return skus === undefined ? [] : skus.split(",").filter((sku) => sku.length > 0);
+}
 const audienceQuerySchema = z.enum(["pro", "public"]).optional();
 
 /**
@@ -17,6 +25,9 @@ const audienceQuerySchema = z.enum(["pro", "public"]).optional();
  * retrait, et pour la même raison : on choisit son service avant d'avoir un
  * compte. Rien de sensible n'y transite, seulement des dates que l'accueil du
  * laboratoire donnerait au téléphone.
+ *
+ * Un client reconnu lit `/fulfillment-days/mine` : sa porte du jour même vient
+ * de sa société, jamais de l'audience annoncée ici.
  *
  * Surface anonyme ⇒ même throttle resserré que `pickup-addresses` (60/min/IP).
  */
@@ -36,9 +47,8 @@ export class FulfillmentDaysController {
     @Query("skus", new ZodQuery(cartSkusQuerySchema)) skus: string | undefined,
     @Query("audience", new ZodQuery(audienceQuerySchema)) audience: "pro" | "public" | undefined,
   ): Promise<readonly FulfillmentDayView[]> {
-    const cartSkus = skus === undefined ? [] : skus.split(",").filter((sku) => sku.length > 0);
     return this.queries.execute<ListFulfillmentDaysQuery, readonly FulfillmentDayView[]>(
-      new ListFulfillmentDaysQuery(cartSkus, audience ?? "public"),
+      new ListFulfillmentDaysQuery(cartSkusOf(skus), anonymousCaller(audience ?? "public")),
     );
   }
 }

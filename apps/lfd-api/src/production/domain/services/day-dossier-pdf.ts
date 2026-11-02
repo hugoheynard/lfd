@@ -208,8 +208,12 @@ function drawOrder(
  * `v12` (2026-11-02, Hugo) : derrière la page de chaque rayon, son calendrier
  * — une page paysage, produits × tranches horaires, une case à cocher par
  * quantité.
+ *
+ * `v13` (2026-11-02, circuit du jour J, bâti des restes) : la part de
+ * réassort d'un rayon compte un réassort au poids pour une pièce, jamais ses
+ * grammes ; la ligne dit « dont 1,25 kg réassort ».
  */
-export const DOSSIER_LAYOUT_VERSION = "v12";
+export const DOSSIER_LAYOUT_VERSION = "v13";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;

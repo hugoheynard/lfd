@@ -14,6 +14,7 @@ import { OrderCutoffsInForceModule } from "./order-cutoffs-in-force.module.js";
 import { AdminOrderCutoffSettingsController } from "./http/admin-order-cutoff-settings.controller.js";
 import { AdminOrderCutoffsController } from "./http/admin-order-cutoffs.controller.js";
 import { FulfillmentDaysController } from "./http/fulfillment-days.controller.js";
+import { MyFulfillmentDaysController } from "./http/my-fulfillment-days.controller.js";
 import { PrismaGeneralOrderCutoffRepository } from "./infrastructure/prisma-general-order-cutoff.repository.js";
 import { PrismaOrderCutoffSettingsRepository } from "./infrastructure/prisma-order-cutoff-settings.repository.js";
 import { ShelfTodaySites } from "./domain/shelf-today-sites.js";
@@ -51,6 +52,7 @@ import { ResupplyModule } from "../resupply/resupply.module.js";
     AdminOrderCutoffsController,
     AdminOrderCutoffSettingsController,
     FulfillmentDaysController,
+    MyFulfillmentDaysController,
   ],
   providers: [
     ListFulfillmentDaysHandler,

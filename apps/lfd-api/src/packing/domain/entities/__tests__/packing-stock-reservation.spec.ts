@@ -31,7 +31,7 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
     expect(held.reserve("rs_asap", 12, FIRST, "piece")).toBe(true);
 
     expect(held.free).toBe(8);
-    expect(() => held.take(9, "Croissant")).toThrow(/Il manque 1 « Croissant »/);
+    expect(() => held.take(9, "Croissant", "piece")).toThrow(/Il manque 1 « Croissant »/);
     expect(held.packed).toBe(0);
   });
 

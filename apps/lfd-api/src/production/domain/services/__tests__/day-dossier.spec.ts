@@ -82,6 +82,7 @@ describe("dayDossierOf", () => {
         orderCount: 2,
         saleUnit: "piece",
         resupplyQuantity: 0,
+        resupplyCount: 0,
       },
       {
         sku: "VIE-002",
@@ -90,6 +91,7 @@ describe("dayDossierOf", () => {
         orderCount: 1,
         saleUnit: "piece",
         resupplyQuantity: 0,
+        resupplyCount: 0,
       },
     ]);
     expect(dossier.pieces).toBe(93);
@@ -159,6 +161,7 @@ describe("dayDossierOf", () => {
           orderCount: 2,
           saleUnit: "piece",
           resupplyQuantity: 12,
+          resupplyCount: 2,
         },
         {
           sku: "VIE-002",
@@ -167,6 +170,7 @@ describe("dayDossierOf", () => {
           orderCount: 1,
           saleUnit: "piece",
           resupplyQuantity: 10,
+          resupplyCount: 1,
         },
       ],
     });
@@ -174,6 +178,38 @@ describe("dayDossierOf", () => {
     expect(dossier.resupplyPieces).toBe(25);
     // Un bon par réassort, non fusionné : par point, puis par identifiant.
     expect(dossier.resupplySheets.map((sheet) => sheet.resupplyId)).toEqual(["r-3", "r-1", "r-2"]);
+  });
+
+  /**
+   * Régression : « dont N de réassort » additionnait les grammes d'un
+   * réassort au poids aux pièces du rayon — 2 000 g de gravlax en faisaient
+   * « dont 2006 de réassort » (bâti des restes du circuit du jour J).
+   */
+  it("ne mêle jamais les grammes d'un réassort au poids aux pièces du rayon", () => {
+    const shelves = new Map([...SHELVES, ["GRA-001", VIENNOISERIES]]);
+    const dossier = dayDossierOf([], shelves, [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        name: null,
+        servedByTransfer: true,
+        lines: [
+          { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" },
+          { sku: "GRA-001", productName: "Gravlax", quantity: 2000, saleUnit: "weight" },
+        ],
+      },
+    ]);
+    const group = dossier.recap[0];
+    expect(group?.quantity).toBe(7);
+    expect(group?.resupplyQuantity).toBe(7);
+    expect(group?.lines.find((line) => line.sku === "GRA-001")).toMatchObject({
+      quantity: 2000,
+      resupplyQuantity: 2000,
+      resupplyCount: 1,
+    });
+    expect(dossier.pieces).toBe(7);
+    expect(dossier.resupplyPieces).toBe(7);
   });
 
   it("monte un dossier de réassorts seuls : fiches de poste et bons de réassort, sans bon de commande", () => {

@@ -15,9 +15,13 @@ import { PickupAddressRepository } from "../../pickup-addresses/domain/pickup-ad
 import { ClosedPlansReader } from "../../../production/channels/commerce/index.js";
 import { OrderCutoffSettingsReader } from "../domain/order-cutoff-settings.reader.js";
 import { OrderCutoffsInForce } from "../domain/order-cutoffs-in-force.js";
-import { sameDayOpenTo } from "../domain/same-day-doors.js";
+import { sameDayDoorOf, type SameDayDoor, sameDayOpenTo } from "../domain/same-day-doors.js";
 import { ShelfTodaySites } from "../domain/shelf-today-sites.js";
-import { ListFulfillmentDaysQuery } from "./list-fulfillment-days.query.js";
+import type { ShopAudience } from "../../catalog/domain/ports/catalog.reader.js";
+import {
+  type FulfillmentDaysCaller,
+  ListFulfillmentDaysQuery,
+} from "./list-fulfillment-days.query.js";
 
 /**
  * **Quelle journée l'écran de commande peut proposer**, point par point.
@@ -59,6 +63,11 @@ import { ListFulfillmentDaysQuery } from "./list-fulfillment-days.query.js";
  * encore un créneau pour cette clientèle et du stock pour tout le panier le
  * propose, sans heure limite (`orderUntil: null` : la passation sur stock
  * n'en oppose aucune). La livraison, elle, ne se prend jamais sur la vitrine.
+ *
+ * Depuis le bâti des restes (même plan, 2026-11-02) : la porte d'un client
+ * reconnu vient de SA société (`sameDayDoorOf`, comme la passation), jamais
+ * de l'audience annoncée — un pro qui annonçait `public` lisait le réglage
+ * des particuliers. Seul l'anonyme dit son audience.
  */
 @QueryHandler(ListFulfillmentDaysQuery)
 export class ListFulfillmentDaysHandler implements IQueryHandler<
@@ -78,25 +87,24 @@ export class ListFulfillmentDaysHandler implements IQueryHandler<
   async execute(query: ListFulfillmentDaysQuery): Promise<readonly FulfillmentDayView[]> {
     const now = this.clock.now();
     const today = instantToLocal(now).day;
+    const door = doorOf(query.caller);
+    const audience = audienceOf(door);
     const [rules, points, windows, closed, settings] = await Promise.all([
       this.cutoffs.list(),
       this.pickups.list(null),
-      this.sale.pickupRangesOf(query.cartSkus, query.audience),
+      this.sale.pickupRangesOf(query.cartSkus, audience),
       this.plans.closedBetween(today, addDays(today, NEXT_FULFILLMENT_HORIZON_DAYS)),
       this.settings.current(),
     ]);
     // Aujourd'hui n'est proposé que si le réglage l'ouvre à cette clientèle
     // (§8.3, par clientèle depuis L4) ; plan arrêté, seulement sur la vitrine.
-    const sameDayOpen = sameDayOpenTo(
-      settings,
-      query.audience === "pro" ? "pro_online" : "public_online",
-    );
+    const sameDayOpen = sameDayOpenTo(settings, door);
     const unavailable = new Set(sameDayOpen ? closed : [...closed, today]);
     const shelfSites =
       sameDayOpen && closed.includes(today)
         ? await this.shelf.sellingToday({
             day: today,
-            audience: query.audience,
+            door,
             siteIds: points.map((point) => point.id),
             cartSkus: query.cartSkus,
           })
@@ -125,4 +133,17 @@ export class ListFulfillmentDaysHandler implements IQueryHandler<
     // laisserait le chemin livraison sans date, donc à réinventer côté écran.
     return [dayOf(null), ...points.map((point) => dayOf(point.id))];
   }
+}
+
+/** La porte du circuit : l'audience annoncée par l'anonyme, la société du reconnu. */
+function doorOf(caller: FulfillmentDaysCaller): SameDayDoor {
+  if (caller.kind === "anonymous") {
+    return caller.audience === "pro" ? "pro_online" : "public_online";
+  }
+  return sameDayDoorOf(caller.companyId, false);
+}
+
+/** La clientèle des opérations datées, tirée de la même porte. */
+function audienceOf(door: SameDayDoor): ShopAudience {
+  return door === "public_online" ? "public" : "pro";
 }

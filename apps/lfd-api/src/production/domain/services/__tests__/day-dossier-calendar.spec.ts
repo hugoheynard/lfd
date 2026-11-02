@@ -16,6 +16,7 @@ function line(sku: string, quantity: number): DossierRecapLine {
     saleUnit: "piece",
     orderCount: 1,
     resupplyQuantity: 0,
+    resupplyCount: 0,
   };
 }
 

@@ -277,7 +277,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v12-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v13-retirage-");
   });
 });
 
@@ -285,7 +285,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v12.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v13.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });
@@ -338,6 +338,33 @@ describe("dayDossierPdfKey", () => {
     expect(sheet).toContain("19 pièces");
     expect(sheet).not.toContain("1268");
     expect(sheet).not.toContain("1250");
+  });
+
+  /**
+   * Régression : la fiche de poste et la couverture disaient « dont 1268 de
+   * réassort » pour 18 pièces et 1,25 kg — des grammes ajoutés à des pièces
+   * (bâti des restes du circuit du jour J, 2026-11-02).
+   */
+  it("la part de réassort compte la ligne au poids pour une, et la ligne dit « dont 1,25 kg réassort »", async () => {
+    const dossier = dayDossierOf([], new Map(), [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        name: null,
+        servedByTransfer: true,
+        lines: [
+          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
+          { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
+        ],
+      },
+    ]);
+    const pages = pdfPages(await rendered(dossier, STAMP, () => "", NO_COLORS, NO_COLORS));
+    const all = pages.join("\n");
+    expect(pages[0]).toContain("19 pièces dont 19 de réassort");
+    expect(pages[1]).toMatch(/19 pièces\s+dont 19 réassort/);
+    expect(pages[1]).toContain("dont 1,25 kg réassort");
+    expect(all).not.toContain("1268");
   });
 
   it("une journée à réassorts seuls : le récapitulatif, puis le bon de réassort", async () => {
