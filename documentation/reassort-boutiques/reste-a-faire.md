@@ -4,7 +4,9 @@
 > plans supprimés ce jour-là et de l'ancien README ; **chaque point a été
 > vérifié dans le code le 2026-11-02** — un point qui y figurait encore mais
 > s'est trouvé bâti n'est pas ici. Ce qui existe est décrit dans
-> [`README.md`](README.md). Un point pris se raye ici avec sa date et son
+> [`README.md`](README.md) ; les pistes tirées des systèmes du marché (invendus,
+> ventes de la caisse, proposition de quantité) sont dans
+> [`comparaison-systemes-du-marche.md`](comparaison-systemes-du-marche.md) §3. Un point pris se raye ici avec sa date et son
 > commit, puis passe dans la doc d'état.
 
 ## 1. Décidé « plus tard » par Hugo

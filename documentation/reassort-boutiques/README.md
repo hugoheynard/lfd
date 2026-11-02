@@ -191,6 +191,9 @@ et `resupply-labo-flow` (le même au Labo, sans colisage ni transfert,
 
 ## 8. Les documents voisins
 
+- [`comparaison-systemes-du-marche.md`](comparaison-systemes-du-marche.md) — ce que font
+  les systèmes de réassort du marché, et ce qu'on peut en tirer (étude du
+  2026-11-02).
 - [`../limites-de-commande/jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md)
   — les commandes qui puisent dans le stock du jour.
 - [`../pricing/vente-au-poids.md`](../pricing/vente-au-poids.md) — le
