@@ -10,6 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import type { ResupplyReceptionLineView, ResupplyReceptionView } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -27,6 +28,7 @@ import {
   RESUPPLY_TARGET_LABELS,
 } from '../../../shared/resupply-labels';
 import { resupplySteps, type ResupplyStep } from '../../../shared/resupply-steps';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
 
 /**
@@ -68,6 +70,7 @@ import { ResupplyReceiptsService } from '../resupply-receipts.service';
     FoldElementTitleComponent,
     FoldNumberInputComponent,
     FoldStatusBadgeComponent,
+    SaleQuantityPipe,
   ],
   templateUrl: './resupply-receptions-card.html',
   styleUrl: './resupply-receptions-card.scss',
@@ -151,6 +154,17 @@ export class ResupplyReceptionsCard {
     await this.act(() =>
       this.service.correctReceived(this.siteId(), reception.resupplyId, line.sku, quantity),
     );
+  }
+
+  /** Au poids (lot L2b-4), le reçu se saisit en grammes et se relit « 1,25 kg ». */
+  protected receivedHint(
+    reception: ResupplyReceptionView,
+    line: ResupplyReceptionLineView,
+  ): string | undefined {
+    const grams = this.draftOf(reception, line);
+    return line.saleUnit === 'weight' && grams !== null && Number.isSafeInteger(grams) && grams >= 0
+      ? saleQuantityLabel(grams, 'weight')
+      : undefined;
   }
 
   /** Un geste, puis la relecture par la page. Un refus reste affiché, avec sa raison. */

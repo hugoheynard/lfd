@@ -1,3 +1,5 @@
+import { quantityFigure, saleQuantity, type SaleUnit } from "@lfd/money";
+
 import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
 
 /**
@@ -34,10 +36,11 @@ export class PackingLineNotFoundError extends ResourceNotFoundError {
  * l'ancien poste (« sortis du four ») : la remise EST la sortie du four (§11.2).
  */
 export class LineNotProducedYetError extends BusinessError {
-  constructor(productName: string, missing: number) {
+  /** `unit` : au poids, le manque se dit « 1,25 kg » (lot L2b-4), jamais « 1250 ». */
+  constructor(productName: string, missing: number, unit: SaleUnit = "piece") {
     super(
       "production.packing.not_produced_yet",
-      `Il manque ${String(missing)} « ${productName} » sortis du four pour remplir cette ligne. Déclarez la fournée sur la fiche d'atelier avant de la mettre au bac.`,
+      `Il manque ${quantityFigure(saleQuantity(missing, unit))} « ${productName} » sortis du four pour remplir cette ligne. Déclarez la fournée sur la fiche d'atelier avant de la mettre au bac.`,
     );
   }
 }

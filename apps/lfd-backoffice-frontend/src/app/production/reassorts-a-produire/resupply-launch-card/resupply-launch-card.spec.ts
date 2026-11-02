@@ -180,4 +180,22 @@ describe('ResupplyLaunchCard', () => {
       '10:30 · Paul',
     );
   });
+
+  /** Lot L2b-4 : un réassort au poids dit ses kilos à part des pièces. */
+  it('dit « 6 pièces · 1,25 kg » pour un réassort qui porte une ligne au poids', () => {
+    const weighed = resupply('r6', 'labo', {
+      lines: [
+        { sku: 'CRO', label: 'Croissant', quantity: 6, saleUnit: 'piece' },
+        { sku: 'GRA', label: 'Gravlax', quantity: 1250, saleUnit: 'weight' },
+      ],
+    });
+    const { root } = mount(true, {
+      ...VIEW,
+      sites: [{ siteId: 'labo', siteLabel: 'Le Labo', resupplies: [weighed] }],
+    });
+
+    const row = root.querySelector('[data-resupply-launch-row="r6"]')?.textContent ?? '';
+    expect(row).toContain('6 pièces · 1,25 kg');
+    expect(row).not.toContain('1256');
+  });
 });

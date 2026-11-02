@@ -1,3 +1,5 @@
+import type { OrderSaleUnit } from "./order.js";
+
 /**
  * **Les réassorts d'une journée, tels que le dossier du jour les montre**
  * (lot R3d du réassort, `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
@@ -10,7 +12,10 @@
 export interface ProductionDayResupplyLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des GRAMMES si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /** L'unité figée sur la ligne (lot L2b-4) : sans elle, 1 250 g se lirait 1 250 pièces. */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /** Un réassort pour un point. */

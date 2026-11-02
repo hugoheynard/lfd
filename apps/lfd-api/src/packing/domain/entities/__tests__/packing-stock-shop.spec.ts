@@ -55,7 +55,7 @@ describe("PackingStock.sendToShop — une sortie de réserve", () => {
 
   it("ne prend jamais une pièce qu'un réassort lancé retient", () => {
     const held = stock({ received: 10 });
-    held.reserve("rsp-1", 8, RESERVED_AT);
+    held.reserve("rsp-1", 8, RESERVED_AT, "piece");
 
     expect(() => held.sendToShop(3, "Croissant")).toThrow(ReserveShortForShopError);
     held.sendToShop(2, "Croissant");

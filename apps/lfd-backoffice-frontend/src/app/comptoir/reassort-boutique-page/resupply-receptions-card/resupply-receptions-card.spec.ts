@@ -35,6 +35,10 @@ const EXPECTED: ResupplyReceptionView = {
 class FakeService {
   readonly calls: string[] = [];
   fail = false;
+  correctReceived(_s: string, resupplyId: string, sku: string, quantity: number): Promise<void> {
+    this.calls.push(`correct ${resupplyId} ${sku} ${String(quantity)}`);
+    return Promise.resolve();
+  }
   receiveResupply(siteId: string, resupplyId: string): Promise<void> {
     this.calls.push(`receive ${siteId} ${resupplyId}`);
     return this.fail ? Promise.reject(new Error('refusé')) : Promise.resolve();
@@ -207,5 +211,61 @@ describe('ResupplyReceptionsCard', () => {
   it('sans réassort envoyé, le dit', () => {
     const { root } = mount([], true);
     expect(root.querySelector('[data-resupply-receptions-empty]')).not.toBeNull();
+  });
+
+  /** Lot L2b-4 : au poids, l'attendu et le reçu se disent en kilos, se corrigent en grammes. */
+  it('dit l’attendu « 1,25 kg », relit la correction en kilos et envoie des grammes', async () => {
+    const weighed: ResupplyReceptionView = {
+      ...EXPECTED,
+      status: 'received',
+      receivedAt: '2026-01-02T07:00:00.000Z',
+      receivedBy: 'Lou',
+      lines: [
+        LINE,
+        {
+          sku: 'GRA',
+          label: 'Saumon gravlax',
+          expectedQuantity: 1250,
+          receivedQuantity: 1250,
+          saleUnit: 'weight',
+        },
+      ],
+    };
+    const { fixture, service, root } = mount([weighed], true);
+    const line = (sku: string) => root.querySelector(`[data-resupply-reception-line="${sku}"]`);
+
+    expect(line('GRA')?.textContent).toContain('1,25 kg');
+    expect(line('GRA')?.textContent).toContain('Reçu, en grammes');
+    expect(line('CRO')?.textContent).toContain('24');
+    expect(line('CRO')?.textContent).not.toContain('kg');
+
+    const card = fixture.componentInstance;
+    card['setDraft'](weighed, weighed.lines[1]!, 1190);
+    fixture.detectChanges();
+    expect(line('GRA')?.textContent).toContain('1,19 kg');
+    await card['correct'](weighed, weighed.lines[1]!);
+
+    expect(service.calls).toEqual(['correct r1 GRA 1190']);
+  });
+
+  it('en lecture seule, le reçu au poids se lit en kilos', () => {
+    const weighed: ResupplyReceptionView = {
+      ...EXPECTED,
+      status: 'received',
+      receivedAt: '2026-01-02T07:00:00.000Z',
+      receivedBy: 'Lou',
+      lines: [
+        {
+          sku: 'GRA',
+          label: 'Saumon gravlax',
+          expectedQuantity: 2000,
+          receivedQuantity: 1940,
+          saleUnit: 'weight',
+        },
+      ],
+    };
+    const { root } = mount([weighed], false);
+
+    expect(root.querySelector('[data-resupply-received]')?.textContent).toContain('1,94 kg');
   });
 });

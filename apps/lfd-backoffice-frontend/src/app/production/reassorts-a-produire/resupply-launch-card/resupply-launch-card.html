@@ -11,7 +11,7 @@
       <div class="row" [attr.data-resupply-launch-row]="row.resupplyId">
         <div class="said">
           <strong>{{ titleOf(row) }}</strong>
-          <span class="muted">{{ row.pieces }} pièces</span>
+          <span class="muted">{{ row.amount }}</span>
         </div>
         @if (row.launchedAt !== null) {
           <fold-status-badge status="active" label="Lancé" />

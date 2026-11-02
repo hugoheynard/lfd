@@ -176,4 +176,69 @@ describe('StockBoard', () => {
       'Parti',
     );
   });
+
+  it('dit le poids à part des pièces, en kilos, et le stock d’un article au poids « 3,75 kg » (L2b-4)', () => {
+    const weighed: DayStockOverviewView = {
+      ...VIEW,
+      sites: [
+        {
+          siteId: 'village',
+          siteLabel: 'Val Village',
+          resupplies: [
+            {
+              resupplyId: 'r5',
+              name: null,
+              target: 'asap',
+              origin: 'counter',
+              state: 'sent',
+              pieces: 12,
+              weightGrams: 1250,
+            },
+            {
+              resupplyId: 'r6',
+              name: null,
+              target: 'asap',
+              origin: 'counter',
+              state: 'sent',
+              pieces: 0,
+              weightGrams: 2000,
+            },
+          ],
+          products: [
+            {
+              sku: 'GRA',
+              label: 'Gravlax',
+              stock: 3750,
+              alert: null,
+              expected: 1250,
+              saleUnit: 'weight',
+            },
+            {
+              sku: 'CRO',
+              label: 'Croissant',
+              stock: 6,
+              alert: null,
+              expected: 0,
+              saleUnit: 'piece',
+            },
+          ],
+        },
+      ],
+    };
+    const { root } = mount(ready(weighed));
+
+    const mixed = root.querySelector('[data-stock-resupply="r5"]')?.textContent ?? '';
+    expect(mixed).toContain('12 pièces · 1,25 kg');
+    expect(mixed).not.toContain('1262');
+    const weightOnly = root.querySelector('[data-stock-resupply="r6"]')?.textContent ?? '';
+    expect(weightOnly).toContain('2 kg');
+    expect(weightOnly).not.toContain('pièces');
+    const gravlax = root.querySelector('[data-stock-product="GRA"]')?.textContent ?? '';
+    expect(gravlax).toContain('3,75 kg');
+    expect(gravlax).toContain('1,25 kg');
+    expect(gravlax).not.toContain('3750');
+    const croissant = root.querySelector('[data-stock-product="CRO"]')?.textContent ?? '';
+    expect(croissant).toContain('6');
+    expect(croissant).not.toContain('kg');
+  });
 });

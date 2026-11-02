@@ -63,7 +63,7 @@ export class OnResupplyLaunched implements DurableSubscriber {
     const at = this.clock.now();
     for (const line of lines) {
       const stock = await this.stocks.lock(event.serviceDay, line.sku);
-      if (stock.reserve(event.resupply.resupplyId, line.quantity, at)) {
+      if (stock.reserve(event.resupply.resupplyId, line.quantity, at, line.saleUnit)) {
         await this.stocks.save(stock);
       }
     }

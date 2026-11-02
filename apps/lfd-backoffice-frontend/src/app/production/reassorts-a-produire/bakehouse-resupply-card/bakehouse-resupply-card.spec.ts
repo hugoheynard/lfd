@@ -3,6 +3,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import type {
   BakehouseResupplyDraftView,
   PlaceSiteResupplyPayload,
+  ResupplyArticleView,
   SaveBakehouseResupplyDraftPayload,
   UpdateBakehouseResupplyDraftPayload,
 } from '@lfd/contracts';
@@ -32,16 +33,42 @@ class FakePickups {
 class FakeBakehouse {
   readonly sent: { siteId: string; payload: PlaceSiteResupplyPayload }[] = [];
   refuse = false;
-  articles(): Promise<readonly { sku: string; name: string }[]> {
+  /** Un article au poids en plus (lot L2b-4) ; absent par défaut. */
+  weighed = false;
+  articles(): Promise<readonly ResupplyArticleView[]> {
     return Promise.resolve([
-      { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+      {
+        sku: 'CRO',
+        name: 'Croissant',
+        categoryId: 'fam_morning',
+        categoryName: 'Viennoiseries',
+        saleUnit: 'piece',
+      },
       {
         sku: 'PAC',
         name: 'Pain au chocolat',
         categoryId: 'fam_morning',
         categoryName: 'Viennoiseries',
+        saleUnit: 'piece',
       },
-      { sku: 'BAG', name: 'Baguette', categoryId: 'fam_bread', categoryName: 'Pains' },
+      {
+        sku: 'BAG',
+        name: 'Baguette',
+        categoryId: 'fam_bread',
+        categoryName: 'Pains',
+        saleUnit: 'piece',
+      },
+      ...(this.weighed
+        ? [
+            {
+              sku: 'GRA',
+              name: 'Saumon gravlax',
+              categoryId: 'fam_deli',
+              categoryName: 'Traiteur',
+              saleUnit: 'weight' as const,
+            },
+          ]
+        : []),
     ]);
   }
   readonly namesAsked: string[] = [];
@@ -292,7 +319,7 @@ describe('BakehouseResupplyCard', () => {
     fixture.detectChanges();
     await clickSend(fixture);
 
-    expect(panels.asked).toEqual([{ label: 'Croissant', quantity: null }]);
+    expect(panels.asked).toEqual([{ label: 'Croissant', quantity: null, saleUnit: 'piece' }]);
     expect(bakehouse.sent[0]?.payload.lines).toEqual([{ sku: 'CRO', quantity: 40 }]);
   });
 
@@ -390,5 +417,34 @@ describe('BakehouseResupplyCard', () => {
     expect(root.querySelector('fold-empty-state')?.textContent).toContain(
       'Impossible de lire les points',
     );
+  });
+
+  /** Lot L2b-4 : un article au poids se saisit en grammes, sans pas de pièces. */
+  it('saisit un article au poids en grammes, le relit en kilos et envoie des grammes', async () => {
+    const bakehouse = new FakeBakehouse();
+    bakehouse.weighed = true;
+    const { fixture, card, root, add } = await mount(undefined, bakehouse);
+    const row = (sku: string) =>
+      [...root.querySelectorAll('[data-bakehouse-row]')].find(
+        (node) => node.getAttribute('data-bakehouse-row') === sku,
+      );
+
+    expect(row('GRA')?.querySelectorAll('[data-bakehouse-step]')).toHaveLength(0);
+    expect(row('CRO')?.querySelectorAll('[data-bakehouse-step]')).toHaveLength(8);
+    card['setQuantity']('GRA', 1250);
+    add('CRO', 12);
+    fixture.detectChanges();
+    expect(root.querySelector('[data-bakehouse-weight="GRA"]')?.textContent).toContain('1,25 kg');
+    expect(root.querySelector('[data-bakehouse-send]')?.textContent).toContain(
+      '2 article(s), 12 pièces · 1,25 kg',
+    );
+    card['siteId'].set('site_l');
+    fixture.detectChanges();
+    await clickSend(fixture);
+
+    expect(bakehouse.sent[0]?.payload.lines).toEqual([
+      { sku: 'CRO', quantity: 12 },
+      { sku: 'GRA', quantity: 1250 },
+    ]);
   });
 });

@@ -28,7 +28,7 @@ function afterHandoff(held: PackingStock, pieces: number): PackingStock {
 describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
   it("retire les pièces réservées du libre : une commande ne les prend pas", () => {
     const held = stock(20);
-    expect(held.reserve("rs_asap", 12, FIRST)).toBe(true);
+    expect(held.reserve("rs_asap", 12, FIRST, "piece")).toBe(true);
 
     expect(held.free).toBe(8);
     expect(() => held.take(9, "Croissant")).toThrow(/Il manque 1 « Croissant »/);
@@ -37,7 +37,7 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
 
   it("ne prend JAMAIS une pièce déjà au bac : elle attend le four", () => {
     const held = stock(10, 10);
-    held.reserve("rs_asap", 6, FIRST);
+    held.reserve("rs_asap", 6, FIRST, "piece");
 
     expect(held.packed).toBe(10);
     expect(held.free).toBe(0);
@@ -46,7 +46,7 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
 
   it("les remises suivantes servent la réserve avant les commandes", () => {
     const held = stock(10, 10);
-    held.reserve("rs_asap", 6, FIRST);
+    held.reserve("rs_asap", 6, FIRST, "piece");
 
     const partly = afterHandoff(held, 4);
     expect(partly.awaitingOven("rs_asap")).toBe(2);
@@ -59,10 +59,10 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
 
   it("la fiche emballe sur sa réservation même quand le libre est à zéro", () => {
     const held = stock(12);
-    held.reserve("rs_asap", 12, FIRST);
+    held.reserve("rs_asap", 12, FIRST, "piece");
     expect(held.free).toBe(0);
 
-    held.takeForResupply("rs_asap", 12, "Croissant");
+    held.takeForResupply("rs_asap", 12, "Croissant", "piece");
 
     expect(held.packed).toBe(12);
     expect(held.reserved).toBe(0);
@@ -71,10 +71,10 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
 
   it("baisser la saisie rend les pièces à la réservation, pas au libre", () => {
     const held = stock(12);
-    held.reserve("rs_asap", 12, FIRST);
-    held.takeForResupply("rs_asap", 12, "Croissant");
+    held.reserve("rs_asap", 12, FIRST, "piece");
+    held.takeForResupply("rs_asap", 12, "Croissant", "piece");
 
-    held.releaseFromResupply("rs_asap", 5);
+    held.releaseFromResupply("rs_asap", 5, "piece");
 
     expect(held.reserved).toBe(5);
     expect(held.free).toBe(0);
@@ -82,32 +82,32 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
 
   it("une fiche du soir n'a que le libre : elle ne prend pas une pièce réservée", () => {
     const held = stock(12);
-    held.reserve("rs_asap", 10, FIRST);
+    held.reserve("rs_asap", 10, FIRST, "piece");
 
-    expect(() => held.takeForResupply("rs_evening", 3, "Croissant")).toThrow(
+    expect(() => held.takeForResupply("rs_evening", 3, "Croissant", "piece")).toThrow(
       LineNotProducedYetError,
     );
-    held.takeForResupply("rs_evening", 2, "Croissant");
+    held.takeForResupply("rs_evening", 2, "Croissant", "piece");
     expect(held.reserved).toBe(10);
   });
 
   it("deux lancés se partagent une remise courte dans l'ordre du lancement", () => {
     const held = stock(8);
-    held.reserve("rs_b", 6, SECOND);
-    held.reserve("rs_a", 6, FIRST);
+    held.reserve("rs_b", 6, SECOND, "piece");
+    held.reserve("rs_a", 6, FIRST, "piece");
 
     expect(held.awaitingOven("rs_a")).toBe(0);
     expect(held.awaitingOven("rs_b")).toBe(4);
-    expect(() => held.takeForResupply("rs_b", 3, "Croissant")).toThrow(/Il manque 1/);
-    held.takeForResupply("rs_b", 2, "Croissant");
-    held.takeForResupply("rs_a", 6, "Croissant");
+    expect(() => held.takeForResupply("rs_b", 3, "Croissant", "piece")).toThrow(/Il manque 1/);
+    held.takeForResupply("rs_b", 2, "Croissant", "piece");
+    held.takeForResupply("rs_a", 6, "Croissant", "piece");
     expect(held.packed).toBe(8);
   });
 
   it("la levée à la clôture rend libre ce qui n'a pas été emballé", () => {
     const held = stock(12);
-    held.reserve("rs_asap", 12, FIRST);
-    held.takeForResupply("rs_asap", 9, "Croissant");
+    held.reserve("rs_asap", 12, FIRST, "piece");
+    held.takeForResupply("rs_asap", 9, "Croissant", "piece");
 
     expect(held.lift("rs_asap", CLOSED)).toBe(true);
 
@@ -117,23 +117,38 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
 
   it("un rejeu ne réserve pas deux fois, même après la levée", () => {
     const held = stock(12);
-    held.reserve("rs_asap", 6, FIRST);
+    held.reserve("rs_asap", 6, FIRST, "piece");
     held.lift("rs_asap", CLOSED);
 
-    expect(held.reserve("rs_asap", 6, SECOND)).toBe(false);
+    expect(held.reserve("rs_asap", 6, SECOND, "piece")).toBe(false);
     expect(held.free).toBe(12);
   });
 
   it("le fournil ne reprend pas en retour une pièce réservée", () => {
     const held = stock(12);
-    held.reserve("rs_asap", 8, FIRST);
+    held.reserve("rs_asap", 8, FIRST, "piece");
 
     expect(held.giveBack(12)).toBe(4);
   });
 
   it.each([0, -1, 2.5])("refuse une réservation de %p pièce(s)", (quantity) => {
-    expect(() => stock(12).reserve("rs_asap", quantity, FIRST)).toThrow(
+    expect(() => stock(12).reserve("rs_asap", quantity, FIRST, "piece")).toThrow(
       StockReservationQuantityInvalidError,
+    );
+  });
+
+  it("dit « grammes » au refus d'une réservation au poids (lot L2b-4)", () => {
+    expect(() => stock(5000).reserve("rs_asap", 0, FIRST, "weight")).toThrow(
+      /nombre entier de grammes/,
+    );
+  });
+
+  it("dit le manque d'un réassort au poids en kilos, jamais en grammes nus (lot L2b-4)", () => {
+    const held = stock(1000);
+    held.reserve("rs_asap", 2250, FIRST, "weight");
+
+    expect(() => held.takeForResupply("rs_asap", 2250, "Saumon fumé", "weight")).toThrow(
+      /Il manque 1,25 kg « Saumon fumé »/,
     );
   });
 });

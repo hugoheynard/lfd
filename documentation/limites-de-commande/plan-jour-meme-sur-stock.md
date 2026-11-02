@@ -814,3 +814,27 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
   `resupply-village-flow` porte le parcours entier : 2 kg envoyés au
   comptoir, comptés et imprimés en grammes, 1,94 kg emballés, partis en
   kilos, reçus 1 940 g au Village, à côté des croissants inchangés.
+
+### Le bâti de L2b-4 (2026-11-02)
+
+- **API** : `CatalogResupplyCatalogue.articles()` n'écarte plus le poids ;
+  chaque article porte son unité. La vue du fournil
+  `ProductionDayResupplyLine` porte `saleUnit` (`get-day-resupplies.handler.ts`).
+  À la réserve du colisage, la réservation d'un réassort, la prise et la
+  reprise d'une fiche connaissent l'unité : leurs refus disent « grammes »
+  au poids, et le manque d'un réassort au poids se dit « 1,25 kg ».
+- **Écrans** : la saisie se fait en GRAMMES (la case de la vente au poids,
+  comme le panier du back-office et le dialogue du colisage), relue
+  « 1,25 kg » à côté ; les pas rapides de pièces (±1, 10, 50, 100) ne
+  s'affichent pas sur une ligne au poids. Comptoir › Réassort boutique (table,
+  dialogue mobile, reçu sans commande, réception), Supervision › Stock
+  (« 12 pièces · 1,25 kg » par réassort, stock et attendu en kilos), fournil
+  (onglet Réassorts : cases en kilos, « Total au poids » à part du total des
+  pièces ; cartes « Au plus tôt » et « À monter » ; table d'envoi par
+  famille), poste de colisage des réassorts (demandé, attendu du four et
+  emballé en kilos ; le refus « entre 0 et 2 kg » du serveur s'affiche tel
+  quel). Le bon de réassort à l'écran dit « 1,25 kg » et compte la ligne
+  pour une pièce, comme le PDF.
+- **Reste** : le dossier du jour additionne encore les grammes d'un réassort
+  au poids dans « dont N de réassort » de son rayon — au serveur
+  (`day-dossier.ts`) comme à l'écran, qui le recopie.

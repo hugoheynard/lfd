@@ -1,4 +1,5 @@
-import { instantToLocal, type ResupplyTarget } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { instantToLocal, type OrderSaleUnit, type ResupplyTarget } from '@lfd/contracts';
 
 const DAY_FORMAT = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long',
@@ -48,4 +49,34 @@ export const RESERVE_ORIGIN_MARK = 'Pain rendu, envoyé par la réserve';
  */
 export function resupplyTitle(name: string | null, siteLabel: string, unnamed: string): string {
   return name === null ? unnamed : `${name} — ${siteLabel}`;
+}
+
+/**
+ * Ce qu'un réassort envoie, en un mot : « 12 pièces », « 1,25 kg », ou
+ * « 12 pièces · 1,25 kg » (lot L2b-4 de `limites-de-commande/plan-jour-meme-sur-stock.md`).
+ * Les pièces ne comptent que les pièces ; le poids se dit à part, jamais en somme.
+ */
+export function resupplyAmountLabel(pieces: number, weightGrams: number): string {
+  const counted = `${String(pieces)} pièces`;
+  if (weightGrams <= 0) {
+    return counted;
+  }
+  const weight = saleQuantityLabel(weightGrams, 'weight');
+  return pieces > 0 ? `${counted} · ${weight}` : weight;
+}
+
+/** La même chose, à partir des lignes d'un réassort, chacune dans son unité. */
+export function resupplyLinesAmountLabel(
+  lines: readonly { readonly quantity: number; readonly saleUnit: OrderSaleUnit }[],
+): string {
+  let pieces = 0;
+  let weightGrams = 0;
+  for (const line of lines) {
+    if (line.saleUnit === 'weight') {
+      weightGrams += line.quantity;
+    } else {
+      pieces += line.quantity;
+    }
+  }
+  return resupplyAmountLabel(pieces, weightGrams);
 }

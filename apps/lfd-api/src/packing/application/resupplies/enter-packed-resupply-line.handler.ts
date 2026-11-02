@@ -46,9 +46,14 @@ export class EnterPackedResupplyLineHandler implements ICommandHandler<
       if (change.delta !== 0) {
         const stock = await this.stocks.lock(command.serviceDay, change.sku);
         if (change.delta > 0) {
-          stock.takeForResupply(command.resupplyId, change.delta, change.productName);
+          stock.takeForResupply(
+            command.resupplyId,
+            change.delta,
+            change.productName,
+            change.saleUnit,
+          );
         } else {
-          stock.releaseFromResupply(command.resupplyId, -change.delta);
+          stock.releaseFromResupply(command.resupplyId, -change.delta, change.saleUnit);
         }
         await this.stocks.save(stock);
       }

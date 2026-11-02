@@ -5,7 +5,8 @@
     <fold-number-input
       size="lg"
       align="center"
-      label="Quantité"
+      [label]="weighed() ? 'Quantité en grammes' : 'Quantité'"
+      [hint]="hint()"
       [value]="draft()"
       (valueChange)="draft.set($event)"
       (keydown.enter)="submit()"
@@ -16,7 +17,7 @@
   <!-- Retirer à gauche, ajouter à droite, comme sur la ligne au bureau. -->
   <div class="steps">
     <div class="side">
-      @for (quantity of downSteps; track quantity) {
+      @for (quantity of downSteps(); track quantity) {
         <button
           foldButton
           type="button"
@@ -31,7 +32,7 @@
       }
     </div>
     <div class="side">
-      @for (quantity of steps; track quantity) {
+      @for (quantity of steps(); track quantity) {
         <button
           foldButton
           type="button"

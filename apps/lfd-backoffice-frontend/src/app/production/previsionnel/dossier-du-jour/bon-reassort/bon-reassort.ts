@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { ProductionDayResupply } from '@lfd/contracts';
+import { pieceTally } from '@lfd/money';
 
+import { SaleQuantityPipe } from '../../../../shared/sale-quantity/sale-quantity.pipe';
 import { resupplySheetTitle } from '../resupply-sheets';
 
 /**
@@ -12,6 +14,7 @@ import { resupplySheetTitle } from '../resupply-sheets';
 @Component({
   selector: 'app-bon-reassort',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [SaleQuantityPipe],
   templateUrl: './bon-reassort.html',
   styleUrl: './bon-reassort.scss',
 })
@@ -23,7 +26,14 @@ export class BonReassort {
   readonly dayLabel = input.required<string>();
 
   protected readonly title = computed(() => resupplySheetTitle(this.resupply()));
+  /**
+   * Une ligne au poids compte pour une pièce, ses grammes écrits sur sa ligne —
+   * la règle du bon PDF (lot L2b-2, validée par Hugo le 2026-11-02).
+   */
   protected readonly pieces = computed(() =>
-    this.resupply().lines.reduce((sum, line) => sum + line.quantity, 0),
+    this.resupply().lines.reduce(
+      (sum, line) => sum + pieceTally({ amount: line.quantity, unit: line.saleUnit }),
+      0,
+    ),
   );
 }

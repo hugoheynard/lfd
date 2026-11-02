@@ -56,6 +56,8 @@ export interface PackedChange {
   readonly sku: string;
   readonly productName: string;
   readonly delta: number;
+  /** L'unité de la ligne : la réserve compte alors des grammes (lot L2b-4). */
+  readonly saleUnit: SaleUnit;
 }
 
 /**
@@ -143,7 +145,12 @@ export class PackingResupply {
     this.linesValue = this.linesValue.map((candidate) =>
       candidate === line ? { ...line, packed: { ...mark, quantity } } : candidate,
     );
-    return { sku, productName: line.productName, delta: quantity - before };
+    return {
+      sku,
+      productName: line.productName,
+      delta: quantity - before,
+      saleUnit: line.saleUnit,
+    };
   }
 
   /**

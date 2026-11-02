@@ -16,8 +16,10 @@ import {
   FoldNumberInputComponent,
   FoldStatusBadgeComponent,
 } from 'fold-ng';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import type { PackingResupplyLineView, PackingResupplyView } from '@lfd/contracts';
 
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 import { PackingService } from '../../packing.service';
 import { serverMessageOf } from '../../server-message';
 
@@ -60,6 +62,7 @@ function lineKey(resupplyId: string, sku: string): string {
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldStatusBadgeComponent,
+    SaleQuantityPipe,
   ],
   templateUrl: './packing-resupplies.html',
   styleUrl: './packing-resupplies.scss',
@@ -113,6 +116,21 @@ export class PackingResupplies {
   protected draftOf(resupply: PackingResupplyView, line: PackingResupplyLineView): number | null {
     const key = lineKey(resupply.resupplyId, line.sku);
     return this.drafts().has(key) ? (this.drafts().get(key) ?? null) : line.packed;
+  }
+
+  /** Au poids (lot L2b-4), l'emballé se saisit en grammes et se relit « 1,94 kg ». */
+  protected weightHint(
+    resupply: PackingResupplyView,
+    line: PackingResupplyLineView,
+  ): string | undefined {
+    if (line.saleUnit !== 'weight') {
+      return undefined;
+    }
+    const grams = this.draftOf(resupply, line);
+    const asked = `sur ${saleQuantityLabel(line.requested, 'weight')}`;
+    return grams !== null && Number.isSafeInteger(grams) && grams >= 0
+      ? `${saleQuantityLabel(grams, 'weight')} ${asked}`
+      : `En grammes, ${asked}`;
   }
 
   protected setDraft(

@@ -21,7 +21,8 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { RESUPPLY_TARGET_LABELS } from '../../shared/resupply-labels';
+import { RESUPPLY_TARGET_LABELS, resupplyAmountLabel } from '../../shared/resupply-labels';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 import type { ColumnState } from '../column-state';
 
 /** Ce que la Supervision montre : la journée (les trois colonnes) ou le stock. */
@@ -80,6 +81,7 @@ const ALERT_BADGES: Readonly<
     FoldLoadingStateComponent,
     FoldStatusBadgeComponent,
     RouterLink,
+    SaleQuantityPipe,
   ],
   templateUrl: './stock-board.html',
   styleUrl: './stock-board.scss',
@@ -104,6 +106,14 @@ export class StockBoard {
 
   protected titleOf(resupply: DayStockResupplyView): string {
     return resupply.name ?? this.targetLabels[resupply.target];
+  }
+
+  /**
+   * Ce que le réassort envoie : les pièces ne comptent que les pièces, le
+   * poids se dit à part (lot L2b-4) — « 12 pièces · 1,25 kg », jamais une somme.
+   */
+  protected amountOf(resupply: DayStockResupplyView): string {
+    return resupplyAmountLabel(resupply.pieces, resupply.weightGrams);
   }
 
   /** Un point que la table des points ne connaît plus garde son identifiant, pas un nom inventé. */

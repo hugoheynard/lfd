@@ -54,11 +54,16 @@
                       <span class="pr-sku">{{ line.sku }}</span>
                     </td>
                     <td class="pr-num pr-requested">
-                      {{ line.requested }}
+                      {{ line.requested | saleQuantity: line.saleUnit }}
                       @if (resupply.status === 'open' && line.awaitingOven > 0) {
                         <span class="pr-awaiting" data-awaiting-oven
-                          >{{ line.awaitingOven }} attendu{{ line.awaitingOven > 1 ? 's' : '' }} du
-                          four</span
+                          >{{ line.awaitingOven | saleQuantity: line.saleUnit }}
+                          {{
+                            line.saleUnit === 'weight' || line.awaitingOven > 1
+                              ? 'attendus'
+                              : 'attendu'
+                          }}
+                          du four</span
                         >
                       }
                     </td>
@@ -69,11 +74,13 @@
                           integer
                           [min]="0"
                           [max]="line.requested"
+                          [placeholder]="line.saleUnit === 'weight' ? 'g' : ''"
+                          [hint]="weightHint(resupply, line)"
                           [value]="draftOf(resupply, line)"
                           (valueChange)="setDraft(resupply, line, $event)"
                         />
                       } @else {
-                        {{ line.packed }}
+                        {{ line.packed ?? 0 | saleQuantity: line.saleUnit }}
                       }
                     </td>
                     <td class="pr-gesture">

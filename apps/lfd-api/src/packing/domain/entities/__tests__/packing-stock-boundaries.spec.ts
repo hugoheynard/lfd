@@ -32,9 +32,9 @@ describe("PackingStock — frontières de l'invariant", () => {
     const held = stock(10, 0, 4);
     for (const move of [
       () => held.take(quantity, "Croissant"),
-      () => held.takeForResupply("rs-1", quantity, "Croissant"),
+      () => held.takeForResupply("rs-1", quantity, "Croissant", "piece"),
       () => held.release(quantity),
-      () => held.releaseFromResupply("rs-1", quantity),
+      () => held.releaseFromResupply("rs-1", quantity, "piece"),
     ]) {
       expect(move).toThrow(StockMoveQuantityInvalidError);
     }

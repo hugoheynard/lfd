@@ -13,7 +13,7 @@ function resupply(
     siteLabel,
     name,
     servedByTransfer: true,
-    lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 6 }],
+    lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 6, saleUnit: 'piece' as const }],
   };
 }
 

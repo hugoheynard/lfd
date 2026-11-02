@@ -6,6 +6,8 @@ import {
   input,
   linkedSignal,
 } from '@angular/core';
+import type { OrderSaleUnit } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import {
   FoldButtonComponent,
   FoldNumberInputComponent,
@@ -20,6 +22,11 @@ import {
 export interface QuantityDialogData {
   readonly label: string;
   readonly quantity: number | null;
+  /**
+   * Au poids (lot L2b-4), la quantité est en GRAMMES : saisie en grammes,
+   * relue « 1,25 kg », sans les pas de pièces. Absente = des pièces.
+   */
+  readonly saleUnit?: OrderSaleUnit | undefined;
 }
 
 /** Les pas, de part et d'autre du chiffre — les mêmes que la table au bureau. */
@@ -50,10 +57,18 @@ export class QuantityDialog {
   private readonly ref = inject<FoldPanelRef<number>>(FoldPanelRef);
   readonly data = input.required<QuantityDialogData>();
 
-  protected readonly steps = STEPS;
-  protected readonly downSteps = [...STEPS].reverse();
+  protected readonly weighed = computed(() => this.data().saleUnit === 'weight');
+  protected readonly steps = computed(() => (this.weighed() ? [] : STEPS));
+  protected readonly downSteps = computed(() => (this.weighed() ? [] : [...STEPS].reverse()));
   protected readonly draft = linkedSignal(() => this.data().quantity);
   protected readonly empty = computed(() => (this.draft() ?? 0) === 0);
+  /** Au poids, la saisie en grammes relue en kilos sous la case. */
+  protected readonly hint = computed(() => {
+    const grams = this.draft();
+    return this.weighed() && grams !== null && Number.isSafeInteger(grams) && grams > 0
+      ? saleQuantityLabel(grams, 'weight')
+      : undefined;
+  });
 
   /** Un pas : positif ajoute, négatif retire, sans descendre sous zéro. */
   protected step(delta: number): void {

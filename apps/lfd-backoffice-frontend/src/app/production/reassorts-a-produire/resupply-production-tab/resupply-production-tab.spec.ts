@@ -20,9 +20,11 @@ import { ResupplyProductionTab } from './resupply-production-tab';
 class FakeResupplies {
   readonly asked: string[] = [];
   stopped = false;
+  /** Un réassort au poids en plus (lot L2b-4) ; absent par défaut. */
+  weighed = false;
   day(serviceDay: string): Promise<ResupplyProductionDayView> {
     this.asked.push(serviceDay);
-    return Promise.resolve({
+    const view: ResupplyProductionDayView = {
       serviceDay,
       planStopped: this.stopped,
       transferSiteIds: [],
@@ -71,8 +73,34 @@ class FakeResupplies {
           saleUnit: 'piece' as const,
         },
       ],
-    });
+    };
+    return Promise.resolve(this.weighed ? withWeight(view) : view);
   }
+}
+
+/** Le même jour, plus 1 250 g de gravlax demandés au Labo. */
+function withWeight(view: ResupplyProductionDayView): ResupplyProductionDayView {
+  const [labo] = view.sites;
+  const [resupply] = labo?.resupplies ?? [];
+  if (labo === undefined || resupply === undefined) {
+    return view;
+  }
+  const weighedLine = { sku: 'GRA', label: 'Gravlax', quantity: 1250, saleUnit: 'weight' as const };
+  return {
+    ...view,
+    sites: [{ ...labo, resupplies: [{ ...resupply, lines: [...resupply.lines, weighedLine] }] }],
+    totals: [...view.totals, weighedLine],
+    articles: [
+      ...view.articles,
+      {
+        sku: 'GRA',
+        name: 'Gravlax',
+        categoryId: 'fam_t',
+        categoryName: 'Traiteur',
+        saleUnit: 'weight',
+      },
+    ],
+  };
 }
 
 class FakeAlerts {
@@ -148,5 +176,17 @@ describe("l'onglet Réassorts de Prod manager", () => {
     await fixture.whenStable();
     expect(resupplies.asked).toHaveLength(2);
     expect((resupplies.asked[1] ?? '') > (resupplies.asked[0] ?? '')).toBe(true);
+  });
+
+  /** Lot L2b-4 : le poids se dit en kilos, à part du total des pièces. */
+  it('écrit « 1,25 kg » pour un article au poids, et ne l’ajoute pas aux pièces', async () => {
+    const resupplies = new FakeResupplies();
+    resupplies.weighed = true;
+    const { el } = await mount(resupplies);
+
+    expect(el.querySelector('[data-resupply-row="GRA"]')?.textContent).toContain('1,25 kg');
+    expect(el.querySelector('[data-resupply-row="GRA"]')?.textContent).not.toContain('1250');
+    expect(el.querySelector('[data-resupply-pieces]')?.textContent?.trim()).toBe('10');
+    expect(el.querySelector('[data-resupply-weight]')?.textContent).toContain('1,25 kg');
   });
 });

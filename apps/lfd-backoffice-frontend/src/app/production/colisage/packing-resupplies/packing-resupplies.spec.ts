@@ -144,4 +144,71 @@ describe('PackingResupplies', () => {
     expect(el.textContent).toContain('En attente du four');
     expect(el.querySelector('[data-awaiting-oven]')?.textContent).toContain('5 attendus du four');
   });
+
+  /** Lot L2b-4 : un réassort au poids se lit en kilos et se saisit en grammes. */
+  describe('au poids', () => {
+    function weighed(packed: number | null, status: 'open' | 'closed' = 'open') {
+      const base = fiche(packed, status);
+      return {
+        ...base,
+        lines: [
+          {
+            sku: 'SAU',
+            productName: 'Saumon gravlax',
+            requested: 2000,
+            packed,
+            saleUnit: 'weight' as const,
+            awaitingOven: 0,
+          },
+        ],
+      };
+    }
+
+    it('dit le demandé « 2 kg », relit la saisie en kilos et envoie des grammes', async () => {
+      const packing = new Packing();
+      packing.current = [weighed(null)];
+      const { fixture, el } = await mount(packing);
+
+      expect(el.querySelector('.pr-requested')?.textContent).toContain('2 kg');
+      expect(el.querySelector('.pr-requested')?.textContent).not.toContain('2000');
+      fixture.componentInstance['setDraft'](weighed(null), weighed(null).lines[0]!, 1940);
+      fixture.detectChanges();
+      expect(el.textContent).toContain('1,94 kg sur 2 kg');
+      packing.current = [weighed(1940)];
+      button(el, 'button.pr-save').click();
+      await fixture.whenStable();
+
+      expect(packing.enterResupplyLine).toHaveBeenCalledWith(DAY, 'r-1', 'SAU', 1940);
+    });
+
+    it('montre le refus du serveur « entre 0 et 2 kg » tel quel', async () => {
+      const packing = new Packing();
+      packing.current = [weighed(null)];
+      const refusal =
+        'La quantité emballée de « Saumon gravlax » doit être un nombre entier de grammes entre 0 et 2000 (2 kg), le poids demandé.';
+      packing.enterResupplyLine.mockRejectedValueOnce(
+        new HttpErrorResponse({ status: 400, error: { message: refusal } }),
+      );
+      const { fixture, el } = await mount(packing);
+
+      fixture.componentInstance['setDraft'](weighed(null), weighed(null).lines[0]!, 2500);
+      fixture.detectChanges();
+      button(el, 'button.pr-save').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(el.querySelector('.pr-failure')?.textContent).toContain('(2 kg)');
+    });
+
+    it('une fiche close dit l’emballé en kilos ; la pièce reste un nombre nu', async () => {
+      const packing = new Packing();
+      packing.current = [weighed(1940, 'closed'), { ...fiche(12, 'closed'), resupplyId: 'r-2' }];
+      const { el } = await mount(packing);
+
+      expect(el.querySelector('tr[data-sku="SAU"]')?.textContent).toContain('1,94 kg');
+      const pac = el.querySelector('tr[data-sku="PAC"]')?.textContent ?? '';
+      expect(pac).toContain('12');
+      expect(pac).not.toContain('kg');
+    });
+  });
 });

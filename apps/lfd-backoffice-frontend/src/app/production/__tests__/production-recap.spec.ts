@@ -142,8 +142,8 @@ describe('le récapitulatif de production', () => {
         name: null,
         servedByTransfer: true,
         lines: [
-          { sku: 'CRO', productName: 'Croissant', quantity: 18 },
-          { sku: 'PAC', productName: 'Pain au chocolat', quantity: 6 },
+          { sku: 'CRO', productName: 'Croissant', quantity: 18, saleUnit: 'piece' as const },
+          { sku: 'PAC', productName: 'Pain au chocolat', quantity: 6, saleUnit: 'piece' as const },
         ],
       },
     ]);
@@ -241,5 +241,22 @@ describe('le récapitulatif de production, par catégorie racine (2026-10-30)', 
 
     expect(recap[0]?.lines.map((line) => line.sku)).toEqual(['CRO', 'FIN']);
     expect([...(recap[0]?.intertitles ?? [])]).toEqual([['FIN', 'Viennoiserie fine']]);
+  });
+
+  /** Lot L2b-4 : un réassort au poids garde son unité — jamais 1 250 pièces. */
+  it('écrit « 1,25 kg » pour un réassort au poids, au lieu de le compter en pièces', () => {
+    const recap = productionRecap([], CATALOGUE, true, [
+      {
+        resupplyId: 'r-2',
+        siteId: 'site-v',
+        siteLabel: 'Village',
+        name: null,
+        servedByTransfer: true,
+        lines: [{ sku: 'SAU', productName: 'Saumon gravlax', quantity: 1250, saleUnit: 'weight' }],
+      },
+    ]);
+
+    const line = recap.flatMap((group) => group.lines).find((candidate) => candidate.sku === 'SAU');
+    expect(line).toMatchObject({ saleUnit: 'weight', label: '1,25 kg', quantity: 1250 });
   });
 });

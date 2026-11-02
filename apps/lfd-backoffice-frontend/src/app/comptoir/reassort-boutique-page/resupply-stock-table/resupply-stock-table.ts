@@ -11,6 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import type {
+  OrderSaleUnit,
   ResupplyArticleView,
   ResupplyReceiptLineView,
   ResupplyTarget,
@@ -18,6 +19,7 @@ import type {
   StockAlertLevel,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -40,6 +42,7 @@ import {
   type QuantityDialogData,
 } from '../../../shared/quantity-dialog/quantity-dialog';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
 import { SiteResuppliesStore } from '../site-resupplies.store';
 import { SiteStockAlertsStore } from '../site-stock-alerts.store';
@@ -52,6 +55,11 @@ interface StockRow {
   readonly name: string;
   /** La famille de l'article ; `null` pour un article reçu puis retiré du catalogue. */
   readonly categoryId: string | null;
+  /**
+   * L'unité de l'article (lot L2b-4) : au poids, le stock, la demande et le
+   * reçu sans commande comptent des GRAMMES, saisis en grammes et dits « 1,25 kg ».
+   */
+  readonly saleUnit: OrderSaleUnit;
   readonly stock: number;
   readonly state: RowState;
   readonly asap: number;
@@ -135,6 +143,7 @@ function normalize(text: string): string {
     FoldSearchComponent,
     FoldViewToggleComponent,
     ResupplyNameField,
+    SaleQuantityPipe,
   ],
   templateUrl: './resupply-stock-table.html',
   styleUrl: './resupply-stock-table.scss',
@@ -164,7 +173,7 @@ export class ResupplyStockTable {
     }
     const target = this.target();
     const quantity = await this.panels.open<QuantityDialogData, number>(QuantityDialog, {
-      data: { label: row.name, quantity: this.quantityOf(target, row) },
+      data: { label: row.name, quantity: this.quantityOf(target, row), saleUnit: row.saleUnit },
     }).closed;
     if (quantity !== undefined) {
       this.setQuantity(target, row, quantity);
@@ -266,8 +275,9 @@ export class ResupplyStockTable {
   protected readonly tomorrowDraft = computed(() => this.draftFor('tomorrow'));
 
   protected readonly rows = computed<readonly StockRow[]>(() => {
-    const stock = new Map(this.stock().map((line) => [line.sku, line] as const));
-    const unordered = new Map(this.unordered().map((line) => [line.sku, line] as const));
+    // Par (article, unité) : des pièces et des grammes ne s'additionnent jamais (L2b-1).
+    const stock = new Map(this.stock().map((line) => [unitKey(line), line] as const));
+    const unordered = new Map(this.unordered().map((line) => [unitKey(line), line] as const));
     const alerts = this.alerts.bySku();
     const asap = quantities(this.asapDraft());
     const tomorrow = quantities(this.tomorrowDraft());
@@ -277,17 +287,23 @@ export class ResupplyStockTable {
       ...this.articles(),
       ...this.stock()
         .filter((line) => !known.has(line.sku))
-        .map((line) => ({ sku: line.sku, name: line.label, categoryId: null })),
+        .map((line) => ({
+          sku: line.sku,
+          name: line.label,
+          categoryId: null,
+          saleUnit: line.saleUnit,
+        })),
     ];
     const rows = products.map((product): StockRow => ({
       sku: product.sku,
       name: product.name,
       categoryId: product.categoryId,
-      stock: stock.get(product.sku)?.estimatedStock ?? 0,
+      saleUnit: product.saleUnit,
+      stock: stock.get(unitKey(product))?.estimatedStock ?? 0,
       state: alerts.get(product.sku)?.level ?? 'ok',
       asap: asap.get(product.sku) ?? 0,
       tomorrow: tomorrow.get(product.sku) ?? 0,
-      unordered: unordered.get(product.sku)?.receivedQuantity ?? null,
+      unordered: unordered.get(unitKey(product))?.receivedQuantity ?? null,
     }));
     return rows
       .map((row, index) => ({ row, index }))
@@ -415,6 +431,14 @@ export class ResupplyStockTable {
     }
   }
 
+  /** Au poids, la saisie en grammes se relit « 1,25 kg » sous la case. */
+  protected unorderedHint(row: StockRow): string | undefined {
+    const grams = this.unorderedQuantity();
+    return row.saleUnit === 'weight' && grams !== null && Number.isSafeInteger(grams) && grams > 0
+      ? saleQuantityLabel(grams, 'weight')
+      : undefined;
+  }
+
   protected openUnordered(row: StockRow): void {
     this.unorderedFailure.set(null);
     this.unorderedSku.set(row.sku);
@@ -488,4 +512,8 @@ export class ResupplyStockTable {
 
 function quantities(draft: SiteResupplyDraftView | null): ReadonlyMap<string, number> {
   return new Map((draft?.lines ?? []).map((line) => [line.sku, line.quantity] as const));
+}
+
+function unitKey(line: { readonly sku: string; readonly saleUnit: OrderSaleUnit }): string {
+  return `${line.saleUnit}:${line.sku}`;
 }

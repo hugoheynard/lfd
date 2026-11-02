@@ -1,5 +1,6 @@
 import type {
   LiveStockAlertsView,
+  OrderSaleUnit,
   ResupplyProductionDayView,
   ResupplyTarget,
   StockAlertLevel,
@@ -30,6 +31,11 @@ export interface ResupplyProductionRow {
   readonly name: string;
   /** Sa famille au catalogue ; `null` : hors catalogue (un réassort d'un article retiré). */
   readonly categoryId: string | null;
+  /**
+   * L'unité de l'article (lot L2b-4) : au poids, cases et total comptent des
+   * GRAMMES — dits « 1,25 kg », jamais ajoutés au total des pièces.
+   */
+  readonly saleUnit: OrderSaleUnit;
   /** Une case par point, dans l'ordre des colonnes. */
   readonly cells: readonly ResupplyCell[];
   /** Pour demain + au plus tôt, tous points. */
@@ -82,23 +88,29 @@ export function resupplyProductionRows(
 ): readonly ResupplyProductionRow[] {
   const names = new Map(view.articles.map((article) => [article.sku, article.name] as const));
   const families = new Map(view.articles.map((a) => [a.sku, a.categoryId] as const));
+  const units = new Map(view.articles.map((a) => [a.sku, a.saleUnit] as const));
   for (const total of view.totals) {
     if (!names.has(total.sku)) {
       names.set(total.sku, total.label);
+    }
+    if (!units.has(total.sku)) {
+      units.set(total.sku, total.saleUnit);
     }
   }
   const quantities = quantitiesOf(view);
   const levels = levelsOf(alerts);
   const rows = [...names].map(([sku, name]) => {
+    const saleUnit = units.get(sku) ?? 'piece';
     const cells = points.map((point) => ({
-      tomorrow: quantities.get(key(point.siteId, sku, 'tomorrow')) ?? 0,
-      asap: quantities.get(key(point.siteId, sku, 'asap')) ?? 0,
+      tomorrow: quantities.get(key(point.siteId, sku, 'tomorrow', saleUnit)) ?? 0,
+      asap: quantities.get(key(point.siteId, sku, 'asap', saleUnit)) ?? 0,
       alert: levels.get(`${point.siteId}|${sku}`) ?? null,
     }));
     return {
       sku,
       name,
       categoryId: families.get(sku) ?? null,
+      saleUnit,
       cells,
       total: cells.reduce((sum, cell) => sum + cell.tomorrow + cell.asap, 0),
       alert: worstOf(cells),
@@ -107,8 +119,9 @@ export function resupplyProductionRows(
   return rows.sort((a, b) => rankOf(a) - rankOf(b) || a.name.localeCompare(b.name, 'fr'));
 }
 
-function key(siteId: string, sku: string, target: ResupplyTarget): string {
-  return `${siteId}|${sku}|${target}`;
+/** Par unité aussi : des pièces et des grammes du même article ne s'additionnent pas (L2b-1). */
+function key(siteId: string, sku: string, target: ResupplyTarget, unit: OrderSaleUnit): string {
+  return `${siteId}|${sku}|${target}|${unit}`;
 }
 
 function quantitiesOf(view: ResupplyProductionDayView): ReadonlyMap<string, number> {
@@ -116,7 +129,7 @@ function quantitiesOf(view: ResupplyProductionDayView): ReadonlyMap<string, numb
   for (const site of view.sites) {
     for (const resupply of site.resupplies) {
       for (const line of resupply.lines) {
-        const at = key(site.siteId, line.sku, resupply.target);
+        const at = key(site.siteId, line.sku, resupply.target, line.saleUnit);
         quantities.set(at, (quantities.get(at) ?? 0) + line.quantity);
       }
     }

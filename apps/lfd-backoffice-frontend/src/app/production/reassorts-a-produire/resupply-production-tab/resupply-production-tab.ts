@@ -33,6 +33,7 @@ import {
   resupplyProductionRows,
   type ResupplyProductionRow,
 } from '../resupply-production-rows';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -84,6 +85,7 @@ function normalize(text: string): string {
     FoldLoadingStateComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
+    SaleQuantityPipe,
   ],
   templateUrl: './resupply-production-tab.html',
   styleUrl: './resupply-production-tab.scss',
@@ -169,8 +171,17 @@ export class ResupplyProductionTab {
     );
   });
 
-  /** Le total de la journée, tous produits : ce que les points attendent du fournil. */
-  protected readonly pieces = computed(() => this.rows().reduce((sum, row) => sum + row.total, 0));
+  /**
+   * Le total de la journée, tous produits : ce que les points attendent du
+   * fournil. Les pièces ne comptent que les pièces ; le poids se dit à part
+   * (lot L2b-4), jamais additionné aux pièces.
+   */
+  protected readonly pieces = computed(() =>
+    this.rows().reduce((sum, row) => sum + (row.saleUnit === 'weight' ? 0 : row.total), 0),
+  );
+  protected readonly weightGrams = computed(() =>
+    this.rows().reduce((sum, row) => sum + (row.saleUnit === 'weight' ? row.total : 0), 0),
+  );
 
   /** Le numéro de la dernière lecture : une réponse lente n'écrase pas une plus récente. */
   private readSeq = 0;

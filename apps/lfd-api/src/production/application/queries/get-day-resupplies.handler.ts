@@ -47,6 +47,7 @@ export class GetDayResuppliesHandler implements IQueryHandler<
           sku: line.sku,
           productName: line.productName,
           quantity: line.quantity,
+          saleUnit: line.saleUnit,
         })),
       })),
     };

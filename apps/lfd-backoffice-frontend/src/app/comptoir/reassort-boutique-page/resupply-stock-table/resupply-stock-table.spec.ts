@@ -214,6 +214,7 @@ async function mount(
     readonly alerts?: FakeAlerts;
     readonly tomorrowOrderUntil?: string;
     readonly now?: number;
+    readonly articles?: readonly ResupplyArticleView[];
   } = {},
 ): Promise<Mounted> {
   const resupplies = new FakeResupplies();
@@ -236,7 +237,7 @@ async function mount(
   const fixture = TestBed.createComponent(ResupplyStockTable);
   fixture.componentRef.setInput('siteId', 'site_v');
   fixture.componentRef.setInput('day', TODAY);
-  fixture.componentRef.setInput('articles', ARTICLES);
+  fixture.componentRef.setInput('articles', options.articles ?? ARTICLES);
   fixture.componentRef.setInput('stock', options.stock ?? []);
   fixture.componentRef.setInput('unordered', options.unordered ?? []);
   fixture.componentRef.setInput('canWrite', options.canWrite ?? true);
@@ -480,5 +481,76 @@ describe('ResupplyStockTable', () => {
     expect(resupplies.calls).toEqual(['name tomorrow Vitrine du matin']);
     expect(table['draftName']()).toBe('Vitrine du matin');
     expect(table['nameText']()).toBe('Vitrine du matin');
+  });
+
+  /** Lot L2b-4 : un article au poids compte des grammes, dits en kilos. */
+  describe('au poids', () => {
+    const GRAVLAX: ResupplyArticleView = {
+      sku: 'GRA',
+      name: 'Saumon gravlax',
+      categoryId: 'fam_deli',
+      categoryName: 'Traiteur',
+      saleUnit: 'weight',
+    };
+
+    it('dit le stock « 3,75 kg », saisit en grammes sans pas de pièces, et envoie des grammes', async () => {
+      const { fixture, table, resupplies } = await mount({
+        articles: [...ARTICLES, GRAVLAX],
+        stock: [
+          {
+            sku: 'GRA',
+            label: 'Saumon gravlax',
+            receivedQuantity: 5000,
+            estimatedStock: 3750,
+            saleUnit: 'weight',
+          },
+          {
+            sku: 'CRO',
+            label: 'Croissant',
+            receivedQuantity: 14,
+            estimatedStock: 14,
+            saleUnit: 'piece',
+          },
+        ],
+      });
+      const el = root(fixture);
+      const stockOf = (sku: string): string | undefined =>
+        el.querySelector(`[data-resupply-stock="${sku}"]`)?.textContent?.trim();
+      expect(stockOf('GRA')).toBe('3,75 kg');
+      expect(stockOf('CRO')).toBe('14');
+      const shortcuts = (sku: string): number =>
+        el.querySelectorAll(`[data-resupply-quantity="${sku}"] .shortcut`).length;
+      expect(shortcuts('GRA')).toBe(0);
+      expect(shortcuts('CRO')).toBe(8);
+
+      // La visée affichée par défaut : « Pour demain », sans heure limite.
+      table['setQuantity']('tomorrow', rowOf(table, 'GRA'), 1250);
+      await settle(fixture);
+      expect(el.querySelector('[data-resupply-weight="GRA"]')?.textContent).toContain('1,25 kg');
+      await table['commit']('tomorrow', rowOf(table, 'GRA'));
+      await settle(fixture);
+
+      expect(resupplies.calls).toEqual(['add tomorrow GRA 1250']);
+    });
+
+    it('le reçu sans commande d’un article au poids se dit en kilos et part en grammes', async () => {
+      const { fixture, table, receipts } = await mount({
+        articles: [GRAVLAX],
+        unordered: [
+          { sku: 'GRA', label: 'Saumon gravlax', receivedQuantity: 2000, saleUnit: 'weight' },
+        ],
+      });
+
+      expect(root(fixture).textContent).toContain('Reçu sans commande (2 kg)');
+      table['openUnordered'](rowOf(table, 'GRA'));
+      table['unorderedQuantity'].set(2500);
+      await settle(fixture);
+      expect(
+        root(fixture).querySelector('[data-resupply-unordered-editor]')?.textContent,
+      ).toContain('2,5 kg');
+      await table['saveUnordered'](rowOf(table, 'GRA'));
+
+      expect(receipts.calls).toEqual(['correct GRA 2500']);
+    });
   });
 });

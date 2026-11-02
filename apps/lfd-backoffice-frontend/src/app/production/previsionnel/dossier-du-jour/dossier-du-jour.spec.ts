@@ -186,7 +186,9 @@ describe('les réassorts au dossier', () => {
         siteLabel: 'Village',
         name: null,
         servedByTransfer: true,
-        lines: [{ sku: 'PAC', productName: 'Pain au chocolat', quantity: 18 }],
+        lines: [
+          { sku: 'PAC', productName: 'Pain au chocolat', quantity: 18, saleUnit: 'piece' as const },
+        ],
       },
     ],
   });

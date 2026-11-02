@@ -1,4 +1,6 @@
-import { quantityFigure, type SaleQuantity } from "@lfd/money";
+import { quantityFigure, type SaleQuantity, type SaleUnit } from "@lfd/money";
+
+import { unitWord } from "./unit-word.js";
 
 import {
   BusinessError,
@@ -70,12 +72,15 @@ export class PackingResupplyIncompleteError extends BusinessError {
   }
 }
 
-/** Une réservation de réassort sans pièce, ou en pièces fractionnaires. */
+/**
+ * Une réservation de réassort vide ou fractionnaire. Au poids, elle compte des
+ * grammes (lot L2b-4) : le refus le dit, sans quoi « 1250 » se lirait en pièces.
+ */
 export class StockReservationQuantityInvalidError extends DomainError {
-  constructor(sku: string, quantity: number) {
+  constructor(sku: string, quantity: number, unit: SaleUnit) {
     super(
       "packing.resupply.reservation_invalid",
-      `La réservation de « ${sku} » pour un réassort lancé doit porter un nombre entier de pièces supérieur à 0 (reçu : ${String(quantity)}). Le fait du fournil est hors contrat : corriger l'émetteur, puis rejouer le message depuis la carte de santé.`,
+      `La réservation de « ${sku} » pour un réassort lancé doit porter un nombre entier de ${unitWord(unit)} supérieur à 0 (reçu : ${String(quantity)}). Le fait du fournil est hors contrat : corriger l'émetteur, puis rejouer le message depuis la carte de santé.`,
     );
   }
 }

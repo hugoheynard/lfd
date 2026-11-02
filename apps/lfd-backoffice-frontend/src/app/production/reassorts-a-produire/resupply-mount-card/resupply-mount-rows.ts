@@ -1,5 +1,7 @@
 import type { ResupplyProductionDayView, ResupplyTarget } from '@lfd/contracts';
 
+import { resupplyLinesAmountLabel } from '../../../shared/resupply-labels';
+
 /** Un réassort d'un point servi sur place, tel que la carte « À monter » le montre. */
 export interface ResupplyMountRow {
   readonly siteId: string;
@@ -7,7 +9,8 @@ export interface ResupplyMountRow {
   readonly siteLabel: string;
   readonly name: string | null;
   readonly target: ResupplyTarget;
-  readonly pieces: number;
+  /** « 12 pièces », « 1,25 kg », ou les deux (lot L2b-4) : jamais des grammes comptés en pièces. */
+  readonly amount: string;
   /** Instant ISO de « Monté » ; `null` tant qu'il est attendu. */
   readonly arrivedAt: string | null;
   readonly arrivedBy: string | null;
@@ -41,7 +44,7 @@ export function resupplyMountRows(view: ResupplyProductionDayView): readonly Res
           siteLabel: site.siteLabel ?? UNKNOWN_POINT,
           name: resupply.name,
           target: resupply.target,
-          pieces: resupply.lines.reduce((sum, line) => sum + line.quantity, 0),
+          amount: resupplyLinesAmountLabel(resupply.lines),
           arrivedAt: resupply.arrivedAt,
           arrivedBy: resupply.arrivedBy,
           mountable: resupply.target !== 'asap' || resupply.launchedAt !== null,

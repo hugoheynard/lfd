@@ -65,14 +65,15 @@
             @for (line of reception.lines; track line.sku) {
               <tr [attr.data-resupply-reception-line]="line.sku">
                 <td>{{ line.label }}</td>
-                <td class="num">{{ line.expectedQuantity }}</td>
+                <td class="num">{{ line.expectedQuantity | saleQuantity: line.saleUnit }}</td>
                 <td class="num" data-resupply-received>
                   @if (reception.status === 'expected') {
                     —
                   } @else if (canWrite()) {
                     <fold-number-input
                       size="sm"
-                      label="Reçu"
+                      [label]="line.saleUnit === 'weight' ? 'Reçu, en grammes' : 'Reçu'"
+                      [hint]="receivedHint(reception, line)"
                       [value]="draftOf(reception, line)"
                       (valueChange)="setDraft(reception, line, $event)"
                       [min]="0"
@@ -80,7 +81,7 @@
                       [disabled]="pending()"
                     />
                   } @else {
-                    {{ line.receivedQuantity }}
+                    {{ line.receivedQuantity ?? 0 | saleQuantity: line.saleUnit }}
                   }
                 </td>
                 @if (canWrite() && reception.status === 'received') {

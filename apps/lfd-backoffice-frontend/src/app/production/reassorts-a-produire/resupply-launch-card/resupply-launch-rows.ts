@@ -1,11 +1,14 @@
 import type { ResupplyProductionDayView } from '@lfd/contracts';
 
+import { resupplyLinesAmountLabel } from '../../../shared/resupply-labels';
+
 /** Un réassort « au plus tôt » envoyé, tel que la carte « Au plus tôt » le montre. */
 export interface ResupplyLaunchRow {
   readonly resupplyId: string;
   readonly siteLabel: string;
   readonly name: string | null;
-  readonly pieces: number;
+  /** « 12 pièces », « 1,25 kg », ou les deux (lot L2b-4) : jamais des grammes comptés en pièces. */
+  readonly amount: string;
   /** L'envoi : instant ISO, et nom figé de qui l'a envoyé. */
   readonly placedAt: string;
   readonly placedBy: string | null;
@@ -36,7 +39,7 @@ export function resupplyLaunchRows(view: ResupplyProductionDayView): readonly Re
         resupplyId: resupply.id,
         siteLabel: site.siteLabel ?? UNKNOWN_POINT,
         name: resupply.name,
-        pieces: resupply.lines.reduce((sum, line) => sum + line.quantity, 0),
+        amount: resupplyLinesAmountLabel(resupply.lines),
         placedAt: resupply.placedAt,
         placedBy: resupply.placedBy,
         launchedAt: resupply.launchedAt,

@@ -152,11 +152,15 @@
                     } @else if (cell.alert === 'low') {
                       <span class="rp-mark rp-mark--low" data-resupply-alert>Faible</span>
                     }
-                    {{ cell.tomorrow || '' }}
+                    {{ cell.tomorrow ? (cell.tomorrow | saleQuantity: row.saleUnit) : '' }}
                   </td>
-                  <td class="num">{{ cell.asap || '' }}</td>
+                  <td class="num">
+                    {{ cell.asap ? (cell.asap | saleQuantity: row.saleUnit) : '' }}
+                  </td>
                 }
-                <td class="num rp-total" data-resupply-total>{{ row.total || '' }}</td>
+                <td class="num rp-total" data-resupply-total>
+                  {{ row.total ? (row.total | saleQuantity: row.saleUnit) : '' }}
+                </td>
               </tr>
             }
           </tbody>
@@ -166,6 +170,15 @@
               <td [attr.colspan]="points().length * 2"></td>
               <td class="num rp-total" data-resupply-pieces>{{ pieces() }}</td>
             </tr>
+            @if (weightGrams() > 0) {
+              <tr>
+                <th scope="row">Total au poids</th>
+                <td [attr.colspan]="points().length * 2"></td>
+                <td class="num rp-total" data-resupply-weight>
+                  {{ weightGrams() | saleQuantity: 'weight' }}
+                </td>
+              </tr>
+            }
           </tfoot>
         </table>
       </div>

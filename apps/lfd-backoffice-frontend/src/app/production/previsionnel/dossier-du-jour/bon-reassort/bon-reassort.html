@@ -27,7 +27,7 @@
   <tbody>
     @for (line of resupply().lines; track line.sku) {
       <tr>
-        <td class="br-qty">{{ line.quantity }}</td>
+        <td class="br-qty">{{ line.quantity | saleQuantity: line.saleUnit }}</td>
         <td>
           <span class="br-product">{{ line.productName }}</span>
           <span class="br-sku">{{ line.sku }}</span>

@@ -62,7 +62,7 @@
       </span>
     </ng-template>
     <ng-template foldCell="stock" let-row>
-      <span [attr.data-resupply-stock]="row.sku">{{ row.stock }}</span>
+      <span [attr.data-resupply-stock]="row.sku">{{ row.stock | saleQuantity: row.saleUnit }}</span>
     </ng-template>
     <ng-template foldCell="state" let-row>
       @if (canWrite()) {
@@ -85,7 +85,8 @@
           (focusout)="commit(target(), row)"
           (keydown.enter)="commit(target(), row)"
         >
-          @for (quantity of downSteps; track quantity) {
+          <!-- Au poids, la case compte des grammes : les pas de pièces n'y ont pas de sens. -->
+          @for (quantity of row.saleUnit === 'weight' ? [] : downSteps; track quantity) {
             <button
               class="shortcut"
               foldButton
@@ -104,6 +105,7 @@
             <fold-number-input
               size="sm"
               align="center"
+              [placeholder]="row.saleUnit === 'weight' ? 'g' : ''"
               [readOnly]="phone()"
               [value]="quantityOf(target(), row)"
               (valueChange)="setQuantity(target(), row, $event)"
@@ -112,7 +114,16 @@
               [disabled]="resuppliesPending()"
             />
           </div>
-          @for (quantity of steps; track quantity) {
+          @if (row.saleUnit === 'weight') {
+            <span class="muted" [attr.data-resupply-weight]="row.sku">
+              @if (quantityOf(target(), row); as grams) {
+                {{ grams | saleQuantity: 'weight' }}
+              } @else {
+                en grammes
+              }
+            </span>
+          }
+          @for (quantity of row.saleUnit === 'weight' ? [] : steps; track quantity) {
             <button
               class="shortcut"
               foldButton
@@ -128,7 +139,7 @@
           }
         </div>
       } @else {
-        {{ target() === 'asap' ? row.asap : row.tomorrow }}
+        {{ (target() === 'asap' ? row.asap : row.tomorrow) | saleQuantity: row.saleUnit }}
       }
     </ng-template>
     <ng-template foldCell="actions" let-row>
@@ -148,7 +159,7 @@
           {{
             row.unordered === null
               ? '+ reçu sans commande'
-              : 'Reçu sans commande (' + row.unordered + ')'
+              : 'Reçu sans commande (' + (row.unordered | saleQuantity: row.saleUnit) + ')'
           }}
         </fold-dropdown-item>
       </fold-dropdown>
@@ -156,7 +167,10 @@
         <div class="quantity" data-resupply-unordered-editor>
           <fold-number-input
             size="sm"
-            label="Reçu sans commande"
+            [label]="
+              row.saleUnit === 'weight' ? 'Reçu sans commande, en grammes' : 'Reçu sans commande'
+            "
+            [hint]="unorderedHint(row)"
             [value]="unorderedQuantity()"
             (valueChange)="unorderedQuantity.set($event)"
             [min]="1"

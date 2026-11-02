@@ -38,7 +38,7 @@
                   @if (resupply.name !== null) {
                     {{ targetLabels[resupply.target] }} ·
                   }
-                  {{ originLabels[resupply.origin] }} · {{ resupply.pieces }} pièces
+                  {{ originLabels[resupply.origin] }} · {{ amountOf(resupply) }}
                 </span>
                 <fold-status-badge
                   [status]="stateBadges[resupply.state].status"
@@ -61,7 +61,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (product of site.products; track product.sku) {
+                  @for (product of site.products; track product.sku + ':' + product.saleUnit) {
                     <tr [attr.data-stock-product]="product.sku">
                       <td>{{ product.label }}</td>
                       <td>
@@ -73,8 +73,14 @@
                           />
                         }
                       </td>
-                      <td class="num">{{ product.expected === 0 ? '—' : product.expected }}</td>
-                      <td class="num">{{ product.stock }}</td>
+                      <td class="num">
+                        {{
+                          product.expected === 0
+                            ? '—'
+                            : (product.expected | saleQuantity: product.saleUnit)
+                        }}
+                      </td>
+                      <td class="num">{{ product.stock | saleQuantity: product.saleUnit }}</td>
                     </tr>
                   }
                 </tbody>

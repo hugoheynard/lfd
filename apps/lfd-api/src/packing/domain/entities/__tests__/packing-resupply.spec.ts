@@ -61,6 +61,7 @@ describe("PackingResupply — la fiche de réassort au colisage (R3b)", () => {
       sku: "CRO",
       productName: "Croissant",
       delta: 12,
+      saleUnit: "piece",
     });
     expect(fiche.enterPacked("CRO", 10, MARK).delta).toBe(-2);
     expect(fiche.enterPacked("PAC", 0, MARK).delta).toBe(0);

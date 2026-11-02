@@ -38,7 +38,9 @@ import {
   QuantityDialog,
   type QuantityDialogData,
 } from '../../../shared/quantity-dialog/quantity-dialog';
+import { resupplyLinesAmountLabel } from '../../../shared/resupply-labels';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './article-filters';
 import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
@@ -102,6 +104,7 @@ interface SiteChoice {
     FoldViewToggleComponent,
     NgTemplateOutlet,
     ResupplyNameField,
+    SaleQuantityPipe,
   ],
   providers: [BakehouseDraftsStore],
   templateUrl: './bakehouse-resupply-card.html',
@@ -175,9 +178,21 @@ export class BakehouseResupplyCard {
       .filter((article) => (quantities.get(article.sku) ?? 0) > 0)
       .map((article) => ({ sku: article.sku, quantity: quantities.get(article.sku) ?? 0 }));
   });
-  protected readonly pieces = computed(() =>
-    this.lines().reduce((total, line) => total + line.quantity, 0),
-  );
+  /**
+   * Ce qui part : les pièces ne comptent que les pièces, le poids se dit à
+   * part (lot L2b-4) — « 12 pièces · 1,25 kg ».
+   */
+  protected readonly amount = computed(() => {
+    const units = new Map(
+      this.articles().map((article) => [article.sku, article.saleUnit] as const),
+    );
+    return resupplyLinesAmountLabel(
+      this.lines().map((line) => ({
+        quantity: line.quantity,
+        saleUnit: units.get(line.sku) ?? 'piece',
+      })),
+    );
+  });
 
   /** Les articles de la famille retenue et de la recherche, dans l'ordre du catalogue. */
   protected readonly visibleArticles = computed(() =>
@@ -263,7 +278,11 @@ export class BakehouseResupplyCard {
       return;
     }
     const quantity = await this.panels.open<QuantityDialogData, number>(QuantityDialog, {
-      data: { label: article.name, quantity: this.quantityOf(article.sku) },
+      data: {
+        label: article.name,
+        quantity: this.quantityOf(article.sku),
+        saleUnit: article.saleUnit,
+      },
     }).closed;
     if (quantity !== undefined) {
       this.setQuantity(article.sku, quantity);

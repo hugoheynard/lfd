@@ -11,7 +11,7 @@
       <div class="row" [attr.data-resupply-mount-row]="row.resupplyId">
         <div class="said">
           <strong>{{ titleOf(row) }}</strong>
-          <span class="muted">{{ targetLabels[row.target] }} · {{ row.pieces }} pièces</span>
+          <span class="muted">{{ targetLabels[row.target] }} · {{ row.amount }}</span>
         </div>
         @if (row.arrivedAt !== null) {
           <fold-status-badge status="active" label="Arrivé" />

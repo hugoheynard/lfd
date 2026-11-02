@@ -1,4 +1,7 @@
+import type { SaleUnit } from "@lfd/money";
+
 import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
+import { unitWord } from "./unit-word.js";
 
 /**
  * **Les refus de l'envoi en boutique depuis la réserve** (plan A1, lot A1.4,
@@ -37,10 +40,10 @@ export class ReserveShopQuantityInvalidError extends DomainError {
  * sans rien refuser. Zéro reste admis : c'est un mouvement vide.
  */
 export class StockMoveQuantityInvalidError extends DomainError {
-  constructor(sku: string, quantity: number) {
+  constructor(sku: string, quantity: number, unit: SaleUnit = "piece") {
     super(
       "packing.stock.move_quantity_invalid",
-      `Le mouvement de « ${sku} » doit être un nombre entier de pièces, positif ou nul (reçu : ${String(quantity)}).`,
+      `Le mouvement de « ${sku} » doit être un nombre entier de ${unitWord(unit)}, positif ou nul (reçu : ${String(quantity)}).`,
     );
   }
 }

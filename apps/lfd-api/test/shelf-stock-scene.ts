@@ -31,9 +31,11 @@ export interface Scene {
 export async function scene(ctx: E2eContext, clock: Clock): Promise<Scene> {
   const agent = ctx.asSub(E2E_STAFF_SUB);
   const siteId = await seedVillage(ctx);
-  const [article] = jsonBody<readonly ResupplyArticleView[]>(
+  // Les pièces de la scène : un article au poids est proposé lui aussi
+  // depuis le lot L2b-4, et compterait des grammes.
+  const article = jsonBody<readonly ResupplyArticleView[]>(
     await agent.get("/admin/resupply-receipts/articles").expect(200),
-  );
+  ).find((candidate) => candidate.saleUnit === "piece");
   if (article === undefined) {
     throw new Error("Le catalogue semé doit proposer au moins un article.");
   }

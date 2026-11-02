@@ -28,13 +28,9 @@ function resupply(resupplyId: string, quantity: number): PlacedResupply {
   };
 }
 
-/**
- * Le réassort tel que la vue le rend : sans l'unité, que le contrat
- * `ProductionDayResupplyLine` ne porte pas encore (écrans, lot L2b-4).
- */
+/** Le réassort tel que la vue le rend : l'unité comprise (lot L2b-4). */
 function viewOf(resupplyId: string, quantity: number) {
-  const { lines, ...rest } = resupply(resupplyId, quantity);
-  return { ...rest, lines: lines.map(({ saleUnit: _unit, ...line }) => line) };
+  return resupply(resupplyId, quantity);
 }
 
 const ORDER: ProducibleOrder = {
@@ -95,5 +91,20 @@ describe("GetDayResuppliesHandler", () => {
     const view = await handler.execute(new GetDayResuppliesQuery(DAY));
     expect(view).toEqual({ date: DAY, frozen: true, resupplies: [viewOf("r-1", 18)] });
     expect(trace).toEqual([]);
+  });
+
+  it("rend l'unité d'une ligne au poids : 1 250 g ne se lisent pas 1 250 pièces (lot L2b-4)", async () => {
+    const weighed: PlacedResupply = {
+      ...resupply("r-3", 0),
+      lines: [{ sku: "SAU-001", productName: "Saumon", quantity: 1250, saleUnit: "weight" }],
+    };
+    const handler = new GetDayResuppliesHandler(
+      new Days(ProductionDay.open(ServiceDay.of(DAY))),
+      new DayResupplies([weighed], []),
+    );
+    const view = await handler.execute(new GetDayResuppliesQuery(DAY));
+    expect(view.resupplies[0]?.lines).toEqual([
+      { sku: "SAU-001", productName: "Saumon", quantity: 1250, saleUnit: "weight" },
+    ]);
   });
 });

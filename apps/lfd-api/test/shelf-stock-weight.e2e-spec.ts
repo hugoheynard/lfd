@@ -11,7 +11,11 @@
  * grammes depuis que la garde d'envoi de L2b-1 est retirée (lot L2b-3 — le
  * parcours entier est dans `resupply-village-flow.e2e-spec.ts`).
  */
-import type { DayStockOverviewView, ResupplyReceiptView } from "@lfd/contracts";
+import type {
+  DayStockOverviewView,
+  ResupplyArticleView,
+  ResupplyReceiptView,
+} from "@lfd/contracts";
 import { instantToLocal, localToInstant } from "@lfd/contracts";
 
 import { WEIGHED_GRAVLAX } from "../src/dev/seeding/delivery-day.seed.js";
@@ -154,5 +158,18 @@ describe("une demande au poids et le fournil (lots L2b-1, L2b-3)", () => {
     });
     expect(lines.map((line) => [line.quantity, line.saleUnit])).toEqual([[750, "weight"]]);
     expect(lines[0]?.resupply.placedAt).not.toBeNull();
+  });
+});
+
+describe("la liste d'articles des écrans de réassort (lot L2b-4)", () => {
+  it("propose un article au poids, avec son unité, à côté des pièces", async () => {
+    await scene(ctx, clock);
+
+    const articles = jsonBody<readonly ResupplyArticleView[]>(
+      await ctx.asSub(E2E_STAFF_SUB).get("/admin/resupply-receipts/articles").expect(200),
+    );
+
+    expect(articles.find((article) => article.sku === GRAVLAX.sku)?.saleUnit).toBe("weight");
+    expect(articles.some((article) => article.saleUnit === "piece")).toBe(true);
   });
 });

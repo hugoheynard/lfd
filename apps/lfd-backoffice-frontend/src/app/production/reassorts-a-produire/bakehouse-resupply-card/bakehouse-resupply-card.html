@@ -117,7 +117,8 @@
         </ng-template>
         <ng-template foldCell="quantity" let-article>
           <div class="stepper" [attr.data-bakehouse-row]="article.sku">
-            @for (quantity of downSteps; track quantity) {
+            <!-- Au poids, la case compte des grammes : pas de pas de pièces (L2b-4). -->
+            @for (quantity of article.saleUnit === 'weight' ? [] : downSteps; track quantity) {
               <button
                 class="shortcut"
                 foldButton
@@ -138,6 +139,7 @@
               <fold-number-input
                 size="sm"
                 align="center"
+                [placeholder]="article.saleUnit === 'weight' ? 'g' : ''"
                 [readOnly]="phone()"
                 [value]="quantityOf(article.sku)"
                 (valueChange)="setQuantity(article.sku, $event)"
@@ -145,7 +147,16 @@
                 integer
               />
             </div>
-            @for (quantity of steps; track quantity) {
+            @if (article.saleUnit === 'weight') {
+              <span class="muted" [attr.data-bakehouse-weight]="article.sku">
+                @if (quantityOf(article.sku); as grams) {
+                  {{ grams | saleQuantity: 'weight' }}
+                } @else {
+                  en grammes
+                }
+              </span>
+            }
+            @for (quantity of article.saleUnit === 'weight' ? [] : steps; track quantity) {
               <button
                 class="shortcut"
                 foldButton
@@ -189,6 +200,6 @@
     [loading]="pending()"
     (click)="send()"
   >
-    Envoyer — {{ lines().length }} article(s), {{ pieces() }} pièce(s)
+    Envoyer — {{ lines().length }} article(s), {{ amount() }}
   </button>
 </ng-template>

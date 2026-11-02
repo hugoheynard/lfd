@@ -6,7 +6,7 @@ import { QuantityDialog } from './quantity-dialog';
 
 /** Le dialogue de la quantité en mobile (Hugo, 2026-10-28). */
 describe('QuantityDialog', () => {
-  function mount(quantity: number | null) {
+  function mount(quantity: number | null, saleUnit?: 'piece' | 'weight') {
     const closed: (number | undefined)[] = [];
     TestBed.configureTestingModule({
       imports: [QuantityDialog],
@@ -15,7 +15,7 @@ describe('QuantityDialog', () => {
       ],
     });
     const fixture = TestBed.createComponent(QuantityDialog);
-    fixture.componentRef.setInput('data', { label: 'Croissant', quantity });
+    fixture.componentRef.setInput('data', { label: 'Croissant', quantity, saleUnit });
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     const press = (step: number): void => {
@@ -25,7 +25,7 @@ describe('QuantityDialog', () => {
     const submit = (): void => {
       root.querySelector<HTMLButtonElement>('[data-quantity-submit]')?.click();
     };
-    return { closed, press, submit };
+    return { closed, press, submit, root };
   }
 
   it('part de la quantité saisie, ajoute et retire par les pas, et rend le total validé', () => {
@@ -45,5 +45,16 @@ describe('QuantityDialog', () => {
     submit();
 
     expect(closed).toEqual([0]);
+  });
+
+  it('au poids, saisit des grammes, les relit « 1,25 kg » et ne propose pas les pas de pièces (L2b-4)', () => {
+    const { closed, submit, root } = mount(1250, 'weight');
+
+    expect(root.querySelector('[data-quantity-step]')).toBeNull();
+    expect(root.textContent).toContain('Quantité en grammes');
+    expect(root.textContent).toContain('1,25 kg');
+    submit();
+
+    expect(closed).toEqual([1250]);
   });
 });

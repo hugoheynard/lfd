@@ -164,8 +164,9 @@ function talliesOf(
   }
   for (const resupply of resupplies) {
     for (const line of resupply.lines) {
-      // Un réassort est toujours à la pièce (`vente-au-poids.md`, § 2).
-      add({ ...line, saleUnit: 'piece' }, false);
+      // Un réassort porte son unité depuis le lot L2b-4 : au poids, des grammes,
+      // comme le dossier du jour du serveur (`day-dossier.ts`, `talliesOf`).
+      add(line, false);
     }
   }
   return [...bySku].map(([sku, tally]) => ({
