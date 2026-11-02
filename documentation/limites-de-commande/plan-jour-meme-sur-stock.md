@@ -744,7 +744,7 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
   article ne mélange pas deux unités ; le poids se compte en grammes entiers.
   `estimateStock`, le total des réassorts, l'onglet Stock et les prélèvements
   comptent par (article, unité) ; le refus de baisse dit « 1,25 kg ».
-- **La garde d'envoi** (`weight-resupply-guard.ts`, dans `SiteResupply.place()`)
+- **La garde d'envoi** (la garde `weight-resupply-guard` (retirée au lot L2b-3), dans `SiteResupply.place()`)
   refuse qu'une demande au poids parte au fournil — par le comptoir, le
   fournil ou la sortie de réserve. À retirer au lot L2b-2.
 - La liste d'articles proposée aux écrans **écarte encore le poids**
@@ -809,7 +809,7 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
   de contenant au colisage (`colisage/colisage.md` §2.2, tranché en R3c), et
   ni « Proposer » du colisage ni celui de la livraison ne voient un réassort.
   `weight_lot_over_bin` ne s'applique donc qu'aux commandes.
-- **La garde d'envoi de L2b-1 est retirée** (`weight-resupply-guard.ts`, son
+- **La garde d'envoi de L2b-1 est retirée** (la garde `weight-resupply-guard` (retirée au lot L2b-3), son
   erreur `resupply.sale_unit.weight_not_sendable`, ses tests). L'e2e
   `resupply-village-flow` porte le parcours entier : 2 kg envoyés au
   comptoir, comptés et imprimés en grammes, 1,94 kg emballés, partis en
