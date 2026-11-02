@@ -1,0 +1,24 @@
+-- RETOUR ARRIÈRE de 20261102100000_d_ou_vient_la_marchandise
+-- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant ne lit ni n'écrit `supply` / `entry_shortcut` : ses
+-- passations prennent le défaut `planned` et `NULL`, que les deux CHECK
+-- admettent. Le retour arrière est donc le retour du code seul ; ce fichier
+-- n'a rien à jouer.
+--
+-- ⚠️ Ce qui est PERDU au retour du code : rien en base tant qu'aucune commande
+-- `shelf` n'existe (aucun chemin ne l'écrit avant L4). Après L4, le code
+-- d'avant verrait une commande `shelf` comme une commande à produire : ne
+-- revenir derrière L4 qu'avec Hugo.
+--
+-- Retirer les colonnes serait un resserrement, dans un déploiement ultérieur,
+-- sur décision de Hugo (une colonne morte reste en base) :
+--
+--   ALTER TABLE public.orders
+--     DROP CONSTRAINT orders_entry_shortcut_on_shelf,
+--     DROP CONSTRAINT orders_shelf_is_dated_pickup;
+
+SELECT 1;

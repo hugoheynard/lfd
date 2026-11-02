@@ -63,6 +63,28 @@ enum OrderClientele {
   @@schema("public")
 }
 
+/// **D'où vient la marchandise d'une commande** (plan
+/// documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §5, §11.1).
+/// `planned` : fabriquée pour elle, au plan du fournil. `shelf` : prise dans
+/// le stock du jour de la vitrine du point — elle n'entre jamais au plan, ni au
+/// transfert. Figée à la passation, jamais modifiable.
+enum OrderSupply {
+  planned
+  shelf
+
+  @@schema("public")
+}
+
+/// **Le raccourci de saisie** qui a posé la commande (plan du jour J, §5) :
+/// `immediate_pickup` = « Retrait immédiat » du comptoir. Une trace, pour
+/// compter combien de fois il a servi et pour quelle clientèle ; il ne décide
+/// de rien.
+enum OrderEntryShortcut {
+  immediate_pickup
+
+  @@schema("public")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Order — une commande, tenant-scoped
 // ─────────────────────────────────────────────────────────────────────────────
@@ -343,6 +365,14 @@ model Order {
   // le verrou de la journée. Le fournil ne l'a pas comptée : le retirage la fait
   // entrer au plan (`confirmedAt`). « Hors plan » = ce drapeau ET `placed`.
   placedOffPlan Boolean @default(false) @map("placed_off_plan")
+
+  // D'où vient la marchandise (plan-jour-meme-sur-stock.md, §11.1) : `shelf`
+  // sort la commande de tout lecteur de production et de transport
+  // (`notFromStock`, plan-filter.ts). Figée à la passation par l'agrégat.
+  supply OrderSupply @default(planned)
+
+  // Le raccourci de saisie qui l'a posée (« Retrait immédiat »), `null` sinon.
+  entryShortcut OrderEntryShortcut? @map("entry_shortcut")
 
   // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
   // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en
