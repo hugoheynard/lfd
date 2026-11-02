@@ -6,7 +6,13 @@ import { ResupplyReceiptsService } from '../resupply-receipts.service';
 import { ResupplyReceptionsCard } from './resupply-receptions-card';
 
 /** « Réceptionner » d'un geste, puis l'écart par ligne (lot R2, 2026-10-21). */
-const LINE = { sku: 'CRO', label: 'Croissant', expectedQuantity: 24, receivedQuantity: null };
+const LINE = {
+  sku: 'CRO',
+  label: 'Croissant',
+  expectedQuantity: 24,
+  receivedQuantity: null,
+  saleUnit: 'piece' as const,
+};
 const EXPECTED: ResupplyReceptionView = {
   resupplyId: 'r1',
   target: 'tomorrow',

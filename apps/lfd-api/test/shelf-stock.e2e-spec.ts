@@ -14,15 +14,10 @@
  * par l'agrégat (`Order.draft`) et écrite par le vrai dépôt
  * (`OrderRepository.place`), comme dans `shelf-order-readers.e2e-spec.ts`.
  */
-import type {
-  DayStockOverviewView,
-  ResupplyArticleView,
-  ResupplyReceiptView,
-} from "@lfd/contracts";
+import type { DayStockOverviewView, ResupplyReceiptView } from "@lfd/contracts";
 import { instantToLocal, localToInstant } from "@lfd/contracts";
-import { millicentsFromCents } from "@lfd/money";
 
-import { Order, type DraftOrderInput } from "../src/b2b/orders/domain/entities/order.js";
+import { Order } from "../src/b2b/orders/domain/entities/order.js";
 import { OrderCancellationRepository } from "../src/b2b/orders/domain/ports/order-cancellation.repository.js";
 import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
 import { BEFORE_INSCRIPTION } from "../src/b2b/orders/domain/services/cancellation-allowance.js";
@@ -37,9 +32,21 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
-import { seedVillage } from "./internal-transfer-scene.js";
-import { counterSent } from "./site-resupply-scene.js";
+import {
+  draftOf,
+  pieces,
+  scene as stockScene,
+  type Scene,
+  sell as sellLine,
+} from "./shelf-stock-scene.js";
+
+function scene(): Promise<Scene> {
+  return stockScene(ctx, clock);
+}
+
+function sell(s: Scene, quantity: number): Promise<string> {
+  return sellLine(ctx, s, pieces(s, quantity));
+}
 
 /** Midi aujourd'hui à Paris : « Réceptionner » n'est permis qu'à partir de sa journée. */
 function todayAtNoon(): Date {
@@ -63,105 +70,6 @@ beforeEach(async () => {
   await ctx.reset();
   clock.set(todayAtNoon());
 });
-
-/** Le reçu du Village : un réassort réceptionné (10) et le sans commande (4) du même article. */
-interface Scene {
-  readonly siteId: string;
-  readonly day: string;
-  readonly article: ResupplyArticleView;
-  readonly resupplyId: string;
-  readonly companyId: string;
-  readonly userId: string;
-}
-
-async function scene(): Promise<Scene> {
-  const agent = ctx.asSub(E2E_STAFF_SUB);
-  const siteId = await seedVillage(ctx);
-  const [article] = jsonBody<readonly ResupplyArticleView[]>(
-    await agent.get("/admin/resupply-receipts/articles").expect(200),
-  );
-  if (article === undefined) {
-    throw new Error("Le catalogue semé doit proposer au moins un article.");
-  }
-  const resupplyId = await counterSent(agent, siteId, "asap", [{ sku: article.sku, quantity: 10 }]);
-  await agent
-    .post(`/admin/resupply-receipts/${siteId}/resupplies/${resupplyId}/receive`)
-    .expect(204);
-  const day = instantToLocal(clock.now()).day;
-  await agent
-    .post(`/admin/resupply-receipts/${siteId}/${day}/lines`)
-    .send({ sku: article.sku, quantity: 4 })
-    .expect(204);
-  const user = await createUser(ctx.prisma, { auth0Sub: "auth0|client", email: "c@vv.fr" });
-  const company = await createCompany(ctx.prisma, { enseigne: "Chalet du Village" });
-  await attachTo(ctx.prisma, user.id, company.id);
-  return { siteId, day, article, resupplyId, companyId: company.id, userId: user.id };
-}
-
-/** Un retrait au compte, au Village, aujourd'hui — composé par l'agrégat. */
-function draftOf(scene: Scene, quantity: number): DraftOrderInput {
-  return {
-    companyId: scene.companyId,
-    billedCompanyId: scene.companyId,
-    principal: null,
-    placedByUserId: scene.userId,
-    placedByStaffId: E2E_STAFF_ID,
-    buyerKind: "registered",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: {
-        label: "Val Village",
-        ligne1: "Route du Village",
-        ligne2: "",
-        codePostal: "73150",
-        ville: "Val d'Isère",
-        pays: "France",
-        siteId: scene.siteId,
-      },
-    },
-    agreed: {
-      window: { value: { start: "08:00", end: "09:00" }, source: "override" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    requestedDeliveryDate: new Date(`${scene.day}T00:00:00.000Z`),
-    note: "",
-    catalogVersionId: null,
-    lines: [
-      {
-        sku: scene.article.sku,
-        productName: scene.article.name,
-        unitPriceMillicents: millicentsFromCents(120),
-        vatRate: 5.5,
-        saleUnit: "piece",
-        quantity,
-      },
-    ],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-  };
-}
-
-async function sell(scene: Scene, quantity: number): Promise<string> {
-  const order = Order.draft(draftOf(scene, quantity), {
-    supply: "shelf",
-    today: scene.day,
-    entryShortcut: "immediate_pickup",
-  });
-  order.deferPayment();
-  return (await ctx.app.get(OrderRepository).place(order)).id;
-}
 
 /** Par le vrai dépôt d'annulation, sous son verrou de ligne. */
 async function cancel(orderId: string): Promise<void> {
@@ -209,7 +117,7 @@ describe("le reste du jour, décompté des commandes sur stock (lot L2)", () => 
 
   it("ne compte pas une commande fabriquée pour ce jour", async () => {
     const s = await scene();
-    const order = Order.draft(draftOf(s, 5), { supply: "planned" });
+    const order = Order.draft(draftOf(s, pieces(s, 5)), { supply: "planned" });
     order.deferPayment();
     await ctx.app.get(OrderRepository).place(order);
 
@@ -260,7 +168,13 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
       await agent.get(`/admin/resupply-receipts/${s.siteId}/${s.day}`).expect(200),
     );
     expect(receipt.stock).toEqual([
-      { sku: s.article.sku, label: s.article.name, receivedQuantity: 12, estimatedStock: 0 },
+      {
+        sku: s.article.sku,
+        label: s.article.name,
+        receivedQuantity: 12,
+        estimatedStock: 0,
+        saleUnit: "piece",
+      },
     ]);
   });
 

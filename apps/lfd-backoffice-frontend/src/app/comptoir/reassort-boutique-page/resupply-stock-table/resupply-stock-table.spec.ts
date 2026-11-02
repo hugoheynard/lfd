@@ -35,13 +35,26 @@ import { ResupplyStockTable } from './resupply-stock-table';
  */
 const TODAY = parisToday();
 const ARTICLES: readonly ResupplyArticleView[] = [
-  { sku: 'BAG', name: 'Baguette', categoryId: 'fam_bread', categoryName: 'Pains' },
-  { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+  {
+    sku: 'BAG',
+    name: 'Baguette',
+    categoryId: 'fam_bread',
+    categoryName: 'Pains',
+    saleUnit: 'piece' as const,
+  },
+  {
+    sku: 'CRO',
+    name: 'Croissant',
+    categoryId: 'fam_morning',
+    categoryName: 'Viennoiseries',
+    saleUnit: 'piece' as const,
+  },
   {
     sku: 'PAC',
     name: 'Pain au chocolat',
     categoryId: 'fam_morning',
     categoryName: 'Viennoiseries',
+    saleUnit: 'piece',
   },
 ];
 
@@ -70,7 +83,12 @@ class FakeResupplies {
               serviceDay: TODAY,
               version: this.version,
               name,
-              lines: lines.map(([sku, quantity]) => ({ sku, label: sku, quantity })),
+              lines: lines.map(([sku, quantity]) => ({
+                sku,
+                label: sku,
+                quantity,
+                saleUnit: 'piece' as const,
+              })),
             },
           ];
     });
@@ -249,8 +267,20 @@ describe('ResupplyStockTable', () => {
   it('montre tous les produits, leur stock du jour (somme des reçus) et un article reçu hors catalogue', async () => {
     const { fixture } = await mount({
       stock: [
-        { sku: 'CRO', label: 'Croissant', receivedQuantity: 14, estimatedStock: 14 },
-        { sku: 'OLD', label: 'Ancien', receivedQuantity: 3, estimatedStock: 3 },
+        {
+          sku: 'CRO',
+          label: 'Croissant',
+          receivedQuantity: 14,
+          estimatedStock: 14,
+          saleUnit: 'piece' as const,
+        },
+        {
+          sku: 'OLD',
+          label: 'Ancien',
+          receivedQuantity: 3,
+          estimatedStock: 3,
+          saleUnit: 'piece' as const,
+        },
       ],
     });
 
@@ -395,7 +425,15 @@ describe('ResupplyStockTable', () => {
 
   it('les puces de famille : « Tout » puis une par famille présente, un clic filtre, combiné à la recherche', async () => {
     const { fixture, table } = await mount({
-      stock: [{ sku: 'OLD', label: 'Ancien', receivedQuantity: 3, estimatedStock: 3 }],
+      stock: [
+        {
+          sku: 'OLD',
+          label: 'Ancien',
+          receivedQuantity: 3,
+          estimatedStock: 3,
+          saleUnit: 'piece' as const,
+        },
+      ],
     });
 
     expect(root(fixture).querySelector('[data-resupply-categories]')).not.toBeNull();

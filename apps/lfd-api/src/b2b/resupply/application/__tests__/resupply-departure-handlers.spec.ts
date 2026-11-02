@@ -25,7 +25,7 @@ function placed(id: string, overrides: Partial<SiteResupplySnapshot> = {}): Site
     version: 2,
     origin: "counter",
     name: null,
-    lines: [{ sku: "CRO", label: "Croissant", quantity: 12 }],
+    lines: [{ sku: "CRO", label: "Croissant", quantity: 12, saleUnit: "piece" as const }],
     placed: { at: PLACED_AT, author: LOU },
     cancelled: null,
     arrived: null,

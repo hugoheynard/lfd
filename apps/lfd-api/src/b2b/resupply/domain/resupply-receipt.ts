@@ -11,6 +11,8 @@ import {
   ResupplyDayNotYetComeError,
 } from "./resupply-receipt-errors.js";
 import { ResupplyReceiptLine, type ResupplyReceiptLineSnapshot } from "./resupply-receipt-line.js";
+import type { SaleUnit } from "./resupply-sale-unit.js";
+import { ResupplyLineUnitMismatchError } from "./resupply-sale-unit-errors.js";
 
 const SERVICE_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -46,6 +48,7 @@ export interface ReceivableResupply {
     readonly sku: string;
     readonly label: string;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
   }[];
 }
 
@@ -165,10 +168,17 @@ export class ResupplyReceipt {
     this.trace = trace;
   }
 
-  /** Réassort sans commande : ajoute un article reçu. Refusé s'il y est déjà. */
+  /**
+   * Réassort sans commande : ajoute un article reçu. Refusé s'il y est déjà —
+   * et, dans une autre unité, refusé en le disant (lot L2b-1).
+   */
   receive(line: ResupplyReceiptLine, trace: ResupplyReceiptTrace): void {
     this.assertUnordered();
-    if (this.lineList.some((existing) => existing.sku === line.sku)) {
+    const existing = this.lineList.find((candidate) => candidate.sku === line.sku);
+    if (existing !== undefined && existing.saleUnit !== line.saleUnit) {
+      throw new ResupplyLineUnitMismatchError(existing.sku, existing.label);
+    }
+    if (existing !== undefined) {
       throw new ReceiptLineAlreadyPresentError(line.sku);
     }
     this.lineList = [...this.lineList, line];
@@ -220,15 +230,23 @@ function assertServiceDay(serviceDay: string): void {
 /**
  * Les lignes attendues : l'emballé s'il est connu, sinon le demandé (lot
  * R3b, §13.1 point 6). Partagé avec la page de réception, qui montre
- * l'attendu avant « Réceptionner ».
+ * l'attendu avant « Réceptionner ». L'emballé du colisage compte des PIÈCES
+ * (`PackedResuppliesReader`) : il ne remplace jamais une ligne au poids, qui
+ * garde son demandé en grammes (le colisage au poids est le lot L2b-3).
  */
 export function expectedLinesOf(
   resupply: Pick<ReceivableResupply, "lines">,
   packed: ReadonlyMap<string, number> | null,
-): readonly { readonly sku: string; readonly label: string; readonly quantity: number }[] {
+): readonly {
+  readonly sku: string;
+  readonly label: string;
+  readonly quantity: number;
+  readonly saleUnit: SaleUnit;
+}[] {
   return resupply.lines.map((line) => ({
     sku: line.sku,
     label: line.label,
-    quantity: packed?.get(line.sku) ?? line.quantity,
+    quantity: (line.saleUnit === "piece" ? packed?.get(line.sku) : undefined) ?? line.quantity,
+    saleUnit: line.saleUnit,
   }));
 }

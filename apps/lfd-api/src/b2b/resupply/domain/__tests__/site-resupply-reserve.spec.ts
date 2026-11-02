@@ -12,7 +12,14 @@ const LAUNCHED_AT = new Date("2026-01-02T08:05:00Z");
 const LOU = { staffUserId: "staff_lou", name: "Lou", role: "supervisor" };
 
 function fromReserve(
-  lines = [SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 4 })],
+  lines = [
+    SiteResupplyLine.of({
+      sku: "CRO",
+      label: "Croissant",
+      quantity: 4,
+      saleUnit: "piece" as const,
+    }),
+  ],
   reserveDay = "2026-01-02",
 ): SiteResupply {
   return SiteResupply.sentFromReserve({
@@ -39,8 +46,18 @@ describe("SiteResupply.sentFromReserve — une sortie de réserve", () => {
 
   it("additionne un même article donné deux fois", () => {
     const resupply = fromReserve([
-      SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 4 }),
-      SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 2 }),
+      SiteResupplyLine.of({
+        sku: "CRO",
+        label: "Croissant",
+        quantity: 4,
+        saleUnit: "piece" as const,
+      }),
+      SiteResupplyLine.of({
+        sku: "CRO",
+        label: "Croissant",
+        quantity: 2,
+        saleUnit: "piece" as const,
+      }),
     ]);
 
     expect(resupply.lines.map((line) => [line.sku, line.quantity])).toEqual([["CRO", 6]]);

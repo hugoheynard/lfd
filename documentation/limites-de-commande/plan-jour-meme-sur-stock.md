@@ -733,3 +733,25 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
 - **Confirmé par Hugo le 2026-11-02** : la tenue par défaut est 30
   minutes (l'expiration boutique d'aujourd'hui ; le 2026-10-21 disait 15), bornée
   de 5 (le pas du balayage d'expiration) à 120.
+
+### Le bâti de L2b-1 (2026-11-02)
+
+- Migration `20261102210000_le_reassort_au_poids` : `sale_unit` (TEXT + CHECK
+  `piece` / `weight`, la forme de `order_lines.sale_unit`), défaut `piece`, sur
+  les lignes de demande et de reçu. Le brouillon du fournil (jsonb) porte une
+  clé `saleUnit` optionnelle, lue `piece` si absente.
+- L'unité est **figée à l'ajout** d'une ligne (lue au catalogue) ; un même
+  article ne mélange pas deux unités ; le poids se compte en grammes entiers.
+  `estimateStock`, le total des réassorts, l'onglet Stock et les prélèvements
+  comptent par (article, unité) ; le refus de baisse dit « 1,25 kg ».
+- **La garde d'envoi** (`weight-resupply-guard.ts`, dans `SiteResupply.place()`)
+  refuse qu'une demande au poids parte au fournil — par le comptoir, le
+  fournil ou la sortie de réserve. À retirer au lot L2b-2.
+- La liste d'articles proposée aux écrans **écarte encore le poids**
+  (`CatalogResupplyCatalogue.articles()`) : tant que les écrans saisissent des
+  pièces, « 5 » deviendrait 5 g. À retirer au lot L2b-4.
+- Pour L2b-2 : `production-range-resupplies.ts:40` pose toujours `piece` en
+  dur. Pour L2b-3 : `PackedResuppliesReader` rend des pièces sans unité.
+- E2E `shelf-stock-weight` : 5 kg reçus − 1 250 g sur stock = 3 750 g à la
+  réception et à la Supervision ; baisse refusée ; demande au poids refusée à
+  l'envoi.

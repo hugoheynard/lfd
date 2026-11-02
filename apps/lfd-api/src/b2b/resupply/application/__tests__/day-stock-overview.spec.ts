@@ -55,19 +55,23 @@ async function world(stopped: readonly string[], extra: readonly SiteResupplySna
   extra.forEach((resupply) => bench.resupplies.put(resupply));
   bench.resupplies.put(placed("r_cro", CRO_24));
   bench.resupplies.put(
-    placed("r_pac", [{ sku: "PAC", label: "Pain au chocolat", quantity: 6 }], {
-      target: "tomorrow",
-      origin: "bakehouse",
-      name: "Vitrine du matin",
-    }),
+    placed(
+      "r_pac",
+      [{ sku: "PAC", label: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const }],
+      {
+        target: "tomorrow",
+        origin: "bakehouse",
+        name: "Vitrine du matin",
+      },
+    ),
   );
   bench.resupplies.put(
-    placed("r_bag", [{ sku: "BAG", label: "Baguette", quantity: 3 }], {
+    placed("r_bag", [{ sku: "BAG", label: "Baguette", quantity: 3, saleUnit: "piece" as const }], {
       arrived: { at: AT, author: AUTHOR },
     }),
   );
   bench.resupplies.put(
-    placed("r_off", [{ sku: "FLA", label: "Flan", quantity: 2 }], {
+    placed("r_off", [{ sku: "FLA", label: "Flan", quantity: 2, saleUnit: "piece" as const }], {
       cancelled: { at: AT, author: AUTHOR },
     }),
   );
@@ -125,10 +129,24 @@ describe("l'onglet Stock de la Supervision (S1)", () => {
     const view = await world([DAY]);
 
     expect(view.sites[0]?.products).toEqual([
-      { sku: "TAR", label: "Tartelette", stock: 0, alert: "out_of_stock", expected: 0 },
-      { sku: "BAG", label: "Baguette", stock: 0, alert: null, expected: 3 },
-      { sku: "PAC", label: "Pain au chocolat", stock: 0, alert: null, expected: 5 },
-      { sku: "CRO", label: "Croissant", stock: 24, alert: null, expected: 0 },
+      {
+        sku: "TAR",
+        label: "Tartelette",
+        stock: 0,
+        alert: "out_of_stock",
+        expected: 0,
+        saleUnit: null,
+      },
+      { sku: "BAG", label: "Baguette", stock: 0, alert: null, expected: 3, saleUnit: "piece" },
+      {
+        sku: "PAC",
+        label: "Pain au chocolat",
+        stock: 0,
+        alert: null,
+        expected: 5,
+        saleUnit: "piece",
+      },
+      { sku: "CRO", label: "Croissant", stock: 24, alert: null, expected: 0, saleUnit: "piece" },
     ]);
   });
 
@@ -148,7 +166,7 @@ describe("l'onglet Stock de la Supervision (S1)", () => {
   it("dit « lancé » puis « parti », et « arrivé » l'emporte sur « parti »", async () => {
     const launched = { at: AT, byName: "Paul" };
     const departed = { at: AT, byName: "Léa" };
-    const line = [{ sku: "ECL", label: "Éclair", quantity: 2 }];
+    const line = [{ sku: "ECL", label: "Éclair", quantity: 2, saleUnit: "piece" as const }];
     const view = await world(
       [DAY],
       [

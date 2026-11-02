@@ -1,6 +1,7 @@
-import type { EstimatedStockLine } from "./estimated-stock.js";
+import { type EstimatedStockLine, stockKeyOf } from "./estimated-stock.js";
 import { expectedLinesOf, type ResupplyReceipt } from "./resupply-receipt.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
+import type { SaleUnit } from "./resupply-sale-unit.js";
 import type { PlacedSiteResupplySnapshot, ResupplyTarget } from "./site-resupply.js";
 import type { StockAlertLevel, StockAlertSnapshot } from "./stock-alert.js";
 
@@ -19,13 +20,18 @@ export interface DayStockResupply {
   readonly target: ResupplyTarget;
   readonly origin: ResupplyOrigin;
   readonly state: DayStockResupplyState;
+  /** La somme des lignes à la pièce. */
   readonly pieces: number;
+  /** La somme des lignes au poids, en grammes (lot L2b-1). */
+  readonly weightGrams: number;
 }
 
 /** Un produit du point : reçu, alerte vivante, attendu non réceptionné. */
 export interface DayStockProduct {
   readonly sku: string;
   readonly label: string;
+  /** L'unité de `stock` et `expected` ; `null` pour une alerte seule (aucune quantité). */
+  readonly saleUnit: SaleUnit | null;
   readonly stock: number;
   readonly alert: StockAlertLevel | null;
   readonly expected: number;
@@ -92,8 +98,15 @@ function resupplyOf(
     target: resupply.target,
     origin: resupply.origin,
     state: stateOf(resupply, received, planStopped),
-    pieces: resupply.lines.reduce((sum, line) => sum + line.quantity, 0),
+    pieces: sumOf(resupply, "piece"),
+    weightGrams: sumOf(resupply, "weight"),
   };
+}
+
+function sumOf(resupply: PlacedSiteResupplySnapshot, unit: SaleUnit): number {
+  return resupply.lines
+    .filter((line) => line.saleUnit === unit)
+    .reduce((sum, line) => sum + line.quantity, 0);
 }
 
 function stateOf(
@@ -117,37 +130,58 @@ function stateOf(
 }
 
 interface ProductTally {
+  readonly sku: string;
+  readonly saleUnit: SaleUnit | null;
   label: string;
   stock: number;
   alert: StockAlertLevel | null;
   expected: number;
 }
 
+/**
+ * Par (article, unité) — jamais pièces et grammes ensemble (lot L2b-1). Une
+ * alerte n'a pas d'unité : elle se pose sur chaque compte de l'article, ou
+ * seule, sans unité, s'il n'en a aucun.
+ */
 function productsOf(
   input: DayStockInput,
   pending: readonly PlacedSiteResupplySnapshot[],
 ): readonly DayStockProduct[] {
   const tallies = new Map<string, ProductTally>();
-  const tallyOf = (sku: string, label: string): ProductTally => {
-    const known = tallies.get(sku) ?? { label, stock: 0, alert: null, expected: 0 };
-    tallies.set(sku, known);
+  const tallyOf = (sku: string, saleUnit: SaleUnit, label: string): ProductTally => {
+    const key = stockKeyOf(sku, saleUnit);
+    const known = tallies.get(key) ?? { sku, saleUnit, label, stock: 0, alert: null, expected: 0 };
+    tallies.set(key, known);
     return known;
   };
   for (const line of input.stock) {
-    tallyOf(line.sku, line.label).stock += line.estimatedStock;
+    tallyOf(line.sku, line.saleUnit, line.label).stock += line.estimatedStock;
   }
   for (const resupply of pending) {
     for (const line of expectedLinesOf(resupply, input.packed.get(resupply.id) ?? null)) {
-      tallyOf(line.sku, line.label).expected += line.quantity;
+      tallyOf(line.sku, line.saleUnit, line.label).expected += line.quantity;
     }
   }
   for (const alert of input.alerts) {
-    tallyOf(alert.sku, alert.label).alert = alert.level;
+    const counted = [...tallies.values()].filter((tally) => tally.sku === alert.sku);
+    if (counted.length === 0) {
+      tallies.set(`alert:${alert.sku}`, {
+        sku: alert.sku,
+        saleUnit: null,
+        label: alert.label,
+        stock: 0,
+        alert: alert.level,
+        expected: 0,
+      });
+    }
+    for (const tally of counted) {
+      tally.alert = alert.level;
+    }
   }
   // Seuls entrent ceux qu'un reçu, un attendu ou une alerte a nommés : un
   // reçu corrigé à zéro reste un reçu, il est donc montré à 0.
-  return [...tallies]
-    .map(([sku, tally]) => ({ sku, ...tally }))
+  return [...tallies.values()]
+    .map((tally) => ({ ...tally }))
     .sort((a, b) => rankOf(a) - rankOf(b) || a.label.localeCompare(b.label, "fr"));
 }
 

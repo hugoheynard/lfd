@@ -20,7 +20,9 @@ import {
 } from "./site-resupply-errors.js";
 import { resupplyNameOf } from "./resupply-name.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
+import { ResupplyLineUnitMismatchError } from "./resupply-sale-unit-errors.js";
 import { SiteResupplyLine } from "./site-resupply-line.js";
+import { assertSendableToBakehouse } from "./weight-resupply-guard.js";
 import {
   type ResupplyTarget,
   serviceDayFor,
@@ -324,7 +326,10 @@ export class SiteResupply {
 
   /**
    * Ajoute un article au brouillon. Déjà présent, sa quantité s'ADDITIONNE :
-   * deux postes qui ajoutent des croissants en demandent la somme.
+   * deux postes qui ajoutent des croissants en demandent la somme — dans la
+   * même unité seulement (lot L2b-1).
+   *
+   * @throws {ResupplyLineUnitMismatchError} déjà présent dans l'autre unité.
    */
   addLine(line: SiteResupplyLine): void {
     this.assertDraft();
@@ -333,11 +338,10 @@ export class SiteResupply {
       this.lineList = [...this.lineList, line];
       return;
     }
-    const summed = SiteResupplyLine.of({
-      sku: existing.sku,
-      label: existing.label,
-      quantity: existing.quantity + line.quantity,
-    });
+    if (existing.saleUnit !== line.saleUnit) {
+      throw new ResupplyLineUnitMismatchError(existing.sku, existing.label);
+    }
+    const summed = existing.withQuantity(existing.quantity + line.quantity);
     this.lineList = this.lineList.map((candidate) =>
       candidate.sku === line.sku ? summed : candidate,
     );
@@ -347,7 +351,7 @@ export class SiteResupply {
   correctLine(sku: string, quantity: number): void {
     this.assertDraft();
     const existing = this.lineOf(sku);
-    const corrected = SiteResupplyLine.of({ sku, label: existing.label, quantity });
+    const corrected = existing.withQuantity(quantity);
     this.lineList = this.lineList.map((candidate) =>
       candidate.sku === sku ? corrected : candidate,
     );
@@ -376,13 +380,15 @@ export class SiteResupply {
    * `planStopped` dit si le plan du fournil pour cette journée est arrêté,
    * lu SOUS le verrou de la journée. « Au plus tôt » ignore les deux. La borne
    * est incluse : à la seconde de l'heure, c'est encore accepté. Une demande
-   * dont la journée est passée ne s'envoie plus.
+   * dont la journée est passée ne s'envoie plus. Une demande au poids ne part
+   * pas tant que le fournil ne sait pas la recevoir (lot L2b-1).
    */
   place(trace: SiteResupplyTrace, deadline: Date | null, planStopped: boolean): void {
     this.assertDraft();
     if (this.lineList.length === 0) {
       throw new EmptyResupplyError();
     }
+    assertSendableToBakehouse(this.lineList);
     if (instantToLocal(trace.at).day > this.serviceDay) {
       throw new ResupplyDayPassedError(this.serviceDay);
     }

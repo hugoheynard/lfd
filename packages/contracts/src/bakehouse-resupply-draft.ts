@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { orderSaleUnitSchema } from "./order.js";
 import { RESUPPLY_TARGETS, type ResupplyTarget } from "./site-resupply.js";
 
 /**
@@ -13,11 +14,17 @@ import { RESUPPLY_TARGETS, type ResupplyTarget } from "./site-resupply.js";
  * celle-ci se calcule à l'envoi, depuis la visée.
  */
 
-/** Une ligne : un article du catalogue et sa quantité, sans libellé — l'écran le lit au catalogue. */
+/**
+ * Une ligne : un article du catalogue et sa quantité, sans libellé — l'écran
+ * le lit au catalogue. `saleUnit` (lot L2b-1) : l'unité de la quantité, des
+ * grammes si `weight` ; absente, la ligne se lit à la pièce (tout brouillon
+ * d'avant). À l'envoi, elle doit être celle du catalogue.
+ */
 export const bakehouseResupplyDraftLineSchema = z
   .object({
     sku: z.string().trim().min(1),
     quantity: z.number().int().positive(),
+    saleUnit: orderSaleUnitSchema.optional(),
   })
   .strict();
 export type BakehouseResupplyDraftLine = z.infer<typeof bakehouseResupplyDraftLineSchema>;

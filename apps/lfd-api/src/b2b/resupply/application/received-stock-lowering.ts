@@ -1,6 +1,7 @@
+import { saleQuantity } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
-import type { EstimatedStockLine } from "../domain/estimated-stock.js";
+import { type EstimatedStockLine, stockKeyOf } from "../domain/estimated-stock.js";
 import { ShelfStockAlreadySoldError } from "../domain/resupply-receipt-errors.js";
 import { ShelfStockLock } from "../domain/shelf-stock-lock.js";
 import { DayShelfStock } from "./day-shelf-stock.js";
@@ -21,6 +22,9 @@ export interface LoweredArticle {
  * transaction, et refuse si l'article est passé sous ce que les commandes sur
  * stock en ont déjà pris. Le refus annule l'écriture avec la transaction.
  *
+ * Le compte se fait par unité (lot L2b-1) : des grammes ne se comparent qu'à
+ * des grammes, et le refus dit l'unité (« 1,25 kg … déjà vendus »).
+ *
  * Seule une BAISSE est refusée : un geste qui remonte un reçu sans atteindre
  * le déjà-pris passe — le refuser bloquerait la correction qui répare.
  *
@@ -36,20 +40,27 @@ export class ReceivedStockLowering {
   /** @throws {ShelfStockAlreadySoldError} la baisse passerait sous le déjà-vendu. */
   async lower(article: LoweredArticle, change: () => Promise<void>): Promise<void> {
     await this.lock.lock(article.serviceDay, article.siteId);
-    const before = await this.lineOf(article);
+    const before = await this.linesOf(article);
     await change();
-    const after = await this.lineOf(article);
-    if (after === null || after.estimatedStock >= 0) {
-      return;
-    }
-    if (after.receivedQuantity < (before?.receivedQuantity ?? 0)) {
-      const sold = after.receivedQuantity - after.estimatedStock;
-      throw new ShelfStockAlreadySoldError(article.sku, after.label, sold);
+    for (const after of (await this.linesOf(article)).values()) {
+      if (after.estimatedStock >= 0) {
+        continue;
+      }
+      const key = stockKeyOf(after.sku, after.saleUnit);
+      if (after.receivedQuantity < (before.get(key)?.receivedQuantity ?? 0)) {
+        const sold = saleQuantity(after.receivedQuantity - after.estimatedStock, after.saleUnit);
+        throw new ShelfStockAlreadySoldError(article.sku, after.label, sold);
+      }
     }
   }
 
-  private async lineOf(article: LoweredArticle): Promise<EstimatedStockLine | null> {
+  /** Les comptes de l'article, une entrée par unité (lot L2b-1) — jamais sommées. */
+  private async linesOf(article: LoweredArticle): Promise<ReadonlyMap<string, EstimatedStockLine>> {
     const lines = await this.stock.at(article.siteId, article.serviceDay);
-    return lines.find((line) => line.sku === article.sku) ?? null;
+    return new Map(
+      lines
+        .filter((line) => line.sku === article.sku)
+        .map((line) => [stockKeyOf(line.sku, line.saleUnit), line] as const),
+    );
   }
 }

@@ -23,7 +23,7 @@ const LAUNCHED: SiteResupplyView = {
   origin: 'counter',
   name: null,
   status: 'placed',
-  lines: [{ sku: 'CRO', label: 'Croissant', quantity: 6 }],
+  lines: [{ sku: 'CRO', label: 'Croissant', quantity: 6, saleUnit: 'piece' as const }],
   placedAt: '2026-01-03T06:00:00.000Z',
   placedBy: 'Lou',
   cancelledAt: null,

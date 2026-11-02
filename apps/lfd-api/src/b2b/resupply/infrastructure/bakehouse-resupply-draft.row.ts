@@ -1,6 +1,7 @@
 import { bakehouseResupplyDraftLineSchema } from "@lfd/contracts";
 import { z } from "zod";
 
+import { draftLineOf } from "../domain/bakehouse-resupply-draft-content.js";
 import { UnreadableBakehouseResupplyDraftError } from "../domain/bakehouse-resupply-draft-errors.js";
 import {
   type BakehouseResupplyDraft,
@@ -42,7 +43,7 @@ function linesOf(row: BakehouseResupplyDraftRow): readonly BakehouseResupplyDraf
   if (!parsed.success) {
     throw new UnreadableBakehouseResupplyDraftError(row.id, parsed.error);
   }
-  return parsed.data;
+  return parsed.data.map(draftLineOf);
 }
 
 function trace(at: Date, staffUserId: string, name: string, role: string): SiteResupplyTrace {
@@ -83,7 +84,11 @@ export function draftColumnsOf(draft: BakehouseResupplyDraft) {
     siteId: content.siteId,
     target: content.target,
     name: content.name,
-    lines: content.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+    lines: content.lines.map((line) => ({
+      sku: line.sku,
+      quantity: line.quantity,
+      saleUnit: line.saleUnit,
+    })),
     status: draft.status,
     sentResupplyId: draft.sentResupplyId,
     updatedAt: updated.at,

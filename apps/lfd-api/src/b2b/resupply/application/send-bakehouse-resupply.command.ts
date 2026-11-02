@@ -1,9 +1,12 @@
+import type { SaleUnit } from "../domain/resupply-sale-unit.js";
 import type { ResupplyTarget } from "../domain/site-resupply.js";
 
 /** Une ligne demandée, telle que l'écran l'envoie : le libellé est lu au catalogue. */
 export interface RequestedResupplyLine {
   readonly sku: string;
   readonly quantity: number;
+  /** Gardée par un brouillon (lot L2b-1) : doit être celle du catalogue. Absente : le catalogue la donne. */
+  readonly saleUnit?: SaleUnit | undefined;
 }
 
 /**

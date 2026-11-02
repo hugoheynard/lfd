@@ -1,4 +1,4 @@
-import { WeightArticleInResupplyError } from "./resupply-receipt-errors.js";
+import type { SaleUnit } from "./resupply-sale-unit.js";
 
 /**
  * Un article qu'un site peut recevoir : le SKU produit, son nom publié et sa
@@ -10,11 +10,11 @@ export interface ResupplyArticle {
   readonly categoryId: string;
   readonly categoryName: string;
   /**
-   * L'unité de vente. Un article au poids ne se réassortit pas : les quantités
-   * d'un réassort sont des pièces (`vente-au-poids.md`, §2 « hors de ce
-   * plan ») — cf. {@link resuppliable}.
+   * L'unité de vente, FIGÉE sur la ligne de réassort à son ajout (lot L2b-1,
+   * Hugo 2026-11-02 : « un article au poids doit avoir un stock au poids ») :
+   * au poids, la quantité compte des grammes.
    */
-  readonly saleUnit: "piece" | "weight";
+  readonly saleUnit: SaleUnit;
 }
 
 /**
@@ -28,18 +28,4 @@ export abstract class ResupplyCatalogue {
 
   /** L'article publié sous ce SKU produit, ou `null` s'il est inconnu ou masqué. */
   abstract article(sku: string): Promise<ResupplyArticle | null>;
-}
-
-/**
- * **L'article, s'il se réassortit** — refuse un article vendu au poids : un
- * réassort compte des pièces, et un poids y serait compté mille fois
- * (`documentation/pricing/vente-au-poids.md`, §2, Hugo 2026-10-28).
- *
- * @throws {WeightArticleInResupplyError} l'article se vend au poids.
- */
-export function resuppliable(article: ResupplyArticle): ResupplyArticle {
-  if (article.saleUnit === "weight") {
-    throw new WeightArticleInResupplyError(article.sku);
-  }
-  return article;
 }

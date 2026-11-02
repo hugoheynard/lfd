@@ -1,3 +1,4 @@
+import type { SaleUnit } from "./resupply-sale-unit.js";
 import {
   IncompleteResupplyLineError,
   InvalidRequestedQuantityError,
@@ -5,21 +6,24 @@ import {
 
 /**
  * **Une ligne demandée** : un article du catalogue publié (SKU produit), son
- * libellé FIGÉ au geste, la quantité demandée. Aucun montant : un réassort est
- * un mouvement interne, jamais une vente.
+ * libellé et son unité FIGÉS au geste, la quantité demandée — des pièces, ou
+ * des GRAMMES si l'unité est `weight` (lot L2b-1). Aucun montant : un
+ * réassort est un mouvement interne, jamais une vente.
  */
 export class SiteResupplyLine {
   private constructor(
     readonly sku: string,
     readonly label: string,
     readonly quantity: number,
+    readonly saleUnit: SaleUnit,
   ) {}
 
-  /** Refusée si l'article manque ou si la quantité n'est pas un entier > 0. */
+  /** Refusée si l'article manque ou si la quantité n'est pas un entier > 0 (pièces ou grammes). */
   static of(input: {
     readonly sku: string;
     readonly label: string;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
   }): SiteResupplyLine {
     const sku = input.sku.trim();
     const label = input.label.trim();
@@ -29,6 +33,11 @@ export class SiteResupplyLine {
     if (!Number.isInteger(input.quantity) || input.quantity < 1) {
       throw new InvalidRequestedQuantityError(input.quantity);
     }
-    return new SiteResupplyLine(sku, label, input.quantity);
+    return new SiteResupplyLine(sku, label, input.quantity, input.saleUnit);
+  }
+
+  /** La même ligne, une autre quantité dans la MÊME unité. */
+  withQuantity(quantity: number): SiteResupplyLine {
+    return SiteResupplyLine.of({ ...this, quantity });
   }
 }

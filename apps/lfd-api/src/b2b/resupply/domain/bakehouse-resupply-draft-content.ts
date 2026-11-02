@@ -6,15 +6,36 @@ import {
 } from "./bakehouse-resupply-draft-errors.js";
 import { resupplyNameOf } from "./resupply-name.js";
 import { InvalidRequestedQuantityError } from "./site-resupply-errors.js";
+import type { SaleUnit } from "./resupply-sale-unit.js";
 import type { ResupplyTarget } from "./site-resupply-snapshot.js";
+
+const PIECE: SaleUnit = "piece";
 
 /** Au plus 200 articles par brouillon — la borne du contrat. */
 export const BAKEHOUSE_DRAFT_MAX_LINES = 200;
 
-/** Une ligne de brouillon : un article et sa quantité, sans libellé. */
+/**
+ * Une ligne de brouillon : un article, sa quantité et son unité, sans libellé.
+ * Au poids, la quantité compte des grammes (lot L2b-1).
+ */
 export interface BakehouseResupplyDraftLine {
   readonly sku: string;
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
+}
+
+/**
+ * Une ligne telle que l'écran ou la base la donnent, l'unité lue : absente,
+ * c'est la pièce — tout brouillon écrit avant le lot L2b-1 l'était, et le
+ * contrat (`bakehouseResupplyDraftLineSchema`) le dit. À l'envoi, l'unité
+ * est confrontée au catalogue (`catalogueLine`).
+ */
+export function draftLineOf(line: {
+  readonly sku: string;
+  readonly quantity: number;
+  readonly saleUnit?: SaleUnit | undefined;
+}): BakehouseResupplyDraftLine {
+  return { sku: line.sku, quantity: line.quantity, saleUnit: line.saleUnit ?? PIECE };
 }
 
 /**
@@ -58,7 +79,7 @@ export function draftContentOf(
       throw new DuplicateBakehouseResupplyDraftLineError(sku);
     }
     seen.add(sku);
-    return { sku, quantity: line.quantity };
+    return { sku, quantity: line.quantity, saleUnit: line.saleUnit };
   });
   return {
     siteId: input.siteId,

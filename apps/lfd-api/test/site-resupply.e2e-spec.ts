@@ -149,7 +149,7 @@ describe("commander un réassort", () => {
         target: "asap",
         origin: "counter",
         status: "placed",
-        lines: [{ sku: article.sku, label: article.name, quantity: 12 }],
+        lines: [{ sku: article.sku, label: article.name, quantity: 12, saleUnit: "piece" }],
       }),
     ]);
 
@@ -195,7 +195,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
         id,
         origin: "bakehouse",
         status: "placed",
-        lines: [{ sku: article.sku, label: article.name, quantity: 10 }],
+        lines: [{ sku: article.sku, label: article.name, quantity: 10, saleUnit: "piece" }],
       }),
     ]);
   });
@@ -377,7 +377,9 @@ describe("les droits", () => {
 
     expect(view.days.map((day) => day.serviceDay)).toEqual([TODAY, TOMORROW]);
     expect(view.days[0]?.sites.map((site) => site.siteLabel)).toEqual(["Val Village"]);
-    expect(view.days[0]?.totals).toEqual([{ sku: article.sku, label: article.name, quantity: 5 }]);
+    expect(view.days[0]?.totals).toEqual([
+      { sku: article.sku, label: article.name, quantity: 5, saleUnit: "piece" },
+    ]);
     expect(view.days[1]?.sites).toEqual([]);
   });
 });

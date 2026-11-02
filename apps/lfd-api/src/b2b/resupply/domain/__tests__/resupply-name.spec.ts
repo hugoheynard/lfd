@@ -9,7 +9,14 @@ const TRACE = { at: EVENING, author: { staffUserId: "s", name: "Lou", role: "cou
 
 function draft(): SiteResupply {
   const resupply = SiteResupply.draft({ id: "rs1", siteId: "site_1", target: "asap", at: EVENING });
-  resupply.addLine(SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 2 }));
+  resupply.addLine(
+    SiteResupplyLine.of({
+      sku: "CRO",
+      label: "Croissant",
+      quantity: 2,
+      saleUnit: "piece" as const,
+    }),
+  );
   return resupply;
 }
 
@@ -47,7 +54,14 @@ describe("le nom d'un réassort (R1g)", () => {
   });
 
   it("le fournil le pose à l'envoi, et un nom trop long refuse l'envoi entier", () => {
-    const lines = [SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 2 })];
+    const lines = [
+      SiteResupplyLine.of({
+        sku: "CRO",
+        label: "Croissant",
+        quantity: 2,
+        saleUnit: "piece" as const,
+      }),
+    ];
     const base = { id: "rs2", siteId: "site_1", target: "asap" as const, lines, trace: TRACE };
     const sent = SiteResupply.sentByBakehouse({
       ...base,

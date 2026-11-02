@@ -19,21 +19,37 @@ async function stocked() {
 describe("le reste du jour, décompté (lot L2)", () => {
   it("la réception montre le reçu moins ce que les commandes sur stock ont pris", async () => {
     const bench = await stocked();
-    bench.draws.set(DAY, SITE, [{ sku: "CRO", label: "Croissant", quantity: 7 }]);
+    bench.draws.set(DAY, SITE, [
+      { sku: "CRO", label: "Croissant", quantity: 7, saleUnit: "piece" as const },
+    ]);
 
     const view = await bench.read.execute(new GetResupplyReceiptQuery(SITE, DAY));
 
     expect(view.stock).toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 24, estimatedStock: 17 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 24,
+        estimatedStock: 17,
+        saleUnit: "piece",
+      },
     ]);
   });
 
   it("ne mélange pas les points : un prélèvement ailleurs ne touche pas le Village", async () => {
     const bench = await stocked();
-    bench.draws.set(DAY, OTHER, [{ sku: "CRO", label: "Croissant", quantity: 7 }]);
+    bench.draws.set(DAY, OTHER, [
+      { sku: "CRO", label: "Croissant", quantity: 7, saleUnit: "piece" as const },
+    ]);
 
     await expect(bench.stock.at(SITE, DAY)).resolves.toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 24, estimatedStock: 24 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 24,
+        estimatedStock: 24,
+        saleUnit: "piece",
+      },
     ]);
   });
 });
@@ -41,7 +57,9 @@ describe("le reste du jour, décompté (lot L2)", () => {
 describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
   it("refuse de corriger un reçu réceptionné sous le déjà-vendu, en nommant le nombre", async () => {
     const bench = await stocked();
-    bench.draws.set(DAY, SITE, [{ sku: "CRO", label: "Croissant", quantity: 12 }]);
+    bench.draws.set(DAY, SITE, [
+      { sku: "CRO", label: "Croissant", quantity: 12, saleUnit: "piece" as const },
+    ]);
 
     const refused = bench.correctReceived.execute(
       new CorrectReceivedResupplyLineCommand(SITE, "r_cro", "CRO", 11, "s"),
@@ -54,7 +72,9 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
 
   it("accepte de corriger jusqu'au déjà-vendu, sous le verrou du stock", async () => {
     const bench = await stocked();
-    bench.draws.set(DAY, SITE, [{ sku: "CRO", label: "Croissant", quantity: 12 }]);
+    bench.draws.set(DAY, SITE, [
+      { sku: "CRO", label: "Croissant", quantity: 12, saleUnit: "piece" as const },
+    ]);
 
     await bench.correctReceived.execute(
       new CorrectReceivedResupplyLineCommand(SITE, "r_cro", "CRO", 12, "s"),
@@ -62,14 +82,22 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
 
     expect(bench.lock.taken).toEqual([`${DAY}:${SITE}`]);
     await expect(bench.stock.at(SITE, DAY)).resolves.toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 12, estimatedStock: 0 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 12,
+        estimatedStock: 0,
+        saleUnit: "piece",
+      },
     ]);
   });
 
   it("refuse de corriger ou de retirer une ligne sans commande quand le reste passerait sous zéro", async () => {
     const bench = await stocked();
     await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "PAC", 5, "s"));
-    bench.draws.set(DAY, SITE, [{ sku: "PAC", label: "Pain au chocolat", quantity: 3 }]);
+    bench.draws.set(DAY, SITE, [
+      { sku: "PAC", label: "Pain au chocolat", quantity: 3, saleUnit: "piece" as const },
+    ]);
 
     await expect(
       bench.correct.execute(new CorrectResupplyLineCommand(SITE, DAY, "PAC", 2, "s")),
@@ -81,7 +109,9 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
 
   it("laisse retirer une ligne sans commande quand les autres reçus couvrent le déjà-vendu", async () => {
     const bench = await stocked();
-    bench.draws.set(DAY, SITE, [{ sku: "CRO", label: "Croissant", quantity: 20 }]);
+    bench.draws.set(DAY, SITE, [
+      { sku: "CRO", label: "Croissant", quantity: 20, saleUnit: "piece" as const },
+    ]);
 
     await bench.withdraw.execute(new WithdrawResupplyLineCommand(SITE, DAY, "CRO", "s"));
 
@@ -91,7 +121,9 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
   it("ne refuse pas une hausse, même si le reste reste sous zéro", async () => {
     const bench = await stocked();
     await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "PAC", 1, "s"));
-    bench.draws.set(DAY, SITE, [{ sku: "PAC", label: "Pain au chocolat", quantity: 4 }]);
+    bench.draws.set(DAY, SITE, [
+      { sku: "PAC", label: "Pain au chocolat", quantity: 4, saleUnit: "piece" as const },
+    ]);
 
     await bench.correct.execute(new CorrectResupplyLineCommand(SITE, DAY, "PAC", 2, "s"));
 
@@ -100,6 +132,68 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
       label: "Pain au chocolat",
       receivedQuantity: 2,
       estimatedStock: -2,
+      saleUnit: "piece",
+    });
+  });
+});
+
+describe("le reste du jour au poids (lot L2b-1)", () => {
+  /** 5 kg de saumon reçus sans commande, 1,25 kg pris par une commande sur stock. */
+  async function weighed() {
+    const bench = await stocked();
+    await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "SAU", 5000, "s"));
+    bench.draws.set(DAY, SITE, [
+      { sku: "SAU", label: "Saumon gravlax", quantity: 1250, saleUnit: "weight" as const },
+      { sku: "CRO", label: "Croissant", quantity: 3, saleUnit: "piece" as const },
+    ]);
+    return bench;
+  }
+
+  it("décompte des grammes, à part des pièces", async () => {
+    const bench = await weighed();
+
+    await expect(bench.stock.at(SITE, DAY)).resolves.toEqual([
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 24,
+        estimatedStock: 21,
+        saleUnit: "piece",
+      },
+      {
+        sku: "SAU",
+        label: "Saumon gravlax",
+        receivedQuantity: 5000,
+        estimatedStock: 3750,
+        saleUnit: "weight",
+      },
+    ]);
+  });
+
+  it("refuse une baisse sous le déjà-vendu en disant le poids", async () => {
+    const bench = await weighed();
+
+    const refused = bench.correct.execute(
+      new CorrectResupplyLineCommand(SITE, DAY, "SAU", 1000, "s"),
+    );
+
+    await expect(refused).rejects.toBeInstanceOf(ShelfStockAlreadySoldError);
+    await expect(refused).rejects.toThrow(
+      "1,25 kg « Saumon gravlax » déjà vendus sur stock aujourd'hui : le reçu ne peut pas descendre sous 1,25 kg",
+    );
+  });
+
+  it("accepte une baisse jusqu'au déjà-vendu", async () => {
+    const bench = await weighed();
+
+    await bench.correct.execute(new CorrectResupplyLineCommand(SITE, DAY, "SAU", 1250, "s"));
+
+    await expect(bench.stock.at(SITE, DAY)).resolves.toContainEqual({
+      sku: "SAU",
+      label: "Saumon gravlax",
+      receivedQuantity: 1250,
+      estimatedStock: 0,
+      saleUnit: "weight",
     });
   });
 });

@@ -19,7 +19,14 @@ const LOU = { staffUserId: "staff_lou", name: "Lou", role: "counter" };
 
 function placed(target: ResupplyTarget = "asap"): SiteResupply {
   const resupply = SiteResupply.draft({ id: "rs1", siteId: "site_1", target, at: PLACED_AT });
-  resupply.addLine(SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 12 }));
+  resupply.addLine(
+    SiteResupplyLine.of({
+      sku: "CRO",
+      label: "Croissant",
+      quantity: 12,
+      saleUnit: "piece" as const,
+    }),
+  );
   resupply.place({ at: PLACED_AT, author: LOU }, null, false);
   return resupply;
 }

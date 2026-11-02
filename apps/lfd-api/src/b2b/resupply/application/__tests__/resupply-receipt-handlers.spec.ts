@@ -36,7 +36,15 @@ describe("« Réceptionner » un réassort", () => {
         departedBy: null,
         receivedAt: null,
         receivedBy: null,
-        lines: [{ sku: "CRO", label: "Croissant", expectedQuantity: 24, receivedQuantity: null }],
+        lines: [
+          {
+            sku: "CRO",
+            label: "Croissant",
+            expectedQuantity: 24,
+            receivedQuantity: null,
+            saleUnit: "piece",
+          },
+        ],
       },
     ]);
     expect(view.stock).toEqual([]);
@@ -79,7 +87,13 @@ describe("« Réceptionner » un réassort", () => {
       lines: [{ sku: "CRO", expectedQuantity: 24, receivedQuantity: 24 }],
     });
     expect(view.stock).toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 24, estimatedStock: 24 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 24,
+        estimatedStock: 24,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -143,8 +157,8 @@ describe("« Réceptionner » un réassort", () => {
     const { resupplies, alerts, receiveResupply, correctReceived } = setup();
     resupplies.put(
       placed("resupply_1", [
-        { sku: "CRO", label: "Croissant", quantity: 24 },
-        { sku: "PAC", label: "Pain au chocolat", quantity: 6 },
+        { sku: "CRO", label: "Croissant", quantity: 24, saleUnit: "piece" as const },
+        { sku: "PAC", label: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
       ]),
     );
     const trace = { at: AT, author: AUTHOR };
@@ -182,7 +196,13 @@ describe("un écart après réception", () => {
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.receptions[0]?.lines).toEqual([
-      { sku: "CRO", label: "Croissant", expectedQuantity: 24, receivedQuantity: 20 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        expectedQuantity: 24,
+        receivedQuantity: 20,
+        saleUnit: "piece",
+      },
     ]);
     expect(view.stock[0]?.estimatedStock).toBe(20);
   });
@@ -204,9 +224,13 @@ describe("le stock du jour", () => {
     const { resupplies, receiveResupply, receive, read } = setup();
     resupplies.put(placed("resupply_1", CRO_24));
     resupplies.put(
-      placed("resupply_2", [{ sku: "CRO", label: "Croissant", quantity: 6 }], {
-        target: "tomorrow",
-      }),
+      placed(
+        "resupply_2",
+        [{ sku: "CRO", label: "Croissant", quantity: 6, saleUnit: "piece" as const }],
+        {
+          target: "tomorrow",
+        },
+      ),
     );
     resupplies.put(placed("resupply_3", CRO_24));
     resupplies.put(placed("resupply_tomorrow", CRO_24, { serviceDay: "2026-01-03" }));
@@ -222,7 +246,13 @@ describe("le stock du jour", () => {
       ["resupply_3", "expected"],
     ]);
     expect(view.stock).toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 32, estimatedStock: 32 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 32,
+        estimatedStock: 32,
+        saleUnit: "piece",
+      },
     ]);
   });
 

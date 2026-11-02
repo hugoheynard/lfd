@@ -206,7 +206,13 @@ describe("« Réceptionner » un réassort", () => {
     const view = await readReceipt(agent, siteId);
     expect(view.receptions.map((reception) => reception.resupplyId)).toEqual([morning, noon]);
     expect(view.stock).toEqual([
-      { sku: first.sku, label: first.name, receivedQuantity: 19, estimatedStock: 19 },
+      {
+        sku: first.sku,
+        label: first.name,
+        receivedQuantity: 19,
+        estimatedStock: 19,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -280,7 +286,13 @@ describe("les trous fermés au lot R1d", () => {
       .expect(409);
     expect(refused.body).toMatchObject({ code: "resupply.order.already_received" });
     expect((await readReceipt(agent, siteId)).stock).toEqual([
-      { sku: first.sku, label: first.name, receivedQuantity: 8, estimatedStock: 8 },
+      {
+        sku: first.sku,
+        label: first.name,
+        receivedQuantity: 8,
+        estimatedStock: 8,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -331,11 +343,17 @@ describe("le réassort sans commande", () => {
 
     const view = await readReceipt(agent, siteId);
     expect(view.unordered.lines).toEqual([
-      { sku: first.sku, label: first.name, receivedQuantity: 10 },
+      { sku: first.sku, label: first.name, receivedQuantity: 10, saleUnit: "piece" },
     ]);
     expect(view.unordered.updatedBy).not.toBeNull();
     expect(view.stock).toEqual([
-      { sku: first.sku, label: first.name, receivedQuantity: 10, estimatedStock: 10 },
+      {
+        sku: first.sku,
+        label: first.name,
+        receivedQuantity: 10,
+        estimatedStock: 10,
+        saleUnit: "piece",
+      },
     ]);
   });
 

@@ -23,7 +23,12 @@ function resupply(
     origin: 'counter',
     name,
     status: 'placed',
-    lines: lines.map(([sku, label, quantity]) => ({ sku, label, quantity })),
+    lines: lines.map(([sku, label, quantity]) => ({
+      sku,
+      label,
+      quantity,
+      saleUnit: 'piece' as const,
+    })),
     placedAt: '2026-01-02T17:00:00.000Z',
     placedBy: null,
     cancelledAt: null,
@@ -57,17 +62,30 @@ const VIEW: ResupplyProductionDayView = {
     },
   ],
   totals: [
-    { sku: 'CRO', label: 'Croissant', quantity: 12 },
-    { sku: 'OLD', label: 'Article retiré', quantity: 3 },
+    { sku: 'CRO', label: 'Croissant', quantity: 12, saleUnit: 'piece' as const },
+    { sku: 'OLD', label: 'Article retiré', quantity: 3, saleUnit: 'piece' as const },
   ],
   articles: [
-    { sku: 'BAG', name: 'Baguette', categoryId: 'fam_bread', categoryName: 'Pains' },
-    { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+    {
+      sku: 'BAG',
+      name: 'Baguette',
+      categoryId: 'fam_bread',
+      categoryName: 'Pains',
+      saleUnit: 'piece' as const,
+    },
+    {
+      sku: 'CRO',
+      name: 'Croissant',
+      categoryId: 'fam_morning',
+      categoryName: 'Viennoiseries',
+      saleUnit: 'piece' as const,
+    },
     {
       sku: 'PAC',
       name: 'Pain au chocolat',
       categoryId: 'fam_morning',
       categoryName: 'Viennoiseries',
+      saleUnit: 'piece',
     },
   ],
 };

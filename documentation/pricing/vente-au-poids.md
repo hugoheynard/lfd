@@ -132,10 +132,20 @@ manifeste du transfert interne porte l'unité ; un réassort est toujours
 
 ## 4. Hors champ
 
-Refusés au domaine pour un article au poids : **les abonnements, les
-engagements de volume, le réassort des boutiques**. Leurs quantités sont des
-entiers de pièces sans unité ; les ouvrir est un autre chantier, inscrit à la
+Refusés au domaine pour un article au poids : **les abonnements et les
+engagements de volume**. Leurs quantités sont des entiers de pièces sans
+unité ; les ouvrir est un autre chantier, inscrit à la
 [carte des chantiers](../carte-des-chantiers.md).
+
+**Le réassort des boutiques s'ouvre au poids** depuis le 2026-11-02 (Hugo :
+« un article au poids doit avoir un stock au poids ») — lot L2b du circuit du
+jour J ([`../limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md) §14).
+Bâti : le commerce (L2b-1) — chaque ligne de demande et de reçu porte son
+unité figée (`sale_unit`), le stock du jour se compte par article et unité ;
+une demande au poids **ne part pas encore au fournil** (refus
+`resupply.sale_unit.weight_not_sendable`) tant que le fournil, le colisage et
+les écrans (L2b-2 à L2b-4) ne la savent pas ; le réassort sans commande du
+comptoir l'accepte.
 
 Aucune pesée réelle, aucun ajustement après la commande.
 

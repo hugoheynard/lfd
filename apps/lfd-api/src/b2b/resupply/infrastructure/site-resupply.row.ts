@@ -1,3 +1,4 @@
+import { resupplySaleUnitOf } from "../domain/resupply-sale-unit.js";
 import { resupplyOriginOf } from "../domain/resupply-origin.js";
 import { resupplyTargetOf, type SiteResupplySnapshot } from "../domain/site-resupply.js";
 
@@ -9,7 +10,7 @@ export function dayColumn(serviceDay: string): Date {
 /** Les lignes, dans l'ordre de saisie. */
 export const SITE_RESUPPLY_LINES = {
   orderBy: { position: "asc" },
-  select: { sku: true, label: true, quantity: true },
+  select: { sku: true, label: true, quantity: true, saleUnit: true },
 } as const;
 
 /** La ligne telle que Prisma la rend, avec ses lignes. */
@@ -41,6 +42,7 @@ export interface SiteResupplyRow {
     readonly sku: string;
     readonly label: string;
     readonly quantity: number;
+    readonly saleUnit: string;
   }[];
 }
 
@@ -58,7 +60,12 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
     version: row.version,
     origin: resupplyOriginOf(row.origin),
     name: row.name,
-    lines: row.lines,
+    lines: row.lines.map((line) => ({
+      sku: line.sku,
+      label: line.label,
+      quantity: line.quantity,
+      saleUnit: resupplySaleUnitOf(line.sku, line.saleUnit),
+    })),
     placed:
       row.placedAt === null
         ? null

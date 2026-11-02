@@ -27,6 +27,7 @@ import { SendBakehouseResupplyDraftCommand } from "../application/send-bakehouse
 import { ListResupplyUsedNamesQuery } from "../application/list-resupply-used-names.query.js";
 import { ListResupplyArticlesQuery } from "../application/list-resupply-articles.query.js";
 import { MarkResupplyMountedCommand } from "../application/mark-resupply-mounted.command.js";
+import { draftLineOf } from "../domain/bakehouse-resupply-draft-content.js";
 import { SendBakehouseResupplyCommand } from "../application/send-bakehouse-resupply.command.js";
 
 /**
@@ -165,5 +166,10 @@ export class AdminBakehouseResuppliesController {
 
 /** Le contenu du brouillon tel que l'écran l'envoie. */
 function contentOf(body: SaveBakehouseResupplyDraftPayload) {
-  return { siteId: body.siteId, target: body.target, name: body.name, lines: body.lines };
+  return {
+    siteId: body.siteId,
+    target: body.target,
+    name: body.name,
+    lines: body.lines.map(draftLineOf),
+  };
 }

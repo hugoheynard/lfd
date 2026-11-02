@@ -43,12 +43,14 @@ export function receptionView(
             label: line.label,
             expectedQuantity: line.quantity,
             receivedQuantity: null,
+            saleUnit: line.saleUnit,
           }))
         : receipt.lines.map((line) => ({
             sku: line.sku,
             label: line.label,
             expectedQuantity: line.expectedQuantity ?? 0,
             receivedQuantity: line.receivedQuantity,
+            saleUnit: line.saleUnit,
           })),
   };
 }
@@ -61,6 +63,7 @@ export function unorderedView(receipt: ResupplyReceipt | null): UnorderedReceipt
       sku: line.sku,
       label: line.label,
       receivedQuantity: line.receivedQuantity ?? 0,
+      saleUnit: line.saleUnit,
     })),
     updatedAt: change === null ? null : change.at.toISOString(),
     updatedBy: change === null ? null : nameOf(change.author.name),

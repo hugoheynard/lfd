@@ -18,6 +18,7 @@ function linesOf(receipt: ResupplyReceipt) {
     expectedQuantity: line.expectedQuantity,
     // Un reçu écrit est reçu (garde de `save`) : chaque ligne porte son reçu.
     quantity: line.receivedQuantity ?? 0,
+    saleUnit: line.saleUnit,
     position,
   }));
 }

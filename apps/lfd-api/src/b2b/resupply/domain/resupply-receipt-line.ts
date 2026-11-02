@@ -2,6 +2,7 @@ import {
   IncompleteReceiptLineError,
   InvalidReceivedQuantityError,
 } from "./resupply-receipt-errors.js";
+import type { SaleUnit } from "./resupply-sale-unit.js";
 
 /** Une ligne telle que l'adaptateur la relit. */
 export interface ResupplyReceiptLineSnapshot {
@@ -9,11 +10,14 @@ export interface ResupplyReceiptLineSnapshot {
   readonly label: string;
   readonly expectedQuantity: number | null;
   readonly receivedQuantity: number | null;
+  /** L'unité des deux quantités, figée à l'ajout (lot L2b-1) : des grammes si `weight`. */
+  readonly saleUnit: SaleUnit;
 }
 
 /**
  * **Une ligne d'un reçu** : un article (SKU produit), son libellé FIGÉ, ce qui
- * était **attendu** et ce qui a été **reçu** (lot R2,
+ * était **attendu** et ce qui a été **reçu**, dans l'unité figée de la ligne —
+ * pièces, ou grammes au poids (lot L2b-1) (lot R2,
  * `reassort-boutiques/plan-reapprovisionnement.md` §12). Aucun montant : un
  * réapprovisionnement est un mouvement interne, jamais une vente.
  *
@@ -29,6 +33,7 @@ export class ResupplyReceiptLine {
     readonly label: string,
     readonly expectedQuantity: number | null,
     readonly receivedQuantity: number | null,
+    readonly saleUnit: SaleUnit,
   ) {}
 
   /** Une ligne attendue d'un réassort, pas encore reçue. */
@@ -36,12 +41,14 @@ export class ResupplyReceiptLine {
     readonly sku: string;
     readonly label: string;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
   }): ResupplyReceiptLine {
     return ResupplyReceiptLine.of({
       sku: input.sku,
       label: input.label,
       expectedQuantity: input.quantity,
       receivedQuantity: null,
+      saleUnit: input.saleUnit,
     });
   }
 
@@ -50,12 +57,14 @@ export class ResupplyReceiptLine {
     readonly sku: string;
     readonly label: string;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
   }): ResupplyReceiptLine {
     return ResupplyReceiptLine.of({
       sku: input.sku,
       label: input.label,
       expectedQuantity: null,
       receivedQuantity: input.quantity,
+      saleUnit: input.saleUnit,
     });
   }
 
@@ -72,7 +81,13 @@ export class ResupplyReceiptLine {
     if (input.receivedQuantity !== null) {
       assertQuantity(input.receivedQuantity);
     }
-    return new ResupplyReceiptLine(sku, label, input.expectedQuantity, input.receivedQuantity);
+    return new ResupplyReceiptLine(
+      sku,
+      label,
+      input.expectedQuantity,
+      input.receivedQuantity,
+      input.saleUnit,
+    );
   }
 
   /** « Réceptionner » : l'attendu devient le reçu, tel quel. */
@@ -82,13 +97,20 @@ export class ResupplyReceiptLine {
       this.label,
       this.expectedQuantity,
       this.expectedQuantity ?? 0,
+      this.saleUnit,
     );
   }
 
   /** La même ligne, reçu corrigé (un écart). L'attendu et le libellé ne bougent pas. */
   withReceived(quantity: number): ResupplyReceiptLine {
     assertQuantity(quantity);
-    return new ResupplyReceiptLine(this.sku, this.label, this.expectedQuantity, quantity);
+    return new ResupplyReceiptLine(
+      this.sku,
+      this.label,
+      this.expectedQuantity,
+      quantity,
+      this.saleUnit,
+    );
   }
 }
 

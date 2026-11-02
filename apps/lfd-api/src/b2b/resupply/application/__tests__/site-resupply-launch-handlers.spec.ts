@@ -101,7 +101,12 @@ function launched(resupplyId: string, siteId = VILLAGE) {
 
 async function sendAsap(place: SendBakehouseResupplyHandler): Promise<string> {
   return place.execute(
-    new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 3 }], "s"),
+    new SendBakehouseResupplyCommand(
+      VILLAGE,
+      "asap",
+      [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
+      "s",
+    ),
   );
 }
 
@@ -136,7 +141,12 @@ describe("annuler un « au plus tôt » lancé (R4a)", () => {
   it("ne pose pas la question au fournil pour un « pour demain »", async () => {
     const { place, cancel, launches } = setup();
     const id = await place.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, "tomorrow", [{ sku: "CRO", quantity: 3 }], "s"),
+      new SendBakehouseResupplyCommand(
+        VILLAGE,
+        "tomorrow",
+        [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
+        "s",
+      ),
     );
 
     await cancel.execute(new CancelSiteResupplyCommand(VILLAGE, id, "s"));

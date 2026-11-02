@@ -160,7 +160,9 @@ describe("la demande en cours", () => {
       .send({ version: draft.version })
       .expect(204);
     draft = await draftOf(agent, siteId, "asap");
-    expect(draft.lines).toEqual([{ sku: croissant.sku, label: croissant.name, quantity: 10 }]);
+    expect(draft.lines).toEqual([
+      { sku: croissant.sku, label: croissant.name, quantity: 10, saleUnit: "piece" },
+    ]);
 
     // Rien d'envoyé : le fournil ne voit rien.
     const bakehouse = await holderOf("fournil", [
@@ -177,7 +179,7 @@ describe("la demande en cours", () => {
       await bakehouse.get("/admin/site-resupplies/to-produce").expect(200),
     );
     expect(after.days[0]?.totals).toEqual([
-      { sku: croissant.sku, label: croissant.name, quantity: 10 },
+      { sku: croissant.sku, label: croissant.name, quantity: 10, saleUnit: "piece" },
     ]);
     const view = await listOf(agent, siteId);
     expect(view.drafts).toEqual([]);

@@ -27,13 +27,18 @@ const RESUPPLY: ReceivableResupply = {
   siteId: "site_1",
   serviceDay: DAY,
   lines: [
-    { sku: "CRO", label: "Croissant", quantity: 24 },
-    { sku: "PAC", label: "Pain au chocolat", quantity: 12 },
+    { sku: "CRO", label: "Croissant", quantity: 24, saleUnit: "piece" as const },
+    { sku: "PAC", label: "Pain au chocolat", quantity: 12, saleUnit: "piece" as const },
   ],
 };
 
 function unorderedLine(sku: string, quantity: number): ResupplyReceiptLine {
-  return ResupplyReceiptLine.unordered({ sku, label: `Article ${sku}`, quantity });
+  return ResupplyReceiptLine.unordered({
+    sku,
+    label: `Article ${sku}`,
+    quantity,
+    saleUnit: "piece",
+  });
 }
 
 function unordered(): ResupplyReceipt {
@@ -51,22 +56,42 @@ describe("ResupplyReceiptLine", () => {
 
   it.each([-1, 1.5, Number.NaN])("refuse la quantité %p", (quantity) => {
     expect(() => unorderedLine("CRO", quantity)).toThrow(InvalidReceivedQuantityError);
-    expect(() => ResupplyReceiptLine.expected({ sku: "CRO", label: "x", quantity })).toThrow(
-      InvalidReceivedQuantityError,
-    );
+    expect(() =>
+      ResupplyReceiptLine.expected({
+        sku: "CRO",
+        label: "x",
+        quantity,
+        saleUnit: "piece" as const,
+      }),
+    ).toThrow(InvalidReceivedQuantityError);
   });
 
   it("refuse une ligne sans article ni libellé", () => {
-    expect(() => ResupplyReceiptLine.unordered({ sku: " ", label: "x", quantity: 1 })).toThrow(
-      IncompleteReceiptLineError,
-    );
-    expect(() => ResupplyReceiptLine.unordered({ sku: "CRO", label: "", quantity: 1 })).toThrow(
-      IncompleteReceiptLineError,
-    );
+    expect(() =>
+      ResupplyReceiptLine.unordered({
+        sku: " ",
+        label: "x",
+        quantity: 1,
+        saleUnit: "piece" as const,
+      }),
+    ).toThrow(IncompleteReceiptLineError);
+    expect(() =>
+      ResupplyReceiptLine.unordered({
+        sku: "CRO",
+        label: "",
+        quantity: 1,
+        saleUnit: "piece" as const,
+      }),
+    ).toThrow(IncompleteReceiptLineError);
   });
 
   it("une ligne attendue n'est pas reçue ; une correction garde attendu et libellé", () => {
-    const line = ResupplyReceiptLine.expected({ sku: "CRO", label: "Croissant", quantity: 5 });
+    const line = ResupplyReceiptLine.expected({
+      sku: "CRO",
+      label: "Croissant",
+      quantity: 5,
+      saleUnit: "piece" as const,
+    });
     expect(line.receivedQuantity).toBeNull();
 
     const corrected = line.receivedAsExpected().withReceived(4);
@@ -193,7 +218,7 @@ describe("estimateStock", () => {
     const noon = expecting({
       ...RESUPPLY,
       id: "resupply_2",
-      lines: [{ sku: "CRO", label: "Croissant", quantity: 10 }],
+      lines: [{ sku: "CRO", label: "Croissant", quantity: 10, saleUnit: "piece" as const }],
     });
     noon.receiveAll(TRACE);
     noon.correct("CRO", 8, TRACE);
@@ -203,9 +228,27 @@ describe("estimateStock", () => {
     rescue.receive(unorderedLine("PAC", 2), TRACE);
 
     expect(estimateStock([morning, noon, notYet, rescue], [])).toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 32, estimatedStock: 32 },
-      { sku: "PAC", label: "Pain au chocolat", receivedQuantity: 14, estimatedStock: 14 },
-      { sku: "BAG", label: "Article BAG", receivedQuantity: 5, estimatedStock: 5 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 32,
+        estimatedStock: 32,
+        saleUnit: "piece",
+      },
+      {
+        sku: "PAC",
+        label: "Pain au chocolat",
+        receivedQuantity: 14,
+        estimatedStock: 14,
+        saleUnit: "piece",
+      },
+      {
+        sku: "BAG",
+        label: "Article BAG",
+        receivedQuantity: 5,
+        estimatedStock: 5,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -223,10 +266,25 @@ describe("estimateStock — les prélèvements des commandes sur stock (lot L2)"
 
   it("soustrait ce que les commandes sur stock ont pris, sans toucher au reçu", () => {
     expect(
-      estimateStock([receivedMorning()], [{ sku: "CRO", label: "Croissant", quantity: 5 }]),
+      estimateStock(
+        [receivedMorning()],
+        [{ sku: "CRO", label: "Croissant", quantity: 5, saleUnit: "piece" as const }],
+      ),
     ).toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 24, estimatedStock: 19 },
-      { sku: "PAC", label: "Pain au chocolat", receivedQuantity: 12, estimatedStock: 12 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 24,
+        estimatedStock: 19,
+        saleUnit: "piece",
+      },
+      {
+        sku: "PAC",
+        label: "Pain au chocolat",
+        receivedQuantity: 12,
+        estimatedStock: 12,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -238,23 +296,53 @@ describe("estimateStock — les prélèvements des commandes sur stock (lot L2)"
       estimateStock(
         [rescue],
         [
-          { sku: "BAG", label: "Baguette", quantity: 2 },
-          { sku: "BAG", label: "Baguette", quantity: 3 },
+          { sku: "BAG", label: "Baguette", quantity: 2, saleUnit: "piece" as const },
+          { sku: "BAG", label: "Baguette", quantity: 3, saleUnit: "piece" as const },
         ],
       ),
-    ).toEqual([{ sku: "BAG", label: "Article BAG", receivedQuantity: 5, estimatedStock: 0 }]);
+    ).toEqual([
+      {
+        sku: "BAG",
+        label: "Article BAG",
+        receivedQuantity: 5,
+        estimatedStock: 0,
+        saleUnit: "piece",
+      },
+    ]);
   });
 
   it("montre en négatif un article pris sans avoir été reçu, avec le libellé de la commande", () => {
-    expect(estimateStock([], [{ sku: "TAR", label: "Tartelette", quantity: 2 }])).toEqual([
-      { sku: "TAR", label: "Tartelette", receivedQuantity: 0, estimatedStock: -2 },
+    expect(
+      estimateStock(
+        [],
+        [{ sku: "TAR", label: "Tartelette", quantity: 2, saleUnit: "piece" as const }],
+      ),
+    ).toEqual([
+      {
+        sku: "TAR",
+        label: "Tartelette",
+        receivedQuantity: 0,
+        estimatedStock: -2,
+        saleUnit: "piece",
+      },
     ]);
   });
 
   it("ne déduit rien d'un reçu encore attendu : le prélèvement reste seul", () => {
-    expect(estimateStock([expecting()], [{ sku: "CRO", label: "Croissant", quantity: 1 }])).toEqual(
-      [{ sku: "CRO", label: "Croissant", receivedQuantity: 0, estimatedStock: -1 }],
-    );
+    expect(
+      estimateStock(
+        [expecting()],
+        [{ sku: "CRO", label: "Croissant", quantity: 1, saleUnit: "piece" as const }],
+      ),
+    ).toEqual([
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 0,
+        estimatedStock: -1,
+        saleUnit: "piece",
+      },
+    ]);
   });
 });
 

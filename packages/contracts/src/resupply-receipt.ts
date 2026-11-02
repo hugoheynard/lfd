@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { OrderSaleUnit } from "./order.js";
 import type { ResupplyOrigin, ResupplyTarget } from "./site-resupply.js";
 
 /**
@@ -15,6 +16,11 @@ export interface ResupplyReceiptLineView {
   readonly sku: string;
   /** Le nom publié, figé à la première réception du jour. */
   readonly label: string;
+  /**
+   * L'unité des deux quantités (lot L2b-1) : des grammes si `weight`. Un
+   * même article peut avoir une ligne par unité, jamais une somme des deux.
+   */
+  readonly saleUnit: OrderSaleUnit;
   /** Somme des quantités reçues dans la journée (réassorts réceptionnés + sans commande). */
   readonly receivedQuantity: number;
   /**
@@ -36,6 +42,8 @@ export interface ResupplyReceptionLineView {
   readonly expectedQuantity: number;
   /** Le reçu ; `null` tant que le réassort n'est pas réceptionné. */
   readonly receivedQuantity: number | null;
+  /** L'unité des deux quantités, figée à l'ajout (lot L2b-1) : des grammes si `weight`. */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /** Un réassort envoyé pour la journée, et sa réception. */
@@ -74,6 +82,8 @@ export interface UnorderedReceiptLineView {
   readonly sku: string;
   readonly label: string;
   readonly receivedQuantity: number;
+  /** L'unité figée à la saisie (lot L2b-1) : des grammes si `weight`. */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /** Le réassort sans commande du jour : la saisie de secours, ligne par ligne. */
@@ -110,6 +120,8 @@ export interface ResupplyArticleView {
    */
   readonly categoryId: string;
   readonly categoryName: string;
+  /** Son unité de vente : au poids, une quantité de réassort compte des grammes (lot L2b-1). */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

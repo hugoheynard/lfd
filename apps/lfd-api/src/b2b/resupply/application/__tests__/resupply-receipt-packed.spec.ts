@@ -9,7 +9,10 @@ import { CRO_24, DAY, placed, SITE, setup } from "./resupply-receipt-setup.js";
  * sinon le demandé ; le compte du comptoir fait foi (décision C).
  */
 describe("la réception d'un réassort colisé", () => {
-  const CRO_PAC = [...CRO_24, { sku: "PAC", label: "Pain au chocolat", quantity: 12 }];
+  const CRO_PAC = [
+    ...CRO_24,
+    { sku: "PAC", label: "Pain au chocolat", quantity: 12, saleUnit: "piece" as const },
+  ];
 
   it("montre l'emballé comme attendu avant « Réceptionner »", async () => {
     const { resupplies, packed, read } = setup();
@@ -25,8 +28,20 @@ describe("la réception d'un réassort colisé", () => {
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
 
     expect(view.receptions[0]?.lines).toEqual([
-      { sku: "CRO", label: "Croissant", expectedQuantity: 20, receivedQuantity: null },
-      { sku: "PAC", label: "Pain au chocolat", expectedQuantity: 0, receivedQuantity: null },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        expectedQuantity: 20,
+        receivedQuantity: null,
+        saleUnit: "piece",
+      },
+      {
+        sku: "PAC",
+        label: "Pain au chocolat",
+        expectedQuantity: 0,
+        receivedQuantity: null,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -45,8 +60,20 @@ describe("la réception d'un réassort colisé", () => {
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.receptions[0]?.lines).toEqual([
-      { sku: "CRO", label: "Croissant", expectedQuantity: 20, receivedQuantity: 20 },
-      { sku: "PAC", label: "Pain au chocolat", expectedQuantity: 12, receivedQuantity: 12 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        expectedQuantity: 20,
+        receivedQuantity: 20,
+        saleUnit: "piece",
+      },
+      {
+        sku: "PAC",
+        label: "Pain au chocolat",
+        expectedQuantity: 12,
+        receivedQuantity: 12,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -58,7 +85,13 @@ describe("la réception d'un réassort colisé", () => {
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.receptions[0]?.lines).toEqual([
-      { sku: "CRO", label: "Croissant", expectedQuantity: 24, receivedQuantity: 24 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        expectedQuantity: 24,
+        receivedQuantity: 24,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -74,7 +107,13 @@ describe("la réception d'un réassort colisé", () => {
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.receptions[0]?.lines).toEqual([
-      { sku: "CRO", label: "Croissant", expectedQuantity: 24, receivedQuantity: 22 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        expectedQuantity: 24,
+        receivedQuantity: 22,
+        saleUnit: "piece",
+      },
     ]);
     expect(view.stock[0]).toMatchObject({ sku: "CRO", receivedQuantity: 22 });
   });

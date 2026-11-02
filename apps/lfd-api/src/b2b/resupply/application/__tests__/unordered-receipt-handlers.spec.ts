@@ -19,12 +19,18 @@ describe("le réassort sans commande", () => {
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.unordered).toEqual({
-      lines: [{ sku: "CRO", label: "Croissant", receivedQuantity: 12 }],
+      lines: [{ sku: "CRO", label: "Croissant", receivedQuantity: 12, saleUnit: "piece" }],
       updatedAt: AT.toISOString(),
       updatedBy: "Lou Martin",
     });
     expect(view.stock).toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 12, estimatedStock: 12 },
+      {
+        sku: "CRO",
+        label: "Croissant",
+        receivedQuantity: 12,
+        estimatedStock: 12,
+        saleUnit: "piece",
+      },
     ]);
   });
 
@@ -71,7 +77,7 @@ describe("le réassort sans commande", () => {
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.unordered.lines).toEqual([
-      { sku: "CRO", label: "Croissant", receivedQuantity: 10 },
+      { sku: "CRO", label: "Croissant", receivedQuantity: 10, saleUnit: "piece" },
     ]);
   });
 });
@@ -91,6 +97,13 @@ it("liste les articles proposables avec leur famille, sans prix", async () => {
       categoryId: "fam_morning",
       categoryName: "Viennoiseries",
       saleUnit: "piece",
+    },
+    {
+      sku: "SAU",
+      name: "Saumon gravlax",
+      categoryId: "fam_deli",
+      categoryName: "Traiteur",
+      saleUnit: "weight",
     },
   ]);
 });

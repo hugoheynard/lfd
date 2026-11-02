@@ -96,7 +96,9 @@ describe("nommer la demande en cours (R1g)", () => {
     expect(view.drafts).toEqual([
       expect.objectContaining({ id, name: "Vitrine du matin", version: 2 }),
     ]);
-    expect(view.drafts[0]?.lines).toEqual([{ sku: "CRO", label: "Croissant", quantity: 4 }]);
+    expect(view.drafts[0]?.lines).toEqual([
+      { sku: "CRO", label: "Croissant", quantity: 4, saleUnit: "piece" as const },
+    ]);
   });
 
   it("ouvre la demande si aucune ne l'est : on peut nommer avant le premier article", async () => {
@@ -144,7 +146,7 @@ describe("nommer la demande en cours (R1g)", () => {
 
   it("le fournil nomme le sien à l'envoi ; sans nom, il n'en a pas", async () => {
     const { bakehouse, store } = setup();
-    const lines = [{ sku: "CRO", quantity: 3 }];
+    const lines = [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }];
     const named = await bakehouse.execute(
       new SendBakehouseResupplyCommand(VILLAGE, "asap", lines, "s", "Vitrine du soir"),
     );
@@ -169,7 +171,7 @@ describe("nommer la demande en cours (R1g)", () => {
 describe("les noms déjà employés au point (R1g)", () => {
   it("distincts, les plus récents d'abord, ceux du point seulement", async () => {
     const { bakehouse, list, usedNames } = setup();
-    const lines = [{ sku: "CRO", quantity: 1 }];
+    const lines = [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }];
     for (const [site, label] of [
       [VILLAGE, "Vitrine du matin"],
       [VILLAGE, "Goûter"],
@@ -193,7 +195,7 @@ describe("les noms déjà employés au point (R1g)", () => {
         new SendBakehouseResupplyCommand(
           VILLAGE,
           "asap",
-          [{ sku: "CRO", quantity: 1 }],
+          [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
           "s",
           `N${String(index)}`,
         ),

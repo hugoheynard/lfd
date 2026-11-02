@@ -18,7 +18,7 @@ const CONTENT = {
   siteId: "site_1",
   target: "tomorrow" as const,
   name: "  Vitrine   du matin ",
-  lines: [{ sku: " CRO ", quantity: 4 }],
+  lines: [{ sku: " CRO ", quantity: 4, saleUnit: "piece" as const }],
 };
 
 /** Un brouillon écrit une fois, relu en version 1. */
@@ -37,7 +37,7 @@ describe("le brouillon d'un réassort du fournil", () => {
       siteId: "site_1",
       target: "tomorrow",
       name: "Vitrine du matin",
-      lines: [{ sku: "CRO", quantity: 4 }],
+      lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" as const }],
     });
   });
 
@@ -45,17 +45,17 @@ describe("le brouillon d'un réassort du fournil", () => {
     const open = (content: Partial<typeof CONTENT> & object) =>
       BakehouseResupplyDraft.open({ id: "d", content: { ...CONTENT, ...content }, trace: TRACE });
     expect(() => open({ lines: [] })).toThrow(EmptyBakehouseResupplyDraftError);
-    expect(() => open({ lines: [{ sku: "CRO", quantity: 0 }] })).toThrow(
-      InvalidRequestedQuantityError,
-    );
-    expect(() => open({ lines: [{ sku: "CRO", quantity: 1.5 }] })).toThrow(
-      InvalidRequestedQuantityError,
-    );
+    expect(() =>
+      open({ lines: [{ sku: "CRO", quantity: 0, saleUnit: "piece" as const }] }),
+    ).toThrow(InvalidRequestedQuantityError);
+    expect(() =>
+      open({ lines: [{ sku: "CRO", quantity: 1.5, saleUnit: "piece" as const }] }),
+    ).toThrow(InvalidRequestedQuantityError);
     expect(() =>
       open({
         lines: [
-          { sku: "CRO", quantity: 1 },
-          { sku: " CRO", quantity: 2 },
+          { sku: "CRO", quantity: 1, saleUnit: "piece" as const },
+          { sku: " CRO", quantity: 2, saleUnit: "piece" as const },
         ],
       }),
     ).toThrow(DuplicateBakehouseResupplyDraftLineError);
@@ -66,6 +66,7 @@ describe("le brouillon d'un réassort du fournil", () => {
     const lines = Array.from({ length: 201 }, (_, index) => ({
       sku: `S${String(index)}`,
       quantity: 1,
+      saleUnit: "piece" as const,
     }));
     expect(() =>
       BakehouseResupplyDraft.open({ id: "d", content: { ...CONTENT, lines }, trace: TRACE }),
@@ -75,8 +76,12 @@ describe("le brouillon d'un réassort du fournil", () => {
   it("se réécrit en entier sous la version lue", () => {
     const draft = stored();
     const later = { ...TRACE, author: { ...TRACE.author, name: "Max" } };
-    draft.save({ ...CONTENT, name: null, lines: [{ sku: "PAC", quantity: 2 }] }, later, 1);
-    expect(draft.content.lines).toEqual([{ sku: "PAC", quantity: 2 }]);
+    draft.save(
+      { ...CONTENT, name: null, lines: [{ sku: "PAC", quantity: 2, saleUnit: "piece" as const }] },
+      later,
+      1,
+    );
+    expect(draft.content.lines).toEqual([{ sku: "PAC", quantity: 2, saleUnit: "piece" as const }]);
     expect(draft.content.name).toBeNull();
     expect(draft.updated.author.name).toBe("Max");
     expect(draft.created.author.name).toBe("Lou");
@@ -101,14 +106,14 @@ describe("le brouillon d'un réassort du fournil", () => {
   it("envoyé, il garde le contenu de l'écran et le réassort né, et ne revient pas en arrière", () => {
     const draft = stored();
     draft.markSent({
-      content: { ...CONTENT, lines: [{ sku: "PAC", quantity: 9 }] },
+      content: { ...CONTENT, lines: [{ sku: "PAC", quantity: 9, saleUnit: "piece" as const }] },
       resupplyId: "rs1",
       trace: TRACE,
       readVersion: 1,
     });
     expect(draft.status).toBe("sent");
     expect(draft.sentResupplyId).toBe("rs1");
-    expect(draft.content.lines).toEqual([{ sku: "PAC", quantity: 9 }]);
+    expect(draft.content.lines).toEqual([{ sku: "PAC", quantity: 9, saleUnit: "piece" as const }]);
     expect(() => draft.discard(TRACE, 1)).toThrow(BakehouseResupplyDraftClosedError);
   });
 

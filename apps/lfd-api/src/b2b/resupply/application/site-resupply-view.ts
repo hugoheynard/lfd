@@ -21,6 +21,7 @@ export function siteResupplyView(snapshot: PlacedSiteResupplySnapshot): SiteResu
       sku: line.sku,
       label: line.label,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
     })),
     placedAt: snapshot.placed.at.toISOString(),
     placedBy: nameOf(snapshot.placed.author.name),
@@ -47,6 +48,7 @@ export function siteResupplyDraftView(snapshot: SiteResupplySnapshot): SiteResup
       sku: line.sku,
       label: line.label,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
     })),
   };
 }

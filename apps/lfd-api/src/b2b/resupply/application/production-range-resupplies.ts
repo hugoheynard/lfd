@@ -36,7 +36,8 @@ export class ProductionRangeResupplies extends ExpectedResuppliesReader {
         sku: total.sku,
         productName: total.label,
         quantity: total.quantity,
-        // Le réassort refuse un article au poids (plan `pricing/vente-au-poids.md`, § 2).
+        // Aucun réassort envoyé ne porte de ligne au poids : la garde d'envoi
+        // (`weight-resupply-guard.ts`, lot L2b-1) l'interdit jusqu'au lot L2b-2.
         saleUnit: "piece" as const,
       })),
     }));

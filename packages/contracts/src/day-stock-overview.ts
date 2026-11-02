@@ -1,3 +1,4 @@
+import type { OrderSaleUnit } from "./order.js";
 import type { ResupplyOrigin, ResupplyTarget } from "./site-resupply.js";
 import type { StockAlertLevel } from "./site-stock-alert.js";
 
@@ -27,14 +28,25 @@ export interface DayStockResupplyView {
   readonly target: ResupplyTarget;
   readonly origin: ResupplyOrigin;
   readonly state: DayStockResupplyState;
-  /** Le nombre de pièces envoyées (la somme de ses lignes demandées). */
+  /** Le nombre de pièces envoyées (la somme de ses lignes demandées à la pièce). */
   readonly pieces: number;
+  /** Les grammes envoyés (la somme de ses lignes au poids, lot L2b-1) ; 0 sans. */
+  readonly weightGrams: number;
 }
 
-/** Un produit du point : seulement s'il a un reçu, une alerte ou un attendu. */
+/**
+ * Un produit du point : seulement s'il a un reçu, une alerte ou un attendu.
+ * Une entrée par (article, unité) : un article qui aurait des lignes dans les
+ * deux unités apparaît deux fois, jamais en somme (lot L2b-1).
+ */
 export interface DayStockProductView {
   readonly sku: string;
   readonly label: string;
+  /**
+   * L'unité de `stock` et `expected` : des grammes si `weight`. `null` pour un
+   * produit qui n'a qu'une alerte — aucune quantité, aucune unité à dire.
+   */
+  readonly saleUnit: OrderSaleUnit | null;
   /** La somme des reçus réceptionnés du jour ; 0 si rien n'est reçu. */
   readonly stock: number;
   /** L'alerte vivante (R1b) ; `null` sans alerte. */

@@ -1,10 +1,16 @@
 import type { ResupplyReceipt } from "./resupply-receipt.js";
+import type { SaleUnit } from "./resupply-sale-unit.js";
 import type { ShelfDraw } from "./shelf-draws.reader.js";
 
-/** Un article du point dans la journée : ce qui en a été reçu, et ce qui devrait en rester en vitrine. */
+/**
+ * Un article du point dans la journée, dans UNE unité : ce qui en a été reçu,
+ * et ce qui devrait en rester en vitrine — des pièces, ou des grammes au
+ * poids (lot L2b-1).
+ */
 export interface EstimatedStockLine {
   readonly sku: string;
   readonly label: string;
+  readonly saleUnit: SaleUnit;
   readonly receivedQuantity: number;
   readonly estimatedStock: number;
 }
@@ -29,6 +35,10 @@ export interface EstimatedStockLine {
  *   Aucun chemin ne le produit aujourd'hui (la baisse d'un reçu est refusée
  *   sous le déjà-pris ; la passation garde le reste au lot L4).
  *
+ * - Le compte se fait par (article, unité), jamais pièces et grammes ensemble
+ *   (lot L2b-1) : un article reçu au poids puis passé à la pièce au catalogue
+ *   donne deux lignes, chacune dans son unité.
+ *
  * L'ordre est celui de la première apparition, reçus d'abord dans l'ordre
  * donné, puis les articles seulement pris ; le libellé est celui de cette
  * première apparition.
@@ -37,28 +47,42 @@ export function estimateStock(
   receipts: readonly ResupplyReceipt[],
   draws: readonly ShelfDraw[],
 ): readonly EstimatedStockLine[] {
-  const totals = new Map<string, { label: string; received: number; drawn: number }>();
+  const totals = new Map<string, Tally>();
+  const tallyOf = (sku: string, saleUnit: SaleUnit, label: string): Tally => {
+    const key = stockKeyOf(sku, saleUnit);
+    const known = totals.get(key) ?? { sku, saleUnit, label, received: 0, drawn: 0 };
+    totals.set(key, known);
+    return known;
+  };
   for (const receipt of receipts) {
     if (receipt.status !== "received") {
       continue;
     }
     for (const line of receipt.lines) {
-      const known = totals.get(line.sku);
-      totals.set(line.sku, {
-        label: known?.label ?? line.label,
-        received: (known?.received ?? 0) + (line.receivedQuantity ?? 0),
-        drawn: 0,
-      });
+      tallyOf(line.sku, line.saleUnit, line.label).received += line.receivedQuantity ?? 0;
     }
   }
   for (const draw of draws) {
-    const known = totals.get(draw.sku) ?? { label: draw.label, received: 0, drawn: 0 };
-    totals.set(draw.sku, { ...known, drawn: known.drawn + draw.quantity });
+    tallyOf(draw.sku, draw.saleUnit, draw.label).drawn += draw.quantity;
   }
-  return [...totals].map(([sku, { label, received, drawn }]) => ({
+  return [...totals.values()].map(({ sku, saleUnit, label, received, drawn }) => ({
     sku,
     label,
+    saleUnit,
     receivedQuantity: received,
     estimatedStock: received - drawn,
   }));
+}
+
+interface Tally {
+  readonly sku: string;
+  readonly saleUnit: SaleUnit;
+  readonly label: string;
+  received: number;
+  drawn: number;
+}
+
+/** La clé d'un compte : l'article ET son unité — deux unités ne se somment jamais. */
+export function stockKeyOf(sku: string, saleUnit: SaleUnit): string {
+  return `${saleUnit}:${sku}`;
 }

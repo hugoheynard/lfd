@@ -3,6 +3,7 @@ import { addDays, instantToLocal } from "@lfd/contracts";
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 import { UnknownResupplyTargetError } from "./site-resupply-errors.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
+import type { SaleUnit } from "./resupply-sale-unit.js";
 
 /** `tomorrow` : la commande du soir pour demain ; `asap` : « au plus tôt », aujourd'hui. */
 export type ResupplyTarget = "tomorrow" | "asap";
@@ -60,10 +61,12 @@ export interface SiteResupplySnapshot {
   readonly origin: ResupplyOrigin;
   /** Son nom libre (lot R1g) ; `null` : sans nom. */
   readonly name: string | null;
+  /** `saleUnit` figée à l'ajout (lot L2b-1) : la quantité compte des grammes si `weight`. */
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
   }[];
   readonly placed: SiteResupplyTrace | null;
   readonly cancelled: SiteResupplyTrace | null;

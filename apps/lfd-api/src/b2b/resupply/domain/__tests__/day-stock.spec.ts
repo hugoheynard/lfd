@@ -21,7 +21,7 @@ function sent(
     version: 2,
     origin: "counter",
     name: null,
-    lines: [{ sku: "CRO", label: "Croissant", quantity }],
+    lines: [{ sku: "CRO", label: "Croissant", quantity, saleUnit: "piece" as const }],
     placed: TRACE,
     cancelled: null,
     arrived: null,
@@ -54,7 +54,7 @@ describe("la journée de stock d'un point (S1)", () => {
 
     expect(day.resupplies.map((r) => r.state)).toEqual(["received"]);
     expect(day.products).toEqual([
-      { sku: "CRO", label: "Croissant", stock: 4, alert: null, expected: 0 },
+      { sku: "CRO", label: "Croissant", stock: 4, alert: null, expected: 0, saleUnit: "piece" },
     ]);
   });
 
@@ -67,7 +67,7 @@ describe("la journée de stock d'un point (S1)", () => {
 
     expect(day.resupplies.map((r) => r.resupplyId)).toEqual(["r2"]);
     expect(day.products).toEqual([
-      { sku: "CRO", label: "Croissant", stock: 0, alert: null, expected: 7 },
+      { sku: "CRO", label: "Croissant", stock: 0, alert: null, expected: 7, saleUnit: "piece" },
     ]);
   });
 
@@ -81,7 +81,7 @@ describe("la journée de stock d'un point (S1)", () => {
     });
 
     expect(day.products).toEqual([
-      { sku: "CRO", label: "Croissant", stock: 4, alert: null, expected: 6 },
+      { sku: "CRO", label: "Croissant", stock: 4, alert: null, expected: 6, saleUnit: "piece" },
     ]);
   });
 });
@@ -95,11 +95,13 @@ describe("la journée de stock d'un point — le reste décompté (lot L2)", () 
       ...EMPTY,
       resupplies: [first],
       receipts,
-      stock: estimateStock(receipts, [{ sku: "CRO", label: "Croissant", quantity: 3 }]),
+      stock: estimateStock(receipts, [
+        { sku: "CRO", label: "Croissant", quantity: 3, saleUnit: "piece" as const },
+      ]),
     });
 
     expect(day.products).toEqual([
-      { sku: "CRO", label: "Croissant", stock: 1, alert: null, expected: 0 },
+      { sku: "CRO", label: "Croissant", stock: 1, alert: null, expected: 0, saleUnit: "piece" },
     ]);
   });
 });

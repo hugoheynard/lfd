@@ -20,8 +20,8 @@ function resupply(
     name: null,
     status: 'placed',
     lines: [
-      { sku: 'CRO', label: 'Croissant', quantity: 10 },
-      { sku: 'PAC', label: 'Pain au chocolat', quantity: 4 },
+      { sku: 'CRO', label: 'Croissant', quantity: 10, saleUnit: 'piece' as const },
+      { sku: 'PAC', label: 'Pain au chocolat', quantity: 4, saleUnit: 'piece' as const },
     ],
     placedAt: '2026-01-02T17:00:00.000Z',
     placedBy: null,

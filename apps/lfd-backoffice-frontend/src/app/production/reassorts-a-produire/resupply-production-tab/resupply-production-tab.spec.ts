@@ -39,7 +39,7 @@ class FakeResupplies {
               origin: 'counter',
               name: null,
               status: 'placed',
-              lines: [{ sku: 'CRO', label: 'Croissant', quantity: 10 }],
+              lines: [{ sku: 'CRO', label: 'Croissant', quantity: 10, saleUnit: 'piece' as const }],
               placedAt: '2026-01-02T17:00:00.000Z',
               placedBy: null,
               cancelledAt: null,
@@ -54,10 +54,22 @@ class FakeResupplies {
           ],
         },
       ],
-      totals: [{ sku: 'CRO', label: 'Croissant', quantity: 10 }],
+      totals: [{ sku: 'CRO', label: 'Croissant', quantity: 10, saleUnit: 'piece' as const }],
       articles: [
-        { sku: 'CRO', name: 'Croissant', categoryId: 'fam_m', categoryName: 'Viennoiseries' },
-        { sku: 'BAG', name: 'Baguette', categoryId: 'fam_b', categoryName: 'Pains' },
+        {
+          sku: 'CRO',
+          name: 'Croissant',
+          categoryId: 'fam_m',
+          categoryName: 'Viennoiseries',
+          saleUnit: 'piece' as const,
+        },
+        {
+          sku: 'BAG',
+          name: 'Baguette',
+          categoryId: 'fam_b',
+          categoryName: 'Pains',
+          saleUnit: 'piece' as const,
+        },
       ],
     });
   }

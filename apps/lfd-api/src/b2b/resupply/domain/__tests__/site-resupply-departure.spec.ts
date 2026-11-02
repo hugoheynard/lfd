@@ -17,7 +17,14 @@ function draft(): SiteResupply {
     target: "asap",
     at: PLACED_AT,
   });
-  resupply.addLine(SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 12 }));
+  resupply.addLine(
+    SiteResupplyLine.of({
+      sku: "CRO",
+      label: "Croissant",
+      quantity: 12,
+      saleUnit: "piece" as const,
+    }),
+  );
   return resupply;
 }
 

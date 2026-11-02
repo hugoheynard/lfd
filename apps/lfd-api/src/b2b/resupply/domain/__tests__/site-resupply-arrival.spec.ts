@@ -23,7 +23,14 @@ function placed(): SiteResupply {
     target: "asap",
     at: PLACED_AT,
   });
-  resupply.addLine(SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 12 }));
+  resupply.addLine(
+    SiteResupplyLine.of({
+      sku: "CRO",
+      label: "Croissant",
+      quantity: 12,
+      saleUnit: "piece" as const,
+    }),
+  );
   resupply.place({ at: PLACED_AT, author: LOU }, null, false);
   return resupply;
 }
@@ -131,7 +138,14 @@ describe("SiteResupply.markMounted (R4c, Q4 : « Lancer » puis « Monté »)", 
       target: "tomorrow",
       at: PLACED_AT,
     });
-    resupply.addLine(SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 12 }));
+    resupply.addLine(
+      SiteResupplyLine.of({
+        sku: "CRO",
+        label: "Croissant",
+        quantity: 12,
+        saleUnit: "piece" as const,
+      }),
+    );
     resupply.place({ at: PLACED_AT, author: LOU }, null, false);
 
     expect(resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, null, false)).toBe(true);

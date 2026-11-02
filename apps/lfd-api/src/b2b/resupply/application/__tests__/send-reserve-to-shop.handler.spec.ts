@@ -123,8 +123,18 @@ describe("SendReserveToShopHandler — envoyer en boutique depuis la réserve", 
         target: "asap",
         serviceDay: TODAY,
         lines: [
-          expect.objectContaining({ sku: "CRO", label: "Croissant", quantity: 6 }),
-          expect.objectContaining({ sku: "BAG", label: "Baguette", quantity: 3 }),
+          expect.objectContaining({
+            sku: "CRO",
+            label: "Croissant",
+            quantity: 6,
+            saleUnit: "piece" as const,
+          }),
+          expect.objectContaining({
+            sku: "BAG",
+            label: "Baguette",
+            quantity: 3,
+            saleUnit: "piece" as const,
+          }),
         ],
       }),
     ]);

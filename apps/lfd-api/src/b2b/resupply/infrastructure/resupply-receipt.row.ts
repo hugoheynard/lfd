@@ -1,3 +1,4 @@
+import { resupplySaleUnitOf } from "../domain/resupply-sale-unit.js";
 import type { ResupplyReceiptSnapshot } from "../domain/resupply-receipt.js";
 
 /** Une journée civile en colonne `DATE` : minuit UTC, que Postgres tronque au jour. */
@@ -8,7 +9,7 @@ export function receiptDayColumn(serviceDay: string): Date {
 /** Les lignes, dans l'ordre du réassort ou de la saisie. */
 export const RECEIPT_LINES = {
   orderBy: { position: "asc" },
-  select: { sku: true, label: true, expectedQuantity: true, quantity: true },
+  select: { sku: true, label: true, expectedQuantity: true, quantity: true, saleUnit: true },
 } as const;
 
 /** La ligne telle que Prisma la rend, avec ses lignes. */
@@ -31,6 +32,7 @@ export interface ResupplyReceiptRow {
     readonly label: string;
     readonly expectedQuantity: number | null;
     readonly quantity: number;
+    readonly saleUnit: string;
   }[];
 }
 
@@ -47,6 +49,7 @@ export function receiptSnapshotOf(row: ResupplyReceiptRow): ResupplyReceiptSnaps
       label: line.label,
       expectedQuantity: line.expectedQuantity,
       receivedQuantity: line.quantity,
+      saleUnit: resupplySaleUnitOf(line.sku, line.saleUnit),
     })),
     received: {
       at: row.receivedAt,

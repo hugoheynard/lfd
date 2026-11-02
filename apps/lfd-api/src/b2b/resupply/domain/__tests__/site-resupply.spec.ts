@@ -36,7 +36,7 @@ function trace(at: Date) {
 }
 
 function line(sku: string, quantity: number): SiteResupplyLine {
-  return SiteResupplyLine.of({ sku, label: `Article ${sku}`, quantity });
+  return SiteResupplyLine.of({ sku, label: `Article ${sku}`, quantity, saleUnit: "piece" });
 }
 
 function draft(target: "tomorrow" | "asap", at = EVENING): SiteResupply {
@@ -51,12 +51,12 @@ describe("SiteResupplyLine", () => {
   });
 
   it("refuse une ligne sans article ni libellé", () => {
-    expect(() => SiteResupplyLine.of({ sku: " ", label: "x", quantity: 1 })).toThrow(
-      IncompleteResupplyLineError,
-    );
-    expect(() => SiteResupplyLine.of({ sku: "CRO", label: " ", quantity: 1 })).toThrow(
-      IncompleteResupplyLineError,
-    );
+    expect(() =>
+      SiteResupplyLine.of({ sku: " ", label: "x", quantity: 1, saleUnit: "piece" as const }),
+    ).toThrow(IncompleteResupplyLineError);
+    expect(() =>
+      SiteResupplyLine.of({ sku: "CRO", label: " ", quantity: 1, saleUnit: "piece" as const }),
+    ).toThrow(IncompleteResupplyLineError);
   });
 });
 
@@ -346,14 +346,14 @@ describe("resupplyTotals", () => {
     expect(
       resupplyTotals([
         [
-          { sku: "CRO", label: "Croissant", quantity: 12 },
-          { sku: "PAC", label: "Pain au chocolat", quantity: 6 },
+          { sku: "CRO", label: "Croissant", quantity: 12, saleUnit: "piece" as const },
+          { sku: "PAC", label: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
         ],
-        [{ sku: "CRO", label: "Croissant beurre", quantity: 8 }],
+        [{ sku: "CRO", label: "Croissant beurre", quantity: 8, saleUnit: "piece" as const }],
       ]),
     ).toEqual([
-      { sku: "CRO", label: "Croissant", quantity: 20 },
-      { sku: "PAC", label: "Pain au chocolat", quantity: 6 },
+      { sku: "CRO", label: "Croissant", quantity: 20, saleUnit: "piece" as const },
+      { sku: "PAC", label: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
     ]);
   });
 

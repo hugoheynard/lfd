@@ -1,3 +1,5 @@
+import { quantityFigure, type SaleQuantity } from "@lfd/money";
+
 import {
   BusinessError,
   DomainError,
@@ -65,17 +67,6 @@ export class ResupplyArticleUnknownError extends ResourceNotFoundError {
     super(
       "resupply.receipt.article_unknown",
       `L'article ${sku} n'est pas au catalogue publié de la boutique : choisissez un article de la liste.`,
-    );
-  }
-}
-
-/** L'article se vend au poids : un réassort ne compte que des pièces (`vente-au-poids.md`). */
-export class WeightArticleInResupplyError extends BusinessError {
-  constructor(readonly sku: string) {
-    super(
-      "resupply.weight_article",
-      `L'article ${sku} se vend au poids, et un réassort ne se compte qu'en pièces. ` +
-        "Choisissez un autre article de la liste.",
     );
   }
 }
@@ -174,17 +165,18 @@ export class UnreceivedReceiptNotPersistableError extends TechnicalError {
 /**
  * Une baisse de reçu passerait sous ce que les commandes sur stock ont déjà
  * pris (plan du jour J, §11.2, lot L2) : la vitrine afficherait un reste
- * négatif, et une commande déjà vendue n'aurait plus de marchandise.
+ * négatif, et une commande déjà vendue n'aurait plus de marchandise. La
+ * quantité dit son unité (lot L2b-1) : « 12 », ou « 1,25 kg ».
  */
 export class ShelfStockAlreadySoldError extends BusinessError {
   constructor(
     readonly sku: string,
     readonly label: string,
-    readonly sold: number,
+    readonly sold: SaleQuantity,
   ) {
     super(
       "resupply.receipt.below_shelf_draws",
-      `${String(sold)} « ${label} » déjà vendus sur stock aujourd'hui : le reçu ne peut pas descendre sous ${String(sold)}. Annulez d'abord la commande concernée si l'article manque vraiment.`,
+      `${quantityFigure(sold)} « ${label} » déjà vendus sur stock aujourd'hui : le reçu ne peut pas descendre sous ${quantityFigure(sold)}. Annulez d'abord la commande concernée si l'article manque vraiment.`,
     );
   }
 }

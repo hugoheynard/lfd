@@ -63,8 +63,8 @@ function placed(
     origin: "bakehouse",
     name: "Vitrine du matin",
     lines: [
-      { sku: "CRO", label: "Croissant", quantity: 12 },
-      { sku: "PAC", label: "Pain au chocolat", quantity: 6 },
+      { sku: "CRO", label: "Croissant", quantity: 12, saleUnit: "piece" as const },
+      { sku: "PAC", label: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
     ],
     placed: { at: PLACED_AT, author: LOU },
     cancelled: null,

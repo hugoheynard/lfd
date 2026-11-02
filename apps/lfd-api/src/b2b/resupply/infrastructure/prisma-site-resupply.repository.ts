@@ -41,6 +41,7 @@ function linesOf(resupply: SiteResupply) {
     sku: line.sku,
     label: line.label,
     quantity: line.quantity,
+    saleUnit: line.saleUnit,
     position,
   }));
 }

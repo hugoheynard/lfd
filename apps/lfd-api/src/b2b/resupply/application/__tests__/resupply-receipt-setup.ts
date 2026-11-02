@@ -46,6 +46,14 @@ export const CATALOGUE = new Catalogue([
     categoryName: "Viennoiseries",
     saleUnit: "piece",
   },
+  // Au poids : la quantité compte des grammes (lot L2b-1).
+  {
+    sku: "SAU",
+    name: "Saumon gravlax",
+    categoryId: "fam_deli",
+    categoryName: "Traiteur",
+    saleUnit: "weight",
+  },
 ]);
 export const AUTHOR = { staffUserId: "staff_lou", name: "Lou Martin", role: "counter" };
 
@@ -136,4 +144,6 @@ export function setup() {
   };
 }
 
-export const CRO_24 = [{ sku: "CRO", label: "Croissant", quantity: 24 }];
+export const CRO_24 = [
+  { sku: "CRO", label: "Croissant", quantity: 24, saleUnit: "piece" as const },
+];

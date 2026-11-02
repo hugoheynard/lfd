@@ -1,6 +1,8 @@
 import { IdGenerator } from "../../../platform/id/id-generator.js";
-import { ResupplyCatalogue, resuppliable } from "../domain/resupply-catalogue.js";
+import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplyArticleUnknownError } from "../domain/resupply-receipt-errors.js";
+import type { SaleUnit } from "../domain/resupply-sale-unit.js";
+import { ResupplyArticleUnitChangedError } from "../domain/resupply-sale-unit-errors.js";
 import { type ResupplyTarget, serviceDayFor, SiteResupply } from "../domain/site-resupply.js";
 import { SiteResupplyNotFoundError } from "../domain/site-resupply-errors.js";
 import { SiteResupplyLine } from "../domain/site-resupply-line.js";
@@ -23,20 +25,34 @@ export async function currentDraft(
   return open ?? SiteResupply.draft({ id: ids.next(), ...input });
 }
 
-/** Une ligne demandée, son libellé lu au catalogue publié — jamais pris du client. */
+/**
+ * Une ligne demandée, son libellé ET son unité lus au catalogue publié —
+ * jamais pris du client (lot L2b-1 : l'unité se fige ici). `saleUnit`, quand
+ * l'appelant en garde une (le brouillon du fournil), doit être celle du
+ * catalogue : sinon la quantité se lirait dans l'autre unité.
+ *
+ * @throws {ResupplyArticleUnitChangedError} l'unité gardée n'est plus celle du catalogue.
+ */
 export async function catalogueLine(
   catalogue: ResupplyCatalogue,
-  requested: { readonly sku: string; readonly quantity: number },
+  requested: {
+    readonly sku: string;
+    readonly quantity: number;
+    readonly saleUnit?: SaleUnit | undefined;
+  },
 ): Promise<SiteResupplyLine> {
   const article = await catalogue.article(requested.sku);
   if (article === null) {
     throw new ResupplyArticleUnknownError(requested.sku);
   }
-  resuppliable(article);
+  if (requested.saleUnit !== undefined && requested.saleUnit !== article.saleUnit) {
+    throw new ResupplyArticleUnitChangedError(article.sku, article.name);
+  }
   return SiteResupplyLine.of({
     sku: article.sku,
     label: article.name,
     quantity: requested.quantity,
+    saleUnit: article.saleUnit,
   });
 }
 

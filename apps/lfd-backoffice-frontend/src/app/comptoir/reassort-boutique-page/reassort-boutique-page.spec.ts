@@ -52,12 +52,19 @@ function counter(initial: CounterPlace | null = VILLAGE) {
 }
 
 const ARTICLES: readonly ResupplyArticleView[] = [
-  { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+  {
+    sku: 'CRO',
+    name: 'Croissant',
+    categoryId: 'fam_morning',
+    categoryName: 'Viennoiseries',
+    saleUnit: 'piece' as const,
+  },
   {
     sku: 'PAC',
     name: 'Pain au chocolat',
     categoryId: 'fam_morning',
     categoryName: 'Viennoiseries',
+    saleUnit: 'piece',
   },
 ];
 
@@ -117,7 +124,10 @@ class FakeReceipts {
   receive(_site: string, _day: string, sku: string, quantity: number): Promise<void> {
     this.calls.push(`receive ${sku} ${String(quantity)}`);
     const label = ARTICLES.find((a) => a.sku === sku)?.name ?? sku;
-    this.unordered = [...this.unordered, { sku, label, receivedQuantity: quantity }];
+    this.unordered = [
+      ...this.unordered,
+      { sku, label, receivedQuantity: quantity, saleUnit: 'piece' as const },
+    ];
     return Promise.resolve();
   }
   correct(_site: string, _day: string, sku: string, quantity: number): Promise<void> {
@@ -150,6 +160,7 @@ class FakeReceipts {
         label: line.label,
         receivedQuantity: sum,
         estimatedStock: sum,
+        saleUnit: line.saleUnit,
       });
     }
     return [...totals.values()];
@@ -174,7 +185,15 @@ function expected(resupplyId: string, quantity: number): ResupplyReceptionView {
     departedBy: null,
     receivedAt: null,
     receivedBy: null,
-    lines: [{ sku: 'CRO', label: 'Croissant', expectedQuantity: quantity, receivedQuantity: null }],
+    lines: [
+      {
+        sku: 'CRO',
+        label: 'Croissant',
+        expectedQuantity: quantity,
+        receivedQuantity: null,
+        saleUnit: 'piece' as const,
+      },
+    ],
   };
 }
 
@@ -201,7 +220,12 @@ class FakeResupplies {
                 serviceDay: TODAY,
                 version: this.added.length,
                 name: null,
-                lines: this.added.map((sku) => ({ sku, label: sku, quantity: 1 })),
+                lines: this.added.map((sku) => ({
+                  sku,
+                  label: sku,
+                  quantity: 1,
+                  saleUnit: 'piece' as const,
+                })),
               },
             ],
       resupplies: [],
@@ -317,7 +341,9 @@ describe('ReassortBoutiquePage', () => {
 
   it('montre le stock du jour, somme des reçus, sans colonne « commandé »', async () => {
     const api = new FakeReceipts();
-    api.unordered = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 2 }];
+    api.unordered = [
+      { sku: 'CRO', label: 'Croissant', receivedQuantity: 2, saleUnit: 'piece' as const },
+    ];
     api.receptions = [{ ...expected('r1', 12) }];
     await api.receiveResupply('site_v', 'r1');
     const { fixture } = await mount(['handover_counter:read'], api);

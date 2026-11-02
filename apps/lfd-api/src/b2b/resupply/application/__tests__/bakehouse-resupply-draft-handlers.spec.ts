@@ -53,7 +53,7 @@ const CONTENT = {
   siteId: SITE,
   target: "tomorrow" as const,
   name: "Vitrine du matin",
-  lines: [{ sku: "CRO", quantity: 4 }],
+  lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" as const }],
 };
 
 function world(options: { readonly now?: Date; readonly stoppedDays?: readonly string[] } = {}) {
@@ -106,7 +106,7 @@ describe("les brouillons du réassort du fournil", () => {
         version: 1,
         siteId: SITE,
         name: "Vitrine du matin",
-        lines: [{ sku: "CRO", quantity: 4 }],
+        lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" as const }],
         savedByName: "Lou Martin",
       }),
     ]);
@@ -118,11 +118,16 @@ describe("les brouillons du réassort du fournil", () => {
   it("se réécrivent sous la version lue ; une version périmée est refusée", async () => {
     const w = world();
     const { id } = await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s"));
-    const rewritten = { ...CONTENT, lines: [{ sku: "PAC", quantity: 2 }] };
+    const rewritten = {
+      ...CONTENT,
+      lines: [{ sku: "PAC", quantity: 2, saleUnit: "piece" as const }],
+    };
     expect(
       await w.save.execute(new SaveBakehouseResupplyDraftCommand(id, rewritten, 1, "s")),
     ).toEqual({ id, version: 2 });
-    expect(w.drafts.row(id)?.content.lines).toEqual([{ sku: "PAC", quantity: 2 }]);
+    expect(w.drafts.row(id)?.content.lines).toEqual([
+      { sku: "PAC", quantity: 2, saleUnit: "piece" as const },
+    ]);
     await expect(
       w.save.execute(new SaveBakehouseResupplyDraftCommand(id, CONTENT, 1, "s")),
     ).rejects.toThrow(BakehouseResupplyDraftChangedMeanwhileError);
@@ -145,7 +150,7 @@ describe("les brouillons du réassort du fournil", () => {
   it("envoyé : le réassort du fournil est créé PUIS le brouillon passe `sent`, dans une seule unité", async () => {
     const w = world();
     const { id } = await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s"));
-    const screen = { ...CONTENT, lines: [{ sku: "PAC", quantity: 7 }] };
+    const screen = { ...CONTENT, lines: [{ sku: "PAC", quantity: 7, saleUnit: "piece" as const }] };
 
     const resupplyId = await w.send.execute(
       new SendBakehouseResupplyDraftCommand(id, screen, 1, "s"),
@@ -159,7 +164,9 @@ describe("les brouillons du réassort du fournil", () => {
     const [resupply] = w.resupplies.all();
     expect(resupply).toMatchObject({ id: resupplyId, origin: "bakehouse", siteId: SITE });
     // Ce qui part est ce que l'écran montrait, pas ce qui était enregistré.
-    expect(resupply?.lines).toEqual([{ sku: "PAC", label: "Pain au chocolat", quantity: 7 }]);
+    expect(resupply?.lines).toEqual([
+      { sku: "PAC", label: "Pain au chocolat", quantity: 7, saleUnit: "piece" as const },
+    ]);
     expect(w.drafts.row(id)).toMatchObject({ status: "sent", sentResupplyId: resupplyId });
     expect(await w.list.execute()).toEqual([]);
   });
@@ -174,7 +181,7 @@ describe("les brouillons du réassort du fournil", () => {
       w.send.execute(
         new SendBakehouseResupplyDraftCommand(
           id,
-          { ...CONTENT, lines: [{ sku: "OLD", quantity: 1 }] },
+          { ...CONTENT, lines: [{ sku: "OLD", quantity: 1, saleUnit: "piece" as const }] },
           1,
           "s",
         ),

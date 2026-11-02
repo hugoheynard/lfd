@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { OrderSaleUnit } from "./order.js";
 import type { ResupplyArticleView } from "./resupply-receipt.js";
 
 /**
@@ -57,7 +58,10 @@ export type SiteResupplyStatus = "placed" | "cancelled";
 export interface SiteResupplyLineView {
   readonly sku: string;
   readonly label: string;
+  /** Des pièces, ou des GRAMMES si `saleUnit = weight`. */
   readonly quantity: number;
+  /** L'unité figée à l'ajout de la ligne (lot L2b-1 du plan du jour J). */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 export interface SiteResupplyView {
@@ -225,11 +229,13 @@ export interface PlacedSiteResupplyResponse {
   readonly id: string;
 }
 
-/** Un article à produire pour une journée, tous points confondus. */
+/** Un article à produire pour une journée, tous points confondus — un total par unité. */
 export interface ResupplyTotalView {
   readonly sku: string;
   readonly label: string;
   readonly quantity: number;
+  /** Des grammes si `weight` (lot L2b-1). */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /** Ce qu'un point a demandé pour une journée : ses réassorts placés. */

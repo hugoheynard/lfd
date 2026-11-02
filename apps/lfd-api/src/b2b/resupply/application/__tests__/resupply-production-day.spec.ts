@@ -77,7 +77,14 @@ async function world() {
     uow,
   );
   const send = (siteId: string, target: "asap" | "tomorrow", sku: string, quantity: number) =>
-    place.execute(new SendBakehouseResupplyCommand(siteId, target, [{ sku, quantity }], "s"));
+    place.execute(
+      new SendBakehouseResupplyCommand(
+        siteId,
+        target,
+        [{ sku, quantity, saleUnit: "piece" as const }],
+        "s",
+      ),
+    );
   await send(VILLAGE, "asap", "CRO", 4);
   await send(VILLAGE, "tomorrow", "CRO", 9);
   await send(LABO, "tomorrow", "PAC", 6);
@@ -108,8 +115,8 @@ describe("l'onglet Réassorts de Prod manager (R3d)", () => {
       [LABO, null],
     ]);
     expect(view.totals).toEqual([
-      { sku: "CRO", label: "Croissant", quantity: 11 },
-      { sku: "PAC", label: "Pain au chocolat", quantity: 6 },
+      { sku: "CRO", label: "Croissant", quantity: 11, saleUnit: "piece" as const },
+      { sku: "PAC", label: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
     ]);
     expect(view.articles.map((article) => article.sku)).toEqual(["CRO", "PAC"]);
     // Lot R3e : le Village arrive par transfert ; au Labo, le fournil dit « Monté ».
@@ -147,8 +154,8 @@ describe("le prévisionnel lit les réassorts pour demain (R3d)", () => {
       {
         day: TOMORROW,
         items: [
-          { sku: "CRO", productName: "Croissant", quantity: 11, saleUnit: "piece" },
-          { sku: "PAC", productName: "Pain au chocolat", quantity: 6, saleUnit: "piece" },
+          { sku: "CRO", productName: "Croissant", quantity: 11, saleUnit: "piece" as const },
+          { sku: "PAC", productName: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
         ],
       },
     ]);

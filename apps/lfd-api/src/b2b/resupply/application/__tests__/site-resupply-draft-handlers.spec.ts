@@ -4,8 +4,11 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   ResupplyArticleUnknownError,
   ResupplySiteUnknownError,
-  WeightArticleInResupplyError,
 } from "../../domain/resupply-receipt-errors.js";
+import {
+  ResupplyArticleUnitChangedError,
+  WeightResupplyNotSendableError,
+} from "../../domain/resupply-sale-unit-errors.js";
 import {
   EmptyResupplyError,
   ResupplyAlreadyPlacedError,
@@ -70,7 +73,7 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
       categoryName: "Viennoiseries",
       saleUnit: "piece",
     },
-    // Au poids : hors du réassort (`vente-au-poids.md`, §2).
+    // Au poids : sa quantité compte des grammes (lot L2b-1).
     {
       sku: "SAU",
       name: "Saumon gravlax",
@@ -131,7 +134,7 @@ describe("la demande en cours — ajouter", () => {
         serviceDay: TOMORROW,
         version: 1,
         name: null,
-        lines: [{ sku: "CRO", label: "Croissant", quantity: 12 }],
+        lines: [{ sku: "CRO", label: "Croissant", quantity: 12, saleUnit: "piece" as const }],
       },
     ]);
     expect(view.resupplies).toEqual([]);
@@ -368,7 +371,12 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
     const draftVersion = versionOf(store, draftId);
 
     const sentId = await bakehouse.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 10 }], "s"),
+      new SendBakehouseResupplyCommand(
+        VILLAGE,
+        "asap",
+        [{ sku: "CRO", quantity: 10, saleUnit: "piece" as const }],
+        "s",
+      ),
     );
 
     expect(sentId).not.toBe(draftId);
@@ -383,7 +391,12 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
   it("après un envoi du fournil, le comptoir ajoute toujours à SA demande", async () => {
     const { add, bakehouse, list } = setup();
     await bakehouse.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 10 }], "s"),
+      new SendBakehouseResupplyCommand(
+        VILLAGE,
+        "asap",
+        [{ sku: "CRO", quantity: 10, saleUnit: "piece" as const }],
+        "s",
+      ),
     );
 
     const draftId = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 2));
@@ -403,13 +416,54 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
   });
 });
 
-describe("la demande en cours — un article au poids", () => {
-  it("est refusé : un réassort ne compte que des pièces", async () => {
-    const { add, store } = setup();
+describe("la demande en cours — un article au poids (lot L2b-1)", () => {
+  it("s'ajoute en grammes, son unité figée sur la ligne", async () => {
+    const { add, list } = setup();
+
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 1250));
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 250));
+
+    const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
+    expect(view.drafts[0]?.lines).toEqual([
+      { sku: "SAU", label: "Saumon gravlax", quantity: 1500, saleUnit: "weight" },
+    ]);
+  });
+
+  it("ne part pas au fournil tant qu'il ne sait pas le recevoir, et rien n'est envoyé", async () => {
+    const { add, send, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 500));
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 12));
 
     await expect(
-      add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 500)),
-    ).rejects.toThrow(WeightArticleInResupplyError);
-    expect(store.all()).toEqual([]);
+      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
+    ).rejects.toThrow(WeightResupplyNotSendableError);
+    expect(store.all().every((row) => row.placed === null)).toBe(true);
+  });
+
+  it("l'envoi du fournil qui en porte est refusé aussi, et n'écrit rien", async () => {
+    const { bakehouse, store } = setup();
+
+    await expect(
+      bakehouse.execute(
+        new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "SAU", quantity: 500 }], "s"),
+      ),
+    ).rejects.toThrow(WeightResupplyNotSendableError);
+    expect(store.saves).toBe(0);
+  });
+
+  it("une unité gardée qui n'est plus celle du catalogue est refusée à l'envoi", async () => {
+    const { bakehouse, store } = setup();
+
+    await expect(
+      bakehouse.execute(
+        new SendBakehouseResupplyCommand(
+          VILLAGE,
+          "asap",
+          [{ sku: "SAU", quantity: 3, saleUnit: "piece" }],
+          "s",
+        ),
+      ),
+    ).rejects.toThrow(ResupplyArticleUnitChangedError);
+    expect(store.saves).toBe(0);
   });
 });
