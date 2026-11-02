@@ -1066,3 +1066,40 @@ sert.
   article** (SKU, unité, reste), tenu par la clientèle de l'appelant (réglage
   `sameDayOpenTo`, créneau restant `pickupLeftToday`, articles de son
   catalogue) et vide quand le plan d'aujourd'hui n'est pas arrêté.
+
+### Le bâti de L7b (API) (2026-11-02)
+
+Le lecteur qui manquait à L7 (boutique) : le reste d'aujourd'hui **par point
+et par article**, tenu par la clientèle de l'appelant.
+
+- **Deux routes, une query** (`GetShelfStockTodayQuery`,
+  `b2b/orders/application/queries/get-shelf-stock-today.*`) :
+  - `GET /shelf-stock/today?pickupAddressId=…&audience=pro|public` —
+    `@Public()`, throttle 60/min/IP, comme `/fulfillment-days` dont elle
+    reprend l'audience annoncée (`public` par défaut). Un anonyme ne
+    s'élargit qu'au rayon pro **public** (`pro_anonymous` : ni réservé, ni
+    sur mesure) ;
+  - `GET /shelf-stock/today/mine?pickupAddressId=…` — murée, la société vient
+    de `@ActingCompany()` : porte du circuit par `sameDayDoorOf` (comme la
+    passation), catalogue par `CatalogViewers.forCompany`. Aucun paramètre
+    d'audience.
+- **Contrat** (`packages/contracts/src/shelf-stock-today.ts`) :
+  `ShelfStockTodayView = readonly { sku, saleUnit, left }[]` — `left` positif,
+  en pièces ou en **grammes** au poids ; `shelfStockTodayPickupSchema` pour le
+  paramètre. Ni label de reçu, ni identifiant de reçu, ni commande.
+- **Les gardes, dans l'ordre de la passation** (vide à chaque refus, jamais
+  une erreur) : plan d'aujourd'hui arrêté (`OrderPlanGate.isClosed`) ; porte
+  ouverte et créneau restant au point (`ShelfCircuit.refusalFor`) ; puis le
+  reste (`DayShelfStock`) réduit par `shelfLeftFor`
+  (`apps/lfd-api/src/b2b/orders/domain/services/shelf-left-today.ts`, pure) aux articles que
+  `resolveMany` sert à ce lecteur (`servedToViewer` : sur mesure non
+  attribué absent, réservé à d'autres absent), dans **leur unité de vente**,
+  reste > 0.
+- **Cache** : aucun `Cache-Control` écrit — la réponse dépend de l'appelant,
+  le middleware pose `private`.
+- **Tests** : unitaires du domaine et du handler (`__tests__/` voisins),
+  e2e `apps/lfd-api/test/shelf-stock-today.e2e-spec.ts` (plan non arrêté → vide ; particulier quand seuls
+  les pros sont ouverts → vide ; pro anonyme et reconnu voient le reste ;
+  sur mesure non attribué absent ; grammes au poids ; plus de créneau public).
+- **Reste à L7 (boutique)** : brancher la vignette (« plus que 3 », « plus
+  que 1,2 kg ») et l'article grisé sur ces deux routes.

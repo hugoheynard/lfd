@@ -3017,3 +3017,5 @@ export type {
   PriceGridPromotionView,
   PriceGridPromotionsView,
 } from "./price-grid.js";
+export { shelfStockTodayPickupSchema } from "./shelf-stock-today.js";
+export type { ShelfStockTodayLineView, ShelfStockTodayView } from "./shelf-stock-today.js";

@@ -471,6 +471,7 @@
   "test/served-company-status.e2e-spec.ts": 14979,
   "test/shelf-order-placement.e2e-spec.ts": 17000,
   "test/shelf-order-readers.e2e-spec.ts": 12500,
+  "test/shelf-stock-today.e2e-spec.ts": 13871,
   "test/shelf-stock-weight.e2e-spec.ts": 10673,
   "test/shelf-stock.e2e-spec.ts": 12900,
   "test/shipment-rank-handover.e2e-spec.ts": 7140,

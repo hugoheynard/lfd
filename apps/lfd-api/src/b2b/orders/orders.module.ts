@@ -259,6 +259,9 @@ import { AdminOfferedPickupsController } from "./http/admin-offered-pickups.cont
 import { MyPickupAddressesController } from "./http/my-pickup-addresses.controller.js";
 import { ListCustomerPickupsHandler } from "./application/queries/list-customer-pickups.handler.js";
 import { ListMyShopPickupsHandler } from "./application/queries/list-my-shop-pickups.handler.js";
+import { GetShelfStockTodayHandler } from "./application/queries/get-shelf-stock-today.handler.js";
+import { ShelfStockTodayController } from "./http/shelf-stock-today.controller.js";
+import { MyShelfStockTodayController } from "./http/my-shelf-stock-today.controller.js";
 import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.js";
 import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
@@ -343,6 +346,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // la liste aussi — client reconnu, et équipe pour un client choisi.
     AdminOfferedPickupsController,
     MyPickupAddressesController,
+    ShelfStockTodayController,
+    MyShelfStockTodayController,
     AdminCatalogController,
     // Les commandes à régler par carte, vues de la comptabilité (plan liens de
     // paiement §2a) : la commande vit ici, la ressource est `b2b_accounting`.
@@ -389,6 +394,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     CustomerAudiences,
     ListCustomerPickupsHandler,
     ListMyShopPickupsHandler,
+    GetShelfStockTodayHandler,
     OrderIntake,
     GetMyOrderAdmissionHandler,
     GetGuestOrderAdmissionHandler,
