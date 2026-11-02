@@ -54,6 +54,7 @@ const DAY: DaySupervisionView = {
       reference: 'LATE',
       customerName: 'Boulangerie Saint-Roch',
       fulfillmentMethod: 'pickup',
+      supply: 'planned',
       window: { start: '07:00', end: '08:00', source: 'override' },
       stage: 'ready',
       rule: 'not_handed_over_after_window',
@@ -418,6 +419,7 @@ describe('SupervisionPage', () => {
       reference: 'SHORT',
       customerName: 'Hôtel du Parc',
       fulfillmentMethod: 'delivery' as const,
+      supply: 'planned' as const,
       reportedAt: '2026-09-25T06:00:00.000Z',
       lines: [
         { sku: 'CRO', productName: 'Croissant', due: 3, packed: 1, saleUnit: 'piece' as const },

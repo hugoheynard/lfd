@@ -71,13 +71,13 @@ const element = (fixture: ComponentFixture<SameDayCircuitCard>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
 describe('SameDayCircuitCard', () => {
-  it('lit les réglages, tous fermés par défaut, et dit qu’ils ne prennent pas encore effet', async () => {
+  it('lit les réglages, tous fermés par défaut, sans plus dire qu’ils attendent (L6)', async () => {
     const fixture = await mount(new FakeSettings(DEFAULT_ORDER_CUTOFF_SETTINGS));
 
     const text = element(fixture).textContent ?? '';
     expect(text).toContain('Particuliers : commander pour aujourd’hui');
     expect(text).toContain('Pros en ligne (hors comptoir)');
-    expect(text).toContain('ne prennent pas encore effet');
+    expect(text).not.toContain('ne prennent pas encore effet');
     expect(fixture.componentInstance['draft']()).toEqual({
       sameDayPublicAllowed: false,
       sameDayProAllowed: false,

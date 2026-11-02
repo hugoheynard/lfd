@@ -14,7 +14,8 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 import { formatAdjustment, resolveZoneForPostalCode } from '@lfd/b2b-ui/order';
-import { NEW_ADDRESS, type DraftAddress, type DraftStore } from '../draft.store';
+import { NEW_ADDRESS, tomorrowIso, type DraftAddress, type DraftStore } from '../draft.store';
+import { clockOf, currentSlotOf, isoDayOf } from '../immediate-pickup';
 import {
   deadlinesFor,
   deliveryOpenTo,
@@ -124,6 +125,12 @@ export class AcheminementCommande {
    * l'adresse gardée.
    */
   readonly canKeepAddress = input(true);
+  /**
+   * Le point du comptoir quand le « Retrait immédiat » est proposé (lot L6) —
+   * `null` ailleurs : hors comptoir, sans point ouvert dans la bande, ou sans
+   * le droit de remettre.
+   */
+  readonly counterPlaceId = input<string | null>(null);
 
   readonly choiceChange = output<FulfillmentChoice>();
 
@@ -158,6 +165,48 @@ export class AcheminementCommande {
   ]);
 
   protected readonly isCourier = computed(() => this.method() === 'delivery');
+
+  /** Le raccourci est-il choisi ? Jamais sans point du comptoir. */
+  protected readonly immediate = computed(
+    () => this.counterPlaceId() !== null && this.draft().entry() === 'immediate',
+  );
+
+  /** « — créneau 7 h 00 – 8 h 00 », ou rien tant qu'aucun n'est posé. */
+  protected readonly immediateSlot = computed(() => {
+    const window = this.draft().window();
+    return window === null ? '' : ` — créneau ${fulfillmentWindowLabel(window)}`;
+  });
+
+  /** Le premier temps : tout de suite, au comptoir. */
+  protected readonly immediateOptions: readonly FoldViewToggleOption[] = [
+    { value: 'immediate', icon: 'lightning', label: 'Retrait immédiat' },
+  ];
+
+  /** Le point du comptoir, s'il est ouvert à ce client — la liste est déjà la sienne. */
+  protected readonly counterPoint = computed<PickupAddressView | null>(
+    () => this.pickups().find((point) => point.id === this.counterPlaceId()) ?? null,
+  );
+
+  /**
+   * « Retrait immédiat » : retrait, aujourd'hui, au point du comptoir, créneau
+   * en cours. Le règlement, lui, est pré-rempli par la page.
+   */
+  protected onImmediate(): void {
+    const placeId = this.counterPlaceId();
+    if (placeId === null) {
+      return;
+    }
+    const now = new Date();
+    const point = this.pickups().find((entry) => entry.id === placeId);
+    const slot =
+      point === undefined ? null : currentSlotOf(pickupSlots(point.opening), clockOf(now));
+    this.resetWindow();
+    this.draft().entry.set('immediate');
+    this.draft().method.set('pickup');
+    this.draft().pickupId.set(placeId);
+    this.draft().requestedDate.set(isoDayOf(now));
+    this.draft().window.set(slot === null ? null : { start: slot.start, end: slot.end });
+  }
 
   /**
    * Le point choisi, sinon la présélection de la boutique — le préféré du
@@ -487,6 +536,9 @@ export class AcheminementCommande {
   }
 
   private pickupChoice(): FulfillmentChoice {
+    if (this.immediate()) {
+      return this.immediateChoice();
+    }
     const point = this.pickup();
     return {
       method: 'pickup',
@@ -495,6 +547,22 @@ export class AcheminementCommande {
       saveToBook: false,
       window: this.chosenWindow(),
       issue: point === null ? this.noPickupIssue() : this.windowIssue(),
+    };
+  }
+
+  /** Le retrait immédiat : le point du comptoir, ou rien — jamais un autre point. */
+  private immediateChoice(): FulfillmentChoice {
+    const point = this.counterPoint();
+    return {
+      method: 'pickup',
+      pickupAddressId: point?.id ?? null,
+      deliveryAddress: null,
+      saveToBook: false,
+      window: this.chosenWindow(),
+      issue:
+        point === null
+          ? 'Le point du comptoir n’est pas ouvert aux commandes de ce client (Réglages › Sites).'
+          : this.windowIssue(),
     };
   }
 
@@ -569,7 +637,14 @@ export class AcheminementCommande {
    */
   protected onMethod(value: string): void {
     const method = value === 'delivery' ? 'delivery' : 'pickup';
-    if (method !== this.method()) {
+    if (this.draft().entry() === 'immediate') {
+      // Quitter le raccourci rend une commande programmée : demain, comme à
+      // l'ouverture, et le créneau se rechoisit.
+      this.draft().entry.set('scheduled');
+      this.draft().requestedDate.set(tomorrowIso());
+      this.draft().pickupId.set('');
+      this.resetWindow();
+    } else if (method !== this.method()) {
       this.resetWindow();
     }
     this.draft().method.set(method);

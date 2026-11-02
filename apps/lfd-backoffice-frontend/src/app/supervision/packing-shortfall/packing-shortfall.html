@@ -1,3 +1,7 @@
+@if (shortfall().supply === 'shelf') {
+  <!-- Lot L6 : prise sur le stock de la vitrine, pas fabriquée pour elle. -->
+  <fold-badge class="shelf" variant="success" content="Sur stock" data-shortfall-shelf />
+}
 <ul class="missing" data-shortfall-missing>
   @for (text of missing(); track $index) {
     <li>{{ text }}</li>

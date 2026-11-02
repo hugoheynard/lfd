@@ -20,6 +20,7 @@ function row(over: Partial<SlotRow> = {}): SlotRow {
     readyAt: '6 h 48',
     overdueMinutes: 20,
     overdueCause: 'customer',
+    shelf: false,
     method: 'pickup',
     heldForQuality: false,
     roundLine: null,

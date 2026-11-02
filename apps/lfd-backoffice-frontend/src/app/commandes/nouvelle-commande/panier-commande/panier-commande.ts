@@ -37,6 +37,11 @@ export interface OrderDraft {
   readonly requestedWindow: FulfillmentWindow | null;
   readonly note: string;
   readonly settlement: StaffSettlement;
+  /**
+   * « Retrait immédiat » (lot L6) : la page passe la commande sur le stock
+   * (`supply: "shelf"`, `entryShortcut: "immediate_pickup"`), puis la remet.
+   */
+  readonly immediate: boolean;
 }
 
 /** L'acheminement tant que le sélecteur n'a rien émis — le temps d'un rendu. */
@@ -111,6 +116,13 @@ export class PanierCommande {
    * faux au comptoir, qui n'a pas `b2b_companies:write`.
    */
   readonly canKeepAddress = input(true);
+  /** Le point du comptoir quand le « Retrait immédiat » est proposé — relayé à l'acheminement. */
+  readonly counterPlaceId = input<string | null>(null);
+  /**
+   * Ce que la vitrine ne couvre pas, ou pourquoi son stock est illisible —
+   * `null` quand tout tient. Ne compte qu'au retrait immédiat.
+   */
+  readonly shelfIssue = input<string | null>(null);
 
   readonly place = output<OrderDraft>();
 
@@ -145,6 +157,11 @@ export class PanierCommande {
     return (members.find((m) => m.role === 'owner') ?? members[0])?.userId ?? null;
   });
 
+  /** Le raccourci du comptoir est-il choisi ? */
+  protected readonly immediate = computed(
+    () => this.counterPlaceId() !== null && this.draft().entry() === 'immediate',
+  );
+
   /** Retrait ou livraison : la date demandée ne désigne pas la même chose. */
   protected readonly dateLabel = computed(() =>
     this.fulfillment().method === 'delivery' ? 'Livraison souhaitée le' : 'Retrait souhaité le',
@@ -172,6 +189,10 @@ export class PanierCommande {
     const acheminement = this.fulfillment().issue;
     if (acheminement !== null) {
       issues.push(acheminement);
+    }
+    const shelf = this.shelfIssue();
+    if (this.immediate() && shelf !== null) {
+      issues.push(shelf);
     }
     if (this.settlement() === 'account' && !this.settlesOnAccount()) {
       issues.push('Cette société ne règle pas au compte — aucun crédit ne lui a été accordé.');
@@ -213,6 +234,7 @@ export class PanierCommande {
       requestedWindow: acheminement.window,
       note: this.note(),
       settlement: this.settlement(),
+      immediate: this.immediate(),
     });
   }
 

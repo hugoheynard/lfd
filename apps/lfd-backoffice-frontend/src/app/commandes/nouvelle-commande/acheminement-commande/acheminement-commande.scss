@@ -58,3 +58,17 @@
   font-size: var(--fold-text-sm);
   cursor: pointer;
 }
+
+/* Lot L6 : « Retrait immédiat » à gauche, le groupe « Commande programmée » à droite. */
+.ach-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--fold-space-md);
+}
+
+.ach-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

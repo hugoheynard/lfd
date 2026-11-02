@@ -1,4 +1,4 @@
-import type { StaffOrderSupply } from "@lfd/contracts";
+import type { StaffEntryShortcut, StaffOrderSupply } from "@lfd/contracts";
 import { instantToLocal } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -15,6 +15,7 @@ import { SameDayOrderClosedError } from "../../domain/errors/same-day-order-clos
 import { NoPickupLeftTodayError } from "../../domain/errors/shelf-circuit-errors.js";
 import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js";
 import { SiteDaySettingsReader } from "../../domain/ports/site-day-settings.reader.js";
+import { staffSupplyOf } from "../../domain/services/order-supply-rules.js";
 import {
   ensureShelfRevisionCovered,
   ensureShelfStockCovers,
@@ -56,22 +57,26 @@ export class ShelfCircuit {
    * **Le serveur décide la marque** (§11.1, Hugo 2026-11-02) :
    *
    * - l'équipe : ce que l'écran envoie (`planned` par défaut — le raccourci
-   *   « Retrait immédiat » envoie `shelf`) ;
+   *   « Retrait immédiat » envoie `shelf` et `immediate_pickup`, lot L6 ;
+   *   un raccourci sans `shelf` est refusé, {@link staffSupplyOf}) ;
    * - un client : `shelf` pour AUJOURD'HUI sur un plan ARRÊTÉ — aujourd'hui
    *   ne se fabrique plus pour lui. Plan ouvert (pas encore arrêté, ou
    *   rouvert) : `planned`, le fournil la prend.
    *
    * La marque `shelf` porte « aujourd'hui » : l'agrégat refuse une autre
    * journée (`ensureSupplyFits`).
+   *
+   * @throws {EntryShortcutOffShelfError} l'équipe envoie un raccourci sans `shelf`.
    */
   async decide(
     parties: OrderParties,
     day: string | null,
     requested: StaffOrderSupply | undefined,
+    shortcut?: StaffEntryShortcut,
   ): Promise<OrderSupplyDecision> {
     const today = this.plans.today();
     if (parties.placedByStaffId !== null) {
-      return requested === "shelf" ? shelfOn(today) : PLANNED_SUPPLY;
+      return staffSupplyOf(requested, shortcut, today);
     }
     if (day !== today || !(await this.plans.isClosed(today))) {
       return PLANNED_SUPPLY;

@@ -11,6 +11,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -23,8 +24,14 @@ import {
   COUNTER_PLACED_ORDER_KEY,
   destinationAfterPlacingOf,
   orderEntryOriginOf,
+  type CounterHandoverOutcome,
   type CounterPlacedOrder,
 } from './order-entry-origin';
+import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
+import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
+import { ResupplyReceiptsService } from '../../comptoir/reassort-boutique-page/resupply-receipts.service';
+import { CounterDeliveryNoteService } from '../../comptoir/counter-delivery-note.service';
+import { isoDayOf, shelfShortageOf, shelfStockBySku } from './immediate-pickup';
 
 /**
  * L'accalmie au bout de laquelle on chiffre, en millisecondes.
@@ -160,6 +167,9 @@ export class NouvelleCommandePage {
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly router = inject(Router);
+  private readonly receipts = inject(ResupplyReceiptsService);
+  private readonly handovers = inject(HandoverQueueService);
+  private readonly counterNotes = inject(CounterDeliveryNoteService);
 
   /**
    * D'où l'on saisit : le Commercial (défaut) ou le Comptoir, lu dans la `data`
@@ -175,6 +185,51 @@ export class NouvelleCommandePage {
     this.origin === 'counter'
       ? inject(CounterOrderEntrySource)
       : inject(CommercialOrderEntrySource);
+
+  /**
+   * La bande du comptoir, d'où vient le point du « Retrait immédiat » (lot
+   * L6). Lue seulement au comptoir ET avec le droit de remettre : sans lui,
+   * l'injecter ferait lire la file du retrait pour se prendre un 403.
+   */
+  private readonly counterQueue =
+    this.origin === 'counter' && this.permissions.can('handover_counter:write')
+      ? inject(HandoverQueueStore, { optional: true })
+      : null;
+
+  /** Le point du comptoir quand le raccourci est proposé ; `null` sinon. */
+  protected readonly counterPlaceId = computed(() => this.counterQueue?.activePlace()?.id ?? null);
+
+  /** Le raccourci est-il choisi ? */
+  protected readonly immediate = computed(
+    () => this.counterPlaceId() !== null && this.draft.entry() === 'immediate',
+  );
+
+  /**
+   * Le reste du jour au point du comptoir, par SKU (grammes au poids) —
+   * `null` tant qu'il n'est pas lu. Lu à l'entrée dans le raccourci.
+   */
+  protected readonly shelfLeft = signal<ReadonlyMap<string, number> | null>(null);
+  protected readonly shelfFailed = signal(false);
+
+  /** Au retrait immédiat, le catalogue se réduit à ce qui reste en vitrine. */
+  protected readonly shownCatalogue = computed<readonly CatalogItemView[]>(() => {
+    if (!this.immediate()) {
+      return this.catalogue();
+    }
+    const left = this.shelfLeft();
+    return left === null ? [] : this.catalogue().filter((item) => left.has(item.sku));
+  });
+
+  /** Ce qui empêche de remettre depuis la vitrine — relayé au panier. */
+  protected readonly shelfIssue = computed<string | null>(() => {
+    if (this.shelfFailed()) {
+      return 'Le stock de la vitrine n’a pas pu être lu — réessayez, ou passez une commande programmée.';
+    }
+    const left = this.shelfLeft();
+    return left === null
+      ? 'Lecture du stock de la vitrine…'
+      : shelfShortageOf(this.cart.lines(), left);
+  });
 
   /** La case « enregistrer au carnet » n'existe que si la source peut l'honorer. */
   protected readonly canKeepAddress = this.customerSource.keepsAddresses;
@@ -292,6 +347,15 @@ export class NouvelleCommandePage {
       void this.load(this.id());
     });
 
+    // Le stock de la vitrine se relit à l'entrée dans le raccourci, et quand
+    // le point de la bande change.
+    effect(() => {
+      const placeId = this.counterPlaceId();
+      if (this.immediate() && placeId !== null) {
+        untracked(() => void this.loadShelf(placeId));
+      }
+    });
+
     /**
      * **Le prix que le serveur facturera**, redemandé quand le panier change —
      * et seulement alors.
@@ -370,6 +434,27 @@ export class NouvelleCommandePage {
     }
   }
 
+  /** Le reste du jour au point, rapporté au catalogue de la saisie. */
+  protected async loadShelf(placeId: string): Promise<void> {
+    this.shelfLeft.set(null);
+    this.shelfFailed.set(false);
+    try {
+      const receipt = await this.receipts.read(placeId, isoDayOf(new Date()));
+      if (placeId === this.counterPlaceId()) {
+        this.shelfLeft.set(shelfStockBySku(receipt.stock, this.catalogue()));
+      }
+    } catch {
+      this.shelfFailed.set(true);
+    }
+  }
+
+  protected retryShelf(): void {
+    const placeId = this.counterPlaceId();
+    if (placeId !== null) {
+      void this.loadShelf(placeId);
+    }
+  }
+
   protected async load(companyId: string): Promise<void> {
     this.state.set('loading');
     this.loadError.set(null);
@@ -402,6 +487,9 @@ export class NouvelleCommandePage {
       this.pickups.set(pickups);
       this.zones.set(zones);
       this.deliveryAvailability.set(deliveryAvailability);
+      // Le règlement se pré-remplit par le payeur (plan du jour J §11.3) : au
+      // compte s'il y a droit, le lien sinon. Un brouillon repris garde le sien.
+      this.draft.settlement.set(company.settlesOnAccount ? 'account' : 'link');
       this.resume(saved, catalogue, company.addresses);
       this.state.set('ready');
     } catch (error) {
@@ -493,6 +581,8 @@ export class NouvelleCommandePage {
         preferredPickupId: this.preferredPickupId(),
         settlesOnAccount: this.settlesOnAccount(),
         canKeepAddress: this.canKeepAddress,
+        counterPlaceId: this.counterPlaceId(),
+        shelfIssue: this.shelfIssue,
       },
     });
     const placed = await ref.closed;
@@ -596,6 +686,10 @@ export class NouvelleCommandePage {
         ...(draft.requestedWindow === null ? {} : { requestedWindow: draft.requestedWindow }),
         note: draft.note,
         lines: [...this.cart.toPayloadLines()],
+        // Le « Retrait immédiat » (lot L6) : pris sur la vitrine, et tracé.
+        ...(draft.immediate
+          ? { supply: 'shelf' as const, entryShortcut: 'immediate_pickup' as const }
+          : {}),
       });
       this.cart.clear();
       // La commande est partie : le brouillon mis de côté n'a plus d'objet, et
@@ -618,7 +712,13 @@ export class NouvelleCommandePage {
       this.lateDraft.set(null);
       this.waiverReason.set('');
       this.notify.success(`Commande ${placed.orderNumber} enregistrée.`);
-      await this.leaveAfterPlacing(placed.id, placed.orderNumber, placed.paymentUrl ?? null);
+      const handover = draft.immediate ? await this.handOver(placed.id, placed.orderNumber) : null;
+      await this.leaveAfterPlacing(
+        placed.id,
+        placed.orderNumber,
+        placed.paymentUrl ?? null,
+        handover,
+      );
     } catch (error) {
       // Le refus « encore rattrapable » n'est pas une panne : on garde la saisie
       // et on propose le geste, plutôt qu'un toast qui laisse le commercial
@@ -659,13 +759,40 @@ export class NouvelleCommandePage {
     orderId: string,
     orderNumber: string,
     paymentUrl: string | null,
+    handover: CounterHandoverOutcome | null,
   ): Promise<void> {
     const destination = destinationAfterPlacingOf(this.origin, this.id(), orderId);
-    const placed: CounterPlacedOrder = { orderNumber, paymentUrl };
+    const placed: CounterPlacedOrder = { orderNumber, paymentUrl, handover };
     await this.router.navigate(
       destination,
       this.origin === 'counter' ? { state: { [COUNTER_PLACED_ORDER_KEY]: placed } } : {},
     );
+  }
+
+  /**
+   * **« Valider et remettre »**, sa seconde moitié : la remise saisie
+   * (`POST /admin/handover/manual/:orderNumber`, celle du bloc du retrait),
+   * puis le bon chiffré à imprimer. La commande est déjà passée : un refus de
+   * remise ne l'annule pas, il se DIT — elle attend dans la file du retrait.
+   */
+  private async handOver(orderId: string, orderNumber: string): Promise<CounterHandoverOutcome> {
+    try {
+      await this.handovers.confirmManually(orderNumber);
+    } catch (error) {
+      const refusal = serverMessageOf(error);
+      this.notify.info(`Commande ${orderNumber} passée, mais pas remise : ${refusal}`);
+      return { orderId, refusal };
+    }
+    try {
+      await this.counterNotes.openClient(orderId);
+    } catch (error) {
+      this.notify.info(
+        `Commande ${orderNumber} remise, mais le bon n’a pas pu s’ouvrir : ${
+          error instanceof Error ? error.message : ''
+        } Réimprimez-le depuis le comptoir.`,
+      );
+    }
+    return { orderId, refusal: null };
   }
 
   /** Relit le réglage de livraison ; un échec garde celui qu'on avait. */

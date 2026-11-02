@@ -14,6 +14,7 @@ const SHORTFALL: ShortfallAwaitingDecision = {
   reference: 'CMD-1',
   customerName: 'Boulangerie du Col',
   fulfillmentMethod: 'delivery',
+  supply: 'planned',
   reportedAt: '2030-01-10T05:30:00.000Z',
   lines: [
     { sku: 'CRO', productName: 'Croissant', due: 12, packed: 9, saleUnit: 'piece' },

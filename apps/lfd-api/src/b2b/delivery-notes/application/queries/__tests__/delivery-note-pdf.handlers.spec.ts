@@ -1,3 +1,7 @@
+import {
+  OrderHandoverHistoryReader,
+  type OrderHandoverHistoryFact,
+} from "../../../../../handover/channels/commerce/index.js";
 import { BrandLogoSource } from "../../../../../platform/brand/brand-logo.source.js";
 import { ART } from "../../../../orders/domain/services/__tests__/client-sheet.fixture.js";
 import {
@@ -10,7 +14,11 @@ import { OrderNotFoundError } from "../../../../orders/domain/errors/order-error
 import type { OwnedOrder } from "../../../../orders/domain/ports/order.reader.js";
 import { AT_PLACEMENT } from "../../../../orders/domain/services/order-sheet.js";
 import type { DeliveryNoteState } from "../../../domain/entities/delivery-note.js";
-import { DeliveryNoteNotFoundError } from "../../../domain/errors/delivery-note-errors.js";
+import {
+  CounterDeliveryNoteNotYetError,
+  CounterDeliveryNoteOutOfReachError,
+  DeliveryNoteNotFoundError,
+} from "../../../domain/errors/delivery-note-errors.js";
 import { DeliveryNoteReader } from "../../../domain/ports/delivery-note.reader.js";
 import {
   handedOverNote,
@@ -21,6 +29,8 @@ import { GetCarrierNotePdfHandler } from "../get-carrier-note-pdf.handler.js";
 import { GetCarrierNotePdfQuery } from "../get-carrier-note-pdf.query.js";
 import { GetClientNotePdfHandler } from "../get-client-note-pdf.handler.js";
 import { GetClientNotePdfQuery } from "../get-client-note-pdf.query.js";
+import { GetCounterClientNotePdfHandler } from "../get-counter-client-note-pdf.handler.js";
+import { GetCounterClientNotePdfQuery } from "../get-counter-client-note-pdf.query.js";
 import { ListOrderDeliveryNotesHandler } from "../list-order-delivery-notes.handler.js";
 import { ListOrderDeliveryNotesQuery } from "../list-order-delivery-notes.query.js";
 import { FixedNoteDiscountParts } from "../../__tests__/departure-doubles.js";
@@ -57,9 +67,9 @@ class OneRole extends OrderAccessReader {
   }
 }
 
-function owned(): OwnedOrder {
+function owned(over: Parameters<typeof view>[0] = {}): OwnedOrder {
   return {
-    view: view({ id: "ord_1", orderNumber: "ORD-1042", companyId: COMPANY }),
+    view: view({ id: "ord_1", orderNumber: "ORD-1042", companyId: COMPANY, ...over }),
     companyId: COMPANY,
     placedByUserId: BUYER,
     stripePaymentIntentId: null,
@@ -155,5 +165,72 @@ describe("ListOrderDeliveryNotesHandler — la liste de la fiche commande", () =
     const notes = await handler.execute(new ListOrderDeliveryNotesQuery("ord_1"));
 
     expect(notes.map((n) => [n.number, n.status])).toEqual([["BL-1042-1", "handed_over"]]);
+  });
+});
+
+/** Le canal du retrait : la remise attestée de `ord_1`, ou aucune. */
+class FixedHandovers extends OrderHandoverHistoryReader {
+  constructor(private readonly attested: boolean) {
+    super();
+  }
+  ofOrders(): Promise<ReadonlyMap<string, OrderHandoverHistoryFact>> {
+    return Promise.resolve(
+      new Map(
+        this.attested
+          ? [
+              [
+                "ord_1",
+                { orderId: "ord_1", handedOverAt: new Date(0), via: "manual", atDoor: false },
+              ],
+            ]
+          : [],
+      ),
+    );
+  }
+}
+
+function counterHandler(
+  notes: readonly DeliveryNoteState[],
+  method: "pickup" | "delivery",
+  attested: boolean,
+): GetCounterClientNotePdfHandler {
+  return new GetCounterClientNotePdfHandler(
+    documents(notes, owned({ fulfillmentMethod: method })),
+    new FixedHandovers(attested),
+  );
+}
+
+describe("GetCounterClientNotePdfHandler — le bon remis au client, au comptoir (lot L6)", () => {
+  it("sert le BL chiffré d'un retrait remis, avec son numéro pour la trace", async () => {
+    const note = handedOverNote();
+
+    const pdf = await counterHandler([note], "pickup", true).execute(
+      new GetCounterClientNotePdfQuery("ord_1"),
+    );
+
+    expect(pdf.number).toBe(note.number);
+    expect(pdf.bytes.subarray(0, 5).toString()).toBe("%PDF-");
+  });
+
+  it("dit « pas encore » quand la remise est attestée sans BL écrit", async () => {
+    await expect(
+      counterHandler([], "pickup", true).execute(new GetCounterClientNotePdfQuery("ord_1")),
+    ).rejects.toBeInstanceOf(CounterDeliveryNoteNotYetError);
+  });
+
+  it("refuse un retrait jamais remis", async () => {
+    await expect(
+      counterHandler([plannedNote().toState()], "pickup", false).execute(
+        new GetCounterClientNotePdfQuery("ord_1"),
+      ),
+    ).rejects.toBeInstanceOf(CounterDeliveryNoteOutOfReachError);
+  });
+
+  it("refuse le BL d'une livraison, même remise", async () => {
+    await expect(
+      counterHandler([handedOverNote()], "delivery", true).execute(
+        new GetCounterClientNotePdfQuery("ord_1"),
+      ),
+    ).rejects.toBeInstanceOf(CounterDeliveryNoteOutOfReachError);
   });
 });

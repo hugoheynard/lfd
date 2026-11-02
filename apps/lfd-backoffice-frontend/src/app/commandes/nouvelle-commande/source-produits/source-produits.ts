@@ -34,6 +34,7 @@ import { formatCents, formatMillicents, formatOrderDate } from '@lfd/b2b-ui/orde
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import type { CartStore } from '../cart.store';
 import { HistoriqueCommandes } from '../historique-commandes/historique-commandes';
+import { shelfHintOf } from '../immediate-pickup';
 
 /**
  * Une ligne proposée : le produit tel que la rangée partagée le rend, plus la
@@ -112,6 +113,11 @@ export class SourceProduits {
   readonly selectedOrderId = input<string | null>(null);
   /** Le panier, pour afficher ce qui y est déjà — lu, jamais muté ici. */
   readonly cart = input.required<CartStore>();
+  /**
+   * Le reste en vitrine par SKU, au « Retrait immédiat » du comptoir (lot L6)
+   * — dit sur chaque rangée du catalogue. `null` hors raccourci.
+   */
+  readonly shelfLeft = input<ReadonlyMap<string, number> | null>(null);
 
   readonly kindChange = output<SourceKind>();
   /** Une commande choisie dans le volet gauche — la page va la relire en détail. */
@@ -148,7 +154,7 @@ export class SourceProduits {
     const slice = this.matching().slice(start, start + CATALOGUE_PAGE_SIZE);
     return catalogShelves(slice, (item) => item.family).map((shelf) => ({
       ...shelf,
-      items: shelf.items.map(fromCatalog),
+      items: shelf.items.map((item) => fromCatalog(item, this.shelfLeft())),
     }));
   });
 
@@ -232,12 +238,19 @@ function matches(item: CatalogItemView, needle: string): boolean {
   return needle === '' || normalise(`${item.name} ${item.sku}`).includes(needle);
 }
 
-function fromCatalog(item: CatalogItemView): ProposedLine {
+function fromCatalog(
+  item: CatalogItemView,
+  shelfLeft: ReadonlyMap<string, number> | null,
+): ProposedLine {
   const product = toCatalogProduct(item);
+  const left = shelfLeft?.get(item.sku);
   return {
     product,
     unitPriceMillicents: item.unitPriceMillicents,
-    hint: item.sku,
+    hint:
+      left === undefined
+        ? item.sku
+        : `${item.sku} · ${shelfHintOf(left, item.saleUnit ?? 'piece')}`,
     quantity: product.minimum ?? 1,
     available: true,
   };

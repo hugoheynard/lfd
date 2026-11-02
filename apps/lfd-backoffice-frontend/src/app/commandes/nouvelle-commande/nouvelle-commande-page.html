@@ -92,11 +92,28 @@
       </fold-callout>
     }
 
+    @if (immediate()) {
+      @if (shelfFailed()) {
+        <fold-callout variant="alert">
+          Le stock de la vitrine n’a pas pu être lu : le retrait immédiat attend sa relecture.
+          <button foldButton emphasis="outline" intent="neutral" (click)="retryShelf()">
+            Relire le stock
+          </button>
+        </fold-callout>
+      } @else if (shelfLeft()?.size === 0) {
+        <fold-callout variant="warning">
+          Rien en vitrine au point du comptoir aujourd’hui : aucun réassort reçu, ou tout est parti.
+          Passez une commande programmée.
+        </fold-callout>
+      }
+    }
+
     <div class="nc-columns">
       <app-source-produits
         class="nc-col nc-left"
         [kind]="source()"
-        [catalogue]="catalogue()"
+        [catalogue]="shownCatalogue()"
+        [shelfLeft]="immediate() ? shelfLeft() : null"
         [habits]="habits()"
         [orders]="history()"
         [selectedOrderId]="selectedOrderId()"
@@ -126,6 +143,8 @@
           [preferredPickupId]="preferredPickupId()"
           [settlesOnAccount]="settlesOnAccount()"
           [canKeepAddress]="canKeepAddress"
+          [counterPlaceId]="counterPlaceId()"
+          [shelfIssue]="shelfIssue()"
           [submitting]="submitting()"
           (place)="onPlace($event)"
         />

@@ -54,6 +54,7 @@ function late(orders: readonly Partial<LateOrder>[], asOf: string): DaySupervisi
       reference: 'R',
       customerName: null,
       fulfillmentMethod: 'pickup',
+      supply: 'planned',
       window: { start: '07:00', end: '08:00', source: 'override' },
       stage: 'ready',
       rule: 'not_handed_over_after_window',
@@ -117,6 +118,22 @@ describe('la colonne Retrait / livraison', () => {
     expect(rows.map((row) => row.state)).toEqual(['overdue', 'ready']);
     expect(rows[0]?.overdueMinutes).toBe(55);
     expect(board.overdue).toBe(1);
+  });
+
+  it('marque « sur stock » le retard d’une commande prise dans la vitrine (L6)', () => {
+    const board = handoverBoard(
+      {
+        day: DAY,
+        entries: [entry('S', promised('07:00', '08:00')), entry('P', promised('07:00', '08:00'))],
+      },
+      late([{ orderId: 'o-S', supply: 'shelf' }, { orderId: 'o-P' }], '2026-09-25T06:55:00.000Z'),
+    );
+
+    const rows = board.pickup[0]?.rows ?? [];
+    expect(rows.map((row) => [row.reference, row.shelf])).toEqual([
+      ['S', true],
+      ['P', false],
+    ]);
   });
 
   it('sans la lecture des retards, ne signale aucun créneau dépassé', () => {

@@ -18,6 +18,7 @@ import type {
   SitePaletteEntryView,
 } from '@lfd/contracts';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -73,6 +74,7 @@ import { OrderTags } from '../../shared/order-identity/order-tags/order-tags';
   imports: [
     OrderTags,
     RouterLink,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,

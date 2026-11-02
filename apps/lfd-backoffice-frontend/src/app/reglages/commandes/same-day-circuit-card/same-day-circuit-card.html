@@ -18,11 +18,6 @@
     @case ('ready') {
       @if (draft(); as current) {
         <div class="form">
-          <fold-callout variant="info" data-same-day-circuit-pending>
-            Ces réglages ne prennent pas encore effet : la commande pour aujourd’hui sur le stock de
-            la vitrine n’est pas encore ouverte. D’ici là, seul le réglage ci-dessus décide.
-          </fold-callout>
-
           <fold-checkbox
             label="Particuliers : commander pour aujourd’hui"
             [checked]="current.sameDayPublicAllowed"

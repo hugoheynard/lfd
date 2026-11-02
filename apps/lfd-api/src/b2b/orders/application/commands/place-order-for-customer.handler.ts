@@ -97,6 +97,8 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       // La marque que l'écran envoie — `shelf` pour le « Retrait immédiat »
       // (plan du jour J, §11.1, lot L4) ; absente, fabriquée comme avant.
       payload.supply,
+      // Le « Retrait immédiat » du comptoir (lot L6) : une trace sur une `shelf`.
+      payload.entryShortcut,
     );
 
     const intent = await this.settle(order, payload.settlement, companyId);

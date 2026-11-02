@@ -107,6 +107,7 @@ describe("GetDaySupervisionHandler", () => {
         reference: "ORD-0002",
         customerName: "Boulangerie du Col",
         fulfillmentMethod: "pickup",
+        supply: "planned",
         reportedAt: NOW.toISOString(),
         lines: [{ sku: "CRO", productName: "Croissant", due: 3, packed: 1, saleUnit: "piece" }],
       },
@@ -126,11 +127,22 @@ describe("GetDaySupervisionHandler", () => {
         reference: "ORD-0001",
         customerName: "Boulangerie du Col",
         fulfillmentMethod: "pickup",
+        supply: "planned",
         window: { start: "07:00", end: "08:00", source: "override" },
         stage: "ready",
         rule: "not_handed_over_after_window",
       },
     ]);
+  });
+
+  it("porte la marque « sur stock » d'une commande prise en vitrine (lot L6)", async () => {
+    const view = await new GetDaySupervisionHandler(
+      new StubReader([{ ...LATE, supply: "shelf" }], 0),
+      new FixedClock(NOW),
+      new FixedPackingStates(),
+    ).execute(new GetDaySupervisionQuery(DAY));
+
+    expect(view.late.map((late) => late.supply)).toEqual(["shelf"]);
   });
 
   it("plan A1 : compte à part les annulées dont le colisage a retiré la feuille", async () => {

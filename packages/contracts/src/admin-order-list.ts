@@ -8,6 +8,7 @@ import {
   type FulfillmentSource,
   type OrderOrigin,
   type OrderStatus,
+  type OrderSupply,
   type PaymentStatus,
 } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
@@ -39,6 +40,11 @@ export interface AdminOrderRow {
    * reprise au fournil (toujours `placed`). Le geste : reprendre la journée.
    */
   readonly offPlan: boolean;
+  /**
+   * **Sur stock** (`shelf`, plan du jour J, lot L6) : prise dans la vitrine de
+   * son point, aujourd'hui — jamais fabriquée pour elle ; `planned` sinon.
+   */
+  readonly supply: OrderSupply;
   /**
    * **Manque signalé — décision attendue** (lot E6a,
    * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : l'instant ISO du

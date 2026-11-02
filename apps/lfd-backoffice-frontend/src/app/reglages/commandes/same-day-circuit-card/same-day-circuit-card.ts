@@ -55,8 +55,8 @@ const WITHOUT_CREDIT_OPTIONS = [
  * ligne ; le sort d'un pro sans crédit au comptoir ; la tenue du stock par un
  * paiement en cours.
  *
- * Rien ne lit ces réglages avant le lot L4 : la carte le dit. Le serveur
- * refuse une durée hors bornes (400). Même droit que la page,
+ * Lus par la passation depuis le lot L4 ; l'encadré « ne prennent pas encore
+ * effet » est retiré au lot L6. Le serveur refuse une durée hors bornes (400). Même droit que la page,
  * `lfc_order_settings`.
  */
 @Component({

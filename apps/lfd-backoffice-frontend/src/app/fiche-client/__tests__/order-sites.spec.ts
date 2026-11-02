@@ -11,6 +11,7 @@ function row(companyId: string | null, companyDisplayName: string | null): Admin
     placedAt: '2026-09-12T08:00:00.000Z',
     status: 'placed',
     offPlan: false,
+    supply: 'planned',
     shortfallReportedAt: null,
     paymentStatus: 'not_required',
     fulfillmentMethod: 'pickup',

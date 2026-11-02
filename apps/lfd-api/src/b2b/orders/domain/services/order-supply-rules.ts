@@ -1,11 +1,16 @@
 import type { RevisableOrder } from "../entities/order-revision.js";
 import type { OrderFulfillmentInput } from "../entities/order-shapes.js";
 import {
+  EntryShortcutOffShelfError,
   ShelfOrderNotPickupError,
   ShelfOrderNotTodayError,
   ShelfOrderRouteChangeError,
 } from "../errors/shelf-order-errors.js";
-import type { OrderSupplyDecision } from "../value-objects/order-supply.js";
+import type {
+  OrderEntryShortcut,
+  OrderSupply,
+  OrderSupplyDecision,
+} from "../value-objects/order-supply.js";
 import type { RevisedFulfillment } from "./fulfillment-promotion.js";
 
 /**
@@ -32,6 +37,30 @@ export function ensureSupplyFits(
   if (serviceDay !== decision.today) {
     throw new ShelfOrderNotTodayError(serviceDay, decision.today);
   }
+}
+
+/**
+ * **La marque d'une saisie de l'équipe** (plan du jour J, §11.1, lot L4 ; le
+ * raccourci, lot L6) : ce que l'écran envoie, `planned` s'il n'envoie rien.
+ * Le « Retrait immédiat » n'existe que sur une `shelf` — la forme
+ * {@link OrderSupplyDecision} le rend inexprimable ailleurs, et ce refus le
+ * dit au vendeur plutôt que de l'oublier en silence. Le retrait, la journée
+ * et le point sont ensuite jugés par l'agrégat ({@link ensureSupplyFits}).
+ *
+ * @throws {EntryShortcutOffShelfError} un raccourci sur une commande programmée.
+ */
+export function staffSupplyOf(
+  requested: OrderSupply | undefined,
+  shortcut: OrderEntryShortcut | undefined,
+  today: string,
+): OrderSupplyDecision {
+  if (requested === "shelf") {
+    return { supply: "shelf", today, entryShortcut: shortcut ?? null };
+  }
+  if (shortcut !== undefined) {
+    throw new EntryShortcutOffShelfError();
+  }
+  return { supply: "planned" };
 }
 
 /**

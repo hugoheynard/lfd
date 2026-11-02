@@ -52,6 +52,21 @@ describe('la commande transmise au sélecteur du comptoir', () => {
     expect(counterPlacedOrderOf(state)).toEqual({
       orderNumber: 'CMD-1',
       paymentUrl: 'https://pay/x',
+      handover: null,
+    });
+  });
+
+  it('relit l’issue de la remise du retrait immédiat (L6), refus compris', () => {
+    const state = {
+      counterPlacedOrder: {
+        orderNumber: 'CMD-1',
+        paymentUrl: null,
+        handover: { orderId: 'o_1', refusal: 'Commande non réglée.' },
+      },
+    };
+    expect(counterPlacedOrderOf(state)?.handover).toEqual({
+      orderId: 'o_1',
+      refusal: 'Commande non réglée.',
     });
   });
 

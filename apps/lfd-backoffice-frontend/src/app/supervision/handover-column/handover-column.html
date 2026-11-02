@@ -107,6 +107,10 @@
             <span class="customer-line">
               <span class="customer">{{ row.customerLabel }}</span>
               <span class="reference" data-row-reference>{{ row.reference }}</span>
+              @if (row.shelf) {
+                <!-- Lot L6 : prise sur le stock de la vitrine (lu dans les retards). -->
+                <fold-badge variant="success" content="Sur stock" data-row-shelf />
+              }
             </span>
             <!-- Pro / Particulier et le mode à la couleur du site — le rendu de
                  la page Commandes (Hugo, 2026-11-01). Le site y est dit : il

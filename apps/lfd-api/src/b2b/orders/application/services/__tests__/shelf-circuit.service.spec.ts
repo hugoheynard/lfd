@@ -1,5 +1,6 @@
 import { millicentsFromCents } from "@lfd/money";
 
+import { EntryShortcutOffShelfError } from "../../../domain/errors/shelf-order-errors.js";
 import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
 import { Order, type DraftOrderInput } from "../../../domain/entities/order.js";
 import { SameDayOrderClosedError } from "../../../domain/errors/same-day-order-closed.error.js";
@@ -72,6 +73,32 @@ describe("ShelfCircuit.decide — le serveur décide la marque", () => {
     expect(await circuit.decide(STAFF, TODAY, "shelf")).toEqual(SHELF_TODAY);
     expect(await circuit.decide(STAFF, TODAY, undefined)).toEqual({ supply: "planned" });
     expect(plans.asked).toEqual([]);
+  });
+
+  it("l'équipe : le « Retrait immédiat » se garde sur la commande sur stock (lot L6)", async () => {
+    const circuit = shelfCircuitOf(gateOf(new FixedClosedPlans([TODAY])));
+
+    expect(await circuit.decide(STAFF, TODAY, "shelf", "immediate_pickup")).toEqual({
+      ...SHELF_TODAY,
+      entryShortcut: "immediate_pickup",
+    });
+  });
+
+  it("l'équipe : un « Retrait immédiat » sur une commande programmée est refusé, pas oublié", async () => {
+    const circuit = shelfCircuitOf(gateOf(new FixedClosedPlans([TODAY])));
+
+    await expect(
+      circuit.decide(STAFF, TODAY, "planned", "immediate_pickup"),
+    ).rejects.toBeInstanceOf(EntryShortcutOffShelfError);
+    await expect(
+      circuit.decide(STAFF, TODAY, undefined, "immediate_pickup"),
+    ).rejects.toBeInstanceOf(EntryShortcutOffShelfError);
+  });
+
+  it("un client ne pose jamais le raccourci, même s'il l'envoie", async () => {
+    const circuit = shelfCircuitOf(gateOf(new FixedClosedPlans([TODAY])));
+
+    expect(await circuit.decide(CLIENT, TODAY, "shelf", "immediate_pickup")).toEqual(SHELF_TODAY);
   });
 });
 

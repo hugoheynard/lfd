@@ -11,7 +11,10 @@ import {
   CompanyMemberReader,
   type CompanyMemberRecord,
 } from "../../../domain/ports/company-member.repository.js";
+import { CompanyFollowsReader } from "../../../domain/ports/company-follows.reader.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
+import { FollowPeriod } from "../../../domain/value-objects/follow-period.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CounterCustomerReader } from "../../../domain/ports/counter-customer.reader.js";
 import type { CompanyStatus } from "../../../domain/value-objects/company-status.js";
 import { DirectDebitBlock } from "../../../domain/value-objects/direct-debit-block.js";
@@ -51,12 +54,13 @@ const DELIVERY: DeliveryAddressView = {
 };
 
 function company(options: {
+  readonly id?: string;
   readonly status?: CompanyStatus;
   readonly onAccount?: boolean;
   readonly blocked?: boolean;
 }): Company {
   return Company.reconstitute({
-    id: "c1",
+    id: options.id ?? "c1",
     raisonSociale: "PQ Marais",
     enseigne: "Le Pain Quotidien",
     formeJuridique: "SAS",
@@ -105,14 +109,17 @@ class FixedCards extends CounterCustomerReader {
 /** Port d'écriture doublé en lecture seule : le handler ne doit que charger. */
 class StoredCompanies extends CompanyRepository {
   saved = 0;
-  constructor(private readonly stored: Company | null) {
+  constructor(
+    private readonly stored: Company | null,
+    private readonly others: ReadonlyMap<string, Company> = new Map(),
+  ) {
     super();
   }
   existsBySiret(): Promise<boolean> {
     return Promise.resolve(false);
   }
-  load(): Promise<Company | null> {
-    return Promise.resolve(this.stored);
+  load(companyId: string): Promise<Company | null> {
+    return Promise.resolve(this.others.get(companyId) ?? this.stored);
   }
   save(): Promise<void> {
     this.saved += 1;
@@ -144,17 +151,39 @@ class FixedMembers extends CompanyMemberReader {
   }
 }
 
+/** Le principal que `c1` suit en `billing` depuis hier, ou aucun. */
+class FixedBillingFollow extends CompanyFollowsReader {
+  constructor(private readonly parentId: string | null) {
+    super();
+  }
+  followsAt(_companyId: string, aspect: string, at: Date): Promise<FollowPeriod | null> {
+    return Promise.resolve(
+      this.parentId === null || aspect !== "billing"
+        ? null
+        : FollowPeriod.open("billing", this.parentId, new Date(at.getTime() - DAY_MS)),
+    );
+  }
+}
+
+const DAY_MS = 86_400_000;
+
 function detail(
   card: CounterCustomerCard | null,
   stored: Company | null,
   members: readonly CompanyMemberRecord[] = [],
+  payer: Company | null = null,
 ): { handler: GetCounterCustomerHandler; companies: StoredCompanies } {
-  const companies = new StoredCompanies(stored);
+  const companies = new StoredCompanies(
+    stored,
+    payer === null ? new Map() : new Map([["p1", payer]]),
+  );
   const handler = new GetCounterCustomerHandler(
     new FixedCards(card),
     companies,
     new FixedAddresses(),
     new FixedMembers(members),
+    new FixedBillingFollow(payer === null ? null : "p1"),
+    new FixedClock(JOINED_AT),
   );
   return { handler, companies };
 }
@@ -219,6 +248,32 @@ describe("GetCounterCustomerHandler", () => {
 
   it("dit « pas au compte » pour une société sans crédit accordé", async () => {
     const { handler } = detail(CARD, company({ onAccount: false }));
+
+    expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(false);
+  });
+
+  /**
+   * Régression (plan du jour J, §12 sérieux, lot L6) : le verdict lisait la
+   * société seule, quand la passation lit le PAYEUR — un site rattaché voyait
+   * « au compte » proposé, puis refusé à la validation.
+   */
+  it("lit le crédit du principal qu'un site suit en facturation, pas celui du site", async () => {
+    const principal = company({ id: "p1", onAccount: true });
+    const { handler } = detail(CARD, company({ onAccount: false }), [], principal);
+
+    expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(true);
+  });
+
+  it("dit « pas au compte » pour un site dont le principal suivi n'a pas de crédit", async () => {
+    const principal = company({ id: "p1", onAccount: false });
+    const { handler } = detail(CARD, company({ onAccount: true }), [], principal);
+
+    expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(false);
+  });
+
+  it("dit « pas au compte » quand le principal suivi n'est pas actif", async () => {
+    const principal = company({ id: "p1", onAccount: true, status: "suspended" });
+    const { handler } = detail(CARD, company({ onAccount: true }), [], principal);
 
     expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(false);
   });

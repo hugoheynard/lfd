@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import type { AdminOrderShortfall, ShortfallAwaitingDecision } from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { FoldBadgeComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { OrderShortfallDecision } from '../../commandes/order-shortfall-decision/order-shortfall-decision';
@@ -18,7 +19,7 @@ import { OrderShortfallDecision } from '../../commandes/order-shortfall-decision
 @Component({
   selector: 'app-packing-shortfall',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [OrderShortfallDecision],
+  imports: [FoldBadgeComponent, OrderShortfallDecision],
   templateUrl: './packing-shortfall.html',
   styleUrl: './packing-shortfall.scss',
 })

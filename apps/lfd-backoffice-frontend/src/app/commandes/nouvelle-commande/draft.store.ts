@@ -2,6 +2,8 @@ import { signal } from '@angular/core';
 
 import type { FulfillmentMethod, FulfillmentWindow, StaffSettlement } from '@lfd/contracts';
 
+import type { OrderEntryKind } from './immediate-pickup';
+
 /** Le choix « une autre adresse » — sentinelle, jamais un identifiant. */
 export const NEW_ADDRESS = '__new__';
 
@@ -76,6 +78,12 @@ export class DraftStore {
   readonly requestedDate = signal(tomorrowIso());
   readonly note = signal('');
   readonly settlement = signal<StaffSettlement>('link');
+  /**
+   * « Retrait immédiat » ou « Commande programmée » (lot L6, comptoir). Hors
+   * du brouillon conservé : un raccourci vaut pour l'instant où le client est
+   * devant le comptoir, jamais pour une saisie reprise plus tard.
+   */
+  readonly entry = signal<OrderEntryKind>('scheduled');
 
   /** Modifie un champ de l'adresse dictée. */
   patchAddress(patch: Partial<DraftAddress>): void {
@@ -111,6 +119,7 @@ export class DraftStore {
   }
 
   reset(): void {
+    this.entry.set('scheduled');
     this.restore({
       buyerUserId: null,
       method: 'pickup',
@@ -131,7 +140,7 @@ export class DraftStore {
  * proposer à J+1 plutôt que vide colle au cas courant (on saisit la veille pour
  * le lendemain) et évite d'ouvrir l'écran sur un bouton déjà bloqué.
  */
-function tomorrowIso(): string {
+export function tomorrowIso(): string {
   const day = new Date();
   day.setDate(day.getDate() + 1);
   const month = `${day.getMonth() + 1}`.padStart(2, '0');

@@ -36,6 +36,7 @@ function delivery(reference: string): SlotRow {
     readyAt: null,
     overdueMinutes: null,
     overdueCause: null,
+    shelf: false,
     method: 'delivery',
     heldForQuality: false,
     roundLine: null,

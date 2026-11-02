@@ -1,11 +1,37 @@
-<fold-view-toggle
-  class="ach-toggle"
-  activeStyle="accent"
-  ariaLabel="Mode d'acheminement"
-  [options]="methods()"
-  [value]="method()"
-  (valueChange)="onMethod($event)"
-/>
+@if (counterPlaceId() !== null) {
+  <!-- Lot L6 : d'abord la nature de la commande (tout de suite, ou pour une
+       date), ensuite son acheminement. -->
+  <div class="ach-entry">
+    <fold-view-toggle
+      activeStyle="accent"
+      ariaLabel="Retrait immédiat"
+      [options]="immediateOptions"
+      [value]="immediate() ? 'immediate' : ''"
+      (valueChange)="onImmediate()"
+      data-immediate
+    />
+    <div class="ach-group">
+      <span class="ach-label">Commande programmée</span>
+      <fold-view-toggle
+        activeStyle="accent"
+        ariaLabel="Commande programmée"
+        [options]="methods()"
+        [value]="immediate() ? '' : method()"
+        (valueChange)="onMethod($event)"
+        data-scheduled
+      />
+    </div>
+  </div>
+} @else {
+  <fold-view-toggle
+    class="ach-toggle"
+    activeStyle="accent"
+    ariaLabel="Mode d'acheminement"
+    [options]="methods()"
+    [value]="method()"
+    (valueChange)="onMethod($event)"
+  />
+}
 
 @if (deliveryClosedReason(); as reason) {
   <p class="ach-line">{{ reason }}</p>
@@ -119,6 +145,13 @@
         data-slot-end
       />
     </div>
+  }
+} @else if (immediate()) {
+  @if (counterPoint(); as point) {
+    <p class="ach-line" data-immediate-line>
+      Retrait à <strong>{{ point.label || point.ville }}</strong
+      >, aujourd’hui{{ immediateSlot() }}, pris sur le stock de la vitrine.
+    </p>
   }
 } @else {
   @if (pickupOptions().length > 1) {

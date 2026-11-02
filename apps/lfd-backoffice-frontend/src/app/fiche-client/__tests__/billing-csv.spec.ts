@@ -18,6 +18,7 @@ function order(
     placedAt,
     status: 'fulfilled' as OrderStatus,
     offPlan: false,
+    supply: 'planned',
     shortfallReportedAt: null,
     paymentStatus,
     fulfillmentMethod: 'pickup',

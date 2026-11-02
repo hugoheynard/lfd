@@ -1330,6 +1330,30 @@ export const staffOrderSupplySchema = z.enum(["planned", "shelf"]);
 export type StaffOrderSupply = z.infer<typeof staffOrderSupplySchema>;
 
 /**
+ * **D'où vient la marchandise d'une commande**, telle que les vues de
+ * l'équipe la montrent (plan `limites-de-commande/plan-jour-meme-sur-stock.md`,
+ * §5, lot L6 : le badge « sur stock » des Commandes et de la Supervision) :
+ * `planned` — fabriquée pour elle ; `shelf` — prise dans la vitrine de son
+ * point, aujourd'hui. Figée à la passation, décidée par le serveur.
+ */
+export const orderSupplySchema = z.enum(["planned", "shelf"]);
+export type OrderSupply = z.infer<typeof orderSupplySchema>;
+
+/**
+ * **Le raccourci de saisie** que l'écran de l'équipe déclare (plan
+ * `limites-de-commande/plan-jour-meme-sur-stock.md`, §1, §5, lot L6) :
+ * `immediate_pickup` est le « Retrait immédiat » du comptoir. Une trace, que
+ * le serveur garde sur la commande pour compter combien de fois il a servi et
+ * pour quelle clientèle ; il ne décide de rien.
+ *
+ * Le serveur ne l'accepte que sur une commande prise sur la vitrine
+ * (`supply: "shelf"`), donc un retrait d'aujourd'hui à un point — refus
+ * `orders.shelf.shortcut_off_shelf` sinon.
+ */
+export const staffEntryShortcutSchema = z.enum(["immediate_pickup"]);
+export type StaffEntryShortcut = z.infer<typeof staffEntryShortcutSchema>;
+
+/**
  * **Ce que le serveur facturera**, demandé avant de valider.
  *
  * Le panier du staff affichait le tarif du CATALOGUE pendant que le serveur

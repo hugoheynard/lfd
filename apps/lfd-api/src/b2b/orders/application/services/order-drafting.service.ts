@@ -3,6 +3,7 @@ import {
   type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
   type SalesTermsDocument,
+  type StaffEntryShortcut,
   type StaffOrderSupply,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
@@ -138,6 +139,8 @@ export class OrderDrafting {
     // staff et pour une boutique qui ne l'a pas envoyée.
     locale: OrderLocale | null,
     requestedSupply?: StaffOrderSupply,
+    // Le « Retrait immédiat » que l'écran de l'équipe déclare (lot L6).
+    requestedShortcut?: StaffEntryShortcut,
   ): Promise<DraftedOrder> {
     // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
     // trois portes de passation partagent (client, saisie staff, boutique), et
@@ -151,7 +154,12 @@ export class OrderDrafting {
     const principal = orderPrincipalOf(standing);
     // D'où vient la marchandise — décidé par le serveur (circuit du jour J,
     // §11.1) : les gardes de la journée s'y séparent.
-    const supply = await this.shelf.decide(parties, content.requestedDeliveryDate, requestedSupply);
+    const supply = await this.shelf.decide(
+      parties,
+      content.requestedDeliveryDate,
+      requestedSupply,
+      requestedShortcut,
+    );
     // L'arrêt du plan ferme la journée au CLIENT, heure limite ou pas (lot O3) :
     // refusé ici, tôt et sans verrou ; `holdSupply` le reprend sous verrou. La
     // saisie de l'équipe passe, et sera reçue « hors plan » (§8.3). Une

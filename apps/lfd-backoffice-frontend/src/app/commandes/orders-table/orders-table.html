@@ -17,6 +17,10 @@
       @if (origin(row); as pill) {
         <fold-badge variant="accent" [content]="pill" />
       }
+      @if (row.supply === 'shelf') {
+        <!-- Lot L6 : prise sur le stock de la vitrine, pas fabriquée pour elle. -->
+        <fold-badge variant="success" content="Sur stock" data-shelf />
+      }
     </span>
   </ng-template>
 

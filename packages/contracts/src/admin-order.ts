@@ -14,6 +14,7 @@ import {
   orderContentShape,
   orderLineInputSchema,
   type FulfillmentMethod,
+  staffEntryShortcutSchema,
   staffOrderSupplySchema,
 } from "./order.js";
 
@@ -123,6 +124,8 @@ export const adminPlaceOrderPayloadSchema = z
     buyerUserId: z.string().trim().min(1, "client requis"),
     settlement: staffSettlementSchema,
     supply: staffOrderSupplySchema.optional(),
+    // Le « Retrait immédiat » du comptoir (lot L6) : seulement avec `supply: "shelf"`.
+    entryShortcut: staffEntryShortcutSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

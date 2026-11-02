@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { BrandModule } from "../../platform/brand/brand.module.js";
 import { OrdersModule } from "../orders/orders.module.js";
+import { GetCounterClientNotePdfHandler } from "./application/queries/get-counter-client-note-pdf.handler.js";
 import { GetAdminClientNotePdfHandler } from "./application/queries/get-admin-client-note-pdf.handler.js";
 import { GetCarrierNotePdfHandler } from "./application/queries/get-carrier-note-pdf.handler.js";
 import { GetCarrierNoteSpecimenHandler } from "./application/queries/get-carrier-note-specimen.handler.js";
@@ -11,6 +12,7 @@ import { ListOrderDeliveryNotesHandler } from "./application/queries/list-order-
 import { DeliveryNoteDocuments } from "./application/services/delivery-note-documents.js";
 import { DeliveryNoteReader } from "./domain/ports/delivery-note.reader.js";
 import { AdminDeliveryNoteSpecimensController } from "./http/admin-delivery-note-specimens.controller.js";
+import { AdminCounterDeliveryNotesController } from "./http/admin-counter-delivery-notes.controller.js";
 import { AdminOrderDeliveryNotesController } from "./http/admin-order-delivery-notes.controller.js";
 import { DeliveryNotesController } from "./http/delivery-notes.controller.js";
 import { PrismaDeliveryNoteReader } from "./infrastructure/prisma-delivery-note.reader.js";
@@ -59,6 +61,7 @@ import {
     DeliveryNotesReconcileController,
     AdminDeliveryNotesController,
     AdminOrderDeliveryNotesController,
+    AdminCounterDeliveryNotesController,
     DeliveryNotesController,
     AdminDeliveryNoteSpecimensController,
   ],
@@ -72,6 +75,7 @@ import {
     ListOrderDeliveryNotesHandler,
     GetCarrierNotePdfHandler,
     GetAdminClientNotePdfHandler,
+    GetCounterClientNotePdfHandler,
     GetClientNotePdfHandler,
     GetCarrierNoteSpecimenHandler,
     GetClientNoteSpecimenHandler,

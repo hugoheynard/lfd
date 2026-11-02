@@ -58,3 +58,18 @@ export class ShelfOrderRouteChangeError extends DomainError {
     );
   }
 }
+
+/**
+ * Le « Retrait immédiat » (`entry_shortcut = immediate_pickup`, lot L6) n'existe
+ * que sur une commande prise sur la vitrine : c'est un retrait, aujourd'hui, à
+ * ce point. Envoyé sur une commande programmée, il compterait un raccourci qui
+ * n'a pas servi.
+ */
+export class EntryShortcutOffShelfError extends DomainError {
+  constructor() {
+    super(
+      "orders.shelf.shortcut_off_shelf",
+      "Le « Retrait immédiat » se prend sur le stock de la vitrine : il ne s'applique pas à une commande programmée. Choisissez « Retrait immédiat » sur un retrait d'aujourd'hui, ou passez une commande programmée sans ce raccourci.",
+    );
+  }
+}

@@ -213,6 +213,7 @@ describe('PackingColumn', () => {
       reference: 'CMD-2',
       customerName: null,
       fulfillmentMethod: 'pickup',
+      supply: 'planned',
       reportedAt: '2030-01-10T05:30:00.000Z',
       lines: [{ sku: 'ECL', productName: 'Éclair pistache', due: 4, packed: 1, saleUnit: 'piece' }],
     };

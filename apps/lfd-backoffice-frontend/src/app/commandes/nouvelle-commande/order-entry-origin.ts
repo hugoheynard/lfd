@@ -64,6 +64,18 @@ export function destinationAfterPlacingOf(
 export interface CounterPlacedOrder {
   readonly orderNumber: string;
   readonly paymentUrl: string | null;
+  /** Le « Valider et remettre » du retrait immédiat (lot L6) — `null` hors raccourci. */
+  readonly handover: CounterHandoverOutcome | null;
+}
+
+/**
+ * Ce qu'est devenue la remise enchaînée à la passation : remise (`refusal`
+ * `null`, le bon peut se réimprimer), ou refusée — la commande est PASSÉE mais
+ * pas remise, et le refus du serveur le dit.
+ */
+export interface CounterHandoverOutcome {
+  readonly orderId: string;
+  readonly refusal: string | null;
 }
 
 /** La clé de l'état de navigation qui porte {@link CounterPlacedOrder}. */
@@ -87,5 +99,19 @@ export function counterPlacedOrderOf(state: unknown): CounterPlacedOrder | null 
   if (typeof orderNumber !== 'string' || (typeof paymentUrl !== 'string' && paymentUrl !== null)) {
     return null;
   }
-  return { orderNumber, paymentUrl };
+  const handover = 'handover' in value ? handoverOf(value.handover) : null;
+  return { orderNumber, paymentUrl, handover };
+}
+
+/** Relit {@link CounterHandoverOutcome} ; une forme inattendue vaut « pas de remise ». */
+function handoverOf(value: unknown): CounterHandoverOutcome | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  const orderId = 'orderId' in value ? value.orderId : undefined;
+  const refusal = 'refusal' in value ? value.refusal : undefined;
+  if (typeof orderId !== 'string' || (typeof refusal !== 'string' && refusal !== null)) {
+    return null;
+  }
+  return { orderId, refusal };
 }

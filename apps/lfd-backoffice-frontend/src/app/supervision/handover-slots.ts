@@ -62,6 +62,13 @@ export interface SlotRow {
    */
   readonly heldForQuality: boolean;
   /**
+   * **Sur stock** (plan du jour J, lot L6) : prise dans la vitrine, jamais
+   * fabriquée pour elle. Lu dans les retards de `supervision/day`
+   * (`LateOrder.supply`) — la file du retrait ne la porte pas ; faux quand la
+   * commande n'est pas en retard ou que la journée n'a pas été lue.
+   */
+  readonly shelf: boolean;
+  /**
    * La tournée d'une LIVRAISON (Hugo, 2026-10-25) : « Kangoo blanc · arrêt 3 ·
    * départ prévu 6 h 45 », ou « Pas encore dans une tournée ». `null` au retrait.
    */
@@ -197,6 +204,9 @@ function rowOf(
       (order) => order.orderId === entry.orderId && order.rule === 'not_handed_over_after_window',
     ) ?? false;
   const state = stateOf(entry, overdue && slotKindOf(entry) === 'hour');
+  const shelf =
+    late?.late.some((order) => order.orderId === entry.orderId && order.supply === 'shelf') ??
+    false;
   const window = entry.window;
   return {
     orderId: entry.orderId,
@@ -219,6 +229,7 @@ function rowOf(
     overdueCause: state === 'overdue' && window !== null ? causeOf(entry, day, window.end) : null,
     method: entry.fulfillmentMethod,
     heldForQuality: entry.heldForQuality,
+    shelf,
     roundLine: roundLineOf(entry),
     departedAt:
       entry.round?.departedAt === undefined || entry.round.departedAt === null

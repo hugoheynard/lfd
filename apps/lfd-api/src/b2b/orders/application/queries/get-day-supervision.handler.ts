@@ -80,6 +80,7 @@ function toAwaitingDecision(
     reference: order.reference,
     customerName: order.customerName,
     fulfillmentMethod: order.fulfillmentMethod,
+    supply: order.supply,
     reportedAt: order.shortfallReportedAt.toISOString(),
     lines: order.shortfallLines.map((line) => ({ ...line })),
   };
@@ -91,6 +92,7 @@ function toLateOrder({ order, window, stage, rule }: LateEntry): LateOrder {
     reference: order.reference,
     customerName: order.customerName,
     fulfillmentMethod: order.fulfillmentMethod,
+    supply: order.supply,
     window: { start: window.start, end: window.end, source: window.source },
     stage,
     rule,

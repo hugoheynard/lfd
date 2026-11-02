@@ -20,6 +20,7 @@ import {
 } from '../../commandes/nouvelle-commande/order-entry-origin';
 import { NotifyService } from '../../notify.service';
 import { CounterCustomersService } from '../counter-customers.service';
+import { CounterDeliveryNoteService } from '../counter-delivery-note.service';
 import { matchesCounterSearch } from '../counter-customer-search';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -74,6 +75,9 @@ export class NouvelleCommandeProPage {
   private readonly customers = inject(CounterCustomersService);
   private readonly router = inject(Router);
   private readonly notify = inject(NotifyService);
+  private readonly notes = inject(CounterDeliveryNoteService);
+  /** Le bon se réimprime-t-il en ce moment ? */
+  protected readonly printing = signal(false);
 
   /**
    * La commande qu'on vient de passer, transmise par l'état de navigation de la
@@ -126,6 +130,22 @@ export class NouvelleCommandeProPage {
 
   protected copy(url: string): void {
     void copyLink(url, this.notify);
+  }
+
+  /**
+   * Réimprime le bon chiffré d'un retrait immédiat remis (lot L6) — la
+   * saisie l'a ouvert une fois ; un onglet bloqué ou fermé ne doit pas le
+   * perdre.
+   */
+  protected async printNote(orderId: string): Promise<void> {
+    this.printing.set(true);
+    try {
+      await this.notes.openClient(orderId);
+    } catch (error) {
+      this.notify.error(error, 'Le bon n’a pas pu s’ouvrir.');
+    } finally {
+      this.printing.set(false);
+    }
   }
 
   /** Le client suivant : on range le récapitulatif du précédent. */

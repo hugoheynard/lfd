@@ -235,8 +235,11 @@ remise (règlement non clos), ni facture.
   La remise reste **celle du bloc du retrait** (`confirm-handover.handler.ts`,
   le fait `OrderHandedOver`, le BL créé à la remise, la clôture du règlement) :
   le commerce n'écrit jamais la remise lui-même (§9.2, 3). Si la remise est
-  refusée après une passation réussie, la commande reste dans la file du
-  comptoir, où le geste normal la remet ; l'écran le dit.
+  refusée après une passation réussie, la commande reste « passée », sans BL ;
+  l'écran le dit. Le seul refus réel est celui d'une commande au lien non
+  payée : elle n'entre dans la file du comptoir qu'une fois payée
+  (`showsInQueue`, `commande-carte-reglee.md` §4.4), et elle y est alors
+  remise par le geste normal (Hugo, 2026-11-02 : « laisse ainsi »).
 
 Lots proposés : **J2a** (la marque, le reste, le verrou), **J2b** (la passation
 d'un particulier), **J2c** (la saisie de l'équipe et le raccourci), **J3/J4**
@@ -512,7 +515,8 @@ puis lecture de l'arrêt), et les verrous existants du dépôt
 - **Le raccourci « Retrait immédiat »** envoie `settlement: "account"` ; un pro
   sans crédit suit l'option admin : refusé (le bouton le dit avant la saisie),
   ou envoyé en « lien de paiement » — auquel cas « Valider et remettre » ne
-  remet pas (règlement non clos) et la commande attend dans la file.
+  remet pas (règlement non clos) : la commande reste « passée » et n'entre
+  dans la file qu'une fois payée (Hugo, 2026-11-02).
 
 ## 12. Troisième contradiction de `vitruve` (2026-11-02), et ce qu'elle change
 
@@ -948,3 +952,89 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
   une `shelf` par carte reste non modifiable.
 - **Non couvert à l'e2e** : changer le point ou le mode (couvert par les
   tests unitaires du handler pour le mode, par ceux de L1 pour le point).
+
+### Le bâti de L6 (API) (2026-11-02)
+
+L'écran du comptoir est un lot à part (back-office) ; voici ce que l'API lui
+sert.
+
+- **Le raccourci** : `entryShortcut: "immediate_pickup"`, champ facultatif de
+  `adminPlaceOrderPayloadSchema` (`staffEntryShortcutSchema`). Accepté
+  seulement avec `supply: "shelf"` (`staffSupplyOf`,
+  `orders/domain/services/order-supply-rules.ts`) ; sinon
+  `orders.shelf.shortcut_off_shelf` (400). Le retrait, la journée
+  d'aujourd'hui et le point sont jugés par l'agrégat (L1). Ignoré pour un
+  client. Écrit dans `orders.entry_shortcut`.
+- **Le règlement pré-rempli** : `CounterCustomerView.settlesOnAccount` lit le
+  **payeur** — le principal suivi en `billing` à l'instant, actif et au
+  crédit non bloqué ; sinon la société elle-même
+  (`get-counter-customer.handler.ts`), comme `accountStanding`.
+- **Le catalogue réduit** : aucune route neuve.
+  `GET /admin/resupply-receipts/:siteId/:day` (sous `handover_counter:read`)
+  rend déjà `stock[]` = `DayShelfStock` (par article et unité, grammes au
+  poids, `estimatedStock` = reçu − pris).
+- **« Valider et remettre »** : deux appels existants, enchaînés par l'écran —
+  `POST /admin/orders`, puis `POST /admin/handover/manual/:orderNumber` (corps
+  `{}`). La remise saisie grave `manual` : aucun QR n'a été scanné. Le BL naît
+  à la remise et le règlement au compte s'y clôt (après la livraison durable
+  du fait de remise : l'écran relit, il ne suppose pas).
+- **Le bon remis au client** : route neuve, sans numéro (le vendeur n'a pas
+  le droit de lister les BL) —
+  `GET /admin/counter/orders/:orderId/delivery-note/client.pdf`, sous
+  `handover_counter:read`, PDF `inline`, impression tracée. Elle sert le BL
+  **remis** d'un **retrait**, le plus récent s'il y en a plusieurs
+  (`counterNoteReach`). Remise attestée au retrait mais BL pas encore écrit
+  (fait de remise pas livré) → 404 `delivery_notes.counter.not_yet`, l'écran
+  réessaie ; tout autre cas → 404 `delivery_notes.counter.out_of_reach`. La
+  route de l'équipe Commandes reste sous `b2b_orders`.
+- **La marque** : `supply` (`planned` / `shelf`, `orderSupplySchema`) sur
+  `AdminOrderRow` (liste des Commandes) et sur `LateOrder` /
+  `ShortfallAwaitingDecision` (Supervision, défaut `planned` à la lecture).
+- E2E `counter-immediate-pickup` : la marque et le raccourci posés, la remise,
+  le BL « pas encore » avant la livraison du fait de remise, puis imprimé par
+  un vendeur qui ne tient que le comptoir, la commande dans
+  la facture du mois ; une remise refusée (lien non payé) laisse la commande
+  passée, sans BL ; le raccourci sur une programmée refusé ; le BL prévu d'une
+  commande fabriquée refusé au vendeur (404), la route Commandes aussi (403).
+- **Faux dans le §11.3** : une commande au lien non payé « attend dans la
+  file » — non : la file ne montre une commande non réglée à personne
+  (`showsInQueue`, [`commande-carte-reglee.md`](../commandes/reglement/commande-carte-reglee.md) §4.4) ; elle y entre à son
+  paiement. Au compte, la remise d'une `shelf` n'a pas de refus de règlement.
+- **Non fait** : la vue détail `AdminOrderView` ne porte pas `supply` ; le
+  point « du comptoir » n'est pas vérifiable au serveur (aucun staff n'a de
+  point), le serveur garde « un point, aujourd'hui, en retrait ».
+
+### Le bâti de L6 (écran) (2026-11-02)
+
+- **Le choix du mode, au comptoir** (`acheminement-commande`) : « Retrait
+  immédiat » à gauche, puis le groupe « Commande programmée » (Retrait,
+  Coursier). Proposé seulement sous `/comptoir`, avec `handover_counter:write`
+  et un point ouvert dans la bande (`HandoverQueueStore.activePlace`). Le
+  raccourci pose retrait, aujourd'hui, le point de la bande et le créneau en
+  cours (`currentSlotOf` : celui qui contient l'heure, sinon le prochain, sinon
+  le dernier — le serveur n'en juge aucun au comptoir) ; quitter le raccourci
+  rend une programmée pour demain, créneau à rechoisir. Le raccourci n'entre
+  pas dans le brouillon conservé.
+- **Le catalogue réduit** au reste du point (`GET /admin/resupply-receipts/:siteId/:day`,
+  `stock[]`, rapporté à l'unité de vente de l'article — `shelfStockBySku`),
+  le reste dit sur chaque rangée ; le panier refuse ce que la vitrine ne
+  couvre pas (`shelfShortageOf`), le serveur rejuge sous verrou. Les onglets
+  « Ses commandes » et « Ses habitudes » ne sont pas réduits.
+- **Le règlement pré-rempli** à l'ouverture, pour toute saisie : au compte si
+  `settlesOnAccount`, le lien sinon ; un brouillon repris garde le sien.
+- **« Valider et remettre »** : `POST /admin/orders` (`supply: "shelf"`,
+  `entryShortcut: "immediate_pickup"`), puis `POST /admin/handover/manual/:orderNumber`,
+  puis le bon chiffré (`CounterDeliveryNoteService`, réessai sur
+  `delivery_notes.counter.not_yet`, six fois à une seconde). Un refus de
+  remise revient au sélecteur du comptoir en « Commande passée, mais pas
+  remise » avec la raison du serveur ; une remise réussie y propose
+  « Réimprimer le bon ».
+- **Le badge « Sur stock »** : liste des Commandes (à côté du numéro),
+  Supervision (carte de retrait en retard, lu dans `LateOrder.supply` ;
+  carte de manque au colisage).
+- **Réglages › Commandes › Jour même** : l'encadré « ne prennent pas encore
+  effet » et l'interrupteur `same_day_allowed` sont retirés ; la page ne porte
+  plus que la carte du circuit.
+- **Non vérifié à l'écran** : l'ouverture du PDF après deux appels attendus
+  (un bloqueur de fenêtres peut la retenir — « Réimprimer le bon » la
+  rattrape).

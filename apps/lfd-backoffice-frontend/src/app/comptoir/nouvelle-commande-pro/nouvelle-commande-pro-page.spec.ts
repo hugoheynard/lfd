@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CounterCustomerCard } from '@lfd/contracts';
 
 import { CounterCustomersService } from '../counter-customers.service';
+import { CounterDeliveryNoteService } from '../counter-delivery-note.service';
 import { NouvelleCommandeProPage } from './nouvelle-commande-pro-page';
 
 function card(id: string, name: string, siret: string, tradeName = ''): CounterCustomerCard {
@@ -38,6 +39,13 @@ async function setup(list: () => Promise<readonly CounterCustomerCard[]>): Promi
   TestBed.configureTestingModule({
     providers: [
       provideRouter([{ path: '**', children: [] }]),
+      {
+        provide: CounterDeliveryNoteService,
+        useValue: { openClient: () => Promise.resolve() } satisfies Pick<
+          CounterDeliveryNoteService,
+          'openClient'
+        >,
+      },
       {
         provide: CounterCustomersService,
         useValue: { list } satisfies Pick<CounterCustomersService, 'list'>,
@@ -98,6 +106,13 @@ async function arriveWith(state: Record<string, unknown>): Promise<HTMLElement> 
     providers: [
       provideRouter([{ path: 'comptoir/nouvelle-commande', component: NouvelleCommandeProPage }]),
       {
+        provide: CounterDeliveryNoteService,
+        useValue: { openClient: () => Promise.resolve() } satisfies Pick<
+          CounterDeliveryNoteService,
+          'openClient'
+        >,
+      },
+      {
         provide: CounterCustomersService,
         useValue: {
           list: () => Promise.resolve(CARDS),
@@ -130,6 +145,32 @@ describe('NouvelleCommandeProPage — retour de la saisie', () => {
     });
     expect(host.textContent).toContain('Commande CMD-43 enregistrée.');
     expect(host.querySelector('.url')).toBeNull();
+  });
+
+  it('dit « passée, mais pas remise » quand la remise du retrait immédiat est refusée (L6)', async () => {
+    const host = await arriveWith({
+      counterPlacedOrder: {
+        orderNumber: 'CMD-44',
+        paymentUrl: null,
+        handover: { orderId: 'o_44', refusal: 'Commande non réglée.' },
+      },
+    });
+    const refused = host.querySelector('[data-handover-refused]');
+    expect(refused?.textContent).toContain('Commande passée, mais pas remise.');
+    expect(refused?.textContent).toContain('Commande non réglée.');
+    expect(host.querySelector('[data-handover-done]')).toBeNull();
+  });
+
+  it('dit la commande remise et propose de réimprimer le bon (L6)', async () => {
+    const host = await arriveWith({
+      counterPlacedOrder: {
+        orderNumber: 'CMD-45',
+        paymentUrl: null,
+        handover: { orderId: 'o_45', refusal: null },
+      },
+    });
+    expect(host.textContent).toContain('Commande CMD-45 enregistrée et remise.');
+    expect(host.querySelector('[data-handover-done]')?.textContent).toContain('Réimprimer le bon');
   });
 
   it('ne montre rien quand on arrive sans commande', async () => {

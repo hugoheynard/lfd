@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, type Signal } from '@angular/core';
 import { FoldPanelHeaderComponent, FoldPanelRef, type FoldPanelDefaults } from 'fold-ng';
 import type {
   CustomerAudience,
@@ -29,6 +29,10 @@ export interface PanierPanelData {
   readonly settlesOnAccount: boolean;
   /** La case « au carnet » — absente au comptoir. */
   readonly canKeepAddress: boolean;
+  /** Le point du comptoir quand le « Retrait immédiat » est proposé (lot L6). */
+  readonly counterPlaceId: string | null;
+  /** Ce que la vitrine ne couvre pas, au retrait immédiat. */
+  readonly shelfIssue: Signal<string | null>;
 }
 
 /**

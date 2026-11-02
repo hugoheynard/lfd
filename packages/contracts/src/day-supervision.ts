@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { fulfillmentMethodSchema, fulfillmentSourceSchema, orderSaleUnitSchema } from "./order.js";
+import {
+  fulfillmentMethodSchema,
+  fulfillmentSourceSchema,
+  orderSaleUnitSchema,
+  orderSupplySchema,
+} from "./order.js";
 
 /**
  * Contrat de fil de la **Supervision du jour** : où en est chaque commande d'une
@@ -91,6 +96,11 @@ export const lateOrderSchema = z.object({
   reference: z.string(),
   customerName: z.string().nullable(),
   fulfillmentMethod: fulfillmentMethodSchema,
+  /**
+   * « Sur stock » (`shelf`, plan du jour J, lot L6) : prise dans la vitrine,
+   * jamais au four. `planned` à la lecture d'un serveur d'avant le champ.
+   */
+  supply: orderSupplySchema.default("planned"),
   window: supervisionWindowSchema,
   stage: supervisionStageSchema,
   rule: latenessRuleSchema,
@@ -108,6 +118,8 @@ export const shortfallAwaitingDecisionSchema = z.object({
   reference: z.string(),
   customerName: z.string().nullable(),
   fulfillmentMethod: fulfillmentMethodSchema,
+  /** « Sur stock » (`shelf`, plan du jour J, lot L6) ; `planned` d'un serveur d'avant. */
+  supply: orderSupplySchema.default("planned"),
   reportedAt: z.string(),
   /** Les lignes manquantes, figées au signalement : le dû et ce qui est au bac. */
   lines: z.array(

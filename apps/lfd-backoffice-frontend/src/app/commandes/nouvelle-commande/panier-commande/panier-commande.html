@@ -55,19 +55,23 @@
     [preferredPickupId]="preferredPickupId()"
     [draft]="draft()"
     [canKeepAddress]="canKeepAddress()"
+    [counterPlaceId]="counterPlaceId()"
     (choiceChange)="onFulfillment($event)"
   />
 
   <!-- `<input type="date">` en natif : Signal Forms ne couvre pas les dates, et
-       le contrôle du navigateur bat tout masque maison. -->
-  <label class="pan-field">
-    <span class="pan-label">{{ dateLabel() }}</span>
-    <input
-      type="date"
-      [value]="requestedDate()"
-      (change)="draft().requestedDate.set($any($event.target).value)"
-    />
-  </label>
+       le contrôle du navigateur bat tout masque maison. Absent au retrait
+       immédiat : la journée y est aujourd'hui, posée par le raccourci. -->
+  @if (!immediate()) {
+    <label class="pan-field">
+      <span class="pan-label">{{ dateLabel() }}</span>
+      <input
+        type="date"
+        [value]="requestedDate()"
+        (change)="draft().requestedDate.set($any($event.target).value)"
+      />
+    </label>
+  }
 
   <label class="pan-field">
     <span class="pan-label">Note</span>
@@ -115,11 +119,15 @@
   @if (blockers().length === 0) {
     @if (!confirming()) {
       <button foldButton [disabled]="submitting()" (click)="confirming.set(true)">
-        Valider la commande
+        {{ immediate() ? 'Valider et remettre' : 'Valider la commande' }}
       </button>
     } @else {
       <fold-callout variant="accent">
         <strong>Confirmer.</strong>
+        @if (immediate()) {
+          Prise sur le stock de la vitrine, la commande sera <strong>remise aussitôt</strong> ; le
+          bon chiffré s’ouvrira pour être imprimé et donné au client.
+        }
         @if (settlement() === 'account') {
           Cette commande partira <strong>au compte</strong> et sera facturée sur la période en
           cours. Rien ne sera encaissé maintenant.
@@ -130,7 +138,7 @@
       </fold-callout>
       <div class="pan-confirm">
         <button foldButton [disabled]="!canPlace()" (click)="submit()">
-          {{ submitting() ? 'Envoi…' : 'Confirmer' }}
+          {{ submitting() ? 'Envoi…' : immediate() ? 'Confirmer et remettre' : 'Confirmer' }}
         </button>
         <button
           foldButton

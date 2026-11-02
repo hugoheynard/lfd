@@ -24,6 +24,7 @@ function order(
     status,
     paymentStatus,
     offPlan: false,
+    supply: 'planned',
     shortfallReportedAt: null,
     fulfillmentMethod: 'pickup',
     subtotalCents: totalCents,

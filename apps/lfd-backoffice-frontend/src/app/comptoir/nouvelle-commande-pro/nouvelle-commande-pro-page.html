@@ -4,7 +4,9 @@
   @if (placed(); as order) {
     <div class="placed">
       <fold-callout variant="success" announce>
-        Commande {{ order.orderNumber }} enregistrée.
+        Commande {{ order.orderNumber }} enregistrée{{
+          order.handover !== null && order.handover.refusal === null ? ' et remise' : ''
+        }}.
         @if (order.paymentUrl !== null) {
           Lien de règlement à transmettre au client&nbsp;:
         }
@@ -20,6 +22,28 @@
           </button>
         </div>
       </fold-callout>
+      @if (order.handover; as handover) {
+        @if (handover.refusal; as refusal) {
+          <!-- Lot L6 : la passation a réussi, la remise non — la commande
+               attend dans la file du retrait. -->
+          <fold-callout variant="warning" announce data-handover-refused>
+            <strong>Commande passée, mais pas remise.</strong> {{ refusal }} Elle attend dans la
+            file du retrait, où le geste habituel la remettra.
+          </fold-callout>
+        } @else {
+          <div class="row" data-handover-done>
+            <button
+              foldButton
+              emphasis="outline"
+              type="button"
+              [loading]="printing()"
+              (click)="printNote(handover.orderId)"
+            >
+              Réimprimer le bon
+            </button>
+          </div>
+        }
+      }
       @if (order.paymentUrl; as url) {
         <p class="url">{{ url }}</p>
         <div class="row">

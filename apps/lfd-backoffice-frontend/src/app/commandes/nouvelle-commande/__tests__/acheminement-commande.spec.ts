@@ -13,6 +13,7 @@ import {
   type FulfillmentChoice,
 } from '../acheminement-commande/acheminement-commande';
 import { DraftStore } from '../draft.store';
+import { isoDayOf } from '../immediate-pickup';
 
 const LABO: PickupAddressView = {
   id: 'pick_1',
@@ -647,5 +648,78 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
 
       expect(choice(fixture).window).toBeNull();
     });
+  });
+});
+
+/** Lot L6 (plan du jour J) : le « Retrait immédiat » du comptoir. */
+describe('AcheminementCommande — retrait immédiat', () => {
+  const VILLAGE: PickupAddressView = {
+    ...LABO,
+    id: 'pick_village',
+    label: 'Village',
+    opening: { publicOpening: { start: '00:00', end: '23:59' }, proPickup: null },
+  };
+
+  function mountCounter(placeId: string | null): {
+    fixture: ComponentFixture<AcheminementCommande>;
+    draft: DraftStore;
+    last: () => FulfillmentChoice | null;
+  } {
+    const draft = new DraftStore();
+    const fixture = TestBed.createComponent(AcheminementCommande);
+    fixture.componentRef.setInput('draft', draft);
+    fixture.componentRef.setInput('pickups', [LABO, VILLAGE]);
+    fixture.componentRef.setInput('addresses', [ADRESSE]);
+    fixture.componentRef.setInput('zones', [ZONE_92]);
+    fixture.componentRef.setInput('deliveryAvailability', OPEN_TO_ALL);
+    fixture.componentRef.setInput('audience', 'b2b');
+    fixture.componentRef.setInput('counterPlaceId', placeId);
+    let last: FulfillmentChoice | null = null;
+    fixture.componentInstance.choiceChange.subscribe((choice) => (last = choice));
+    fixture.detectChanges();
+    return { fixture, draft, last: () => last };
+  }
+
+  it('ne propose le raccourci qu’au comptoir', () => {
+    const outside = mountCounter(null).fixture.nativeElement as HTMLElement;
+    expect(outside.querySelector('[data-immediate]')).toBeNull();
+    const counter = mountCounter('pick_village').fixture.nativeElement as HTMLElement;
+    expect(counter.querySelector('[data-immediate]')).not.toBeNull();
+    expect(counter.textContent).toContain('Commande programmée');
+  });
+
+  it('pré-règle retrait, aujourd’hui, point du comptoir et créneau en cours', () => {
+    const { fixture, draft, last } = mountCounter('pick_village');
+    fixture.componentInstance['onImmediate']();
+    fixture.detectChanges();
+
+    expect(draft.entry()).toBe('immediate');
+    expect(draft.method()).toBe('pickup');
+    expect(draft.pickupId()).toBe('pick_village');
+    expect(draft.requestedDate()).toBe(isoDayOf(new Date()));
+    expect(draft.window()).not.toBeNull();
+    expect(last()).toMatchObject({
+      method: 'pickup',
+      pickupAddressId: 'pick_village',
+      issue: null,
+    });
+  });
+
+  it('revient à une commande programmée pour demain en choisissant un mode', () => {
+    const { fixture, draft } = mountCounter('pick_village');
+    fixture.componentInstance['onImmediate']();
+    fixture.componentInstance['onMethod']('pickup');
+    fixture.detectChanges();
+
+    expect(draft.entry()).toBe('scheduled');
+    expect(draft.requestedDate()).not.toBe(isoDayOf(new Date()));
+    expect(draft.window()).toBeNull();
+  });
+
+  it('refuse quand le point du comptoir n’est pas ouvert à ce client', () => {
+    const { fixture, last } = mountCounter('pick_ailleurs');
+    fixture.componentInstance['onImmediate']();
+    fixture.detectChanges();
+    expect(last()?.issue).toContain('Le point du comptoir n’est pas ouvert');
   });
 });

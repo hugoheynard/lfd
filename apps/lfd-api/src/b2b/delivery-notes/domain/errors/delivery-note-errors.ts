@@ -206,3 +206,34 @@ export class HandedOverRemainderNoteNotFoundError extends ResourceNotFoundError 
     );
   }
 }
+
+/**
+ * Le comptoir ne lit que le BL chiffré **qu'il a lui-même remis** : celui d'un
+ * retrait, une fois remis (plan du jour J, lot L6). Les autres restent sous
+ * `b2b_orders`. Un 404 : le poste du comptoir n'a pas à apprendre qu'un autre
+ * bon existe.
+ */
+export class CounterDeliveryNoteOutOfReachError extends ResourceNotFoundError {
+  constructor(orderId: string) {
+    super(
+      "delivery_notes.counter.out_of_reach",
+      `La commande ${orderId} n'a pas de bon imprimable au comptoir : ` +
+        "le comptoir n'imprime que le bon d'un retrait qu'il a remis. " +
+        "Demandez-le à l'équipe Commandes, qui l'ouvre depuis la fiche de la commande.",
+    );
+  }
+}
+
+/**
+ * La remise est attestée, mais son bon n'est pas encore écrit : il naît à la
+ * livraison du fait de remise, juste après. L'écran réessaie dans un instant.
+ */
+export class CounterDeliveryNoteNotYetError extends ResourceNotFoundError {
+  constructor(orderId: string) {
+    super(
+      "delivery_notes.counter.not_yet",
+      `Le bon de la commande ${orderId} est en cours d'écriture après la remise : ` +
+        "réessayez dans quelques secondes.",
+    );
+  }
+}

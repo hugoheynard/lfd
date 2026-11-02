@@ -24,9 +24,12 @@ export interface ResupplyReceiptLineView {
   /** Somme des quantités reçues dans la journée (réassorts réceptionnés + sans commande). */
   readonly receivedQuantity: number;
   /**
-   * Reçu − ce que les commandes « jour même sur stock » en ont pris. Ce circuit
-   * n'est pas bâti (lot J2) : il vaut le reçu. Les commandes passées la veille
-   * ne s'y soustraient pas — le fournil les a fabriquées pour elles.
+   * **Le reste en vitrine** : reçu − ce que les commandes sur stock
+   * (`supply = shelf`, ni brouillon ni annulées) en ont pris — `DayShelfStock`,
+   * le calcul que la passation garde sous verrou (plan du jour J, L2, L4).
+   * C'est aussi ce que le comptoir lit pour réduire son catalogue au
+   * « Retrait immédiat » (L6). Les commandes fabriquées pour ce jour ne s'y
+   * soustraient pas — le fournil les a cuites pour elles.
    */
   readonly estimatedStock: number;
 }
@@ -106,7 +109,7 @@ export interface ResupplyReceiptView {
    */
   readonly receptions: readonly ResupplyReceptionView[];
   readonly unordered: UnorderedReceiptView;
-  /** Le stock estimé du jour : somme des reçus. */
+  /** Le reste du jour, par article et unité : reçus − prélèvements sur stock. */
   readonly stock: readonly ResupplyReceiptLineView[];
 }
 

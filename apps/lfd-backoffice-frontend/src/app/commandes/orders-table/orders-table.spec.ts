@@ -17,6 +17,7 @@ function row(over: Partial<AdminOrderRow> = {}): AdminOrderRow {
     placedAt: '2026-10-12T08:00:00.000Z',
     status: 'placed',
     offPlan: false,
+    supply: 'planned',
     shortfallReportedAt: null,
     paymentStatus: 'paid',
     fulfillmentMethod: 'delivery',
@@ -172,6 +173,18 @@ describe('OrdersTable', () => {
     );
     expect(fixture.componentInstance['rowTone'](row({ offPlan: true }))).toBe('alert');
     expect(fixture.componentInstance['rowTone'](row())).toBeNull();
+  });
+
+  /** Lot L6 (plan du jour J) : prise dans la vitrine, la liste le dit. */
+  it('marque « Sur stock » une commande prise dans la vitrine, et elle seule', () => {
+    const fixture = render(
+      [row({ supply: 'shelf' }), row({ id: 'o_2', orderNumber: 'CMD-2' })],
+      true,
+    );
+    const badges = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-shelf]');
+
+    expect(badges).toHaveLength(1);
+    expect(badges[0]?.textContent).toContain('Sur stock');
   });
 
   /** Lot E6a : le colisage a signalé un manque, la commande attend une décision. */

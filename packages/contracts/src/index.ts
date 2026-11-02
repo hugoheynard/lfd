@@ -1174,6 +1174,8 @@ export {
   ORDER_ORIGIN_LABELS,
   recurringDeltasSchema,
   orderQuotePayloadSchema,
+  orderSupplySchema,
+  staffEntryShortcutSchema,
   staffOrderSupplySchema,
   orderQuantitySchema,
   orderSaleUnitSchema,
@@ -1258,6 +1260,8 @@ export type {
   RecurringDeltas,
   RecurringDeltaLine,
   OrderQuotePayload,
+  OrderSupply,
+  StaffEntryShortcut,
   StaffOrderSupply,
   OrderQuoteLineView,
   OrderQuoteView,
@@ -1291,7 +1295,6 @@ export type { CatalogFamilyNodeView, CatalogFamilyView, CatalogItemView } from "
 
 export {
   RESERVED_VISIBILITIES,
-  setMadeToOrderPayloadSchema,
   setReservedVisibilityPayloadSchema,
 } from "./catalog-reservation.js";
 export type {
@@ -1301,7 +1304,6 @@ export type {
   MadeToOrderMarkView,
   ReservedArticleView,
   ReservedVisibility,
-  SetMadeToOrderPayload,
   SetReservedVisibilityPayload,
 } from "./catalog-reservation.js";
 export {
