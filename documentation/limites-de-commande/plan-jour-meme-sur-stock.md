@@ -422,7 +422,7 @@ qu'elle traverse chaque filtre.
 filtre** `notFromStock()` dans `plan-filter.ts`, versé **dans** `planWhere` (ce
 qui couvre d'un coup fiche, retirage, rattrapage, prévisionnel, état du jour,
 absorption) et dans une `productionWhere()` = `settlementWhere` + `notFromStock`
-que prennent les quatre autres lecteurs de production et de transport.
+que prennent les six autres adaptateurs de production et de transport.
 `settlementWhere` seul ne disparaît pas : la Supervision et le reste le
 gardent. Une **e2e unique** sème une commande sur stock au Village et vérifie
 qu'elle est **absente** de chaque lecteur du premier tableau, **présente** dans
@@ -589,3 +589,52 @@ réécrire au bâti.
 `OrderDrafting`) peuvent-ils viser aujourd'hui ; `Order.revise` peut-il changer
 l'acheminement ou le point (sans objet si la révision d'une `shelf` est
 refusée) ; le `persist` de la passation invité.
+
+## 13. Quatrième contradiction (2026-11-02) — la révision d'une commande `shelf`
+
+1. **Bloquant, corrigé ici.** Le verrou de journée de la révision n'est pas
+   `holdDay` : c'est `workshops.note(...)` (`revise-order.handler.ts:93`), qui
+   passe par le guichet du fournil (`OrderWorkshopRevision.note`,
+   `ProductionOrderRevisionDesk.note` : `ProductionDayLock` par journée touchée,
+   puis une note de révision au fournil). **Décidé** : la révision d'une
+   commande `shelf` **ne passe ni par le guichet du fournil
+   (`workshops.note`) ni par le suivi des BL (`deliveryNotes.followRevision`)**
+   — elle n'a jamais été inscrite au fournil, et son BL naît à la remise. La
+   séparation se fait dans `ReviseOrderHandler` sur la marque relue, et une
+   e2e vérifie qu'aucune note de révision n'est écrite pour une `shelf`. Les
+   deux verrous restent ainsi jamais tenus ensemble ; l'ordre réel de la
+   révision `shelf` est : la ligne `orders`, puis le verrou du stock.
+2. **Bloquant, à trancher par Hugo.** La règle M1 refuse de modifier une
+   commande dont le règlement par **carte** est attendu ou encaissé
+   (`order-revisability.ts:65-76`, rejugée dans `Order`,
+   `ensureRevisableSettlement`) — le lot M2 (complément ou remboursement partiel
+   par Stripe) n'est pas bâti. Et un « Retrait immédiat » est remis dès sa
+   validation. **Concrètement, la décision « pouvoir modifier une commande
+   prise sur la vitrine » ne vaut aujourd'hui que pour une commande `shelf`
+   réglée au compte et pas encore remise** : un pro en ligne, ou un « Valider
+   et remettre » dont la remise a échoué. Une commande `shelf` d'un
+   particulier (toujours par carte) ne se modifie pas tant que M2 n'existe pas
+   — elle s'annule et se refait. À Hugo : accepter cette limite pour le premier
+   bâti, ou ouvrir M2 d'abord (chantier d'argent, contredit en octobre :
+   « plus tard »).
+
+**Sérieux**, repris dans le dessin :
+
+- **« Lignes et quantités » a une garde à elle** : `Order.recompose` rejuge
+  l'invariant `shelf` ⇒ retrait, même jour, même point — `Order.revise` accepte
+  sinon `method`, adresse, créneau (`order-revision.ts:272-284`), et une
+  `shelf` passée en livraison entrerait dans les tournées. Ce n'est **pas**
+  `isQuantitiesOnly` (`revision-after-arrest.ts:49-63`), qui refuse un article
+  nouveau.
+- **Toutes les gardes de révision se séparent sur `supply`** : `ensureDayOpen`,
+  `ensureBeforeCutoff`, le refus client sur journée arrêtée dans `holdDay`
+  (`order-revising.service.ts:262-264`), et le verdict des écrans
+  `revisabilityOf` (l. 117-138). Préalable : la ligne relue `RevisableOrder`
+  (`revisable-order.row.ts`) porte `supply`.
+- **Le reste est revérifié dans `record`**, sous le verrou du stock, après le
+  verrou de la ligne `orders` — la recomposition hors transaction ne fait foi
+  de rien.
+
+**Mineurs** : §9.3 compte six adaptateurs hors `planWhere`, pas quatre ; une
+commande `shelf` au lien non payé ne se modifie pas (M1) — son seul geste est
+l'annulation, qui rend son stock.
