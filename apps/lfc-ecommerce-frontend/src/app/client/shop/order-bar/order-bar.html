@@ -3,7 +3,7 @@
      item, la barre centrale doit apparaître ; le pied, c'est le mobile »).
      Rien de choisi et rien pris : pas de barre — visiter est permis, et une
      barre vide en ferait un manque. -->
-@if (choice() !== null || count() > 0) {
+@if (choice() !== null || started() !== null || count() > 0) {
   <div class="bar">
     @if (choice(); as service) {
       <!-- GAUCHE : ce qui a été décidé, et comment le défaire. -->
@@ -57,6 +57,32 @@
               {{ service.mode === 'delivery' ? modeCopy().toPickup : modeCopy().toDelivery }}
             </button>
           }
+        </span>
+      </div>
+    } @else if (started(); as draft) {
+      <!-- GAUCHE, un point retenu sans jour ni heure (lien direct, carte d'une
+           maison) : le point se dit, et le geste reprend le parcours là où il
+           en est — le jour, puis l'heure. -->
+      <div class="said" data-started>
+        <span class="kicker">
+          <span class="dot" aria-hidden="true"></span>
+          <span>{{ c().title }} · {{ draft.mode }}</span>
+        </span>
+        <span class="value">
+          <span class="promise">
+            <span class="place">{{ draft.place }}</span>
+          </span>
+        </span>
+        @if (lateNotice(); as notice) {
+          <fold-callout variant="warning" appearance="flat" data-late-day>{{
+            notice
+          }}</fold-callout>
+        }
+        <app-first-day-moved-callout />
+        <span class="acts">
+          <button class="act" type="button" (click)="houseRequested.emit()">
+            {{ draft.prompt }}
+          </button>
         </span>
       </div>
     } @else {

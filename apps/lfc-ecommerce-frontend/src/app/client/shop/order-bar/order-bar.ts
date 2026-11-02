@@ -105,6 +105,27 @@ export class OrderBar {
 
   protected readonly choice = this.order.choice;
 
+  /**
+   * **Un point déjà retenu, sans jour ni heure** — le lien direct d'une fiche
+   * Google (`?retrait=`) ou la carte d'une maison à l'accueil posent ce
+   * brouillon (`OrderDoors.designate`). Régression du 2026-11-02 (Hugo) : la
+   * barre ne lisait que le choix COMPLET, et disait « Où et quand ? » à qui
+   * venait de choisir Val Village — le choix était retenu, la barre le taisait.
+   * `null` : aucun point retenu.
+   */
+  protected readonly started = computed(() => {
+    const draft = this.order.draft();
+    if (draft === null || draft.place === undefined) {
+      return null;
+    }
+    const copy = this.c();
+    return {
+      mode: draft.mode === 'delivery' ? copy.delivery : copy.pickup,
+      place: draft.place,
+      prompt: draft.date === undefined ? copy.chooseDay : copy.chooseTime,
+    };
+  });
+
   /** L’heure limite qui approche, ou « trop tard » quand c’est vrai — sinon `null`. */
   protected readonly lateNotice = inject(ServiceDayNotice).message;
 

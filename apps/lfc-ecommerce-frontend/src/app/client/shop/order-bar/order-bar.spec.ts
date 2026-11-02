@@ -314,4 +314,24 @@ describe('OrderBar', () => {
 
     expect(textOf(fixture, '.empty')).toBe('Rien encore.');
   });
+
+  /**
+   * Régression du 2026-11-02 (Hugo) : le lien d'une fiche Google retenait le
+   * point (brouillon sans jour ni heure), mais la barre ne lisait que le choix
+   * complet et disait « Où et quand ? », panier vide ou non.
+   */
+  it('dit le point retenu par un lien direct, avant le jour et l’heure', () => {
+    const fixture = boot({ choice: null });
+    TestBed.inject(OrderContextStore).draft.set({
+      mode: 'pickup',
+      place: 'Val Village',
+      address: 'rue du val village',
+      pickupAddressId: 'pt-village',
+    });
+    fixture.detectChanges();
+
+    expect(textOf(fixture, '[data-started] .place')).toBe('Val Village');
+    expect(textOf(fixture, '[data-started] .act')).toBe('Choisissez le jour');
+    expect(el(fixture).textContent).not.toContain('Où et quand ?');
+  });
 });
