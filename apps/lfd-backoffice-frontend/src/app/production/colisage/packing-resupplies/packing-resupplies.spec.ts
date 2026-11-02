@@ -20,7 +20,14 @@ function fiche(packed: number | null, status: 'open' | 'closed' = 'open'): Packi
     awaitingOven: false,
     closedAt: null,
     lines: [
-      { sku: 'PAC', productName: 'Pain au chocolat', requested: 18, packed, awaitingOven: 0 },
+      {
+        sku: 'PAC',
+        productName: 'Pain au chocolat',
+        requested: 18,
+        packed,
+        saleUnit: 'piece',
+        awaitingOven: 0,
+      },
     ],
   };
 }

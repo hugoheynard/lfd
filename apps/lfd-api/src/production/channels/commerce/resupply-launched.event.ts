@@ -2,7 +2,7 @@ import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { instantOf, recordOf, textOf } from "../packing/payload-fields.js";
 import { resupplyLinesOf } from "../packing/resupply-list-drawn.event.js";
-import type { PlacedResupply, PlacedResupplyLine } from "./day-resupplies.reader.js";
+import type { PlacedResupply } from "./day-resupplies.reader.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_RESUPPLY_LAUNCHED = "production.resupply_launched";
@@ -101,7 +101,9 @@ function launchedResupplyOf(value: unknown): PlacedResupply | null {
   const siteLabel = raw["siteLabel"] ?? null;
   const name = raw["name"] ?? null;
   const servedByTransfer = raw["servedByTransfer"];
-  const lines = launchedLinesOf(raw["lines"]);
+  // Les lignes portent leur unité (L2b-2) : absente = `piece`, inconnue =
+  // payload illisible — la lecture partagée avec le fait de liste (L2b-3).
+  const lines = resupplyLinesOf(raw["lines"]);
   if (
     resupplyId === null ||
     siteId === null ||
@@ -113,29 +115,6 @@ function launchedResupplyOf(value: unknown): PlacedResupply | null {
     return null;
   }
   return { resupplyId, siteId, siteLabel, name, servedByTransfer, lines };
-}
-
-/**
- * Les lignes relues avec leur unité (lot L2b-2). Une ligne écrite avant
- * l'unité n'a pas de clé `saleUnit` et se relit `piece` : aucun réassort au
- * poids n'a pu être lancé avant elle (garde d'envoi de L2b-1). Une valeur
- * présente mais inconnue rend le payload illisible.
- */
-function launchedLinesOf(value: unknown): readonly PlacedResupplyLine[] | null {
-  const lines = resupplyLinesOf(value);
-  if (lines === null || !Array.isArray(value)) {
-    return null;
-  }
-  const units = value.map((entry: unknown) => recordOf(entry)?.["saleUnit"] ?? "piece");
-  const placed: PlacedResupplyLine[] = [];
-  for (const [index, line] of lines.entries()) {
-    const saleUnit = units[index];
-    if (saleUnit !== "piece" && saleUnit !== "weight") {
-      return null;
-    }
-    placed.push({ ...line, saleUnit });
-  }
-  return placed;
 }
 
 /** Le fait `production.resupply_launched` reçu ne respecte pas son contrat. */

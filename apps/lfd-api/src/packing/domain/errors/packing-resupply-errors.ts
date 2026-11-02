@@ -1,3 +1,5 @@
+import { quantityFigure, type SaleQuantity } from "@lfd/money";
+
 import {
   BusinessError,
   DomainError,
@@ -30,12 +32,20 @@ export class PackingResupplyLineNotFoundError extends ResourceNotFoundError {
   }
 }
 
-/** La quantité emballée est hors de 0…demandée. */
+/**
+ * La quantité emballée est hors de 0…demandée. Au poids, elle se dit en
+ * grammes et le demandé « 1,25 kg » (lot L2b-3) : « 1250 » seul se lirait
+ * comme des pièces.
+ */
 export class PackedResupplyQuantityOutOfRangeError extends DomainError {
-  constructor(productName: string, requested: number) {
+  constructor(productName: string, requested: SaleQuantity) {
+    const range =
+      requested.unit === "weight"
+        ? `un nombre entier de grammes entre 0 et ${String(requested.amount)} (${quantityFigure(requested)}), le poids demandé`
+        : `un nombre entier entre 0 et ${String(requested.amount)}, la quantité demandée`;
     super(
       "packing.resupply.packed_out_of_range",
-      `La quantité emballée de « ${productName} » doit être un nombre entier entre 0 et ${String(requested)}, la quantité demandée. Si vous en avez emballé davantage, retirez le surplus : le point n'en a pas demandé plus.`,
+      `La quantité emballée de « ${productName} » doit être ${range}. Si vous en avez emballé davantage, retirez le surplus : le point n'en a pas demandé plus.`,
     );
   }
 }

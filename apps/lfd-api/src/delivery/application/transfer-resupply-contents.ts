@@ -6,6 +6,7 @@ import {
 } from "../../packing/channels/delivery/index.js";
 import {
   type FrozenResupply,
+  type FrozenResupplyLine,
   FrozenResuppliesReader,
 } from "../../production/channels/delivery/index.js";
 import type { InternalTransfer } from "../domain/entities/internal-transfer.js";
@@ -86,11 +87,26 @@ function linesOf(
   packed: PackedResupplyLines | null,
 ): readonly ManifestLine[] {
   return resupply.lines.flatMap((line) => {
-    const quantity = packed === null ? line.quantity : (packed.get(line.sku) ?? 0);
-    // Un réassort est toujours à la pièce : le poids en est exclu (§ 2 de
-    // `pricing/vente-au-poids.md`).
+    const quantity = packed === null ? line.quantity : packedQuantityOf(packed, line);
+    // L'unité figée à l'arrêt (L2b-3) : un lot au poids part en grammes, et
+    // le manifeste le dit en kilos.
     return quantity > 0
-      ? [{ sku: line.sku, productName: line.productName, quantity, saleUnit: "piece" as const }]
+      ? [{ sku: line.sku, productName: line.productName, quantity, saleUnit: line.saleUnit }]
       : [];
   });
+}
+
+/**
+ * L'emballé d'une ligne figée. Une ligne absente d'une fiche close n'est pas
+ * partie (0). Un emballé d'une autre unité que la ligne figée ne se lit pas
+ * — des grammes comptés en pièces — : la ligne garde son demandé, la règle
+ * de la réception (`expectedLinesOf`). Le cas ne naît pas : la fiche du
+ * colisage recopie l'unité du même fait du fournil.
+ */
+function packedQuantityOf(packed: PackedResupplyLines, line: FrozenResupplyLine): number {
+  const entry = packed.get(line.sku);
+  if (entry === undefined) {
+    return 0;
+  }
+  return entry.saleUnit === line.saleUnit ? entry.quantity : line.quantity;
 }

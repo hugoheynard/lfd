@@ -1,6 +1,10 @@
 import type { ResupplyReceptionView, UnorderedReceiptView } from "@lfd/contracts";
 
-import { expectedLinesOf, type ResupplyReceipt } from "../domain/resupply-receipt.js";
+import {
+  expectedLinesOf,
+  type PackedLines,
+  type ResupplyReceipt,
+} from "../domain/resupply-receipt.js";
 import type { PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
 
 /** Un auteur que l'annuaire ne connaissait pas a été figé sans nom : on ne l'invente pas. */
@@ -17,7 +21,7 @@ function nameOf(name: string): string | null {
 export function receptionView(
   resupply: PlacedSiteResupplySnapshot,
   receipt: ResupplyReceipt | null,
-  packed: ReadonlyMap<string, number> | null = null,
+  packed: PackedLines | null = null,
 ): ResupplyReceptionView {
   const received = receipt?.received ?? null;
   return {

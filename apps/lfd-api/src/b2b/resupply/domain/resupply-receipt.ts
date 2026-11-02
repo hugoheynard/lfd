@@ -86,12 +86,12 @@ export class ResupplyReceipt {
   /**
    * Le reçu attendu d'un réassort envoyé. Son attendu est la quantité
    * EMBALLÉE au colisage quand elle est connue (lot R3b : `packed`, SKU →
-   * pièces, d'une fiche close), sinon la quantité demandée.
+   * quantité et unité, d'une fiche close), sinon la quantité demandée.
    */
   static expecting(
     id: string,
     resupply: ReceivableResupply,
-    packed: ReadonlyMap<string, number> | null = null,
+    packed: PackedLines | null = null,
   ): ResupplyReceipt {
     assertServiceDay(resupply.serviceDay);
     const lines = expectedLinesOf(resupply, packed).map((line) =>
@@ -228,15 +228,31 @@ function assertServiceDay(serviceDay: string): void {
 }
 
 /**
+ * L'emballé d'une fiche de réassort close, tel que le colisage le rend :
+ * SKU → quantité et unité (lot L2b-3). Déclaré ici pour que le domaine ne
+ * dépende pas du canal ; `PackedResupplyLines` lui est conforme.
+ */
+export type PackedLines = ReadonlyMap<
+  string,
+  { readonly quantity: number; readonly saleUnit: SaleUnit }
+>;
+
+function packedOf(packed: PackedLines | null, sku: string, saleUnit: SaleUnit): number | undefined {
+  const line = packed?.get(sku);
+  return line !== undefined && line.saleUnit === saleUnit ? line.quantity : undefined;
+}
+
+/**
  * Les lignes attendues : l'emballé s'il est connu, sinon le demandé (lot
  * R3b, §13.1 point 6). Partagé avec la page de réception, qui montre
- * l'attendu avant « Réceptionner ». L'emballé du colisage compte des PIÈCES
- * (`PackedResuppliesReader`) : il ne remplace jamais une ligne au poids, qui
- * garde son demandé en grammes (le colisage au poids est le lot L2b-3).
+ * l'attendu avant « Réceptionner ». L'emballé du colisage porte son unité
+ * (lot L2b-3) : des grammes au poids. Un emballé d'une autre unité que la
+ * ligne ne la remplace pas — la ligne garde son demandé plutôt que de lire
+ * des grammes comme des pièces (le fournil refuse ce mélange à l'arrêt).
  */
 export function expectedLinesOf(
   resupply: Pick<ReceivableResupply, "lines">,
-  packed: ReadonlyMap<string, number> | null,
+  packed: PackedLines | null,
 ): readonly {
   readonly sku: string;
   readonly label: string;
@@ -246,7 +262,7 @@ export function expectedLinesOf(
   return resupply.lines.map((line) => ({
     sku: line.sku,
     label: line.label,
-    quantity: (line.saleUnit === "piece" ? packed?.get(line.sku) : undefined) ?? line.quantity,
+    quantity: packedOf(packed, line.sku, line.saleUnit) ?? line.quantity,
     saleUnit: line.saleUnit,
   }));
 }

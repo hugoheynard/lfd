@@ -9,7 +9,7 @@ import { FixedTransferContents, plannedTransfer } from "./transfer-doubles.js";
  */
 const DAY = "2030-03-12";
 const AT = new Date(0);
-/** Un réassort est toujours à la pièce : le poids en est exclu (P6, vente au poids). */
+/** Un réassort de croissants, à la pièce. */
 const CROISSANT = { sku: "CRO-001", productName: "Croissant", saleUnit: "piece" as const };
 
 function transferWith(resupplyId: string) {
@@ -65,7 +65,9 @@ describe("le réassort au manifeste du transfert", () => {
         },
       ],
     };
-    const packed = new Map([["res_vv", new Map([["CRO-001", 4]])]]);
+    const packed = new Map([
+      ["res_vv", new Map([["CRO-001", { quantity: 4, saleUnit: "piece" as const }]])],
+    ]);
 
     const contents = await itemContentsOf(ORDERS, resupplyContentsOver([withTwo], packed), [
       transfer,
@@ -84,7 +86,9 @@ describe("le réassort au manifeste du transfert", () => {
 
   it("le départ fige l'emballé : le manifeste ne bouge plus ensuite", async () => {
     const transfer = transferWith("res_vv");
-    const packed = new Map([["res_vv", new Map([["CRO-001", 5]])]]);
+    const packed = new Map([
+      ["res_vv", new Map([["CRO-001", { quantity: 5, saleUnit: "piece" as const }]])],
+    ]);
     transfer.depart(
       AT,
       await itemContentsOf(ORDERS, resupplyContentsOver([frozenResupply("res_vv", DAY)], packed), [
@@ -95,5 +99,37 @@ describe("le réassort au manifeste du transfert", () => {
     const after = transfer.manifest(() => undefined);
 
     expect(after.resupplies.totals).toEqual([{ ...CROISSANT, quantity: 5 }]);
+  });
+
+  it("un réassort au poids part avec son unité et l'emballé en grammes (L2b-3)", async () => {
+    const transfer = transferWith("res_vv");
+    const frozen = frozenResupply("res_vv", DAY, { quantity: 2000, saleUnit: "weight" });
+    const packed = new Map([
+      ["res_vv", new Map([["CRO-001", { quantity: 1940, saleUnit: "weight" as const }]])],
+    ]);
+
+    const contents = await itemContentsOf(ORDERS, resupplyContentsOver([frozen], packed), [
+      transfer,
+    ]);
+
+    expect(transfer.manifest(contents).resupplies.totals).toEqual([
+      { ...CROISSANT, quantity: 1940, saleUnit: "weight" },
+    ]);
+  });
+
+  it("un emballé d'une autre unité que la ligne figée ne se lit pas : le demandé part", async () => {
+    const transfer = transferWith("res_vv");
+    const frozen = frozenResupply("res_vv", DAY, { quantity: 2000, saleUnit: "weight" });
+    const packed = new Map([
+      ["res_vv", new Map([["CRO-001", { quantity: 2, saleUnit: "piece" as const }]])],
+    ]);
+
+    const contents = await itemContentsOf(ORDERS, resupplyContentsOver([frozen], packed), [
+      transfer,
+    ]);
+
+    expect(transfer.manifest(contents).resupplies.totals).toEqual([
+      { ...CROISSANT, quantity: 2000, saleUnit: "weight" },
+    ]);
   });
 });

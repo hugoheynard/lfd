@@ -7,8 +7,9 @@
  * (`resupply_receipt_line.sale_unit`) et celle des lignes de commande
  * (`order_lines.sale_unit`) se décomptent en grammes, à part des pièces, à la
  * réception comme à la Supervision ; que la baisse sous le déjà-vendu se
- * refuse en disant le poids ; et qu'une demande au poids ne part pas au
- * fournil tant qu'il ne sait pas la recevoir (lot L2b-2).
+ * refuse en disant le poids ; et qu'une demande au poids part au fournil en
+ * grammes depuis que la garde d'envoi de L2b-1 est retirée (lot L2b-3 — le
+ * parcours entier est dans `resupply-village-flow.e2e-spec.ts`).
  */
 import type { DayStockOverviewView, ResupplyReceiptView } from "@lfd/contracts";
 import { instantToLocal, localToInstant } from "@lfd/contracts";
@@ -138,20 +139,20 @@ describe("le reste du jour au poids (lot L2b-1)", () => {
   });
 });
 
-describe("une demande au poids et le fournil (lot L2b-1)", () => {
-  it("se compose en grammes mais ne part pas au fournil, et reste la demande en cours", async () => {
+describe("une demande au poids et le fournil (lots L2b-1, L2b-3)", () => {
+  it("se compose en grammes et part au fournil, son unité figée", async () => {
     const s = await scene(ctx, clock);
 
     const { sent } = await counterSends(ctx.asSub(E2E_STAFF_SUB), s.siteId, "asap", [
       { sku: GRAVLAX.sku, quantity: 750 },
     ]);
 
-    expect(sent.status).toBe(409);
-    expect(jsonBody<{ code: string }>(sent).code).toBe("resupply.sale_unit.weight_not_sendable");
+    expect(sent.status).toBe(204);
     const lines = await ctx.prisma.siteResupplyLine.findMany({
       where: { sku: GRAVLAX.sku },
       select: { quantity: true, saleUnit: true, resupply: { select: { placedAt: true } } },
     });
-    expect(lines).toEqual([{ quantity: 750, saleUnit: "weight", resupply: { placedAt: null } }]);
+    expect(lines.map((line) => [line.quantity, line.saleUnit])).toEqual([[750, "weight"]]);
+    expect(lines[0]?.resupply.placedAt).not.toBeNull();
   });
 });

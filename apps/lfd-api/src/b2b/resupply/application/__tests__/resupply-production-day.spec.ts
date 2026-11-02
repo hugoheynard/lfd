@@ -167,8 +167,8 @@ describe("le prévisionnel lit les réassorts pour demain (R3d)", () => {
 
 /**
  * Un lecteur qui ajoute une ligne de saumon au poids à chaque réassort envoyé.
- * La garde d'envoi (`weight-resupply-guard.ts`) empêche encore d'en placer un
- * par le geste : le double tient lieu de l'état d'après L2b-3.
+ * Écrit quand la garde d'envoi de L2b-1 empêchait d'en placer un par le
+ * geste ; elle est retirée depuis L2b-3, le double reste un raccourci.
  */
 class WeighedReader extends SiteResupplyReader {
   constructor(private readonly inner: SiteResupplyReader) {

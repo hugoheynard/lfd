@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { PackingResupplyKind } from "../entities/packing-resupply.js";
 
 /** Un réassort à coliser, tel que la liste du fournil l'inscrit. */
@@ -15,7 +17,10 @@ export interface ResupplyToDraw {
   readonly lines: readonly {
     readonly sku: string;
     readonly productName: string;
+    /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
     readonly quantity: number;
+    /** L'unité figée par le fournil (lot L2b-3). */
+    readonly saleUnit: SaleUnit;
   }[];
 }
 

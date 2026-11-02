@@ -11,6 +11,12 @@
  * en base, par les vraies routes et la vraie boîte d'envoi, sans écriture
  * de raccord.
  *
+ * La même demande porte une ligne AU POIDS (lot L2b-3 de
+ * `limites-de-commande/plan-jour-meme-sur-stock.md`) : 2 kg de gravlax,
+ * comptés et imprimés en grammes au fournil, colisés en un lot de 1,94 kg,
+ * partis au manifeste en kilos, reçus en grammes au Village — et les
+ * croissants à côté, inchangés.
+ *
  * L'horloge est figée et SAUTE d'une étape à l'autre : la veille (J-1) puis
  * le jour servi (J, dans une semaine). Aucune date du calendrier.
  */
@@ -28,6 +34,7 @@ import type {
 } from "@lfd/contracts";
 import { addDays, localToInstant } from "@lfd/contracts";
 
+import { WEIGHED_GRAVLAX } from "../src/dev/seeding/delivery-day.seed.js";
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
 import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -49,12 +56,18 @@ import {
   worksheetLine,
 } from "./production-day-fixture.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const NAME = "Vitrine du matin";
 const ASKED = 20;
 const PACKED = 18;
 const ORDERED = 4;
+/** Le saumon gravlax du corpus, vendu au poids : 2 kg demandés, un lot de 1,94 kg emballé. */
+const GRAVLAX = `${WEIGHED_GRAVLAX}-1`;
+const ASKED_GRAMS = 2_000;
+const PACKED_GRAMS = 1_940;
+const BATCH_GRAMS = "01K6A0000000000000000000VG";
 const BATCH = "01K6A0000000000000000000VF";
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
@@ -117,6 +130,11 @@ async function counterSendsNamed(village: string): Promise<string> {
     .post(`${base}/drafts/tomorrow/lines`)
     .send({ sku: CROISSANT, quantity: ASKED })
     .expect(201);
+  // Le vrai envoi du comptoir, avec une ligne au poids : la garde de L2b-1 est retirée.
+  await staff()
+    .post(`${base}/drafts/tomorrow/lines`)
+    .send({ sku: GRAVLAX, quantity: ASKED_GRAMS })
+    .expect(201);
   const id = jsonBody<{ id: string }>(added).id;
   const view = jsonBody<{ drafts: readonly { id: string; version: number }[] }>(
     await staff().get(base).expect(200),
@@ -148,6 +166,7 @@ async function customerOrdersAtVillage(village: string): Promise<void> {
 
 async function stepEveAfternoon(): Promise<Flow> {
   clock.set(at(EVE, "15:00"));
+  await seedWeighedArticles(ctx);
   await seedDeparture(ctx);
   await addVehicle(ctx, "Kangoo", MEASURED);
   await seedDriverRole(ctx);
@@ -180,9 +199,9 @@ async function autoCloseTour(): Promise<string> {
   return jsonBody<{ outcome: string }>(response).outcome;
 }
 
-async function dossierPdfFirstAndLast(): Promise<readonly string[]> {
+async function pdfPagesOf(path: string): Promise<readonly string[]> {
   const pdf = await staff()
-    .get(`/admin/production/batch/${SERVICE_DAY}/dossier.pdf`)
+    .get(path)
     .buffer()
     .parse((res, callback) => {
       const chunks: Buffer[] = [];
@@ -210,18 +229,37 @@ async function stepEveStop(flow: Flow): Promise<void> {
   expect(
     await ctx.prisma.productionResupply.findMany({
       where: { serviceDay: SERVICE_DAY },
-      select: { resupplyId: true, lines: { select: { sku: true, quantity: true } } },
+      select: {
+        resupplyId: true,
+        lines: { select: { sku: true, quantity: true, saleUnit: true }, orderBy: { sku: "asc" } },
+      },
     }),
-  ).toEqual([{ resupplyId: flow.resupplyId, lines: [{ sku: CROISSANT, quantity: ASKED }] }]);
+  ).toEqual([
+    {
+      resupplyId: flow.resupplyId,
+      lines: [
+        { sku: GRAVLAX, quantity: ASKED_GRAMS, saleUnit: "weight" },
+        { sku: CROISSANT, quantity: ASKED, saleUnit: "piece" },
+      ],
+    },
+  ]);
   expect((await worksheetLine(ctx)).quantity).toBe(ORDERED + ASKED);
+  // Le compte du fournil : des grammes, pas 2 000 pièces.
+  expect(await worksheetLine(ctx, GRAVLAX)).toMatchObject({
+    quantity: ASKED_GRAMS,
+    saleUnit: "weight",
+  });
   const dossier = jsonBody<ProductionDayResuppliesView>(
     await staff().get(`/admin/production/batch/${SERVICE_DAY}/resupplies`).expect(200),
   );
   expect(dossier).toMatchObject({
     frozen: true,
-    resupplies: [{ resupplyId: flow.resupplyId, lines: [{ quantity: ASKED }] }],
+    // La vue de l'écran du fournil ne porte pas encore l'unité (lot L2b-4).
+    resupplies: [
+      { resupplyId: flow.resupplyId, lines: [{ quantity: ASKED }, { quantity: ASKED_GRAMS }] },
+    ],
   });
-  const pages = await dossierPdfFirstAndLast();
+  const pages = await pdfPagesOf(`/admin/production/batch/${SERVICE_DAY}/dossier.pdf`);
   // La couverture dit la part du réassort au rayon, et que le point est servi
   // par transfert (mise en page du 2026-10-25) ; le bon ferme le dossier.
   expect(pages[0]).toMatch(
@@ -229,6 +267,8 @@ async function stepEveStop(flow: Flow): Promise<void> {
   );
   expect(pages[0]).toContain("Par transfert");
   expect(pages.at(-1)).toContain("RÉASSORT 1/1");
+  // Le bon de réassort dit le poids sur la ligne (L2b-2).
+  expect(pages.at(-1)).toContain("2 kg");
 }
 
 async function stepDurableFacts(flow: Flow): Promise<string> {
@@ -241,7 +281,10 @@ async function stepDurableFacts(flow: Flow): Promise<string> {
       resupplyId: flow.resupplyId,
       title: `${NAME} — Val Village`,
       status: "open",
-      lines: [{ sku: CROISSANT, requested: ASKED, packed: null }],
+      lines: [
+        { sku: GRAVLAX, requested: ASKED_GRAMS, saleUnit: "weight", packed: null },
+        { sku: CROISSANT, requested: ASKED, saleUnit: "piece", packed: null },
+      ],
     },
   ]);
   const transfers = await ctx.prisma.deliveryInternalTransfer.findMany({
@@ -265,9 +308,16 @@ async function stepDurableFacts(flow: Flow): Promise<string> {
 async function stepMorningPacking(flow: Flow): Promise<void> {
   clock.set(at(SERVICE_DAY, "06:00"));
   expect(await recordBatch(ctx, BATCH, ORDERED + ASKED)).toBe(204);
+  expect(await recordBatch(ctx, BATCH_GRAMS, ASKED_GRAMS, GRAVLAX)).toBe(204);
   await settle();
   const sheet = `/admin/packing/${SERVICE_DAY}/resupplies/${flow.resupplyId}`;
   await staff().put(`${sheet}/lines/${CROISSANT}`).send({ quantity: PACKED }).expect(204);
+  // Le lot au poids, pesé : 1,94 kg — jamais plus que les 2 kg demandés.
+  await staff()
+    .put(`${sheet}/lines/${GRAVLAX}`)
+    .send({ quantity: ASKED_GRAMS + 1 })
+    .expect(400);
+  await staff().put(`${sheet}/lines/${GRAVLAX}`).send({ quantity: PACKED_GRAMS }).expect(204);
   await staff().post(`${sheet}/close`).expect(204);
   await settle();
   const after = jsonBody<PackingResuppliesView>(
@@ -275,7 +325,10 @@ async function stepMorningPacking(flow: Flow): Promise<void> {
   );
   expect(after.resupplies[0]).toMatchObject({
     status: "closed",
-    lines: [{ requested: ASKED, packed: PACKED }],
+    lines: [
+      { sku: GRAVLAX, requested: ASKED_GRAMS, saleUnit: "weight", packed: PACKED_GRAMS },
+      { sku: CROISSANT, requested: ASKED, saleUnit: "piece", packed: PACKED },
+    ],
   });
 }
 
@@ -311,9 +364,16 @@ async function stepDeparture(transferId: string): Promise<{ roundId: string; pau
 
   const manifest = await manifestOf(transferId);
   expect(manifest.frozen).toBe(true);
-  expect(manifest.resupplies.totals).toEqual([
-    expect.objectContaining({ sku: CROISSANT, quantity: PACKED }),
-  ]);
+  expect(manifest.resupplies.totals).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ sku: CROISSANT, quantity: PACKED, saleUnit: "piece" }),
+      expect.objectContaining({ sku: GRAVLAX, quantity: PACKED_GRAMS, saleUnit: "weight" }),
+    ]),
+  );
+  expect(manifest.resupplies.totals).toHaveLength(2);
+  // Le papier de la tournée dit le lot en kilos, pas « 1940 × ».
+  const paper = (await pdfPagesOf(`/admin/delivery/rounds/${roundId}/round.pdf`)).join("\n");
+  expect(paper).toContain("1,94 kg");
   expect(manifest.orders.totals).toEqual([
     expect.objectContaining({ sku: CROISSANT, quantity: ORDERED }),
   ]);
@@ -373,23 +433,42 @@ async function receiptOf(village: string): Promise<ResupplyReceiptView> {
 
 async function stepReception(flow: Flow): Promise<void> {
   const before = await receiptOf(flow.village);
-  expect(before.receptions).toMatchObject([
-    { resupplyId: flow.resupplyId, name: NAME, lines: [{ expectedQuantity: PACKED }] },
+  expect(before.receptions).toMatchObject([{ resupplyId: flow.resupplyId, name: NAME }]);
+  // La réception se pré-remplit de l'emballé, en grammes pour le lot au poids.
+  const expected = [...(before.receptions[0]?.lines ?? [])].sort((a, b) =>
+    a.sku.localeCompare(b.sku),
+  );
+  expect(expected).toMatchObject([
+    { sku: GRAVLAX, expectedQuantity: PACKED_GRAMS, saleUnit: "weight" },
+    { sku: CROISSANT, expectedQuantity: PACKED, saleUnit: "piece" },
   ]);
   await staff()
     .post(`/admin/resupply-receipts/${flow.village}/resupplies/${flow.resupplyId}/receive`)
     .expect(204);
 
   const after = await receiptOf(flow.village);
-  expect(after.stock).toMatchObject([
-    { sku: CROISSANT, receivedQuantity: PACKED, estimatedStock: PACKED },
-  ]);
+  expect(after.stock).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ sku: CROISSANT, receivedQuantity: PACKED, estimatedStock: PACKED }),
+      expect.objectContaining({
+        sku: GRAVLAX,
+        receivedQuantity: PACKED_GRAMS,
+        estimatedStock: PACKED_GRAMS,
+        saleUnit: "weight",
+      }),
+    ]),
+  );
   const overview = jsonBody<DayStockOverviewView>(
     await staff().get(`/admin/supervision/stock/${SERVICE_DAY}`).expect(200),
   );
   const atVillage = overview.sites.find((site) => site.siteId === flow.village);
   expect(atVillage?.resupplies).toMatchObject([{ resupplyId: flow.resupplyId, state: "received" }]);
-  expect(atVillage?.products).toMatchObject([{ sku: CROISSANT, stock: PACKED }]);
+  expect(atVillage?.products).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ sku: CROISSANT, stock: PACKED }),
+      expect.objectContaining({ sku: GRAVLAX, stock: PACKED_GRAMS, saleUnit: "weight" }),
+    ]),
+  );
 }
 
 describe("le parcours du Village, de l'envoi au stock du jour", () => {
@@ -401,13 +480,13 @@ describe("le parcours du Village, de l'envoi au stock du jour", () => {
     await stepEveStop(flow);
     // 3. Les faits durables : une fiche au colisage, un transfert qui porte commande et réassort.
     const transferId = await stepDurableFacts(flow);
-    // 4. J 06:00 — la fournée descend au colisage, 18 emballés sur 20, fiche close.
+    // 4. J 06:00 — les fournées descendent au colisage : 18 croissants sur 20, 1,94 kg sur 2, close.
     await stepMorningPacking(flow);
-    // 5. J 07:30 — placé, chargé, parti : le manifeste fige 18 et la commande.
+    // 5. J 07:30 — placé, chargé, parti : le manifeste fige 18, 1,94 kg et la commande.
     const { roundId, paul } = await stepDeparture(transferId);
     // 6. J 09:00 — « Remis au site » : réassort arrivé, cloche au comptoir, commande retirable.
     await stepSiteDrop(flow, roundId, paul);
-    // 7. Le comptoir réceptionne 18 ; la Supervision lit le stock du jour.
+    // 7. Le comptoir réceptionne 18 et 1 940 g ; la Supervision lit le stock du jour.
     await stepReception(flow);
   });
 });

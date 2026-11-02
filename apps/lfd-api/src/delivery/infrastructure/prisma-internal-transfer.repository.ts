@@ -146,7 +146,17 @@ export class PrismaInternalTransferRepository extends InternalTransferRepository
         });
       }
       await tx.deliveryInternalTransferManifestLine.createMany({
-        data: snapshot.manifest.map((line) => ({ transferId: snapshot.id, ...line })),
+        // Colonne par colonne : un champ ajouté à `FrozenManifestLine` (ou à
+        // la ligne de réassort qu'il recopie) n'atteint pas Prisma par un
+        // étalement, qui refuserait l'écriture au départ.
+        data: snapshot.manifest.map((line) => ({
+          transferId: snapshot.id,
+          itemId: line.itemId,
+          sku: line.sku,
+          productName: line.productName,
+          quantity: line.quantity,
+          saleUnit: line.saleUnit,
+        })),
         skipDuplicates: true,
       });
     });

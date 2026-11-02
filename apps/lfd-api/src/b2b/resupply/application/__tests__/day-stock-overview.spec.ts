@@ -75,7 +75,7 @@ async function world(stopped: readonly string[], extra: readonly SiteResupplySna
       cancelled: { at: AT, author: AUTHOR },
     }),
   );
-  bench.packed.closed.set("r_pac", new Map([["PAC", 5]]));
+  bench.packed.closed.set("r_pac", new Map([["PAC", { quantity: 5, saleUnit: "piece" as const }]]));
   await bench.receiveResupply.execute(new ReceiveSiteResupplyCommand(SITE, "r_cro", "s"));
   const alert = (id: string, siteId: string) =>
     StockAlert.declare({

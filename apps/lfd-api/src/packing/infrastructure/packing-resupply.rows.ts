@@ -5,6 +5,7 @@ import {
   type PackingResupplySnapshot,
 } from "../domain/entities/packing-resupply.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
+import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /** Les colonnes lues d'une fiche de réassort et de ses lignes. */
 export const RESUPPLY_SELECT = {
@@ -22,6 +23,7 @@ export const RESUPPLY_SELECT = {
       sku: true,
       productName: true,
       quantity: true,
+      saleUnit: true,
       packed: true,
       packedAt: true,
       packedBy: true,
@@ -34,6 +36,7 @@ interface LineRow {
   readonly sku: string;
   readonly productName: string;
   readonly quantity: number;
+  readonly saleUnit: string;
   readonly packed: number | null;
   readonly packedAt: Date | null;
   readonly packedBy: string | null;
@@ -57,6 +60,7 @@ function lineOf(row: LineRow): PackingResupplyLineSnapshot {
     sku: row.sku,
     productName: row.productName,
     quantity: row.quantity,
+    saleUnit: packingSaleUnitOf(row.sku, row.saleUnit),
     // Les CHECK de la table interdisent l'un sans les autres.
     packed:
       row.packed === null || row.packedAt === null || row.packedBy === null

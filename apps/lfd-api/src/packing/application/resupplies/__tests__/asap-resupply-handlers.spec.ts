@@ -35,7 +35,7 @@ async function setup(received: number) {
     name: null,
     kind: "evening",
     drawnAt: EVENING,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 2 }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
   });
   const shadow = new InMemoryShadow();
   shadow.stocks.set(`${DAY}/CRO`, { received, returned: 0 });

@@ -81,6 +81,7 @@ export function resupplyListFactsOf(
               sku: line.sku,
               productName: line.productName,
               quantity: line.quantity,
+              saleUnit: line.saleUnit,
             })),
           },
           reopenedAt,

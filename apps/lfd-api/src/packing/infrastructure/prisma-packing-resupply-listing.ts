@@ -37,14 +37,14 @@ export class PrismaPackingResupplyListing extends PackingResupplyListing {
       skipDuplicates: true,
     });
     await this.prisma.packingResupplyLine.createMany({
-      // Colonne par colonne : le fait « réassort lancé » porte l'unité de ses
-      // lignes depuis L2b-2, que `packing_resupply_line` ne connaît pas encore
-      // (L2b-3) — l'étalement l'envoyait à Prisma, qui refusait l'écriture.
+      // Colonne par colonne : un champ ajouté aux lignes du fait n'atteint
+      // pas Prisma par un étalement, qui refuserait l'écriture.
       data: resupply.lines.map((line) => ({
         ...key,
         sku: line.sku,
         productName: line.productName,
         quantity: line.quantity,
+        saleUnit: line.saleUnit,
       })),
       skipDuplicates: true,
     });

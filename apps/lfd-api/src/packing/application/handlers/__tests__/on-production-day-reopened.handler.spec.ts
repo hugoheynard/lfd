@@ -77,7 +77,7 @@ describe("OnProductionDayReopened (colisage)", () => {
         name: null,
         kind: "evening",
         drawnAt: CLOSED,
-        lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+        lines: [{ sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
       });
     }
     const repository = new InMemoryResupplyRepository(resupplies);
@@ -117,7 +117,7 @@ describe("OnProductionDayReopened (colisage)", () => {
       name: null,
       kind: "asap",
       drawnAt: CLOSED,
-      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
     });
     const delivery = {
       ...DELIVERY,

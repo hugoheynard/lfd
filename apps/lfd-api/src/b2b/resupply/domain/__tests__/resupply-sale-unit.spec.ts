@@ -7,7 +7,6 @@ import { resupplySaleUnitOf } from "../resupply-sale-unit.js";
 import {
   ResupplyLineUnitMismatchError,
   UnknownResupplySaleUnitError,
-  WeightResupplyNotSendableError,
 } from "../resupply-sale-unit-errors.js";
 import { type PlacedSiteResupplySnapshot, SiteResupply } from "../site-resupply.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
@@ -62,16 +61,20 @@ describe("la demande de réassort au poids", () => {
     expect(resupply.lines.map((line) => line.quantity)).toEqual([500]);
   });
 
-  it("ne part pas au fournil tant qu'elle porte une ligne au poids", () => {
+  it("part au fournil avec sa ligne au poids, en grammes (L2b-3 : la garde d'envoi est retirée)", () => {
     const resupply = SiteResupply.draft({ id: "r", siteId: "site_1", target: "asap", at: AT });
     resupply.addLine(
       SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 6, saleUnit: "piece" }),
     );
     resupply.addLine(SiteResupplyLine.of({ ...SALMON_GRAMS, quantity: 500 }));
 
-    expect(() => resupply.place(TRACE, null, false)).toThrow(WeightResupplyNotSendableError);
-    expect(() => resupply.place(TRACE, null, false)).toThrow("« Saumon gravlax »");
-    expect(resupply.status).toBe("draft");
+    resupply.place(TRACE, null, false);
+
+    expect(resupply.status).toBe("placed");
+    expect(resupply.lines.map((line) => [line.sku, line.quantity, line.saleUnit])).toEqual([
+      ["CRO", 6, "piece"],
+      [SALMON_GRAMS.sku, 500, "weight"],
+    ]);
   });
 });
 
@@ -88,7 +91,7 @@ describe("le reçu au poids", () => {
     ]);
   });
 
-  it("l'emballé du colisage (des pièces) ne remplace jamais une ligne au poids", () => {
+  it("l'emballé du colisage au poids remplace le demandé en grammes (L2b-3)", () => {
     const lines = expectedLinesOf(
       {
         lines: [
@@ -97,13 +100,24 @@ describe("le reçu au poids", () => {
         ],
       },
       new Map([
-        ["CRO", 20],
-        ["SAU", 1],
+        ["CRO", { quantity: 20, saleUnit: "piece" as const }],
+        ["SAU", { quantity: 1420, saleUnit: "weight" as const }],
       ]),
     );
 
     expect(lines.map((line) => [line.sku, line.quantity, line.saleUnit])).toEqual([
       ["CRO", 20, "piece"],
+      ["SAU", 1420, "weight"],
+    ]);
+  });
+
+  it("un emballé d'une autre unité que la ligne ne la remplace pas", () => {
+    const lines = expectedLinesOf(
+      { lines: [{ ...SALMON_GRAMS, quantity: 1500 }] },
+      new Map([["SAU", { quantity: 1, saleUnit: "piece" as const }]]),
+    );
+
+    expect(lines.map((line) => [line.sku, line.quantity, line.saleUnit])).toEqual([
       ["SAU", 1500, "weight"],
     ]);
   });

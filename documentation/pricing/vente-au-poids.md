@@ -102,8 +102,11 @@ poser en partie quand la réserve n'en tient qu'une partie.
   reste « à répartir » ; le préparateur le pose à la main, en un geste.
 
 Un **manquant** est la différence de grammes entre le dû et le lot au bac. Le
-manifeste du transfert interne porte l'unité ; un réassort est toujours
-`piece`.
+manifeste du transfert interne porte l'unité — celle d'une ligne de commande
+comme celle d'une ligne de réassort (lot L2b-3 de
+[`limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md),
+2026-11-02) : un réassort au poids s'emballe en un lot à sa fiche, en
+grammes, et part en kilos.
 
 ### Facture
 

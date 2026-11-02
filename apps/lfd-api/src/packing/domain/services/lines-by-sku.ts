@@ -8,11 +8,11 @@ export interface DueLine {
   readonly productName: string;
   /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
-  /** P6 de `pricing/vente-au-poids.md` ; un réassort est toujours à la pièce. */
+  /** P6 de `pricing/vente-au-poids.md` ; un réassort la porte aussi depuis L2b-3. */
   readonly saleUnit: SaleUnit;
 }
 
-/** Ce que le regroupement lit : une ligne de commande (avec unité) ou de réassort (sans). */
+/** Ce que le regroupement lit : une ligne de commande ou de réassort, avec son unité. */
 export interface SummableLine {
   readonly sku: string;
   readonly productName: string;
@@ -29,7 +29,8 @@ export interface SummableLine {
  *
  * Le nom retenu est celui de la première ligne, comme le compte à produire du
  * fournil (`countOf`) : c'est le SKU qui fait foi. Une ligne de commande
- * porte son unité ; une ligne de réassort n'en porte pas (toujours des pièces).
+ * comme une ligne de réassort (L2b-3) porte son unité : des pièces et des
+ * grammes du même article ne s'additionnent pas.
  *
  * Le marqueur « sur mesure » (plan M4) : une seule ligne sur mesure fait la
  * ligne sur mesure — c'est ce qui doit se voir au bac ; un « non » connu

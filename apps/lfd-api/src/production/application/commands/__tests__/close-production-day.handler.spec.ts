@@ -686,8 +686,7 @@ describe("le réassort à coliser (lot R3b)", () => {
         siteId: "site_village",
         siteLabel: "Le Village",
         name: null,
-        // Le fait de colisage ne porte pas encore l'unité (lot L2b-3).
-        lines: VILLAGE_RESUPPLY.lines.map(({ saleUnit: _unit, ...line }) => line),
+        lines: VILLAGE_RESUPPLY.lines,
       }).durableFact(),
     ]);
     expect(drawn[0]?.key).toBe(`${PRODUCTION_RESUPPLY_LIST_DRAWN}:${DAY}:rs_1`);

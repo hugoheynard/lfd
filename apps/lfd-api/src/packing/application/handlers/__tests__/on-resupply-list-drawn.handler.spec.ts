@@ -22,8 +22,8 @@ const FACT = new ResupplyListDrawnEvent(DAY, DRAWN, {
   siteLabel: "Le Village",
   name: null,
   lines: [
-    { sku: "CRO", productName: "Croissant", quantity: 6 },
-    { sku: "CRO", productName: "Croissant", quantity: 6 },
+    { sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" },
+    { sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" },
   ],
 }).durableFact();
 
@@ -42,8 +42,51 @@ describe("OnResupplyListDrawn (colisage, R3b)", () => {
       kind: "evening",
       drawnAt: DRAWN,
       closed: null,
-      lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, packed: null }],
+      lines: [
+        { sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece", packed: null },
+      ],
     });
+  });
+
+  it("inscrit une ligne au poids en grammes, avec son unité (L2b-3)", async () => {
+    const weighed = new ResupplyListDrawnEvent(DAY, DRAWN, {
+      resupplyId: "rs_3",
+      siteId: "site_village",
+      siteLabel: "Le Village",
+      name: null,
+      lines: [{ sku: "SAU", productName: "Saumon gravlax", quantity: 2000, saleUnit: "weight" }],
+    }).durableFact();
+    const table = new InMemoryResupplies();
+
+    await new OnResupplyListDrawn(table).handle(delivery(weighed.payload));
+
+    expect(table.rows.get(`${DAY}/rs_3`)?.lines).toEqual([
+      {
+        sku: "SAU",
+        productName: "Saumon gravlax",
+        quantity: 2000,
+        saleUnit: "weight",
+        packed: null,
+      },
+    ]);
+  });
+
+  it("relit `piece` une ligne écrite avant l'unité ; une unité inconnue rend le fait illisible", async () => {
+    const before = {
+      resupplyId: "rs_1",
+      siteId: "site_village",
+      siteLabel: "Le Village",
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+    };
+    const table = new InMemoryResupplies();
+
+    await new OnResupplyListDrawn(table).handle(delivery({ ...FACT.payload, resupply: before }));
+
+    expect(table.rows.get(`${DAY}/rs_1`)?.lines[0]?.saleUnit).toBe("piece");
+    const unknown = { ...before, lines: [{ ...before.lines[0], saleUnit: "litre" }] };
+    expect(() =>
+      ResupplyListDrawnEvent.fromPayload({ ...FACT.payload, resupply: unknown }),
+    ).toThrow(ResupplyListDrawnPayloadError);
   });
 
   it("porte le nom du réassort (R1g) ; un fait publié avant le champ se relit sans nom", async () => {
@@ -52,14 +95,14 @@ describe("OnResupplyListDrawn (colisage, R3b)", () => {
       siteId: "site_village",
       siteLabel: "Le Village",
       name: "Vitrine du matin",
-      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
     }).durableFact();
     // Le réassort d'un fait publié avant R1g : sans champ `name`.
     const before = {
       resupplyId: "rs_1",
       siteId: "site_village",
       siteLabel: "Le Village",
-      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
     };
     const table = new InMemoryResupplies();
 

@@ -20,8 +20,8 @@ describe("la réception d'un réassort colisé", () => {
     packed.closed.set(
       "resupply_1",
       new Map([
-        ["CRO", 20],
-        ["PAC", 0],
+        ["CRO", { quantity: 20, saleUnit: "piece" as const }],
+        ["PAC", { quantity: 0, saleUnit: "piece" as const }],
       ]),
     );
 
@@ -51,8 +51,8 @@ describe("la réception d'un réassort colisé", () => {
     packed.closed.set(
       "resupply_1",
       new Map([
-        ["CRO", 20],
-        ["PAC", 12],
+        ["CRO", { quantity: 20, saleUnit: "piece" as const }],
+        ["PAC", { quantity: 12, saleUnit: "piece" as const }],
       ]),
     );
 
@@ -103,7 +103,10 @@ describe("la réception d'un réassort colisé", () => {
       new CorrectReceivedResupplyLineCommand(SITE, "resupply_1", "CRO", 22, "staff_lou"),
     );
 
-    packed.closed.set("resupply_1", new Map([["CRO", 18]]));
+    packed.closed.set(
+      "resupply_1",
+      new Map([["CRO", { quantity: 18, saleUnit: "piece" as const }]]),
+    );
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.receptions[0]?.lines).toEqual([

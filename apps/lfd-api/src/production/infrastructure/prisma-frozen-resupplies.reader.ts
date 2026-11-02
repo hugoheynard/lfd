@@ -5,6 +5,7 @@ import {
   type FrozenResupply,
   FrozenResuppliesReader,
 } from "../channels/delivery/frozen-resupplies.reader.js";
+import { productionSaleUnitOf } from "./sale-unit.column.js";
 
 /**
  * Les réassorts figés d'une journée (lot R3c) — `production_resupply` et ses
@@ -39,10 +40,18 @@ export class PrismaFrozenResuppliesReader extends FrozenResuppliesReader {
         launchedAt: true,
         lines: {
           orderBy: { sku: "asc" },
-          select: { sku: true, productName: true, quantity: true },
+          select: { sku: true, productName: true, quantity: true, saleUnit: true },
         },
       },
     });
-    return rows;
+    return rows.map((row) => ({
+      ...row,
+      lines: row.lines.map((line) => ({
+        sku: line.sku,
+        productName: line.productName,
+        quantity: line.quantity,
+        saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
+      })),
+    }));
   }
 }

@@ -1,8 +1,13 @@
+import type { SaleUnit } from "@lfd/money";
+
 /** Une ligne d'un réassort figé : l'article, son nom figé, la quantité demandée. */
 export interface FrozenResupplyLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des GRAMMES si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /** L'unité figée à l'arrêt (L2b-2), rendue au manifeste du transfert (L2b-3). */
+  readonly saleUnit: SaleUnit;
 }
 
 /**

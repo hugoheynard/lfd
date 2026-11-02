@@ -2,6 +2,7 @@ import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { LineNotProducedYetError } from "../../../domain/errors/packing-station-errors.js";
 import {
+  PackedResupplyQuantityOutOfRangeError,
   PackingResupplyIncompleteError,
   PackingResupplyNotDrawnError,
 } from "../../../domain/errors/packing-resupply-errors.js";
@@ -33,7 +34,7 @@ async function setup(received = 24) {
     name: null,
     kind: "evening",
     drawnAt: AT,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 12 }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece" }],
   });
   const shadow = new InMemoryShadow();
   shadow.stocks.set(`${DAY}/CRO`, { received, returned: 0 });
@@ -107,10 +108,84 @@ describe("la fiche de réassort au poste (R3b)", () => {
           awaitingOven: false,
           closedAt: AT.toISOString(),
           lines: [
-            { sku: "CRO", productName: "Croissant", requested: 12, packed: 11, awaitingOven: 0 },
+            {
+              sku: "CRO",
+              productName: "Croissant",
+              requested: 12,
+              saleUnit: "piece",
+              packed: 11,
+              awaitingOven: 0,
+            },
           ],
         },
       ],
     });
+  });
+});
+
+describe("une ligne de réassort au poids au poste (L2b-3)", () => {
+  async function weighed(received: number) {
+    const table = new InMemoryResupplies();
+    await table.draw({
+      serviceDay: DAY,
+      resupplyId: "rs_w",
+      siteId: "site_village",
+      siteLabel: "Le Village",
+      name: null,
+      kind: "evening",
+      drawnAt: AT,
+      lines: [{ sku: "SAU", productName: "Saumon gravlax", quantity: 2000, saleUnit: "weight" }],
+    });
+    const shadow = new InMemoryShadow();
+    shadow.stocks.set(`${DAY}/SAU`, { received, returned: 0 });
+    const stocks = new InMemoryStocks(shadow);
+    const repository = new InMemoryResupplyRepository(table);
+    const clock = new FixedClock(AT);
+    const uow = new DirectUnitOfWork();
+    return {
+      stocks,
+      enter: new EnterPackedResupplyLineHandler(repository, stocks, clock, uow),
+      list: new ListPackingResuppliesHandler(
+        new InMemoryResupplyBoard(table),
+        new InMemoryDayStocks(stocks),
+      ),
+    };
+  }
+  const grams = (quantity: number) =>
+    new EnterPackedResupplyLineCommand(DAY, "rs_w", "SAU", quantity, "staff_lou");
+
+  it("s'emballe en un lot, en grammes pris à la réserve, et la liste dit son unité", async () => {
+    const { enter, stocks, list } = await weighed(2500);
+
+    await enter.execute(grams(1940));
+
+    expect(stocks.packedOf(DAY, "SAU")).toBe(1940);
+    const view = await list.execute(new ListPackingResuppliesQuery(DAY));
+    expect(view.resupplies[0]?.lines).toEqual([
+      {
+        sku: "SAU",
+        productName: "Saumon gravlax",
+        requested: 2000,
+        saleUnit: "weight",
+        packed: 1940,
+        awaitingOven: 0,
+      },
+    ]);
+  });
+
+  it("refuse plus que le poids demandé, en le disant en kilos", async () => {
+    const { enter } = await weighed(2500);
+
+    const refused = enter.execute(grams(2100));
+
+    await expect(refused).rejects.toThrow(PackedResupplyQuantityOutOfRangeError);
+    await expect(refused).rejects.toThrow("entre 0 et 2000 (2 kg)");
+  });
+
+  it("refuse d'emballer des grammes que le four n'a pas remis", async () => {
+    const { enter, stocks } = await weighed(1000);
+
+    await expect(enter.execute(grams(2000))).rejects.toThrow(LineNotProducedYetError);
+    expect(stocks.packedOf(DAY, "SAU")).toBe(0);
   });
 });

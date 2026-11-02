@@ -1,3 +1,4 @@
+import type { SaleUnit } from "@lfd/money";
 import {
   PackedResuppliesReader,
   type PackedResupplyLines,
@@ -64,6 +65,7 @@ export function frozenResupply(
     readonly quantity?: number;
     readonly name?: string | null;
     readonly launchedAt?: Date | null;
+    readonly saleUnit?: SaleUnit;
   } = {},
 ): FrozenResupply {
   return {
@@ -73,7 +75,14 @@ export function frozenResupply(
     siteLabel: options.siteLabel === undefined ? "Val Village" : options.siteLabel,
     name: options.name ?? null,
     servedByTransfer: options.servedByTransfer ?? true,
-    lines: [{ sku: "CRO-001", productName: "Croissant", quantity: options.quantity ?? 6 }],
+    lines: [
+      {
+        sku: "CRO-001",
+        productName: "Croissant",
+        quantity: options.quantity ?? 6,
+        saleUnit: options.saleUnit ?? "piece",
+      },
+    ],
     launchedAt: options.launchedAt ?? null,
   };
 }

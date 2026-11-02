@@ -5,6 +5,7 @@ import {
   PackedResuppliesReader,
   type PackedResupplyLines,
 } from "../channels/commerce/packed-resupplies.reader.js";
+import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /**
  * L'emballé des fiches de réassort closes (lot R3b). Une fiche se cherche par
@@ -26,10 +27,21 @@ export class PrismaPackedResuppliesReader extends PackedResuppliesReader {
     }
     const rows = await this.prisma.packingResupply.findMany({
       where: { resupplyId: { in: [...resupplyIds] }, closedAt: { not: null } },
-      select: { resupplyId: true, lines: { select: { sku: true, packed: true } } },
+      select: {
+        resupplyId: true,
+        lines: { select: { sku: true, packed: true, saleUnit: true } },
+      },
     });
     for (const row of rows) {
-      packed.set(row.resupplyId, new Map(row.lines.map((line) => [line.sku, line.packed ?? 0])));
+      packed.set(
+        row.resupplyId,
+        new Map(
+          row.lines.map((line) => [
+            line.sku,
+            { quantity: line.packed ?? 0, saleUnit: packingSaleUnitOf(line.sku, line.saleUnit) },
+          ]),
+        ),
+      );
     }
     return packed;
   }

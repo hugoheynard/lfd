@@ -22,7 +22,6 @@ import { resupplyNameOf } from "./resupply-name.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
 import { ResupplyLineUnitMismatchError } from "./resupply-sale-unit-errors.js";
 import { SiteResupplyLine } from "./site-resupply-line.js";
-import { assertSendableToBakehouse } from "./weight-resupply-guard.js";
 import {
   type ResupplyTarget,
   serviceDayFor,
@@ -380,15 +379,15 @@ export class SiteResupply {
    * `planStopped` dit si le plan du fournil pour cette journée est arrêté,
    * lu SOUS le verrou de la journée. « Au plus tôt » ignore les deux. La borne
    * est incluse : à la seconde de l'heure, c'est encore accepté. Une demande
-   * dont la journée est passée ne s'envoie plus. Une demande au poids ne part
-   * pas tant que le fournil ne sait pas la recevoir (lot L2b-1).
+   * dont la journée est passée ne s'envoie plus. Une demande au poids part
+   * comme une autre : le fournil, le colisage et le transfert portent son
+   * unité (lots L2b-2 et L2b-3).
    */
   place(trace: SiteResupplyTrace, deadline: Date | null, planStopped: boolean): void {
     this.assertDraft();
     if (this.lineList.length === 0) {
       throw new EmptyResupplyError();
     }
-    assertSendableToBakehouse(this.lineList);
     if (instantToLocal(trace.at).day > this.serviceDay) {
       throw new ResupplyDayPassedError(this.serviceDay);
     }

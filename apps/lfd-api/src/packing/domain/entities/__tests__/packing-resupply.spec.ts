@@ -21,8 +21,8 @@ function sheet(): PackingResupply {
     drawnAt: AT,
     closed: null,
     lines: [
-      { sku: "CRO", productName: "Croissant", quantity: 12, packed: null },
-      { sku: "PAC", productName: "Pain au chocolat", quantity: 6, packed: null },
+      { sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece", packed: null },
+      { sku: "PAC", productName: "Pain au chocolat", quantity: 6, saleUnit: "piece", packed: null },
     ],
   });
 }

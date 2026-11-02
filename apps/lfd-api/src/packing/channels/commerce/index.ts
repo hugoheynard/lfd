@@ -19,7 +19,11 @@
  * `lint:context-boundaries` n'autorise `b2b → packing` que par ce dossier ;
  * `packing → b2b` reste interdit : le colisage ne sait pas qui le lit.
  */
-export { PackedResuppliesReader, type PackedResupplyLines } from "./packed-resupplies.reader.js";
+export {
+  PackedResuppliesReader,
+  type PackedResupplyLines,
+  type PackedResupplyQuantity,
+} from "./packed-resupplies.reader.js";
 export {
   PACKING_SHORTFALL_REPORTED,
   PackingShortfallPayloadError,

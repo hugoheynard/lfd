@@ -1,5 +1,5 @@
 import { type EstimatedStockLine, stockKeyOf } from "./estimated-stock.js";
-import { expectedLinesOf, type ResupplyReceipt } from "./resupply-receipt.js";
+import { expectedLinesOf, type PackedLines, type ResupplyReceipt } from "./resupply-receipt.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
 import type { SaleUnit } from "./resupply-sale-unit.js";
 import type { PlacedSiteResupplySnapshot, ResupplyTarget } from "./site-resupply.js";
@@ -54,7 +54,7 @@ export interface DayStockInput {
   /** Ses alertes vivantes. */
   readonly alerts: readonly StockAlertSnapshot[];
   /** L'emballé au colisage par réassort, quand la fiche est close (R3b). */
-  readonly packed: ReadonlyMap<string, ReadonlyMap<string, number> | null>;
+  readonly packed: ReadonlyMap<string, PackedLines | null>;
   /** Le plan de la journée est-il arrêté ? Un « pour demain » y est alors figé. */
   readonly planStopped: boolean;
 }

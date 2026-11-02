@@ -5,10 +5,7 @@ import {
   ResupplyArticleUnknownError,
   ResupplySiteUnknownError,
 } from "../../domain/resupply-receipt-errors.js";
-import {
-  ResupplyArticleUnitChangedError,
-  WeightResupplyNotSendableError,
-} from "../../domain/resupply-sale-unit-errors.js";
+import { ResupplyArticleUnitChangedError } from "../../domain/resupply-sale-unit-errors.js";
 import {
   EmptyResupplyError,
   ResupplyAlreadyPlacedError,
@@ -429,26 +426,33 @@ describe("la demande en cours — un article au poids (lot L2b-1)", () => {
     ]);
   });
 
-  it("ne part pas au fournil tant qu'il ne sait pas le recevoir, et rien n'est envoyé", async () => {
+  it("part au fournil avec sa ligne en grammes (L2b-3 : la garde d'envoi est retirée)", async () => {
     const { add, send, store } = setup();
     const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 500));
     await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 12));
 
-    await expect(
-      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
-    ).rejects.toThrow(WeightResupplyNotSendableError);
-    expect(store.all().every((row) => row.placed === null)).toBe(true);
+    await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
+
+    const sent = store.all().find((row) => row.id === id);
+    expect(sent?.placed).not.toBeNull();
+    expect(sent?.lines.map((line) => [line.sku, line.quantity, line.saleUnit])).toEqual([
+      ["SAU", 500, "weight"],
+      ["CRO", 12, "piece"],
+    ]);
   });
 
-  it("l'envoi du fournil qui en porte est refusé aussi, et n'écrit rien", async () => {
+  it("l'envoi du fournil qui en porte part aussi, en grammes", async () => {
     const { bakehouse, store } = setup();
 
-    await expect(
-      bakehouse.execute(
-        new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "SAU", quantity: 500 }], "s"),
-      ),
-    ).rejects.toThrow(WeightResupplyNotSendableError);
-    expect(store.saves).toBe(0);
+    const id = await bakehouse.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "SAU", quantity: 500 }], "s"),
+    );
+
+    const sent = store.all().find((row) => row.id === id);
+    expect(sent?.placed).not.toBeNull();
+    expect(sent?.lines.map((line) => [line.sku, line.quantity, line.saleUnit])).toEqual([
+      ["SAU", 500, "weight"],
+    ]);
   });
 
   it("une unité gardée qui n'est plus celle du catalogue est refusée à l'envoi", async () => {

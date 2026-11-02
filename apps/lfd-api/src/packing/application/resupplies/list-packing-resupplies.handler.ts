@@ -59,6 +59,7 @@ function viewOf(
       sku: line.sku,
       productName: line.productName,
       requested: line.quantity,
+      saleUnit: line.saleUnit,
       packed: line.packed?.quantity ?? null,
       awaitingOven:
         stock === undefined ? 0 : awaitingOvenOf(stock, stock.reservations, sheet.resupplyId),

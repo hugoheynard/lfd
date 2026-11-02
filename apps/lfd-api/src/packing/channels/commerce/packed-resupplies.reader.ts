@@ -1,5 +1,17 @@
-/** Ce qu'une fiche de réassort close a réellement emballé : SKU → pièces. */
-export type PackedResupplyLines = ReadonlyMap<string, number>;
+import type { SaleUnit } from "@lfd/money";
+
+/**
+ * L'emballé d'une ligne : la quantité et son unité (lot L2b-3 de
+ * `limites-de-commande/plan-jour-meme-sur-stock.md`) — des grammes au poids.
+ * Sans l'unité, un lecteur ne pouvait que supposer des pièces.
+ */
+export interface PackedResupplyQuantity {
+  readonly quantity: number;
+  readonly saleUnit: SaleUnit;
+}
+
+/** Ce qu'une fiche de réassort close a réellement emballé : SKU → quantité et unité. */
+export type PackedResupplyLines = ReadonlyMap<string, PackedResupplyQuantity>;
 
 /**
  * **« Qu'a-t-on réellement emballé pour ces réassorts ? »** (réassort, lot

@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import {
   PackedResupplyQuantityOutOfRangeError,
   PackingResupplyClosedError,
@@ -15,8 +17,14 @@ export interface ResupplyMark {
 export interface PackingResupplyLineSnapshot {
   readonly sku: string;
   readonly productName: string;
-  /** La quantité demandée par le point, figée à l'arrêt. */
+  /** La quantité demandée par le point, figée à l'arrêt — des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /**
+   * L'unité figée par le fournil (lot L2b-3). Un article au poids s'emballe en
+   * UN lot, comme une ligne de commande (P6) : l'emballé est son poids réel,
+   * en grammes, entre 0 et le demandé.
+   */
+  readonly saleUnit: SaleUnit;
   /** La quantité réellement emballée et sa saisie ; `null` : pas encore saisie. */
   readonly packed: (ResupplyMark & { readonly quantity: number }) | null;
 }
@@ -126,7 +134,10 @@ export class PackingResupply {
       throw new PackingResupplyLineNotFoundError(sku, this.title);
     }
     if (!Number.isInteger(quantity) || quantity < 0 || quantity > line.quantity) {
-      throw new PackedResupplyQuantityOutOfRangeError(line.productName, line.quantity);
+      throw new PackedResupplyQuantityOutOfRangeError(line.productName, {
+        amount: line.quantity,
+        unit: line.saleUnit,
+      });
     }
     const before = line.packed?.quantity ?? 0;
     this.linesValue = this.linesValue.map((candidate) =>

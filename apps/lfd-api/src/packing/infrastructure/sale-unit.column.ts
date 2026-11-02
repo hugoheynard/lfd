@@ -19,7 +19,7 @@ export class StoredPackingSaleUnitUnknownError extends TechnicalError {
 }
 
 /**
- * Lit `sale_unit` (`packing.packing_line`) dans le
+ * Lit `sale_unit` (`packing.packing_line`, `packing.packing_resupply_line`) dans le
  * vocabulaire du domaine. Refuse plutôt que de replier sur `piece` : des
  * grammes relus en pièces se coliseraient un par un.
  *

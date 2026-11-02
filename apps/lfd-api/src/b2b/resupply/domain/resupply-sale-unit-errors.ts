@@ -37,20 +37,6 @@ export class ResupplyLineUnitMismatchError extends BusinessError {
 }
 
 /**
- * Tant que le fournil ne sait pas recevoir un réassort au poids (lot L2b-2),
- * une demande qui en porte ne part pas : il la compterait en pièces.
- */
-export class WeightResupplyNotSendableError extends BusinessError {
-  constructor(readonly labels: readonly string[]) {
-    super(
-      "resupply.sale_unit.weight_not_sendable",
-      `Le fournil ne reçoit pas encore de réassort au poids, et cette demande en porte (${labels.map((l) => `« ${l} »`).join(", ")}). ` +
-        "Retirez ces articles avant d'envoyer ; s'ils arrivent en boutique, saisissez-les dans « Réassort sans commande ».",
-    );
-  }
-}
-
-/**
  * Un brouillon garde une unité que le catalogue ne donne plus à l'article :
  * l'envoyer compterait des pièces en grammes, ou l'inverse.
  */

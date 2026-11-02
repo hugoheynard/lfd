@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { OrderSaleUnit } from "./order.js";
+
 /**
  * **Les fiches de réassort au poste de colisage** (réassort, lot R3b,
  * 2026-10-21 — `documentation/reassort-boutiques/plan-reapprovisionnement.md`
@@ -12,9 +14,15 @@ import { z } from "zod";
 export interface PackingResupplyLineView {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly requested: number;
-  /** `null` : pas encore saisie. */
+  /** `null` : pas encore saisie. Même unité que `requested`. */
   readonly packed: number | null;
+  /**
+   * L'unité de la ligne (lot L2b-3 de `limites-de-commande/plan-jour-meme-sur-stock.md`) :
+   * un réassort au poids s'emballe en un lot, saisi en grammes.
+   */
+  readonly saleUnit: OrderSaleUnit;
   /**
    * Les pièces réservées que le four n'a pas encore remises (fiche « au plus
    * tôt », R4b) ; 0 : tout est là, ou fiche du soir (rien de réservé).
