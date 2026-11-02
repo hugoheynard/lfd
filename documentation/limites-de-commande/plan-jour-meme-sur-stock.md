@@ -245,9 +245,11 @@ d'un particulier), **J2c** (la saisie de l'équipe et le raccourci), **J3/J4**
 
 ## 6. Questions ouvertes
 
-- **Q3 bis** — Le stock tenu par un paiement en cours : 15 minutes (décision du
-  21 octobre) ou les 30 déjà en place ? Et que faire des commandes que
-  l'expiration ne sait pas annuler (§4.6) ?
+- ~~**Q3 bis**~~ — tranchée le 2026-11-02 (Hugo, « à définir en admin ») : la
+  durée pendant laquelle un paiement en cours tient le stock est **un réglage
+  de la page Jour même**. Reste à décider au bâti ce que deviennent les
+  commandes que l'expiration ne sait pas annuler (§4.6) : elles tiennent leur
+  quantité tant qu'elles ne sont ni payées ni annulées.
 - ~~**Q5**~~ — tranchée le 2026-11-02 : pas d'heure de fin, les créneaux
   restants de chaque site (§3).
 - ~~**Q6**~~ — tranchée le 2026-11-02 : une option de la page Jour même, avec
