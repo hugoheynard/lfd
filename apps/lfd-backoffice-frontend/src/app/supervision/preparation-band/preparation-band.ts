@@ -22,8 +22,8 @@ export class PreparationBand {
   readonly board = input.required<PreparationBoard>();
   /** Le rayon retenu — `[(filter)]`, partagé avec `app-preparation-column`. */
   readonly filter = model<string>(ALL_SHELVES);
-  /** Par rayon (défaut) ou par tranche — `[(view)]`, que la page lit (Hugo, 2026-11-01). */
-  readonly view = model<PreparationView>('shelves');
+  /** Par tranche (défaut, Hugo, 2026-11-02) ou par rayon — `[(view)]`, que la page lit (Hugo, 2026-11-01). */
+  readonly view = model<PreparationView>('slots');
 
   protected readonly views: readonly FoldViewToggleOption[] = [
     { value: 'shelves', label: 'Par rayon' },

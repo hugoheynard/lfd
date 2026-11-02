@@ -179,7 +179,9 @@ export class SupervisionPage {
 
   protected readonly packingBoard = computed(() => {
     const view = dataOf(this.packing());
-    return view === null ? null : packingBoard(view, dataOf(this.handover()));
+    return view === null
+      ? null
+      : packingBoard(view, dataOf(this.handover()), dataOf(this.day())?.shelfOrderIds ?? []);
   });
 
   protected readonly handoverBoard = computed(() => {
@@ -281,7 +283,7 @@ export class SupervisionPage {
   /** Les filtres des bandes (A4) : la page les tient, les colonnes les lisent. */
   protected readonly shelfFilter = signal(ALL_SHELVES);
   /** Colonne 1 par rayon (défaut) ou par tranche (Hugo, 2026-11-01). */
-  protected readonly preparationView = signal<PreparationView>('shelves');
+  protected readonly preparationView = signal<PreparationView>('slots');
   /** La fiche lue — la vue par tranche s'en sert telle quelle. */
   protected readonly worksheet = computed(() => dataOf(this.preparation()));
   /** Les acheminements cochés de la colonne 2 ; vide = tous (2026-11-01). */

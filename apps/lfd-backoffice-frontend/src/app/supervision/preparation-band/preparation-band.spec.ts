@@ -26,6 +26,16 @@ const BOARD: PreparationBoard = {
   shelvesKnown: true,
 };
 
+/** Le geste de l'écran : « Par rayon » au sélecteur de lecture. */
+async function pick(fixture: Awaited<ReturnType<typeof mount>>, label: string) {
+  const element: HTMLElement = fixture.nativeElement;
+  [...element.querySelectorAll<HTMLElement>('[role="radio"]')]
+    .find((node) => node.textContent?.includes(label))
+    ?.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+}
+
 async function mount() {
   const fixture = TestBed.createComponent(PreparationBand);
   fixture.componentRef.setInput('board', BOARD);
@@ -37,6 +47,7 @@ async function mount() {
 describe('PreparationBand', () => {
   it('pose le repère et le filtre, sur « Tous les rayons » par défaut', async () => {
     const fixture = await mount();
+    await pick(fixture, 'Par rayon');
     const element: HTMLElement = fixture.nativeElement;
 
     expect(element.textContent).toContain('À sortir d');
@@ -47,6 +58,7 @@ describe('PreparationBand', () => {
 
   it('teinte le filtre dès qu’un rayon est retenu', async () => {
     const fixture = await mount();
+    await pick(fixture, 'Par rayon');
     fixture.componentInstance.filter.set('Pains');
     fixture.detectChanges();
     await fixture.whenStable();
@@ -57,27 +69,33 @@ describe('PreparationBand', () => {
   });
 });
 
-/** Hugo, 2026-11-01 : la colonne 1 se lit aussi par tranche. */
-describe('PreparationBand — la bascule Par rayon / Par tranche', () => {
-  it('s’ouvre par rayon, avec le filtre des rayons', async () => {
+/** Hugo, 2026-11-01 : la colonne 1 se lit aussi par tranche ; par tranche d'abord (2026-11-02). */
+describe('PreparationBand — la bascule Par tranche / Par rayon', () => {
+  it('s’ouvre par tranche, sans le filtre des rayons', async () => {
     const fixture = await mount();
     const element: HTMLElement = fixture.nativeElement;
 
+    expect(fixture.componentInstance.view()).toBe('slots');
+    expect(element.querySelector('[data-preparation-view]')?.textContent).toContain('Par rayon');
+    expect(element.querySelector('fold-listbox')).toBeNull();
+  });
+
+  it('bascule par rayon au clic, et le filtre des rayons apparaît', async () => {
+    const fixture = await mount();
+    const element: HTMLElement = fixture.nativeElement;
+
+    await pick(fixture, 'Par rayon');
+
     expect(fixture.componentInstance.view()).toBe('shelves');
-    expect(element.querySelector('[data-preparation-view]')?.textContent).toContain('Par tranche');
     expect(element.querySelector('fold-listbox')).not.toBeNull();
   });
 
-  it('bascule par tranche au clic, et le filtre des rayons s’efface', async () => {
+  it('revient par tranche au clic, et le filtre des rayons s’efface', async () => {
     const fixture = await mount();
     const element: HTMLElement = fixture.nativeElement;
-    const slots = [...element.querySelectorAll<HTMLElement>('[role="radio"]')].find((node) =>
-      node.textContent?.includes('Par tranche'),
-    );
 
-    slots?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
+    await pick(fixture, 'Par rayon');
+    await pick(fixture, 'Par tranche');
 
     expect(fixture.componentInstance.view()).toBe('slots');
     expect(element.querySelector('fold-listbox')).toBeNull();

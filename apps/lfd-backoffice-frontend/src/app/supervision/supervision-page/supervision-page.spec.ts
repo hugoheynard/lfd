@@ -12,6 +12,7 @@ import type {
   QualityBoardView,
   ProductionPackingView,
   ProductionWorksheetView,
+  WorkshopLine,
   StaffPermission,
   StaffRole,
 } from '@lfd/contracts';
@@ -64,6 +65,23 @@ const DAY: DaySupervisionView = {
   undated: 0,
 };
 
+/** La ligne de la fiche, en cours. */
+const PAC_LINE: WorkshopLine = {
+  sku: 'pac',
+  productName: 'Pain au chocolat',
+  quantity: 96,
+  containerLabel: null,
+  done: false,
+  initials: null,
+  doneAt: null,
+  produced: 0,
+  remaining: 96,
+  surplus: 0,
+  batches: [],
+  container: null,
+  saleUnit: 'piece',
+};
+
 const WORKSHEET: ProductionWorksheetView = {
   date: DATE,
   generatedAt: 'x',
@@ -83,25 +101,10 @@ const WORKSHEET: ProductionWorksheetView = {
       totalUnits: 146,
       remainingUnits: 96,
       doneUnits: 50,
-      lines: [],
+      // Contrat : `lines` porte TOUTES les lignes de la fiche (pending ∪ done).
+      lines: [PAC_LINE],
       done: [],
-      pending: [
-        {
-          sku: 'pac',
-          productName: 'Pain au chocolat',
-          quantity: 96,
-          containerLabel: null,
-          done: false,
-          initials: null,
-          doneAt: null,
-          produced: 0,
-          remaining: 96,
-          surplus: 0,
-          batches: [],
-          container: null,
-          saleUnit: 'piece',
-        },
-      ],
+      pending: [PAC_LINE],
     },
   ],
 };
@@ -274,6 +277,16 @@ async function mount(
   return fixture;
 }
 
+/** Le geste de l'écran : « Par rayon » (ou « Par tranche ») au sélecteur de la colonne 1. */
+async function pickPreparation(fixture: Awaited<ReturnType<typeof mount>>, label: string) {
+  [...(column(fixture, 'preparation')?.querySelectorAll<HTMLElement>('[role="radio"]') ?? [])]
+    .find((node) => node.textContent?.includes(label))
+    ?.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+}
+
 function root(fixture: { nativeElement: HTMLElement }): HTMLElement {
   return fixture.nativeElement;
 }
@@ -372,6 +385,7 @@ describe('SupervisionPage', () => {
 
   it('montre les trois colonnes, leur unité, et les compteurs', async () => {
     const fixture = await mount();
+    await pickPreparation(fixture, 'Par rayon');
 
     expect(column(fixture, 'preparation')?.textContent).toContain("l'unité est le produit");
     expect(column(fixture, 'preparation')?.textContent).toContain('Pain au chocolat');
@@ -385,6 +399,7 @@ describe('SupervisionPage', () => {
 
   it('une lecture qui échoue n’efface pas les autres : chaque colonne a son état', async () => {
     const fixture = await mount({ packing: () => Promise.reject(new Error('503')) });
+    await pickPreparation(fixture, 'Par rayon');
 
     const failed = column(fixture, 'packing')?.querySelector('fold-empty-state');
     expect(failed?.getAttribute('tone')).toBe('alert');
@@ -486,6 +501,7 @@ describe('SupervisionPage', () => {
 
   it('montre les renvois à qui peut ouvrir les postes', async () => {
     const fixture = await mount();
+    await pickPreparation(fixture, 'Par rayon');
 
     const targets = Array.from(root(fixture).querySelectorAll('a')).map((a) =>
       a.getAttribute('href'),
@@ -654,10 +670,12 @@ describe('SupervisionPage', () => {
 
   it('ne montre « Contrôler » qu’avec b2b_supervision:write', async () => {
     const reader = await mount();
+    await pickPreparation(reader, 'Par rayon');
     expect(root(reader).textContent).not.toContain('Contrôler');
 
     TestBed.resetTestingModule();
     const judge = await mount({}, ['b2b_supervision:read', 'b2b_supervision:write']);
+    await pickPreparation(judge, 'Par rayon');
     expect(column(judge, 'preparation')?.querySelector('[data-check="pac"]')).not.toBeNull();
   });
 
@@ -680,6 +698,7 @@ describe('SupervisionPage', () => {
       },
       judge,
     );
+    await pickPreparation(linesOff, 'Par rayon');
     expect(offered(linesOff)).toEqual({ lines: false, orders: true });
     expect(column(linesOff, 'preparation')?.querySelector('[data-check]')).toBeNull();
 
@@ -691,6 +710,7 @@ describe('SupervisionPage', () => {
       },
       judge,
     );
+    await pickPreparation(ordersOff, 'Par rayon');
     expect(offered(ordersOff)).toEqual({ lines: true, orders: false });
     expect(column(ordersOff, 'preparation')?.querySelector('[data-check="pac"]')).not.toBeNull();
   });
@@ -702,6 +722,7 @@ describe('SupervisionPage', () => {
       'b2b_supervision:read',
       'b2b_supervision:write',
     ]);
+    await pickPreparation(fixture, 'Par rayon');
     const button = (): HTMLButtonElement | null =>
       root(fixture).querySelector<HTMLButtonElement>('[data-check="pac"]');
 
@@ -717,6 +738,7 @@ describe('SupervisionPage', () => {
 
   it('dit quand les pastilles n’ont pas pu être lues, sans vider les colonnes', async () => {
     const fixture = await mount({ quality: () => Promise.reject(new Error('503')) });
+    await pickPreparation(fixture, 'Par rayon');
 
     expect(root(fixture).querySelector('[data-quality-failed]')?.getAttribute('variant')).toBe(
       'alert',
@@ -778,23 +800,20 @@ describe('SupervisionPage', () => {
   });
 });
 
-/** Hugo, 2026-11-01 : la colonne Préparation se lit par rayon, ou par tranche. */
+/** Hugo, 2026-11-01 : la colonne Préparation se lit par rayon, ou par tranche ; par tranche d'abord (2026-11-02). */
 describe('SupervisionPage — la colonne 1 par tranche', () => {
-  it('s’ouvre par rayon, puis montre la vue par tranche à la bascule', async () => {
+  it('s’ouvre par tranche, puis montre la vue par rayon à la bascule', async () => {
     const fixture = await mount();
     const prep = () => column(fixture, 'preparation');
-    expect(prep()?.querySelector('app-preparation-column')).not.toBeNull();
-    expect(prep()?.querySelector('app-preparation-slots')).toBeNull();
-
-    const slots = [...(prep()?.querySelectorAll<HTMLElement>('[role="radio"]') ?? [])].find(
-      (node) => node.textContent?.includes('Par tranche'),
-    );
-    slots?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
     expect(prep()?.querySelector('app-preparation-slots')).not.toBeNull();
     expect(prep()?.querySelector('app-preparation-column')).toBeNull();
     expect(prep()?.querySelector('app-preparation-slots button')).toBeNull();
+    // La fiche porte des lignes : la vue par tranche ne dit pas qu'il n'y a rien.
+    expect(prep()?.textContent).not.toContain('Aucune tranche ce jour');
+
+    await pickPreparation(fixture, 'Par rayon');
+
+    expect(prep()?.querySelector('app-preparation-column')).not.toBeNull();
+    expect(prep()?.querySelector('app-preparation-slots')).toBeNull();
   });
 });
