@@ -1,0 +1,25 @@
+-- RETOUR ARRIÈRE de 20261102240000_le_sur_mesure_au_referentiel
+-- (documentation/catalogue/plan-articles-sur-mesure.md, § 13, R3-1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant ne lit ni n'écrit `custom_recipe` : il relit le marqueur
+-- dans `catalog_item_overrides.is_made_to_order`, que cette migration n'a pas
+-- touché. Le retour du code seul suffit pour les fiches reportées.
+--
+-- ⚠️ Une fiche COCHÉE au référentiel après le déploiement n'a pas son
+-- marqueur côté commerce : revenir au code d'avant la rendrait ouverte à tous
+-- les pros (S4 d'alors) et la sortirait de S3 (public). Les constater avant :
+--
+--   SELECT ci.sku FROM public.catalog_items ci
+--     LEFT JOIN public.catalog_item_overrides o ON o.sku = ci.sku
+--    WHERE ci.custom_recipe AND NOT coalesce(o.is_made_to_order, false);
+--
+-- et les marquer à l'écran d'avant, sur décision de Hugo. Retirer les colonnes
+-- serait un resserrement, dans un déploiement ultérieur, sur sa décision :
+--
+--   ALTER TABLE pim.product DROP COLUMN custom_recipe;
+--   ALTER TABLE public.catalog_items DROP COLUMN custom_recipe;
+
+SELECT 1;
