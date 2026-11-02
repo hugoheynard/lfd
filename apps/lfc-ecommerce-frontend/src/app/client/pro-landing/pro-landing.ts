@@ -37,7 +37,7 @@ import { ContactSettingsStore, contactFor, telHref } from '../shop/contact-setti
 import { ProFeaturedCard } from './pro-featured-card/pro-featured-card';
 import { proLandingCopy } from '../copy/screens/pro-landing.copy';
 import { screenCopy } from '../copy/shop-copy-composer';
-import { bestPickupDiscount, discountLabel } from '../shop/pickup-discount';
+import { bestPickupDiscount, discountLabel, pickupDiscountName } from '../shop/pickup-discount';
 import { mediaSrcset, SHEET_WIDTHS, sizedMedia } from '../shop/media-source';
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
 import { ProFeaturedGateway } from '../shop/pro-featured.gateway';
@@ -187,7 +187,8 @@ export class ProLanding {
     const best = bestPickupDiscount(this.points() ?? []);
     return best === null
       ? this.c().pickup.note
-      : fill(this.c().pickupPoints.discount, { value: discountLabel(best) });
+      : (pickupDiscountName(best, this.locale.current()) ??
+          fill(this.c().pickupPoints.discount, { value: discountLabel(best.adjustment) }));
   });
 
   /** `null` tant que la lecture court ; vide si elle échoue — la section se tait. */

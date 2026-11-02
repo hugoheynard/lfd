@@ -181,7 +181,12 @@ export class OrderBar {
     if (point === undefined) {
       return null;
     }
-    const offer = pickupOffer(point, this.servedAsPro(), this.t().pickupDialog);
+    const offer = pickupOffer(
+      point,
+      this.servedAsPro(),
+      this.t().pickupDialog,
+      this.locale.current(),
+    );
     return offer.hasOffer ? offer.label : null;
   });
 

@@ -17,7 +17,7 @@ import { formatCents, formatMillicents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
-import { discountBp, millicentsFromCents, unitPriceCents } from '@lfd/money';
+import { millicentsFromCents, unitPriceCents } from '@lfd/money';
 
 import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../made-to-order';
@@ -46,9 +46,6 @@ import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/sta
 
 /** Les lots qu'un professionnel commande d'un geste (handoff boutique, SPEC §6). */
 const BATCHES: readonly number[] = [6, 12, 24];
-
-/** Un point de base par centième de pour cent : 100 bp font 1 %. */
-const BP_PER_PERCENT = 100;
 
 /** Ce que le bouton du pied dit, selon le panier et le brouillon. */
 export type SheetCtaState = 'add' | 'update' | 'inCart';
@@ -341,23 +338,15 @@ export class ProductSheet {
   );
 
   /**
-   * L'écart au tarif boutique, en pour cent entier — ou `null` quand il n'y a
-   * rien à dire. Dérivé des deux montants servis, tous deux hors taxe : aucun
-   * pourcentage n'est stocké, aucun n'est inventé.
+   * Le nom de la baisse, tel que réglé sur la promotion — ou `null`.
+   *
+   * 🔴 Aucun libellé n'est fabriqué ici (règle de Hugo, 2026-11-02) : une
+   * baisse qui ne vient pas d'une promotion (mercuriale, palier) ne dit rien
+   * de plus que le prix. Le serveur ne sert `promotionNames` que dans ce cas.
    */
-  protected readonly discountPercent = computed(() => {
-    const product = this.product();
-    const catalogue = product?.catalogPriceMillicents;
-    if (product === null || catalogue === undefined) {
-      return null;
-    }
-    const percent = Math.round(discountBp(catalogue, product.unitPriceMillicents) / BP_PER_PERCENT);
-    return percent > 0 ? percent : null;
-  });
-
   protected readonly discountLabel = computed(() => {
-    const percent = this.discountPercent();
-    return percent === null ? null : fill(this.t().product.proDiscount, { pct: String(percent) });
+    const names = this.product()?.promotionNames ?? [];
+    return names.length === 0 ? null : names.join(' · ');
   });
 
   protected readonly ctaState = computed<SheetCtaState>(() => {

@@ -10,9 +10,10 @@ import {
   DEFAULT_DELIVERY_AVAILABILITY,
   type PublicDeliveryAvailabilityView,
 } from '@lfd/contracts/shop-values';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, switchMap } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
+import { AuthFacade } from '../../auth/auth.facade';
 import { PickupListGateway } from './pickup-list.gateway';
 
 /**
@@ -52,6 +53,7 @@ import { PickupListGateway } from './pickup-list.gateway';
 @Injectable({ providedIn: 'root' })
 export class ServicePoints {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthFacade);
   private readonly list = inject(PickupListGateway);
 
   /**
@@ -80,7 +82,10 @@ export class ServicePoints {
    * le panier ni le catalogue, et le rester lui évite de les charger chez tous
    * ceux qui ne veulent que des points de retrait.
    */
-  private cartQuery = '';
+  private cartSkus: readonly string[] = [];
+
+  /** La clientèle qui commande, pour la route publique ; `null` avant le premier panier. */
+  private cartAudience: 'pro' | 'public' | null = null;
 
   /** La requête dont {@link dayList} est la réponse. */
   private daysAskedFor = '';
@@ -193,12 +198,11 @@ export class ServicePoints {
     audience: 'pro' | 'public',
   ): void {
     this.scopedToCart.set(operationScoped);
-    this.cartQuery =
-      cartSkus.length === 0
-        ? `?audience=${audience}`
-        : `?skus=${encodeURIComponent(cartSkus.join(','))}&audience=${audience}`;
-    if (this.asked && this.cartQuery !== this.daysAskedFor) {
-      void this.refreshDays(this.cartQuery);
+    this.cartSkus = cartSkus;
+    this.cartAudience = audience;
+    const query = this.daysQuery();
+    if (this.asked && query !== this.daysAskedFor) {
+      void this.refreshDays(query);
     }
   }
 
@@ -268,7 +272,7 @@ export class ServicePoints {
       const [pickups, zones, days, settings] = await Promise.all([
         reader === null ? Promise.resolve(null) : this.pickupsOf(reader),
         firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
-        this.daysFor(this.cartQuery),
+        this.daysFor(this.daysQuery()),
         firstValueFrom(
           this.http.get<PublicDeliveryAvailabilityView>(`${base}/delivery-availability`),
         ).catch(() => null),
@@ -328,17 +332,43 @@ export class ServicePoints {
    */
   refreshDaysNow(): void {
     if (this.asked) {
-      void this.refreshDays(this.cartQuery);
+      void this.refreshDays(this.daysQuery());
     }
+  }
+
+  /**
+   * Le chemin et la requête des jours, pour qui regarde.
+   *
+   * Un client reconnu lit `/fulfillment-days/mine`, murée : sa clientèle vient
+   * de sa société, côté serveur, et il n'en envoie aucune (2026-11-02, « chaque
+   * audience, son information »). Le visiteur garde la route publique, sa
+   * clientèle déclarée en paramètre.
+   */
+  private daysQuery(): string {
+    const skus =
+      this.cartSkus.length === 0 ? null : `skus=${encodeURIComponent(this.cartSkus.join(','))}`;
+    if (this.auth.isAuthenticated()) {
+      return skus === null ? '/mine' : `/mine?${skus}`;
+    }
+    const audience = this.cartAudience === null ? null : `audience=${this.cartAudience}`;
+    const params = [skus, audience].filter((p) => p !== null);
+    return params.length === 0 ? '' : `?${params.join('&')}`;
   }
 
   private async daysFor(query: string): Promise<readonly FulfillmentDayView[]> {
     this.daysAskedFor = query;
+    const url = `${AUTH_CONFIG.apiBaseUrl}/fulfillment-days${query}`;
     // Typé par le contrat ; une API d'avant `orderUntil` passe par le normaliseur.
     const days = await firstValueFrom(
-      this.http.get<readonly FulfillmentDayView[]>(
-        `${AUTH_CONFIG.apiBaseUrl}/fulfillment-days${query}`,
-      ),
+      query.startsWith('/mine')
+        ? this.auth.accessToken$().pipe(
+            switchMap((token) =>
+              this.http.get<readonly FulfillmentDayView[]>(url, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+            ),
+          )
+        : this.http.get<readonly FulfillmentDayView[]>(url),
     );
     return days.map(servedDay);
   }

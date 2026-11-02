@@ -449,7 +449,9 @@ export class CartDialog {
     }
     const offer = this.points
       .pickups()
-      .map((point) => pickupOffer(point, this.servedAsPro(), this.t().pickupDialog))
+      .map((point) =>
+        pickupOffer(point, this.servedAsPro(), this.t().pickupDialog, this.locale.current()),
+      )
       .find((o) => o.hasOffer);
     return offer === undefined ? c.otherPickup : fill(c.otherPickupOffer, { offer: offer.label });
   });

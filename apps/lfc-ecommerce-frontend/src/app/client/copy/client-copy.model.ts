@@ -641,8 +641,6 @@ export interface ClientCopy {
      * `catalogue/plan-quantite-minimale.md`, Q4), toujours au moins deux.
      */
     readonly minimumPieces: string;
-    /** `{pct}` = l'écart au tarif boutique, dérivé des deux montants, entier. */
-    readonly proDiscount: string;
     /**
      * La mention d'une promotion qu'un acheminement ouvrirait (plan des
      * promotions, lot L10) — le prix du rayon ne la compte pas. `{discount}`

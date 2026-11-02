@@ -319,11 +319,22 @@ describe('ProductSheet', () => {
     });
   });
 
-  it('dérive « Prix pro −10 % » des deux montants servis', () => {
+  /**
+   * Régression : la fiche fabriquait « Prix pro −10 % » d'une mercuriale ; une
+   * baisse qui ne vient pas d'une promotion ne dit rien de plus que le prix
+   * (règle de Hugo, 2026-11-02).
+   */
+  it('une mercuriale seule barre le prix sans aucune mention', () => {
     mount(NEGOTIATED, 0, true);
 
     expect(el().querySelector('.price-was')).not.toBeNull();
-    expect(el().querySelector('.discount')?.textContent?.trim()).toBe('Prix pro −10 %');
+    expect(el().querySelector('.discount')).toBeNull();
+  });
+
+  it('une promotion affiche son nom réglé, plusieurs se joignent', () => {
+    mount({ ...NEGOTIATED, promotionNames: ['Folie Coffee', 'Rentrée'] }, 0, true);
+
+    expect(el().querySelector('.discount')?.textContent?.trim()).toBe('Folie Coffee · Rentrée');
   });
 
   /** RGAA 3.1 (lot A5) : la rature ne s'entend pas, une phrase la dit. */

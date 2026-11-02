@@ -111,7 +111,6 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   proAccountTitle: 'Compte pro — titre',
   proAccountsLead: 'Mes comptes pro — accroche',
   proAccountsTitle: 'Mes comptes pro — titre',
-  proDiscount: 'Prix pro — remise',
   proDraftTitle: 'CGV pro — en cours de rédaction',
   proLabel: 'Professionnel',
   proOnly: 'Réservé aux pros',

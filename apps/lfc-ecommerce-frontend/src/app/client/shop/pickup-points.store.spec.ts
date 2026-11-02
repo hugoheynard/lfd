@@ -248,9 +248,9 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
     };
   }
 
-  function answerTheRest(http: HttpTestingController): void {
+  function answerTheRest(http: HttpTestingController, days = '/fulfillment-days'): void {
     http.expectOne(url('/delivery-zones')).flush([]);
-    http.expectOne(url('/fulfillment-days')).flush([]);
+    http.expectOne(url(days)).flush([]);
     http.expectOne(url('/delivery-availability')).flush({});
   }
 
@@ -270,7 +270,7 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
     const { points, http } = boot(true, workspace);
     const hydrating = points.hydrate();
     http.expectOne(url('/pickup-addresses/mine')).flush([OLD_POINT]);
-    answerTheRest(http);
+    answerTheRest(http, '/fulfillment-days/mine');
     await hydrating;
     expect(points.pickups().map((p) => p.id)).toEqual(['pick_labo']);
 
@@ -293,7 +293,7 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
     const { points, http } = boot(true, workspace);
     const hydrating = points.hydrate();
     http.expectOne(url('/pickup-addresses/mine')).flush([OLD_POINT]);
-    answerTheRest(http);
+    answerTheRest(http, '/fulfillment-days/mine');
     await hydrating;
 
     workspace.choose('cmp_pro');
@@ -307,6 +307,34 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
 
     expect(points.pickups()).toEqual([]);
     expect(points.pickupsSettled()).toBe(true);
+    http.verify();
+  });
+
+  /** 2026-11-02 : la clientèle d'un client reconnu vient de sa société, au serveur. */
+  it('un client reconnu lit ses jours sur /mine, jeton porté, sans audience', async () => {
+    const { points, http } = boot(true, workspaceDouble());
+    const hydrating = points.hydrate();
+    http.expectOne(url('/pickup-addresses/mine')).flush([OLD_POINT]);
+    answerTheRest(http, '/fulfillment-days/mine');
+    await hydrating;
+
+    points.scopeDaysTo(['VIE-001'], false, 'pro');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const request = http.expectOne(url('/fulfillment-days/mine?skus=VIE-001'));
+    expect(request.request.url).not.toContain('audience');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer jeton');
+    request.flush([]);
+  });
+
+  it('un visiteur lit ses jours sur la route publique, sa clientèle en paramètre', async () => {
+    const { points, http } = boot(false, workspaceDouble());
+    const hydrating = points.hydrate();
+    http.expectOne(url('/pickup-addresses')).flush([OLD_POINT]);
+    answerTheRest(http);
+    await hydrating;
+
+    points.scopeDaysTo(['VIE-001'], false, 'public');
+    http.expectOne(url('/fulfillment-days?skus=VIE-001&audience=public')).flush([]);
     http.verify();
   });
 });

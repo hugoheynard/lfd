@@ -65,13 +65,36 @@ export function pickupOffer(
   point: AudiencePickupAddressView,
   servedAsPro: boolean,
   copy: PickupOfferCopy,
+  locale: string,
 ): PickupOffer {
   const discount = point.discount;
   if (discount === null) {
     return { label: servedAsPro ? copy.proPrice : copy.shopPrice, hasOffer: false };
   }
+  const name = pickupDiscountName(discount, locale);
+  if (name !== null) {
+    return { label: name, hasOffer: true };
+  }
   const tag = coversSelection(discount) ? copy.discountTagSelection : copy.discountTag;
   return { label: fill(tag, { value: discountLabel(discount.adjustment) }), hasOffer: true };
+}
+
+/**
+ * Le nom réglé sur la promotion — son texte de vignette, sinon son libellé —
+ * dans la langue de la boutique, repli français ; `null` quand la promotion
+ * n'en porte pas. Aucun nom n'est fabriqué ici (règle de Hugo, 2026-11-02) :
+ * l'appelant dit alors la valeur seule.
+ */
+export function pickupDiscountName(
+  discount: AudiencePickupDiscount,
+  locale: string,
+): string | null {
+  const named = discount.tileText ?? discount.label;
+  if (named === undefined) {
+    return null;
+  }
+  const text = (locale === 'en' ? named.en : locale === 'it' ? named.it : named.fr) || named.fr;
+  return text.trim() === '' ? null : text;
 }
 
 /**
@@ -103,14 +126,15 @@ export function discountLabel(adjustment: CartAdjustment): string {
  */
 export function bestPickupDiscount(
   points: readonly AudiencePickupAddressView[],
-): CartAdjustment | null {
-  const offers = points.map((point) => pickupAdjustmentFor(point)).filter((d) => d !== null);
-  const percents = offers.filter((d) => d.mode === 'percent');
-  if (percents.length > 0) {
-    return percents.reduce((best, d) => (d.bp > best.bp ? d : best));
-  }
-  const amounts = offers.filter((d) => d.mode === 'amount');
-  return amounts.length === 0
-    ? null
-    : amounts.reduce((best, d) => (d.cents > best.cents ? d : best));
+): AudiencePickupDiscount | null {
+  const offers = points.map((point) => point.discount).filter((d) => d !== null);
+  const percents = offers.filter((d) => d.adjustment.mode === 'percent');
+  const pool = percents.length > 0 ? percents : offers;
+  return pool.length === 0 ? null : pool.reduce((best, d) => (worth(d) > worth(best) ? d : best));
+}
+
+/** La grandeur comparable d'une remise, dans sa nature (bp ou centimes). */
+function worth(discount: AudiencePickupDiscount): number {
+  const adjustment = discount.adjustment;
+  return adjustment.mode === 'percent' ? adjustment.bp : adjustment.cents;
 }

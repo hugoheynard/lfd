@@ -204,7 +204,7 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
     TestBed.tick();
     const http = TestBed.inject(HttpTestingController);
     http
-      .expectOne((req) => req.url.endsWith('/fulfillment-days'))
+      .expectOne((req) => req.url.endsWith('/fulfillment-days/mine'))
       .flush([{ pickupAddressId: null, date: THURSDAY, orderUntil: WEDNESDAY_23H }]);
 
     await new Promise((resolve) => setTimeout(resolve, 0));

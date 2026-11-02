@@ -32,6 +32,7 @@ import { screenCopy } from '../copy/shop-copy-composer';
 import { formatHour } from '../format-hour';
 import {
   bestPickupDiscount,
+  pickupDiscountName,
   discountLabel,
   pickupAdjustmentFor,
   pickupOffer,
@@ -581,7 +582,8 @@ export class AccueilPublic {
     return points.map((point) => {
       // Le drapeau ne se pose QU'UNE fois : deux cartes « le plus avantageux »
       // ne diraient plus rien.
-      const isBest = !flagged && best !== null && sameAdjustment(pickupAdjustmentFor(point), best);
+      const isBest =
+        !flagged && best !== null && sameAdjustment(pickupAdjustmentFor(point), best.adjustment);
       if (isBest) {
         flagged = true;
       }
@@ -589,7 +591,7 @@ export class AccueilPublic {
         point,
         name: point.label || point.ville,
         place: `${point.ville} · ${point.ligne1}`,
-        offer: pickupOffer(point, servedAsPro, copy),
+        offer: pickupOffer(point, servedAsPro, copy, this.locale.current()),
         best: isBest,
       };
     });
@@ -603,7 +605,13 @@ export class AccueilPublic {
    */
   protected readonly bestLabel = computed(() => {
     const best = bestPickupDiscount(this.points.pickups());
-    return best === null ? null : fill(this.c().proof.discount, { value: discountLabel(best) });
+    if (best === null) {
+      return null;
+    }
+    return (
+      pickupDiscountName(best, this.locale.current()) ??
+      fill(this.c().proof.discount, { value: discountLabel(best.adjustment) })
+    );
   });
 
   /**

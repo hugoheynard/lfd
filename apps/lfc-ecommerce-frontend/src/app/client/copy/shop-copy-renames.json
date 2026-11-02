@@ -56,6 +56,7 @@
     "housePicker.cta": null,
     "housePicker.ctaIdle": null,
     "slotPicker.days.none": null,
-    "slotPicker.days.group": null
+    "slotPicker.days.group": null,
+    "product.proDiscount": null
   }
 }

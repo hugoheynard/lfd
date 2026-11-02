@@ -37,7 +37,7 @@ function pointWith(discount: AudiencePickupDiscount | null): AudiencePickupAddre
  */
 describe('pickupOffer — sur tout ou sur une sélection', () => {
   it('dit « sur tout » sans règle', () => {
-    expect(pickupOffer(pointWith(TEN_PERCENT), false, COPY).label).toBe('−10 % sur tout');
+    expect(pickupOffer(pointWith(TEN_PERCENT), false, COPY, 'fr').label).toBe('−10 % sur tout');
   });
 
   it('dit « sur une sélection » dès qu’une règle exclut', () => {
@@ -45,12 +45,12 @@ describe('pickupOffer — sur tout ou sur une sélection', () => {
       ...TEN_PERCENT,
       categories: [{ categoryId: 'cat_epicerie', eligible: false }],
     });
-    expect(pickupOffer(point, false, COPY).label).toBe('−10 % sur une sélection');
+    expect(pickupOffer(point, false, COPY, 'fr').label).toBe('−10 % sur une sélection');
   });
 
   it('dit « sur une sélection » en mode « seulement »', () => {
     const point = pointWith({ ...TEN_PERCENT, scope: 'only' });
-    expect(pickupOffer(point, false, COPY).label).toBe('−10 % sur une sélection');
+    expect(pickupOffer(point, false, COPY, 'fr').label).toBe('−10 % sur une sélection');
   });
 
   it('une règle qui réinclut seule ne retire rien : « sur tout »', () => {
@@ -58,18 +58,18 @@ describe('pickupOffer — sur tout ou sur une sélection', () => {
       ...TEN_PERCENT,
       products: [{ productId: 'prd_tasse', eligible: true }],
     });
-    expect(pickupOffer(point, false, COPY).label).toBe('−10 % sur tout');
+    expect(pickupOffer(point, false, COPY, 'fr').label).toBe('−10 % sur tout');
   });
 
   it('sans remise, le tarif : « Prix pro » à qui la caisse sert en pro', () => {
-    expect(pickupOffer(pointWith(null), true, COPY)).toEqual({
+    expect(pickupOffer(pointWith(null), true, COPY, 'fr')).toEqual({
       label: 'Prix pro',
       hasOffer: false,
     });
   });
 
   it('sans remise, « Prix boutique » à un particulier', () => {
-    expect(pickupOffer(pointWith(null), false, COPY)).toEqual({
+    expect(pickupOffer(pointWith(null), false, COPY, 'fr')).toEqual({
       label: 'Prix boutique',
       hasOffer: false,
     });
@@ -90,7 +90,22 @@ describe('la remise unique du point', () => {
     const twenty = { ...TEN_PERCENT, adjustment: { mode: 'percent', bp: 2000 } } as const;
     expect(
       bestPickupDiscount([pointWith(TEN_PERCENT), pointWith(twenty), pointWith(null)]),
-    ).toEqual({ mode: 'percent', bp: 2000 });
+    ).toEqual(twenty);
     expect(bestPickupDiscount([pointWith(null)])).toBeNull();
+  });
+
+  /** Règle de Hugo (2026-11-02) : le nom réglé en admin, jamais un nom fabriqué. */
+  it('dit le texte de vignette réglé, puis le libellé, dans la langue de la boutique', () => {
+    const label = { fr: 'Folie Coffee', en: 'Folie Coffee EN', it: '' };
+    const tileText = { fr: 'Café offert', en: 'Free coffee', it: '' };
+    expect(pickupOffer(pointWith({ ...TEN_PERCENT, label }), false, COPY, 'en').label).toBe(
+      'Folie Coffee EN',
+    );
+    expect(
+      pickupOffer(pointWith({ ...TEN_PERCENT, label, tileText }), false, COPY, 'en').label,
+    ).toBe('Free coffee');
+    expect(
+      pickupOffer(pointWith({ ...TEN_PERCENT, label, tileText }), false, COPY, 'it').label,
+    ).toBe('Café offert');
   });
 });

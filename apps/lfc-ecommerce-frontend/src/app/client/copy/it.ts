@@ -335,7 +335,6 @@ export const IT: ClientCopy = {
     perPiece: '/ pezzo',
     perKilogram: '/ kg',
     minimumPieces: 'Minimo {n} pezzi',
-    proDiscount: 'Prezzo pro −{pct} %',
     offerAtPickupPoint: '{discount} con ritiro a {place}',
     offerOnPickup: '{discount} con ritiro',
     offerOnDelivery: '{discount} con consegna',

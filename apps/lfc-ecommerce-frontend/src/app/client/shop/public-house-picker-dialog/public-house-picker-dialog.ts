@@ -11,6 +11,7 @@ import {
 } from 'fold-ng';
 
 import { ClientAudience } from '../../client-audience.service';
+import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { housePickerCopy } from '../../copy/screens/house-picker.copy';
@@ -122,6 +123,7 @@ export class PublicHousePickerDialog {
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly servedAsPro = inject(ClientAudience).servedAsPro;
+  private readonly locale = inject(ClientLocale);
   private readonly workspace = inject(ClientWorkspace);
 
   /**
@@ -147,13 +149,14 @@ export class PublicHousePickerDialog {
   protected readonly houses = computed<readonly House[]>(() => {
     const servedAsPro = this.servedAsPro();
     const copy = this.t().pickupDialog;
+    const locale = this.locale.current();
     const currentId = this.data().currentId;
     const selectedId = currentId ?? this.preselectedId();
     const day = this.data().day ?? null;
     return this.points
       .pickups()
       .filter((point) => day === null || servesOn(this.points.nextDayFor(point.id), day))
-      .map((point) => ({ point, offer: pickupOffer(point, servedAsPro, copy) }))
+      .map((point) => ({ point, offer: pickupOffer(point, servedAsPro, copy, locale) }))
       .map(({ point, offer }) => ({
         point,
         // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
