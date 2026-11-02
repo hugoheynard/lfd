@@ -41,6 +41,8 @@ model ResupplyReceipt {
   lines ResupplyReceiptLine[]
 
   @@index([siteId, serviceDay])
+  /// L'onglet Stock lit une journée pour tous les points (migration 20261102260000).
+  @@index([serviceDay])
   @@map("resupply_receipt")
   @@schema("public")
 }
@@ -208,6 +210,7 @@ model SiteStockAlert {
   liftReason      String?   @map("lift_reason")
 
   @@index([siteId, liftedAt])
+  /// + `site_stock_alert_live_declared_idx` (partiel, `lifted_at IS NULL`), en SQL seulement (20261102260000).
   @@map("site_stock_alert")
   @@schema("public")
 }
