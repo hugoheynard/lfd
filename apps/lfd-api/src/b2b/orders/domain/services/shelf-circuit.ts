@@ -1,6 +1,7 @@
 import { saleQuantity, type SaleUnit } from "@lfd/money";
 
 import type { SameDayDoor } from "../../../order-cutoffs/domain/same-day-doors.js";
+import type { RevisableOrder } from "../entities/order-revision.js";
 import type { OrderToPlace } from "../entities/order-shapes.js";
 import { ShelfStockShortError } from "../errors/shelf-circuit-errors.js";
 import type { SiteDaySettings } from "../ports/site-day-settings.reader.js";
@@ -113,6 +114,27 @@ export function shelfClaimOf(order: OrderToPlace): ShelfClaim | null {
   };
 }
 
+/**
+ * La prise d'une commande sur stock DÉJÀ PASSÉE, telle que la révision la
+ * trouve — `null` si elle est fabriquée. Sa journée et son point sont figés
+ * (`ensureShelfKeepsRoute`) : c'est la vitrine que la révision rejuge.
+ */
+export function revisedShelfClaimOf(order: RevisableOrder): ShelfClaim | null {
+  if (order.supply !== "shelf" || order.serviceDay === null) {
+    return null;
+  }
+  return {
+    serviceDay: order.serviceDay,
+    siteId: order.fulfillment.pickupAddress?.siteId ?? null,
+    lines: order.lines.map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      saleUnit: line.saleUnit,
+      quantity: line.quantity,
+    })),
+  };
+}
+
 /** Ce qui reste d'un article en vitrine, dans UNE unité — la forme de `EstimatedStockLine`. */
 export interface ShelfStockLeft {
   readonly sku: string;
@@ -132,13 +154,7 @@ export function ensureShelfStockCovers(
   lines: readonly ShelfClaimLine[],
   stock: readonly ShelfStockLeft[],
 ): void {
-  const asked = new Map<string, ShelfClaimLine>();
-  for (const line of lines) {
-    const key = `${line.saleUnit}:${line.sku}`;
-    const known = asked.get(key);
-    asked.set(key, { ...line, quantity: (known?.quantity ?? 0) + line.quantity });
-  }
-  for (const line of asked.values()) {
+  for (const line of totalsOf(lines).values()) {
     const left =
       stock.find((entry) => entry.sku === line.sku && entry.saleUnit === line.saleUnit)
         ?.estimatedStock ?? 0;
@@ -151,4 +167,43 @@ export function ensureShelfStockCovers(
       );
     }
   }
+}
+
+/**
+ * **Le reste couvre-t-il la révision ?** (plan du jour J, §12 bloquant 2,
+ * §13, lot L5) — sous le verrou du stock, comme la passation.
+ *
+ * Le reste lu compte DÉJÀ la commande révisée parmi les prélèvements : elle
+ * est vivante. La rendre d'abord, puis reprendre la nouvelle composition,
+ * revient à ne juger que les HAUSSES, par article et par unité : une hausse
+ * doit tenir dans le reste, une baisse ou un article retiré rend le stock et
+ * ne se refuse jamais. Le refus d'une hausse nomme la quantité AJOUTÉE.
+ *
+ * @throws {ShelfStockShortError} une hausse dépasse ce qui reste.
+ */
+export function ensureShelfRevisionCovered(
+  before: readonly ShelfClaimLine[],
+  after: readonly ShelfClaimLine[],
+  stock: readonly ShelfStockLeft[],
+): void {
+  const held = totalsOf(before);
+  const increases: ShelfClaimLine[] = [];
+  for (const [key, line] of totalsOf(after)) {
+    const added = line.quantity - (held.get(key)?.quantity ?? 0);
+    if (added > 0) {
+      increases.push({ ...line, quantity: added });
+    }
+  }
+  ensureShelfStockCovers(increases, stock);
+}
+
+/** Les lignes additionnées par article et par unité — jamais pièces et grammes ensemble. */
+function totalsOf(lines: readonly ShelfClaimLine[]): ReadonlyMap<string, ShelfClaimLine> {
+  const totals = new Map<string, ShelfClaimLine>();
+  for (const line of lines) {
+    const key = `${line.saleUnit}:${line.sku}`;
+    const known = totals.get(key);
+    totals.set(key, { ...line, quantity: (known?.quantity ?? 0) + line.quantity });
+  }
+  return totals;
 }

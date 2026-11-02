@@ -12,8 +12,9 @@ import type { UnsettledSettlement } from "./unsettled-settlement.reader.js";
  * jamais : elle garde le seul balayage de clôture.
  *
  * **Depuis le lot L4 du circuit du jour J**, un second périmètre : les
- * commandes prises sur la vitrine (`supply = shelf`) que le client a passées
- * lui-même avec une intention directe, particulier OU pro — le balayage de
+ * commandes prises sur la vitrine (`supply = shelf`) portant une intention —
+ * passées par le client (particulier OU pro) ou, depuis le 2026-11-02, envoyées
+ * au lien de paiement par l'équipe — le balayage de
  * clôture ne les voit plus (`notFromStock`, lot L1), et elles tiennent le
  * stock du jour tant qu'elles vivent. Leur délai est le réglage
  * `shelf_hold_minutes`, pas les 30 minutes de la boutique.
@@ -25,7 +26,10 @@ export abstract class UnsettledShopOrderReader {
    */
   abstract placedBefore(cutoff: Date): Promise<readonly UnsettledSettlement[]>;
 
-  /** Les commandes sur stock non réglées, passées par le client, strictement avant `cutoff`. */
+  /**
+   * Les commandes sur stock non réglées portant une intention (client ou lien
+   * de l'équipe), passées strictement avant `cutoff`.
+   */
   abstract shelfPlacedBefore(cutoff: Date): Promise<readonly UnsettledSettlement[]>;
 
   /**

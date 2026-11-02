@@ -60,6 +60,9 @@ import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { OrderOperations } from "../../services/order-operations.service.js";
 import type { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { OrderRevising } from "../../services/order-revising.service.js";
+import { shelfCircuitOf } from "../../services/__tests__/shelf-circuit-doubles.js";
+import type { ShelfCircuit } from "../../services/shelf-circuit.service.js";
+import { ShelfRevising } from "../../services/shelf-revising.service.js";
 import { OrderWorkshopRevision } from "../../services/order-workshop-revision.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import { ReviseOrderHandler } from "../revise-order.handler.js";
@@ -221,6 +224,8 @@ export function revisingAt(
     readonly engagements?: AccountOrderEngagementReader;
     readonly catalogItems?: readonly UnsealedCatalogItem[];
     readonly intake?: OrderIntake;
+    /** Le circuit du jour J (lot L5) — par défaut fermé, sur la porte du plan. */
+    readonly shelf?: ShelfCircuit;
   } = {},
 ): OrderRevising {
   const catalog = new InMemoryProductCatalog(options.catalogItems ?? CATALOG);
@@ -246,12 +251,14 @@ export function revisingAt(
     { openFor: () => Promise.resolve(null), consume: () => Promise.resolve() },
     clock,
   );
+  const plans = options.plans ?? openPlanGate();
   return new OrderRevising(
     composition,
     cutoffs,
-    options.plans ?? openPlanGate(),
+    plans,
     new CancellationRule(options.engagements ?? new FixedEngagements()),
     options.intake ?? intakeAt(undefined, "active", [], {}, undefined, clock),
+    new ShelfRevising(options.shelf ?? shelfCircuitOf(plans), plans),
   );
 }
 
@@ -533,6 +540,7 @@ export function reviseScene(
     readonly plans?: OrderPlanGate;
     readonly engagements?: AccountOrderEngagementReader;
     readonly catalogItems?: readonly UnsealedCatalogItem[];
+    readonly shelf?: ShelfCircuit;
   } = {},
 ) {
   const trace: string[] = [];
@@ -555,6 +563,7 @@ export function reviseScene(
       ...(options.plans === undefined ? {} : { plans: options.plans }),
       ...(options.engagements === undefined ? {} : { engagements: options.engagements }),
       ...(options.catalogItems === undefined ? {} : { catalogItems: options.catalogItems }),
+      ...(options.shelf === undefined ? {} : { shelf: options.shelf }),
     }),
     revisions,
     new OrderWorkshopRevision(desk, packing),

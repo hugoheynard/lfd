@@ -150,18 +150,12 @@ async function openSameDay(over: Record<string, unknown> = {}): Promise<void> {
  * s'arrête pas : une saisie de l'équipe, au compte, fabriquée, y entre d'abord.
  */
 async function closeToday(): Promise<void> {
-  const user = await createUser(ctx.prisma, { auth0Sub: "auth0|pro-l4", email: "pro@l4.fr" });
-  const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
-  await ctx.prisma.company.update({
-    where: { id: company.id },
-    data: { grantedTerms: ["monthly"] },
-  });
-  await attachTo(ctx.prisma, user.id, company.id);
+  const pro = await seedCreditedPro("auth0|pro-l4", "pro@l4.fr");
   await staff()
     .post("/admin/orders")
     .send({
-      companyId: company.id,
-      buyerUserId: user.id,
+      companyId: pro.companyId,
+      buyerUserId: pro.userId,
       settlement: "account",
       requestedDeliveryDate: day,
       fulfillmentMethod: "pickup",
@@ -172,6 +166,21 @@ async function closeToday(): Promise<void> {
     .expect(201);
   await staff().post(`/admin/production/batch/${day}/close`).expect(201);
   await ctx.drain();
+}
+
+/** Un pro actif, avec un crédit au compte accordé, et son acheteur. */
+async function seedCreditedPro(
+  auth0Sub: string,
+  email: string,
+): Promise<{ readonly companyId: string; readonly userId: string }> {
+  const user = await createUser(ctx.prisma, { auth0Sub, email });
+  const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
+  });
+  await attachTo(ctx.prisma, user.id, company.id);
+  return { companyId: company.id, userId: user.id };
 }
 
 function shopPayload(lines: PlaceShopOrderPayload["lines"]): PlaceShopOrderPayload {
@@ -336,6 +345,52 @@ describe("la passation sur stock (L4) — la tenue du stock et les verrous", () 
   });
 
   /**
+   * Complément L4 (Hugo, 2026-11-02, §6 Q3 bis) : une commande sur stock que
+   * l'équipe envoie au lien de paiement expire aussi à la durée réglée — un
+   * lien jamais réglé ne retient plus la vitrine sans limite.
+   */
+  it("une commande de l'équipe au lien de paiement, non réglée, rend sa part après la durée réglée", async () => {
+    const pro = await seedCreditedPro("auth0|pro-l4-link", "lien@l4.fr");
+    const placed = await staff()
+      .post("/admin/orders")
+      .send({
+        companyId: pro.companyId,
+        buyerUserId: pro.userId,
+        settlement: "link",
+        supply: "shelf",
+        requestedDeliveryDate: day,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: siteId,
+        requestedWindow: { start: "14:00", end: "15:00" },
+        lines: [{ sku: CROISSANT, quantity: 3 }],
+      })
+      .expect(201);
+    await ctx.drain();
+    const orderId = jsonBody<{ readonly id: string }>(placed).id;
+    expect(await supplyOf(orderId)).toBe("shelf");
+    expect(await croissantsLeft()).toBe(RECEIVED - 3);
+    const { createdAt } = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { createdAt: true },
+    });
+
+    clock.set(new Date(createdAt.getTime() + 14 * MINUTE));
+    await ctx.app.get(UnsettledShopOrderExpiry).expireLapsed();
+    expect(await croissantsLeft()).toBe(RECEIVED - 3);
+
+    clock.set(new Date(createdAt.getTime() + 16 * MINUTE));
+    await ctx.app.get(UnsettledShopOrderExpiry).expireLapsed();
+    await ctx.drain();
+
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { status: true },
+    });
+    expect(order.status).toBe("cancelled");
+    expect(await croissantsLeft()).toBe(RECEIVED);
+  });
+
+  /**
    * §12 (sérieux) : l'annulation d'une commande sur stock ne traverse pas le
    * guichet du fournil — elle n'y a jamais été inscrite — et rend sa part.
    */
@@ -379,5 +434,94 @@ describe("la passation sur stock (L4) — la tenue du stock et les verrous", () 
       release();
       await holder;
     }
+  });
+});
+
+/**
+ * Lot L5 (§12 bloquant 2, §13) : une commande sur stock au compte se modifie
+ * dans la limite du reste, sous le verrou du stock ; le fournil n'en reçoit
+ * aucune note ; sa journée ne change pas ; une commande par carte reste non
+ * modifiable (M1, limite acceptée par Hugo le 2026-11-02).
+ */
+describe("la modification d'une commande sur stock (L5)", () => {
+  beforeEach(async () => {
+    await openSameDay();
+    await closeToday();
+  });
+
+  /** Une saisie de l'équipe sur la vitrine, au compte, pour un pro crédité. */
+  async function placeCounterShelf(quantity: number): Promise<string> {
+    const pro = await seedCreditedPro("auth0|pro-l5", "pro@l5.fr");
+    const placed = await staff()
+      .post("/admin/orders")
+      .send({
+        companyId: pro.companyId,
+        buyerUserId: pro.userId,
+        settlement: "account",
+        supply: "shelf",
+        requestedDeliveryDate: day,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: siteId,
+        requestedWindow: { start: "14:00", end: "15:00" },
+        lines: [{ sku: CROISSANT, quantity }],
+      })
+      .expect(201);
+    await ctx.drain();
+    return jsonBody<{ readonly id: string }>(placed).id;
+  }
+
+  function reviseTo(orderId: string, expectedRevision: number, quantity: number, over = {}) {
+    return staff()
+      .post(`/admin/orders/${orderId}/revisions`)
+      .send({
+        expectedRevision,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: siteId,
+        requestedWindow: { start: "14:00", end: "15:00" },
+        requestedDeliveryDate: day,
+        deliveryAddress: null,
+        deliveryAddressId: null,
+        note: "",
+        lines: [{ sku: CROISSANT, quantity }],
+        ...over,
+      });
+  }
+
+  it("se modifie dans la limite du reste, sans note au fournil ; une baisse rend le stock", async () => {
+    const orderId = await placeCounterShelf(3);
+    expect(await croissantsLeft()).toBe(RECEIVED - 3);
+
+    await reviseTo(orderId, 0, 9).expect(200);
+    await ctx.drain();
+    expect(await croissantsLeft()).toBe(RECEIVED - 9);
+
+    const refused = await reviseTo(orderId, 1, 11);
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ code: "orders.shelf.stock_short" });
+    expect(await croissantsLeft()).toBe(RECEIVED - 9);
+
+    await reviseTo(orderId, 1, 4).expect(200);
+    await ctx.drain();
+    expect(await croissantsLeft()).toBe(RECEIVED - 4);
+    expect(await ctx.prisma.orderRevisionNotice.count({ where: { orderId } })).toBe(0);
+  });
+
+  it("changer la journée est refusé", async () => {
+    const orderId = await placeCounterShelf(3);
+    const tomorrow = instantToLocal(new Date(clock.now().getTime() + 24 * 60 * MINUTE)).day;
+
+    const refused = await reviseTo(orderId, 0, 3, { requestedDeliveryDate: tomorrow });
+
+    expect(refused.body).toMatchObject({ code: "orders.revise.shelf_route" });
+    expect(await croissantsLeft()).toBe(RECEIVED - 3);
+  });
+
+  it("une commande sur stock réglée par carte reste non modifiable (M1)", async () => {
+    const orderId = await placeShop([{ sku: CROISSANT, quantity: 2 }]);
+
+    const refused = await reviseTo(orderId, 0, 1);
+
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ code: "orders.revise.card_settled" });
   });
 });

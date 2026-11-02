@@ -42,6 +42,7 @@ import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
 import { OrderIntake } from "./order-intake.service.js";
 import type { OrderParties } from "./order-parties.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
+import { ShelfRevising } from "./shelf-revising.service.js";
 
 /**
  * **Recomposer une commande passée** (plan
@@ -73,6 +74,7 @@ export class OrderRevising {
     private readonly plans: OrderPlanGate,
     private readonly rule: CancellationRule,
     private readonly intake: OrderIntake,
+    private readonly shelf: ShelfRevising,
   ) {}
 
   /**
@@ -123,6 +125,10 @@ export class OrderRevising {
     const { block: standing, scope } = await this.standingOf(order, inscribedDay, actorKind);
     if (standing === null && scope === "quantities") {
       return { revisable: true, until: null, quantitiesOnly: true };
+    }
+    if (standing === null && order.supply === "shelf") {
+      // Sur la vitrine, les gardes du circuit, pour l'équipe aussi (lot L5).
+      return this.shelf.verdictOf(order, actorKind);
     }
     if (standing !== null || actorKind === "staff" || order.serviceDay === null) {
       return revisabilityOf({ standing, planClosedDay: null, cutoff: null });
@@ -207,8 +213,15 @@ export class OrderRevising {
     options: RevisionOptions,
   ): Promise<QuotedRevision> {
     const actor = options.rulesOf ?? author.kind;
-    await this.ensureDayOpen(order, content.requestedDeliveryDate, actor);
-    await this.ensureFirstOrderableDay(order, content.requestedDeliveryDate, actor);
+    // Une commande sur stock n'a ni plan ni heure limite : les gardes du
+    // circuit les remplacent (plan du jour J, §13, lot L5).
+    const fromShelf = order.supply === "shelf";
+    if (fromShelf) {
+      await this.shelf.ensureOpen(order, actor);
+    } else {
+      await this.ensureDayOpen(order, content.requestedDeliveryDate, actor);
+      await this.ensureFirstOrderableDay(order, content.requestedDeliveryDate, actor);
+    }
     const parties: OrderParties = {
       companyId: order.companyId,
       placedByUserId: order.placedByUserId,
@@ -221,7 +234,9 @@ export class OrderRevising {
       { lines: order.lines, discounts: replayableDiscountsOf(order) },
       order.vatMethod,
     );
-    await this.ensureBeforeCutoff(order, content, actor);
+    if (!fromShelf) {
+      await this.ensureBeforeCutoff(order, content, actor);
+    }
     const arranged = await this.composition.arrange(
       content,
       parties,
@@ -247,13 +262,29 @@ export class OrderRevising {
   }
 
   /**
-   * **Sous le verrou** des journées (après le guichet du fournil) : la
-   * nouvelle journée n'a pas été arrêtée depuis la composition.
+   * **Sous le verrou de la ligne `orders`** : la vitrine OU la journée,
+   * jamais les deux (plan du jour J, §11.2, §13). Une commande sur stock
+   * prend le verrou du stock et rejuge le reste ; une commande fabriquée
+   * tient sa journée, après le guichet du fournil.
    *
+   * @throws {ShelfStockShortError} sur stock : une hausse dépasse le reste.
    * @throws {RevisionIntoClosedDayError} la commande changerait pour une journée arrêtée.
    * @throws {ProductionPlanClosedError} le client modifie une commande d'une journée arrêtée.
    */
-  async holdDay(revision: OrderRevisionToSave, actor: RevisionActor): Promise<void> {
+  async holdSupply(
+    order: RevisableOrder,
+    revision: OrderRevisionToSave,
+    actor: RevisionActor,
+  ): Promise<void> {
+    if (order.supply === "shelf") {
+      await this.shelf.hold(order, revision);
+      return;
+    }
+    await this.holdDay(revision, actor);
+  }
+
+  /** La nouvelle journée n'a pas été arrêtée depuis la composition. */
+  private async holdDay(revision: OrderRevisionToSave, actor: RevisionActor): Promise<void> {
     if (revision.serviceDay === null || !(await this.plans.hold(revision.serviceDay))) {
       return;
     }

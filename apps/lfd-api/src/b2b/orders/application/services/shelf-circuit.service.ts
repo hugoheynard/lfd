@@ -16,9 +16,11 @@ import { NoPickupLeftTodayError } from "../../domain/errors/shelf-circuit-errors
 import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js";
 import { SiteDaySettingsReader } from "../../domain/ports/site-day-settings.reader.js";
 import {
+  ensureShelfRevisionCovered,
   ensureShelfStockCovers,
   pickupLeftToday,
   shelfClaimOf,
+  type ShelfClaim,
 } from "../../domain/services/shelf-circuit.js";
 import {
   PLANNED_SUPPLY,
@@ -86,19 +88,35 @@ export class ShelfCircuit {
    * @throws {NoPickupLeftTodayError} le point n'a plus de créneau aujourd'hui pour elle.
    */
   async ensureOpen(parties: OrderParties, siteId: string | null): Promise<void> {
+    const refusal = await this.refusalFor(doorOf(parties), siteId);
+    if (refusal !== null) {
+      throw refusal;
+    }
+  }
+
+  /**
+   * Le refus des gardes du circuit pour cette porte, sans le lever — `null`
+   * quand elle est ouverte. Partagé par la passation ({@link ensureOpen}) et
+   * par la révision d'une commande sur stock, qui en fait aussi un verdict
+   * d'écran (lot L5).
+   */
+  async refusalFor(
+    door: SameDayDoor,
+    siteId: string | null,
+  ): Promise<SameDayOrderClosedError | NoPickupLeftTodayError | null> {
     const today = this.plans.today();
-    const door = doorOf(parties);
     if (!sameDayOpenTo(await this.sameDay.settings(), door)) {
-      throw new SameDayOrderClosedError(today);
+      return new SameDayOrderClosedError(today);
     }
     if (door === "counter") {
-      return;
+      return null;
     }
     const site =
       siteId === null ? null : ((await this.sites.forDay(today, [siteId])).get(siteId) ?? null);
     if (!pickupLeftToday(door, site, instantToLocal(this.clock.now()).time)) {
-      throw new NoPickupLeftTodayError(site?.label ?? null);
+      return new NoPickupLeftTodayError(site?.label ?? null);
     }
+    return null;
   }
 
   /**
@@ -125,6 +143,27 @@ export class ShelfCircuit {
     await this.lock.lock(claim.serviceDay, claim.siteId);
     ensureShelfStockCovers(claim.lines, await this.stock.at(claim.siteId, claim.serviceDay));
     return true;
+  }
+
+  /**
+   * **La vitrine tenue pour une révision** (plan du jour J, §13, lot L5) : le
+   * même verrou que la passation, pris APRÈS celui de la ligne `orders` —
+   * jamais avec celui de la journée. Le reste relu compte encore `before` ;
+   * seules les hausses de `after` y sont jugées ({@link ensureShelfRevisionCovered}).
+   *
+   * @throws {ShelfStockShortError} une hausse dépasse ce qui reste.
+   * @throws {NoPickupLeftTodayError} la commande n'a pas de site à décompter.
+   */
+  async holdRevision(before: ShelfClaim, after: ShelfClaim): Promise<void> {
+    if (before.siteId === null) {
+      throw new NoPickupLeftTodayError(null);
+    }
+    await this.lock.lock(before.serviceDay, before.siteId);
+    ensureShelfRevisionCovered(
+      before.lines,
+      after.lines,
+      await this.stock.at(before.siteId, before.serviceDay),
+    );
   }
 
   /**

@@ -59,7 +59,10 @@ function ensureRequestable(order: RevisableOrder, verdict: RevisionVerdict): voi
   }
   const { block } = verdict;
   switch (block.kind) {
+    // Une commande sur stock que le circuit ne sert plus au client
+    // (`shelf_closed`) : l'équipe l'applique sous ses propres gardes (lot L5).
     case "past_cutoff":
+    case "shelf_closed":
       return;
     case "plan_closed":
       throw new OrderChangeNotQuotableError(order.orderNumber, "in_preparation");

@@ -249,6 +249,11 @@ d'un particulier), **J2c** (la saisie de l'équipe et le raccourci), **J3/J4**
   de la page Jour même**. Reste à décider au bâti ce que deviennent les
   commandes que l'expiration ne sait pas annuler (§4.6) : elles tiennent leur
   quantité tant qu'elles ne sont ni payées ni annulées.
+  **Complété par Hugo le 2026-11-02** : une commande `shelf` que l'équipe
+  envoie **au lien de paiement** expire elle aussi à la même durée
+  (`shelf_hold_minutes`) si elle n'est pas réglée, et son stock revient. La
+  durée réglée ne vaut que pour les `shelf` ; les commandes boutique
+  fabriquées gardent leurs 30 minutes.
 - ~~**Q5**~~ — tranchée le 2026-11-02 : pas d'heure de fin, les créneaux
   restants de chaque site (§3).
 - ~~**Q6**~~ — tranchée le 2026-11-02 : une option de la page Jour même, avec
@@ -885,8 +890,12 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
 - **La tenue du stock** : l'expiration annule, au-delà de `shelf_hold_minutes`,
   une `shelf` non réglée **passée par le client** avec une intention —
   particulier ou pro (`unsettledShelfOrderWhere`) ; les commandes boutique
-  fabriquées gardent leurs 30 minutes. Celle que l'équipe a envoyée au lien
-  n'y entre pas : elle tient sa part tant qu'elle vit (§6, Q3 bis).
+  fabriquées gardent leurs 30 minutes. ~~Celle que l'équipe a envoyée au lien
+  n'y entre pas~~ — **complément du 2026-11-02 (Hugo, §6 Q3 bis)** : elle y
+  entre aussi, à la même durée ; `unsettledShelfOrderWhere` ne filtre plus
+  `placedByStaffId` (une commande au compte n'a pas d'intention, elle n'y
+  entre jamais). E2E : une `shelf` au lien non réglée est annulée après la
+  durée réglée et rend sa part.
 - **L'annulation** d'une `shelf` ne traverse pas le guichet du fournil
   (`OrderWorkshopWithdrawal`, `CancellationSubject.supply`) : elle rend sa part
   en retombant hors des prélèvements.
@@ -903,3 +912,39 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
   aujourd'hui sur un plan ouvert suit maintenant « pros » — au lieu de l'ancien
   interrupteur unique ; les abonnements ne passent pas par `OrderDrafting` et
   n'ont pas été ouverts.
+
+### Le bâti de L5 (2026-11-02)
+
+- **La révision se sépare sur `supply`** : `OrderRevising.quote` remplace,
+  pour une `shelf`, `ensureDayOpen`, le premier jour commandable et
+  `ensureBeforeCutoff` par les gardes du circuit (`ShelfRevising.ensureOpen`,
+  `b2b/orders/application/services/shelf-revising.service.ts`) : la porte de
+  **qui modifie** (`sameDayDoorOf`, comme la révision d'une `planned`) — le
+  réglage de sa clientèle, puis le créneau restant au point (aucun au
+  comptoir) — et **la journée, qui doit être aujourd'hui** : une `shelf` d'un
+  jour passé ne se modifie plus (`orders.shelf.not_today`).
+- **Les verrous** : `ReviseOrderHandler` ne passe ni par `workshops.note` ni
+  par `deliveryNotes.followRevision` pour une `shelf` ; `holdDay` devient
+  `OrderRevising.holdSupply`, qui prend le verrou du stock OU la journée. Ordre
+  réel : la ligne `orders`, puis `ShelfStockLock`.
+- **Le reste rejugé sous le verrou** (`ensureShelfRevisionCovered`,
+  `orders/domain/services/shelf-circuit.ts`) : le reste lu compte déjà la
+  commande ; seules les **hausses** (par article et unité, grammes au poids)
+  s'y jugent — une baisse ou un article retiré ne se refuse jamais. Le refus
+  (`orders.shelf.stock_short`) nomme la quantité ajoutée.
+- **Lignes et quantités seulement** : le mode, la journée et le point restent
+  refusés par l'agrégat (`ensureShelfKeepsRoute`, L1,
+  `orders.revise.shelf_route`).
+- **La carte** : refusée par la règle M1 existante
+  (`orders.revise.card_settled`) — la limite acceptée.
+- **Le verdict des écrans** (`revisabilityOf`) : pour une `shelf`, les gardes
+  du circuit au lieu de l'arrêt et de l'heure limite, pour l'équipe aussi. Un
+  bloc neuf `shelf_closed` porte la phrase du refus ; le client lit le code
+  `too_late` (aucune valeur ajoutée au contrat). La demande de modification
+  (M4) l'admet comme un « trop tard » : l'équipe l'applique sous ses gardes.
+- E2E (`shelf-order-placement`) : une `shelf` au compte passe de 3 à 9 (reste
+  10 → 1), est refusée à 11, redescend à 4 (le stock revient), sans aucune
+  ligne `production.order_revision_notice` ; changer la journée est refusé ;
+  une `shelf` par carte reste non modifiable.
+- **Non couvert à l'e2e** : changer le point ou le mode (couvert par les
+  tests unitaires du handler pour le mode, par ceux de L1 pour le point).

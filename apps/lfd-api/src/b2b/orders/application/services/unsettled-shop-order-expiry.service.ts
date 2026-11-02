@@ -71,7 +71,8 @@ export interface UnsettledShopOrderExpiryReport {
  * ## La tenue du stock (lot L4 du circuit du jour J, 2026-11-02)
  *
  * Une commande prise sur la vitrine, payée par carte par le client — en
- * boutique ou en ligne pour un pro — tient sa part du stock tant qu'elle vit.
+ * boutique ou en ligne pour un pro — ou envoyée au lien de paiement par
+ * l'équipe (2026-11-02, Hugo), tient sa part du stock tant qu'elle vit.
  * Au-delà de la durée réglée (`shelf_hold_minutes`, Réglages › Commandes ›
  * Jour même), elle est annulée par ce même chemin, et sa quantité revient en
  * vitrine : les prélèvements ne comptent pas une annulée. Les gardes Stripe

@@ -40,6 +40,11 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  *
  * Aucune carte : M1 refuse une commande payable par carte (§9, lot M2).
  *
+ * ## Une commande prise sur la vitrine (plan du jour J, §13, lot L5)
+ *
+ * Ni guichet du fournil, ni suivi du BL : l'ordre est la ligne `orders`,
+ * puis le verrou du stock, et le reste y est rejugé sur les hausses.
+ *
  * ## Après l'arrêt du plan (plan A2, § 7)
  *
  * L'équipe d'une commande au compte change encore les QUANTITÉS : la portée
@@ -90,8 +95,14 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       revision,
       await this.revising.ensureRevisable(locked, command.actor.kind),
     );
-    const afterArrest = await this.workshops.note(locked, revision, command.actor);
-    await this.revising.holdDay(revision, command.actor);
+    // Plan du jour J, §13 : une commande sur stock n'a jamais été inscrite au
+    // fournil — ni guichet (et donc ni verrou de journée), ni BL à suivre :
+    // le sien naît à la remise. `holdSupply` prend alors le verrou du stock.
+    const afterArrest =
+      locked.supply === "shelf"
+        ? false
+        : await this.workshops.note(locked, revision, command.actor);
+    await this.revising.holdSupply(locked, revision, command.actor);
     const now = this.clock.now();
     if (!(await this.revisions.save(revision, command.actor, now))) {
       // Sous le verrou, révision et règle venaient de passer : ne pas franchir

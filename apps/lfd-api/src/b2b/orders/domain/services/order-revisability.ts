@@ -23,7 +23,14 @@ export type RevisionBlock =
   /** Client seulement : le plan de la journée est arrêté. */
   | { readonly kind: "plan_closed"; readonly day: string }
   /** Client seulement : l'heure limite de la date est passée (`until` : celle qui l'est). */
-  | { readonly kind: "past_cutoff"; readonly until: Date | null };
+  | { readonly kind: "past_cutoff"; readonly until: Date | null }
+  /**
+   * Une commande prise sur la vitrine (plan du jour J, §13, lot L5) : le
+   * circuit ne la sert plus — réglage fermé à cette porte, plus de créneau
+   * au point, ou une journée qui n'est plus aujourd'hui. `reason` : la phrase
+   * du refus que le geste lèverait.
+   */
+  | { readonly kind: "shelf_closed"; readonly reason: string };
 
 /** Les blocages qui valent pour tous, client et équipe — ce que le geste refuse d'emblée. */
 export type StandingRevisionBlock = Extract<
@@ -121,6 +128,8 @@ export function revisionBlockReasonOf(block: RevisionBlock): string {
       return "Le plan du fournil est arrêté pour ce jour : la commande ne se modifie plus en ligne.";
     case "past_cutoff":
       return "L'heure limite de cette commande est passée : elle ne se modifie plus en ligne.";
+    case "shelf_closed":
+      return block.reason;
   }
 }
 
@@ -136,6 +145,7 @@ export function customerRevisionRefusalOf(block: RevisionBlock): OrderRevisionRe
     case "plan_closed":
       return "in_preparation";
     case "past_cutoff":
+    case "shelf_closed":
       return "too_late";
   }
 }

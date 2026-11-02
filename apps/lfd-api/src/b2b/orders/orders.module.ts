@@ -140,6 +140,7 @@ import { OrderCutoffNotice } from "./application/services/order-cutoff-notice.se
 import { OrderPlanGate } from "./application/services/order-plan-gate.service.js";
 import { SameDayOrderReader } from "./domain/ports/same-day-order.reader.js";
 import { ShelfCircuit } from "./application/services/shelf-circuit.service.js";
+import { ShelfRevising } from "./application/services/shelf-revising.service.js";
 import { ResupplyModule } from "../resupply/resupply.module.js";
 import { SettingsSameDayOrderReader } from "./infrastructure/settings-same-day-order.reader.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
@@ -377,6 +378,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // du fournil par `ProductionDeskFeedModule`.
     OrderPlanGate,
     ShelfCircuit,
+    ShelfRevising,
     // Le réglage « jour même » (§8.3), lu sur le réglage de l'heure limite.
     { provide: SameDayOrderReader, useClass: SettingsSameDayOrderReader },
     // Le garde des opérations datées, partagé par la caisse et les deux devis.

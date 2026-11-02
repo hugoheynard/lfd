@@ -32,17 +32,18 @@ export function unsettledShopOrderWhere(): Prisma.OrderWhereInput {
 
 /**
  * **Le périmètre de la tenue du stock** (plan du jour J, §11.2, lot L4) : une
- * commande sur stock `placed`, non réglée, passée par le client lui-même —
- * particulier ou pro — avec une intention directe. Celle que l'équipe a
- * envoyée au lien de paiement n'y entre pas : elle attend dans la file du
- * comptoir et garde sa part tant qu'elle vit (§6, Q3 bis).
+ * commande sur stock `placed`, non réglée, portant une intention — passée par
+ * le client lui-même (particulier ou pro) OU envoyée au lien de paiement par
+ * l'équipe. Cette dernière y entre depuis le 2026-11-02 (Hugo, §6 Q3 bis) :
+ * un lien jamais réglé ne retient plus la vitrine sans limite. Une commande
+ * au compte n'a pas d'intention (`PlaceOrderForCustomerHandler.settle`,
+ * vérifié le 2026-11-02) : elle n'y entre jamais.
  */
 export function unsettledShelfOrderWhere(): Prisma.OrderWhereInput {
   return {
     status: OrderStatus.placed,
     paymentStatus: { in: [PaymentStatus.pending, PaymentStatus.failed] },
     supply: OrderSupply.shelf,
-    placedByStaffId: null,
     stripePaymentIntentId: { not: null },
   };
 }
