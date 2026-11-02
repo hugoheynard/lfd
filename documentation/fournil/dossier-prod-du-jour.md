@@ -42,7 +42,9 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    quantité à sortir dans chaque case avec **une case à cocher**, le total du
    produit à droite et celui de chaque tranche en bas (pièces seules : un
    article au poids n'y est pas compté, et la page le dit). Seules les
-   tranches que le rayon touche ont une colonne. La règle est celle de la
+   tranches que le rayon touche ont une colonne ; au-delà de six, chiffres,
+   libellés et cases rétrécissent (jusqu'à 55 %), pour que dix colonnes du
+   mode « calculé » tiennent sur la feuille. La règle est celle de la
    journée par tranche à l'écran : le total figé du produit, **réparti** par
    les tranches de la fiche d'atelier (`WorksheetDeadlinesReading`), le reste
    en « Sans heure » — la somme d'une ligne est toujours le total. Des

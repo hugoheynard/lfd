@@ -1,5 +1,6 @@
 import type { DossierRecapGroup, DossierRecapLine } from "../day-dossier.js";
 import { dossierCalendarOf } from "../day-dossier-calendar.js";
+import { calendarScale } from "../day-dossier-calendar-pdf.js";
 import type { TrancheThreshold } from "../production-tranches.js";
 
 /**
@@ -129,5 +130,18 @@ describe("dossierCalendarOf", () => {
     );
 
     expect(page?.intertitles).toBe(intertitles);
+  });
+});
+
+/** Hugo, 2026-11-02 : « réduis la police au-delà de 6 colonnes ». */
+describe("calendarScale", () => {
+  it("garde la taille pleine jusqu'à six tranches", () => {
+    expect([1, 6].map(calendarScale)).toEqual([1, 1]);
+  });
+
+  it("rétrécit au-delà, jamais sous le plancher", () => {
+    expect(calendarScale(8)).toBeCloseTo(0.75);
+    expect(calendarScale(12)).toBeCloseTo(0.55);
+    expect(calendarScale(30)).toBeCloseTo(0.55);
   });
 });

@@ -34,9 +34,25 @@ const CHECK_SIZE = 4.5 * MM;
 const FIGURE_SIZE = 15;
 
 /** La géométrie d'une page : où commence chaque colonne de tranche, et leur largeur. */
+/** Jusqu'à six tranches, la taille pleine ; au-delà, tout ce qui vit dans une tranche rétrécit. */
+const FULL_SIZE_COLUMNS = 6;
+/** Plancher : un chiffre plus petit ne se lit plus à bout de bras au fournil. */
+const MIN_SCALE = 0.55;
+
+/**
+ * L'échelle des textes et des cases d'une tranche (Hugo, 2026-11-02 : « réduis
+ * la police au-delà de 6 colonnes ») — le mode « calculé » fait une colonne
+ * par heure d'échéance réelle, et dix colonnes en taille pleine débordent.
+ */
+export function calendarScale(columns: number): number {
+  return columns <= FULL_SIZE_COLUMNS ? 1 : Math.max(FULL_SIZE_COLUMNS / columns, MIN_SCALE);
+}
+
 interface Grid {
   readonly columnX: readonly number[];
   readonly columnWidth: number;
+  /** `calendarScale` du nombre de tranches de la page. */
+  readonly scale: number;
   readonly totalX: number;
   readonly right: number;
 }
@@ -50,6 +66,7 @@ function gridOf(page: CalendarPage, right: number): Grid {
   return {
     columnX: page.columns.map((_, index) => first + index * columnWidth),
     columnWidth,
+    scale: calendarScale(page.columns.length),
     totalX: first + page.columns.length * columnWidth,
     right: first + page.columns.length * columnWidth + TOTAL_WIDTH,
   };
@@ -100,7 +117,7 @@ function drawHead(doc: Doc, page: CalendarPage, grid: Grid, top: number): number
       grid.columnX[index] ?? 0,
       grid.columnWidth,
       top + 3.2 * MM,
-      11,
+      11 * grid.scale,
       true,
     );
   });
@@ -126,13 +143,7 @@ function drawRow(doc: Doc, row: CalendarRow, grid: Grid, top: number): void {
   }
   row.quantities.forEach((quantity, index) => {
     if (quantity > 0) {
-      drawCell(
-        doc,
-        { quantity, saleUnit: row.line.saleUnit },
-        grid.columnX[index] ?? 0,
-        grid.columnWidth,
-        top,
-      );
+      drawCell(doc, { quantity, saleUnit: row.line.saleUnit }, grid.columnX[index] ?? 0, grid, top);
     }
   });
   const total = { quantity: row.line.quantity, saleUnit: row.line.saleUnit };
@@ -154,24 +165,22 @@ function drawCell(
   doc: Doc,
   figure: { readonly quantity: number; readonly saleUnit: CalendarRow["line"]["saleUnit"] },
   x: number,
-  width: number,
+  grid: Grid,
   top: number,
 ): void {
-  const boxX = x + width - CHECK_SIZE - 2.5 * MM;
+  const width = grid.columnWidth;
+  const check = CHECK_SIZE * Math.max(grid.scale, 0.75);
+  const boxX = x + width - check - 2.5 * MM * grid.scale;
   centered(
     doc,
     lineFigure(figure),
     x,
     boxX - x,
     top + 2.6 * MM,
-    figureFontSize(figure, FIGURE_SIZE),
+    figureFontSize(figure, Math.round(FIGURE_SIZE * grid.scale)),
     true,
   );
-  strokeBox(
-    doc,
-    { x: boxX, y: top + (ROW_HEIGHT - CHECK_SIZE) / 2, width: CHECK_SIZE, height: CHECK_SIZE },
-    0.9,
-  );
+  strokeBox(doc, { x: boxX, y: top + (ROW_HEIGHT - check) / 2, width: check, height: check }, 0.9);
 }
 
 /**
@@ -194,7 +203,7 @@ function drawFoot(doc: Doc, page: CalendarPage, grid: Grid, top: number): number
         grid.columnX[index] ?? 0,
         grid.columnWidth,
         top + 3 * MM,
-        14,
+        14 * grid.scale,
         true,
       );
     }
