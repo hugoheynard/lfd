@@ -1,0 +1,25 @@
+-- RETOUR ARRIÈRE de 20261102230000_le_reassort_au_poids_au_colisage
+-- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L2b-3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant ne lit ni n'écrit `sale_unit` sur cette table : ses
+-- insertions prennent le défaut `piece`, que le CHECK admet. Le retour du code
+-- seul suffit tant qu'aucune ligne `weight` n'a été inscrite au colisage.
+--
+-- ⚠️ L2b-3 retire la garde d'envoi de L2b-1 : une fois ce lot en service, des
+-- lignes `weight` peuvent exister, et le code d'avant les lirait comme des
+-- PIÈCES (2 000 g deviendraient 2 000 pièces à l'emballé et au manifeste). Le
+-- retour du code demande alors de remettre la garde d'envoi en même temps.
+-- Les constater avant :
+--
+--   SELECT count(*) FROM packing.packing_resupply_line WHERE sale_unit = 'weight';
+--
+-- et décider avec Hugo (aucune suppression d'office). Retirer la colonne
+-- serait un resserrement, dans un déploiement ultérieur, sur sa décision :
+--
+--   ALTER TABLE packing.packing_resupply_line
+--     DROP CONSTRAINT packing_resupply_line_sale_unit_check;
+
+SELECT 1;
