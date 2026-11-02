@@ -131,11 +131,12 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   });
 
   /**
-   * D6 : un panier qui porte un article réservé à une opération ne se voit
-   * proposer que ses jours de retrait. Les jours se relisent avec ses SKU et la
-   * clientèle ; un article courant ne les relit pas.
+   * D6 et lot L7 du circuit du jour J : les jours se relisent avec TOUS les
+   * SKU du panier (la vitrine d'aujourd'hui doit les avoir tous ; une opération
+   * tient les siens à ses jours) et la clientèle, toujours envoyée. Une
+   * quantité changée ne relit rien.
    */
-  it('relit les jours avec les articles d’opération du panier et la clientèle', async () => {
+  it('relit les jours avec les articles du panier et la clientèle', async () => {
     // Un espace personnel : la clientèle est le public, sans lire `/me`.
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -150,6 +151,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     http = TestBed.inject(HttpTestingController);
     hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
     const cart = TestBed.inject(CartStore);
+    cart.clear();
     TestBed.inject(CartFulfillmentDays);
     // Le réglage porte le premier jour commandable (lot J4) : aucun ici.
     http.expectOne(url('/order-opening')).flush({ ordersOpenToB2b: true, ordersOpenToB2c: true });
@@ -159,22 +161,33 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     http.expectOne(url('/fulfillment-days')).flush([]);
     http.expectOne(url('/delivery-availability')).flush({});
     await hydrating;
+    TestBed.tick();
+    // Panier vide : la clientèle part quand même — sans elle, le public répond.
+    http.expectOne(url('/fulfillment-days?audience=public')).flush([]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     cart.setQuantity('VIE-001', 2);
+    TestBed.tick();
+    http.expectOne(url('/fulfillment-days?skus=VIE-001&audience=public')).flush([]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(points.daysScopedToCart()).toBe(false);
+
+    cart.setQuantity('VIE-001', 5);
     TestBed.tick();
     http.expectNone((request) => request.url.includes('/fulfillment-days'));
 
     cart.setQuantity('PAT-NOE', 1);
     TestBed.tick();
     http
-      .expectOne((request) =>
-        request.url.endsWith('/fulfillment-days?skus=PAT-NOE&audience=public'),
+      .expectOne(
+        url(`/fulfillment-days?skus=${encodeURIComponent('PAT-NOE,VIE-001')}&audience=public`),
       )
       .flush([{ pickupAddressId: 'pick_labo', date: '2026-12-20' }]);
     // La réponse traverse deux promesses avant d'être posée.
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(points.nextDayFor('pick_labo')).toBe('2026-12-20');
+    expect(points.daysScopedToCart()).toBe(true);
     http.verify();
   });
 

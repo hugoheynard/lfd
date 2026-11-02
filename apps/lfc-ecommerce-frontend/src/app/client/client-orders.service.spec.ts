@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { PlaceOrderPayload, PlaceShopOrderPayload } from '@lfd/contracts';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientCart } from './cart/client-cart.service';
@@ -21,6 +21,7 @@ import { VoucherChoice } from './cart/voucher-choice.service';
 import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { hydrateWith, TEST_CATALOGUE } from './shop/shop-catalogue.fixture';
+import { ServicePoints } from './shop/pickup-points.store';
 import { ShopCatalogue } from './shop/shop-catalogue.store';
 
 const AU_LABO: ServiceChoice = {
@@ -331,6 +332,54 @@ describe('passer commande', () => {
 
     expect(await placing).toBeNull();
     expect(TestBed.inject(ClientCart).isEmpty()).toBe(false);
+  });
+
+  /**
+   * Lot L7 du circuit du jour J : un refus de la vitrine d'aujourd'hui dit le
+   * message du serveur tel quel, et relit les jours — « Aujourd'hui » ne doit
+   * plus se proposer là où la passation vient de le refuser.
+   */
+  it.each([
+    ['orders.shelf.stock_short', "« Croissant » n'est plus en vitrine à ce point aujourd'hui."],
+    ['orders.shelf.no_pickup_left', "Le point n'a plus de créneau de retrait aujourd'hui."],
+    ['orders.same_day_closed', 'Les commandes pour le jour même ne sont pas ouvertes.'],
+  ])('au refus %s : dit le message du serveur et relit les jours', async (code, message) => {
+    const http = boot();
+    const refresh = vi.spyOn(TestBed.inject(ServicePoints), 'refreshDaysNow');
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const orders = TestBed.inject(ClientOrders);
+
+    const placing = orders.place();
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders'))
+      .flush({ code, message }, { status: 409, statusText: 'Conflict' });
+
+    expect(await placing).toBeNull();
+    expect(orders.refusal()).toBe(message);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('un autre refus ne relit pas les jours', async () => {
+    const http = boot();
+    const refresh = vi.spyOn(TestBed.inject(ServicePoints), 'refreshDaysNow');
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders'))
+      .flush(
+        { code: 'orders.cutoff.past', message: 'Trop tard.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(await placing).toBeNull();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   /**

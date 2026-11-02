@@ -1038,3 +1038,31 @@ sert.
 - **Non vérifié à l'écran** : l'ouverture du PDF après deux appels attendus
   (un bloqueur de fenêtres peut la retenir — « Réimprimer le bon » la
   rattrape).
+
+### Le bâti de L7 (boutique) (2026-11-02) — partiel
+
+- **« Aujourd'hui » dans le choix du jour** : aucun changement d'écran — le
+  sélecteur (`day-picker-dialog`) le montrait déjà dès que `/fulfillment-days`
+  sert aujourd'hui, sans heure quand `orderUntil` est `null` ; le choix de la
+  maison (`public-house-picker-dialog`) ne garde que les points qui servent le
+  jour choisi.
+- **La clientèle part toujours** (`ServicePoints.scopeDaysTo`) : elle ne partait
+  qu'avec un article d'opération, et le serveur répondait sinon pour le
+  **public** — un pro se voyait proposer ou refuser aujourd'hui selon le
+  réglage d'une autre clientèle.
+- **Le panier mixte** : `CartFulfillmentDays` envoie **tous** les SKU du panier
+  (triés, relus quand l'ensemble change, jamais sur une quantité) ; le serveur
+  ne propose aujourd'hui qu'aux points dont la vitrine a un reste pour tout le
+  panier, et demain sinon. `daysScopedToCart` ne dit toujours que l'opération.
+- **Les refus** `orders.shelf.*` et `orders.same_day_closed` : leur message
+  serveur se montre tel quel au panier (déjà le cas), et ils relisent les jours
+  (`ClientOrders.refuse` → `ServicePoints.refreshDaysNow`).
+- **Non bâti, faute de lecteur** : le reste sur la vignette (« plus que 3 »,
+  « plus que 1,2 kg ») et l'article grisé pour aujourd'hui. Aucune route
+  ouverte au client ne rend le reste par article : `DayShelfStock` n'est servi
+  que par `GET /admin/resupply-receipts/:siteId/:day` (staff,
+  `handover_counter:read`), et `ShelfTodaySites` ne rend qu'un ensemble de
+  points. Il manque un lecteur public du reste d'aujourd'hui **par point et par
+  article** (SKU, unité, reste), tenu par la clientèle de l'appelant (réglage
+  `sameDayOpenTo`, créneau restant `pickupLeftToday`, articles de son
+  catalogue) et vide quand le plan d'aujourd'hui n'est pas arrêté.

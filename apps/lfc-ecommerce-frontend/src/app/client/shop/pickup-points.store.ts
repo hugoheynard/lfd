@@ -181,17 +181,22 @@ export class ServicePoints {
   }
 
   /**
-   * Borne les jours au panier : les articles réservés à une opération qu'il
-   * porte, et la clientèle qui commande. Relit les jours seuls quand la
+   * Borne les jours au panier : ses articles (une opération les tient à ses
+   * jours ; la vitrine d'aujourd'hui doit les avoir tous, lot L7) et la
+   * clientèle qui commande, toujours envoyée. Relit les jours seuls quand la
    * réponse connue ne vaut plus — et rien avant la première hydratation,
    * c'est elle qui les lira.
    */
-  scopeDaysTo(operationSkus: readonly string[], audience: 'pro' | 'public'): void {
-    this.scopedToCart.set(operationSkus.length > 0);
+  scopeDaysTo(
+    cartSkus: readonly string[],
+    operationScoped: boolean,
+    audience: 'pro' | 'public',
+  ): void {
+    this.scopedToCart.set(operationScoped);
     this.cartQuery =
-      operationSkus.length === 0
-        ? ''
-        : `?skus=${encodeURIComponent(operationSkus.join(','))}&audience=${audience}`;
+      cartSkus.length === 0
+        ? `?audience=${audience}`
+        : `?skus=${encodeURIComponent(cartSkus.join(','))}&audience=${audience}`;
     if (this.asked && this.cartQuery !== this.daysAskedFor) {
       void this.refreshDays(this.cartQuery);
     }

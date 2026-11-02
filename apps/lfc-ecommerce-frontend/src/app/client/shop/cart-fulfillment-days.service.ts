@@ -16,10 +16,11 @@ import { isLocked } from './locked-item';
  * que les jours de retrait de celle-ci : `GET /fulfillment-days` le sait dès
  * qu'on lui passe les SKU et la clientèle. Ce service les lui passe.
  *
- * Seuls les articles d'opération y entrent. Le serveur ne borne qu'eux, et y
- * mettre tout le panier relirait les jours à chaque croissant ajouté pour la
- * même réponse. La clientèle est celle de la vitrine : `pro` pour une
- * société, `public` sinon. Il pose aussi le dernier jour proposable
+ * Tout le panier y entre depuis le lot L7 du circuit du jour J : le serveur
+ * juge aussi le reste en vitrine pour « aujourd'hui ». La clientèle part
+ * TOUJOURS, panier vide compris — `pro` pour une société, `public` sinon :
+ * sans elle, le serveur répondait pour le public, et un pro se voyait
+ * proposer (ou refuser) aujourd'hui selon le réglage d'une autre clientèle. Il pose aussi le dernier jour proposable
  * ({@link ServicePoints.lastDay}) : la première journée vient du serveur, les
  * suivantes sont des onglets que rien d'autre ne bornerait.
  *
@@ -50,9 +51,25 @@ export class CartFulfillmentDays {
       );
   });
 
-  private readonly operationSkus = computed(() => this.operationItems().map((item) => item.sku), {
-    equal: (a, b) => a.join(',') === b.join(','),
-  });
+  private readonly operationScoped = computed(() => this.operationItems().length > 0);
+
+  /**
+   * TOUS les SKU du panier, triés — pas seulement ceux d'opération, depuis le
+   * lot L7 du circuit du jour J (`plan-jour-meme-sur-stock.md`, §3) : le
+   * serveur ne propose aujourd'hui à un point que si sa vitrine a un reste
+   * pour TOUT le panier ; un panier mixte se voit proposer demain. La relecture
+   * suit l'ENSEMBLE des articles, jamais leurs quantités : un croissant de plus
+   * ne relit rien, un article neuf si.
+   */
+  private readonly cartSkus = computed(
+    () => {
+      const quantities = this.cart.quantities();
+      return Object.keys(quantities)
+        .filter((sku) => (quantities[sku] ?? 0) > 0)
+        .sort();
+    },
+    { equal: (a, b) => a.join(',') === b.join(',') },
+  );
 
   /**
    * Le plus petit dernier jour de retrait des opérations du panier — lu dans
@@ -73,10 +90,11 @@ export class CartFulfillmentDays {
     // Le réglage porte la date de la clientèle : sans lui, rien ne la borne.
     void this.opening.hydrate();
     effect(() => {
-      const skus = this.operationSkus();
+      const skus = this.cartSkus();
+      const scoped = this.operationScoped();
       const audience = this.audience.shown() === 'b2b' ? 'pro' : 'public';
       untracked(() => {
-        this.points.scopeDaysTo(skus, audience);
+        this.points.scopeDaysTo(skus, scoped, audience);
       });
     });
     effect(() => {

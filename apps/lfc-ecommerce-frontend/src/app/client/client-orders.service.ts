@@ -30,6 +30,7 @@ import { ClientLocale, type LocaleCode } from './client-locale.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { OrderAdmissionStore } from './shop/order-admission.store';
+import { ServicePoints } from './shop/pickup-points.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
 import { isSoldByWeight, lineTermsOf, requestedLine, type SaleTerms } from './shop/sale-unit';
 
@@ -197,6 +198,21 @@ function adoptLegacy(workspace: string): void {
 /** Le refus que le serveur oppose à un appel identique encore en vol. */
 const IN_FLIGHT = 'orders.idempotency.in_flight';
 
+/**
+ * Les refus du circuit du jour J (`orders.shelf.*` : plus de créneau, reste
+ * insuffisant ; `orders.same_day_closed` : clientèle fermée) — codes de
+ * `apps/lfd-api/src/b2b/orders/domain/errors/shelf-circuit-errors.ts` et
+ * `same-day-order-closed.error.ts`, qu'aucun sous-chemin sans zod de
+ * `@lfd/contracts` n'exporte (vérifié le 2026-11-02). Leurs messages sont
+ * écrits pour le client et se montrent tels quels.
+ */
+const SHELF_REFUSAL_PREFIX = 'orders.shelf.';
+const SAME_DAY_CLOSED = 'orders.same_day_closed';
+
+function isShelfRefusal(code: string | null): boolean {
+  return code === SAME_DAY_CLOSED || code?.startsWith(SHELF_REFUSAL_PREFIX) === true;
+}
+
 function parseOrders(raw: unknown): readonly PlacedOrder[] | null {
   return Array.isArray(raw) ? raw.filter(isPlaced) : null;
 }
@@ -279,6 +295,7 @@ export class ClientOrders {
   private readonly salesTerms = inject(SalesTermsConsent);
   private readonly locale = inject(ClientLocale);
   private readonly admission = inject(OrderAdmissionStore);
+  private readonly points = inject(ServicePoints);
 
   /**
    * **Le dernier refus de la passation**, dit DANS le panier (RGAA 11.10,
@@ -755,6 +772,14 @@ export class ClientOrders {
     // est ramené.
     if (httpErrorCode(error) === SERVICE_DAY_BEFORE_FIRST_ORDERABLE_DAY) {
       void this.admission.reload();
+    }
+    // Un refus du circuit du jour J (lot L7) : la vitrine ou les créneaux
+    // d'aujourd'hui ont bougé depuis la lecture des jours. Le message du
+    // serveur dit le cas et le geste ; les jours se relisent, pour que le
+    // choix ne propose plus « Aujourd'hui » là où la passation vient de le
+    // refuser.
+    if (isShelfRefusal(httpErrorCode(error))) {
+      this.points.refreshDaysNow();
     }
   }
 
