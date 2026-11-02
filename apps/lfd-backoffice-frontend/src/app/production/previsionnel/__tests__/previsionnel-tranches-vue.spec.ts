@@ -94,4 +94,16 @@ describe('la journée par tranche, dans le prévisionnel', () => {
     expect(first !== undefined && (asked.at(-1) ?? '') > first).toBe(true);
     expect(el.querySelector('.pv-title')?.textContent).not.toBe(title);
   });
+
+  /** Hugo, 2026-11-02 : elle s'ouvrait sur demain, alors qu'on y suit la fournée de ce matin. */
+  it('s’ouvre sur aujourd’hui', async () => {
+    const { fixture, asked } = await render();
+    const el = fixture.nativeElement as HTMLElement;
+    buttonNamed(el, 'Journée par tranche')?.click();
+    await settle(fixture);
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`;
+    expect(asked.at(-1)).toBe(today);
+  });
 });

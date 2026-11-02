@@ -348,4 +348,25 @@ describe('ForecastTable', () => {
     expect(fixture.nativeElement.querySelectorAll('[data-tone="current"]')).toHaveLength(7);
     expect(fixture.nativeElement.querySelectorAll('[data-tone]')).toHaveLength(7);
   });
+
+  it('sans action, aucune colonne ne porte de bouton d’entrée', () => {
+    const fixture = mount();
+    expect(fixture.nativeElement.querySelectorAll('.pv-day-enter')).toHaveLength(0);
+  });
+
+  /** Hugo, 2026-11-02 : entrer dans une journée depuis sa colonne, sans sélecteur de date. */
+  it('le bouton sous une colonne rend la clé de CETTE colonne', () => {
+    const fixture = mount();
+    fixture.componentRef.setInput('columnAction', 'Par tranche');
+    const entered: string[] = [];
+    fixture.componentInstance.columnEntered.subscribe((key) => entered.push(key));
+    fixture.detectChanges();
+
+    const buttons = [
+      ...fixture.nativeElement.querySelectorAll('.pv-day-enter'),
+    ] as HTMLButtonElement[];
+    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Par tranche', 'Par tranche']);
+    buttons[1]?.click();
+    expect(entered).toEqual(['2026-09-04']);
+  });
 });

@@ -347,7 +347,13 @@
           </fold-callout>
         }
 
-        <app-forecast-table [columns]="columns()" [footRows]="footRows" [rayons]="rayons()" />
+        <app-forecast-table
+          [columns]="columns()"
+          [footRows]="footRows"
+          [rayons]="rayons()"
+          columnAction="Par tranche horaire"
+          (columnEntered)="enterDay($event)"
+        />
       }
     }
   }

@@ -193,10 +193,18 @@ export class PrevisionnelPage {
   }
 
   /**
-   * La journée de la vue par tranche — même défaut que le dossier, mais son
-   * propre signal : passer d'une vue à l'autre ne déplace pas l'autre journée.
+   * La journée de la vue par tranche — **aujourd'hui** par défaut (Hugo,
+   * 2026-11-02) : on y suit ce qui sort du four, et c'est la fournée de ce
+   * matin. Le dossier, lui, garde « demain » : on le tire le soir. Son propre
+   * signal : passer d'une vue à l'autre ne déplace pas l'autre journée.
    */
-  protected readonly trancheDate = signal(defaultDossierDate());
+  protected readonly trancheDate = signal(isoDay(new Date()));
+
+  /** « Par tranche horaire » sous une colonne de la semaine : entrer dans sa journée. */
+  protected enterDay(date: string): void {
+    this.trancheDate.set(date);
+    this.view.set('tranches');
+  }
 
   /** « La journée du mercredi 7 octobre, par tranche ». */
   protected readonly trancheTitle = computed(

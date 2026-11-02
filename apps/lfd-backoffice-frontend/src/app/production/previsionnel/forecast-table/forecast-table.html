@@ -37,6 +37,20 @@
         @if (column.mention; as mention) {
           <span class="pv-day-state">{{ mention }}</span>
         }
+        @if (columnAction(); as action) {
+          <!-- Entrer dans la colonne (Hugo, 2026-11-02) : la journée par
+               tranche de CE jour, sans passer par un sélecteur de date. -->
+          <button
+            foldButton
+            emphasis="soft"
+            size="sm"
+            class="pv-day-enter"
+            [attr.aria-label]="action + ' — ' + column.title"
+            (click)="columnEntered.emit(column.key)"
+          >
+            {{ action }}
+          </button>
+        }
       </div>
     }
   </div>

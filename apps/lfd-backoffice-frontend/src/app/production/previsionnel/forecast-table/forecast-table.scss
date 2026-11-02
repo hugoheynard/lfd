@@ -572,3 +572,13 @@
   font-size: var(--fold-text-2xs);
   color: var(--fold-color-info-text);
 }
+
+/* Entrer dans la journée de la colonne : sous son état, à la largeur de la
+   colonne. Le libellé passe à la ligne plutôt que de déborder sur la voisine. */
+.pv-day-enter {
+  align-self: stretch;
+  min-width: 0;
+  height: auto;
+  white-space: normal;
+  text-wrap: balance;
+}

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { FoldBadgeComponent, FoldSurfaceDirective } from 'fold-ng';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { FoldBadgeComponent, FoldButtonComponent, FoldSurfaceDirective } from 'fold-ng';
 
 import type { ForecastCell, ForecastRayon } from '../previsionnel-matrix';
 import type { ForecastColumn, ForecastColumnTone, ForecastFootRow } from '../forecast-column';
@@ -43,7 +43,7 @@ const DENSE_ABOVE = 24;
 @Component({
   selector: 'app-forecast-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldSurfaceDirective],
+  imports: [FoldBadgeComponent, FoldButtonComponent, FoldSurfaceDirective],
   templateUrl: './forecast-table.html',
   styleUrl: './forecast-table.scss',
 })
@@ -56,6 +56,13 @@ export class ForecastTable {
 
   /** Les lignes du pied ; chaque colonne porte ses valeurs dans le même ordre. */
   readonly footRows = input.required<readonly ForecastFootRow[]>();
+
+  /**
+   * Le libellé du bouton d'entrée sous chaque colonne (« Par tranche horaire ») —
+   * `null` : pas de bouton. Le clic rend la clé de la colonne.
+   */
+  readonly columnAction = input<string | null>(null);
+  readonly columnEntered = output<string>();
 
   /** Le nom de la grille, pour les lecteurs d'écran. */
   readonly label = input('Prévisionnel de production');
