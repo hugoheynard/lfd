@@ -11,8 +11,9 @@ import type { CatalogItemSubject } from "./catalog-item.events.js";
  * (`catalog-item.events.ts`).
  */
 export const MADE_TO_ORDER_FACTS = {
-  marked: "catalog_item.made_to_order_marked",
-  unmarked: "catalog_item.made_to_order_unmarked",
+  // `catalog_item.made_to_order_marked` / `_unmarked` ne s'écrivent plus depuis
+  // R3-1 (2026-11-02) : le sur mesure est un fait de la fiche, journalisé au
+  // référentiel (`product.custom_recipe_changed`). Les faits passés restent.
   reserved: "catalog_item.reserved",
   released: "catalog_item.reservation_released",
   visibilitySet: "catalog_item.reserved_visibility_set",
@@ -24,23 +25,6 @@ const SUBJECT_TYPE = "catalog_item";
 export interface ReservationCompany {
   readonly companyId: string;
   readonly companyName: string | null;
-}
-
-/** Fait : l'article est marqué sur mesure, ou ne l'est plus. */
-export class MadeToOrderChangedEvent implements JournaledEvent {
-  constructor(
-    readonly item: CatalogItemSubject,
-    readonly madeToOrder: boolean,
-  ) {}
-
-  journalFact(): JournalFact {
-    return {
-      type: this.madeToOrder ? MADE_TO_ORDER_FACTS.marked : MADE_TO_ORDER_FACTS.unmarked,
-      subjectType: SUBJECT_TYPE,
-      subjectId: this.item.sku,
-      payload: { subjectLabel: this.item.name, sku: this.item.sku },
-    };
-  }
 }
 
 /**

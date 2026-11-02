@@ -250,6 +250,14 @@ describe("projectProductFact", () => {
     ).toBe(false);
   });
 
+  /** Fil v17 (`plan-articles-sur-mesure.md` § 13, D1) : toujours émis, tel que la fiche le dit. */
+  it("porte le sur mesure de la fiche, `false` compris", () => {
+    expect(projectProductFact(input()).product.customRecipe).toBe(false);
+    expect(
+      projectProductFact(input({ product: tarte({ customRecipe: true }) })).product.customRecipe,
+    ).toBe(true);
+  });
+
   /** L7 de `plan-pro-voit-les-declinaisons.md` : la filiation du détachement voyage. */
   it("porte l'ancienne référence de vente d'une fiche née d'un détachement", () => {
     expect(projectProductFact(input()).product.detachedFromSku).toBeNull();

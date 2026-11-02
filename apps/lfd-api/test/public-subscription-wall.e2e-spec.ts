@@ -20,6 +20,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const stubAdminVerifier = {
@@ -84,10 +85,7 @@ const GESTURES: readonly [string, () => Promise<unknown>][] = [
         .send({ audience: "public", hidden: true })
         .expect(204),
   ],
-  [
-    "sur mesure",
-    () => staff().put(`/admin/catalog/${X}/made-to-order`).send({ madeToOrder: true }).expect(204),
-  ],
+  ["sur mesure", () => markCustomRecipe(ctx, X)],
   [
     "réservé à un pro",
     () => staff().put(`/admin/catalog/${X}/reservations/${company}`).expect(204),
@@ -110,7 +108,7 @@ describe("abonnement de particulier", () => {
 
   it("refuse une dérogation d'échéance qui ajoute un article non servi au public", async () => {
     const id = jsonBody<CreatedSubscription>(await subscribe(OPEN).expect(201)).id;
-    await staff().put(`/admin/catalog/${X}/made-to-order`).send({ madeToOrder: true }).expect(204);
+    await markCustomRecipe(ctx, X);
 
     const refused = await ctx
       .asSub(PERSON)
@@ -126,10 +124,19 @@ describe("abonnement pro", () => {
   const subscribePro = (sku: string) => ctx.asSub(PRO).post("/subscriptions").send(weekly(sku));
   const NOT_SERVED = "catalog.article_not_served_to_company";
 
-  it("accepte un article servi aux pros, sur mesure compris", async () => {
+  it("accepte un article servi aux pros, sur mesure attribué à sa société compris", async () => {
     await subscribePro(OPEN).expect(201);
-    await staff().put(`/admin/catalog/${X}/made-to-order`).send({ madeToOrder: true }).expect(204);
+    await markCustomRecipe(ctx, X);
+    await staff().put(`/admin/catalog/${X}/reservations/${company}`).expect(204);
     await subscribePro(X).expect(201);
+  });
+
+  /** D3 (§ 13, 2026-11-02) : sur mesure et attribué à personne, il n'est servi à aucun pro. */
+  it("refuse un article sur mesure attribué à aucun compte, par son nom", async () => {
+    await markCustomRecipe(ctx, X);
+
+    const refused = await subscribePro(X).expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe(NOT_SERVED);
   });
 
   it("refuse un article masqué au rayon pro, par son nom", async () => {

@@ -34,7 +34,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     audience: null,
     isFeaturedPro: false,
     isFeaturedPublic: false,
-    isMadeToOrder: false,
+    isCustomRecipe: false,
     isReserved: false,
     operationOnly: false,
     decidedBy: null,

@@ -44,11 +44,12 @@ const product = {
   operationOnly: false,
   requiresCold: false,
   variantsAsTiles: false,
+  customRecipe: false,
 };
 
 describe("syncProductSchema — variantsAsTiles", () => {
-  it("le fil est en v16", () => {
-    expect(CATALOG_SNAPSHOT_VERSION).toBe(16);
+  it("le fil est au moins en v16", () => {
+    expect(CATALOG_SNAPSHOT_VERSION).toBeGreaterThanOrEqual(16);
   });
 
   it("porte l'option telle que la fiche la dit", () => {

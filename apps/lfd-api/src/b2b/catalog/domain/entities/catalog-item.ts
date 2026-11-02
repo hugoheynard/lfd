@@ -263,6 +263,16 @@ export interface PimFacts {
    * porté par tous les articles de la fiche née. Optionnelle, comme elle.
    */
   readonly detachedFromVariantSku?: string | null | undefined;
+  /**
+   * **Sur mesure** (fil v17, `plan-articles-sur-mesure.md` § 13, D1) — un fait
+   * de la fiche, descendu sur chaque article. Sans réservation, l'article
+   * n'est servi à aucun pro (D3, `servedToViewer`).
+   *
+   * 🔴 ABSENT n'est pas `false` : un fait d'avant la v17 ne le porte pas, et
+   * l'écriture laisse alors la colonne INTACTE (13.6-4) — sans quoi un fait en
+   * vol défaisait le report de la migration. Relu de la base, il est toujours là.
+   */
+  readonly customRecipe?: boolean | undefined;
   readonly receivedAt: Date;
 }
 
@@ -527,6 +537,11 @@ export class CatalogItem {
 
   get detachedFromVariantSku(): string | null {
     return this.facts.detachedFromVariantSku ?? null;
+  }
+
+  /** Sur mesure ? `false` pour un fait qui ne le disait pas — cf. {@link PimFacts.customRecipe}. */
+  get customRecipe(): boolean {
+    return this.facts.customRecipe ?? false;
   }
 
   get vatRatePercent(): number | null {

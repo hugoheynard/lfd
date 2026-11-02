@@ -112,6 +112,13 @@ export interface ProductSnapshot {
    * fiche) : l'agrégat le rend toujours.
    */
   readonly variantsAsTiles?: boolean | undefined;
+  /**
+   * **Sur mesure** — une recette faite pour un ou quelques clients
+   * (`plan-articles-sur-mesure.md` § 13, D1). Le référentiel ne connaît aucune
+   * société : à qui l'article est attribué se décide au commerce. Facultatif à
+   * la LECTURE (absent = `false`) : l'agrégat le rend toujours.
+   */
+  readonly customRecipe?: boolean | undefined;
 }
 
 /**
@@ -165,6 +172,8 @@ export class Product {
     // Une fiche naît en montrant chaque déclinaison (Hugo, 2026-10-29) : le
     // comportement de base, qu'on décoche fiche par fiche.
     private variantsAsTilesValue = true,
+    // Une fiche naît ouverte : « sur mesure » se coche, il ne se devine pas.
+    private customRecipeValue = false,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -208,6 +217,7 @@ export class Product {
       snapshot.audience,
       snapshot.originVariantId ?? null,
       snapshot.variantsAsTiles ?? true,
+      snapshot.customRecipe ?? false,
     );
   }
 
@@ -318,6 +328,29 @@ export class Product {
       return false;
     }
     this.variantsAsTilesValue = variantsAsTiles;
+    return true;
+  }
+
+  /** Une recette sur mesure ? */
+  get customRecipe(): boolean {
+    return this.customRecipeValue;
+  }
+
+  /**
+   * **Déclare la fiche sur mesure** — ou la rend ouverte
+   * (`plan-articles-sur-mesure.md` § 13, D1).
+   *
+   * Aucune règle ne refuse le geste : ce que la case change se juge chez ceux
+   * qui VENDENT — le commerce ne sert un article sur mesure qu'aux comptes
+   * auxquels il l'a attribué (D3).
+   *
+   * @returns `false` quand la fiche le disait déjà ({@link StatusChanged}).
+   */
+  declareCustomRecipe(customRecipe: boolean): boolean {
+    if (this.customRecipeValue === customRecipe) {
+      return false;
+    }
+    this.customRecipeValue = customRecipe;
     return true;
   }
 
@@ -723,6 +756,10 @@ export class Product {
       this.requiresColdValue,
       this.audienceValue,
       variantId,
+      true,
+      // Une déclinaison détachée d'une fiche sur mesure le reste (13.6-8) :
+      // sinon le détachement ouvrirait à tous les pros une recette réservée.
+      this.customRecipeValue,
     );
   }
 
@@ -930,6 +967,7 @@ export class Product {
       audience: this.audienceValue,
       originVariantId: this.originVariantIdValue,
       variantsAsTiles: this.variantsAsTilesValue,
+      customRecipe: this.customRecipeValue,
     };
   }
 }

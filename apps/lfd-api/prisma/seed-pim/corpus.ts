@@ -88,6 +88,12 @@ export interface CorpusProduct {
    * défaut seul.
    */
   readonly variants?: readonly CorpusVariant[] | undefined;
+  /**
+   * **Sur mesure** (`documentation/catalogue/plan-articles-sur-mesure.md` § 13,
+   * D1). Absent = fiche ouverte. Le corpus n'attribue la fiche à aucun compte :
+   * c'est un geste du commerce, et le semis montre l'état « à attribuer ».
+   */
+  readonly customRecipe?: boolean | undefined;
 }
 
 /** Le pas et le minimum d'un article au poids, en grammes. */

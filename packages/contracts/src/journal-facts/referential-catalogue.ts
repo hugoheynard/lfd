@@ -483,6 +483,13 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
   ),
   /**
+   * La fiche devient sur mesure (`to: true`) ou redevient ouverte (`to: false`)
+   * — `plan-articles-sur-mesure.md` § 13, D1.
+   */
+  "product.custom_recipe_changed": fact(
+    payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
+  ),
+  /**
    * **La quantité minimale d'une déclinaison** — son minimum pro et son
    * minimum public en pièces, ou « suit le défaut » (`plan-quantite-minimale.md`,
    * M1). Avant et après en entier. Par audience seulement : aucun contexte.

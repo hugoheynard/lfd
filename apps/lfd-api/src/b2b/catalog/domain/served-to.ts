@@ -30,8 +30,15 @@ export interface ServableItem {
    * servi au public. Chez les pros, c'est `servedToViewer` qui décide qui y a droit.
    */
   readonly isReserved: boolean;
-  /** Marqué « sur mesure » (S3, Q5) : jamais servi au public, ouvert à tous les pros (S4). */
-  readonly isMadeToOrder: boolean;
+  /**
+   * Une fiche **sur mesure** (fait du référentiel, § 13 D1) : jamais servie au
+   * public (S3). ~~Ouvert à tous les pros (S4)~~ — S4 est remplacée par D3 le
+   * 2026-11-02 : sans réservation, aucun pro ne la voit. D3 se juge dans
+   * `servedToViewer`, pas ici (13.6, bloquant 1) : les lecteurs internes qui
+   * appellent `servedTo(item, "pro")` (fournil, heure limite, bacs, saisie
+   * staff…) doivent continuer de la voir.
+   */
+  readonly isCustomRecipe: boolean;
 }
 
 /**
@@ -60,7 +67,7 @@ export function servedTo(item: ServableItem, viewer: ShopAudience): boolean {
   }
   return viewer === "pro"
     ? !item.isHidden && !item.proReviewPending
-    : !item.isHiddenPublic && !item.publicReviewPending && !item.isReserved && !item.isMadeToOrder;
+    : !item.isHiddenPublic && !item.publicReviewPending && !item.isReserved && !item.isCustomRecipe;
 }
 
 /** L'audience (`null` lu `both`) contient-elle ce lecteur ? */
@@ -81,7 +88,7 @@ export function audienceIncludes(audience: CatalogAudience | null, viewer: ShopA
  */
 export function servedToAnyone(item: ServableItem): boolean {
   return (
-    servedTo(item, "public") || (servedTo(item, "pro") && !item.isReserved && !item.isMadeToOrder)
+    servedTo(item, "public") || (servedTo(item, "pro") && !item.isReserved && !item.isCustomRecipe)
   );
 }
 

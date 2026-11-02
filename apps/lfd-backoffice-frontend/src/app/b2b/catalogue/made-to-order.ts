@@ -1,4 +1,4 @@
-import type { MadeToOrderMarkView, ReservedVisibility } from '@lfd/contracts';
+import type { CatalogAdminItemView, MadeToOrderMarkView, ReservedVisibility } from '@lfd/contracts';
 
 /**
  * Les mots du sur mesure, partagés par l'article (catalogue publié) et la
@@ -25,4 +25,31 @@ export function reservationCountLabel(mark: MadeToOrderMarkView | undefined): st
     return null;
   }
   return `réservé à ${String(count)} compte${count > 1 ? 's' : ''}`;
+}
+
+/**
+ * L'étiquette d'un article **sur mesure** dans Catalogue publié (§ 13, D3 et
+ * 13.6-7) : « Sur mesure · réservé à 2 comptes », « Sur mesure · à attribuer »,
+ * et l'attente de validation pro quand il y en a une — un article sur mesure
+ * n'est servi à un pro que validé ET attribué. `null` hors sur mesure.
+ *
+ * `mark` absent alors que les réservations sont lisibles = aucune réservation.
+ * Sans le droit de les lire (`countsKnown` faux), on ne dit que le fait.
+ */
+export function customRecipeLabel(
+  item: Pick<CatalogAdminItemView, 'isCustomRecipe' | 'proReviewPending'>,
+  mark: MadeToOrderMarkView | undefined,
+  countsKnown: boolean,
+): string | null {
+  if (!item.isCustomRecipe) {
+    return null;
+  }
+  const parts = ['Sur mesure'];
+  if (countsKnown) {
+    parts.push(reservationCountLabel(mark) ?? 'à attribuer');
+  }
+  if (item.proReviewPending) {
+    parts.push('validation pro en attente');
+  }
+  return parts.join(' · ');
 }

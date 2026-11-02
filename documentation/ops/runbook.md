@@ -646,6 +646,69 @@ redéployer : la migration repart de zéro. Ne **jamais** utiliser `--applied`
 ici : la contrainte et le défaut ne seraient pas posés, et Prisma croirait
 qu'ils le sont.
 
+## Avant de déployer « le sur mesure au référentiel » (R3-1, `20261102240000_le_sur_mesure_au_referentiel`)
+
+Plan : [`plan-articles-sur-mesure.md`](../catalogue/plan-articles-sur-mesure.md) § 13
+(bâti le 2026-11-02, **non déployé**). « Sur mesure » quitte le commerce
+(`catalog_item_overrides.is_made_to_order`, colonne morte) pour la fiche du
+référentiel (`pim.product.custom_recipe`), et descend par le fil v17 en
+`catalog_items.custom_recipe`. La règle change : **sur mesure et attribué à
+aucun compte, un article n'est plus servi à aucun pro** (D3). La migration
+reporte l'ancien marqueur : une fiche dont UNE déclinaison était marquée
+devient sur mesure en entier (accepté par Hugo, § 13.7).
+
+**Avant de pousser, constater** sur la production (lecture seule) :
+
+```sql
+-- Les fiches qui deviendront sur mesure en entier alors qu'une partie
+-- seulement de leurs déclinaisons était marquée :
+SELECT ci.product_id,
+       count(*) FILTER (WHERE o.is_made_to_order) AS marquees,
+       count(*) AS declinaisons
+  FROM public.catalog_items ci
+  LEFT JOIN public.catalog_item_overrides o ON o.sku = ci.sku
+ GROUP BY ci.product_id
+HAVING bool_or(coalesce(o.is_made_to_order, false))
+   AND NOT bool_and(coalesce(o.is_made_to_order, false));
+
+-- Les articles marqués SANS réservation : ils sortiront du rayon de tous
+-- les pros au déploiement (D3, D4). À attribuer avant, ou à assumer.
+SELECT o.sku FROM public.catalog_item_overrides o
+ WHERE o.is_made_to_order
+   AND NOT EXISTS (SELECT 1 FROM public.catalog_item_reservations r WHERE r.sku = o.sku);
+```
+
+**L'ordre** (13.6-4) — et il ne se permute pas :
+
+1. **la migration** (au déploiement, avant le démarrage du code) : les deux
+   colonnes et le report ;
+2. **le code R3-1** : un fait de fiche resté en boîte d'envoi, émis par le
+   binaire d'avant, ne porte pas `customRecipe` — il laisse la colonne du
+   commerce **intacte** au lieu de la réécrire `false` (sans quoi l'article
+   reporté sortirait de S3 et serait servi au public) ;
+3. **« Tout réémettre »** (section suivante) : chaque fiche repart avec sa
+   case, lue au référentiel où la migration l'a reportée.
+
+⚠️ **Le back-office** : la route `PUT /admin/catalog/:sku/made-to-order` est
+retirée par R3-1. Tant que R3-2 (la case sur la fiche, « Attribuer… » dans
+Catalogue publié) n'est pas déployé avec lui, le bouton « Sur mesure… »
+répond 404 : déployer les deux ensemble.
+
+**Contrôle** : après la migration,
+
+```sql
+SELECT (SELECT count(*) FROM pim.product WHERE custom_recipe) AS fiches,
+       (SELECT count(DISTINCT ci.product_id) FROM public.catalog_items ci
+          JOIN public.catalog_item_overrides o ON o.sku = ci.sku
+         WHERE o.is_made_to_order) AS marquees_avant;
+```
+
+rend deux nombres égaux (sauf article orphelin, sans fiche au référentiel),
+et l'article reporté sans réservation n'apparaît plus au rayon pro anonyme. **Retour arrière** :
+`apps/lfd-api/prisma/rollback/20261102240000_le_sur_mesure_au_referentiel.sql` (le code
+d'avant relit l'ancienne colonne, intacte ; une fiche cochée APRÈS le
+déploiement n'y est pas — la requête de constat y est).
+
 ## Avant de déployer la bascule du défaut (`20261029180000_le_defaut_se_vend_sous_sa_reference`)
 
 Plan : [`plan-defaut-sous-sa-reference.md`](../catalogue/plan-defaut-sous-sa-reference.md), § 16

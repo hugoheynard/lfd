@@ -20,18 +20,11 @@ export const COMPANY_NAME = "Le Fournil d'Anna";
 
 /** Le réglage en mémoire, avec les défauts de la base ; note chaque écriture dans le fil. */
 export class InMemoryMadeToOrderSettings extends MadeToOrderSettings {
-  readonly madeToOrder = new Map<string, boolean>();
   readonly visibility = new Map<string, ReservedVisibility>();
   readonly at: Date[] = [];
 
   constructor(private readonly steps: string[]) {
     super();
-  }
-
-  setMadeToOrder(sku: string, madeToOrder: boolean, at: Date): Promise<boolean> {
-    const changed = (this.madeToOrder.get(sku) ?? false) !== madeToOrder;
-    this.madeToOrder.set(sku, madeToOrder);
-    return this.wrote(`made-to-order:${sku}`, changed, at);
   }
 
   setReservedVisibility(sku: string, visibility: ReservedVisibility, at: Date): Promise<boolean> {

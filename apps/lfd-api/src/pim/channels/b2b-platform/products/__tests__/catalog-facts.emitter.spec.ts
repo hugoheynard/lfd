@@ -81,6 +81,7 @@ function body(id: string): CatalogProductFactBody {
       operationOnly: false,
       requiresCold: false,
       variantsAsTiles: true,
+      customRecipe: true,
       detachedFromSku: null,
     },
     variants: [],
@@ -157,6 +158,23 @@ describe("B2bCatalogFactsEmitter", () => {
     expect(
       CatalogProductChangedFact.fromPayload({ ...payload, product }).body.product.variantsAsTiles,
     ).toBe(true);
+  });
+
+  /**
+   * Fil v17 (13.6-4 de `plan-articles-sur-mesure.md`) : un fait resté dans la
+   * boîte avant le sur mesure se lit ABSENT, pas `false` — lu `false`, il
+   * défaisait au commerce le report de la migration.
+   */
+  it("relit un fait émis avant `customRecipe` sans l'inventer", async () => {
+    const { uow, emitter } = setup(["p_a"]);
+    await uow.run(() => emitter.emitProducts(["p_a"]));
+    const payload = uow.of(PIM_CATALOG_PRODUCT_CHANGED)[0]?.payload ?? {};
+    const { customRecipe: _dropped, ...product } = payload["product"] as Record<string, unknown>;
+
+    expect(
+      CatalogProductChangedFact.fromPayload({ ...payload, product }).body.product.customRecipe,
+    ).toBeUndefined();
+    expect(CatalogProductChangedFact.fromPayload(payload).body.product.customRecipe).toBe(true);
   });
 
   it("ignore une fiche que le verrou ne trouve pas, sans tirer de numéro pour elle", async () => {

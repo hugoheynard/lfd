@@ -13,7 +13,7 @@ function item(over: Partial<ServableItem> = {}): ServableItem {
     publicReviewPending: false,
     proReviewPending: false,
     isReserved: false,
-    isMadeToOrder: false,
+    isCustomRecipe: false,
     ...over,
   };
 }
@@ -87,7 +87,7 @@ describe("catalogAudienceOf", () => {
 describe("S3 — réservé ou sur mesure, jamais au public", () => {
   it.each([
     ["réservé", { isReserved: true }],
-    ["sur mesure", { isMadeToOrder: true }],
+    ["sur mesure", { isCustomRecipe: true }],
   ])("%s : refusé au public, servi aux pros", (_label, over) => {
     expect(servedTo(item({ audience: "both", ...over }), "public")).toBe(false);
     expect(servedTo(item({ audience: "public", ...over }), "public")).toBe(false);
@@ -96,10 +96,19 @@ describe("S3 — réservé ou sur mesure, jamais au public", () => {
 
   it.each([
     ["réservé", { isReserved: true }],
-    ["sur mesure", { isMadeToOrder: true }],
+    ["sur mesure", { isCustomRecipe: true }],
   ])("%s : `servedToAnyone` dit non, même servi aux pros", (_label, over) => {
     expect(servedToAnyone(item({ audience: "both", ...over }))).toBe(false);
     expect(servedToAnyone(item({ audience: "pro", ...over }))).toBe(false);
+  });
+
+  /**
+   * Régression évitée (vitruve, 2026-11-02, § 13.6 bloquant 1) : D3 posée ici
+   * aurait retiré l'article non attribué au fournil, à l'heure limite, aux
+   * bacs et à la saisie staff, qui lisent tous `servedTo(item, "pro")`.
+   */
+  it("sur mesure sans réservation : `servedTo(pro)` reste vrai — D3 est dans `servedToViewer`", () => {
+    expect(servedTo(item({ isCustomRecipe: true, isReserved: false }), "pro")).toBe(true);
   });
 
   it("un article ouvert reste servi à quelqu'un par sa branche pro", () => {

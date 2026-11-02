@@ -1,10 +1,8 @@
 import {
-  setMadeToOrderPayloadSchema,
   setReservedVisibilityPayloadSchema,
   type ArticleReservationView,
   type CompanyReservedArticlesView,
   type MadeToOrderMarkView,
-  type SetMadeToOrderPayload,
   type SetReservedVisibilityPayload,
 } from "@lfd/contracts";
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
@@ -15,7 +13,6 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReleaseArticleCommand } from "../application/commands/release-article.command.js";
 import { ReserveArticleCommand } from "../application/commands/reserve-article.command.js";
-import { SetMadeToOrderCommand } from "../application/commands/set-made-to-order.command.js";
 import { SetReservedVisibilityCommand } from "../application/commands/set-reserved-visibility.command.js";
 import { GetArticleReservationQuery } from "../application/queries/get-article-reservation.query.js";
 import { ListCompanyReservedArticlesQuery } from "../application/queries/list-company-reserved-articles.query.js";
@@ -23,8 +20,10 @@ import { ListMadeToOrderMarksQuery } from "../application/queries/list-made-to-o
 
 /**
  * **Les articles sur mesure et leur réservation** (plan
- * `documentation/catalogue/plan-articles-sur-mesure.md`, lot L1a) : marquer,
- * régler la visibilité, réserver à une société, retirer.
+ * `documentation/catalogue/plan-articles-sur-mesure.md`, lot L1a) : régler la
+ * visibilité, réserver à une société, retirer. Marquer « sur mesure » n'est
+ * plus ici depuis R3-1 (2026-11-02, § 13 D2) : c'est la case de la fiche, au
+ * référentiel (`PUT /pim/catalogue/products/:id/custom-recipe`).
  *
  * Surface À PART, `lfc_made_to_order` (Hugo, 2026-10-30) : décider du
  * masquage (`lfc_catalog`) n'emporte pas de dire à qui un article est réservé.
@@ -61,17 +60,6 @@ export class AdminMadeToOrderController {
   ofArticle(@Param("sku") sku: string): Promise<ArticleReservationView> {
     return this.queries.execute<GetArticleReservationQuery, ArticleReservationView>(
       new GetArticleReservationQuery(sku),
-    );
-  }
-
-  @Put(":sku/made-to-order")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async setMadeToOrder(
-    @Param("sku") sku: string,
-    @Body(new ZodBody(setMadeToOrderPayloadSchema)) payload: SetMadeToOrderPayload,
-  ): Promise<void> {
-    await this.commands.execute<SetMadeToOrderCommand, void>(
-      new SetMadeToOrderCommand(sku, payload.madeToOrder),
     );
   }
 

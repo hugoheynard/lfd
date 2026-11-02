@@ -81,6 +81,7 @@ function product(sku: string, requiresCold: boolean, variants: readonly Variant[
     operationOnly: false,
     requiresCold,
     variantsAsTiles: true,
+    customRecipe: false,
   };
 }
 

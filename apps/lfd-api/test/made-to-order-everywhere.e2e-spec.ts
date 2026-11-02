@@ -7,7 +7,8 @@ import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { ExpectedProductionReader } from "../src/production/channels/commerce/expected-production.reader.js";
 import { ServiceRange } from "../src/production/domain/value-objects/service-range.value-object.js";
 import { settleCardPayments } from "./card-payments.js";
-import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { markCustomRecipe } from "./custom-recipe-fixture.js";
+import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import {
@@ -59,12 +60,19 @@ beforeEach(async () => {
   companyId = company.id;
 });
 
-async function mark(sku: string, madeToOrder: boolean): Promise<void> {
-  await ctx
-    .asSub(STAFF)
-    .put(`/admin/catalog/${sku}/made-to-order`)
-    .send({ madeToOrder })
-    .expect(204);
+/**
+ * Le sur mesure est un fait de la fiche depuis R3-1 (2026-11-02, § 13 de
+ * `plan-articles-sur-mesure.md`) ; coché, il est attribué à la société du
+ * commandeur — sans réservation, aucun pro ne le commanderait (D3).
+ */
+async function mark(sku: string, customRecipe: boolean): Promise<void> {
+  await markCustomRecipe(ctx, sku, customRecipe);
+  if (customRecipe) {
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .put(`/admin/catalog/${sku}/reservations/${companyId}`)
+      .expect(204);
+  }
 }
 
 /** Une commande professionnelle de retrait pour la journée servie ; rend sa référence. */

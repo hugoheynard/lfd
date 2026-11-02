@@ -98,7 +98,6 @@ interface ItemRow extends AccessRow {
     readonly isHiddenPublic: boolean;
     readonly isFeaturedPro: boolean;
     readonly isFeaturedPublic: boolean;
-    readonly isMadeToOrder: boolean;
     readonly reservedVisibility: string;
   } | null;
 }

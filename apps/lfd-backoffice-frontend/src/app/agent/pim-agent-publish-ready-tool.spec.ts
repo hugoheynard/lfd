@@ -25,6 +25,7 @@ function product(id: string, status: ProductStatus): Product {
     variants: [],
     vatByContext: {},
     operationOnly: false,
+    customRecipe: false,
     requiresCold: false,
     variantsAsTiles: true,
     audience: null,

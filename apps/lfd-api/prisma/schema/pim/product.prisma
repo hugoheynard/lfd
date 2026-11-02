@@ -73,6 +73,17 @@ model Product {
   /// voulu, et il s'affine après le déploiement.
   variantsAsTiles Boolean @default(true) @map("variants_as_tiles")
 
+  /// **Sur mesure** — une recette faite pour un ou quelques clients (Hugo,
+  /// 2026-11-02, `documentation/catalogue/plan-articles-sur-mesure.md` § 13,
+  /// D1). Un fait de la FICHE, toutes déclinaisons comprises ; le référentiel
+  /// ne connaît aucune société : attribuer l'article à des comptes reste au
+  /// commerce. Cochée et sans réservation, la fiche n'est servie à personne
+  /// (D3). Rien à voir avec `kind = made_to_order` (« Sur commande »).
+  ///
+  /// `false` par défaut ; `20261102240000_le_sur_mesure_au_referentiel` a
+  /// reporté à `true` les fiches dont une déclinaison était marquée côté commerce.
+  customRecipe Boolean @default(false) @map("custom_recipe")
+
   /// **À qui la fiche vend, quand elle ne suit pas sa famille** — `pro` |
   /// `public` | `both`, ou `NULL` : elle hérite de `category.audience` (C2 du
   /// plan `plan-catalogue-synchronise-par-audience.md`). `CHECK` en base.

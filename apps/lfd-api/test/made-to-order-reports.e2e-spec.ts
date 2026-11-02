@@ -22,6 +22,7 @@ import {
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
+import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { staffWith, stubAdminVerifier } from "./operations-at-commerce-scene.js";
@@ -65,12 +66,14 @@ function yesterdayMorning(): Date {
   return at;
 }
 
-async function mark(sku: string, madeToOrder: boolean): Promise<void> {
-  await ctx
-    .asSub(STAFF)
-    .put(`/admin/catalog/${sku}/made-to-order`)
-    .send({ madeToOrder })
-    .expect(204);
+/**
+ * Une société au compte, à laquelle l'article sur mesure est attribué : sans
+ * réservation, il n'est servi à aucun pro (D3, § 13 de `plan-articles-sur-mesure.md`).
+ */
+async function customerOf(enseigne: string) {
+  const pro = await proCompany(enseigne);
+  await ctx.asSub(STAFF).put(`/admin/catalog/${CUSTOM}/reservations/${pro.companyId}`).expect(204);
+  return pro;
 }
 
 /** Une société au compte et son détenteur. */
@@ -120,12 +123,12 @@ async function lineHt(order: PlacedTestOrder, sku: string): Promise<number> {
  * Chalet trois pièces, dont la ligne est ramenée « d'avant le suivi ».
  */
 async function scene(): Promise<{ custom: number; plain: number; legacy: number }> {
-  await mark(CUSTOM, true);
-  const hotel = await proOrder(await proCompany("Hôtel des Cimes"), [
+  await markCustomRecipe(ctx, CUSTOM);
+  const hotel = await proOrder(await customerOf("Hôtel des Cimes"), [
     { sku: CUSTOM, quantity: 2 },
     { sku: PLAIN, quantity: 2 },
   ]);
-  const chalet = await proOrder(await proCompany("Chalet Blanc"), [{ sku: CUSTOM, quantity: 3 }]);
+  const chalet = await proOrder(await customerOf("Chalet Blanc"), [{ sku: CUSTOM, quantity: 3 }]);
   // Une ligne écrite avant la colonne : on ne savait pas (même geste que M1).
   await ctx.prisma.orderLine.updateMany({
     where: { orderId: chalet.id },

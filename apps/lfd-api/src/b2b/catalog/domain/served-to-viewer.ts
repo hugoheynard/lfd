@@ -19,11 +19,17 @@ export type ViewerVerdict = "served" | "locked" | "absent";
 
 /**
  * **L'article est-il servi à CE lecteur ?** — `servedTo` (audience, masquages,
- * validations, S3), puis la réservation (S1, S2, S7). Pure : la ligne lue et
- * le lecteur suffisent.
+ * validations, S3), puis la réservation (S1, S2, S7) et le sur mesure (D3 du
+ * § 13). Pure : la ligne lue et le lecteur suffisent.
  *
  * - le public et le personnel n'ont que `servedTo` : S3 y est déjà, et le
- *   personnel voit les réservations (S5) ;
+ *   personnel voit les réservations (S5) et le sur mesure « à attribuer » ;
+ * - les lignes gardées d'une révision (`waiveReservation`) ne relisent ni la
+ *   réservation ni le sur mesure : déjà commandées, elles gardent leur minimum ;
+ * - 🔴 D3 : un article **sur mesure sans aucune réservation** n'est servi à
+ *   aucun pro, anonyme ou reconnu (13.2). Ici et non dans `servedTo`
+ *   (13.6, bloquant 1) : le fournil, l'heure limite, les bacs et la saisie
+ *   staff lisent `servedTo(item, "pro")` et doivent continuer de le voir ;
  * - un pro anonyme ne voit jamais un article réservé (Q2) ;
  * - un pro reconnu le voit s'il est des réservataires, lui ou son principal
  *   actif (S1) ; sinon `visible_locked` le liste verrouillé, au seul lecteur
@@ -37,13 +43,20 @@ export function servedToViewer(
   if (!servedTo(item, viewerAudience(viewer))) {
     return "absent";
   }
-  if (!item.isReserved || viewer.kind === "public" || viewer.kind === "staff") {
+  if (viewer.kind === "public" || viewer.kind === "staff") {
     return "served";
+  }
+  if (viewer.kind === "pro" && viewer.waiveReservation === true) {
+    return "served";
+  }
+  if (!item.isReserved) {
+    // D3 : sur mesure et attribué à personne — servi à aucun pro.
+    return item.isCustomRecipe ? "absent" : "served";
   }
   if (viewer.kind === "pro_anonymous") {
     return "absent";
   }
-  if (viewer.waiveReservation === true || heldByAny(reservation, holderIds(viewer.holders))) {
+  if (heldByAny(reservation, holderIds(viewer.holders))) {
     return "served";
   }
   return reservation.visibility === "visible_locked" && viewer.show === "served_and_locked"

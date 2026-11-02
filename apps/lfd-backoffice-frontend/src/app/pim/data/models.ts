@@ -200,6 +200,12 @@ export interface Product {
    */
   operationOnly: boolean;
   /**
+   * **Sur mesure** (R3 du plan des articles sur mesure) : une recette faite pour
+   * des comptes précis. Tant qu'aucun compte ne lui est attribué dans Catalogue
+   * publié, aucun pro ne le voit. `false` = article courant.
+   */
+  customRecipe: boolean;
+  /**
    * **Demande le froid** (lot 4 bis du plan de préparation de tournée) : la
    * livraison ne le charge qu'en bac isotherme. `false` = rien de déclaré.
    */

@@ -101,6 +101,7 @@ function productOf(index: number, variantCount: number): SyncProduct {
     operationOnly: false,
     requiresCold: false,
     variantsAsTiles: true,
+    customRecipe: false,
   };
 }
 

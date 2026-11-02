@@ -5,16 +5,18 @@ import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { MadeToOrderSettings } from "../domain/ports/made-to-order-settings.js";
 
-/** Les deux colonnes de ce réglage, et la valeur que la base leur donne par défaut. */
+/**
+ * La colonne de ce réglage, et la valeur que la base lui donne par défaut.
+ * `is_made_to_order` n'y est plus : colonne morte depuis R3-1 (2026-11-02).
+ */
 const COLUMNS = {
-  isMadeToOrder: { sql: Prisma.raw(`"is_made_to_order"`), byDefault: false },
   reservedVisibility: { sql: Prisma.raw(`"reserved_visibility"`), byDefault: "hidden" },
 } as const;
 
 type Column = keyof typeof COLUMNS;
 
 /**
- * Le marqueur sur mesure et la visibilité réservée, sur la ligne de décision
+ * La visibilité réservée, sur la ligne de décision
  * de l'article (`catalog_item_overrides`).
  *
  * 🔴 **En SQL écrit, pas par `catalogItemOverride.update`** : la colonne
@@ -23,17 +25,13 @@ type Column = keyof typeof COLUMNS;
  * (le journal le dit). Les colonnes de l'agrégat ne sont jamais touchées.
  *
  * Une ligne n'est créée que si la valeur posée n'est pas celle du défaut : un
- * article jamais décidé n'a pas de ligne, et démarquer un article qui ne l'a
- * jamais été n'en crée pas une pour rien.
+ * article jamais décidé n'a pas de ligne, et remettre le défaut sur un article
+ * qui ne l'a jamais quitté n'en crée pas une pour rien.
  */
 @Injectable()
 export class PrismaMadeToOrderSettings extends MadeToOrderSettings {
   constructor(private readonly prisma: PrismaService) {
     super();
-  }
-
-  setMadeToOrder(sku: string, madeToOrder: boolean, at: Date): Promise<boolean> {
-    return this.write("isMadeToOrder", sku, madeToOrder, at);
   }
 
   setReservedVisibility(sku: string, visibility: ReservedVisibility, at: Date): Promise<boolean> {
@@ -44,7 +42,7 @@ export class PrismaMadeToOrderSettings extends MadeToOrderSettings {
   private async write(
     column: Column,
     sku: string,
-    value: boolean | ReservedVisibility,
+    value: ReservedVisibility,
     at: Date,
   ): Promise<boolean> {
     const { sql, byDefault } = COLUMNS[column];

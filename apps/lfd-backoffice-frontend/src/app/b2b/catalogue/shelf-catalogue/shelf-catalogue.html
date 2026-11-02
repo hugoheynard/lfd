@@ -38,18 +38,18 @@
         @if (row.item?.vatRatePercent === null) {
           <fold-badge content="sans taux — invendable" variant="warning" />
         }
-        <!-- Le sur mesure (plan des articles sur mesure, L1a) : le marqueur, le
-             compte des réservataires, et le réglage — pour un article en vente
-             seulement, le serveur n'a de ligne que pour lui. -->
-        @if (markOf(row)?.isMadeToOrder) {
-          <fold-badge content="Sur mesure" variant="accent" />
-        }
-        @if (reservedLabel(row); as reserved) {
+        <!-- Le sur mesure (plan des articles sur mesure, § 13, R3-2) : le fait
+             vient de la fiche ; ici, le compte des réservataires, l'attente de
+             validation pro, et « Attribuer… » — pour un article sur mesure
+             seulement. -->
+        @if (customLabel(row); as custom) {
+          <fold-badge [content]="custom" variant="accent" />
+        } @else if (reservedLabel(row); as reserved) {
           <fold-badge [content]="reserved" variant="info" />
         }
-        @if (madeToOrderEnabled() && row.item !== null) {
+        @if (madeToOrderEnabled() && row.item?.isCustomRecipe) {
           <button foldButton size="sm" emphasis="soft" (click)="madeToOrderOpened.emit(row)">
-            Sur mesure…
+            Attribuer…
           </button>
         }
       </span>

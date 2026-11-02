@@ -56,6 +56,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     variants: [variant],
     vatByContext: {},
     operationOnly: false,
+    customRecipe: false,
     requiresCold: false,
     variantsAsTiles: true,
     audience: null,

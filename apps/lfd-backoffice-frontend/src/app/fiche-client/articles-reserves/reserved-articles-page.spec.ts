@@ -21,7 +21,7 @@ function article(over: Partial<ReservedArticleView> = {}): ReservedArticleView {
   return {
     sku: 'TAR-001-1',
     name: 'Tarte citron',
-    isMadeToOrder: true,
+    isCustomRecipe: true,
     reservedVisibility: 'hidden',
     reservedAt: RESERVED_AT,
     reservedByName: 'Colette Martin',

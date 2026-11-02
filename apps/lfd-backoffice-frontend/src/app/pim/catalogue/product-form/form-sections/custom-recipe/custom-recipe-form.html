@@ -1,0 +1,7 @@
+<fold-checkbox
+  label="Sur mesure"
+  hint="Une recette faite pour des comptes précis, sur toutes les déclinaisons. Tant qu'aucun compte ne lui est attribué dans Catalogue publié, aucun pro ne le voit."
+  [checked]="store.customRecipe()"
+  [disabled]="busy()"
+  (checkedChange)="onChange($event)"
+/>

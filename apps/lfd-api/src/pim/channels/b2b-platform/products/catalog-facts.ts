@@ -69,6 +69,13 @@ export interface CatalogProductHead {
   /** Chaque déclinaison en vignette au rayon (fil v16, `plan-declinaisons-en-vignette.md`). */
   readonly variantsAsTiles: boolean;
   /**
+   * **Sur mesure** (fil v17, `plan-articles-sur-mesure.md` § 13, D1). Toujours
+   * émis ; absent d'un fait d'AVANT la v17, et alors le commerce laisse sa
+   * colonne intacte (13.6-4) — jamais lu `false` : un fait en vol réécrirait
+   * sinon une fiche reportée par la migration, et l'ouvrirait au public.
+   */
+  readonly customRecipe?: boolean | undefined;
+  /**
    * **L'ancienne référence de vente** d'une fiche née d'un détachement — le SKU
    * de la déclinaison d'origine (`plan-pro-voit-les-declinaisons.md`, L7).
    * Porté par le fait seul : l'instantané du push reste en v16, il ne la
@@ -231,6 +238,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       operationOnly: product.operationOnly,
       requiresCold: product.requiresCold,
       variantsAsTiles: product.variantsAsTiles ?? true,
+      customRecipe: product.customRecipe ?? false,
       detachedFromSku: input.detachedFromSku,
     },
     variants,

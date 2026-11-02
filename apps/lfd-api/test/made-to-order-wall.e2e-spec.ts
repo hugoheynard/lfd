@@ -30,6 +30,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const stubAdminVerifier = {
@@ -291,14 +292,37 @@ describe("hors connexion et au public", () => {
     },
   );
 
-  it("sur mesure sans réservation : tous les pros, jamais le public (S3, S4)", async () => {
-    await staff().put(`/admin/catalog/${X}/made-to-order`).send({ madeToOrder: true }).expect(204);
+  /**
+   * D3 (§ 13, 2026-11-02) remplace S4 : sans réservation, un article sur
+   * mesure n'est servi à AUCUN pro — l'ordre des gestes ne peut plus l'exposer.
+   */
+  it("sur mesure sans réservation : aucun pro, ni le public (D3, S3)", async () => {
+    await markCustomRecipe(ctx, X);
+    const http = () => request(ctx.app.getHttpServer());
 
-    expect(itemOf(await shelfOf(MEMBER_B), X)).toBeDefined();
-    const open = jsonBody<ShopCatalogueView>(
-      await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
+    expect(itemOf(await shelfOf(MEMBER_A), X)).toBeUndefined();
+    expect(itemOf(await shelfOf(MEMBER_B), X)).toBeUndefined();
+    expect(
+      itemOf(
+        jsonBody<ShopCatalogueView>(await http().get("/shop/catalogue?audience=pro").expect(200)),
+        X,
+      ),
+    ).toBeUndefined();
+    expect(
+      itemOf(jsonBody<ShopCatalogueView>(await http().get("/shop/catalogue").expect(200)), X),
+    ).toBeUndefined();
+    expect(jsonBody<{ code: string }>(await quote(MEMBER_A, X).expect(400)).code).toBe(
+      "orders.sku.unknown",
     );
-    expect(itemOf(open, X)).toBeUndefined();
+  });
+
+  it("sur mesure et réservé à A : servi à A seul (D3, S1)", async () => {
+    await markCustomRecipe(ctx, X);
+    await reserve(a, "hidden");
+
+    expect(itemOf(await shelfOf(MEMBER_A), X)).toBeDefined();
+    await quote(MEMBER_A, X).expect(200);
+    expect(itemOf(await shelfOf(MEMBER_B), X)).toBeUndefined();
   });
 });
 

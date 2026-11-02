@@ -27,6 +27,7 @@ interface AdminRow {
   readonly allergenLabels: unknown;
   readonly allergensPrecautionary: boolean;
   readonly operationOnly: boolean;
+  readonly customRecipe: boolean;
   readonly audience: string | null;
   readonly publicReviewPending: boolean;
   readonly proReviewPending: boolean;
@@ -45,7 +46,6 @@ interface AdminRow {
     readonly isFeaturedPublic: boolean;
     readonly decidedBy: string | null;
     readonly decidedAt: Date;
-    readonly isMadeToOrder: boolean;
   } | null;
   readonly _count: { readonly reservations: number };
 }
@@ -68,7 +68,7 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
       where: { ...STILL_SOLD },
       include: {
         category: true,
-        override: { select: { ...DECISION_COLUMNS, isMadeToOrder: true } },
+        override: { select: DECISION_COLUMNS },
         _count: { select: { reservations: true } },
       },
       // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
@@ -133,7 +133,8 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     proReviewPending: row.proReviewPending,
     isFeaturedPro: row.override?.isFeaturedPro ?? false,
     isFeaturedPublic: row.override?.isFeaturedPublic ?? false,
-    isMadeToOrder: row.override?.isMadeToOrder ?? false,
+    // Le fait de la fiche (fil v17), plus la colonne morte `is_made_to_order`.
+    isCustomRecipe: row.customRecipe,
     isReserved: row._count.reservations > 0,
     operationOnly: row.operationOnly,
     decidedBy: row.override?.decidedBy ?? null,

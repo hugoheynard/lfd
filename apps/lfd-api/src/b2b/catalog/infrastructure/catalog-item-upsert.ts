@@ -75,6 +75,7 @@ const SQL_NAMES = {
   operationOnly: "operation_only",
   requiresCold: "requires_cold",
   variantsAsTiles: "variants_as_tiles",
+  customRecipe: "custom_recipe",
   productName: "product_name",
   detachedFromSku: "detached_from_sku",
   detachedFromVariantSku: "detached_from_variant_sku",

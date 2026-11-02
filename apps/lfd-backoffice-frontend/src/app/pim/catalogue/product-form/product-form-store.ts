@@ -693,6 +693,8 @@ export class ProductFormStore {
    * l'écrit seule, sur sa propre route, comme la limite de commande.
    */
   readonly operationOnly = signal(false);
+  /** Sur mesure (R3). Hors des sections, comme l'opération. */
+  readonly customRecipe = signal(false);
   /** Demande le froid (lot 4 bis). Hors des sections, comme la réservation. */
   readonly requiresCold = signal(false);
   /** Chaque déclinaison en vignette au rayon. Hors des sections, comme le froid. */
@@ -2418,6 +2420,7 @@ export class ProductFormStore {
     // ils se lisent sur la déclinaison ouverte, plus sur le produit aplati.
     this.vatOverride.set(product.vatByContext);
     this.operationOnly.set(product.operationOnly);
+    this.customRecipe.set(product.customRecipe);
     this.requiresCold.set(product.requiresCold);
     this.variantsAsTiles.set(product.variantsAsTiles);
     this.audience.set(product.audience);

@@ -107,6 +107,7 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
       operationOnly: false,
       requiresCold: false,
       variantsAsTiles: true,
+      customRecipe: false,
       productName: null,
     })),
     orderTimeLimits: [],

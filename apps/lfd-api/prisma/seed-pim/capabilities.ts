@@ -2,6 +2,7 @@ import type { CommandBus } from "@nestjs/cqrs";
 
 import { AddProductVariantCommand } from "../../src/pim/catalogue/product/application/add-product-variant.js";
 import { DiscontinueProductVariantCommand } from "../../src/pim/catalogue/product/application/discontinue-product-variant.js";
+import { SetProductCustomRecipeCommand } from "../../src/pim/catalogue/product/application/set-product-custom-recipe.js";
 import { SetProductMinQuantitiesCommand } from "../../src/pim/catalogue/product/application/set-product-min-quantities.js";
 import { SetProductVariantsAsTilesCommand } from "../../src/pim/catalogue/product/application/set-product-variants-as-tiles.js";
 import { SetVariantShopNameCommand } from "../../src/pim/catalogue/product/application/set-variant-shop-name.js";
@@ -11,7 +12,7 @@ import type { CorpusProduct, CorpusVariant } from "./corpus.js";
 
 /**
  * **Les gestes de fiche livrés après le premier corpus** — quantité minimale,
- * déclinaisons en vignette, nom de boutique, déclinaison archivée — rejoués par
+ * déclinaisons en vignette, nom de boutique, déclinaison archivée, sur mesure — rejoués par
  * les VRAIS handlers, comme le reste de `replay.ts`.
  *
  * Joués AVANT la signature et la mise en vente (`settle`) : une fiche neuve se
@@ -33,6 +34,12 @@ export async function replayCapabilities(
   if (variants.length > 0) {
     await bus.execute<SetProductVariantsAsTilesCommand, void>(
       new SetProductVariantsAsTilesCommand(productId, true),
+    );
+  }
+  if (product.customRecipe === true) {
+    // Idempotent : une case déjà cochée n'écrit pas de fait.
+    await bus.execute<SetProductCustomRecipeCommand, void>(
+      new SetProductCustomRecipeCommand(productId, true),
     );
   }
 }

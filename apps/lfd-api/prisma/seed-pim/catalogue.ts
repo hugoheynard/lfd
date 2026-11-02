@@ -1132,6 +1132,9 @@ export const CATALOGUE: CatalogueCorpus = {
       },
       declaration: null,
       vat: {},
+      // Une recette sur mesure (2026-11-02, plan-articles-sur-mesure.md § 13,
+      // 13.6-5) : cochée et attribuée à personne, aucun pro ne la voit (D3).
+      customRecipe: true,
     },
     {
       sku: "PAT-014",

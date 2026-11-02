@@ -51,6 +51,7 @@ function snapshotOf(version: number, variants: readonly Record<string, unknown>[
         operationOnly: false,
         requiresCold: false,
         variantsAsTiles: true,
+        customRecipe: false,
       },
     ],
     orderTimeLimits: [],

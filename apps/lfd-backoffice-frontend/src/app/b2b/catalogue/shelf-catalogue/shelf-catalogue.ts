@@ -17,7 +17,7 @@ import {
 } from 'fold-ng';
 
 import type { ShopAudience } from '../catalogue.service';
-import { reservationCountLabel } from '../made-to-order';
+import { customRecipeLabel, reservationCountLabel } from '../made-to-order';
 import { PublishedCell } from '../published-cell/published-cell';
 import type { ReviewApproval } from '../review-callout/review-callout';
 import { ReviewRowNote } from '../review-row-note/review-row-note';
@@ -95,10 +95,10 @@ export class ShelfCatalogue {
    */
   readonly marks = input<ReadonlyMap<string, MadeToOrderMarkView>>(new Map());
 
-  /** Le droit de lire le sur mesure (`lfc_made_to_order:read`) : sans lui, pas de « Sur mesure… ». */
+  /** Le droit de lire le sur mesure (`lfc_made_to_order:read`) : sans lui, pas d'« Attribuer… ». */
   readonly madeToOrderEnabled = input(false);
 
-  /** Ouvrir le réglage sur mesure d'un article en vente. */
+  /** Ouvrir l'attribution d'un article sur mesure. */
   readonly madeToOrderOpened = output<PublishedRow>();
 
   /** Une validation est en vol : les boutons des notes attendent. */
@@ -123,6 +123,11 @@ export class ShelfCatalogue {
 
   protected readonly reservedLabel = (row: PublishedRow): string | null =>
     reservationCountLabel(this.markOf(row));
+
+  protected readonly customLabel = (row: PublishedRow): string | null =>
+    row.item === null
+      ? null
+      : customRecipeLabel(row.item, this.markOf(row), this.madeToOrderEnabled());
 
   protected readonly euros = formatEuros;
   protected readonly name = rowName;

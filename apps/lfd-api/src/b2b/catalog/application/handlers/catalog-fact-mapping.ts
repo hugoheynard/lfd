@@ -73,6 +73,9 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       detachedFromSku: product.detachedFromSku,
       // La trace de la déclinaison d'origine : sur l'article copié seul.
       detachedFromVariantSku: variant.detachedFromVariantSku,
+      // Fil v17 : absent d'un fait d'avant, et laissé absent — la colonne
+      // reste alors intacte (13.6-4 de `plan-articles-sur-mesure.md`).
+      customRecipe: product.customRecipe,
       receivedAt,
     })),
   };

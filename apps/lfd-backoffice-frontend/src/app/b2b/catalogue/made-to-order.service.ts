@@ -20,8 +20,8 @@ const sku = (value: string): string => encodeURIComponent(value);
  * `documentation/catalogue/plan-articles-sur-mesure.md`, lot L1a) — un geste
  * nommé par route, comme le reste du paramétrage. Surface `lfc_catalog`.
  *
- * ⚠️ Tant que le lot L1b n'est pas déployé, une réservation ne restreint
- * rien : les écrans le disent.
+ * Le fait « sur mesure » ne se pose plus ici : il se déclare sur la fiche du
+ * référentiel (§ 13, R3) ; le commerce le lit et attribue.
  */
 @Injectable({ providedIn: 'root' })
 export class MadeToOrderService {
@@ -43,12 +43,6 @@ export class MadeToOrderService {
       this.http.get<CompanyReservedArticlesView>(
         `${BASE}/reservations/${encodeURIComponent(companyId)}`,
       ),
-    );
-  }
-
-  async setMadeToOrder(article: string, madeToOrder: boolean): Promise<void> {
-    await firstValueFrom(
-      this.http.put<void>(`${BASE}/${sku(article)}/made-to-order`, { madeToOrder }),
     );
   }
 

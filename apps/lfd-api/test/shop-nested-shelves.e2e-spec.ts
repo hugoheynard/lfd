@@ -72,6 +72,7 @@ function product(id: string, sku: string, categoryId: string): CatalogSnapshot["
     operationOnly: false,
     requiresCold: false,
     variantsAsTiles: true,
+    customRecipe: false,
   };
 }
 

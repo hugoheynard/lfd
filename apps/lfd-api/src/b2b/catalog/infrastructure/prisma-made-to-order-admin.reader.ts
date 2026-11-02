@@ -17,14 +17,18 @@ import {
   reservationHoldersOf,
 } from "../../shared/company-standing/infrastructure/read-reservation-holders.js";
 
-/** Le réglage lu sur la ligne de décision ; absente = les défauts de la base. */
-const SETTING = { select: { isMadeToOrder: true, reservedVisibility: true } } as const;
+/**
+ * La visibilité lue sur la ligne de décision (absente = le défaut de la base),
+ * et le sur mesure sur l'article : un fait de la fiche depuis R3-1
+ * (2026-11-02, § 13) — `is_made_to_order` est une colonne morte.
+ */
+const SETTING = { select: { reservedVisibility: true } } as const;
 
-type Setting = { readonly isMadeToOrder: boolean; readonly reservedVisibility: string } | null;
+type Setting = { readonly reservedVisibility: string } | null;
 
-function settingOf(override: Setting) {
+function settingOf(customRecipe: boolean, override: Setting) {
   return {
-    isMadeToOrder: override?.isMadeToOrder ?? false,
+    isCustomRecipe: customRecipe,
     reservedVisibility: reservedVisibilityOf(override?.reservedVisibility),
   };
 }
@@ -47,14 +51,19 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
         ...STILL_SOLD,
-        OR: [{ override: { isMadeToOrder: true } }, { reservations: { some: {} } }],
+        OR: [{ customRecipe: true }, { reservations: { some: {} } }],
       },
-      select: { sku: true, override: SETTING, _count: { select: { reservations: true } } },
+      select: {
+        sku: true,
+        customRecipe: true,
+        override: SETTING,
+        _count: { select: { reservations: true } },
+      },
       orderBy: { sku: "asc" },
     });
     return rows.map((row) => ({
       sku: row.sku,
-      ...settingOf(row.override),
+      ...settingOf(row.customRecipe, row.override),
       reservationCount: row._count.reservations,
     }));
   }
@@ -65,6 +74,7 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
       select: {
         sku: true,
         name: true,
+        customRecipe: true,
         override: SETTING,
         reservations: { orderBy: [{ reservedAt: "asc" }, { companyId: "asc" }] },
       },
@@ -79,7 +89,7 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
     return {
       sku: row.sku,
       name: row.name,
-      ...settingOf(row.override),
+      ...settingOf(row.customRecipe, row.override),
       holders: row.reservations.map((reservation) => ({
         companyId: reservation.companyId,
         companyName: names.get(reservation.companyId) ?? null,
@@ -125,7 +135,7 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
         companyId: true,
         reservedAt: true,
         reservedBy: true,
-        item: { select: { sku: true, name: true, override: SETTING } },
+        item: { select: { sku: true, name: true, customRecipe: true, override: SETTING } },
       },
       orderBy: [{ item: { name: "asc" } }, { sku: "asc" }],
     });
@@ -136,7 +146,7 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
       list.push({
         sku: row.item.sku,
         name: row.item.name,
-        ...settingOf(row.item.override),
+        ...settingOf(row.item.customRecipe, row.item.override),
         reservedAt: row.reservedAt.toISOString(),
         reservedByName: authors.nameOf(row.reservedBy),
       });

@@ -132,10 +132,12 @@ export interface CatalogAdminItemView {
   readonly isFeaturedPro: boolean;
   readonly isFeaturedPublic: boolean;
   /**
-   * **Sur mesure** (`documentation/catalogue/plan-articles-sur-mesure.md`, S4) :
-   * jamais servi au public (S3, Q5), ouvert à tous les pros.
+   * **Sur mesure** — un fait de la fiche du référentiel (fil v17,
+   * `documentation/catalogue/plan-articles-sur-mesure.md` § 13, D1) : jamais
+   * servi au public (S3) ; ~~ouvert à tous les pros (S4)~~ — sans réservation,
+   * servi à aucun pro (D3, 2026-11-02).
    */
-  readonly isMadeToOrder: boolean;
+  readonly isCustomRecipe: boolean;
   /**
    * **Réservé à au moins un compte** (S1) : jamais servi au public, ni à la
    * vitrine (S3). Le détail des comptes vit sur l'article (`/reservation`).

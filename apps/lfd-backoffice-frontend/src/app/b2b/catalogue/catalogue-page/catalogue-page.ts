@@ -101,7 +101,7 @@ export class CataloguePage {
 
   /**
    * Le sur mesure a son droit à part (Hugo, 2026-10-30) : sans sa lecture, ni
-   * badges ni « Sur mesure… », et la liste des marqueurs n'est pas demandée —
+   * compte des réservataires ni « Attribuer… », et la liste des marqueurs n'est pas demandée —
    * le serveur la refuserait et ferait tomber toute la page.
    */
   protected readonly canSeeMadeToOrder = computed(() =>

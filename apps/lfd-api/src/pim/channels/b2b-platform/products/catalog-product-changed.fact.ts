@@ -43,6 +43,10 @@ const payloadSchema = z.object({
     // avant elle, et lue `true` — la valeur que la colonne du référentiel a
     // donnée à toute fiche existante.
     variantsAsTiles: z.boolean().default(true),
+    // Fil v17 (`plan-articles-sur-mesure.md` § 13) : absent d'un fait émis
+    // avant lui, et lu ABSENT — pas `false`. Le commerce laisse alors sa
+    // colonne intacte (13.6-4) : la migration de report l'a posée.
+    customRecipe: z.boolean().optional(),
     // L7 de `plan-pro-voit-les-declinaisons.md` (fait seul, sans version
     // d'instantané) : absente d'un fait émis avant elle, et lue `null`. Une
     // fiche détachée avant ce lot la reçoit à sa prochaine émission.

@@ -88,6 +88,7 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
     operationOnly: false,
     requiresCold: false,
     variantsAsTiles: true,
+    customRecipe: false,
   };
 }
 

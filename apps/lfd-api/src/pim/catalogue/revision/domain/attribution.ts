@@ -102,6 +102,9 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // Les vignettes de déclinaison ne sont dans aucun champ de révision
   // (`RevisionItemInput`, vérifié le 2026-10-29) : l'option traverse le fil v16.
   [PIM_EVENTS.productVariantsAsTilesChanged]: [],
+  // Le sur mesure n'est dans aucun champ de révision (`RevisionItemInput`,
+  // vérifié le 2026-11-02) : il traverse le fil v17.
+  [PIM_EVENTS.productCustomRecipeChanged]: [],
   // La quantité minimale n'est dans aucun champ de révision
   // (`RevisionItemInput`, vérifié le 2026-10-29) : elle traverse le fil v15.
   [PIM_EVENTS.productMinQuantitiesChanged]: [],

@@ -76,6 +76,7 @@ function detailWith(
       variants: [...variants],
       vatByContext: overrides.vatByContext ?? {},
       operationOnly: false,
+      customRecipe: false,
       requiresCold: false,
       variantsAsTiles: true,
       audience: null,

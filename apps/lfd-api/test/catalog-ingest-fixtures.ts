@@ -128,6 +128,7 @@ export function snapshotOf(
         operationOnly,
         requiresCold,
         variantsAsTiles: true,
+        customRecipe: false,
         variants: [
           {
             id: `var_${sku}`,

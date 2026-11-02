@@ -104,6 +104,10 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // signataire qui a relu la fiche sous une seule vignette voudrait la revoir
   // sous plusieurs (`plan-declinaisons-en-vignette.md`, V1).
   [PIM_EVENTS.productVariantsAsTilesChanged]: true,
+  // Le sur mesure change À QUI la fiche se vend, comme l'audience : un
+  // signataire qui l'a relue ouverte voudrait la revoir réservée
+  // (`plan-articles-sur-mesure.md` § 13, D1).
+  [PIM_EVENTS.productCustomRecipeChanged]: true,
   // La quantité minimale change ce qu'un client doit prendre : un signataire
   // qui a relu la fiche sans minimum voudrait la revoir avec
   // (`plan-quantite-minimale.md`, M1).

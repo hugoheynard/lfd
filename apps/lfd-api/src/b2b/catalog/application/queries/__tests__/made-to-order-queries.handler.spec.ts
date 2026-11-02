@@ -16,14 +16,14 @@ import { ListMadeToOrderMarksHandler } from "../list-made-to-order-marks.handler
 const ARTICLE: ArticleReservationView = {
   sku: "VIE-001-1",
   name: "Croissant",
-  isMadeToOrder: true,
+  isCustomRecipe: true,
   reservedVisibility: "hidden",
   holders: [],
 };
 const COMPANY_VIEW: CompanyReservedArticlesView = { own: [], principal: null };
 const MARK: MadeToOrderMarkView = {
   sku: "VIE-001-1",
-  isMadeToOrder: true,
+  isCustomRecipe: true,
   reservedVisibility: "visible_locked",
   reservationCount: 2,
 };

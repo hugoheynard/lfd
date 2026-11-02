@@ -72,6 +72,7 @@ function detailWith(variants: readonly Variant[]): ProductDetail {
       variants: [...variants],
       vatByContext: {},
       operationOnly: false,
+      customRecipe: false,
       requiresCold: false,
       variantsAsTiles: true,
       audience: null,

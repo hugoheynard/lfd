@@ -126,6 +126,12 @@ export const PIM_EVENTS = {
    */
   productVariantsAsTilesChanged: "product.variants_as_tiles_changed",
   /**
+   * La fiche devient sur mesure, ou redevient ouverte
+   * (`plan-articles-sur-mesure.md` § 13, D1). Sur sa propre route : sans
+   * compte attribué au commerce, il retire l'article à tous les pros.
+   */
+  productCustomRecipeChanged: "product.custom_recipe_changed",
+  /**
    * La quantité minimale d'achat d'une déclinaison change, ou se met à suivre
    * le défaut (`plan-quantite-minimale.md`, M1). Un fait à part, sur sa
    * propre route : il change COMBIEN on doit en prendre.

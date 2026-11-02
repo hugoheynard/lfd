@@ -7,7 +7,6 @@ import { RetracePricesFromReferentialHandler } from "./application/commands/retr
 import { CatalogPriceRetracer } from "./domain/ports/catalog-price-retracer.js";
 import { PrismaCatalogPriceRetracer } from "./infrastructure/prisma-catalog-price-retracer.js";
 import { SetMaskingHandler } from "./application/commands/set-masking.handler.js";
-import { SetMadeToOrderHandler } from "./application/commands/set-made-to-order.handler.js";
 import { SetReservedVisibilityHandler } from "./application/commands/set-reserved-visibility.handler.js";
 import { ReserveArticleHandler } from "./application/commands/reserve-article.handler.js";
 import { ReleaseArticleHandler } from "./application/commands/release-article.handler.js";
@@ -190,7 +189,6 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     ApproveReviewHandler,
     SetCatalogFeaturedHandler,
     // Le sur mesure et la réservation (L1a) : réglés ici, lus par le mur au L1b.
-    SetMadeToOrderHandler,
     SetReservedVisibilityHandler,
     ReserveArticleHandler,
     ReleaseArticleHandler,

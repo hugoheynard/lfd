@@ -393,6 +393,15 @@ model CatalogItem {
   /// reçue avant ce lot : la vignette porte alors le nom de la déclinaison seul.
   productName String? @map("product_name")
 
+  /// **Sur mesure**, tel que le référentiel le dit de la fiche (fil v17,
+  /// `documentation/catalogue/plan-articles-sur-mesure.md` § 13, D1) — un
+  /// fait descendu sur chaque article. Sans réservation, l'article n'est
+  /// servi à aucun pro ni au public (D3, dans `servedToViewer`).
+  ///
+  /// Un fait d'avant la v17 ne le porte pas et laisse la colonne INTACTE
+  /// (13.6-4) : la migration de report l'a posée, un fait en vol ne la défait pas.
+  customRecipe Boolean @default(false) @map("custom_recipe")
+
   /// **L'ancienne référence de vente** d'un article né d'un détachement — le
   /// SKU de la déclinaison d'origine, fait de sa fiche descendu sur chaque
   /// article (`plan-pro-voit-les-declinaisons.md`, L7). `NULL` pour tout autre
@@ -640,10 +649,14 @@ model CatalogItemOverride {
   decidedBy String?  @map("decided_by")
   decidedAt DateTime @updatedAt @map("decided_at")
 
-  /// **Sur mesure** (plan `documentation/catalogue/plan-articles-sur-mesure.md`,
-  /// L1a) : un marqueur propre, indépendant de la réservation. Il ne restreint
-  /// rien chez les pros (S4). Écrit par son seul geste, jamais par l'agrégat
-  /// des décisions, qui ne le connaît pas.
+  /// 🪦 **Colonne morte depuis le 2026-11-02** (R3-1 de
+  /// `documentation/catalogue/plan-articles-sur-mesure.md` § 13). Elle portait
+  /// le marqueur « sur mesure » posé au commerce ; ~~il ne restreint rien chez
+  /// les pros (S4)~~ — le fait vit désormais sur la fiche du référentiel et
+  /// descend en `catalog_items.custom_recipe`, où
+  /// `20261102240000_le_sur_mesure_au_referentiel` l'a reporté. Plus aucun
+  /// code ne la lit ni ne l'écrit ; gardée en base, rien ne se supprime sans
+  /// ordre (CLAUDE.md §0).
   isMadeToOrder Boolean @default(false) @map("is_made_to_order")
 
   /// Ce que voient les pros qui ne sont PAS réservataires d'un article réservé :

@@ -57,7 +57,8 @@ beforeEach(async () => {
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
-function snapshot(skus: readonly string[]): CatalogSnapshot {
+/** `custom` : les fiches que le référentiel dit sur mesure (fil v17, § 13 D1). */
+function snapshot(skus: readonly string[], custom: readonly string[] = []): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: RECEIVED,
@@ -108,6 +109,7 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
       operationOnly: false,
       requiresCold: false,
       variantsAsTiles: true,
+      customRecipe: custom.includes(sku),
       productName: null,
     })),
     orderTimeLimits: [],
@@ -128,41 +130,56 @@ async function article(sku: string = SKU): Promise<ArticleReservationView> {
   return response.body as ArticleReservationView;
 }
 
-describe("le marqueur et la visibilité", () => {
-  it("marquer sur mesure et régler la visibilité : lus, journalisés une fois", async () => {
-    await staff().put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(204);
-    await staff().put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(204);
+describe("le sur mesure (fait de la fiche) et la visibilité", () => {
+  it("le fait de la fiche se lit sur l'article ; la visibilité se journalise une fois", async () => {
+    await deliverAsFacts(ctx, snapshot(["VIE-001", "VIE-002"], ["VIE-001"]));
+    await staff()
+      .put(`${ITEM}/reserved-visibility`)
+      .send({ visibility: "visible_locked" })
+      .expect(204);
     await staff()
       .put(`${ITEM}/reserved-visibility`)
       .send({ visibility: "visible_locked" })
       .expect(204);
 
     expect(await article()).toMatchObject({
-      isMadeToOrder: true,
+      isCustomRecipe: true,
       reservedVisibility: "visible_locked",
       holders: [],
     });
-    expect(await facts("catalog_item.made_to_order_marked")).toEqual([
+    expect((await article(OTHER_SKU)).isCustomRecipe).toBe(false);
+    expect(await facts("catalog_item.reserved_visibility_set")).toEqual([
       {
         subjectId: SKU,
         actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: { subjectLabel: "Article VIE-001", sku: SKU },
+        payload: { subjectLabel: "Article VIE-001", sku: SKU, visibility: "visible_locked" },
       },
     ]);
-    expect(await facts("catalog_item.reserved_visibility_set")).toHaveLength(1);
   });
 
-  it("ne touche pas la décision de masquage : `decided_by` et `decided_at` restent", async () => {
+  /**
+   * R3-1 (§ 13, D2) : le commerce ne pose plus le sur mesure — la route est
+   * retirée, et rien n'écrit plus `is_made_to_order`, colonne morte.
+   */
+  it("le geste « Sur mesure… » du commerce n'existe plus", async () => {
+    await staff().put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(404);
+    expect(await ctx.prisma.catalogItemOverride.count({ where: { isMadeToOrder: true } })).toBe(0);
+  });
+
+  it("régler la visibilité ne touche pas la décision de masquage", async () => {
     await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: true }).expect(204);
     const before = await ctx.prisma.catalogItemOverride.findUniqueOrThrow({ where: { sku: SKU } });
 
-    await staff().put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(204);
+    await staff()
+      .put(`${ITEM}/reserved-visibility`)
+      .send({ visibility: "visible_locked" })
+      .expect(204);
 
     const after = await ctx.prisma.catalogItemOverride.findUniqueOrThrow({ where: { sku: SKU } });
     expect(after).toMatchObject({
       isHidden: true,
-      isMadeToOrder: true,
+      reservedVisibility: "visible_locked",
       decidedBy: before.decidedBy,
       decidedAt: before.decidedAt,
     });
@@ -171,18 +188,18 @@ describe("le marqueur et la visibilité", () => {
   it("refuse une visibilité inconnue (400) et un article absent (404)", async () => {
     await staff().put(`${ITEM}/reserved-visibility`).send({ visibility: "visible" }).expect(400);
     await staff()
-      .put("/admin/catalog/ABSENT-1/made-to-order")
-      .send({ madeToOrder: true })
+      .put("/admin/catalog/ABSENT-1/reserved-visibility")
+      .send({ visibility: "hidden" })
       .expect(404);
   });
 
   it("les réglages de la liste ne nomment que les articles qui en portent", async () => {
-    await staff().put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(204);
+    await deliverAsFacts(ctx, snapshot(["VIE-001", "VIE-002"], ["VIE-001"]));
 
     const response = await staff().get("/admin/catalog/made-to-order").expect(200);
 
     expect(response.body as MadeToOrderMarkView[]).toEqual([
-      { sku: SKU, isMadeToOrder: true, reservedVisibility: "hidden", reservationCount: 0 },
+      { sku: SKU, isCustomRecipe: true, reservedVisibility: "hidden", reservationCount: 0 },
     ]);
   });
 });
@@ -295,11 +312,10 @@ async function holderOf(
 }
 
 describe("le droit du sur mesure, à part du catalogue (Hugo, 2026-10-30)", () => {
-  it("`lfc_catalog:write` seul ne marque, ne réserve ni ne lit le sur mesure", async () => {
+  it("`lfc_catalog:write` seul ne règle, ne réserve ni ne lit le sur mesure", async () => {
     const company = await createCompany(ctx.prisma);
     const catalogue = await holderOf("catalogue", [{ resource: "lfc_catalog", action: "write" }]);
 
-    await catalogue.put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(403);
     await catalogue.put(`${ITEM}/reserved-visibility`).send({ visibility: "hidden" }).expect(403);
     await catalogue.put(`${ITEM}/reservations/${company.id}`).expect(403);
     await catalogue.delete(`${ITEM}/reservations/${company.id}`).expect(403);
@@ -319,13 +335,13 @@ describe("le droit du sur mesure, à part du catalogue (Hugo, 2026-10-30)", () =
     await reader.put(`${ITEM}/reservations/${company.id}`).expect(403);
   });
 
-  it("`lfc_made_to_order:write`, sans `lfc_catalog`, marque et réserve", async () => {
+  it("`lfc_made_to_order:write`, sans `lfc_catalog`, règle et réserve", async () => {
     const company = await createCompany(ctx.prisma);
     const writer = await holderOf("sur-mesure", [
       { resource: "lfc_made_to_order", action: "write" },
     ]);
 
-    await writer.put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(204);
+    await writer.put(`${ITEM}/reserved-visibility`).send({ visibility: "hidden" }).expect(204);
     await writer.put(`${ITEM}/reservations/${company.id}`).expect(204);
     expect(await ctx.prisma.catalogItemReservation.count()).toBe(1);
   });

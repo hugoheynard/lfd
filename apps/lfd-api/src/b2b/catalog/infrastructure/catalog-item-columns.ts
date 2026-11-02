@@ -102,6 +102,12 @@ export function pimFactsColumns(facts: PimFacts) {
     productName: facts.productName,
     detachedFromSku: facts.detachedFromSku ?? null,
     detachedFromVariantSku: facts.detachedFromVariantSku ?? null,
+    // 🔴 OMISE quand le fait ne la porte pas (avant la v17) : l'upsert ne
+    // l'écrit alors pas, ni à la création (défaut `false`) ni au conflit
+    // (colonne intacte, 13.6-4). Jamais `?? false` : ce repli réécrirait une
+    // fiche reportée par la migration. Toutes les lignes d'un lot viennent
+    // d'un même fait, ou de la base : elles l'ont toutes, ou aucune.
+    ...(facts.customRecipe === undefined ? {} : { customRecipe: facts.customRecipe }),
     receivedAt: facts.receivedAt,
   };
 }

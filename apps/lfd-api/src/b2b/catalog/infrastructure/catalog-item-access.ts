@@ -10,12 +10,13 @@ import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 import { reservedVisibilityOf } from "./reserved-visibility-column.js";
 
 /**
- * Les colonnes de décision, plus le réglage sur mesure — ce que le mur lit sur
- * `catalog_item_overrides` (`plan-articles-sur-mesure.md`, § 4).
+ * Les colonnes de décision, plus la visibilité réservée — ce que le mur lit sur
+ * `catalog_item_overrides` (`plan-articles-sur-mesure.md`, § 4). Le sur mesure
+ * n'y est plus depuis R3-1 (2026-11-02) : c'est un fait de la fiche, lu sur
+ * `catalog_items.custom_recipe` ; `is_made_to_order` est une colonne morte.
  */
 export const ACCESS_DECISION_COLUMNS = {
   ...DECISION_COLUMNS,
-  isMadeToOrder: true,
   reservedVisibility: true,
 } as const;
 
@@ -43,10 +44,11 @@ export interface AccessRow {
   readonly audience: string | null;
   readonly publicReviewPending: boolean;
   readonly proReviewPending: boolean;
+  /** Le fait de la fiche (fil v17, § 13 D1). */
+  readonly customRecipe: boolean;
   readonly override: {
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
-    readonly isMadeToOrder: boolean;
     readonly reservedVisibility: string;
   } | null;
   readonly _count: { readonly reservations: number };
@@ -68,7 +70,7 @@ export function accessOf(row: AccessRow, viewer: CatalogViewer): ItemAccess {
     publicReviewPending: row.publicReviewPending,
     proReviewPending: row.proReviewPending,
     isReserved: row._count.reservations > 0,
-    isMadeToOrder: row.override?.isMadeToOrder ?? false,
+    isCustomRecipe: row.customRecipe,
   };
   const reservation: ItemReservation = {
     heldBy: row.reservations.map((entry) => entry.companyId),

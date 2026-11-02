@@ -52,6 +52,7 @@ export interface ItemRow {
   readonly operationOnly: boolean;
   readonly requiresCold: boolean;
   readonly variantsAsTiles: boolean;
+  readonly customRecipe: boolean;
   readonly productName: string | null;
   readonly detachedFromSku: string | null;
   readonly detachedFromVariantSku: string | null;
@@ -166,6 +167,7 @@ export function toDomain(row: ItemRow): CatalogItem {
       productName: row.productName,
       detachedFromSku: row.detachedFromSku,
       detachedFromVariantSku: row.detachedFromVariantSku,
+      customRecipe: row.customRecipe,
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,

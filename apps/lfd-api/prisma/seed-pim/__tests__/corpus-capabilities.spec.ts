@@ -129,3 +129,11 @@ describe("la commande mêlée du scénario de dev", () => {
     expect(WEIGHED_SKUS.every((sku) => product(sku).soldByWeight !== undefined)).toBe(true);
   });
 });
+
+/** 13.6-5 de `plan-articles-sur-mesure.md` : le semis montre une fiche sur mesure. */
+describe("le corpus — sur mesure", () => {
+  it("coche une fiche, que le rejeu passe aux vrais handlers", () => {
+    const custom = CATALOGUE.products.filter((candidate) => candidate.customRecipe === true);
+    expect(custom.map((candidate) => candidate.sku)).toEqual(["PAT-013"]);
+  });
+});

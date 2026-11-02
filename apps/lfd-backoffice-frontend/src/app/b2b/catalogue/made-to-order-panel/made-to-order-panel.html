@@ -1,5 +1,5 @@
 @if (data(); as article) {
-  <fold-panel-header title="Sur mesure" [subtitle]="article.name + ' · ' + article.sku" />
+  <fold-panel-header title="Attribuer" [subtitle]="article.name + ' · ' + article.sku" />
 
   <fold-panel-body>
     @switch (state()) {
@@ -17,12 +17,6 @@
             @if (saveError(); as message) {
               <fold-callout variant="alert">{{ message }}</fold-callout>
             }
-            <fold-checkbox
-              label="Article sur mesure"
-              [checked]="madeToOrder()"
-              [disabled]="!canEdit() || saving()"
-              (checkedChange)="madeToOrder.set($event)"
-            />
 
             <div class="field">
               <span class="field-label">Pour les autres professionnels</span>
@@ -37,13 +31,13 @@
               } @else {
                 <span>{{ visibilityLabel(current.reservedVisibility) }}</span>
               }
-              <span class="hint">Ne joue que si l'article est réservé à au moins un compte.</span>
+              <span class="hint">Ne joue qu'une fois l'article réservé à au moins un compte.</span>
             </div>
 
             <div class="field">
               <span class="field-label">
                 @if (current.holders.length === 0) {
-                  Réservé à aucun compte : ouvert à tous les pros
+                  Réservé à aucun compte : aucun pro ne le voit
                 } @else {
                   Réservé à {{ current.holders.length }} compte{{
                     current.holders.length > 1 ? 's' : ''

@@ -393,6 +393,12 @@ export interface ProductView {
    */
   readonly variantsAsTiles: boolean;
   /**
+   * **Sur mesure** — une recette faite pour un ou quelques clients
+   * (`plan-articles-sur-mesure.md` § 13). Cochée, aucun pro ne la voit tant
+   * qu'aucun compte ne lui est attribué dans Catalogue publié (D3, D4).
+   */
+  readonly customRecipe: boolean;
+  /**
    * La clientèle **propre** à la fiche ; `null` = elle suit sa famille. La
    * dérogation seule, comme les canaux — l'effective est à côté.
    */
@@ -609,6 +615,15 @@ export const setProductVariantsAsTilesPayloadSchema = z.strictObject({
 export type SetProductVariantsAsTilesPayload = z.infer<
   typeof setProductVariantsAsTilesPayloadSchema
 >;
+
+/**
+ * **Sur mesure** — la case de la fiche (`PUT /pim/catalogue/products/:id/custom-recipe`,
+ * `documentation/catalogue/plan-articles-sur-mesure.md` § 13, D1). L'état de la case.
+ */
+export const setProductCustomRecipePayloadSchema = z.strictObject({
+  customRecipe: z.boolean(),
+});
+export type SetProductCustomRecipePayload = z.infer<typeof setProductCustomRecipePayloadSchema>;
 
 /**
  * **Élargir ou restreindre à qui la fiche vend** — ou la rendre à sa famille

@@ -16,7 +16,6 @@ import {
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldCheckboxComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPanelBodyComponent,
@@ -34,7 +33,7 @@ import { NotifyService } from '../../../notify.service';
 import { MadeToOrderService } from '../made-to-order.service';
 import { RESERVED_VISIBILITY_LABELS, reservationDate } from '../made-to-order';
 
-/** L'article dont on règle le sur mesure. */
+/** L'article sur mesure qu'on attribue. */
 export interface MadeToOrderPanelData {
   readonly sku: string;
   readonly name: string;
@@ -43,10 +42,11 @@ export interface MadeToOrderPanelData {
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **Le sur mesure d'un article** (plan
- * `documentation/catalogue/plan-articles-sur-mesure.md`, § 7, lot L1a) : le
- * marqueur, ce que voient les autres pros, et les comptes à qui l'article est
- * réservé.
+ * **Attribuer un article sur mesure** (plan
+ * `documentation/catalogue/plan-articles-sur-mesure.md`, § 13, R3-2) : ce que
+ * voient les autres pros, et les comptes à qui l'article est réservé. Le fait
+ * « sur mesure » se déclare sur la fiche du référentiel (D1) ; ce panneau ne le
+ * pose plus, il n'est ouvert que pour un article qui le porte.
  *
  * On réserve depuis la fiche du client (« Articles réservés ») : c'est là
  * qu'on sait à qui l'on parle. Ce panneau liste les comptes et y renvoie.
@@ -66,7 +66,6 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldCheckboxComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPanelBodyComponent,
@@ -99,16 +98,12 @@ export class MadeToOrderPanel implements FoldPanelContent<MadeToOrderPanelData> 
   protected readonly leaving = signal(false);
 
   /** La saisie locale — rien ne part avant « Enregistrer ». */
-  protected readonly madeToOrder = signal(false);
   protected readonly visibility = signal<ReservedVisibility>('hidden');
 
-  protected readonly markChanged = computed(
-    () => this.view() !== null && this.madeToOrder() !== this.view()?.isMadeToOrder,
-  );
   protected readonly visibilityChanged = computed(
     () => this.view() !== null && this.visibility() !== this.view()?.reservedVisibility,
   );
-  protected readonly dirty = computed(() => this.markChanged() || this.visibilityChanged());
+  protected readonly dirty = computed(() => this.visibilityChanged());
 
   protected readonly visibilities: readonly FoldViewToggleOption[] = RESERVED_VISIBILITIES.map(
     (value) => ({ value, label: RESERVED_VISIBILITY_LABELS[value] }),
@@ -130,7 +125,6 @@ export class MadeToOrderPanel implements FoldPanelContent<MadeToOrderPanelData> 
     try {
       const view = await this.api.ofArticle(sku);
       this.view.set(view);
-      this.madeToOrder.set(view.isMadeToOrder);
       this.visibility.set(view.reservedVisibility);
       this.state.set('ready');
     } catch {
@@ -157,12 +151,7 @@ export class MadeToOrderPanel implements FoldPanelContent<MadeToOrderPanelData> 
     }
   }
 
-  /**
-   * N'envoie que ce qui a changé. La visibilité part AVANT le marqueur : un
-   * article qui devient sur mesure l'est déjà avec ce que les autres pros
-   * doivent en voir. Chaque geste réussi avance la référence locale : après
-   * un échec partiel, réessayer ne renvoie que le reste.
-   */
+  /** N'envoie que ce qui a changé : la visibilité, seul réglage saisi ici. */
   protected async save(): Promise<void> {
     const data = this.data();
     const current = this.view();
@@ -179,14 +168,7 @@ export class MadeToOrderPanel implements FoldPanelContent<MadeToOrderPanelData> 
           view === null ? view : { ...view, reservedVisibility: visibility },
         );
       }
-      if (this.markChanged()) {
-        const madeToOrder = this.madeToOrder();
-        await this.api.setMadeToOrder(data.sku, madeToOrder);
-        this.view.update((view) =>
-          view === null ? view : { ...view, isMadeToOrder: madeToOrder },
-        );
-      }
-      this.notify.success('Réglage sur mesure enregistré.');
+      this.notify.success('Attribution enregistrée.');
       this.panel.close(true);
     } catch {
       this.saveError.set(

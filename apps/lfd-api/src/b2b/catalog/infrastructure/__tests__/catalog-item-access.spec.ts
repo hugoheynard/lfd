@@ -3,13 +3,15 @@ import { accessOf, type AccessRow } from "../catalog-item-access.js";
 
 /**
  * La ligne lue → le verdict du mur : `_count` dit « réservé », la relation
- * filtrée dit « à moi », la décision locale dit la visibilité et le marqueur.
+ * filtrée dit « à moi », la décision locale dit la visibilité, et la colonne
+ * de la fiche dit « sur mesure » (fil v17, § 13 — plus la ligne de décision).
  */
 function row(over: Partial<AccessRow> = {}): AccessRow {
   return {
     audience: "both",
     publicReviewPending: false,
     proReviewPending: false,
+    customRecipe: false,
     override: null,
     _count: { reservations: 0 },
     reservations: [],
@@ -20,7 +22,6 @@ function row(over: Partial<AccessRow> = {}): AccessRow {
 const OVERRIDE = {
   isHidden: false,
   isHiddenPublic: false,
-  isMadeToOrder: false,
   reservedVisibility: "visible_locked",
 };
 const B_LOCKED = proViewer({ companyId: "co_b", activePrincipalId: null }, "served_and_locked");
@@ -47,9 +48,22 @@ describe("accessOf", () => {
     expect(accessOf(reserved, B_LOCKED).verdict).toBe("absent");
   });
 
-  it("le marqueur sur mesure ferme le public (S3, Q5)", () => {
-    const madeToOrder = row({ override: { ...OVERRIDE, isMadeToOrder: true } });
-    expect(accessOf(madeToOrder, PUBLIC_VIEWER).verdict).toBe("absent");
-    expect(accessOf(madeToOrder, PRO_ANONYMOUS_VIEWER).verdict).toBe("served");
+  it("sur mesure sans réservation : fermé au public (S3) et à tout pro (D3)", () => {
+    const customRecipe = row({ customRecipe: true, override: OVERRIDE });
+    expect(accessOf(customRecipe, PUBLIC_VIEWER).verdict).toBe("absent");
+    expect(accessOf(customRecipe, PRO_ANONYMOUS_VIEWER).verdict).toBe("absent");
+    expect(accessOf(customRecipe, A).verdict).toBe("absent");
+  });
+
+  it("sur mesure et réservé à A : servi à A seul", () => {
+    const customRecipe = row({
+      customRecipe: true,
+      _count: { reservations: 1 },
+      reservations: [{ companyId: "co_a" }],
+    });
+    expect(accessOf(customRecipe, A)).toEqual({ verdict: "served", mark: "mine" });
+    expect(
+      accessOf(row({ customRecipe: true, _count: { reservations: 1 } }), B_LOCKED).verdict,
+    ).toBe("absent");
   });
 });

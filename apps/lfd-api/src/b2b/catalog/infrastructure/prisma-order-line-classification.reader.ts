@@ -43,7 +43,7 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
         categoryId: true,
         isDefault: true,
         category: { select: { parentId: true } },
-        override: { select: { isMadeToOrder: true } },
+        customRecipe: true,
       },
       orderBy: [{ sku: "asc" }],
     });
@@ -54,9 +54,10 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
         productId: row.productId,
         categoryId: row.categoryId,
         categoryPath: lineage(row.categoryId),
-        // Sans décision posée, l'article n'est pas marqué : le défaut de la
-        // colonne (`false`), lu tel quel.
-        madeToOrder: row.override?.isMadeToOrder ?? false,
+        // Le fait de la fiche (fil v17, `plan-articles-sur-mesure.md` § 13),
+        // figé sur la ligne sous son nom d'origine : `is_made_to_order` est une
+        // colonne morte depuis R3-1 (2026-11-02).
+        madeToOrder: row.customRecipe,
       });
     }
     return found;

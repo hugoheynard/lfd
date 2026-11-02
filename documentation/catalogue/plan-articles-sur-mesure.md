@@ -161,9 +161,11 @@ réservation).
   - `listSellable("public")` des coffrets (`catalog-bundle-articles.ts:31`) et
     leur verdict `servedTo(line, "public")` (:45) passent par la première
     règle, sans code propre.
-- **S4. Le marqueur.** « Sur mesure » est indépendant de la réservation : il
+- ~~**S4. Le marqueur.** « Sur mesure » est indépendant de la réservation : il
   affiche, il ne restreint rien chez les pros. Un article sur mesure sans
-  réservation reste ouvert à tous les pros, jamais au public (S3).
+  réservation reste ouvert à tous les pros, jamais au public (S3).~~
+  **Remplacée par D3 le 2026-11-02** (§ 13, bâtie en R3-1) : sur mesure et
+  sans réservation, un article n'est servi à aucun pro.
 - **S5. Le staff** voit tout, avec une étiquette. La saisie staff **au nom
   d'une société** passe par le chemin qui facture, donc par S1–S2.
 - **S6. Rejeu idempotent.** Une commande rejouée avec la même clé rend le
@@ -612,3 +614,231 @@ sans distinguer un réservé invisible d'un inconnu ; un article montré
 verrouillé garde `ReservedArticleRefusedError`. Pré-lancement : aucun
 abonnement réel à protéger d'un refus nouveau à la dérogation. Avant, la garde
 ne jugeait que la réservation et laissait passer audience et SKU inconnu.
+
+## 13. Révision 3 — le sur mesure devient un fait de la fiche (2026-11-02)
+
+> 📐 Plan. **R3-1 (back) bâti le 2026-11-02, non commité** (§ 13.8) ; **R3-2
+> (back-office) bâti le 2026-11-02, non commité** (§ 13.9). Décision de Hugo le 2026-11-02 : « déclarer
+> l'attribut sur mesure est un fait du catalogue, attribuer le produit à une
+> clientèle appartient au catalogue publié », et « je ne veux pas que le
+> catalogue connaisse les comptes pros ». Affirmations ouvertes le 2026-11-02
+> (chemins relatifs à `apps/lfd-api/`). Contradiction de `vitruve`
+> obligatoire : migration de données et frontière de visibilité.
+
+### 13.1 Le défaut corrigé
+
+Aujourd'hui, le marqueur vit côté commerce (`catalog_item_overrides.is_made_to_order`,
+`prisma/schema/public/catalog.prisma:647`), réglé par le bouton « Sur mesure… »
+de Catalogue publié, et **il ne restreint rien chez les pros** (S4 ;
+`servedTo`, `src/b2b/catalog/domain/served-to.ts:61-63` : la branche pro ne lit
+ni `isMadeToOrder` ni `isReserved`). Une fiche pro arrive en attente de
+validation (`awaitsReview`, posé à la création seulement,
+`prisma-catalog-product-facts.projection.ts:118-131`) ; la fenêtre d'erreur est
+donc l'**ordre des gestes** : valider pour les pros avant d'avoir réservé
+expose à tous les pros une recette faite pour un client.
+
+### 13.2 Les décisions
+
+- **D1. Le fait.** « Sur mesure » est un attribut de la **fiche** (toutes ses
+  déclinaisons), saisi au référentiel, section Commerce de la fiche. Il
+  traverse le fil vers le commerce comme `operationOnly` le fait déjà —
+  précédent exact : `pim/catalogue/product/application/set-product-operation-only.ts`
+  → `pim/channels/b2b-platform/products/catalog-facts.ts:67,231`
+  → `b2b/catalog/application/handlers/catalog-fact-mapping.ts:65`
+  → `b2b/catalog/infrastructure/catalog-item-columns.ts:99`
+  → `catalog_items.operation_only` (`catalog.prisma:371`). Le référentiel ne
+  connaît aucune société (CLAUDE.md §3, pim → b2b interdit) : rien ne change là.
+- **D2. L'attribution reste au commerce.** Réserver à des comptes et régler la
+  visibilité (`hidden` / `visible_locked`) restent dans Catalogue publié, par
+  les commandes existantes (`ReserveArticleCommand`, `ReleaseArticleCommand`,
+  `SetReservedVisibilityCommand`). `SetMadeToOrderCommand` et le bouton
+  « Sur mesure… » disparaissent : le commerce ne pose plus le fait, il le lit.
+- **D3. La règle qui ferme la fenêtre (S4 remplacée).** Un article **sur
+  mesure sans aucune réservation n'est servi à personne** — ni au public (S3,
+  inchangé), ni à aucun pro. Avec au moins une réservation, S1–S2 s'appliquent
+  comme aujourd'hui. Dans `servedTo`, branche pro :
+  `!item.isHidden && !item.proReviewPending && !(item.isMadeToOrder && !item.isReserved)`.
+  Le staff le voit avec l'étiquette « Sur mesure · à attribuer ». Plus aucun
+  ordre de gestes ne peut l'exposer : c'est **inexprimable**, pas vérifié.
+- **D4. Ce qui est déjà vendu.** Un article qu'une fiche passe sur mesure
+  alors qu'il n'a aucune réservation **disparaît** du rayon de tous les pros
+  au fait suivant. Les commandes déjà passées gardent leurs lignes (prix et
+  lignes figés, S6) ; un abonnement qui le porte suit le mur existant à
+  l'occurrence (§ 6, Abonnements). À afficher dans la confirmation de la case
+  au référentiel : « tant qu'aucun compte ne lui est attribué dans Catalogue
+  publié, aucun pro ne le voit ».
+
+### 13.3 Données
+
+Migration `20261102xxxxxx_le_sur_mesure_au_referentiel`, en trois temps
+(étendre, basculer, ne plus lire — la colonne morte reste, CLAUDE.md §0) :
+
+1. **Étendre** : `pim.product.custom_recipe boolean NOT NULL DEFAULT false` et
+   `public.catalog_items.custom_recipe boolean NOT NULL DEFAULT false`.
+2. **Reporter** dans la même migration : une fiche passe à `true` si **au moins
+   une** de ses déclinaisons porte `catalog_item_overrides.is_made_to_order =
+true` (jointure par `catalog_items.product_id`), et les `catalog_items` de
+   ces fiches aussi. Le report est le seul endroit qui lit les deux schémas, et
+   c'est une migration, pas du code servi (`lint:cross-schema-join`).
+   ⚠️ Effet à faire valider : une fiche dont UNE déclinaison seulement était
+   marquée devient sur mesure en entier. Compter ces cas avant (requête de
+   lecture fournie au runbook).
+3. **Ne plus lire** : tous les lecteurs de `override.isMadeToOrder`
+   (`prisma-made-to-order-admin.reader.ts:21-50`,
+   `prisma-order-line-classification.reader.ts:46-59`,
+   `prisma-catalog-admin.reader.ts:71,136`, `catalog-item-access.ts:18,71`)
+   lisent `catalog_items.made_to_order`. `is_made_to_order` reste en base,
+   documentée colonne morte.
+
+Le fil gagne une version (v17) : un fait d'avant elle ne porte pas le champ et
+se lit `false` — c'est l'état de toutes les fiches avant la case, sauf celles
+que la migration a reportées, qu'un push complet relit `true` depuis la fiche.
+
+### 13.4 Écrans
+
+- **Fiche produit, section Commerce** : case « Sur mesure », avec la phrase de
+  D4. Pas de liste de comptes.
+- **Catalogue publié** : badge « Sur mesure · réservé à N comptes », ou
+  « Sur mesure · à attribuer » ; le geste « Attribuer… » (comptes et
+  visibilité) remplace « Sur mesure… » et n'existe que sur un article sur
+  mesure. Filtre « sur mesure » inchangé.
+- **Fiche client, Articles réservés** : inchangée.
+
+### 13.5 Lots
+
+- **R3-1 back** : migration (D1, report), fil v17, commande PIM
+  `SetProductMadeToOrderCommand` + fait de journal, colonne commerce, bascule
+  des lecteurs, D3 dans `servedTo` et `servedToAnyone`, retrait de
+  `SetMadeToOrderCommand` et de sa route.
+- **R3-2 back-office** : case sur la fiche, badge et « Attribuer… » dans
+  Catalogue publié.
+- **Tests** : table de vérité de `servedTo` (sur mesure × réservé × lecteur) ;
+  e2e « fiche cochée sans réservation → absent du rayon d'un pro et de la
+  boutique ; une réservation → servi au seul titulaire » ; e2e du report.
+
+### 13.6 Contradiction de vitruve (2026-11-02), et ce qu'elle change
+
+- **BLOQUANT 1 — la règle n'entre pas dans `servedTo`.** Le staff, le fournil
+  (`catalog-sellable-articles.reader.ts:38`), l'heure limite
+  (`order-cutoff-gate.service.ts:55,80`), les bacs, la saisie staff, les
+  promotions, le résumé et l'export lisent par `servedTo(item, "pro")`
+  (`served-to-viewer.ts:37`), et la dérogation `waiveReservation` des lignes
+  gardées passe après (`:46`). **Corrigé** : D3 vit dans `servedToViewer`,
+  après les branches `staff` et `waiveReservation` ; la table de vérité couvre
+  `staff("pro")` et `waiveReservation`.
+- **BLOQUANT 2 — homonyme.** La fiche porte déjà `kind = made_to_order`
+  (« Sur commande », `product.prisma:1-5`), qui traverse le fil jusqu'à
+  `catalog_items.kind` (`catalog.prisma:144`). **À trancher par Hugo** : le
+  nouveau champ ne s'appelle pas `made_to_order` (proposition : `custom_recipe`,
+  « Sur mesure » à l'écran).
+- **BLOQUANT 3 — nom de table.** `pim.product` (`product.prisma:127`), pas
+  `pim.products`. **Corrigé** au § 13.3. La jointure par `catalog_items.product_id`
+  (`catalog.prisma:136-141`, « pas pour joindre ») n'est admise que dans la
+  migration de report.
+- **SÉRIEUX 4 — faits en vol.** Un fait d'avant v17 réécrirait `false` sur une
+  ligne reportée à `true`, et l'article sortirait de S3 (public). **Corrigé** :
+  un fait sans le champ laisse la colonne intacte (comme les colonnes exclues à
+  la création, `prisma-catalog-product-facts.projection.ts:124-131`) ; ordre de
+  déploiement migration → code → push complet, écrit au runbook.
+- **SÉRIEUX 5 — fixtures.** `seed:pim` sème une fiche cochée ; l'e2e du report
+  pose son override à l'ancienne avant la migration de test.
+- **SÉRIEUX 6 — confirmation.** La case au référentiel dit combien de comptes
+  ont commandé ou ont l'article en habituel ou en abonnement (lecture par le
+  canal pro existant). Les abonnements : Q7 du § 6 reste ouverte, la promesse
+  « à l'occurrence » n'est pas faite ici.
+- **SÉRIEUX 7 — validation pro.** Servi = validé pour les pros **et** au moins
+  une réservation. L'étiquette de Catalogue publié dit les deux attentes ; la
+  fixture e2e valide avant de réserver.
+- **SÉRIEUX 8 — détachement.** Une déclinaison détachée d'une fiche sur mesure
+  **hérite** de la case (`detachedFromSku`, `catalog-fact-mapping.ts:73`).
+- **MINEURS** : retirer `isMadeToOrder` de `ACCESS_DECISION_COLUMNS` et
+  d'`AccessRow.override` (`catalog-item-access.ts:46-51`) ; barrer S4 au § 3 et
+  les commentaires `served-to.ts:33`, `catalog.prisma:641-645` dans le même lot.
+
+### 13.7 Réponses de Hugo (2026-11-02)
+
+- **Nom** : `custom_recipe` dans le code (`pim.product.custom_recipe`,
+  `catalog_items.custom_recipe`, `customRecipe`), « Sur mesure » à l'écran.
+  « Sur commande » (`kind = made_to_order`) ne change pas.
+- **Report** : une fiche dont une seule déclinaison était marquée devient sur
+  mesure en entier — accepté.
+- « bâtis » : R3-1 puis R3-2.
+
+### 13.8 Le bâti de R3-1 (2026-11-02)
+
+Bâti, non commité, non déployé. Chemins relatifs à `apps/lfd-api/`.
+
+- **Migration** `20261102240000_le_sur_mesure_au_referentiel` : `pim.product.custom_recipe`
+  et `public.catalog_items.custom_recipe` (`boolean NOT NULL DEFAULT false`),
+  puis le report par `catalog_items.product_id` (seule jointure des deux
+  schémas, dans la migration). Retour : `prisma/rollback/` du même nom. L'ordre
+  de déploiement (migration → code → « Tout réémettre ») et les requêtes de
+  constat sont au runbook (« Avant de déployer « le sur mesure au référentiel » »).
+- **Le fait** : `Product.declareCustomRecipe` ; `SetProductCustomRecipeCommand`
+  (`apps/lfd-api/src/pim/catalogue/product/application/set-product-custom-recipe.ts`, modèle de
+  `set-product-operation-only.ts` : journal `product.custom_recipe_changed`,
+  émission dans la même unité de travail) ; route
+  `PUT /pim/catalogue/products/:id/custom-recipe` (`{ customRecipe }`, droit
+  `pim_catalog`) ; la vue de fiche porte `customRecipe`. Le détachement hérite
+  de la case (13.6-8).
+- **Le fil v17** (`@lfd/catalog-sync`) : `customRecipe` obligatoire à
+  l'émission, toléré absent d'une arrivée stockée d'avant. Le fait
+  `pim.catalog_product_changed` le lit **absent** quand il manque, et
+  `pimFactsColumns` omet alors la colonne : ni écrite à la création (défaut
+  `false`), ni réécrite au conflit (13.6-4).
+- **D3** dans `servedToViewer`, après les branches `public`/`staff` et
+  `waiveReservation` ; `servedTo(item, "pro")` reste vrai pour un article sur
+  mesure non attribué (13.6, bloquant 1). `ServableItem.isMadeToOrder` devient
+  `isCustomRecipe`, lu sur `catalog_items.custom_recipe` ;
+  `ACCESS_DECISION_COLUMNS` et `AccessRow.override` ne portent plus le marqueur.
+- **Lecteurs basculés** : `catalog-item-access.ts`, `prisma-catalog.reader.ts`,
+  `prisma-catalog-admin.reader.ts`, `prisma-made-to-order-admin.reader.ts`,
+  `prisma-order-line-classification.reader.ts` (la ligne de commande garde
+  son `made_to_order` figé, sous son nom d'origine).
+- **Retirés** : `SetMadeToOrderCommand`, son handler, la route
+  `PUT /admin/catalog/:sku/made-to-order`, `MadeToOrderSettings.setMadeToOrder`
+  et l'événement `MadeToOrderChangedEvent` (les faits passés
+  `catalog_item.made_to_order_marked` restent au journal).
+- **Contrats** (`@lfd/contracts`) : `isMadeToOrder` → `isCustomRecipe` sur
+  `CatalogAdminItemView`, `MadeToOrderMarkView`, `ArticleReservationView`,
+  `ReservedArticleView` ; `setMadeToOrderPayloadSchema` retiré.
+  `@lfd/pim-contracts` : `setProductCustomRecipePayloadSchema`, `customRecipe`
+  sur la vue de fiche. Journal : `product.custom_recipe_changed`.
+- **Semis** : `seed:pim` coche la tartelette noix caramel (`PAT-013`), sans
+  l'attribuer (13.6-5).
+- **Tests** : table de vérité de `servedToViewer` (sur mesure × réservation ×
+  dix lecteurs, `staff("pro")`, `staff("public")` et `waiveReservation`
+  compris) ; e2e `catalog-custom-recipe` (case → journal → fait → colonne →
+  mur) et `custom-recipe-report-migration` (le report rejoué depuis le
+  fichier de migration).
+
+**Pas fait dans R3-1** : la lecture « combien de comptes touchés » de la
+confirmation (13.6-6). Le canal existant que le référentiel déclare au
+commerce (`SaleReferenceUsage`) ne rend que des catégories d'usage, jamais
+une société, par construction ; compter des comptes demande un **port de
+plus** (lecture par lot, déclarée dans `pim/channels/b2b-platform/`,
+implémentée au commerce) — à décider avec R3-2, qui l'affiche.
+
+### 13.9 Le bâti de R3-2 (2026-11-02)
+
+Bâti, non commité. Chemins relatifs à `apps/lfd-backoffice-frontend/src/app/`.
+
+- **La case de la fiche** : `pim/catalogue/product-form/form-sections/custom-recipe/`
+  (`app-custom-recipe-form`), modèle de la vente en opération — écrite tout de
+  suite par `ProductHttpApi.setCustomRecipe` (`PUT products/:id/custom-recipe`),
+  hors de « Tout enregistrer », un refus remet la case. Rangée dans la carte
+  « Audience » de la section Commerce (à qui la fiche se vend). L'aide dit
+  la phrase de D4. `Product.customRecipe` et `ProductFormStore.customRecipe`
+  la portent ; le journal dit `product.custom_recipe_changed`.
+- **Pas de compte de clients touchés** (13.6-6) : décidé le 2026-11-02, pas de
+  port de plus pour l'instant. La case ne dit que la règle.
+- **Catalogue publié** (`b2b/catalogue/`) : un article sur mesure porte
+  « Sur mesure · réservé à N comptes » ou « Sur mesure · à attribuer », suivi
+  de « · validation pro en attente » quand `proReviewPending` (13.6-7)
+  (`customRecipeLabel`, `made-to-order.ts`). Sans le droit
+  `lfc_made_to_order:read`, le badge ne dit que « Sur mesure ». Un article
+  réservé non sur mesure garde son badge « réservé à N comptes ». « Sur
+  mesure… » devient **« Attribuer… »**, offert sur un article sur mesure
+  seulement ; le panneau (`made-to-order-panel/`) ne porte plus la case :
+  visibilité et comptes réservataires. `setMadeToOrder` est retiré du service.
+- **Fiche client, Articles réservés** : inchangée, le badge lit `isCustomRecipe`.

@@ -4,10 +4,10 @@ import { z } from "zod";
  * **Les articles sur mesure et leur réservation**, vus du back-office (plan
  * `documentation/catalogue/plan-articles-sur-mesure.md`, lot L1a).
  *
- * Un article peut être marqué « sur mesure » et réservé à une liste de
- * sociétés. Ce contrat ne porte que le RÉGLAGE : le mur qui en tire les
- * conséquences au rayon, au devis et à la commande est le lot L1b — tant
- * qu'il n'est pas déployé, une réservation ne restreint rien.
+ * Un article peut être réservé à une liste de sociétés. Depuis R3-1
+ * (2026-11-02, § 13), « sur mesure » est un FAIT de la fiche du référentiel
+ * (`isCustomRecipe`), que ces vues relaient ; sans réservation, un article sur
+ * mesure n'est servi à aucun pro (D3).
  */
 
 /**
@@ -20,9 +20,9 @@ import { z } from "zod";
 export const RESERVED_VISIBILITIES = ["hidden", "visible_locked"] as const;
 export type ReservedVisibility = (typeof RESERVED_VISIBILITIES)[number];
 
-/** Marquer un article « sur mesure », ou l'en démarquer (`PUT admin/catalog/:sku/made-to-order`). */
-export const setMadeToOrderPayloadSchema = z.object({ madeToOrder: z.boolean() });
-export type SetMadeToOrderPayload = z.infer<typeof setMadeToOrderPayloadSchema>;
+// Le geste « Sur mesure… » du commerce (`PUT admin/catalog/:sku/made-to-order`)
+// est retiré par R3-1 (2026-11-02, § 13 D2) : le sur mesure est un fait de la
+// fiche, posé au référentiel (`PUT /pim/catalogue/products/:id/custom-recipe`).
 
 /** Régler la visibilité d'un article réservé (`PUT admin/catalog/:sku/reserved-visibility`). */
 export const setReservedVisibilityPayloadSchema = z.object({
@@ -31,16 +31,20 @@ export const setReservedVisibilityPayloadSchema = z.object({
 export type SetReservedVisibilityPayload = z.infer<typeof setReservedVisibilityPayloadSchema>;
 
 /**
- * Le réglage d'un article qui en porte un — sur mesure, ou réservé à au moins
- * une société (`GET admin/catalog/made-to-order`). Les autres n'y sont pas :
+ * Le réglage d'un article qui en porte un — sur mesure (fait de la fiche), ou
+ * réservé à au moins une société (`GET admin/catalog/made-to-order`). Les autres n'y sont pas :
  * l'écran les joint au catalogue par SKU, et un article absent n'a rien de
  * réglé.
  */
 export interface MadeToOrderMarkView {
   readonly sku: string;
-  readonly isMadeToOrder: boolean;
+  /** Le fait de la fiche (§ 13, D1) — « Sur mesure » à l'écran. */
+  readonly isCustomRecipe: boolean;
   readonly reservedVisibility: ReservedVisibility;
-  /** Le nombre de sociétés réservataires — `0` : ouvert à tous les pros. */
+  /**
+   * Le nombre de sociétés réservataires — `0` : ouvert à tous les pros, sauf
+   * s'il est sur mesure (« à attribuer », servi à aucun pro, D3).
+   */
   readonly reservationCount: number;
 }
 
@@ -58,7 +62,8 @@ export interface ArticleReservationHolderView {
 export interface ArticleReservationView {
   readonly sku: string;
   readonly name: string;
-  readonly isMadeToOrder: boolean;
+  /** Le fait de la fiche (§ 13, D1) — « Sur mesure » à l'écran. */
+  readonly isCustomRecipe: boolean;
   readonly reservedVisibility: ReservedVisibility;
   readonly holders: readonly ArticleReservationHolderView[];
 }
@@ -67,7 +72,8 @@ export interface ArticleReservationView {
 export interface ReservedArticleView {
   readonly sku: string;
   readonly name: string;
-  readonly isMadeToOrder: boolean;
+  /** Le fait de la fiche (§ 13, D1) — « Sur mesure » à l'écran. */
+  readonly isCustomRecipe: boolean;
   readonly reservedVisibility: ReservedVisibility;
   readonly reservedAt: string;
   readonly reservedByName: string | null;

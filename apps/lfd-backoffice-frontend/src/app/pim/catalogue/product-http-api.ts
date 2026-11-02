@@ -29,6 +29,7 @@ import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
 import type {
   SetProductOperationOnlyPayload,
+  SetProductCustomRecipePayload,
   SetProductColdRequirementPayload,
   SetProductVariantsAsTilesPayload,
   UpdateVariantPricingPayload,
@@ -208,6 +209,7 @@ export function backendToProduct(
     variants: product.variants.map(toVariant),
     vatByContext: product.vatByContext,
     operationOnly: product.operationOnly,
+    customRecipe: product.customRecipe,
     requiresCold: product.requiresCold,
     variantsAsTiles: product.variantsAsTiles,
     audience: product.audience,
@@ -600,6 +602,15 @@ export class ProductHttpApi {
   async setOperationOnly(id: string, operationOnly: boolean): Promise<void> {
     const payload: SetProductOperationOnlyPayload = { operationOnly };
     await this.put(`products/${id}/operation-only`, payload);
+  }
+
+  /**
+   * **Sur mesure** — une écriture à part, journalisée par le serveur
+   * (`product.custom_recipe_changed`), hors de l'enregistrement des sections.
+   */
+  async setCustomRecipe(id: string, customRecipe: boolean): Promise<void> {
+    const payload: SetProductCustomRecipePayload = { customRecipe };
+    await this.put(`products/${id}/custom-recipe`, payload);
   }
 
   /**

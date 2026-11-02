@@ -41,7 +41,7 @@
                   <span class="muted">{{ article.sku }}</span>
                 </span>
                 <span class="tags">
-                  @if (article.isMadeToOrder) {
+                  @if (article.isCustomRecipe) {
                     <fold-badge content="Sur mesure" variant="accent" />
                   }
                   <fold-badge [content]="visibility(article)" variant="neutral" />
@@ -102,7 +102,7 @@
                     <span class="muted">{{ article.sku }} · via {{ principal.name }}</span>
                   </span>
                   <span class="tags">
-                    @if (article.isMadeToOrder) {
+                    @if (article.isCustomRecipe) {
                       <fold-badge content="Sur mesure" variant="accent" />
                     }
                   </span>

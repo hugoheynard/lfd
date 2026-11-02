@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 16;
+export const CATALOG_SNAPSHOT_VERSION = 17;
 
 /**
  * Une famille de produits, **à plat**.
@@ -575,6 +575,17 @@ export const syncProductSchema = z.object({
    * l'émission plutôt que de laisser le récepteur choisir.
    */
   variantsAsTiles: z.boolean(),
+  /**
+   * **Sur mesure** — une recette faite pour un ou quelques clients (v17,
+   * `documentation/catalogue/plan-articles-sur-mesure.md` § 13, D1). Un fait
+   * de la fiche, que le récepteur descend sur ses articles ; c'est lui qui
+   * décide à quels comptes l'article est attribué — le référentiel ne connaît
+   * aucune société.
+   *
+   * Obligatoire, comme `variantsAsTiles` : un émetteur qui l'oublie échoue à
+   * l'émission plutôt que de laisser lire « ouvert à tous ».
+   */
+  customRecipe: z.boolean(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
 
@@ -725,6 +736,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(14),
     z.literal(15),
     z.literal(16),
+    z.literal(17),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -739,6 +751,9 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
       // Absent avant la v16 : seule la déclinaison par défaut paraissait au
       // rayon. C'est la VERSION qui dit comment lire.
       variantsAsTiles: z.boolean().optional(),
+      // Absent avant la v17 : le sur mesure ne traversait pas, il se posait
+      // au commerce. C'est la VERSION qui dit comment lire.
+      customRecipe: z.boolean().optional(),
       // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
       // arrivée d'avant la bascule reste lisible, et se lit alors « ni ligne ni
       // visuel » — ce qui est exact : elle n'en portait pas.

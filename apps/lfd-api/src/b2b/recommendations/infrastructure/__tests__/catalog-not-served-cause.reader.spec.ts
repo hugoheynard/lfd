@@ -26,7 +26,7 @@ function variant(
     proReviewPending: false,
     isFeaturedPro: false,
     isFeaturedPublic: false,
-    isMadeToOrder: false,
+    isCustomRecipe: false,
     isReserved: false,
     operationOnly: false,
     decidedBy: null,

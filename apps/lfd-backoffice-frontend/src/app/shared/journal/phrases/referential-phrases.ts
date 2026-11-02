@@ -293,6 +293,23 @@ function operationOnlyChanged(fact: PhraseFact): Said {
 }
 
 /**
+ * « … a déclaré « Tartelette » sur mesure » — le fait de la fiche (§ 13 du plan
+ * des articles sur mesure, D1). L'attribuer à des comptes est un autre fait.
+ */
+function customRecipeChanged(fact: PhraseFact): Said {
+  const custom = fact.payload['to'] === true;
+  return byActor(
+    fact,
+    [
+      text('a déclaré '),
+      ...theSubject(fact, PRODUCT),
+      text(custom ? ' sur mesure' : ' hors sur mesure'),
+    ],
+    ['subjectLabel', 'from', 'to'],
+  );
+}
+
+/**
  * « … a déclaré que « Tarte citron » demande le froid » / « … ne demande plus
  * le froid » (lot 4 bis du plan de préparation de tournée, 2026-09-29).
  */
@@ -381,6 +398,7 @@ export const REFERENTIAL_PHRASES = {
   'product.media_saved': sectionSaved('les visuels', OF_PRODUCT, 'none'),
   'product.channels_changed': channelsChanged,
   'product.operation_only_changed': operationOnlyChanged,
+  'product.custom_recipe_changed': customRecipeChanged,
   'product.cold_requirement_changed': coldRequirementChanged,
   'product.variants_as_tiles_changed': variantsAsTilesChanged,
   'product.declared_ready': onProduct('a déclaré', ' prête à publier'),

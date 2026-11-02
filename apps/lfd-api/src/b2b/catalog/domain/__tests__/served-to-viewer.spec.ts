@@ -33,7 +33,7 @@ function item(over: Partial<ServableItem> = {}): ServableItem {
     publicReviewPending: false,
     proReviewPending: false,
     isReserved: true,
-    isMadeToOrder: false,
+    isCustomRecipe: false,
     ...over,
   };
 }
@@ -111,24 +111,59 @@ describe("servedToViewer — sans réservation", () => {
     }
   });
 
-  it("sur mesure sans réservation : tous les pros, jamais le public (S4, S3)", () => {
-    const madeToOrder = item({ isReserved: false, isMadeToOrder: true });
-    expect(servedToViewer(madeToOrder, reservedTo(PRO_B, [], "hidden"), PRO_B)).toBe("served");
-    expect(
-      servedToViewer(
-        madeToOrder,
-        reservedTo(PRO_ANONYMOUS_VIEWER, [], "hidden"),
-        PRO_ANONYMOUS_VIEWER,
-      ),
-    ).toBe("served");
-    expect(
-      servedToViewer(madeToOrder, reservedTo(PUBLIC_VIEWER, [], "hidden"), PUBLIC_VIEWER),
-    ).toBe("absent");
-  });
-
   it("le personnel lisant le public applique S3 aussi", () => {
     const viewer = staffViewer("public");
     expect(servedToViewer(item(), reservedTo(viewer, [A], "hidden"), viewer)).toBe("absent");
+  });
+});
+
+/**
+ * **D3 — la table de vérité du sur mesure** (`plan-articles-sur-mesure.md`
+ * § 13.2, 13.6) : sur mesure × réservation × lecteur. S4 (« ouvert à tous les
+ * pros ») est remplacée : sans réservation, aucun pro ne le voit. Le personnel
+ * et les lignes gardées d'une révision passent AVANT la règle (bloquant 1).
+ */
+describe("servedToViewer — un article sur mesure (D3)", () => {
+  const KEPT_B = keptLinesViewer({ companyId: B, activePrincipalId: null });
+  const STAFF_PUBLIC = staffViewer("public");
+
+  it.each<[string, CatalogViewer, ViewerVerdict, ViewerVerdict, ViewerVerdict]>([
+    // lecteur, sans réservation, réservé à A `hidden`, réservé à A `visible_locked`
+    ["le public (S3)", PUBLIC_VIEWER, "absent", "absent", "absent"],
+    ["le pro anonyme (D3, Q2)", PRO_ANONYMOUS_VIEWER, "absent", "absent", "absent"],
+    ["A lui-même (D3, S1)", PRO_A, "absent", "served", "served"],
+    ["un site dont A est le principal actif", SITE_A, "absent", "served", "served"],
+    ["un site au principal suspendu", SITE_A_SUSPENDED_PRINCIPAL, "absent", "absent", "absent"],
+    ["B, lecteur ordinaire", PRO_B, "absent", "absent", "absent"],
+    ["B, rayon reconnu ou habituels", PRO_B_LOCKED, "absent", "absent", "locked"],
+    ["le personnel, tarif pro (S5)", STAFF, "served", "served", "served"],
+    ["le personnel, étiquette publique (S3)", STAFF_PUBLIC, "absent", "absent", "absent"],
+    ["les lignes gardées de B (waiveReservation)", KEPT_B, "served", "served", "served"],
+  ])("%s", (_label, viewer, unattributed, whenHidden, whenLocked) => {
+    const custom = (isReserved: boolean): ServableItem =>
+      item({ isReserved, isCustomRecipe: true });
+    expect(servedToViewer(custom(false), reservedTo(viewer, [], "hidden"), viewer)).toBe(
+      unattributed,
+    );
+    expect(servedToViewer(custom(true), reservedTo(viewer, [A], "hidden"), viewer)).toBe(
+      whenHidden,
+    );
+    expect(servedToViewer(custom(true), reservedTo(viewer, [A], "visible_locked"), viewer)).toBe(
+      whenLocked,
+    );
+  });
+
+  it("un article ouvert, non sur mesure, reste servi à tous les pros (rien ne change)", () => {
+    const open = item({ isReserved: false, isCustomRecipe: false });
+    for (const viewer of [PRO_ANONYMOUS_VIEWER, PRO_A, PRO_B, KEPT_B]) {
+      expect(servedToViewer(open, reservedTo(viewer, [], "hidden"), viewer)).toBe("served");
+    }
+  });
+
+  it("le sur mesure n'ouvre pas ce que la validation pro ferme (13.6-7)", () => {
+    const pending = item({ isCustomRecipe: true, proReviewPending: true });
+    expect(servedToViewer(pending, reservedTo(PRO_A, [A], "hidden"), PRO_A)).toBe("absent");
+    expect(servedToViewer(pending, reservedTo(STAFF, [A], "hidden"), STAFF)).toBe("absent");
   });
 });
 

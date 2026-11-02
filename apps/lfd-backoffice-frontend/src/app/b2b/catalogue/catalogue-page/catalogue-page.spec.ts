@@ -51,7 +51,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     audience: null,
     isFeaturedPro: false,
     isFeaturedPublic: false,
-    isMadeToOrder: false,
+    isCustomRecipe: false,
     isReserved: false,
     operationOnly: false,
     decidedBy: null,
@@ -795,36 +795,41 @@ describe('CataloguePage — le prix public encaissé', () => {
   });
 });
 
-describe('le sur mesure (L1a)', () => {
-  it('marque l’article sur mesure et compte ses réservataires', async () => {
+describe('le sur mesure (R3-2)', () => {
+  const badgesOf = (fixture: Awaited<ReturnType<typeof render>>): string[] =>
+    [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-badge')].map((badge) =>
+      badge.textContent.trim(),
+    );
+
+  it('un article sur mesure réservé dit à combien de comptes', async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ isCustomRecipe: true, isReserved: true })];
     const madeToOrder = new FakeMadeToOrder();
     madeToOrder.marked = [
-      {
-        sku: 'VIE-001-1',
-        isMadeToOrder: true,
-        reservedVisibility: 'hidden',
-        reservationCount: 2,
-      },
+      { sku: 'VIE-001-1', isCustomRecipe: true, reservedVisibility: 'hidden', reservationCount: 2 },
     ];
 
-    const fixture = await render(new FakeCatalogue(), madeToOrder);
+    const fixture = await render(api, madeToOrder);
 
-    const badges = [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-badge')].map(
-      (badge) => badge.textContent.trim(),
-    );
-    expect(badges).toContain('Sur mesure');
-    expect(badges).toContain('réservé à 2 comptes');
+    expect(badgesOf(fixture)).toContain('Sur mesure · réservé à 2 comptes');
+    expect(text(fixture)).toContain('Attribuer…');
   });
 
-  it('sans réglage, ni badge ni compte — le geste reste offert', async () => {
+  it('un article sur mesure sans réservation est « à attribuer », et dit sa validation pro', async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ isCustomRecipe: true, proReviewPending: true })];
+
+    const fixture = await render(api, new FakeMadeToOrder());
+
+    expect(badgesOf(fixture)).toContain('Sur mesure · à attribuer · validation pro en attente');
+  });
+
+  it('un article courant : ni badge, ni « Attribuer… »', async () => {
     const fixture = await render(new FakeCatalogue());
 
-    const badges = [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-badge')].map(
-      (badge) => badge.textContent.trim(),
-    );
-    expect(badges).not.toContain('Sur mesure');
-    expect(text(fixture)).not.toContain('réservé à');
-    expect(text(fixture)).toContain('Sur mesure…');
+    expect(badgesOf(fixture).some((badge) => badge.startsWith('Sur mesure'))).toBe(false);
+    expect(text(fixture)).not.toContain('Attribuer…');
+    expect(text(fixture)).not.toContain('Sur mesure…');
   });
 
   /** Le sur mesure a son droit à part de `lfc_catalog` (Hugo, 2026-10-30). */
@@ -837,7 +842,7 @@ describe('le sur mesure (L1a)', () => {
     );
 
     expect(madeToOrder.calls).toBe(0);
-    expect(text(fixture)).not.toContain('Sur mesure…');
+    expect(text(fixture)).not.toContain('Attribuer…');
     expect(text(fixture)).toContain('Croissant');
   });
 });
