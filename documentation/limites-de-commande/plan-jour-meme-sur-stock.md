@@ -525,10 +525,22 @@ Trois **bloquants** sur le §11, chacun avec sa réponse proposée.
 2. **La révision d'une commande `shelf`** (`order-revising.service.ts:182-246`)
    recompose ses lignes : une hausse vendrait au-delà du reste, et la garder
    obligerait à tenir le verrou du stock **avec** celui de journée (`holdDay`).
-   → **Proposé, à confirmer par Hugo** : **une commande `shelf` ne se modifie
-   pas** — elle se remet dans la journée, ou s'annule et se refait. La règle est
-   dans l'agrégat (`Order.revise` refuse `shelf`), et les deux verrous restent
-   séparés.
+   → ~~une commande `shelf` ne se modifie pas~~ — **refusé par Hugo le
+   2026-11-02 : « je voudrais pouvoir modifier les commandes prises sur la
+   vitrine »**. Décidé à la place :
+   - la révision d'une commande `shelf` prend **le verrou du stock à la place**
+     du verrou de journée (`holdDay` se sépare sur `supply` comme `holdPlan`) :
+     les deux verrous ne sont toujours jamais tenus ensemble ;
+   - elle applique les gardes du circuit (clientèle autorisée, créneau restant,
+     **reste** recalculé en rendant d'abord les quantités de la commande
+     elle-même), et non `ensureDayOpen` / `ensureBeforeCutoff` ;
+   - **les lignes et les quantités** se modifient ; **la journée** ne change pas
+     (une commande `shelf` reste d'aujourd'hui) ; **le point** non plus — le
+     stock d'un autre point est un autre stock : changer de point, c'est annuler
+     et refaire ;
+   - une commande `shelf` **déjà remise** ne se modifie plus, comme toute
+     commande remise (le « Retrait immédiat » d'un pro l'est dès sa
+     validation).
 3. **Aucun créneau pro n'existe** : les seuls créneaux sont publics
    (`public_pickup_slot_rules`, `settings.prisma:502-537`).
    → **Proposé** — la source selon la porte :
@@ -548,7 +560,8 @@ Trois **bloquants** sur le §11, chacun avec sa réponse proposée.
   demain ne serait jamais cuite.
 - **« Client + aujourd'hui = `shelf` » seulement si le plan d'aujourd'hui est
   arrêté.** Plan ouvert (rouvert, ou pas encore arrêté faute d'heure limite) :
-  la commande est `planned`, le fournil la prend. **À confirmer par Hugo.**
+  la commande est `planned`, le fournil la prend. **Confirmé par Hugo le
+  2026-11-02.**
 - **Le pré-remplissage du règlement lit le payeur**, comme le serveur
   (`order-settlement.ts:114-126` : `payerId ?? companyId`, société active) : la
   vue du comptoir (`CounterCustomerView.settlesOnAccount`, calculée sur la
