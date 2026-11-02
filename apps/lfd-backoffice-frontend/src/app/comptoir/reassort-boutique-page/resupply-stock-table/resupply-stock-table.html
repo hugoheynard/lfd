@@ -74,70 +74,17 @@
           (valueChange)="setState(row, $event)"
         />
       } @else {
-        {{ row.state === 'ok' ? 'OK' : row.state === 'low' ? 'Faible' : 'Rupture' }}
+        {{ stateLabel(row.state) }}
       }
     </ng-template>
     <ng-template foldCell="quantity" let-row>
       @if (canWrite()) {
-        <div
-          class="quantity"
-          [attr.data-resupply-quantity]="row.sku"
-          (focusout)="commit(target(), row)"
-          (keydown.enter)="commit(target(), row)"
-        >
-          <!-- Au poids, la case compte des grammes : ses pas aussi (100 g, 500 g, 1 kg). -->
-          @for (quantity of downStepsOf(row.saleUnit); track quantity) {
-            <button
-              class="shortcut"
-              foldButton
-              type="button"
-              emphasis="soft"
-              intent="neutral"
-              size="sm"
-              [disabled]="resuppliesPending() || !quantityOf(target(), row)"
-              (click)="stepDown(target(), row, quantity)"
-            >
-              −{{ quantity | saleQuantity: row.saleUnit }}
-            </button>
-          }
-          <!-- En mobile, la case seule ouvre le dialogue des raccourcis. -->
-          <div class="cell" (click)="openQuantity(row)">
-            <fold-number-input
-              size="sm"
-              align="center"
-              [placeholder]="row.saleUnit === 'weight' ? 'g' : ''"
-              [readOnly]="phone()"
-              [value]="quantityOf(target(), row)"
-              (valueChange)="setQuantity(target(), row, $event)"
-              [min]="0"
-              integer
-              [disabled]="resuppliesPending()"
-            />
-          </div>
-          @if (row.saleUnit === 'weight') {
-            <span class="muted" [attr.data-resupply-weight]="row.sku">
-              @if (quantityOf(target(), row); as grams) {
-                {{ grams | saleQuantity: 'weight' }}
-              } @else {
-                en grammes
-              }
-            </span>
-          }
-          @for (quantity of stepsOf(row.saleUnit); track quantity) {
-            <button
-              class="shortcut"
-              foldButton
-              type="button"
-              emphasis="soft"
-              intent="neutral"
-              size="sm"
-              [disabled]="resuppliesPending()"
-              (click)="step(target(), row, quantity)"
-            >
-              +{{ quantity | saleQuantity: row.saleUnit }}
-            </button>
-          }
-        </div>
+        <app-resupply-quantity-cell
+          [row]="row"
+          [target]="target()"
+          [draft]="targetDraft()"
+          [phone]="phone()"
+        />
       } @else {
         {{ (target() === 'asap' ? row.asap : row.tomorrow) | saleQuantity: row.saleUnit }}
       }
@@ -164,38 +111,14 @@
         </fold-dropdown-item>
       </fold-dropdown>
       @if (unorderedSku() === row.sku) {
-        <div class="quantity" data-resupply-unordered-editor>
-          <fold-number-input
-            size="sm"
-            [label]="
-              row.saleUnit === 'weight' ? 'Reçu sans commande, en grammes' : 'Reçu sans commande'
-            "
-            [hint]="unorderedHint(row)"
-            [value]="unorderedQuantity()"
-            (valueChange)="unorderedQuantity.set($event)"
-            [min]="1"
-            integer
-          />
-          <button
-            foldButton
-            type="button"
-            size="sm"
-            [disabled]="unorderedPending()"
-            (click)="saveUnordered(row)"
-          >
-            Enregistrer
-          </button>
-          <button
-            foldButton
-            type="button"
-            emphasis="soft"
-            intent="neutral"
-            size="sm"
-            (click)="closeUnordered()"
-          >
-            Annuler
-          </button>
-        </div>
+        <app-unordered-receipt-editor
+          [siteId]="siteId()"
+          [day]="day()"
+          [row]="row"
+          (saved)="unorderedSaved()"
+          (closed)="closeUnordered()"
+          (failure)="unorderedFailure.set($event)"
+        />
       }
     </ng-template>
   </fold-data-table>

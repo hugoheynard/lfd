@@ -1,0 +1,24 @@
+<div class="editor" data-resupply-unordered-editor>
+  <fold-number-input
+    size="sm"
+    [label]="row().saleUnit === 'weight' ? 'Reçu sans commande, en grammes' : 'Reçu sans commande'"
+    [hint]="hint()"
+    [value]="quantity()"
+    (valueChange)="quantity.set($event)"
+    [min]="1"
+    integer
+  />
+  <button foldButton type="button" size="sm" [disabled]="pending()" (click)="save()">
+    Enregistrer
+  </button>
+  <button
+    foldButton
+    type="button"
+    emphasis="soft"
+    intent="neutral"
+    size="sm"
+    (click)="closed.emit()"
+  >
+    Annuler
+  </button>
+</div>

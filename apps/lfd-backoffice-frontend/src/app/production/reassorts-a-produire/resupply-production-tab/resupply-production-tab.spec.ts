@@ -6,7 +6,7 @@ import type {
   StaffPermission,
 } from '@lfd/contracts';
 import { signal } from '@angular/core';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
@@ -188,5 +188,30 @@ describe("l'onglet Réassorts de Prod manager", () => {
     expect(el.querySelector('[data-resupply-row="GRA"]')?.textContent).not.toContain('1250');
     expect(el.querySelector('[data-resupply-pieces]')?.textContent?.trim()).toBe('10');
     expect(el.querySelector('[data-resupply-weight]')?.textContent).toContain('1,25 kg');
+  });
+
+  describe('le passage de minuit sur un onglet resté ouvert', () => {
+    afterEach(() => vi.useRealTimers());
+
+    /**
+     * Régression : le jour du poste était lu une fois à la construction ; après
+     * minuit, « demain » restait celui de la veille et la flèche de retour
+     * restait grisée sur le mauvais jour (audit réassort, 2026-11-02).
+     */
+    it('suit le jour réel de Paris, et arrête sa minuterie à la destruction', async () => {
+      vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+      // 23 h 30 à Paris (UTC+1 en mars) : demain est le 11.
+      vi.setSystemTime(new Date('2026-03-10T22:30:00.000Z'));
+      const resupplies = new FakeResupplies();
+      const { fixture } = await mount(resupplies);
+      expect(resupplies.asked[0]).toBe('2026-03-11');
+      expect(fixture.componentInstance['atTomorrow']()).toBe(true);
+
+      vi.advanceTimersByTime(60 * 60_000);
+      expect(fixture.componentInstance['atTomorrow']()).toBe(false);
+
+      fixture.destroy();
+      expect(vi.getTimerCount()).toBe(0);
+    });
   });
 });

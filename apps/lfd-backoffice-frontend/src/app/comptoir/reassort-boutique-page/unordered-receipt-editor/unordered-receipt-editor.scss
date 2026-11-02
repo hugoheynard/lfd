@@ -1,0 +1,10 @@
+:host {
+  display: block;
+}
+
+.editor {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--fold-space-xs);
+  align-items: center;
+}

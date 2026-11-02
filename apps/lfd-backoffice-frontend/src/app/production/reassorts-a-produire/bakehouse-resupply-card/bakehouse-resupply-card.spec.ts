@@ -131,10 +131,11 @@ async function mount(
   bakehouse = new FakeBakehouse(),
   panels = new FakePanels(),
   draftId: string | null = null,
+  phone = false,
 ) {
-  // jsdom n'a pas `matchMedia` : le bureau par défaut, chaque test bascule `phone`.
+  // jsdom n'a pas `matchMedia` : le bureau par défaut, le téléphone sur demande.
   vi.stubGlobal('matchMedia', () => ({
-    matches: false,
+    matches: phone,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
   }));
@@ -343,8 +344,9 @@ describe('BakehouseResupplyCard', () => {
       new FakePickups(),
       new FakeBakehouse(),
       panels,
+      null,
+      true,
     );
-    card['phone'].set(true);
     card['siteId'].set('site_v');
     fixture.detectChanges();
 

@@ -1,12 +1,8 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import type {
   ResupplyArticleView,
   ResupplyReceiptLineView,
-  ResupplyTarget,
-  SiteResuppliesView,
-  SiteStockAlertsView,
-  StockAlertLevel,
-  StockAlertView,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,12 +16,20 @@ beforeEach(() => {
   }));
 });
 
-import { parisToday } from '../../../shared/paris-today';
+import { ResupplyQuantityCell } from '../resupply-quantity-cell/resupply-quantity-cell';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
+import {
+  ARTICLES,
+  FakeAlerts,
+  FakeReceipts,
+  FakeResupplies,
+  TODAY,
+} from '../resupply-stock.testing';
 import { SiteResuppliesService } from '../site-resupplies.service';
 import { SiteResuppliesStore } from '../site-resupplies.store';
 import { SiteStockAlertsService } from '../site-stock-alerts.service';
 import { SiteStockAlertsStore } from '../site-stock-alerts.store';
+import { UnorderedReceiptEditor } from '../unordered-receipt-editor/unordered-receipt-editor';
 import { ResupplyStockTable } from './resupply-stock-table';
 
 /**
@@ -33,164 +37,6 @@ import { ResupplyStockTable } from './resupply-stock-table';
  * clic, la demande en cours saisie dans la case, le tri « ce qui manque
  * d'abord », et le reçu sans commande dans le menu de la ligne.
  */
-const TODAY = parisToday();
-const ARTICLES: readonly ResupplyArticleView[] = [
-  {
-    sku: 'BAG',
-    name: 'Baguette',
-    categoryId: 'fam_bread',
-    categoryName: 'Pains',
-    saleUnit: 'piece' as const,
-  },
-  {
-    sku: 'CRO',
-    name: 'Croissant',
-    categoryId: 'fam_morning',
-    categoryName: 'Viennoiseries',
-    saleUnit: 'piece' as const,
-  },
-  {
-    sku: 'PAC',
-    name: 'Pain au chocolat',
-    categoryId: 'fam_morning',
-    categoryName: 'Viennoiseries',
-    saleUnit: 'piece',
-  },
-];
-
-/** La demande en cours, en mémoire : une version par geste, comme le serveur. */
-class FakeResupplies {
-  readonly calls: string[] = [];
-  private readonly lines = new Map<ResupplyTarget, Map<string, number>>([
-    ['asap', new Map()],
-    ['tomorrow', new Map()],
-  ]);
-  private version = 0;
-  private readonly names = new Map<ResupplyTarget, string>();
-  tomorrowOrderUntil: string | null = null;
-  usedNames: readonly string[] = [];
-
-  list(siteId: string): Promise<SiteResuppliesView> {
-    const drafts = (['asap', 'tomorrow'] as const).flatMap((target) => {
-      const lines = [...(this.lines.get(target) ?? new Map<string, number>())];
-      const name = this.names.get(target) ?? null;
-      return lines.length === 0 && name === null
-        ? []
-        : [
-            {
-              id: `draft_${target}`,
-              target,
-              serviceDay: TODAY,
-              version: this.version,
-              name,
-              lines: lines.map(([sku, quantity]) => ({
-                sku,
-                label: sku,
-                quantity,
-                saleUnit: 'piece' as const,
-              })),
-            },
-          ];
-    });
-    return Promise.resolve({
-      siteId,
-      today: TODAY,
-      tomorrow: TODAY,
-      tomorrowOrderUntil: this.tomorrowOrderUntil,
-      drafts,
-      resupplies: [],
-      usedNames: this.usedNames,
-    });
-  }
-  name(_s: string, target: ResupplyTarget, name: string | null): Promise<{ id: string }> {
-    this.calls.push(`name ${target} ${name ?? ''}`);
-    const trimmed = (name ?? '').trim();
-    if (trimmed === '') {
-      this.names.delete(target);
-    } else {
-      this.names.set(target, trimmed);
-    }
-    this.version += 1;
-    return Promise.resolve({ id: `draft_${target}` });
-  }
-  addLine(
-    _s: string,
-    target: ResupplyTarget,
-    sku: string,
-    quantity: number,
-  ): Promise<{ id: string }> {
-    this.calls.push(`add ${target} ${sku} ${String(quantity)}`);
-    const lines = this.lines.get(target);
-    lines?.set(sku, (lines.get(sku) ?? 0) + quantity);
-    this.version += 1;
-    return Promise.resolve({ id: `draft_${target}` });
-  }
-  correctLine(_s: string, id: string, sku: string, quantity: number): Promise<void> {
-    this.calls.push(`correct ${id} ${sku} ${String(quantity)}`);
-    this.lines.get(id === 'draft_asap' ? 'asap' : 'tomorrow')?.set(sku, quantity);
-    this.version += 1;
-    return Promise.resolve();
-  }
-  withdrawLine(_s: string, id: string, sku: string): Promise<void> {
-    this.calls.push(`withdraw ${id} ${sku}`);
-    this.lines.get(id === 'draft_asap' ? 'asap' : 'tomorrow')?.delete(sku);
-    this.version += 1;
-    return Promise.resolve();
-  }
-  send(_s: string, id: string): Promise<void> {
-    this.calls.push(`send ${id}`);
-    this.lines.get(id === 'draft_asap' ? 'asap' : 'tomorrow')?.clear();
-    this.version += 1;
-    return Promise.resolve();
-  }
-}
-
-class FakeAlerts {
-  readonly calls: string[] = [];
-  alerts: StockAlertView[] = [];
-
-  list(siteId: string): Promise<SiteStockAlertsView> {
-    return Promise.resolve({ siteId, alerts: this.alerts });
-  }
-  declare(siteId: string, sku: string, level: StockAlertLevel): Promise<void> {
-    this.calls.push(`declare ${sku} ${level}`);
-    this.alerts = [
-      {
-        id: `alert_${sku}`,
-        siteId,
-        sku,
-        label: sku,
-        level,
-        declaredAt: '2026-01-02T08:30:00.000Z',
-        declaredBy: 'Lou',
-      },
-      ...this.alerts.filter((a) => a.sku !== sku),
-    ];
-    return Promise.resolve();
-  }
-  lift(_siteId: string, alertId: string): Promise<void> {
-    this.calls.push(`lift ${alertId}`);
-    this.alerts = this.alerts.filter((a) => a.id !== alertId);
-    return Promise.resolve();
-  }
-}
-
-class FakeReceipts {
-  readonly calls: string[] = [];
-  receive(_s: string, _d: string, sku: string, quantity: number): Promise<void> {
-    this.calls.push(`receive ${sku} ${String(quantity)}`);
-    return Promise.resolve();
-  }
-  correct(_s: string, _d: string, sku: string, quantity: number): Promise<void> {
-    this.calls.push(`correct ${sku} ${String(quantity)}`);
-    return Promise.resolve();
-  }
-  withdraw(_s: string, _d: string, sku: string): Promise<void> {
-    this.calls.push(`withdraw ${sku}`);
-    return Promise.resolve();
-  }
-}
-
 interface Mounted {
   readonly fixture: ComponentFixture<ResupplyStockTable>;
   readonly table: ResupplyStockTable;
@@ -264,6 +110,29 @@ const order = (fixture: ComponentFixture<ResupplyStockTable>): string[] =>
     (tr) => tr.getAttribute('data-resupply-row') ?? '',
   );
 
+/** La case de quantité d'une ligne, telle que la table l'a posée. */
+function cellOf(fixture: ComponentFixture<ResupplyStockTable>, sku: string): ResupplyQuantityCell {
+  const cell = fixture.debugElement
+    .queryAll(By.directive(ResupplyQuantityCell))
+    .map((debug) => debug.componentInstance as ResupplyQuantityCell)
+    .find((instance) => instance.row().sku === sku);
+  if (cell === undefined) {
+    throw new Error(`case absente : ${sku}`);
+  }
+  return cell;
+}
+
+/** L'éditeur du reçu sans commande ouvert sous la table. */
+function editorOf(fixture: ComponentFixture<ResupplyStockTable>): UnorderedReceiptEditor {
+  const editor = fixture.debugElement.query(By.directive(UnorderedReceiptEditor));
+  if (editor === null) {
+    throw new Error('éditeur du reçu sans commande absent');
+  }
+  return editor.componentInstance as UnorderedReceiptEditor;
+}
+
+const store = (): SiteResuppliesStore => TestBed.inject(SiteResuppliesStore);
+
 describe('ResupplyStockTable', () => {
   it('montre tous les produits, leur stock du jour (somme des reçus) et un article reçu hors catalogue', async () => {
     const { fixture } = await mount({
@@ -313,9 +182,9 @@ describe('ResupplyStockTable', () => {
   it('trie : alertes, puis demandés, puis le reste', async () => {
     const alerts = new FakeAlerts();
     await alerts.declare('site_v', 'PAC', 'low');
-    const { fixture, table } = await mount({ alerts });
+    const { fixture } = await mount({ alerts });
 
-    await table['step']('tomorrow', rowOf(table, 'CRO'), 5);
+    await store().addLine('tomorrow', 'CRO', 5);
     await settle(fixture);
 
     expect(order(fixture)).toEqual(['PAC', 'CRO', 'BAG']);
@@ -324,18 +193,20 @@ describe('ResupplyStockTable', () => {
   it('la case écrit la demande en cours : ajoute, corrige, retire ; les pas s’ajoutent', async () => {
     const { fixture, table, resupplies } = await mount();
 
-    table['setQuantity']('asap', rowOf(table, 'CRO'), 6);
-    await table['commit']('asap', rowOf(table, 'CRO'));
+    table['chooseTarget']('asap');
     await settle(fixture);
-    await table['step']('asap', rowOf(table, 'CRO'), 10);
+    cellOf(fixture, 'CRO').setQuantity(6);
+    await cellOf(fixture, 'CRO').commit();
+    await settle(fixture);
+    await cellOf(fixture, 'CRO').step(10);
     await settle(fixture);
     expect(rowOf(table, 'CRO').asap).toBe(16);
 
-    table['setQuantity']('asap', rowOf(table, 'CRO'), 4);
-    await table['commit']('asap', rowOf(table, 'CRO'));
+    cellOf(fixture, 'CRO').setQuantity(4);
+    await cellOf(fixture, 'CRO').commit();
     await settle(fixture);
-    table['setQuantity']('asap', rowOf(table, 'CRO'), null);
-    await table['commit']('asap', rowOf(table, 'CRO'));
+    cellOf(fixture, 'CRO').setQuantity(null);
+    await cellOf(fixture, 'CRO').commit();
     await settle(fixture);
 
     expect(resupplies.calls).toEqual([
@@ -350,8 +221,8 @@ describe('ResupplyStockTable', () => {
     const { fixture, table, resupplies } = await mount();
 
     table['chooseTarget']('asap');
-    await table['step']('asap', rowOf(table, 'CRO'), 1);
-    await table['step']('asap', rowOf(table, 'PAC'), 5);
+    await store().addLine('asap', 'CRO', 1);
+    await store().addLine('asap', 'PAC', 5);
     await settle(fixture);
     const buttons = root(fixture).querySelectorAll<HTMLButtonElement>('[data-resupply-send]');
     expect(buttons.length).toBe(1);
@@ -379,8 +250,8 @@ describe('ResupplyStockTable', () => {
       root(fixture).querySelectorAll('[data-resupply-quantity="CRO"] fold-number-input').length,
     ).toBe(1);
 
-    await table['step']('tomorrow', rowOf(table, 'CRO'), 3);
-    await table['step']('tomorrow', rowOf(table, 'PAC'), 3);
+    await store().addLine('tomorrow', 'CRO', 3);
+    await store().addLine('tomorrow', 'PAC', 3);
     await settle(fixture);
     expect(table['targetOptions']().map((option) => option.label)).toEqual([
       'Au plus tôt',
@@ -407,8 +278,9 @@ describe('ResupplyStockTable', () => {
     table.changed.subscribe(() => (changed += 1));
 
     table['openUnordered'](rowOf(table, 'BAG'));
-    table['unorderedQuantity'].set(8);
-    await table['saveUnordered'](rowOf(table, 'BAG'));
+    await settle(fixture);
+    editorOf(fixture).quantity.set(8);
+    await editorOf(fixture).save();
     await settle(fixture);
 
     expect(receipts.calls).toEqual(['receive BAG 8']);
@@ -494,7 +366,7 @@ describe('ResupplyStockTable', () => {
     };
 
     it('dit le stock « 3,75 kg », saisit en grammes avec des pas en grammes, et envoie des grammes', async () => {
-      const { fixture, table, resupplies } = await mount({
+      const { fixture, resupplies } = await mount({
         articles: [...ARTICLES, GRAVLAX],
         stock: [
           {
@@ -528,10 +400,10 @@ describe('ResupplyStockTable', () => {
       expect(shortcuts('CRO')).toBe(8);
 
       // La visée affichée par défaut : « Pour demain », sans heure limite.
-      table['setQuantity']('tomorrow', rowOf(table, 'GRA'), 1250);
+      cellOf(fixture, 'GRA').setQuantity(1250);
       await settle(fixture);
       expect(el.querySelector('[data-resupply-weight="GRA"]')?.textContent).toContain('1,25 kg');
-      await table['commit']('tomorrow', rowOf(table, 'GRA'));
+      await cellOf(fixture, 'GRA').commit();
       await settle(fixture);
 
       expect(resupplies.calls).toEqual(['add tomorrow GRA 1250']);
@@ -547,12 +419,13 @@ describe('ResupplyStockTable', () => {
 
       expect(root(fixture).textContent).toContain('Reçu sans commande (2 kg)');
       table['openUnordered'](rowOf(table, 'GRA'));
-      table['unorderedQuantity'].set(2500);
+      await settle(fixture);
+      editorOf(fixture).quantity.set(2500);
       await settle(fixture);
       expect(
         root(fixture).querySelector('[data-resupply-unordered-editor]')?.textContent,
       ).toContain('2,5 kg');
-      await table['saveUnordered'](rowOf(table, 'GRA'));
+      await editorOf(fixture).save();
 
       expect(receipts.calls).toEqual(['correct GRA 2500']);
     });

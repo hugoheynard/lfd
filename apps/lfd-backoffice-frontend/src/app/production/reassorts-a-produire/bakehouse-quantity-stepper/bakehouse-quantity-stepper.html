@@ -1,0 +1,52 @@
+<div class="stepper" [attr.data-bakehouse-row]="article().sku">
+  @for (amount of downSteps(); track amount) {
+    <button
+      class="shortcut"
+      foldButton
+      type="button"
+      emphasis="soft"
+      intent="neutral"
+      size="sm"
+      [attr.data-bakehouse-step]="-amount"
+      [disabled]="!quantity()"
+      (click)="step(-amount)"
+    >
+      −{{ amount | saleQuantity: article().saleUnit }}
+    </button>
+  }
+  <div class="cell" (click)="openDialog()">
+    <fold-number-input
+      size="sm"
+      align="center"
+      [placeholder]="article().saleUnit === 'weight' ? 'g' : ''"
+      [readOnly]="phone()"
+      [value]="quantity()"
+      (valueChange)="quantityChange.emit($event)"
+      [min]="0"
+      integer
+    />
+  </div>
+  @if (article().saleUnit === 'weight') {
+    <span class="muted" [attr.data-bakehouse-weight]="article().sku">
+      @if (quantity(); as grams) {
+        {{ grams | saleQuantity: 'weight' }}
+      } @else {
+        en grammes
+      }
+    </span>
+  }
+  @for (amount of upSteps(); track amount) {
+    <button
+      class="shortcut"
+      foldButton
+      type="button"
+      emphasis="soft"
+      intent="neutral"
+      size="sm"
+      [attr.data-bakehouse-step]="amount"
+      (click)="step(amount)"
+    >
+      +{{ amount | saleQuantity: article().saleUnit }}
+    </button>
+  }
+</div>

@@ -1,0 +1,31 @@
+:host {
+  display: block;
+}
+
+.stepper {
+  display: flex;
+  gap: var(--fold-space-xs);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.stepper fold-number-input {
+  width: 6rem;
+}
+
+.muted {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+  color: var(--fold-color-text-muted);
+}
+
+/* En mobile, la case seule : les raccourcis vivent dans le dialogue. */
+@media (max-width: 768px) {
+  .shortcut {
+    display: none;
+  }
+
+  .stepper fold-number-input {
+    width: 5rem;
+  }
+}

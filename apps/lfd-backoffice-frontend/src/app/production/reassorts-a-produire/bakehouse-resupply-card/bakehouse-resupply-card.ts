@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   inject,
   input,
   output,
@@ -25,8 +24,6 @@ import {
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldListboxComponent,
-  FoldNumberInputComponent,
-  FoldPanelHostService,
   FoldSearchComponent,
   FoldViewToggleComponent,
   type FoldSelectOption,
@@ -34,22 +31,15 @@ import {
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
-import {
-  QuantityDialog,
-  type QuantityDialogData,
-} from '../../../shared/quantity-dialog/quantity-dialog';
-import { resupplyLinesAmountLabel } from '../../../shared/resupply-labels';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
-import {
-  quantityDownStepsFor,
-  quantityStepsFor,
-} from '../../../shared/quantity-steps/quantity-steps';
-import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
+import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './article-filters';
+import { requestedAmountLabel, requestedLines, withQuantity } from './bakehouse-resupply-lines';
 import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
+import { BakehouseQuantityStepper } from '../bakehouse-quantity-stepper/bakehouse-quantity-stepper';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 
-/** Le téléphone — le même seuil que la feuille de style. */
+/** Le téléphone — le même seuil que la feuille de style, plus large que l'étroit commun. */
 const PHONE_QUERY = '(max-width: 768px)';
 
 /** Les colonnes ; leurs cellules sont des gabarits (`foldCell`). */
@@ -88,6 +78,7 @@ interface SiteChoice {
   selector: 'app-bakehouse-resupply-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BakehouseQuantityStepper,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -96,12 +87,10 @@ interface SiteChoice {
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldListboxComponent,
-    FoldNumberInputComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
     NgTemplateOutlet,
     ResupplyNameField,
-    SaleQuantityPipe,
   ],
   providers: [BakehouseDraftsStore],
   templateUrl: './bakehouse-resupply-card.html',
@@ -110,7 +99,6 @@ interface SiteChoice {
 export class BakehouseResupplyCard {
   private readonly service = inject(BakehouseResuppliesService);
   private readonly pickups = inject(PickupAddressesService);
-  private readonly panels = inject(FoldPanelHostService);
   protected readonly draftsStore = inject(BakehouseDraftsStore);
   /** Le libellé de chaque point, pour la liste des brouillons. */
   protected readonly siteLabels = computed(
@@ -122,7 +110,7 @@ export class BakehouseResupplyCard {
    * et la toucher ouvre le dialogue (Hugo, 2026-10-28). Le seuil des
    * raccourcis masqués en CSS est le même.
    */
-  protected readonly phone = signal(false);
+  protected readonly phone = narrowViewport(PHONE_QUERY);
 
   /**
    * Le brouillon à reprendre (`/prod-manager/reassorts/brouillon/:draftId`) ;
@@ -149,17 +137,11 @@ export class BakehouseResupplyCard {
   protected readonly familyOptions = computed(() =>
     familyOptionsOf(this.articles(), this.quantities()),
   );
-  /**
-   * Les pas rapides, de part et d'autre de la case (Hugo, 2026-10-28) : on
-   * retire à gauche, on ajoute à droite ; en grammes au poids (L2b-4).
-   */
-  protected readonly stepsOf = quantityStepsFor;
   /** En mobile, la famille est dans le filtre : la table garde produit et quantité. */
   protected readonly columns = computed(() =>
     this.phone() ? COLUMNS.filter((column) => column.key !== 'family') : COLUMNS,
   );
   protected readonly skuOf = (article: ResupplyArticleView): string => article.sku;
-  protected readonly downStepsOf = quantityDownStepsFor;
   /** Le nom du réassort (R1g), envoyé avec lui ; vide : sans nom. */
   protected readonly name = signal('');
   /** Les noms déjà employés au point choisi ; vides tant qu'aucun n'est choisi. */
@@ -172,27 +154,9 @@ export class BakehouseResupplyCard {
     this.sites().map((site) => ({ value: site.id, label: site.label })),
   );
   /** Les lignes envoyées : les articles à quantité positive, dans l'ordre du catalogue. */
-  protected readonly lines = computed(() => {
-    const quantities = this.quantities();
-    return this.articles()
-      .filter((article) => (quantities.get(article.sku) ?? 0) > 0)
-      .map((article) => ({ sku: article.sku, quantity: quantities.get(article.sku) ?? 0 }));
-  });
-  /**
-   * Ce qui part : les pièces ne comptent que les pièces, le poids se dit à
-   * part (lot L2b-4) — « 12 pièces · 1,25 kg ».
-   */
-  protected readonly amount = computed(() => {
-    const units = new Map(
-      this.articles().map((article) => [article.sku, article.saleUnit] as const),
-    );
-    return resupplyLinesAmountLabel(
-      this.lines().map((line) => ({
-        quantity: line.quantity,
-        saleUnit: units.get(line.sku) ?? 'piece',
-      })),
-    );
-  });
+  protected readonly lines = computed(() => requestedLines(this.articles(), this.quantities()));
+  /** Ce qui part, pièces et poids à part : « 12 pièces · 1,25 kg ». */
+  protected readonly amount = computed(() => requestedAmountLabel(this.articles(), this.lines()));
 
   /** Les articles de la famille retenue et de la recherche, dans l'ordre du catalogue. */
   protected readonly visibleArticles = computed(() =>
@@ -207,11 +171,6 @@ export class BakehouseResupplyCard {
   protected readonly canSaveDraft = this.canSend;
 
   constructor() {
-    const query = window.matchMedia(PHONE_QUERY);
-    this.phone.set(query.matches);
-    const follow = (event: MediaQueryListEvent): void => this.phone.set(event.matches);
-    query.addEventListener('change', follow);
-    inject(DestroyRef).onDestroy(() => query.removeEventListener('change', follow));
     void this.load();
   }
 
@@ -260,38 +219,8 @@ export class BakehouseResupplyCard {
 
   /** La case réécrite : vidée ou à zéro, l'article n'est plus demandé. */
   protected setQuantity(sku: string, quantity: number | null): void {
-    this.quantities.update((current) => {
-      const next = new Map(current);
-      if (quantity === null || quantity <= 0) {
-        next.delete(sku);
-      } else {
-        next.set(sku, quantity);
-      }
-      return next;
-    });
+    this.quantities.update((current) => withQuantity(current, sku, quantity));
     this.done.set(null);
-  }
-
-  /** En mobile, la case ouvre le dialogue du chiffre et des raccourcis. */
-  protected async openQuantity(article: ResupplyArticleView): Promise<void> {
-    if (!this.phone()) {
-      return;
-    }
-    const quantity = await this.panels.open<QuantityDialogData, number>(QuantityDialog, {
-      data: {
-        label: article.name,
-        quantity: this.quantityOf(article.sku),
-        saleUnit: article.saleUnit,
-      },
-    }).closed;
-    if (quantity !== undefined) {
-      this.setQuantity(article.sku, quantity);
-    }
-  }
-
-  /** Un pas rapide : positif ajoute, négatif retire, sans descendre sous zéro. */
-  protected step(sku: string, delta: number): void {
-    this.setQuantity(sku, Math.max(0, (this.quantityOf(sku) ?? 0) + delta));
   }
 
   /** Le contenu de la carte, tel qu'il s'enregistre ou s'envoie ; `null` sans point. */

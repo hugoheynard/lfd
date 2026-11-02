@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   signal,
@@ -20,7 +21,8 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { resupplyDayLabel } from '../../../shared/resupply-labels';
-import { isoDay, shiftDay } from '../../previsionnel/previsionnel-range';
+import { parisToday } from '../../../shared/paris-today';
+import { shiftDay } from '../../previsionnel/previsionnel-range';
 import { BakehouseDraftsSection } from '../bakehouse-drafts-section/bakehouse-drafts-section';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import { ResuppliesToProduceService } from '../resupplies-to-produce.service';
@@ -36,6 +38,9 @@ import {
 import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** Le pas de relecture du jour : une minute de retard au plus sur minuit. */
+const TODAY_POLL_MS = 60_000;
 
 /** La puce « Tout » des familles. */
 const ALL_CATEGORIES = '';
@@ -97,15 +102,19 @@ export class ResupplyProductionTab {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  /** Le jour du poste, lu une fois, comme le prévisionnel. */
-  private readonly today = isoDay(new Date());
+  /**
+   * Le jour du poste, à Paris, relu chaque minute : un onglet resté ouvert la
+   * nuit doit savoir qu'on a changé de jour, sinon « demain » et les alertes
+   * vivantes restent ceux de la veille. Le signal n'émet que si le jour change.
+   */
+  private readonly todaySignal = signal(parisToday());
 
   protected readonly canSend = computed(() => this.permissions.can('production_resupply:write'));
   protected readonly day = signal(
-    this.route.snapshot.queryParamMap.get('day') ?? shiftDay(this.today, 1),
+    this.route.snapshot.queryParamMap.get('day') ?? shiftDay(this.todaySignal(), 1),
   );
   protected readonly dayLabel = computed(() => resupplyDayLabel(this.day()));
-  protected readonly atTomorrow = computed(() => this.day() === shiftDay(this.today, 1));
+  protected readonly atTomorrow = computed(() => this.day() === shiftDay(this.todaySignal(), 1));
 
   protected readonly state = signal<LoadState>('loading');
   private readonly view = signal<ResupplyProductionDayView | null>(null);
@@ -132,7 +141,9 @@ export class ResupplyProductionTab {
   );
 
   /** Les alertes de maintenant ne disent rien d'une journée passée. */
-  private readonly liveAlerts = computed(() => (this.day() >= this.today ? this.alerts() : null));
+  private readonly liveAlerts = computed(() =>
+    this.day() >= this.todaySignal() ? this.alerts() : null,
+  );
 
   protected readonly points = computed(() => {
     const view = this.view();
@@ -187,6 +198,8 @@ export class ResupplyProductionTab {
   private readSeq = 0;
 
   constructor() {
+    const clock = setInterval(() => this.todaySignal.set(parisToday()), TODAY_POLL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(clock));
     effect(() => {
       void this.load(this.day());
     });
@@ -198,7 +211,7 @@ export class ResupplyProductionTab {
   }
 
   protected backToTomorrow(): void {
-    this.go(shiftDay(this.today, 1));
+    this.go(shiftDay(this.todaySignal(), 1));
   }
 
   private go(day: string): void {
