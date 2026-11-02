@@ -172,7 +172,7 @@ export class ShelfStockToday {
     const key = keyOf(target);
     this.askedFor = key;
     try {
-      const view = await this.fetch(target);
+      const view = await this.request(target);
       if (this.askedFor === key) {
         this.served.set({
           key,
@@ -189,7 +189,7 @@ export class ShelfStockToday {
     }
   }
 
-  private fetch(target: ShelfTarget): Promise<ShelfStockTodayView> {
+  private request(target: ShelfTarget): Promise<ShelfStockTodayView> {
     const base = AUTH_CONFIG.apiBaseUrl;
     const point = encodeURIComponent(target.pickupAddressId);
     if (target.reader === VISITOR) {
