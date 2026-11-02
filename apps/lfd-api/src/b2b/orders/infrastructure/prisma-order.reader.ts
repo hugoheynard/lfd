@@ -37,7 +37,7 @@ import {
   parseTrace,
   type OrderLineRow,
 } from "./order-line-row.js";
-import { settlementWhere } from "./plan-filter.js";
+import { productionWhere } from "./plan-filter.js";
 import {
   OrderReader,
   type OrderAuthor,
@@ -314,7 +314,7 @@ export class PrismaOrderReader extends OrderReader {
         // autres lisaient `planWhere` ; celle-ci écartait les seules annulées et
         // imprimait donc des bons que le compte à produire avait refusés.
         //
-        // Son statut reste le sien — `settlementWhere` et non `planWhere` — et
+        // Son statut reste le sien — `productionWhere` et non `planWhere` — et
         // c'est délibéré : une commande déjà prête ou déjà remise RESTE dans son
         // lot, sans quoi la pile maigrirait entre deux tirages et la numérotation
         // « fiche 3/14 » cesserait de désigner la même feuille.
@@ -322,7 +322,9 @@ export class PrismaOrderReader extends OrderReader {
         // Un brouillon n'existe pas encore : la file du comptoir l'écarte déjà
         // (« n'affiche PAS un brouillon — il n'attend personne »), le fournil
         // n'a pas de raison d'en fabriquer le contenu.
-        ...settlementWhere(),
+        // Ni une commande prise sur la vitrine : elle n'a pas de bon à
+        // imprimer, sa marchandise est déjà en vitrine (plan du jour J, §9.3).
+        ...productionWhere(),
       },
       orderBy: { orderNumber: "asc" },
       select: {

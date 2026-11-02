@@ -3,6 +3,7 @@ import {
   PAYMENTS_AWAITING,
   PAYMENTS_REFUSED,
   STATUS_IN_PLAN,
+  SUPPLY_PRODUCED,
 } from "../domain/services/production-plan.js";
 
 /**
@@ -36,16 +37,21 @@ import {
 /**
  * Ce que la journée absorbe, en une condition.
  *
- * Deux conditions, exactement celles du prédicat : le statut du plan, et un
- * règlement ni mort (refusé, remboursé) ni en vol (`pending`), pour personne.
+ * Trois conditions, exactement celles du prédicat : le statut du plan, un
+ * règlement ni mort (refusé, remboursé) ni en vol (`pending`), pour personne,
+ * et une marchandise fabriquée pour elle.
  *
  * ⚠️ Jusqu'au 2026-09-22 (D2), l'attente valait pour qui avait un compte, et le
  * fragment portait un `OR` sur `clientele` avec une branche `null` explicite —
  * en SQL, `clientele <> 'public'` est FAUX sur `NULL`. La clientèle ne compte
  * plus : le `NULL` n'a plus rien à rattraper.
+ *
+ * Une commande prise sur la vitrine en est exclue ({@link notFromStock}) : la
+ * fiche, le retirage, l'alerte de rattrapage, le prévisionnel et l'état du
+ * jour la laissent dehors d'un coup (plan du jour J, §9.3, lot L1).
  */
 export function planWhere(): Prisma.OrderWhereInput {
-  return { status: STATUS_IN_PLAN, ...settlementWhere() };
+  return { status: STATUS_IN_PLAN, ...settlementWhere(), ...notFromStock() };
 }
 
 /**
@@ -65,4 +71,30 @@ export function settlementWhere(): Prisma.OrderWhereInput {
   return {
     paymentStatus: { notIn: [...PAYMENTS_REFUSED, ...PAYMENTS_AWAITING] },
   };
+}
+
+/**
+ * 🔴 **Pas une commande prise sur la vitrine** (plan
+ * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §9.3, lot
+ * L1) — traduction de {@link SUPPLY_PRODUCED}.
+ *
+ * Une commande `shelf` puise dans le stock du jour du point : elle n'a rien à
+ * attendre du fournil ni du transport. Tout lecteur de PRODUCTION ou de
+ * TRANSPORT la porte ; la file du comptoir, la remise, la facture et la
+ * Supervision ne la portent PAS — elles doivent voir la commande.
+ */
+export function notFromStock(): Prisma.OrderWhereInput {
+  return { supply: SUPPLY_PRODUCED };
+}
+
+/**
+ * **Ce qu'un lecteur de production voit, sans la condition de statut du plan**
+ * : l'argent ({@link settlementWhere}) et la marque ({@link notFromStock}).
+ *
+ * Pour le dossier du jour, les échéances du four et l'arrivée des transferts,
+ * qui gardent leurs propres statuts. `settlementWhere` seul reste celui de la
+ * Supervision, qui doit voir une commande sur stock (en retrait).
+ */
+export function productionWhere(): Prisma.OrderWhereInput {
+  return { ...settlementWhere(), ...notFromStock() };
 }

@@ -27,6 +27,7 @@ import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
+import type { OrderEntryShortcut, OrderSupply } from "../value-objects/order-supply.js";
 import type { RefundPosition } from "./order-refund.js";
 import type {
   OrderDiscountLabel,
@@ -68,6 +69,13 @@ export interface RevisableOrder {
   readonly refunds: RefundPosition;
   /** Le jour de service `AAAA-MM-JJ`, ou `null`. */
   readonly serviceDay: string | null;
+  /**
+   * D'où vient la marchandise, figé à la passation (plan du jour J, §13) : une
+   * commande `shelf` ne change ni de mode, ni de journée, ni de point.
+   */
+  readonly supply: OrderSupply;
+  /** Le raccourci de saisie, relu pour être reporté tel quel. */
+  readonly entryShortcut: OrderEntryShortcut | null;
   readonly fulfillment: OrderFulfillmentInput;
   readonly agreed: AgreedFulfillment;
   readonly note: string;

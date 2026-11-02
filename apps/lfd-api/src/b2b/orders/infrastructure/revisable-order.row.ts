@@ -19,6 +19,7 @@ import { refundPositionOf, type RefundStatus } from "../domain/entities/order-re
 import type { RevisableOrder } from "../domain/entities/order-revision.js";
 import type { OrderSalesTerms } from "../domain/entities/order-shapes.js";
 import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
+import type { OrderEntryShortcut, OrderSupply } from "../domain/value-objects/order-supply.js";
 import { buyerKindOf } from "./order-buyer-kind.column.js";
 import {
   frozenLabelOf,
@@ -90,6 +91,8 @@ export const REVISABLE_ORDER_SELECT = {
   cancelledAt: true,
   refunds: { select: { amountCents: true, status: true } },
   requestedDeliveryDate: true,
+  supply: true,
+  entryShortcut: true,
   fulfillmentMethod: true,
   deliveryZoneId: true,
   deliveryAddressSnapshot: true,
@@ -150,6 +153,8 @@ export interface RevisableOrderRow {
   readonly cancelledAt: Date | null;
   readonly refunds: readonly { readonly amountCents: number; readonly status: RefundStatus }[];
   readonly requestedDeliveryDate: Date | null;
+  readonly supply: OrderSupply;
+  readonly entryShortcut: OrderEntryShortcut | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryZoneId: string | null;
   readonly deliveryAddressSnapshot: Prisma.JsonValue | null;
@@ -207,6 +212,8 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
       row.requestedDeliveryDate === null
         ? null
         : row.requestedDeliveryDate.toISOString().slice(0, 10),
+    supply: row.supply,
+    entryShortcut: row.entryShortcut,
     fulfillment: {
       method: row.fulfillmentMethod,
       deliveryZoneId: row.deliveryZoneId,

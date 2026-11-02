@@ -9,6 +9,7 @@ import {
 } from "../../../delivery/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { orderLineSaleUnitOf } from "./order-line-row.js";
+import { notFromStock } from "./plan-filter.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 
 /** Ce qui n'est pas (ou plus) une commande : un brouillon, une annulée. */
@@ -40,6 +41,9 @@ export class PrismaTransferOrdersReader extends TransferOrdersReader {
         fulfillmentMethod: "pickup",
         status: { notIn: [...NOT_ACTIVE] },
         requestedDeliveryDate: { not: null },
+        // Une commande prise sur la vitrine du site n'a rien à transférer : sa
+        // marchandise y est déjà (plan du jour J, §9.3, lot L1).
+        ...notFromStock(),
       },
       orderBy: { createdAt: "asc" },
       select: { id: true, pickupAddress: true, requestedDeliveryDate: true },
@@ -80,7 +84,8 @@ export class PrismaTransferOrderContentsReader extends TransferOrderContentsRead
       return new Map();
     }
     const rows = await this.prisma.orderLine.findMany({
-      where: { orderId: { in: [...orderIds] } },
+      // Ni au manifeste : la marchandise d'une commande sur stock ne voyage pas.
+      where: { orderId: { in: [...orderIds] }, order: notFromStock() },
       orderBy: [{ orderId: "asc" }, { id: "asc" }],
       select: {
         orderId: true,

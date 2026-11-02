@@ -62,6 +62,20 @@ const STAGE_OF_STATUS: Readonly<Record<OrderStatus, SupervisionStage | null>> = 
 };
 
 /**
+ * **L'étape d'une commande telle que la Supervision la montre** : celle de son
+ * statut, sauf pour une commande prise sur la vitrine (plan
+ * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §9.3, lot
+ * L1). Celle-ci n'entre jamais au plan et reste `placed` jusqu'à sa remise ;
+ * sa marchandise est pourtant déjà en vitrine. Elle se montre donc PRÊTE —
+ * jamais en attente ni en préparation, et jamais « pas prête avant le
+ * créneau ».
+ */
+export function supervisedStageOf(order: SupervisedOrder): SupervisionStage | null {
+  const stage = stageOf(order.status);
+  return order.supply === "shelf" && stage !== null && NOT_READY.has(stage) ? "ready" : stage;
+}
+
+/**
  * La règle qui signale une commande en retard, ou `null`.
  *
  * 🔴 **Seul un créneau PROMIS est jugé** : `window` non nul et
@@ -141,7 +155,7 @@ export function superviseDay(
   withdrawnAfterPlan: ReadonlySet<string> = new Set(),
 ): DaySupervision {
   const staged = orders.flatMap((order) => {
-    const stage = stageOf(order.status);
+    const stage = supervisedStageOf(order);
     return stage === null ? [] : [{ order, stage }];
   });
   return {

@@ -135,6 +135,9 @@ export class PrismaOrderRepository extends OrderRepository {
           // La porte de passation, posée par la route et figée (§ 13.7, L1).
           buyerKind: state.buyerKind,
           placedOffPlan: state.placedOffPlan,
+          // D'où vient la marchandise, figé par l'agrégat (plan du jour J, §11.1).
+          supply: state.supply,
+          entryShortcut: state.entryShortcut,
           customerCancellableUntil: state.customerCancellableUntil,
           ...customerCancellationColumnsOf(state.customerCancellation),
           requestedDeliveryDate: state.requestedDeliveryDate,

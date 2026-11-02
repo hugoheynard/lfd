@@ -120,6 +120,7 @@ describe("superviseDay", () => {
     customerName: "Boulangerie du Col",
     fulfillmentMethod,
     status,
+    supply: "planned",
     window,
     shortfallReportedAt: null,
     shortfallLines: [],
@@ -181,6 +182,16 @@ describe("superviseDay", () => {
     ]);
   });
 
+  it("montre prête une commande prise sur la vitrine — jamais en attente ni en préparation (lot L1)", () => {
+    const shelf: SupervisedOrder = { ...order("1", "placed", "pickup", PROMISED), supply: "shelf" };
+
+    // Le créneau promis approche (07:00 à Paris = 06:00 UTC, marge d'une heure).
+    const { flow, late } = superviseDay(DAY, [shelf, order("2", "placed")], at("05:30"));
+
+    expect(flow[0]).toMatchObject({ placed: 1, inProduction: 0, ready: 1 });
+    expect(late).toEqual([]);
+  });
+
   it("ne liste en retard que les créneaux promis, avec leur règle", () => {
     const { late } = superviseDay(
       DAY,
@@ -212,6 +223,7 @@ describe("awaitingDecisionOf — « Manque signalé — décision attendue » (E
     customerName: null,
     fulfillmentMethod: "delivery",
     status,
+    supply: "planned",
     window: null,
     shortfallReportedAt,
     shortfallLines: [],

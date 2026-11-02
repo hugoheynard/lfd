@@ -312,9 +312,11 @@ quantités, et éventuellement un stock »).
      `due-thresholds.service.ts`) ;
    - **l'heure d'arrivée des transferts** (`prisma-site-arrival-orders.reader.ts:27-31`,
      lu par `commerce-transfer-sites.service.ts`) ;
-   - **la Supervision** (`prisma-day-supervision.reader.ts:56-58`), dont
-     `awaitingProduction` nourrit `OvenWaitingOrdersReader` — « attend le
-     four » sur la fiche.
+   - **la Supervision** (`prisma-day-supervision.reader.ts:56-58`). ⚠️ Corrigé au
+     bâti de L1 : « attend le four » (`awaitingProduction`) ne s'y calcule pas,
+     il vit au colisage (`packing-board.ts`, `BoardOvenWaitingOrdersReader`),
+     nourri par les faits de l'arrêt et du retirage — donc déjà fermé par
+     `planWhere`.
 
    → **Inventaire fait le 2026-11-02 : §9.3.**
 
@@ -663,3 +665,26 @@ une migration passent par `lecteur-de-migrations` avant `main`.
 et `mark-arrived-on-transfer-received.handler.ts` (écrivent-ils un reçu ?) ;
 les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
 `shelf` ; le `persist` de la passation invité.
+
+### Le bâti de L1 (2026-11-02)
+
+- `domain/value-objects/order-supply.ts`, `domain/services/order-supply-rules.ts`
+  (`ensureSupplyFits` à la passation, `ensureShelfKeepsRoute` à la révision),
+  trois `DomainError` (`shelf-order-errors.ts`). `Order.draft(input, supply)`
+  garde un défaut `planned` ; les trois appelants de production passent la
+  marque explicitement. Le raccourci n'existe que sur une `shelf` (type et
+  CHECK `orders_entry_shortcut_on_shelf`).
+- `notFromStock()` dans `planWhere()` ; `productionWhere()` pour le dossier,
+  les échéances et l'arrivée des transferts ; `notFromStock()` dans les deux
+  lecteurs du transfert et le balayage des règlements.
+- La Supervision montre une `shelf` à l'étape **prête** (`supervisedStageOf`),
+  jamais en attente ni « pas prête avant le créneau ».
+- **Pour L4** : une `shelf` payée par carte et encore en attente à la clôture
+  n'est plus annulée par le balayage des règlements (`notFromStock` y est
+  posé, sans e2e) ; seule l'expiration boutique (§4.6) la tient — à couvrir
+  par L4.
+- **Pour Hugo** : `prisma migrate dev` a voulu remettre à blanc la base de dev
+  (dérive connue : `StaffResource` `storefront` / `b2b_storefront`, migration
+  `20261013300000` appliquée mais absente du dépôt). La migration a été
+  appliquée par `migrate deploy`, qui n'efface rien. La dérive reste à
+  réaligner (carte des chantiers, §0).

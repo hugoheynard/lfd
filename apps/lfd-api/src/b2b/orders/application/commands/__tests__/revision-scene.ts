@@ -344,6 +344,8 @@ function seed(): RevisableOrder {
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },
     serviceDay: DAY,
+    supply: "planned",
+    entryShortcut: null,
     fulfillment: {
       method: "pickup",
       deliveryZoneId: null,

@@ -3,6 +3,7 @@ import {
   revisedFulfillmentOf,
 } from "../services/fulfillment-promotion.js";
 import { ensureSlotKeepsPromotionHours } from "../services/slot-promotion-hours.js";
+import { ensureShelfKeepsRoute, ensureSupplyFits } from "../services/order-supply-rules.js";
 import { ProductionPlanClosedError } from "../errors/production-plan-closed.error.js";
 import type {
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
@@ -55,6 +56,12 @@ import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
+import {
+  PLANNED_SUPPLY,
+  supplyMarkOf,
+  type OrderSupplyDecision,
+  type OrderSupplyMark,
+} from "../value-objects/order-supply.js";
 
 export type {
   DraftOrderInput,
@@ -120,15 +127,24 @@ export class Order {
     private readonly voucher: { readonly id: string; readonly appliedCents: number } | null,
     private readonly salesTerms: OrderSalesTerms,
     private readonly locale: OrderLocale | null,
+    private readonly supplyMark: OrderSupplyMark,
   ) {}
 
   /**
    * Compose une commande qu'on PASSE : valide, fige les lignes et calcule tous
    * les montants. La méthode de TVA se décide ici, une fois, sur l'absence de
    * société (`placementVatMethodOf`) ; ensuite elle se relit (`recompose`).
+   *
+   * `supply` dit d'où vient la marchandise (plan du jour J, §11.1) ; décidée
+   * par l'appelant, jamais par le client, et figée ici. Sans elle : `planned`,
+   * le comportement d'avant la marque.
+   *
+   * @throws {ShelfOrderNotPickupError} une commande sur stock qui n'est pas un retrait.
+   * @throws {ShelfOrderNotTodayError} une commande sur stock qui ne vise pas aujourd'hui.
    */
-  static draft(input: DraftOrderInput): Order {
-    return Order.compose(input, placementVatMethodOf(input.companyId));
+  static draft(input: DraftOrderInput, supply: OrderSupplyDecision = PLANNED_SUPPLY): Order {
+    ensureSupplyFits(supply, input.fulfillment, input.requestedDeliveryDate);
+    return Order.compose(input, placementVatMethodOf(input.companyId), supplyMarkOf(supply));
   }
 
   /**
@@ -136,7 +152,11 @@ export class Order {
    * la commande par `recompose`. Les montants de `input` sont dans l'unité de
    * la méthode (HT pour `line_ht`, TTC pour `exact_ht`).
    */
-  private static compose(input: DraftOrderInput, vatMethod: OrderVatMethod): Order {
+  private static compose(
+    input: DraftOrderInput,
+    vatMethod: OrderVatMethod,
+    supply: OrderSupplyMark,
+  ): Order {
     ensureDraftable(input);
     const fulfillment = normalizeFulfillment(input.fulfillment, input.companyId);
     const amounts = AMOUNTS_BY_METHOD[vatMethod](input, fulfillment);
@@ -166,6 +186,7 @@ export class Order {
         : { id: input.voucher.id, appliedCents: amounts.voucherDiscountCents },
       input.salesTerms,
       input.locale,
+      supply,
     );
   }
 
@@ -180,6 +201,7 @@ export class Order {
    * @throws {ShortfallDecidedRevisionError} son départ incomplet est décidé (E6b).
    * @throws {UnchangedOrderRevisionError} la modification ne change rien.
    * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement sort de la cible figée d'une remise (L9).
+   * @throws {ShelfOrderRouteChangeError} une commande sur stock changerait de mode, de journée ou de point.
    */
   static revise(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
     const revision = Order.recompose(current, input);
@@ -194,10 +216,16 @@ export class Order {
     // L9 avant les gardes de montant : une remise emportée hors de sa cible
     // se refuse en nommant la promotion (plan des remises acquises, § 10.2).
     const revisedFulfillment = revisedFulfillmentOf(input);
+    // Une commande sur stock garde son acheminement (plan du jour J, §13).
+    ensureShelfKeepsRoute(current, revisedFulfillment);
     ensureFulfillmentKeepsPromotion(current, revisedFulfillment);
     // Le créneau, contre les heures figées d'une promotion « au retrait ».
     ensureSlotKeepsPromotionHours(current, revisedFulfillment);
-    const revised = Order.compose(input, current.vatMethod);
+    // La marque se relit sur la commande : elle n'a aucun setter.
+    const revised = Order.compose(input, current.vatMethod, {
+      supply: current.supply,
+      entryShortcut: current.entryShortcut,
+    });
     revised.carryCustomerCancellation(
       effectiveFixedCancellation(current.customerCancellation, current.customerCancellableUntil, {
         serviceDay: current.serviceDay,
@@ -343,6 +371,8 @@ export class Order {
       placedByStaffId: this.placedByStaffId,
       buyerKind: this.buyerKind,
       placedOffPlan: this.offPlan,
+      supply: this.supplyMark.supply,
+      entryShortcut: this.supplyMark.entryShortcut,
       customerCancellation: this.customerCancellation,
       customerCancellableUntil: this.customerCancellableUntil,
       fulfillmentMethod: this.fulfillment.method,

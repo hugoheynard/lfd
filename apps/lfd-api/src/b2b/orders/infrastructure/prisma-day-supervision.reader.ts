@@ -23,6 +23,7 @@ const SUPERVISION_SELECT = {
   id: true,
   orderNumber: true,
   status: true,
+  supply: true,
   fulfillmentMethod: true,
   fulfillment: true,
   shortfalls: {
@@ -41,6 +42,10 @@ const SUPERVISION_SELECT = {
  * `planWhere` : on garde les commandes prêtes et retirées, qui sont justement
  * ce qu'on supervise, et on écarte les règlements morts et toute carte restée
  * en l'air — pro compris depuis D2 (2026-09-22).
+ *
+ * ⚠️ **Ni `notFromStock` ni `productionWhere`** : une commande prise sur la
+ * vitrine se supervise — en retrait, prête (`supervisedStageOf`). La vue porte
+ * donc la marque au lieu de l'écarter (plan du jour J, §9.3, lot L1).
  */
 @Injectable()
 export class PrismaDaySupervisionReader extends DaySupervisionReader {
@@ -72,6 +77,7 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
         customerName: nameOf(row.company, row.placedBy),
         fulfillmentMethod: row.fulfillmentMethod,
         status: row.status,
+        supply: row.supply,
         window: windowOf(fulfillmentOf(row.fulfillment)),
         shortfallReportedAt: pending?.reportedAt ?? null,
         shortfallLines:

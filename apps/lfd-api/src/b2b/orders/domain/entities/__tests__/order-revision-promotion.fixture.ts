@@ -126,6 +126,8 @@ export function placed(
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },
     serviceDay: DAY,
+    supply: state.supply,
+    entryShortcut: state.entryShortcut,
     fulfillment: delivered ?? {
       method: state.fulfillmentMethod,
       deliveryZoneId: null,

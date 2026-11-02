@@ -37,6 +37,7 @@ const LATE: SupervisedOrder = {
   customerName: "Boulangerie du Col",
   fulfillmentMethod: "pickup",
   status: "ready",
+  supply: "planned",
   window: { start: "07:00", end: "08:00", source: "override" },
   shortfallReportedAt: null,
   shortfallLines: [],

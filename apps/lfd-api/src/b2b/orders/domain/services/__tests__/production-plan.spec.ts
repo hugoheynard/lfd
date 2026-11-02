@@ -7,7 +7,7 @@ const ON_ACCOUNT: PaymentStatus = "not_required";
 
 describe("le plan du soir", () => {
   it("absorbe une commande passée — c'est exactement ce qu'il attend", () => {
-    expect(absorbedByPlan("placed", ON_ACCOUNT)).toBe(true);
+    expect(absorbedByPlan("placed", ON_ACCOUNT, "planned")).toBe(true);
   });
 
   it.each<OrderStatus>(["confirmed", "in_production", "ready", "fulfilled"])(
@@ -15,23 +15,27 @@ describe("le plan du soir", () => {
     (status) => {
       // Les états ne reculent jamais. Reconfirmer une commande déjà en
       // fabrication effacerait le fait qu'elle l'était.
-      expect(absorbedByPlan(status, ON_ACCOUNT)).toBe(false);
+      expect(absorbedByPlan(status, ON_ACCOUNT, "planned")).toBe(false);
     },
   );
 
   it("laisse une commande annulée dehors — elle n'est plus à produire", () => {
-    expect(absorbedByPlan("cancelled", ON_ACCOUNT)).toBe(false);
+    expect(absorbedByPlan("cancelled", ON_ACCOUNT, "planned")).toBe(false);
+  });
+
+  it("laisse dehors une commande prise sur la vitrine — sa marchandise y est déjà (lot L1)", () => {
+    expect(absorbedByPlan("placed", ON_ACCOUNT, "shelf")).toBe(false);
   });
 
   it("laisse un brouillon dehors — il n'existe pas encore", () => {
-    expect(absorbedByPlan("draft", ON_ACCOUNT)).toBe(false);
+    expect(absorbedByPlan("draft", ON_ACCOUNT, "planned")).toBe(false);
   });
 
   it("rend la clôture IDEMPOTENTE par sa règle, pas par un garde", () => {
     // Une journée close une seconde fois ne contient plus aucune `placed` :
     // zéro commande à absorber, sans qu'aucun verrou n'ait été posé.
     const secondPass = (["confirmed", "cancelled"] as const).filter((status) =>
-      absorbedByPlan(status, ON_ACCOUNT),
+      absorbedByPlan(status, ON_ACCOUNT, "planned"),
     );
 
     expect(secondPass).toEqual([]);
@@ -49,19 +53,19 @@ describe("le plan du soir et le RÈGLEMENT", () => {
   it.each<PaymentStatus>(["failed", "refunded"])(
     "🔴 ne produit JAMAIS un règlement %s, quelle que soit la clientèle",
     (payment) => {
-      expect(absorbedByPlan("placed", payment)).toBe(false);
+      expect(absorbedByPlan("placed", payment, "planned")).toBe(false);
     },
   );
 
   it("produit ce qui est payé, et ce qui n'a pas à l'être", () => {
-    expect(absorbedByPlan("placed", "paid")).toBe(true);
-    expect(absorbedByPlan("placed", "not_required")).toBe(true);
+    expect(absorbedByPlan("placed", "paid", "planned")).toBe(true);
+    expect(absorbedByPlan("placed", "not_required", "planned")).toBe(true);
   });
 
   it("un règlement refusé ne ressuscite pas un état déjà dépassé", () => {
     // La condition de statut reste la première : `failed` ne change rien à une
     // commande qui a déjà quitté `placed`.
-    expect(absorbedByPlan("confirmed", "failed")).toBe(false);
+    expect(absorbedByPlan("confirmed", "failed", "planned")).toBe(false);
   });
 });
 
@@ -79,7 +83,7 @@ describe("le plan du soir et le règlement EN VOL", () => {
    * toutes les nuits (règle antérieure à D2, 2026-09-22).
    */
   it("🔴 un pro dont la carte est en l'air ne part pas au plan du soir", () => {
-    expect(absorbedByPlan("placed", "pending")).toBe(false);
+    expect(absorbedByPlan("placed", "pending", "planned")).toBe(false);
   });
 
   it("🔴 n'imprime pas de bon pour un règlement en vol, quelle que soit la clientèle", () => {
@@ -87,7 +91,7 @@ describe("le plan du soir et le règlement EN VOL", () => {
   });
 
   it("produit toujours le pro au compte — `not_required` n'a rien à attendre", () => {
-    expect(absorbedByPlan("placed", ON_ACCOUNT)).toBe(true);
+    expect(absorbedByPlan("placed", ON_ACCOUNT, "planned")).toBe(true);
   });
 });
 
@@ -121,7 +125,7 @@ describe("l'argent, sans le statut — ce que le plan et le dossier PARTAGENT", 
     // c'est que la règle du plan a été recopiée ici en entier — et le dossier
     // sortira VIDE de l'imprimante, une fois la journée arrêtée.
     for (const status of ["confirmed", "ready", "fulfilled"] as const) {
-      expect(absorbedByPlan(status, ON_ACCOUNT)).toBe(false);
+      expect(absorbedByPlan(status, ON_ACCOUNT, "planned")).toBe(false);
     }
     expect(settlementAllowsProduction(ON_ACCOUNT)).toBe(true);
   });
@@ -139,7 +143,9 @@ describe("l'argent, sans le statut — ce que le plan et le dossier PARTAGENT", 
     ];
 
     for (const payment of cases) {
-      expect(settlementAllowsProduction(payment)).toBe(absorbedByPlan("placed", payment));
+      expect(settlementAllowsProduction(payment)).toBe(
+        absorbedByPlan("placed", payment, "planned"),
+      );
     }
   });
 });

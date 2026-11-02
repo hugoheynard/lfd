@@ -7,6 +7,7 @@ import {
   type UnsettledSettlement,
 } from "../domain/ports/unsettled-settlement.reader.js";
 import type { SettlementSweepWindow } from "../domain/services/settlement-sweep.js";
+import { notFromStock } from "./plan-filter.js";
 
 /**
  * Adaptateur Prisma du balayage de clôture.
@@ -25,6 +26,10 @@ export class PrismaUnsettledSettlementReader extends UnsettledSettlementReader {
       where: {
         status: OrderStatus.placed,
         paymentStatus: { in: [PaymentStatus.pending, PaymentStatus.failed] },
+        // Une commande prise sur la vitrine n'est pas au plan : la clôture n'a
+        // pas à trancher son règlement, son expiration est celle de la boutique
+        // (plan du jour J, §9.3, lot L1).
+        ...notFromStock(),
         OR: [
           // La colonne est un `date` Postgres, lu à minuit UTC : même clé que
           // `PrismaDayOrdersSource`, c'est une journée de service, pas un instant.

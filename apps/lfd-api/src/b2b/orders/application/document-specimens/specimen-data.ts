@@ -1,3 +1,4 @@
+import { PLANNED_SUPPLY } from "../../domain/value-objects/order-supply.js";
 import {
   addDays,
   type BillingAddressPayload,
@@ -116,7 +117,7 @@ function line(
  */
 function specimenOrder(variant: SheetVariant, requestedFor: Date): Order {
   if (variant === "pro") {
-    return Order.draft(proInput(requestedFor));
+    return Order.draft(proInput(requestedFor), PLANNED_SUPPLY);
   }
   const base = publicInput(requestedFor);
   // Le bon public est celui d'un particulier : sa commande est composée en
@@ -129,11 +130,14 @@ function specimenOrder(variant: SheetVariant, requestedFor: Date): Order {
     deliveryVatMode: base.deliveryVatMode,
     voucherFaceCents: 0,
   });
-  return Order.draft({
-    ...base,
-    discountCents: composed.pickupDiscount.ttcCents,
-    discountAdjustment: DISCOUNT,
-  });
+  return Order.draft(
+    {
+      ...base,
+      discountCents: composed.pickupDiscount.ttcCents,
+      discountAdjustment: DISCOUNT,
+    },
+    PLANNED_SUPPLY,
+  );
 }
 
 /** Ce que les deux variantes partagent — tout sauf qui commande et comment ça part. */

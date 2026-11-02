@@ -1,3 +1,4 @@
+import { PLANNED_SUPPLY } from "../../domain/value-objects/order-supply.js";
 import {
   cartAdjustmentCents,
   type LateFeeAdjustment,
@@ -161,34 +162,38 @@ export class OrderDrafting {
     // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
     // se paierait sur toutes les commandes à l'heure.
     const late = await this.lateFeeFor(waiverUsed, resolved.subtotalCents);
-    const order = Order.draft({
-      // La méthode de la PASSATION — celle qu'`Order.draft` décidera de son
-      // côté sur la même société : les montants partent dans son unité.
-      ...OrderComposition.draftOf(
-        content,
-        resolved,
-        arranged,
-        placementVatMethodOf(parties.companyId),
-      ),
-      companyId: parties.companyId,
-      billedCompanyId,
-      principal,
-      placedByUserId: parties.placedByUserId,
-      placedByStaffId: parties.placedByStaffId,
-      buyerKind: parties.buyerKind,
-      // 🔴 Plus d'estampille de version (Q2, Hugo, 2026-10-17 — plan
-      // documentation/catalogue/catalogue-synchronise.md §6, X0). Les lignes
-      // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et
-      // les commandes passées gardent la leur.
-      catalogVersionId: null,
-      // La surtaxe ne s'applique QUE si une dérogation a laissé passer : c'est
-      // elle qui atteste le retard. Sans réglage, elle vaut zéro.
-      lateFeeCents: late.cents,
-      lateFeeAdjustment: late.frozen,
-      voucher,
-      salesTerms: await this.salesTermsIn(salesTermsOf(resolved.audience)),
-      locale,
-    });
+    const order = Order.draft(
+      {
+        // La méthode de la PASSATION — celle qu'`Order.draft` décidera de son
+        // côté sur la même société : les montants partent dans son unité.
+        ...OrderComposition.draftOf(
+          content,
+          resolved,
+          arranged,
+          placementVatMethodOf(parties.companyId),
+        ),
+        companyId: parties.companyId,
+        billedCompanyId,
+        principal,
+        placedByUserId: parties.placedByUserId,
+        placedByStaffId: parties.placedByStaffId,
+        buyerKind: parties.buyerKind,
+        // 🔴 Plus d'estampille de version (Q2, Hugo, 2026-10-17 — plan
+        // documentation/catalogue/catalogue-synchronise.md §6, X0). Les lignes
+        // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et
+        // les commandes passées gardent la leur.
+        catalogVersionId: null,
+        // La surtaxe ne s'applique QUE si une dérogation a laissé passer : c'est
+        // elle qui atteste le retard. Sans réglage, elle vaut zéro.
+        lateFeeCents: late.cents,
+        lateFeeAdjustment: late.frozen,
+        voucher,
+        salesTerms: await this.salesTermsIn(salesTermsOf(resolved.audience)),
+        locale,
+        // Aucune passation n'écrit encore `shelf` (plan du jour J, §14 : L4).
+      },
+      PLANNED_SUPPLY,
+    );
     return { order, waiverUsed };
   }
 

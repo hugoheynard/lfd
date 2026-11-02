@@ -1,6 +1,7 @@
 import type { SaleUnit } from "@lfd/money";
 import type { FulfillmentMethod, OrderStatus } from "@lfd/contracts";
 
+import type { OrderSupply } from "../value-objects/order-supply.js";
 import type { HandoverQueueWindow } from "./order.reader.js";
 
 /**
@@ -14,6 +15,11 @@ export interface SupervisedOrder {
   readonly customerName: string | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly status: OrderStatus;
+  /**
+   * D'où vient la marchandise (plan du jour J, §9.3) : une commande `shelf`
+   * se supervise prête, jamais en préparation (`supervisedStageOf`).
+   */
+  readonly supply: OrderSupply;
   /** Le créneau convenu et sa provenance, `null` s'il n'y en a pas. */
   readonly window: HandoverQueueWindow | null;
   /** Le manque signalé au colisage en vigueur (E6a), `null` = aucun. */

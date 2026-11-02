@@ -1,5 +1,7 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
+import type { OrderSupply } from "../value-objects/order-supply.js";
+
 /**
  * La règle du **plan du soir** : quelles commandes une journée absorbe.
  *
@@ -67,10 +69,30 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
  * Le sens du choix est celui-ci : produire pour rien coûte de la marchandise
  * tous les jours, tandis qu'un webhook en retard est un incident rare et
  * visible.
+ *
+ * Et une commande prise sur la vitrine (`supply = shelf`) n'y entre jamais :
+ * sa marchandise est déjà en vitrine (plan du jour J, §9.3, lot L1).
  */
-export function absorbedByPlan(status: OrderStatus, payment: PaymentStatus): boolean {
-  return status === STATUS_IN_PLAN && settlementAllowsProduction(payment);
+export function absorbedByPlan(
+  status: OrderStatus,
+  payment: PaymentStatus,
+  supply: OrderSupply,
+): boolean {
+  return (
+    status === STATUS_IN_PLAN && settlementAllowsProduction(payment) && supply === SUPPLY_PRODUCED
+  );
 }
+
+/**
+ * 🔴 **La seule marque de marchandise que le fournil fabrique** (plan
+ * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §9.3, lot L1).
+ *
+ * Une commande `shelf` puise dans le stock du jour de la vitrine : aucun
+ * lecteur de production ni de transport ne la voit — ni le plan, ni le dossier
+ * du jour, ni les échéances du four, ni le transfert. Exporté pour que
+ * l'adaptateur le LISE (`notFromStock`, `plan-filter.ts`).
+ */
+export const SUPPLY_PRODUCED: OrderSupply = "planned";
 
 /**
  * 🔴 **L'ARGENT seul, sans le statut** (2026-09-17, Hugo : « sur l'impression du
