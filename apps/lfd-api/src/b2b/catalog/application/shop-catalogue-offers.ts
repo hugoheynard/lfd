@@ -25,6 +25,7 @@ import {
   admitsPromotion,
   type PromotionAdmission,
 } from "../../pricing/domain/entities/mercuriale-promotion-policy.js";
+import type { PromotionNameLabels } from "./shop-catalogue-promotion-names.js";
 import { shownByShopSku } from "./shop-catalogue-view.js";
 
 /** La porte d'entrée d'un rayon : la route (invité, reconnu) ou l'aperçu déclaré. */
@@ -107,6 +108,8 @@ export interface ShelfPrices {
   readonly view: ShopCatalogueView;
   /** Par SKU affiché ; absent = aucune mercuriale ne fixe l'article à la quantité 1. */
   readonly sealing: ReadonlyMap<string, PromotionAdmission>;
+  /** Par SKU affiché, les promotions qui ont baissé son prix ; absent = aucune. */
+  readonly promotionNames: ReadonlyMap<string, readonly PromotionNameLabels[]>;
 }
 
 /** Ce que la mercuriale du lecteur laisse passer, article par article. */

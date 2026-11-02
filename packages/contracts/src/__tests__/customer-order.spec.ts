@@ -155,6 +155,33 @@ describe("toCustomerOrder", () => {
     });
   });
 
+  it("🔴 ne nomme pas une baisse de mercuriale : seules les promotions se nomment", () => {
+    // Décision de Hugo (2026-11-02) : une baisse qui ne vient pas d'une
+    // promotion n'a aucune mention chez le client.
+    const [line] = STAFF_ORDER.lines;
+    if (line?.pricing == null) {
+      throw new Error("fixture sans trace");
+    }
+    const [promotion] = line.pricing.steps;
+    if (promotion === undefined) {
+      throw new Error("fixture sans étape");
+    }
+    const negotiated = {
+      ...promotion,
+      stage: "mercuriale" as const,
+      ruleId: "merc_dupont",
+      label: "Mercuriale Café Dupont",
+    };
+    const order = {
+      ...STAFF_ORDER,
+      lines: [{ ...line, pricing: { ...line.pricing, steps: [negotiated, promotion] } }],
+    };
+
+    expect(toCustomerOrder(order).lines[0]?.pricing?.steps).toEqual([
+      { label: "Promotion d'hiver" },
+    ]);
+  });
+
   it("recopie le reste de la commande à l'identique", () => {
     // Le premier niveau n'a jamais été le sujet : chacun de ses champs a été
     // décidé pour le client. Ce cas fige ce jeu de clés — un champ staff ajouté

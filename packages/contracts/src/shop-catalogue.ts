@@ -261,6 +261,18 @@ export interface ShopItemView {
    * aucune — la règle de {@link catalogPriceMillicents}.
    */
   readonly fulfillmentOffers?: readonly ShopItemFulfillmentOfferView[];
+  /**
+   * **Le nom des promotions « dans le prix affiché » qui ont baissé ce prix**
+   * (règle de Hugo, 2026-11-02) — le libellé réglé sur chaque promotion, dans
+   * la langue du rayon et l'audience de l'appelant (libellé Particuliers ou
+   * Pros, repli sur le commun), dans l'ordre où elles ont agi.
+   *
+   * Présent seulement quand {@link catalogPriceMillicents} l'est ET qu'au
+   * moins une promotion a produit l'écart. Un écart venu d'une mercuriale,
+   * d'un palier ou d'un engagement n'a **aucun nom** : la clé est absente, et
+   * l'écran n'écrit rien de plus que le prix — jamais un libellé fabriqué.
+   */
+  readonly promotionNames?: readonly string[];
   /** Le taux applicable, en pourcentage (5.5, 10). Un article sans taux ne sort pas d'ici. */
   readonly vatRatePercent: number;
   readonly shelfId: string;

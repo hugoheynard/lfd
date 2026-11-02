@@ -138,9 +138,16 @@ function moneyOf(order: OrderView): SheetMoney {
  * serveur — ce sont eux, la grille.
  *
  * Une ligne sans trace rend une liste vide, pas une phrase inventée.
+ *
+ * 🔴 **Seules les promotions se nomment** (décision de Hugo, 2026-11-02) : une
+ * baisse venue d'une mercuriale, d'un palier ou d'un engagement ne porte
+ * aucune mention — le libellé de ces règles est écrit par l'équipe pour
+ * l'équipe, et le client n'en lit que le prix.
  */
 function priceLabelsOf(line: OrderLineView): readonly string[] {
-  return (line.pricing?.steps ?? []).map((step) => step.label);
+  return (line.pricing?.steps ?? [])
+    .filter((step) => step.stage === "promotion")
+    .map((step) => step.label);
 }
 
 /**

@@ -40,6 +40,13 @@ export interface AudiencePickupDiscount {
    * sous l'ancien chemin et sur la fiche d'un site, qui n'en a pas.
    */
   readonly label?: DiscountLabelView | undefined;
+  /**
+   * Le **texte sur les vignettes** réglé sur la promotion
+   * (`plan-texte-de-la-vignette.md`), trois langues, repli sur le français ;
+   * absent quand la promotion n'en a pas — l'écran dit alors le libellé, ou
+   * la valeur seule, jamais un nom fabriqué (règle de Hugo, 2026-11-02).
+   */
+  readonly tileText?: DiscountLabelView | undefined;
   readonly scope: PickupDiscountScope;
   readonly categories: readonly PickupDiscountCategoryRule[];
   readonly products: readonly PickupDiscountProductRule[];

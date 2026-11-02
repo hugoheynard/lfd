@@ -1059,7 +1059,11 @@ export interface CustomerPriceStepView {
 export interface CustomerOrderLinePricingTrace {
   /** Le tarif d'entrée, avant tout étage — celui du catalogue, que le client voit au rayon. */
   readonly basePriceMillicents: number;
-  /** Les étages qui ont produit un effet, dans l'ordre. Vide = aucun. */
+  /**
+   * Les PROMOTIONS qui ont produit un effet, dans l'ordre. Vide = aucune.
+   * Une mercuriale, un palier ou un engagement n'y figure pas (Hugo,
+   * 2026-11-02) : une baisse qui ne vient pas d'une promotion n'a pas de nom.
+   */
   readonly steps: readonly CustomerPriceStepView[];
   /** Une limite a-t-elle **relevé** ce prix ? Cf. l'asymétrie ci-dessus. */
   readonly floored: boolean;
@@ -1237,7 +1241,11 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
           ? null
           : {
               basePriceMillicents: line.pricing.basePriceMillicents,
-              steps: line.pricing.steps.map((step) => ({ label: step.label })),
+              // Seules les promotions se nomment (Hugo, 2026-11-02) : une baisse
+              // de mercuriale, de palier ou d'engagement n'a pas de mention.
+              steps: line.pricing.steps
+                .filter((step) => step.stage === "promotion")
+                .map((step) => ({ label: step.label })),
               floored: line.pricing.floored,
             },
       allergens: line.allergens,

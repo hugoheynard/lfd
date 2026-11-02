@@ -78,7 +78,8 @@ export function vitrineItemOf(
   // l'agence : son flux n'a pas été élargi (cf. `VitrineItemView`).
   // L'unité de vente non plus (P4 de `vente-au-poids.md`, 2026-10-28), ni la
   // quantité minimale (M2 de `plan-quantite-minimale.md`, 2026-10-29), ni
-  // les promotions qu'un acheminement ouvrirait (L10 des promotions).
+  // les promotions qu'un acheminement ouvrirait (L10 des promotions), ni le
+  // nom des promotions du prix affiché (2026-11-02).
   const {
     allergens,
     proPricePerKgMillicents,
@@ -88,6 +89,7 @@ export function vitrineItemOf(
     weightMinGrams,
     minQuantity,
     fulfillmentOffers,
+    promotionNames,
     ...shown
   } = item;
   void allergens;
@@ -98,6 +100,7 @@ export function vitrineItemOf(
   void weightMinGrams;
   void minQuantity;
   void fulfillmentOffers;
+  void promotionNames;
   return {
     ...shown,
     image: imageFor(item.image, item.name),

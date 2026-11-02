@@ -29,6 +29,7 @@ import { pricingCompanyOf, viewerAudience, type CatalogViewer } from "../domain/
 import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg.js";
 import { inShopLanguage, shopCatalogueOf, shownByShopSku } from "./shop-catalogue-view.js";
 import { struck } from "./shop-catalogue-struck.js";
+import { promotionNamesOf, withPromotionNames } from "./shop-catalogue-promotion-names.js";
 import { SHELF_SCOPE, scopedTo, withoutCompany, type ShelfScope } from "./shop-catalogue-scope.js";
 import type { PricingCaller } from "../../pricing/application/pricing-caller.js";
 
@@ -244,7 +245,7 @@ export class ShopCataloguePricing {
       this.offers.offeredFor(buyer, catalogue, audience),
     ]);
     const mentioned = withFulfillmentOffers(
-      priced.view,
+      withPromotionNames(priced.view, priced.promotionNames, language),
       sellable,
       offered,
       this.clock.now(),
@@ -296,7 +297,7 @@ export class ShopCataloguePricing {
       // Rien à tarifer : la vitrine sort au tarif, c'est-à-dire exactement ce
       // qu'elle servait avant R22. Un rayon vide serait pire qu'un rayon au
       // canonique.
-      return { view: catalogue, sealing: new Map() };
+      return { view: catalogue, sealing: new Map(), promotionNames: new Map() };
     }
 
     // 🔴 La porte prend l'instant elle-même, une fois pour tout le lot : deux
@@ -313,6 +314,7 @@ export class ShopCataloguePricing {
     return {
       view: { ...catalogue, items: catalogue.items.map((item) => struck(item, prices, audience)) },
       sealing: sealingOfShelf(all),
+      promotionNames: promotionNamesOf(all),
     };
   }
 }

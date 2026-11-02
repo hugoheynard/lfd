@@ -2,6 +2,7 @@ import type {
   AudiencePickupDiscount,
   CartAdjustment,
   AnnouncedPickupDiscounts,
+  DiscountLabelView,
   PickupAnnouncementKey,
 } from "@lfd/contracts";
 
@@ -153,6 +154,7 @@ function asPickupDiscount(promotion: AdmittedPromotion): AudiencePickupDiscount 
   return {
     adjustment,
     label: promotion.servedLabel,
+    ...tileTextOf(promotion),
     scope: promotion.scope.mode,
     categories: sorted
       .filter((rule) => rule.target === "category")
@@ -161,6 +163,15 @@ function asPickupDiscount(promotion: AdmittedPromotion): AudiencePickupDiscount 
       .filter((rule) => rule.target === "product")
       .map((rule) => ({ productId: rule.targetId, eligible: rule.eligible })),
   };
+}
+
+/** Le texte sur les vignettes, trois langues sans trou ; rien s'il n'est pas réglé. */
+function tileTextOf(promotion: AdmittedPromotion): { readonly tileText?: DiscountLabelView } {
+  const text = promotion.tileText;
+  if (text === null) {
+    return {};
+  }
+  return { tileText: { fr: text.fr, en: text.en ?? text.fr, it: text.it ?? text.fr } };
 }
 
 function adjustmentOf(effect: PromotionEffect): CartAdjustment | null {

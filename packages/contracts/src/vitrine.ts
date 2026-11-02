@@ -85,6 +85,7 @@ export type VitrineItemView = Omit<
   | "weightMinGrams"
   | "minQuantity"
   | "fulfillmentOffers"
+  | "promotionNames"
 > & {
   readonly isFeatured?: boolean;
   readonly operation?: ShopItemView["operation"];

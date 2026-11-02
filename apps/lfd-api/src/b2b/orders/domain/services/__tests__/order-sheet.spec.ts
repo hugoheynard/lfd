@@ -32,7 +32,7 @@ function line(overrides: Partial<OrderLineView> = {}): OrderLineView {
       clampedToZero: false,
       steps: [
         {
-          stage: "mercuriale",
+          stage: "promotion",
           ruleId: "rule_42",
           label: "Promotion de rentrée",
           scope: null,
@@ -157,12 +157,42 @@ describe("la feuille du client", () => {
 
     expect(payload).toContain("PAT-ECLAIR");
     expect(payload).not.toContain("250000");
-    expect(payload).not.toContain("mercuriale");
+    expect(payload).not.toContain('"promotion"');
     expect(payload).not.toContain("rule_42");
   });
 
   it("garde le LIBELLÉ de l'étage, qui lui est destiné", () => {
     expect(clientSheetOf(order()).lines[0]?.priceLabels).toEqual(["Promotion de rentrée"]);
+  });
+
+  it("🔴 ne nomme pas une baisse de mercuriale : seules les promotions se nomment", () => {
+    // Décision de Hugo (2026-11-02) : une baisse qui ne vient pas d'une
+    // promotion ne porte aucune mention, et le libellé d'une mercuriale est
+    // écrit par l'équipe pour l'équipe.
+    const negotiated = line({
+      pricing: {
+        basePriceMillicents: 250_000,
+        clampedToZero: false,
+        steps: [
+          {
+            stage: "mercuriale",
+            ruleId: "merc_dupont",
+            label: "Mercuriale Café Dupont",
+            scope: null,
+            resultMillicents: 210_000,
+            supersedes: [],
+          },
+        ],
+        floored: false,
+        floorDecision: null,
+        rejected: [],
+        commitment: null,
+      },
+    });
+
+    const sheet = clientSheetOf(order({ lines: [negotiated] }));
+
+    expect(sheet.lines[0]?.priceLabels).toEqual([]);
   });
 
   it("rend une liste vide quand la ligne ne porte aucune trace", () => {

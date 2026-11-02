@@ -128,6 +128,20 @@ dans le modèle, et la boutique l'affiche depuis L10.
   acheminements lui est ouvert et que sa mercuriale l'admet ; hors de ses
   heures, ses heures suivent le texte. La remise se chiffre au panier, une
   fois l'acheminement choisi.
+- **Le nom d'une baisse** (règle de Hugo, 2026-11-02) : ce qui est réglé
+  sur la promotion, jamais un libellé fabriqué par le code. Au rayon,
+  `ShopItemView.promotionNames` porte le libellé des promotions « dans le
+  prix affiché » qui ont baissé le prix barré, lu dans la trace du
+  tarificateur (étage `promotion`,
+  `apps/lfd-api/src/b2b/catalog/application/shop-catalogue-promotion-names.ts`),
+  dans la langue du rayon et l'audience du lecteur (libellé Particuliers
+  ou Pros, repli sur le commun). Une baisse venue d'une mercuriale, d'un
+  palier ou d'un engagement n'a **aucun nom** : la clé est absente, et
+  l'écran n'écrit que le prix. Même règle sur la trace d'une commande
+  servie au client (`toCustomerOrder`) et sur le bon de commande
+  (`priceLabels`) : seules les étapes de promotion y sont nommées.
+  L'annonce d'un point porte, à côté de son libellé, le texte sur les
+  vignettes (`AudiencePickupDiscount.tileText`) quand il est réglé.
 - **Invité** : s'il existe une promotion réservée aux inscrits, il lit
   « Vous avez un compte ? Connectez-vous pour profiter de −X % ».
 - **Panier, confirmation, e-mail, bons, facture** : une ligne par remise.
