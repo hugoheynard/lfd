@@ -427,3 +427,152 @@ que prennent les quatre autres lecteurs de production et de transport.
 gardent. Une **e2e unique** sème une commande sur stock au Village et vérifie
 qu'elle est **absente** de chaque lecteur du premier tableau, **présente** dans
 la file du comptoir, et en **Retrait** à la Supervision.
+
+## 11. Les trois bloquants levés (2026-11-02, avant nouvelle contradiction)
+
+Faits relus pour cette section : `order-drafting.service.ts:124-226`
+(`draft`, `ensureDayOpen`, `holdPlan`), `order-plan-gate.service.ts:68-73`
+(`hold` → `PlanAdmissionDesk.admit`),
+`production/application/services/production-plan-admission.desk.ts:32-38`
+(verrou de journée `ProductionDayLock` dans l'unité de travail de l'appelant,
+puis lecture de l'arrêt), et les verrous existants du dépôt
+(`pg_advisory_xact_lock(hashtextextended(…))` dans
+`b2b/accounting/infrastructure/prisma-collection-lock.ts:33` et
+`prisma-bank-export-preparation-lock.ts:45`).
+
+### 11.1 La passation d'une commande `shelf`
+
+- **Qui décide `supply`** : le **serveur**, jamais le client.
+  - Passation d'un client (particulier, ou pro en ligne si l'option est
+    ouverte) : une commande **pour aujourd'hui** est `shelf` — aujourd'hui ne
+    se fabrique jamais pour un client, le plan est figé depuis la veille. Une
+    commande pour demain ou après est `planned`.
+  - Saisie de l'équipe : `planned` par défaut (le comportement d'aujourd'hui,
+    hors plan compris) ; `shelf` seulement quand l'écran l'envoie — le
+    raccourci « Retrait immédiat ».
+- **L'agrégat porte l'invariant** : `Order.draft` reçoit `supply` et refuse
+  une commande `shelf` qui n'est pas un retrait pour une journée donnée
+  (`DomainError`). La marque n'a **aucun setter** : la révision
+  (`order-revising`) refuse de changer la journée d'une commande `shelf`.
+- **Les gardes de `OrderDrafting.draft`** se séparent sur `supply` :
+
+  | Garde                                                  | `planned` (inchangé) | `shelf`                                                                                                                         |
+  | ------------------------------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+  | `ensureDayOpen` (plan arrêté, réglage jour même)       | oui                  | **non** — remplacée par la garde du circuit : la clientèle est autorisée (réglage particuliers / pros, option « pro en ligne ») |
+  | `ensureNotTooLate` (heure limite générale, dérogation) | oui                  | **non** — remplacée par : le site a encore un créneau de retrait aujourd'hui, après maintenant                                  |
+  | `holdPlan` (verrou de journée, `receiveOffPlan`)       | oui                  | **non** — une commande `shelf` n'entre jamais au plan, elle n'a pas à attendre son arrêt                                        |
+  | garde du **reste** sous verrou du stock (§11.2)        | —                    | **oui**                                                                                                                         |
+
+  `receiveOffPlan` ne change pas : il reste la réception hors plan des
+  saisies `planned` de l'équipe.
+
+### 11.2 Le verrou du stock et son ordre
+
+- **Le verrou** : `pg_advisory_xact_lock(hashtextextended('shelf:' || jour ||
+':' || site, 0))`, relâché au `COMMIT` — la forme déjà en usage dans
+  `b2b/accounting`. Son **propriétaire** est le contexte qui possède le stock,
+  `b2b/resupply` : un port `ShelfStockLock` (domaine) et son adaptateur Prisma.
+  La passation (`b2b/orders`) l'appelle dans sa transaction ; c'est le même
+  bloc `b2b`, aucune frontière franchie.
+- **Le reste** est lu **sous** ce verrou : reçus réceptionnés du jour au point
+  (`resupply`) − lignes des commandes `shelf` du jour au point dont le statut
+  n'est pas `cancelled` (port `ShelfDrawsReader`, implémenté par `orders`). Une
+  commande au paiement refusé ou en cours **compte** jusqu'à son annulation
+  par l'expiration (durée réglée en admin) ; celles que l'expiration ne sait
+  pas annuler (§4.6) comptent tant qu'elles vivent. Un seul calcul, servi aussi
+  à la Supervision et à la réception par un service applicatif qui passe les
+  prélèvements à `estimateStock`, laquelle reste pure.
+- **La correction d'un reçu** (`correct-received-resupply-line.handler.ts`)
+  prend le même verrou et **refuse** de descendre sous ce qui a déjà été pris
+  (« 12 déjà vendus sur stock »). L'annulation d'un réassort réceptionné est
+  déjà refusée : rien à verrouiller.
+- **L'ordre, et pourquoi il ne peut pas interbloquer** : le verrou du stock et
+  le verrou de journée **ne sont jamais tenus ensemble**. La passation `shelf`
+  ne prend pas le verrou de journée (§11.1) ; la passation `planned`, l'arrêt
+  du plan, le retirage et le lancement d'un réassort ne prennent pas le verrou
+  du stock. La règle s'écrit dans le JSDoc des deux ports, et une e2e passe une
+  commande `shelf` pendant qu'un arrêt du plan tient la journée.
+
+### 11.3 Le règlement d'une saisie de l'équipe
+
+- **Aucun défaut serveur** : le contrat de soumission (`admin-order.ts:115-117`)
+  garde son exigence d'un `settlement` explicite — la décision écrite tient.
+- **Un choix pré-rempli à l'écran**, par client : « au compte » si le client a
+  un crédit au compte accordé, sinon « lien de paiement ». L'écran envoie la
+  valeur, explicitement, comme aujourd'hui.
+- **Les brouillons enregistrés** gardent la valeur qu'ils portent ; le
+  `.default("link")` du brouillon (l. 236) ne sert qu'à ceux qui n'en portent
+  pas et ne change pas — rien ne bascule en silence.
+- **Le raccourci « Retrait immédiat »** envoie `settlement: "account"` ; un pro
+  sans crédit suit l'option admin : refusé (le bouton le dit avant la saisie),
+  ou envoyé en « lien de paiement » — auquel cas « Valider et remettre » ne
+  remet pas (règlement non clos) et la commande attend dans la file.
+
+## 12. Troisième contradiction de `vitruve` (2026-11-02), et ce qu'elle change
+
+Trois **bloquants** sur le §11, chacun avec sa réponse proposée.
+
+1. **Trois gestes font baisser un reçu, pas un.** Outre
+   `correct-received-resupply-line.handler.ts`, le réassort sans commande baisse
+   le stock par `CorrectResupplyLineHandler` (`correct-resupply-line.handler.ts:27-31`)
+   et `WithdrawResupplyLineHandler` (`withdraw-resupply-line.handler.ts:24-33`) ;
+   il est « reçu » dès sa première ligne (`resupply-receipt.ts:175`).
+   → **Proposé** : un seul service applicatif du réassort, par lequel passe
+   **toute** baisse d'une quantité reçue — il prend le verrou du stock et
+   refuse de descendre sous le déjà-pris ; les trois handlers l'appellent. À
+   ouvrir au bâti : `send-reserve-to-shop.handler.ts` et
+   `mark-arrived-on-transfer-received.handler.ts`, qui pourraient écrire un reçu.
+2. **La révision d'une commande `shelf`** (`order-revising.service.ts:182-246`)
+   recompose ses lignes : une hausse vendrait au-delà du reste, et la garder
+   obligerait à tenir le verrou du stock **avec** celui de journée (`holdDay`).
+   → **Proposé, à confirmer par Hugo** : **une commande `shelf` ne se modifie
+   pas** — elle se remet dans la journée, ou s'annule et se refait. La règle est
+   dans l'agrégat (`Order.revise` refuse `shelf`), et les deux verrous restent
+   séparés.
+3. **Aucun créneau pro n'existe** : les seuls créneaux sont publics
+   (`public_pickup_slot_rules`, `settings.prisma:502-537`).
+   → **Proposé** — la source selon la porte :
+   - particulier en ligne : les **créneaux publics** du site, fermetures
+     (`public-pickup-closure.ts`) comprises ;
+   - pro en ligne : la **fenêtre de retrait pro** du site (`opening.proPickup`,
+     déjà servie avec les points de retrait) ;
+   - pro au comptoir (« Retrait immédiat ») : **aucune garde de créneau** — la
+     remise est immédiate, le client est devant le vendeur.
+   - Un site sans créneau ni fenêtre pour cette clientèle ne propose pas
+     aujourd'hui — jamais un horaire inventé.
+
+**Sérieux**, repris :
+
+- **L'agrégat reçoit « aujourd'hui »** (en paramètre, comme `activate`) et
+  refuse une commande `shelf` d'un autre jour — une commande `shelf` datée de
+  demain ne serait jamais cuite.
+- **« Client + aujourd'hui = `shelf` » seulement si le plan d'aujourd'hui est
+  arrêté.** Plan ouvert (rouvert, ou pas encore arrêté faute d'heure limite) :
+  la commande est `planned`, le fournil la prend. **À confirmer par Hugo.**
+- **Le pré-remplissage du règlement lit le payeur**, comme le serveur
+  (`order-settlement.ts:114-126` : `payerId ?? companyId`, société active) : la
+  vue du comptoir (`CounterCustomerView.settlesOnAccount`, calculée sur la
+  société seule, `get-counter-customer.handler.ts:58`) est à aligner, sans quoi
+  un site rattaché à un principal verrait « au compte » proposé puis refusé.
+- **L'annulation d'une commande `shelf`** ne traverse pas le guichet du fournil
+  (`order-workshop-withdrawal.ts:42-70`, qui prend `ProductionDayLock` et
+  interroge le colisage) : elle ne fut jamais inscrite. Un chemin propre, qui
+  rend la quantité en retombant hors des prélèvements.
+- **Toutes les portes se séparent sur `supply`**, pas seulement `draft` :
+  `place-shop-order.handler.ts` (invité), `quote-order.handler.ts` (devis),
+  `order-cutoff-notice.service.ts` (avis d'heure limite),
+  `cart-adjustments.service.ts` — sans quoi l'écran annoncerait un refus que la
+  passation ne fait plus.
+- **L'ordre des verrous dans `persist`** pour `shelf` : verrou du stock, puis
+  bon de fidélité (`vouchers.reserve`), puis la commande — et le refus du reste
+  annule l'intention Stripe créée avant la persistance par le mécanisme déjà en
+  place (`place-order.handler.ts:265`).
+
+**Mineurs** : les prélèvements excluent aussi `draft` (pas seulement
+`cancelled`) ; le JSDoc d'`estimateStock` (« aucun port posé d'avance ») est à
+réécrire au bâti.
+
+**Non vérifié par `vitruve`** : les abonnements (qui ne passent pas par
+`OrderDrafting`) peuvent-ils viser aujourd'hui ; `Order.revise` peut-il changer
+l'acheminement ou le point (sans objet si la révision d'une `shelf` est
+refusée) ; le `persist` de la passation invité.
