@@ -30,7 +30,7 @@ export class CounterDeliveryNoteService {
 
   /** Le PDF, en réessayant tant que le serveur dit « pas encore ». */
   clientPdf(orderId: string): Promise<Blob> {
-    return retryWhileNotYet(() => this.fetch(orderId), NOT_YET_ATTEMPTS, NOT_YET_WAIT_MS);
+    return retryWhileNotYet(() => this.download(orderId), NOT_YET_ATTEMPTS, NOT_YET_WAIT_MS);
   }
 
   /**
@@ -51,7 +51,7 @@ export class CounterDeliveryNoteService {
     }, BLOB_LIFETIME_MS);
   }
 
-  private fetch(orderId: string): Promise<Blob> {
+  private download(orderId: string): Promise<Blob> {
     return firstValueFrom(
       this.http.get(
         `${B2B_API_BASE}/admin/counter/orders/${encodeURIComponent(orderId)}/delivery-note/client.pdf`,
