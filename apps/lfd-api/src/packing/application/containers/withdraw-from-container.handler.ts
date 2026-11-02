@@ -39,7 +39,7 @@ export class WithdrawFromContainerHandler implements ICommandHandler<
       const line = sheet.lineToTouch(command.sku);
       const pieces = sheet.withdraw(command.containerId, command.sku, command.quantity);
       await releaseToStock(this.stocks, command.serviceDay, [
-        { sku: command.sku, quantity: pieces },
+        { sku: command.sku, quantity: pieces, unit: line.saleUnit },
       ]);
       await this.sheets.save(sheet);
       await this.events.publishTraced(

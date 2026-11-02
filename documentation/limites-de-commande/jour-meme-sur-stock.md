@@ -367,9 +367,8 @@ avec son retour dans `prisma/rollback/`.
 - **La facture « Remise client »** pour une commande remise au comptoir.
 - **Le rayon pro sans connexion** lit encore son libellé propre, pas le
   libellé commun.
-- **`PackingStock.release`** (`packing/domain/entities/packing-stock.ts:222`)
-  ne prend pas l'unité, là où `reserve`, `take` et `takeForResupply` la
-  prennent.
+- ~~**`PackingStock.release`** ne prend pas l'unité~~ — fait le 2026-11-02
+  (commit à venir) : `release(quantity, unit)`, l'unité de la ligne du bon.
 - **La route publique `/fulfillment-days`** accepte encore `audience=public`
   d'un pro (`fulfillment-days.controller.ts:21,48`) : un pro qui ne passe pas
   par `/mine` lit le réglage des particuliers ; la passation tranche.

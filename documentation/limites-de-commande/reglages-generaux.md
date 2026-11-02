@@ -90,12 +90,12 @@ toujours), rien quand l'état ne change pas.
 Ni lues ni écrites ; elles restent en base jusqu'à un déploiement qui les
 supprime, une fois qu'aucun binaire en service ne les nomme.
 
-| Colonne                                                             | Morte depuis         | Pourquoi                                                |
-| ------------------------------------------------------------------- | -------------------- | ------------------------------------------------------- |
-| `public.order_cutoff_settings.enabled`                              | 2026-10-21           | l'interrupteur de l'heure limite, §2                    |
-| `public.order_cutoff_settings.resupply_subject_to_cutoff`           | 2026-10-21 (lot R3a) | remplacée par `resupply_cutoff_time`                    |
-| `public.order_cutoff_settings.same_day_allowed` (vue seulement)     | 2026-11-02 (lot L4)  | remplacée par les réglages par clientèle, §4            |
-| `production.production_settings.close_mode`, `close_at`, `alert_at` | 2026-10-21           | [`plan-une-seule-heure.md`](plan-une-seule-heure.md) §5 |
+| Colonne                                                             | Morte depuis         | Pourquoi                                                                              |
+| ------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------- |
+| `public.order_cutoff_settings.enabled`                              | 2026-10-21           | l'interrupteur de l'heure limite, §2                                                  |
+| ~~`public.order_cutoff_settings.resupply_subject_to_cutoff`~~       | 2026-10-21 (lot R3a) | retirée le 2026-11-02 (`20261102250000_le_reassort_sans_interrupteur`, ordre de Hugo) |
+| `public.order_cutoff_settings.same_day_allowed` (vue seulement)     | 2026-11-02 (lot L4)  | remplacée par les réglages par clientèle, §4                                          |
+| `production.production_settings.close_mode`, `close_at`, `alert_at` | 2026-10-21           | [`plan-une-seule-heure.md`](plan-une-seule-heure.md) §5                               |
 
 ## 2. L'interrupteur — retiré le 2026-10-21
 

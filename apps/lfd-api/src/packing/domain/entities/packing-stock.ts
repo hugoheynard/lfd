@@ -188,7 +188,7 @@ export class PackingStock {
   }
 
   /** @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire. */
-  private ensureMovable(quantity: number, unit: SaleUnit = "piece"): void {
+  private ensureMovable(quantity: number, unit: SaleUnit): void {
     if (!Number.isInteger(quantity) || quantity < 0) {
       throw new StockMoveQuantityInvalidError(this.sku, quantity, unit);
     }
@@ -218,9 +218,15 @@ export class PackingStock {
     this.sentToShopValue += quantity;
   }
 
-  /** Des pièces ressortent d'un bac et redeviennent disponibles. */
-  release(quantity: number): void {
-    this.ensureMovable(quantity);
+  /**
+   * Des pièces — ou des grammes, au poids — ressortent d'un bac et
+   * redeviennent disponibles. `unit` est celle de la ligne, comme pour
+   * `take` : le refus d'une quantité invalide dit « grammes », pas « pièces ».
+   *
+   * @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire.
+   */
+  release(quantity: number, unit: SaleUnit): void {
+    this.ensureMovable(quantity, unit);
     this.packedValue = Math.max(0, this.packedValue - quantity);
   }
 

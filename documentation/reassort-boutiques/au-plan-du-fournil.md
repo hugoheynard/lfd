@@ -172,7 +172,7 @@ fournil, figé à l'arrêt (`served_by_transfer`) ; le fait
   l'annuaire et figé). Affichage seulement.
 - **Arrivé** : les deux chemins de la réception d'un transfert écrivent
   `delivery.transfer_received` ; `MarkArrivedOnTransferReceived` appelle
-  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:293`) à
+  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:228`, règle dans `site-resupply-progress.ts`) à
   l'instant et sous l'auteur de la réception. Au Labo, « Monté » :
   `POST admin/bakehouse-resupplies/sites/:siteId/:resupplyId/mounted`
   (`production_resupply:write`). Déjà arrivé ou déjà réceptionné : rien ne

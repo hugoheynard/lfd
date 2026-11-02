@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import type { PackingSheet } from "../../domain/entities/packing-sheet.js";
 import { PackingOrderNotDrawnYetError } from "../../domain/errors/packing-station-errors.js";
@@ -43,12 +45,16 @@ export function citedOrderOf(sheet: PackingSheet): CitedPackingOrder {
 export async function releaseToStock(
   stocks: PackingStockRepository,
   serviceDay: string,
-  released: readonly { readonly sku: string; readonly quantity: number }[],
+  released: readonly {
+    readonly sku: string;
+    readonly quantity: number;
+    readonly unit: SaleUnit;
+  }[],
 ): Promise<void> {
   const ordered = [...released].sort((a, b) => a.sku.localeCompare(b.sku));
-  for (const { sku, quantity } of ordered) {
+  for (const { sku, quantity, unit } of ordered) {
     const stock = await stocks.lock(serviceDay, sku);
-    stock.release(quantity);
+    stock.release(quantity, unit);
     await stocks.save(stock);
   }
 }

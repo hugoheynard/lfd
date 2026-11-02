@@ -77,6 +77,11 @@ flowchart TD
 | back-office | comptoir, Prod manager, colisage, Supervision                                    | `comptoir/reassort-boutique-page/`, `production/reassorts-a-produire/`, `production/colisage/packing-resupplies/`, `supervision/stock-board/`                                                            |
 | contrats    | vues et charges                                                                  | `packages/contracts/src/site-resupply.ts`, `resupply-receipt.ts`, `bakehouse-resupply-draft.ts`, `site-stock-alert.ts`, `day-stock-overview.ts`, `production-day-resupplies.ts`, `packing-resupplies.ts` |
 
+**La démonstration** : le scénario du jour (`placeToday`) sème un réassort
+« au plus tôt » du Village, « Vitrine de l'après-midi », envoyé à 15 h par
+les vrais handlers du comptoir (`apps/lfd-api/src/dev/seeding/village-resupply.seed.ts`) ;
+il attend « Lancer » au fournil.
+
 **Les canaux entre blocs** (aucun bloc ne lit les tables d'un autre) :
 
 | Port                       | Déclaré par                                                             | Implémenté par                           | Pour                                                  |
@@ -185,7 +190,8 @@ Le code cite ses lots ; voici ce qu'ils désignent et où ils sont décrits.
 `shelf-stock-weight` (`.e2e-spec.ts`). Deux parcours de bout en bout, chacun
 sous une horloge figée qui saute d'une étape à l'autre :
 `resupply-village-flow` (envoi la veille, arrêt automatique, colisage,
-transfert, « Remis au site », réception pré-remplie de l'emballé, Supervision)
+transfert, « Remis au site », réception pré-remplie de l'emballé, Supervision ;
+ses étapes de la veille vivent dans `test/resupply-village-scene.ts`)
 et `resupply-labo-flow` (le même au Labo, sans colisage ni transfert,
 « Monté ») ; et `resupply-asap-village-flow` pour le « au plus tôt ».
 

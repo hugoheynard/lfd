@@ -52,7 +52,11 @@ export class PackingContainerVoiding {
       released.push(...sheet.voidContainer(containerId, mark));
     }
     const bySku = sumBySku(released);
-    await releaseToStock(this.stocks, sheet.serviceDay, bySku);
+    await releaseToStock(
+      this.stocks,
+      sheet.serviceDay,
+      bySku.map((line) => ({ ...line, unit: sheet.lineToTouch(line.sku).saleUnit })),
+    );
     for (const containerId of containerIds) {
       await this.events.publishTraced(
         new PackingContainerVoidedEvent(

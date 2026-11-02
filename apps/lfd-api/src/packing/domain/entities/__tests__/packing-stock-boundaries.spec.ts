@@ -33,7 +33,7 @@ describe("PackingStock — frontières de l'invariant", () => {
     for (const move of [
       () => held.take(quantity, "Croissant", "piece"),
       () => held.takeForResupply("rs-1", quantity, "Croissant", "piece"),
-      () => held.release(quantity),
+      () => held.release(quantity, "piece"),
       () => held.releaseFromResupply("rs-1", quantity, "piece"),
     ]) {
       expect(move).toThrow(StockMoveQuantityInvalidError);
@@ -44,7 +44,7 @@ describe("PackingStock — frontières de l'invariant", () => {
   it("un mouvement de zéro pièce est admis et ne change rien", () => {
     const held = stock(10, 0, 4);
     held.take(0, "Croissant", "piece");
-    held.release(0);
+    held.release(0, "piece");
     expect(held.toSnapshot().packed).toBe(4);
   });
 
@@ -81,7 +81,7 @@ describe("PackingStock — frontières de l'invariant", () => {
    */
   it("ressortir plus que le bac ne contient plafonne à zéro, sans libre fantôme", () => {
     const held = stock(10, 0, 3);
-    held.release(50);
+    held.release(50, "piece");
     expect(held.packed).toBe(0);
     expect(held.free).toBe(10);
   });

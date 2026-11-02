@@ -238,8 +238,9 @@ interrupteur mais une **heure** — `order_cutoff_settings.resupply_cutoff_time`
 « la veille, HH:MM », `20:00` par défaut. Passé elle, « Pour demain » est
 refusé (409, « demandez au fournil ») ; le plan du fournil s'arrête à la plus
 tardive de ① (rattrapage compris) et de ⑨, et fige alors les réassorts avec
-les commandes. `resupply_subject_to_cutoff` reste en base, ni lue ni écrite, à
-retirer ([`reglages-generaux.md`](reglages-generaux.md) §1, colonnes mortes).
+les commandes. `resupply_subject_to_cutoff`, ni lue ni écrite depuis, est
+retirée de la base le 2026-11-02 sur ordre de Hugo
+([`reglages-generaux.md`](reglages-generaux.md) §1, colonnes mortes).
 
 **Reste à faire** : les recommandations « commandable aujourd'hui » alignées sur
 « la plus stricte gagne », le devis qui signale la limite, le rattrapage réuni

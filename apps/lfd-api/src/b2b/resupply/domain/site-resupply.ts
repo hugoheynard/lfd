@@ -1,27 +1,19 @@
-import { instantToLocal } from "@lfd/contracts";
-
 import {
-  EmptyResupplyError,
   ResupplyAlreadyPlacedError,
-  ResupplyDayPassedError,
-  ResupplyLineNotInDraftError,
-  ResupplyAlreadyReceivedNotCancellableError,
-  ResupplyNotCancellableError,
   ReserveNotTodayError,
-  ReserveResupplyNotCancellableError,
-  BakehouseResupplyAfterStopError,
-  ResupplyFrozenInPlanError,
-  ResupplyLaunchedNotCancellableError,
-  ResupplyPastCutoffError,
-  ResupplyPlanStoppedError,
-  ResupplyNotArrivableError,
-  ResupplyNotLaunchedNotMountableError,
   SiteResupplyChangedMeanwhileError,
 } from "./site-resupply-errors.js";
 import { resupplyNameOf } from "./resupply-name.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
-import { ResupplyLineUnitMismatchError } from "./resupply-sale-unit-errors.js";
+import { assertCancellable, assertPlaceable } from "./site-resupply-gates.js";
+import type {
+  BakehouseResupplyInput,
+  CounterDraftInput,
+  ReserveResupplyInput,
+} from "./site-resupply-inputs.js";
 import { SiteResupplyLine } from "./site-resupply-line.js";
+import { type ProgressContext, SiteResupplyProgress } from "./site-resupply-progress.js";
+import { withLineAdded, withLineCorrected, withLineWithdrawn } from "./site-resupply-lines.js";
 import {
   type ResupplyTarget,
   serviceDayFor,
@@ -85,18 +77,11 @@ export class SiteResupply {
     private lineList: readonly SiteResupplyLine[],
     private placedTrace: SiteResupplyTrace | null,
     private cancelledTrace: SiteResupplyTrace | null,
-    private arrivedTrace: SiteResupplyTrace | null,
-    private launchedMark: SiteResupplyLaunch | null = null,
-    private departedMark: SiteResupplyDeparture | null = null,
+    private readonly progress: SiteResupplyProgress,
   ) {}
 
   /** Un brouillon, au geste `at` : sa journée en découle. */
-  static draft(input: {
-    readonly id: string;
-    readonly siteId: string;
-    readonly target: ResupplyTarget;
-    readonly at: Date;
-  }): SiteResupply {
+  static draft(input: CounterDraftInput): SiteResupply {
     return SiteResupply.blank(input, input.at, "counter");
   }
 
@@ -106,16 +91,7 @@ export class SiteResupply {
    * `place` avec les règles du comptoir — au moins une ligne, l'heure limite
    * de sa journée pour « pour demain », et le plan pas encore arrêté (R3a).
    */
-  static sentByBakehouse(input: {
-    readonly id: string;
-    readonly siteId: string;
-    readonly target: ResupplyTarget;
-    readonly name: string | null;
-    readonly lines: readonly SiteResupplyLine[];
-    readonly trace: SiteResupplyTrace;
-    readonly deadline: Date | null;
-    readonly planStopped: boolean;
-  }): SiteResupply {
+  static sentByBakehouse(input: BakehouseResupplyInput): SiteResupply {
     const resupply = SiteResupply.blank(input, input.trace.at, "bakehouse");
     resupply.rename(input.name);
     for (const line of input.lines) {
@@ -135,13 +111,7 @@ export class SiteResupply {
    *
    * @throws {ReserveNotTodayError} `reserveDay` n'est pas la journée du geste.
    */
-  static sentFromReserve(input: {
-    readonly id: string;
-    readonly siteId: string;
-    readonly reserveDay: string;
-    readonly lines: readonly SiteResupplyLine[];
-    readonly trace: SiteResupplyTrace;
-  }): SiteResupply {
+  static sentFromReserve(input: ReserveResupplyInput): SiteResupply {
     const today = serviceDayFor("asap", input.trace.at);
     if (input.reserveDay !== today) {
       throw new ReserveNotTodayError(input.reserveDay, today);
@@ -167,9 +137,11 @@ export class SiteResupply {
       snapshot.lines.map((line) => SiteResupplyLine.of(line)),
       snapshot.placed,
       snapshot.cancelled,
-      snapshot.arrived,
-      snapshot.launched ?? null,
-      snapshot.departed ?? null,
+      new SiteResupplyProgress(
+        snapshot.arrived,
+        snapshot.launched ?? null,
+        snapshot.departed ?? null,
+      ),
     );
   }
 
@@ -190,7 +162,7 @@ export class SiteResupply {
       [],
       null,
       null,
-      null,
+      new SiteResupplyProgress(null, null, null),
     );
   }
 
@@ -227,140 +199,61 @@ export class SiteResupply {
   }
 
   get arrived(): SiteResupplyTrace | null {
-    return this.arrivedTrace;
+    return this.progress.arrived;
   }
 
   /** « Lancé par X à HH:MM » au fournil (R4a), ou `null`. Un affichage, pas une garde. */
   get launched(): SiteResupplyLaunch | null {
-    return this.launchedMark;
+    return this.progress.launched;
   }
 
-  /**
-   * **Le fournil l'a lancé** (R4a) — l'affichage, posé par l'abonné au fait
-   * `production.resupply_launched`. Seul un « au plus tôt » envoyé se lance,
-   * jamais une sortie de réserve (A1.4) ; rejoué, rien ne change.
-   *
-   * @returns `true` si l'affichage vient d'être posé ; `false` sinon (déjà
-   *   posé, ou réassort qui n'est pas un « au plus tôt » envoyé — l'abonné
-   *   l'écarte sans relivrer le fait sans fin).
-   */
+  /** Cf. {@link SiteResupplyProgress.recordLaunch} : la règle et ses refus. */
   recordLaunch(launch: SiteResupplyLaunch): boolean {
-    if (
-      this.target !== "asap" ||
-      this.origin === "reserve" ||
-      this.status !== "placed" ||
-      this.launchedMark !== null
-    ) {
-      return false;
-    }
-    this.launchedMark = launch;
-    return true;
+    const launchable =
+      this.target === "asap" && this.origin !== "reserve" && this.status === "placed";
+    return this.progress.recordLaunch(launchable, launch);
   }
 
   /** « Parti à HH:MM » (R4d), ou `null`. Un affichage, pas une garde. */
   get departed(): SiteResupplyDeparture | null {
-    return this.departedMark;
+    return this.progress.departed;
   }
 
-  /**
-   * **La tournée qui porte son transfert est partie** (R4d) — l'affichage,
-   * posé par l'abonné au fait `delivery.transfer_departed`. Seul un réassort
-   * envoyé part ; rejoué, rien ne change. Aucun refus n'en dépend :
-   * « Réceptionner » reste permis avant comme après.
-   *
-   * @returns `true` si l'affichage vient d'être posé ; `false` sinon.
-   */
+  /** Cf. {@link SiteResupplyProgress.recordDeparture} : la règle et ses refus. */
   recordDeparture(departure: SiteResupplyDeparture): boolean {
-    if (this.status !== "placed" || this.departedMark !== null) {
-      return false;
-    }
-    this.departedMark = departure;
-    return true;
+    return this.progress.recordDeparture(this.progressContext(), departure);
   }
 
-  /**
-   * **« Il est là »** (lot R3e) — le même signal pour les deux chemins : la
-   * réception au site du transfert qui le porte, ou « Monté » au fournil.
-   * `reception`, lue par l'appelant (`null` avant « Réceptionner »).
-   *
-   * Refusé sur une demande en cours ou un réassort annulé. Déjà arrivé, ou
-   * déjà réceptionné (le comptoir fait foi, il n'attend pas le signal), rien
-   * ne change : `false`, et personne ne sonne une seconde fois.
-   *
-   * @returns `true` si le réassort vient de passer d'attendu à arrivé.
-   * @throws {ResupplyNotArrivableError}
-   */
+  /** Cf. {@link SiteResupplyProgress.markArrived} : la règle et ses refus. */
   markArrived(trace: SiteResupplyTrace, reception: SiteResupplyTrace | null): boolean {
-    if (this.status !== "placed") {
-      throw new ResupplyNotArrivableError(this.status === "draft");
-    }
-    if (this.arrivedTrace !== null || reception !== null) {
-      return false;
-    }
-    this.arrivedTrace = trace;
-    return true;
+    return this.progress.markArrived(this.progressContext(), trace, reception);
   }
 
-  /**
-   * **« Monté »** (R3e) — « il est là » par le geste du fournil. Un « au plus
-   * tôt » n'est monté qu'une fois LANCÉ (Q4, R4c) : avant, il n'est pas au
-   * plan, rien n'a été fabriqué pour lui. Déjà arrivé ou réceptionné, rien
-   * ne change et rien n'est refusé. `launched` est lu au fournil par
-   * l'appelant, jamais à la colonne d'affichage du commerce.
-   *
-   * @returns `true` si le réassort vient de passer d'attendu à arrivé.
-   * @throws {ResupplyNotArrivableError} @throws {ResupplyNotLaunchedNotMountableError}
-   */
+  /** Cf. {@link SiteResupplyProgress.markMounted} : la règle et ses refus. */
   markMounted(
     trace: SiteResupplyTrace,
     reception: SiteResupplyTrace | null,
     launched: boolean,
   ): boolean {
-    const awaited = this.status === "placed" && this.arrivedTrace === null && reception === null;
-    if (awaited && this.target === "asap" && !launched) {
-      throw new ResupplyNotLaunchedNotMountableError(this.serviceDay);
-    }
-    return this.markArrived(trace, reception);
+    return this.progress.markMounted(this.progressContext(), trace, reception, launched);
   }
 
-  /**
-   * Ajoute un article au brouillon. Déjà présent, sa quantité s'ADDITIONNE :
-   * deux postes qui ajoutent des croissants en demandent la somme — dans la
-   * même unité seulement (lot L2b-1).
-   *
-   * @throws {ResupplyLineUnitMismatchError} déjà présent dans l'autre unité.
-   */
+  /** Ajoute un article au brouillon ; cf. {@link withLineAdded} (somme, unité). */
   addLine(line: SiteResupplyLine): void {
     this.assertDraft();
-    const existing = this.lineList.find((candidate) => candidate.sku === line.sku);
-    if (existing === undefined) {
-      this.lineList = [...this.lineList, line];
-      return;
-    }
-    if (existing.saleUnit !== line.saleUnit) {
-      throw new ResupplyLineUnitMismatchError(existing.sku, existing.label);
-    }
-    const summed = existing.withQuantity(existing.quantity + line.quantity);
-    this.lineList = this.lineList.map((candidate) =>
-      candidate.sku === line.sku ? summed : candidate,
-    );
+    this.lineList = withLineAdded(this.lineList, line);
   }
 
   /** Remplace la quantité d'un article du brouillon (entière, un ou plus). */
   correctLine(sku: string, quantity: number): void {
     this.assertDraft();
-    const existing = this.lineOf(sku);
-    const corrected = existing.withQuantity(quantity);
-    this.lineList = this.lineList.map((candidate) =>
-      candidate.sku === sku ? corrected : candidate,
-    );
+    this.lineList = withLineCorrected(this.lineList, sku, quantity);
   }
 
   /** Retire un article du brouillon. */
   withdrawLine(sku: string): void {
     this.assertDraft();
-    this.lineOf(sku);
-    this.lineList = this.lineList.filter((candidate) => candidate.sku !== sku);
+    this.lineList = withLineWithdrawn(this.lineList, sku);
   }
 
   /**
@@ -374,53 +267,27 @@ export class SiteResupply {
   }
 
   /**
-   * Passe le réassort. `deadline` est l'heure du réassort pour sa journée
-   * (« la veille, HH:MM », lot R3a), `null` si elle n'existe pas ce jour-là ;
-   * `planStopped` dit si le plan du fournil pour cette journée est arrêté,
-   * lu SOUS le verrou de la journée. « Au plus tôt » ignore les deux. La borne
-   * est incluse : à la seconde de l'heure, c'est encore accepté. Une demande
-   * dont la journée est passée ne s'envoie plus. Une demande au poids part
-   * comme une autre : le fournil, le colisage et le transfert portent son
-   * unité (lots L2b-2 et L2b-3).
+   * Passe le réassort. `deadline` (l'heure du réassort pour sa journée, ou
+   * `null`) et `planStopped` (lu SOUS le verrou de la journée) : cf.
+   * {@link assertPlaceable}.
    */
   place(trace: SiteResupplyTrace, deadline: Date | null, planStopped: boolean): void {
     this.assertDraft();
-    if (this.lineList.length === 0) {
-      throw new EmptyResupplyError();
-    }
-    if (instantToLocal(trace.at).day > this.serviceDay) {
-      throw new ResupplyDayPassedError(this.serviceDay);
-    }
-    if (this.target === "tomorrow") {
-      this.assertBeforeStop(trace.at, deadline, planStopped);
-    }
+    assertPlaceable({
+      lineCount: this.lineList.length,
+      target: this.target,
+      origin: this.origin,
+      serviceDay: this.serviceDay,
+      at: trace.at,
+      deadline,
+      planStopped,
+    });
     this.placedTrace = trace;
   }
 
-  /** Avant l'heure du réassort ET avant l'arrêt — le message suit qui envoie. */
-  private assertBeforeStop(at: Date, deadline: Date | null, planStopped: boolean): void {
-    const late = deadline !== null && at > deadline;
-    if (!late && !planStopped) {
-      return;
-    }
-    const limit = deadline === null ? null : instantToLocal(deadline);
-    const label = limit === null ? "inconnue" : `la veille à ${limit.time}`;
-    if (this.origin === "bakehouse") {
-      throw new BakehouseResupplyAfterStopError(this.serviceDay, label);
-    }
-    if (late) {
-      throw new ResupplyPastCutoffError(this.serviceDay, label);
-    }
-    throw new ResupplyPlanStoppedError(this.serviceDay);
-  }
-
   /**
-   * Annule un réassort passé. `reception`, lue par l'appelant (`null` avant
-   * « Réceptionner ») : arrivé et attesté, il ne s'annule plus (R1d).
-   * `planStopped`, lu SOUS le verrou de la journée : un réassort « pour
-   * demain » figé dans un plan arrêté ne s'annule plus (R3a, Q3) ; rouvert,
-   * il s'annule de nouveau. `launched`, lu au fournil SOUS le même verrou
-   * (R4a) : un « au plus tôt » lancé est au plan, il ne s'annule plus.
+   * Annule un réassort passé. `reception`, `planStopped` et `launched` sont
+   * lus par l'appelant sous le verrou de la journée : cf. {@link assertCancellable}.
    */
   cancel(
     trace: SiteResupplyTrace,
@@ -428,33 +295,20 @@ export class SiteResupply {
     planStopped: boolean,
     launched: boolean,
   ): void {
-    if (this.status !== "placed") {
-      throw new ResupplyNotCancellableError();
-    }
-    if (this.origin === "reserve") {
-      throw new ReserveResupplyNotCancellableError();
-    }
-    if (this.target === "tomorrow" && planStopped) {
-      throw new ResupplyFrozenInPlanError(this.serviceDay);
-    }
-    if (launched) {
-      throw new ResupplyLaunchedNotCancellableError(this.serviceDay);
-    }
-    if (reception !== null) {
-      throw new ResupplyAlreadyReceivedNotCancellableError(
-        reception.author.name,
-        instantToLocal(reception.at).time,
-      );
-    }
+    assertCancellable({
+      status: this.status,
+      origin: this.origin,
+      target: this.target,
+      serviceDay: this.serviceDay,
+      reception,
+      planStopped,
+      launched,
+    });
     this.cancelledTrace = trace;
   }
 
-  private lineOf(sku: string): SiteResupplyLine {
-    const line = this.lineList.find((candidate) => candidate.sku === sku);
-    if (line === undefined) {
-      throw new ResupplyLineNotInDraftError(sku);
-    }
-    return line;
+  private progressContext(): ProgressContext {
+    return { status: this.status, target: this.target, serviceDay: this.serviceDay };
   }
 
   private assertDraft(): void {

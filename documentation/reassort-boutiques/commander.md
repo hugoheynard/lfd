@@ -17,7 +17,7 @@ flowchart LR
 
 ## 1. L'agrégat `SiteResupply`
 
-`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:76` — un point, une
+`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:68` — un point, une
 visée (`tomorrow` | `asap`), une **journée déduite** de l'instant du geste à
 l'heure de Paris (demain ou aujourd'hui), jamais saisie ; des lignes (SKU,
 libellé figé du catalogue publié, **unité** `piece` | `weight`, quantité
@@ -66,8 +66,10 @@ Après l'arrêt, un « pour demain » est refusé (`resupply.order.plan_stopped`
 au comptoir, `resupply.order.bakehouse_after_stop` au fournil) ; il n'y a
 pas d'ajout tardif.
 
-L'ancien interrupteur `resupply_subject_to_cutoff` reste en base, mort
-(`prisma/schema/public/settings.prisma:357-359`) : aucune règle ne le lit.
+L'ancien interrupteur `resupply_subject_to_cutoff` est retiré de la base
+sur ordre de Hugo du 2026-11-02 (migration
+`20261102250000_le_reassort_sans_interrupteur`) ; les faits passés du
+journal gardent leur `resupplySubjectToCutoff`.
 
 ## 3. Le comptoir — la demande en cours
 

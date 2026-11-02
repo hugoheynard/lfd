@@ -34,7 +34,7 @@ describe("PackingStock — au bac ≤ reçu − rendu", () => {
 
   it("ressortir du bac rend les pièces disponibles", () => {
     const held = stock(12, 0, 12);
-    held.release(12);
+    held.release(12, "piece");
     expect(held.free).toBe(12);
   });
 });
@@ -86,5 +86,14 @@ describe("PackingStock — la mise au bac d'une commande au poids", () => {
 
   it("un mouvement fractionnaire se refuse en grammes", () => {
     expect(() => stock(3_750).take(1.5, "Gravlax", "weight")).toThrow(/entier de grammes/);
+  });
+
+  /** Régression : `release` ne prenait pas l'unité et disait « pièces » (2026-11-02). */
+  it("un retour du bac fractionnaire se refuse en grammes aussi", () => {
+    const held = stock(3_750);
+    held.take(2_500, "Gravlax", "weight");
+    expect(() => held.release(1.5, "weight")).toThrow(/entier de grammes/);
+    held.release(1_000, "weight");
+    expect(held.packed).toBe(1_500);
   });
 });

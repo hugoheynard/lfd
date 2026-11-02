@@ -19,56 +19,55 @@
  *
  * L'horloge est figée et SAUTE d'une étape à l'autre : la veille (J-1) puis
  * le jour servi (J, dans une semaine). Aucune date du calendrier.
+ *
+ * Les étapes de la veille (1 à 3) vivent dans `resupply-village-scene.ts`
+ * depuis le 2026-11-02 ; celles du jour J restent ici.
  */
-import { Buffer } from "node:buffer";
-import { randomUUID } from "node:crypto";
-
 import type {
   DayStockOverviewView,
   HandoverQueueView,
   InternalTransferManifestView,
   MyDeliveryRoundView,
   PackingResuppliesView,
-  ProductionDayResuppliesView,
   ResupplyReceiptView,
 } from "@lfd/contracts";
-import { addDays, localToInstant } from "@lfd/contracts";
 
-import { WEIGHED_GRAVLAX } from "../src/dev/seeding/delivery-day.seed.js";
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
-import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
-import { settleCardPayments } from "./card-payments.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
-import { MY_ROUND, seedDriverRole, staffWithRole } from "./delivery-driver-scene.js";
-import { binTypeId, depart, loadBin } from "./delivery-loading-scene.js";
-import { ADMIN_VERIFIER_OVERRIDE, addVehicle, ROUNDS, roundOf } from "./delivery-rounds-scene.js";
-import { MEASURED, ROAD_ROUTING_OVERRIDES, seedDeparture } from "./delivery-routing-scene.js";
-import { declareTransferBins, FixedRoad, seedVillage } from "./internal-transfer-scene.js";
+import { MY_ROUND, staffWithRole } from "./delivery-driver-scene.js";
+import { depart, loadBin } from "./delivery-loading-scene.js";
+import { ADMIN_VERIFIER_OVERRIDE, ROUNDS, roundOf } from "./delivery-rounds-scene.js";
+import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
+import { declareTransferBins, FixedRoad } from "./internal-transfer-scene.js";
 import {
   bootstrapProductionDay,
   CROISSANT,
-  MEMBER,
   recordBatch,
   SERVICE_DAY,
   STAFF,
-  worksheetLine,
 } from "./production-day-fixture.js";
-import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
-import { seedWeighedArticles } from "./weighed-catalog-scene.js";
+import {
+  ASKED,
+  ASKED_GRAMS,
+  at,
+  BATCH,
+  BATCH_GRAMS,
+  type Flow,
+  GRAVLAX,
+  NAME,
+  ORDERED,
+  PACKED,
+  PACKED_GRAMS,
+  pdfPagesOf,
+  settle,
+  stepDurableFacts,
+  stepEveAfternoon,
+  stepEveStop,
+  type VillageScene,
+} from "./resupply-village-scene.js";
 
-const EVE = addDays(SERVICE_DAY, -1);
-const NAME = "Vitrine du matin";
-const ASKED = 20;
-const PACKED = 18;
-const ORDERED = 4;
-/** Le saumon gravlax du corpus, vendu au poids : 2 kg demandés, un lot de 1,94 kg emballé. */
-const GRAVLAX = `${WEIGHED_GRAVLAX}-1`;
-const ASKED_GRAMS = 2_000;
-const PACKED_GRAMS = 1_940;
-const BATCH_GRAMS = "01K6A0000000000000000000VG";
-const BATCH = "01K6A0000000000000000000VF";
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
 let issued: string[];
@@ -87,229 +86,18 @@ afterAll(async () => {
   await ctx.close();
 });
 
-/** L'instant de la maison `time` le jour `day`, à l'heure de Paris. */
-function at(day: string, time: string): Date {
-  const instant = localToInstant(day, time);
-  if (instant === null) {
-    throw new TypeError(`heure locale inexistante : ${day} ${time}`);
-  }
-  return instant;
-}
-
-async function settle(): Promise<void> {
-  for (let round = 0; round < 4; round += 1) {
-    await ctx.drain();
-  }
+/** Ce que les étapes de la veille reçoivent : la même application, la même horloge. */
+function scene(): VillageScene {
+  return { ctx, clock, issued };
 }
 
 const staff = () => ctx.asSub(STAFF);
-
-/** Ce que les étapes se passent : rien n'est relu ailleurs qu'en base. */
-interface Flow {
-  readonly village: string;
-  readonly resupplyId: string;
-}
-
-/** Générale la veille à 18:00 sans rattrapage, réassort la veille à 20:00 (comme R3a). */
-async function twoHours(): Promise<void> {
-  await staff()
-    .put("/admin/order-cutoffs/general")
-    .send({ daysBefore: 1, time: "18:00", graceMinutes: 0 })
-    .expect(204);
-  await staff()
-    .patch("/admin/order-cutoff-settings")
-    .send({ resupplyCutoffTime: "20:00" })
-    .expect(204);
-}
-
-/** Le comptoir nomme sa demande « pour demain », y pose ses croissants, et l'envoie. */
-async function counterSendsNamed(village: string): Promise<string> {
-  const base = `/admin/site-resupplies/sites/${village}`;
-  await staff().put(`${base}/drafts/tomorrow/name`).send({ name: NAME }).expect(200);
-  const added = await staff()
-    .post(`${base}/drafts/tomorrow/lines`)
-    .send({ sku: CROISSANT, quantity: ASKED })
-    .expect(201);
-  // Le vrai envoi du comptoir, avec une ligne au poids : la garde de L2b-1 est retirée.
-  await staff()
-    .post(`${base}/drafts/tomorrow/lines`)
-    .send({ sku: GRAVLAX, quantity: ASKED_GRAMS })
-    .expect(201);
-  const id = jsonBody<{ id: string }>(added).id;
-  const view = jsonBody<{ drafts: readonly { id: string; version: number }[] }>(
-    await staff().get(base).expect(200),
-  );
-  const version = view.drafts.find((draft) => draft.id === id)?.version;
-  await staff().post(`${base}/${id}/send`).send({ version }).expect(204);
-  return id;
-}
-
-/** Un client passe un click and collect PAYÉ, à retirer au Village le jour J. */
-async function customerOrdersAtVillage(village: string): Promise<void> {
-  await ctx
-    .asSub(MEMBER)
-    .post("/orders")
-    .send({
-      idempotencyKey: randomUUID(),
-      salesTerms: null,
-      companyId: null,
-      requestedDeliveryDate: SERVICE_DAY,
-      fulfillmentMethod: "pickup",
-      requestedWindow: { start: "07:30", end: "09:00" },
-      pickupAddressId: village,
-      note: "",
-      lines: [{ sku: CROISSANT, quantity: ORDERED }],
-    })
-    .expect(201);
-  await settleCardPayments(ctx, issued);
-}
-
-async function stepEveAfternoon(): Promise<Flow> {
-  clock.set(at(EVE, "15:00"));
-  await seedWeighedArticles(ctx);
-  await seedDeparture(ctx);
-  await addVehicle(ctx, "Kangoo", MEASURED);
-  await seedDriverRole(ctx);
-  // Un type de bac en service : sans lui, la composition du soir refuse de proposer.
-  await binTypeId(ctx);
-  const village = await seedVillage(ctx);
-  // Le point « sur place » existe à côté : il ne doit rien emprunter au parcours.
-  await ctx.prisma.site.create({
-    data: {
-      label: "Le Labo",
-      ligne1: "1 place",
-      codePostal: "73150",
-      ville: "Val",
-      pays: "France",
-    },
-  });
-  await twoHours();
-  const resupplyId = await counterSendsNamed(village);
-  await customerOrdersAtVillage(village);
-  return { village, resupplyId };
-}
-
-async function autoCloseTour(): Promise<string> {
-  const response = await ctx
-    .http()
-    .post("/admin/production/auto-close")
-    .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
-    .expect(200);
-  await ctx.drain();
-  return jsonBody<{ outcome: string }>(response).outcome;
-}
-
-async function pdfPagesOf(path: string): Promise<readonly string[]> {
-  const pdf = await staff()
-    .get(path)
-    .buffer()
-    .parse((res, callback) => {
-      const chunks: Buffer[] = [];
-      res.on("data", (chunk: Buffer) => chunks.push(chunk));
-      res.on("end", () => {
-        callback(null, Buffer.concat(chunks));
-      });
-    })
-    .expect(200);
-  return Buffer.isBuffer(pdf.body) ? pdfPages(pdf.body) : [];
-}
-
-async function stepEveStop(flow: Flow): Promise<void> {
-  // L'heure client est passée, pas celle du réassort : l'arrêt attend.
-  clock.set(at(EVE, "19:00"));
-  expect(await autoCloseTour()).toBe("nothing");
-  clock.set(at(EVE, "20:01"));
-  expect(await autoCloseTour()).toBe("closed");
-
-  const day = await ctx.prisma.productionDay.findUniqueOrThrow({
-    where: { serviceDay: SERVICE_DAY },
-    select: { closedAt: true },
-  });
-  expect(day.closedAt).toEqual(at(EVE, "20:01"));
-  expect(
-    await ctx.prisma.productionResupply.findMany({
-      where: { serviceDay: SERVICE_DAY },
-      select: {
-        resupplyId: true,
-        lines: { select: { sku: true, quantity: true, saleUnit: true }, orderBy: { sku: "asc" } },
-      },
-    }),
-  ).toEqual([
-    {
-      resupplyId: flow.resupplyId,
-      lines: [
-        { sku: GRAVLAX, quantity: ASKED_GRAMS, saleUnit: "weight" },
-        { sku: CROISSANT, quantity: ASKED, saleUnit: "piece" },
-      ],
-    },
-  ]);
-  expect((await worksheetLine(ctx)).quantity).toBe(ORDERED + ASKED);
-  // Le compte du fournil : des grammes, pas 2 000 pièces.
-  expect(await worksheetLine(ctx, GRAVLAX)).toMatchObject({
-    quantity: ASKED_GRAMS,
-    saleUnit: "weight",
-  });
-  const dossier = jsonBody<ProductionDayResuppliesView>(
-    await staff().get(`/admin/production/batch/${SERVICE_DAY}/resupplies`).expect(200),
-  );
-  expect(dossier).toMatchObject({
-    frozen: true,
-    // La vue de l'écran du fournil ne porte pas encore l'unité (lot L2b-4).
-    resupplies: [
-      { resupplyId: flow.resupplyId, lines: [{ quantity: ASKED }, { quantity: ASKED_GRAMS }] },
-    ],
-  });
-  const pages = await pdfPagesOf(`/admin/production/batch/${SERVICE_DAY}/dossier.pdf`);
-  // La couverture dit la part du réassort au rayon, et que le point est servi
-  // par transfert (mise en page du 2026-10-25) ; le bon ferme le dossier.
-  expect(pages[0]).toMatch(
-    new RegExp(`dont ${String(ASKED)} réassort\\s+${String(ORDERED + ASKED)} pièces`, "u"),
-  );
-  expect(pages[0]).toContain("Par transfert");
-  expect(pages.at(-1)).toContain("RÉASSORT 1/1");
-  // Le bon de réassort dit le poids sur la ligne (L2b-2).
-  expect(pages.at(-1)).toContain("2 kg");
-}
-
-async function stepDurableFacts(flow: Flow): Promise<string> {
-  await settle();
-  const sheets = jsonBody<PackingResuppliesView>(
-    await staff().get(`/admin/packing/${SERVICE_DAY}/resupplies`).expect(200),
-  );
-  expect(sheets.resupplies).toMatchObject([
-    {
-      resupplyId: flow.resupplyId,
-      title: `${NAME} — Val Village`,
-      status: "open",
-      lines: [
-        { sku: GRAVLAX, requested: ASKED_GRAMS, saleUnit: "weight", packed: null },
-        { sku: CROISSANT, requested: ASKED, saleUnit: "piece", packed: null },
-      ],
-    },
-  ]);
-  const transfers = await ctx.prisma.deliveryInternalTransfer.findMany({
-    where: { serviceDay: SERVICE_DAY },
-    select: { id: true, siteId: true },
-  });
-  expect(transfers.map((transfer) => transfer.siteId)).toEqual([flow.village]);
-  const transferId = transfers[0]?.id ?? "";
-  const items = await ctx.prisma.deliveryInternalTransferItem.findMany({
-    where: { transferId, detachedAt: null },
-    select: { kind: true, resupplyId: true },
-    orderBy: { kind: "asc" },
-  });
-  expect(items).toEqual([
-    { kind: "order", resupplyId: null },
-    { kind: "resupply", resupplyId: flow.resupplyId },
-  ]);
-  return transferId;
-}
 
 async function stepMorningPacking(flow: Flow): Promise<void> {
   clock.set(at(SERVICE_DAY, "06:00"));
   expect(await recordBatch(ctx, BATCH, ORDERED + ASKED)).toBe(204);
   expect(await recordBatch(ctx, BATCH_GRAMS, ASKED_GRAMS, GRAVLAX)).toBe(204);
-  await settle();
+  await settle(scene());
   const sheet = `/admin/packing/${SERVICE_DAY}/resupplies/${flow.resupplyId}`;
   await staff().put(`${sheet}/lines/${CROISSANT}`).send({ quantity: PACKED }).expect(204);
   // Le lot au poids, pesé : 1,94 kg — jamais plus que les 2 kg demandés.
@@ -319,7 +107,7 @@ async function stepMorningPacking(flow: Flow): Promise<void> {
     .expect(400);
   await staff().put(`${sheet}/lines/${GRAVLAX}`).send({ quantity: PACKED_GRAMS }).expect(204);
   await staff().post(`${sheet}/close`).expect(204);
-  await settle();
+  await settle(scene());
   const after = jsonBody<PackingResuppliesView>(
     await staff().get(`/admin/packing/${SERVICE_DAY}/resupplies`).expect(200),
   );
@@ -360,7 +148,7 @@ async function stepDeparture(transferId: string): Promise<{ roundId: string; pau
   const [binId] = await declareTransferBins(ctx, transferId, 1);
   await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
   expect((await depart(ctx, roundId)).status).toBe(204);
-  await settle();
+  await settle(scene());
 
   const manifest = await manifestOf(transferId);
   expect(manifest.frozen).toBe(true);
@@ -372,7 +160,9 @@ async function stepDeparture(transferId: string): Promise<{ roundId: string; pau
   );
   expect(manifest.resupplies.totals).toHaveLength(2);
   // Le papier de la tournée dit le lot en kilos, pas « 1940 × ».
-  const paper = (await pdfPagesOf(`/admin/delivery/rounds/${roundId}/round.pdf`)).join("\n");
+  const paper = (await pdfPagesOf(scene(), `/admin/delivery/rounds/${roundId}/round.pdf`)).join(
+    "\n",
+  );
   expect(paper).toContain("1,94 kg");
   expect(manifest.orders.totals).toEqual([
     expect.objectContaining({ sku: CROISSANT, quantity: ORDERED }),
@@ -398,7 +188,7 @@ async function stepSiteDrop(flow: Flow, roundId: string, paul: Paul): Promise<vo
     .post(`${MY_ROUND}/${roundId}/stops/${stopId}/site-drop`)
     .send({ version: mine.version })
     .expect(204);
-  await settle();
+  await settle(scene());
 
   const resupply = await ctx.prisma.siteResupply.findUniqueOrThrow({
     where: { id: flow.resupplyId },
@@ -475,11 +265,11 @@ describe("le parcours du Village, de l'envoi au stock du jour", () => {
   it("le réassort « pour demain » d'un point servi par transfert s'enchaîne de bout en bout", async () => {
     await ctx.reset();
     // 1. J-1 15:00 — le comptoir envoie « Vitrine du matin », un client commande au Village.
-    const flow = await stepEveAfternoon();
+    const flow = await stepEveAfternoon(scene());
     // 2. J-1 20:01 — le tour d'arrêt automatique fige le plan à la plus tardive des heures.
-    await stepEveStop(flow);
+    await stepEveStop(scene(), flow);
     // 3. Les faits durables : une fiche au colisage, un transfert qui porte commande et réassort.
-    const transferId = await stepDurableFacts(flow);
+    const transferId = await stepDurableFacts(scene(), flow);
     // 4. J 06:00 — les fournées descendent au colisage : 18 croissants sur 20, 1,94 kg sur 2, close.
     await stepMorningPacking(flow);
     // 5. J 07:30 — placé, chargé, parti : le manifeste fige 18, 1,94 kg et la commande.

@@ -68,15 +68,23 @@
 
 ## 4. Dette de code
 
-- `apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts` fait **465 lignes**
-  et `apps/lfd-api/src/production/infrastructure/prisma-production-day.repository.ts`
-  **365** (mesuré le 2026-11-02), au-delà des ~300 du dépôt.
-- La colonne `order_cutoff_settings.resupply_subject_to_cutoff` est morte
-  depuis le 2026-10-21 (`prisma/schema/public/settings.prisma:357-359`) ; la
-  retirer est une migration à part, sur ordre de Hugo.
-- Le semis de démonstration d'un réassort (« un réapprovisionnement de Val
-  Village l'après-midi de J », lot R5 de 2026-10-14) n'existe pas :
-  `dev/seeding/` ne lit que l'heure du réassort.
+- ~~`site-resupply.ts` (465 lignes) et `prisma-production-day.repository.ts`
+  (365)~~ — découpés le 2026-11-02 (commit à venir) : l'agrégat délègue ses
+  lignes (`site-resupply-lines.ts`), ses refus d'envoi et d'annulation
+  (`site-resupply-gates.ts`), son suivi (`site-resupply-progress.ts`) et ses
+  entrées (`site-resupply-inputs.ts`), API publique inchangée ; le dépôt
+  sort la recopie du colisage de l'ancien poste
+  (`production-day-carried-packing.ts`). La suite
+  `resupply-village-flow.e2e-spec.ts` sort ses étapes de la veille dans
+  `resupply-village-scene.ts`.
+- ~~La colonne morte `order_cutoff_settings.resupply_subject_to_cutoff`~~ —
+  retirée le 2026-11-02 sur ordre de Hugo (commit à venir) :
+  `20261102250000_le_reassort_sans_interrupteur`, retour dans
+  `prisma/rollback/`.
+- ~~Le semis de démonstration d'un réassort~~ — fait le 2026-11-02 (commit à
+  venir) : `dev/seeding/village-resupply.seed.ts`, un « au plus tôt » du
+  Village envoyé à 15 h le jour J par les vrais handlers, appelé par
+  `placeToday` ; il attend « Lancer ».
 
 ## 5. Décidé, puis abandonné
 

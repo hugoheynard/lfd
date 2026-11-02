@@ -34,6 +34,7 @@ import {
   type Target,
 } from "./order-placing.seed.js";
 import { seedReturnedBatch } from "./packing-return.seed.js";
+import { seedVillageAfternoonResupply } from "./village-resupply.seed.js";
 import { supplyVillageByTransfer } from "./village-transfer.seed.js";
 
 /**
@@ -211,6 +212,8 @@ export async function placeToday(
   await supplyVillageByTransfer(context);
   const counter = await placeCounter(context, clients.counter, { ...day, wide });
   const deliveries = await placeDeliveryDay(context, clients.byEnseigne, day.orderedAt, day.forDay);
+  // Le réassort « au plus tôt » du Village, l'après-midi : il attend « Lancer ».
+  await seedVillageAfternoonResupply(context, day.today, day.forDay, wide);
   return counter.length + deliveries.length;
 }
 

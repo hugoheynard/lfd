@@ -25,7 +25,8 @@ const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
  *
  * Porte aussi, depuis le lot R3a du réassort (2026-10-21), **l'heure limite
  * du réassort pour demain** (« la veille, HH:MM ») ; l'interrupteur
- * `resupply_subject_to_cutoff` qu'elle remplace reste en base, ni lu ni écrit.
+ * `resupply_subject_to_cutoff` qu'elle remplace est retiré de la base le
+ * 2026-11-02 (ordre de Hugo).
  *
  * Porte aussi, depuis le lot L3 du circuit du jour J (2026-11-02), les
  * réglages de ce circuit — sans effet avant le lot L4.
