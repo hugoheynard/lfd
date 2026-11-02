@@ -50,3 +50,33 @@ describe("sameDayOpenTo", () => {
     ).toBe(true);
   });
 });
+
+/**
+ * La matrice complète : chaque porte × chacun des 8 états des trois
+ * réglages. Les cas isolés plus haut laissent passer une combinaison ; celle-ci
+ * énonce la règle (public = « particuliers » ; comptoir = « pros » ; pro en
+ * ligne = « pros » ET « en ligne ») et se compare à elle.
+ */
+describe("sameDayOpenTo — chaque porte × chaque réglage", () => {
+  const states = [false, true].flatMap((sameDayPublicAllowed) =>
+    [false, true].flatMap((sameDayProAllowed) =>
+      [false, true].map((sameDayProOnline) => ({
+        sameDayPublicAllowed,
+        sameDayProAllowed,
+        sameDayProOnline,
+      })),
+    ),
+  );
+
+  it.each(states)("réglages %j", (settings) => {
+    expect(sameDayOpenTo(settings, "public_online")).toBe(settings.sameDayPublicAllowed);
+    expect(sameDayOpenTo(settings, "counter")).toBe(settings.sameDayProAllowed);
+    expect(sameDayOpenTo(settings, "pro_online")).toBe(
+      settings.sameDayProAllowed && settings.sameDayProOnline,
+    );
+  });
+
+  it("l'équipe qui saisit pour un particulier sans société passe quand même par le comptoir", () => {
+    expect(sameDayDoorOf(null, true)).toBe("counter");
+  });
+});

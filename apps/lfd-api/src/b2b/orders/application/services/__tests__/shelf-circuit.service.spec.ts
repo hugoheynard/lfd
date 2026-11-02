@@ -12,6 +12,7 @@ import type { OrderSupplyDecision } from "../../../domain/value-objects/order-su
 import {
   FixedClosedPlans,
   FixedSameDay,
+  GATE_NOW,
   gateOf,
   RecordingAdmissionDesk,
 } from "../../commands/__tests__/plan-doubles.js";
@@ -161,7 +162,11 @@ describe("ShelfCircuit.ensureOpen — clientèle et créneaux restants", () => {
   });
 });
 
-function shelfOrder(quantity: number, supply: OrderSupplyDecision = SHELF_TODAY): Order {
+function shelfOrder(
+  quantity: number,
+  supply: OrderSupplyDecision = SHELF_TODAY,
+  siteId: string | null = SITE,
+): Order {
   const input: DraftOrderInput = {
     companyId: "co_1",
     billedCompanyId: "co_1",
@@ -181,7 +186,7 @@ function shelfOrder(quantity: number, supply: OrderSupplyDecision = SHELF_TODAY)
         codePostal: "73150",
         ville: "Val d'Isère",
         pays: "France",
-        siteId: SITE,
+        ...(siteId === null ? {} : { siteId }),
       },
     },
     agreed: {
@@ -269,5 +274,173 @@ describe("ShelfCircuit.refusesWithoutCredit — le pro sans crédit (Q7)", () =>
 
     expect(await refuse.refusesWithoutCredit()).toBe(true);
     expect(await link.refusesWithoutCredit()).toBe(false);
+  });
+});
+
+describe("ShelfCircuit.ensureOpen — chaque porte × chaque réglage", () => {
+  const AFTERNOON = siteDay({
+    label: "Village",
+    publicRules: [{ start: "14:00", end: "15:00", slotMinutes: 60 }],
+    proPickup: { start: "06:00", end: "18:00" },
+  });
+  const sites = () => new FixedSiteDays(new Map([[SITE, AFTERNOON]]));
+
+  it("les particuliers ouverts seuls : le pro et le comptoir sont refusés", async () => {
+    const circuit = shelfCircuitOf(gateOf(), {
+      sameDay: new FixedSameDay({ sameDayPublicAllowed: true }),
+      sites: sites(),
+    });
+    await expect(circuit.ensureOpen(CLIENT, SITE)).resolves.toBeUndefined();
+    await expect(circuit.ensureOpen(PRO, SITE)).rejects.toBeInstanceOf(SameDayOrderClosedError);
+    await expect(circuit.ensureOpen(STAFF, SITE)).rejects.toBeInstanceOf(SameDayOrderClosedError);
+  });
+
+  it("« pros » sans « en ligne » : le comptoir passe, le pro en ligne est refusé", async () => {
+    const circuit = shelfCircuitOf(gateOf(), {
+      sameDay: new FixedSameDay({ sameDayProAllowed: true }),
+      sites: sites(),
+    });
+    await expect(circuit.ensureOpen(STAFF, SITE)).resolves.toBeUndefined();
+    await expect(circuit.ensureOpen(PRO, SITE)).rejects.toBeInstanceOf(SameDayOrderClosedError);
+  });
+
+  it("« pros » et « en ligne » : le pro en ligne passe dans sa fenêtre", async () => {
+    const circuit = shelfCircuitOf(gateOf(), {
+      sameDay: new FixedSameDay({ sameDayProAllowed: true, sameDayProOnline: true }),
+      sites: sites(),
+    });
+    await expect(circuit.ensureOpen(PRO, SITE)).resolves.toBeUndefined();
+  });
+
+  it("le comptoir fermé par le réglage est refusé même sans site", async () => {
+    const circuit = shelfCircuitOf(gateOf(), { sameDay: new FixedSameDay(false) });
+    await expect(circuit.ensureOpen(STAFF, null)).rejects.toBeInstanceOf(SameDayOrderClosedError);
+  });
+
+  it("un particulier sans site, ou sur un site inconnu, est refusé sans libellé inventé", async () => {
+    const circuit = shelfCircuitOf(gateOf(), {
+      sameDay: new FixedSameDay({ sameDayPublicAllowed: true }),
+      sites: sites(),
+    });
+    await expect(circuit.ensureOpen(CLIENT, null)).rejects.toMatchObject({ siteLabel: null });
+    await expect(circuit.ensureOpen(CLIENT, "site_inconnu")).rejects.toMatchObject({
+      siteLabel: null,
+    });
+  });
+});
+
+describe("ShelfCircuit.ensureOpen — le dernier créneau, à la minute", () => {
+  // Midi à Paris = 11:00Z. Le créneau de 14:00 est le seul du jour.
+  const LAST = siteDay({
+    label: "Village",
+    publicRules: [{ start: "14:00", end: "15:00", slotMinutes: 60 }],
+  });
+  const at = (minutesAfterNoon: number) => new Date(GATE_NOW.getTime() + minutesAfterNoon * 60_000);
+  const circuitAt = (minutesAfterNoon: number, site = LAST) =>
+    shelfCircuitOf(gateOf(), {
+      sameDay: new FixedSameDay({ sameDayPublicAllowed: true }),
+      sites: new FixedSiteDays(new Map([[SITE, site]])),
+      now: at(minutesAfterNoon),
+    });
+
+  it("à 13:59 le créneau de 14:00 sert encore ; à 14:00 pile, plus", async () => {
+    await expect(circuitAt(119).ensureOpen(CLIENT, SITE)).resolves.toBeUndefined();
+    await expect(circuitAt(120).ensureOpen(CLIENT, SITE)).rejects.toBeInstanceOf(
+      NoPickupLeftTodayError,
+    );
+  });
+
+  // Fermeture exceptionnelle sur le seul créneau restant : le point ne sert plus.
+  it("une fermeture exceptionnelle qui couvre le dernier créneau refuse le particulier", async () => {
+    const closed = siteDay({
+      label: "Village",
+      publicRules: [{ start: "14:00", end: "15:00", slotMinutes: 60 }],
+      publicClosures: [{ start: "13:00", end: "16:00" }],
+    });
+    await expect(circuitAt(0, closed).ensureOpen(CLIENT, SITE)).rejects.toBeInstanceOf(
+      NoPickupLeftTodayError,
+    );
+  });
+
+  it("la fermeture d'une journée entière refuse aussi le particulier", async () => {
+    const closed = siteDay({
+      label: "Village",
+      publicRules: [{ start: "14:00", end: "15:00", slotMinutes: 60 }],
+      publicClosures: [{ start: null, end: null }],
+    });
+    await expect(circuitAt(0, closed).ensureOpen(CLIENT, SITE)).rejects.toBeInstanceOf(
+      NoPickupLeftTodayError,
+    );
+  });
+});
+
+describe("ShelfCircuit.hold — frontières du reste et du site", () => {
+  it("le dernier article passe : demande == reste", async () => {
+    const stock = new FixedShelfStock().set(TODAY, SITE, CROISSANTS(2));
+    await expect(shelfCircuitOf(gateOf(), { stock }).hold(shelfOrder(2))).resolves.toBe(true);
+  });
+
+  it("un article absent du stock du jour est refusé (panier mixte), le verrou pris avant", async () => {
+    const lock = new RecordingShelfStockLock();
+    const stock = new FixedShelfStock().set(TODAY, SITE, []);
+    const circuit = shelfCircuitOf(gateOf(), { lock, stock });
+    await expect(circuit.hold(shelfOrder(1))).rejects.toBeInstanceOf(ShelfStockShortError);
+    expect(lock.taken).toEqual([`${TODAY}:${SITE}`]);
+  });
+
+  it("le reste d'un AUTRE point ne couvre pas celui-ci", async () => {
+    const stock = new FixedShelfStock().set(TODAY, "autre_site", CROISSANTS(50));
+    await expect(shelfCircuitOf(gateOf(), { stock }).hold(shelfOrder(1))).rejects.toBeInstanceOf(
+      ShelfStockShortError,
+    );
+  });
+});
+
+describe("ShelfCircuit.holdRevision — verrou, hausses, site", () => {
+  const claim = (quantity: number, siteId: string | null = SITE) => ({
+    serviceDay: TODAY,
+    siteId,
+    lines: [{ sku: "VIE-001-1", productName: "Croissant", saleUnit: "piece" as const, quantity }],
+  });
+
+  it("prend le verrou du point, puis ne juge que la hausse (égale au reste : passe)", async () => {
+    const lock = new RecordingShelfStockLock();
+    const stock = new FixedShelfStock().set(TODAY, SITE, CROISSANTS(2));
+    const circuit = shelfCircuitOf(gateOf(), { lock, stock });
+    await expect(circuit.holdRevision(claim(5), claim(7))).resolves.toBeUndefined();
+    expect(lock.taken).toEqual([`${TODAY}:${SITE}`]);
+  });
+
+  it("une hausse d'une pièce au-delà du reste est refusée", async () => {
+    const stock = new FixedShelfStock().set(TODAY, SITE, CROISSANTS(2));
+    await expect(
+      shelfCircuitOf(gateOf(), { stock }).holdRevision(claim(5), claim(8)),
+    ).rejects.toBeInstanceOf(ShelfStockShortError);
+  });
+
+  it("une baisse passe vitrine vide", async () => {
+    const stock = new FixedShelfStock().set(TODAY, SITE, CROISSANTS(0));
+    await expect(
+      shelfCircuitOf(gateOf(), { stock }).holdRevision(claim(5), claim(1)),
+    ).resolves.toBeUndefined();
+  });
+
+  it("sans site à décompter : refus, et aucun verrou pris", async () => {
+    const lock = new RecordingShelfStockLock();
+    await expect(
+      shelfCircuitOf(gateOf(), { lock }).holdRevision(claim(1, null), claim(2, null)),
+    ).rejects.toBeInstanceOf(NoPickupLeftTodayError);
+    expect(lock.taken).toEqual([]);
+  });
+});
+
+describe("ShelfCircuit.hold — une commande sur stock sans site", () => {
+  it("refuse sans prendre de verrou, jamais un reste inventé", async () => {
+    const lock = new RecordingShelfStockLock();
+    const order = shelfOrder(1, SHELF_TODAY, null);
+    await expect(shelfCircuitOf(gateOf(), { lock }).hold(order)).rejects.toBeInstanceOf(
+      NoPickupLeftTodayError,
+    );
+    expect(lock.taken).toEqual([]);
   });
 });
