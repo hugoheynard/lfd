@@ -129,10 +129,15 @@ describe("un geste, ses routes et elles seules", () => {
     await expectGates(agent, [], ["placeOrder", "quote", "draft"]);
   });
 
-  it("le plan du soir seul : l'état, le lot du jour — pas la fiche d'atelier", async () => {
+  /**
+   * La fiche d'atelier s'ouvre au plan en LECTURE depuis le 2026-11-01 (Hugo) :
+   * le prod manager y lit les cartes de tranches et la journée par tranche
+   * (`a8fc09efb`). Saisir à la fiche reste au geste du fournil.
+   */
+  it("le plan du soir seul : l'état, le lot du jour et la fiche en lecture — pas le colisage", async () => {
     const agent = await holderOf("plan-seul", [{ resource: "production_plan", action: "read" }]);
 
-    await expectGates(agent, ["batch", "dayStatus", "version"], ["worksheet", "packing", "packed"]);
+    await expectGates(agent, ["batch", "dayStatus", "version", "worksheet"], ["packing", "packed"]);
   });
 
   it("la fiche d'atelier seule : la fiche — pas l'état de la journée", async () => {

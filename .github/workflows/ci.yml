@@ -438,8 +438,10 @@ jobs:
       # qu'il simule : le test reste vert, et ce qu'il prouve a disparu. Deux
       # cas réels le jour où elle a été posée — `setChannels({b1, b2})` et
       # `setTva("tva_5", null)`, deux signatures mortes, deux tests verts.
+      # Le script porte ses 6 Go de tas : tsc sur les specs dépasse le défaut de
+      # Node (≈ 4 Go) depuis le 2026-11-02, et plantait ici en « heap out of memory ».
       - name: "Typecheck des specs"
-        run: pnpm --filter lfd-api exec tsc --noEmit -p tsconfig.test.json
+        run: pnpm --filter lfd-api typecheck:tests
 
   b2b-unit:
     name: Backend B2B · tests unitaires
