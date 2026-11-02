@@ -92,7 +92,12 @@
 >   avec `lint:typical-buyer` : l'acheteur « type » de l'export de grille de
 >   prix (un pro sans société, pour l'aperçu du staff) ne se fabrique que
 >   dans `pricing/application/price-grid-*` — ailleurs, il publierait un prix
->   ou une promotion réservés. C'est la
+>   ou une promotion réservés. Et **51** depuis le 2026-11-02 avec
+>   `lint:cache-control` : un middleware pose `private, no-store` (appelant
+>   identifié) ou `private, no-cache` (visiteur) sur toute réponse de l'API,
+>   et la porte refuse qu'une route écrive autre chose que `private` ou
+>   `no-store` hors d'une liste admise, comme un cache dans la passerelle —
+>   un cache partagé servirait un appelant à un autre. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1262,7 +1267,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 50 portes du dépôt, d'un coup
+pnpm lint:gates         # les 51 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

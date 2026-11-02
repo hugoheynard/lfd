@@ -292,6 +292,13 @@ jobs:
       - name: "Gate : les types d'API viennent des contrats"
         run: pnpm lint:api-types
 
+      # Une réponse qui n'est ni `private` ni `no-store` peut se garder dans un
+      # cache partagé et servir un appelant à un autre — le prix pro d'une route
+      # à jeton facultatif à un particulier. Le défaut est posé par un
+      # middleware ; c'est l'exception écrite par une route qui se garde ici.
+      - name: "Gate : aucune réponse ne s'offre à un cache partagé"
+        run: pnpm lint:cache-control
+
   # ── Les paquets partagés ────────────────────────────────────────────────────
   # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.
   packages:

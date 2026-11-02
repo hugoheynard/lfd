@@ -1,7 +1,8 @@
-import { Module } from "@nestjs/common";
+import { type MiddlewareConsumer, Module, type NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
+import { cacheControlByDefault } from "../platform/security/cache-control-by-default.middleware.js";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { PricingFollowJournalModule } from "./pricing-follow-journal.module.js";
 import { SiteMandateRevocationModule } from "./site-mandate-revocation.module.js";
@@ -269,4 +270,14 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // le 2026-10-09 avec la clé : la boutique est toujours ouverte à la commande.
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Le `Cache-Control` par défaut de toute réponse, posé ICI et non dans
+   * `main.ts` : le harnais e2e boote ce module sans recopier `main.ts`, et une
+   * règle de sécurité que les e2e ne voient pas n'est pas éprouvée
+   * (`documentation/caching-usage/plan-aucun-cache-sur-le-personnel.md`).
+   */
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(cacheControlByDefault).forRoutes("{*splat}");
+  }
+}

@@ -46,6 +46,7 @@
   "test/bought-with.e2e-spec.ts": 9483,
   "test/bundles.e2e-spec.ts": 13045,
   "test/buyer-kind-migration.e2e-spec.ts": 8305,
+  "test/cache-control.e2e-spec.ts": 3000,
   "test/card-invoices.e2e-spec.ts": 9150,
   "test/cart-suggestions.e2e-spec.ts": 7409,
   "test/catalog-batch-writes.e2e-spec.ts": 9500,
