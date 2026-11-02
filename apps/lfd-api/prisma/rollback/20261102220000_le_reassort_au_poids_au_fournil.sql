@@ -1,0 +1,24 @@
+-- RETOUR ARRIÈRE de 20261102220000_le_reassort_au_poids_au_fournil
+-- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L2b-2).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant ne lit ni n'écrit `sale_unit` sur cette table : ses
+-- insertions prennent le défaut `piece`, que le CHECK admet. Le retour du code
+-- seul suffit tant qu'aucune ligne `weight` n'a été figée — ce que la garde
+-- d'envoi de L2b-1 (`weight-resupply-guard.ts`) empêche tant qu'elle est en
+-- place.
+--
+-- ⚠️ Si des lignes `weight` existent, le code d'avant les lirait comme des
+-- PIÈCES (2 000 g deviendraient 2 000 pièces au four). Les constater avant :
+--
+--   SELECT count(*) FROM production.production_resupply_line WHERE sale_unit = 'weight';
+--
+-- et décider avec Hugo (aucune suppression d'office). Retirer la colonne
+-- serait un resserrement, dans un déploiement ultérieur, sur sa décision :
+--
+--   ALTER TABLE production.production_resupply_line
+--     DROP CONSTRAINT production_resupply_line_sale_unit_check;
+
+SELECT 1;

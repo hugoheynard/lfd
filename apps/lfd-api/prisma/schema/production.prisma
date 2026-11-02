@@ -869,7 +869,13 @@ model ProductionResupplyLine {
 
   sku         String
   productName String @map("product_name")
+  /// Des pièces, ou des GRAMMES si `saleUnit = weight` — toujours un entier.
   quantity    Int
+  /// `piece` ou `weight` (CHECK), recopiée de la ligne de réassort du commerce
+  /// à l'arrêt ou au lancement (lot L2b-2 du plan
+  /// `limites-de-commande/plan-jour-meme-sur-stock.md`). `piece` pour toute
+  /// ligne figée avant la colonne : la garde d'envoi refusait le poids.
+  saleUnit    String @default("piece") @map("sale_unit")
 
   @@index([productionResupplyId])
   @@map("production_resupply_line")
