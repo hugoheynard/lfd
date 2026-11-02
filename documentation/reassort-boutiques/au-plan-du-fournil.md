@@ -130,7 +130,7 @@ fournil, figé à l'arrêt (`served_by_transfer`) ; le fait
 
 - **L'attache** : à `production.day_closed`, `LearnArrestedPlan` appelle
   `TransferAttachment.attachResupplies`
-  (`delivery/application/transfer-attachment.ts:59`), qui range chaque
+  (`delivery/application/transfer-attachment.ts:62`), qui range chaque
   réassort figé d'un point servi par transfert dans le transfert prévu du
   point, ouvert au besoin — un point sans commande ce jour-là reçoit le sien.
   La liste vient des `resupplyIds` **du fait**, les lignes de la copie figée
@@ -172,7 +172,7 @@ fournil, figé à l'arrêt (`served_by_transfer`) ; le fait
   l'annuaire et figé). Affichage seulement.
 - **Arrivé** : les deux chemins de la réception d'un transfert écrivent
   `delivery.transfer_received` ; `MarkArrivedOnTransferReceived` appelle
-  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:215`, règle dans `site-resupply-progress.ts`) à
+  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:220`, règle dans `site-resupply-progress.ts`) à
   l'instant et sous l'auteur de la réception. Au Labo, « Monté » :
   `POST admin/bakehouse-resupplies/sites/:siteId/:resupplyId/mounted`
   (`production_resupply:write`). Déjà arrivé ou déjà réceptionné : rien ne

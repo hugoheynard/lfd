@@ -21,7 +21,7 @@ flowchart LR
 ```
 
 L'agrégat `ResupplyReceipt`
-(`apps/lfd-api/src/b2b/resupply/domain/resupply-receipt.ts:74`) a deux
+(`apps/lfd-api/src/b2b/resupply/domain/resupply-receipt.ts:65`) a deux
 sortes, une seule règle — seul le reçu compte au stock :
 
 - **le reçu d'un réassort envoyé** : `expecting` (l. 88) le fait naître
@@ -57,7 +57,7 @@ l'emballage. Un reçu porte une `version` (`resupply.receipt.changed_meanwhile`)
 Une réception faite avant la clôture du colisage reste ce qu'elle est : un
 emballé connu après ne change rien (le comptoir fait foi).
 
-**Routes** — `admin/resupply-receipts` (`http/admin-resupply-receipts.controller.ts:46`),
+**Routes** — `admin/resupply-receipts` (`http/admin-resupply-receipts.controller.ts:47`),
 `handover_counter` : `GET articles` (le catalogue publié, pièces et poids,
 avec la famille), `GET :siteId/:day` (les réassorts envoyés de la journée
 avec leur réception, le sans commande, le stock),
@@ -83,15 +83,15 @@ ligne. Le reçu sans commande est dans le menu de chaque ligne de la table.
   **réceptionnés** seulement, moins ce que les commandes « sur stock » du
   jour ont pris. Sans reçu, pas de stock — **jamais un stock inventé**.
 - **Un seul calcul** : `estimateStock(receipts, draws)`, pure
-  (`b2b/resupply/domain/estimated-stock.ts:46`), **par (article, unité)**
-  (`stockKeyOf`, l. 86) — jamais pièces et grammes ensemble ; un article au
+  (`b2b/resupply/domain/estimated-stock.ts:50`), **par (article, unité)**
+  (`stockKeyOf`, `domain/stock-tally.ts:4`) — jamais pièces et grammes ensemble ; un article au
   poids a un stock en grammes entiers (Hugo, 2026-11-02). `DayShelfStock`
   (`application/day-shelf-stock.ts:19`) est le seul à lui passer les
   prélèvements, lus par `ShelfDrawsReader` (déclaré par le réassort,
   implémenté par les commandes).
 - **Toute baisse d'un reçu** (corriger une ligne réceptionnée, corriger ou
   retirer une ligne sans commande) passe par `ReceivedStockLowering.lower`
-  (`application/received-stock-lowering.ts:38`), sous `ShelfStockLock`, et
+  (`application/received-stock-lowering.ts:39`), sous `ShelfStockLock`, et
   refuse de descendre sous le déjà-pris
   (`resupply.receipt.below_shelf_draws`, 409).
 - **Les commandes pour demain ne s'y soustraient pas** : elles sont dans le
@@ -102,7 +102,7 @@ ligne. Le reçu sans commande est dans le menu de chaque ligne de la table.
 « Au comptoir on devrait pouvoir déclarer une rupture, un stock faible sur un
 produit » (Hugo, 2026-10-21).
 
-- **L'agrégat** `StockAlert` (`domain/stock-alert.ts:75`) : une alerte vivante
+- **L'agrégat** `StockAlert` (`domain/stock-alert.ts:69`) : une alerte vivante
   par (point, SKU), niveau `out_of_stock` ou `low`, libellé figé, auteur et
   instant de la dernière déclaration. Redéclarer change le niveau
   (`redeclare`, l. 134) ; une alerte levée ne se rouvre pas.

@@ -9,9 +9,13 @@
  * Désormais la question se pose sous le verrou, et un geste qui tient le plan
  * (`ArrestedPlanHold`) fait attendre la réouverture jusqu'à sa validation.
  *
- * Même mécanique que `production-day-close-race` : une troisième transaction
- * tient le verrou le temps de mettre la réouverture en file ; Postgres accorde
- * un verrou consultatif dans l'ordre d'attente.
+ * La mécanique : le geste lui-même tient le plan (`ArrestedPlanHold.hold`, le
+ * verrou en mode partagé) dans une unité de travail qu'on garde ouverte ; la
+ * réouverture, qui demande l'exclusif, se met en file (`pg_locks`, un
+ * demandeur en attente) ; on relâche le geste, puis on lit ce que chacun a
+ * vu. Postgres accorde un verrou consultatif dans l'ordre d'attente. L'autre
+ * course — un sac ouvert pendant que la réouverture attend — est éprouvée
+ * par `packing-plan-hold-race`.
  */
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { ArrestedPlanHold } from "../src/production/channels/packing/index.js";

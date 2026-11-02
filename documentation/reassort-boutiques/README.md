@@ -73,7 +73,7 @@ flowchart TD
 | commerce    | demande, envoi, brouillons, réception, alertes, stock du jour, Supervision Stock | `apps/lfd-api/src/b2b/resupply/` (module `resupply.module.ts`)                                                                                                                                           |
 | fournil     | copie figée, « Lancer », dossier du jour, part sur place                         | `apps/lfd-api/src/production/` — `domain/entities/production-day.ts` (`launchResupply`), `domain/services/on-site-share.ts:37`                                                                           |
 | colisage    | fiche de réassort, emballé, réserve d'un lancé                                   | `apps/lfd-api/src/packing/domain/entities/packing-resupply.ts:76`, `packing-stock.ts:139` (`reserve`)                                                                                                    |
-| livraison   | élément `resupply` du transfert, placement, départ, réception                    | `apps/lfd-api/src/delivery/application/transfer-attachment.ts:59` (`attachResupplies`)                                                                                                                   |
+| livraison   | élément `resupply` du transfert, placement, départ, réception                    | `apps/lfd-api/src/delivery/application/transfer-attachment.ts:62` (`attachResupplies`)                                                                                                                   |
 | back-office | comptoir, Prod manager, colisage, Supervision                                    | `comptoir/reassort-boutique-page/`, `production/reassorts-a-produire/`, `production/colisage/packing-resupplies/`, `supervision/stock-board/`                                                            |
 | contrats    | vues et charges                                                                  | `packages/contracts/src/site-resupply.ts`, `resupply-receipt.ts`, `bakehouse-resupply-draft.ts`, `site-stock-alert.ts`, `day-stock-overview.ts`, `production-day-resupplies.ts`, `packing-resupplies.ts` |
 
@@ -158,7 +158,10 @@ l'unicité (site, journée) d'une table jamais déployée),
 morte retirée sur ordre de Hugo du 2026-11-02, retour dans
 `prisma/rollback/`), `20261102260000_le_reassort_lu_par_index` (deux index),
 `20261102270000_la_fiche_de_reassort_retiree` (`packing_resupply.withdrawn_at` :
-la réouverture retire une fiche par un statut, elle ne l'efface plus).
+la réouverture retire une fiche par un statut, elle ne l'efface plus),
+`20261102280000_les_noms_du_reassort_par_index` (index `(site_id, name)`),
+`20261102290000_la_fiche_retiree_jamais_emballee` (deux déclencheurs : une
+fiche retirée n'a aucune ligne emballée).
 
 ## 6. Les lots, pour lire les commentaires du code
 
@@ -184,6 +187,7 @@ Le code cite ses lots ; voici ce qu'ils désignent et où ils sont décrits.
 | A1.4         | la sortie de réserve, origine `reserve`                                              | `a362a3823`                                        | [`commander.md`](commander.md)                   |
 | brouillons   | les brouillons du fournil, au serveur                                                | `a1dfdc980`, `8065d7c9c`                           | [`commander.md`](commander.md)                   |
 | L2, L2b      | le stock du jour décompte les commandes sur stock ; le réassort au poids             | `6fc29c23a`, `c1e016e66`…`15fc8a475`               | [`reception-et-stock.md`](reception-et-stock.md) |
+| audit        | l'audit du 2026-11-02 : dette, courses, clés d'envoi, index, écrans, cinq tranches   | `ae8a79414`…`2b6ff7197`                            | [`reste-a-faire.md`](reste-a-faire.md) §3–4      |
 
 ## 7. Les e2e
 

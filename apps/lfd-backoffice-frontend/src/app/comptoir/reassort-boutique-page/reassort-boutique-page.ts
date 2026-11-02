@@ -34,9 +34,8 @@ type LoadState = 'loading' | 'ready' | 'error';
  * `limites-de-commande/jour-meme-sur-stock.md`, J1, 2026-10-21).
  *
  * Depuis le lot R1 (`reassort-boutiques/README.md`,
- * 2026-10-21), la page commande aussi le réassort au fournil
- * (`ResupplyOrderCard`), au-dessus de la réception, qui ne change pas (R2 la
- * refera).
+ * 2026-10-21), la page commande aussi le réassort au fournil, au-dessus
+ * de la réception (une carte d'alors, fondue depuis dans la table de R1e).
  *
  * Depuis le lot R1b (2026-10-21), la page déclare aussi les ruptures et
  * stocks faibles du point (`StockAlertsCard` en tête, et les gestes sur
@@ -50,9 +49,10 @@ type LoadState = 'loading' | 'ready' | 'error';
  *
  * Depuis le lot R2 (2026-10-21), la réception se fait en UN geste par
  * réassort envoyé (`ResupplyReceptionsCard`) ; la saisie ligne par ligne
- * devient le « réassort sans commande » (`UnorderedReceiptCard`), replié en
- * bas ; et le stock estimé du jour est la SOMME des reçus, tous confondus.
- * Les gestes vivent dans les deux cartes ; la page relit tout après chacun.
+ * devient le « réassort sans commande » (aujourd'hui `UnorderedReceiptEditor`,
+ * ouvert depuis le menu d'une ligne de la table) ; et le stock estimé du jour
+ * est la SOMME des reçus, tous confondus. La page relit tout après chaque
+ * geste.
  *
  * Depuis le lot R1e (Hugo, 2026-10-21 : « pense comptoir, un clic »), les
  * cartes laissent place à UNE table de tous les produits
@@ -61,10 +61,10 @@ type LoadState = 'loading' | 'ready' | 'error';
  * réassorts à réceptionner passent EN TÊTE, et seulement s'il y en a. Le
  * titre « Réassort Labo » est retiré : l'onglet du bandeau le dit déjà.
  *
- * Le stock estimé est le reçu tant que le circuit « jour même sur stock »
- * n'existe pas (J2) : les commandes déjà passées pour ce jour l'ont été la
- * veille, le fournil les a fabriquées pour elles, et elles ne puisent pas dans
- * la vitrine. Lecture sous `handover_counter:read`, gestes sous `:write`.
+ * Le stock estimé est le reçu moins ce que les commandes prises sur stock ont
+ * prélevé (le serveur le calcule, `documentation/limites-de-commande/jour-meme-sur-stock.md`) ;
+ * une commande programmée, fabriquée pour elle, ne puise pas dans la vitrine.
+ * Lecture sous `handover_counter:read`, gestes sous `:write`.
  *
  * 🔴 **Le point est celui de la bande du comptoir** (Hugo, 2026-10-21 :
  * « réassort Labo si switch Labo, Village si switch sur Village »). La page

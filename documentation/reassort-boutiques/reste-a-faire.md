@@ -41,7 +41,7 @@
 ## 3. Limites connues, non corrigées
 
 - ~~**La course annuler / réceptionner**~~ — fermée le 2026-11-02 (G1 de
-  l'audit, commit à venir) : « Réceptionner » passe par l'agrégat
+  l'audit, `63e1797ab`) : « Réceptionner » passe par l'agrégat
   (`SiteResupply.assertReceivable`) et le SAUVE sous sa version avant le
   reçu ; l'annulation et l'arrivée par transfert, qui sauvent aussi sous la
   version lue, échouent alors en 409. E2E à deux transactions dans
@@ -72,7 +72,7 @@
 ## 4. Dette de code
 
 - ~~`site-resupply.ts` (465 lignes) et `prisma-production-day.repository.ts`
-  (365)~~ — découpés le 2026-11-02 (commit à venir) : l'agrégat délègue ses
+  (365)~~ — découpés le 2026-11-02 (`ae8a79414`) : l'agrégat délègue ses
   lignes (`site-resupply-lines.ts`), ses refus d'envoi et d'annulation
   (`site-resupply-gates.ts`), son suivi (`site-resupply-progress.ts`) et ses
   entrées (`site-resupply-inputs.ts`), API publique inchangée ; le dépôt
@@ -81,17 +81,18 @@
   `resupply-village-flow.e2e-spec.ts` sort ses étapes de la veille dans
   `resupply-village-scene.ts`.
 - ~~La colonne morte `order_cutoff_settings.resupply_subject_to_cutoff`~~ —
-  retirée le 2026-11-02 sur ordre de Hugo (commit à venir) :
+  retirée le 2026-11-02 sur ordre de Hugo (`ae8a79414` pour le code,
+  `e0ee9e2e4` pour la migration) :
   `20261102250000_le_reassort_sans_interrupteur`, retour dans
   `prisma/rollback/`.
-- ~~Le semis de démonstration d'un réassort~~ — fait le 2026-11-02 (commit à
-  venir) : `dev/seeding/village-resupply.seed.ts`, un « au plus tôt » du
+- ~~Le semis de démonstration d'un réassort~~ — fait le 2026-11-02
+  (`ae8a79414`) : `dev/seeding/village-resupply.seed.ts`, un « au plus tôt » du
   Village envoyé à 15 h le jour J par les vrais handlers, appelé par
   `placeToday` ; il attend « Lancer ».
 
 ## 4 bis. L'audit qualité du 2026-11-02
 
-Corrigé (commit à venir), chacun avec son test de régression nommé :
+Corrigé (`63e1797ab` ; la migration d'index seule dans `928a5b3bc`), chacun avec son test de régression nommé :
 G1 (ci-dessus) ; G-A (le lancement lit les commandes SOUS le verrou) ; C-D
 (une fournée se déclare sous le verrou de la journée, relue) ; C1 (réserve
 datée du lancement) ; C2 (« Déclarer une rupture » concurrent : 409
@@ -118,12 +119,14 @@ Laissé, et pourquoi :
   fichiers de domaine du backend (compté le 2026-11-02) : un sous-chemin sans
   Zod pour quatre fichiers ferait une seconde convention. À trancher pour
   tout le dépôt.
-- ~~**`site-resupply.ts` repasse à 339 lignes**~~ — 295 le 2026-11-02 (commit
-  à venir) : le nom et les lignes de la demande en cours sortent dans
-  `site-resupply-content.ts`, les refus des gardes dans
-  `site-resupply-gate-errors.ts`.
+- **`site-resupply.ts` au-dessus de 300 lignes** : 339, ramené à 295 le
+  2026-11-02 (`3968aa218` : le nom et les lignes de la demande en cours
+  sortent dans `site-resupply-content.ts`, les refus des gardes dans
+  `site-resupply-gate-errors.ts`), il est remonté à **308** avec les
+  corrections de `83df1eacb` (`assertReceivable`, le sans-commande) —
+  mesuré le 2026-11-03. Encore à découper.
 
-## 4 ter. Le contrôle de l'audit, 2026-11-02 (commit à venir)
+## 4 ter. Le contrôle de l'audit, 2026-11-02 (`3968aa218`)
 
 - La journée du fournil s'écrit **par différence** : `ProductionDay.changes`
   dit ce que chaque geste a touché, et `writeDayChanges`
@@ -133,14 +136,17 @@ Laissé, et pourquoi :
 - La fiche de réassort retirée par une réouverture n'est plus effacée : elle
   porte `withdrawn_at` (migration additive
   `20261102270000_la_fiche_de_reassort_retiree`), un nouvel arrêt la
-  rétablit. La liste des COMMANDES du colisage (`PrismaPackingListWithdrawal`)
-  efface encore les siennes — hors de ce contrôle.
+  rétablit ; deux déclencheurs tiennent en base qu'une fiche retirée n'a
+  aucune ligne emballée (`20261102290000_la_fiche_retiree_jamais_emballee`,
+  `0a5eef1ce`). La liste des COMMANDES du colisage
+  (`PrismaPackingListWithdrawal`) efface encore les siennes : voir §4
+  quinquies.
 - L'annulation prend le verrou de la journée AVANT de charger le réassort
   (`SiteResupplyPlanKeyReader`) ; le lancement et la réception délèguent
   leurs lectures et leurs écritures (`ResupplyLaunchReading`,
   `ResupplyLaunchRecording`, `ResupplyReceiving`).
 
-## 4 quater. Les tranches 1 et 2 de l'audit pour 9/10, 2026-11-02 (commit à venir)
+## 4 quater. Les tranches 1 et 2 de l'audit pour 9/10, 2026-11-02 (`83df1eacb`)
 
 Corrigé, chacun avec son test de régression : « Réceptionner » refusé sur un
 sans commande ; le code `resupply.order.reserve_not_today` (était
@@ -152,8 +158,8 @@ d'être comblé de vide ; le refus d'une réception concurrente nomme le geste
 gagnant ; une seule trace (`ResupplyTrace`), une forme de ligne
 (`ResupplyLineShape`), un compte par (article, unité) (`StockTallies`) ;
 les lignes d'un reçu écrites par différence ; l'index `(site_id, name)`
-(migration additive `20261102280000_les_noms_du_reassort_par_index`, retour
-dans `prisma/rollback/`) ; le `:sku` du chemin validé ; les gestes du sans
+(migration additive `20261102280000_les_noms_du_reassort_par_index`,
+`0a5eef1ce`, retour dans `prisma/rollback/`) ; le `:sku` du chemin validé ; les gestes du sans
 commande renommés `*UnorderedReceiptLine*` ; `site-resupply.spec.ts`
 découpé (les gardes dans
 `apps/lfd-api/src/b2b/resupply/domain/__tests__/site-resupply-gates.spec.ts`,
@@ -169,6 +175,29 @@ Laissé, et pourquoi :
 - **`resupply.prisma` garde deux écarts, écrits au-dessus des colonnes** :
   `launched_at`/`departed_at` en `Timestamptz` (aligner réécrirait la
   colonne) et le défaut `version = 0` du reçu (jamais écrit).
+
+Après, le même jour et le lendemain :
+
+- **Les noms déjà employés se rangent par instant d'envoi** (`d99fac379`) :
+  depuis la clé d'envoi, l'identifiant d'un réassort est la clé tirée par
+  l'écran, plus un ULID ordonné par le temps.
+- **La garde de réouverture** (`2b6ff7197`) : les gestes du colisage
+  (contenant, « Proposer », mettre au bac, fermer, saisir et clore une fiche
+  de réassort) et de la livraison (charger un bac, faire partir une tournée)
+  prennent le plan sous le verrou partagé (`ArrestedPlanHold`). Trois états
+  — arrêté, rouvert, jamais arrêté : le colisage exige « arrêté », la
+  livraison ne refuse que « rouvert »
+  ([`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md)).
+
+## 4 quinquies. Reste à faire du colisage
+
+- **Retirer par statut les fiches de COMMANDE du colisage** à la réouverture,
+  comme les fiches de réassort (`withdrawn_at`) : `PrismaPackingListWithdrawal`
+  les efface encore, pierres tombales comprises
+  ([`../colisage/colisage.md`](../colisage/colisage.md) §4.7). La colonne
+  `packing_order.withdrawn_at` dit déjà « retirée par le commerce » ; une
+  colonne à part (`unlisted_at`) est proposée — **décision de Hugo en
+  attente** (noté le 2026-11-03).
 
 ## 5. Décidé, puis abandonné
 

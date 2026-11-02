@@ -35,6 +35,7 @@ origine, l'auteur et l'instant de chaque geste. Aucun champ monétaire.
 | `assertSeen`                  | 251      | verrou de version : `resupply.order.changed_meanwhile` (409)                                                                           |
 | `isPlacementOf`               | 262      | le double clic sur « Envoyer » (D5) : envoyé en `version + 1`, il est parti tel que le poste l'a vu                                    |
 | `place`                       | 271      | vide refusé (400) ; « pour demain » refusé après l'heure du réassort ou sur un plan arrêté ; journée passée refusée                    |
+| `assertReceivable`            | 279      | réceptionner : une commande envoyée seulement (un sans-commande n'a rien à réceptionner)                                               |
 | `cancel`                      | 287      | une fois, jamais une suppression ; refus ci-dessous                                                                                    |
 
 Lignes relues le 2026-11-02, après l'audit du réassort.
@@ -139,7 +140,7 @@ jamais. Le réassort naît `origin = bakehouse`, créé et envoyé d'un geste
 (CHECK `site_resupply_bakehouse_placed`), avec les règles du comptoir. Le
 chemin d'envoi est un seul, partagé par l'envoi direct et l'envoi d'un
 brouillon : `prepareBakehouseResupply` / `writeBakehouseResupply`
-(`application/bakehouse-resupply-sending.ts:56`, `:76`).
+(`application/bakehouse-resupply-sending.ts:52`, `:72`).
 
 **Les brouillons** (Hugo, 2026-10-28 : « un enregistrer comme brouillon »,
 retrouvé depuis n'importe quel poste) vivent dans leur propre table,

@@ -55,8 +55,8 @@ est refusé (le comptoir : « demandez au fournil » ; le fournil : produire hor
 plan) et l'annulation aussi (« réceptionnez avec un écart »). Aucun réassort
 ne peut donc arriver après l'arrêt : le retirage n'en absorbe aucun, il garde
 seulement les réassorts figés dans le compte qu'il refait. La réouverture
-les dégèle (ils redeviennent annulables) ; le retrait d'une fiche de colisage
-de réassort sera R3b.
+les dégèle (ils redeviennent annulables) et retire les fiches de réassort
+intouchées du colisage, par un statut (`withdrawn_at`, `3968aa218`).
 
 ## Ce que fait un arrêt
 
