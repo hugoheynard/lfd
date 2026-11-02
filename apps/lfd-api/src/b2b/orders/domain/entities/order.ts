@@ -308,6 +308,11 @@ export class Order {
     return settlementRegimeOf(this.payment.status, this.amounts.totalCents);
   }
 
+  /** Prise sur la vitrine (`shelf`) — lu avant que le règlement soit décidé (Q7, lot L4). */
+  get isFromShelf(): boolean {
+    return this.supplyMark.supply === "shelf";
+  }
+
   /**
    * **Reçue pour une journée dont le plan est déjà arrêté** (lot O3,
    * `plan-reglages-commandes.md` §8.3, Hugo 2026-10-14). Seule l'équipe le

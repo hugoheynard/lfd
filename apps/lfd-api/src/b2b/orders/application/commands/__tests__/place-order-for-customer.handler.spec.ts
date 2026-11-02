@@ -51,7 +51,19 @@ import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { SameDayOrderClosedError } from "../../../domain/errors/same-day-order-closed.error.js";
-import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
+import type { ShelfCircuit } from "../../services/shelf-circuit.service.js";
+import { FixedShelfStock, shelfCircuitOf } from "../../services/__tests__/shelf-circuit-doubles.js";
+import {
+  ShelfStockShortError,
+  ShelfWithoutCreditRefusedError,
+} from "../../../domain/errors/shelf-circuit-errors.js";
+import {
+  FixedClosedPlans,
+  FixedSameDay,
+  gateOf,
+  openPlanGate,
+  RecordingAdmissionDesk,
+} from "./plan-doubles.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
@@ -327,6 +339,7 @@ function handler(
     readonly plans?: OrderPlanGate;
     readonly salesTerms?: FixedSalesTerms;
     readonly durable?: RecordingDurable;
+    readonly shelf?: ShelfCircuit;
   } = {},
 ): PlaceOrderForCustomerHandler {
   // `in` et non `??` : `null` est une valeur que les tests passent EXPRÈS, et
@@ -379,6 +392,7 @@ function handler(
       options.plans ?? openPlanGate(),
       options.salesTerms ?? new FixedSalesTerms(),
       new FixedLineClassifications(),
+      options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -388,6 +402,7 @@ function handler(
     new FixedClock(PRICED_AT),
     { run: <T>(work: () => Promise<T>): Promise<T> => work() },
     options.durable ?? new RecordingDurable(),
+    options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
   );
 }
 
@@ -527,6 +542,110 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
 
     expect(desk.held).toEqual([payload().requestedDeliveryDate]);
     expect(writtenWhenHeld).toEqual([false]);
+  });
+});
+
+/**
+ * **Le « Retrait immédiat » au serveur** (lot L4 du circuit du jour J,
+ * `plan-jour-meme-sur-stock.md` §11.1, §11.3) : l'écran envoie `shelf`, la
+ * commande est prise sur la vitrine — sans le verrou de la journée, sans
+ * créneau à garder, et le pro sans crédit suit le réglage.
+ */
+describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
+  const TODAY = "2026-01-01";
+  const SITE = LABO.id;
+
+  function shelfFor(
+    plans: OrderPlanGate,
+    over: { readonly left?: number; readonly sameDay?: FixedSameDay } = {},
+  ): ShelfCircuit {
+    return shelfCircuitOf(plans, {
+      sameDay: over.sameDay ?? new FixedSameDay({ sameDayProAllowed: true }),
+      stock: new FixedShelfStock().set(TODAY, SITE, [
+        {
+          sku: "VIE-001",
+          label: "Croissant",
+          saleUnit: "piece",
+          receivedQuantity: 5,
+          estimatedStock: over.left ?? 5,
+        },
+      ]),
+    });
+  }
+
+  const shelfPayload = (over: Partial<AdminPlaceOrderPayload> = {}) =>
+    payload({ requestedDeliveryDate: TODAY, supply: "shelf", ...over });
+
+  it("prise sur la vitrine, au compte, sans tenir la journée — plan arrêté ou non", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const desk = new RecordingAdmissionDesk([TODAY]);
+    const plans = gateOf(new FixedClosedPlans([TODAY]), desk);
+
+    await handler(guard("orders", "active", "granted"), sink, {
+      plans,
+      shelf: shelfFor(plans),
+    }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload()));
+
+    expect(sink.placed).toMatchObject({ supply: "shelf", placedOffPlan: false });
+    expect(desk.held).toEqual([]);
+  });
+
+  it("refusée quand le réglage n'ouvre pas aujourd'hui aux pros", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const plans = gateOf();
+
+    await expect(
+      handler(guard("orders", "active", "granted"), sink, {
+        plans,
+        shelf: shelfFor(plans, { sameDay: new FixedSameDay({ sameDayPublicAllowed: true }) }),
+      }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload())),
+    ).rejects.toBeInstanceOf(SameDayOrderClosedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("refusée au-delà du reste", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const plans = gateOf();
+
+    await expect(
+      handler(guard("orders", "active", "granted"), sink, {
+        plans,
+        shelf: shelfFor(plans, { left: 1 }),
+      }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload())),
+    ).rejects.toBeInstanceOf(ShelfStockShortError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("un pro sans crédit, réglage « refuser » : le lien de paiement est refusé, sans intention", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = { intent: null as CreateIntentParams | null };
+    const plans = gateOf();
+
+    await expect(
+      handler(guard("orders", "active", "none"), sink, {
+        plans,
+        payments: payments(intents),
+        shelf: shelfFor(plans),
+      }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload({ settlement: "link" }))),
+    ).rejects.toBeInstanceOf(ShelfWithoutCreditRefusedError);
+    expect(intents.intent).toBeNull();
+  });
+
+  it("un pro sans crédit, réglage « lien de paiement » : la commande attend son règlement", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const plans = gateOf();
+    const sameDay = new FixedSameDay({
+      sameDayProAllowed: true,
+      sameDayProWithoutCredit: "payment_link",
+    });
+
+    const result = await handler(guard("orders", "active", "none"), sink, {
+      plans,
+      shelf: shelfFor(plans, { sameDay }),
+    }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload({ settlement: "link" })));
+
+    expect(sink.placed).toMatchObject({ supply: "shelf", paymentStatus: "pending" });
+    expect(result.paymentUrl).toBeDefined();
   });
 });
 
@@ -743,6 +862,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         openPlanGate(),
         new FixedSalesTerms(),
         new FixedLineClassifications(),
+        shelfCircuitOf(openPlanGate()),
       ),
       repo(sink),
       payments(intents),
@@ -752,6 +872,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       new FixedClock(PRICED_AT),
       { run: <T>(work: () => Promise<T>): Promise<T> => work() },
       new RecordingDurable(),
+      shelfCircuitOf(openPlanGate()),
     );
 
     const result = await free.execute(

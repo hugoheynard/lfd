@@ -135,6 +135,18 @@ async function setSameDay(sameDayAllowed: boolean): Promise<void> {
   await staff().patch(ROUTE).send({ sameDayAllowed }).expect(204);
 }
 
+/**
+ * Ouvre aujourd'hui aux deux clientèles, en ligne comprise — les réglages
+ * qui font foi depuis le lot L4 du circuit du jour J (Hugo, 2026-11-02).
+ * `sameDayAllowed` n'est plus lu : colonne morte.
+ */
+async function openSameDay(): Promise<void> {
+  await staff()
+    .patch(ROUTE)
+    .send({ sameDayPublicAllowed: true, sameDayProAllowed: true, sameDayProOnline: true })
+    .expect(204);
+}
+
 /** La saisie de l'ÉQUIPE pour le client — la porte qui reçoit « hors plan » (§8.3). */
 function staffOrder(day: string) {
   return staff()
@@ -210,6 +222,9 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
   it("une ligne résiduelle « désactivée » n'éteint plus l'heure limite, ni au fournil", async () => {
     await seedGeneralRule();
     await leaveResidualSwitchOff();
+    // Aujourd'hui ouvert par les réglages qui font foi depuis L4 : c'est
+    // l'heure limite, et elle seule, que ce cas éprouve.
+    await openSameDay();
     // L'heure du réassort au plus tôt (lot R3a) : l'arrêt lu reste l'heure générale.
     await staff().patch(ROUTE).send({ resupplyCutoffTime: "00:00" }).expect(204);
     // Pour AUJOURD'HUI, la limite de la veille à 00:01 est franchie à toute heure.
@@ -278,10 +293,11 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
 
 /**
  * Le circuit du jour J — ses réglages (lot L3, `plan-jour-meme-sur-stock.md`
- * §14). Aucun effet avant L4 : seul `sameDayAllowed` ouvre encore aujourd'hui.
+ * §14). Depuis le lot L4, ils font foi : « particuliers » ouvre aujourd'hui à
+ * la boutique, et `sameDayAllowed` n'est plus lu.
  */
-describe("les réglages du circuit du jour J (L3)", () => {
-  it("se posent, se relisent, et laissent l'interrupteur actuel fermé", async () => {
+describe("les réglages du circuit du jour J (L3, en vigueur depuis L4)", () => {
+  it("se posent, se relisent, et ouvrent aujourd'hui sans l'ancien interrupteur", async () => {
     await staff()
       .patch(ROUTE)
       .send({
@@ -302,11 +318,27 @@ describe("les réglages du circuit du jour J (L3)", () => {
       sameDayProWithoutCredit: "payment_link",
       shelfHoldMinutes: 15,
     });
-    // Sans effet avant L4 : aujourd'hui n'est toujours pas proposé.
+    // En vigueur depuis L4 : « particuliers » ouvre aujourd'hui, l'ancien
+    // interrupteur restant fermé.
     const days = jsonBody<readonly FulfillmentDayView[]>(
       await ctx.http().get("/fulfillment-days").expect(200),
     );
-    expect(days.map((day) => day.date)).not.toContain(serviceDay(0));
+    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(0), orderUntil: null });
+  });
+
+  /**
+   * Lot L4 (Hugo, 2026-11-02) : `same_day_allowed` est une colonne morte —
+   * gardée en base, plus lue. Une ligne qui la porte à vrai n'ouvre plus rien.
+   */
+  it("l'ancien interrupteur seul n'ouvre plus aujourd'hui", async () => {
+    await setSameDay(true);
+
+    const days = jsonBody<readonly FulfillmentDayView[]>(
+      await ctx.http().get("/fulfillment-days").expect(200),
+    );
+    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(1), orderUntil: null });
+    const refused = await staffOrder(serviceDay(0)).expect(409);
+    expect(refused.body).toMatchObject({ code: "orders.same_day_closed" });
   });
 
   it("une ligne posée avant L3 lit le jour J fermé", async () => {
@@ -387,7 +419,7 @@ describe("l'arrêt du plan est une limite (O5)", () => {
   });
 
   it("la boutique ne propose plus une journée arrêtée", async () => {
-    await setSameDay(true);
+    await openSameDay();
     const today = serviceDay(0);
     await closePlan(today);
 
@@ -420,7 +452,7 @@ describe("le jour même, réglage admin (§8.3)", () => {
   });
 
   it("ouvert : la boutique propose aujourd'hui, sans heure limite posée", async () => {
-    await setSameDay(true);
+    await openSameDay();
 
     const days = jsonBody<readonly FulfillmentDayView[]>(
       await ctx.http().get("/fulfillment-days").expect(200),

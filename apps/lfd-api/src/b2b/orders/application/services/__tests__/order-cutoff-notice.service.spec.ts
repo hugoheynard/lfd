@@ -63,7 +63,11 @@ function notice(rules: readonly OrderCutoffView[], now: Date): OrderCutoffNotice
 
 describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
   it("annonce la limite générale quand elle est encore devant", async () => {
-    const view = await notice([general("18:00")], at(TODAY, "10:00")).forDay(["PLAIN"], TOMORROW);
+    const view = await notice([general("18:00")], at(TODAY, "10:00")).forDay(
+      ["PLAIN"],
+      TOMORROW,
+      "planned",
+    );
     expect(view).toEqual({ status: "open", until: at(TODAY, "18:00").toISOString() });
   });
 
@@ -71,6 +75,7 @@ describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
     const view = await notice([general("18:00")], at(TODAY, "08:00")).forDay(
       ["PLAIN", "EARLY"],
       TOMORROW,
+      "planned",
     );
     expect(view).toEqual({ status: "open", until: at(TODAY, "09:00").toISOString() });
   });
@@ -79,18 +84,36 @@ describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
     const view = await notice([general("09:30", 60)], at(TODAY, "10:00")).forDay(
       ["PLAIN"],
       TOMORROW,
+      "planned",
     );
     expect(view).toEqual({ status: "grace", until: at(TODAY, "10:30").toISOString() });
   });
 
   /** Même règle que la passation : la plus stricte gagne, la limite d'article ne relâche rien. */
   it("signale « fermé » quand la règle générale est passée, même si l'article ferme plus tard", async () => {
-    const view = await notice([general("09:00")], at(TODAY, "10:00")).forDay(["LATE"], TOMORROW);
+    const view = await notice([general("09:00")], at(TODAY, "10:00")).forDay(
+      ["LATE"],
+      TOMORROW,
+      "planned",
+    );
     expect(view).toEqual({ status: "closed", until: null });
   });
 
   it("dit ouvert, sans heure, quand rien n'est réglé", async () => {
-    const view = await notice([], at(TODAY, "10:00")).forDay(["PLAIN"], TOMORROW);
+    const view = await notice([], at(TODAY, "10:00")).forDay(["PLAIN"], TOMORROW, "planned");
+    expect(view).toEqual({ status: "open", until: null });
+  });
+
+  /**
+   * Lot L4 du circuit du jour J : une commande sur stock n'a pas d'heure
+   * limite — l'annoncer « fermée » promettrait un refus qui n'arrive pas.
+   */
+  it("dit ouvert, sans heure, pour une commande sur stock même la limite passée", async () => {
+    const view = await notice([general("09:00")], at(TODAY, "10:00")).forDay(
+      ["PLAIN"],
+      TODAY,
+      "shelf",
+    );
     expect(view).toEqual({ status: "open", until: null });
   });
 });

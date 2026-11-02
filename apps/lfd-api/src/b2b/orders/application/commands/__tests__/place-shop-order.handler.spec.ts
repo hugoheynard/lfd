@@ -67,7 +67,20 @@ import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { ProductionPlanClosedError } from "../../../domain/errors/production-plan-closed.error.js";
-import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
+import {
+  FixedSiteDays,
+  shelfCircuitOf,
+  siteDay,
+} from "../../services/__tests__/shelf-circuit-doubles.js";
+import type { ShelfCircuit } from "../../services/shelf-circuit.service.js";
+import { ShelfStockShortError } from "../../../domain/errors/shelf-circuit-errors.js";
+import {
+  FixedClosedPlans,
+  FixedSameDay,
+  gateOf,
+  openPlanGate,
+  RecordingAdmissionDesk,
+} from "./plan-doubles.js";
 import {
   LoyaltyEarningPreview,
   type LoyaltyEarningBasis,
@@ -258,6 +271,7 @@ function drafting(
   delivery: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
   plans: OrderPlanGate = openPlanGate(),
   salesTerms: FixedSalesTerms = new FixedSalesTerms(),
+  shelf: ShelfCircuit = shelfCircuitOf(plans),
 ): OrderDrafting {
   return new OrderDrafting(
     new OrderLinePricing(
@@ -301,6 +315,7 @@ function drafting(
     plans,
     salesTerms,
     new FixedLineClassifications(),
+    shelf,
   );
 }
 
@@ -344,10 +359,12 @@ class FakeRegistrar extends GuestBuyerRegistrar {
 interface PaymentCalls {
   intent: CreateIntentParams | null;
   retrieved: number;
+  cancelled?: string[];
 }
 
 function payments(sink: PaymentCalls): PaymentGateway {
   return {
+    // Les intentions annulées après coup (lot L4 : refus sous le verrou du stock).
     createIntent: (params) => {
       sink.intent = params;
       return Promise.resolve({ paymentIntentId: "pi_public", clientSecret: "pi_public_secret" });
@@ -360,7 +377,10 @@ function payments(sink: PaymentCalls): PaymentGateway {
         state: "awaiting_payment",
       });
     },
-    cancelIntent: () => Promise.resolve({ kind: "cancelled" }),
+    cancelIntent: (paymentIntentId) => {
+      sink.cancelled?.push(paymentIntentId);
+      return Promise.resolve({ kind: "cancelled" });
+    },
     publishableKey: () => "pk_test_123",
     parseWebhook: () => ({ kind: "ignored" }),
   };
@@ -458,18 +478,24 @@ function scene(
     readonly plans?: OrderPlanGate;
     readonly salesTerms?: FixedSalesTerms;
     readonly cancellation?: Partial<CustomerCancellationSettingsView>;
+    readonly shelf?: ShelfCircuit;
   } = {},
 ) {
   const earning = new FakeEarning(options.points ?? null);
   const sink = { placed: null as OrderToPlace | null };
-  const paid: PaymentCalls = { intent: null, retrieved: 0 };
+  const paid: PaymentCalls = { intent: null, retrieved: 0, cancelled: [] };
   const keys = new FakeKeys(options.claim ?? { kind: "claimed" });
   const buyers = new FakeRegistrar();
   const published = new RecordingPublisher();
   const durable = new RecordingDurable();
   const handler = new PlaceShopOrderHandler(
     buyers,
-    drafting(options.delivery, options.plans, options.salesTerms),
+    drafting(
+      options.delivery,
+      options.plans,
+      options.salesTerms,
+      options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
+    ),
     capturingRepo(sink),
     payments(paid),
     published,
@@ -747,6 +773,38 @@ describe("PlaceShopOrderHandler — ce qui échoue avant l'écriture", () => {
     );
     expect(keys.released).toEqual([KEY]);
     expect(paid.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+  });
+
+  /**
+   * Lot L4 du circuit du jour J : aujourd'hui, plan arrêté, l'invité prend
+   * sur la vitrine. Le dernier article pris par une autre passation entre la
+   * composition et l'écriture : refusé sous le verrou du stock, et
+   * l'intention déjà créée est annulée — elle resterait orpheline sinon.
+   */
+  it("sur la vitrine, le reste pris entre-temps : refusé, intention annulée, clé rendue", async () => {
+    const today = "2026-01-01";
+    const plans = gateOf(new FixedClosedPlans([today]), new RecordingAdmissionDesk([today]));
+    const { handler, keys, sink, paid } = scene({
+      plans,
+      shelf: shelfCircuitOf(plans, {
+        sameDay: new FixedSameDay({ sameDayPublicAllowed: true }),
+        sites: new FixedSiteDays(
+          new Map([
+            [
+              LABO_POINT.id,
+              siteDay({ publicRules: [{ start: "16:00", end: "18:00", slotMinutes: 30 }] }),
+            ],
+          ]),
+        ),
+      }),
+    });
+
+    await expect(
+      handler.execute(new PlaceShopOrderCommand(payload({ requestedDeliveryDate: today }))),
+    ).rejects.toBeInstanceOf(ShelfStockShortError);
+    expect(paid.cancelled).toEqual(["pi_public"]);
+    expect(keys.released).toEqual([KEY]);
     expect(sink.placed).toBeNull();
   });
 

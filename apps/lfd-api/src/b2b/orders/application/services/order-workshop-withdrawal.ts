@@ -45,8 +45,11 @@ export class OrderWorkshopWithdrawal {
     actor: CancellationActor,
   ): Promise<boolean> {
     // Sans jour de service, une commande n'est jamais producible (`planWhere`
-    // lit `requested_delivery_date`) : il n'y a rien à retirer.
-    if (locked.serviceDay === null) {
+    // lit `requested_delivery_date`) : il n'y a rien à retirer. Une commande
+    // prise sur la vitrine non plus : elle n'a jamais été inscrite, et son
+    // guichet prendrait le verrou de la journée, que le circuit du jour J ne
+    // tient jamais (plan du jour J, §12, lot L4).
+    if (locked.serviceDay === null || locked.supply === "shelf") {
       return false;
     }
     const day = locked.serviceDay;

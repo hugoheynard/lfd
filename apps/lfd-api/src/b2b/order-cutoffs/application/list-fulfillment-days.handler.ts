@@ -15,6 +15,8 @@ import { PickupAddressRepository } from "../../pickup-addresses/domain/pickup-ad
 import { ClosedPlansReader } from "../../../production/channels/commerce/index.js";
 import { OrderCutoffSettingsReader } from "../domain/order-cutoff-settings.reader.js";
 import { OrderCutoffsInForce } from "../domain/order-cutoffs-in-force.js";
+import { sameDayOpenTo } from "../domain/same-day-doors.js";
+import { ShelfTodaySites } from "../domain/shelf-today-sites.js";
 import { ListFulfillmentDaysQuery } from "./list-fulfillment-days.query.js";
 
 /**
@@ -50,6 +52,13 @@ import { ListFulfillmentDaysQuery } from "./list-fulfillment-days.query.js";
  * pas (§8.3). Une journée d'opération repoussée sur un plan arrêté n'est pas
  * resautée : cas d'école (une opération ouvre loin devant, un plan s'arrête la
  * veille), et la passation reste l'autorité.
+ *
+ * Depuis le lot L4 du circuit du jour J (`plan-jour-meme-sur-stock.md`, §3) :
+ * le réglage « jour même » se lit par clientèle (`sameDayOpenTo`), et un plan
+ * d'aujourd'hui ARRÊTÉ n'éteint plus aujourd'hui partout — un point qui a
+ * encore un créneau pour cette clientèle et du stock pour tout le panier le
+ * propose, sans heure limite (`orderUntil: null` : la passation sur stock
+ * n'en oppose aucune). La livraison, elle, ne se prend jamais sur la vitrine.
  */
 @QueryHandler(ListFulfillmentDaysQuery)
 export class ListFulfillmentDaysHandler implements IQueryHandler<
@@ -63,6 +72,7 @@ export class ListFulfillmentDaysHandler implements IQueryHandler<
     private readonly sale: SaleOperations,
     private readonly plans: ClosedPlansReader,
     private readonly settings: OrderCutoffSettingsReader,
+    private readonly shelf: ShelfTodaySites,
   ) {}
 
   async execute(query: ListFulfillmentDaysQuery): Promise<readonly FulfillmentDayView[]> {
@@ -75,11 +85,31 @@ export class ListFulfillmentDaysHandler implements IQueryHandler<
       this.plans.closedBetween(today, addDays(today, NEXT_FULFILLMENT_HORIZON_DAYS)),
       this.settings.current(),
     ]);
-    // Aujourd'hui n'est proposé que si le réglage « jour même » l'autorise (§8.3).
-    const unavailable = new Set(settings.sameDayAllowed ? closed : [...closed, today]);
+    // Aujourd'hui n'est proposé que si le réglage l'ouvre à cette clientèle
+    // (§8.3, par clientèle depuis L4) ; plan arrêté, seulement sur la vitrine.
+    const sameDayOpen = sameDayOpenTo(
+      settings,
+      query.audience === "pro" ? "pro_online" : "public_online",
+    );
+    const unavailable = new Set(sameDayOpen ? closed : [...closed, today]);
+    const shelfSites =
+      sameDayOpen && closed.includes(today)
+        ? await this.shelf.sellingToday({
+            day: today,
+            audience: query.audience,
+            siteIds: points.map((point) => point.id),
+            cartSkus: query.cartSkus,
+          })
+        : new Set<string>();
     // `orderUntil` : la limite ANNONCÉE de la journée rendue (2026-10-21), grâce
     // non comprise — la boutique prévient avant le « trop tard ».
     const dayOf = (pickupAddressId: string | null): FulfillmentDayView => {
+      // Sur la vitrine : aujourd'hui, si le panier n'est pas tenu à d'autres jours.
+      if (pickupAddressId !== null && shelfSites.has(pickupAddressId)) {
+        if (firstPickupDay(today, windows) === today) {
+          return { pickupAddressId, date: today, orderUntil: null };
+        }
+      }
       const date = firstPickupDay(
         nextFulfillmentDay(rules, now, NEXT_FULFILLMENT_HORIZON_DAYS, unavailable),
         windows,

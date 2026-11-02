@@ -16,6 +16,11 @@ import { AdminOrderCutoffsController } from "./http/admin-order-cutoffs.controll
 import { FulfillmentDaysController } from "./http/fulfillment-days.controller.js";
 import { PrismaGeneralOrderCutoffRepository } from "./infrastructure/prisma-general-order-cutoff.repository.js";
 import { PrismaOrderCutoffSettingsRepository } from "./infrastructure/prisma-order-cutoff-settings.repository.js";
+import { ShelfTodaySites } from "./domain/shelf-today-sites.js";
+import { OrderShelfTodaySites } from "../orders/application/services/order-shelf-today-sites.js";
+import { SiteDaySettingsReader } from "../orders/domain/ports/site-day-settings.reader.js";
+import { PrismaSiteDaySettingsReader } from "../orders/infrastructure/prisma-site-day-settings.reader.js";
+import { ResupplyModule } from "../resupply/resupply.module.js";
 
 /**
  * **Heures limites de commande** — jusqu'à quand on commande pour un
@@ -32,7 +37,16 @@ import { PrismaOrderCutoffSettingsRepository } from "./infrastructure/prisma-ord
   // Les points de retrait pour `GET /fulfillment-days` : la journée se calcule
   // par point, et c'est ce module-ci qui possède les règles qui la décident.
   // Le catalogue, pour les jours d'une opération datée (`SaleOperations`).
-  imports: [PickupAddressesModule, CatalogModule, AccountModule, OrderCutoffsInForceModule],
+  // Le reste de la vitrine, pour proposer aujourd'hui sur stock (plan du jour
+  // J, lot L4) : `ShelfTodaySites` est déclaré ici et implémenté par les
+  // commandes, comme `ShelfDrawsReader` l'est pour le réassort.
+  imports: [
+    PickupAddressesModule,
+    CatalogModule,
+    AccountModule,
+    OrderCutoffsInForceModule,
+    ResupplyModule,
+  ],
   controllers: [
     AdminOrderCutoffsController,
     AdminOrderCutoffSettingsController,
@@ -40,6 +54,8 @@ import { PrismaOrderCutoffSettingsRepository } from "./infrastructure/prisma-ord
   ],
   providers: [
     ListFulfillmentDaysHandler,
+    { provide: ShelfTodaySites, useClass: OrderShelfTodaySites },
+    { provide: SiteDaySettingsReader, useClass: PrismaSiteDaySettingsReader },
     GetGeneralOrderCutoffHandler,
     DefineGeneralOrderCutoffHandler,
     { provide: GeneralOrderCutoffRepository, useClass: PrismaGeneralOrderCutoffRepository },

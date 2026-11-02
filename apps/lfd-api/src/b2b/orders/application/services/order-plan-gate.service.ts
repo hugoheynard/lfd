@@ -7,6 +7,7 @@ import {
   ServiceDay,
 } from "../../../../production/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { type SameDayDoor, sameDayOpenTo } from "../../../order-cutoffs/domain/same-day-doors.js";
 import { SameDayOrderClosedError } from "../../domain/errors/same-day-order-closed.error.js";
 import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js";
 
@@ -26,7 +27,8 @@ import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js"
  * Il CONSTATE, il ne décide pas : refuser le client ou recevoir la saisie de
  * l'équipe « hors plan » est la règle de l'agrégat (`Order.receiveOffPlan`).
  * Sans journée demandée, rien n'est arrêté. Porte aussi le réglage « jour
- * même » (§8.3) : les deux décident du premier jour qu'on peut demander.
+ * même » (§8.3) : les deux décident du premier jour qu'on peut demander —
+ * par clientèle depuis le lot L4 du circuit du jour J (`sameDayOpenTo`).
  */
 @Injectable()
 export class OrderPlanGate {
@@ -38,18 +40,24 @@ export class OrderPlanGate {
   ) {}
 
   /**
-   * Le réglage « jour même » (§8.3) : sans lui, aujourd'hui — et a fortiori
-   * une journée passée — est refusé. Aucun délai n'est codé ici.
+   * Le réglage « jour même » de CETTE porte (§8.3 ; par clientèle depuis le
+   * lot L4) : sans lui, aujourd'hui — et a fortiori une journée passée — est
+   * refusé. Aucun délai n'est codé ici.
    *
-   * @throws {SameDayOrderClosedError} la journée n'est pas après aujourd'hui, et le réglage ne l'ouvre pas.
+   * @throws {SameDayOrderClosedError} la journée n'est pas après aujourd'hui, et le réglage ne l'ouvre pas à cette porte.
    */
-  async ensureNotTooSoon(day: string | null): Promise<void> {
-    if (day === null || day > instantToLocal(this.clock.now()).day) {
+  async ensureNotTooSoon(day: string | null, door: SameDayDoor): Promise<void> {
+    if (day === null || day > this.today()) {
       return;
     }
-    if (!(await this.sameDay.allowed())) {
+    if (!sameDayOpenTo(await this.sameDay.settings(), door)) {
       throw new SameDayOrderClosedError(day);
     }
+  }
+
+  /** La journée de Paris, à l'horloge du serveur. */
+  today(): string {
+    return instantToLocal(this.clock.now()).day;
   }
 
   /** Le plan de la journée est-il arrêté ? Sans verrou : pour refuser tôt. */

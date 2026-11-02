@@ -45,6 +45,28 @@ describe("OrderWorkshopWithdrawal", () => {
     expect(packing.calls).toEqual([{ day: "2026-10-13", orderId: "ord_1", by: "usr_invite" }]);
   });
 
+  /**
+   * Lot L4 du circuit du jour J : une commande prise sur la vitrine n'a
+   * jamais été inscrite, et le guichet du fournil prendrait le verrou de la
+   * journée, que le circuit ne tient jamais.
+   */
+  it("prise sur la vitrine : aucun atelier n'est appelé", async () => {
+    const trace: string[] = [];
+    const workshops = new OrderWorkshopWithdrawal(
+      new ScriptedDesk("inscribed", trace),
+      new ScriptedPackingDesk("withdrawn", trace),
+    );
+
+    const after = await workshops.withdraw(
+      cancellationSubject({ supply: "shelf" }),
+      BEFORE_PACKING,
+      { kind: "customer", userId: "usr_1" },
+    );
+
+    expect(after).toBe(false);
+    expect(trace).toEqual([]);
+  });
+
   it("sans jour de service : aucun atelier n'est appelé", async () => {
     const trace: string[] = [];
     const workshops = new OrderWorkshopWithdrawal(

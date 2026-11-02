@@ -236,10 +236,12 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     const voucherId = payload.voucherId ?? null;
     try {
       return await this.unitOfWork.run(async () => {
-        // La journée d'abord, sous son verrou, avant le bon et la commande :
-        // l'arrêt du plan ne passe plus entre la composition et l'écriture
-        // (lot O3, S5). Un refus ici annule l'intention, plus bas.
-        await this.drafting.holdPlan(order, payload.requestedDeliveryDate);
+        // La journée — ou, sur stock, la vitrine (plan du jour J, §12) —
+        // d'abord, sous son verrou, avant le bon et la commande : l'arrêt du
+        // plan ou la passation concurrente ne passent plus entre la
+        // composition et l'écriture (lot O3, S5). Un refus ici annule
+        // l'intention, plus bas.
+        await this.drafting.holdSupply(order, payload.requestedDeliveryDate);
         if (voucherId !== null) {
           await this.vouchers.reserve(voucherId, actorUserId, this.clock.now());
         }

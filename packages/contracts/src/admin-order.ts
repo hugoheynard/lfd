@@ -14,6 +14,7 @@ import {
   orderContentShape,
   orderLineInputSchema,
   type FulfillmentMethod,
+  staffOrderSupplySchema,
 } from "./order.js";
 
 /**
@@ -121,6 +122,7 @@ export const adminPlaceOrderPayloadSchema = z
     companyId: z.string().trim().min(1, "société requise"),
     buyerUserId: z.string().trim().min(1, "client requis"),
     settlement: staffSettlementSchema,
+    supply: staffOrderSupplySchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

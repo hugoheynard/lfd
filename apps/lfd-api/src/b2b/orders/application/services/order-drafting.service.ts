@@ -1,9 +1,9 @@
-import { PLANNED_SUPPLY } from "../../domain/value-objects/order-supply.js";
 import {
   cartAdjustmentCents,
   type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
   type SalesTermsDocument,
+  type StaffOrderSupply,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -37,6 +37,9 @@ import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.s
 import type { OrderParties } from "./order-parties.js";
 import type { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
+import type { OrderSupplyDecision } from "../../domain/value-objects/order-supply.js";
+import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
+import { ShelfCircuit } from "./shelf-circuit.service.js";
 
 export type { OrderContent } from "./order-content.js";
 
@@ -95,6 +98,7 @@ export class OrderDrafting {
     private readonly plans: OrderPlanGate,
     private readonly salesTerms: OrderSalesTermsReader,
     classifications: OrderLineClassificationReader,
+    private readonly shelf: ShelfCircuit,
   ) {
     this.composition = new OrderComposition(
       linePricing,
@@ -121,6 +125,10 @@ export class OrderDrafting {
    * passation du client connecté en porte un (plan des points, C3) ; ce
    * service ne le réserve pas — il le passe à l'agrégat, qui décide ce qu'il
    * impute.
+   *
+   * `requestedSupply` : la marque que l'écran de l'ÉQUIPE envoie (lot L4 du
+   * circuit du jour J) ; ignorée pour un client, dont la marque se décide ici
+   * ({@link ShelfCircuit.decide}).
    */
   async draft(
     parties: OrderParties,
@@ -129,6 +137,7 @@ export class OrderDrafting {
     // La langue du CLIENT à la passation (lot A3) ; `null` pour la saisie du
     // staff et pour une boutique qui ne l'a pas envoyée.
     locale: OrderLocale | null,
+    requestedSupply?: StaffOrderSupply,
   ): Promise<DraftedOrder> {
     // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
     // trois portes de passation partagent (client, saisie staff, boutique), et
@@ -140,16 +149,27 @@ export class OrderDrafting {
     // historique des rattachements ne permettrait de le retrouver ensuite
     // (avis au principal, §2).
     const principal = orderPrincipalOf(standing);
+    // D'où vient la marchandise — décidé par le serveur (circuit du jour J,
+    // §11.1) : les gardes de la journée s'y séparent.
+    const supply = await this.shelf.decide(parties, content.requestedDeliveryDate, requestedSupply);
     // L'arrêt du plan ferme la journée au CLIENT, heure limite ou pas (lot O3) :
-    // refusé ici, tôt et sans verrou ; `holdPlan` le reprend sous verrou. La
-    // saisie de l'équipe passe, et sera reçue « hors plan » (§8.3).
-    await this.ensureDayOpen(content.requestedDeliveryDate, parties);
+    // refusé ici, tôt et sans verrou ; `holdSupply` le reprend sous verrou. La
+    // saisie de l'équipe passe, et sera reçue « hors plan » (§8.3). Une
+    // commande sur stock n'entre jamais au plan : elle n'a pas à l'attendre.
+    if (supply.supply === "planned") {
+      await this.ensureDayOpen(content.requestedDeliveryDate, parties);
+    }
     const resolved = await this.composition.resolve(content, parties, null);
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
     // d'opposer la mauvaise règle, ce qui est un refus faux.
-    const waiverUsed = await this.ensureNotTooLate(content, parties);
+    const waiverUsed = await this.ensureCircuit(
+      supply,
+      content,
+      parties,
+      resolved.fulfillment.pickupAddress?.siteId ?? null,
+    );
     // APRÈS le délai de fabrication, et sans la dérogation (D6 du plan des
     // opérations datées) : c'est le premier geste d'`arrange`.
     const arranged = await this.composition.arrange(
@@ -190,9 +210,8 @@ export class OrderDrafting {
         voucher,
         salesTerms: await this.salesTermsIn(salesTermsOf(resolved.audience)),
         locale,
-        // Aucune passation n'écrit encore `shelf` (plan du jour J, §14 : L4).
       },
-      PLANNED_SUPPLY,
+      supply,
     );
     return { order, waiverUsed };
   }
@@ -209,22 +228,51 @@ export class OrderDrafting {
       throw new ProductionPlanClosedError(day ?? "");
     }
     if (!closed) {
-      await this.plans.ensureNotTooSoon(day);
+      await this.plans.ensureNotTooSoon(
+        day,
+        sameDayDoorOf(parties.companyId, parties.placedByStaffId !== null),
+      );
     }
   }
 
   /**
-   * **La journée tenue pour la commande qu'on écrit** — à appeler en PREMIER
-   * dans la transaction qui la persiste, avant toute ligne `orders` (plan
-   * `plan-reglages-commandes.md`, §8.1, S5). Le verrou de la journée tient
-   * jusqu'au `COMMIT` : l'arrêt du plan attend, ou la commande est refusée.
-   *
-   * Plan arrêté : la saisie de l'équipe est reçue « hors plan », le client
-   * refusé — c'est l'agrégat qui tranche (`Order.receiveOffPlan`, §8.3).
-   *
-   * @throws {ProductionPlanClosedError} le plan a été arrêté depuis `draft`, pour un client.
+   * Les gardes qui suivent la résolution, séparées sur la marque (§11.1) :
+   * une commande fabriquée oppose l'heure limite (et sa dérogation) ; une
+   * commande sur stock n'en a pas — sa clientèle et les créneaux restants de
+   * son point la limitent à la place. Rend la dérogation dépensée, ou `null`.
    */
-  async holdPlan(order: Order, requestedDeliveryDate: string | null): Promise<void> {
+  private async ensureCircuit(
+    supply: OrderSupplyDecision,
+    content: OrderContent,
+    parties: OrderParties,
+    siteId: string | null,
+  ): Promise<string | null> {
+    if (supply.supply === "planned") {
+      return this.ensureNotTooLate(content, parties);
+    }
+    await this.shelf.ensureOpen(parties, siteId);
+    return null;
+  }
+
+  /**
+   * **Ce que la commande qu'on écrit tient** — à appeler en PREMIER dans la
+   * transaction qui la persiste, avant le bon et toute ligne `orders` (plan
+   * `plan-reglages-commandes.md`, §8.1, S5 ; plan du jour J, §11.2, §12).
+   *
+   * - **Sur stock** : le verrou de la vitrine de son point, et le reste relu
+   *   dessous ({@link ShelfCircuit.hold}). Jamais le verrou de la journée.
+   * - **Fabriquée** : le verrou de la journée, qui tient jusqu'au `COMMIT` :
+   *   l'arrêt du plan attend, ou la commande est refusée. Plan arrêté : la
+   *   saisie de l'équipe est reçue « hors plan », le client refusé — c'est
+   *   l'agrégat qui tranche (`Order.receiveOffPlan`, §8.3).
+   *
+   * @throws {ShelfStockShortError} sur stock : le reste ne couvre plus le panier.
+   * @throws {ProductionPlanClosedError} fabriquée : le plan a été arrêté depuis `draft`, pour un client.
+   */
+  async holdSupply(order: Order, requestedDeliveryDate: string | null): Promise<void> {
+    if (await this.shelf.hold(order)) {
+      return;
+    }
     if (requestedDeliveryDate !== null && (await this.plans.hold(requestedDeliveryDate))) {
       order.receiveOffPlan(requestedDeliveryDate);
     }

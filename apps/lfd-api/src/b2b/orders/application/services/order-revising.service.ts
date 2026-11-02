@@ -1,6 +1,7 @@
 import { cartAdjustmentCents, type DeliveryVatMode } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
 import { Order, type DraftOrderInput } from "../../domain/entities/order.js";
 import {
   type OrderRevisionToSave,
@@ -279,7 +280,8 @@ export class OrderRevising {
       if (closed && day !== null) {
         throw new RevisionIntoClosedDayError(day);
       }
-      await this.plans.ensureNotTooSoon(day);
+      // La porte de la révision : celle de qui modifie (lot L4 du jour J).
+      await this.plans.ensureNotTooSoon(day, sameDayDoorOf(order.companyId, actor === "staff"));
       return;
     }
     if (closed && actor === "customer") {
@@ -397,6 +399,7 @@ function subjectOf(order: RevisableOrder) {
     placedByUserId: order.placedByUserId,
     companyId: order.companyId,
     fulfillmentMethod: order.fulfillment.method,
+    supply: order.supply,
     status: order.status,
     paymentStatus: order.paymentStatus,
     totalCents: order.totalCents,

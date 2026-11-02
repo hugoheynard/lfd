@@ -49,7 +49,11 @@ beforeEach(async () => {
   // Ces cas éprouvent les règles d'heure limite et proposent AUJOURD'HUI quand
   // elles le permettent : le jour même est ouvert. Fermé — le défaut depuis le
   // lot O3 (§8.3) —, c'est `order-cutoff-switch.e2e-spec.ts` qui l'éprouve.
-  await staff().patch("/admin/order-cutoff-settings").send({ sameDayAllowed: true }).expect(204);
+  // Depuis le lot L4 du jour J, les réglages par clientèle font foi.
+  await staff()
+    .patch("/admin/order-cutoff-settings")
+    .send({ sameDayPublicAllowed: true, sameDayProAllowed: true, sameDayProOnline: true })
+    .expect(204);
 });
 
 function staff(): ReturnType<E2eContext["asSub"]> {

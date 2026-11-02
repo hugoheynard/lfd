@@ -48,6 +48,7 @@ export function cancellationSubject(
     placedByUserId: "usr_1",
     companyId: null,
     fulfillmentMethod: "pickup",
+    supply: "planned",
     status: "placed",
     paymentStatus: "pending",
     totalCents: 2_110,

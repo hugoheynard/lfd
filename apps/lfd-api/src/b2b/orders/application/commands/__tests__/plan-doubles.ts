@@ -5,7 +5,10 @@ import {
   type ServiceDay,
 } from "../../../../../production/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { SameDayOrderReader } from "../../../domain/ports/same-day-order.reader.js";
+import {
+  type SameDayCircuitSettings,
+  SameDayOrderReader,
+} from "../../../domain/ports/same-day-order.reader.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 
 /**
@@ -47,13 +50,27 @@ export class RecordingAdmissionDesk extends PlanAdmissionDesk {
   }
 }
 
-/** Le réglage « jour même », fixé par le test. */
+/**
+ * Les réglages du jour même, fixés par le test. Un booléen ouvre (ou ferme)
+ * aujourd'hui aux trois portes à la fois ; un objet règle chaque réglage.
+ */
 export class FixedSameDay extends SameDayOrderReader {
-  constructor(private readonly value: boolean) {
+  private readonly value: SameDayCircuitSettings;
+
+  constructor(value: boolean | Partial<SameDayCircuitSettings>) {
     super();
+    const all = typeof value === "boolean" ? value : false;
+    this.value = {
+      sameDayPublicAllowed: all,
+      sameDayProAllowed: all,
+      sameDayProOnline: all,
+      sameDayProWithoutCredit: "refuse",
+      shelfHoldMinutes: 30,
+      ...(typeof value === "boolean" ? {} : value),
+    };
   }
 
-  allowed(): Promise<boolean> {
+  settings(): Promise<SameDayCircuitSettings> {
     return Promise.resolve(this.value);
   }
 }

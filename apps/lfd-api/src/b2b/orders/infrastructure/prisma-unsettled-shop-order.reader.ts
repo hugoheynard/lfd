@@ -3,7 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { UnsettledShopOrderReader } from "../domain/ports/unsettled-shop-order.reader.js";
 import type { UnsettledSettlement } from "../domain/ports/unsettled-settlement.reader.js";
-import { unsettledShopOrderWhere } from "./unsettled-shop-order.where.js";
+import { OrderSupply } from "../../../platform/database/client/client.js";
+import { unsettledShelfOrderWhere, unsettledShopOrderWhere } from "./unsettled-shop-order.where.js";
 
 const SETTLEMENT_SELECT = {
   id: true,
@@ -21,7 +22,9 @@ interface SettlementRow {
  * Adaptateur Prisma de l'expiration boutique.
  *
  * Aucun mur `company_id` : c'est une passe d'exploitation, déclenchée par le
- * cron ou par la passation, et le périmètre exclut toute société.
+ * cron ou par la passation. Le périmètre boutique exclut toute société ; celui
+ * de la tenue du stock (lot L4) en admet, parce qu'il ne lit que des
+ * identifiants pour annuler, jamais une donnée d'une société pour une autre.
  */
 @Injectable()
 export class PrismaUnsettledShopOrderReader extends UnsettledShopOrderReader {
@@ -31,7 +34,21 @@ export class PrismaUnsettledShopOrderReader extends UnsettledShopOrderReader {
 
   async placedBefore(cutoff: Date): Promise<readonly UnsettledSettlement[]> {
     const rows = await this.prisma.order.findMany({
-      where: { ...unsettledShopOrderWhere(), createdAt: { lt: cutoff } },
+      // Fabriquées seulement : une commande sur stock suit la durée réglée.
+      where: {
+        ...unsettledShopOrderWhere(),
+        supply: OrderSupply.planned,
+        createdAt: { lt: cutoff },
+      },
+      orderBy: { createdAt: "asc" },
+      select: SETTLEMENT_SELECT,
+    });
+    return rows.map(toSettlement);
+  }
+
+  async shelfPlacedBefore(cutoff: Date): Promise<readonly UnsettledSettlement[]> {
+    const rows = await this.prisma.order.findMany({
+      where: { ...unsettledShelfOrderWhere(), createdAt: { lt: cutoff } },
       orderBy: { createdAt: "asc" },
       select: SETTLEMENT_SELECT,
     });

@@ -94,6 +94,7 @@ supprime, une fois qu'aucun binaire en service ne les nomme.
 | ------------------------------------------------------------------- | -------------------- | ------------------------------------------------------- |
 | `public.order_cutoff_settings.enabled`                              | 2026-10-21           | l'interrupteur de l'heure limite, §2                    |
 | `public.order_cutoff_settings.resupply_subject_to_cutoff`           | 2026-10-21 (lot R3a) | remplacée par `resupply_cutoff_time`                    |
+| `public.order_cutoff_settings.same_day_allowed` (vue seulement)     | 2026-11-02 (lot L4)  | remplacée par les réglages par clientèle, §4            |
 | `production.production_settings.close_mode`, `close_at`, `alert_at` | 2026-10-21           | [`plan-une-seule-heure.md`](plan-une-seule-heure.md) §5 |
 
 ## 2. L'interrupteur — retiré le 2026-10-21
@@ -162,13 +163,24 @@ l'heure limite avec l'interrupteur ([`plan-une-seule-heure.md`](plan-une-seule-h
 Depuis le 2026-11-02 (lot L3 du circuit du jour J,
 [`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §14), la même
 ligne porte aussi les réglages du circuit — particuliers, pros, pros en ligne,
-pro sans crédit, tenue du stock par un paiement en cours — **posés mais lus
-par rien** jusqu'au lot L4 ; seul `same_day_allowed` agit aujourd'hui.
+pro sans crédit, tenue du stock par un paiement en cours. **Ils font foi
+depuis le lot L4** (Hugo, 2026-11-02) ; `same_day_allowed` n'est plus lu par
+aucune décision — colonne morte, gardée en base (§1). La vue et le `PATCH` la
+portent encore, et l'écran aussi : c'est au lot L6 (back-office) de ne garder
+qu'un interrupteur par clientèle.
 
-`same_day_allowed` à `false` (défaut) : aujourd'hui n'est pas proposé par la
-boutique et toute passation qui vise une journée non postérieure à aujourd'hui
-est refusée (`orders.same_day_closed`) — client, invité et équipe. Exception :
-l'équipe sur un plan arrêté est reçue hors plan sans que ce réglage s'y oppose.
+La règle (`sameDayOpenTo`, `b2b/order-cutoffs/domain/same-day-doors.ts`) se
+lit par **porte** : un particulier en ligne suit « particuliers » ; un pro en
+ligne, « pros » **et** « en ligne » ; l'équipe (comptoir, Commercial) suit
+« pros ». Fermée (le défaut) : aujourd'hui n'est pas proposé par la boutique
+à cette clientèle, et toute passation qui vise une journée non postérieure à
+aujourd'hui est refusée (`orders.same_day_closed`). Exception inchangée :
+l'équipe sur un plan arrêté, saisie **fabriquée**, est reçue hors plan sans que
+ce réglage s'y oppose.
+
+Plan d'aujourd'hui **arrêté**, un client n'est plus refusé : sa commande est
+prise sur la vitrine de son point (`supply = shelf`), sans heure limite —
+voir le circuit du jour J, « Le bâti de L4 ».
 
 ## 5. L'arrêt du plan
 
@@ -186,9 +198,19 @@ pour le lendemain »). Voir [`../fournil/arret-du-plan.md`](../fournil/arret-du-
 `ListFulfillmentDaysHandler` (`b2b/order-cutoffs/application/`) rend, pour la
 livraison (en tête) puis pour chaque point de retrait, **la première journée
 proposable** : dans les délais des règles en vigueur, hors plans arrêtés, hors
-aujourd'hui si le jour même n'est pas autorisé, et dans les jours de retrait
-d'une opération datée que porte le panier. Cette lecture **n'autorise rien** :
-elle ne connaît pas les limites d'article, et la passation reste l'autorité.
+aujourd'hui si le jour même n'est pas ouvert à la clientèle demandée
+(`?audience=`), et dans les jours de retrait d'une opération datée que porte
+le panier. Cette lecture **n'autorise rien** : elle ne connaît pas les limites
+d'article, et la passation reste l'autorité.
+
+Depuis le lot L4 du circuit du jour J (2026-11-02), un plan d'aujourd'hui
+arrêté n'éteint plus aujourd'hui partout : un **point** qui a encore un créneau
+pour cette clientèle après maintenant et un reste positif pour **tout** le
+panier (ou, sans panier, au moins un article reçu) rend aujourd'hui, avec
+`orderUntil: null` — la passation sur stock n'oppose pas d'heure limite. Un
+panier mixte se voit proposer le jour d'après. La livraison (en tête) n'est
+jamais prise sur la vitrine. La question vit dans le port `ShelfTodaySites`
+(déclaré ici, implémenté par les commandes : `OrderShelfTodaySites`).
 
 Depuis le 2026-10-21 (`fe78e1db8`), chaque journée porte **`orderUntil`** :
 l'instant limite **annoncé** (`announcedOrderUntil`, `@lfd/contracts`), grâce

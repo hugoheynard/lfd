@@ -93,7 +93,22 @@ import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
-import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
+import type { ShelfCircuit } from "../../services/shelf-circuit.service.js";
+import {
+  FixedShelfStock,
+  FixedSiteDays,
+  shelfCircuitOf,
+  siteDay,
+} from "../../services/__tests__/shelf-circuit-doubles.js";
+import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
+import { ShelfStockShortError } from "../../../domain/errors/shelf-circuit-errors.js";
+import {
+  FixedClosedPlans,
+  FixedSameDay,
+  gateOf,
+  openPlanGate,
+  RecordingAdmissionDesk,
+} from "./plan-doubles.js";
 import { ProductionPlanClosedError } from "../../../domain/errors/production-plan-closed.error.js";
 import { SameDayOrderClosedError } from "../../../domain/errors/same-day-order-closed.error.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
@@ -450,6 +465,7 @@ function drafting(
     readonly cutoffs?: OrderCutoffReader;
     readonly limits?: InMemoryProductCatalog;
     readonly classifications?: FixedLineClassifications;
+    readonly shelf?: ShelfCircuit;
   } = {},
 ): OrderDrafting {
   const classifications = audience.classifications ?? new FixedLineClassifications();
@@ -498,6 +514,7 @@ function drafting(
     audience.plans ?? openPlanGate(),
     audience.salesTerms ?? new FixedSalesTerms(),
     classifications,
+    audience.shelf ?? shelfCircuitOf(audience.plans ?? openPlanGate()),
   );
 }
 
@@ -2125,12 +2142,16 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
     readonly plans: OrderPlanGate;
     readonly intents?: { intent: CreateIntentParams | null };
     readonly cancelled?: string[];
+    readonly shelf?: ShelfCircuit;
   }): PlaceOrderHandler {
     const gateway = payments(over.intents);
     const cancelled = over.cancelled ?? [];
     return new PlaceOrderHandler(
       guard(null, null),
-      drafting(pickups(LABO_POINT), zones(), { plans: over.plans }),
+      drafting(pickups(LABO_POINT), zones(), {
+        plans: over.plans,
+        ...(over.shelf === undefined ? {} : { shelf: over.shelf }),
+      }),
       capturingRepo(over.sink),
       {
         createIntent: (params) => gateway.createIntent(params),
@@ -2224,6 +2245,95 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
     );
 
     expect(sink.placed?.placedOffPlan).toBe(false);
+  });
+
+  /**
+   * **La passation sur stock** (lot L4 du circuit du jour J,
+   * `plan-jour-meme-sur-stock.md` §11.1, §12) : aujourd'hui, plan arrêté, le
+   * client n'est plus refusé — il prend dans la vitrine de son point, sous le
+   * verrou du stock et jamais sous celui de la journée.
+   */
+  describe("sur la vitrine (L4)", () => {
+    const TODAY = "2026-01-01";
+    const SITE = LABO_POINT.id;
+
+    function circuit(left: number, plans: OrderPlanGate, lock = new RecordingShelfStockLock()) {
+      return shelfCircuitOf(plans, {
+        sameDay: new FixedSameDay({ sameDayPublicAllowed: true }),
+        sites: new FixedSiteDays(
+          new Map([
+            [SITE, siteDay({ publicRules: [{ start: "16:00", end: "18:00", slotMinutes: 30 }] })],
+          ]),
+        ),
+        lock,
+        stock: new FixedShelfStock().set(TODAY, SITE, [
+          {
+            sku: "VIE-001",
+            label: "Croissant",
+            saleUnit: "piece",
+            receivedQuantity: 5,
+            estimatedStock: left,
+          },
+        ]),
+      });
+    }
+
+    it("plan arrêté : la commande est prise sur la vitrine, sans le verrou de la journée", async () => {
+      const sink = { placed: null as OrderToPlace | null };
+      const desk = new RecordingAdmissionDesk([TODAY]);
+      const plans = gateOf(new FixedClosedPlans([TODAY]), desk);
+      const lock = new RecordingShelfStockLock();
+
+      await planHandler({ sink, plans, shelf: circuit(2, plans, lock) }).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: TODAY }), null),
+      );
+
+      expect(sink.placed).toMatchObject({ supply: "shelf", placedOffPlan: false });
+      expect(lock.taken).toEqual([`${TODAY}:${SITE}`]);
+      expect(desk.held).toEqual([]);
+    });
+
+    it("le reste ne couvre plus le panier : refusé sous le verrou, intention annulée", async () => {
+      const sink = { placed: null as OrderToPlace | null };
+      const cancelled: string[] = [];
+      const plans = gateOf(new FixedClosedPlans([TODAY]), new RecordingAdmissionDesk([TODAY]));
+
+      await expect(
+        planHandler({ sink, plans, cancelled, shelf: circuit(1, plans) }).execute(
+          new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: TODAY }), null),
+        ),
+      ).rejects.toBeInstanceOf(ShelfStockShortError);
+      expect(sink.placed).toBeNull();
+      expect(cancelled).toEqual(["pi_test_1"]);
+    });
+
+    it("la clientèle fermée par le réglage : refusée avant l'intention", async () => {
+      const sink = { placed: null as OrderToPlace | null };
+      const intents = { intent: null as CreateIntentParams | null };
+      const plans = gateOf(new FixedClosedPlans([TODAY]), new RecordingAdmissionDesk([TODAY]));
+
+      await expect(
+        planHandler({ sink, plans, intents, shelf: shelfCircuitOf(plans) }).execute(
+          new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: TODAY }), null),
+        ),
+      ).rejects.toBeInstanceOf(SameDayOrderClosedError);
+      expect(intents.intent).toBeNull();
+    });
+
+    it("plan rouvert : la commande est fabriquée, sous le verrou de la journée", async () => {
+      const sink = { placed: null as OrderToPlace | null };
+      const desk = new RecordingAdmissionDesk();
+      const plans = gateOf(new FixedClosedPlans(), desk, true);
+      const lock = new RecordingShelfStockLock();
+
+      await planHandler({ sink, plans, shelf: circuit(0, plans, lock) }).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: TODAY }), null),
+      );
+
+      expect(sink.placed?.supply).toBe("planned");
+      expect(desk.held).toEqual([TODAY]);
+      expect(lock.taken).toEqual([]);
+    });
   });
 });
 

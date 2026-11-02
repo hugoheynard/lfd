@@ -2,6 +2,8 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { OrderQuoteLineView, OrderQuotePayload, OrderQuoteView } from "@lfd/contracts";
 
 import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
+import type { OrderParties } from "../services/order-parties.js";
+import { ShelfCircuit } from "../services/shelf-circuit.service.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
@@ -44,6 +46,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
     private readonly drafting: OrderDrafting,
     private readonly guard: OrderGuardReader,
     private readonly cutoffNotice: OrderCutoffNotice,
+    private readonly shelf: ShelfCircuit,
   ) {}
 
   async execute(query: QuoteOrderQuery): Promise<OrderQuoteView> {
@@ -55,16 +58,17 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       ensureOrderMember(await this.guard.roleOf(query.actorUserId, companyId), companyId);
     }
 
+    const parties: OrderParties = {
+      companyId,
+      // L'estimation ne s'attribue à personne : elle ne crée rien. Le saisisseur
+      // n'apparaît qu'au moment où une commande existe, et porte une trace.
+      placedByUserId: query.actorUserId,
+      placedByStaffId: query.asStaff ? query.actorUserId : null,
+      // Derrière une route gardée, staff ou client : un compte reconnu (§ 13.7).
+      buyerKind: REGISTERED_BUYER,
+    };
     const lines = await this.drafting.quote(
-      {
-        companyId,
-        // L'estimation ne s'attribue à personne : elle ne crée rien. Le saisisseur
-        // n'apparaît qu'au moment où une commande existe, et porte une trace.
-        placedByUserId: query.actorUserId,
-        placedByStaffId: query.asStaff ? query.actorUserId : null,
-        // Derrière une route gardée, staff ou client : un compte reconnu (§ 13.7).
-        buyerKind: REGISTERED_BUYER,
-      },
+      parties,
       query.payload.lines.map((line) => ({
         sku: line.sku,
         productName: "",
@@ -83,12 +87,16 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       // Un SIGNAL, pas un refus : le devis répond toujours, la passation seule
       // refuse — mais par la même décision, pour qu'un devis ne promette plus
       // ce que la caisse refusera (point 8, 2026-10-21).
+      // Séparé sur la marque, décidée comme à la passation (lot L4) : une
+      // commande sur stock n'a pas d'heure limite.
       cutoff:
         requestedDeliveryDate === undefined
           ? null
           : await this.cutoffNotice.forDay(
               query.payload.lines.map((line) => line.sku),
               requestedDeliveryDate,
+              (await this.shelf.decide(parties, requestedDeliveryDate, query.payload.supply))
+                .supply,
             ),
       // Le sous-total est un MONTANT : il s'arrondit au centime, une fois par
       // ligne, exactement comme la commande le fera. Sommer des millicentimes

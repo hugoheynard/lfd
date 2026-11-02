@@ -15,7 +15,7 @@ import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { LoyaltyEarningPreview } from "../../domain/ports/loyalty-earning-preview.js";
 import { WelcomeBonusPreview } from "../../domain/ports/welcome-bonus-preview.js";
 import { GuestBuyerRegistrar } from "../../domain/ports/guest-buyer.registrar.js";
-import { OrderRepository } from "../../domain/ports/order.repository.js";
+import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repository.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ShopOrderIdempotencyStore } from "../../domain/ports/shop-order-idempotency.store.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
@@ -29,6 +29,12 @@ import { GUEST_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
+
+/** L'intention créée avant l'écriture : son secret pour la boutique, son id pour l'annuler. */
+interface ShopIntent {
+  readonly clientSecret: string;
+  readonly paymentIntentId: string;
+}
 
 /**
  * **Commander sans compte** — plan
@@ -169,20 +175,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     await this.cancellationDeadline.fixOn(order);
 
     const intent = await this.settle(order);
-    // LA COMMANDE ET SA CLÉ, ENSEMBLE. Il n'existe aucun instant où la commande
-    // est écrite et la clé ne l'est pas — le seul état que ce dispositif ne
-    // survivrait pas : ni rendable (la commande existe), ni reprenable (on en
-    // passerait une seconde).
-    const placed = await this.unitOfWork.run(async () => {
-      // La journée d'abord, sous son verrou : l'arrêt du plan ne passe plus
-      // entre la composition et l'écriture (lot O3, S5).
-      await this.drafting.holdPlan(order, payload.requestedDeliveryDate);
-      const written = await this.orders.place(order);
-      await this.keys.resolve(payload.idempotencyKey, written.id);
-      // La livraison situe l'adresse : un fait durable, écrit avec la commande (CA0).
-      await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
-      return written;
-    });
+    const placed = await this.persist(order, payload, intent);
 
     // Fait de domaine, publié APRÈS persistance. C'est lui qui déclenche le
     // courriel de confirmation et son QR — le porteur inscrit plus haut a une
@@ -217,6 +210,43 @@ export class PlaceShopOrderHandler implements ICommandHandler<
         amountCents: order.totalCents,
       },
     };
+  }
+
+  /**
+   * LA COMMANDE ET SA CLÉ, ENSEMBLE. Il n'existe aucun instant où la commande
+   * est écrite et la clé ne l'est pas — le seul état que ce dispositif ne
+   * survivrait pas : ni rendable (la commande existe), ni reprenable (on en
+   * passerait une seconde).
+   *
+   * 🔴 Si la transaction échoue — le reste de la vitrine pris entre-temps par
+   * une autre passation (plan du jour J, §12, lot L4), l'arrêt du plan —,
+   * l'intention Stripe déjà créée est annulée, comme sur le chemin connecté :
+   * jamais confirmée, elle ne serait jamais débitée, mais elle resterait
+   * orpheline. `cancelIntent` ne lève jamais.
+   */
+  private async persist(
+    order: Order,
+    payload: PlaceShopOrderCommand["payload"],
+    intent: ShopIntent | null,
+  ): Promise<PlacedOrder> {
+    try {
+      return await this.unitOfWork.run(async () => {
+        // La journée — ou, sur stock, la vitrine — d'abord, sous son verrou :
+        // l'arrêt du plan ou la passation concurrente ne passent plus entre
+        // la composition et l'écriture (lot O3, S5 ; plan du jour J, §12).
+        await this.drafting.holdSupply(order, payload.requestedDeliveryDate);
+        const written = await this.orders.place(order);
+        await this.keys.resolve(payload.idempotencyKey, written.id);
+        // La livraison situe l'adresse : un fait durable, écrit avec la commande (CA0).
+        await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
+        return written;
+      });
+    } catch (error) {
+      if (intent !== null) {
+        await this.payments.cancelIntent(intent.paymentIntentId);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -260,7 +290,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
    * Un total nul ne crée aucune intention : Stripe refuserait un montant de
    * zéro, et il n'y a rien à encaisser.
    */
-  private async settle(order: Order): Promise<{ clientSecret: string } | null> {
+  private async settle(order: Order): Promise<ShopIntent | null> {
     if (order.totalCents <= 0) {
       order.deferPayment();
       return null;
@@ -271,6 +301,6 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       companyId: null,
     });
     order.payByCard(intent.paymentIntentId);
-    return { clientSecret: intent.clientSecret };
+    return { clientSecret: intent.clientSecret, paymentIntentId: intent.paymentIntentId };
   }
 }

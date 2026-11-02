@@ -197,6 +197,8 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     ProductionDayResupplies,
     ProductionRangeResupplies,
   ],
-  exports: [ProductionDayResupplies, ProductionRangeResupplies],
+  // Le reste du jour et son verrou, que la passation sur stock lit (plan du
+  // jour J, lot L4) — même bloc `b2b`, sans frontière franchie.
+  exports: [ProductionDayResupplies, ProductionRangeResupplies, DayShelfStock, ShelfStockLock],
 })
 export class ResupplyModule {}

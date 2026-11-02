@@ -838,3 +838,68 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
 - **Reste** : le dossier du jour additionne encore les grammes d'un réassort
   au poids dans « dont N de réassort » de son rayon — au serveur
   (`day-dossier.ts`) comme à l'écran, qui le recopie.
+
+### Le bâti de L4 (2026-11-02)
+
+- **La marque se décide au serveur** (`ShelfCircuit.decide`,
+  `b2b/orders/application/services/shelf-circuit.service.ts`) : un client
+  (particulier, invité, pro en ligne) pour **aujourd'hui** sur un plan
+  **arrêté** → `shelf` ; plan ouvert ou rouvert → `planned`. L'équipe : ce que
+  l'écran envoie (`supply`, champ facultatif de `adminPlaceOrderPayloadSchema`
+  et de `orderQuotePayloadSchema`, absent = `planned`). `entry_shortcut` reste
+  vide : le « Retrait immédiat » qui le pose est L6.
+- **Les gardes se séparent sur `supply`** dans `OrderDrafting.draft` :
+  `shelf` ne passe ni par `ensureDayOpen`, ni par l'heure limite (aucune
+  dérogation dépensée, aucune surtaxe), ni par le verrou de journée ; il passe
+  par la **clientèle** (`sameDayOpenTo`, `order-cutoffs/domain/same-day-doors.ts`)
+  et les **créneaux restants** du point (`pickupLeftToday`,
+  `orders/domain/services/shelf-circuit.ts`) : créneaux publics et fermetures
+  pour le particulier (un créneau dont le début est après maintenant, la
+  règle de `publicPickupSlotsFor`), fenêtre pro non finie pour le pro en
+  ligne, aucune pour le comptoir. Refus : `orders.same_day_closed`,
+  `orders.shelf.no_pickup_left` (409).
+- **Le reste sous le verrou** : `OrderDrafting.holdSupply` (ex-`holdPlan`)
+  prend `ShelfStockLock` OU le verrou de journée, jamais les deux, en premier
+  dans `persist` (avant le bon de fidélité). Le reste est relu par
+  `DayShelfStock` et jugé par `ensureShelfStockCovers` (par article et unité,
+  grammes au poids ; un article absent = 0, d'où le refus du panier mixte) :
+  `orders.shelf.stock_short` (409). Un refus annule l'intention Stripe sur les
+  trois portes — la boutique et la saisie de l'équipe ne l'annulaient pas
+  avant ce lot.
+- **Le pro sans crédit, au comptoir** (Q7) : une `shelf` au lien de paiement
+  d'un payeur sans crédit accordé est refusée si le réglage dit « refuser »
+  (`orders.shelf.without_credit`) ; « lien de paiement » la laisse passer, en
+  attente de règlement. Au compte, la règle d'avant s'applique
+  (`AccountSettlementNotGrantedError`).
+- **Le réglage** : `same_day_allowed` n'est plus lu par aucune décision
+  (colonne morte, [`reglages-generaux.md`](reglages-generaux.md) §1, §4) ; la
+  porte « jour même » du plan ouvert (`OrderPlanGate.ensureNotTooSoon`) et la
+  révision lisent aussi le réglage de la clientèle.
+- **`/fulfillment-days`** propose aujourd'hui par point quand le plan
+  d'aujourd'hui est arrêté et que la clientèle y a droit, sans heure limite
+  (`orderUntil: null`), par le port `ShelfTodaySites` (déclaré par les heures
+  limites, implémenté par les commandes) : créneau restant **et** reste positif
+  pour tout le panier.
+- **Le devis** (`QuoteOrderHandler` → `OrderCutoffNotice.forDay(…, supply)`)
+  dit « ouvert, sans heure » pour une `shelf`.
+- **La tenue du stock** : l'expiration annule, au-delà de `shelf_hold_minutes`,
+  une `shelf` non réglée **passée par le client** avec une intention —
+  particulier ou pro (`unsettledShelfOrderWhere`) ; les commandes boutique
+  fabriquées gardent leurs 30 minutes. Celle que l'équipe a envoyée au lien
+  n'y entre pas : elle tient sa part tant qu'elle vit (§6, Q3 bis).
+- **L'annulation** d'une `shelf` ne traverse pas le guichet du fournil
+  (`OrderWorkshopWithdrawal`, `CancellationSubject.supply`) : elle rend sa part
+  en retombant hors des prélèvements.
+- E2E `shelf-order-placement` : la marque (arrêté → `shelf`, rouvert →
+  `planned`), `/fulfillment-days`, la course au dernier article (deux
+  transactions, une refusée), le panier mixte, plus de créneau, la clientèle
+  fermée, le paiement abandonné qui rend sa part après la durée réglée,
+  l'annulation par l'équipe, et une passation sur stock pendant qu'une autre
+  transaction tient le verrou de la journée.
+- **Pour L6** : l'encadré de la page Jour même (« ces réglages ne prennent pas
+  encore effet ») est désormais faux, et l'interrupteur `same_day_allowed`
+  qu'elle montre ne fait plus rien — à retirer de l'écran.
+- **Non couvert** : le Commercial (hors comptoir) qui saisit `planned` pour
+  aujourd'hui sur un plan ouvert suit maintenant « pros » — au lieu de l'ancien
+  interrupteur unique ; les abonnements ne passent pas par `OrderDrafting` et
+  n'ont pas été ouverts.

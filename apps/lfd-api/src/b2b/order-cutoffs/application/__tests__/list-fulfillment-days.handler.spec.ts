@@ -16,14 +16,42 @@ import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup
 import { ClosedPlansReader } from "../../../../production/channels/commerce/index.js";
 import { OrderCutoffSettingsReader } from "../../domain/order-cutoff-settings.reader.js";
 import { OrderCutoffsInForce } from "../../domain/order-cutoffs-in-force.js";
+import { type ShelfTodayQuestion, ShelfTodaySites } from "../../domain/shelf-today-sites.js";
 
-/** Le réglage « jour même » (§8.3), fixé par le test. */
+/**
+ * Le réglage « jour même », fixé par le test : un booléen l'ouvre (ou le
+ * ferme) aux deux clientèles, en ligne comprise ; un objet règle chaque
+ * réglage. Depuis le lot L4, `sameDayAllowed` n'est plus lu — il reste FERMÉ
+ * ici pour le prouver.
+ */
 class SameDay extends OrderCutoffSettingsReader {
-  constructor(private readonly allowed: boolean) {
+  constructor(private readonly allowed: boolean | Partial<OrderCutoffSettingsView>) {
     super();
   }
   current(): Promise<OrderCutoffSettingsView> {
-    return Promise.resolve({ ...DEFAULT_ORDER_CUTOFF_SETTINGS, sameDayAllowed: this.allowed });
+    const all = typeof this.allowed === "boolean" ? this.allowed : false;
+    return Promise.resolve({
+      ...DEFAULT_ORDER_CUTOFF_SETTINGS,
+      sameDayAllowed: false,
+      sameDayPublicAllowed: all,
+      sameDayProAllowed: all,
+      sameDayProOnline: all,
+      ...(typeof this.allowed === "boolean" ? {} : this.allowed),
+    });
+  }
+}
+
+/** Les points qui vendent aujourd'hui sur la vitrine, fixés par le test ; note les questions. */
+class FixedShelfSites extends ShelfTodaySites {
+  readonly asked: ShelfTodayQuestion[] = [];
+
+  constructor(private readonly selling: readonly string[] = []) {
+    super();
+  }
+
+  sellingToday(question: ShelfTodayQuestion): Promise<ReadonlySet<string>> {
+    this.asked.push(question);
+    return Promise.resolve(new Set(this.selling.filter((id) => question.siteIds.includes(id))));
   }
 }
 import { ListFulfillmentDaysHandler } from "../list-fulfillment-days.handler.js";
@@ -61,8 +89,11 @@ class FixedClosedPlans extends ClosedPlansReader {
 }
 
 class NoPoints extends PickupAddressRepository {
+  constructor(private readonly points: readonly PickupAddressView[] = []) {
+    super();
+  }
   list(): Promise<readonly PickupAddressView[]> {
-    return Promise.resolve([]);
+    return Promise.resolve(this.points);
   }
   resolve(): Promise<PickupAddressView | null> {
     return Promise.resolve(null);
@@ -100,12 +131,14 @@ function handler(
   over: {
     readonly rules?: readonly OrderCutoffView[];
     readonly plans?: FixedClosedPlans;
-    readonly sameDayAllowed?: boolean;
+    readonly sameDayAllowed?: boolean | Partial<OrderCutoffSettingsView>;
+    readonly points?: readonly PickupAddressView[];
+    readonly shelf?: FixedShelfSites;
   } = {},
 ): ListFulfillmentDaysHandler {
   return new ListFulfillmentDaysHandler(
     new FixedCutoffs(over.rules),
-    new NoPoints(),
+    new NoPoints(over.points),
     new FixedClock(NOW),
     saleOperationsOver({
       now: NOW,
@@ -116,6 +149,7 @@ function handler(
     over.plans ?? new FixedClosedPlans(),
     // Le jour même OUVERT par défaut ici : ces cas parlent d'autre chose.
     new SameDay(over.sameDayAllowed ?? true),
+    over.shelf ?? new FixedShelfSites(),
   );
 }
 
@@ -249,5 +283,86 @@ describe("ListFulfillmentDaysHandler — l'heure limite annoncée", () => {
     expect(days).toEqual([
       { pickupAddressId: null, date: "2026-12-20", orderUntil: "2026-12-19T22:00:00.000Z" },
     ]);
+  });
+});
+
+/** Un point de retrait, sans heure déclarée : `FixedShelfSites` décide pour lui. */
+function point(id: string): PickupAddressView {
+  return {
+    id,
+    label: id,
+    ligne1: "1 rue du Four",
+    ligne2: "",
+    codePostal: "73150",
+    ville: "Val d'Isère",
+    pays: "France",
+    discounts: { b2b: null, b2c: null },
+    opening: { publicOpening: null, proPickup: null },
+  };
+}
+
+/**
+ * Lot L4 du circuit du jour J (`plan-jour-meme-sur-stock.md`, §3, §14) : un
+ * plan d'aujourd'hui arrêté n'éteint plus aujourd'hui partout — un point qui
+ * vend encore sur sa vitrine le propose, sans heure limite. `NOW` : le 1er
+ * décembre, 11 h à Paris.
+ */
+describe("ListFulfillmentDaysHandler — aujourd'hui sur la vitrine (L4)", () => {
+  const TODAY = "2026-12-01";
+  const TOMORROW = "2026-12-02";
+
+  it("propose aujourd'hui au point qui vend encore, demain aux autres et à la livraison", async () => {
+    const shelf = new FixedShelfSites(["village"]);
+    const days = await handler([], {
+      plans: new FixedClosedPlans([TODAY]),
+      sameDayAllowed: { sameDayPublicAllowed: true },
+      points: [point("village"), point("labo")],
+      shelf,
+    }).execute(new ListFulfillmentDaysQuery(["VIE-001-1"], "public"));
+
+    expect(days).toEqual([
+      { pickupAddressId: null, date: TOMORROW, orderUntil: null },
+      { pickupAddressId: "village", date: TODAY, orderUntil: null },
+      { pickupAddressId: "labo", date: TOMORROW, orderUntil: null },
+    ]);
+    expect(shelf.asked).toEqual([
+      { day: TODAY, audience: "public", siteIds: ["village", "labo"], cartSkus: ["VIE-001-1"] },
+    ]);
+  });
+
+  it("ne demande rien à la vitrine quand la clientèle n'y a pas droit", async () => {
+    const shelf = new FixedShelfSites(["village"]);
+    const days = await handler([], {
+      plans: new FixedClosedPlans([TODAY]),
+      // Les pros, mais pas en ligne : au comptoir seulement.
+      sameDayAllowed: { sameDayProAllowed: true },
+      points: [point("village")],
+      shelf,
+    }).execute(new ListFulfillmentDaysQuery([], "pro"));
+
+    expect(days.map((day) => day.date)).toEqual([TOMORROW, TOMORROW]);
+    expect(shelf.asked).toEqual([]);
+  });
+
+  it("plan d'aujourd'hui ouvert : aujourd'hui se fabrique, la vitrine n'est pas lue", async () => {
+    const shelf = new FixedShelfSites(["village"]);
+    const days = await handler([], {
+      sameDayAllowed: { sameDayPublicAllowed: true },
+      points: [point("village")],
+      shelf,
+    }).execute(new ListFulfillmentDaysQuery());
+
+    expect(days.map((day) => day.date)).toEqual([TODAY, TODAY]);
+    expect(shelf.asked).toEqual([]);
+  });
+
+  it("un panier tenu à d'autres jours n'est pas proposé aujourd'hui, même en vitrine", async () => {
+    const days = await handler([NOEL], {
+      plans: new FixedClosedPlans([TODAY]),
+      points: [point("village")],
+      shelf: new FixedShelfSites(["village"]),
+    }).execute(new ListFulfillmentDaysQuery(["PAT-002-1"], "public"));
+
+    expect(days.map((day) => day.date)).toEqual(["2026-12-20", "2026-12-20"]);
   });
 });

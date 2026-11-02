@@ -3,9 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { OrderStatus, PaymentStatus } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { UnsettledShopOrderCanceller } from "../domain/ports/unsettled-shop-order.canceller.js";
-import { unsettledShopOrderWhere } from "./unsettled-shop-order.where.js";
+import { expirableOrderWhere } from "./unsettled-shop-order.where.js";
 
-/** Adaptateur Prisma de l'écriture d'expiration : la règle est dans le `where`. */
+/**
+ * Adaptateur Prisma de l'écriture d'expiration : la règle est dans le `where` —
+ * le périmètre boutique ou celui de la tenue du stock (lot L4 du jour J).
+ */
 @Injectable()
 export class PrismaUnsettledShopOrderCanceller extends UnsettledShopOrderCanceller {
   constructor(private readonly prisma: PrismaService) {
@@ -14,7 +17,7 @@ export class PrismaUnsettledShopOrderCanceller extends UnsettledShopOrderCancell
 
   async cancel(orderId: string): Promise<boolean> {
     const { count } = await this.prisma.order.updateMany({
-      where: { id: orderId, ...unsettledShopOrderWhere() },
+      where: { id: orderId, ...expirableOrderWhere() },
       data: { status: OrderStatus.cancelled, paymentStatus: PaymentStatus.failed },
     });
     return count === 1;

@@ -6,6 +6,10 @@ import { ProductCatalogReader } from "../../../catalog/domain/ports/product-cata
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { decideStrictestOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
+import type { OrderSupply } from "../../domain/value-objects/order-supply.js";
+
+/** Ce qu'une commande sur stock lit de l'heure limite : rien ne la ferme (lot L4). */
+const SHELF_NOTICE: OrderQuoteCutoffView = { status: "open", until: null };
 
 /**
  * **Ce que l'heure limite dira de ce panier pour ce jour**, sans rien refuser.
@@ -17,6 +21,11 @@ import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
  * article, audience `pro`) et décide par la MÊME fonction
  * (`decideStrictestOrderCutoff`). Il ne consulte pas les dérogations : il dit
  * l'état de la journée, pas si ce client passerait pendant le rattrapage.
+ *
+ * Il se sépare sur la marque (plan du jour J, §12, lot L4) : une commande
+ * prise sur la vitrine n'a pas d'heure limite — la passation ne lui en
+ * oppose aucune —, et l'annoncer « fermée » promettrait un refus qui
+ * n'arrivera pas.
  */
 @Injectable()
 export class OrderCutoffNotice {
@@ -26,7 +35,14 @@ export class OrderCutoffNotice {
     private readonly clock: Clock,
   ) {}
 
-  async forDay(skus: readonly string[], fulfillmentDate: string): Promise<OrderQuoteCutoffView> {
+  async forDay(
+    skus: readonly string[],
+    fulfillmentDate: string,
+    supply: OrderSupply,
+  ): Promise<OrderQuoteCutoffView> {
+    if (supply === "shelf") {
+      return SHELF_NOTICE;
+    }
     const [fallback, items] = await Promise.all([
       this.cutoffs.list(),
       this.catalog.resolveMany(skus, staffViewer("pro")),

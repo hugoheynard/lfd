@@ -82,7 +82,8 @@ beforeEach(async () => {
   await ctx
     .asSub(STAFF)
     .patch("/admin/order-cutoff-settings")
-    .send({ sameDayAllowed: true })
+    // Depuis le lot L4 du jour J, les réglages par clientèle font foi.
+    .send({ sameDayPublicAllowed: true, sameDayProAllowed: true, sameDayProOnline: true })
     .expect(204);
   const point = await ctx.prisma.site.create({
     data: { ...LABO, isDefault: true },

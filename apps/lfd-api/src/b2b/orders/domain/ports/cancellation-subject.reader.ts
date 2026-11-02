@@ -1,6 +1,7 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
 import type { RefundPosition } from "../entities/order-refund.js";
+import type { OrderSupply } from "../value-objects/order-supply.js";
 
 /**
  * **Une commande, vue de l'annulation staff** — ce que la règle lit, et ce
@@ -21,6 +22,13 @@ export interface CancellationSubject {
    * on ne défait ni bac ni tournée).
    */
   readonly fulfillmentMethod: "pickup" | "delivery";
+  /**
+   * D'où vient la marchandise (plan du jour J, §12, lot L4) : une commande
+   * prise sur la vitrine n'a jamais été inscrite au fournil, son annulation
+   * ne passe pas par son guichet — elle rend sa part au stock en retombant
+   * hors des prélèvements.
+   */
+  readonly supply: OrderSupply;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;

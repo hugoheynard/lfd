@@ -13,6 +13,7 @@ import { UnsettledShopOrderCanceller } from "../../../domain/ports/unsettled-sho
 import { UnsettledShopOrderReader } from "../../../domain/ports/unsettled-shop-order.reader.js";
 import type { UnsettledSettlement } from "../../../domain/ports/unsettled-settlement.reader.js";
 import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
+import { FixedSameDay } from "../../commands/__tests__/plan-doubles.js";
 import { RecordingRedemption } from "../../commands/__tests__/voucher-doubles.js";
 import { UnsettledShopOrderExpiry } from "../unsettled-shop-order-expiry.service.js";
 
@@ -23,6 +24,8 @@ const NOW = new Date(1_000 * MINUTE);
 interface Row extends UnsettledSettlement {
   readonly placedAt: Date;
   readonly buyer: string;
+  /** Prise sur la vitrine (lot L4) : son délai est le réglage, pas les 30 minutes. */
+  readonly shelf: boolean;
 }
 
 function row(orderId: string, minutes: number, buyer = "u_1", voucher: string | null = null): Row {
@@ -32,7 +35,13 @@ function row(orderId: string, minutes: number, buyer = "u_1", voucher: string | 
     loyaltyVoucherId: voucher,
     placedAt: new Date(NOW.getTime() - minutes * MINUTE),
     buyer,
+    shelf: false,
   };
+}
+
+/** Une commande sur stock non réglée, passée il y a `minutes`. */
+function shelfRow(orderId: string, minutes: number): Row {
+  return { ...row(orderId, minutes), shelf: true };
 }
 
 /** Le lecteur : applique la limite et l'acheteur comme la base le ferait. */
@@ -42,7 +51,11 @@ class Unsettled extends UnsettledShopOrderReader {
   }
 
   placedBefore(cutoff: Date): Promise<readonly UnsettledSettlement[]> {
-    return Promise.resolve(this.rows.filter((r) => r.placedAt < cutoff));
+    return Promise.resolve(this.rows.filter((r) => !r.shelf && r.placedAt < cutoff));
+  }
+
+  shelfPlacedBefore(cutoff: Date): Promise<readonly UnsettledSettlement[]> {
+    return Promise.resolve(this.rows.filter((r) => r.shelf && r.placedAt < cutoff));
   }
 
   replacedBy(newOrderId: string): Promise<readonly UnsettledSettlement[]> {
@@ -106,6 +119,8 @@ interface Scenario {
   readonly rows: readonly Row[];
   readonly outcomes?: ReadonlyMap<string, IntentCancellation>;
   readonly crossed?: readonly string[];
+  /** La tenue du stock réglée en admin (lot L4) ; 30 minutes par défaut. */
+  readonly shelfHoldMinutes?: number;
 }
 
 function build(scenario: Scenario) {
@@ -121,6 +136,7 @@ function build(scenario: Scenario) {
     new DirectUnitOfWork(),
     vouchers,
     new FixedClock(NOW),
+    new FixedSameDay({ shelfHoldMinutes: scenario.shelfHoldMinutes ?? 30 }),
   );
   return { expiry, calls, events, vouchers };
 }
@@ -225,5 +241,47 @@ describe("UnsettledShopOrderExpiry — le remplacement par une nouvelle passatio
 
     expect(report).toEqual({ cancelled: 0, kept: 0 });
     expect(calls).toEqual([]);
+  });
+});
+
+/**
+ * **La tenue du stock** (lot L4 du circuit du jour J) : une commande prise sur
+ * la vitrine et non réglée rend sa part au bout de la durée réglée en admin,
+ * pas des 30 minutes de la boutique.
+ */
+describe("UnsettledShopOrderExpiry — la tenue du stock d'une commande sur stock", () => {
+  it("annule une commande sur stock passé la durée réglée, garde celle qui est dedans", async () => {
+    const { expiry, calls } = build({
+      rows: [shelfRow("held_out", 16), shelfRow("held_in", 14), row("shop", 16)],
+      shelfHoldMinutes: 15,
+    });
+
+    const report = await expiry.expireLapsed();
+
+    expect(report).toEqual({ cancelled: 1, kept: 0 });
+    expect(calls).toEqual(["cancel-intent:pi_held_out", "cancel-order:held_out"]);
+  });
+
+  it("suit la durée réglée quand elle dépasse trente minutes", async () => {
+    const { expiry, calls } = build({
+      rows: [shelfRow("held", 45), row("shop", 31)],
+      shelfHoldMinutes: 60,
+    });
+
+    await expiry.expireLapsed();
+
+    expect(calls).toEqual(["cancel-intent:pi_shop", "cancel-order:shop"]);
+  });
+
+  it("garde une commande sur stock dont le paiement est en cours chez Stripe", async () => {
+    const { expiry, calls } = build({
+      rows: [shelfRow("paying", 40)],
+      outcomes: new Map([["pi_paying", { kind: "in_progress" }]]),
+    });
+
+    const report = await expiry.expireLapsed();
+
+    expect(report).toEqual({ cancelled: 0, kept: 1 });
+    expect(calls).toEqual(["cancel-intent:pi_paying"]);
   });
 });

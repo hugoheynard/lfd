@@ -1317,6 +1317,19 @@ export interface PlacedOrderResponse {
 // `admin-order-list.ts` depuis le 2026-10-12 (page-commandes, lot C1).
 
 /**
+ * **D'où vient la marchandise d'une saisie de l'équipe** (plan
+ * `limites-de-commande/plan-jour-meme-sur-stock.md`, §11.1, lot L4) :
+ * `planned` — fabriquée pour elle, le comportement d'avant ; `shelf` — prise
+ * dans la vitrine du point, aujourd'hui (le raccourci « Retrait immédiat »).
+ *
+ * Seule l'équipe l'envoie : pour un client, c'est le serveur qui décide
+ * (aujourd'hui sur un plan arrêté). Absente = `planned`, ce qu'envoyait
+ * l'écran avant le lot — un défaut qui ne change rien à ce qui existe.
+ */
+export const staffOrderSupplySchema = z.enum(["planned", "shelf"]);
+export type StaffOrderSupply = z.infer<typeof staffOrderSupplySchema>;
+
+/**
  * **Ce que le serveur facturera**, demandé avant de valider.
  *
  * Le panier du staff affichait le tarif du CATALOGUE pendant que le serveur
@@ -1347,6 +1360,12 @@ export const orderQuotePayloadSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/u, "date de retrait/livraison (AAAA-MM-JJ)")
     .optional(),
+  /**
+   * La marque que la saisie de l'équipe enverra (lot L4) : un devis `shelf`
+   * ne dit pas d'heure limite, la passation n'en opposera pas. Lue pour
+   * l'équipe seulement ; pour un client, le serveur décide.
+   */
+  supply: staffOrderSupplySchema.optional(),
 });
 export type OrderQuotePayload = z.infer<typeof orderQuotePayloadSchema>;
 

@@ -22,3 +22,15 @@ const MILLISECONDS_PER_MINUTE = 60_000;
 export function unsettledShopOrderCutoff(now: Date): Date {
   return new Date(now.getTime() - UNSETTLED_SHOP_ORDER_TTL_MINUTES * MILLISECONDS_PER_MINUTE);
 }
+
+/**
+ * **L'instant avant lequel une commande sur stock non réglée a rendu sa
+ * part** (plan du jour J, §3 Q3 et §11.2, lot L4) : un paiement en cours tient
+ * le stock pendant la durée réglée en admin (`shelf_hold_minutes`, Réglages ›
+ * Commandes › Jour même), puis la commande est annulée avec son intention et
+ * sa quantité revient en vitrine. Même promesse « au plus cinq minutes de
+ * plus » que la boutique : c'est le même balayage.
+ */
+export function shelfOrderHoldCutoff(now: Date, holdMinutes: number): Date {
+  return new Date(now.getTime() - holdMinutes * MILLISECONDS_PER_MINUTE);
+}

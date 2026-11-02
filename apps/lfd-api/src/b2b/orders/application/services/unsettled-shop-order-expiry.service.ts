@@ -10,7 +10,11 @@ import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-red
 import { UnsettledShopOrderCanceller } from "../../domain/ports/unsettled-shop-order.canceller.js";
 import { UnsettledShopOrderReader } from "../../domain/ports/unsettled-shop-order.reader.js";
 import type { UnsettledSettlement } from "../../domain/ports/unsettled-settlement.reader.js";
-import { unsettledShopOrderCutoff } from "../../domain/services/unsettled-shop-order-expiry.js";
+import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js";
+import {
+  shelfOrderHoldCutoff,
+  unsettledShopOrderCutoff,
+} from "../../domain/services/unsettled-shop-order-expiry.js";
 
 /** Pourquoi une commande boutique non réglée est annulée — et le fait qu'elle publie. */
 type ExpiryCause = "expired" | "replaced";
@@ -63,6 +67,15 @@ export interface UnsettledShopOrderExpiryReport {
  * Aucun abonné ne lit aujourd'hui `expired` ni `replaced` ; le fait est écrit
  * quand même, pour que le règlement mort ait un seul chemin, quel que soit
  * le geste qui l'a tué.
+ *
+ * ## La tenue du stock (lot L4 du circuit du jour J, 2026-11-02)
+ *
+ * Une commande prise sur la vitrine, payée par carte par le client — en
+ * boutique ou en ligne pour un pro — tient sa part du stock tant qu'elle vit.
+ * Au-delà de la durée réglée (`shelf_hold_minutes`, Réglages › Commandes ›
+ * Jour même), elle est annulée par ce même chemin, et sa quantité revient en
+ * vitrine : les prélèvements ne comptent pas une annulée. Les gardes Stripe
+ * ci-dessus valent pour elle aussi.
  */
 @Injectable()
 export class UnsettledShopOrderExpiry {
@@ -76,12 +89,22 @@ export class UnsettledShopOrderExpiry {
     private readonly unitOfWork: UnitOfWork,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly clock: Clock,
+    private readonly sameDay: SameDayOrderReader,
   ) {}
 
-  /** Annule les commandes du périmètre passées depuis plus que le délai. */
+  /**
+   * Annule les commandes du périmètre passées depuis plus que leur délai :
+   * 30 minutes pour une commande boutique fabriquée, la durée réglée pour
+   * une commande sur stock. Les deux comptes s'additionnent.
+   */
   async expireLapsed(): Promise<UnsettledShopOrderExpiryReport> {
-    const found = await this.unsettled.placedBefore(unsettledShopOrderCutoff(this.clock.now()));
-    return this.cutAll(found, "expired");
+    const now = this.clock.now();
+    const { shelfHoldMinutes } = await this.sameDay.settings();
+    const planned = await this.unsettled.placedBefore(unsettledShopOrderCutoff(now));
+    const shelf = await this.unsettled.shelfPlacedBefore(
+      shelfOrderHoldCutoff(now, shelfHoldMinutes),
+    );
+    return this.cutAll([...planned, ...shelf], "expired");
   }
 
   /** Annule les commandes du périmètre que la commande `newOrderId` remplace. */

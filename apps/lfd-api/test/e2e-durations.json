@@ -466,6 +466,7 @@
   "test/sale-unit-change.e2e-spec.ts": 8929,
   "test/schema.e2e-spec.ts": 3429,
   "test/served-company-status.e2e-spec.ts": 14979,
+  "test/shelf-order-placement.e2e-spec.ts": 17000,
   "test/shelf-order-readers.e2e-spec.ts": 12500,
   "test/shelf-stock-weight.e2e-spec.ts": 10673,
   "test/shelf-stock.e2e-spec.ts": 12900,

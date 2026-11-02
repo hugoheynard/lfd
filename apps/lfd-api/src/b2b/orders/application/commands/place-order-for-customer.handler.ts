@@ -12,7 +12,9 @@ import type { Order } from "../../domain/entities/order.js";
 import { AccountSettlementNotGrantedError } from "../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
-import { OrderRepository } from "../../domain/ports/order.repository.js";
+import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repository.js";
+import { ShelfWithoutCreditRefusedError } from "../../domain/errors/shelf-circuit-errors.js";
+import { ShelfCircuit } from "../services/shelf-circuit.service.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { paymentUrlFor } from "../../domain/services/payment-link.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
@@ -25,6 +27,11 @@ import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
+
+/** L'intention du lien de règlement, créée avant l'écriture : à annuler si elle échoue. */
+interface CreatedLink {
+  readonly paymentIntentId: string;
+}
 
 /**
  * Passe une commande **au nom d'un client**, depuis le back-office.
@@ -61,6 +68,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly unitOfWork: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly shelf: ShelfCircuit,
   ) {}
 
   async execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
@@ -86,18 +94,13 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       null,
       // Ni de langue : celle de l'écran du back-office ne dit rien du client (lot A3).
       null,
+      // La marque que l'écran envoie — `shelf` pour le « Retrait immédiat »
+      // (plan du jour J, §11.1, lot L4) ; absente, fabriquée comme avant.
+      payload.supply,
     );
 
     const intent = await this.settle(order, payload.settlement, companyId);
-    // La commande et le fait qui fait situer son adresse (CA0), ensemble.
-    const placed = await this.unitOfWork.run(async () => {
-      // La journée d'abord, sous son verrou : l'arrêt du plan ne passe plus
-      // entre la composition et l'écriture (lot O3, S5).
-      await this.drafting.holdPlan(order, payload.requestedDeliveryDate);
-      const written = await this.orders.place(order);
-      await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
-      return written;
-    });
+    const placed = await this.persist(order, payload.requestedDeliveryDate, intent);
 
     // La dérogation se consomme APRÈS la persistance, et son échec ne s'absorbe
     // pas : restée ouverte, elle laisserait passer une seconde commande tardive
@@ -125,19 +128,50 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
   }
 
   /**
+   * La commande et le fait qui fait situer son adresse (CA0), ensemble. La
+   * journée — ou, sur stock, la vitrine (plan du jour J, §12) — d'abord, sous
+   * son verrou : l'arrêt du plan ou une passation concurrente ne passent plus
+   * entre la composition et l'écriture (lot O3, S5). Un refus annule
+   * l'intention du lien, qui ne servirait plus à rien.
+   */
+  private async persist(
+    order: Order,
+    requestedDeliveryDate: string | null,
+    intent: CreatedLink | null,
+  ): Promise<PlacedOrder> {
+    try {
+      return await this.unitOfWork.run(async () => {
+        await this.drafting.holdSupply(order, requestedDeliveryDate);
+        const written = await this.orders.place(order);
+        await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
+        return written;
+      });
+    } catch (error) {
+      if (intent !== null) {
+        await this.payments.cancelIntent(intent.paymentIntentId);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Décide le règlement. `account` exige un crédit réellement accordé — sans quoi
    * un écran de back-office suffirait à en inventer un. `link` crée l'intention
-   * Stripe, sauf sur un total nul où il n'y a rien à encaisser.
+   * Stripe, sauf sur un total nul où il n'y a rien à encaisser — et, sur la
+   * vitrine, suit le réglage du pro sans crédit (Q7).
    */
   private async settle(
     order: Order,
     settlement: PlaceOrderForCustomerCommand["payload"]["settlement"],
     companyId: string,
-  ): Promise<{ clientSecret: string } | null> {
+  ): Promise<CreatedLink | null> {
     if (settlement === "account") {
       await this.ensureSettlesOnAccount(companyId, order.billedCompanyId);
       order.deferPayment();
       return null;
+    }
+    if (order.isFromShelf) {
+      await this.ensureShelfLinkAllowed(companyId, order.billedCompanyId);
     }
     if (order.totalCents <= 0) {
       // Rien à encaisser : un lien de règlement à 0 € enverrait le client sur une
@@ -151,7 +185,22 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       companyId,
     });
     order.payByCard(intent.paymentIntentId);
-    return { clientSecret: intent.clientSecret };
+    return { paymentIntentId: intent.paymentIntentId };
+  }
+
+  /**
+   * **Un pro sans crédit, sur la vitrine** (plan du jour J, §11.3, Q7) : le
+   * réglage « Pro sans crédit » refuse, ou l'envoie au lien de paiement — et
+   * la commande attend alors dans la file, règlement non clos. Un pro qui a
+   * un crédit peut toujours être envoyé au lien : c'est le choix du vendeur.
+   *
+   * @throws {ShelfWithoutCreditRefusedError} sans crédit, et le réglage refuse.
+   */
+  private async ensureShelfLinkAllowed(companyId: string, payerId: string | null): Promise<void> {
+    const standing = await accountStanding(this.guard, { companyId, payerId });
+    if (standing !== "granted" && (await this.shelf.refusesWithoutCredit())) {
+      throw new ShelfWithoutCreditRefusedError(companyId);
+    }
   }
 
   /**

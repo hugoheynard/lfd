@@ -139,6 +139,8 @@ import { OrderDrafting } from "./application/services/order-drafting.service.js"
 import { OrderCutoffNotice } from "./application/services/order-cutoff-notice.service.js";
 import { OrderPlanGate } from "./application/services/order-plan-gate.service.js";
 import { SameDayOrderReader } from "./domain/ports/same-day-order.reader.js";
+import { ShelfCircuit } from "./application/services/shelf-circuit.service.js";
+import { ResupplyModule } from "../resupply/resupply.module.js";
 import { SettingsSameDayOrderReader } from "./infrastructure/settings-same-day-order.reader.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
@@ -316,6 +318,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // les promotions panier et le journal de l'ombre sous le cache des
     // matériaux de prix — le singleton de ce module.
     PricingModule,
+    // Le reste de la vitrine et son verrou, pour la passation sur stock (plan
+    // du jour J, lot L4).
+    ResupplyModule,
   ],
   controllers: [
     ...ORDER_REFUND_CONTROLLERS,
@@ -371,6 +376,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // L'arrêt du plan opposé à la passation (lot O3) ; ses deux ports viennent
     // du fournil par `ProductionDeskFeedModule`.
     OrderPlanGate,
+    ShelfCircuit,
     // Le réglage « jour même » (§8.3), lu sur le réglage de l'heure limite.
     { provide: SameDayOrderReader, useClass: SettingsSameDayOrderReader },
     // Le garde des opérations datées, partagé par la caisse et les deux devis.
