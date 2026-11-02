@@ -14,7 +14,11 @@ import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
 } from "../../__tests__/order-print-colors-doubles.js";
-import { FixedPaperLogo, FixedPlannedDeliveryNotes } from "../../__tests__/paper-doubles.js";
+import {
+  FixedTrancheReading,
+  FixedPaperLogo,
+  FixedPlannedDeliveryNotes,
+} from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { ProductionPapers } from "../production-paper.service.js";
 
@@ -75,6 +79,7 @@ function papersWith(
       new FixedPaperLogo(),
       deliveryNotes,
       new InMemoryDisplaySettings().reader(),
+      new FixedTrancheReading(),
     ),
     store,
   };

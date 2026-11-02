@@ -32,6 +32,19 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    lot compté, les commandes par acheminement, les rayons et leur total, les
    réassorts. Rien que les pages suivantes ne détaillent.
 2. **Un rayon par page** — « Viennoiseries — total à produire ».
+   **Suivi de son calendrier** (2026-11-02, Hugo) — « Viennoiseries — par
+   tranche horaire », en **paysage** : les produits du rayon en lignes (avec
+   leurs sous-catégories si le réglage est actif), les tranches horaires en
+   colonnes (« avant 05:00 »…, puis « Dans la journée » et « Sans heure »), la
+   quantité à sortir dans chaque case avec **une case à cocher**, le total du
+   produit à droite et celui de chaque tranche en bas (pièces seules : un
+   article au poids n'y est pas compté, et la page le dit). Seules les
+   tranches que le rayon touche ont une colonne. La règle est celle de la
+   journée par tranche à l'écran : le total figé du produit, **réparti** par
+   les tranches de la fiche d'atelier (`WorksheetDeadlinesReading`), le reste
+   en « Sans heure » — la somme d'une ligne est toujours le total. Des
+   échéances qui dépassent le total ne répartissent rien, et la ligne le dit.
+   Tranches illisibles : le dossier part sans calendrier, **non archivé**.
 3. **Une fiche par commande** — « ORD-… — Fiche de commande ». L'acheminement
    s'écrit « Retrait <site> · pro / particulier » ou « Livraison · … », derrière
    le carré de la couleur de la commande (`OrderPrintColorsReader`).
@@ -169,6 +182,10 @@ l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires
 - Contenu : `apps/lfd-api/src/production/domain/services/day-dossier.ts`
   (récapitulatif, ordre) et `dossier-sheet-head.ts` (en-tête d'un bon).
 - Mise en page : `day-dossier-pdf.ts`, sur la trousse `paper-pdf-kit.ts`.
+- Calendrier par tranche : `day-dossier-calendar.ts` (la grille) et
+  `day-dossier-calendar-pdf.ts` (la page paysage) ; le cadre d'une section en
+  paysage au milieu d'un papier en portrait : `PaperPages.openLandscape`
+  (`apps/lfd-api/src/platform/pdf/paper-pages.ts`).
 - Archive et tirage : `application/services/production-paper.service.ts`
   (`dossierOf`).
 - Ce que l'arrêt fige : le port `production/channels/commerce/day-orders.reader.ts`

@@ -153,7 +153,14 @@ export function put(
   text: string,
   x: number,
   y: number,
-  options: { size: number; bold?: boolean; width?: number; color?: string },
+  options: {
+    size: number;
+    bold?: boolean;
+    width?: number;
+    color?: string;
+    /** Dans `width` seulement : centrer un chiffre dans sa case. */
+    align?: "left" | "center" | "right";
+  },
 ): void {
   doc
     .font(options.bold === true ? BOLD : REGULAR)
@@ -163,7 +170,9 @@ export function put(
       text,
       x,
       y,
-      options.width === undefined ? { lineBreak: false } : { width: options.width },
+      options.width === undefined
+        ? { lineBreak: false }
+        : { width: options.width, align: options.align ?? "left" },
     );
   doc.fillColor(BLACK);
 }

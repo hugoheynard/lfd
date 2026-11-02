@@ -4,6 +4,7 @@ import type { DeliveryNoteDrawing } from "../../../channels/commerce/planned-del
 import type { ProductionOrderSnapshot } from "../../entities/production-day.js";
 import { type DayDossier, dayDossierOf } from "../day-dossier.js";
 import { type DossierStamp, dayDossierPdfKey, renderDayDossierPdf } from "../day-dossier-pdf.js";
+import { dossierCalendarOf } from "../day-dossier-calendar.js";
 import { PAPER_LOGO } from "./paper-logo.fixture.js";
 import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 
@@ -276,7 +277,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v11-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v12-retirage-");
   });
 });
 
@@ -284,7 +285,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v11.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v12.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });
@@ -532,5 +533,42 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
     expect(pages[4]).not.toContain("Fiche de commande");
     expect(pages[4]).toContain("5/6");
     expect(pages[5]).toContain("BON 2/2");
+  });
+
+  it("pose le calendrier d'un rayon juste après sa page de total, en paysage, sans changer les autres pages", async () => {
+    const calendar = dossierCalendarOf(
+      DOSSIER.recap,
+      new Map([
+        [
+          DOSSIER.recap[0]?.lines[0]?.sku ?? "",
+          [{ kind: "deadline" as const, before: "05:00", quantity: 4, cumulative: 4 }],
+        ],
+      ]),
+    );
+    const pdf = await renderDayDossierPdf(
+      DOSSIER,
+      STAMP,
+      {
+        logo: PAPER_LOGO,
+        colisageUrlOf: () => "",
+        colors: NO_COLORS,
+        resupplyColors: NO_COLORS,
+        deliveryNotes: new Map(),
+      },
+      calendar,
+    );
+    const pages = pdfPages(pdf);
+
+    expect(pages).toHaveLength(5);
+    expect(pages[1]).toContain("2 cdes");
+    expect(pages[2]).toContain("par tranche horaire");
+    expect(pages[2]).toContain("avant 05:00");
+    expect(pages[2]).toContain("Sans heure");
+    expect(pages[2]).toContain("TOTAL PIÈCES");
+    // La page du calendrier est en paysage, les autres restent en portrait.
+    const boxes = [
+      ...pdf.toString("latin1").matchAll(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/gu),
+    ].map((match) => Number(match[1]) > Number(match[2]));
+    expect(boxes).toEqual([false, false, true, false, false]);
   });
 });

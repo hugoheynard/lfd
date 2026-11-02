@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 
 import type { CatalogFamilyView } from "@lfd/contracts";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
@@ -30,6 +30,12 @@ import {
 } from "../../domain/services/atelier-sheet-pdf.js";
 import { countColorSharesOf } from "../../domain/services/count-color-shares.js";
 import { dayDossierOf } from "../../domain/services/day-dossier.js";
+import {
+  type CalendarPage,
+  dossierCalendarOf,
+} from "../../domain/services/day-dossier-calendar.js";
+import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
 import { countPaperRowsOf } from "../../domain/services/made-to-order.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 
@@ -80,6 +86,10 @@ export class ProductionPapers {
     private readonly logo: BrandLogoSource,
     private readonly deliveryNotes: PlannedDeliveryNotesReader,
     private readonly display: ProductionDisplaySettingsReader,
+    // Le seul geste lu : `read`. Typé étroit pour qu'un test le double sans
+    // la classe ; le jeton reste la classe, pour l'injection.
+    @Inject(WorksheetDeadlinesReading)
+    private readonly tranches: Pick<WorksheetDeadlinesReading, "read">,
   ) {}
 
   /**
@@ -174,18 +184,25 @@ export class ProductionPapers {
       ...resupplies.flatMap((resupply) => resupply.lines),
     ]);
     const orderIds = snapshot.orders.map((order) => order.orderId);
-    const [colors, resupplyColors, logo, deliveryNotes, display] = await Promise.all([
+    const [colors, resupplyColors, logo, deliveryNotes, display, tranches] = await Promise.all([
       this.colors.colorsOf(orderIds),
       this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
       this.logo.load(),
       this.deliveryNotesOrNull(snapshot.serviceDay, orderIds),
       this.display.current(),
+      // Le calendrier par tranche (2026-11-02) : les tranches de la fiche
+      // d'atelier. Illisibles, le dossier part sans calendrier et n'est pas
+      // archivé — le tirage suivant le refera complet.
+      this.tranches.read(ServiceDay.of(snapshot.serviceDay)),
     ]);
     // Le rangement (sous-catégories, 2026-10-30) est lu au tirage et figé
     // avec le papier archivé, comme les rayons.
     const { showSubcategories } = display ?? ProductionDisplaySettings.defaults();
+    const dossier = dayDossierOf(snapshot.orders, shelves, resupplies, showSubcategories);
+    const calendar: readonly CalendarPage[] =
+      tranches === null ? [] : dossierCalendarOf(dossier.recap, tranches);
     const bytes = await renderDayDossierPdf(
-      dayDossierOf(snapshot.orders, shelves, resupplies, showSubcategories),
+      dossier,
       {
         serviceDay: snapshot.serviceDay,
         closedAt,
@@ -200,8 +217,9 @@ export class ProductionPapers {
         resupplyColors,
         deliveryNotes: deliveryNotes ?? new Map(),
       },
+      calendar,
     );
-    if (shelves !== null && deliveryNotes !== null) {
+    if (shelves !== null && deliveryNotes !== null && tranches !== null) {
       await this.archive(key, bytes);
     }
     return { bytes, fileName };

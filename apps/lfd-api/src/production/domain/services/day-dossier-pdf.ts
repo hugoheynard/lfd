@@ -4,6 +4,8 @@ import type { DeliveryNoteDrawing } from "../../channels/commerce/planned-delive
 import { type PlanSigner, signedVerb, staffSigner } from "../entities/plan-signer.js";
 import type { ProductionOrderSnapshot } from "../entities/production-day.js";
 import type { DayDossier } from "./day-dossier.js";
+import type { CalendarPage } from "./day-dossier-calendar.js";
+import { drawCalendarPage } from "./day-dossier-calendar-pdf.js";
 import { drawDossierCover } from "./day-dossier-cover-pdf.js";
 import { drawRecapGroup } from "./day-dossier-recap-pdf.js";
 import { dossierSheetHeadOf, type DossierSheetHead } from "./dossier-sheet-head.js";
@@ -27,7 +29,7 @@ import {
 } from "../../../platform/pdf/paper-pdf-kit.js";
 import { isMadeToOrder, MADE_TO_ORDER_MENTION } from "./made-to-order.js";
 import { drawRouting } from "./order-routing-pdf.js";
-import { PaperPages } from "../../../platform/pdf/paper-pages.js";
+import { contentRightOf, PaperPages } from "../../../platform/pdf/paper-pages.js";
 
 /**
  * **Le dossier du jour, en PDF** — une couverture, le récapitulatif (un rayon
@@ -85,6 +87,8 @@ export function renderDayDossierPdf(
   dossier: DayDossier,
   stamp: DossierStamp,
   print: DossierPrint,
+  /** Le calendrier par tranche, une page paysage par catégorie — vide : aucune. */
+  calendar: readonly CalendarPage[] = [],
 ): Promise<Buffer> {
   return render(
     stamp.retakenAt ?? stamp.closedAt,
@@ -96,8 +100,17 @@ export function renderDayDossierPdf(
         orders: print.colors,
         resupplies: print.resupplyColors,
       });
+      // Chaque rayon : son total du jour, puis son calendrier par tranche
+      // horaire juste derrière (Hugo, 2026-11-02 : « pour respecter un ordre
+      // logique »).
+      const calendarOf = new Map(calendar.map((page) => [page.label, page]));
       for (const group of dossier.recap) {
         drawRecapGroup(doc, group, pages.open(`${group.label} — total à produire`), room);
+        const page = calendarOf.get(group.label);
+        if (page !== undefined && page.rows.length > 0) {
+          const top = pages.openLandscape(`${page.label} — par tranche horaire`);
+          drawCalendarPage(doc, page, top, room, contentRightOf("landscape"));
+        }
       }
       dossier.sheets.forEach((order, index) => {
         const rank = `bon ${String(index + 1)}/${String(dossier.sheets.length)}`;
@@ -191,8 +204,12 @@ function drawOrder(
  * « Dossier de production du … », un rayon par page (« (1/2) » s'il
  * déborde), numéro de page encadré, acheminement « Retrait <site> · pro »
  * derrière la pastille, et le BL de transport derrière chaque bon.
+ *
+ * `v12` (2026-11-02, Hugo) : derrière la page de chaque rayon, son calendrier
+ * — une page paysage, produits × tranches horaires, une case à cocher par
+ * quantité.
  */
-export const DOSSIER_LAYOUT_VERSION = "v11";
+export const DOSSIER_LAYOUT_VERSION = "v12";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;

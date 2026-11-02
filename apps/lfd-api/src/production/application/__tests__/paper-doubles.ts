@@ -8,6 +8,7 @@ import {
 } from "../../channels/commerce/planned-delivery-notes.reader.js";
 import { PAPER_LOGO } from "../../domain/services/__tests__/paper-logo.fixture.js";
 import { put } from "../../../platform/pdf/paper-pdf-kit.js";
+import type { TrancheThreshold } from "../../domain/services/production-tranches.js";
 
 /** Le logo du dépôt, servi sans disque. */
 export class FixedPaperLogo extends BrandLogoSource {
@@ -56,5 +57,19 @@ export class FixedPlannedDeliveryNotes extends PlannedDeliveryNotesReader {
 export class FixedSpecimenDeliveryNote extends SpecimenDeliveryNoteReader {
   specimenDrawing(): Promise<DeliveryNoteDrawing> {
     return Promise.resolve(noteDrawing("BL-EXEMPLE"));
+  }
+}
+
+/**
+ * Les tranches de la fiche d'atelier, doublées : celles qu'on pose, ou
+ * `null` — la lecture en panne, le dossier part sans calendrier.
+ */
+export class FixedTrancheReading {
+  constructor(
+    private readonly tranches: ReadonlyMap<string, readonly TrancheThreshold[]> | null = new Map(),
+  ) {}
+
+  read(): Promise<ReadonlyMap<string, readonly TrancheThreshold[]> | null> {
+    return Promise.resolve(this.tranches);
   }
 }

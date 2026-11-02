@@ -5,6 +5,7 @@ import type {
   ProductionResupplySnapshot,
 } from "../../domain/entities/production-day.js";
 import { SPECIMEN_ORDER } from "./specimen-data.js";
+import type { TrancheThreshold } from "../../domain/services/production-tranches.js";
 
 /**
  * **La journée d'exemple du fournil** — le compte à produire et le dossier du
@@ -91,4 +92,28 @@ export const SPECIMEN_DAY_SHELVES: ReadonlyMap<string, CatalogFamilyView> = new 
   ["EXEMPLE-CAM", BREADS],
   ["EXEMPLE-CRO", PASTRIES],
   ["EXEMPLE-PAC", PASTRIES],
+]);
+
+/**
+ * Les tranches d'exemple de la fiche d'atelier (le calendrier du dossier,
+ * 2026-11-02) : deux heures, et le pain de campagne sans échéance — il tombe
+ * dans « Sans heure », comme un vrai produit sans marge réglée. Totaux : ceux
+ * des commandes et réassorts d'exemple ci-dessus.
+ */
+export const SPECIMEN_DAY_TRANCHES: ReadonlyMap<string, readonly TrancheThreshold[]> = new Map([
+  [
+    "EXEMPLE-CRO",
+    [
+      { kind: "deadline", before: "05:00", quantity: 20, cumulative: 20 },
+      { kind: "deadline", before: "07:00", quantity: 18, cumulative: 38 },
+    ],
+  ],
+  ["EXEMPLE-PAC", [{ kind: "deadline", before: "07:00", quantity: 24, cumulative: 24 }]],
+  [
+    "EXEMPLE-BAG",
+    [
+      { kind: "deadline", before: "05:00", quantity: 15, cumulative: 15 },
+      { kind: "deadline", before: "07:00", quantity: 12, cumulative: 27 },
+    ],
+  ],
 ]);

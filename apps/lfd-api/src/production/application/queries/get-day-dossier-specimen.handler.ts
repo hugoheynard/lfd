@@ -14,14 +14,16 @@ import {
   SPECIMEN_DAY_ORDERS,
   SPECIMEN_DAY_RESUPPLIES,
   SPECIMEN_DAY_SHELVES,
+  SPECIMEN_DAY_TRANCHES,
 } from "../document-specimens/specimen-day.js";
+import { dossierCalendarOf } from "../../domain/services/day-dossier-calendar.js";
 import type { ProductionPaper } from "../services/production-paper.service.js";
 import { GetDayDossierSpecimenQuery } from "./get-day-dossier-specimen.query.js";
 
 /**
  * **Rend le dossier du jour d'exemple** par le montage et le rendu mêmes du
  * vrai dossier (`dayDossierOf`, `renderDayDossierPdf`) : récapitulatif par
- * rayon, un bon par commande avec sa pastille, le BL de transport d'exemple
+ * rayon, le calendrier par tranche horaire, un bon par commande avec sa pastille, le BL de transport d'exemple
  * derrière le premier, un bon de réassort — sans
  * `ProductionPapers`, qui archive par tirage, ce qu'un exemple ne fait pas.
  *
@@ -44,8 +46,13 @@ export class GetDayDossierSpecimenHandler implements IQueryHandler<
   async execute(): Promise<ProductionPaper> {
     const now = this.clock.now();
     const base = this.config.adminBaseUrl();
+    const dossier = dayDossierOf(
+      SPECIMEN_DAY_ORDERS,
+      SPECIMEN_DAY_SHELVES,
+      SPECIMEN_DAY_RESUPPLIES,
+    );
     const bytes = await renderDayDossierPdf(
-      dayDossierOf(SPECIMEN_DAY_ORDERS, SPECIMEN_DAY_SHELVES, SPECIMEN_DAY_RESUPPLIES),
+      dossier,
       {
         serviceDay: specimenServiceDay(now),
         closedAt: now,
@@ -65,6 +72,7 @@ export class GetDayDossierSpecimenHandler implements IQueryHandler<
           [SPECIMEN_ORDER.orderId, await this.deliveryNote.specimenDrawing(now)],
         ]),
       },
+      dossierCalendarOf(dossier.recap, SPECIMEN_DAY_TRANCHES),
     );
     return { bytes, fileName: "exemple-dossier-du-jour.pdf" };
   }

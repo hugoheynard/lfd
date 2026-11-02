@@ -15,7 +15,11 @@ import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
 } from "../../__tests__/order-print-colors-doubles.js";
-import { FixedPaperLogo, FixedPlannedDeliveryNotes } from "../../__tests__/paper-doubles.js";
+import {
+  FixedTrancheReading,
+  FixedPaperLogo,
+  FixedPlannedDeliveryNotes,
+} from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { ProductionPapers } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
@@ -95,6 +99,7 @@ function setup(
   day: ProductionDay,
   colors = new FixedOrderPrintColors(),
   deliveryNotes = new FixedPlannedDeliveryNotes(),
+  tranches = new FixedTrancheReading(),
 ): {
   handler: GetDayDossierPdfHandler;
   store: InMemoryProductionStore;
@@ -111,6 +116,7 @@ function setup(
     new FixedPaperLogo(),
     deliveryNotes,
     new InMemoryDisplaySettings().reader(),
+    tranches,
   );
   return { handler: new GetDayDossierPdfHandler(new Days(day), papers), store, shelves };
 }
@@ -157,6 +163,18 @@ describe("GetDayDossierPdfHandler", () => {
   it("sert le dossier sans rayons quand le commerce est muet, mais ne l'archive pas", async () => {
     const { handler, store, shelves } = setup(closedDay());
     shelves.broken = true;
+    const paper = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    expect(paper.bytes.length).toBeGreaterThan(0);
+    expect(store.objects.size).toBe(0);
+  });
+
+  it("sert le dossier sans calendrier quand les tranches sont illisibles, mais ne l'archive pas", async () => {
+    const { handler, store } = setup(
+      closedDay(),
+      new FixedOrderPrintColors(),
+      new FixedPlannedDeliveryNotes(),
+      new FixedTrancheReading(null),
+    );
     const paper = await handler.execute(new GetDayDossierPdfQuery(DAY));
     expect(paper.bytes.length).toBeGreaterThan(0);
     expect(store.objects.size).toBe(0);
