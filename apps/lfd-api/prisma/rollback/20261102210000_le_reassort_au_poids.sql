@@ -1,0 +1,24 @@
+-- RETOUR ARRIÈRE de 20261102210000_le_reassort_au_poids
+-- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L2b-1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant ne lit ni n'écrit `sale_unit` : ses insertions prennent le
+-- défaut `piece`, que le CHECK admet. Le retour du code seul suffit tant
+-- qu'aucune ligne `weight` n'a été écrite.
+--
+-- ⚠️ Si des lignes `weight` existent, le code d'avant les lirait comme des
+-- PIÈCES (1250 g deviendraient 1250 pièces au stock). Les constater avant :
+--
+--   SELECT 'demande' AS ou, count(*) FROM public.site_resupply_line WHERE sale_unit = 'weight'
+--   UNION ALL
+--   SELECT 'recu', count(*) FROM public.resupply_receipt_line WHERE sale_unit = 'weight';
+--
+-- et décider avec Hugo (aucune suppression d'office). Retirer les colonnes
+-- serait un resserrement, dans un déploiement ultérieur, sur sa décision :
+--
+--   ALTER TABLE public.site_resupply_line DROP CONSTRAINT site_resupply_line_sale_unit_check;
+--   ALTER TABLE public.resupply_receipt_line DROP CONSTRAINT resupply_receipt_line_sale_unit_check;
+
+SELECT 1;

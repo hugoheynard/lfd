@@ -59,6 +59,9 @@ model ResupplyReceiptLine {
   expectedQuantity Int?   @map("expected_quantity")
   /// Le reçu.
   quantity         Int
+  /// L'unité des deux quantités, figée à l'ajout de la ligne (lot L2b-1) :
+  /// `piece`, ou `weight` — elles comptent alors des GRAMMES. CHECK en base.
+  saleUnit         String @default("piece") @map("sale_unit")
   /// Rang d'affichage : l'ordre du réassort, ou de saisie.
   position         Int
 
@@ -157,6 +160,9 @@ model SiteResupplyLine {
   sku      String
   label    String
   quantity Int
+  /// L'unité de la quantité, figée à l'ajout (lot L2b-1) : `piece`, ou
+  /// `weight` — la quantité compte alors des GRAMMES. CHECK en base.
+  saleUnit String @default("piece") @map("sale_unit")
   /// Rang d'affichage : l'ordre de saisie.
   position Int
 
@@ -222,7 +228,7 @@ model BakehouseResupplyDraft {
   /// Son nom libre et facultatif, rogné, 1 à 60 caractères (CHECK
   /// `bakehouse_resupply_draft_name_trimmed`), `null` : sans nom.
   name   String? @db.VarChar(60)
-  /// Les lignes `[{ sku, quantity }]` : remplacées ensemble, jamais lues une à une.
+  /// Les lignes `[{ sku, quantity, saleUnit? }]` (`saleUnit` absent : `piece`) : remplacées ensemble, jamais lues une à une.
   lines  Json
 
   /// `open` → `sent` | `discarded` (CHECK `bakehouse_resupply_draft_status_known`).
