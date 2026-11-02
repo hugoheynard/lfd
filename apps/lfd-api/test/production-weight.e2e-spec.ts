@@ -347,7 +347,7 @@ describe("le colisage, au poids", () => {
 
 /**
  * Le réassort au poids au fournil (lot L2b-2 du plan
- * `limites-de-commande/plan-jour-meme-sur-stock.md`). La garde d'envoi de
+ * `limites-de-commande/jour-meme-sur-stock.md`). La garde d'envoi de
  * L2b-1 empêche encore le commerce d'en envoyer un (le colisage ne sait pas
  * l'unité, L2b-3) : la journée est arrêtée par l'agrégat, avec le réassort tel
  * que le canal le servira, puis écrite et relue par le VRAI adaptateur — c'est

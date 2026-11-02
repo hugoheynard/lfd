@@ -292,7 +292,7 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
 });
 
 /**
- * Le circuit du jour J — ses réglages (lot L3, `plan-jour-meme-sur-stock.md`
+ * Le circuit du jour J — ses réglages (lot L3, `jour-meme-sur-stock.md`
  * §14). Depuis le lot L4, ils font foi : « particuliers » ouvre aujourd'hui à
  * la boutique, et `sameDayAllowed` n'est plus lu.
  */

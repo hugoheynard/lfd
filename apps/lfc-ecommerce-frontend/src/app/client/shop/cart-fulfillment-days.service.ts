@@ -55,7 +55,7 @@ export class CartFulfillmentDays {
 
   /**
    * TOUS les SKU du panier, triés — pas seulement ceux d'opération, depuis le
-   * lot L7 du circuit du jour J (`plan-jour-meme-sur-stock.md`, §3) : le
+   * lot L7 du circuit du jour J (`jour-meme-sur-stock.md`) : le
    * serveur ne propose aujourd'hui à un point que si sa vitrine a un reste
    * pour TOUT le panier ; un panier mixte se voit proposer demain. La relecture
    * suit l'ENSEMBLE des articles, jamais leurs quantités : un croissant de plus

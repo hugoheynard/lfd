@@ -1,7 +1,7 @@
 import { sameDayDoorOf, sameDayOpenTo, type SameDayDoorSettings } from "../same-day-doors.js";
 
 /**
- * Le jour même par clientèle (plan `plan-jour-meme-sur-stock.md`, §3, lot
+ * Le jour même par clientèle (plan `jour-meme-sur-stock.md`, lot
  * L4) : trois portes, trois réglages — l'ancien interrupteur unique n'est
  * plus lu.
  */

@@ -227,7 +227,7 @@ export class ClientCart {
     const item = this.catalogue.itemOf(productId);
     if (item !== null && !isLocked(item)) {
       const next = nextQuantity(item, this.store.quantityOf(productId));
-      // Le jour J (`plan-jour-meme-sur-stock.md`, L7) : rien au-delà de ce qui
+      // Le jour J (`jour-meme-sur-stock.md`, L7) : rien au-delà de ce qui
       // reste en vitrine — une annonce, la passation reste juge.
       if (exceedsShelf(this.shelf.stateOf(productId), next)) {
         return 'shelfLimited';

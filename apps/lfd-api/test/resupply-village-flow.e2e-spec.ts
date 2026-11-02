@@ -12,7 +12,7 @@
  * de raccord.
  *
  * La même demande porte une ligne AU POIDS (lot L2b-3 de
- * `limites-de-commande/plan-jour-meme-sur-stock.md`) : 2 kg de gravlax,
+ * `limites-de-commande/jour-meme-sur-stock.md`) : 2 kg de gravlax,
  * comptés et imprimés en grammes au fournil, colisés en un lot de 1,94 kg,
  * partis au manifeste en kilos, reçus en grammes au Village — et les
  * croissants à côté, inchangés.

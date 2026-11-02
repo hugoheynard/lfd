@@ -2,7 +2,7 @@
 
 > **État au 2026-10-21 : partiel.** La **réception** est bâtie (agrégat
 > `ResupplyReceipt`, `b2b/resupply/`, et la page Comptoir › Réassort boutique —
-> [`plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md)
+> [`jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md)
 > §7), ainsi que le réglage « soumis à l'heure limite / sans limite », stocké
 > sans effet. Restent : la **commande au fournil** (`SiteResupply`, lots R1–R5)
 > et son branchement aux lecteurs du fournil, du colisage et du transfert ; la
@@ -170,7 +170,7 @@ de règlement, pas de chiffre d'affaires. Le coût est de le brancher dans les
 lecteurs du fournil, du colisage et du transfert (§3), le jour où il sera
 commandé au fournil. La **réception** au comptoir (lignes produit, quantités
 reçues, stock estimé du jour) est bâtie avant la commande, le 2026-10-21 —
-voir [`../limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md).
+voir [`../limites-de-commande/jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md).
 
 ## 10. Le circuit complet : commander, produire et emballer, réceptionner (Hugo, 2026-10-21) — l'emporte sur les §4–§5
 

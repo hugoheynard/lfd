@@ -1,6 +1,6 @@
 /**
  * E2E du **stock décompté** (lot L2 —
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.2,
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * §12 bloquant 1, §14).
  *
  * Ce que seul le vrai SQL prouve : que les prélèvements lus par les commandes

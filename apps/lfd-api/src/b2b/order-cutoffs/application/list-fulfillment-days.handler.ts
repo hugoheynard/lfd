@@ -57,7 +57,7 @@ import {
  * resautée : cas d'école (une opération ouvre loin devant, un plan s'arrête la
  * veille), et la passation reste l'autorité.
  *
- * Depuis le lot L4 du circuit du jour J (`plan-jour-meme-sur-stock.md`, §3) :
+ * Depuis le lot L4 du circuit du jour J (`jour-meme-sur-stock.md`) :
  * le réglage « jour même » se lit par clientèle (`sameDayOpenTo`), et un plan
  * d'aujourd'hui ARRÊTÉ n'éteint plus aujourd'hui partout — un point qui a
  * encore un créneau pour cette clientèle et du stock pour tout le panier le

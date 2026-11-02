@@ -304,7 +304,7 @@ function point(id: string): PickupAddressView {
 }
 
 /**
- * Lot L4 du circuit du jour J (`plan-jour-meme-sur-stock.md`, §3, §14) : un
+ * Lot L4 du circuit du jour J (`jour-meme-sur-stock.md`) : un
  * plan d'aujourd'hui arrêté n'éteint plus aujourd'hui partout — un point qui
  * vend encore sur sa vitrine le propose, sans heure limite. `NOW` : le 1er
  * décembre, 11 h à Paris.

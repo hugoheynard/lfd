@@ -580,7 +580,7 @@ export interface ClientCopy {
     /** La même raison, en phrase, à la place de l'ajout sur la fiche. */
     readonly reservedToOtherAccountHint: string;
     /**
-     * Le jour J sur stock (`plan-jour-meme-sur-stock.md`, L7) : le reste en
+     * Le jour J sur stock (`jour-meme-sur-stock.md`, L7) : le reste en
      * vitrine aujourd'hui sur la vignette. `{left}` = « 3 » ou « 1,2 kg ».
      */
     readonly shelfLeft: string;

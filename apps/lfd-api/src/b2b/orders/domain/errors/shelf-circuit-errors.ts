@@ -4,7 +4,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus du **circuit du jour J** à la passation (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.1, §12,
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * lot L4) : une commande prise sur la vitrine n'a ni heure limite ni plan du
  * fournil ; ce qui la limite, c'est le point qui la sert encore aujourd'hui,
  * et ce qui reste en vitrine. Lus au comptoir et dans la boutique : chaque

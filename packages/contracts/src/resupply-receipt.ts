@@ -5,7 +5,7 @@ import type { ResupplyOrigin, ResupplyTarget } from "./site-resupply.js";
 
 /**
  * **La réception du réassort d'un point** — Comptoir › Réassort boutique
- * (lot J1 de `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`,
+ * (lot J1 de `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * refait au lot R2 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
  * 2026-10-21). Aucun montant : un réassort n'est jamais une vente.
  */

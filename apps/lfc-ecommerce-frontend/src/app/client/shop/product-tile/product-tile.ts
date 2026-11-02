@@ -142,7 +142,7 @@ export class ProductTile {
     if (reserved !== null) {
       return reserved;
     }
-    // Plus rien en vitrine aujourd'hui (`plan-jour-meme-sur-stock.md`, L7) :
+    // Plus rien en vitrine aujourd'hui (`jour-meme-sur-stock.md`, L7) :
     // grisé comme un article réservé, et la raison DITE, pas seulement vue.
     if (this.shelfState() === 'absent') {
       const shop = this.t().shop;

@@ -1,6 +1,6 @@
 /**
  * E2E du **reste d'aujourd'hui servi à la boutique** (lot L7b —
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §14).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`).
  *
  * Ce que seul le vrai SQL prouve : que la route lit le même reste que la
  * réception, tenu par l'arrêt réel du plan, le réglage de la clientèle et le

@@ -547,7 +547,7 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
 
 /**
  * **Le « Retrait immédiat » au serveur** (lot L4 du circuit du jour J,
- * `plan-jour-meme-sur-stock.md` §11.1, §11.3) : l'écran envoie `shelf`, la
+ * `jour-meme-sur-stock.md`) : l'écran envoie `shelf`, la
  * commande est prise sur la vitrine — sans le verrou de la journée, sans
  * créneau à garder, et le pro sans crédit suit le réglage.
  */

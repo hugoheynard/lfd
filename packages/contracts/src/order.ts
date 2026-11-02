@@ -1326,7 +1326,7 @@ export interface PlacedOrderResponse {
 
 /**
  * **D'où vient la marchandise d'une saisie de l'équipe** (plan
- * `limites-de-commande/plan-jour-meme-sur-stock.md`, §11.1, lot L4) :
+ * `limites-de-commande/jour-meme-sur-stock.md`, lot L4) :
  * `planned` — fabriquée pour elle, le comportement d'avant ; `shelf` — prise
  * dans la vitrine du point, aujourd'hui (le raccourci « Retrait immédiat »).
  *
@@ -1339,7 +1339,7 @@ export type StaffOrderSupply = z.infer<typeof staffOrderSupplySchema>;
 
 /**
  * **D'où vient la marchandise d'une commande**, telle que les vues de
- * l'équipe la montrent (plan `limites-de-commande/plan-jour-meme-sur-stock.md`,
+ * l'équipe la montrent (plan `limites-de-commande/jour-meme-sur-stock.md`,
  * §5, lot L6 : le badge « sur stock » des Commandes et de la Supervision) :
  * `planned` — fabriquée pour elle ; `shelf` — prise dans la vitrine de son
  * point, aujourd'hui. Figée à la passation, décidée par le serveur.
@@ -1349,7 +1349,7 @@ export type OrderSupply = z.infer<typeof orderSupplySchema>;
 
 /**
  * **Le raccourci de saisie** que l'écran de l'équipe déclare (plan
- * `limites-de-commande/plan-jour-meme-sur-stock.md`, §1, §5, lot L6) :
+ * `limites-de-commande/jour-meme-sur-stock.md`, lot L6) :
  * `immediate_pickup` est le « Retrait immédiat » du comptoir. Une trace, que
  * le serveur garde sur la commande pour compter combien de fois il a servi et
  * pour quelle clientèle ; il ne décide de rien.

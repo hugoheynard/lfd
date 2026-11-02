@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261102200000_les_reglages_du_jour_j
--- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L3).
+-- (documentation/limites-de-commande/jour-meme-sur-stock.md, L3).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE. La migration reste inscrite « appliquée ».

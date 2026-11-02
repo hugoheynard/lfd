@@ -230,7 +230,7 @@ l'heure, elle propose le premier jour encore ouvert (le surlendemain).
 l'heure limite (`order_cutoff_settings.resupply_subject_to_cutoff`, oui par
 défaut). Elle ne décidait rien à son ajout ; depuis le lot R1 du même jour,
 elle s'oppose au réassort commandé « Pour demain » — jamais à « Au plus tôt »
-([`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §7 ; le réassort a son dossier,
+([`jour-meme-sur-stock.md`](jour-meme-sur-stock.md) §3 ; le réassort a son dossier,
 [`../reassort-boutiques/`](../reassort-boutiques/README.md)).
 
 **Révisé le 2026-10-21 (lot R3a du réassort)** : ⑨ n'est plus un

@@ -33,7 +33,7 @@ import { WithdrawResupplyLineCommand } from "../application/withdraw-resupply-li
 
 /**
  * **La réception du réapprovisionnement** — Comptoir › Réassort boutique
- * (plan `limites-de-commande/plan-jour-meme-sur-stock.md`, J1, 2026-10-21).
+ * (plan `limites-de-commande/jour-meme-sur-stock.md`, J1, 2026-10-21).
  *
  * Depuis le lot R2 (2026-10-21) : un reçu par réassort envoyé —
  * « Réceptionner » d'un geste, puis la correction d'un écart par ligne — et

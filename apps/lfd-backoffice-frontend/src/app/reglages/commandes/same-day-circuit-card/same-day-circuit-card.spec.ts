@@ -12,7 +12,7 @@ import { OrderCutoffSettingsService } from '../order-cutoff-settings.service';
 import { SameDayCircuitCard } from './same-day-circuit-card';
 
 /**
- * **Le circuit du jour J** (lot L3, `plan-jour-meme-sur-stock.md` §14) : la
+ * **Le circuit du jour J** (lot L3, `jour-meme-sur-stock.md`) : la
  * carte lit, n'envoie que ce qui a changé, et dit qu'elle n'a pas encore
  * d'effet.
  */

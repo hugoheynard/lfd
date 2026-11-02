@@ -35,7 +35,7 @@ export interface OrderCutoffSettingsView {
   /** **« Avertir le client »** (sa commande prend du retard) : même règle, son propre délai. */
   readonly delayWarningDelayMinutes: number;
   /**
-   * **Le circuit du jour J** (lot L3, `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`
+   * **Le circuit du jour J** (lot L3, `documentation/limites-de-commande/jour-meme-sur-stock.md`
    * §3, Hugo 2026-11-02) : les particuliers peuvent-ils commander pour
    * aujourd'hui, sur le stock de la vitrine. Aucun effet avant le lot L4 ;
    * jusque-là, seul `sameDayAllowed` décide.

@@ -1,6 +1,6 @@
 /**
  * E2E du **stock au poids** (lot L2b-1 —
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §14 ;
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md` ;
  * Hugo, 2026-11-02 : « un article au poids doit avoir un stock au poids »).
  *
  * Ce que seul le vrai SQL prouve : que l'unité figée sur la ligne de reçu

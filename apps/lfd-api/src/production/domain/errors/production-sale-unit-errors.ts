@@ -5,7 +5,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
  * `documentation/pricing/vente-au-poids.md`, P6).
  *
  * Le compte à produire additionne par SKU, commandes et réassorts ensemble
- * (lot L2b-2 du plan `limites-de-commande/plan-jour-meme-sur-stock.md`). L'unité d'une déclinaison est
+ * (lot L2b-2 du plan `limites-de-commande/jour-meme-sur-stock.md`). L'unité d'une déclinaison est
  * figée dès sa première publication, et le commerce refuse une ligne dont
  * l'unité ne suit pas l'article : ce refus ne se produit donc que si une
  * commande a été écrite hors de ces règles. Additionner quand même rendrait

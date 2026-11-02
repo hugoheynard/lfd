@@ -15,7 +15,7 @@ export interface ResupplyListLine {
   readonly quantity: number;
   /**
    * L'unité figée sur la ligne au commerce (lot L2b-3 du plan
-   * `limites-de-commande/plan-jour-meme-sur-stock.md`). Additive : une ligne
+   * `limites-de-commande/jour-meme-sur-stock.md`). Additive : une ligne
    * écrite avant le champ se relit `piece` — aucun réassort au poids n'a pu
    * partir au fournil avant elle (garde d'envoi de L2b-1).
    */

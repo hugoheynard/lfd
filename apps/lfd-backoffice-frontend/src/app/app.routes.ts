@@ -930,7 +930,7 @@ export const routes: Routes = [
       },
       {
         // LE RÉASSORT — la réception du jour et le stock estimé (2026-10-21,
-        // plan-jour-meme-sur-stock.md J1). Le droit du retrait : le comptoir
+        // jour-meme-sur-stock.md J1). Le droit du retrait : le comptoir
         // déclare le stock (Q1, Hugo) ; les routes serveur le tiennent aussi.
         path: 'reassort',
         canActivate: [permissionGuard('handover_counter:read')],

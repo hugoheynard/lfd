@@ -191,7 +191,7 @@ déclencheurs `day_change` (posés le 2026-10-22) couvrent déjà
 
 - Une tournée **déjà partie** ne reçoit rien (I6).
 - Le jour même **sur stock pour les particuliers**
-  ([`../limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md)).
+  ([`../limites-de-commande/jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md)).
 - Le réassort récurrent (Q-C1, « plus tard »).
 
 ## 6. Les risques, dits d'avance

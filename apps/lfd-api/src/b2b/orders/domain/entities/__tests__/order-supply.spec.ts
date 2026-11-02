@@ -13,7 +13,7 @@ import type { RevisableOrder } from "../order-revision.js";
 
 /**
  * **La marque d'une commande sur stock** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.1, §13,
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * lot L1) : `shelf` ⇒ un retrait, aujourd'hui ; la révision garde le mode, la
  * journée et le point.
  *

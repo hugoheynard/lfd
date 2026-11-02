@@ -121,7 +121,7 @@ export interface OrderCutoffSettingsState {
   /** « Avertir le client » : minutes après la fin du créneau d'un retrait (2026-10-25). */
   readonly delayWarningDelayMinutes: number;
   /**
-   * Le circuit du jour J (lot L3, `limites-de-commande/plan-jour-meme-sur-stock.md`
+   * Le circuit du jour J (lot L3, `limites-de-commande/jour-meme-sur-stock.md`
    * §3, 2026-11-02) : autoriser les particuliers, les pros, les pros en ligne ;
    * le sort d'un pro sans crédit au comptoir ; la tenue du stock par un
    * paiement en cours. Rien ne les lit avant le lot L4.

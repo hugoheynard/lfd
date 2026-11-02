@@ -8,7 +8,7 @@ import type { SiteDaySettings } from "../ports/site-day-settings.reader.js";
 
 /**
  * Les règles PURES du circuit du jour J à la passation (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.1,
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * §12 bloquant 3, lot L4) : un point qui sert encore aujourd'hui, et un reste
  * qui couvre le panier. Aucune lecture : l'appelant passe le site, l'heure et
  * le reste qu'il a lus.

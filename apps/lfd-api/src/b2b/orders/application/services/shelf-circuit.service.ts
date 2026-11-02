@@ -32,7 +32,7 @@ import type { OrderParties } from "./order-parties.js";
 
 /**
  * **Le circuit du jour J à la passation** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.1,
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * §11.2, §12, lot L4) : décider d'où vient la marchandise, puis garder ce qui
  * limite une commande prise sur la vitrine — sa clientèle, les créneaux
  * restants de son point, et le reste en vitrine sous le verrou du stock.

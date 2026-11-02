@@ -77,7 +77,7 @@ export function exceedsShelf(state: ShelfState, quantity: number): boolean {
 
 /**
  * **Le reste d'aujourd'hui en vitrine, au point choisi** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, L7b).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, L7b).
  *
  * Lu seulement quand le jour choisi est AUJOURD'HUI et que le retrait vise un
  * point : hors de là, aucune requête, et rien ne change à l'écran. Un client

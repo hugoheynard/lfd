@@ -13,7 +13,7 @@ import {
 
 /**
  * **Le bon remis au client, imprimé au comptoir** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, lot L6 ;
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, lot L6 ;
  * Hugo, 2026-11-02 : « on doit aussi donner un bon avec le contenu de la
  * commande », chiffré).
  *

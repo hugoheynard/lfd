@@ -1,6 +1,6 @@
 /**
  * **Le verrou du stock du jour d'un point** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.2, lot
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, lot
  * L2) : tout ce qui lit le reste pour décider — une passation sur stock, une
  * baisse d'un reçu — le prend d'abord, et deux décisions sur la même vitrine
  * se suivent au lieu de se croiser. Pris DANS l'unité de travail de

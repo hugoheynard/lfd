@@ -1,6 +1,6 @@
 /**
  * La scène du **stock décompté** (lot L2, étendue au poids au lot L2b-1 —
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §14) : un
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`) : un
  * point, un article reçu deux fois, et une commande sur stock composée par
  * l'agrégat (`Order.draft`) puis écrite par le vrai dépôt
  * (`OrderRepository.place`). Partagée par `shelf-stock.e2e-spec.ts` et

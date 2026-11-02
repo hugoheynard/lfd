@@ -10,7 +10,7 @@ export interface PlacedResupplyLine {
   readonly quantity: number;
   /**
    * L'unité figée sur la ligne au commerce (`site_resupply_line.sale_unit`,
-   * lot L2b-1 du plan `limites-de-commande/plan-jour-meme-sur-stock.md`) ;
+   * lot L2b-1 du plan `limites-de-commande/jour-meme-sur-stock.md`) ;
    * le fournil la recopie à l'arrêt comme celle d'une commande (L2b-2).
    */
   readonly saleUnit: SaleUnit;

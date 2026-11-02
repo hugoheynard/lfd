@@ -19,7 +19,7 @@ export interface PackingResupplyLineView {
   /** `null` : pas encore saisie. Même unité que `requested`. */
   readonly packed: number | null;
   /**
-   * L'unité de la ligne (lot L2b-3 de `limites-de-commande/plan-jour-meme-sur-stock.md`) :
+   * L'unité de la ligne (lot L2b-3 de `limites-de-commande/jour-meme-sur-stock.md`) :
    * un réassort au poids s'emballe en un lot, saisi en grammes.
    */
   readonly saleUnit: OrderSaleUnit;

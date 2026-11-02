@@ -811,4 +811,4 @@ Seule la réserve du jour sort. Plan :
 - **Le jour même sur stock** (J2) : les commandes qui puisent dans la vitrine,
   leur décompte dans le stock estimé, et l'effet des alertes de R1b (une
   rupture bloque la vente en ligne du jour, un stock faible avertit) —
-  [`../limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md).
+  [`../limites-de-commande/jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md).

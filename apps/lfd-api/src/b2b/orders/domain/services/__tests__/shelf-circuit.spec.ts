@@ -9,7 +9,7 @@ import {
 
 /**
  * Les règles pures du circuit du jour J à la passation (plan
- * `plan-jour-meme-sur-stock.md`, §11.1, §12 bloquant 3, lot L4).
+ * `jour-meme-sur-stock.md` 3, lot L4).
  */
 
 const NO_SITE_HOURS: TodayPickupSite = { proPickup: null, publicRules: [], publicClosures: [] };

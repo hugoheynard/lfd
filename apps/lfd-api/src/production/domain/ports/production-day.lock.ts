@@ -20,7 +20,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
  * `b2b/resupply`) : une commande prise sur la vitrine n'entre jamais au plan,
  * et aucun chemin ne prend les deux — deux verrous qu'aucune transaction ne
  * tient ensemble ne s'attendent pas en cercle (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.2).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`).
  */
 export abstract class ProductionDayLock {
   /** Prend le verrou jusqu'à la fin de l'unité de travail en cours. */

@@ -9,7 +9,7 @@ import { SameDayCircuitCard } from '../same-day-circuit-card/same-day-circuit-ca
  *
  * La page ne porte plus que les réglages du circuit du jour J
  * (`SameDayCircuitCard`, lot L3 de
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`).
  * L'interrupteur unique `same_day_allowed` qu'elle montrait n'est plus lu par
  * aucune décision depuis le lot L4 : il est retiré de l'écran au lot L6
  * (2026-11-02), la colonne reste en base.

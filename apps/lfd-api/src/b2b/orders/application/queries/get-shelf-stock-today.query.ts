@@ -16,7 +16,7 @@ export type ShelfStockCaller =
 
 /**
  * Query : le reste d'aujourd'hui d'un point, par article, pour CET appelant
- * (plan `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`,
+ * (plan `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * lot L7b).
  */
 export class GetShelfStockTodayQuery {

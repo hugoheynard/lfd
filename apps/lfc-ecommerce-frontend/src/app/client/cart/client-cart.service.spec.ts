@@ -323,7 +323,7 @@ describe('Le panier, au poids', () => {
   });
 });
 
-/** Le jour J sur stock (`plan-jour-meme-sur-stock.md`, L7) : le panier s'arrête au reste. */
+/** Le jour J sur stock (`jour-meme-sur-stock.md`, L7) : le panier s'arrête au reste. */
 describe('Le panier, aujourd’hui, sur le reste en vitrine', () => {
   function withShelf(states: Record<string, ShelfState>): ClientCart {
     TestBed.resetTestingModule();

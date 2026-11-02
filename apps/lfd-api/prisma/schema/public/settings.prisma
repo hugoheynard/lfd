@@ -367,9 +367,9 @@ model OrderCutoffSettings {
   /// ne propose pas le geste et le serveur le refuse. 0 par défaut, ≥ 0 (CHECK).
   pickupReminderDelayMinutes Int                     @default(0) @map("pickup_reminder_delay_minutes")
   delayWarningDelayMinutes   Int                     @default(0) @map("delay_warning_delay_minutes")
-  /// **Le circuit du jour J** (lot L3, `limites-de-commande/plan-jour-meme-sur-stock.md`
-  /// §3, Hugo 2026-11-02) : « autoriser le jour même » séparé par clientèle.
-  /// Recopié de `same_day_allowed` à la migration ; aucun lecteur avant L4.
+  /// **Le circuit du jour J** (lot L3, `limites-de-commande/jour-meme-sur-stock.md`
+  /// Hugo 2026-11-02) : « autoriser le jour même » séparé par clientèle.
+  /// Recopié de `same_day_allowed` à la migration ; font foi depuis L4.
   sameDayPublicAllowed       Boolean                 @default(false) @map("same_day_public_allowed")
   sameDayProAllowed          Boolean                 @default(false) @map("same_day_pro_allowed")
   /// Un pro peut-il commander pour aujourd'hui en ligne, hors comptoir (Q6).

@@ -1,6 +1,6 @@
 /**
  * E2E de **la marque d'une commande sur stock, sans effet** (lot L1 —
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §9.3, §14).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`).
  *
  * Ce que seul le vrai SQL prouve : qu'une commande prise sur la vitrine
  * (`supply = shelf`) du Village, servi par transfert, est ABSENTE de chaque

@@ -161,7 +161,7 @@ du rail et des tuiles), sous `lfc_order_settings` — il quittait l'écran de
 l'heure limite avec l'interrupteur ([`plan-une-seule-heure.md`](plan-une-seule-heure.md) §6).
 
 Depuis le 2026-11-02 (lot L3 du circuit du jour J,
-[`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §14), la même
+[`jour-meme-sur-stock.md`](jour-meme-sur-stock.md)), la même
 ligne porte aussi les réglages du circuit — particuliers, pros, pros en ligne,
 pro sans crédit, tenue du stock par un paiement en cours. **Ils font foi
 depuis le lot L4** (Hugo, 2026-11-02) ; `same_day_allowed` n'est plus lu par

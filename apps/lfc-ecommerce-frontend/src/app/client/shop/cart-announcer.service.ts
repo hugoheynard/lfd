@@ -47,7 +47,7 @@ export class CartAnnouncer {
 
   /**
    * Dit qu'un ajout est refusé : il dépasse le reste en vitrine aujourd'hui
-   * (`plan-jour-meme-sur-stock.md`, L7). La vignette le montre ; ceci le dit.
+   * (`jour-meme-sur-stock.md`, L7). La vignette le montre ; ceci le dit.
    */
   announceShelfLimit(sku: string): void {
     const item = this.catalogue.itemOf(sku);

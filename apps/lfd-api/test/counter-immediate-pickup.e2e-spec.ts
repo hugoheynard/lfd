@@ -1,6 +1,6 @@
 /**
  * E2E du **« Retrait immédiat » au comptoir** (lot L6 —
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §1, §5,
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * §11.3, §14).
  *
  * « Valider et remettre » est deux appels existants, enchaînés par l'écran :

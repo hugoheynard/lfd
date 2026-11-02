@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261102100000_d_ou_vient_la_marchandise
--- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L1).
+-- (documentation/limites-de-commande/jour-meme-sur-stock.md, L1).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE. La migration reste inscrite « appliquée ».

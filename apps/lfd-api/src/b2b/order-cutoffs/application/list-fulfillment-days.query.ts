@@ -3,7 +3,7 @@ import type { ShopAudience } from "../../catalog/domain/ports/catalog.reader.js"
 /**
  * Qui demande les journées — décidé par la ROUTE, jamais par un paramètre qui
  * changerait la clientèle d'un appelant reconnu (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, le bâti
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, le bâti
  * des restes) :
  *
  * - `anonymous` : la boutique sans connexion, à l'audience qu'elle annonce ;

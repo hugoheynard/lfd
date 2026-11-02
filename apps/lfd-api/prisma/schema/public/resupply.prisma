@@ -1,5 +1,5 @@
 /// **Un reçu de réassort** — ce que la vitrine d'un point a reçu (lot J1 de
-/// `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, refait au
+/// `documentation/limites-de-commande/jour-meme-sur-stock.md`, refait au
 /// lot R2 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
 ///
 /// Un mouvement interne, JAMAIS une commande — aucun prix, aucune TVA, aucun

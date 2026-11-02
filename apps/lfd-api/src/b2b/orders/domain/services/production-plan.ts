@@ -85,7 +85,7 @@ export function absorbedByPlan(
 
 /**
  * 🔴 **La seule marque de marchandise que le fournil fabrique** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §9.3, lot L1).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, lot L1).
  *
  * Une commande `shelf` puise dans le stock du jour de la vitrine : aucun
  * lecteur de production ni de transport ne la voit — ni le plan, ni le dossier

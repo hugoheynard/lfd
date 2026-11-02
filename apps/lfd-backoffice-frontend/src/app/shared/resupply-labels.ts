@@ -53,7 +53,7 @@ export function resupplyTitle(name: string | null, siteLabel: string, unnamed: s
 
 /**
  * Ce qu'un réassort envoie, en un mot : « 12 pièces », « 1,25 kg », ou
- * « 12 pièces · 1,25 kg » (lot L2b-4 de `limites-de-commande/plan-jour-meme-sur-stock.md`).
+ * « 12 pièces · 1,25 kg » (lot L2b-4 de `limites-de-commande/jour-meme-sur-stock.md`).
  * Les pièces ne comptent que les pièces ; le poids se dit à part, jamais en somme.
  */
 export function resupplyAmountLabel(pieces: number, weightGrams: number): string {

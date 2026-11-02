@@ -4,7 +4,7 @@ import type { OrderSaleUnit } from "./order.js";
 
 /**
  * **Le reste d'aujourd'hui d'un article, à un point** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, lot L7b) —
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, lot L7b) —
  * ce que la boutique écrit sur la vignette (« plus que 3 », « plus que
  * 1,2 kg ») et ce qui grise un article pour aujourd'hui.
  *

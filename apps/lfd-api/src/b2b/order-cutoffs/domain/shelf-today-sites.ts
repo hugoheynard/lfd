@@ -17,7 +17,7 @@ export interface ShelfTodayQuestion {
 
 /**
  * **Les points qui vendent encore aujourd'hui sur leur vitrine** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §3, §14
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`
  * lot L4) — lu par `GET /fulfillment-days` quand le plan d'aujourd'hui est
  * arrêté et que la clientèle y a droit.
  *

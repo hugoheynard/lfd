@@ -1,6 +1,6 @@
 /**
  * E2E de la **réception du réassort** — Comptoir › Réassort boutique (lot J1
- * du plan `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`,
+ * du plan `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * refait au lot R2 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
  * 2026-10-21).
  *

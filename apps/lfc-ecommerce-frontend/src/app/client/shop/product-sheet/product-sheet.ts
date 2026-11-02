@@ -138,7 +138,7 @@ export class ProductSheet {
     if (locked !== null) {
       return { orderable: false, label: locked.sentence };
     }
-    // Plus rien en vitrine aujourd'hui (`plan-jour-meme-sur-stock.md`, L7).
+    // Plus rien en vitrine aujourd'hui (`jour-meme-sur-stock.md`, L7).
     if (this.shelfStock.stateOf(product.sku) === 'absent') {
       return { orderable: false, label: this.t().shop.shelfGoneHint };
     }

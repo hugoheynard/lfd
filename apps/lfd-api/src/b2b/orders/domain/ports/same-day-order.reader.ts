@@ -4,7 +4,7 @@ import type { SameDayDoorSettings } from "../../../order-cutoffs/domain/same-day
 
 /**
  * Les réglages du **circuit du jour J** que les commandes lisent (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §3, lots
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, lots
  * L3–L4) : qui peut viser aujourd'hui, le sort d'un pro sans crédit au
  * comptoir, et combien de temps un paiement en cours tient le stock.
  */

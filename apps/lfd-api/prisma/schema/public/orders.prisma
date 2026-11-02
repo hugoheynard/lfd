@@ -64,7 +64,7 @@ enum OrderClientele {
 }
 
 /// **D'où vient la marchandise d'une commande** (plan
-/// documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §5, §11.1).
+/// documentation/limites-de-commande/jour-meme-sur-stock.md).
 /// `planned` : fabriquée pour elle, au plan du fournil. `shelf` : prise dans
 /// le stock du jour de la vitrine du point — elle n'entre jamais au plan, ni au
 /// transfert. Figée à la passation, jamais modifiable.
@@ -366,7 +366,7 @@ model Order {
   // entrer au plan (`confirmedAt`). « Hors plan » = ce drapeau ET `placed`.
   placedOffPlan Boolean @default(false) @map("placed_off_plan")
 
-  // D'où vient la marchandise (plan-jour-meme-sur-stock.md, §11.1) : `shelf`
+  // D'où vient la marchandise (jour-meme-sur-stock.md) : `shelf`
   // sort la commande de tout lecteur de production et de transport
   // (`notFromStock`, plan-filter.ts). Figée à la passation par l'agrégat.
   supply OrderSupply @default(planned)

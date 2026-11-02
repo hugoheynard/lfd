@@ -64,7 +64,7 @@ const STAGE_OF_STATUS: Readonly<Record<OrderStatus, SupervisionStage | null>> = 
 /**
  * **L'étape d'une commande telle que la Supervision la montre** : celle de son
  * statut, sauf pour une commande prise sur la vitrine (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §9.3, lot
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, lot
  * L1). Celle-ci n'entre jamais au plan et reste `placed` jusqu'à sa remise ;
  * sa marchandise est pourtant déjà en vitrine. Elle se montre donc PRÊTE —
  * jamais en attente ni en préparation, et jamais « pas prête avant le

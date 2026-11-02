@@ -31,7 +31,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 /**
  * **Le réassort boutique** — ce que la vitrine d'un point de retrait a reçu
  * pour une journée, et le stock estimé qui en découle (plan
- * `limites-de-commande/plan-jour-meme-sur-stock.md`, J1, 2026-10-21).
+ * `limites-de-commande/jour-meme-sur-stock.md`, J1, 2026-10-21).
  *
  * Depuis le lot R1 (`reassort-boutiques/plan-reapprovisionnement.md` §12,
  * 2026-10-21), la page commande aussi le réassort au fournil

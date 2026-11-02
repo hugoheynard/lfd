@@ -2249,7 +2249,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
 
   /**
    * **La passation sur stock** (lot L4 du circuit du jour J,
-   * `plan-jour-meme-sur-stock.md` §11.1, §12) : aujourd'hui, plan arrêté, le
+   * `jour-meme-sur-stock.md`) : aujourd'hui, plan arrêté, le
    * client n'est plus refusé — il prend dans la vitrine de son point, sous le
    * verrou du stock et jamais sous celui de la journée.
    */

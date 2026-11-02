@@ -1,6 +1,6 @@
 /**
  * E2E de la **passation sur stock** (lot L4 —
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11, §12, §14).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`).
  *
  * Ce que seul le vrai SQL prouve : que deux passations sur le dernier article
  * se suivent sous le verrou consultatif du stock au lieu de se croiser ; que

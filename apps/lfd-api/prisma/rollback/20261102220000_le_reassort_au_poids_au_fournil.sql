@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261102220000_le_reassort_au_poids_au_fournil
--- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L2b-2).
+-- (documentation/limites-de-commande/jour-meme-sur-stock.md, L2b-2).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE. La migration reste inscrite « appliquée ».

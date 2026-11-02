@@ -2,7 +2,7 @@ import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus d'une **commande prise sur la vitrine** (`supply = shelf`, plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.1, §13).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`).
  * Une telle commande puise dans le stock du jour d'UN point : elle est un
  * retrait, d'aujourd'hui, à ce point — sans quoi elle ne serait ni cuite (hors
  * plan) ni présente en vitrine.

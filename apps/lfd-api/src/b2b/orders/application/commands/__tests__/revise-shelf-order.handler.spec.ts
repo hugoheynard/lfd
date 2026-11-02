@@ -34,7 +34,7 @@ import {
 
 /**
  * **Modifier une commande prise sur la vitrine** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §12
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`
  * bloquant 2, §13, lot L5) : les lignes et les quantités changent dans la
  * limite du reste, sous le verrou du stock ; ni guichet du fournil, ni verrou
  * de journée, ni suivi du BL ; la route ne bouge pas ; la carte reste refusée

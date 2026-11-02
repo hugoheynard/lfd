@@ -2,7 +2,7 @@ import type { OrderCutoffSettingsView } from "@lfd/contracts";
 
 /**
  * **Par quelle porte une commande vise aujourd'hui** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §3, §12
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`
  * bloquant 3, lot L4) :
  *
  * - `public_online` : un particulier, en ligne (sans société) ;

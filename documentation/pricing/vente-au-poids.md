@@ -104,7 +104,7 @@ poser en partie quand la réserve n'en tient qu'une partie.
 Un **manquant** est la différence de grammes entre le dû et le lot au bac. Le
 manifeste du transfert interne porte l'unité — celle d'une ligne de commande
 comme celle d'une ligne de réassort (lot L2b-3 de
-[`limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md),
+[`limites-de-commande/jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md),
 2026-11-02) : un réassort au poids s'emballe en un lot à sa fiche, en
 grammes, et part en kilos.
 
@@ -142,7 +142,7 @@ unité ; les ouvrir est un autre chantier, inscrit à la
 
 **Le réassort des boutiques s'ouvre au poids** depuis le 2026-11-02 (Hugo :
 « un article au poids doit avoir un stock au poids ») — lot L2b du circuit du
-jour J ([`../limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md) §14).
+jour J ([`../limites-de-commande/jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md)).
 Bâti : le commerce (L2b-1) — chaque ligne de demande et de reçu porte son
 unité figée (`sale_unit`), le stock du jour se compte par article et unité ;
 le fournil (L2b-2) — l'unité recopiée à l'arrêt, comptée en grammes et

@@ -19,7 +19,7 @@ type ShelfRevisionRefusal =
 
 /**
  * **Les gardes du circuit du jour J, pour la révision d'une commande sur
- * stock** (plan `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`,
+ * stock** (plan `documentation/limites-de-commande/jour-meme-sur-stock.md`,
  * §12 bloquant 2, §13, lot L5) — à la place de l'arrêt du plan, de l'heure
  * limite et du verrou de journée, que la révision d'une commande fabriquée
  * applique.

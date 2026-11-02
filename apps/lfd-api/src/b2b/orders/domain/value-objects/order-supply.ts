@@ -1,6 +1,6 @@
 /**
  * **D'où vient la marchandise d'une commande** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §5, §11.1).
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`).
  *
  * - `planned` : fabriquée pour elle — elle entre au plan du fournil, au
  *   transfert, aux échéances du four. Toute commande d'avant la marque.

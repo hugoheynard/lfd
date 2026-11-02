@@ -50,7 +50,7 @@ const WITHOUT_CREDIT_OPTIONS = [
 
 /**
  * **Le circuit du jour J** — commander pour aujourd'hui sur le stock de la
- * vitrine (lot L3, `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`
+ * vitrine (lot L3, `documentation/limites-de-commande/jour-meme-sur-stock.md`
  * §3, Hugo 2026-11-02) : autoriser les particuliers, les pros, les pros en
  * ligne ; le sort d'un pro sans crédit au comptoir ; la tenue du stock par un
  * paiement en cours.

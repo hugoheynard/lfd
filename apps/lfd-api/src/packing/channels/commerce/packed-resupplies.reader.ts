@@ -2,7 +2,7 @@ import type { SaleUnit } from "@lfd/money";
 
 /**
  * L'emballé d'une ligne : la quantité et son unité (lot L2b-3 de
- * `limites-de-commande/plan-jour-meme-sur-stock.md`) — des grammes au poids.
+ * `limites-de-commande/jour-meme-sur-stock.md`) — des grammes au poids.
  * Sans l'unité, un lecteur ne pouvait que supposer des pièces.
  */
 export interface PackedResupplyQuantity {

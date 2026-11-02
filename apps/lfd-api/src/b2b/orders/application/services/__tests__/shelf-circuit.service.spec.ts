@@ -25,7 +25,7 @@ import {
 } from "./shelf-circuit-doubles.js";
 
 /**
- * Le circuit du jour J à la passation (plan `plan-jour-meme-sur-stock.md`,
+ * Le circuit du jour J à la passation (plan `jour-meme-sur-stock.md`,
  * §11.1, §11.2, §12, lot L4). La porte du plan de `gateOf` est le 1er janvier
  * 2026 à midi, Paris : « aujourd'hui » y vaut `TODAY`, et les jours ci-dessous
  * ne sont comparés qu'à cette horloge figée (exception étroite du CLAUDE.md §5).

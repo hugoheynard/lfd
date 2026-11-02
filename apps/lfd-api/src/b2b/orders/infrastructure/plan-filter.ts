@@ -75,7 +75,7 @@ export function settlementWhere(): Prisma.OrderWhereInput {
 
 /**
  * 🔴 **Pas une commande prise sur la vitrine** (plan
- * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §9.3, lot
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`, lot
  * L1) — traduction de {@link SUPPLY_PRODUCED}.
  *
  * Une commande `shelf` puise dans le stock du jour du point : elle n'a rien à

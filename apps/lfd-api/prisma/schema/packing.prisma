@@ -282,7 +282,7 @@ model PackingResupplyLine {
   /// Des pièces, ou des grammes si `saleUnit = weight`.
   quantity    Int
   /// `piece` ou `weight` (CHECK), recopiée du fait du fournil (lot L2b-3 de
-  /// `limites-de-commande/plan-jour-meme-sur-stock.md`). Une ligne inscrite
+  /// `limites-de-commande/jour-meme-sur-stock.md`). Une ligne inscrite
   /// avant la colonne se relit `piece`, ce qu'elle était.
   saleUnit    String @default("piece") @map("sale_unit")
 
