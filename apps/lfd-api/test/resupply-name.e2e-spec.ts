@@ -152,10 +152,18 @@ describe("le nom d'un réassort (R1g)", () => {
   it("les noms employés : distincts, les plus récents d'abord, ceux du point seulement", async () => {
     const village = await seedSite("Village");
     const labo = await seedSite("Labo");
+    // Régression : le rang suivait l'identifiant, un ULID ; depuis la clé d'envoi
+    // du fournil (2026-11-02), l'identifiant est la clé de l'écran, et le rang
+    // suit l'instant d'envoi. L'horloge avance donc d'un envoi à l'autre.
+    clock.set(at("12:01"));
     await bakehouseSends(village, "Vitrine du matin");
+    clock.set(at("12:02"));
     await bakehouseSends(village, "Goûter");
+    clock.set(at("12:03"));
     await bakehouseSends(labo, "Labo seul");
+    clock.set(at("12:04"));
     await bakehouseSends(village, "Vitrine du matin");
+    clock.set(at("12:05"));
     await bakehouseSends(village);
 
     const names = jsonBody<ResupplyUsedNamesView>(
