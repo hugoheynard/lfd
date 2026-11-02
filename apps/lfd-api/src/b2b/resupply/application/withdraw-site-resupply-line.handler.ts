@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
-import { loadSiteResupply } from "./site-resupply-draft.js";
+import { changeDraft } from "./site-resupply-draft.js";
 import { WithdrawSiteResupplyLineCommand } from "./withdraw-site-resupply-line.command.js";
 
 /**
@@ -16,10 +16,7 @@ export class WithdrawSiteResupplyLineHandler implements ICommandHandler<
 > {
   constructor(private readonly resupplies: SiteResupplyRepository) {}
 
-  async execute(command: WithdrawSiteResupplyLineCommand): Promise<void> {
-    const draft = await loadSiteResupply(this.resupplies, command.siteId, command.resupplyId);
-    draft.assertSeen(command.seenVersion);
-    draft.withdrawLine(command.sku);
-    await this.resupplies.save(draft);
+  execute(command: WithdrawSiteResupplyLineCommand): Promise<void> {
+    return changeDraft(this.resupplies, command, (draft) => draft.withdrawLine(command.sku));
   }
 }

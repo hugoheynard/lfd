@@ -19,7 +19,7 @@ import {
   PRODUCTION_RESUPPLY_LIST_DRAWN,
   ResupplyListDrawnEvent,
 } from "../../../channels/packing/resupply-list-drawn.event.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
+import { NOTHING_PENDING, ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../../domain/events/production-day.events.js";
 import {
   PlanClosedBeforeOrderCutoffError,
@@ -35,6 +35,8 @@ import {
   stopRulesOf,
 } from "../../__tests__/settings-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
+import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
+import { PlanArrestRecording } from "../../services/plan-arrest-recording.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
 
@@ -226,20 +228,17 @@ function subject(
     calls,
     events,
     handler: new CloseProductionDayHandler(
-      days,
-      commerce,
+      intakeReadingOf({ days, orders: commerce, withdrawals, resupplies }),
+      new PlanArrestRecording(days, durable),
       sweeper,
-      events,
-      new FixedClock(NOW),
-      uow,
-      durable,
-      new RecordingDayLock(),
+      stopRulesOf(cutoffs, resupplyTime),
       new FixedStaffAuthorDirectory(
         authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
       ),
-      withdrawals,
-      stopRulesOf(cutoffs, resupplyTime),
-      resupplies,
+      events,
+      new FixedClock(NOW),
+      uow,
+      new RecordingDayLock(),
     ),
   };
 }
@@ -717,5 +716,34 @@ describe("le réassort à coliser (lot R3b)", () => {
     expect(fact.key).toBe(
       `${PRODUCTION_RESUPPLY_LIST_DRAWN}:${DAY}:rs_1:after-reopening:${reopenedAt.toISOString()}`,
     );
+  });
+});
+
+/**
+ * Régression (audit du réassort, 2026-11-02) : une journée qu'un lancement
+ * « au plus tôt » a ouverte arrêtée n'a jamais publié `production.day_closed`
+ * (Q6 : ni fait d'arrêt, ni dossier). L'arrêt suivant — à la main, ou le tour
+ * automatique — la trouvait arrêtée et RÉANNONÇAIT un arrêt qui n'avait pas
+ * eu lieu, au commerce et à la livraison.
+ */
+describe("une journée arrêtée par un lancement « au plus tôt »", () => {
+  function openedByLaunch(): ProductionDay {
+    const day = ProductionDay.open(ServiceDay.of(DAY));
+    day.launchResupply(
+      VILLAGE_RESUPPLY,
+      { at: EARLIER, staffUserId: "staff-1", name: "Marie Dupont" },
+      NOTHING_PENDING,
+    );
+    return day;
+  }
+
+  it("🔴 ne réannonce ni l'arrêt ni la liste à coliser, et rend « déjà arrêtée »", async () => {
+    const { handler, durable, events } = subject(openedByLaunch(), [order()]);
+
+    const closure = await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(closure).toMatchObject({ alreadyClosed: true, closedAt: EARLIER.toISOString() });
+    expect(durable.facts).toEqual([]);
+    expect(events.traced).toEqual([]);
   });
 });

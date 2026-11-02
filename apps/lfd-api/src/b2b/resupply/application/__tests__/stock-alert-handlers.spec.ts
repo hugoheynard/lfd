@@ -16,8 +16,8 @@ import { LiftStockAlertHandler } from "../lift-stock-alert.handler.js";
 import { ListLiveStockAlertsHandler } from "../list-live-stock-alerts.handler.js";
 import { ListSiteStockAlertsHandler } from "../list-site-stock-alerts.handler.js";
 import { ListSiteStockAlertsQuery } from "../list-site-stock-alerts.query.js";
-import { ReceiveResupplyLineCommand } from "../receive-resupply-line.command.js";
-import { ReceiveResupplyLineHandler } from "../receive-resupply-line.handler.js";
+import { ReceiveUnorderedReceiptLineCommand } from "../receive-unordered-receipt-line.command.js";
+import { ReceiveUnorderedReceiptLineHandler } from "../receive-unordered-receipt-line.handler.js";
 import { Catalogue, Directory, InMemoryReceipts, Sites } from "./resupply-doubles.js";
 import { SiteLabels } from "./site-resupply-doubles.js";
 import { InMemoryStockAlertReader, InMemoryStockAlerts } from "./stock-alert-doubles.js";
@@ -64,7 +64,7 @@ function setup() {
       uow,
     ),
     lift: new LiftStockAlertHandler(store, staff, clock),
-    receive: new ReceiveResupplyLineHandler(
+    receive: new ReceiveUnorderedReceiptLineHandler(
       new InMemoryReceipts(),
       store,
       CATALOGUE,
@@ -194,7 +194,7 @@ describe("lever une alerte de stock", () => {
     await declare.execute(new DeclareStockAlertCommand(VILLAGE, "PAC", "low", "staff_lou"));
 
     await receive.execute(
-      new ReceiveResupplyLineCommand(VILLAGE, "2026-01-02", "CRO", 12, "staff_lou"),
+      new ReceiveUnorderedReceiptLineCommand(VILLAGE, "2026-01-02", "CRO", 12, "staff_lou"),
     );
 
     const village = await list.execute(new ListSiteStockAlertsQuery(VILLAGE));
@@ -212,7 +212,7 @@ describe("lever une alerte de stock", () => {
     );
 
     await receive.execute(
-      new ReceiveResupplyLineCommand(VILLAGE, "2026-01-02", "CRO", 0, "staff_lou"),
+      new ReceiveUnorderedReceiptLineCommand(VILLAGE, "2026-01-02", "CRO", 0, "staff_lou"),
     );
 
     await expect(onlyAlertOf(list, VILLAGE)).resolves.toMatchObject({ level: "out_of_stock" });

@@ -2,12 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
-  isPlaced,
   type PlacedSiteResupplySnapshot,
   type SiteResupplySnapshot,
 } from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
-import { SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
+import { placedSnapshotOf, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
 import { dayColumn } from "./day-column.js";
 
 /** Lecture Prisma des réassorts, pour le comptoir et pour le fournil. */
@@ -41,6 +40,6 @@ export class PrismaSiteResupplyReader extends SiteResupplyReader {
       include: { lines: SITE_RESUPPLY_LINES },
       orderBy: [{ placedAt: "asc" }, { id: "asc" }],
     });
-    return rows.map(snapshotOf).filter(isPlaced);
+    return rows.map(placedSnapshotOf);
   }
 }

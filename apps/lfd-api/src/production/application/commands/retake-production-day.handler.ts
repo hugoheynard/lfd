@@ -3,79 +3,38 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
-import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
-import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
-import { ProductionDayRetakenEvent } from "../../channels/delivery/index.js";
 import { ProductionDayRetakenJournalEvent } from "../../domain/events/production-day.events.js";
-import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
-import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { arrivalsBetween } from "../../domain/services/production-handoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { packingListFactsOf } from "../services/packing-list-facts.js";
-import { ShipmentRef } from "../../domain/value-objects/shipment-ref.value-object.js";
+import { PlanIntakeReading } from "../services/plan-intake-reading.js";
+import { RetakeRecording } from "../services/retake-recording.js";
 import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
 
 /**
  * **Le retirage** : la fiche reprend ce qui est arrivé depuis qu'elle est tirée.
  *
- * ## Ce que le handler ne fait PAS
+ * Sous le verrou de la journée, dans une unité de travail : la journée
+ * RECHARGÉE (chargée avant, un geste concurrent était effacé par `save`), les
+ * coches héritées matérialisées AVANT d'absorber (sans quoi 30 cochés puis
+ * 30 → 42 deviendraient 42 sortis), puis les retraits et les commandes lus
+ * sous le même verrou que la passation — une commande admise entre une
+ * lecture faite avant et le verrou manquait au tirage (corrigé le 2026-11-02).
  *
- * Il ne filtre pas les commandes déjà inscrites au plan, et ce n'est pas un
- * oubli : `ProductionDay.retake` les écarte lui-même, par `orderId` (vérifié le
- * 2026-09-13). Le refaire ici donnerait deux filtres pour un seul fait — et le
- * jour où l'un changerait, le bandeau annoncerait autre chose que ce que le
- * bouton absorbe.
+ * Il ne filtre pas les commandes déjà au plan : `ProductionDay.retake` les
+ * écarte par `orderId` (vérifié le 2026-11-02). Deux filtres pour un fait
+ * finiraient par diverger. Ce qu'il écrit et publie — fournées héritées,
+ * journée, liste à coliser des arrivées, `production.day_retaken` — est dans
+ * {@link RetakeRecording} ; il journalise `production_day.retaken` dans la
+ * même transaction. Il ne publie rien AU COMMERCE : les commandes absorbées
+ * sont des `placed` qu'une réannonce de l'arrêt lui apprend.
  *
- * Il publie, en revanche, AU COLISAGE (2026-10-04, plan
- * `colisage/colisage.md`, §11, B2) : un `production.packing_list_drawn`
- * par commande ABSORBÉE, dans la même unité de travail — sans quoi elles
- * n'arriveraient jamais à la liste à coliser.
+ * **Zéro absorbé** n'est pas une erreur — deux personnes qui pressent le même
+ * bouton : rien n'est écrit, et l'accusé rend le tirage que la fiche montre
+ * déjà (cf. `RetakeProductionDayCommand`).
  *
- * Et AU FOURNIL lui-même (2026-10-06, plan `fournil/dossier-prod-du-jour.md`,
- * E3) : `production.day_retaken`, durable, dans la même unité de travail —
- * c'est lui qui fait repartir le dossier complété. Seulement quand des
- * commandes sont absorbées, comme tout le reste. Depuis CA6b (2026-10-06,
- * `livraisons/tournees/composition-automatique.md`, §4), il porte leurs
- * `orderIds`, et la livraison l'écoute par `production/channels/delivery/`.
- *
- * Il ne publie rien AU COMMERCE. Un retirage n'inscrit aucune commande NOUVELLE
- * au commerce : celles qu'il absorbe sont les mêmes `placed` qu'une clôture
- * rejouée republierait, et c'est à la clôture de le faire. Le jour où l'on
- * voudra que le commerce apprenne un retirage, ce sera un événement de plus,
- * pas une branche ici.
- *
- * Il **journalise**, en revanche (depuis le 2026-09-19) : `production_day.retaken`
- * part dans la transaction de `save`, et un journal en panne annule le
- * retirage. La ligne de la journée ne garde que le DERNIER retirage ; le
- * journal les garde tous. Aucun abonné n'écoute ce fait sur le bus (vérifié le
- * 2026-09-19) : `publishTraced` ne prévient donc personne au commerce.
- *
- * ## Le verrou, et les coches héritées (plan des fournées, D4, §5.3)
- *
- * `save` réécrit le colisage de chaque ligne depuis l'instantané : chargé
- * AVANT, il effaçait un colisage validé pendant le retirage. La journée est
- * donc verrouillée puis RECHARGÉE dans l'unité de travail, et c'est cet
- * agrégat-là qu'on écrit. Les commandes du commerce sont lues SOUS le verrou
- * (2026-11-02) : lues avant, une commande admise entre-temps manquait au tirage.
- *
- * Le retirage est le seul geste qui change une quantité. Avant d'absorber, il
- * écrit en vraies fournées les coches héritées (même `id` que le rattrapage) :
- * sans ça, 30 cochés puis 30 → 42 deviendraient 42 sortis.
- *
- * ## Zéro absorbé
- *
- * Ce n'est pas une erreur — c'est le cas de deux personnes qui pressent le même
- * bouton, ou d'un écran ouvert depuis un moment. Rien n'est écrit — ni la
- * journée, ni un fait —, et la réponse rend le tirage que la fiche montre déjà.
- * Même figure qu'`alreadyClosed`.
- *
- * @throws {ProductionDayNotClosedError} rien n'est arrêté : il n'y a pas de
- *   tirage à reprendre.
+ * @throws {ProductionDayNotClosedError} rien n'est arrêté : pas de tirage à reprendre.
  */
 @CommandHandler(RetakeProductionDayCommand)
 export class RetakeProductionDayHandler implements ICommandHandler<
@@ -83,77 +42,46 @@ export class RetakeProductionDayHandler implements ICommandHandler<
   ProductionWorksheetRetake
 > {
   constructor(
-    private readonly days: ProductionDayRepository,
-    private readonly orders: DayOrdersReader,
-    private readonly clock: Clock,
-    private readonly events: DomainEventPublisher,
-    private readonly uow: UnitOfWork,
-    private readonly batches: ProductionBatchRepository,
-    private readonly lock: ProductionDayLock,
-    private readonly durable: DurablePublisher,
+    private readonly reading: PlanIntakeReading,
+    private readonly recording: RetakeRecording,
     private readonly authors: StaffAuthorDirectory,
-    private readonly withdrawals: OrderWithdrawalsReader,
+    private readonly events: DomainEventPublisher,
+    private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly lock: ProductionDayLock,
   ) {}
 
   async execute(command: RetakeProductionDayCommand): Promise<ProductionWorksheetRetake> {
     const day = ServiceDay.of(command.serviceDay);
-    // Hors du verrou, comme toute lecture d'un autre bloc : le nom est FIGÉ au
+    // Hors du verrou, comme toute lecture d'annuaire : le nom est FIGÉ au
     // retirage, le dossier dit « complété par … » sans relire l'annuaire.
     const byName = (await this.authors.identify([command.staffUserId])).nameOf(command.staffUserId);
 
-    const outcome = await this.uow.run(async () => {
+    const current = await this.uow.run(async () => {
       await this.lock.lock(day);
-      const locked = await this.days.load(day);
+      const locked = await this.reading.dayUnderLock(day);
       const inherited = locked.materialize();
       const before = locked.orders;
-      // Sous le verrou, comme à la clôture (plan d'annulation, C3.4).
-      const withdrawn = await this.withdrawals.withdrawnOn(day);
-      // SOUS le verrou, comme à la clôture (2026-11-02) : lue avant, une
-      // commande admise entre la lecture et le verrou manquait au tirage.
-      const producible = await this.orders.producibleFor(day);
+      const { withdrawn, producible } = await this.reading.retakeUnderLock(day);
       const now = this.clock.now();
       const absorbed = locked.retake(producible, withdrawn, now, command.staffUserId, byName);
       if (absorbed > 0) {
-        for (const batch of inherited) {
-          await this.batches.record(day, batch);
-        }
-        await this.days.save(locked);
+        await this.recording.record({ day, before, current: locked, inherited, at: now, absorbed });
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
-        const arrivals = arrivalsBetween(before, locked.orders);
-        await this.publishArrivals(day, arrivals, now, locked.reopened?.at ?? null);
-        // Chaque arrivée est l'envoi de sa ligne de plan (L3b).
-        const shipments = arrivals.map((order) => ShipmentRef.of(order.orderId, order.rank));
-        await this.durable.publish(
-          new ProductionDayRetakenEvent(day.value, now, absorbed, shipments).durableFact(),
-        );
       }
-      return { day: locked, absorbed };
+      return { locked, absorbed };
     });
     return {
       date: day.value,
-      absorbed: outcome.absorbed,
+      absorbed: current.absorbed,
       // Le tirage que la fiche montre MAINTENANT : celui qu'on vient de
-      // reprendre, ou le précédent quand il n'y avait rien à absorber. Aucun des
-      // deux ne peut manquer — l'agrégat a déjà refusé une journée ouverte — mais
-      // on le traite plutôt que de l'affirmer : un `!` dirait au compilateur de
-      // se taire sur la seule chose qu'il sait.
+      // reprendre, ou le précédent. Aucun ne peut manquer — l'agrégat a refusé
+      // une journée ouverte — mais on le traite plutôt que de l'affirmer.
       retakenAt: (
-        outcome.day.retaken?.at ??
-        outcome.day.closedAt ??
+        current.locked.retaken?.at ??
+        current.locked.closedAt ??
         this.clock.now()
       ).toISOString(),
     };
-  }
-
-  /** Les commandes absorbées entrent dans la liste à coliser, datées du retirage. */
-  private async publishArrivals(
-    day: ServiceDay,
-    arrivals: readonly ProductionOrderSnapshot[],
-    drawnAt: Date,
-    reopenedAt: Date | null,
-  ): Promise<void> {
-    for (const fact of packingListFactsOf(day, arrivals, drawnAt, reopenedAt)) {
-      await this.durable.publish(fact.durableFact());
-    }
   }
 }

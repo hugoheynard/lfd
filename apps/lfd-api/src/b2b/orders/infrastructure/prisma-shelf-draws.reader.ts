@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { stockKeyOf } from "../../resupply/domain/estimated-stock.js";
+import { stockKeyOf } from "../../resupply/domain/stock-tally.js";
 import { resupplySaleUnitOf } from "../../resupply/domain/resupply-sale-unit.js";
 import type { ShelfDraw } from "../../resupply/domain/shelf-draws.reader.js";
 import { ShelfDrawsReader } from "../../resupply/domain/shelf-draws.reader.js";

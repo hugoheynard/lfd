@@ -12,8 +12,8 @@ export interface ShelfDraw {
 }
 
 /**
- * Port de **lecture** des prélèvements de la vitrine (plan du jour J, §11.2,
- * (L2)) : déclaré par le réassort, qui possède le stock, et implémenté par
+ * Port de **lecture** des prélèvements de la vitrine (L2 —
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`) : déclaré par le réassort, qui possède le stock, et implémenté par
  * les commandes, qui possèdent les lignes (`lint:prisma-model-ownership`).
  *
  * Compte les lignes des commandes `supply = shelf` du jour au point, statut ni

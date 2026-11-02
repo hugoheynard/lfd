@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { ResupplyReceptions } from "../domain/resupply-receptions.js";
-import type { SiteResupplyTrace } from "../domain/site-resupply.js";
+import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 /** La réception d'un réassort, lue dans `resupply_receipt` — écrite seulement une fois reçu. */
 @Injectable()
@@ -11,7 +11,7 @@ export class PrismaResupplyReceptions extends ResupplyReceptions {
     super();
   }
 
-  async receptionOf(siteId: string, resupplyId: string): Promise<SiteResupplyTrace | null> {
+  async receptionOf(siteId: string, resupplyId: string): Promise<ResupplyTrace | null> {
     // Le point est dans le `where` : c'est le mur par point.
     const row = await this.prisma.resupplyReceipt.findFirst({
       where: { resupplyId, siteId },

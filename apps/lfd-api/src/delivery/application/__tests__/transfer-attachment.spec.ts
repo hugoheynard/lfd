@@ -1,5 +1,10 @@
 import { RecordingPublisher } from "../../../platform/events/__tests__/recording-publisher.js";
-import { attachmentOver, InMemoryInternalTransfers, plannedTransfer } from "./transfer-doubles.js";
+import {
+  attachmentOver,
+  InMemoryInternalTransfers,
+  plannedTransfer,
+  RecordingTransferDayLock,
+} from "./transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -58,5 +63,41 @@ describe("TransferAttachment — chaque retrait d'un site servi par transfert a 
     expect(attached).toBe(0);
     expect(transfers.saves).toEqual([]);
     expect(events.traced).toEqual([]);
+  });
+
+  /**
+   * Régression (audit du réassort, 2026-11-02) : deux rangements concurrents
+   * lisaient chacun « aucun transfert prévu » et en ouvraient deux pour le
+   * même point. Le verrou des journées est pris AVANT toute écriture.
+   */
+  it("prend le verrou des journées rangées avant d'ouvrir un transfert", async () => {
+    const transfers = new InMemoryInternalTransfers();
+    const lock = new RecordingTransferDayLock(transfers);
+
+    await attachmentOver([{ orderId: "o_1", ...VV }], transfers, undefined, [], lock).attachAmong([
+      "o_1",
+    ]);
+
+    expect(lock.held).toEqual([{ days: [DAY], savesBefore: 0 }]);
+    expect(transfers.saves).toHaveLength(1);
+  });
+
+  it("prend le verrou avant de ranger un réassort figé", async () => {
+    const transfers = new InMemoryInternalTransfers();
+    const lock = new RecordingTransferDayLock(transfers);
+    const frozen = {
+      resupplyId: "r_1",
+      serviceDay: DAY,
+      siteId: "site_vv",
+      siteLabel: "Val Village",
+      name: null,
+      servedByTransfer: true,
+      lines: [],
+      launchedAt: null,
+    };
+
+    await attachmentOver([], transfers, undefined, [frozen], lock).attachResupplies(DAY, ["r_1"]);
+
+    expect(lock.held).toEqual([{ days: [DAY], savesBefore: 0 }]);
   });
 });

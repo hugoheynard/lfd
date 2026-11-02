@@ -14,6 +14,7 @@ import {
   type TransferItem,
 } from "../../domain/entities/internal-transfer.js";
 import { InternalTransferStaleError } from "../../domain/errors/internal-transfer-errors.js";
+import { InternalTransferDayLock } from "../../domain/ports/internal-transfer-day.lock.js";
 import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
 import {
   CarriedOrderTransfers,
@@ -227,6 +228,24 @@ export function plannedTransfer(
 }
 
 /**
+ * Le verrou des journées, sans base : il note ce qu'on lui demande et ce que
+ * le dépôt avait déjà écrit à cet instant — un verrou pris après une
+ * écriture ne protège rien.
+ */
+export class RecordingTransferDayLock extends InternalTransferDayLock {
+  readonly held: { readonly days: readonly string[]; readonly savesBefore: number }[] = [];
+
+  constructor(private readonly transfers?: InMemoryInternalTransfers) {
+    super();
+  }
+
+  hold(serviceDays: readonly string[]): Promise<void> {
+    this.held.push({ days: serviceDays, savesBefore: this.transfers?.saves.length ?? 0 });
+    return Promise.resolve();
+  }
+}
+
+/**
  * Un rangement des transferts réel, sur des doubles : sans retrait d'un site
  * servi par transfert (`refs` vide) ni réassort figé, il ne fait rien.
  */
@@ -235,11 +254,13 @@ export function attachmentOver(
   transfers = new InMemoryInternalTransfers(),
   events = new RecordingPublisher(),
   resupplies: readonly FrozenResupply[] = [],
+  dayLock = new RecordingTransferDayLock(transfers),
 ): TransferAttachment {
   return new TransferAttachment(
     new FixedTransferOrders(refs),
     new FixedFrozenResupplies(resupplies),
     transfers,
+    dayLock,
     new FixedIdGenerator("tr"),
     new FixedClock(new Date(0)),
     events,

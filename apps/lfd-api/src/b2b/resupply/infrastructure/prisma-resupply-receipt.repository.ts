@@ -2,15 +2,16 @@ import { Injectable } from "@nestjs/common";
 
 import { isUniqueViolation } from "../../../platform/database/json-columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { ResupplyReceipt, type ResupplyReceiptTrace } from "../domain/resupply-receipt.js";
+import { alreadyReceivedBy, ResupplyReceipt } from "../domain/resupply-receipt.js";
 import {
-  ResupplyAlreadyReceivedError,
   ResupplyReceiptChangedMeanwhileError,
   UnreceivedReceiptNotPersistableError,
 } from "../domain/resupply-receipt-errors.js";
 import { ResupplyReceiptRepository } from "../domain/resupply-receipt.repository.js";
 import { RECEIPT_LINES, receiptSnapshotOf } from "./resupply-receipt.row.js";
 import { dayColumn } from "./day-column.js";
+import { writeReceiptLines } from "./resupply-receipt-lines.writer.js";
+import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 function linesOf(receipt: ResupplyReceipt) {
   return receipt.lines.map((line, position) => ({
@@ -24,7 +25,7 @@ function linesOf(receipt: ResupplyReceipt) {
   }));
 }
 
-function updatedOf(change: ResupplyReceiptTrace) {
+function updatedOf(change: ResupplyTrace) {
   return {
     updatedAt: change.at,
     updatedByStaffId: change.author.staffUserId,
@@ -39,7 +40,9 @@ function updatedOf(change: ResupplyReceiptTrace) {
  * « Réceptionner » concurrent, l'index partiel `resupply_receipt_unordered_key`
  * un second réassort sans commande du jour. Ensuite il se réécrit sous le
  * verrou de la version lue. Les lignes sont des parties de l'agrégat : en
- * retirer une la supprime ; le reçu, lui, ne se supprime jamais.
+ * retirer une la supprime ; le reçu, lui, ne se supprime jamais. Elles
+ * s'écrivent par différence (`writeReceiptLines`) : une correction d'une
+ * ligne n'en réécrit qu'une.
  */
 @Injectable()
 export class PrismaResupplyReceiptRepository extends ResupplyReceiptRepository {
@@ -82,17 +85,14 @@ export class PrismaResupplyReceiptRepository extends ResupplyReceiptRepository {
       if (count === 0) {
         throw new ResupplyReceiptChangedMeanwhileError();
       }
-      await tx.resupplyReceiptLine.deleteMany({ where: { receiptId: receipt.id } });
-      await tx.resupplyReceiptLine.createMany({
-        data: linesOf(receipt).map((line) => ({ receiptId: receipt.id, ...line })),
-      });
+      await writeReceiptLines(tx, receipt.id, linesOf(receipt));
     });
   }
 
   private async create(
     receipt: ResupplyReceipt,
-    received: ResupplyReceiptTrace,
-    change: ResupplyReceiptTrace,
+    received: ResupplyTrace,
+    change: ResupplyTrace,
   ): Promise<void> {
     try {
       await this.prisma.resupplyReceipt.create({
@@ -114,11 +114,23 @@ export class PrismaResupplyReceiptRepository extends ResupplyReceiptRepository {
       if (!isUniqueViolation(error)) {
         throw error;
       }
-      // Un autre poste a écrit le même reçu entre la lecture et l'écriture.
-      if (receipt.resupplyId === null) {
-        throw new ResupplyReceiptChangedMeanwhileError();
-      }
-      throw new ResupplyAlreadyReceivedError("un autre poste", "à l'instant");
+      throw await this.refusalAfterRace(receipt);
     }
+  }
+
+  /**
+   * Un autre poste a écrit le même reçu entre la lecture et l'écriture. Le
+   * refus nomme le geste qui a gagné, relu en base — jamais un « un autre
+   * poste, à l'instant » fabriqué (audit du réassort, 2026-11-02).
+   */
+  private async refusalAfterRace(receipt: ResupplyReceipt): Promise<Error> {
+    if (receipt.resupplyId === null) {
+      return new ResupplyReceiptChangedMeanwhileError();
+    }
+    const winner = await this.loadForResupply(receipt.siteId, receipt.resupplyId);
+    const received = winner?.received ?? null;
+    return received === null
+      ? new ResupplyReceiptChangedMeanwhileError()
+      : alreadyReceivedBy(received);
   }
 }

@@ -1,4 +1,5 @@
-import { type EstimatedStockLine, stockKeyOf } from "./estimated-stock.js";
+import type { EstimatedStockLine } from "./estimated-stock.js";
+import { StockTallies } from "./stock-tally.js";
 import { expectedLinesOf, type PackedLines, type ResupplyReceipt } from "./resupply-receipt.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
 import type { SaleUnit } from "./resupply-sale-unit.js";
@@ -132,10 +133,15 @@ function stateOf(
 interface ProductTally {
   readonly sku: string;
   readonly saleUnit: SaleUnit | null;
-  label: string;
+  readonly label: string;
   stock: number;
   alert: StockAlertLevel | null;
   expected: number;
+}
+
+/** Un compte ouvert par un reçu ou un attendu : il a toujours son unité. */
+interface CountedTally extends ProductTally {
+  readonly saleUnit: SaleUnit;
 }
 
 /**
@@ -147,25 +153,26 @@ function productsOf(
   input: DayStockInput,
   pending: readonly PlacedSiteResupplySnapshot[],
 ): readonly DayStockProduct[] {
-  const tallies = new Map<string, ProductTally>();
-  const tallyOf = (sku: string, saleUnit: SaleUnit, label: string): ProductTally => {
-    const key = stockKeyOf(sku, saleUnit);
-    const known = tallies.get(key) ?? { sku, saleUnit, label, stock: 0, alert: null, expected: 0 };
-    tallies.set(key, known);
-    return known;
-  };
+  const tallies = new StockTallies<CountedTally>((identity) => ({
+    ...identity,
+    stock: 0,
+    alert: null,
+    expected: 0,
+  }));
   for (const line of input.stock) {
-    tallyOf(line.sku, line.saleUnit, line.label).stock += line.estimatedStock;
+    tallies.of(line).stock += line.estimatedStock;
   }
   for (const resupply of pending) {
     for (const line of expectedLinesOf(resupply, input.packed.get(resupply.id) ?? null)) {
-      tallyOf(line.sku, line.saleUnit, line.label).expected += line.quantity;
+      tallies.of(line).expected += line.quantity;
     }
   }
+  const counted = tallies.values();
+  const alertsAlone: ProductTally[] = [];
   for (const alert of input.alerts) {
-    const counted = [...tallies.values()].filter((tally) => tally.sku === alert.sku);
-    if (counted.length === 0) {
-      tallies.set(`alert:${alert.sku}`, {
+    const named = counted.filter((tally) => tally.sku === alert.sku);
+    if (named.length === 0) {
+      alertsAlone.push({
         sku: alert.sku,
         saleUnit: null,
         label: alert.label,
@@ -174,13 +181,13 @@ function productsOf(
         expected: 0,
       });
     }
-    for (const tally of counted) {
+    for (const tally of named) {
       tally.alert = alert.level;
     }
   }
   // Seuls entrent ceux qu'un reçu, un attendu ou une alerte a nommés : un
   // reçu corrigé à zéro reste un reçu, il est donc montré à 0.
-  return [...tallies.values()]
+  return [...counted, ...alertsAlone]
     .map((tally) => ({ ...tally }))
     .sort((a, b) => rankOf(a) - rankOf(b) || a.label.localeCompare(b.label, "fr"));
 }

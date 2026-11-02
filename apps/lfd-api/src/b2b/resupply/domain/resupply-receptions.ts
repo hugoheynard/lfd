@@ -1,4 +1,4 @@
-import type { SiteResupplyTrace } from "./site-resupply.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
 
 /**
  * Port de **lecture** de la réception d'un réassort (l'envoi du fournil, R1d) : l'annulation
@@ -10,5 +10,5 @@ export abstract class ResupplyReceptions {
    * « Réceptionner » de ce réassort au point (instant et auteur figés), ou
    * `null` s'il n'est pas réceptionné. Le point est dans la clé : le mur.
    */
-  abstract receptionOf(siteId: string, resupplyId: string): Promise<SiteResupplyTrace | null>;
+  abstract receptionOf(siteId: string, resupplyId: string): Promise<ResupplyTrace | null>;
 }

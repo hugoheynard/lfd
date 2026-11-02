@@ -41,3 +41,25 @@ export async function reservationsOn(
   }
   return bySku;
 }
+
+/**
+ * Les levées que la lecture ne portait pas, groupées par instant : `save`
+ * n'écrit qu'elles (audit du réassort, 2026-11-02 — il réécrivait chaque
+ * levée connue, une requête par réservation, à chaque geste).
+ */
+export function newlyLifted(
+  reservations: readonly StockReservationSnapshot[],
+  known: ReadonlyMap<string, StockReservationSnapshot>,
+): readonly { readonly at: Date; readonly resupplyIds: readonly string[] }[] {
+  const byInstant = new Map<number, { readonly at: Date; readonly resupplyIds: string[] }>();
+  for (const reservation of reservations) {
+    const at = reservation.releasedAt;
+    if (at === null || (known.get(reservation.resupplyId)?.releasedAt ?? null) !== null) {
+      continue;
+    }
+    const group = byInstant.get(at.getTime()) ?? { at, resupplyIds: [] };
+    group.resupplyIds.push(reservation.resupplyId);
+    byInstant.set(at.getTime(), group);
+  }
+  return [...byInstant.values()];
+}

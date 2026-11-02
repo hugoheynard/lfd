@@ -5,7 +5,7 @@ import { currentTransaction } from "../../../platform/database/transaction.store
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { ShelfStockLock } from "../domain/shelf-stock-lock.js";
 
-/** Espace de noms du verrou (plan du jour J, §11.2). */
+/** Espace de noms du verrou (L2, `documentation/limites-de-commande/jour-meme-sur-stock.md`). */
 const LOCK_NAMESPACE = "shelf:";
 
 /** Demandé hors transaction : relâché aussitôt, il ne protégerait rien. */

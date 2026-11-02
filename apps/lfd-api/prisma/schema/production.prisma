@@ -68,8 +68,10 @@ model ProductionDay {
   /// de la clôture, et une journée garde le propriétaire qu'elle a eu à sa
   /// clôture (`documentation/colisage/colisage.md`, §13, B1).
   ///
-  /// Le binaire de K1 n'écrit QUE `legacy` : l'ombre du colisage calcule à
-  /// côté, personne ne la lit. Le CHECK de la migration tient les deux valeurs.
+  /// Depuis la bascule au colisage (2026-10-04, et le retrait de l'ancien poste
+  /// le 2026-10-05), tout arrêt écrit `packing` ; `legacy` ne nomme plus que
+  /// les journées arrêtées avant, et le défaut de la colonne n'est lu que par
+  /// une journée jamais arrêtée. Le CHECK de la migration tient les deux valeurs.
   packingOwner String @default("legacy") @map("packing_owner")
 
   orders     ProductionOrder[]

@@ -17,6 +17,7 @@ import {
   FixedTransferOrders,
   InMemoryInternalTransfers,
   plannedTransfer,
+  RecordingTransferDayLock,
   RecordingTransferPlacer,
 } from "./transfer-doubles.js";
 
@@ -61,6 +62,7 @@ function scene(options: {
       orders,
       new FixedFrozenResupplies(),
       transfers,
+      new RecordingTransferDayLock(transfers),
       new FixedIdGenerator("tr"),
       clock,
       events,

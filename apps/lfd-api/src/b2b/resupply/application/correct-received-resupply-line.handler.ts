@@ -15,7 +15,7 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * n'est reçu, donc rien ne se corrige (409). Comme pour les alertes de stock (R1b), une correction
  * ne lève aucune alerte : seule la réception le fait.
  *
- * Une baisse passe par `ReceivedStockLowering` (plan du jour J, le stock du jour décompté, L2) :
+ * Une baisse passe par `ReceivedStockLowering` (L2 — `documentation/limites-de-commande/jour-meme-sur-stock.md`) :
  * elle ne descend pas sous ce que les commandes sur stock ont déjà pris.
  */
 @CommandHandler(CorrectReceivedResupplyLineCommand)

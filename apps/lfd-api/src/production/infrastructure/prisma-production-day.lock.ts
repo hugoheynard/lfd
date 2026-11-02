@@ -9,6 +9,15 @@ import type { ServiceDay } from "../domain/value-objects/service-day.value-objec
 /** L'espace de noms du fournil : aucune autre clé consultative ne le porte. */
 const DAY_LOCK_NAMESPACE = "production_day:";
 
+/**
+ * La clé consultative d'une journée — partagée avec `PrismaArrestedPlanHold`,
+ * qui la prend en mode partagé : une seule clé, sans quoi les deux verrous ne
+ * se verraient pas.
+ */
+export function dayLockKey(serviceDay: string): string {
+  return `${DAY_LOCK_NAMESPACE}${serviceDay}`;
+}
+
 /** Le verrou demandé hors d'une unité de travail : un défaut de code, pas un refus. */
 class DayLockOutsideTransactionError extends TechnicalError {
   constructor(serviceDay: string) {
@@ -46,7 +55,7 @@ export class PrismaProductionDayLock extends ProductionDayLock {
     if (currentTransaction() === undefined) {
       throw new DayLockOutsideTransactionError(day.value);
     }
-    const key = `${DAY_LOCK_NAMESPACE}${day.value}`;
+    const key = dayLockKey(day.value);
     await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
     await this.prisma.$queryRaw`
       SELECT "service_day" FROM "production"."production_day"

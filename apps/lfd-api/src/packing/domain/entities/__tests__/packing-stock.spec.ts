@@ -1,3 +1,4 @@
+import { PackedStockInconsistentError } from "../../errors/packing-shop-release-errors.js";
 import { LineNotProducedYetError } from "../../errors/packing-station-errors.js";
 import { PackingStock } from "../packing-stock.js";
 
@@ -95,5 +96,18 @@ describe("PackingStock — la mise au bac d'une commande au poids", () => {
     expect(() => held.release(1.5, "weight")).toThrow(/entier de grammes/);
     held.release(1_000, "weight");
     expect(held.packed).toBe(1_500);
+  });
+});
+
+/**
+ * Régression (audit du réassort, 2026-11-02) : `release` bornait à zéro par
+ * `Math.max` — un bac qui rendait plus que la réserve ne comptait remettait le
+ * compte à zéro sans rien dire, et le libre gonflait d'autant.
+ */
+describe("PackingStock.release — un bac ne rend pas plus que la réserve ne compte", () => {
+  it("refuse, nommément, sans rien changer", () => {
+    const held = stock(12, 0, 3);
+    expect(() => held.release(5, "piece")).toThrow(PackedStockInconsistentError);
+    expect(held.toSnapshot()).toMatchObject({ packed: 3 });
   });
 });

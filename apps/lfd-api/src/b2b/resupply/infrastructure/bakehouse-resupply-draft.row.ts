@@ -9,7 +9,9 @@ import {
   type BakehouseResupplyDraftSnapshot,
   bakehouseDraftStatusOf,
 } from "../domain/bakehouse-resupply-draft.js";
-import { resupplyTargetOf, type SiteResupplyTrace } from "../domain/site-resupply.js";
+import { wholeTraceOf } from "./trace-columns.js";
+import { resupplyTargetOf } from "../domain/site-resupply.js";
+import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 const LINES = z.array(bakehouseResupplyDraftLineSchema);
 
@@ -46,7 +48,7 @@ function linesOf(row: BakehouseResupplyDraftRow): readonly BakehouseResupplyDraf
   return parsed.data.map(draftLineOf);
 }
 
-function trace(at: Date, staffUserId: string, name: string, role: string): SiteResupplyTrace {
+function trace(at: Date, staffUserId: string, name: string, role: string): ResupplyTrace {
   return { at, author: { staffUserId, name, role } };
 }
 
@@ -64,15 +66,15 @@ export function draftSnapshotOf(row: BakehouseResupplyDraftRow): BakehouseResupp
     },
     created: trace(row.createdAt, row.createdByStaffId, row.createdByName, row.createdByRole),
     updated: trace(row.updatedAt, row.updatedByStaffId, row.updatedByName, row.updatedByRole),
-    closed:
-      row.closedAt === null
-        ? null
-        : trace(
-            row.closedAt,
-            row.closedByStaffId ?? "",
-            row.closedByName ?? "",
-            row.closedByRole ?? "",
-          ),
+    closed: wholeTraceOf(
+      {
+        at: row.closedAt,
+        staffUserId: row.closedByStaffId,
+        name: row.closedByName,
+        role: row.closedByRole,
+      },
+      { table: "bakehouse_resupply_draft", rowId: row.id, gesture: "clôture" },
+    ),
     sentResupplyId: row.sentResupplyId,
   };
 }

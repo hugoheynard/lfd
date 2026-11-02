@@ -140,15 +140,15 @@ export const resupplyServiceDaySchema = z
  * libellé n'est PAS accepté : le serveur le lit au catalogue publié. La
  * règle sur la quantité (entier ≥ 0) vit dans le domaine.
  */
-export const receiveResupplyLineSchema = z
+export const receiveUnorderedReceiptLineSchema = z
   .object({ sku: z.string().trim().min(1), quantity: z.number() })
   .strict();
-export type ReceiveResupplyLinePayload = z.infer<typeof receiveResupplyLineSchema>;
+export type ReceiveUnorderedReceiptLinePayload = z.infer<typeof receiveUnorderedReceiptLineSchema>;
 
 /**
  * `PATCH /admin/resupply-receipts/:siteId/:day/lines/:sku` (sans commande) et
  * `PATCH /admin/resupply-receipts/:siteId/resupplies/:resupplyId/lines/:sku`
  * (un écart après « Réceptionner ») — la quantité reçue corrigée.
  */
-export const correctResupplyLineSchema = z.object({ quantity: z.number() }).strict();
-export type CorrectResupplyLinePayload = z.infer<typeof correctResupplyLineSchema>;
+export const correctReceiptLineSchema = z.object({ quantity: z.number() }).strict();
+export type CorrectReceiptLinePayload = z.infer<typeof correctReceiptLineSchema>;

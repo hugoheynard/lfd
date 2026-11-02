@@ -1,5 +1,6 @@
 import type { SiteResupplyLine } from "./site-resupply-line.js";
-import type { ResupplyTarget, SiteResupplyTrace } from "./site-resupply-snapshot.js";
+import type { ResupplyTarget } from "./site-resupply-snapshot.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
 
 /** La demande en cours d'un point, ouverte au geste `at` (`SiteResupply.draft`). */
 export interface CounterDraftInput {
@@ -16,7 +17,7 @@ export interface BakehouseResupplyInput {
   readonly target: ResupplyTarget;
   readonly name: string | null;
   readonly lines: readonly SiteResupplyLine[];
-  readonly trace: SiteResupplyTrace;
+  readonly trace: ResupplyTrace;
   readonly deadline: Date | null;
   readonly planStopped: boolean;
 }
@@ -27,5 +28,5 @@ export interface ReserveResupplyInput {
   readonly siteId: string;
   readonly reserveDay: string;
   readonly lines: readonly SiteResupplyLine[];
-  readonly trace: SiteResupplyTrace;
+  readonly trace: ResupplyTrace;
 }

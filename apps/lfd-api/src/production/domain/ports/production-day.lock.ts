@@ -16,6 +16,10 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
  *
  * Un port à part (ISP) : les lecteurs de la journée n'ont rien à verrouiller.
  *
+ * Il est EXCLUSIF. Le colisage et la livraison prennent la même clé en mode
+ * PARTAGÉ par `ArrestedPlanHold` (`channels/packing/`, 2026-11-02) : leurs
+ * gestes ne s'attendent pas entre eux, mais la réouverture les attend.
+ *
  * 🔴 **Jamais tenu avec le verrou du stock de la vitrine** (`ShelfStockLock`,
  * `b2b/resupply`) : une commande prise sur la vitrine n'entre jamais au plan,
  * et aucun chemin ne prend les deux — deux verrous qu'aucune transaction ne

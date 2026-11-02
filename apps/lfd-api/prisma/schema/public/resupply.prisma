@@ -22,6 +22,11 @@ model ResupplyReceipt {
   resupply   SiteResupply? @relation(fields: [resupplyId], references: [id], onDelete: Restrict)
 
   /// Verrou optimiste : deux postes qui corrigent le même reçu ne s'écrasent pas.
+  /// Le défaut `0` n'est jamais écrit : l'adaptateur insère toujours `1`
+  /// (`PrismaResupplyReceiptRepository.create`), et `0` désigne en mémoire un
+  /// reçu pas encore en base — d'où l'écart avec le `1` des autres tables du
+  /// réassort, gardé plutôt que changé par une migration sans effet
+  /// (vérifié le 2026-11-02).
   version Int @default(0)
 
   /// « Réceptionner » (ou la première saisie d'un réassort sans commande) :
@@ -132,6 +137,12 @@ model SiteResupply {
   /// réassort « au plus tôt » au fournil, posé par l'abonné du fait
   /// `production.resupply_launched`. Le refus d'annuler ne le lit pas : il
   /// est synchrone, au fournil. Nom figé, `null` si l'annuaire n'en avait pas.
+  /// `Timestamptz`, quand les autres instants de la table sont en `timestamp`
+  /// (le défaut de Prisma) : les deux rangent le même instant UTC et se
+  /// relisent en un même `Date` par Prisma. Aligner serait réécrire la
+  /// colonne (changement de type), sans rien gagner à la lecture ; l'écart
+  /// est gardé (vérifié le 2026-11-02, migrations 20261022150000 et
+  /// 20261022190000).
   launchedAt     DateTime? @map("launched_at") @db.Timestamptz(6)
   launchedByName String?   @map("launched_by_name")
 
@@ -147,6 +158,9 @@ model SiteResupply {
   receipt ResupplyReceipt?
 
   @@index([serviceDay, siteId])
+  /// Les noms déjà employés au point (R1g) : regroupés par nom pour UN point
+  /// (migration 20261102280000).
+  @@index([siteId, name])
   @@map("site_resupply")
   @@schema("public")
 }

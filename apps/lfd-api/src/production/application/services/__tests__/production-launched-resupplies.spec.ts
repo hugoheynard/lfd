@@ -1,71 +1,49 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
+import { LaunchedResupplyLookup } from "../../../domain/ports/launched-resupply.lookup.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { ProductionLaunchedResupplies } from "../production-launched-resupplies.js";
 
 /**
- * Le refus synchrone d'annuler (R4a, BLOQUANT 3) : le fournil répond sous le
- * MÊME verrou que le lancement — verrou d'abord, relecture ensuite. Instants
- * recopiés, jamais comparés à l'horloge.
+ * Le refus synchrone d'annuler un réassort lancé : le fournil répond sous le
+ * MÊME verrou que le lancement — verrou d'abord, lecture ensuite. Depuis le
+ * 2026-11-02, la lecture vise le seul réassort, plus la journée entière.
  */
 
 const DAY = "2026-09-08";
-const AT = new Date("2026-09-08T07:30:00.000Z");
 
-class Days extends ProductionDayRepository {
+/** Les réassorts lancés, par (jour, réassort) ; chaque lecture est tracée. */
+class Launched extends LaunchedResupplyLookup {
   constructor(
-    private readonly current: ProductionDay,
+    private readonly launched: ReadonlySet<string>,
     private readonly trace: string[],
   ) {
     super();
   }
 
-  load(): Promise<ProductionDay> {
-    this.trace.push("load");
-    return Promise.resolve(this.current);
+  isLaunched(day: ServiceDay, resupplyId: string): Promise<boolean> {
+    this.trace.push(`isLaunched:${day.value}:${resupplyId}`);
+    return Promise.resolve(this.launched.has(resupplyId));
   }
-
-  save(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
-function launchedDay(): ProductionDay {
-  const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.launchResupply(
-    {
-      resupplyId: "rs_asap",
-      siteId: "site_village",
-      siteLabel: null,
-      name: null,
-      servedByTransfer: true,
-      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8, saleUnit: "piece" }],
-    },
-    { at: AT, staffUserId: "s_max", name: null },
-    { orders: [], withdrawn: new Set<string>(), resupplies: [] },
-  );
-  return day;
 }
 
 describe("ProductionLaunchedResupplies", () => {
-  it("verrouille la journée PUIS la relit, et dit le lancé", async () => {
+  it("verrouille la journée PUIS lit le réassort, et dit le lancé", async () => {
     const trace: string[] = [];
     const port = new ProductionLaunchedResupplies(
       new RecordingDayLock(trace),
-      new Days(launchedDay(), trace),
+      new Launched(new Set(["rs_asap"]), trace),
       new DirectUnitOfWork(),
     );
 
     expect(await port.isLaunched(ServiceDay.of(DAY), "rs_asap")).toBe(true);
-    expect(trace).toEqual([`lock:${DAY}`, "load"]);
+    expect(trace).toEqual([`lock:${DAY}`, `isLaunched:${DAY}:rs_asap`]);
   });
 
   it("un réassort que le fournil n'a pas lancé ne l'est pas", async () => {
     const port = new ProductionLaunchedResupplies(
       new RecordingDayLock(),
-      new Days(launchedDay(), []),
+      new Launched(new Set(["rs_asap"]), []),
       new DirectUnitOfWork(),
     );
 

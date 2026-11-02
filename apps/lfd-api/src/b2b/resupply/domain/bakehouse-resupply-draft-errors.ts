@@ -103,7 +103,8 @@ export class UnreadableBakehouseResupplyDraftError extends TechnicalError {
  * Un brouillon porte déjà cet identifiant — le même « Enregistrer » rejoué en
  * même temps depuis l'écran (la clé d'envoi, C-C, 2026-11-02) : la base a refusé le second.
  * Le cas d'usage le relit ; l'écran ne voit cette erreur que si la relecture
- * échoue elle-même.
+ * échoue elle-même (`CreateBakehouseResupplyDraftHandler.execute`, vérifié le
+ * 2026-11-02).
  */
 export class BakehouseResupplyDraftAlreadyWrittenError extends BusinessError {
   constructor(readonly draftId: string) {
@@ -124,6 +125,20 @@ export class BakehouseResupplyDraftKeyTakenError extends BusinessError {
     super(
       "resupply.bakehouse_draft.key_taken",
       "Cet enregistrement porte une clé déjà employée par le brouillon d'un autre point : rien n'a été enregistré. Fermez le panneau, rouvrez-le, puis enregistrez de nouveau.",
+    );
+  }
+}
+
+/**
+ * Un brouillon repris ne change pas de point (D3, 2026-11-02) : son point est
+ * figé à l'ouverture. Le déplacer ferait d'une composition pensée pour une
+ * vitrine celle d'une autre, sous le même nom et sans trace du changement.
+ */
+export class BakehouseResupplyDraftSiteFrozenError extends BusinessError {
+  constructor(readonly draftId: string) {
+    super(
+      "resupply.bakehouse_draft.site_frozen",
+      "Ce brouillon a été composé pour un autre point : il ne change pas de point. Gardez son point, ou fermez-le et composez un nouveau réassort pour le point voulu.",
     );
   }
 }

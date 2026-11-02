@@ -1,6 +1,12 @@
 -- RETOUR ARRIÈRE de 20261102270000_la_fiche_de_reassort_retiree
 -- (audit du réassort, 2026-11-02).
 --
+-- 🔴 NE JAMAIS LE JOUER SANS UN ORDRE EXPLICITE DE HUGO. Il porte des
+-- `DELETE` sur la base de production (`CLAUDE.md` §0 : aucune suppression
+-- sans ordre explicite). Si `20261102290000_la_fiche_retiree_jamais_emballee`
+-- est appliquée, jouer d'abord SON retour arrière : ses déclencheurs lisent
+-- la colonne que celui-ci retire.
+--
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE, APRÈS le retour du code qui effaçait les fiches. La
 -- migration reste inscrite « appliquée ».

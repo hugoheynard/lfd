@@ -1,4 +1,5 @@
 import type { Prisma } from "../../platform/database/client/client.js";
+import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import type {
   LaunchedResupplySnapshot,
   ProductionDay,
@@ -101,7 +102,20 @@ async function replaceEveningPlan(tx: Prisma.TransactionClient, snapshot: DaySna
   await writeResupplies(tx, serviceDay, snapshot.resupplies ?? []);
 }
 
-/** Le compte à produire, remplacé : il naît sans coche (`done_*` n'est plus écrit). */
+/**
+ * Le compte à produire, remplacé : il naît sans coche (`done_*` n'est plus écrit).
+ *
+ * ⚠️ Effacer le compte efface les coches de l'ancien poste (`done_*`) qu'il
+ * portait. Ce n'est sans perte qu'à une condition : **qu'aucune coche vivante
+ * ne soit sous le compte effacé**. Elle tient pour chaque geste qui le
+ * remplace (vérifié le 2026-11-02) — le retirage, le lancement « au plus
+ * tôt » et la révision matérialisent d'abord les coches en fournées
+ * (`ProductionDay.materialize`, écrites par `recordInherited`) ; l'arrêt part
+ * d'une journée ouverte, dont le compte est vide ; la réouverture refuse une
+ * journée cochée (`assertReopenable`). Un nouveau geste qui refait le compte
+ * doit matérialiser AVANT, ou cette fonction efface une coche en silence.
+ * Une journée `fromSnapshot` (base inconnue) n'a aucun appelant qui l'écrive.
+ */
 async function replaceCounts(tx: Prisma.TransactionClient, snapshot: DaySnapshot) {
   await tx.productionCount.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
   if (snapshot.counts.length > 0) {
@@ -121,6 +135,13 @@ async function replaceCounts(tx: Prisma.TransactionClient, snapshot: DaySnapshot
  * La quantité due révisée, ligne à ligne : la révision garde les mêmes
  * articles (`revisedPlanOf`), seule la quantité change. La ligne garde son
  * identifiant et son colisage de l'ancien poste — rien à recopier.
+ *
+ * Chaque écriture doit toucher UNE ligne, exactement (clé : jour, commande,
+ * rang, article). Zéro — une ligne absente en base alors que l'agrégat la
+ * porte —, et la révision était perdue sans un mot : la journée en mémoire
+ * disait le dû révisé, la base l'ancien (audit du réassort, 2026-11-02).
+ *
+ * @throws {RevisionNotWrittenError} une ligne révisée n'a pas été trouvée.
  */
 async function writeRevisions(
   tx: Prisma.TransactionClient,
@@ -130,10 +151,13 @@ async function writeRevisions(
   for (const order of orders) {
     const parent = { serviceDay, orderId: order.orderId, rank: order.rank };
     for (const line of order.lines) {
-      await tx.productionOrderLine.updateMany({
+      const written = await tx.productionOrderLine.updateMany({
         where: { order: parent, sku: line.sku },
         data: { quantity: line.quantity },
       });
+      if (written.count !== 1) {
+        throw new RevisionNotWrittenError(serviceDay, order.reference, line.sku, written.count);
+      }
     }
   }
 }
@@ -225,4 +249,20 @@ function lineRowOf(
     madeToOrder: line.madeToOrder ?? null,
     ...carried.lines.get(`${key}/${line.sku}`),
   };
+}
+
+/**
+ * La base ne porte pas la ligne que l'agrégat révise : la transaction est
+ * annulée, la révision n'est pas écrite. Un défaut de données ou de code, pas
+ * un refus métier.
+ */
+export class RevisionNotWrittenError extends TechnicalError {
+  constructor(serviceDay: string, reference: string, sku: string, count: number) {
+    super(
+      "production.revision.not_written",
+      `La révision de la commande ${reference} (plan du ${serviceDay}) devait réécrire une ` +
+        `ligne « ${sku} » au plan du fournil, et en a touché ${String(count)}. Rien n'a été ` +
+        "écrit : le plan garde l'ancien dû. Signalez-le à l'équipe technique.",
+    );
+  }
 }

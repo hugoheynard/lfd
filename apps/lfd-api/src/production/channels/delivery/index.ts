@@ -29,6 +29,9 @@ export {
 } from "../commerce/production-day-reopened.event.js";
 export { ClosedPlansReader } from "../commerce/closed-plans.reader.js";
 export { DayDispatchProgressReader } from "./day-dispatch-progress.reader.js";
+// Tenir le plan arrêté pendant un chargement ou un départ (2026-11-02) : la
+// même déclaration que pour le colisage, une seule implémentation au fournil.
+export { ArrestedPlanHold } from "../packing/arrested-plan.hold.js";
 // Le réassort (lot R3c, 2026-10-21) : la copie figée à l'arrêt, que la
 // livraison lit pour attacher un réassort au transfert de son point.
 export {

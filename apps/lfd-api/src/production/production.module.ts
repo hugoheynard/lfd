@@ -12,6 +12,9 @@ import { PrismaOrderRevisionNoticesReader } from "./infrastructure/prisma-order-
 import { PlanStopRules } from "./application/services/plan-stop-rules.js";
 import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
 import { ProductionLaunchedResupplies } from "./application/services/production-launched-resupplies.js";
+import { PlanArrestRecording } from "./application/services/plan-arrest-recording.js";
+import { PlanIntakeReading } from "./application/services/plan-intake-reading.js";
+import { RetakeRecording } from "./application/services/retake-recording.js";
 import { LaunchResupplyHandler } from "./application/commands/launch-resupply.handler.js";
 import { ProductionResupplyLaunchController } from "./http/production-resupply-launch.controller.js";
 import { ClosedPlansReader } from "./channels/commerce/closed-plans.reader.js";
@@ -141,6 +144,14 @@ import {
 import { PrismaProductionDayRepository } from "./infrastructure/prisma-production-day.repository.js";
 import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
 import { PrismaProductionDayLock } from "./infrastructure/prisma-production-day.lock.js";
+import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
+import {
+  PrismaLaunchedResupplyLookup,
+  PrismaProductionDayStatusReader,
+} from "./infrastructure/prisma-production-day-status.reader.js";
+import { ArrestedPlanHold } from "./channels/packing/arrested-plan.hold.js";
+import { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
+import { ProductionDayStatusReader } from "./domain/ports/production-day-status.reader.js";
 import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
 import { PackingHandoffs } from "./application/services/packing-handoffs.service.js";
 import { ProductionHandoffLedger } from "./domain/ports/production-handoff.ledger.js";
@@ -237,6 +248,13 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
     { provide: ProductionBatchRepository, useClass: PrismaProductionBatchRepository },
     { provide: ProductionDayLock, useClass: PrismaProductionDayLock },
+    // L'en-tête seul, et un réassort lancé seul (2026-11-02) : deux lectures
+    // ciblées, à part du dépôt qui relit la journée entière (ISP).
+    { provide: ProductionDayStatusReader, useClass: PrismaProductionDayStatusReader },
+    { provide: LaunchedResupplyLookup, useClass: PrismaLaunchedResupplyLookup },
+    // Tenir le plan arrêté pendant un geste du colisage ou de la livraison
+    // (2026-11-02) : publié par `channels/packing/`, exporté pour leurs modules.
+    { provide: ArrestedPlanHold, useClass: PrismaArrestedPlanHold },
     // La lecture du plan arrêté est un port À PART du dépôt d'écriture, et son
     // adaptateur vit chez la production : c'est SON schéma qu'il interroge.
     { provide: ProductionPlanReader, useClass: PrismaProductionPlanReader },
@@ -297,6 +315,11 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ResupplyLaunchGestures,
     ResupplyLaunchReading,
     ResupplyLaunchRecording,
+    // L'arrêt et le retirage : ce qu'ils lisent sous le verrou, ce qu'ils
+    // écrivent et publient (sortis des handlers le 2026-11-02).
+    PlanIntakeReading,
+    PlanArrestRecording,
+    RetakeRecording,
     // Publiés pour le poste servi par le colisage (K3a) ; reliés par
     // `PackingFeedModule`.
     ChannelQualityHeldOrdersReader,
@@ -371,6 +394,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     PrismaClosedPlansReader,
     ProductionPlanAdmissionDesk,
     ProductionLaunchedResupplies,
+    ArrestedPlanHold,
   ],
 })
 export class ProductionModule {}

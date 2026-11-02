@@ -2,6 +2,7 @@ import type { ProducibleOrder } from "../../../channels/commerce/day-orders.read
 import type { PlacedResupply } from "../../../channels/commerce/day-resupplies.reader.js";
 import {
   ResupplyAlreadyLaunchedError,
+  ResupplyLaunchOnReopenedPlanError,
   ResupplyLaunchOnUnarrestedPlanError,
 } from "../../errors/resupply-launch-errors.js";
 import { ServiceDay } from "../../value-objects/service-day.value-object.js";
@@ -190,6 +191,69 @@ describe("ProductionDay.launchResupply — une journée jamais arrêtée (Q5)", 
     const day = opened();
 
     expect(day.launchResupply(resupply("rs_asap", 8), GESTURE, pending)).toBe(true);
+  });
+});
+
+/**
+ * Régression (D1, audit du réassort, 2026-11-02) : une journée arrêtée puis
+ * rouverte s'ouvrait arrêtée par un lancement, comme une journée jamais
+ * arrêtée — les commandes rendues au commerce par la réouverture restaient
+ * hors du plan, sans refus.
+ */
+describe("ProductionDay.launchResupply — une journée rouverte (D1)", () => {
+  it("🔴 refuse de l'ouvrir par un lancement, en nommant le geste de sortie", () => {
+    const day = closed();
+    day.reopen({ packingStarted: false, dispatchStarted: false }, LATER, "s_max");
+
+    expect(() => day.launchResupply(resupply("rs_asap", 8), GESTURE, NOTHING_PENDING)).toThrow(
+      ResupplyLaunchOnReopenedPlanError,
+    );
+    expect(() => day.launchResupply(resupply("rs_asap", 8), GESTURE, NOTHING_PENDING)).toThrow(
+      /rouvert.*Arrêtez d'abord le plan du jour/su,
+    );
+    expect(day.isClosed).toBe(false);
+    expect(day.launchedResupplies).toEqual([]);
+  });
+
+  it("arrêtée de nouveau, elle accepte le lancement comme toute journée arrêtée", () => {
+    const day = closed();
+    day.reopen({ packingStarted: false, dispatchStarted: false }, LATER, "s_max");
+    day.close([order()], NO_WITHDRAWAL, LATER, null, []);
+
+    expect(day.launchResupply(resupply("rs_asap", 8), GESTURE, NOTHING_PENDING)).toBe(false);
+  });
+});
+
+describe("ProductionDay.openedByLaunch — qui a arrêté la journée (Q6)", () => {
+  it("vrai quand l'arrêt est celui d'un lancement", () => {
+    const day = opened();
+    day.launchResupply(resupply("rs_asap", 8), GESTURE, NOTHING_PENDING);
+
+    expect(day.openedByLaunch).toBe(true);
+  });
+
+  it("faux pour un arrêt du plan, même suivi d'un lancement", () => {
+    const day = closed();
+    day.launchResupply(resupply("rs_asap", 8), GESTURE, NOTHING_PENDING);
+
+    expect(day.openedByLaunch).toBe(false);
+    expect(opened().openedByLaunch).toBe(false);
+  });
+
+  it("faux après une réouverture et un nouvel arrêt : l'instant est neuf", () => {
+    const day = opened();
+    day.launchResupply(resupply("rs_asap", 8), GESTURE, NOTHING_PENDING);
+    day.reopen({ packingStarted: false, dispatchStarted: false }, LATER, "s_max");
+    day.close([], NO_WITHDRAWAL, LATER, null, []);
+
+    expect(day.openedByLaunch).toBe(false);
+  });
+
+  it("se relit depuis l'instantané", () => {
+    const day = opened();
+    day.launchResupply(resupply("rs_asap", 8), GESTURE, NOTHING_PENDING);
+
+    expect(ProductionDay.restore(day.toSnapshot()).openedByLaunch).toBe(true);
   });
 });
 

@@ -8,13 +8,14 @@ import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
-import { SiteResupply, type SiteResupplyTrace } from "../domain/site-resupply.js";
+import { SiteResupply } from "../domain/site-resupply.js";
 import type { SiteResupplyLine } from "../domain/site-resupply-line.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 import { sendOnceUnderKey } from "./resupply-sending-key.js";
 import { SendReserveToShopCommand } from "./send-reserve-to-shop.command.js";
 import { catalogueLine } from "./site-resupply-draft.js";
+import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 /**
  * **« Envoyer en boutique »** — une sortie de la réserve du colisage (plan
@@ -71,7 +72,7 @@ export class SendReserveToShopHandler implements ICommandHandler<SendReserveToSh
   private async send(
     command: SendReserveToShopCommand,
     lines: readonly SiteResupplyLine[],
-    trace: SiteResupplyTrace,
+    trace: ResupplyTrace,
     siteLabel: string | null,
   ): Promise<void> {
     const resupply = SiteResupply.sentFromReserve({

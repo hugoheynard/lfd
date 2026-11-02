@@ -1,3 +1,4 @@
+import type { ResupplyOrigin } from "./resupply-origin.js";
 import {
   ResupplyNotArrivableError,
   ResupplyNotLaunchedNotMountableError,
@@ -7,14 +8,15 @@ import type {
   SiteResupplyDeparture,
   SiteResupplyLaunch,
   SiteResupplyStatus,
-  SiteResupplyTrace,
 } from "./site-resupply-snapshot.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
 
 /** Ce que le suivi lit du réassort qui le porte, à l'instant du geste. */
 export interface ProgressContext {
   readonly status: SiteResupplyStatus;
   readonly target: ResupplyTarget;
   readonly serviceDay: string;
+  readonly origin: ResupplyOrigin;
 }
 
 /**
@@ -25,12 +27,12 @@ export interface ProgressContext {
  */
 export class SiteResupplyProgress {
   constructor(
-    private arrivedTrace: SiteResupplyTrace | null,
+    private arrivedTrace: ResupplyTrace | null,
     private launchedMark: SiteResupplyLaunch | null,
     private departedMark: SiteResupplyDeparture | null,
   ) {}
 
-  get arrived(): SiteResupplyTrace | null {
+  get arrived(): ResupplyTrace | null {
     return this.arrivedTrace;
   }
 
@@ -52,7 +54,8 @@ export class SiteResupplyProgress {
    *
    * @returns `true` si l'affichage vient d'être posé ; `false` sinon (déjà
    *   posé, ou réassort qui n'est pas un « au plus tôt » envoyé — l'abonné
-   *   l'écarte sans relivrer le fait sans fin).
+   *   l'écarte au lieu de faire échouer la livraison du fait, qui serait
+   *   relivré jusqu'à épuiser ses essais pour un refus qui ne passera jamais).
    */
   recordLaunch(launchable: boolean, launch: SiteResupplyLaunch): boolean {
     if (!launchable || this.launchedMark !== null) {
@@ -92,8 +95,8 @@ export class SiteResupplyProgress {
    */
   markArrived(
     context: ProgressContext,
-    trace: SiteResupplyTrace,
-    reception: SiteResupplyTrace | null,
+    trace: ResupplyTrace,
+    reception: ResupplyTrace | null,
   ): boolean {
     if (context.status !== "placed") {
       throw new ResupplyNotArrivableError(context.status === "draft");
@@ -108,21 +111,27 @@ export class SiteResupplyProgress {
   /**
    * **« Monté »** (R3e) — « il est là » par le geste du fournil. Un « au plus
    * tôt » n'est monté qu'une fois LANCÉ (« Lancer » puis « Monté », Q4, R4c) : avant, il n'est pas
-   * au plan, rien n'a été fabriqué pour lui. Déjà arrivé ou réceptionné, rien
-   * ne change et rien n'est refusé. `launched` est lu au fournil par
-   * l'appelant, jamais à la colonne d'affichage du commerce.
+   * au plan, rien n'a été fabriqué pour lui. Une sortie de réserve (A1.4) en
+   * est exclue : elle ne se lance jamais (rien à fabriquer), la règle lui
+   * opposerait un geste impossible — l'écran ne lui offre pas « Monté », et
+   * le domaine ne lui refuse pas l'arrivée (D4, 2026-11-02). Déjà arrivé ou
+   * réceptionné, rien ne change et rien n'est refusé. `launched` est lu au
+   * fournil par l'appelant, jamais à la colonne d'affichage du commerce
+   * (`MarkResupplyMountedHandler` → `ResupplyPlanGate.launched`, vérifié le
+   * 2026-11-02).
    *
    * @returns `true` si le réassort vient de passer d'attendu à arrivé.
    * @throws {ResupplyNotArrivableError} @throws {ResupplyNotLaunchedNotMountableError}
    */
   markMounted(
     context: ProgressContext,
-    trace: SiteResupplyTrace,
-    reception: SiteResupplyTrace | null,
+    trace: ResupplyTrace,
+    reception: ResupplyTrace | null,
     launched: boolean,
   ): boolean {
     const awaited = context.status === "placed" && this.arrivedTrace === null && reception === null;
-    if (awaited && context.target === "asap" && !launched) {
+    const mustBeLaunched = context.target === "asap" && context.origin !== "reserve";
+    if (awaited && mustBeLaunched && !launched) {
       throw new ResupplyNotLaunchedNotMountableError(context.serviceDay);
     }
     return this.markArrived(context, trace, reception);

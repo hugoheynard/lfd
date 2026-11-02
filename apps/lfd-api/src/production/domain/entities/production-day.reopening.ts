@@ -8,8 +8,9 @@ import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "./production
 /**
  * **Ce qui a commencé en aval du plan**, tel que le colisage et la livraison
  * le disent au fournil par leurs ports (`production/channels/packing/`,
- * `production/channels/delivery/`). L'appelant le lit AVANT le verrou de la
- * journée : pas de lecture d'un autre bloc sous un verrou tenu.
+ * `production/channels/delivery/`). L'appelant le lit SOUS le verrou de la
+ * journée depuis le 2026-11-02 : lu avant, un colisage commencé entre la
+ * lecture et le verrou n'était pas vu.
  */
 export interface DownstreamProgress {
   /** Une commande de la journée est au bac ou au sac (contenant, ligne ou bac fermé). */

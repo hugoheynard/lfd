@@ -263,6 +263,8 @@ model PackingResupply {
   /// Retirée par la réouverture du plan, jamais entamée (CHECK
   /// `packing_resupply_withdrawn_untouched`) — plus effacée depuis le
   /// 2026-11-02. Aucun lecteur ne la voit ; un nouvel arrêt la rétablit.
+  /// Jamais emballée : deux déclencheurs le tiennent (migration
+  /// `20261102290000`, `packing_resupply_withdrawn_unpacked`).
   withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(6)
 
   lines PackingResupplyLine[]

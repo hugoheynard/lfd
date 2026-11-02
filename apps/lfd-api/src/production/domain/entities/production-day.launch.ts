@@ -2,10 +2,11 @@ import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.
 import type { PlacedResupply } from "../../channels/commerce/day-resupplies.reader.js";
 import {
   ResupplyAlreadyLaunchedError,
+  ResupplyLaunchOnReopenedPlanError,
   ResupplyLaunchOnUnarrestedPlanError,
 } from "../errors/resupply-launch-errors.js";
 import { freezeResupply } from "../services/production-count.js";
-import type { LaunchedResupplySnapshot } from "./production-day.snapshot.js";
+import type { LaunchedResupplySnapshot, PackedMark } from "./production-day.snapshot.js";
 
 /**
  * **Ce que l'arrêt du plan figerait aujourd'hui** — lu par l'appelant pour un
@@ -56,6 +57,19 @@ export function assertNothingElseToFreeze(serviceDay: string, pending: PendingPl
   const orders = pending.orders.filter((order) => !pending.withdrawn.has(order.orderId));
   if (orders.length > 0 || pending.resupplies.length > 0) {
     throw new ResupplyLaunchOnUnarrestedPlanError(serviceDay);
+  }
+}
+
+/**
+ * D1 (audit du réassort, 2026-11-02) — Q5 dit « une journée JAMAIS arrêtée ».
+ * Une journée rouverte a déjà eu un plan, que la réouverture a défait : seul
+ * un nouvel arrêt la refige, commandes rendues au commerce comprises.
+ *
+ * @throws {ResupplyLaunchOnReopenedPlanError}
+ */
+export function assertNeverArrested(serviceDay: string, reopened: PackedMark | null): void {
+  if (reopened !== null) {
+    throw new ResupplyLaunchOnReopenedPlanError(serviceDay);
   }
 }
 

@@ -77,3 +77,27 @@ export async function loadSiteResupply(
   }
   return resupply;
 }
+
+/** Ce qu'un geste sur la demande en cours porte : la demande, et la version que le poste a vue. */
+export interface DraftGesture {
+  readonly siteId: string;
+  readonly resupplyId: string;
+  readonly seenVersion: number;
+}
+
+/**
+ * **Un geste sur la demande en cours, sous la version vue** — la mécanique
+ * commune à corriger et retirer une ligne, qui se recopiaient à la mutation
+ * près (audit du réassort, 2026-11-02) : chargée sous le point, refusée si
+ * le poste n'a plus la dernière version, mutée par l'agrégat, sauvée.
+ */
+export async function changeDraft(
+  resupplies: SiteResupplyRepository,
+  gesture: DraftGesture,
+  mutate: (draft: SiteResupply) => void,
+): Promise<void> {
+  const draft = await loadSiteResupply(resupplies, gesture.siteId, gesture.resupplyId);
+  draft.assertSeen(gesture.seenVersion);
+  mutate(draft);
+  await resupplies.save(draft);
+}

@@ -156,4 +156,22 @@ describe('ResupplyMountCard', () => {
       root.querySelector('[data-resupply-mount-row="a2"] [data-resupply-mount]'),
     ).not.toBeNull();
   });
+
+  /** Régression (D4) : une sortie de réserve s'affichait « À lancer d'abord » — un geste impossible. */
+  it('ne propose rien à monter pour une sortie de réserve : le pain est déjà parti', () => {
+    const view: ResupplyProductionDayView = {
+      ...VIEW,
+      sites: [
+        {
+          siteId: 'labo',
+          siteLabel: 'Le Labo',
+          resupplies: [resupply('s1', 'labo', { target: 'asap', origin: 'reserve' })],
+        },
+      ],
+    };
+
+    const { root } = mount(true, view);
+
+    expect(root.querySelector('[data-resupply-mount-row="s1"]')).toBeNull();
+  });
 });

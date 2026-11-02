@@ -249,7 +249,9 @@ describe("envoyer en boutique depuis la réserve", () => {
       lines: [{ sku: CROISSANT, quantity: 1 }],
     }).expect(409);
 
-    expect(jsonBody<{ readonly code: string }>(refused).code).toBe("packing.reserve.not_today");
+    expect(jsonBody<{ readonly code: string }>(refused).code).toBe(
+      "resupply.order.reserve_not_today",
+    );
     expect(await ctx.prisma.siteResupply.count({ where: { id: "panel-7" } })).toBe(0);
   });
 

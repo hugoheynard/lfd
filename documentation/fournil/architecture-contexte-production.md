@@ -27,6 +27,29 @@ forme des tables du commerce**. Un renommage côté commande casse un écran
 d'atelier, et rien ne le dit avant l'exécution — c'est une frontière qui n'existe
 que dans les noms de dossiers.
 
+## La journée, un agrégat — et son plan à part
+
+`ProductionDay` (`apps/lfd-api/src/production/domain/entities/production-day.ts`)
+est un agrégat, pas un CRUD : deux règles peuvent refuser une écriture, et
+elles coûtent cher si on les rate.
+
+1. **Une journée arrêtée ne se recalcule pas.** Le compte à produire est un
+   instantané pris à l'arrêt ; les commandes bougent après. Le refaire
+   donnerait un autre nombre que celui sur lequel le fournil a lancé ses
+   fournées. Seuls trois gestes signés le touchent ensuite — le retirage, le
+   lancement d'un réassort « au plus tôt », la révision d'une commande
+   inscrite — et aucun ne fait descendre un article sous ce qui a déjà été
+   demandé au four (`floorCounts`).
+2. **Une journée sans commande ni réassort ne s'arrête pas.** Fermer le vide
+   écrirait « ce jour-là on a produit ceci » là où il n'y a rien eu.
+
+Les commandes et leurs lignes sont **dedans** : elles n'ont aucun cycle de vie
+propre. Le **calcul** du plan — commandes, réassorts du soir, réassorts lancés,
+compte — vit dans `DayPlan` (`apps/lfd-api/src/production/domain/entities/production-day.plan.ts`, sorti le 2026-11-02) ;
+l'agrégat garde le **cycle** (arrêtée, reprise, rouverte, qui colise, les
+fournées) et les refus. **Aucun montant** : le fournil fabrique, il ne facture
+pas, et `ProducibleLine` n'a pas de champ de prix.
+
 ## Comment les deux contextes se parlent, et QUAND
 
 Cinq échanges, et un seul est synchrone. Le sens compte plus que le nombre : le

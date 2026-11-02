@@ -24,28 +24,35 @@ L'agrégat `ResupplyReceipt`
 (`apps/lfd-api/src/b2b/resupply/domain/resupply-receipt.ts:74`) a deux
 sortes, une seule règle — seul le reçu compte au stock :
 
-- **le reçu d'un réassort envoyé** : `expecting` (l. 91) le fait naître
-  attendu (`expectedLinesOf`, l. 253 : l'emballé lu par
+- **le reçu d'un réassort envoyé** : `expecting` (l. 88) le fait naître
+  attendu (`expectedLinesOf`, l. 268 : l'emballé lu par
   `PackedResuppliesReader` si la fiche du colisage est close, sinon le
-  demandé) ; `receiveAll` (l. 157) recopie l'attendu en reçu d'un geste ;
-  une ligne ne se corrige (`correct`, l. 190) qu'**après**
+  demandé) ; `receiveAll` (l. 156) recopie l'attendu en reçu d'un geste ;
+  une ligne ne se corrige (`correct`, l. 189) qu'**après**
   (`resupply.receipt.not_yet_received`). On n'y ajoute ni n'en retire
   d'article : un article en plus va au sans commande, un manquant se corrige
   à zéro. Un second « Réceptionner » est refusé
-  (`resupply.receipt.already_received`, qui et quand), jamais rejoué. Seul un
+  (`resupply.receipt.already_received`, qui et quand), jamais rejoué — même
+  quand deux postes se croisent à l'écriture : l'adaptateur relit le reçu
+  gagnant et nomme son auteur et son heure réels (2026-11-02). Seul un
   réassort envoyé et non annulé se réceptionne
   (`resupply.receipt.resupply_not_receivable`, tenu par
   `SiteResupply.assertReceivable`), et pas avant sa journée
   (`resupply.receipt.day_not_yet_come`). Le réassort est SAUVÉ sous sa version
   avant le reçu : une annulation ou une arrivée lues avant échouent en 409
   (G1, 2026-11-02) ;
-- **le réassort sans commande** (`resupplyId` nul, `openUnordered`, l. 113) :
-  `receive`, `correct`, `withdraw` ligne par ligne, au plus un par (point,
+- **le réassort sans commande** (`resupplyId` nul, `openUnordered`, l. 110) :
+  `receive`, `correct`, `withdraw` ligne par ligne — « Réceptionner » d'un
+  geste y est refusé (`resupply.receipt.not_bound_to_resupply`) —, au plus un par (point,
   journée) (index unique partiel `resupply_receipt_unordered_key`) ; un même
   article deux fois est refusé (`resupply.receipt.line_already_present`).
 
 Le reçu n'est écrit en base qu'une fois reçu : avant, l'attendu se lit du
-réassort. Le stock ne monte qu'à la réception, jamais à l'envoi ni à
+réassort. Ses lignes s'écrivent par différence avec la base
+(`apps/lfd-api/src/b2b/resupply/infrastructure/resupply-receipt-lines.writer.ts`) : une correction n'en
+réécrit qu'une. Une ligne relue dont un geste daté n'a pas son auteur entier
+est refusée (`resupply.row.unreadable`, 500), jamais comblée de chaînes
+vides. Le stock ne monte qu'à la réception, jamais à l'envoi ni à
 l'emballage. Un reçu porte une `version` (`resupply.receipt.changed_meanwhile`).
 Une réception faite avant la clôture du colisage reste ce qu'elle est : un
 emballé connu après ne change rien (le comptoir fait foi).
@@ -56,7 +63,12 @@ avec la famille), `GET :siteId/:day` (les réassorts envoyés de la journée
 avec leur réception, le sans commande, le stock),
 `POST :siteId/resupplies/:resupplyId/receive`,
 `PATCH :siteId/resupplies/:resupplyId/lines/:sku`, et
-`POST|PATCH|DELETE :siteId/:day/lines…` pour le sans commande.
+`POST|PATCH|DELETE :siteId/:day/lines…` pour le sans commande
+(`ReceiveUnorderedReceiptLine`, `CorrectUnorderedReceiptLine`,
+`WithdrawUnorderedReceiptLine` — renommés le 2026-11-02 pour ne plus se lire
+comme les gestes de la demande ; contrats `receiveUnorderedReceiptLineSchema`
+et `correctReceiptLineSchema`). Le `:sku` du chemin est validé (400 qui le
+nomme).
 
 **L'écran** — en tête de Comptoir › Réassort, seulement s'il y en a,
 `resupply-receptions-card/` : chaque réassort attendu de la journée, ses

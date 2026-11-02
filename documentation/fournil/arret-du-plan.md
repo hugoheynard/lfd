@@ -100,6 +100,78 @@ sequenceDiagram
 - **Un arrêt se défait** tant que rien n'a commencé : voir « Rouvrir une
   journée arrêtée » ci-dessous.
 
+### Le handler de l'arrêt, étape par étape
+
+Ce paragraphe vivait dans la JSDoc de `CloseProductionDayHandler` jusqu'au
+2026-11-02 (cent lignes au-dessus d'une classe de cent) ; le handler n'en garde
+que le plan, et renvoie ici. Code : `application/commands/close-production-day.handler.ts`,
+lectures sous verrou `apps/lfd-api/src/production/application/services/plan-intake-reading.ts`,
+écriture et faits `apps/lfd-api/src/production/application/services/plan-arrest-recording.ts`.
+
+- **Pas avant l'heure limite** (depuis le 2026-10-21). Le plan s'arrête tout
+  seul à la plus tardive de la fin du rattrapage de l'heure limite générale
+  (`limites-de-commande/plan-une-seule-heure.md` §5) et de l'heure du
+  réassort (`PlanStopRules`). Un arrêt demandé plus tôt, à la main, est refusé
+  AVANT le balayage, qui annulerait sinon les paiements de clients encore en
+  train de commander. Une réannonce n'est pas un arrêt : elle n'est pas
+  refusée.
+- **Balayer d'abord, compter ensuite** (depuis le 2026-09-26). Le fournil
+  DEMANDE au commerce de trancher les règlements restés en l'air pour la
+  journée (`PendingSettlementSweeper`, port déclaré par le fournil,
+  implémenté par le commerce —
+  `commandes/reglement/architecture-abandon-du-reglement.md`). Sans ce geste,
+  une journée où aucune carte n'est payée resterait vide, donc inarrêtable,
+  et ses règlements vivraient pour toujours. Le balayage tourne à **chaque**
+  appel, réannonce comprise : une commande passée après le premier arrêt doit
+  mourir aussi. Le refus « journée vide » vient après lui, et ne dit plus que
+  la vérité : personne n'a payé.
+- **Pourquoi un geste, alors que le cycle de vie dit « pas un clic ».** Le
+  dossier du cycle de vie écrit que `confirmed` est automatique. Les deux
+  façons d'y arriver sans geste humain étaient fermées : pas de planificateur
+  dans l'API à l'époque, et une lecture n'écrit rien. Reste le geste que
+  l'équipe faisait déjà — arrêter de prendre pour demain. Ce que le dossier
+  refuse est une décision **par commande** ; une bascule **par journée** acte
+  une heure, pas un tri. L'arrêt automatique (plus bas) fait aujourd'hui ce
+  geste à l'heure dite.
+- **Une seule décision, sous le verrou.** La journée est verrouillée puis
+  RECHARGÉE dans une unité de travail (depuis le 2026-10-06 : chargée hors
+  verrou, deux arrêts concurrents fermaient tous les deux). Les retraits de
+  l'annulation staff, les réassorts « pour demain » et les commandes sont lus
+  sous le même verrou (les commandes depuis le 2026-11-02).
+- **La réannonce n'est pas un arrêt de plus.** Rejouer l'arrêt ne recalcule
+  rien — le compte à produire est un instantané. Le fait est **republié**
+  sous une clé neuve (`ProductionDayClosedEvent`), avec la liste à coliser
+  (même clé par commande, la boîte d'envoi absorbe). Le fait est durable
+  depuis le 2026-10-04 (`journalisation/plan-boite-d-envoi.md`) : la boîte
+  d'envoi reprend un abonné qui échoue, et la réannonce n'est plus que le
+  filet — celui qui fait apprendre au commerce les commandes d'un retirage.
+  La réponse dit laquelle des deux choses vient d'arriver (`alreadyClosed`).
+- **Une journée arrêtée par un lancement « au plus tôt »** (la journée jamais
+  arrêtée qu'un « Lancer » ouvre arrêtée, `reassort-boutiques/au-plus-tot.md`)
+  n'a jamais publié `production.day_closed`, et sa réannonce n'en publie pas
+  non plus (2026-11-02) : le fait annoncerait au commerce et à la livraison
+  un arrêt du plan qui n'a pas eu lieu. Le fait du lancement (`openedPlan`)
+  l'a déjà dit. `ProductionDay.openedByLaunch` le reconnaît : l'instant de
+  l'arrêt est celui d'un lancé.
+- **Le journal et la boîte d'envoi dans la MÊME transaction.** L'arrêt écrit
+  `production_day.closed` au journal et `production.day_closed` dans la boîte
+  d'envoi, dans l'unité de travail qui tient le verrou et où la journée
+  s'écrit : les trois, ou aucun. La réannonce n'écrit AUCUN fait au journal —
+  un second « arrêtée » mentirait sur l'heure et l'auteur. Les abonnés ne
+  tournent pas dans cette transaction : le relais les livre après la
+  validation, chacun dans sa propre unité de travail.
+- **La liste à coliser.** Un `production.packing_list_drawn` par commande de
+  l'instantané (`colisage/colisage.md` §11), et un
+  `production.resupply_list_drawn` par réassort d'un point servi par
+  transfert, même unité de travail, même instant.
+- **Qui colisera.** Toute journée arrêtée naît au colisage (`packing_owner =
+packing`, Hugo, 2026-10-04 : « on bascule direct »). Une journée arrêtée
+  avant la bascule garde `legacy`.
+- **L'accusé.** La commande rend `{ date, absorbed, alreadyClosed, closedAt }`.
+  Ce n'est pas un modèle de lecture mais l'accusé du geste (décision D2 de
+  l'audit du réassort, 2026-11-02, écrite sur `CloseProductionDayCommand`) ;
+  même exception pour le retirage et la réouverture.
+
 ## Rouvrir une journée arrêtée
 
 **État au 2026-10-14** (décision de Hugo, plan de lancement §3). Bâti, pas
@@ -118,9 +190,13 @@ plan : une fournée déclarée et non annulée (ou une ligne cochée par l'ancie
 poste), un colisage commencé (un contenant ouvert, même annulé, une ligne au
 bac, un bac fermé), une tournée chargée (un bac chargé) ou partie. Le fournil
 pose la question au colisage et à la livraison par deux ports qu'il déclare
-(`DayPackingProgressReader`,
-`DayDispatchProgressReader`), **avant** le verrou ;
-l'agrégat (`ProductionDay.reopen`) décide sous le verrou de l'arrêt.
+(`DayPackingProgressReader`, `DayDispatchProgressReader`), **sous** le verrou
+de l'arrêt (depuis le 2026-11-02 — lue avant, un colisage commencé entre la
+lecture et le verrou n'était pas vu) ; l'agrégat (`ProductionDay.reopen`)
+décide. L'autre moitié de la garde : un geste du colisage ou de la livraison
+tient le même verrou en mode **partagé** (`ArrestedPlanHold`,
+`production/channels/packing/`) ; validé avant la réouverture, elle le voit ;
+arrivé après, il trouve le plan rouvert.
 
 ```mermaid
 sequenceDiagram
@@ -130,9 +206,10 @@ sequenceDiagram
     participant K as Colisage
     participant L as Livraison
     É->>F: rouvrir J
+    F->>F: verrou de J
     F->>K: le colisage de J a-t-il commencé ?
     F->>L: une tournée de J est-elle chargée ou partie ?
-    F->>F: verrou de J, relecture, reopen (refus éventuel)
+    F->>F: relecture, reopen (refus éventuel)
     F-->>C: production.day_reopened
     F-->>K: production.day_reopened
     F-->>L: production.day_reopened

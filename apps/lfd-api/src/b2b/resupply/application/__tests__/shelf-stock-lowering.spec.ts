@@ -1,10 +1,10 @@
 import { ShelfStockAlreadySoldError } from "../../domain/resupply-receipt-errors.js";
 import { CorrectReceivedResupplyLineCommand } from "../correct-received-resupply-line.command.js";
-import { CorrectResupplyLineCommand } from "../correct-resupply-line.command.js";
+import { CorrectUnorderedReceiptLineCommand } from "../correct-unordered-receipt-line.command.js";
 import { GetResupplyReceiptQuery } from "../get-resupply-receipt.query.js";
-import { ReceiveResupplyLineCommand } from "../receive-resupply-line.command.js";
+import { ReceiveUnorderedReceiptLineCommand } from "../receive-unordered-receipt-line.command.js";
 import { ReceiveSiteResupplyCommand } from "../receive-site-resupply.command.js";
-import { WithdrawResupplyLineCommand } from "../withdraw-resupply-line.command.js";
+import { WithdrawUnorderedReceiptLineCommand } from "../withdraw-unordered-receipt-line.command.js";
 import { CRO_24, DAY, OTHER, placed, setup, SITE } from "./resupply-receipt-setup.js";
 
 /** Le Village a reçu 24 croissants d'un réassort, et une ligne croissant à 0 sans commande. */
@@ -12,7 +12,7 @@ async function stocked() {
   const bench = setup();
   bench.resupplies.put(placed("r_cro", CRO_24));
   await bench.receiveResupply.execute(new ReceiveSiteResupplyCommand(SITE, "r_cro", "s"));
-  await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "CRO", 0, "s"));
+  await bench.receive.execute(new ReceiveUnorderedReceiptLineCommand(SITE, DAY, "CRO", 0, "s"));
   return bench;
 }
 
@@ -94,16 +94,16 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
 
   it("refuse de corriger ou de retirer une ligne sans commande quand le reste passerait sous zéro", async () => {
     const bench = await stocked();
-    await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "PAC", 5, "s"));
+    await bench.receive.execute(new ReceiveUnorderedReceiptLineCommand(SITE, DAY, "PAC", 5, "s"));
     bench.draws.set(DAY, SITE, [
       { sku: "PAC", label: "Pain au chocolat", quantity: 3, saleUnit: "piece" as const },
     ]);
 
     await expect(
-      bench.correct.execute(new CorrectResupplyLineCommand(SITE, DAY, "PAC", 2, "s")),
+      bench.correct.execute(new CorrectUnorderedReceiptLineCommand(SITE, DAY, "PAC", 2, "s")),
     ).rejects.toBeInstanceOf(ShelfStockAlreadySoldError);
     await expect(
-      bench.withdraw.execute(new WithdrawResupplyLineCommand(SITE, DAY, "PAC", "s")),
+      bench.withdraw.execute(new WithdrawUnorderedReceiptLineCommand(SITE, DAY, "PAC", "s")),
     ).rejects.toBeInstanceOf(ShelfStockAlreadySoldError);
   });
 
@@ -113,7 +113,7 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
       { sku: "CRO", label: "Croissant", quantity: 20, saleUnit: "piece" as const },
     ]);
 
-    await bench.withdraw.execute(new WithdrawResupplyLineCommand(SITE, DAY, "CRO", "s"));
+    await bench.withdraw.execute(new WithdrawUnorderedReceiptLineCommand(SITE, DAY, "CRO", "s"));
 
     expect(bench.lock.taken).toEqual([`${DAY}:${SITE}`]);
   });
@@ -132,12 +132,12 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
 
   it("ne refuse pas une hausse, même si le reste reste sous zéro", async () => {
     const bench = await stocked();
-    await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "PAC", 1, "s"));
+    await bench.receive.execute(new ReceiveUnorderedReceiptLineCommand(SITE, DAY, "PAC", 1, "s"));
     bench.draws.set(DAY, SITE, [
       { sku: "PAC", label: "Pain au chocolat", quantity: 4, saleUnit: "piece" as const },
     ]);
 
-    await bench.correct.execute(new CorrectResupplyLineCommand(SITE, DAY, "PAC", 2, "s"));
+    await bench.correct.execute(new CorrectUnorderedReceiptLineCommand(SITE, DAY, "PAC", 2, "s"));
 
     await expect(bench.stock.at(SITE, DAY)).resolves.toContainEqual({
       sku: "PAC",
@@ -153,7 +153,9 @@ describe("le reste du jour au poids (lot L2b-1)", () => {
   /** 5 kg de saumon reçus sans commande, 1,25 kg pris par une commande sur stock. */
   async function weighed() {
     const bench = await stocked();
-    await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "SAU", 5000, "s"));
+    await bench.receive.execute(
+      new ReceiveUnorderedReceiptLineCommand(SITE, DAY, "SAU", 5000, "s"),
+    );
     bench.draws.set(DAY, SITE, [
       { sku: "SAU", label: "Saumon gravlax", quantity: 1250, saleUnit: "weight" as const },
       { sku: "CRO", label: "Croissant", quantity: 3, saleUnit: "piece" as const },
@@ -186,7 +188,7 @@ describe("le reste du jour au poids (lot L2b-1)", () => {
     const bench = await weighed();
 
     const refused = bench.correct.execute(
-      new CorrectResupplyLineCommand(SITE, DAY, "SAU", 1000, "s"),
+      new CorrectUnorderedReceiptLineCommand(SITE, DAY, "SAU", 1000, "s"),
     );
 
     await expect(refused).rejects.toBeInstanceOf(ShelfStockAlreadySoldError);
@@ -198,7 +200,9 @@ describe("le reste du jour au poids (lot L2b-1)", () => {
   it("accepte une baisse jusqu'au déjà-vendu", async () => {
     const bench = await weighed();
 
-    await bench.correct.execute(new CorrectResupplyLineCommand(SITE, DAY, "SAU", 1250, "s"));
+    await bench.correct.execute(
+      new CorrectUnorderedReceiptLineCommand(SITE, DAY, "SAU", 1250, "s"),
+    );
 
     await expect(bench.stock.at(SITE, DAY)).resolves.toContainEqual({
       sku: "SAU",

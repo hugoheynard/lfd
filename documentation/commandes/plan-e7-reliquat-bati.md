@@ -220,7 +220,7 @@ IS NOT NULL)`. Il **reste NULL au rang 1**, pour toujours : la date du BL-1
     `delivery.prisma:829`) est remplacé par une **table fille**
     `delivery_day_readiness_shipment (service_day, order_id, rank)`, PK sur les
     trois ; les faits qui portaient des `orderIds` nus —
-    `ProductionDayRetakenEvent` (`retake-production-day.handler.ts:126`),
+    `ProductionDayRetakenEvent` (`apps/lfd-api/src/production/application/services/retake-recording.ts`),
     `DeliveryRoundDepartedFact` (`delivery-departure-support.ts:112`),
     `DeliveryOrdersBroughtBackFact` — portent une liste `shipments:
 [{ orderId, rank }]` ; leur `fromPayload` lit l'ancienne forme `orderIds`

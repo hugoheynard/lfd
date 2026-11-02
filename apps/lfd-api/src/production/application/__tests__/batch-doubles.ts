@@ -72,6 +72,16 @@ export class InMemoryBatches extends ProductionBatchRepository {
       : Promise.resolve(stored);
   }
 
+  /** Même sémantique que `record`, sans relecture ; la trace note chaque fournée. */
+  async recordInherited(
+    day: ServiceDay,
+    batches: readonly ProductionBatchSnapshot[],
+  ): Promise<void> {
+    for (const batch of batches) {
+      await this.record(day, batch);
+    }
+  }
+
   cancel(day: ServiceDay, id: string, mark: PackedMark): Promise<void> {
     this.trace.push(`cancel:${id}`);
     const stored = this.rows.get(id);

@@ -126,6 +126,11 @@ export class BakehouseResupplyCard {
   protected readonly sites = signal<readonly SiteChoice[]>([]);
   protected readonly articles = signal<readonly ResupplyArticleView[]>([]);
   protected readonly siteId = signal<string | null>(null);
+  /**
+   * Un brouillon en main garde son point (D3, 2026-11-02) : le serveur refuse
+   * de le déplacer, la carte ne le propose donc pas.
+   */
+  protected readonly siteLocked = computed(() => this.draftsStore.currentId() !== null);
   protected readonly target = signal<ResupplyTarget>('asap');
   /** La quantité saisie par article ; un article absent n'est pas demandé. */
   protected readonly quantities = signal<ReadonlyMap<string, number>>(new Map());

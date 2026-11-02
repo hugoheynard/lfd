@@ -87,4 +87,31 @@ describe("SiteResupply.sentFromReserve — une sortie de réserve", () => {
     expect(resupply.recordLaunch({ at: LAUNCHED_AT, byName: "Paul" })).toBe(false);
     expect(resupply.launched).toBeNull();
   });
+
+  /**
+   * Régression (D4, 2026-11-02) : « Monté » sur une sortie de réserve exigeait
+   * un lancement qu'elle ne peut jamais avoir — « lancez-le d'abord », impossible.
+   */
+  it("n'exige pas de lancement pour arriver : il n'y a rien à lancer", () => {
+    const resupply = fromReserve();
+
+    expect(resupply.markMounted({ at: LAUNCHED_AT, author: LOU }, null, false)).toBe(true);
+    expect(resupply.arrived).toEqual({ at: LAUNCHED_AT, author: LOU });
+  });
+
+  it("répond au code du réassort, pas à celui du colisage, quand la réserve n'est pas du jour", () => {
+    const refusal = refusalOf(() => fromReserve(undefined, "2026-01-01"));
+
+    expect(refusal).toBeInstanceOf(ReserveNotTodayError);
+    expect(refusal).toMatchObject({ code: "resupply.order.reserve_not_today" });
+  });
 });
+
+function refusalOf(gesture: () => unknown): unknown {
+  try {
+    gesture();
+  } catch (error: unknown) {
+    return error;
+  }
+  return null;
+}

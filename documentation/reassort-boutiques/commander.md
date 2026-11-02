@@ -17,7 +17,7 @@ flowchart LR
 
 ## 1. L'agrégat `SiteResupply`
 
-`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:65` — un point, une
+`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:64` — un point, une
 visée (`tomorrow` | `asap`), une **journée déduite** de l'instant du geste à
 l'heure de Paris (demain ou aujourd'hui), jamais saisie ; des lignes (SKU,
 libellé figé du catalogue publié, **unité** `piece` | `weight`, quantité
@@ -26,15 +26,18 @@ origine, l'auteur et l'instant de chaque geste. Aucun champ monétaire.
 
 | Méthode                       | Ligne    | Règle                                                                                                                                  |
 | ----------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `draft`                       | 94       | la demande en cours du comptoir                                                                                                        |
-| `sentByBakehouse`             | 109      | créé et envoyé d'un geste, jamais de brouillon ; un article donné deux fois s'additionne                                               |
-| `sentFromReserve`             | 138      | « au plus tôt », ne se lance ni ne s'annule                                                                                            |
-| `rename`                      | 205      | la demande en cours seulement ; envoyée, elle ne se renomme plus                                                                       |
-| `addLine`                     | 333      | un article déjà présent voit sa quantité **s'additionner** ; deux unités pour un même article refusées (`resupply.sale_unit.mismatch`) |
-| `correctLine`, `withdrawLine` | 350, 360 | entier ≥ 1 ; la demande peut rester vide                                                                                               |
-| `assertSeen`                  | 370      | verrou de version : `resupply.order.changed_meanwhile` (409)                                                                           |
-| `place`                       | 386      | vide refusé (400) ; « pour demain » refusé après l'heure du réassort ou sur un plan arrêté ; journée passée refusée                    |
-| `cancel`                      | 425      | une fois, jamais une suppression ; refus ci-dessous                                                                                    |
+| `draft`                       | 85       | la demande en cours du comptoir                                                                                                        |
+| `sentByBakehouse`             | 93       | créé et envoyé d'un geste, jamais de brouillon ; un article donné deux fois s'additionne                                               |
+| `sentFromReserve`             | 111      | « au plus tôt », ne se lance ni ne s'annule ; une autre journée que celle du geste refusée (`resupply.order.reserve_not_today`)        |
+| `rename`                      | 164      | la demande en cours seulement ; envoyée, elle ne se renomme plus                                                                       |
+| `addLine`                     | 230      | un article déjà présent voit sa quantité **s'additionner** ; deux unités pour un même article refusées (`resupply.sale_unit.mismatch`) |
+| `correctLine`, `withdrawLine` | 236, 242 | entier ≥ 1 ; la demande peut rester vide                                                                                               |
+| `assertSeen`                  | 251      | verrou de version : `resupply.order.changed_meanwhile` (409)                                                                           |
+| `isPlacementOf`               | 262      | le double clic sur « Envoyer » (D5) : envoyé en `version + 1`, il est parti tel que le poste l'a vu                                    |
+| `place`                       | 271      | vide refusé (400) ; « pour demain » refusé après l'heure du réassort ou sur un plan arrêté ; journée passée refusée                    |
+| `cancel`                      | 287      | une fois, jamais une suppression ; refus ci-dessous                                                                                    |
+
+Lignes relues le 2026-11-02, après l'audit du réassort.
 
 `resupplyNameOf` (`domain/resupply-name.ts:13`) : rogné, blancs intérieurs
 ramenés à un espace, vide → `null`, plus de 60 caractères refusé (400),
@@ -79,7 +82,11 @@ index unique partiel `site_resupply_open_draft_key … WHERE placed_at IS NULL`.
 Deux postes qui l'ouvrent au même instant : le second est refusé
 (`resupply.order.draft_opened_meanwhile`, 409) et refait son geste.
 Corriger, retirer et envoyer portent la version vue ; ajouter n'en porte pas
-(deux ajouts se cumulent, jamais ne s'écrasent).
+(deux ajouts se cumulent, jamais ne s'écrasent). L'envoi lit la clé de la
+journée, prend son verrou, PUIS charge la demande (comme l'annulation,
+2026-11-02). Un second « Envoyer » portant la MÊME version que l'envoi qui a
+réussi — le double clic — rend 204 sans rien écrire (D5) ; une version plus
+ancienne reste refusée en 409.
 
 Une demande restée sans envoi garde sa journée ; le matin de cette journée,
 elle part encore si l'heure le permet ; la journée passée, elle quitte
@@ -140,7 +147,7 @@ retrouvé depuis n'importe quel poste) vivent dans leur propre table,
 interdit qu'un réassort du fournil y soit brouillon, l'index partiel est
 celui du comptoir, et un `SiteResupply` porte une journée qu'un brouillon
 repris trois jours plus tard aurait périmée. Agrégat
-`BakehouseResupplyDraft` (`domain/bakehouse-resupply-draft.ts:60`) : point,
+`BakehouseResupplyDraft` (`domain/bakehouse-resupply-draft.ts:63`) : point,
 visée, nom, lignes en `jsonb` (au moins une, 200 au plus, un SKU deux fois
 refusé), **aucune journée** (calculée à l'envoi), version, statut
 `open → sent | discarded` dans ce sens seulement, `sent_resupply_id` non nul
@@ -149,7 +156,10 @@ si et seulement si `sent`. Pas de suppression : « Supprimer » le passe
 l'enregistrement ; un article dont l'unité a changé aussi
 (`resupply.sale_unit.changed`). Envoyer un brouillon reçoit le contenu
 entier de l'écran et la version lue ; un refus laisse le brouillon `open`.
-Les écritures ne vont pas au journal, comme l'envoi qu'elles empruntent.
+**Un brouillon ne change pas de point** (D3, 2026-11-02) : son point est figé
+à l'ouverture, et l'enregistrer ou l'envoyer vers un autre est refusé
+(`resupply.bakehouse_draft.site_frozen`, 409) ; la carte grise le choix du
+point dès qu'un brouillon est en main. Les écritures ne vont pas au journal, comme l'envoi qu'elles empruntent.
 
 **Routes** — `admin/bakehouse-resupplies`
 (`http/admin-bakehouse-resupplies.controller.ts:44`), `production_resupply` :

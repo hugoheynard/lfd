@@ -33,7 +33,8 @@ export interface ResupplyLaunchSubject {
  * commandes, les retraits de l'annulation staff et les réassorts « pour
  * demain » envoyés. Lues avant le verrou, une commande admise entre la
  * lecture et le verrou échappait à la garde « une journée jamais arrêtée ne
- * s'ouvre pas avec ce seul réassort » (G-A, audit du 2026-11-02).
+ * s'ouvre pas avec ce seul réassort » (trou trouvé par l'audit du réassort
+ * le 2026-11-02 : une lecture hors verrou que la passation pouvait devancer).
  */
 @Injectable()
 export class ResupplyLaunchReading {

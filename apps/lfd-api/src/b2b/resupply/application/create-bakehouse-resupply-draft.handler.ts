@@ -4,10 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { BakehouseResupplyDraft } from "../domain/bakehouse-resupply-draft.js";
-import {
-  BakehouseResupplyDraftAlreadyWrittenError,
-  BakehouseResupplyDraftKeyTakenError,
-} from "../domain/bakehouse-resupply-draft-errors.js";
+import { BakehouseResupplyDraftAlreadyWrittenError } from "../domain/bakehouse-resupply-draft-errors.js";
 import { BakehouseResupplyDraftRepository } from "../domain/bakehouse-resupply-draft.repository.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
 import { ensureSiteExists, savedDraft } from "./bakehouse-resupply-draft-support.js";
@@ -75,9 +72,7 @@ export class CreateBakehouseResupplyDraftHandler implements ICommandHandler<
     if (existing === null) {
       return null;
     }
-    if (existing.content.siteId !== command.content.siteId) {
-      throw new BakehouseResupplyDraftKeyTakenError(command.key);
-    }
+    existing.assertReplayableFor(command.content.siteId);
     return { id: existing.id, version: existing.version };
   }
 }

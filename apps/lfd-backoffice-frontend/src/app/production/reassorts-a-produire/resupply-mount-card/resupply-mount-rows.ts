@@ -29,7 +29,9 @@ const UNKNOWN_POINT = 'Point inconnu';
  * point servi par transfert arrivent à la réception du transfert, pas par
  * « Monté ». Un réassort annulé n'est pas à monter. Un « au plus tôt » pas
  * encore lancé se montre sans « Monté » : il n'est pas au plan du fournil
- * (correctif R4a/Q4, lot R4b).
+ * (correctif R4a/Q4, lot R4b). Une sortie de réserve (A1.4) n'y figure pas :
+ * le pain est déjà fait et parti du colisage, il n'y a rien à monter (D4,
+ * 2026-11-02) — elle arrive par sa réception au point.
  */
 export function resupplyMountRows(view: ResupplyProductionDayView): readonly ResupplyMountRow[] {
   const byTransfer = new Set(view.transferSiteIds);
@@ -37,7 +39,7 @@ export function resupplyMountRows(view: ResupplyProductionDayView): readonly Res
     .filter((site) => !byTransfer.has(site.siteId))
     .flatMap((site) =>
       site.resupplies
-        .filter((resupply) => resupply.status === 'placed')
+        .filter((resupply) => resupply.status === 'placed' && resupply.origin !== 'reserve')
         .map((resupply) => ({
           siteId: site.siteId,
           resupplyId: resupply.id,

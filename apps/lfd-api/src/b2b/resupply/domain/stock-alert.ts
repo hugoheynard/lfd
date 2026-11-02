@@ -1,10 +1,10 @@
-import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 import {
   IncompleteStockAlertError,
   StockAlertAlreadyLiftedError,
   UnknownStockAlertLevelError,
   UnknownStockAlertLiftReasonError,
 } from "./stock-alert-errors.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
 
 /** `out_of_stock` : rupture ; `low` : stock faible. */
 export type StockAlertLevel = "out_of_stock" | "low";
@@ -33,14 +33,8 @@ export function stockAlertLiftReasonOf(value: string): StockAlertLiftReason {
   return reason;
 }
 
-/** Un geste daté et signé. */
-export interface StockAlertTrace {
-  readonly at: Date;
-  readonly author: StaffTrace;
-}
-
 /** La levée : qui, quand, pourquoi. */
-export interface StockAlertLift extends StockAlertTrace {
+export interface StockAlertLift extends ResupplyTrace {
   readonly reason: StockAlertLiftReason;
 }
 
@@ -53,7 +47,7 @@ export interface StockAlertSnapshot {
   readonly level: StockAlertLevel;
   readonly version: number;
   /** La DERNIÈRE déclaration : une redéclaration la remplace. */
-  readonly declared: StockAlertTrace;
+  readonly declared: ResupplyTrace;
   readonly lifted: StockAlertLift | null;
 }
 
@@ -78,9 +72,15 @@ export class StockAlert {
     readonly siteId: string,
     readonly sku: string,
     readonly label: string,
+    /**
+     * La version LUE en base (`0` : pas encore écrite). Elle n'avance pas en
+     * mémoire : l'adaptateur écrit `version + 1` sous ce verrou, et un agrégat
+     * ne se sauve qu'une fois par unité de travail — un second `save` sur la
+     * même instance buterait sur son propre verrou (choix du 2026-11-02).
+     */
     readonly version: number,
     private currentLevel: StockAlertLevel,
-    private declaredTrace: StockAlertTrace,
+    private declaredTrace: ResupplyTrace,
     private liftedTrace: StockAlertLift | null,
   ) {}
 
@@ -91,7 +91,7 @@ export class StockAlert {
     readonly sku: string;
     readonly label: string;
     readonly level: StockAlertLevel;
-    readonly trace: StockAlertTrace;
+    readonly trace: ResupplyTrace;
   }): StockAlert {
     const sku = input.sku.trim();
     const label = input.label.trim();
@@ -118,7 +118,7 @@ export class StockAlert {
     return this.currentLevel;
   }
 
-  get declared(): StockAlertTrace {
+  get declared(): ResupplyTrace {
     return this.declaredTrace;
   }
 
@@ -131,23 +131,23 @@ export class StockAlert {
   }
 
   /** Redéclare l'alerte vivante : le niveau change, l'auteur et l'instant aussi. */
-  redeclare(level: StockAlertLevel, trace: StockAlertTrace): void {
+  redeclare(level: StockAlertLevel, trace: ResupplyTrace): void {
     this.assertLive();
     this.currentLevel = level;
     this.declaredTrace = trace;
   }
 
   /** Le comptoir lève l'alerte à la main. */
-  liftByHand(trace: StockAlertTrace): void {
+  liftByHand(trace: ResupplyTrace): void {
     this.lift(trace, "manual");
   }
 
   /** Un réassort de l'article a été reçu au point : l'alerte tombe. */
-  liftOnReceipt(trace: StockAlertTrace): void {
+  liftOnReceipt(trace: ResupplyTrace): void {
     this.lift(trace, "receipt");
   }
 
-  private lift(trace: StockAlertTrace, reason: StockAlertLiftReason): void {
+  private lift(trace: ResupplyTrace, reason: StockAlertLiftReason): void {
     this.assertLive();
     this.liftedTrace = { ...trace, reason };
   }

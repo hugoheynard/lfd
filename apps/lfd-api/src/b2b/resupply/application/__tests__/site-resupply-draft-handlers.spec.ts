@@ -37,6 +37,7 @@ import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
 import {
   FixedResupplyCutoff,
   InMemorySiteResupplies,
+  InMemorySiteResupplyPlanKeys,
   InMemorySiteResupplyReader,
   InMemoryResupplyUsedNames,
   FixedLaunches,
@@ -95,7 +96,15 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
     add: new AddSiteResupplyLineHandler(store, catalogue, sites, clock, ids),
     correct: new CorrectSiteResupplyLineHandler(store),
     withdraw: new WithdrawSiteResupplyLineHandler(store),
-    send: new SendSiteResupplyHandler(store, cutoff, staff, clock, gate, uow),
+    send: new SendSiteResupplyHandler(
+      store,
+      new InMemorySiteResupplyPlanKeys(store),
+      cutoff,
+      staff,
+      clock,
+      gate,
+      uow,
+    ),
     bakehouse: new SendBakehouseResupplyHandler(
       store,
       catalogue,

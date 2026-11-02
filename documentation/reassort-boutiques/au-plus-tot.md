@@ -51,8 +51,9 @@ sequenceDiagram
 ```
 
 - **L'agrégat** : `ProductionDay.launchResupply`
-  (`apps/lfd-api/src/production/domain/entities/production-day.ts:433`,
-  règles dans `production-day.launch.ts`) — un geste à part du retirage, qui
+  (`apps/lfd-api/src/production/domain/entities/production-day.ts`, règles
+  dans `production-day.launch.ts`, compte dans
+  `apps/lfd-api/src/production/domain/entities/production-day.plan.ts`) — un geste à part du retirage, qui
   n'absorbe que des commandes. Le lancé est rangé à part des réassorts du
   soir (`launchedResupplies`, `production_resupply.kind = asap`, CHECK « asap
   ⇔ lancé »), ajouté au compte des fournées. Refus : déjà lancé
@@ -64,8 +65,12 @@ sequenceDiagram
   seul réassort (journal `production_day.resupply_launched`,
   `openedPlan: true`) — sauf s'il restait des commandes ou des réassorts du
   soir à figer : 409 « arrêtez d'abord le plan du jour »
-  (`production.resupply.launch_on_unarrested_plan`). Ni
-  `production.day_closed`, ni dossier.
+  (`production.resupply.launch_on_unarrested_plan`). Une journée arrêtée
+  puis **rouverte** n'est pas « jamais arrêtée » : 409 nommé
+  (`production.resupply.launch_on_reopened_plan`, décision D1 du
+  2026-11-02). Ni `production.day_closed`, ni dossier — ni au lancement, ni
+  quand un arrêt ultérieur trouve la journée déjà arrêtée
+  (`ProductionDay.openedByLaunch`).
 - **Le refus d'annuler est synchrone** : `LaunchedResupplies.isLaunched`
   (`production/channels/commerce/launched-resupplies.ts:22`, déclaré et
   implémenté par le fournil) est lu par `ResupplyPlanGate.launched` sous le
@@ -145,12 +150,15 @@ sequenceDiagram
   avant « Partir » ». Un transfert parti ne reçoit plus rien.
 - **« Monté »** sur un « au plus tôt » non lancé est refusé
   (`resupply.order.not_launched`, 409), sous le verrou de la journée ; la
-  carte « À monter » dit « À lancer d'abord ».
+  carte « À monter » dit « À lancer d'abord ». Une sortie de réserve en est
+  exclue (D4, 2026-11-02) : elle ne se lance jamais, le domaine ne lui
+  oppose donc pas « lancez-le d'abord », et la carte « À monter » ne la
+  liste pas.
 
 ## 5. Le suivi
 
 `SiteResupply.recordLaunch` et `recordDeparture`
-(`b2b/resupply/domain/site-resupply.ts:198`, `:210`, la règle dans
+(`b2b/resupply/domain/site-resupply.ts:203`, `:215`, la règle dans
 `site-resupply-progress.ts`) posent l'affichage ;
 rejoués, ils ne changent rien. Le comptoir (`resupply-receptions-card`,
 `shared/resupply-steps.ts`) montre Envoyé → Lancé → Parti → Arrivé, chacun

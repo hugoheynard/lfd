@@ -55,9 +55,7 @@ export class UnmarkWorksheetLineHandler implements ICommandHandler<
       await this.lock.lock(day);
       const current = await this.days.load(day);
       const cancelled = current.batchesToUncheck(command.sku);
-      for (const inherited of current.materialize(command.sku)) {
-        await this.batches.record(day, inherited);
-      }
+      await this.batches.recordInherited(day, current.materialize(command.sku));
       const mark = { at: this.clock.now(), by: command.staffUserId };
       if (current.packingOwner === "packing") {
         for (const unhanded of await this.handoffs.requestReturns(day, cancelled, mark)) {

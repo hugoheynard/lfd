@@ -1,4 +1,7 @@
-import { StockMoveQuantityInvalidError } from "../../errors/packing-shop-release-errors.js";
+import {
+  PackedStockInconsistentError,
+  StockMoveQuantityInvalidError,
+} from "../../errors/packing-shop-release-errors.js";
 import { LineNotProducedYetError } from "../../errors/packing-station-errors.js";
 import { PackingStock } from "../packing-stock.js";
 
@@ -76,14 +79,15 @@ describe("PackingStock — frontières de l'invariant", () => {
   });
 
   /**
-   * Ressortir plus que ce qui est au bac ne fait pas de pièces négatives : le
-   * libre ne dépasse alors jamais le reçu.
+   * Ressortir plus que ce qui est au bac ne fait pas de pièces négatives, et
+   * ne fabrique pas de libre. Jusqu'au 2026-11-02 le compte plafonnait à zéro
+   * en silence ; il refuse désormais (audit du réassort), sans rien changer.
    */
-  it("ressortir plus que le bac ne contient plafonne à zéro, sans libre fantôme", () => {
+  it("ressortir plus que le bac ne contient est refusé, sans libre fantôme", () => {
     const held = stock(10, 0, 3);
-    held.release(50, "piece");
-    expect(held.packed).toBe(0);
-    expect(held.free).toBe(10);
+    expect(() => held.release(50, "piece")).toThrow(PackedStockInconsistentError);
+    expect(held.packed).toBe(3);
+    expect(held.free).toBe(7);
   });
 
   it("un libre jamais négatif même si la base est en dette", () => {

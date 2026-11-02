@@ -159,7 +159,7 @@ export class ResupplyDayPassedError extends BusinessError {
 export class ReserveNotTodayError extends BusinessError {
   constructor(reserveDay: string, today: string) {
     super(
-      "packing.reserve.not_today",
+      "resupply.order.reserve_not_today",
       `Seule la réserve du jour (${today}) s'envoie en boutique, pas celle du ${reserveDay}. Revenez à la journée d'aujourd'hui dans la Supervision.`,
     );
   }
@@ -174,6 +174,16 @@ export class ReserveResupplyNotCancellableError extends BusinessError {
     super(
       "resupply.order.reserve_not_cancellable",
       "Ce réassort est du pain envoyé par la réserve du colisage : il est déjà parti et ne s'annule pas. Réceptionnez ce qui arrive vraiment, avec l'écart s'il y en a un.",
+    );
+  }
+}
+
+/** Seul un réassort envoyé et non annulé se réceptionne. */
+export class ResupplyNotReceivableError extends BusinessError {
+  constructor() {
+    super(
+      "resupply.receipt.resupply_not_receivable",
+      "Ce réassort n'a pas été envoyé au fournil, ou a été annulé : il n'y a rien à réceptionner. Saisissez ce qui est arrivé dans « Réassort sans commande ».",
     );
   }
 }

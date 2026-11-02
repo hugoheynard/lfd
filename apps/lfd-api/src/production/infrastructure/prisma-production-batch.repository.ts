@@ -99,19 +99,7 @@ export class PrismaProductionBatchRepository extends ProductionBatchRepository {
    */
   async record(day: ServiceDay, batch: ProductionBatchSnapshot): Promise<RecordedBatch> {
     await this.prisma.productionBatch.createMany({
-      data: [
-        {
-          id: batch.id,
-          serviceDay: day.value,
-          sku: batch.sku,
-          quantity: batch.quantity,
-          recordedAt: batch.recorded.at,
-          recordedBy: batch.recorded.by,
-          initials: batch.recorded.initials,
-          cancelledAt: batch.cancelled?.at ?? null,
-          cancelledBy: batch.cancelled?.by ?? null,
-        },
-      ],
+      data: [batchRowOf(day, batch)],
       skipDuplicates: true,
     });
     const stored = await this.prisma.productionBatch.findUniqueOrThrow({
@@ -121,10 +109,39 @@ export class PrismaProductionBatchRepository extends ProductionBatchRepository {
     return { serviceDay: stored.serviceDay, batch: batchOf(stored) };
   }
 
+  /** Une seule requête, quel que soit le nombre de coches héritées. */
+  async recordInherited(
+    day: ServiceDay,
+    batches: readonly ProductionBatchSnapshot[],
+  ): Promise<void> {
+    if (batches.length === 0) {
+      return;
+    }
+    await this.prisma.productionBatch.createMany({
+      data: batches.map((batch) => batchRowOf(day, batch)),
+      skipDuplicates: true,
+    });
+  }
+
   async cancel(day: ServiceDay, id: string, mark: PackedMark): Promise<void> {
     await this.prisma.productionBatch.updateMany({
       where: { id, serviceDay: day.value, cancelledAt: null },
       data: { cancelledAt: mark.at, cancelledBy: mark.by },
     });
   }
+}
+
+/** Fournée → ligne de `production_batch`. */
+function batchRowOf(day: ServiceDay, batch: ProductionBatchSnapshot) {
+  return {
+    id: batch.id,
+    serviceDay: day.value,
+    sku: batch.sku,
+    quantity: batch.quantity,
+    recordedAt: batch.recorded.at,
+    recordedBy: batch.recorded.by,
+    initials: batch.recorded.initials,
+    cancelledAt: batch.cancelled?.at ?? null,
+    cancelledBy: batch.cancelled?.by ?? null,
+  };
 }

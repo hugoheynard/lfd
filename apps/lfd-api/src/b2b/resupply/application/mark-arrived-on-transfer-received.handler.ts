@@ -13,9 +13,11 @@ import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { authorOf } from "../../feature-access/application/feature-access-author.js";
 import { ResupplyReceptions } from "../domain/resupply-receptions.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
-import type { SiteResupplyTrace } from "../domain/site-resupply.js";
+import type { SiteResupply } from "../domain/site-resupply.js";
+import { ResupplyNotArrivableError } from "../domain/site-resupply-gate-errors.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { ResupplyArrivedBell } from "./resupply-arrived-bell.js";
+import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const MARK_ARRIVED_ON_TRANSFER_RECEIVED = "b2b.resupply-arrived-on-transfer-received";
@@ -37,7 +39,9 @@ export const MARK_ARRIVED_ON_TRANSFER_RECEIVED = "b2b.resupply-arrived-on-transf
  *   relivré, et la relecture trouve la réception — rien ne sonne.
  * - **Un réassort introuvable sous ce point, ou qui n'est plus envoyé**
  *   (annulé, ce que le plan figé interdit), est écarté et journalisé : lever
- *   ferait relivrer le fait sans fin pour une arrivée qui n'a plus d'objet.
+ *   ferait relivrer le fait jusqu'à épuiser ses dix essais
+ *   (`MAX_DELIVERY_ATTEMPTS`, vérifié le 2026-11-02), puis le laisserait en
+ *   échec, pour une arrivée qui n'a plus d'objet.
  */
 @Injectable()
 @DurableHandler({
@@ -60,7 +64,7 @@ export class MarkArrivedOnTransferReceived implements DurableSubscriber {
     if (fact.resupplyIds.length === 0) {
       return;
     }
-    const trace: SiteResupplyTrace = {
+    const trace: ResupplyTrace = {
       at: fact.receivedAt,
       author: await authorOf(this.staff, fact.receivedByStaffId),
     };
@@ -73,22 +77,47 @@ export class MarkArrivedOnTransferReceived implements DurableSubscriber {
   private async arrive(
     siteId: string,
     resupplyId: string,
-    trace: SiteResupplyTrace,
+    trace: ResupplyTrace,
     label: string | null,
   ): Promise<void> {
     const resupply = await this.resupplies.load(siteId, resupplyId);
-    if (resupply === null || resupply.status !== "placed") {
-      this.logger.warn(
-        `Réassort ${resupplyId} du transfert reçu au point ${siteId} : introuvable ou plus ` +
-          `envoyé, il n'est pas marqué arrivé.`,
-      );
+    if (resupply === null) {
+      this.skip(siteId, resupplyId, "introuvable sous ce point");
       return;
     }
     const reception = await this.receptions.receptionOf(siteId, resupplyId);
-    if (!resupply.markArrived(trace, reception)) {
+    if (!this.arrived(resupply, trace, reception)) {
       return;
     }
     await this.resupplies.save(resupply);
     this.bell.ring(resupply, label, trace.at);
+  }
+
+  /**
+   * L'agrégat tranche : un réassort qui n'est plus envoyé refuse l'arrivée
+   * (`ResupplyNotArrivableError`) ; ce refus-là est écarté et journalisé, au
+   * lieu d'être revérifié ici sur le statut.
+   */
+  private arrived(
+    resupply: SiteResupply,
+    trace: ResupplyTrace,
+    reception: ResupplyTrace | null,
+  ): boolean {
+    try {
+      return resupply.markArrived(trace, reception);
+    } catch (error: unknown) {
+      if (!(error instanceof ResupplyNotArrivableError)) {
+        throw error;
+      }
+      this.skip(resupply.siteId, resupply.id, "plus envoyé");
+      return false;
+    }
+  }
+
+  private skip(siteId: string, resupplyId: string, why: string): void {
+    this.logger.warn(
+      `Réassort ${resupplyId} du transfert reçu au point ${siteId} : ${why}, il n'est pas ` +
+        `marqué arrivé.`,
+    );
   }
 }

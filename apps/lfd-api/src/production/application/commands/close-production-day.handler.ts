@@ -3,13 +3,9 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
-import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
-import { DayResuppliesReader } from "../../channels/commerce/day-resupplies.reader.js";
 import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
-import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
 import {
   AUTOMATIC_SIGNER,
   type PlanSigner,
@@ -17,109 +13,35 @@ import {
 } from "../../domain/entities/plan-signer.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../domain/events/production-day.events.js";
-import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { refuseCloseBeforeCutoff } from "../../domain/services/early-close.js";
 import { planStopOf } from "../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { packingListFactsOf, resupplyListFactsOf } from "../services/packing-list-facts.js";
+import { PlanArrestRecording } from "../services/plan-arrest-recording.js";
+import { PlanIntakeReading } from "../services/plan-intake-reading.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
 
 /**
- * **La clôture du plan du soir** — le moment où une journée bascule.
+ * **L'arrêt du plan du soir** — le moment où une journée bascule. Le pourquoi
+ * de chaque étape (balayer d'abord, pourquoi un geste et pas un automate, la
+ * réannonce, le journal et la boîte d'envoi dans la même transaction, la
+ * liste à coliser) est dans `documentation/fournil/arret-du-plan.md`,
+ * « Ce que fait un arrêt ».
  *
- * ## Ce que ce handler fait, et ce qu'il ne fait PAS
+ * 1. Pas avant l'heure limite : refusé AVANT le balayage, qui annulerait les
+ *    paiements de clients encore en train de commander (hors verrou).
+ * 2. Le commerce tranche les règlements restés en l'air (hors verrou : il
+ *    écrit chez lui), à CHAQUE appel, réannonce comprise.
+ * 3. Sous le verrou de la journée, dans une unité de travail : la journée
+ *    RECHARGÉE décide. Ouverte, elle s'arrête sur les retraits, les réassorts
+ *    et les commandes lus sous le même verrou — la passation et l'envoi d'un
+ *    réassort le prennent aussi, donc rien ne s'y glisse entre la lecture et
+ *    l'arrêt. Déjà arrêtée, le fait est réannoncé sans rien recalculer (sauf
+ *    une journée arrêtée par un lancement, qui n'en a jamais publié).
  *
- * Il verrouille la journée, la RECHARGE sous le verrou, lui demande de se
- * clore, l'écrit, et **publie** — tout dans une unité de travail (lot A0 du
- * plan `fournil/arret-du-plan.md`, B1, 2026-10-06 : jusque-là le
- * chargement se faisait hors verrou, et deux clôtures concurrentes fermaient
- * toutes les deux). Le balayage reste AVANT le verrou : il écrit chez le
- * commerce. Les commandes, elles, sont lues SOUS le verrou depuis le
- * 2026-11-02 (même trou que G-A de l'audit du réassort) : la passation prend
- * le même verrou par le guichet d'admission, et une commande NOUVELLE admise
- * entre une lecture faite avant et le verrou n'était pas figée — la journée
- * s'arrêtait sans elle. Le repère des révisions (`FreshDayOrders`) ne voyait
- * que les révisions ; il est retiré, la lecture sous verrou couvre les deux. Il
- * n'écrit rien chez le commerce : `confirmed` est un fait du commerce, tiré du
- * nôtre par un abonné qui vit chez lui. Chaque contexte n'écrit que ses tables.
- *
- * ## Pas avant l'heure limite (depuis le 2026-10-21)
- *
- * Le plan d'une journée s'arrête tout seul à la plus tardive de la fin du
- * rattrapage de l'heure limite générale (`limites-de-commande/plan-une-seule-heure.md`
- * §5) et de l'heure du réassort (lot R3a du réassort, `PlanStopRules`). Un
- * arrêt demandé plus tôt — à la main — est refusé AVANT le balayage, qui
- * annulerait sinon les paiements de clients encore en train de commander.
- *
- * ## Balayer d'abord, compter ensuite (depuis le 2026-09-26)
- *
- * Avant tout, il DEMANDE au commerce de trancher les règlements restés en l'air
- * pour la journée — `PendingSettlementSweeper`, un port que le fournil déclare
- * et que le commerce implémente (plan
- * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, Q1, B1). C'est le
- * commerce qui écrit, dans ses tables ; le fournil n'en connaît que la
- * question. Sans ce geste, une journée où aucune carte n'est payée resterait
- * vide, donc inarrêtable, donc ses règlements vivraient pour toujours.
- *
- * Le balayage tourne à **chaque** appel, réannonce comprise (S4) : une
- * commande passée après la première clôture doit mourir aussi. Le refus
- * « journée vide » vient APRÈS lui, et ne dit plus que la vérité : personne
- * n'a payé.
- *
- * ## Pourquoi une commande, alors que le dossier dit « pas un clic »
- *
- * ⚠️ Inflexion de conception héritée de la version précédente, et elle vaut
- * toujours. Le dossier du cycle de vie écrit que `confirmed` est automatique.
- * Les deux façons d'y arriver sans geste humain sont fermées : l'API n'a aucun
- * planificateur, et une écriture sur la lecture du lot est interdite — « une
- * requête de lecture n'écrit rien, pas même un compteur ».
- *
- * Reste le geste que l'équipe fait déjà : arrêter de prendre pour demain. Ce que
- * le dossier refuse est une décision **par commande** ; une bascule **par
- * journée** n'demande à personne de juger — elle acte une heure, pas un tri.
- *
- * ## La réannonce, et pourquoi elle n'est pas un « close » de plus
- *
- * Rejouer la clôture ne recalcule RIEN : l'agrégat refuse, parce que le compte à
- * produire est un instantané et que les commandes bougent après. Mais le fait
- * est **republié**, sous une clé neuve — cf. `ProductionDayClosedEvent`.
- *
- * Jusqu'au 2026-10-04, le fait vivait en mémoire, « ni persisté ni rejoué », et
- * la réannonce était LE rattrapage d'un abonné qui avait échoué. Il est durable
- * depuis (plan `journalisation/plan-boite-d-envoi.md`, BE3 bâti en premier) :
- * la boîte d'envoi reprend un abonné qui échoue, et la réannonce n'est plus que
- * le filet — celui qui fait apprendre au commerce les commandes d'un retirage.
- *
- * La réponse dit laquelle des deux choses vient d'arriver, plutôt que de rendre
- * deux fois le même nombre sans dire pourquoi.
- *
- * ## Le journal et la boîte d'envoi, dans la MÊME transaction
- *
- * La clôture écrit `production_day.closed` au journal et `production.day_closed`
- * dans la boîte d'envoi, dans l'unité de travail qui tient le verrou et où
- * `save` écrit : les trois, ou aucun. La réannonce n'écrit AUCUN fait au
- * journal — un second « arrêtée » mentirait sur l'heure et l'auteur — mais
- * publie dans une unité de travail, sous le même verrou.
- *
- * L'abonné du commerce ne tourne plus dans le contexte de cette transaction :
- * le relais le livre après la validation, dans SA propre unité de travail.
- *
- * ## La liste à coliser (colisage, K1 — 2026-10-04)
- *
- * Dans la même unité de travail, un `production.packing_list_drawn` par
- * commande de l'instantané (plan `colisage/colisage.md`, §11, B1).
- * La réannonce les republie : même clé par commande, la boîte d'envoi absorbe
- * (§13, MINEURS).
- *
- * ## Qui colisera (K2 — 2026-10-04)
- *
- * Toute journée arrêtée par ce binaire naît au colisage (`packing_owner =
- * packing`, §13 B1) : Hugo a tranché « on bascule direct », sans
- * interrupteur. La réannonce ne change rien au propriétaire ; une journée
- * arrêtée avant le déploiement garde `legacy` et finit sur l'ancien poste.
+ * L'accusé rendu (`ProductionPlanClosure`) n'est pas un modèle de lecture :
+ * cf. `CloseProductionDayCommand`.
  */
 @CommandHandler(CloseProductionDayCommand)
 export class CloseProductionDayHandler implements ICommandHandler<
@@ -127,47 +49,40 @@ export class CloseProductionDayHandler implements ICommandHandler<
   ProductionPlanClosure
 > {
   constructor(
-    private readonly days: ProductionDayRepository,
-    private readonly orders: DayOrdersReader,
+    private readonly reading: PlanIntakeReading,
+    private readonly recording: PlanArrestRecording,
     private readonly settlements: PendingSettlementSweeper,
+    private readonly stopRules: PlanStopRules,
+    private readonly authors: StaffAuthorDirectory,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
-    private readonly durable: DurablePublisher,
     private readonly lock: ProductionDayLock,
-    private readonly authors: StaffAuthorDirectory,
-    private readonly withdrawals: OrderWithdrawalsReader,
-    private readonly stopRules: PlanStopRules,
-    private readonly resupplies: DayResuppliesReader,
   ) {}
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
     const day = ServiceDay.of(command.serviceDay);
-    // Lecture HORS verrou, qui ne sert qu'à épargner la question au commerce
-    // quand la journée est déjà close. Elle ne décide jamais d'une clôture :
-    // la décision se reprend sous le verrou, sur la journée relue.
-    const alreadyClosed = (await this.days.load(day)).isClosed;
+    // Hors verrou, l'en-tête seul : épargner la question de l'heure limite à
+    // une journée déjà arrêtée. La décision se reprend sous le verrou.
+    const alreadyClosed = await this.reading.isClosed(day);
     if (!alreadyClosed) {
-      // AVANT le balayage : un arrêt refusé n'annule aucun paiement. Un arrêt
-      // déjà fait reste tel quel, sa réannonce n'est pas un arrêt (2026-10-21).
       await this.refuseBeforeCutoff(day);
     }
-    // Avant la branche de réannonce : le balayage vaut pour chaque appel, et
-    // une journée déjà close n'en est pas dispensée (S4). Hors du verrou :
-    // c'est un appel au commerce, qui écrit chez lui.
     await this.settlements.sweep(day);
-    if (alreadyClosed) {
-      return this.reannounce(day);
-    }
+    // Résolu même pour une réannonce : une journée rouverte entre-temps se
+    // trouve ouverte sous le verrou, et s'arrête alors signée, pas anonyme.
     const signer = await this.signerOf(command);
-    return this.closeUnderLock(day, signer);
+    return this.uow.run(async () => {
+      await this.lock.lock(day);
+      const current = await this.reading.dayUnderLock(day);
+      if (current.isClosed) {
+        return this.reannounce(day, current);
+      }
+      return this.arrest(day, current, signer);
+    });
   }
 
-  /**
-   * Pas d'arrêt avant la fin du rattrapage de l'heure limite générale pour
-   * cette journée (2026-10-21, `plan-une-seule-heure.md` §5) — lue au
-   * commerce, hors verrou, comme les commandes.
-   */
+  /** Pas d'arrêt avant la fin du rattrapage de l'heure limite (`plan-une-seule-heure.md` §5). */
   private async refuseBeforeCutoff(day: ServiceDay): Promise<void> {
     const stop = planStopOf(await this.stopRules.rules(), day.value);
     refuseCloseBeforeCutoff(day.value, stop, this.clock.now());
@@ -188,116 +103,49 @@ export class CloseProductionDayHandler implements ICommandHandler<
     return staffSigner(command.staffUserId, authors.nameOf(command.staffUserId));
   }
 
-  /**
-   * Verrouille, RECHARGE, lit les commandes, puis décide (lot A0, 2026-10-06 ;
-   * commandes sous le verrou depuis le 2026-11-02). Chargée hors
-   * verrou, deux clôtures concurrentes fermaient toutes les deux : deux
-   * instantanés, deux `production_day.closed`, deux faits « frais ». La
-   * seconde trouve désormais la journée close et réannonce.
-   */
-  private async closeUnderLock(
+  /** Sous le verrou, sur la journée relue ouverte. */
+  private async arrest(
     day: ServiceDay,
+    current: ProductionDay,
     signer: PlanSigner | null,
   ): Promise<ProductionPlanClosure> {
-    const automatic = signer?.kind === "automatic";
-    return this.uow.run(async () => {
-      await this.lock.lock(day);
-      const current = await this.days.load(day);
-      if (current.isClosed) {
-        return this.republish(day, current);
-      }
-      // Les retraits de l'annulation staff, lus SOUS le verrou : une commande
-      // annulée après la lecture du commerce y figure (plan d'annulation, C3.4).
-      const withdrawn = await this.withdrawals.withdrawnOn(day);
-      // Les réassorts pour demain, lus SOUS le verrou (lot R3a) : leur envoi
-      // et leur annulation prennent le même verrou par le guichet
-      // d'admission, donc ce qui est lu ici est définitif — rien ne s'y
-      // ajoute ni ne s'en retire après l'arrêt.
-      const resupplies = await this.resupplies.placedFor(day);
-      // Les commandes, SOUS le verrou (2026-11-02) : la passation et la
-      // révision prennent ce verrou par leur guichet, donc une commande admise
-      // avant est lue ici, et une commande admise après trouve le plan arrêté.
-      const producible = await this.orders.producibleFor(day);
-      const now = this.clock.now();
-      current.close(producible, withdrawn, now, signer, resupplies);
-      await this.days.save(current);
-      await this.events.publishTraced(
-        new ProductionDayClosedJournalEvent(day.value, current.orders.length, automatic),
-      );
-      await this.durable.publish(this.factOf(day, current, now, null).durableFact());
-      await this.publishPackingList(day, current, now);
-      return this.report(day, now, current.orders.length, false);
-    });
-  }
-
-  /**
-   * Republie le fait sur une journée déjà close, sans rien recalculer. Sous le
-   * verrou, sur la journée relue : un retirage concurrent ne fait pas
-   * republier un instantané d'avant lui. Depuis le 2026-10-14, une journée close
-   * se rouvre (`ProductionDay.reopen`) ; rouverte, elle n'est plus close, et
-   * l'appel suivant l'arrête de nouveau au lieu de réannoncer.
-   */
-  private async reannounce(day: ServiceDay): Promise<ProductionPlanClosure> {
-    return this.uow.run(async () => {
-      await this.lock.lock(day);
-      return this.republish(day, await this.days.load(day));
-    });
-  }
-
-  /** À appeler DANS l'unité de travail : la boîte d'envoi refuse d'écrire hors d'elle. */
-  private async republish(day: ServiceDay, current: ProductionDay): Promise<ProductionPlanClosure> {
-    // `closedAt` ne peut pas être nul ici — l'agrégat l'était déjà. On le traite
-    // quand même plutôt que de l'affirmer : un `!` dirait au compilateur de se
-    // taire sur la seule chose qu'il sait.
+    const { producible, withdrawn, resupplies } = await this.reading.arrestUnderLock(day);
     const now = this.clock.now();
-    const at = current.closedAt ?? now;
-    await this.durable.publish(this.factOf(day, current, at, now).durableFact());
-    await this.publishPackingList(day, current, at);
-    return this.report(day, at, current.orders.length, true);
+    current.close(producible, withdrawn, now, signer, resupplies);
+    await this.recording.record(day, current, now);
+    await this.events.publishTraced(
+      new ProductionDayClosedJournalEvent(
+        day.value,
+        current.orders.length,
+        signer?.kind === "automatic",
+      ),
+    );
+    return report(day, now, current.orders.length, false);
   }
 
   /**
-   * Une commande, un fait — l'instant est celui du tirage d'origine. Et un
-   * fait par réassort d'un point servi par transfert (lot R3b), même unité
-   * de travail, même instant, même suffixe de réouverture.
+   * Sous le verrou, sur la journée relue arrêtée : un retirage concurrent ne
+   * fait pas republier un instantané d'avant lui. Aucun fait au journal — un
+   * second « arrêtée » mentirait sur l'heure et l'auteur.
    */
-  private async publishPackingList(
+  private async reannounce(
     day: ServiceDay,
     current: ProductionDay,
-    drawnAt: Date,
-  ): Promise<void> {
-    const reopenedAt = current.reopened?.at ?? null;
-    for (const fact of packingListFactsOf(day, current.orders, drawnAt, reopenedAt)) {
-      await this.durable.publish(fact.durableFact());
-    }
-    for (const fact of resupplyListFactsOf(day, current.resupplies, drawnAt, reopenedAt)) {
-      await this.durable.publish(fact.durableFact());
-    }
+  ): Promise<ProductionPlanClosure> {
+    const now = this.clock.now();
+    // `closedAt` n'est pas nul : la journée est arrêtée. On le traite plutôt
+    // que de l'affirmer — un `!` ferait taire le compilateur sur ce qu'il sait.
+    const at = current.closedAt ?? now;
+    await this.recording.republish(day, current, at, now);
+    return report(day, at, current.orders.length, true);
   }
+}
 
-  /** L'instant est celui du SNAPSHOT, jamais celui du rejeu. */
-  private factOf(
-    day: ServiceDay,
-    current: ProductionDay,
-    closedAt: Date,
-    reannouncedAt: Date | null,
-  ): ProductionDayClosedEvent {
-    const orderIds = current.orders.map((order) => order.orderId);
-    const resupplyIds = current.resupplies.map((resupply) => resupply.resupplyId);
-    return new ProductionDayClosedEvent(day.value, closedAt, orderIds, reannouncedAt, resupplyIds);
-  }
-
-  private report(
-    day: ServiceDay,
-    closedAt: Date,
-    orderCount: number,
-    alreadyClosed: boolean,
-  ): ProductionPlanClosure {
-    return {
-      date: day.value,
-      absorbed: orderCount,
-      alreadyClosed,
-      closedAt: closedAt.toISOString(),
-    };
-  }
+function report(
+  day: ServiceDay,
+  closedAt: Date,
+  orderCount: number,
+  alreadyClosed: boolean,
+): ProductionPlanClosure {
+  return { date: day.value, absorbed: orderCount, alreadyClosed, closedAt: closedAt.toISOString() };
 }

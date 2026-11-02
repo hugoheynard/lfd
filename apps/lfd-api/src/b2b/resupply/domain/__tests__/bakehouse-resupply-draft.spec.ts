@@ -2,6 +2,8 @@ import { BakehouseResupplyDraft } from "../bakehouse-resupply-draft.js";
 import {
   BakehouseResupplyDraftChangedMeanwhileError,
   BakehouseResupplyDraftClosedError,
+  BakehouseResupplyDraftKeyTakenError,
+  BakehouseResupplyDraftSiteFrozenError,
   DuplicateBakehouseResupplyDraftLineError,
   EmptyBakehouseResupplyDraftError,
   TooManyBakehouseResupplyDraftLinesError,
@@ -124,5 +126,25 @@ describe("le brouillon d'un réassort du fournil", () => {
     ).toThrow(BakehouseResupplyDraftChangedMeanwhileError);
     expect(draft.status).toBe("open");
     expect(draft.sentResupplyId).toBeNull();
+  });
+
+  /** Régression (D3) : un brouillon repris changeait de point en silence à l'enregistrement. */
+  it("refuse de changer de point, à l'enregistrement comme à l'envoi, sans rien toucher", () => {
+    const draft = stored();
+    const elsewhere = { ...CONTENT, siteId: "site_2" };
+
+    expect(() => draft.save(elsewhere, TRACE, 1)).toThrow(BakehouseResupplyDraftSiteFrozenError);
+    expect(() =>
+      draft.markSent({ content: elsewhere, resupplyId: "rs1", trace: TRACE, readVersion: 1 }),
+    ).toThrow(BakehouseResupplyDraftSiteFrozenError);
+    expect(draft.content.siteId).toBe("site_1");
+    expect(draft.status).toBe("open");
+  });
+
+  it("une clé rejouée ne rend le brouillon qu'au point qui l'a ouvert", () => {
+    const draft = stored();
+
+    expect(() => draft.assertReplayableFor("site_1")).not.toThrow();
+    expect(() => draft.assertReplayableFor("site_2")).toThrow(BakehouseResupplyDraftKeyTakenError);
   });
 });

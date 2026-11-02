@@ -12,7 +12,6 @@ import {
   type ResupplyTarget,
   SiteResupply,
   type SiteResupplySnapshot,
-  type SiteResupplyTrace,
 } from "../../domain/site-resupply.js";
 import {
   SiteResupplyAlreadyWrittenError,
@@ -26,6 +25,7 @@ import {
 import { SiteResupplyReader } from "../../domain/site-resupply.reader.js";
 import { SiteResupplyRepository } from "../../domain/site-resupply.repository.js";
 import { TransferServedSites } from "../../domain/transfer-served-sites.js";
+import type { ResupplyTrace } from "../../domain/resupply-trace.js";
 
 /** L'instantané d'un réassort, brouillon compris, tel que la base le rendrait. */
 function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapshot {
@@ -197,13 +197,13 @@ export class SiteLabels extends ResupplySiteLabels {
 /** Les réceptions connues, par (point, réassort) ; retient les questions posées. */
 export class KnownReceptions extends ResupplyReceptions {
   readonly asked: string[] = [];
-  private readonly known = new Map<string, SiteResupplyTrace>();
+  private readonly known = new Map<string, ResupplyTrace>();
 
-  receive(siteId: string, resupplyId: string, trace: SiteResupplyTrace): void {
+  receive(siteId: string, resupplyId: string, trace: ResupplyTrace): void {
     this.known.set(`${siteId}:${resupplyId}`, trace);
   }
 
-  receptionOf(siteId: string, resupplyId: string): Promise<SiteResupplyTrace | null> {
+  receptionOf(siteId: string, resupplyId: string): Promise<ResupplyTrace | null> {
     this.asked.push(`${siteId}:${resupplyId}`);
     return Promise.resolve(this.known.get(`${siteId}:${resupplyId}`) ?? null);
   }

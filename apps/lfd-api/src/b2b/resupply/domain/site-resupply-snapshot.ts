@@ -1,9 +1,9 @@
 import { addDays, instantToLocal } from "@lfd/contracts";
 
-import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 import { UnknownResupplyTargetError } from "./site-resupply-errors.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
-import type { SaleUnit } from "./resupply-sale-unit.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
+import type { ResupplyLineShape } from "./resupply-line-shape.js";
 
 /** `tomorrow` : la commande du soir pour demain ; `asap` : « au plus tôt », aujourd'hui. */
 export type ResupplyTarget = "tomorrow" | "asap";
@@ -20,12 +20,6 @@ export function resupplyTargetOf(value: string): ResupplyTarget {
 }
 
 export type SiteResupplyStatus = "draft" | "placed" | "cancelled";
-
-/** Un geste daté et signé. */
-export interface SiteResupplyTrace {
-  readonly at: Date;
-  readonly author: StaffTrace;
-}
 
 /**
  * Le lancement au fournil d'un réassort « au plus tôt » (R4a), tel que le
@@ -62,19 +56,14 @@ export interface SiteResupplySnapshot {
   /** Son nom libre (R1g) ; `null` : sans nom. */
   readonly name: string | null;
   /** `saleUnit` figée à l'ajout (le réassort au poids, L2b-1) : la quantité compte des grammes si `weight`. */
-  readonly lines: readonly {
-    readonly sku: string;
-    readonly label: string;
-    readonly quantity: number;
-    readonly saleUnit: SaleUnit;
-  }[];
-  readonly placed: SiteResupplyTrace | null;
-  readonly cancelled: SiteResupplyTrace | null;
+  readonly lines: readonly ResupplyLineShape[];
+  readonly placed: ResupplyTrace | null;
+  readonly cancelled: ResupplyTrace | null;
   /**
    * Le signal « il est là » (l'arrivée au point, R3e) : la réception au site du transfert
    * qui le porte, ou « Monté » au fournil ; `null` tant qu'il est attendu.
    */
-  readonly arrived: SiteResupplyTrace | null;
+  readonly arrived: ResupplyTrace | null;
   /**
    * « Lancé par X à HH:MM » (R4a) ; `null` tant que le fournil ne l'a pas
    * lancé. Facultatif à la RÉHYDRATATION seulement (absent vaut `null`).
@@ -89,7 +78,7 @@ export interface SiteResupplySnapshot {
 
 /** Un réassort envoyé (passé, annulé ou non). */
 export type PlacedSiteResupplySnapshot = SiteResupplySnapshot & {
-  readonly placed: SiteResupplyTrace;
+  readonly placed: ResupplyTrace;
 };
 
 /** Le réassort a-t-il été envoyé ? Un brouillon ne l'a pas été. */

@@ -7,6 +7,7 @@ import { FrozenResuppliesReader } from "../../production/channels/delivery/index
 import { TransferOrdersReader } from "../channels/commerce/index.js";
 import { InternalTransfer, type TransferItem } from "../domain/entities/internal-transfer.js";
 import { InternalTransferOpenedEvent } from "../domain/events/internal-transfer.events.js";
+import { InternalTransferDayLock } from "../domain/ports/internal-transfer-day.lock.js";
 import { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
 
 /**
@@ -35,6 +36,7 @@ export class TransferAttachment {
     private readonly orders: TransferOrdersReader,
     private readonly resupplies: FrozenResuppliesReader,
     private readonly transfers: InternalTransferRepository,
+    private readonly dayLock: InternalTransferDayLock,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -46,6 +48,7 @@ export class TransferAttachment {
       return 0;
     }
     const refs = await this.orders.transferOrdersAmong(orderIds);
+    await this.dayLock.hold(refs.map((ref) => ref.day));
     let attached = 0;
     for (const ref of refs) {
       if (await this.attach({ kind: "order", orderId: ref.orderId }, ref)) {
@@ -61,8 +64,10 @@ export class TransferAttachment {
       return 0;
     }
     const frozen = await this.resupplies.frozenOf(serviceDay, resupplyIds);
+    const carried = frozen.filter((candidate) => candidate.servedByTransfer);
+    await this.dayLock.hold(carried.map((resupply) => resupply.serviceDay));
     let attached = 0;
-    for (const resupply of frozen.filter((candidate) => candidate.servedByTransfer)) {
+    for (const resupply of carried) {
       const item = { kind: "resupply", resupplyId: resupply.resupplyId } as const;
       // Un nom inconnu à l'arrêt : le transfert garde l'identifiant du point,
       // seule chose sûre (le nom ne se devine pas).

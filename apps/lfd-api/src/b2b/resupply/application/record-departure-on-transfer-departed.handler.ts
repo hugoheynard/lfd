@@ -28,7 +28,8 @@ export const RECORD_DEPARTURE_ON_TRANSFER_DEPARTED = "b2b.resupply-departure-on-
  * Abonné DURABLE (`lint:durable-cross-block`). Rejoué, il ne pose rien de
  * plus (`recordDeparture` rend `false`). Un réassort introuvable sous le
  * point du transfert est écarté et journalisé : lever ferait relivrer le
- * fait sans fin pour un affichage sans objet.
+ * fait jusqu'à épuiser ses dix essais (`MAX_DELIVERY_ATTEMPTS`, vérifié le
+ * 2026-11-02), puis le laisserait en échec, pour un affichage sans objet.
  */
 @Injectable()
 @DurableHandler({

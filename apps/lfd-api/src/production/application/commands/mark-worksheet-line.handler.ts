@@ -55,9 +55,7 @@ export class MarkWorksheetLineHandler implements ICommandHandler<MarkWorksheetLi
       return;
     }
     await this.uow.run(async () => {
-      for (const inherited of current.materialize(command.sku)) {
-        await this.batches.record(day, inherited);
-      }
+      await this.batches.recordInherited(day, current.materialize(command.sku));
       const stored = await this.batches.record(day, batch);
       current.acknowledge(batch, stored.serviceDay, stored.batch);
       if (stored.batch.cancelled === null) {

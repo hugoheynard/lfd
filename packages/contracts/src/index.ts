@@ -2331,13 +2331,13 @@ export type {
   SameDayProWithoutCredit,
 } from "./order-cutoff-settings.js";
 export {
-  correctResupplyLineSchema,
-  receiveResupplyLineSchema,
+  correctReceiptLineSchema,
+  receiveUnorderedReceiptLineSchema,
   resupplyServiceDaySchema,
 } from "./resupply-receipt.js";
 export type {
-  CorrectResupplyLinePayload,
-  ReceiveResupplyLinePayload,
+  CorrectReceiptLinePayload,
+  ReceiveUnorderedReceiptLinePayload,
   ResupplyArticleView,
   ResupplyReceiptLineView,
   ResupplyReceiptView,

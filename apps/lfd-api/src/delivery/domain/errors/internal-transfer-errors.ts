@@ -137,3 +137,13 @@ export class TransferBinsClosedError extends BusinessError {
     );
   }
 }
+
+/** Le verrou des transferts demandé hors d'une unité de travail : un défaut de code, pas un refus. */
+export class InternalTransferLockOutsideTransactionError extends TechnicalError {
+  constructor(days: string) {
+    super(
+      "delivery.internal_transfer.lock_outside_transaction",
+      `Le verrou des transferts du ${days} a été demandé hors d'une unité de travail : il serait relâché aussitôt pris. Rien n'a été rangé ; signalez-le à l'équipe technique.`,
+    );
+  }
+}

@@ -4,7 +4,7 @@ import {
   type PackingResupplyLineSnapshot,
   type PackingResupplySnapshot,
 } from "../domain/entities/packing-resupply.js";
-import { TechnicalError } from "../../platform/shared/errors/app-error.js";
+import { PackingResupplyKindUnknownError } from "../domain/errors/packing-resupply-errors.js";
 import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /** Les colonnes lues d'une fiche de réassort et de ses lignes. */
@@ -94,14 +94,4 @@ function kindOf(raw: string): PackingResupplyKind {
     throw new PackingResupplyKindUnknownError(raw);
   }
   return kind;
-}
-
-/** Une fiche relue porte un genre que le CHECK de la table aurait dû refuser. */
-export class PackingResupplyKindUnknownError extends TechnicalError {
-  constructor(raw: string) {
-    super(
-      "packing.resupply.kind_unknown",
-      `Une fiche de réassort au colisage porte le genre « ${raw} », que le poste ne connaît pas (attendu : evening ou asap). La contrainte de la table a été levée ou contournée : la rétablir, puis corriger la ligne en base.`,
-    );
-  }
 }

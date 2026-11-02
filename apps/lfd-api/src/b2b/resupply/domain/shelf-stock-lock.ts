@@ -13,7 +13,11 @@
  * Deux verrous qu'aucune transaction ne tient ensemble ne peuvent pas
  * s'attendre l'un l'autre en cercle : c'est ce qui exclut l'interblocage, et
  * pas un ordre de prise qu'il faudrait respecter partout. Un appelant qui
- * aurait besoin des deux dit qu'il mélange les deux circuits.
+ * aurait besoin des deux dit qu'il mélange les deux circuits. (Vérifié le
+ * 2026-11-02 : le prennent `ShelfCircuit` — passation et révision sur stock,
+ * exclusives de `OrderPlanGate.hold` dans `OrderDraftingService.holdSupply`
+ * et `OrderRevisingService.holdSupply` — et `ReceivedStockLowering`, qui
+ * ne prend pas le verrou de journée.)
  */
 export abstract class ShelfStockLock {
   /** Attend puis tient le stock de ce point pour cette journée (`AAAA-MM-JJ`). */

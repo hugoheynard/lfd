@@ -49,3 +49,22 @@ export class ResupplyLaunchOnUnarrestedPlanError extends BusinessError {
     );
   }
 }
+
+/**
+ * La journée a été arrêtée puis ROUVERTE : « Lancer » ne l'ouvre pas arrêtée
+ * avec ce seul réassort (décision D1 de l'audit du réassort, 2026-11-02). La
+ * règle d'ouverture (Q5) vise une journée JAMAIS arrêtée ; une journée
+ * rouverte attend un nouvel arrêt, qui figera les commandes que la
+ * réouverture a rendues au commerce — l'ouvrir par un lancement les
+ * laisserait hors du plan.
+ */
+export class ResupplyLaunchOnReopenedPlanError extends BusinessError {
+  constructor(serviceDay: string) {
+    super(
+      "production.resupply.launch_on_reopened_plan",
+      `Le plan du ${serviceDay} a été rouvert et n'est pas encore arrêté de nouveau : lancer ce ` +
+        "réassort ne peut pas l'arrêter à sa place. Arrêtez d'abord le plan du jour (Prod " +
+        "manager), puis lancez le réassort.",
+    );
+  }
+}

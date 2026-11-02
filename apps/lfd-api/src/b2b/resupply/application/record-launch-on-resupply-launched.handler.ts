@@ -28,7 +28,10 @@ export const RECORD_LAUNCH_ON_RESUPPLY_LAUNCHED = "b2b.resupply-launch-on-resupp
  * Abonné DURABLE (`lint:durable-cross-block`). Rejoué, il ne pose rien de
  * plus (`recordLaunch` rend `false`). Un réassort introuvable sous son point,
  * ou qui n'est plus un « au plus tôt » envoyé, est écarté et journalisé :
- * lever ferait relivrer le fait sans fin pour un affichage sans objet.
+ * lever ferait relivrer le fait jusqu'à épuiser ses dix essais
+ * (`MAX_DELIVERY_ATTEMPTS`, vérifié le 2026-11-02), puis le laisserait en
+ * échec, pour un affichage sans objet. Un conflit de version, lui, lève :
+ * il est transitoire, et l'essai suivant le résout.
  */
 @Injectable()
 @DurableHandler({

@@ -3,6 +3,7 @@ import {
   IncompleteResupplyLineError,
   InvalidRequestedQuantityError,
 } from "./site-resupply-errors.js";
+import type { ResupplyLineShape } from "./resupply-line-shape.js";
 
 /**
  * **Une ligne demandée** : un article du catalogue publié (SKU produit), son
@@ -19,12 +20,7 @@ export class SiteResupplyLine {
   ) {}
 
   /** Refusée si l'article manque ou si la quantité n'est pas un entier > 0 (pièces ou grammes). */
-  static of(input: {
-    readonly sku: string;
-    readonly label: string;
-    readonly quantity: number;
-    readonly saleUnit: SaleUnit;
-  }): SiteResupplyLine {
+  static of(input: ResupplyLineShape): SiteResupplyLine {
     const sku = input.sku.trim();
     const label = input.label.trim();
     if (sku === "" || label === "") {

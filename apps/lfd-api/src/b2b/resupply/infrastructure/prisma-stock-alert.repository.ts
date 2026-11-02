@@ -54,6 +54,13 @@ export class PrismaStockAlertRepository extends StockAlertRepository {
     return row === null ? null : StockAlert.restore(stockAlertSnapshotOf(row));
   }
 
+  /**
+   * Borné sans borne écrite (vérifié le 2026-11-02) : `skus` est la liste
+   * DÉDOUBLONNÉE des articles d'un reçu (`resupply_receipt_line` est unique
+   * par (reçu, article)), donc au plus le nombre d'articles du catalogue
+   * publié de la boutique ; et l'index unique partiel
+   * `site_stock_alert_live_site_sku_key` rend au plus une ligne par article.
+   */
   async liveForSkus(siteId: string, skus: readonly string[]): Promise<readonly StockAlert[]> {
     const rows = await this.prisma.siteStockAlert.findMany({
       where: { siteId, sku: { in: [...skus] }, liftedAt: null },

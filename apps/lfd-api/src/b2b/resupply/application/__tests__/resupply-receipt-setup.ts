@@ -7,12 +7,12 @@ import {
 } from "../../../../packing/channels/commerce/index.js";
 import type { SiteResupplySnapshot } from "../../domain/site-resupply.js";
 import { CorrectReceivedResupplyLineHandler } from "../correct-received-resupply-line.handler.js";
-import { CorrectResupplyLineHandler } from "../correct-resupply-line.handler.js";
+import { CorrectUnorderedReceiptLineHandler } from "../correct-unordered-receipt-line.handler.js";
 import { GetResupplyReceiptHandler } from "../get-resupply-receipt.handler.js";
-import { ReceiveResupplyLineHandler } from "../receive-resupply-line.handler.js";
+import { ReceiveUnorderedReceiptLineHandler } from "../receive-unordered-receipt-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "../receive-site-resupply.handler.js";
 import { ResupplyReceiving } from "../resupply-receiving.js";
-import { WithdrawResupplyLineHandler } from "../withdraw-resupply-line.handler.js";
+import { WithdrawUnorderedReceiptLineHandler } from "../withdraw-unordered-receipt-line.handler.js";
 import { DayShelfStock } from "../day-shelf-stock.js";
 import { ReceivedStockLowering } from "../received-stock-lowering.js";
 import {
@@ -122,7 +122,7 @@ export function setup() {
       packed,
     ),
     correctReceived: new CorrectReceivedResupplyLineHandler(receipts, staff, clock, uow, lowering),
-    receive: new ReceiveResupplyLineHandler(
+    receive: new ReceiveUnorderedReceiptLineHandler(
       receipts,
       alerts,
       CATALOGUE,
@@ -132,8 +132,8 @@ export function setup() {
       ids,
       uow,
     ),
-    correct: new CorrectResupplyLineHandler(receipts, staff, clock, uow, lowering),
-    withdraw: new WithdrawResupplyLineHandler(receipts, staff, clock, uow, lowering),
+    correct: new CorrectUnorderedReceiptLineHandler(receipts, staff, clock, uow, lowering),
+    withdraw: new WithdrawUnorderedReceiptLineHandler(receipts, staff, clock, uow, lowering),
     read: new GetResupplyReceiptHandler(
       new InMemoryReceiptReader(receipts),
       new InMemorySiteResupplyReader(resupplies),

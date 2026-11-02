@@ -125,15 +125,20 @@ function setup(day: ProductionDay, progress = { packing: false, dispatch: false 
 }
 
 describe("ReopenProductionDayHandler", () => {
-  it("questionne l'aval AVANT le verrou, puis rouvre la journée relue sous lui", async () => {
+  /**
+   * Régression (audit du réassort, 2026-11-02) : l'aval était questionné AVANT
+   * le verrou — un colisage commencé entre la question et le verrou n'était
+   * pas vu, et la journée se rouvrait sous un sac ouvert.
+   */
+  it("prend le verrou, PUIS questionne l'aval, puis rouvre la journée relue sous lui", async () => {
     const { handler, trace } = setup(closedDay());
 
     await handler.execute(new ReopenProductionDayCommand(DAY, "staff-1"));
 
     expect(trace).toEqual([
+      `lock:${DAY}`,
       `packing:${DAY}`,
       `dispatch:${DAY}`,
-      `lock:${DAY}`,
       "load",
       "save",
       `publish:${PRODUCTION_DAY_REOPENED}`,

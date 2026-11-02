@@ -5,6 +5,7 @@ import {
   StockReservationQuantityInvalidError,
 } from "../errors/packing-resupply-errors.js";
 import {
+  PackedStockInconsistentError,
   ReserveShopQuantityInvalidError,
   StockMoveQuantityInvalidError,
   ReserveShortForShopError,
@@ -237,10 +238,14 @@ export class PackingStock {
    * `take` : le refus d'une quantité invalide dit « grammes », pas « pièces ».
    *
    * @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire.
+   * @throws {PackedStockInconsistentError} plus que la réserve ne compte au bac.
    */
   release(quantity: number, unit: SaleUnit): void {
     this.ensureMovable(quantity, unit);
-    this.packedValue = Math.max(0, this.packedValue - quantity);
+    if (quantity > this.packedValue) {
+      throw new PackedStockInconsistentError(this.sku, this.packedValue, quantity, unit);
+    }
+    this.packedValue -= quantity;
   }
 
   /**

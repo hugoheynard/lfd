@@ -1,13 +1,15 @@
 import {
   BakehouseResupplyDraftChangedMeanwhileError,
   BakehouseResupplyDraftClosedError,
+  BakehouseResupplyDraftKeyTakenError,
+  BakehouseResupplyDraftSiteFrozenError,
   UnknownBakehouseResupplyDraftStatusError,
 } from "./bakehouse-resupply-draft-errors.js";
 import {
   type BakehouseResupplyDraftContent,
   draftContentOf,
 } from "./bakehouse-resupply-draft-content.js";
-import type { SiteResupplyTrace } from "./site-resupply-snapshot.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
 
 export {
   BAKEHOUSE_DRAFT_MAX_LINES,
@@ -36,11 +38,11 @@ export interface BakehouseResupplyDraftSnapshot {
   readonly version: number;
   readonly status: BakehouseResupplyDraftStatus;
   readonly content: BakehouseResupplyDraftContent;
-  readonly created: SiteResupplyTrace;
+  readonly created: ResupplyTrace;
   /** Le dernier enregistrement (la création comprise). */
-  readonly updated: SiteResupplyTrace;
+  readonly updated: ResupplyTrace;
   /** L'envoi ou la suppression ; `null` tant qu'il est ouvert. */
-  readonly closed: SiteResupplyTrace | null;
+  readonly closed: ResupplyTrace | null;
   /** Le réassort né de l'envoi ; `null` hors `sent`. */
   readonly sentResupplyId: string | null;
 }
@@ -55,17 +57,24 @@ export interface BakehouseResupplyDraftSnapshot {
  * Ce qu'il garantit : un contenu valide ({@link draftContentOf}), une
  * écriture seulement tant qu'il est ouvert, sous la version LUE — deux postes
  * qui reprennent le même brouillon ne s'écrasent pas —, et
- * `open` → `sent` | `discarded`, jamais en arrière. Jamais supprimé.
+ * `open` → `sent` | `discarded`, jamais en arrière. Son point est figé à
+ * l'ouverture (D3). Jamais supprimé.
  */
 export class BakehouseResupplyDraft {
   private constructor(
     readonly id: string,
+    /**
+     * La version LUE en base (`0` : pas encore écrite). Elle n'avance pas en
+     * mémoire : l'adaptateur écrit `version + 1` sous ce verrou, et un agrégat
+     * ne se sauve qu'une fois par unité de travail — un second `save` sur la
+     * même instance buterait sur son propre verrou (choix du 2026-11-02).
+     */
     readonly version: number,
     private currentStatus: BakehouseResupplyDraftStatus,
     private currentContent: BakehouseResupplyDraftContent,
-    readonly created: SiteResupplyTrace,
-    private updatedTrace: SiteResupplyTrace,
-    private closedTrace: SiteResupplyTrace | null,
+    readonly created: ResupplyTrace,
+    private updatedTrace: ResupplyTrace,
+    private closedTrace: ResupplyTrace | null,
     private resupplyId: string | null,
   ) {}
 
@@ -73,7 +82,7 @@ export class BakehouseResupplyDraft {
   static open(input: {
     readonly id: string;
     readonly content: BakehouseResupplyDraftContent;
-    readonly trace: SiteResupplyTrace;
+    readonly trace: ResupplyTrace;
   }): BakehouseResupplyDraft {
     const content = draftContentOf(input.content);
     return new BakehouseResupplyDraft(
@@ -110,11 +119,11 @@ export class BakehouseResupplyDraft {
     return this.currentContent;
   }
 
-  get updated(): SiteResupplyTrace {
+  get updated(): ResupplyTrace {
     return this.updatedTrace;
   }
 
-  get closed(): SiteResupplyTrace | null {
+  get closed(): ResupplyTrace | null {
     return this.closedTrace;
   }
 
@@ -142,19 +151,35 @@ export class BakehouseResupplyDraft {
     }
   }
 
-  /** « Enregistrer » à nouveau : le contenu ENTIER remplace le précédent. */
-  save(
-    content: BakehouseResupplyDraftContent,
-    trace: SiteResupplyTrace,
-    readVersion: number,
-  ): void {
+  /**
+   * La même clé d'enregistrement rejouée par l'écran (C-C) : rendre ce
+   * brouillon n'a de sens que pour le point qui l'a ouvert.
+   *
+   * @throws {BakehouseResupplyDraftKeyTakenError} la clé est celle d'un brouillon d'un autre point.
+   */
+  assertReplayableFor(siteId: string): void {
+    if (siteId !== this.currentContent.siteId) {
+      throw new BakehouseResupplyDraftKeyTakenError(this.id);
+    }
+  }
+
+  /**
+   * « Enregistrer » à nouveau : le contenu ENTIER remplace le précédent — au
+   * même point seulement (D3).
+   *
+   * @throws {BakehouseResupplyDraftSiteFrozenError} le contenu vise un autre point.
+   */
+  save(content: BakehouseResupplyDraftContent, trace: ResupplyTrace, readVersion: number): void {
     this.ensureWritable(readVersion);
+    if (content.siteId !== this.currentContent.siteId) {
+      throw new BakehouseResupplyDraftSiteFrozenError(this.id);
+    }
     this.currentContent = draftContentOf(content);
     this.updatedTrace = trace;
   }
 
   /** « Supprimer le brouillon » : un statut, jamais une suppression. */
-  discard(trace: SiteResupplyTrace, readVersion: number): void {
+  discard(trace: ResupplyTrace, readVersion: number): void {
     this.ensureWritable(readVersion);
     this.currentStatus = "discarded";
     this.updatedTrace = trace;
@@ -168,7 +193,7 @@ export class BakehouseResupplyDraft {
   markSent(input: {
     readonly content: BakehouseResupplyDraftContent;
     readonly resupplyId: string;
-    readonly trace: SiteResupplyTrace;
+    readonly trace: ResupplyTrace;
     readonly readVersion: number;
   }): void {
     this.save(input.content, input.trace, input.readVersion);

@@ -70,12 +70,11 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
   }
 
   async dayOf(serviceDay: string): Promise<PackingBoardDay> {
-    const [orders, stocks, reservations] = await Promise.all([
-      this.prisma.packingOrder.findMany({
-        where: { serviceDay },
-        select: ORDER_SELECT,
-        orderBy: [{ drawnAt: "asc" }, { orderId: "asc" }, { rank: "asc" }],
-      }),
+    // Les retirées séparées EN BASE (audit du réassort, 2026-11-02) : les
+    // deux listes sortent triées, sans tri ni filtre à refaire ici.
+    const [active, withdrawn, stocks, reservations] = await Promise.all([
+      this.sheets(serviceDay, false),
+      this.sheets(serviceDay, true),
       this.prisma.packingStock.findMany({
         where: { serviceDay },
         select: { sku: true, received: true, returned: true, packed: true, sentToShop: true },
@@ -83,18 +82,25 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
       }),
       reservationsOn(this.prisma, serviceDay),
     ]);
-    const active = orders.filter((order) => order.withdrawnAt === null);
     const liveBins = await this.desk.liveBins(
       active.flatMap((order) => order.containers.flatMap((row) => row.binId ?? [])),
     );
     return {
       orders: active.map((row) => boardOrderOf(row, liveBins)),
-      withdrawn: orders.flatMap(withdrawnSheetOf),
+      withdrawn: withdrawn.flatMap(withdrawnSheetOf),
       stocks: stocks.map((stock) => ({
         ...stock,
         reserved: reservedOf(reservations.get(stock.sku) ?? []),
       })),
     };
+  }
+
+  private sheets(serviceDay: string, withdrawn: boolean): Promise<OrderRow[]> {
+    return this.prisma.packingOrder.findMany({
+      where: { serviceDay, withdrawnAt: withdrawn ? { not: null } : null },
+      select: ORDER_SELECT,
+      orderBy: [{ drawnAt: "asc" }, { orderId: "asc" }, { rank: "asc" }],
+    });
   }
 }
 

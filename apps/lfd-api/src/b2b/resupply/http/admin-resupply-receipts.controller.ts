@@ -1,8 +1,8 @@
 import {
-  type CorrectResupplyLinePayload,
-  correctResupplyLineSchema,
-  type ReceiveResupplyLinePayload,
-  receiveResupplyLineSchema,
+  type CorrectReceiptLinePayload,
+  correctReceiptLineSchema,
+  type ReceiveUnorderedReceiptLinePayload,
+  receiveUnorderedReceiptLineSchema,
   type ResupplyArticleView,
   type ResupplyReceiptView,
   resupplyServiceDaySchema,
@@ -24,12 +24,13 @@ import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-su
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CorrectReceivedResupplyLineCommand } from "../application/correct-received-resupply-line.command.js";
-import { CorrectResupplyLineCommand } from "../application/correct-resupply-line.command.js";
+import { CorrectUnorderedReceiptLineCommand } from "../application/correct-unordered-receipt-line.command.js";
 import { GetResupplyReceiptQuery } from "../application/get-resupply-receipt.query.js";
 import { ListResupplyArticlesQuery } from "../application/list-resupply-articles.query.js";
-import { ReceiveResupplyLineCommand } from "../application/receive-resupply-line.command.js";
+import { ReceiveUnorderedReceiptLineCommand } from "../application/receive-unordered-receipt-line.command.js";
 import { ReceiveSiteResupplyCommand } from "../application/receive-site-resupply.command.js";
-import { WithdrawResupplyLineCommand } from "../application/withdraw-resupply-line.command.js";
+import { WithdrawUnorderedReceiptLineCommand } from "../application/withdraw-unordered-receipt-line.command.js";
+import { skuParam } from "./resupply-params.js";
 
 /**
  * **La réception du réapprovisionnement** — Comptoir › Réassort boutique
@@ -92,8 +93,8 @@ export class AdminResupplyReceiptsController {
   async correctReceived(
     @Param("siteId") siteId: string,
     @Param("resupplyId") resupplyId: string,
-    @Param("sku") sku: string,
-    @Body(new ZodBody(correctResupplyLineSchema)) body: CorrectResupplyLinePayload,
+    @Param("sku", skuParam()) sku: string,
+    @Body(new ZodBody(correctReceiptLineSchema)) body: CorrectReceiptLinePayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<CorrectReceivedResupplyLineCommand, void>(
@@ -107,11 +108,11 @@ export class AdminResupplyReceiptsController {
   async receive(
     @Param("siteId") siteId: string,
     @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,
-    @Body(new ZodBody(receiveResupplyLineSchema)) body: ReceiveResupplyLinePayload,
+    @Body(new ZodBody(receiveUnorderedReceiptLineSchema)) body: ReceiveUnorderedReceiptLinePayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.commands.execute<ReceiveResupplyLineCommand, void>(
-      new ReceiveResupplyLineCommand(siteId, day, body.sku, body.quantity, staffUserId),
+    await this.commands.execute<ReceiveUnorderedReceiptLineCommand, void>(
+      new ReceiveUnorderedReceiptLineCommand(siteId, day, body.sku, body.quantity, staffUserId),
     );
   }
 
@@ -121,12 +122,12 @@ export class AdminResupplyReceiptsController {
   async correct(
     @Param("siteId") siteId: string,
     @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,
-    @Param("sku") sku: string,
-    @Body(new ZodBody(correctResupplyLineSchema)) body: CorrectResupplyLinePayload,
+    @Param("sku", skuParam()) sku: string,
+    @Body(new ZodBody(correctReceiptLineSchema)) body: CorrectReceiptLinePayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.commands.execute<CorrectResupplyLineCommand, void>(
-      new CorrectResupplyLineCommand(siteId, day, sku, body.quantity, staffUserId),
+    await this.commands.execute<CorrectUnorderedReceiptLineCommand, void>(
+      new CorrectUnorderedReceiptLineCommand(siteId, day, sku, body.quantity, staffUserId),
     );
   }
 
@@ -136,11 +137,11 @@ export class AdminResupplyReceiptsController {
   async withdraw(
     @Param("siteId") siteId: string,
     @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,
-    @Param("sku") sku: string,
+    @Param("sku", skuParam()) sku: string,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.commands.execute<WithdrawResupplyLineCommand, void>(
-      new WithdrawResupplyLineCommand(siteId, day, sku, staffUserId),
+    await this.commands.execute<WithdrawUnorderedReceiptLineCommand, void>(
+      new WithdrawUnorderedReceiptLineCommand(siteId, day, sku, staffUserId),
     );
   }
 }

@@ -15,7 +15,11 @@ import { dayColumn } from "./day-column.js";
 /** Le nom (R1g) et les colonnes des trois gestes datés (l'arrivée au point depuis R3e), `null` tant qu'ils n'ont pas eu lieu. */
 function tracesOf(resupply: SiteResupply) {
   const { placed, cancelled, arrived } = resupply;
-  // Le lancement (R4a) n'est qu'un affichage, posé par le fait du fournil.
+  // Le lancement (R4a) et le départ (R4d) ne sont que des affichages, posés
+  // par les abonnés aux faits du fournil et de la livraison. Les réécrire à
+  // chaque `save` est sûr : ces abonnés passent eux aussi par load → save sous
+  // la version, et rien d'autre n'écrit `site_resupply` (vérifié le
+  // 2026-11-02) — un `save` concurrent échoue au lieu d'effacer l'affichage.
   return {
     name: resupply.name,
     placedAt: placed?.at ?? null,

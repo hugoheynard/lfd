@@ -1,7 +1,8 @@
 import { saleQuantity } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
-import { type EstimatedStockLine, estimateStock, stockKeyOf } from "../domain/estimated-stock.js";
+import { type EstimatedStockLine, estimateStock } from "../domain/estimated-stock.js";
+import { stockKeyOf } from "../domain/stock-tally.js";
 import { ShelfStockAlreadySoldError } from "../domain/resupply-receipt-errors.js";
 import { ShelfStockLock } from "../domain/shelf-stock-lock.js";
 import { DayShelfStock } from "./day-shelf-stock.js";
@@ -14,9 +15,9 @@ export interface LoweredArticle {
 }
 
 /**
- * **Toute baisse d'une quantité reçue passe par ici** (plan du jour J, §11.2
- * et §12 bloquant 1, le stock du jour décompté (L2)) : corriger un reçu réceptionné, corriger ou
- * retirer un article du réassort sans commande.
+ * **Toute baisse d'une quantité reçue passe par ici** (le stock du jour
+ * décompté, L2 — `documentation/limites-de-commande/jour-meme-sur-stock.md`) : corriger un
+ * reçu réceptionné, corriger ou retirer un article du réassort sans commande.
  *
  * Prend `ShelfStockLock`, laisse le geste écrire, relit le reste dans la même
  * transaction, et refuse si l'article est passé sous ce que les commandes sur

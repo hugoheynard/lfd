@@ -95,9 +95,7 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
     const plan = await this.days.load(day);
     const inherited = plan.materialize();
     const raised = plan.reviseOrder(revised.orderId, revised.lines);
-    for (const batch of inherited) {
-      await this.batches.record(day, batch);
-    }
+    await this.batches.recordInherited(day, inherited);
     await this.days.save(plan);
     if (raised.length === 0) {
       return "unchanged";

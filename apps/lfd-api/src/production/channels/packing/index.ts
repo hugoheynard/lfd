@@ -17,6 +17,7 @@
  * | `OvenWaitingOrdersReader` | port (2026-10-28) | les commandes qui attendent le four, par SKU — pour la fiche |
  * | `InscribedOrderHeaderReader` | port publié (A1) | l'en-tête figé d'une commande, pour la pierre tombale |
  * | `OrderLabelHeadReader`  | port publié      | l'acheminement et le créneau, pour l'étiquette d'un sac |
+ * | `ArrestedPlanHold`      | port publié (2026-11-02) | tenir le plan arrêté pendant un geste — contre la réouverture |
  *
  * `lint:context-boundaries` n'autorise `packing → production` que par ce
  * dossier, et `production → packing` jamais : le fournil publie, il ne sait
@@ -56,6 +57,7 @@ export {
   PackingReturnedEvent,
   PackingReturnedPayloadError,
 } from "./packing-returned.event.js";
+export { ArrestedPlanHold } from "./arrested-plan.hold.js";
 export { PackingDayVersionReader } from "./packing-day-version.reader.js";
 export { PackedOrdersReader, type PackedOrderSeal } from "./packed-orders.reader.js";
 export { OvenWaitingOrdersReader, type OvenWaitingOrders } from "./oven-waiting-orders.reader.js";

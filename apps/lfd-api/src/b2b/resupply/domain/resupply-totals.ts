@@ -1,5 +1,5 @@
-import { stockKeyOf } from "./estimated-stock.js";
 import type { SaleUnit } from "./resupply-sale-unit.js";
+import { StockTallies } from "./stock-tally.js";
 
 /** Une ligne à cumuler : ce que portent les lignes d'un réassort. */
 export interface ResupplyQuantity {
@@ -10,6 +10,13 @@ export interface ResupplyQuantity {
   readonly saleUnit: SaleUnit;
 }
 
+interface QuantityTally {
+  readonly sku: string;
+  readonly saleUnit: SaleUnit;
+  readonly label: string;
+  quantity: number;
+}
+
 /**
  * **Le cumul par article** des réassorts d'une journée : ce que le fournil a
  * à produire, tous points confondus — par (article, unité). L'ordre est celui
@@ -18,16 +25,14 @@ export interface ResupplyQuantity {
 export function resupplyTotals(
   lineGroups: readonly (readonly ResupplyQuantity[])[],
 ): readonly ResupplyQuantity[] {
-  const totals = new Map<string, ResupplyQuantity>();
+  const tallies = new StockTallies<QuantityTally>((identity) => ({ ...identity, quantity: 0 }));
   for (const line of lineGroups.flat()) {
-    const key = stockKeyOf(line.sku, line.saleUnit);
-    const known = totals.get(key);
-    totals.set(key, {
-      sku: line.sku,
-      label: known?.label ?? line.label,
-      quantity: (known?.quantity ?? 0) + line.quantity,
-      saleUnit: line.saleUnit,
-    });
+    tallies.of(line).quantity += line.quantity;
   }
-  return [...totals.values()];
+  return tallies.values().map(({ sku, label, quantity, saleUnit }) => ({
+    sku,
+    label,
+    quantity,
+    saleUnit,
+  }));
 }

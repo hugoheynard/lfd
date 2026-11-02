@@ -100,3 +100,13 @@ export class PackedResupplyStockInconsistentError extends TechnicalError {
     );
   }
 }
+
+/** Une fiche relue porte un genre que le CHECK de la table aurait dû refuser. */
+export class PackingResupplyKindUnknownError extends TechnicalError {
+  constructor(raw: string) {
+    super(
+      "packing.resupply.kind_unknown",
+      `Une fiche de réassort au colisage porte le genre « ${raw} », que le poste ne connaît pas (attendu : evening ou asap). La contrainte de la table a été levée ou contournée : la rétablir, puis corriger la ligne en base.`,
+    );
+  }
+}

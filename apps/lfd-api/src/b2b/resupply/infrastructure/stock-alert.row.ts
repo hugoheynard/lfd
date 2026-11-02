@@ -1,8 +1,11 @@
 import {
   stockAlertLevelOf,
   stockAlertLiftReasonOf,
+  type StockAlertLift,
   type StockAlertSnapshot,
 } from "../domain/stock-alert.js";
+import { UnreadableResupplyRowError } from "../domain/resupply-unreadable-row-error.js";
+import { wholeTraceOf } from "./trace-columns.js";
 
 /** La ligne `site_stock_alert` telle que Prisma la rend. */
 export interface StockAlertRow {
@@ -40,17 +43,30 @@ export function stockAlertSnapshotOf(row: StockAlertRow): StockAlertSnapshot {
         role: row.declaredByRole,
       },
     },
-    lifted:
-      row.liftedAt === null
-        ? null
-        : {
-            at: row.liftedAt,
-            reason: stockAlertLiftReasonOf(row.liftReason ?? ""),
-            author: {
-              staffUserId: row.liftedByStaffId ?? "",
-              name: row.liftedByName ?? "",
-              role: row.liftedByRole ?? "",
-            },
-          },
+    lifted: liftOf(row),
   };
+}
+
+/**
+ * La levée relue : `null` sans instant ; un instant sans raison ni auteur
+ * entier est refusé, jamais comblé (audit du réassort, 2026-11-02).
+ */
+function liftOf(row: StockAlertRow): StockAlertLift | null {
+  const origin = { table: "site_stock_alert", rowId: row.id, gesture: "levée" };
+  const trace = wholeTraceOf(
+    {
+      at: row.liftedAt,
+      staffUserId: row.liftedByStaffId,
+      name: row.liftedByName,
+      role: row.liftedByRole,
+    },
+    origin,
+  );
+  if (trace === null) {
+    return null;
+  }
+  if (row.liftReason === null) {
+    throw new UnreadableResupplyRowError(origin.table, origin.rowId, origin.gesture);
+  }
+  return { ...trace, reason: stockAlertLiftReasonOf(row.liftReason) };
 }

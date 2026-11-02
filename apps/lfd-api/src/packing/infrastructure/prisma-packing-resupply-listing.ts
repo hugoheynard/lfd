@@ -17,10 +17,12 @@ import {
  * au point (`PrismaPackedResuppliesReader`) — vérifié le 2026-11-02. Une
  * fiche retirée porte `withdrawn_at` ; le dépôt et le poste l'écartent, et les
  * deux autres ne lisent que des fiches entamées ou closes, ce qu'une fiche
- * retirée n'est jamais (CHECK `packing_resupply_withdrawn_untouched`).
+ * retirée n'est jamais (CHECK `packing_resupply_withdrawn_untouched`, et
+ * aucune ligne emballée : déclencheurs `packing_resupply_withdrawn_unpacked`).
  *
  * ⚠️ La liste des COMMANDES (`PrismaPackingListWithdrawal`) efface encore les
- * siennes : elle n'est pas dans ce lot.
+ * siennes, sous verrou depuis le 2026-11-02 : sa seule colonne de statut est
+ * la pierre tombale de l'annulation (voir son JSDoc).
  */
 @Injectable()
 export class PrismaPackingResupplyListing extends PackingResupplyListing {

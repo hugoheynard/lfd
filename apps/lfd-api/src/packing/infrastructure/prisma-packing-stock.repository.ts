@@ -4,7 +4,8 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { PackingStock } from "../domain/entities/packing-stock.js";
 import { PackingStockRepository } from "../domain/ports/packing-stock.repository.js";
 import { assertInsideUnitOfWork, PackingStockVanishedError } from "./packing-lock.js";
-import { reservationsOn } from "./packing-stock-reservation.rows.js";
+import type { StockReservationSnapshot } from "../domain/services/stock-reservations.js";
+import { newlyLifted, reservationsOn } from "./packing-stock-reservation.rows.js";
 
 /** Les compteurs d'une réserve, tels que `FOR UPDATE` les rend. */
 interface StockRow {
@@ -26,6 +27,13 @@ interface StockRow {
  */
 @Injectable()
 export class PrismaPackingStockRepository extends PackingStockRepository {
+  /**
+   * Les réservations telles que `lock` les a lues, par réserve chargée :
+   * `save` n'écrit que ce qui a changé depuis (audit du réassort,
+   * 2026-11-02). Faible : une réserve oubliée sort d'elle-même.
+   */
+  private readonly loaded = new WeakMap<PackingStock, readonly StockReservationSnapshot[]>();
+
   constructor(private readonly prisma: PrismaService) {
     super();
   }
@@ -47,7 +55,9 @@ export class PrismaPackingStockRepository extends PackingStockRepository {
     }
     // Après le verrou, jamais avant (cf. `reservationsOn`).
     const reservations = (await reservationsOn(this.prisma, serviceDay, sku)).get(sku) ?? [];
-    return PackingStock.fromSnapshot({ serviceDay, sku, ...row, reservations });
+    const stock = PackingStock.fromSnapshot({ serviceDay, sku, ...row, reservations });
+    this.loaded.set(stock, reservations);
+    return stock;
   }
 
   async save(stock: PackingStock): Promise<void> {
@@ -58,28 +68,36 @@ export class PrismaPackingStockRepository extends PackingStockRepository {
     await this.saveReservations(stock);
   }
 
-  /** Inscrit les neuves (une existante reste), pose la levée des levées. */
+  /**
+   * Inscrit les neuves, pose l'instant des levées NOUVELLES — un `UPDATE` par
+   * instant de levée, d'ordinaire un seul. Une réserve qui n'a pas été
+   * chargée par `lock` (aucun appelant, vérifié le 2026-11-02) est écrite en
+   * entier : les deux écritures restent idempotentes.
+   */
   private async saveReservations(stock: PackingStock): Promise<void> {
-    if (stock.reservations.length === 0) {
-      return;
-    }
+    const before = this.loaded.get(stock);
+    const known = new Map(
+      (before ?? []).map((reservation) => [reservation.resupplyId, reservation]),
+    );
+    const fresh = stock.reservations.filter((reservation) => !known.has(reservation.resupplyId));
     const day = { serviceDay: stock.serviceDay, sku: stock.sku };
-    await this.prisma.packingStockReservation.createMany({
-      data: stock.reservations.map((reservation) => ({
-        ...day,
-        resupplyId: reservation.resupplyId,
-        quantity: reservation.quantity,
-        reservedAt: reservation.reservedAt,
-      })),
-      skipDuplicates: true,
-    });
-    for (const reservation of stock.reservations) {
-      if (reservation.releasedAt !== null) {
-        await this.prisma.packingStockReservation.updateMany({
-          where: { ...day, resupplyId: reservation.resupplyId, releasedAt: null },
-          data: { releasedAt: reservation.releasedAt },
-        });
-      }
+    if (fresh.length > 0) {
+      await this.prisma.packingStockReservation.createMany({
+        data: fresh.map((reservation) => ({
+          ...day,
+          resupplyId: reservation.resupplyId,
+          quantity: reservation.quantity,
+          reservedAt: reservation.reservedAt,
+        })),
+        skipDuplicates: true,
+      });
     }
+    for (const { at, resupplyIds } of newlyLifted(stock.reservations, known)) {
+      await this.prisma.packingStockReservation.updateMany({
+        where: { ...day, resupplyId: { in: [...resupplyIds] }, releasedAt: null },
+        data: { releasedAt: at },
+      });
+    }
+    this.loaded.set(stock, stock.reservations);
   }
 }

@@ -28,7 +28,9 @@ import { TransferResupplyContents } from "./application/transfer-resupply-conten
 import { TransferPlacement } from "./application/transfer-placement.js";
 import { TransferPlaceFinder, TransferPlacer } from "./application/transfer-placer.js";
 import { TransferRouting } from "./application/transfer-routing.js";
+import { InternalTransferDayLock } from "./domain/ports/internal-transfer-day.lock.js";
 import { InternalTransferRepository } from "./domain/ports/internal-transfer.repository.js";
+import { PrismaInternalTransferDayLock } from "./infrastructure/prisma-internal-transfer-day.lock.js";
 import {
   InternalTransfersReader,
   TransferredOrdersReader,
@@ -75,6 +77,8 @@ export const INTERNAL_TRANSFER_PROVIDERS: readonly Provider[] = [
   ReconcileOnOrderRevised,
   DropTransferAtSiteHandler,
   { provide: InternalTransferRepository, useClass: PrismaInternalTransferRepository },
+  // Audit du réassort (2026-11-02) : deux rangements concurrents n'ouvrent pas deux transferts.
+  { provide: InternalTransferDayLock, useClass: PrismaInternalTransferDayLock },
   { provide: InternalTransfersReader, useClass: PrismaInternalTransfersReader },
   { provide: TransferredOrdersReader, useClass: PrismaTransferredOrdersReader },
   // Réassort, lot R3c : le contenu d'un réassort dans le transfert.

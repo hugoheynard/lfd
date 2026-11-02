@@ -12,7 +12,10 @@ import { PendingSettlementSweeper } from "../../../channels/commerce/pending-set
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDayStatusReader } from "../../../domain/ports/production-day-status.reader.js";
+import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
 import { DayResupplies, stopRulesOf } from "../../__tests__/settings-doubles.js";
+import { PlanArrestRecording } from "../../services/plan-arrest-recording.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
@@ -112,26 +115,42 @@ function closed(): ProductionDay {
   return day;
 }
 
-function subject(sequence: ProductionDay[]) {
+function subject(sequence: ProductionDay[], status?: ProductionDayStatusReader) {
   const trace: string[] = [];
   const days = new SequencedDays(sequence, trace);
   const events = new RecordingPublisher();
   const durable = new Durable();
-  const handler = new CloseProductionDayHandler(
+  const reading = intakeReadingOf({
     days,
-    new Commerce(trace),
+    orders: new Commerce(trace),
+    withdrawals: new InMemoryWithdrawals(trace),
+    resupplies: new DayResupplies([], trace),
+    ...(status === undefined ? {} : { status }),
+  });
+  const handler = new CloseProductionDayHandler(
+    reading,
+    new PlanArrestRecording(days, durable),
     new Sweeper(),
+    stopRulesOf(),
+    new FixedStaffAuthorDirectory(),
     events,
     new FixedClock(NOW),
     new DirectUnitOfWork(),
-    durable,
     new RecordingDayLock(trace),
-    new FixedStaffAuthorDirectory(),
-    new InMemoryWithdrawals(trace),
-    stopRulesOf(),
-    new DayResupplies([], trace),
   );
   return { handler, days, events, durable, trace };
+}
+
+/** L'en-tête seul : il note qu'on l'a lu, et dit « ouverte ». */
+class HeaderOnly extends ProductionDayStatusReader {
+  constructor(private readonly trace: string[]) {
+    super();
+  }
+
+  isClosed(): Promise<boolean> {
+    this.trace.push("status");
+    return Promise.resolve(false);
+  }
 }
 
 describe("clore sous le verrou de la journée", () => {
@@ -182,5 +201,20 @@ describe("clore sous le verrou de la journée", () => {
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(trace).toEqual(["load", `lock:${DAY}`, "load"]);
+  });
+
+  /**
+   * Régression (audit du réassort, 2026-11-02) : la lecture hors verrou
+   * relisait la journée ENTIÈRE — commandes, lignes, compte, fournées — pour
+   * n'en garder que `closedAt`. Elle ne lit plus que l'en-tête.
+   */
+  it("hors verrou, ne lit que l'en-tête ; la journée entière n'est relue que sous lui", async () => {
+    const trace: string[] = [];
+    const { handler, trace: steps } = subject([open()], new HeaderOnly(trace));
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(trace).toEqual(["status"]);
+    expect(steps.slice(0, 2)).toEqual([`lock:${DAY}`, "load"]);
   });
 });

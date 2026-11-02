@@ -24,8 +24,8 @@ import {
   type SiteResupplyLaunch,
   type SiteResupplySnapshot,
   type SiteResupplyStatus,
-  type SiteResupplyTrace,
 } from "./site-resupply-snapshot.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
 
 export {
   isPlaced,
@@ -37,7 +37,6 @@ export {
   type SiteResupplyLaunch,
   type SiteResupplySnapshot,
   type SiteResupplyStatus,
-  type SiteResupplyTrace,
 } from "./site-resupply-snapshot.js";
 
 /**
@@ -68,11 +67,17 @@ export class SiteResupply {
     readonly siteId: string,
     readonly target: ResupplyTarget,
     readonly serviceDay: string,
+    /**
+     * La version LUE en base (`0` : pas encore écrite). Elle n'avance pas en
+     * mémoire : l'adaptateur écrit `version + 1` sous ce verrou, et un agrégat
+     * ne se sauve qu'une fois par unité de travail — un second `save` sur la
+     * même instance buterait sur son propre verrou (choix du 2026-11-02).
+     */
     readonly version: number,
     readonly origin: ResupplyOrigin,
     private readonly content: SiteResupplyContent,
-    private placedTrace: SiteResupplyTrace | null,
-    private cancelledTrace: SiteResupplyTrace | null,
+    private placedTrace: ResupplyTrace | null,
+    private cancelledTrace: ResupplyTrace | null,
     private readonly progress: SiteResupplyProgress,
   ) {}
 
@@ -177,15 +182,15 @@ export class SiteResupply {
     return this.placedTrace === null ? "draft" : "placed";
   }
 
-  get placed(): SiteResupplyTrace | null {
+  get placed(): ResupplyTrace | null {
     return this.placedTrace;
   }
 
-  get cancelled(): SiteResupplyTrace | null {
+  get cancelled(): ResupplyTrace | null {
     return this.cancelledTrace;
   }
 
-  get arrived(): SiteResupplyTrace | null {
+  get arrived(): ResupplyTrace | null {
     return this.progress.arrived;
   }
 
@@ -212,16 +217,12 @@ export class SiteResupply {
   }
 
   /** Cf. {@link SiteResupplyProgress.markArrived} : la règle et ses refus. */
-  markArrived(trace: SiteResupplyTrace, reception: SiteResupplyTrace | null): boolean {
+  markArrived(trace: ResupplyTrace, reception: ResupplyTrace | null): boolean {
     return this.progress.markArrived(this.gateContext(), trace, reception);
   }
 
   /** Cf. {@link SiteResupplyProgress.markMounted} : la règle et ses refus. */
-  markMounted(
-    trace: SiteResupplyTrace,
-    reception: SiteResupplyTrace | null,
-    launched: boolean,
-  ): boolean {
+  markMounted(trace: ResupplyTrace, reception: ResupplyTrace | null, launched: boolean): boolean {
     return this.progress.markMounted(this.gateContext(), trace, reception, launched);
   }
 
@@ -254,11 +255,20 @@ export class SiteResupply {
   }
 
   /**
+   * L'envoi qui a suivi `seenVersion`, et lui seul (D5, double clic) : chaque
+   * `save` avance la version d'un, donc un envoyé en `seenVersion + 1` est
+   * parti tel que le poste l'a vu.
+   */
+  isPlacementOf(seenVersion: number): boolean {
+    return this.placedTrace !== null && this.version === seenVersion + 1;
+  }
+
+  /**
    * Passe le réassort. `deadline` (l'heure du réassort pour sa journée, ou
    * `null`) et `planStopped` (lu SOUS le verrou de la journée) : cf.
    * {@link assertPlaceable}.
    */
-  place(trace: SiteResupplyTrace, deadline: Date | null, planStopped: boolean): void {
+  place(trace: ResupplyTrace, deadline: Date | null, planStopped: boolean): void {
     this.assertDraft();
     const lineCount = this.content.lines.length;
     assertPlaceable({ ...this.gateContext(), lineCount, at: trace.at, deadline, planStopped });
@@ -275,8 +285,8 @@ export class SiteResupply {
    * lus par l'appelant sous le verrou de la journée : cf. {@link assertCancellable}.
    */
   cancel(
-    trace: SiteResupplyTrace,
-    reception: SiteResupplyTrace | null,
+    trace: ResupplyTrace,
+    reception: ResupplyTrace | null,
     planStopped: boolean,
     launched: boolean,
   ): void {
@@ -285,7 +295,7 @@ export class SiteResupply {
   }
 
   /** Ce que les gardes et le suivi lisent du réassort à l'instant du geste. */
-  private gateContext(): ProgressContext & { readonly origin: ResupplyOrigin } {
+  private gateContext(): ProgressContext {
     const { status, target, serviceDay, origin } = this;
     return { status, target, serviceDay, origin };
   }

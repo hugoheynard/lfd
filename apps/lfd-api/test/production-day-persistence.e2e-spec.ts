@@ -1,7 +1,7 @@
 import type { PlacedResupply, ProducibleOrder } from "../src/production/channels/commerce/index.js";
 import {
   NOTHING_PENDING,
-  type ProductionDay,
+  ProductionDay,
   type ProductionDaySnapshot,
 } from "../src/production/domain/entities/production-day.js";
 import { ProductionDayRepository } from "../src/production/domain/ports/production-day.repository.js";
@@ -137,6 +137,35 @@ describe("La journée de production — écrite par différence, relue telle que
     expect(comparable(reloaded)).toEqual(comparable(current));
     expect(reloaded.orders[0]?.lines[0]?.quantity).toBe(9);
     expect(await rowIds()).toEqual(before);
+  });
+
+  /**
+   * Régression (audit du réassort, 2026-11-02) : `updateMany` ne contrôlait pas
+   * ce qu'il touchait. Une ligne absente en base laissait la révision perdue
+   * sans un mot — la journée en mémoire disait 9, la base 4, le compte montait.
+   */
+  it("une révision dont la ligne manque en base échoue, et rien n'est écrit", async () => {
+    await ctx.prisma.productionOrderLine.deleteMany({
+      where: { order: { serviceDay: SERVICE_DAY } },
+    });
+    const current = await days.load(day);
+    expect(current.orders[0]?.lines).toEqual([]);
+    // L'agrégat porte encore la ligne que la base a perdue — la dérive à révéler.
+    const revising = ProductionDay.restore({
+      ...current.toSnapshot(),
+      orders: current.orders.map((o) => ({
+        ...o,
+        lines: order("ord_1").lines.map((l) => ({ ...l })),
+      })),
+    });
+
+    revising.reviseOrder("ord_1", [{ sku: "VIE-001", quantity: 9 }]);
+
+    await expect(days.save(revising)).rejects.toMatchObject({
+      code: "production.revision.not_written",
+    });
+    const reloaded = await days.load(day);
+    expect(reloaded.counts.map((c) => [c.sku, c.quantity])).toEqual([["VIE-001", 10]]);
   });
 
   it("la réouverture efface le plan du soir et garde le réassort lancé", async () => {

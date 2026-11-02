@@ -2,8 +2,8 @@ import {
   ReceiptNotYetReceivedError,
   ResupplyAlreadyReceivedError,
   ResupplyDayNotYetComeError,
-  ResupplyNotReceivableError,
 } from "../../domain/resupply-receipt-errors.js";
+import { ResupplyNotReceivableError } from "../../domain/site-resupply-gate-errors.js";
 import {
   SiteResupplyChangedMeanwhileError,
   SiteResupplyNotFoundError,
@@ -11,7 +11,7 @@ import {
 import { StockAlert } from "../../domain/stock-alert.js";
 import { CorrectReceivedResupplyLineCommand } from "../correct-received-resupply-line.command.js";
 import { GetResupplyReceiptQuery } from "../get-resupply-receipt.query.js";
-import { ReceiveResupplyLineCommand } from "../receive-resupply-line.command.js";
+import { ReceiveUnorderedReceiptLineCommand } from "../receive-unordered-receipt-line.command.js";
 import { ReceiveSiteResupplyCommand } from "../receive-site-resupply.command.js";
 import { AT, AUTHOR, CRO_24, DAY, OTHER, placed, SITE, setup } from "./resupply-receipt-setup.js";
 
@@ -275,7 +275,7 @@ describe("le stock du jour", () => {
     resupplies.put(placed("resupply_tomorrow", CRO_24, { serviceDay: "2026-01-03" }));
     await receiveResupply.execute(new ReceiveSiteResupplyCommand(SITE, "resupply_1", "staff_lou"));
     await receiveResupply.execute(new ReceiveSiteResupplyCommand(SITE, "resupply_2", "staff_lou"));
-    await receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "CRO", 2, "staff_lou"));
+    await receive.execute(new ReceiveUnorderedReceiptLineCommand(SITE, DAY, "CRO", 2, "staff_lou"));
 
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
 

@@ -15,10 +15,11 @@ import { RecordBatchCommand } from "./record-batch.command.js";
  * Charger, demander à l'agrégat s'il laisse passer (journée arrêtée, SKU au
  * compte, au moins une pièce), écrire, comparer ce que la base a gardé.
  *
- * ## Sous le verrou de la journée (C-D, audit du 2026-11-02)
+ * ## Sous le verrou de la journée (audit du réassort, 2026-11-02)
  *
- * Déclarer ne fait qu'AUGMENTER le disponible (D4) : aucun invariant « au bac ≤
- * sorti » ne peut casser, et deux déclarations simultanées ne s'écrasent rien.
+ * Déclarer ne fait qu'AUGMENTER ce qui est sorti du four (décision D4 du plan
+ * des fournées) : aucun invariant « au bac ≤ sorti » ne peut casser, et deux
+ * déclarations simultanées ne s'écrasent rien.
  * Mais la GARDE de l'agrégat (journée arrêtée, SKU au compte) se lisait sur
  * une journée chargée hors verrou : une réouverture ou un retirage passés
  * entre la lecture et l'écriture laissaient entrer une fournée sur une
@@ -67,9 +68,7 @@ export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, v
         by: command.staffUserId,
         initials: command.initials,
       });
-      for (const inherited of current.materialize(command.sku)) {
-        await this.batches.record(day, inherited);
-      }
+      await this.batches.recordInherited(day, current.materialize(command.sku));
       const stored = await this.batches.record(day, batch);
       current.acknowledge(batch, stored.serviceDay, stored.batch);
       if (stored.batch.cancelled === null) {

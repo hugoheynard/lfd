@@ -139,12 +139,15 @@ export class ReceiptBoundToResupplyError extends BusinessError {
   }
 }
 
-/** Seul un réassort envoyé et non annulé se réceptionne. */
-export class ResupplyNotReceivableError extends BusinessError {
+/**
+ * « Réceptionner » d'un geste ne vaut que pour le reçu d'un réassort commandé :
+ * un réassort sans commande est reçu ligne par ligne, à la saisie.
+ */
+export class ReceiptNotBoundToResupplyError extends BusinessError {
   constructor() {
     super(
-      "resupply.receipt.resupply_not_receivable",
-      "Ce réassort n'a pas été envoyé au fournil, ou a été annulé : il n'y a rien à réceptionner. Saisissez ce qui est arrivé dans « Réassort sans commande ».",
+      "resupply.receipt.not_bound_to_resupply",
+      "Ce reçu est un réassort sans commande : chaque article y est reçu dès sa saisie, il n'y a rien à « Réceptionner ». Ajoutez ou corrigez les articles de la liste.",
     );
   }
 }
@@ -164,7 +167,8 @@ export class UnreceivedReceiptNotPersistableError extends TechnicalError {
 
 /**
  * Une baisse de reçu passerait sous ce que les commandes sur stock ont déjà
- * pris (plan du jour J, §11.2, le stock du jour décompté, L2) : la vitrine afficherait un reste
+ * pris (le stock du jour décompté, L2 —
+ * `documentation/limites-de-commande/jour-meme-sur-stock.md`) : la vitrine afficherait un reste
  * négatif, et une commande déjà vendue n'aurait plus de marchandise. La
  * quantité dit son unité (L2b-1) : « 12 », ou « 1,25 kg ».
  */

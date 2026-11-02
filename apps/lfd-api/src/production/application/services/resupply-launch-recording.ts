@@ -47,9 +47,7 @@ export class ResupplyLaunchRecording {
 
   async record(launch: DecidedLaunch): Promise<void> {
     const { day, current, resupply, gesture, openedPlan } = launch;
-    for (const batch of launch.inherited) {
-      await this.batches.record(day, batch);
-    }
+    await this.batches.recordInherited(day, launch.inherited);
     await this.days.save(current);
     const reopenedAt = current.reopened?.at ?? null;
     await this.durable.publish(

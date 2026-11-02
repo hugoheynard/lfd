@@ -27,9 +27,10 @@ import type {
  * annule ou qu'on décoche, **sans rien muter** (plan
  * `documentation/fournil/plan-fournees-progressives.md`, D3, D4).
  *
- * Hors de `production-day.ts` parce que le fichier de l'agrégat dépasserait
- * trois cents lignes. La journée reste le seul
- * point d'entrée — chaque garde est exposée par une méthode de `ProductionDay`.
+ * Des fonctions pures sur {@link BatchState}, sans transition : elles ne
+ * lisent qu'un état et refusent. La journée reste le seul point d'entrée —
+ * chaque garde est exposée par une méthode de `ProductionDayState`
+ * (`production-day.state.ts`), la base de l'agrégat.
  */
 
 /** Ce qu'une garde lit d'une journée — et rien de ce qui la modifie. */

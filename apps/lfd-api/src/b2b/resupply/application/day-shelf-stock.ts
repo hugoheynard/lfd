@@ -6,8 +6,8 @@ import { ResupplyReceiptReader } from "../domain/resupply-receipt.reader.js";
 import { ShelfDrawsReader } from "../domain/shelf-draws.reader.js";
 
 /**
- * **Le reste du jour d'un point, en un seul calcul** (plan du jour J, §11.2,
- * le stock du jour décompté (L2)) : lit les prélèvements des commandes sur stock et les passe, avec
+ * **Le reste du jour d'un point, en un seul calcul** (le stock du jour
+ * décompté, L2 — `documentation/limites-de-commande/jour-meme-sur-stock.md`) : lit les prélèvements des commandes sur stock et les passe, avec
  * les reçus, à `estimateStock`. La Supervision, la réception et le refus
  * d'une baisse de reçu passent tous par ici : deux écrans ne peuvent pas
  * dire deux restes.

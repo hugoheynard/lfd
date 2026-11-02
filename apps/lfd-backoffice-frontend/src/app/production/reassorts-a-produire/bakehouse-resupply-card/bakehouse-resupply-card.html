@@ -38,6 +38,8 @@
           placeholder="Choisir un point"
           [options]="siteOptions()"
           [value]="siteId()"
+          [disabled]="siteLocked()"
+          [hint]="siteLocked() ? 'Un brouillon garde le point où il a été composé.' : ''"
           (selectionChange)="pickSite($event)"
         />
         <div class="targets" role="group" aria-label="Pour quand">

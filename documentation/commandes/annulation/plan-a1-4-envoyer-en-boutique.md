@@ -95,7 +95,7 @@ fournil − au bac − envoyé en boutique − réservé`. Une méthode
 
 - **La réserve du jour seulement** : la sortie ne part que de la réserve de
   la journée du geste (heure de Paris, par le `Clock`). Une autre journée est
-  refusée (409 `packing.reserve.not_today`, `SiteResupply.sentFromReserve`).
+  refusée (409 `resupply.order.reserve_not_today`, `SiteResupply.sentFromReserve`).
 - **Pas d'annulation** : un réassort d'origine `reserve` ne s'annule pas, le
   pain est physiquement parti (409 `resupply.order.reserve_not_cancellable`,
   `SiteResupply.cancel`). Le comptoir n'a pas de bouton d'annulation sur la

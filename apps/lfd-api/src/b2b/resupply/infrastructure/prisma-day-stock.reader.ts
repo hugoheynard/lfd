@@ -3,10 +3,10 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { type DayStockSite, DayStockReader } from "../domain/day-stock.reader.js";
 import type { ResupplyReceiptSnapshot } from "../domain/resupply-receipt.js";
-import { isPlaced, type PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
+import type { PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
 import { dayColumn } from "./day-column.js";
 import { RECEIPT_LINES, receiptSnapshotOf } from "./resupply-receipt.row.js";
-import { SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
+import { placedSnapshotOf, SITE_RESUPPLY_LINES } from "./site-resupply.row.js";
 
 /**
  * Lecture Prisma de l'onglet Stock : une journée, tous points.
@@ -42,7 +42,7 @@ export class PrismaDayStockReader extends DayStockReader {
       include: { lines: SITE_RESUPPLY_LINES },
       orderBy: [{ placedAt: "asc" }, { id: "asc" }],
     });
-    return rows.map(snapshotOf).filter(isPlaced);
+    return rows.map(placedSnapshotOf);
   }
 
   async receiptsOn(serviceDay: string): Promise<readonly ResupplyReceiptSnapshot[]> {

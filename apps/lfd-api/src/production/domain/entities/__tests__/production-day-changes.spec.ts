@@ -114,3 +114,65 @@ describe("ProductionDay.changes — ce que save écrira", () => {
     expect(day.changes).toEqual({ ...UNCHANGED_DAY, plan: true, counts: true });
   });
 });
+
+/**
+ * Garde (audit du réassort, 2026-11-02) : `save` n'écrit QUE ce que `changes`
+ * dit. Un mutateur ajouté sans marquer `changes` changerait la journée en
+ * mémoire et rien en base — sans erreur, sans test rouge. Toute méthode
+ * publique doit donc être classée ici ; une méthode neuve fait échouer le
+ * premier test tant qu'on n'a pas dit ce qu'elle écrit.
+ */
+describe("chaque mutateur de ProductionDay marque ce qu'il change", () => {
+  const gesture = { at: MORNING, staffUserId: "s_max", name: null };
+  /** Les mutateurs que `save` écrit, chacun joué sur une journée relue. */
+  const SAVED: Readonly<Record<string, (day: ProductionDay) => void>> = {
+    close: (day) => day.close([order("ord_9")], NONE, MORNING, null),
+    retake: (day) => day.retake([order("ord_1"), order("ord_2")], NONE, MORNING, "s_max", null),
+    reopen: (day) => day.reopen(IDLE, MORNING, "s_max"),
+    launchResupply: (day) => day.launchResupply(resupply("rs_asap"), gesture, NOTHING_PENDING),
+    reviseOrder: (day) => day.reviseOrder("ord_1", [{ sku: "VIE-001", quantity: 9 }]),
+  };
+  /** `materialize` touche les fournées, qui ont leur port : l'appelant les écrit. */
+  const BATCH_PORT = ["materialize"];
+  /** Les lectures et les gardes qui refusent sans muter. */
+  const READERS = [
+    "producedOf",
+    "batchToRecord",
+    "acknowledge",
+    "batchToComplete",
+    "batchToCancel",
+    "batchesToUncheck",
+    "itemToMark",
+    "toSnapshot",
+  ];
+
+  function methodsOf(prototype: object): readonly string[] {
+    return Object.getOwnPropertyNames(prototype).filter(
+      (name) =>
+        name !== "constructor" &&
+        typeof Object.getOwnPropertyDescriptor(prototype, name)?.value === "function",
+    );
+  }
+
+  it("toute méthode publique de la journée est classée", () => {
+    const own = methodsOf(ProductionDay.prototype);
+    const inherited = methodsOf(Object.getPrototypeOf(ProductionDay.prototype) as object);
+
+    expect([...own, ...inherited].sort()).toEqual(
+      [...Object.keys(SAVED), ...BATCH_PORT, ...READERS].sort(),
+    );
+  });
+
+  it.each(Object.keys(SAVED))("%s change l'instantané ET le dit à `save`", (name) => {
+    const day =
+      name === "close"
+        ? ProductionDay.restore(ProductionDay.open(ServiceDay.of("2026-09-08")).toSnapshot())
+        : reloadedClosed();
+    const before = { ...day.toSnapshot(), batches: [] };
+
+    SAVED[name]?.(day);
+
+    expect({ ...day.toSnapshot(), batches: [] }).not.toEqual(before);
+    expect(day.changes).not.toEqual(UNCHANGED_DAY);
+  });
+});

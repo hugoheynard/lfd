@@ -431,6 +431,18 @@ describe('BakehouseResupplyCard', () => {
       expect(sentCount()).toBe(1);
     });
 
+    /** Régression (D3) : un brouillon repris se laissait déplacer vers un autre point. */
+    it('fige le point d’un brouillon repris ; une carte neuve le laisse choisir', async () => {
+      const bakehouse = new FakeBakehouse();
+      bakehouse.stored = [DRAFT];
+      const resumed = await mount(new FakePickups(), bakehouse, new FakePanels(), 'dr_1');
+      await settle(resumed.fixture);
+      const fresh = await mount();
+
+      expect(resumed.card['siteLocked']()).toBe(true);
+      expect(fresh.card['siteLocked']()).toBe(false);
+    });
+
     it('dit qu’un brouillon demandé n’est plus ouvert, et part d’une carte vide', async () => {
       const { fixture, card, root } = await mount(
         new FakePickups(),

@@ -18,6 +18,8 @@ import { RetakeProductionDayHandler } from "../retake-production-day.handler.js"
 import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
+import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
+import { RetakeRecording } from "../../services/retake-recording.js";
 
 /** Deux instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const TIRAGE = new Date("2026-09-13T04:20:00.000Z");
@@ -112,18 +114,15 @@ function subject(
   trace: string[] = [],
 ): RetakeProductionDayHandler {
   return new RetakeProductionDayHandler(
-    days,
-    new Commerce(rows, trace),
-    new FixedClock(NOW),
-    events,
-    new DirectUnitOfWork(),
-    batches,
-    lock,
-    durable,
+    intakeReadingOf({ days, orders: new Commerce(rows, trace), withdrawals }),
+    new RetakeRecording(days, batches, durable),
     new FixedStaffAuthorDirectory(
       authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
     ),
-    withdrawals,
+    events,
+    new FixedClock(NOW),
+    new DirectUnitOfWork(),
+    lock,
   );
 }
 

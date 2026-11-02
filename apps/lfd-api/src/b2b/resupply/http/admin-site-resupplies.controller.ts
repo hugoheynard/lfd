@@ -24,11 +24,11 @@ import {
   Put,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import { z } from "zod";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
-import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { z } from "zod";
+import { ZodBody, ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 
 import { AddSiteResupplyLineCommand } from "../application/add-site-resupply-line.command.js";
 import { CancelSiteResupplyCommand } from "../application/cancel-site-resupply.command.js";
@@ -37,6 +37,7 @@ import { NameSiteResupplyCommand } from "../application/name-site-resupply.comma
 import { ListSiteResuppliesQuery } from "../application/list-site-resupplies.query.js";
 import { SendSiteResupplyCommand } from "../application/send-site-resupply.command.js";
 import { WithdrawSiteResupplyLineCommand } from "../application/withdraw-site-resupply-line.command.js";
+import { skuParam } from "./resupply-params.js";
 
 const targetParamSchema = z.enum(RESUPPLY_TARGETS);
 
@@ -91,7 +92,7 @@ export class AdminSiteResuppliesController {
   @RequirePermission("handover_counter:write")
   async addLine(
     @Param("siteId") siteId: string,
-    @Param("target", new ZodQuery(targetParamSchema)) target: ResupplyTarget,
+    @Param("target", new ZodParam(targetParamSchema, "target")) target: ResupplyTarget,
     @Body(new ZodBody(addSiteResupplyLineSchema)) body: AddSiteResupplyLinePayload,
   ): Promise<PlacedSiteResupplyResponse> {
     const id = await this.commands.execute<AddSiteResupplyLineCommand, string>(
@@ -105,7 +106,7 @@ export class AdminSiteResuppliesController {
   @RequirePermission("handover_counter:write")
   async name(
     @Param("siteId") siteId: string,
-    @Param("target", new ZodQuery(targetParamSchema)) target: ResupplyTarget,
+    @Param("target", new ZodParam(targetParamSchema, "target")) target: ResupplyTarget,
     @Body(new ZodBody(nameSiteResupplySchema)) body: NameSiteResupplyPayload,
   ): Promise<PlacedSiteResupplyResponse> {
     const id = await this.commands.execute<NameSiteResupplyCommand, string>(
@@ -120,7 +121,7 @@ export class AdminSiteResuppliesController {
   async correctLine(
     @Param("siteId") siteId: string,
     @Param("resupplyId") resupplyId: string,
-    @Param("sku") sku: string,
+    @Param("sku", skuParam()) sku: string,
     @Body(new ZodBody(correctSiteResupplyLineSchema)) body: CorrectSiteResupplyLinePayload,
   ): Promise<void> {
     await this.commands.execute<CorrectSiteResupplyLineCommand, void>(
@@ -134,7 +135,7 @@ export class AdminSiteResuppliesController {
   async withdrawLine(
     @Param("siteId") siteId: string,
     @Param("resupplyId") resupplyId: string,
-    @Param("sku") sku: string,
+    @Param("sku", skuParam()) sku: string,
     @Body(new ZodBody(seenSiteResupplyVersionSchema)) body: SeenSiteResupplyVersionPayload,
   ): Promise<void> {
     await this.commands.execute<WithdrawSiteResupplyLineCommand, void>(

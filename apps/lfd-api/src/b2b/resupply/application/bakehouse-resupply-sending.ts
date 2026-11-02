@@ -2,17 +2,13 @@ import type { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import type { ResupplyCutoff } from "../domain/resupply-cutoff.js";
 import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
 import type { ResupplySites } from "../domain/resupply-sites.js";
-import {
-  type ResupplyTarget,
-  serviceDayFor,
-  SiteResupply,
-  type SiteResupplyTrace,
-} from "../domain/site-resupply.js";
+import { type ResupplyTarget, serviceDayFor, SiteResupply } from "../domain/site-resupply.js";
 import type { SiteResupplyLine } from "../domain/site-resupply-line.js";
 import type { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import type { RequestedResupplyLine } from "./send-bakehouse-resupply.command.js";
 import type { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { catalogueLine } from "./site-resupply-draft.js";
+import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 /**
  * **Le chemin de l'envoi du fournil** (R1d), partagé par « Envoyer un
@@ -48,7 +44,7 @@ export interface BakehouseSendingRequest {
 export interface PreparedBakehouseResupply {
   readonly request: BakehouseSendingRequest;
   readonly lines: readonly SiteResupplyLine[];
-  readonly trace: SiteResupplyTrace;
+  readonly trace: ResupplyTrace;
   readonly serviceDay: string;
 }
 
@@ -56,7 +52,7 @@ export interface PreparedBakehouseResupply {
 export async function prepareBakehouseResupply(
   ports: BakehouseSendingPorts,
   request: BakehouseSendingRequest,
-  trace: SiteResupplyTrace,
+  trace: ResupplyTrace,
 ): Promise<PreparedBakehouseResupply> {
   if (!(await ports.sites.exists(request.siteId))) {
     throw new ResupplySiteUnknownError(request.siteId);

@@ -56,9 +56,7 @@ export class CancelBatchHandler implements ICommandHandler<CancelBatchCommand, v
       if (target === null) {
         return;
       }
-      for (const inherited of current.materialize(target.sku)) {
-        await this.batches.record(day, inherited);
-      }
+      await this.batches.recordInherited(day, current.materialize(target.sku));
       const mark = { at: this.clock.now(), by: command.staffUserId };
       if (current.packingOwner === "packing") {
         for (const unhanded of await this.handoffs.requestReturns(day, [target], mark)) {

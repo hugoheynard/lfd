@@ -1,7 +1,6 @@
 import { instantToLocal } from "@lfd/contracts";
 
 import type { ResupplyOrigin } from "./resupply-origin.js";
-import { ResupplyNotReceivableError } from "./resupply-receipt-errors.js";
 import { EmptyResupplyError } from "./site-resupply-errors.js";
 import {
   BakehouseResupplyAfterStopError,
@@ -10,15 +9,13 @@ import {
   ResupplyFrozenInPlanError,
   ResupplyLaunchedNotCancellableError,
   ResupplyNotCancellableError,
+  ResupplyNotReceivableError,
   ResupplyPastCutoffError,
   ResupplyPlanStoppedError,
   ReserveResupplyNotCancellableError,
 } from "./site-resupply-gate-errors.js";
-import type {
-  ResupplyTarget,
-  SiteResupplyStatus,
-  SiteResupplyTrace,
-} from "./site-resupply-snapshot.js";
+import type { ResupplyTarget, SiteResupplyStatus } from "./site-resupply-snapshot.js";
+import type { ResupplyTrace } from "./resupply-trace.js";
 
 /**
  * **Les refus de l'envoi et de l'annulation** d'un `SiteResupply` — sortis
@@ -92,7 +89,7 @@ export interface CancellationState {
   readonly origin: ResupplyOrigin;
   readonly target: ResupplyTarget;
   readonly serviceDay: string;
-  readonly reception: SiteResupplyTrace | null;
+  readonly reception: ResupplyTrace | null;
   readonly planStopped: boolean;
   readonly launched: boolean;
 }

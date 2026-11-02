@@ -1,6 +1,10 @@
 import type { SaleUnit } from "@lfd/money";
 
-import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  TechnicalError,
+} from "../../../platform/shared/errors/app-error.js";
 import { unitWord } from "./unit-word.js";
 
 /**
@@ -44,6 +48,22 @@ export class StockMoveQuantityInvalidError extends DomainError {
     super(
       "packing.stock.move_quantity_invalid",
       `Le mouvement de « ${sku} » doit être un nombre entier de ${unitWord(unit)}, positif ou nul (reçu : ${String(quantity)}).`,
+    );
+  }
+}
+
+/**
+ * Un bac rend plus que la réserve ne compte au bac (audit du réassort,
+ * 2026-11-02) : le compte des lignes et celui de la réserve ne s'accordent
+ * plus. Un `Math.max(0, …)` le taisait en remettant le compte à zéro — et le
+ * libre gonflait d'autant ; c'est une incohérence de nos données, elle se
+ * dit, et rien n'est écrit. Même figure que `PackedResupplyStockInconsistentError`.
+ */
+export class PackedStockInconsistentError extends TechnicalError {
+  constructor(sku: string, packed: number, released: number, unit: SaleUnit = "piece") {
+    super(
+      "packing.stock.packed_inconsistent",
+      `La réserve du colisage ne compte que ${String(packed)} ${unitWord(unit)} de « ${sku} » au bac, et ce geste en rendrait ${String(released)} : rien n'a été changé. Rechargez le poste ; si l'écart reste, signalez-le à l'équipe technique avec la commande concernée.`,
     );
   }
 }

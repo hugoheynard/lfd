@@ -140,6 +140,36 @@ Laissé, et pourquoi :
   leurs lectures et leurs écritures (`ResupplyLaunchReading`,
   `ResupplyLaunchRecording`, `ResupplyReceiving`).
 
+## 4 quater. Les tranches 1 et 2 de l'audit pour 9/10, 2026-11-02 (commit à venir)
+
+Corrigé, chacun avec son test de régression : « Réceptionner » refusé sur un
+sans commande ; le code `resupply.order.reserve_not_today` (était
+`packing.…`) ; D3 (un brouillon du fournil garde son point), D4 (« Monté »
+n'est pas offert à une sortie de réserve), D5 (le double clic sur
+« Envoyer » rend 204) ; l'envoi prend le verrou avant de charger ; un geste
+relu sans son auteur entier est refusé (`resupply.row.unreadable`) au lieu
+d'être comblé de vide ; le refus d'une réception concurrente nomme le geste
+gagnant ; une seule trace (`ResupplyTrace`), une forme de ligne
+(`ResupplyLineShape`), un compte par (article, unité) (`StockTallies`) ;
+les lignes d'un reçu écrites par différence ; l'index `(site_id, name)`
+(migration additive `20261102280000_les_noms_du_reassort_par_index`, retour
+dans `prisma/rollback/`) ; le `:sku` du chemin validé ; les gestes du sans
+commande renommés `*UnorderedReceiptLine*` ; `site-resupply.spec.ts`
+découpé (les gardes dans
+`apps/lfd-api/src/b2b/resupply/domain/__tests__/site-resupply-gates.spec.ts`,
+les données communes dans
+`apps/lfd-api/src/b2b/resupply/domain/__tests__/site-resupply-fixtures.ts`).
+
+Laissé, et pourquoi :
+
+- **`isUniqueViolation` reste dans `platform/database/json-columns.ts`** :
+  l'en-tête du fichier l'annonce (« et des refus d'unicité de Prisma »), et
+  le déplacer toucherait huit lecteurs de six autres contextes (PIM,
+  médiathèque, ops, offres, opérations) — hors du réassort.
+- **`resupply.prisma` garde deux écarts, écrits au-dessus des colonnes** :
+  `launched_at`/`departed_at` en `Timestamptz` (aligner réécrirait la
+  colonne) et le défaut `version = 0` du reçu (jamais écrit).
+
 ## 5. Décidé, puis abandonné
 
 Pour qu'on ne les rebâtisse pas en croyant qu'ils manquent :

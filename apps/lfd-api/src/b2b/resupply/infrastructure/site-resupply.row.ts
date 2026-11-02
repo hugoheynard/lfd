@@ -1,7 +1,16 @@
 import { serviceDayOfColumn } from "./day-column.js";
 import { resupplySaleUnitOf } from "../domain/resupply-sale-unit.js";
 import { resupplyOriginOf } from "../domain/resupply-origin.js";
-import { resupplyTargetOf, type SiteResupplySnapshot } from "../domain/site-resupply.js";
+import {
+  isPlaced,
+  type PlacedSiteResupplySnapshot,
+  resupplyTargetOf,
+  type SiteResupplySnapshot,
+} from "../domain/site-resupply.js";
+import { UnreadableResupplyRowError } from "../domain/resupply-unreadable-row-error.js";
+import { wholeTraceOf } from "./trace-columns.js";
+
+const TABLE = "site_resupply";
 
 /** Les lignes, dans l'ordre de saisie. */
 export const SITE_RESUPPLY_LINES = {
@@ -45,7 +54,8 @@ export interface SiteResupplyRow {
 /**
  * Ligne → instantané du domaine. La visée et l'origine revalident ; la journée se relit en
  * UTC. Un envoi, comme une arrivée, est entier en base (CHECK `site_resupply_placement_whole`,
- * `…_arrival_whole`) : un auteur absent à côté d'un instant n'arrive pas.
+ * `…_arrival_whole`) ; un geste relu sans son auteur entier est refusé
+ * (`UnreadableResupplyRowError`), jamais comblé de chaînes vides.
  */
 export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
   return {
@@ -62,14 +72,33 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
       quantity: line.quantity,
       saleUnit: resupplySaleUnitOf(line.sku, line.saleUnit),
     })),
-    placed: traceOf(row.placedAt, row.placedByStaffId, row.placedByName, row.placedByRole),
-    cancelled: traceOf(
-      row.cancelledAt,
-      row.cancelledByStaffId,
-      row.cancelledByName,
-      row.cancelledByRole,
+    placed: wholeTraceOf(
+      {
+        at: row.placedAt,
+        staffUserId: row.placedByStaffId,
+        name: row.placedByName,
+        role: row.placedByRole,
+      },
+      { table: TABLE, rowId: row.id, gesture: "envoi" },
     ),
-    arrived: traceOf(row.arrivedAt, row.arrivedByStaffId, row.arrivedByName, row.arrivedByRole),
+    cancelled: wholeTraceOf(
+      {
+        at: row.cancelledAt,
+        staffUserId: row.cancelledByStaffId,
+        name: row.cancelledByName,
+        role: row.cancelledByRole,
+      },
+      { table: TABLE, rowId: row.id, gesture: "annulation" },
+    ),
+    arrived: wholeTraceOf(
+      {
+        at: row.arrivedAt,
+        staffUserId: row.arrivedByStaffId,
+        name: row.arrivedByName,
+        role: row.arrivedByRole,
+      },
+      { table: TABLE, rowId: row.id, gesture: "arrivée" },
+    ),
     // L'affichage du lancement (R4a) : un nom absent reste `null`.
     launched: row.launchedAt === null ? null : { at: row.launchedAt, byName: row.launchedByName },
     // L'affichage du départ (R4d) : une tournée sans livreur laisse le nom `null`.
@@ -78,17 +107,15 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
 }
 
 /**
- * Un geste daté relu : `null` sans instant. Le CHECK de la base le tient
- * entier ; le repli vide ne sert qu'au typage des colonnes nullables.
+ * Ligne → instantané d'un réassort ENVOYÉ, pour les lectures dont le `where`
+ * porte déjà `placedAt: { not: null }`. Un brouillon ici contredirait la
+ * requête : refusé, au lieu d'être écarté en silence par un filtre qui
+ * redisait le `where` (audit du réassort, 2026-11-02).
  */
-function traceOf(
-  at: Date | null,
-  staffUserId: string | null,
-  name: string | null,
-  role: string | null,
-): SiteResupplySnapshot["placed"] {
-  if (at === null) {
-    return null;
+export function placedSnapshotOf(row: SiteResupplyRow): PlacedSiteResupplySnapshot {
+  const snapshot = snapshotOf(row);
+  if (!isPlaced(snapshot)) {
+    throw new UnreadableResupplyRowError(TABLE, row.id, "envoi");
   }
-  return { at, author: { staffUserId: staffUserId ?? "", name: name ?? "", role: role ?? "" } };
+  return snapshot;
 }

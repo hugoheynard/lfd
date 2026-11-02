@@ -2,11 +2,12 @@ import { Injectable } from "@nestjs/common";
 
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import type { PackedResupplyLines } from "../../../packing/channels/commerce/index.js";
-import { ResupplyReceipt, type ResupplyReceiptTrace } from "../domain/resupply-receipt.js";
+import { ResupplyReceipt } from "../domain/resupply-receipt.js";
 import { ResupplyReceiptRepository } from "../domain/resupply-receipt.repository.js";
 import type { SiteResupply } from "../domain/site-resupply.js";
 import { StockAlertRepository } from "../domain/stock-alert.repository.js";
 import { liftStockAlertsOnReceipt } from "./lift-stock-alert-on-receipt.js";
+import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 /**
  * **Le reçu d'un réassort attesté d'un geste, et ce qu'il lève** — le reçu
@@ -27,7 +28,7 @@ export class ResupplyReceiving {
   async receiveAll(
     resupply: SiteResupply,
     packed: PackedResupplyLines | null,
-    trace: ResupplyReceiptTrace,
+    trace: ResupplyTrace,
   ): Promise<void> {
     const receipt =
       (await this.receipts.loadForResupply(resupply.siteId, resupply.id)) ??

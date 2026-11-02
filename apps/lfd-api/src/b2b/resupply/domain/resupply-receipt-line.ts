@@ -3,6 +3,7 @@ import {
   InvalidReceivedQuantityError,
 } from "./resupply-receipt-errors.js";
 import type { SaleUnit } from "./resupply-sale-unit.js";
+import type { ResupplyLineShape } from "./resupply-line-shape.js";
 
 /** Une ligne telle que l'adaptateur la relit. */
 export interface ResupplyReceiptLineSnapshot {
@@ -15,15 +16,15 @@ export interface ResupplyReceiptLineSnapshot {
 }
 
 /**
- * **Une ligne d'un reçu** : un article (SKU produit), son libellé FIGÉ, ce qui
- * était **attendu** et ce qui a été **reçu**, dans l'unité figée de la ligne —
- * pièces, ou grammes au poids (L2b-1) (R2,
- * `reassort-boutiques/README.md`). Aucun montant : un
- * réapprovisionnement est un mouvement interne, jamais une vente.
+ * **Une ligne d'un reçu** (R2, `reassort-boutiques/README.md`) : un article
+ * (SKU produit), son libellé FIGÉ, ce qui était **attendu** et ce qui a été
+ * **reçu**, dans l'unité figée de la ligne — pièces, ou grammes au poids
+ * (L2b-1). Aucun montant : un réapprovisionnement est un mouvement interne,
+ * jamais une vente.
  *
  * - L'attendu est la quantité EMBALLÉE au colisage quand elle est connue
- *   (R3b), sinon la quantité DEMANDÉE au réassort ; `null` sur un réassort sans commande, où rien
- * n'était attendu.
+ *   (R3b), sinon la quantité DEMANDÉE au réassort ; `null` sur un réassort
+ *   sans commande, où rien n'était attendu.
  * - Le reçu est `null` tant que le comptoir n'a pas réceptionné : seul le
  *   reçu fait le stock.
  */
@@ -37,12 +38,7 @@ export class ResupplyReceiptLine {
   ) {}
 
   /** Une ligne attendue d'un réassort, pas encore reçue. */
-  static expected(input: {
-    readonly sku: string;
-    readonly label: string;
-    readonly quantity: number;
-    readonly saleUnit: SaleUnit;
-  }): ResupplyReceiptLine {
+  static expected(input: ResupplyLineShape): ResupplyReceiptLine {
     return ResupplyReceiptLine.of({
       sku: input.sku,
       label: input.label,
@@ -53,12 +49,7 @@ export class ResupplyReceiptLine {
   }
 
   /** Une ligne reçue sans rien d'attendu : le réassort sans commande. */
-  static unordered(input: {
-    readonly sku: string;
-    readonly label: string;
-    readonly quantity: number;
-    readonly saleUnit: SaleUnit;
-  }): ResupplyReceiptLine {
+  static unordered(input: ResupplyLineShape): ResupplyReceiptLine {
     return ResupplyReceiptLine.of({
       sku: input.sku,
       label: input.label,

@@ -20,6 +20,7 @@ import type {
 
 import { OrderPlanRelease } from "../src/b2b/orders/domain/ports/order-plan-release.js";
 import { PackingListWithdrawal } from "../src/packing/domain/ports/packing-list-withdrawal.js";
+import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
@@ -261,9 +262,15 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     const released = await ctx.app
       .get(OrderPlanRelease, { strict: false })
       .releaseFromPlan(SERVICE_DAY, [order.id], confirmedAt ?? new Date(0));
+    // Dans une unité de travail, comme l'abonné à la réouverture : le retrait
+    // verrouille les feuilles (audit du réassort, 2026-11-02).
     const withdrawn = await ctx.app
-      .get(PackingListWithdrawal, { strict: false })
-      .withdrawUntouched(SERVICE_DAY, [order.id]);
+      .get(UnitOfWork)
+      .run(() =>
+        ctx.app
+          .get(PackingListWithdrawal, { strict: false })
+          .withdrawUntouched(SERVICE_DAY, [order.id]),
+      );
 
     expect([released, withdrawn]).toEqual([0, 0]);
     expect((await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe(

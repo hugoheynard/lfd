@@ -7,6 +7,7 @@ import {
   ReceiptBoundToResupplyError,
   ReceiptLineAlreadyPresentError,
   ReceiptLineNotFoundError,
+  ReceiptNotBoundToResupplyError,
   ReceiptNotYetReceivedError,
   ResupplyAlreadyReceivedError,
   ResupplyDayNotYetComeError,
@@ -170,6 +171,13 @@ describe("ResupplyReceipt — le reçu d'un réassort", () => {
 });
 
 describe("ResupplyReceipt — le réassort sans commande", () => {
+  /** Régression : « Réceptionner » un sans-commande vide le marquait reçu, sans aucune ligne. */
+  it("refuse « Réceptionner » : un sans-commande est reçu à la saisie, pas d'un geste", () => {
+    const receipt = unordered();
+    expect(() => receipt.receiveAll(TRACE)).toThrow(ReceiptNotBoundToResupplyError);
+    expect(receipt.status).toBe("expected");
+  });
+
   it("reçoit des articles dans l'ordre de saisie, reçus dès la saisie", () => {
     const receipt = unordered();
 

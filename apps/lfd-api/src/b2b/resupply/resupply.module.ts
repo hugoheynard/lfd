@@ -10,7 +10,7 @@ import { LiftStockAlertHandler } from "./application/lift-stock-alert.handler.js
 import { ListLiveStockAlertsHandler } from "./application/list-live-stock-alerts.handler.js";
 import { ListSiteStockAlertsHandler } from "./application/list-site-stock-alerts.handler.js";
 import { CorrectReceivedResupplyLineHandler } from "./application/correct-received-resupply-line.handler.js";
-import { CorrectResupplyLineHandler } from "./application/correct-resupply-line.handler.js";
+import { CorrectUnorderedReceiptLineHandler } from "./application/correct-unordered-receipt-line.handler.js";
 import { CorrectSiteResupplyLineHandler } from "./application/correct-site-resupply-line.handler.js";
 import { GetDayStockOverviewHandler } from "./application/get-day-stock-overview.handler.js";
 import { GetResupplyProductionDayHandler } from "./application/get-resupply-production-day.handler.js";
@@ -26,7 +26,7 @@ import { ResupplyArrivedBell } from "./application/resupply-arrived-bell.js";
 import { ProductionDayResupplies } from "./application/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "./application/production-range-resupplies.js";
 import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
-import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
+import { ReceiveUnorderedReceiptLineHandler } from "./application/receive-unordered-receipt-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
 import { ResupplyReceiving } from "./application/resupply-receiving.js";
 import { SendBakehouseResupplyHandler } from "./application/send-bakehouse-resupply.handler.js";
@@ -42,7 +42,7 @@ import { PrismaBakehouseResupplyDraftReader } from "./infrastructure/prisma-bake
 import { SendReserveToShopHandler } from "./application/send-reserve-to-shop.handler.js";
 import { AdminReserveShopReleasesController } from "./http/admin-reserve-shop-releases.controller.js";
 import { SendSiteResupplyHandler } from "./application/send-site-resupply.handler.js";
-import { WithdrawResupplyLineHandler } from "./application/withdraw-resupply-line.handler.js";
+import { WithdrawUnorderedReceiptLineHandler } from "./application/withdraw-unordered-receipt-line.handler.js";
 import { WithdrawSiteResupplyLineHandler } from "./application/withdraw-site-resupply-line.handler.js";
 import { DayStockReader } from "./domain/day-stock.reader.js";
 import { ResupplyCatalogue } from "./domain/resupply-catalogue.js";
@@ -155,12 +155,16 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     { provide: StockAlertReader, useClass: PrismaStockAlertReader },
     { provide: DayStockReader, useClass: PrismaDayStockReader },
     { provide: ShelfStockLock, useClass: PrismaShelfStockLock },
+    // Câblé ici, pas dans `appBootstrap/` : `orders` et `resupply` sont deux
+    // contextes du MÊME bloc `b2b`, que `lint:context-boundaries` laisse se
+    // lier (vérifié le 2026-11-02, même figure qu'`order-cutoffs` et
+    // `pricing-admin`). `appBootstrap/` relie les blocs entre eux.
     { provide: ShelfDrawsReader, useClass: PrismaShelfDrawsReader },
     DayShelfStock,
     ReceivedStockLowering,
-    ReceiveResupplyLineHandler,
-    CorrectResupplyLineHandler,
-    WithdrawResupplyLineHandler,
+    ReceiveUnorderedReceiptLineHandler,
+    CorrectUnorderedReceiptLineHandler,
+    WithdrawUnorderedReceiptLineHandler,
     ReceiveSiteResupplyHandler,
     ResupplyReceiving,
     CorrectReceivedResupplyLineHandler,
