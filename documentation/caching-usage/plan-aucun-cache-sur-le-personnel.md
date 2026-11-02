@@ -11,8 +11,8 @@
 > en CI). Les photos (`private, immutable`) et les exports en flux
 > (`no-store`) gardent leur en-tête : onze suites e2e existantes le vérifiaient
 > déjà, relancées vertes avec le middleware. Un refus des guards est éprouvé
-> par une 403 du mur staff. Reste le `curl` en production après déploiement
-> (§5).
+> par une 403 du mur staff. Vérifié en production le 2026-11-02 (`main` = `46b7b38c8`) : `GET /api/lfd/health`
+> rend `private, no-cache` — la zone Cloudflare ne réécrit pas l'en-tête.
 
 ## 1. Le constat (vérifié le 2026-11-02)
 
