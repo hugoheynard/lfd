@@ -278,6 +278,29 @@ describe("GetCounterCustomerHandler", () => {
     expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(false);
   });
 
+  it("dit « pas au compte » quand le prélèvement du principal suivi est bloqué", async () => {
+    const principal = company({ id: "p1", onAccount: true, blocked: true });
+    const { handler } = detail(CARD, company({ onAccount: true }), [], principal);
+
+    expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(false);
+  });
+
+  // Un suivi échu ne renvoie rien à `followsAt` : le payeur redevient la
+  // société elle-même, et c'est SON crédit qui parle, pas celui de l'ancien principal.
+  it("lit la société elle-même quand le suivi de facturation est échu", async () => {
+    const own = company({ onAccount: true });
+    const handler = new GetCounterCustomerHandler(
+      new FixedCards(CARD),
+      new StoredCompanies(own, new Map([["p1", company({ id: "p1", onAccount: false })]])),
+      new FixedAddresses(),
+      new FixedMembers([]),
+      new FixedBillingFollow(null),
+      new FixedClock(JOINED_AT),
+    );
+
+    expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(true);
+  });
+
   it("refuse une société inconnue en 404", async () => {
     const { handler } = detail(null, null);
 

@@ -226,6 +226,30 @@ describe("GetCounterClientNotePdfHandler — le bon remis au client, au comptoir
     ).rejects.toBeInstanceOf(CounterDeliveryNoteOutOfReachError);
   });
 
+  it("refuse une commande inconnue en 404 commande, sans rien imprimer", async () => {
+    const handler = new GetCounterClientNotePdfHandler(
+      new DeliveryNoteDocuments(
+        new OneOrderReader(null),
+        new FixedNotes([handedOverNote()]),
+        new FixedLogo(),
+        new FixedNoteDiscountParts(),
+      ),
+      new FixedHandovers(true),
+    );
+
+    await expect(handler.execute(new GetCounterClientNotePdfQuery("ord_x"))).rejects.toBeInstanceOf(
+      OrderNotFoundError,
+    );
+  });
+
+  it("dit « pas encore » quand plusieurs BL existent mais aucun n'est remis", async () => {
+    await expect(
+      counterHandler([plannedNote().toState(), plannedNote().toState()], "pickup", true).execute(
+        new GetCounterClientNotePdfQuery("ord_1"),
+      ),
+    ).rejects.toBeInstanceOf(CounterDeliveryNoteNotYetError);
+  });
+
   it("refuse le BL d'une livraison, même remise", async () => {
     await expect(
       counterHandler([handedOverNote()], "delivery", true).execute(
