@@ -2,7 +2,6 @@ import {
   PRODUCTION_RESUPPLY_LAUNCHED,
   ResupplyLaunchedEvent,
 } from "../../../../production/channels/packing/index.js";
-import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { InMemoryResupplies } from "../../__tests__/resupply-doubles.js";
 import { InMemoryShadow } from "../../__tests__/shadow-doubles.js";
 import { InMemoryStocks } from "../../__tests__/station-doubles.js";
@@ -11,7 +10,6 @@ import { OnResupplyLaunched } from "../on-resupply-launched.handler.js";
 /** Instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const DAY = "2026-10-22";
 const LAUNCHED = new Date("2026-10-22T07:00:00.000Z");
-const RECEIVED = new Date("2026-10-22T07:00:02.000Z");
 
 function fact(servedByTransfer: boolean) {
   return new ResupplyLaunchedEvent(DAY, LAUNCHED, "staff_max", "Max", {
@@ -33,7 +31,7 @@ function setup(receivedCro = 0) {
   const shadow = new InMemoryShadow();
   shadow.stocks.set(`${DAY}/CRO`, { received: receivedCro, returned: 0 });
   const stocks = new InMemoryStocks(shadow);
-  const handler = new OnResupplyLaunched(table, stocks, new FixedClock(RECEIVED));
+  const handler = new OnResupplyLaunched(table, stocks);
   const deliver = (servedByTransfer = true) =>
     handler.handle({
       eventId: "evt_1",
@@ -69,11 +67,25 @@ describe("OnResupplyLaunched (colisage, R4b)", () => {
 
     const cro = await stocks.lock(DAY, "CRO");
     expect(cro.reservations).toEqual([
-      { resupplyId: "rs_asap", quantity: 8, packed: 0, reservedAt: RECEIVED, releasedAt: null },
+      { resupplyId: "rs_asap", quantity: 8, packed: 0, reservedAt: LAUNCHED, releasedAt: null },
     ]);
     expect(cro.free).toBe(0);
     expect(cro.awaitingOven("rs_asap")).toBe(5);
     expect((await stocks.lock(DAY, "PAC")).reserved).toBe(4);
+  });
+
+  /**
+   * Régression : la réserve était datée de la LIVRAISON du fait (`clock.now()`),
+   * si bien qu'un fait relivré tard passait derrière un réassort lancé après lui
+   * dans l'ordre « servi le premier » (audit du réassort, 2026-11-02).
+   */
+  it("date la réserve du lancement, jamais de la livraison du fait", async () => {
+    const { stocks, deliver } = setup(0);
+
+    await deliver();
+
+    const [reservation] = (await stocks.lock(DAY, "CRO")).reservations;
+    expect(reservation?.reservedAt).toEqual(LAUNCHED);
   });
 
   it("le rejeu du fait ne réserve pas deux fois", async () => {

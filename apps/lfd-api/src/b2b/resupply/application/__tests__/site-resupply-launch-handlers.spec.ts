@@ -1,5 +1,4 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { ResupplyLaunchedEvent } from "../../../../production/channels/commerce/index.js";
 import {
@@ -25,6 +24,7 @@ import {
   InMemorySiteResupplyReader,
   KnownReceptions,
   SiteLabels,
+  freshSendingKey,
 } from "./site-resupply-doubles.js";
 
 /**
@@ -66,7 +66,6 @@ function setup() {
       cutoff,
       staff,
       clock,
-      new FixedIdGenerator("resupply"),
       gate,
       uow,
     ),
@@ -103,6 +102,7 @@ async function sendAsap(place: SendBakehouseResupplyHandler): Promise<string> {
   return place.execute(
     new SendBakehouseResupplyCommand(
       VILLAGE,
+      freshSendingKey(),
       "asap",
       [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
       "s",
@@ -143,6 +143,7 @@ describe("annuler un « au plus tôt » lancé (R4a)", () => {
     const id = await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "tomorrow",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",

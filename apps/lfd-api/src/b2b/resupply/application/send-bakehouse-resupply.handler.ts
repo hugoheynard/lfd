@@ -1,7 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
@@ -11,6 +10,7 @@ import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 import { SendBakehouseResupplyCommand } from "./send-bakehouse-resupply.command.js";
 import { ResupplyPlanGate } from "./resupply-plan-gate.js";
+import { sendOnceUnderKey } from "./resupply-sending-key.js";
 import { prepareBakehouseResupply, writeBakehouseResupply } from "./bakehouse-resupply-sending.js";
 
 /**
@@ -23,6 +23,10 @@ import { prepareBakehouseResupply, writeBakehouseResupply } from "./bakehouse-re
  * l'heure du réassort pour « pour demain ». Depuis le lot R3a, « pour
  * demain » s'admet au plan sous le verrou de la journée : après l'arrêt, il
  * est refusé, et le message dit au fournil son recours.
+ *
+ * Un envoi, une fois (C-A, audit du 2026-11-02) : la clé de l'écran est
+ * l'identifiant du réassort ({@link sendOnceUnderKey}) ; deux clics ne font
+ * qu'un réassort, une clé prise ailleurs est refusée en le nommant.
  */
 @CommandHandler(SendBakehouseResupplyCommand)
 export class SendBakehouseResupplyHandler implements ICommandHandler<
@@ -36,7 +40,6 @@ export class SendBakehouseResupplyHandler implements ICommandHandler<
     private readonly cutoff: ResupplyCutoff,
     private readonly staff: StaffDirectory,
     private readonly clock: Clock,
-    private readonly ids: IdGenerator,
     private readonly gate: ResupplyPlanGate,
     private readonly uow: UnitOfWork,
   ) {}
@@ -47,11 +50,16 @@ export class SendBakehouseResupplyHandler implements ICommandHandler<
       catalogue: this.catalogue,
       sites: this.sites,
       cutoff: this.cutoff,
-      ids: this.ids,
       gate: this.gate,
     };
     const trace = await traceOf(this.staff, this.clock, command.staffUserId);
     const prepared = await prepareBakehouseResupply(ports, command, trace);
-    return this.uow.run(() => writeBakehouseResupply(ports, prepared));
+    await sendOnceUnderKey(
+      this.uow,
+      this.resupplies,
+      { key: command.key, siteId: command.siteId, origin: "bakehouse" },
+      () => writeBakehouseResupply(ports, prepared, command.key),
+    );
+    return command.key;
   }
 }

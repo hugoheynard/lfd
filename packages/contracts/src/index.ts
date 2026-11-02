@@ -2938,12 +2938,14 @@ export type {
 export {
   bakehouseResupplyDraftLineSchema,
   saveBakehouseResupplyDraftSchema,
+  createBakehouseResupplyDraftSchema,
   updateBakehouseResupplyDraftSchema,
   discardBakehouseResupplyDraftSchema,
 } from "./bakehouse-resupply-draft.js";
 export type {
   BakehouseResupplyDraftLine,
   SaveBakehouseResupplyDraftPayload,
+  CreateBakehouseResupplyDraftPayload,
   UpdateBakehouseResupplyDraftPayload,
   DiscardBakehouseResupplyDraftPayload,
   BakehouseResupplyDraftView,

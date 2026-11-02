@@ -44,7 +44,7 @@ async function setup(received: number) {
   const clock = new FixedClock(LAUNCHED);
   const uow = new DirectUnitOfWork();
   const launch = () =>
-    new OnResupplyLaunched(table, stocks, clock).handle({
+    new OnResupplyLaunched(table, stocks).handle({
       eventId: "evt_1",
       type: PRODUCTION_RESUPPLY_LAUNCHED,
       payload: new ResupplyLaunchedEvent(DAY, LAUNCHED, "staff_max", "Max", {

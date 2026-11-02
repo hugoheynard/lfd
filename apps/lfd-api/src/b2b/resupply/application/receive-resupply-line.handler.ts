@@ -14,7 +14,7 @@ import { ResupplyReceiptLine } from "../domain/resupply-receipt-line.js";
 import { ResupplyReceiptRepository } from "../domain/resupply-receipt.repository.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
 import { StockAlertRepository } from "../domain/stock-alert.repository.js";
-import { liftStockAlertOnReceipt } from "./lift-stock-alert-on-receipt.js";
+import { liftStockAlertsOnReceipt } from "./lift-stock-alert-on-receipt.js";
 import { ReceiveResupplyLineCommand } from "./receive-resupply-line.command.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
@@ -69,9 +69,10 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
         });
       receipt.receive(line, trace);
       await this.receipts.save(receipt);
-      await liftStockAlertOnReceipt(
+      await liftStockAlertsOnReceipt(
         this.alerts,
-        { siteId: command.siteId, sku: line.sku, quantity: command.quantity },
+        command.siteId,
+        [{ sku: line.sku, quantity: command.quantity }],
         trace,
       );
     });

@@ -1,9 +1,10 @@
 import {
+  type CreateBakehouseResupplyDraftPayload,
+  createBakehouseResupplyDraftSchema,
   type BakehouseResupplyDraftView,
   type DiscardBakehouseResupplyDraftPayload,
   discardBakehouseResupplyDraftSchema,
   type SaveBakehouseResupplyDraftPayload,
-  saveBakehouseResupplyDraftSchema,
   type SavedBakehouseResupplyDraftResponse,
   type UpdateBakehouseResupplyDraftPayload,
   updateBakehouseResupplyDraftSchema,
@@ -73,6 +74,7 @@ export class AdminBakehouseResuppliesController {
     const id = await this.commands.execute<SendBakehouseResupplyCommand, string>(
       new SendBakehouseResupplyCommand(
         siteId,
+        body.key,
         body.target,
         body.lines,
         staffUserId,
@@ -112,13 +114,14 @@ export class AdminBakehouseResuppliesController {
   /** « Enregistrer comme brouillon », la première fois. */
   @Post("drafts")
   createDraft(
-    @Body(new ZodBody(saveBakehouseResupplyDraftSchema)) body: SaveBakehouseResupplyDraftPayload,
+    @Body(new ZodBody(createBakehouseResupplyDraftSchema))
+    body: CreateBakehouseResupplyDraftPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<SavedBakehouseResupplyDraftResponse> {
     return this.commands.execute<
       CreateBakehouseResupplyDraftCommand,
       SavedBakehouseResupplyDraftResponse
-    >(new CreateBakehouseResupplyDraftCommand(contentOf(body), staffUserId));
+    >(new CreateBakehouseResupplyDraftCommand(contentOf(body), staffUserId, body.key));
   }
 
   /** Réécrire un brouillon repris, sous la version lue (409 si périmée). */

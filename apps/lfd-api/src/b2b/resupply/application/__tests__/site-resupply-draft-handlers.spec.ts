@@ -38,6 +38,7 @@ import {
   InMemorySiteResupplyReader,
   InMemoryResupplyUsedNames,
   FixedLaunches,
+  freshSendingKey,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier : les journées ne sont comparées qu'à cette horloge figée. */
@@ -100,7 +101,6 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
       cutoff,
       staff,
       clock,
-      ids,
       gate,
       uow,
     ),
@@ -370,6 +370,7 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
     const sentId = await bakehouse.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "CRO", quantity: 10, saleUnit: "piece" as const }],
         "s",
@@ -390,6 +391,7 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
     await bakehouse.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "CRO", quantity: 10, saleUnit: "piece" as const }],
         "s",
@@ -407,7 +409,9 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
     const { bakehouse, store } = setup();
 
     await expect(
-      bakehouse.execute(new SendBakehouseResupplyCommand(VILLAGE, "asap", [], "s")),
+      bakehouse.execute(
+        new SendBakehouseResupplyCommand(VILLAGE, freshSendingKey(), "asap", [], "s"),
+      ),
     ).rejects.toThrow(EmptyResupplyError);
     expect(store.saves).toBe(0);
   });
@@ -445,7 +449,13 @@ describe("la demande en cours — un article au poids (lot L2b-1)", () => {
     const { bakehouse, store } = setup();
 
     const id = await bakehouse.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "SAU", quantity: 500 }], "s"),
+      new SendBakehouseResupplyCommand(
+        VILLAGE,
+        freshSendingKey(),
+        "asap",
+        [{ sku: "SAU", quantity: 500 }],
+        "s",
+      ),
     );
 
     const sent = store.all().find((row) => row.id === id);
@@ -462,6 +472,7 @@ describe("la demande en cours — un article au poids (lot L2b-1)", () => {
       bakehouse.execute(
         new SendBakehouseResupplyCommand(
           VILLAGE,
+          freshSendingKey(),
           "asap",
           [{ sku: "SAU", quantity: 3, saleUnit: "piece" }],
           "s",

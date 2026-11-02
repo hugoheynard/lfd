@@ -100,7 +100,7 @@ function setup(base: ProductionDay = closedDay()) {
     trace,
     lock,
     handoffs,
-    record: new RecordBatchHandler(days, store, clock, uow, handoffs.service),
+    record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
   };
 }
@@ -110,8 +110,8 @@ function record(id: string, quantity: number, sku = SKU, day = DAY): RecordBatch
 }
 
 describe("RecordBatchHandler", () => {
-  it("écrit la fournée avec l'horloge et l'identité du guard — sans verrou", async () => {
-    const { store, lock, record: handler } = setup();
+  it("écrit la fournée avec l'horloge et l'identité du guard", async () => {
+    const { store, record: handler } = setup();
 
     await handler.execute(record(FIRST, 12));
 
@@ -126,8 +126,19 @@ describe("RecordBatchHandler", () => {
         pendingReturn: 0,
       },
     ]);
-    // Déclarer ne fait qu'augmenter le disponible : rien à sérialiser (D4).
-    expect(lock.taken).toHaveLength(0);
+  });
+
+  /**
+   * Régression C-D (audit du 2026-11-02) : la journée était chargée et gardée
+   * HORS verrou ; une réouverture passée entre la lecture et l'écriture
+   * laissait entrer une fournée sur une journée rouverte.
+   */
+  it("prend le verrou de la journée AVANT de la charger et de la garder", async () => {
+    const { trace, record: handler } = setup();
+
+    await handler.execute(record(FIRST, 12));
+
+    expect(trace.slice(0, 3)).toEqual([`lock:${DAY}`, "load", `record:${FIRST}`]);
   });
 
   it("un rejeu de la même charge est un succès silencieux", async () => {
@@ -183,7 +194,12 @@ describe("RecordBatchHandler", () => {
 
     await handler.execute(record(FIRST, 5));
 
-    expect(trace).toEqual(["load", `record:backfill-${DAY}-${SKU}`, `record:${FIRST}`]);
+    expect(trace).toEqual([
+      `lock:${DAY}`,
+      "load",
+      `record:backfill-${DAY}-${SKU}`,
+      `record:${FIRST}`,
+    ]);
     expect(store.batches.map((batch) => batch.quantity)).toEqual([30, 5]);
   });
 });

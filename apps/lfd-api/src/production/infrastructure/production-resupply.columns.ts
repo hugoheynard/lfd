@@ -89,7 +89,7 @@ export function splitResupplies(rows: readonly ResupplyRow[]): SplitResupplies {
   return { resupplies, launchedResupplies };
 }
 
-/** Réassort → colonnes à écrire, genre et lancement compris. */
+/** Réassort → colonnes à écrire, genre et lancement compris — sans ses lignes (`resupplyLineRowsOf`). */
 export function resupplyRowOf(resupply: ProductionResupplySnapshot | LaunchedResupplySnapshot) {
   const launched = "launched" in resupply ? resupply.launched : null;
   return {
@@ -101,13 +101,19 @@ export function resupplyRowOf(resupply: ProductionResupplySnapshot | LaunchedRes
     kind: launched === null ? EVENING_KIND : ASAP_KIND,
     launchedAt: launched?.at ?? null,
     launchedBy: launched?.by ?? null,
-    lines: {
-      create: resupply.lines.map((line) => ({
-        sku: line.sku,
-        productName: line.productName,
-        quantity: line.quantity,
-        saleUnit: line.saleUnit,
-      })),
-    },
   };
+}
+
+/** Les lignes d'un réassort, à rattacher à sa ligne écrite (`production_resupply_id`). */
+export function resupplyLineRowsOf(
+  parent: string,
+  resupply: ProductionResupplySnapshot | LaunchedResupplySnapshot,
+) {
+  return resupply.lines.map((line) => ({
+    productionResupplyId: parent,
+    sku: line.sku,
+    productName: line.productName,
+    quantity: line.quantity,
+    saleUnit: line.saleUnit,
+  }));
 }

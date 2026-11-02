@@ -5,7 +5,11 @@ import {
 } from "./site-resupply-errors.js";
 import { resupplyNameOf } from "./resupply-name.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
-import { assertCancellable, assertPlaceable } from "./site-resupply-gates.js";
+import {
+  assertCancellable,
+  assertPlaceable,
+  assertReceivableStatus,
+} from "./site-resupply-gates.js";
 import type {
   BakehouseResupplyInput,
   CounterDraftInput,
@@ -66,6 +70,9 @@ export {
  * du fournil ; envoyé, il ne change plus.
  */
 export class SiteResupply {
+  /** Les lignes ont-elles bougé depuis la lecture ? L'adaptateur ne réécrit qu'alors (M4). */
+  private linesTouched = false;
+
   private constructor(
     readonly id: string,
     readonly siteId: string,
@@ -183,6 +190,11 @@ export class SiteResupply {
     return this.lineList;
   }
 
+  /** Vrai si un geste a changé les lignes depuis la réhydratation (ou la création). */
+  get linesChanged(): boolean {
+    return this.linesTouched;
+  }
+
   get status(): SiteResupplyStatus {
     if (this.cancelledTrace !== null) {
       return "cancelled";
@@ -242,18 +254,21 @@ export class SiteResupply {
   addLine(line: SiteResupplyLine): void {
     this.assertDraft();
     this.lineList = withLineAdded(this.lineList, line);
+    this.linesTouched = true;
   }
 
   /** Remplace la quantité d'un article du brouillon (entière, un ou plus). */
   correctLine(sku: string, quantity: number): void {
     this.assertDraft();
     this.lineList = withLineCorrected(this.lineList, sku, quantity);
+    this.linesTouched = true;
   }
 
   /** Retire un article du brouillon. */
   withdrawLine(sku: string): void {
     this.assertDraft();
     this.lineList = withLineWithdrawn(this.lineList, sku);
+    this.linesTouched = true;
   }
 
   /**
@@ -283,6 +298,11 @@ export class SiteResupply {
       planStopped,
     });
     this.placedTrace = trace;
+  }
+
+  /** « Réceptionner » (G1) — cf. {@link assertReceivableStatus}, puis `save` sous la version. */
+  assertReceivable(): void {
+    assertReceivableStatus(this.status);
   }
 
   /**

@@ -1,28 +1,38 @@
 import type { StockAlertTrace } from "../domain/stock-alert.js";
 import type { StockAlertRepository } from "../domain/stock-alert.repository.js";
 
+/** Un article reçu au point, avec sa quantité reçue. */
+export interface ReceivedArticle {
+  readonly sku: string;
+  readonly quantity: number;
+}
+
 /**
- * **Le point d'accroche de la réception** (lot R1b) : un article reçu au
- * point lève son alerte vivante, dans la transaction de l'appelant. C'est le
- * SEUL chemin de la levée par réception ; l'appellent
- * `ReceiveSiteResupplyHandler` (« Réceptionner », une fois par ligne reçue,
- * lot R2) et `ReceiveResupplyLineHandler` (le réassort sans commande) —
- * vérifié le 2026-10-21.
+ * **Le point d'accroche de la réception** (lot R1b) : les articles reçus au
+ * point lèvent leurs alertes vivantes, dans la transaction de l'appelant.
+ * C'est le SEUL chemin de la levée par réception ; l'appellent
+ * `ReceiveSiteResupplyHandler` (« Réceptionner », toutes les lignes d'un
+ * coup, lot R2) et `ReceiveResupplyLineHandler` (le réassort sans commande,
+ * une ligne) — vérifié le 2026-11-02.
+ *
+ * Les alertes vivantes sont lues en UNE requête pour tous les articles
+ * (audit du réassort, 2026-11-02 : une lecture par ligne auparavant) ; seule
+ * une alerte effectivement levée s'écrit, sous sa version.
  *
  * Une quantité reçue nulle ne lève rien : rien n'est arrivé en vitrine.
  */
-export async function liftStockAlertOnReceipt(
+export async function liftStockAlertsOnReceipt(
   alerts: StockAlertRepository,
-  received: { readonly siteId: string; readonly sku: string; readonly quantity: number },
+  siteId: string,
+  received: readonly ReceivedArticle[],
   trace: StockAlertTrace,
 ): Promise<void> {
-  if (received.quantity <= 0) {
+  const skus = [...new Set(received.filter((line) => line.quantity > 0).map((line) => line.sku))];
+  if (skus.length === 0) {
     return;
   }
-  const live = await alerts.liveFor(received.siteId, received.sku);
-  if (live === null) {
-    return;
+  for (const live of await alerts.liveForSkus(siteId, skus)) {
+    live.liftOnReceipt(trace);
+    await alerts.save(live);
   }
-  live.liftOnReceipt(trace);
-  await alerts.save(live);
 }

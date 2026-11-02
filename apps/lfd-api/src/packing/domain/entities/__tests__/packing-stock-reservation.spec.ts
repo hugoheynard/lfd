@@ -1,5 +1,8 @@
 import { LineNotProducedYetError } from "../../errors/packing-station-errors.js";
-import { StockReservationQuantityInvalidError } from "../../errors/packing-resupply-errors.js";
+import {
+  PackedResupplyStockInconsistentError,
+  StockReservationQuantityInvalidError,
+} from "../../errors/packing-resupply-errors.js";
 import { PackingStock } from "../packing-stock.js";
 
 /** Instants comparés entre eux seulement, jamais à l'horloge — exception étroite du §5. */
@@ -78,6 +81,23 @@ describe("PackingStock — la réserve d'un réassort lancé (R4b, Q7)", () => {
 
     expect(held.reserved).toBe(5);
     expect(held.free).toBe(0);
+  });
+
+  /**
+   * Régression M5 (audit du 2026-11-02) : rendre plus que ce que la fiche a
+   * emballé remettait le compte à zéro par un `Math.max(0, …)`, et
+   * l'incohérence disparaissait sans trace.
+   */
+  it("refuse nommément de rendre plus que ce que la fiche a emballé, sans rien changer", () => {
+    const held = stock(20);
+    held.reserve("rs_asap", 12, FIRST, "piece");
+    held.takeForResupply("rs_asap", 4, "Croissant", "piece");
+
+    expect(() => held.releaseFromResupply("rs_asap", 5, "piece")).toThrow(
+      PackedResupplyStockInconsistentError,
+    );
+    expect(held.packed).toBe(4);
+    expect(held.reservations[0]?.packed).toBe(4);
   });
 
   it("une fiche du soir n'a que le libre : elle ne prend pas une pièce réservée", () => {

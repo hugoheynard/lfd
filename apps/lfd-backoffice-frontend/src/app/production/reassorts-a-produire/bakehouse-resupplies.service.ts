@@ -2,11 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   BakehouseResupplyDraftView,
+  CreateBakehouseResupplyDraftPayload,
   PlacedSiteResupplyResponse,
   PlaceSiteResupplyPayload,
   ResupplyArticleView,
   ResupplyUsedNamesView,
-  SaveBakehouseResupplyDraftPayload,
   SavedBakehouseResupplyDraftResponse,
   UpdateBakehouseResupplyDraftPayload,
 } from '@lfd/contracts';
@@ -39,6 +39,7 @@ export class BakehouseResuppliesService {
     return view.names;
   }
 
+  /** Envoie sans brouillon ; `key` (une par composition) : deux clics, un seul réassort. */
   send(siteId: string, payload: PlaceSiteResupplyPayload): Promise<PlacedSiteResupplyResponse> {
     return firstValueFrom(
       this.http.post<PlacedSiteResupplyResponse>(
@@ -55,8 +56,9 @@ export class BakehouseResuppliesService {
     );
   }
 
+  /** La première écriture ; `key` (une par composition) en fait un enregistrement unique. */
   createDraft(
-    payload: SaveBakehouseResupplyDraftPayload,
+    payload: CreateBakehouseResupplyDraftPayload,
   ): Promise<SavedBakehouseResupplyDraftResponse> {
     return firstValueFrom(
       this.http.post<SavedBakehouseResupplyDraftResponse>(`${this.base()}/drafts`, payload),

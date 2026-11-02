@@ -63,3 +63,16 @@ export class StockAlertChangedMeanwhileError extends BusinessError {
     );
   }
 }
+
+/**
+ * Deux postes ont déclaré une alerte pour le même article au même instant :
+ * l'index unique partiel de l'alerte vivante a refusé la seconde.
+ */
+export class StockAlertDeclaredMeanwhileError extends BusinessError {
+  constructor() {
+    super(
+      "resupply.stock_alert.declared_meanwhile",
+      "Une alerte vient d'être déclarée pour cet article depuis un autre poste : rechargez la page, puis changez son niveau si celui affiché n'est pas le bon.",
+    );
+  }
+}

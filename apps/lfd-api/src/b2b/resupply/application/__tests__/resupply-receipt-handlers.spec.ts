@@ -4,7 +4,10 @@ import {
   ResupplyDayNotYetComeError,
   ResupplyNotReceivableError,
 } from "../../domain/resupply-receipt-errors.js";
-import { SiteResupplyNotFoundError } from "../../domain/site-resupply-errors.js";
+import {
+  SiteResupplyChangedMeanwhileError,
+  SiteResupplyNotFoundError,
+} from "../../domain/site-resupply-errors.js";
 import { StockAlert } from "../../domain/stock-alert.js";
 import { CorrectReceivedResupplyLineCommand } from "../correct-received-resupply-line.command.js";
 import { GetResupplyReceiptQuery } from "../get-resupply-receipt.query.js";
@@ -151,6 +154,42 @@ describe("« Réceptionner » un réassort", () => {
     const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
     expect(view.receptions[0]).toMatchObject({ origin: "bakehouse", status: "received" });
     expect(view.stock[0]).toMatchObject({ sku: "CRO", receivedQuantity: 24 });
+  });
+
+  /**
+   * Régression G1 (audit du 2026-11-02) : « Réceptionner » n'écrivait que le
+   * reçu, sans toucher la version du réassort ; une annulation qui avait lu
+   * « pas encore réceptionné » juste avant sauvait quand même, et le réassort
+   * finissait annulé ET réceptionné.
+   */
+  it("une annulation lue avant « Réceptionner » échoue à l'écriture (409)", async () => {
+    const { resupplies, receiveResupply } = setup();
+    resupplies.put(placed("resupply_1", CRO_24));
+    const readByCancel = await resupplies.load(SITE, "resupply_1");
+    if (readByCancel === null) {
+      throw new Error("le réassort semé est introuvable");
+    }
+
+    await receiveResupply.execute(new ReceiveSiteResupplyCommand(SITE, "resupply_1", "staff_lou"));
+
+    readByCancel.cancel({ at: AT, author: AUTHOR }, null, false, false);
+    await expect(resupplies.save(readByCancel)).rejects.toThrow(SiteResupplyChangedMeanwhileError);
+    expect(resupplies.all()[0]?.cancelled).toBeNull();
+  });
+
+  /** Régression M2 (audit du 2026-11-02) : une lecture des alertes vivantes par ligne reçue. */
+  it("lit les alertes vivantes une seule fois pour tout le reçu", async () => {
+    const { resupplies, alerts, receiveResupply } = setup();
+    resupplies.put(
+      placed("resupply_1", [
+        { sku: "CRO", label: "Croissant", quantity: 24, saleUnit: "piece" as const },
+        { sku: "PAC", label: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
+      ]),
+    );
+
+    await receiveResupply.execute(new ReceiveSiteResupplyCommand(SITE, "resupply_1", "staff_lou"));
+
+    expect(alerts.liveReads).toBe(1);
   });
 
   it("lève l'alerte vivante de chaque article reçu au point, pas d'un article reçu à zéro", async () => {

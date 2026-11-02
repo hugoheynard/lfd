@@ -80,7 +80,7 @@ function setup(base: ProductionDay = closedDay()) {
     store,
     ledger: handoffs.ledger,
     durable: handoffs.durable,
-    record: new RecordBatchHandler(days, store, clock, uow, handoffs.service),
+    record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
     mark: new MarkWorksheetLineHandler(days, store, clock, uow, handoffs.service),
     unmark: new UnmarkWorksheetLineHandler(days, store, lock, clock, uow, handoffs.service),

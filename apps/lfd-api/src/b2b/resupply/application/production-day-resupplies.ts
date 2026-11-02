@@ -42,6 +42,13 @@ export class ProductionDayResupplies extends DayResuppliesReader {
    * R4a : LE réassort « au plus tôt » envoyé et non annulé que le fournil
    * lance, pour cette journée — `null` sinon (annulé, autre jour, autre
    * visée, ou sortie de réserve : rien à fabriquer, plan A1, lot A1.4).
+   *
+   * Il ne filtre PAS le déjà lancé, délibérément (M7, audit du 2026-11-02) :
+   * la colonne `launched_at` du commerce n'est qu'un affichage posé par le
+   * fait, en retard sur le fournil. L'autorité est l'agrégat de la journée,
+   * qui refuse un second lancement en le nommant
+   * (`ResupplyAlreadyLaunchedError`, 409) ; filtrer ici le changerait en
+   * « introuvable » (404), et ferait décider le commerce à la place du fournil.
    */
   async asapToLaunch(day: ServiceDay, resupplyId: string): Promise<PlacedResupply | null> {
     const asap = (await this.reader.placedOn([day.value])).filter(

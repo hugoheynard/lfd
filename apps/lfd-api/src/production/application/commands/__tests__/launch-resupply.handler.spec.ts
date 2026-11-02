@@ -140,13 +140,12 @@ function subject(day: ProductionDay, orders: readonly ProducibleOrder[] = [ORDER
 const LAUNCH = new LaunchResupplyCommand(DAY, "rs_asap", "s_max");
 
 describe("LaunchResupplyHandler", () => {
-  it("lit le commerce, PUIS verrouille, recharge, lit LE réassort, écrit et publie", async () => {
+  it("verrouille, recharge, lit LE réassort, écrit et publie — sans lire les commandes d'une journée arrêtée", async () => {
     const { handler, trace } = subject(closedDay());
 
     await handler.execute(LAUNCH);
 
     expect(trace).toEqual([
-      "producibleFor",
       `lock:${DAY}`,
       "load",
       `asap:${DAY}:rs_asap`,
@@ -237,16 +236,21 @@ describe("LaunchResupplyHandler", () => {
 });
 
 describe("LaunchResupplyHandler — journée jamais arrêtée (Q5)", () => {
-  it("lit les retraits et le soir SOUS le verrou, puis ouvre la journée arrêtée", async () => {
+  /**
+   * Régression G-A (audit du 2026-11-02) : les commandes étaient lues AVANT le
+   * verrou ; une commande admise entre-temps échappait à la garde de Q5, et le
+   * lancement arrêtait la journée sans la figer.
+   */
+  it("lit les commandes, les retraits et le soir SOUS le verrou, puis ouvre la journée arrêtée", async () => {
     const { handler, days, events, trace } = subject(ProductionDay.open(ServiceDay.of(DAY)), []);
 
     await handler.execute(LAUNCH);
 
     expect(trace.slice(0, 6)).toEqual([
-      "producibleFor",
       `lock:${DAY}`,
       "load",
       `asap:${DAY}:rs_asap`,
+      "producibleFor",
       `withdrawals:${DAY}`,
       `resupplies:${DAY}`,
     ]);

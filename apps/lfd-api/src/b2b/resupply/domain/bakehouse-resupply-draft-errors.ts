@@ -98,3 +98,32 @@ export class UnreadableBakehouseResupplyDraftError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Un brouillon porte déjà cet identifiant — le même « Enregistrer » rejoué en
+ * même temps depuis l'écran (C-C, 2026-11-02) : la base a refusé le second.
+ * Le cas d'usage le relit ; l'écran ne voit cette erreur que si la relecture
+ * échoue elle-même.
+ */
+export class BakehouseResupplyDraftAlreadyWrittenError extends BusinessError {
+  constructor(readonly draftId: string) {
+    super(
+      "resupply.bakehouse_draft.already_written",
+      "Ce brouillon vient d'être enregistré depuis un autre clic : rechargez la page, il y est déjà.",
+    );
+  }
+}
+
+/**
+ * La clé d'enregistrement de l'écran est déjà celle d'un brouillon d'un AUTRE
+ * point (C-C, 2026-11-02) : rendre ce brouillon-là ferait reprendre à l'écran
+ * la composition d'un autre point.
+ */
+export class BakehouseResupplyDraftKeyTakenError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "resupply.bakehouse_draft.key_taken",
+      "Cet enregistrement porte une clé déjà employée par le brouillon d'un autre point : rien n'a été enregistré. Fermez le panneau, rouvrez-le, puis enregistrez de nouveau.",
+    );
+  }
+}

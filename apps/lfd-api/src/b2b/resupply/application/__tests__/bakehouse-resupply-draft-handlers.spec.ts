@@ -10,6 +10,7 @@ import {
   ResupplyArticleUnknownError,
   ResupplySiteUnknownError,
 } from "../../domain/resupply-receipt-errors.js";
+import { BakehouseResupplyDraftKeyTakenError } from "../../domain/bakehouse-resupply-draft-errors.js";
 import { serviceDayFor } from "../../domain/site-resupply.js";
 import { BakehouseResupplyAfterStopError } from "../../domain/site-resupply-errors.js";
 import { CreateBakehouseResupplyDraftCommand } from "../create-bakehouse-resupply-draft.command.js";
@@ -30,7 +31,7 @@ import {
   WriteLog,
 } from "./bakehouse-draft-doubles.js";
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
-import { FixedLaunches, FixedResupplyCutoff } from "./site-resupply-doubles.js";
+import { FixedLaunches, FixedResupplyCutoff, freshSendingKey } from "./site-resupply-doubles.js";
 
 const SITE = "site_village";
 const ARTICLES = [
@@ -56,13 +57,19 @@ const CONTENT = {
   lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" as const }],
 };
 
-function world(options: { readonly now?: Date; readonly stoppedDays?: readonly string[] } = {}) {
+function world(
+  options: {
+    readonly now?: Date;
+    readonly stoppedDays?: readonly string[];
+    readonly sites?: readonly string[];
+  } = {},
+) {
   const log = new WriteLog();
   const clock = new FixedClock(options.now ?? new Date());
   const drafts = new InMemoryBakehouseDrafts(log);
   const resupplies = new LoggedSiteResupplies(log);
   const staff = new Directory({ name: "Lou Martin", role: "bakehouse" });
-  const sites = new Sites([SITE]);
+  const sites = new Sites(options.sites ?? [SITE]);
   const ids = new FixedIdGenerator("id");
   const uow = new LoggedUnitOfWork(log);
   const gate = new ResupplyPlanGate(
@@ -75,7 +82,7 @@ function world(options: { readonly now?: Date; readonly stoppedDays?: readonly s
     drafts,
     resupplies,
     uow,
-    create: new CreateBakehouseResupplyDraftHandler(drafts, sites, staff, clock, ids),
+    create: new CreateBakehouseResupplyDraftHandler(drafts, sites, staff, clock),
     save: new SaveBakehouseResupplyDraftHandler(drafts, sites, staff, clock),
     discard: new DiscardBakehouseResupplyDraftHandler(drafts, staff, clock),
     send: new SendBakehouseResupplyDraftHandler(
@@ -97,12 +104,15 @@ function world(options: { readonly now?: Date; readonly stoppedDays?: readonly s
 describe("les brouillons du réassort du fournil", () => {
   it("se créent en version 1, sous un point qui existe, et se listent", async () => {
     const w = world();
-    const saved = await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s"));
-    expect(saved).toEqual({ id: "id_000001", version: 1 });
+    const key = freshSendingKey();
+    const saved = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", key),
+    );
+    expect(saved).toEqual({ id: key, version: 1 });
     const listed = await w.list.execute();
     expect(listed).toEqual([
       expect.objectContaining({
-        id: "id_000001",
+        id: key,
         version: 1,
         siteId: SITE,
         name: "Vitrine du matin",
@@ -111,13 +121,53 @@ describe("les brouillons du réassort du fournil", () => {
       }),
     ]);
     await expect(
-      w.create.execute(new CreateBakehouseResupplyDraftCommand({ ...CONTENT, siteId: "x" }, "s")),
+      w.create.execute(
+        new CreateBakehouseResupplyDraftCommand(
+          { ...CONTENT, siteId: "x" },
+          "s",
+          freshSendingKey(),
+        ),
+      ),
     ).rejects.toThrow(ResupplySiteUnknownError);
+  });
+
+  /**
+   * Régression C-C (audit du 2026-11-02) : la création n'avait pas de clé
+   * d'idempotence — deux clics sur « Enregistrer » faisaient deux brouillons.
+   */
+  it("deux créations de la même clé ne font qu'un brouillon, rendu tel qu'il est écrit", async () => {
+    const w = world();
+    const key = freshSendingKey();
+
+    const first = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", key),
+    );
+    const second = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", key),
+    );
+
+    expect(second).toEqual(first);
+    expect(w.drafts.all()).toHaveLength(1);
+  });
+
+  it("refuse nommément une clé déjà prise par le brouillon d'un autre point", async () => {
+    const w = world({ sites: [SITE, "site_labo"] });
+    const key = freshSendingKey();
+    await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s", key));
+
+    await expect(
+      w.create.execute(
+        new CreateBakehouseResupplyDraftCommand({ ...CONTENT, siteId: "site_labo" }, "s", key),
+      ),
+    ).rejects.toThrow(BakehouseResupplyDraftKeyTakenError);
+    expect(w.drafts.all().map((row) => row.content.siteId)).toEqual([SITE]);
   });
 
   it("se réécrivent sous la version lue ; une version périmée est refusée", async () => {
     const w = world();
-    const { id } = await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s"));
+    const { id } = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", freshSendingKey()),
+    );
     const rewritten = {
       ...CONTENT,
       lines: [{ sku: "PAC", quantity: 2, saleUnit: "piece" as const }],
@@ -138,7 +188,9 @@ describe("les brouillons du réassort du fournil", () => {
 
   it("supprimé, il sort de la liste et ne s'écrit plus", async () => {
     const w = world();
-    const { id } = await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s"));
+    const { id } = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", freshSendingKey()),
+    );
     await w.discard.execute(new DiscardBakehouseResupplyDraftCommand(id, 1, "s"));
     expect(w.drafts.row(id)?.status).toBe("discarded");
     expect(await w.list.execute()).toEqual([]);
@@ -149,7 +201,9 @@ describe("les brouillons du réassort du fournil", () => {
 
   it("envoyé : le réassort du fournil est créé PUIS le brouillon passe `sent`, dans une seule unité", async () => {
     const w = world();
-    const { id } = await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s"));
+    const { id } = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", freshSendingKey()),
+    );
     const screen = { ...CONTENT, lines: [{ sku: "PAC", quantity: 7, saleUnit: "piece" as const }] };
 
     const resupplyId = await w.send.execute(
@@ -174,7 +228,9 @@ describe("les brouillons du réassort du fournil", () => {
   it("un envoi refusé (article retiré, plan arrêté, version périmée) laisse le brouillon ouvert et intact", async () => {
     const now = new Date();
     const w = world({ now, stoppedDays: [serviceDayFor("tomorrow", now)] });
-    const { id } = await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s"));
+    const { id } = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", freshSendingKey()),
+    );
     const before = w.drafts.row(id);
 
     await expect(

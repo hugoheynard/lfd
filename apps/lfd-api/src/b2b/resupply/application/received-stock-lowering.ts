@@ -1,7 +1,7 @@
 import { saleQuantity } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
-import { type EstimatedStockLine, stockKeyOf } from "../domain/estimated-stock.js";
+import { type EstimatedStockLine, estimateStock, stockKeyOf } from "../domain/estimated-stock.js";
 import { ShelfStockAlreadySoldError } from "../domain/resupply-receipt-errors.js";
 import { ShelfStockLock } from "../domain/shelf-stock-lock.js";
 import { DayShelfStock } from "./day-shelf-stock.js";
@@ -28,6 +28,10 @@ export interface LoweredArticle {
  * Seule une BAISSE est refusée : un geste qui remonte un reçu sans atteindre
  * le déjà-pris passe — le refuser bloquerait la correction qui répare.
  *
+ * Avant le geste, seul le REÇU compte : il se lit sans les prélèvements.
+ * Le reste entier (prélèvements compris) ne se calcule qu'une fois, après —
+ * il se calculait deux fois (M3, audit du 2026-11-02).
+ *
  * ⚠️ À appeler DANS `UnitOfWork.run` : le verrou se relâche au `COMMIT`.
  */
 @Injectable()
@@ -40,9 +44,14 @@ export class ReceivedStockLowering {
   /** @throws {ShelfStockAlreadySoldError} la baisse passerait sous le déjà-vendu. */
   async lower(article: LoweredArticle, change: () => Promise<void>): Promise<void> {
     await this.lock.lock(article.serviceDay, article.siteId);
-    const before = await this.linesOf(article);
+    const received = estimateStock(
+      await this.stock.receiptsAt(article.siteId, article.serviceDay),
+      [],
+    );
+    const before = linesOf(article, received);
     await change();
-    for (const after of (await this.linesOf(article)).values()) {
+    const remaining = await this.stock.at(article.siteId, article.serviceDay);
+    for (const after of linesOf(article, remaining).values()) {
       if (after.estimatedStock >= 0) {
         continue;
       }
@@ -53,14 +62,16 @@ export class ReceivedStockLowering {
       }
     }
   }
+}
 
-  /** Les comptes de l'article, une entrée par unité (lot L2b-1) — jamais sommées. */
-  private async linesOf(article: LoweredArticle): Promise<ReadonlyMap<string, EstimatedStockLine>> {
-    const lines = await this.stock.at(article.siteId, article.serviceDay);
-    return new Map(
-      lines
-        .filter((line) => line.sku === article.sku)
-        .map((line) => [stockKeyOf(line.sku, line.saleUnit), line] as const),
-    );
-  }
+/** Les comptes de l'article, une entrée par unité (lot L2b-1) — jamais sommées. */
+function linesOf(
+  article: LoweredArticle,
+  lines: readonly EstimatedStockLine[],
+): ReadonlyMap<string, EstimatedStockLine> {
+  return new Map(
+    lines
+      .filter((line) => line.sku === article.sku)
+      .map((line) => [stockKeyOf(line.sku, line.saleUnit), line] as const),
+  );
 }

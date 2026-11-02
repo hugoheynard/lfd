@@ -13,6 +13,7 @@
  * réceptionne au comptoir comme les autres ; un réassort réceptionné ne
  * s'annule plus ; un réassort d'une journée future ne se réceptionne pas.
  */
+import { randomUUID } from "node:crypto";
 import type {
   ResupplyArticleView,
   ResupplyReceiptView,
@@ -262,6 +263,68 @@ describe("« Réceptionner » un réassort", () => {
   });
 });
 
+describe("les courses de la réception (audit du réassort, 2026-11-02)", () => {
+  /**
+   * Régression G1 : « Réceptionner » n'avançait pas la version du réassort ;
+   * une annulation qui avait lu « pas encore réceptionné » sauvait quand même,
+   * et le réassort finissait annulé ET réceptionné. Deux transactions
+   * concurrentes, plusieurs tours : jamais les deux.
+   */
+  it("🔴 « Réceptionner » et « Annuler » en même temps : un seul passe, et l'état le dit", async () => {
+    const agent = await counter();
+    const siteId = await seedSite();
+    const [first] = await articlesOf(agent);
+    for (let round = 0; round < 5; round += 1) {
+      const id = await placeAsap(agent, siteId, [{ sku: first.sku, quantity: 2 }]);
+
+      const [received, cancelled] = await Promise.all([
+        agent.post(`/admin/resupply-receipts/${siteId}/resupplies/${id}/receive`),
+        agent.post(`/admin/site-resupplies/sites/${siteId}/${id}/cancel`),
+      ]);
+
+      const row = await ctx.prisma.siteResupply.findUniqueOrThrow({
+        where: { id },
+        select: { cancelledAt: true },
+      });
+      const receipts = await ctx.prisma.resupplyReceipt.count({ where: { resupplyId: id } });
+      expect([received.status, cancelled.status].filter((status) => status === 204)).toHaveLength(
+        1,
+      );
+      expect([received.status, cancelled.status]).toContain(409);
+      expect(row.cancelledAt === null).toBe(receipts === 1);
+    }
+  });
+
+  /**
+   * Régression C2 : deux « Déclarer une rupture » simultanés pour le même
+   * article — l'index de l'alerte vivante refusait le second en 500.
+   */
+  it("deux déclarations simultanées du même article : une alerte, et jamais une 500", async () => {
+    const agent = await counter();
+    const siteId = await seedSite();
+    const [first] = await articlesOf(agent);
+
+    const answers = await Promise.all(
+      [0, 1, 2].map(() =>
+        agent
+          .post(`/admin/site-stock-alerts/sites/${siteId}`)
+          .send({ sku: first.sku, level: "out_of_stock" }),
+      ),
+    );
+
+    for (const answer of answers) {
+      expect([204, 409]).toContain(answer.status);
+      if (answer.status === 409) {
+        // Inséré en même temps : `declared_meanwhile` ; redéclaré en même temps : `changed_meanwhile`.
+        expect(jsonBody<{ code: string }>(answer).code).toMatch(
+          /^resupply\.stock_alert\.(declared|changed)_meanwhile$/u,
+        );
+      }
+    }
+    expect(await ctx.prisma.siteStockAlert.count({ where: { siteId, liftedAt: null } })).toBe(1);
+  });
+});
+
 describe("les trous fermés au lot R1d", () => {
   it("le réassort du fournil arrive marqué, se réceptionne en un geste, puis ne s'annule plus", async () => {
     const agent = await counter();
@@ -273,7 +336,7 @@ describe("les trous fermés au lot R1d", () => {
     const { id } = jsonBody<{ id: string }>(
       await sender
         .post(`/admin/bakehouse-resupplies/sites/${siteId}`)
-        .send({ target: "asap", lines: [{ sku: first.sku, quantity: 8 }] })
+        .send({ key: randomUUID(), target: "asap", lines: [{ sku: first.sku, quantity: 8 }] })
         .expect(201),
     );
 

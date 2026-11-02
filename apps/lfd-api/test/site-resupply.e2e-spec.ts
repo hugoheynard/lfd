@@ -13,6 +13,7 @@
  *
  * L'horloge est gelée : la limite se compare à elle seule, jamais au calendrier.
  */
+import { randomUUID } from "node:crypto";
 import type {
   ResupplyArticleView,
   ResuppliesToProduceView,
@@ -184,7 +185,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
 
     const sent = await sender
       .post(`/admin/bakehouse-resupplies/sites/${siteId}`)
-      .send({ target: "asap", lines: [{ sku: article.sku, quantity: 10 }] })
+      .send({ key: randomUUID(), target: "asap", lines: [{ sku: article.sku, quantity: 10 }] })
       .expect(201);
 
     const { id } = jsonBody<{ id: string }>(sent);
@@ -211,17 +212,17 @@ describe("le fournil envoie un réassort (R1d)", () => {
 
     await sender
       .post(route)
-      .send({ target: "asap", lines: [{ sku, quantity: 0 }] })
+      .send({ key: randomUUID(), target: "asap", lines: [{ sku, quantity: 0 }] })
       .expect(400);
     await sender
       .post(route)
-      .send({ target: "asap", lines: [{ sku: "INCONNU-9", quantity: 1 }] })
+      .send({ key: randomUUID(), target: "asap", lines: [{ sku: "INCONNU-9", quantity: 1 }] })
       .expect(404);
-    await sender.post(route).send({ target: "asap", lines: [] }).expect(400);
-    await sender.post(route).send({ target: "hier", lines: [] }).expect(400);
+    await sender.post(route).send({ key: randomUUID(), target: "asap", lines: [] }).expect(400);
+    await sender.post(route).send({ key: randomUUID(), target: "hier", lines: [] }).expect(400);
     await sender
       .post("/admin/bakehouse-resupplies/sites/site_inconnu")
-      .send({ target: "asap", lines: [{ sku, quantity: 1 }] })
+      .send({ key: randomUUID(), target: "asap", lines: [{ sku, quantity: 1 }] })
       .expect(404);
 
     expect(await ctx.prisma.siteResupply.count()).toBe(0);
@@ -235,14 +236,17 @@ describe("le fournil envoie un réassort (R1d)", () => {
     const lines = [{ sku: article.sku, quantity: 3 }];
     const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
 
-    const refused = await sender.post(route).send({ target: "tomorrow", lines }).expect(409);
+    const refused = await sender
+      .post(route)
+      .send({ key: randomUUID(), target: "tomorrow", lines })
+      .expect(409);
     expect(refused.body).toMatchObject({ code: "resupply.order.bakehouse_after_stop" });
-    await sender.post(route).send({ target: "asap", lines }).expect(201);
+    await sender.post(route).send({ key: randomUUID(), target: "asap", lines }).expect(201);
   });
 
   it("son droit à lui : ni le comptoir ni la fournée n'envoient ; la lecture voit points et articles", async () => {
     const siteId = await seedSite("Val Village");
-    const body = { target: "asap", lines: [{ sku: "VIE-001-1", quantity: 1 }] };
+    const body = { key: randomUUID(), target: "asap", lines: [{ sku: "VIE-001-1", quantity: 1 }] };
     const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
 
     await (await counter()).post(route).send(body).expect(403);
@@ -284,7 +288,7 @@ describe("le mur par point", () => {
     const sent = jsonBody<{ id: string }>(
       await sender
         .post(`/admin/bakehouse-resupplies/sites/${village}`)
-        .send({ target: "asap", lines: [{ sku: article.sku, quantity: 6 }] })
+        .send({ key: randomUUID(), target: "asap", lines: [{ sku: article.sku, quantity: 6 }] })
         .expect(201),
     );
 
@@ -381,5 +385,46 @@ describe("les droits", () => {
       { sku: article.sku, label: article.name, quantity: 5, saleUnit: "piece" },
     ]);
     expect(view.days[1]?.sites).toEqual([]);
+  });
+});
+
+describe("une clé, un envoi du fournil (audit du réassort, 2026-11-02)", () => {
+  /** Régression C-A : deux clics sur « Envoyer » faisaient deux réassorts. */
+  it("deux envois simultanés de la même clé ne font qu'un réassort, rendu aux deux", async () => {
+    const sender = await bakehouseSender();
+    const siteId = await seedSite("Val Village");
+    const article = await firstArticle(await counter());
+    const body = { key: randomUUID(), target: "asap", lines: [{ sku: article.sku, quantity: 2 }] };
+    const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
+
+    const answers = await Promise.all([
+      sender.post(route).send(body),
+      sender.post(route).send(body),
+    ]);
+
+    expect(answers.map((answer) => answer.status)).toEqual([201, 201]);
+    expect(answers.map((answer) => jsonBody<{ id: string }>(answer).id)).toEqual([
+      body.key,
+      body.key,
+    ]);
+    expect(await ctx.prisma.siteResupply.count({ where: { id: body.key } })).toBe(1);
+  });
+
+  /** Régression C-B : une clé prise par un autre point rendait le réassort de cet autre point. */
+  it("refuse nommément une clé déjà prise par le réassort d'un autre point (409)", async () => {
+    const sender = await bakehouseSender();
+    const village = await seedSite("Val Village");
+    const front = await seedSite("Front de neige");
+    const article = await firstArticle(await counter());
+    const body = { key: randomUUID(), target: "asap", lines: [{ sku: article.sku, quantity: 2 }] };
+    await sender.post(`/admin/bakehouse-resupplies/sites/${village}`).send(body).expect(201);
+
+    const refused = await sender
+      .post(`/admin/bakehouse-resupplies/sites/${front}`)
+      .send(body)
+      .expect(409);
+
+    expect(refused.body).toMatchObject({ code: "resupply.sending_key.taken" });
+    expect(await ctx.prisma.siteResupply.count({ where: { siteId: front } })).toBe(0);
   });
 });

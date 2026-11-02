@@ -2,7 +2,8 @@ import type { BakehouseResupplyDraft } from "./bakehouse-resupply-draft.js";
 
 /**
  * Port d'**écriture** des brouillons du fournil : l'agrégat entier, chargé
- * puis rendu. `save` insère un brouillon neuf (version 0) et réécrit les
+ * puis rendu. `save` insère un brouillon neuf (version 0 ; un identifiant
+ * déjà écrit lève `BakehouseResupplyDraftAlreadyWrittenError`) et réécrit les
  * autres sous la version lue — une version périmée lève
  * `BakehouseResupplyDraftChangedMeanwhileError`.
  */

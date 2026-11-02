@@ -59,6 +59,18 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
     );
   }
 
+  /** Lectures groupées (`loadMany`) — une par fait, pas une par réassort (M6). */
+  manyReads = 0;
+
+  loadMany(siteId: string, resupplyIds: readonly string[]): Promise<readonly SiteResupply[]> {
+    this.manyReads += 1;
+    return Promise.resolve(
+      this.all()
+        .filter((row) => row.siteId === siteId && resupplyIds.includes(row.id))
+        .map((row) => SiteResupply.restore(row)),
+    );
+  }
+
   openDraft(
     siteId: string,
     target: ResupplyTarget,
@@ -221,4 +233,15 @@ export class FixedLaunches extends LaunchedResupplies {
     this.asked.push(`${day.value}:${resupplyId}`);
     return Promise.resolve(this.launched.has(resupplyId));
   }
+}
+
+let sendingKeys = 0;
+
+/**
+ * Une clé d'envoi neuve, comme l'écran du fournil en tire une par ouverture
+ * du panneau (C-A) : elle devient l'identifiant du réassort envoyé.
+ */
+export function freshSendingKey(): string {
+  sendingKeys += 1;
+  return `send_key_${String(sendingKeys)}`;
 }

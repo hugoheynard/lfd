@@ -8,11 +8,11 @@ import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
-import { SiteResupplyAlreadyWrittenError } from "../domain/site-resupply-errors.js";
 import { SiteResupply, type SiteResupplyTrace } from "../domain/site-resupply.js";
 import type { SiteResupplyLine } from "../domain/site-resupply-line.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { traceOf } from "./resupply-receipt-trace.js";
+import { sendOnceUnderKey } from "./resupply-sending-key.js";
 import { SendReserveToShopCommand } from "./send-reserve-to-shop.command.js";
 import { catalogueLine } from "./site-resupply-draft.js";
 
@@ -30,10 +30,10 @@ import { catalogueLine } from "./site-resupply-draft.js";
  *
  * Les libellés sont lus au catalogue publié, comme pour un réassort du
  * fournil, et lus AVANT l'unité de travail, comme l'auteur et le nom du point.
- * La clé de l'écran est l'identifiant du réassort : déjà écrit, rien ne se
- * refait — y compris quand deux envois de la même clé se croisent : le
- * second bute sur la clé primaire, sa transaction est défaite, et il rend ce
- * que rend le rejeu.
+ * La clé de l'écran est l'identifiant du réassort ({@link sendOnceUnderKey}) :
+ * déjà écrite à ce point par une sortie de réserve, rien ne se refait — y
+ * compris quand deux envois de la même clé se croisent. Prise par un autre
+ * point ou un autre geste, elle est refusée en le nommant (C-B, 2026-11-02).
  */
 @CommandHandler(SendReserveToShopCommand)
 export class SendReserveToShopHandler implements ICommandHandler<SendReserveToShopCommand, string> {
@@ -58,26 +58,22 @@ export class SendReserveToShopHandler implements ICommandHandler<SendReserveToSh
       lines.push(await catalogueLine(this.catalogue, requested));
     }
     const siteLabel = (await this.labels.labelsOf([command.siteId])).get(command.siteId) ?? null;
-    try {
-      await this.uow.run(() => this.sendOnce(command, lines, trace, siteLabel));
-    } catch (error) {
-      if (!(error instanceof SiteResupplyAlreadyWrittenError)) {
-        throw error;
-      }
-    }
+    await sendOnceUnderKey(
+      this.uow,
+      this.resupplies,
+      { key: command.key, siteId: command.siteId, origin: "reserve" },
+      () => this.send(command, lines, trace, siteLabel),
+    );
     return command.key;
   }
 
-  /** Le réassort, puis la sortie de réserve — rien si la clé est déjà écrite. */
-  private async sendOnce(
+  /** Le réassort, puis la sortie de réserve — dans l'unité de travail de la clé. */
+  private async send(
     command: SendReserveToShopCommand,
     lines: readonly SiteResupplyLine[],
     trace: SiteResupplyTrace,
     siteLabel: string | null,
   ): Promise<void> {
-    if ((await this.resupplies.load(command.siteId, command.key)) !== null) {
-      return;
-    }
     const resupply = SiteResupply.sentFromReserve({
       id: command.key,
       siteId: command.siteId,

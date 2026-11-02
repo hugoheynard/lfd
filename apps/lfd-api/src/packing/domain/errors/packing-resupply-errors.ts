@@ -6,6 +6,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../platform/shared/errors/app-error.js";
 
 /**
@@ -81,6 +82,21 @@ export class StockReservationQuantityInvalidError extends DomainError {
     super(
       "packing.resupply.reservation_invalid",
       `La réservation de « ${sku} » pour un réassort lancé doit porter un nombre entier de ${unitWord(unit)} supérieur à 0 (reçu : ${String(quantity)}). Le fait du fournil est hors contrat : corriger l'émetteur, puis rejouer le message depuis la carte de santé.`,
+    );
+  }
+}
+
+/**
+ * La fiche rend plus qu'elle n'a emballé (M5, audit du 2026-11-02) : le
+ * compte de la réserve et celui de la fiche ne s'accordent plus. Un
+ * `Math.max(0, …)` le taisait en remettant le compte à zéro ; c'est une
+ * incohérence de nos données, et elle se dit — rien n'est écrit.
+ */
+export class PackedResupplyStockInconsistentError extends TechnicalError {
+  constructor(sku: string, packed: number, released: number) {
+    super(
+      "packing.resupply.packed_inconsistent",
+      `La réserve du colisage ne compte que ${String(packed)} « ${sku} » emballés pour cette fiche, et la correction en rendrait ${String(released)} : rien n'a été changé. Rechargez la fiche ; si l'écart reste, signalez-le à l'équipe technique avec le nom de la fiche.`,
     );
   }
 }

@@ -77,7 +77,14 @@ function setup() {
   const handoffs = handoffsOnDoubles();
   return {
     ...handoffs,
-    record: new RecordBatchHandler(days, store, clock, uow, handoffs.service),
+    record: new RecordBatchHandler(
+      days,
+      store,
+      new RecordingDayLock(),
+      clock,
+      uow,
+      handoffs.service,
+    ),
     mark: new MarkWorksheetLineHandler(days, store, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(
       days,

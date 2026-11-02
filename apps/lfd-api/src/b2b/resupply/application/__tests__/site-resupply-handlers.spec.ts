@@ -1,5 +1,4 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   ResupplyArticleUnknownError,
@@ -24,6 +23,7 @@ import { ListSiteResuppliesQuery } from "../list-site-resupplies.query.js";
 import { ResupplyPlanGate } from "../resupply-plan-gate.js";
 import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
 import { SendBakehouseResupplyHandler } from "../send-bakehouse-resupply.handler.js";
+import { ResupplySendingKeyTakenError } from "../../domain/resupply-sending-key-errors.js";
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
 import {
   FixedResupplyCutoff,
@@ -33,6 +33,7 @@ import {
   SiteLabels,
   InMemoryResupplyUsedNames,
   FixedLaunches,
+  freshSendingKey,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier ; l'heure limite double est posée relativement à lui. */
@@ -63,14 +64,18 @@ const CATALOGUE = new Catalogue([
  * `stopped` : les journées dont le plan est arrêté (lot R3a) — le guichet
  * doublé les dit closes, et note chaque journée qu'on lui fait tenir.
  */
-function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
+function setup(
+  deadline: Date | null = null,
+  stopped: readonly string[] = [],
+  onAdmit: () => void = () => undefined,
+) {
   const store = new InMemorySiteResupplies();
   const reader = new InMemorySiteResupplyReader(store);
   const cutoff = new FixedResupplyCutoff(deadline);
   const clock = new FixedClock(NOW);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
   const receptions = new KnownReceptions();
-  const desk = new RecordingAdmissionDesk(stopped);
+  const desk = new RecordingAdmissionDesk(stopped, onAdmit);
   const launches = new FixedLaunches();
   const gate = new ResupplyPlanGate(desk, launches);
   const uow = new DirectUnitOfWork();
@@ -87,7 +92,6 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
       cutoff,
       staff,
       clock,
-      new FixedIdGenerator("resupply"),
       gate,
       uow,
     ),
@@ -110,10 +114,12 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
 describe("le fournil envoie un réassort (R1d)", () => {
   it("le compose au catalogue, l'envoie d'un geste, signé du fournil, et rend son identifiant", async () => {
     const { place, list } = setup();
+    const key = freshSendingKey();
 
     const id = await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        key,
         "tomorrow",
         [{ sku: "CRO", quantity: 24, saleUnit: "piece" as const }],
         "staff_lou",
@@ -121,7 +127,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
     );
 
     const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
-    expect(id).toBe("resupply_000001");
+    // La clé de l'écran est l'identifiant du réassort (C-A).
+    expect(id).toBe(key);
     expect(view).toMatchObject({ today: TODAY, tomorrow: TOMORROW, tomorrowOrderUntil: null });
     expect(view.resupplies).toEqual([
       {
@@ -153,6 +160,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
     const refusal = place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "tomorrow",
         [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
         "s",
@@ -172,6 +180,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
     await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "tomorrow",
         [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
         "s",
@@ -180,6 +189,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
     await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
         "s",
@@ -197,6 +207,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
       place.execute(
         new SendBakehouseResupplyCommand(
           VILLAGE,
+          freshSendingKey(),
           "tomorrow",
           [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
           "s",
@@ -212,6 +223,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
     await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "PAC", quantity: 6, saleUnit: "piece" as const }],
         "s",
@@ -226,12 +238,15 @@ describe("le fournil envoie un réassort (R1d)", () => {
     const lines = [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }];
 
     await expect(
-      place.execute(new SendBakehouseResupplyCommand("site_x", "asap", lines, "s")),
+      place.execute(
+        new SendBakehouseResupplyCommand("site_x", freshSendingKey(), "asap", lines, "s"),
+      ),
     ).rejects.toThrow(ResupplySiteUnknownError);
     await expect(
       place.execute(
         new SendBakehouseResupplyCommand(
           VILLAGE,
+          freshSendingKey(),
           "asap",
           [{ sku: "X", quantity: 1, saleUnit: "piece" as const }],
           "s",
@@ -246,12 +261,72 @@ describe("le fournil envoie un réassort (R1d)", () => {
     const lines = [{ sku: "CRO", quantity: 2, saleUnit: "piece" as const }];
 
     await place.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, "asap", [...lines, ...lines], "s"),
+      new SendBakehouseResupplyCommand(
+        VILLAGE,
+        freshSendingKey(),
+        "asap",
+        [...lines, ...lines],
+        "s",
+      ),
     );
 
     expect(store.all()[0]?.lines).toEqual([
       expect.objectContaining({ sku: "CRO", quantity: 4, saleUnit: "piece" as const }),
     ]);
+  });
+});
+
+describe("le fournil envoie un réassort — une clé, un envoi (C-A, C-B)", () => {
+  const lines = [{ sku: "CRO", quantity: 2, saleUnit: "piece" as const }];
+
+  /**
+   * Régression C-A (audit du 2026-11-02) : l'envoi du fournil n'avait pas de
+   * clé d'idempotence — deux clics sur « Envoyer » faisaient deux réassorts.
+   */
+  it("deux envois de la même clé ne font qu'un réassort, et rendent la même clé", async () => {
+    const { place, store } = setup();
+    const key = freshSendingKey();
+
+    const first = await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, key, "asap", lines, "s"),
+    );
+    const second = await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, key, "asap", lines, "s"),
+    );
+
+    expect([first, second]).toEqual([key, key]);
+    expect(store.all()).toHaveLength(1);
+    expect(store.saves).toBe(1);
+  });
+
+  it("refuse nommément une clé déjà prise par un réassort d'un autre point", async () => {
+    const { place, store } = setup();
+    const key = freshSendingKey();
+    await place.execute(new SendBakehouseResupplyCommand(LABO, key, "asap", lines, "s"));
+
+    await expect(
+      place.execute(new SendBakehouseResupplyCommand(VILLAGE, key, "asap", lines, "s")),
+    ).rejects.toThrow(ResupplySendingKeyTakenError);
+    expect(store.all().map((row) => row.siteId)).toEqual([LABO]);
+  });
+
+  /**
+   * Régression M1 (audit du 2026-11-02) : l'heure du réassort se lisait à la
+   * préparation, HORS du verrou de la journée ; un réglage changé entre-temps
+   * laissait partir un « pour demain » sur l'heure d'avant.
+   */
+  it("lit l'heure du réassort APRÈS avoir tenu la journée au guichet du plan", async () => {
+    let askedBeforeHold: number | null = null;
+    const { place, cutoff } = setup(null, [], () => {
+      askedBeforeHold = cutoff.asked.length;
+    });
+
+    await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, freshSendingKey(), "tomorrow", lines, "s"),
+    );
+
+    expect(askedBeforeHold).toBe(0);
+    expect(cutoff.asked).toEqual([TOMORROW]);
   });
 });
 
@@ -261,6 +336,7 @@ describe("annuler un réassort", () => {
     const id = await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",
@@ -282,6 +358,7 @@ describe("annuler un réassort", () => {
     const id = await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",
@@ -306,6 +383,7 @@ describe("annuler un réassort", () => {
     const id = await open.place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "tomorrow",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",
@@ -329,6 +407,7 @@ describe("annuler un réassort", () => {
     const id = await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",
@@ -345,6 +424,7 @@ describe("annuler un réassort", () => {
     const id = await place.execute(
       new SendBakehouseResupplyCommand(
         VILLAGE,
+        freshSendingKey(),
         "asap",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",
@@ -364,6 +444,7 @@ describe("les réassorts à produire", () => {
       place.execute(
         new SendBakehouseResupplyCommand(
           siteId,
+          freshSendingKey(),
           target,
           [{ sku, quantity, saleUnit: "piece" as const }],
           "s",
@@ -399,6 +480,7 @@ describe("les réassorts à produire, une fois le plan arrêté (R3a)", () => {
       open.place.execute(
         new SendBakehouseResupplyCommand(
           VILLAGE,
+          freshSendingKey(),
           target,
           [{ sku: "CRO", quantity, saleUnit: "piece" as const }],
           "s",

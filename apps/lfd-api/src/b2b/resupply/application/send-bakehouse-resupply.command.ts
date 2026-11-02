@@ -12,10 +12,15 @@ export interface RequestedResupplyLine {
 /**
  * « Envoyer un réassort » depuis le fournil, pour un point (lot R1d). Acte
  * staff ; rend l'identifiant du réassort créé.
+ *
+ * `key` est fournie par l'écran, une par ouverture du panneau : elle devient
+ * l'identifiant du réassort, et un second envoi avec la même clé ne fait rien
+ * (C-A, audit du 2026-11-02 — deux clics faisaient deux réassorts).
  */
 export class SendBakehouseResupplyCommand {
   constructor(
     readonly siteId: string,
+    readonly key: string,
     readonly target: ResupplyTarget,
     readonly lines: readonly RequestedResupplyLine[],
     readonly staffUserId: string,

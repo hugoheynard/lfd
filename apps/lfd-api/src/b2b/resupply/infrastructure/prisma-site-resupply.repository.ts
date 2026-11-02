@@ -50,9 +50,12 @@ function linesOf(resupply: SiteResupply) {
  * Adaptateur Prisma du réassort (`site_resupply` + ses lignes). Un réassort
  * neuf s'insère — l'index unique partiel refuse une seconde demande en
  * cours pour la même visée, en 409 ; ensuite il se réécrit sous le verrou de
- * la version lue. Les lignes sont des parties de l'agrégat : tant qu'il n'est
- * pas annulé, elles se réécrivent avec lui (le brouillon les fait bouger,
- * l'envoi les fige). L'agrégat, lui, ne se supprime jamais.
+ * la version lue — chaque `save` avance la version, même sans autre
+ * changement : c'est ce qui sérialise « Réceptionner » et « Annuler » (G1).
+ * Les lignes sont des parties de l'agrégat : elles ne se réécrivent que si un
+ * geste les a changées (`linesChanged`, seulement sur un brouillon) ;
+ * l'envoi, l'annulation, l'arrivée et la réception n'y touchent pas (M4,
+ * 2026-11-02). L'agrégat, lui, ne se supprime jamais.
  */
 @Injectable()
 export class PrismaSiteResupplyRepository extends SiteResupplyRepository {
@@ -67,6 +70,18 @@ export class PrismaSiteResupplyRepository extends SiteResupplyRepository {
       include: { lines: SITE_RESUPPLY_LINES },
     });
     return row === null ? null : SiteResupply.restore(snapshotOf(row));
+  }
+
+  async loadMany(siteId: string, resupplyIds: readonly string[]): Promise<readonly SiteResupply[]> {
+    if (resupplyIds.length === 0) {
+      return [];
+    }
+    // Le point est dans le `where` : c'est le mur par point.
+    const rows = await this.prisma.siteResupply.findMany({
+      where: { id: { in: [...resupplyIds] }, siteId },
+      include: { lines: SITE_RESUPPLY_LINES },
+    });
+    return rows.map((row) => SiteResupply.restore(snapshotOf(row)));
   }
 
   async openDraft(
@@ -102,7 +117,7 @@ export class PrismaSiteResupplyRepository extends SiteResupplyRepository {
       if (count === 0) {
         throw new SiteResupplyChangedMeanwhileError();
       }
-      if (resupply.status === "cancelled") {
+      if (!resupply.linesChanged) {
         return;
       }
       await tx.siteResupplyLine.deleteMany({ where: { resupplyId: resupply.id } });

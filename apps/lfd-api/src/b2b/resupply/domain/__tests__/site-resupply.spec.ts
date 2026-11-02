@@ -18,6 +18,7 @@ import {
   UnknownResupplyOriginError,
   UnknownResupplyTargetError,
 } from "../site-resupply-errors.js";
+import { ResupplyNotReceivableError } from "../resupply-receipt-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 
 /** 17 h à Paris, le 2 janvier (heure d'hiver) : seules des dates comparées entre elles. */
@@ -359,5 +360,44 @@ describe("resupplyTotals", () => {
 
   it("rien demandé, rien à produire", () => {
     expect(resupplyTotals([])).toEqual([]);
+  });
+});
+
+describe("SiteResupply — ce que l'adaptateur réécrit, et la réception (audit du 2026-11-02)", () => {
+  /** Régression M4 : toutes les lignes étaient réécrites à chaque geste, envoi et annulation compris. */
+  it("ne dit ses lignes changées qu'après un geste sur elles", () => {
+    const resupply = draft("asap");
+    const restored = SiteResupply.restore({
+      id: resupply.id,
+      siteId: resupply.siteId,
+      target: resupply.target,
+      serviceDay: resupply.serviceDay,
+      version: 1,
+      origin: resupply.origin,
+      name: null,
+      lines: resupply.lines,
+      placed: null,
+      cancelled: null,
+      arrived: null,
+    });
+
+    expect(restored.linesChanged).toBe(false);
+    restored.place(trace(EVENING), null, false);
+    expect(restored.linesChanged).toBe(false);
+  });
+
+  it("dit ses lignes changées après un ajout", () => {
+    const resupply = draft("asap");
+    expect(resupply.linesChanged).toBe(true);
+  });
+
+  /** Régression G1 : la réception ne passait pas par l'agrégat. */
+  it("se laisse réceptionner envoyé, jamais en brouillon ni annulé", () => {
+    const resupply = draft("asap");
+    expect(() => resupply.assertReceivable()).toThrow(ResupplyNotReceivableError);
+    resupply.place(trace(EVENING), null, false);
+    expect(() => resupply.assertReceivable()).not.toThrow();
+    resupply.cancel(trace(EVENING), null, false, false);
+    expect(() => resupply.assertReceivable()).toThrow(ResupplyNotReceivableError);
   });
 });

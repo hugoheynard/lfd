@@ -5,10 +5,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import {
-  DayOrdersReader,
-  type ProducibleOrder,
-} from "../../channels/commerce/day-orders.reader.js";
+import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import {
   DayResuppliesReader,
   type PlacedResupply,
@@ -43,10 +40,13 @@ import { LaunchResupplyCommand } from "./launch-resupply.command.js";
  * plus. Lire le commerce SOUS le verrou est la même exception que
  * `placedFor` à l'arrêt, pour la même raison.
  *
- * Les commandes du commerce et le nom de qui lance sont lus AVANT le
- * verrou, comme au retirage : elles ne servent qu'à la garde de Q5 (une
- * journée jamais arrêtée ne s'ouvre pas avec ce seul réassort s'il reste
- * des commandes à figer).
+ * Le nom de qui lance est lu AVANT le verrou. Les commandes du commerce,
+ * elles, sont lues SOUS lui, et seulement sur une journée encore ouverte :
+ * elles nourrissent la garde de Q5 (une journée jamais arrêtée ne s'ouvre
+ * pas avec ce seul réassort s'il reste des commandes à figer). Lues avant,
+ * une commande admise entre la lecture et le verrou — la passation prend ce
+ * même verrou par le guichet d'admission — échappait à la garde, et le
+ * lancement arrêtait la journée sans la figer (G-A, audit du 2026-11-02).
  *
  * ## Ce qu'il ne fait PAS
  *
@@ -75,7 +75,6 @@ export class LaunchResupplyHandler implements ICommandHandler<LaunchResupplyComm
 
   async execute(command: LaunchResupplyCommand): Promise<void> {
     const day = ServiceDay.of(command.serviceDay);
-    const producible = await this.orders.producibleFor(day);
     const name = (await this.authors.identify([command.staffUserId])).nameOf(command.staffUserId);
     await this.uow.run(async () => {
       await this.lock.lock(day);
@@ -85,22 +84,18 @@ export class LaunchResupplyHandler implements ICommandHandler<LaunchResupplyComm
         throw new ResupplyToLaunchNotFoundError(day.value);
       }
       const gesture = { at: this.clock.now(), staffUserId: command.staffUserId, name };
-      const pending = await this.pendingOf(day, current, producible);
+      const pending = await this.pendingOf(day, current);
       await this.launch(day, current, resupply, gesture, pending);
     });
   }
 
-  /** Ce que l'arrêt figerait encore — rien sur une journée déjà arrêtée. */
-  private async pendingOf(
-    day: ServiceDay,
-    current: ProductionDay,
-    producible: readonly ProducibleOrder[],
-  ): Promise<PendingPlan> {
+  /** Ce que l'arrêt figerait encore, lu SOUS le verrou — rien sur une journée déjà arrêtée. */
+  private async pendingOf(day: ServiceDay, current: ProductionDay): Promise<PendingPlan> {
     if (current.isClosed) {
       return NOTHING_PENDING;
     }
     return {
-      orders: producible,
+      orders: await this.orders.producibleFor(day),
       withdrawn: await this.withdrawals.withdrawnOn(day),
       resupplies: await this.resupplies.placedFor(day),
     };

@@ -10,6 +10,7 @@ import {
   ResupplyArticleUnknownError,
   ResupplySiteUnknownError,
 } from "../../domain/resupply-receipt-errors.js";
+import { ResupplySendingKeyTakenError } from "../../domain/resupply-sending-key-errors.js";
 import { EmptyResupplyError, ReserveNotTodayError } from "../../domain/site-resupply-errors.js";
 import type { SiteResupply } from "../../domain/site-resupply.js";
 import { GetResupplyProductionDayHandler } from "../get-resupply-production-day.handler.js";
@@ -18,6 +19,7 @@ import { ListResuppliesToProduceHandler } from "../list-resupplies-to-produce.ha
 import { ProductionDayResupplies } from "../production-day-resupplies.js";
 import { SendReserveToShopCommand } from "../send-reserve-to-shop.command.js";
 import { SendReserveToShopHandler } from "../send-reserve-to-shop.handler.js";
+import { CRO_24, placed } from "./resupply-receipt-setup.js";
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
 import {
   FixedTransferServedSites,
@@ -75,12 +77,19 @@ class RecordingRelease extends ReserveShopRelease {
 
 /**
  * Deux envois de la même clé qui se croisent : chacun a lu « pas encore
- * écrit » avant que l'autre ne valide — `load` ne voit rien, la clé primaire
- * refuse le second.
+ * écrit » dans SA transaction, avant que l'autre ne valide — les deux
+ * premières lectures ne voient rien, la clé primaire refuse le second. La
+ * relecture hors transaction, elle, voit ce qui a été validé.
  */
 class RacingSiteResupplies extends InMemorySiteResupplies {
-  override load(): Promise<SiteResupply | null> {
-    return Promise.resolve(null);
+  private blindReads = 2;
+
+  override load(siteId: string, resupplyId: string): Promise<SiteResupply | null> {
+    if (this.blindReads > 0) {
+      this.blindReads -= 1;
+      return Promise.resolve(null);
+    }
+    return super.load(siteId, resupplyId);
   }
 }
 
@@ -171,6 +180,30 @@ describe("SendReserveToShopHandler — envoyer en boutique depuis la réserve", 
 
     expect(store.saves).toBe(1);
     expect(release.sent).toHaveLength(1);
+  });
+
+  /**
+   * Régression C-B (audit du 2026-11-02) : le garde lisait la clé sous le
+   * point seul ; une clé déjà prise par un réassort d'un AUTRE point butait
+   * sur la clé primaire, l'erreur était avalée, et l'écran recevait la clé
+   * d'un réassort qui n'était pas le sien — sans que rien ne soit sorti.
+   */
+  it("refuse nommément une clé déjà prise par un réassort d'un autre point", async () => {
+    const store = new InMemorySiteResupplies();
+    store.put(placed(KEY, CRO_24, { siteId: "site_labo" }));
+    const { release, send } = setup(null, store);
+
+    await expect(send([{ sku: "CRO", quantity: 4 }])).rejects.toThrow(ResupplySendingKeyTakenError);
+    expect(release.sent).toEqual([]);
+  });
+
+  it("refuse nommément une clé déjà prise à ce point par un autre geste", async () => {
+    const store = new InMemorySiteResupplies();
+    store.put(placed(KEY, CRO_24, { siteId: VILLAGE, origin: "bakehouse" }));
+    const { release, send } = setup(null, store);
+
+    await expect(send([{ sku: "CRO", quantity: 4 }])).rejects.toThrow(ResupplySendingKeyTakenError);
+    expect(release.sent).toEqual([]);
   });
 
   it("refuse la réserve d'un autre jour que celui du geste, sans rien écrire ni sortir", async () => {

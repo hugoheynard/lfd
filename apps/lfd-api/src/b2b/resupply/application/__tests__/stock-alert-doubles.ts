@@ -23,6 +23,8 @@ function snapshotOf(alert: StockAlert, version: number): StockAlertSnapshot {
 export class InMemoryStockAlerts extends StockAlertRepository {
   private readonly rows = new Map<string, StockAlertSnapshot>();
   saves = 0;
+  /** Lectures groupées des alertes vivantes (`liveForSkus`) — une par réception. */
+  liveReads = 0;
 
   load(siteId: string, alertId: string): Promise<StockAlert | null> {
     const row = this.rows.get(alertId);
@@ -36,6 +38,17 @@ export class InMemoryStockAlerts extends StockAlertRepository {
       (alert) => alert.siteId === siteId && alert.sku === sku && alert.lifted === null,
     );
     return Promise.resolve(row === undefined ? null : StockAlert.restore(row));
+  }
+
+  liveForSkus(siteId: string, skus: readonly string[]): Promise<readonly StockAlert[]> {
+    this.liveReads += 1;
+    return Promise.resolve(
+      this.all()
+        .filter(
+          (alert) => alert.siteId === siteId && skus.includes(alert.sku) && alert.lifted === null,
+        )
+        .map((alert) => StockAlert.restore(alert)),
+    );
   }
 
   save(alert: StockAlert): Promise<void> {

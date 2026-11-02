@@ -1,5 +1,4 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { ServiceDay, ServiceRange } from "../../../../production/channels/commerce/index.js";
 import type { PlacedSiteResupplySnapshot } from "../../domain/site-resupply.js";
@@ -26,6 +25,7 @@ import {
   KnownReceptions,
   SiteLabels,
   FixedLaunches,
+  freshSendingKey,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier : les journées sont le SUJET, l'horloge est fixée. */
@@ -67,7 +67,6 @@ async function world() {
     new FixedResupplyCutoff(null),
     staff,
     clock,
-    new FixedIdGenerator("resupply"),
     gate,
     uow,
   );
@@ -83,6 +82,7 @@ async function world() {
     place.execute(
       new SendBakehouseResupplyCommand(
         siteId,
+        freshSendingKey(),
         target,
         [{ sku, quantity, saleUnit: "piece" as const }],
         "s",

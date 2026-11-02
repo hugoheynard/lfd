@@ -5,16 +5,12 @@ import { ProductionDay } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
-import { carriedKey, carriedPacking } from "./production-day-carried-packing.js";
+import { carriedPacking } from "./production-day-carried-packing.js";
+import { writeDayChildren } from "./production-day-children.writer.js";
 import { productionSaleUnitOf } from "./sale-unit.column.js";
 import { signerColumns, signerOf } from "./production-day-signer.columns.js";
-import { RESUPPLY_COLUMNS, resupplyRowOf, splitResupplies } from "./production-resupply.columns.js";
-import {
-  SHEET_COLUMNS,
-  clienteleOf,
-  sheetDetailsOf,
-  sheetRowOf,
-} from "./production-order-sheet.columns.js";
+import { RESUPPLY_COLUMNS, splitResupplies } from "./production-resupply.columns.js";
+import { SHEET_COLUMNS, clienteleOf, sheetDetailsOf } from "./production-order-sheet.columns.js";
 
 /**
  * L'adaptateur Prisma de la journée de production.
@@ -165,7 +161,12 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
    *
    * ⚠️ Les enfants sont remplacés, pas fusionnés : l'agrégat est l'autorité, et
    * une fusion laisserait vivre une commande que la journée ne porte plus. Le
-   * coût est nul — une journée n'est écrite qu'à sa clôture.
+   * coût n'est PAS nul : la journée s'écrit à la clôture, au retirage, à la
+   * réouverture, à chaque lancement d'un réassort « au plus tôt » et à chaque
+   * révision de commande inscrite (vérifié le 2026-11-02), toujours sous
+   * `FOR UPDATE`. D'où des écritures EN LOTS (`writeDayChildren`, M-A de
+   * l'audit du réassort) : cinq requêtes au plus, quel que soit le nombre de
+   * commandes et de réassorts.
    *
    * Un compte à produire enregistré sans ses commandes décrirait une journée que
    * personne ne pourrait relire ; d'où la transaction, et non trois écritures.
@@ -225,53 +226,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
       await tx.productionOrder.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
       await tx.productionCount.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
       await tx.productionResupply.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
-      for (const order of snapshot.orders) {
-        await tx.productionOrder.create({
-          data: {
-            serviceDay: snapshot.serviceDay,
-            orderId: order.orderId,
-            rank: order.rank,
-            reference: order.reference,
-            customerLabel: order.customerLabel,
-            fulfillmentMethod: order.fulfillmentMethod,
-            destination: order.destination,
-            dueAt: order.dueAt,
-            clientele: order.clientele,
-            siteId: order.siteId,
-            ...sheetRowOf(order.sheetDetails),
-            ...carried.orders.get(carriedKey(order.orderId, order.rank)),
-            lines: {
-              create: order.lines.map((line) => ({
-                sku: line.sku,
-                productName: line.productName,
-                quantity: line.quantity,
-                saleUnit: line.saleUnit,
-                // `NULL` écrit tel quel : « on ne savait pas » ne devient pas
-                // « non » en traversant (plan `plan-sur-mesure-partout.md`, M2).
-                madeToOrder: line.madeToOrder ?? null,
-                ...carried.lines.get(`${carriedKey(order.orderId, order.rank)}/${line.sku}`),
-              })),
-            },
-          },
-        });
-      }
-      const resupplies = [...(snapshot.resupplies ?? []), ...(snapshot.launchedResupplies ?? [])];
-      for (const resupply of resupplies) {
-        await tx.productionResupply.create({
-          data: { serviceDay: snapshot.serviceDay, ...resupplyRowOf(resupply) },
-        });
-      }
-      if (snapshot.counts.length > 0) {
-        await tx.productionCount.createMany({
-          data: snapshot.counts.map((count) => ({
-            serviceDay: snapshot.serviceDay,
-            sku: count.sku,
-            productName: count.productName,
-            quantity: count.quantity,
-            saleUnit: count.saleUnit,
-          })),
-        });
-      }
+      await writeDayChildren(tx, snapshot, carried);
     });
   }
 }

@@ -3,7 +3,10 @@ import {
   BakehouseResupplyDraft,
   type BakehouseResupplyDraftSnapshot,
 } from "../../domain/bakehouse-resupply-draft.js";
-import { BakehouseResupplyDraftChangedMeanwhileError } from "../../domain/bakehouse-resupply-draft-errors.js";
+import {
+  BakehouseResupplyDraftAlreadyWrittenError,
+  BakehouseResupplyDraftChangedMeanwhileError,
+} from "../../domain/bakehouse-resupply-draft-errors.js";
 import { BakehouseResupplyDraftReader } from "../../domain/bakehouse-resupply-draft.reader.js";
 import { BakehouseResupplyDraftRepository } from "../../domain/bakehouse-resupply-draft.repository.js";
 import type { SiteResupply } from "../../domain/site-resupply.js";
@@ -61,6 +64,10 @@ export class InMemoryBakehouseDrafts extends BakehouseResupplyDraftRepository {
 
   save(draft: BakehouseResupplyDraft): Promise<void> {
     const current = this.rows.get(draft.id);
+    // La clé primaire de la base : un brouillon neuf sous un id déjà écrit.
+    if (draft.version === 0 && current !== undefined) {
+      return Promise.reject(new BakehouseResupplyDraftAlreadyWrittenError(draft.id));
+    }
     if (draft.version !== 0 && current?.version !== draft.version) {
       return Promise.reject(new BakehouseResupplyDraftChangedMeanwhileError());
     }

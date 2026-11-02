@@ -154,11 +154,24 @@ Les écritures ne vont pas au journal, comme l'envoi qu'elles empruntent.
 **Routes** — `admin/bakehouse-resupplies`
 (`http/admin-bakehouse-resupplies.controller.ts:43`), `production_resupply` :
 `GET articles`, `GET sites/:siteId/names`, `POST sites/:siteId`
-(`{ target, name, lines }` → `{ id }`), `POST sites/:siteId/:resupplyId/mounted`
+(`{ key, target, name, lines }` → `{ id }`), `POST sites/:siteId/:resupplyId/mounted`
 (« Monté », [`au-plan-du-fournil.md`](au-plan-du-fournil.md)),
-`GET|POST drafts`, `PUT drafts/:draftId`, `POST drafts/:draftId/discard`,
+`GET|POST drafts` (création : `{ key, siteId, target, name, lines }`),
+`PUT drafts/:draftId`, `POST drafts/:draftId/discard`,
 `POST drafts/:draftId/send`. Les points proposés se lisent sur
 `GET /admin/pickup-addresses`, ouvert à `production_resupply:read`.
+
+**Une clé, un envoi** (audit du 2026-11-02, C-A et C-C) : l'écran tire une
+clé par composition (`BakehouseDraftsStore`), la garde à travers un refus et
+la renouvelle dès que la composition change de main. L'envoi sans brouillon
+et la première création d'un brouillon en font leur identifiant : deux clics,
+ou un renvoi après une réponse perdue, rendent le même réassort ou le même
+brouillon. Une clé déjà prise par un autre point, ou par un autre geste, est
+refusée en 409 (`resupply.sending_key.taken`,
+`resupply.bakehouse_draft.key_taken`) — jamais rendue
+(`apps/lfd-api/src/b2b/resupply/application/resupply-sending-key.ts`, partagé
+avec la réserve). L'heure du
+réassort se lit sous le verrou de la journée, à l'écriture.
 
 **Les écrans** — Prod manager › Réassorts (`/prod-manager/reassorts`) liste
 les réassorts demandés, les brouillons ouverts au-dessus (« Reprendre »,
@@ -178,5 +191,7 @@ depuis la Supervision (`POST admin/reserve-shop-releases/:serviceDay`,
 s'annule pas ; `isProducedByBakehouse` (`domain/resupply-origin.ts:21`)
 l'écarte des réassorts à produire et de l'onglet de Prod manager. Le comptoir
 le réceptionne comme les autres, marqué « Pain rendu, envoyé par la
-réserve ». Seule la réserve du jour sort. Détail :
+réserve ». Seule la réserve du jour sort. La clé du panneau est
+l'identifiant du réassort ; prise par un autre point, elle est refusée en
+409 (C-B, 2026-11-02), plus jamais avalée. Détail :
 [`../commandes/annulation/plan-a1-4-envoyer-en-boutique.md`](../commandes/annulation/plan-a1-4-envoyer-en-boutique.md).

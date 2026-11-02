@@ -1,6 +1,7 @@
 import { instantToLocal } from "@lfd/contracts";
 
 import type { ResupplyOrigin } from "./resupply-origin.js";
+import { ResupplyNotReceivableError } from "./resupply-receipt-errors.js";
 import {
   BakehouseResupplyAfterStopError,
   EmptyResupplyError,
@@ -123,5 +124,20 @@ export function assertCancellable(state: CancellationState): void {
       state.reception.author.name,
       instantToLocal(state.reception.at).time,
     );
+  }
+}
+
+/**
+ * **« Réceptionner »** (G1, audit du 2026-11-02) : seul un réassort envoyé et
+ * non annulé se réceptionne. L'appelant SAUVE ensuite l'agrégat sous sa
+ * version : une annulation, une arrivée ou une seconde réception lues avant
+ * celle-ci échouent alors à l'écriture (`SiteResupplyChangedMeanwhileError`),
+ * au lieu de passer à côté.
+ *
+ * @throws {ResupplyNotReceivableError}
+ */
+export function assertReceivableStatus(status: SiteResupplyStatus): void {
+  if (status !== "placed") {
+    throw new ResupplyNotReceivableError();
   }
 }

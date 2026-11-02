@@ -46,6 +46,20 @@ export const saveBakehouseResupplyDraftSchema = z
 export type SaveBakehouseResupplyDraftPayload = z.infer<typeof saveBakehouseResupplyDraftSchema>;
 
 /**
+ * `POST /admin/bakehouse-resupplies/drafts` — le premier enregistrement. `key`
+ * est fournie par l'écran, une par ouverture du panneau (C-C, 2026-11-02) :
+ * elle devient l'identifiant du brouillon, et un second enregistrement avec
+ * la même clé rend le brouillon déjà écrit ; prise par le brouillon d'un autre
+ * point, elle est refusée (409).
+ */
+export const createBakehouseResupplyDraftSchema = saveBakehouseResupplyDraftSchema
+  .extend({ key: z.string().trim().min(1).max(64) })
+  .strict();
+export type CreateBakehouseResupplyDraftPayload = z.infer<
+  typeof createBakehouseResupplyDraftSchema
+>;
+
+/**
  * `PUT /admin/bakehouse-resupplies/drafts/:draftId` et
  * `POST …/drafts/:draftId/send` : le contenu, plus la version LUE — deux
  * postes qui reprennent le même brouillon ne s'écrasent pas (409).

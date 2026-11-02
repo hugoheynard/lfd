@@ -22,6 +22,14 @@ export class PrismaStockAlertReader extends StockAlertReader {
     return rows.map(stockAlertSnapshotOf);
   }
 
+  /**
+   * Toutes les alertes vivantes, filtrées EN BASE (`lifted_at IS NULL`, index
+   * partiel `site_stock_alert_live_declared_idx`, migration 20261102260000).
+   * Pas de `take` : la liste est bornée par construction — au plus une alerte
+   * vivante par (point, article), tenu par `site_stock_alert_live_site_sku_key`
+   * (vérifié le 2026-11-02) — et une borne arbitraire tairait une rupture.
+   * Les appelants ne font ensuite que les ranger par point.
+   */
   async liveEverywhere(): Promise<readonly StockAlertSnapshot[]> {
     const rows = await this.prisma.siteStockAlert.findMany({
       where: { liftedAt: null },

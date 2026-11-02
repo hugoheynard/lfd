@@ -45,11 +45,11 @@ export class SendBakehouseResupplyDraftHandler implements ICommandHandler<
     cutoff: ResupplyCutoff,
     private readonly staff: StaffDirectory,
     private readonly clock: Clock,
-    ids: IdGenerator,
+    private readonly ids: IdGenerator,
     gate: ResupplyPlanGate,
     private readonly uow: UnitOfWork,
   ) {
-    this.ports = { resupplies, catalogue, sites, cutoff, ids, gate };
+    this.ports = { resupplies, catalogue, sites, cutoff, gate };
   }
 
   async execute(command: SendBakehouseResupplyDraftCommand): Promise<string> {
@@ -60,7 +60,8 @@ export class SendBakehouseResupplyDraftHandler implements ICommandHandler<
     const trace = await traceOf(this.staff, this.clock, command.staffUserId);
     const prepared = await prepareBakehouseResupply(this.ports, content, trace);
     return this.uow.run(async () => {
-      const resupplyId = await writeBakehouseResupply(this.ports, prepared);
+      const resupplyId = this.ids.next();
+      await writeBakehouseResupply(this.ports, prepared, resupplyId);
       draft.markSent({ content, resupplyId, trace, readVersion: command.version });
       await this.drafts.save(draft);
       return resupplyId;

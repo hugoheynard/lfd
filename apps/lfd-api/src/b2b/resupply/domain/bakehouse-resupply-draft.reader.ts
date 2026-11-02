@@ -2,6 +2,6 @@ import type { BakehouseResupplyDraftSnapshot } from "./bakehouse-resupply-draft.
 
 /** Port de **lecture** des brouillons du fournil, pour la liste de la carte. */
 export abstract class BakehouseResupplyDraftReader {
-  /** Les brouillons ouverts, le dernier enregistré d'abord. */
+  /** Les brouillons ouverts, le dernier enregistré d'abord — bornés par l'adaptateur. */
   abstract listOpen(): Promise<readonly BakehouseResupplyDraftSnapshot[]>;
 }

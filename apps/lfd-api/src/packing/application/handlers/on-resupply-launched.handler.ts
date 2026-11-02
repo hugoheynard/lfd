@@ -5,7 +5,6 @@ import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../platform/outbox/durable-handler.js";
-import { Clock } from "../../../platform/time/clock.js";
 import {
   PRODUCTION_RESUPPLY_LAUNCHED,
   ResupplyLaunchedEvent,
@@ -31,6 +30,9 @@ export const ON_RESUPPLY_LAUNCHED = "packing.draw-launched-resupply";
  *    attente du four » et les remises suivantes la servent avant les
  *    commandes.
  *
+ * La réserve est datée du lancement (`launchedAt`), pas de la livraison du
+ * fait : c'est l'ordre « servi le premier » de `stock-reservations.ts`.
+ *
  * Ordre des verrous : la fiche (insérée), puis les réserves — celui de la
  * saisie. Inscrite si absente, réservée si non réservée : le rejeu ne double
  * rien, même après la clôture.
@@ -41,7 +43,6 @@ export class OnResupplyLaunched implements DurableSubscriber {
   constructor(
     private readonly listing: PackingResupplyListing,
     private readonly stocks: PackingStockRepository,
-    private readonly clock: Clock,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -60,7 +61,10 @@ export class OnResupplyLaunched implements DurableSubscriber {
       drawnAt: event.launchedAt,
       lines,
     });
-    const at = this.clock.now();
+    // L'instant du LANCEMENT, jamais celui de la livraison du fait : « servi
+    // le premier » range les réserves par cet instant, et un fait relivré
+    // tard ne doit pas faire passer un réassort derrière un plus récent.
+    const at = event.launchedAt;
     for (const line of lines) {
       const stock = await this.stocks.lock(event.serviceDay, line.sku);
       if (stock.reserve(event.resupply.resupplyId, line.quantity, at, line.saleUnit)) {

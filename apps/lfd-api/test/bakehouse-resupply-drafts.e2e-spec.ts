@@ -11,6 +11,7 @@
  * L'horloge est gelée la VEILLE de la journée servie (`SERVICE_DAY`, dans une
  * semaine) : les heures se comparent à elle seule, jamais au calendrier.
  */
+import { randomUUID } from "node:crypto";
 import type {
   BakehouseResupplyDraftView,
   ResupplyArticleView,
@@ -101,6 +102,7 @@ describe("les brouillons du réassort du fournil", () => {
         .asSub(STAFF)
         .post("/admin/bakehouse-resupplies/drafts")
         .send({
+          key: randomUUID(),
           siteId: site,
           target: "tomorrow",
           name: " Vitrine du matin ",
@@ -173,6 +175,29 @@ describe("les brouillons du réassort du fournil", () => {
     expect(counterAfter.resupplies.map((placed) => placed.id)).toEqual([sent.id]);
   });
 
+  /** Régression C-C (audit du 2026-11-02) : deux clics sur « Enregistrer » faisaient deux brouillons. */
+  it("deux créations simultanées de la même clé ne font qu'un brouillon, rendu aux deux", async () => {
+    const site = await seedSite("Village");
+    const sku = await article();
+    const body = {
+      key: randomUUID(),
+      siteId: site,
+      target: "asap",
+      name: null,
+      lines: [{ sku, quantity: 1 }],
+    };
+    const create = () => ctx.asSub(STAFF).post("/admin/bakehouse-resupplies/drafts").send(body);
+
+    const answers = await Promise.all([create(), create()]);
+
+    expect(answers.map((answer) => answer.status)).toEqual([201, 201]);
+    expect(answers.map((answer) => jsonBody<SavedBakehouseResupplyDraftResponse>(answer))).toEqual([
+      { id: body.key, version: 1 },
+      { id: body.key, version: 1 },
+    ]);
+    expect(await ctx.prisma.bakehouseResupplyDraft.count()).toBe(1);
+  });
+
   it("deux postes : le second qui écrit sur la même version reçoit 409", async () => {
     const site = await seedSite("Village");
     const sku = await article();
@@ -180,7 +205,13 @@ describe("les brouillons du réassort du fournil", () => {
       await ctx
         .asSub(STAFF)
         .post("/admin/bakehouse-resupplies/drafts")
-        .send({ siteId: site, target: "asap", name: null, lines: [{ sku, quantity: 1 }] })
+        .send({
+          key: randomUUID(),
+          siteId: site,
+          target: "asap",
+          name: null,
+          lines: [{ sku, quantity: 1 }],
+        })
         .expect(201),
     );
     const content = { siteId: site, target: "asap", name: null, lines: [{ sku, quantity: 2 }] };
@@ -213,6 +244,7 @@ describe("les brouillons du réassort du fournil", () => {
         .asSub(STAFF)
         .post("/admin/bakehouse-resupplies/drafts")
         .send({
+          key: randomUUID(),
           siteId: site,
           target: "tomorrow",
           name: null,
@@ -258,7 +290,13 @@ describe("les brouillons du réassort du fournil", () => {
       await ctx
         .asSub(STAFF)
         .post("/admin/bakehouse-resupplies/drafts")
-        .send({ siteId: site, target: "tomorrow", name: null, lines: [{ sku, quantity: 1 }] })
+        .send({
+          key: randomUUID(),
+          siteId: site,
+          target: "tomorrow",
+          name: null,
+          lines: [{ sku, quantity: 1 }],
+        })
         .expect(201),
     );
     await expect(

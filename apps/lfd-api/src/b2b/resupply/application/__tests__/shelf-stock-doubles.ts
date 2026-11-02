@@ -19,7 +19,11 @@ export class FixedShelfDraws extends ShelfDrawsReader {
     this.draws.set(`${serviceDay}:${siteId}`, draws);
   }
 
+  /** Combien de fois les prélèvements ont été lus (M3). */
+  reads = 0;
+
   drawsAt(serviceDay: string, siteId: string): Promise<readonly ShelfDraw[]> {
+    this.reads += 1;
     return Promise.resolve(this.draws.get(`${serviceDay}:${siteId}`) ?? []);
   }
 }

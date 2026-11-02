@@ -10,6 +10,7 @@
  * L'horloge est gelée la VEILLE de la journée servie (`SERVICE_DAY`, dans une
  * semaine) : les heures se comparent à elle seule, jamais au calendrier.
  */
+import { randomUUID } from "node:crypto";
 import type {
   ProductionDayResuppliesView,
   ResupplyArticleView,
@@ -88,6 +89,7 @@ async function bakehouseSends(site: string, name?: string): Promise<string> {
     .asSub(STAFF)
     .post(`/admin/bakehouse-resupplies/sites/${site}`)
     .send({
+      key: randomUUID(),
       target: "tomorrow",
       ...(name === undefined ? {} : { name }),
       lines: [{ sku: await article(), quantity: 6 }],

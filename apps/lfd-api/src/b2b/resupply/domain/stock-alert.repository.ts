@@ -12,5 +12,8 @@ export abstract class StockAlertRepository {
   /** L'alerte VIVANTE de cet article à ce point, s'il y en a une. */
   abstract liveFor(siteId: string, sku: string): Promise<StockAlert | null>;
 
+  /** Les alertes VIVANTES de ces articles à ce point — une requête pour la réception entière. */
+  abstract liveForSkus(siteId: string, skus: readonly string[]): Promise<readonly StockAlert[]>;
+
   abstract save(alert: StockAlert): Promise<void>;
 }

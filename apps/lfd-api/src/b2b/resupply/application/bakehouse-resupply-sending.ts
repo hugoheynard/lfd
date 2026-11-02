@@ -1,4 +1,3 @@
-import type { IdGenerator } from "../../../platform/id/id-generator.js";
 import type { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import type { ResupplyCutoff } from "../domain/resupply-cutoff.js";
 import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
@@ -22,16 +21,18 @@ import { catalogueLine } from "./site-resupply-draft.js";
  * qui part d'un brouillon part par les mêmes règles, sans copie.
  *
  * En deux temps : {@link prepareBakehouseResupply} lit — le point, les
- * libellés au catalogue publié, l'heure du réassort — HORS de la transaction ;
+ * libellés au catalogue publié — HORS de la transaction ;
  * {@link writeBakehouseResupply} s'appelle DANS l'unité de travail de
- * l'appelant, prend le verrou de la journée et écrit.
+ * l'appelant, prend le verrou de la journée, PUIS lit l'heure du réassort et
+ * écrit. L'heure se lisait à la préparation (M1, audit du 2026-11-02) : un
+ * réglage changé entre-temps laissait partir un « pour demain » sur l'heure
+ * d'avant. Lue sous le verrou, elle est celle que l'arrêt du plan voit.
  */
 export interface BakehouseSendingPorts {
   readonly resupplies: SiteResupplyRepository;
   readonly catalogue: ResupplyCatalogue;
   readonly sites: ResupplySites;
   readonly cutoff: ResupplyCutoff;
-  readonly ids: IdGenerator;
   readonly gate: ResupplyPlanGate;
 }
 
@@ -49,7 +50,6 @@ export interface PreparedBakehouseResupply {
   readonly lines: readonly SiteResupplyLine[];
   readonly trace: SiteResupplyTrace;
   readonly serviceDay: string;
-  readonly deadline: Date | null;
 }
 
 /** @throws {ResupplySiteUnknownError} le point n'existe pas ou est archivé. */
@@ -65,27 +65,31 @@ export async function prepareBakehouseResupply(
   for (const requested of request.lines) {
     lines.push(await catalogueLine(ports.catalogue, requested));
   }
-  const serviceDay = serviceDayFor(request.target, trace.at);
-  const deadline = await ports.cutoff.deadlineFor(serviceDay);
-  return { request, lines, trace, serviceDay, deadline };
+  return { request, lines, trace, serviceDay: serviceDayFor(request.target, trace.at) };
 }
 
-/** Crée et envoie le réassort ; à appeler DANS une unité de travail. Rend son identifiant. */
+/**
+ * Crée et envoie le réassort sous l'identifiant `id` ; à appeler DANS une
+ * unité de travail. Le verrou de la journée d'abord, puis l'heure du
+ * réassort : les deux sont lues sous lui.
+ */
 export async function writeBakehouseResupply(
   ports: BakehouseSendingPorts,
   prepared: PreparedBakehouseResupply,
-): Promise<string> {
+  id: string,
+): Promise<void> {
   const { request, trace } = prepared;
+  const planStopped = await ports.gate.hold(request.target, prepared.serviceDay);
+  const deadline = await ports.cutoff.deadlineFor(prepared.serviceDay);
   const resupply = SiteResupply.sentByBakehouse({
-    id: ports.ids.next(),
+    id,
     siteId: request.siteId,
     target: request.target,
     name: request.name,
     lines: prepared.lines,
     trace,
-    deadline: prepared.deadline,
-    planStopped: await ports.gate.hold(request.target, prepared.serviceDay),
+    deadline,
+    planStopped,
   });
   await ports.resupplies.save(resupply);
-  return resupply.id;
 }

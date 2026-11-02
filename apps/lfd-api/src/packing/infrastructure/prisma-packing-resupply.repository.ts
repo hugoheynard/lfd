@@ -11,7 +11,8 @@ import { RESUPPLY_SELECT, resupplyOf } from "./packing-resupply.rows.js";
 /**
  * L'adaptateur Prisma de la fiche de réassort (lot R3b). `lock` pose
  * `FOR UPDATE` sur la fiche — le verrou tient jusqu'au `COMMIT` de l'unité de
- * travail ; `save` écrit la saisie de chaque ligne et la clôture.
+ * travail ; `save` écrit la saisie de toutes les lignes (une requête) et la
+ * clôture.
  */
 @Injectable()
 export class PrismaPackingResupplyRepository extends PackingResupplyRepository {
@@ -35,15 +36,24 @@ export class PrismaPackingResupplyRepository extends PackingResupplyRepository {
   async save(sheet: PackingResupply): Promise<void> {
     const snapshot = sheet.toSnapshot();
     const key = { serviceDay: snapshot.serviceDay, resupplyId: snapshot.resupplyId };
-    for (const line of snapshot.lines) {
-      await this.prisma.packingResupplyLine.update({
-        where: { serviceDay_resupplyId_sku: { ...key, sku: line.sku } },
-        data: {
-          packed: line.packed?.quantity ?? null,
-          packedAt: line.packed?.at ?? null,
-          packedBy: line.packed?.by ?? null,
-        },
-      });
+    // Toutes les lignes en UNE requête (M-E, audit du 2026-11-02) : une
+    // `update` par ligne, sous le verrou de la fiche, jusque-là.
+    const lines = snapshot.lines;
+    if (lines.length > 0) {
+      await this.prisma.$executeRaw`
+        UPDATE "packing"."packing_resupply_line" AS line
+           SET "packed" = given.packed,
+               "packed_at" = given.packed_at,
+               "packed_by" = given.packed_by
+          FROM unnest(
+                 ${lines.map((line) => line.sku)}::text[],
+                 ${lines.map((line) => line.packed?.quantity ?? null)}::integer[],
+                 ${lines.map((line) => line.packed?.at ?? null)}::timestamptz[],
+                 ${lines.map((line) => line.packed?.by ?? null)}::text[]
+               ) AS given(sku, packed, packed_at, packed_by)
+         WHERE line."service_day" = ${key.serviceDay}
+           AND line."resupply_id" = ${key.resupplyId}
+           AND line."sku" = given.sku`;
     }
     await this.prisma.packingResupply.update({
       where: { serviceDay_resupplyId: key },

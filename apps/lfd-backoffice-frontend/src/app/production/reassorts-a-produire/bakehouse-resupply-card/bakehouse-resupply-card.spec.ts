@@ -4,7 +4,7 @@ import type {
   BakehouseResupplyDraftView,
   PlaceSiteResupplyPayload,
   ResupplyArticleView,
-  SaveBakehouseResupplyDraftPayload,
+  CreateBakehouseResupplyDraftPayload,
   UpdateBakehouseResupplyDraftPayload,
 } from '@lfd/contracts';
 import { describe, expect, it, vi } from 'vitest';
@@ -81,9 +81,11 @@ class FakeBakehouse {
   drafts(): Promise<readonly BakehouseResupplyDraftView[]> {
     return Promise.resolve(this.stored);
   }
+  readonly draftKeys: string[] = [];
   createDraft(
-    payload: SaveBakehouseResupplyDraftPayload,
+    payload: CreateBakehouseResupplyDraftPayload,
   ): Promise<{ id: string; version: number }> {
+    this.draftKeys.push(payload.key);
     this.draftCalls.push(`create:${JSON.stringify(payload.lines)}`);
     return Promise.resolve({ id: 'dr_new', version: 1 });
   }
@@ -103,7 +105,9 @@ class FakeBakehouse {
     this.stored = this.stored.filter((draft) => draft.id !== id);
     return Promise.resolve();
   }
+  readonly sendKeys: string[] = [];
   send(siteId: string, payload: PlaceSiteResupplyPayload): Promise<{ id: string }> {
+    this.sendKeys.push(payload.key);
     if (this.refuse) {
       return Promise.reject(new Error('refusé'));
     }
@@ -205,6 +209,7 @@ describe('BakehouseResupplyCard', () => {
       {
         siteId: 'site_v',
         payload: {
+          key: expect.any(String),
           target: 'tomorrow',
           name: null,
           lines: [
@@ -235,7 +240,12 @@ describe('BakehouseResupplyCard', () => {
     expect(bakehouse.sent).toEqual([
       {
         siteId: 'site_l',
-        payload: { target: 'asap', name: null, lines: [{ sku: 'CRO', quantity: 3 }] },
+        payload: {
+          key: expect.any(String),
+          target: 'asap',
+          name: null,
+          lines: [{ sku: 'CRO', quantity: 3 }],
+        },
       },
     ]);
   });
@@ -300,6 +310,30 @@ describe('BakehouseResupplyCard', () => {
     expect(sentCount()).toBe(0);
     expect(root.querySelector('fold-callout')?.textContent).toContain('pas pu être envoyé');
     expect(root.querySelector('.product.asked')?.textContent).toContain('Croissant');
+  });
+
+  /**
+   * Régression C-A (audit du 2026-11-02) : l'envoi ne portait pas de clé —
+   * deux clics, ou un renvoi après une réponse perdue, faisaient deux réassorts.
+   */
+  it('renvoie la MÊME clé après un refus, et en tire une neuve après un envoi réussi', async () => {
+    const bakehouse = new FakeBakehouse();
+    bakehouse.refuse = true;
+    const { fixture, card, add } = await mount(new FakePickups(), bakehouse);
+    card['siteId'].set('site_v');
+    add('CRO', 3);
+
+    await clickSend(fixture);
+    bakehouse.refuse = false;
+    await clickSend(fixture);
+    card['siteId'].set('site_v');
+    add('PAC', 2);
+    await clickSend(fixture);
+
+    expect(bakehouse.sendKeys).toHaveLength(3);
+    const [refused, retried, next] = bakehouse.sendKeys;
+    expect(retried).toBe(refused);
+    expect(next).not.toBe(retried);
   });
 
   it('en mobile, toucher la case ouvre le dialogue, et sa quantité est retenue', async () => {

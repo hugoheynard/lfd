@@ -31,6 +31,10 @@ export const MARK_ARRIVED_ON_TRANSFER_RECEIVED = "b2b.resupply-arrived-on-transf
  *
  * - **Rejoué**, il ne fait rien de plus : un réassort déjà arrivé, ou déjà
  *   réceptionné, ne change pas et ne sonne pas (`markArrived` rend `false`).
+ * - **En course avec « Réceptionner »** (G1, 2026-11-02) : les deux sauvent
+ *   le réassort sous sa version, et « Réceptionner » l'avance toujours ; le
+ *   second à écrire lève `SiteResupplyChangedMeanwhileError`, le fait est
+ *   relivré, et la relecture trouve la réception — rien ne sonne.
  * - **Un réassort introuvable sous ce point, ou qui n'est plus envoyé**
  *   (annulé, ce que le plan figé interdit), est écarté et journalisé : lever
  *   ferait relivrer le fait sans fin pour une arrivée qui n'a plus d'objet.

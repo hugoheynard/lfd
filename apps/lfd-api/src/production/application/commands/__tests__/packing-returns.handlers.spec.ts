@@ -71,7 +71,7 @@ function setup() {
     store,
     days,
     ...handoffs,
-    record: new RecordBatchHandler(days, store, clock, uow, handoffs.service),
+    record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
     unmark: new UnmarkWorksheetLineHandler(days, store, lock, clock, uow, handoffs.service),
     answer: new OnPackingReturned(

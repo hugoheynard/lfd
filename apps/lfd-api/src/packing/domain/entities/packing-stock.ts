@@ -1,6 +1,9 @@
 import type { SaleUnit } from "@lfd/money";
 
-import { StockReservationQuantityInvalidError } from "../errors/packing-resupply-errors.js";
+import {
+  PackedResupplyStockInconsistentError,
+  StockReservationQuantityInvalidError,
+} from "../errors/packing-resupply-errors.js";
 import {
   ReserveShopQuantityInvalidError,
   StockMoveQuantityInvalidError,
@@ -180,10 +183,20 @@ export class PackingStock {
     this.shiftOwnPacked(resupplyId, quantity);
   }
 
-  /** La fiche emballe moins : les pièces reviennent, à sa réservation d'abord. */
+  /**
+   * La fiche emballe moins : les pièces reviennent, à sa réservation d'abord.
+   *
+   * @throws {PackedResupplyStockInconsistentError} elle rendrait plus que ce
+   *   que la réserve compte au bac, ou que sa réservation a emballé.
+   */
   releaseFromResupply(resupplyId: string, quantity: number, unit: SaleUnit): void {
     this.ensureMovable(quantity, unit);
-    this.packedValue = Math.max(0, this.packedValue - quantity);
+    const own = this.reservationsValue.find((reservation) => reservation.resupplyId === resupplyId);
+    const ceiling = Math.min(this.packedValue, own?.packed ?? this.packedValue);
+    if (quantity > ceiling) {
+      throw new PackedResupplyStockInconsistentError(this.sku, ceiling, quantity);
+    }
+    this.packedValue -= quantity;
     this.shiftOwnPacked(resupplyId, -quantity);
   }
 
@@ -258,7 +271,7 @@ export class PackingStock {
   private shiftOwnPacked(resupplyId: string, delta: number): void {
     this.reservationsValue = this.reservationsValue.map((reservation) =>
       reservation.resupplyId === resupplyId
-        ? { ...reservation, packed: Math.max(0, reservation.packed + delta) }
+        ? { ...reservation, packed: reservation.packed + delta }
         : reservation,
     );
   }

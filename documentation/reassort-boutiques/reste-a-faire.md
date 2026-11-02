@@ -40,11 +40,12 @@
 
 ## 3. Limites connues, non corrigées
 
-- **La course annuler / réceptionner** : l'annulation lit la réception puis
-  écrit le réassort (`cancel-site-resupply.handler.ts:45-47`) ; « Réceptionner »
-  ne touche pas la version du réassort. Deux postes à la même seconde peuvent
-  laisser un réassort annulé ET réceptionné (le reçu reste et compte au
-  stock). Fermé seulement si la réception passe un jour par l'agrégat.
+- ~~**La course annuler / réceptionner**~~ — fermée le 2026-11-02 (G1 de
+  l'audit, commit à venir) : « Réceptionner » passe par l'agrégat
+  (`SiteResupply.assertReceivable`) et le SAUVE sous sa version avant le
+  reçu ; l'annulation et l'arrivée par transfert, qui sauvent aussi sous la
+  version lue, échouent alors en 409. E2E à deux transactions dans
+  `resupply-receipt.e2e-spec.ts`.
 - **« Réceptionné » n'apparaît pas à Prod manager** : la carte « Au plus
   tôt » lit `SiteResupplyView`, qui ne porte pas la réception ; elle
   s'arrête à « Arrivé ».
@@ -53,7 +54,9 @@
   composition ou à l'affectation à la main.
 - **La réserve du colisage naît au traitement du fait**, pas à l'instant du
   lancement : une commande mise au bac entre les deux garde ses pièces, et la
-  fiche attend le four.
+  fiche attend le four. Depuis le 2026-11-02 (C1), la réserve est DATÉE du
+  lancement (`launchedAt` du fait) : l'ordre « servi le premier » entre deux
+  réassorts ne dépend plus de la livraison du fait.
 - **La cloche « Réassort arrivé » ne cible pas le point** : `StaffNotice`
   n'adresse qu'un droit, tout le comptoir l'entend.
 - **Un transfert vidé par la réouverture** garde son arrêt dans la tournée
@@ -85,6 +88,38 @@
   venir) : `dev/seeding/village-resupply.seed.ts`, un « au plus tôt » du
   Village envoyé à 15 h le jour J par les vrais handlers, appelé par
   `placeToday` ; il attend « Lancer ».
+
+## 4 bis. L'audit qualité du 2026-11-02
+
+Corrigé (commit à venir), chacun avec son test de régression nommé :
+G1 (ci-dessus) ; G-A (le lancement lit les commandes SOUS le verrou) ; C-D
+(une fournée se déclare sous le verrou de la journée, relue) ; C1 (réserve
+datée du lancement) ; C2 (« Déclarer une rupture » concurrent : 409
+`declared_meanwhile`) ; C4 et M-B (migration additive
+`20261102260000_le_reassort_lu_par_index`) ; C-A, C-B, C-C (une clé d'écran
+par composition : l'envoi du fournil et la création d'un brouillon en font
+leur identifiant, une clé prise ailleurs est refusée en 409
+`resupply.sending_key.taken` / `resupply.bakehouse_draft.key_taken`) ; M1
+(l'heure du réassort lue sous le verrou) ; M2 (alertes levées en une
+lecture) ; M3 (prélèvements lus une fois par baisse) ; M4 (les lignes ne se
+réécrivent que si elles ont changé) ; M5 (rendre plus qu'emballé est refusé
+nommément) ; M6 (un transfert parti lit ses réassorts en une fois) ; M-A
+(la journée du fournil écrit ses enfants en lots) ; M-C (la liste des
+brouillons ouverts est bornée à 100) ; M-E (les lignes d'une fiche du
+colisage en une requête).
+
+Laissé, et pourquoi :
+
+- **M7** — `asapToLaunch` ne filtre pas le déjà lancé, délibérément :
+  l'agrégat du fournil refuse un second lancement en le nommant (409) ;
+  filtrer au commerce le changerait en 404.
+- **M-D** — le domaine importe `@lfd/contracts`, dont le baril charge Zod
+  (`site-resupply.ts` l'importe au niveau du module). C'est le cas de ~495
+  fichiers de domaine du backend (compté le 2026-11-02) : un sous-chemin sans
+  Zod pour quatre fichiers ferait une seconde convention. À trancher pour
+  tout le dépôt.
+- **`site-resupply.ts` repasse à 339 lignes** (319 après le découpage) : la
+  garde de réception et le suivi des lignes changées s'y ajoutent.
 
 ## 5. Décidé, puis abandonné
 

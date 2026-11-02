@@ -34,8 +34,11 @@ sortes, une seule règle — seul le reçu compte au stock :
   à zéro. Un second « Réceptionner » est refusé
   (`resupply.receipt.already_received`, qui et quand), jamais rejoué. Seul un
   réassort envoyé et non annulé se réceptionne
-  (`resupply.receipt.resupply_not_receivable`), et pas avant sa journée
-  (`resupply.receipt.day_not_yet_come`) ;
+  (`resupply.receipt.resupply_not_receivable`, tenu par
+  `SiteResupply.assertReceivable`), et pas avant sa journée
+  (`resupply.receipt.day_not_yet_come`). Le réassort est SAUVÉ sous sa version
+  avant le reçu : une annulation ou une arrivée lues avant échouent en 409
+  (G1, 2026-11-02) ;
 - **le réassort sans commande** (`resupplyId` nul, `openUnordered`, l. 113) :
   `receive`, `correct`, `withdraw` ligne par ligne, au plus un par (point,
   journée) (index unique partiel `resupply_receipt_unordered_key`) ; un même
@@ -94,11 +97,15 @@ produit » (Hugo, 2026-10-21).
 - **Sa durée** : aucune échéance. Elle tient jusqu'à ce que le comptoir la
   lève (`liftByHand`, l. 141, raison `manual`) ou qu'une ligne de l'article
   soit reçue > 0 au point (`liftOnReceipt`, l. 146, raison `receipt`) — par
-  `liftStockAlertOnReceipt` (`application/lift-stock-alert-on-receipt.ts:14`),
-  dans l'unité de travail de « Réceptionner » et du sans commande. Corriger
+  `liftStockAlertsOnReceipt` (`application/lift-stock-alert-on-receipt.ts`),
+  dans l'unité de travail de « Réceptionner » et du sans commande — une
+  lecture des alertes vivantes pour tout le reçu. Corriger
   ou retirer une ligne ne lève rien.
 - **La table** `site_stock_alert`, index unique partiel `(site_id, sku) WHERE
-lifted_at IS NULL` ; une levée garde qui, quand et pourquoi.
+lifted_at IS NULL` ; une levée garde qui, quand et pourquoi. Deux
+  déclarations simultanées du même article : la seconde reçoit 409
+  `resupply.stock_alert.declared_meanwhile` (2026-11-02). L'index partiel
+  `site_stock_alert_live_declared_idx` sert la lecture de tous les points.
 - **Routes** : `admin/site-stock-alerts/sites/:siteId` (`handover_counter` :
   lire, `POST { sku, level }`, `…/:alertId/lift`) ;
   `admin/site-stock-alerts/live` (`production_resupply:read`) : les alertes

@@ -62,6 +62,18 @@ describe("« réassort parti » au départ du transfert (R4d)", () => {
     expect(resupplies.all()[0]?.departed).toEqual({ at: DEPARTED_AT, byName: "Léa" });
   });
 
+  /** Régression M6 (audit du 2026-11-02) : une lecture par réassort du transfert. */
+  it("lit tous les réassorts du transfert en une fois, et les marque tous", async () => {
+    const { resupplies, handler } = world();
+    resupplies.put(placed("rs_1"));
+    resupplies.put(placed("rs_2"));
+
+    await handler.handle(deliveryOf(["rs_1", "rs_2"]));
+
+    expect(resupplies.manyReads).toBe(1);
+    expect(resupplies.all().map((row) => row.departed?.at)).toEqual([DEPARTED_AT, DEPARTED_AT]);
+  });
+
   it("rejoué, ne réécrit rien : le premier départ fait foi", async () => {
     const { resupplies, handler } = world();
     resupplies.put(placed("rs_1"));

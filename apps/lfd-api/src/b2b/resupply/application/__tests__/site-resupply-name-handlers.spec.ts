@@ -29,6 +29,7 @@ import {
   InMemorySiteResupplies,
   InMemorySiteResupplyReader,
   FixedLaunches,
+  freshSendingKey,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier : les journées ne sont comparées qu'à cette horloge figée. */
@@ -68,7 +69,6 @@ function setup() {
       cutoff,
       staff,
       clock,
-      ids,
       gate,
       uow,
     ),
@@ -148,10 +148,17 @@ describe("nommer la demande en cours (R1g)", () => {
     const { bakehouse, store } = setup();
     const lines = [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }];
     const named = await bakehouse.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, "asap", lines, "s", "Vitrine du soir"),
+      new SendBakehouseResupplyCommand(
+        VILLAGE,
+        freshSendingKey(),
+        "asap",
+        lines,
+        "s",
+        "Vitrine du soir",
+      ),
     );
     const plain = await bakehouse.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, "asap", lines, "s"),
+      new SendBakehouseResupplyCommand(VILLAGE, freshSendingKey(), "asap", lines, "s"),
     );
 
     expect(store.all().find((row) => row.id === named)?.name).toBe("Vitrine du soir");
@@ -178,7 +185,9 @@ describe("les noms déjà employés au point (R1g)", () => {
       [LABO, "Labo seul"],
       [VILLAGE, "Vitrine du matin"],
     ] as const) {
-      await bakehouse.execute(new SendBakehouseResupplyCommand(site, "asap", lines, "s", label));
+      await bakehouse.execute(
+        new SendBakehouseResupplyCommand(site, freshSendingKey(), "asap", lines, "s", label),
+      );
     }
 
     const expected = ["Vitrine du matin", "Goûter"];
@@ -194,6 +203,7 @@ describe("les noms déjà employés au point (R1g)", () => {
       await bakehouse.execute(
         new SendBakehouseResupplyCommand(
           VILLAGE,
+          freshSendingKey(),
           "asap",
           [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
           "s",

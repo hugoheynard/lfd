@@ -24,12 +24,13 @@ export class DayShelfStock {
 
   /** Le reste au point, reçus relus. */
   async at(siteId: string, serviceDay: string): Promise<readonly EstimatedStockLine[]> {
+    return this.of(siteId, serviceDay, await this.receiptsAt(siteId, serviceDay));
+  }
+
+  /** Les reçus du point ce jour-là, réhydratés — sans les prélèvements. */
+  async receiptsAt(siteId: string, serviceDay: string): Promise<readonly ResupplyReceipt[]> {
     const snapshots = await this.receipts.on(siteId, serviceDay);
-    return this.of(
-      siteId,
-      serviceDay,
-      snapshots.map((snapshot) => ResupplyReceipt.restore(snapshot)),
-    );
+    return snapshots.map((snapshot) => ResupplyReceipt.restore(snapshot));
   }
 
   /** Le reste au point, pour un appelant qui a déjà les reçus de CE point et de CE jour. */

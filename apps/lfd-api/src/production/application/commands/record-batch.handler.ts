@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
+import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { PackingHandoffs } from "../services/packing-handoffs.service.js";
@@ -14,12 +15,15 @@ import { RecordBatchCommand } from "./record-batch.command.js";
  * Charger, demander à l'agrégat s'il laisse passer (journée arrêtée, SKU au
  * compte, au moins une pièce), écrire, comparer ce que la base a gardé.
  *
- * ## Pourquoi sans verrou
+ * ## Sous le verrou de la journée (C-D, audit du 2026-11-02)
  *
  * Déclarer ne fait qu'AUGMENTER le disponible (D4) : aucun invariant « au bac ≤
- * sorti » ne peut casser. Et aucune colonne dérivée n'est écrite : deux
- * déclarations simultanées ne peuvent rien s'écraser, la somme est la seule
- * vérité.
+ * sorti » ne peut casser, et deux déclarations simultanées ne s'écrasent rien.
+ * Mais la GARDE de l'agrégat (journée arrêtée, SKU au compte) se lisait sur
+ * une journée chargée hors verrou : une réouverture ou un retirage passés
+ * entre la lecture et l'écriture laissaient entrer une fournée sur une
+ * journée rouverte, ou un SKU sorti du compte. Le geste prend donc le verrou
+ * de la journée, la RECHARGE, puis demande à l'agrégat — comme l'annulation.
  *
  * ## La coche héritée d'abord
  *
@@ -47,6 +51,7 @@ export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, v
   constructor(
     private readonly days: ProductionDayRepository,
     private readonly batches: ProductionBatchRepository,
+    private readonly lock: ProductionDayLock,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly handoffs: PackingHandoffs,
@@ -54,13 +59,14 @@ export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, v
 
   async execute(command: RecordBatchCommand): Promise<void> {
     const day = ServiceDay.of(command.serviceDay);
-    const current = await this.days.load(day);
-    const batch = current.batchToRecord(command.batchId, command.sku, command.quantity, {
-      at: this.clock.now(),
-      by: command.staffUserId,
-      initials: command.initials,
-    });
     await this.uow.run(async () => {
+      await this.lock.lock(day);
+      const current = await this.days.load(day);
+      const batch = current.batchToRecord(command.batchId, command.sku, command.quantity, {
+        at: this.clock.now(),
+        by: command.staffUserId,
+        initials: command.initials,
+      });
       for (const inherited of current.materialize(command.sku)) {
         await this.batches.record(day, inherited);
       }

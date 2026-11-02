@@ -181,12 +181,18 @@ export type NameSiteResupplyPayload = z.infer<typeof nameSiteResupplySchema>;
  * heure limite pour demain si le réassort y est soumis) vivent dans le
  * domaine.
  *
+ * `key` est fournie par l'écran, une par ouverture du panneau (C-A,
+ * 2026-11-02) : elle devient l'identifiant du réassort, et un second envoi
+ * avec la même clé ne fait rien ; prise par un autre réassort, elle est
+ * refusée (409).
+ *
  * Jusqu'au 2026-10-21, le même corps passait par `POST
  * /admin/site-resupplies/sites/:siteId`, qui envoyait la demande « au plus
  * tôt » DU COMPTOIR : retiré au lot R1d.
  */
 export const placeSiteResupplySchema = z
   .object({
+    key: z.string().trim().min(1).max(64),
     target: z.enum(RESUPPLY_TARGETS),
     /** Son nom (R1g) ; absent, `null` ou vide : sans nom. */
     name: z.string().nullable().optional(),

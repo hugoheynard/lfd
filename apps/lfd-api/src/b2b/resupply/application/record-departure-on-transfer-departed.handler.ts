@@ -52,8 +52,19 @@ export class RecordDepartureOnTransferDeparted implements DurableSubscriber {
       at: fact.departedAt,
       byName: await this.driverNameOf(fact.driverStaffId),
     };
+    // Une lecture pour tout le transfert (M6, 2026-11-02) ; chaque réassort
+    // se sauve ensuite sous SA version — un verrou par agrégat.
+    const found = await this.resupplies.loadMany(fact.siteId, fact.resupplyIds);
     for (const resupplyId of fact.resupplyIds) {
-      await this.depart(fact.siteId, resupplyId, departure);
+      const resupply = found.find((candidate) => candidate.id === resupplyId);
+      if (resupply === undefined) {
+        this.logger.warn(
+          `Réassort ${resupplyId} du transfert parti vers le point ${fact.siteId} : introuvable ` +
+            `sous ce point, « parti » n'est pas affiché.`,
+        );
+      } else if (resupply.recordDeparture(departure)) {
+        await this.resupplies.save(resupply);
+      }
     }
   }
 
@@ -64,23 +75,5 @@ export class RecordDepartureOnTransferDeparted implements DurableSubscriber {
     }
     const agent = await this.staff.identify(driverStaffId);
     return agent === null || agent.name === "" ? null : agent.name;
-  }
-
-  private async depart(
-    siteId: string,
-    resupplyId: string,
-    departure: SiteResupplyDeparture,
-  ): Promise<void> {
-    const resupply = await this.resupplies.load(siteId, resupplyId);
-    if (resupply === null) {
-      this.logger.warn(
-        `Réassort ${resupplyId} du transfert parti vers le point ${siteId} : introuvable sous ce ` +
-          `point, « parti » n'est pas affiché.`,
-      );
-      return;
-    }
-    if (resupply.recordDeparture(departure)) {
-      await this.resupplies.save(resupply);
-    }
   }
 }

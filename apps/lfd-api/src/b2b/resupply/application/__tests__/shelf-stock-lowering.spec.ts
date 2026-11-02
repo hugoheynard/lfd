@@ -118,6 +118,18 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
     expect(bench.lock.taken).toEqual([`${DAY}:${SITE}`]);
   });
 
+  /** Régression M3 (audit du 2026-11-02) : le reste entier était calculé deux fois par geste. */
+  it("ne lit les prélèvements qu'une fois par baisse", async () => {
+    const bench = await stocked();
+    bench.draws.reads = 0;
+
+    await bench.correctReceived.execute(
+      new CorrectReceivedResupplyLineCommand(SITE, "r_cro", "CRO", 20, "s"),
+    );
+
+    expect(bench.draws.reads).toBe(1);
+  });
+
   it("ne refuse pas une hausse, même si le reste reste sous zéro", async () => {
     const bench = await stocked();
     await bench.receive.execute(new ReceiveResupplyLineCommand(SITE, DAY, "PAC", 1, "s"));

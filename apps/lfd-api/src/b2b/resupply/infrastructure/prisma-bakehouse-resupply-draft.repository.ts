@@ -1,14 +1,19 @@
 import { Injectable } from "@nestjs/common";
 
+import { isUniqueViolation } from "../../../platform/database/json-columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { BakehouseResupplyDraft } from "../domain/bakehouse-resupply-draft.js";
-import { BakehouseResupplyDraftChangedMeanwhileError } from "../domain/bakehouse-resupply-draft-errors.js";
+import {
+  BakehouseResupplyDraftAlreadyWrittenError,
+  BakehouseResupplyDraftChangedMeanwhileError,
+} from "../domain/bakehouse-resupply-draft-errors.js";
 import { BakehouseResupplyDraftRepository } from "../domain/bakehouse-resupply-draft.repository.js";
 import { draftColumnsOf, draftSnapshotOf } from "./bakehouse-resupply-draft.row.js";
 
 /**
  * Adaptateur Prisma des brouillons du fournil (`bakehouse_resupply_drafts`).
- * Un brouillon neuf s'insère ; ensuite il se réécrit sous la version lue —
+ * Un brouillon neuf s'insère — sa clé primaire est la clé de l'écran, un
+ * doublon est `BakehouseResupplyDraftAlreadyWrittenError` ; ensuite il se réécrit sous la version lue —
  * zéro ligne touchée dit qu'un autre poste l'a écrit entre-temps (409).
  * Jamais supprimé.
  */
@@ -25,7 +30,21 @@ export class PrismaBakehouseResupplyDraftRepository extends BakehouseResupplyDra
 
   async save(draft: BakehouseResupplyDraft): Promise<void> {
     if (draft.version === 0) {
-      const { created } = draft;
+      await this.create(draft);
+      return;
+    }
+    const { count } = await this.prisma.bakehouseResupplyDraft.updateMany({
+      where: { id: draft.id, version: draft.version },
+      data: { version: draft.nextVersion, ...draftColumnsOf(draft) },
+    });
+    if (count === 0) {
+      throw new BakehouseResupplyDraftChangedMeanwhileError();
+    }
+  }
+
+  private async create(draft: BakehouseResupplyDraft): Promise<void> {
+    const { created } = draft;
+    try {
       await this.prisma.bakehouseResupplyDraft.create({
         data: {
           id: draft.id,
@@ -37,14 +56,13 @@ export class PrismaBakehouseResupplyDraftRepository extends BakehouseResupplyDra
           ...draftColumnsOf(draft),
         },
       });
-      return;
-    }
-    const { count } = await this.prisma.bakehouseResupplyDraft.updateMany({
-      where: { id: draft.id, version: draft.version },
-      data: { version: draft.nextVersion, ...draftColumnsOf(draft) },
-    });
-    if (count === 0) {
-      throw new BakehouseResupplyDraftChangedMeanwhileError();
+    } catch (error) {
+      // La clé primaire : l'identifiant est la clé de l'écran (C-C), qu'un
+      // même enregistrement rejoué en même temps a déjà écrite.
+      if (isUniqueViolation(error)) {
+        throw new BakehouseResupplyDraftAlreadyWrittenError(draft.id);
+      }
+      throw error;
     }
   }
 }
