@@ -26,6 +26,16 @@
         <button foldButton (click)="load()">Réessayer</button>
       </fold-empty-state>
     } @else {
+      @if (draftUnreadable()) {
+        <fold-empty-state
+          tone="alert"
+          title="Impossible de lire le brouillon"
+          subtitle="La liste des brouillons n'a pas pu se lire : le brouillon existe peut-être encore."
+          data-bakehouse-draft-unreadable
+        >
+          <button foldButton (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
       @if (draftMissing()) {
         <fold-callout variant="warning" data-bakehouse-draft-missing>
           Ce brouillon n'est plus ouvert : il a été envoyé ou supprimé depuis un autre poste. La
@@ -42,26 +52,13 @@
           [hint]="siteLocked() ? 'Un brouillon garde le point où il a été composé.' : ''"
           (selectionChange)="pickSite($event)"
         />
-        <div class="targets" role="group" aria-label="Pour quand">
-          <button
-            foldButton
-            data-bakehouse-target="asap"
-            [emphasis]="target() === 'asap' ? 'solid' : 'outline'"
-            [attr.aria-pressed]="target() === 'asap'"
-            (click)="pickTarget('asap')"
-          >
-            Aujourd'hui, au plus tôt
-          </button>
-          <button
-            foldButton
-            data-bakehouse-target="tomorrow"
-            [emphasis]="target() === 'tomorrow' ? 'solid' : 'outline'"
-            [attr.aria-pressed]="target() === 'tomorrow'"
-            (click)="pickTarget('tomorrow')"
-          >
-            Pour demain
-          </button>
-        </div>
+        <fold-view-toggle
+          data-bakehouse-target
+          ariaLabel="Pour quand"
+          [options]="targetOptions"
+          [value]="target()"
+          (valueChange)="pickTarget($event)"
+        />
       </div>
 
       <!-- Le nom en haut, avec le point et la visée (Hugo, 2026-10-28) : il

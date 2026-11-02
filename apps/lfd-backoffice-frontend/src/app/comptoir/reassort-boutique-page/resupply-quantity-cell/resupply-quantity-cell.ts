@@ -5,6 +5,7 @@ import {
   inject,
   input,
   linkedSignal,
+  signal,
 } from '@angular/core';
 import type { ResupplyTarget, SiteResupplyDraftView } from '@lfd/contracts';
 import { FoldButtonComponent, FoldNumberInputComponent, FoldPanelHostService } from 'fold-ng';
@@ -47,7 +48,6 @@ export class ResupplyQuantityCell {
   readonly draft = input.required<SiteResupplyDraftView | null>();
   readonly phone = input(false);
 
-  protected readonly pending = this.resupplies.pending;
   /** Les pas rapides ; au poids, en grammes (100 g, 500 g, 1 kg — lot L2b-4). */
   protected readonly upSteps = computed(() => quantityStepsFor(this.row().saleUnit));
   protected readonly downSteps = computed(() => quantityDownStepsFor(this.row().saleUnit));
@@ -67,13 +67,21 @@ export class ResupplyQuantityCell {
     this.target() === 'asap' ? this.row().asap : this.row().tomorrow,
   );
 
-  /** Ce que la case montre : la saisie en cours, sinon la demande (vide à zéro). */
+  /**
+   * Le chiffre parti au serveur et pas encore relu. La case le montre en
+   * attendant : un « −1 » cliqué dans la foulée part de lui, pas de l'ancienne
+   * demande (audit du 2026-11-03).
+   */
+  private readonly sending = signal<number | undefined>(undefined);
+
+  /** Ce que la case montre : la saisie, sinon l'envoi en cours, sinon la demande (vide à zéro). */
   readonly quantity = computed<number | null>(() => {
     const edit = this.edit();
     if (edit !== undefined) {
       return edit;
     }
-    return this.current() === 0 ? null : this.current();
+    const shown = this.sending() ?? this.current();
+    return shown === 0 ? null : shown;
   });
 
   setQuantity(quantity: number | null): void {
@@ -82,7 +90,8 @@ export class ResupplyQuantityCell {
 
   /**
    * La case quittée (ou Entrée) écrit la demande : un article absent
-   * s'ajoute, présent se corrige, vidé ou à zéro se retire.
+   * s'ajoute, présent se corrige, vidé ou à zéro se retire — décidé par le
+   * store à son tour dans la file, sur la demande relue.
    */
   async commit(): Promise<void> {
     const edit = this.edit();
@@ -90,20 +99,17 @@ export class ResupplyQuantityCell {
       return;
     }
     this.edit.set(undefined);
-    const target = this.target();
-    const draft = this.draft();
-    const sku = this.row().sku;
-    const current = this.current();
     const wanted = edit ?? 0;
-    if (wanted === current) {
+    if (wanted === (this.sending() ?? this.current())) {
       return;
     }
-    if (current === 0) {
-      await this.resupplies.addLine(target, sku, wanted);
-    } else if (draft !== null && wanted === 0) {
-      await this.resupplies.withdrawLine(draft, sku);
-    } else if (draft !== null) {
-      await this.resupplies.correctLine(draft, sku, wanted);
+    this.sending.set(wanted);
+    try {
+      await this.resupplies.setLine(this.target(), this.row().sku, wanted);
+    } finally {
+      if (this.sending() === wanted) {
+        this.sending.set(undefined);
+      }
     }
   }
 
@@ -127,7 +133,7 @@ export class ResupplyQuantityCell {
 
   /** En mobile, la case ouvre le dialogue du chiffre et des raccourcis, puis écrit. */
   protected async openDialog(): Promise<void> {
-    if (!this.phone() || this.pending()) {
+    if (!this.phone()) {
       return;
     }
     const row = this.row();

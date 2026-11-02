@@ -78,7 +78,12 @@ class FakeBakehouse {
   }
   stored: BakehouseResupplyDraftView[] = [];
   readonly draftCalls: string[] = [];
+  /** La liste des brouillons ne se lit pas (réseau). */
+  draftsFail = false;
   drafts(): Promise<readonly BakehouseResupplyDraftView[]> {
+    if (this.draftsFail) {
+      return Promise.reject(new Error('réseau'));
+    }
     return Promise.resolve(this.stored);
   }
   readonly draftKeys: string[] = [];
@@ -199,7 +204,7 @@ describe('BakehouseResupplyCard', () => {
   it('compose pour un point, additionne un article ajouté deux fois, et envoie d’un geste', async () => {
     const { fixture, card, bakehouse, add, root, sentCount } = await mount();
     card['siteId'].set('site_v');
-    root.querySelector<HTMLButtonElement>('[data-bakehouse-target="tomorrow"]')?.click();
+    card['pickTarget']('tomorrow');
     add('CRO', 10);
     add('PAC', 4);
     add('CRO', 2);
@@ -441,6 +446,55 @@ describe('BakehouseResupplyCard', () => {
 
       expect(resumed.card['siteLocked']()).toBe(true);
       expect(fresh.card['siteLocked']()).toBe(false);
+    });
+
+    /**
+     * Régression (audit du 2026-11-03) : une liste illisible était annoncée
+     * « brouillon envoyé ou supprimé ». C'est un échec de lecture, dit par un
+     * état fold qui se réessaie — et la réussite efface l'annonce.
+     */
+    it('dit un échec de lecture, pas un brouillon supprimé, et se réessaie', async () => {
+      const bakehouse = new FakeBakehouse();
+      bakehouse.stored = [DRAFT];
+      bakehouse.draftsFail = true;
+      const { fixture, card, root } = await mount(
+        new FakePickups(),
+        bakehouse,
+        new FakePanels(),
+        'dr_1',
+      );
+      await settle(fixture);
+
+      expect(root.querySelector('[data-bakehouse-draft-missing]')).toBeNull();
+      expect(root.querySelector('[data-bakehouse-draft-unreadable]')?.textContent).toContain(
+        'Impossible de lire le brouillon',
+      );
+
+      bakehouse.draftsFail = false;
+      await card['load']();
+      await settle(fixture);
+      expect(root.querySelector('[data-bakehouse-draft-unreadable]')).toBeNull();
+      expect(card['siteId']()).toBe('site_l');
+    });
+
+    /** Régression (audit du 2026-11-03) : « Réessayer » reprenait le brouillon par-dessus la saisie. */
+    it('ne réécrase pas la saisie d’un brouillon déjà repris quand on réessaie', async () => {
+      const bakehouse = new FakeBakehouse();
+      bakehouse.stored = [DRAFT];
+      const { fixture, card, add } = await mount(
+        new FakePickups(),
+        bakehouse,
+        new FakePanels(),
+        'dr_1',
+      );
+      await settle(fixture);
+      add('CRO', 5);
+      const typed = card['lines']();
+
+      await card['load']();
+      await settle(fixture);
+
+      expect(card['lines']()).toEqual(typed);
     });
 
     it('dit qu’un brouillon demandé n’est plus ouvert, et part d’une carte vide', async () => {

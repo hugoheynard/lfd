@@ -37,7 +37,9 @@ export class BakehouseDraftList {
   protected metaOf(draft: BakehouseResupplyDraftView): string {
     const site = this.siteLabels().get(draft.siteId) ?? 'Point inconnu';
     const count = draft.lines.length;
+    // L'heure de Paris, quel que soit le fuseau du poste (audit du 2026-11-03).
     const when = new Date(draft.savedAt).toLocaleString('fr-FR', {
+      timeZone: 'Europe/Paris',
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',

@@ -11,8 +11,7 @@
   justify-content: flex-end;
 }
 
-.row,
-.targets {
+.row {
   display: flex;
   flex-wrap: wrap;
   gap: var(--fold-space-md);
@@ -73,12 +72,6 @@
   .row {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .targets {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--fold-space-xs);
   }
 
   /* Le filtre des familles défile au lieu de pousser la carte. */

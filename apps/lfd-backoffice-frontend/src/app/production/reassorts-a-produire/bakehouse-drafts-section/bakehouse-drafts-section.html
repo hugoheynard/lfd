@@ -8,6 +8,7 @@
   <app-bakehouse-draft-list
     [drafts]="store.drafts()"
     [siteLabels]="siteLabels()"
+    [currentId]="store.currentId()"
     [pending]="pending()"
     (resumed)="resume($event)"
     (discarded)="discard($event)"

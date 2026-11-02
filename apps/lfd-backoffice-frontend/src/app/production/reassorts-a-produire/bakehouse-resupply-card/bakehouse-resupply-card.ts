@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import type {
   BakehouseResupplyDraftView,
@@ -48,6 +50,12 @@ const COLUMNS: readonly FoldTableColumn<ResupplyArticleView>[] = [
   { key: 'product', label: 'Produit' },
   { key: 'quantity', label: 'Quantité', align: 'right' },
 ];
+
+/** Les deux visées, dans l'ordre de la carte. */
+const TARGET_OPTIONS = [
+  { value: 'asap', label: "Aujourd'hui, au plus tôt" },
+  { value: 'tomorrow', label: 'Pour demain' },
+] as const;
 
 /** Un point proposé. */
 interface SiteChoice {
@@ -121,6 +129,12 @@ export class BakehouseResupplyCard {
   readonly sent = output();
   /** Le brouillon demandé n'est plus ouvert (envoyé, supprimé, ou inconnu). */
   protected readonly draftMissing = signal(false);
+  /**
+   * La liste des brouillons n'a pas pu se lire : on ne sait pas si le
+   * brouillon demandé existe. L'annoncer « envoyé ou supprimé » mentait
+   * (audit du 2026-11-03) : c'est un échec de lecture, qui se réessaie.
+   */
+  protected readonly draftUnreadable = signal(false);
 
   protected readonly loadFailed = signal(false);
   protected readonly sites = signal<readonly SiteChoice[]>([]);
@@ -132,6 +146,8 @@ export class BakehouseResupplyCard {
    */
   protected readonly siteLocked = computed(() => this.draftsStore.currentId() !== null);
   protected readonly target = signal<ResupplyTarget>('asap');
+  /** Les deux visées, en UN contrôle — le même que la table du comptoir. */
+  protected readonly targetOptions = TARGET_OPTIONS;
   /** La quantité saisie par article ; un article absent n'est pas demandé. */
   protected readonly quantities = signal<ReadonlyMap<string, number>>(new Map());
   protected readonly query = signal('');
@@ -176,11 +192,23 @@ export class BakehouseResupplyCard {
   protected readonly canSaveDraft = this.canSend;
 
   constructor() {
-    void this.load();
+    // L'entrée n'est posée qu'après le constructeur : on suit `draftId` — un
+    // autre brouillon ouvert sur la même page relit aussi.
+    effect(() => {
+      const wanted = this.draftId();
+      untracked(() => void this.load(wanted));
+    });
   }
 
-  protected async load(): Promise<void> {
+  /**
+   * `wanted` est figé à l'appel, AVANT toute attente : il était relu après
+   * la lecture, et une navigation entre-temps faisait reprendre un autre
+   * brouillon que celui demandé (audit du 2026-11-03).
+   */
+  protected async load(wanted: string | null = this.draftId()): Promise<void> {
     this.loadFailed.set(false);
+    this.draftMissing.set(false);
+    this.draftUnreadable.set(false);
     try {
       const [sites, articles] = await Promise.all([this.pickups.list(), this.service.articles()]);
       this.sites.set(sites.map((site) => ({ id: site.id, label: site.label })));
@@ -189,14 +217,20 @@ export class BakehouseResupplyCard {
       this.loadFailed.set(true);
     }
     await this.draftsStore.reload();
-    const wanted = this.draftId();
-    if (wanted !== null) {
-      const draft = this.draftsStore.drafts().find((candidate) => candidate.id === wanted);
-      if (draft === undefined) {
-        this.draftMissing.set(true);
-      } else {
-        await this.resume(draft);
-      }
+    // Le brouillon déjà en main n'est pas repris une seconde fois : « Réessayer »
+    // écrasait la saisie faite depuis (audit du 2026-11-03).
+    if (wanted === null || this.draftsStore.currentId() === wanted) {
+      return;
+    }
+    if (this.draftsStore.unreadable()) {
+      this.draftUnreadable.set(true);
+      return;
+    }
+    const draft = this.draftsStore.drafts().find((candidate) => candidate.id === wanted);
+    if (draft === undefined) {
+      this.draftMissing.set(true);
+    } else {
+      await this.resume(draft);
     }
   }
 
@@ -214,8 +248,10 @@ export class BakehouseResupplyCard {
     }
   }
 
-  protected pickTarget(target: ResupplyTarget): void {
-    this.target.set(target);
+  protected pickTarget(target: string): void {
+    if (target === 'asap' || target === 'tomorrow') {
+      this.target.set(target);
+    }
   }
 
   protected quantityOf(sku: string): number | null {

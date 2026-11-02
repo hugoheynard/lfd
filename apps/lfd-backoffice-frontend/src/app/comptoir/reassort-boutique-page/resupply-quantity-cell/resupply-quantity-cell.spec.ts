@@ -90,4 +90,21 @@ describe('ResupplyQuantityCell', () => {
     await cell.commit();
     expect(resupplies.calls).toEqual(['add asap CRO 2', 'add asap PAC 1']);
   });
+
+  /**
+   * Régression (audit du 2026-11-03) : la case quittée écrivait, et le « −1 »
+   * cliqué dans la foulée était jeté en silence parce qu'un geste était en
+   * cours. Il est désormais mis en file, et part de la saisie écrite.
+   */
+  it('ne perd pas le « −1 » cliqué pendant que la saisie s’écrit', async () => {
+    const { cell, resupplies, sync } = await mount();
+    cell.setQuantity(5);
+    const first = cell.commit();
+    const second = cell.stepDown(1);
+    await Promise.all([first, second]);
+    sync();
+
+    expect(resupplies.calls).toEqual(['add asap CRO 5', 'correct draft_asap CRO 4']);
+    expect(cell.quantity()).toBe(4);
+  });
 });

@@ -5,13 +5,10 @@ import type {
   ResupplyReceiptLineView,
   ResupplyReceiptView,
   ResupplyReceptionView,
-  SiteResuppliesView,
-  SiteStockAlertsView,
   StaffPermission,
-  StockAlertLevel,
-  StockAlertView,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
+import { By } from '@angular/platform-browser';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // jsdom n'a pas `matchMedia` : la table le lit pour la saisie mobile (2026-10-28).
@@ -31,6 +28,8 @@ import { ReassortBoutiquePage } from './reassort-boutique-page';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
 import { SiteResuppliesService } from './site-resupplies.service';
 import { SiteStockAlertsService } from './site-stock-alerts.service';
+import { ResupplyStockTable } from './resupply-stock-table/resupply-stock-table';
+import { FakeAlerts, FakeResupplies } from './resupply-stock.testing';
 
 /**
  * Le réassort boutique (J1, refait au lot R2 le 2026-10-21) : un point de
@@ -197,87 +196,6 @@ function expected(resupplyId: string, quantity: number): ResupplyReceptionView {
   };
 }
 
-/**
- * La commande au fournil (R1, R1c) a sa propre suite : ici, une demande en
- * cours qui retient ce qu'on y ajoute, pour la proposition des alertes.
- */
-class FakeResupplies {
-  readonly added: string[] = [];
-
-  list(siteId: string): Promise<SiteResuppliesView> {
-    return Promise.resolve({
-      siteId,
-      today: TODAY,
-      tomorrow: TODAY,
-      tomorrowOrderUntil: null,
-      drafts:
-        this.added.length === 0
-          ? []
-          : [
-              {
-                id: 'draft_asap',
-                target: 'asap',
-                serviceDay: TODAY,
-                version: this.added.length,
-                name: null,
-                lines: this.added.map((sku) => ({
-                  sku,
-                  label: sku,
-                  quantity: 1,
-                  saleUnit: 'piece' as const,
-                })),
-              },
-            ],
-      resupplies: [],
-      usedNames: [],
-    });
-  }
-
-  addLine(siteId: string, target: string, sku: string, quantity: number): Promise<{ id: string }> {
-    this.added.push(sku);
-    this.calls.push(`add ${siteId} ${target} ${sku} ${String(quantity)}`);
-    return Promise.resolve({ id: 'draft_asap' });
-  }
-
-  readonly calls: string[] = [];
-}
-
-/**
- * Les alertes de stock (R1b) en mémoire : déclarer redéclare la vivante,
- * lever la retire, et une réception de l'article la lève comme le serveur.
- */
-class FakeAlerts {
-  readonly calls: string[] = [];
-  alerts: StockAlertView[] = [];
-
-  list(siteId: string): Promise<SiteStockAlertsView> {
-    this.calls.push(`list ${siteId}`);
-    return Promise.resolve({ siteId, alerts: this.alerts });
-  }
-  declare(siteId: string, sku: string, level: StockAlertLevel): Promise<void> {
-    this.calls.push(`declare ${sku} ${level}`);
-    const label = ARTICLES.find((a) => a.sku === sku)?.name ?? sku;
-    this.alerts = [
-      {
-        id: `alert_${sku}`,
-        siteId,
-        sku,
-        label,
-        level,
-        declaredAt: '2026-01-02T08:30:00.000Z',
-        declaredBy: 'Lou',
-      },
-      ...this.alerts.filter((a) => a.sku !== sku),
-    ];
-    return Promise.resolve();
-  }
-  lift(_siteId: string, alertId: string): Promise<void> {
-    this.calls.push(`lift ${alertId}`);
-    this.alerts = this.alerts.filter((a) => a.id !== alertId);
-    return Promise.resolve();
-  }
-}
-
 /** Le chargement enchaîne deux lectures : on laisse passer les tâches en attente. */
 async function settle(fixture: ComponentFixture<ReassortBoutiquePage>): Promise<void> {
   fixture.detectChanges();
@@ -426,7 +344,6 @@ describe('ReassortBoutiquePage', () => {
     api.receptions = [expected('r1', 12)];
     const alerts = new FakeAlerts();
     await alerts.declare('site_v', 'PAC', 'out_of_stock');
-    alerts.calls.length = 0;
     const { fixture } = await mount(
       ['handover_counter:read', 'handover_counter:write'],
       api,
@@ -434,12 +351,36 @@ describe('ReassortBoutiquePage', () => {
       alerts,
     );
 
-    expect(alerts.calls).toEqual(['list site_v']);
+    expect(alerts.listed).toEqual(['site_v']);
     expect(
       root(fixture).querySelector('[data-resupply-row]')?.getAttribute('data-resupply-row'),
     ).toBe('PAC');
     clickOn(fixture, '[data-resupply-reception="r1"] [data-resupply-receive]');
     await settle(fixture);
-    expect(alerts.calls).toEqual(['list site_v', 'list site_v']);
+    expect(alerts.listed).toEqual(['site_v', 'site_v']);
+  });
+
+  /**
+   * Régression (audit du 2026-11-03) : changer de point ou de jour repassait
+   * la page en « chargement » et démontait la table — recherche, visée et
+   * saisie en cours perdues à chaque flèche du bandeau.
+   */
+  it('garde la table, sa recherche et sa visée quand la journée change', async () => {
+    const { fixture, band } = await mount(['handover_counter:read', 'handover_counter:write']);
+    const before = fixture.debugElement.query(By.directive(ResupplyStockTable))
+      .componentInstance as ResupplyStockTable;
+    before['query'].set('crois');
+    before['chooseTarget']('asap');
+
+    band.day.set('2026-01-03');
+    fixture.detectChanges();
+    expect(root(fixture).querySelector('fold-loading')).toBeNull();
+    await settle(fixture);
+
+    const after = fixture.debugElement.query(By.directive(ResupplyStockTable))
+      .componentInstance as ResupplyStockTable;
+    expect(after).toBe(before);
+    expect(after['query']()).toBe('crois');
+    expect(after['target']()).toBe('asap');
   });
 });

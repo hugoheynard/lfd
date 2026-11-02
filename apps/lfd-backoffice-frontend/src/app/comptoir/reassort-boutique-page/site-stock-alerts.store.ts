@@ -5,9 +5,9 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { SiteStockAlertsService } from './site-stock-alerts.service';
 
 /**
- * Les alertes vivantes du point ouvert, partagées par la carte d'en-tête et
- * les gestes posés sur chaque ligne de la réception (lot R1b). Fournie par la
- * page : une instance par écran, jamais à la racine.
+ * Les alertes vivantes du point ouvert (lot R1b), que la table du réassort
+ * lit et pose d'un clic (R1e). Fournie par la page : une instance par écran,
+ * jamais à la racine.
  */
 @Injectable()
 export class SiteStockAlertsStore {
@@ -50,10 +50,23 @@ export class SiteStockAlertsStore {
     return this.act((siteId) => this.service.lift(siteId, alert.id));
   }
 
-  /** Un geste, puis la relecture. Un refus laisse la liste servie, avec sa raison. */
-  private async act(gesture: (siteId: string) => Promise<void>): Promise<void> {
+  /** La file des gestes : chacun attend que le précédent soit écrit et relu. */
+  private queue: Promise<unknown> = Promise.resolve();
+
+  /**
+   * Un geste, puis la relecture. Un refus laisse la liste servie, avec sa raison.
+   * Un geste posé pendant qu'un autre s'écrit est mis en file, plus jeté en
+   * silence (audit du 2026-11-03).
+   */
+  private act(gesture: (siteId: string) => Promise<void>): Promise<void> {
+    const run = this.queue.then(() => this.run(gesture));
+    this.queue = run;
+    return run;
+  }
+
+  private async run(gesture: (siteId: string) => Promise<void>): Promise<void> {
     const siteId = this.siteId();
-    if (siteId === null || this.pending()) {
+    if (siteId === null) {
       return;
     }
     this.pending.set(true);

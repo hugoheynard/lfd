@@ -37,15 +37,12 @@ type LoadState = 'loading' | 'ready' | 'error';
  * 2026-10-21), la page commande aussi le réassort au fournil, au-dessus
  * de la réception (une carte d'alors, fondue depuis dans la table de R1e).
  *
- * Depuis le lot R1b (2026-10-21), la page déclare aussi les ruptures et
- * stocks faibles du point (`StockAlertsCard` en tête, et les gestes sur
- * chaque ligne reçue) ; un article reçu lève son alerte côté serveur, d'où la
- * relecture des alertes après chaque geste de réception.
+ * Depuis le lot R1b (2026-10-21), la page tient aussi les ruptures et
+ * stocks faibles du point (`SiteStockAlertsStore`) ; un article reçu lève son
+ * alerte côté serveur, d'où la relecture des alertes après chaque geste.
  *
  * Depuis le lot R1c (2026-10-21), la demande de réassort en cours est
- * enregistrée et partagée par `SiteResuppliesStore` : la carte « Commander
- * au fournil » la remplit et l'envoie, et chaque alerte propose d'y ajouter
- * son article « au plus tôt ».
+ * enregistrée et partagée par `SiteResuppliesStore`.
  *
  * Depuis le lot R2 (2026-10-21), la réception se fait en UN geste par
  * réassort envoyé (`ResupplyReceptionsCard`) ; la saisie ligne par ligne
@@ -59,7 +56,10 @@ type LoadState = 'loading' | 'ready' | 'error';
  * (`ResupplyStockTable`) : stock du jour, état en un clic, demande en cours
  * saisie dans la case, reçu sans commande dans le menu de la ligne. Les
  * réassorts à réceptionner passent EN TÊTE, et seulement s'il y en a. Le
- * titre « Réassort Labo » est retiré : l'onglet du bandeau le dit déjà.
+ * titre « Réassort Labo » est retiré : l'onglet du bandeau le dit déjà. La
+ * carte d'alertes d'en-tête, ses gestes par ligne et l'ajout « au plus tôt »
+ * des lots R1b/R1c ont été retirés avec elle (576addd62) : l'état et la
+ * demande se saisissent dans la table.
  *
  * Le stock estimé est le reçu moins ce que les commandes prises sur stock ont
  * prélevé (le serveur le calcule, `documentation/limites-de-commande/jour-meme-sur-stock.md`) ;
@@ -129,7 +129,12 @@ export class ReassortBoutiquePage {
 
   /** Le catalogue (une fois), puis la liste du point ouvert dans la bande. */
   protected async start(): Promise<void> {
-    this.state.set('loading');
+    // Le premier chargement seul passe par « loading » : un changement de point
+    // ou de jour relit SOUS la vue, sans détruire la table (saisie, recherche,
+    // visée) — régression de l'audit du 2026-11-03.
+    if (this.state() !== 'ready') {
+      this.state.set('loading');
+    }
     this.refreshFailed.set(false);
     try {
       if (!this.articlesLoaded) {

@@ -9,6 +9,8 @@ import { signal } from '@angular/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
+import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import { ResuppliesToProduceService } from '../resupplies-to-produce.service';
 import { ResupplyProductionTab } from './resupply-production-tab';
@@ -22,6 +24,8 @@ class FakeResupplies {
   stopped = false;
   /** Un réassort au poids en plus (lot L2b-4) ; absent par défaut. */
   weighed = false;
+  /** Le réassort du Labo est « au plus tôt » : la carte « Lancer » paraît (R4a). */
+  asap = false;
   day(serviceDay: string): Promise<ResupplyProductionDayView> {
     this.asked.push(serviceDay);
     const view: ResupplyProductionDayView = {
@@ -37,7 +41,7 @@ class FakeResupplies {
               id: 'r1',
               siteId: 'labo',
               serviceDay,
-              target: 'tomorrow',
+              target: this.asap ? 'asap' : 'tomorrow',
               origin: 'counter',
               name: null,
               status: 'placed',
@@ -109,7 +113,23 @@ class FakeAlerts {
   }
 }
 
-async function mount(resupplies = new FakeResupplies(), granted: readonly StaffPermission[] = []) {
+/** Le fournil : ses brouillons (vides) et « Lancer », qui consigne. */
+class FakeBakehouse {
+  readonly launched: string[] = [];
+  drafts(): Promise<readonly never[]> {
+    return Promise.resolve([]);
+  }
+  launch(_day: string, resupplyId: string): Promise<void> {
+    this.launched.push(resupplyId);
+    return Promise.resolve();
+  }
+}
+
+async function mount(
+  resupplies = new FakeResupplies(),
+  granted: readonly StaffPermission[] = [],
+  bakehouse = new FakeBakehouse(),
+) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ResupplyProductionTab],
@@ -117,6 +137,8 @@ async function mount(resupplies = new FakeResupplies(), granted: readonly StaffP
       provideRouter([]),
       { provide: ResuppliesToProduceService, useValue: resupplies },
       { provide: LiveStockAlertsService, useValue: new FakeAlerts() },
+      { provide: BakehouseResuppliesService, useValue: bakehouse },
+      { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
       {
         provide: PermissionsStore,
         useValue: {
@@ -155,9 +177,62 @@ describe("l'onglet Réassorts de Prod manager", () => {
     expect(el.textContent).toContain('Pour demain · figé');
   });
 
-  it("n'offre l'envoi du fournil qu'à qui tient son droit", async () => {
+  /**
+   * Régression (audit du 2026-11-03) : ce test cherchait une carte que
+   * l'onglet ne monte plus, et passait quoi qu'il arrive. Il éprouve
+   * désormais « Créer un réassort » et les brouillons, avec et sans droit.
+   */
+  it("n'offre la création d'un réassort qu'à qui tient son droit", async () => {
     const without = await mount();
-    expect(without.el.querySelector('app-bakehouse-resupply-card')).toBeNull();
+    expect(without.el.querySelector('[data-resupply-create]')).toBeNull();
+    expect(without.el.querySelector('app-bakehouse-drafts-section')).toBeNull();
+
+    const granted = await mount(new FakeResupplies(), ['production_resupply:write']);
+    expect(granted.el.querySelector('[data-resupply-create]')).not.toBeNull();
+    expect(granted.el.querySelector('app-bakehouse-drafts-section')).not.toBeNull();
+  });
+
+  /**
+   * Régression (audit du 2026-11-03) : changer de journée repassait l'onglet
+   * en « chargement » et démontait la table ; la recherche était perdue.
+   */
+  it('garde la recherche et la vue quand la journée change', async () => {
+    const resupplies = new FakeResupplies();
+    const { fixture, el } = await mount(resupplies);
+    fixture.componentInstance['query'].set('crois');
+
+    fixture.componentInstance['shift'](1);
+    fixture.detectChanges();
+    expect(el.querySelector('fold-loading')).toBeNull();
+    expect(el.querySelector('[data-resupply-production-table]')).not.toBeNull();
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['query']()).toBe('crois');
+    expect(el.querySelector('[data-resupply-row="BAG"]')).toBeNull();
+  });
+
+  /**
+   * Régression (audit du 2026-11-03) : « lancé depuis ce poste » vivait dans
+   * la carte, que la relecture démontait ; « Lancer » revenait, et un second
+   * clic était refusé.
+   */
+  it('ne repropose pas « Lancer » après la relecture qui suit un lancement', async () => {
+    const resupplies = new FakeResupplies();
+    resupplies.asap = true;
+    const bakehouse = new FakeBakehouse();
+    const { fixture, el } = await mount(resupplies, ['production_resupply:write'], bakehouse);
+
+    el.querySelector<HTMLButtonElement>('[data-resupply-launch]')?.click();
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(bakehouse.launched).toEqual(['r1']);
+    expect(resupplies.asked).toHaveLength(2);
+    expect(el.querySelector('[data-resupply-launch-row="r1"]')).not.toBeNull();
+    expect(el.querySelector('[data-resupply-launch]')).toBeNull();
   });
 
   /** Lot R3e : le Labo est servi sur place, ses réassorts sont « à monter ». */

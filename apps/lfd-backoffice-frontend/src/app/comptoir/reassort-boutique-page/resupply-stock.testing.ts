@@ -129,9 +129,12 @@ export class FakeResupplies {
 
 export class FakeAlerts {
   readonly calls: string[] = [];
+  /** Les lectures, à part des gestes : la page vérifie qu'elle relit. */
+  readonly listed: string[] = [];
   alerts: StockAlertView[] = [];
 
   list(siteId: string): Promise<SiteStockAlertsView> {
+    this.listed.push(siteId);
     return Promise.resolve({ siteId, alerts: this.alerts });
   }
   declare(siteId: string, sku: string, level: StockAlertLevel): Promise<void> {

@@ -55,8 +55,8 @@ export class ResupplyLaunchCard {
 
   readonly view = input.required<ResupplyProductionDayView>();
   readonly canLaunch = input.required<boolean>();
-  /** Un « Lancer » a réussi : l'onglet relit. */
-  readonly launched = output();
+  /** Un « Lancer » a réussi, pour ce réassort : l'onglet le retient, et relit. */
+  readonly launched = output<string>();
 
   protected readonly rows = computed(() => resupplyLaunchRows(this.view()));
   protected readonly pending = signal<string | null>(null);
@@ -65,8 +65,11 @@ export class ResupplyLaunchCard {
    * Lancés depuis ce poste : le serveur a accepté, mais l'affichage « lancé »
    * suit le fait du fournil et peut manquer à la relecture qui suit. Sans
    * ça, « Lancer » réapparaîtrait et un second clic serait refusé (409).
+   *
+   * Tenu par l'onglet, plus par la carte : une relecture qui la démontait
+   * effaçait la mémoire, et « Lancer » revenait (audit du 2026-11-03).
    */
-  protected readonly launchedHere = signal<ReadonlySet<string>>(new Set<string>());
+  readonly launchedHere = input<ReadonlySet<string>>(new Set<string>());
 
   protected titleOf(row: ResupplyLaunchRow): string {
     return resupplyTitle(row.name, row.siteLabel, row.siteLabel);
@@ -90,8 +93,7 @@ export class ResupplyLaunchCard {
     this.failure.set(null);
     try {
       await this.service.launch(this.view().serviceDay, row.resupplyId);
-      this.launchedHere.update((ids) => new Set([...ids, row.resupplyId]));
-      this.launched.emit();
+      this.launched.emit(row.resupplyId);
     } catch (error) {
       this.failure.set(httpErrorMessage(error, "Le réassort n'a pas pu être lancé."));
     } finally {

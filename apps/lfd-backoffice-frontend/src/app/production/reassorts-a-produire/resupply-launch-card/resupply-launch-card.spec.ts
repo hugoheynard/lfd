@@ -79,7 +79,11 @@ function mount(canLaunch: boolean, view: ResupplyProductionDayView = VIEW) {
   fixture.componentRef.setInput('view', view);
   fixture.componentRef.setInput('canLaunch', canLaunch);
   let launched = 0;
-  fixture.componentInstance.launched.subscribe(() => (launched += 1));
+  // L'onglet retient le lancé et le rend à la carte : on joue son rôle.
+  fixture.componentInstance.launched.subscribe((id) => {
+    launched += 1;
+    fixture.componentRef.setInput('launchedHere', new Set([id]));
+  });
   fixture.detectChanges();
   return { fixture, service, root: fixture.nativeElement as HTMLElement, launched: () => launched };
 }

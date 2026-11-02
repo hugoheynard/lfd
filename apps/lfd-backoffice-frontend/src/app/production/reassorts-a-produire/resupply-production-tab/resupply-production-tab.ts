@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { LiveStockAlertsView, ResupplyProductionDayView } from '@lfd/contracts';
@@ -194,6 +195,17 @@ export class ResupplyProductionTab {
     this.rows().reduce((sum, row) => sum + (row.saleUnit === 'weight' ? row.total : 0), 0),
   );
 
+  /**
+   * Les « au plus tôt » lancés depuis ce poste (cf. `ResupplyLaunchCard`).
+   * Tenus ici : la carte peut être démontée par une relecture, l'onglet non.
+   */
+  protected readonly launchedHere = signal<ReadonlySet<string>>(new Set<string>());
+
+  protected onLaunched(resupplyId: string): void {
+    this.launchedHere.update((ids) => new Set([...ids, resupplyId]));
+    void this.load();
+  }
+
   /** Le numéro de la dernière lecture : une réponse lente n'écrase pas une plus récente. */
   private readSeq = 0;
 
@@ -201,7 +213,9 @@ export class ResupplyProductionTab {
     const clock = setInterval(() => this.todaySignal.set(parisToday()), TODAY_POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(clock));
     effect(() => {
-      void this.load(this.day());
+      const day = this.day();
+      // `load` lit l'état : non suivi, sinon chaque lecture en relancerait une.
+      untracked(() => void this.load(day));
     });
   }
 
@@ -226,7 +240,12 @@ export class ResupplyProductionTab {
 
   protected async load(day: string = this.day()): Promise<void> {
     const seq = ++this.readSeq;
-    this.state.set('loading');
+    // « loading » au premier chargement seulement : une relecture (geste,
+    // journée) garde la vue — recherche, famille, cartes — sous les yeux
+    // (audit du 2026-11-03).
+    if (this.state() !== 'ready') {
+      this.state.set('loading');
+    }
     try {
       const [view, alerts] = await Promise.all([
         this.service.day(day),

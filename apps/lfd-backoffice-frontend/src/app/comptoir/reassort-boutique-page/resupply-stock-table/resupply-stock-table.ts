@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   inject,
   input,
@@ -52,6 +53,9 @@ const STATE_OPTIONS = [
   { value: 'low', label: 'Faible' },
   { value: 'out_of_stock', label: 'Rupture' },
 ] as const;
+
+/** Le pas de relecture de l'heure : une minute de retard au plus sur l'heure limite. */
+const NOW_POLL_MS = 60_000;
 
 /** Le téléphone — le seuil des feuilles de style de la table et de la case, plus large que l'étroit commun. */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -108,10 +112,12 @@ export class ResupplyStockTable {
   readonly unordered = input.required<readonly UnorderedReceiptLineView[]>();
   readonly canWrite = input.required<boolean>();
   /**
-   * L'instant qui choisit la visée par défaut. Une entrée plutôt qu'un
-   * `new Date()` au rendu, comme `cycle-bar` : le test le fixe.
+   * L'instant qui choisit la visée par défaut, relu chaque minute : il était
+   * lu UNE fois, et une table ouverte avant l'heure limite proposait encore
+   * « Pour demain » des heures après (audit du 2026-11-03). Le test le pilote
+   * par de faux minuteurs.
    */
-  readonly now = input(Date.now());
+  protected readonly now = signal(Date.now());
   /** Un reçu sans commande a été écrit : la page relit le stock. */
   readonly changed = output();
 
@@ -200,6 +206,11 @@ export class ResupplyStockTable {
   protected readonly draftName = computed(() => this.targetDraft()?.name ?? null);
   protected readonly nameText = linkedSignal(() => this.draftName() ?? '');
   protected readonly usedNames = this.resupplies.usedNames;
+
+  constructor() {
+    const clock = setInterval(() => this.now.set(Date.now()), NOW_POLL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(clock));
+  }
 
   /** Nomme la demande de la visée affichée ; vide retire le nom. */
   protected async rename(name: string): Promise<void> {

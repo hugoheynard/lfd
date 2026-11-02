@@ -185,7 +185,12 @@
     }
 
     @if (launchable(); as view) {
-      <app-resupply-launch-card [view]="view" [canLaunch]="canSend()" (launched)="load()" />
+      <app-resupply-launch-card
+        [view]="view"
+        [canLaunch]="canSend()"
+        [launchedHere]="launchedHere()"
+        (launched)="onLaunched($event)"
+      />
     }
 
     @if (mountable(); as view) {

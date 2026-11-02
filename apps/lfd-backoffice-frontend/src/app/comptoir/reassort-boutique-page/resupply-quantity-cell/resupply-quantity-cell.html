@@ -12,7 +12,7 @@
       emphasis="soft"
       intent="neutral"
       size="sm"
-      [disabled]="pending() || !quantity()"
+      [disabled]="!quantity()"
       (click)="stepDown(amount)"
     >
       −{{ amount | saleQuantity: row().saleUnit }}
@@ -29,7 +29,6 @@
       (valueChange)="setQuantity($event)"
       [min]="0"
       integer
-      [disabled]="pending()"
     />
   </div>
   @if (row().saleUnit === 'weight') {
@@ -49,7 +48,6 @@
       emphasis="soft"
       intent="neutral"
       size="sm"
-      [disabled]="pending()"
       (click)="step(amount)"
     >
       +{{ amount | saleQuantity: row().saleUnit }}

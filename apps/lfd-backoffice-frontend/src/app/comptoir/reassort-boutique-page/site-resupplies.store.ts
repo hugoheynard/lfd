@@ -11,9 +11,8 @@ import { SiteResuppliesService } from './site-resupplies.service';
 
 /**
  * Les réassorts du point ouvert — sa demande en cours par visée (lot R1c) et
- * ses réassorts envoyés —, partagés par la carte « Commander au fournil » et
- * par la proposition « Ajouter à la demande au plus tôt » des alertes de
- * stock. Fournie par la page : une instance par écran, jamais à la racine.
+ * ses réassorts envoyés —, que la table du réassort saisit et envoie
+ * (R1e) et que la carte de réception lit. Fournie par la page : une instance par écran, jamais à la racine.
  *
  * Rien n'est gardé à l'écran que le serveur n'ait pas : chaque geste écrit,
  * puis relit — un rechargement ou un autre poste retrouve la même demande.
@@ -72,6 +71,30 @@ export class SiteResuppliesStore {
   /** Les noms déjà employés au point, proposés à la saisie (R1g). */
   readonly usedNames = computed<readonly string[]>(() => this.view()?.usedNames ?? []);
 
+  /**
+   * Porte la ligne de la visée à `wanted` : absente, elle s'ajoute ; présente,
+   * elle se corrige ; à zéro, elle se retire. Le geste se décide à SON tour
+   * dans la file, sur la demande relue — pas sur celle qu'avait l'écran quand
+   * on a cliqué : un « −1 » qui suit une saisie part de la saisie écrite.
+   */
+  setLine(target: ResupplyTarget, sku: string, wanted: number): Promise<boolean> {
+    return this.act((siteId) => {
+      const view = this.view();
+      const day = target === 'asap' ? view?.today : view?.tomorrow;
+      const draft = view?.drafts.find((d) => d.target === target && d.serviceDay === day) ?? null;
+      const current = draft?.lines.find((line) => line.sku === sku)?.quantity ?? 0;
+      if (wanted === current) {
+        return Promise.resolve();
+      }
+      if (draft === null || current === 0) {
+        return this.service.addLine(siteId, target, sku, wanted);
+      }
+      return wanted === 0
+        ? this.service.withdrawLine(siteId, draft.id, sku, draft.version)
+        : this.service.correctLine(siteId, draft.id, sku, wanted, draft.version);
+    });
+  }
+
   correctLine(draft: SiteResupplyDraftView, sku: string, quantity: number): Promise<boolean> {
     return this.act((siteId) =>
       this.service.correctLine(siteId, draft.id, sku, quantity, draft.version),
@@ -90,13 +113,26 @@ export class SiteResuppliesStore {
     return this.act((siteId) => this.service.cancel(siteId, resupply.id));
   }
 
+  /** La file des gestes : chacun attend que le précédent soit écrit ET relu. */
+  private queue: Promise<unknown> = Promise.resolve();
+
   /**
    * Un geste, puis la relecture — y compris après un refus : un 409 dit
    * qu'un autre poste a changé la demande, et l'écran montre alors la sienne.
+   *
+   * Un geste posé pendant qu'un autre s'écrit est MIS EN FILE, plus jeté :
+   * la case quittée puis « −1 » cliqué dans la foulée perdait le second en
+   * silence (audit du 2026-11-03).
    */
-  private async act(gesture: (siteId: string) => Promise<unknown>): Promise<boolean> {
+  private act(gesture: (siteId: string) => Promise<unknown>): Promise<boolean> {
+    const run = this.queue.then(() => this.run(gesture));
+    this.queue = run;
+    return run;
+  }
+
+  private async run(gesture: (siteId: string) => Promise<unknown>): Promise<boolean> {
     const siteId = this.siteId();
-    if (siteId === null || this.pending()) {
+    if (siteId === null) {
       return false;
     }
     this.pending.set(true);

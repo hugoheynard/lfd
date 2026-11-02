@@ -5,7 +5,7 @@ import type {
   ResupplyReceiptLineView,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // jsdom n'a pas `matchMedia` : la table le lit pour la saisie mobile (2026-10-28).
 beforeEach(() => {
@@ -88,7 +88,7 @@ async function mount(
   fixture.componentRef.setInput('unordered', options.unordered ?? []);
   fixture.componentRef.setInput('canWrite', options.canWrite ?? true);
   if (options.now !== undefined) {
-    fixture.componentRef.setInput('now', options.now);
+    fixture.componentInstance['now'].set(options.now);
   }
   await settle(fixture);
   return { fixture, table: fixture.componentInstance, resupplies, alerts, receipts };
@@ -242,6 +242,30 @@ describe('ResupplyStockTable', () => {
     expect(after.table['target']()).toBe('asap');
     const unlimited = await mount();
     expect(unlimited.table['target']()).toBe('tomorrow');
+  });
+
+  describe('l’heure limite franchie sur une table restée ouverte', () => {
+    afterEach(() => vi.useRealTimers());
+
+    /**
+     * Régression (audit du 2026-11-03) : l'instant était lu une fois au
+     * montage ; une table ouverte avant l'heure limite restait sur « Pour
+     * demain » des heures après.
+     */
+    it('passe d’elle-même à « Au plus tôt », et arrête sa minuterie', async () => {
+      vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+      const until = '2026-10-21T18:00:00.000Z';
+      vi.setSystemTime(Date.parse(until) - 30_000);
+      const { fixture, table } = await mount({ tomorrowOrderUntil: until });
+      expect(table['target']()).toBe('tomorrow');
+
+      vi.advanceTimersByTime(60_000);
+      expect(table['target']()).toBe('asap');
+
+      const running = vi.getTimerCount();
+      fixture.destroy();
+      expect(vi.getTimerCount()).toBe(running - 1);
+    });
   });
 
   it('une seule colonne de quantité ; l’autre visée se signale par son compte', async () => {
