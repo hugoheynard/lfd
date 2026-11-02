@@ -299,6 +299,68 @@ jobs:
       - name: "Gate : aucune réponse ne s'offre à un cache partagé"
         run: pnpm lint:cache-control
 
+      # ── Le prix ──
+      # Ces portes ne tournaient qu'au pre-push, qu'un `--no-verify` saute :
+      # constaté le 2026-11-02, 25 des 51 portes n'avaient aucune étape ici.
+      - name: "Gate : toute décision du prix porte une fenêtre"
+        run: pnpm lint:dated-decisions
+      - name: "Gate : aucun centime dérivé d'un millicentime à la main"
+        run: pnpm lint:money-units
+      - name: "Gate : on demande un prix par la porte du tarificateur"
+        run: pnpm lint:price-door
+      - name: "Gate : le pro type ne se fabrique que dans l'export de grille"
+        run: pnpm lint:typical-buyer
+      - name: "Gate : un seul chemin fabrique un prix"
+        run: pnpm lint:price-pipeline
+      - name: "Gate : seul catalog/ frappe un article scellé"
+        run: pnpm lint:catalogue-authority
+      - name: "Gate : aucun rayon écrit dans le code"
+        run: pnpm lint:no-shelf-literals
+
+      # ── Les données et leurs propriétaires ──
+      - name: "Gate : un modèle Prisma n'est lu que par son propriétaire"
+        run: pnpm lint:prisma-model-ownership
+      - name: "Gate : le rangement du schéma Prisma dit la vérité"
+        run: pnpm lint:prisma-schema-layout
+      - name: "Gate : une migration n'accorde aucun droit à un rôle"
+        run: pnpm lint:no-role-grants-in-migrations
+      - name: "Gate : un jour se convertit en instant à l'heure de Paris"
+        run: pnpm lint:business-day
+      - name: "Gate : un seul handler par fichier"
+        run: pnpm lint:handler-per-file
+
+      # ── L'identité et les données personnelles ──
+      - name: "Gate : le sub du jeton n'est lu que pour l'identité"
+        run: pnpm lint:subject-readers
+      - name: "Gate : l'identifiant de connexion stocké n'est lu que pour l'identité"
+        run: pnpm lint:auth0-id-readers
+      - name: "Gate : le rôle dans une société se lit par la requête partagée"
+        run: pnpm lint:company-role-readers
+      - name: "Gate : toute donnée personnelle est au registre RGPD"
+        run: pnpm lint:rgpd-staff
+
+      # ── La documentation et les textes générés ──
+      - name: "Gate : un fichier nommé dans la doc existe encore"
+        run: pnpm lint:doc-references
+      - name: "Gate : un document normatif ne se vide pas en silence"
+        run: pnpm lint:doc-substance
+      - name: "Gate : aucune doc orpheline"
+        run: pnpm lint:doc-orphans
+      - name: "Gate : le recueil des textes de la boutique suit le code"
+        run: pnpm lint:shop-copy-digest
+      - name: "Gate : le manifeste des e-mails suit le dictionnaire"
+        run: pnpm lint:mail-copy-digest
+      - name: "Gate : le suivi d'accessibilité suit la grille d'audit"
+        run: pnpm lint:rgaa-digest
+      - name: "Gate : tout PDF a son exemple sur la planche"
+        run: pnpm lint:pdf-specimens
+
+      # ── Les fronts et les specs ──
+      - name: "Gate : un attribut posé sur un composant fold existe"
+        run: pnpm lint:fold-unknown-attributes
+      - name: "Gate : les specs de l'API compilent (nest ne les compile pas)"
+        run: pnpm lint:spec-types
+
   # ── Les paquets partagés ────────────────────────────────────────────────────
   # En premier et à part : c'est le trou qu'aucune commande d'app ne couvrait.
   packages:
