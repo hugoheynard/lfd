@@ -30,14 +30,19 @@
  *    nommée avec la commande à lancer, et la relance en boucle s'arrête.
  * 4. Un chien de garde interroge `/health` toutes les 10 s, et relance une API
  *    vivante mais muette depuis une minute.
- * 5. `Ctrl-C` / `SIGTERM` tuent tsc et Node : aucun orphelin (cf. l'en-tête de
+ * 5. Les tâches périodiques que le Worker joue en production (arrêt du plan,
+ *    boîte d'envoi, impayés…) sont rejouées au même rythme, avec un jeton
+ *    passé à l'API au démarrage (`dev-sweeps.mjs`, depuis le 2026-11-02).
+ *    `LFD_DEV_SWEEPS=0` les coupe.
+ * 6. `Ctrl-C` / `SIGTERM` tuent tsc et Node : aucun orphelin (cf. l'en-tête de
  *    `dev-stack.sh`, et ses sept compagnons du 2026-09-10).
  *
  * Les décisions vivent dans `api-dev-policy.mjs`, testées par
  * `node --test dev-toolbox/__tests__/api-dev.test.mjs`.
  */
 import { spawn, execSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, rmSync, watch } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, watch } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
@@ -58,6 +63,12 @@ import {
   postgresReady,
   uncommittedMigrations,
 } from "./dev-db.mjs";
+import {
+  EVERY_FIVE_MINUTES,
+  EVERY_HOUR,
+  dueSweeps,
+  unclassifiedWorkerPaths,
+} from "./dev-sweeps.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const API = join(ROOT, "apps", "lfd-api");
@@ -69,6 +80,17 @@ const HEALTH_URL = `http://localhost:${String(PORT)}/health`;
 const HEALTH_TIMEOUT_MS = 5_000;
 const KILL_GRACE_MS = 5_000;
 const DIST_SCAN_MS = 5_000;
+const API_URL = `http://localhost:${String(PORT)}`;
+const WORKER_SOURCE = join(API, "container", "worker.ts");
+const SWEEP_CHECK_MS = 30_000;
+const SWEEP_TIMEOUT_MS = 60_000;
+const SWEEPS_ON = process.env.LFD_DEV_SWEEPS !== "0";
+/**
+ * Le jeton des routes machine : celui de l'environnement s'il existe, sinon un
+ * jeton de session. Passé à l'API dans son environnement, il l'emporte sur les
+ * fichiers `.env` (ConfigModule ne remplace pas une variable déjà posée).
+ */
+const SWEEP_TOKEN = process.env.RECOMPUTE_TOKEN?.trim() || randomUUID();
 
 const say = (line) => console.log(`[api-dev] ${line}`);
 
@@ -107,6 +129,7 @@ function startApp(reason) {
   const child = spawn(process.execPath, ["--enable-source-maps", "dist/main.js"], {
     cwd: API,
     stdio: "inherit",
+    env: { ...process.env, RECOMPUTE_TOKEN: SWEEP_TOKEN },
   });
   const current = { child, startedAt: Date.now(), lastHealthyAt: null, expected: false };
   app = current;
@@ -276,6 +299,68 @@ async function probe() {
   if (verdict === "restart") await restartApp("⚠ API muette depuis 60 s — relancée.");
 }
 
+// ─── Les tâches périodiques de la production ─────────────────────────────────
+const lastSweep = { fiveMinutes: null, hour: null };
+let sweeping = false;
+
+async function postSweep(path) {
+  try {
+    const res = await fetch(`${API_URL}/${path}`, {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": SWEEP_TOKEN },
+      signal: AbortSignal.timeout(SWEEP_TIMEOUT_MS),
+    });
+    if (!res.ok) say(`⚠ tâche ${path} : HTTP ${String(res.status)}`);
+    else if (path === "admin/production/auto-close") await sayAutoClose(res);
+  } catch (error) {
+    say(`⚠ tâche ${path} : ${String(error?.message ?? error)}`);
+  }
+}
+
+/** L'arrêt du plan ne se tait que quand il n'a rien fait. */
+async function sayAutoClose(res) {
+  const report = await res.json().catch(() => null);
+  const acted = [report?.outcome, report?.todayOutcome].filter((o) => o && o !== "nothing");
+  if (acted.length > 0 || report?.todayOverdue) {
+    say(`arrêt du plan : ${JSON.stringify(report)}`);
+  }
+}
+
+/** Une passe à la fois, et seulement sur une API qui répond. */
+async function runDueSweeps() {
+  const current = app;
+  if (sweeping || !current || current.lastHealthyAt === null) return;
+  sweeping = true;
+  try {
+    const now = Date.now();
+    const due = dueSweeps(now, lastSweep);
+    // L'heure se compte dès la première passe : elle part au premier
+    // changement d'heure, pas au démarrage.
+    if (lastSweep.hour === null || due.includes("hour")) lastSweep.hour = now;
+    if (due.includes("fiveMinutes")) lastSweep.fiveMinutes = now;
+    for (const cadence of due) {
+      const paths = cadence === "fiveMinutes" ? EVERY_FIVE_MINUTES : EVERY_HOUR;
+      for (const path of paths) await postSweep(path);
+    }
+  } finally {
+    sweeping = false;
+  }
+}
+
+function warnUnclassifiedSweeps() {
+  try {
+    const unknown = unclassifiedWorkerPaths(readFileSync(WORKER_SOURCE, "utf8"));
+    if (unknown.length > 0) {
+      say(
+        `⚠ le Worker appelle ${unknown.join(", ")}, que dev-sweeps.mjs ne range nulle part — ` +
+          "rejouée en dev ou écartée avec sa raison ?",
+      );
+    }
+  } catch {
+    // Le Worker déplacé : le test de dev-sweeps le dira.
+  }
+}
+
 // ─── Sortie ──────────────────────────────────────────────────────────────────
 async function shutdown(exitCode) {
   if (stopping) return;
@@ -311,3 +396,7 @@ startTsc();
 scanPackageDists();
 setInterval(scanPackageDists, DIST_SCAN_MS).unref();
 setInterval(() => void probe(), HEALTH_PERIOD_MS).unref();
+if (SWEEPS_ON) {
+  warnUnclassifiedSweeps();
+  setInterval(() => void runDueSweeps(), SWEEP_CHECK_MS).unref();
+}
