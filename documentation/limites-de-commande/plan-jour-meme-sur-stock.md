@@ -67,8 +67,9 @@ Du 2026-10-21, toujours valables :
 - **Panier mixte** : un panier « pour aujourd'hui » ne contient que des
   articles du stock du jour ; sinon le jour proposé est demain.
 - **Un article absent du stock du jour** n'est pas commandable pour aujourd'hui.
-- **L'heure de fin** du jour même est un réglage (« jusqu'à 16 h ») ; passée,
-  aujourd'hui n'est plus proposé.
+- ~~**L'heure de fin** du jour même est un réglage (« jusqu'à 16 h »)~~ —
+  remplacé le 2026-11-02 : aujourd'hui suit les créneaux restants du site
+  (ci-dessous).
 - **Les commandes déjà passées pour ce jour ne se soustraient pas du stock** :
   passées la veille avant l'heure limite, elles sont au plan, fabriquées pour
   elles, et ne puisent pas dans la vitrine.
@@ -82,6 +83,19 @@ Du 2026-11-02 :
 - **Le règlement par défaut d'une saisie de l'équipe devrait toujours être
   « au compte, à facturer »** — à concilier avec l'objection 4 du §9.1.
 - **Garder la donnée** du raccourci : combien de fois, quelle clientèle.
+
+Du 2026-11-02, après le schéma (Hugo) :
+
+- **« Autoriser le jour même » se sépare par clientèle** : deux réglages,
+  **particuliers** et **pros**, sur la page Réglages › Commandes › Jour même
+  (l'interrupteur unique `same_day_allowed` d'aujourd'hui ne suffit plus).
+- **Un pro en ligne** (hors comptoir) : une **option** de cette même page —
+  tranche Q6.
+- **Un pro sans crédit au compte**, au comptoir : une **option admin** (refuser,
+  ou passer par le lien de paiement) — tranche Q7.
+- **Pas d'heure de fin à régler** : le jour même suit les **créneaux de retrait
+  encore disponibles aujourd'hui, site par site**. Un point dont le dernier
+  créneau du jour est passé ne propose plus aujourd'hui — tranche Q5.
 
 ## 4. Ce que fait le code aujourd'hui (relu le 2026-11-02)
 
@@ -206,8 +220,8 @@ remise (règlement non clos), ni facture.
   passation.
 - **Garde sous verrou** à la passation, et le même verrou pour les corrections
   de réception.
-- **Pas d'heure limite générale** pour elle ; ce qui la limite : l'interrupteur,
-  l'heure de fin, le reste.
+- **Pas d'heure limite générale** pour elle ; ce qui la limite : l'autorisation
+  de sa clientèle, les créneaux restants du site, le reste.
 - **Le raccourci** du comptoir pose en plus `entryShortcut: "immediate_pickup"`
   (le compte que veut Hugo) et impose `settlement: "account"` au serveur.
 
@@ -220,12 +234,12 @@ d'un particulier), **J2c** (la saisie de l'équipe et le raccourci), **J3/J4**
 - **Q3 bis** — Le stock tenu par un paiement en cours : 15 minutes (décision du
   21 octobre) ou les 30 déjà en place ? Et que faire des commandes que
   l'expiration ne sait pas annuler (§4.6) ?
-- **Q5** — Une seule heure de fin pour tous les points ?
-- **Q6** — Un pro **en ligne** peut-il commander pour aujourd'hui sur stock, ou
-  seulement par le comptoir ? À trancher avant J2b : sans garde, la passation
-  sur stock serait ouverte aux pros par défaut.
-- **Q7** — Un pro **sans crédit au compte**, au comptoir : refusé, ou basculé
-  sur le lien de paiement ?
+- ~~**Q5**~~ — tranchée le 2026-11-02 : pas d'heure de fin, les créneaux
+  restants de chaque site (§3).
+- ~~**Q6**~~ — tranchée le 2026-11-02 : une option de la page Jour même, avec
+  « autoriser » séparé particuliers / pros (§3).
+- ~~**Q7**~~ — tranchée le 2026-11-02 : une option admin, refuser ou lien de
+  paiement (§3).
 - **Q8** — Sans stock reçu au point aujourd'hui : « Retrait immédiat » est
   grisé (proposé), ou la saisie est libre ?
 - **Q9** — La **remise de retrait** du point s'applique-t-elle au retrait
