@@ -41,8 +41,12 @@ export interface ProductionRecapLine {
   readonly label: string;
   /** Sur combien de commandes il se répartit : 240 en 3 fois n'est pas 240 en 40. */
   readonly orderCount: number;
-  /** Dont réassort — un détail du total, jamais à part de lui. */
+  /** Dont réassort — un détail du total, jamais à part de lui. Des grammes au poids. */
   readonly resupplyQuantity: number;
+  /** Combien de réassorts portent ce produit — au poids, chacun compte pour une pièce. */
+  readonly resupplyCount: number;
+  /** « 24 », ou « 1,25 kg » au poids — le « dont … réassort » de la ligne. */
+  readonly resupplyLabel: string;
 }
 
 /** Un rayon et son contenu. */
@@ -52,6 +56,7 @@ export interface ProductionRecapGroup {
   readonly label: string;
   /** Les pièces du rayon : un article au poids y compte une par commande (P6). */
   readonly quantity: number;
+  /** Les pièces de réassort du rayon : jamais une somme de pièces et de grammes. */
   readonly resupplyQuantity: number;
   readonly lines: readonly ProductionRecapLine[];
   /** Les intertitres de sous-catégorie (SKU de la première ligne → nom) ; vide, réglage éteint. */
@@ -85,6 +90,7 @@ interface Tally {
   quantity: number;
   orderCount: number;
   resupplyQuantity: number;
+  resupplyCount: number;
 }
 
 /**
@@ -125,7 +131,7 @@ export function productionRecap(
       family: shelf.root,
       label: shelfLabel(shelf.root, shelvesKnown),
       quantity: lines.reduce((sum, line) => sum + recapPieces(line), 0),
-      resupplyQuantity: lines.reduce((sum, line) => sum + line.resupplyQuantity, 0),
+      resupplyQuantity: lines.reduce((sum, line) => sum + recapResupplyPieces(line), 0),
       lines,
       intertitles,
     };
@@ -148,6 +154,7 @@ function talliesOf(
       quantity: 0,
       orderCount: 0,
       resupplyQuantity: 0,
+      resupplyCount: 0,
     };
     bySku.set(sku, tally);
     tally.quantity += quantity;
@@ -155,6 +162,7 @@ function talliesOf(
       tally.orderCount += 1;
     } else {
       tally.resupplyQuantity += quantity;
+      tally.resupplyCount += 1;
     }
   };
   for (const sheet of sheets) {
@@ -173,6 +181,7 @@ function talliesOf(
     sku,
     ...tally,
     label: saleQuantityLabel(tally.quantity, tally.saleUnit),
+    resupplyLabel: saleQuantityLabel(tally.resupplyQuantity, tally.saleUnit),
   }));
 }
 
@@ -186,11 +195,20 @@ interface TalliedInput {
 
 /**
  * Ce qu'un produit pèse en pièces : ses pièces, ou — au poids — une par
- * commande qui le porte (P6). La même règle que le dossier du jour serveur
- * (`recapPieces`, `day-dossier.ts`) : l'écran et le PDF disent le même total.
+ * commande et une par réassort qui le portent (P6). La même règle que le
+ * dossier du jour serveur (`recapPieces`, `day-dossier.ts`) : l'écran et le
+ * PDF disent le même total.
  */
 export function recapPieces(line: ProductionRecapLine): number {
-  return line.saleUnit === 'weight' ? line.orderCount : line.quantity;
+  return line.saleUnit === 'weight' ? line.orderCount + line.resupplyCount : line.quantity;
+}
+
+/**
+ * La part réassort d'un produit, en pièces : au poids, un réassort compte pour
+ * une, jamais ses grammes (`recapResupplyPieces`, `day-dossier.ts`).
+ */
+export function recapResupplyPieces(line: ProductionRecapLine): number {
+  return line.saleUnit === 'weight' ? line.resupplyCount : line.resupplyQuantity;
 }
 
 /**

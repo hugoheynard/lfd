@@ -158,6 +158,8 @@ describe('le récapitulatif de production', () => {
         label: '42',
         orderCount: 1,
         resupplyQuantity: 18,
+        resupplyCount: 1,
+        resupplyLabel: '18',
       },
       {
         sku: 'PAC',
@@ -167,6 +169,8 @@ describe('le récapitulatif de production', () => {
         label: '6',
         orderCount: 0,
         resupplyQuantity: 6,
+        resupplyCount: 1,
+        resupplyLabel: '6',
       },
     ]);
     expect(totalPieces(recap)).toBe(48);
@@ -198,6 +202,37 @@ describe('le récapitulatif de production, au poids', () => {
     const recap = productionRecap([weighed('C-1', 1250, 12), weighed('C-2', 500)], CATALOGUE);
 
     expect(totalPieces(recap)).toBe(14);
+  });
+
+  /**
+   * Régression (2026-11-02) : « dont N de réassort » additionnait pièces et
+   * grammes — 6 croissants + 1 250 g de saumon disaient « dont 1 256 ». Le
+   * serveur compte un réassort au poids pour une pièce (`recapResupplyPieces`).
+   */
+  it('dit « dont 7 de réassort » et non « dont 1 256 » quand un réassort mêle pièces et poids', () => {
+    const recap = productionRecap([weighed('C-1', 500)], CATALOGUE, true, [
+      {
+        resupplyId: 'r-3',
+        siteId: 'site-v',
+        siteLabel: 'Village',
+        name: null,
+        servedByTransfer: true,
+        lines: [
+          { sku: 'CRO', productName: 'Croissant', quantity: 6, saleUnit: 'piece' as const },
+          {
+            sku: 'SAU',
+            productName: 'Saumon gravlax',
+            quantity: 1250,
+            saleUnit: 'weight' as const,
+          },
+        ],
+      },
+    ]);
+    const salmon = recap.flatMap((group) => group.lines).find((line) => line.sku === 'SAU');
+
+    expect(resupplyPieces(recap)).toBe(7);
+    expect(totalPieces(recap)).toBe(8);
+    expect(salmon).toMatchObject({ resupplyLabel: '1,25 kg', label: '1,75 kg' });
   });
 
   it('une ligne sans unité reste une ligne à la pièce', () => {

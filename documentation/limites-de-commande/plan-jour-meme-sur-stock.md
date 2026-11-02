@@ -872,8 +872,8 @@ du même article font refuser l'arrêt, comme deux commandes d'unités différen
   `DossierRecapLine.resupplyCount`), jamais ses grammes ; le total du rayon
   aussi (`recapPieces` = commandes + réassorts au poids), ce qui l'aligne sur
   l'e-mail (`dossierCountsOf`). La ligne dit « dont 1,25 kg réassort ».
-  `DOSSIER_LAYOUT_VERSION` → `v13`. L'écran (`production-recap.ts`) recopie
-  encore l'ancienne somme.
+  `DOSSIER_LAYOUT_VERSION` → `v13`. L'écran (`production-recap.ts`) suit la
+  même règle (`recapResupplyPieces`, `resupplyCount`, `resupplyLabel`).
 - **API — le colisage** : `PackingStock.take()` prend l'unité de la ligne
   (`SheetLine.saleUnit`), comme `reserve`/`takeForResupply` : le manque se dit
   « 1,25 kg », un mouvement fractionnaire « entier de grammes ».
