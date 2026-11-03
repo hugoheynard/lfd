@@ -65,7 +65,7 @@ export function estimateKeyOf(payload: AdminPlaceOrderPayload): string {
  */
 export function estimatesOf(
   requests: Observable<EstimateRequest | null>,
-  fetch: (payload: AdminPlaceOrderPayload) => Observable<AdminOrderEstimateView>,
+  estimate: (payload: AdminPlaceOrderPayload) => Observable<AdminOrderEstimateView>,
   debounceMs: number = ESTIMATE_DEBOUNCE_MS,
 ): Observable<AdminOrderEstimateView | null> {
   return requests.pipe(
@@ -74,7 +74,7 @@ export function estimatesOf(
       request === null
         ? of(null)
         : timer(debounceMs).pipe(
-            switchMap(() => fetch(request.payload)),
+            switchMap(() => estimate(request.payload)),
             catchError(() => of(null)),
           ),
     ),
