@@ -55,7 +55,8 @@ export class GetCounterClientNotePdfHandler implements IQueryHandler<
     const state = reach.note;
     const parts = await this.documents.partsOf([state.id]);
     const note = clientNoteOf(state, head, billing, parts.get(state.id));
-    const bytes = await renderClientNotePdf(note, await this.documents.art());
+    // Le BL tendu au comptoir porte la zone de réception (Hugo, 2026-11-03).
+    const bytes = await renderClientNotePdf(note, await this.documents.art(), { receipt: true });
     return { number: state.number, bytes, fileName: deliveryNotePdfFileName(note) };
   }
 }

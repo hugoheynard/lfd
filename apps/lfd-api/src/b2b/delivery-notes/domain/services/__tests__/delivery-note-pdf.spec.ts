@@ -69,6 +69,18 @@ describe("le BL chiffré en PDF", () => {
     expect(text).toContain("* Non concerné par la remise retrait.");
   });
 
+  /** Le BL tendu au comptoir porte la zone de réception (Hugo, 2026-11-03). */
+  it("porte « Reçu par, le, signature » au comptoir, et nulle part ailleurs", async () => {
+    const note = clientNoteOf(handedOverNote(), HEAD, PRO_BILLING);
+    const counter = pdfText(await renderClientNotePdf(note, DELIVERY_ART, { receipt: true }));
+    const plain = pdfText(await renderClientNotePdf(note, DELIVERY_ART));
+
+    expect(counter).toMatch(/REÇU PAR|Reçu par/u);
+    expect(counter).toMatch(/SIGNATURE|Signature/u);
+    expect(counter).toContain("Total HT");
+    expect(plain).not.toMatch(/REÇU PAR|Reçu par/u);
+  });
+
   it("propose un nom de fichier par lecteur", () => {
     expect(deliveryNotePdfFileName(clientNoteOf(handedOverNote(), HEAD, PRO_BILLING))).toBe(
       "bon-de-livraison-BL-1042-1.pdf",

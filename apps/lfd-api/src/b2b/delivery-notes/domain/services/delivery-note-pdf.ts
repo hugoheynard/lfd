@@ -235,16 +235,32 @@ function totals(doc: Doc, note: ClientNote, top: number): number {
   return y;
 }
 
+/** Ce que le BL chiffré ajoute selon qui l'imprime. */
+export interface ClientNoteOptions {
+  /**
+   * La zone « Reçu par, le, signature » du BL de transport, sous les totaux —
+   * pour le BL que le comptoir tend au client (Hugo, 2026-11-03 : « les
+   * champs comme en livraison »). Absente partout ailleurs : le client qui
+   * télécharge son BL n'a rien à signer.
+   */
+  readonly receipt?: boolean;
+}
+
 /** Le BL chiffré, pro ou public. */
-export async function renderClientNotePdf(note: ClientNote, art: DeliveryNoteArt): Promise<Buffer> {
+export async function renderClientNotePdf(
+  note: ClientNote,
+  art: DeliveryNoteArt,
+  options: ClientNoteOptions = {},
+): Promise<Buffer> {
   const excluded = note.lines.some((line) => line.pickupDiscountEligible === false);
   return render(new Date(note.issuedAt), `Bon de livraison ${note.number}`, (doc) => {
     const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
     const end = table(doc, note, pricedColumns(note), top);
+    const afterTotals = totals(doc, note, end);
     noteFooter(
       doc,
       note,
-      noteRemark(doc, note, totals(doc, note, end)),
+      noteRemark(doc, note, options.receipt === true ? receipt(doc, afterTotals) : afterTotals),
       excluded ? [PICKUP_DISCOUNT_EXCLUDED_NOTE] : [],
     );
   });
