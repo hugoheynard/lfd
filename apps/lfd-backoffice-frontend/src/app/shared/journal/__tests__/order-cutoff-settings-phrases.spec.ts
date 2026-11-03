@@ -107,7 +107,7 @@ describe('l’heure limite générale (order_cutoff_settings.updated)', () => {
     });
 
     expect(sentence(input)).toBe(
-      'Colette Martin a réglé « Avertir le client » à 15 min après la fin du créneau',
+      'Colette Martin a réglé « Avertir le client » à 15 min après le retard',
     );
     expect(renderFact(input).detail).toEqual([]);
   });

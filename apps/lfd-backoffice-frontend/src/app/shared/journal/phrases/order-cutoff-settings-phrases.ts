@@ -55,8 +55,13 @@ function changes(fact: PhraseFact): string[] {
   for (const [key, gesture] of NUDGE_DELAYS) {
     const delay = minutesChange(fact, key);
     if (delay !== null && delay.before !== delay.after) {
-      said.push(`a réglé « ${gesture} » à ${String(delay.after)} min après la fin du créneau`);
+      said.push(`a réglé « ${gesture} » à ${String(delay.after)} min après le retard`);
     }
+  }
+  // La tolérance de retard (2026-11-03) : absente des faits d'avant.
+  const tolerance = minutesChange(fact, LATE_TOLERANCE);
+  if (tolerance !== null && tolerance.before !== tolerance.after) {
+    said.push(`a réglé la tolérance de retard à ${String(tolerance.after)} min`);
   }
   return [...said, ...circuitChanges(fact)];
 }
@@ -132,6 +137,9 @@ const NUDGE_DELAYS = [
   ['delayWarningDelayMinutes', 'Avertir le client'],
 ] as const;
 
+/** La tolérance de retard (2026-11-03) : en deçà, aucun retard n'est dit. */
+const LATE_TOLERANCE = 'lateToleranceMinutes';
+
 /** L'avant et l'après d'un délai en minutes, ou `null` (ligne d'avant le 2026-10-25). */
 function minutesChange(fact: PhraseFact, key: string): { before: number; after: number } | null {
   const before = recordOf(fact.payload['previous'])?.[key];
@@ -165,7 +173,7 @@ function saidKeys(fact: PhraseFact): string[] {
     (key) => change(fact, key) !== null,
   );
   const time = timeChange(fact) === null ? [] : ['resupplyCutoffTime'];
-  const delays = NUDGE_DELAYS.map(([key]) => key).filter(
+  const delays = [...NUDGE_DELAYS.map(([key]) => key), LATE_TOLERANCE].filter(
     (key) => minutesChange(fact, key) !== null,
   );
   return [...optional, ...time, ...delays, ...circuitKeys(fact), 'sameDayAllowed', 'previous'];

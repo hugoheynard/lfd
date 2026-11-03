@@ -67,6 +67,13 @@ beforeEach(async () => {
   clock.set(new Date());
   await ctx.reset();
   sentMails.splice(0);
+  // Les délais se comptent depuis la fin de la tolérance de retard (2026-11-03) ;
+  // ces cas éprouvent les délais seuls, la tolérance a le sien plus bas.
+  await ctx
+    .asSub(STAFF)
+    .patch("/admin/order-cutoff-settings")
+    .send({ lateToleranceMinutes: 0 })
+    .expect(204);
 });
 
 async function gesture(
@@ -154,6 +161,23 @@ describe("« Rappel au client »", () => {
     expect((await nudges()).pickupReminderDelayMinutes).toBe(30);
 
     clock.set(afterEnd(30));
+    expect((await gesture(order.id, "pickup-reminder")).status).toBe(204);
+  });
+
+  /** Les relances comptent depuis la fin de la tolérance (Hugo, 2026-11-03). */
+  it("🔴 la tolérance de retard décale la relance : 15 + 30 min après la fin du créneau", async () => {
+    const order = await readyOrder();
+    await ctx
+      .asSub(STAFF)
+      .patch("/admin/order-cutoff-settings")
+      .send({ lateToleranceMinutes: 15, pickupReminderDelayMinutes: 30 })
+      .expect(204);
+
+    clock.set(afterEnd(44));
+    expect((await gesture(order.id, "pickup-reminder")).status).toBe(409);
+    expect((await nudges()).pickupReminderDelayMinutes).toBe(45);
+
+    clock.set(afterEnd(45));
     expect((await gesture(order.id, "pickup-reminder")).status).toBe(204);
   });
 

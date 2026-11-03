@@ -215,13 +215,15 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // n'est lu qu'à l'ouverture d'une fiche d'atelier ; s'il pesait un jour dans
   // le compteur, c'est qu'une lecture le redemande par ligne au lieu d'un coup.
   ProductionContainer: "production",
-  OrderHandover: "production",
+  // Les trois tables du retrait, dans leur schéma depuis le 2026-11-03
+  // (`documentation/retrait/plan-schema-handover.md`).
+  OrderHandover: "handover",
   // La garde passée au livreur (2026-10-01, `a-la-porte.md`, BQ) : écrite
   // par le retrait après un départ, lue par le fournil avant un verdict.
-  OrderDeparture: "production",
+  OrderDeparture: "handover",
   // Les pièces d'une remise à la porte (2026-10-01, `a-la-porte.md`, B1) :
   // écrites par le retrait avec l'attestation, relues au rejeu du livreur.
-  OrderHandoverProof: "production",
+  OrderHandoverProof: "handover",
   // Le retrait d'une commande annulée par l'équipe (2026-10-12, doc
   // `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) : écrit par le guichet du
   // fournil, relu par la clôture et le retirage sous le verrou.

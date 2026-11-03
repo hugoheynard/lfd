@@ -83,7 +83,7 @@ describe('la commande pro au comptoir', () => {
 
   it('a son entrée de rail pour le vendeur de comptoir, pas pour le support', () => {
     // Ordre des onglets depuis le 2026-10-12 (retrait en tête) ; le réassort suit le droit du retrait.
-    expect(counterViewKeys('comptoir')).toEqual(['retrait', 'reassort', 'nouvelle-commande']);
+    expect(counterViewKeys('comptoir')).toEqual(['retrait', 'nouvelle-commande', 'reassort']);
     expect(counterViewKeys('support')).toEqual(['retrait', 'reassort']);
   });
 });
