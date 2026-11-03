@@ -75,11 +75,14 @@ describe('TransferStrip', () => {
     expect(buttons(host)).toEqual(['Réceptionner']);
   });
 
-  it('sans droit, ou une fois reçu, aucun bouton', async () => {
+  it('sans droit, aucun bouton', async () => {
     expect(buttons(await render([entry('a', DEPARTED)], false))).toEqual([]);
-    TestBed.resetTestingModule();
+  });
+
+  it('une fois reçu, la carte disparaît', async () => {
     const received = { ...DEPARTED, state: 'received' as const };
-    expect(buttons(await render([entry('a', received)], true))).toEqual([]);
+    const host = await render([entry('a', received)], true);
+    expect(host.querySelectorAll('fold-card')).toHaveLength(0);
   });
 
   /** Régression (R3c, R3e) : un transfert de réassort seul ne se réceptionnait pas au comptoir. */

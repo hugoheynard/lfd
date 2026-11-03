@@ -23,7 +23,8 @@ import { TransferReceptionDialog } from '../transfer-reception-dialog/transfer-r
  * transfert du jour (prévu, parti, reçu, nombre de bacs), et « Réceptionner »
  * (plan du transfert interne, §6, lots T2–T3).
  *
- * Rien à montrer sur un onglet sans transfert : le composant ne rend alors
+ * Rien à montrer sur un onglet sans transfert, ou dont tous les transferts
+ * sont reçus : le composant ne rend alors
  * rien, et la file reste telle qu'elle était.
  */
 @Component({
@@ -45,8 +46,11 @@ export class TransferStrip {
   /** Un transfert vient d'être réceptionné : la file est à relire. */
   readonly received = output<void>();
 
+  /** Un transfert reçu n'a plus rien à demander au comptoir : sa carte s'en va (Hugo, 2026-11-03). */
   protected readonly transfers = computed(() =>
-    transfersOf(this.entries(), this.resupplyTransfers()),
+    transfersOf(this.entries(), this.resupplyTransfers()).filter(
+      (transfer) => transfer.state !== 'received',
+    ),
   );
 
   protected title(transfer: CounterTransfer): string {
