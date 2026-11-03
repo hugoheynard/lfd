@@ -100,56 +100,44 @@
                      sont retirés — l'onglet dit déjà le point, le bouton dit
                      l'ordre — pour que la table monte au niveau du rail. -->
                   <div class="file-head" data-file-head>
-                    <div class="file-filter" data-queue-filter>
-                      <fold-view-toggle
-                        ariaLabel="Lignes montrées dans la file"
-                        size="sm"
-                        activeStyle="accent"
-                        [options]="views"
-                        [value]="view()"
-                        (valueChange)="view.set(viewOf($event))"
-                      />
-                      <button
-                        foldButton
-                        emphasis="soft"
-                        size="sm"
-                        [icon]="reversed() ? 'chevron-up' : 'chevron-down'"
-                        data-queue-reverse
-                        [attr.aria-pressed]="reversed()"
-                        [attr.aria-label]="
-                          reversed()
-                            ? 'Ordre : plus récent en tête. Passer au plus ancien en tête'
-                            : 'Ordre : plus ancien en tête. Passer au plus récent en tête'
-                        "
-                        [title]="reversed() ? 'Plus récent en tête' : 'Plus ancien en tête'"
-                        (click)="reversed.set(!reversed())"
-                      ></button>
-                    </div>
-
-                    <!-- Les deux gestes ensemble : ils passent à la ligne EN BLOC
-                     quand la colonne se resserre, au lieu de laisser le bouton
-                     descendre seul sous une boîte qui reste en haut. -->
-                    <div class="file-tools">
-                      <!-- 🔴 `[(value)]` et non `(searchChange)` : la file est DÉJÀ
-                     en mémoire, et un délai n'ajouterait ici que de la latence
-                     entre la frappe et ce qu'on voit. Le compte annoncé vient
-                     de la file elle-même — c'est elle qui filtre, donc elle
-                     seule sait combien il reste. -->
-                      <fold-search
-                        class="file-search"
-                        placeholder="Client, référence, créneau…"
-                        ariaLabel="Filtrer la file"
-                        size="sm"
-                        [(value)]="query"
-                        [resultCount]="matches()"
-                        [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
-                        placement="end"
-                      />
-
-                      <button class="file-scan" foldButton icon="qr-code" (click)="scan()">
-                        Scanner le QR code du client
-                      </button>
-                    </div>
+                    <!-- Une ligne, une hauteur (Hugo, 2026-11-03 : « je veux que
+                         l'interface soit belle ») : le filtre et son sens à
+                         gauche, la recherche qui prend l'air du milieu, le scan
+                         au bout — le seul geste plein de la barre. -->
+                    <fold-view-toggle
+                      class="file-views"
+                      ariaLabel="Lignes montrées dans la file"
+                      activeStyle="accent"
+                      [options]="views"
+                      [value]="view()"
+                      (valueChange)="view.set(viewOf($event))"
+                    />
+                    <fold-button-icon
+                      data-queue-reverse
+                      [icon]="reversed() ? 'chevron-up' : 'chevron-down'"
+                      [tooltip]="
+                        reversed()
+                          ? 'Plus récent en tête — passer au plus ancien'
+                          : 'Plus ancien en tête — passer au plus récent'
+                      "
+                      (clicked)="reversed.set(!reversed())"
+                    />
+                    <!-- 🔴 `[(value)]` et non `(searchChange)` : la file est DÉJÀ
+                         en mémoire, et un délai n'ajouterait ici que de la
+                         latence entre la frappe et ce qu'on voit. Le compte
+                         annoncé vient de la file elle-même. -->
+                    <fold-search
+                      class="file-search"
+                      placeholder="Rechercher…"
+                      ariaLabel="Filtrer la file"
+                      [(value)]="query"
+                      [resultCount]="matches()"
+                      [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
+                      placement="end"
+                    />
+                    <button class="file-scan" foldButton icon="qr-code" (click)="scan()">
+                      Scanner le QR code client
+                    </button>
                   </div>
                 </app-queue-table>
               </fold-tab-panel>

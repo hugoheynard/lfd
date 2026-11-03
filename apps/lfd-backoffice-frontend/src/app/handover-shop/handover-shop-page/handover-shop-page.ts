@@ -22,6 +22,7 @@ import {
   FoldTabPanelComponent,
   FoldIconComponent,
   FoldViewToggleComponent,
+  FoldButtonIconComponent,
 } from 'fold-ng';
 
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
@@ -85,6 +86,7 @@ const STACK_AT_PX = 1040;
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldTabPanelComponent,
+    FoldButtonIconComponent,
     FoldViewToggleComponent,
     QueueTable,
     HandoverDetail,

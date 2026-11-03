@@ -16,47 +16,30 @@
 }
 
 /* ── LA BARRE DE LA FILE ────────────────────────────────────────────────────
-   Une seule ligne (Hugo, 2026-11-03) : le filtre à gauche, la recherche et le
-   scan au bout. Centrée : il n'y a plus d'eyebrow sur lequel caler une ligne
-   de base. */
+   Une ligne, une hauteur (Hugo, 2026-11-03) : le filtre et son sens à gauche,
+   la recherche qui prend le milieu et rétrécit la première, le scan au bout.
+   Tout en taille `md` : des contrôles de hauteurs différentes côte à côte se
+   lisent comme une barre mal finie. */
 .file-head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   flex: 1 1 auto;
-  gap: var(--fold-space-xs) var(--fold-space-md);
-}
-
-/* La vue et le sens de lecture, ensemble. */
-.file-filter {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-xs);
-}
-
-/* Les deux gestes, poussés au bout ENSEMBLE : la marge automatique plutôt qu'un
-   `space-between`, qui aurait écarté l'eyebrow de son indication. Groupés, ils
-   passent à la ligne en bloc — séparés, le bouton descendait seul sous une
-   boîte restée en haut (vu à l'écran le 2026-09-11, à 1440 px : le rail de
-   28 rem ne laisse que ~390 px à cette barre). */
-.file-tools {
-  display: flex;
-  flex: 0 1 auto;
   align-items: center;
   gap: var(--fold-space-sm);
-  margin-left: auto;
+  min-width: 0;
 }
 
-/* Elle se contracte, et ne s'étire pas : une boîte de recherche qui prend la
-   moitié de la barre promet une recherche large. Celle-ci filtre ce qui est
-   déjà à l'écran, et sa taille doit le dire. */
+.file-views {
+  flex: 0 0 auto;
+}
+
 .file-search {
-  flex: 0 1 15rem;
-  min-width: 0;
+  flex: 1 1 12rem;
+  min-width: 7rem;
 }
 
 .file-scan {
   flex: 0 0 auto;
+  margin-left: auto;
 }
 
 /* ── SUR ÉCRAN ÉTROIT : LE SAC MONTE SUR LA FILE ────────────────────────────

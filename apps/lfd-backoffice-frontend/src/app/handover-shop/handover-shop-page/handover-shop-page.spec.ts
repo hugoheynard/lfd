@@ -621,7 +621,7 @@ describe('HandoverShopPage — changer de journée', () => {
       panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
       const fixture = await render(api, panels);
 
-      button(fixture, 'Scanner le QR code du client')?.click();
+      button(fixture, 'Scanner le QR code client')?.click();
       await settle(fixture);
 
       const current = (fixture.nativeElement as HTMLElement).querySelector('tbody [data-current]');
@@ -637,7 +637,7 @@ describe('HandoverShopPage — changer de journée', () => {
       panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
       const fixture = await render(api, panels);
 
-      button(fixture, 'Scanner le QR code du client')?.click();
+      button(fixture, 'Scanner le QR code client')?.click();
       await settle(fixture);
       expect(text(fixture)).not.toContain('QR non scanné');
       button(fixture, 'Remettre la commande')?.click();
@@ -653,7 +653,7 @@ describe('HandoverShopPage — changer de journée', () => {
       panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
       const fixture = await render(api, panels);
 
-      button(fixture, 'Scanner le QR code du client')?.click();
+      button(fixture, 'Scanner le QR code client')?.click();
       await settle(fixture);
       const other = rowTexts(fixture).findIndex((row) => row.includes('Boulangerie Marin'));
       (fixture.nativeElement as HTMLElement)
@@ -688,7 +688,7 @@ describe('HandoverShopPage — changer de journée', () => {
       panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
       const fixture = await render(api, panels);
 
-      button(fixture, 'Scanner le QR code du client')?.click();
+      button(fixture, 'Scanner le QR code client')?.click();
       await settle(fixture);
 
       expect(text(fixture)).toContain('QR code lu');
