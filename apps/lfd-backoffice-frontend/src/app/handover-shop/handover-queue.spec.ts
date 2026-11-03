@@ -30,6 +30,7 @@ import {
   inQueueView,
   queueViewOf,
   rowTone,
+  settledLast,
   sortedQueue,
   stillRemittable,
 } from './handover-queue';
@@ -682,5 +683,36 @@ describe('inQueueView', () => {
   it('une valeur inconnue retombe sur « Tout »', () => {
     expect(queueViewOf('late')).toBe('late');
     expect(queueViewOf('n’importe quoi')).toBe('all');
+  });
+});
+
+/** Les retirées en bas de la file (Hugo, 2026-11-03). */
+describe('settledLast', () => {
+  const lines = [
+    entry({ orderId: 'gone-1', state: 'handed_over' }),
+    entry({ orderId: 'a' }),
+    entry({ orderId: 'off', state: 'cancelled' }),
+    entry({ orderId: 'b' }),
+    entry({ orderId: 'gone-2', state: 'handed_over' }),
+  ];
+
+  it('descend les retirées puis les annulées, dans leur ordre', () => {
+    expect(settledLast(lines, false).map((line) => line.orderId)).toEqual([
+      'a',
+      'b',
+      'gone-1',
+      'gone-2',
+      'off',
+    ]);
+  });
+
+  it('inverser ne remonte pas les retirées : le sens joue dans chaque groupe', () => {
+    expect(settledLast(lines, true).map((line) => line.orderId)).toEqual([
+      'b',
+      'a',
+      'gone-2',
+      'gone-1',
+      'off',
+    ]);
   });
 });

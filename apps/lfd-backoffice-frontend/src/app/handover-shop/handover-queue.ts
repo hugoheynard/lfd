@@ -680,3 +680,24 @@ export function inQueueView(
       return entries.filter((entry) => entry.state === 'handed_over');
   }
 }
+
+/**
+ * **Ce qui reste à tendre d'abord, ce qui est parti en bas** (Hugo,
+ * 2026-11-03) : les retirées puis les annulées descendent en fin de file, dans
+ * leur ordre ; le sens de lecture s'applique à l'intérieur de chaque groupe,
+ * jamais aux groupes eux-mêmes — inverser ne remonte pas les retirées.
+ */
+export function settledLast(
+  entries: readonly HandoverQueueEntryView[],
+  reversed: boolean,
+): readonly HandoverQueueEntryView[] {
+  const order = (group: readonly HandoverQueueEntryView[]): readonly HandoverQueueEntryView[] =>
+    reversed ? [...group].reverse() : group;
+  return [
+    ...order(
+      entries.filter((entry) => entry.state !== 'handed_over' && entry.state !== 'cancelled'),
+    ),
+    ...order(entries.filter((entry) => entry.state === 'handed_over')),
+    ...order(entries.filter((entry) => entry.state === 'cancelled')),
+  ];
+}

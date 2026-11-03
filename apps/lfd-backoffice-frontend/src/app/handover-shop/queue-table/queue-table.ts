@@ -37,6 +37,7 @@ import {
   matchingQueue,
   type QueueView,
   rowTone,
+  settledLast,
   sortedQueue,
 } from '../handover-queue';
 import { causeOf, type OverdueCause } from '../../supervision/handover-slots';
@@ -200,7 +201,7 @@ export class QueueTable {
       this.now(),
       this.lateTolerance(),
     );
-    return this.reversed() ? [...kept].reverse() : kept;
+    return settledLast(kept, this.reversed());
   });
 
   protected readonly columns: readonly FoldTableColumn<HandoverQueueEntryView>[] = [
