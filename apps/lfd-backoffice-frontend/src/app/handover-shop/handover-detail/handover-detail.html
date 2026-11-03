@@ -261,9 +261,15 @@
           data-action="remit"
           [loading]="remitting()"
           [disabled]="nothingChecked()"
-          (click)="remit()"
+          (click)="incompleteProcedure() ? startIncomplete() : remit()"
         >
-          {{ shipments().length > 0 ? 'Remettre les envois cochés' : 'Remettre la commande' }}
+          <!-- Sac pas fini : la procédure, qui lit le bac avant tout geste
+               (Hugo, 2026-11-03). Sac fini : la remise, sans dialogue. -->
+          @if (incompleteProcedure()) {
+            Procédure commande incomplète
+          } @else {
+            {{ shipments().length > 0 ? 'Remettre les envois cochés' : 'Remettre la commande' }}
+          }
         </button>
       }
     </footer>

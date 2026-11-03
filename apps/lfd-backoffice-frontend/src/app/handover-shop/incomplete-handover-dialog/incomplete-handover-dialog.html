@@ -1,0 +1,60 @@
+<fold-panel-header
+  title="Procédure commande incomplète"
+  [subtitle]="data().reference"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="ihd-body">
+    @if (refusal(); as why) {
+      <fold-callout variant="warning" icon="info" data-refusal>{{ why }}</fold-callout>
+    }
+
+    @if (lines().length > 0) {
+      <ul class="ihd-lines">
+        @for (line of lines(); track line.sku) {
+          <li class="ihd-line" [attr.data-sku]="line.sku">
+            <span class="ihd-name">{{ line.productName }}</span>
+            <span class="ihd-split">
+              <span data-departing>
+                Au bac&nbsp;: {{ line.departing | saleQuantity: line.saleUnit }}
+              </span>
+              @if (line.notDeparting > 0) {
+                <span class="ihd-short" data-not-departing>
+                  Ne part pas&nbsp;: {{ line.notDeparting | saleQuantity: line.saleUnit }}
+                </span>
+              }
+              <span class="ihd-due">sur {{ line.due | saleQuantity: line.saleUnit }}</span>
+            </span>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  @if (refusal() === null) {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      Annuler
+    </button>
+    <button
+      foldButton
+      icon="check"
+      type="button"
+      data-action="hand-over-packed"
+      [loading]="saving()"
+      (click)="submit()"
+    >
+      Remettre ce qui est au bac — le reste est abandonné
+    </button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      Fermer
+    </button>
+  }
+</fold-panel-footer>

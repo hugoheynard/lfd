@@ -26,6 +26,7 @@ import {
   FoldSurfaceDirective,
 } from 'fold-ng';
 
+import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
 import { NotifyService } from '../../notify.service';
 import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
@@ -35,6 +36,10 @@ import {
   type CounterDocument,
   type CounterNotePanelData,
 } from '../counter-note-panel/counter-note-panel';
+import {
+  IncompleteHandoverDialog,
+  type IncompleteHandoverDialogData,
+} from '../incomplete-handover-dialog/incomplete-handover-dialog';
 import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
@@ -144,6 +149,7 @@ export class HandoverDetail {
   private readonly packing = inject(PackingService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly incomplete = inject(CounterIncompleteHandoverService);
 
   protected readonly state = signal<LoadState>('idle');
 
@@ -251,6 +257,17 @@ export class HandoverDetail {
   protected readonly caution = computed(() => gestureCaution(this.entry()));
   protected readonly muted = computed(() => gesturesMuted(this.entry(), this.readiness()));
 
+  /**
+   * **Le sac n'est pas fini** : le bouton du rail devient « Procédure commande
+   * incomplète » (Hugo, 2026-11-03). Faute de fiche de colis (plan non
+   * arrêté, commande hors plan), il n'y a rien à juger : la remise ordinaire
+   * reste. Deux envois prêts gardent leur propre geste (L4c).
+   */
+  protected readonly incompleteProcedure = computed<boolean>(() => {
+    const bag = this.readiness();
+    return bag !== null && !bag.ready && this.shipments().length === 0;
+  });
+
   /** Peut-on encore tendre ce sac ? La règle vit dans `handover-queue.ts`. */
   protected readonly remittable = computed<boolean>(() => {
     const entry = this.entry();
@@ -337,6 +354,43 @@ export class HandoverDetail {
       document,
     };
     this.panels.open<CounterNotePanelData>(CounterNotePanel, { data });
+  }
+
+  /**
+   * **Procédure commande incomplète** (lot C2, Hugo, 2026-11-03) : lit
+   * l'aperçu, puis — tout est réparti (`nothing_short`) — remet comme
+   * « Remettre la commande », sans dialogue ; sinon ouvre le dialogue, qui
+   * offre le geste partiel ou dit le refus.
+   *
+   * ⚠️ Le geste partiel est gravé `manual` par le serveur (C1), même quand un
+   * QR a ouvert la fiche : il ne porte pas le jeton lu.
+   */
+  protected async startIncomplete(): Promise<void> {
+    const entry = this.entry();
+    if (entry === null) {
+      return;
+    }
+    this.remitting.set(true);
+    let data: IncompleteHandoverDialogData;
+    try {
+      const view = await this.incomplete.preview(entry.orderId);
+      data = { orderId: entry.orderId, reference: entry.reference, view };
+    } catch (caught) {
+      this.notify.error(caught, "L'état du bac n'a pas pu être relu.");
+      return;
+    } finally {
+      this.remitting.set(false);
+    }
+    if (data.view.refusal === 'nothing_short') {
+      await this.remit();
+      return;
+    }
+    const ref = this.panels.open<IncompleteHandoverDialogData, boolean>(IncompleteHandoverDialog, {
+      data,
+    });
+    if ((await ref.closed) === true) {
+      this.remitted.emit();
+    }
   }
 
   /**

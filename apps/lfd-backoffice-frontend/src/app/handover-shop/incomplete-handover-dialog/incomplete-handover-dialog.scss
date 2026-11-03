@@ -1,0 +1,38 @@
+.ihd-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.ihd-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ihd-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.ihd-name {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.ihd-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+
+.ihd-short {
+  color: var(--fold-color-alert-text);
+}
+
+.ihd-due {
+  color: var(--fold-color-text-muted);
+}

@@ -1,7 +1,9 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import { FoldPanelHostService } from 'fold-ng';
 import type {
+  CounterIncompleteHandoverView,
   HandoverQueueEntryView,
   OrderHandoverLine,
   OrderHandoverView,
@@ -10,6 +12,7 @@ import type {
   ProductionPackingView,
 } from '@lfd/contracts';
 
+import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
 import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverDetail } from './handover-detail';
@@ -197,9 +200,38 @@ function sheet(reference: string, overrides: Partial<PackingSheet> = {}): Packin
   };
 }
 
+/** L'aperçu du départ incomplet (C2) — le rail ne lit que lui. */
+class FakeIncomplete {
+  view: CounterIncompleteHandoverView = {
+    orderId: 'ord_1',
+    refusal: null,
+    handoverRefusalReason: null,
+    lines: [],
+  };
+  readonly previewed: string[] = [];
+
+  preview(orderId: string): Promise<CounterIncompleteHandoverView> {
+    this.previewed.push(orderId);
+    return Promise.resolve(this.view);
+  }
+}
+
+/** L'hôte des panneaux : retient ce qu'on ouvre, et se ferme sur `result`. */
+class FakePanels {
+  readonly opened: unknown[] = [];
+  result: boolean | undefined = undefined;
+
+  open(_component: unknown, options: { data: unknown }): { closed: Promise<boolean | undefined> } {
+    this.opened.push(options.data);
+    return { closed: Promise.resolve(this.result) };
+  }
+}
+
 interface Doubles {
   readonly handovers: FakeHandovers;
   readonly packing?: FakePacking;
+  readonly incomplete?: FakeIncomplete;
+  readonly panels?: FakePanels;
 }
 
 async function render(
@@ -211,6 +243,13 @@ async function render(
     providers: [
       { provide: HandoverQueueService, useValue: doubles.handovers },
       { provide: PackingService, useValue: doubles.packing ?? new FakePacking() },
+      {
+        provide: CounterIncompleteHandoverService,
+        useValue: doubles.incomplete ?? new FakeIncomplete(),
+      },
+      ...(doubles.panels === undefined
+        ? []
+        : [{ provide: FoldPanelHostService, useValue: doubles.panels }]),
     ],
   });
   const fixture: ComponentFixture<HandoverDetail> = TestBed.createComponent(HandoverDetail);
@@ -577,5 +616,96 @@ describe('HandoverDetail — les envois prêts (plan E7 reliquat, L4c)', () => {
     fixture.detectChanges();
     const remit = buttonSaying(fixture, 'Remettre les envois cochés') as HTMLButtonElement | null;
     expect(remit?.disabled).toBe(true);
+  });
+  describe('procédure commande incomplète (C2)', () => {
+    const unfinished = (): FakePacking => new FakePacking([sheet('CMD-1042', { packedLines: 1 })]);
+
+    it('sac pas fini : le bouton dit « Procédure commande incomplète »', async () => {
+      const fixture = await render(entry(), {
+        handovers: new FakeHandovers(),
+        packing: unfinished(),
+      });
+      expect(buttonSaying(fixture, 'Procédure commande incomplète')).not.toBeNull();
+      expect(buttonSaying(fixture, 'Remettre la commande')).toBeNull();
+    });
+
+    it('sac fini : « Remettre la commande », et la remise part sans aperçu ni dialogue', async () => {
+      const handovers = new FakeHandovers();
+      const incomplete = new FakeIncomplete();
+      const panels = new FakePanels();
+      const fixture = await render(entry(), {
+        handovers,
+        incomplete,
+        panels,
+        packing: new FakePacking([
+          sheet('CMD-1042', { packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
+        ]),
+      });
+      expect(buttonSaying(fixture, 'Procédure commande incomplète')).toBeNull();
+      buttonSaying(fixture, 'Remettre la commande')?.click();
+      await fixture.whenStable();
+      expect(handovers.remitted).toEqual(['CMD-1042']);
+      expect(incomplete.previewed).toEqual([]);
+      expect(panels.opened).toEqual([]);
+    });
+
+    it('tout est réparti (`nothing_short`) : remise ordinaire, sans dialogue', async () => {
+      const handovers = new FakeHandovers();
+      const incomplete = new FakeIncomplete();
+      incomplete.view = { ...incomplete.view, refusal: 'nothing_short' };
+      const panels = new FakePanels();
+      const fixture = await render(entry(), {
+        handovers,
+        incomplete,
+        panels,
+        packing: unfinished(),
+      });
+      let remitted = 0;
+      fixture.componentInstance.remitted.subscribe(() => (remitted += 1));
+      buttonSaying(fixture, 'Procédure commande incomplète')?.click();
+      await fixture.whenStable();
+      expect(incomplete.previewed).toEqual(['ord_1']);
+      expect(panels.opened).toEqual([]);
+      expect(handovers.remitted).toEqual(['CMD-1042']);
+      expect(remitted).toBe(1);
+    });
+
+    it('un manque : le dialogue s’ouvre sur l’aperçu, et sa remise relit la file', async () => {
+      const handovers = new FakeHandovers();
+      const incomplete = new FakeIncomplete();
+      const panels = new FakePanels();
+      panels.result = true;
+      const fixture = await render(entry(), {
+        handovers,
+        incomplete,
+        panels,
+        packing: unfinished(),
+      });
+      let remitted = 0;
+      fixture.componentInstance.remitted.subscribe(() => (remitted += 1));
+      buttonSaying(fixture, 'Procédure commande incomplète')?.click();
+      await fixture.whenStable();
+      expect(panels.opened).toEqual([
+        { orderId: 'ord_1', reference: 'CMD-1042', view: incomplete.view },
+      ]);
+      // Le rail ne remet rien lui-même : c'est le dialogue qui a remis.
+      expect(handovers.remitted).toEqual([]);
+      expect(remitted).toBe(1);
+    });
+
+    it('dialogue refermé sans geste : rien n’est annoncé', async () => {
+      const panels = new FakePanels();
+      const fixture = await render(entry(), {
+        handovers: new FakeHandovers(),
+        panels,
+        packing: unfinished(),
+      });
+      let remitted = 0;
+      fixture.componentInstance.remitted.subscribe(() => (remitted += 1));
+      buttonSaying(fixture, 'Procédure commande incomplète')?.click();
+      await fixture.whenStable();
+      expect(panels.opened.length).toBe(1);
+      expect(remitted).toBe(0);
+    });
   });
 });
