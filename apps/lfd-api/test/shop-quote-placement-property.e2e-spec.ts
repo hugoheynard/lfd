@@ -46,6 +46,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { drawer, pick, type Drawer } from "./seeded-draw.js";
 
 const REGISTERED = "auth0|propriete-inscrit";
 const SERVICE_DAY = serviceDay();
@@ -90,19 +91,6 @@ const fakeGateway = {
   parseWebhook: () => ({ kind: "ignored" as const }),
   cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
-
-/** Un tirage déterministe (mulberry32) — rien ne dépend de l'horloge ni de `Math.random`. */
-function drawer(seed: number): { next: () => number; int: (min: number, max: number) => number } {
-  let state = seed >>> 0;
-  const next = (): number => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-  };
-  return { next, int: (min, max) => min + Math.floor(next() * (max - min + 1)) };
-}
 
 let ctx: E2eContext;
 let site = "";
@@ -173,11 +161,6 @@ const PERCENTS = [
   1, 333, 500, 1_000, 1_250, 1_500, 2_000, 3_333, 10_000,
 ] as const satisfies readonly [number, ...number[]];
 const AMOUNTS = [1, 50, 199, 300, 1_000, 5_000, 99_999] as const;
-/** Un élément tiré ; les listes ci-dessous ne sont jamais vides. */
-function pick<T>(rng: ReturnType<typeof drawer>, items: readonly [T, ...T[]]): T {
-  return items[rng.int(0, items.length - 1)] ?? items[0];
-}
-
 type Audience = PromotionTermsPayload["audiences"][number];
 const AUDIENCES: readonly [Audience, ...Audience[]] = [
   { kind: "everyone" as const, companyId: null },
@@ -191,7 +174,7 @@ interface Basket {
   readonly describe: string;
 }
 
-function drawBasket(rng: ReturnType<typeof drawer>, index: number): Basket {
+function drawBasket(rng: Drawer, index: number): Basket {
   const picked = [...SKUS].sort(() => rng.next() - 0.5).slice(0, rng.int(1, 4));
   const lines = picked.map((sku) => ({ sku, quantity: rng.int(1, 15) }));
   const promotions: PromotionTermsPayload[] = [];
@@ -414,7 +397,7 @@ async function expectSameDiscounts(
  * Deux ou trois promotions panier CUMULABLES (lot M7) — tout le monde, au
  * retrait : elles s'enchaînent sur le reste, un arrondi par étape.
  */
-function drawCumulatedBasket(rng: ReturnType<typeof drawer>, index: number): Basket {
+function drawCumulatedBasket(rng: Drawer, index: number): Basket {
   const picked = [...SKUS].sort(() => rng.next() - 0.5).slice(0, rng.int(1, 5));
   const lines = picked.map((sku) => ({ sku, quantity: rng.int(1, 15) }));
   const promotions = Array.from({ length: rng.int(2, 3) }, (_, rank) => {

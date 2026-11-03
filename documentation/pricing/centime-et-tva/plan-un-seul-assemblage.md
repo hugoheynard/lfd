@@ -10,7 +10,7 @@
 > commun de deux assemblages ; celle-ci sépare ce que tous les chemins
 > emmêlent. Il touche à l'argent : contredit par `vitruve` avant Hugo.
 > L'inventaire qui le fonde : [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md)
-> (26 étapes, 17 écarts, vérifié le 2026-11-03).
+> (26 étapes, 17 écarts, vérifié le 2026-11-03 ; É18 ajouté par le corpus L0).
 
 ## 1. Le diagnostic
 
@@ -126,21 +126,34 @@ sans aucun montant ; `orderTotalRows` lit `BasketAmounts`, un adaptateur sert
 
 ## 4. Les lots (un à la fois)
 
-| Lot     | Contenu                                                                                                                       | Ce qui le prouve                      |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **L0**  | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                                  | vert sur le code d'aujourd'hui        |
-| **L1**  | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose` (la révision bascule ici, contexte figé) | G2 au centime, commandes et révisions |
-| **L2**  | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil         | G2 ; écarts tranchés                  |
-| **L3**  | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                            | G2 ; écarts tranchés                  |
-| **L4**  | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                            | G3 (ordre) ; refus du corpus          |
-| **L5a** | fiche commande sur `BasketAmounts` (adaptateur depuis les colonnes)                                                           | rendu identique sur le corpus         |
-| **L5b** | PDF du bon                                                                                                                    | idem                                  |
-| **L5c** | panier de la boutique                                                                                                         | idem                                  |
-| **L5d** | panier de la saisie (fin des champs passés à vide)                                                                            | idem                                  |
-| **L6**  | suppression de l'ancien code ; porte : le calcul réservé à `priceBasket`, interdit aux fronts                                 | la porte, et G2                       |
+| Lot                  | Contenu                                                                                                                       | Ce qui le prouve                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **L0** ✅ 2026-11-03 | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                                  | vert sur le code d'aujourd'hui        |
+| **L1**               | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose` (la révision bascule ici, contexte figé) | G2 au centime, commandes et révisions |
+| **L2**               | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil         | G2 ; écarts tranchés                  |
+| **L3**               | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                            | G2 ; écarts tranchés                  |
+| **L4**               | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                            | G3 (ordre) ; refus du corpus          |
+| **L5a**              | fiche commande sur `BasketAmounts` (adaptateur depuis les colonnes)                                                           | rendu identique sur le corpus         |
+| **L5b**              | PDF du bon                                                                                                                    | idem                                  |
+| **L5c**              | panier de la boutique                                                                                                         | idem                                  |
+| **L5d**              | panier de la saisie (fin des champs passés à vide)                                                                            | idem                                  |
+| **L6**               | suppression de l'ancien code ; porte : le calcul réservé à `priceBasket`, interdit aux fronts                                 | la porte, et G2                       |
 
 Chaque lot dit au bâti son nombre de fichiers et d'appelants, et son retour
 arrière (L6, la suppression, se fait seule et en dernier).
+
+**L0, bâti le 2026-11-03** —
+`apps/lfd-api/test/pricing-golden-master.e2e-spec.ts` et ses sept modules
+`pricing-golden-master-*.ts`, l'instantané
+`apps/lfd-api/test/pricing-golden-master.snapshot.json`, le tirage partagé
+`apps/lfd-api/test/seeded-draw.ts`. Horloge figée sur un mercredi à 10 h, 32 paniers à
+graine fixe, 19 chemins par panier (A, B, E en deux passes ; C ; D client
+puis équipe), deux cas fixes (ordre des refus, dérogation) ; ~42 s.
+Régénérer : `LFD_GOLDEN_MASTER_WRITE=1`, jamais par défaut. Écarts admis
+nommés dans `apps/lfd-api/test/pricing-golden-master-properties.ts` : É11, É16 ; écart nouveau
+É18 inscrit à l'inventaire. Ordre des refus mesuré : jour (3) avant chargement
+(4), chargement (4) avant heure limite (5) ; le payeur (1) n'est pas mesuré
+(aucun compte de groupe ni site au payeur inactif dans la scène).
 
 ## 5. Ce que ce plan ne fait pas
 
@@ -148,14 +161,14 @@ arrière (L6, la suppression, se fait seule et en dernier).
 - Faire de la saisie l'espace du pro : elle reste un écran admin.
 - Fusionner les deux paniers.
 
-## 6. Questions pour Hugo (à trancher avant L1)
+## 6. Décisions de Hugo (2026-11-03, « oui aux trois »)
 
 - **É12** — la révision par l'équipe d'une commande pro suit-elle la règle E1
-  (créneaux du pro) ? Recommandation : oui (`ProWindowRule` en exécution).
+  (créneaux du pro) ? **Oui** : la révision suit E1, comme la passation.
 - **É13** — la révision garde-t-elle la clientèle de la commande, plutôt que
-  celle d'aujourd'hui ? Recommandation : oui (contexte figé).
+  celle d'aujourd'hui ? **Oui** : contexte figé sur la commande.
 - **É9** — le mode de TVA du port : celui du jour pour un panier, celui de la
-  commande pour une révision. Recommandation : oui (la passation fait foi).
+  commande pour une révision. **Oui** : le jour pour un panier, le figé pour une révision.
 
 ## 7. Ce que `vitruve` a contredit
 

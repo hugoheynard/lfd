@@ -46,6 +46,14 @@ export const E2E_WORKERS = Number(process.env["E2E_WORKERS"] ?? "4");
 export const E2E_BOOT_LOG: string | undefined = process.env["E2E_BOOT_LOG"];
 
 /**
+ * **Réécrire l'instantané du golden master du chiffrage** au lieu de le
+ * comparer (`test/pricing-golden-master.e2e-spec.ts`). Jamais posé par
+ * défaut, ni en CI : un instantané réécrit d'office ne prouverait plus rien.
+ * `LFD_GOLDEN_MASTER_WRITE=1`, une fois, quand un écart a été tranché.
+ */
+export const GOLDEN_MASTER_WRITE = process.env["LFD_GOLDEN_MASTER_WRITE"] === "1";
+
+/**
  * Le numéro du worker courant, 1..N.
  *
  * Jest pose `JEST_WORKER_ID` dans chaque worker. Hors de Jest — le script de

@@ -328,7 +328,24 @@ donne donc un devis anonyme plus cher que la commande du même client connecté.
 Voulu (la porte se lit sur la route, `SCQ:498-505`) ; à garder en tête pour les
 parités. _Recommandation_ : paramètre de `CartPricing`, jamais lu du corps.
 
-**17 écarts.**
+**É18 — Société suspendue : la saisie de l'équipe passe (relevé par le
+corpus L0, 2026-11-03).** É14 suppose que C refuse une société suspendue ;
+mesuré sur `POST /admin/orders` (règlement `link`), il ne la refuse pas. Ni
+`orderPayerOf` (`domain/services/order-payer.ts:22-37` : il ne refuse qu'un
+compte de groupe sans livraison ou un payeur suivi non actif), ni la porte
+d'admission de l'équipe (`services/staff-order-preparation.ts:56-60` →
+`order-intake.service.ts:121-127`) n'opposent le statut de la société. La
+commande s'écrit en `line_ht` (une société), **au prix public** : la
+clientèle tarifaire d'une société non active est celle des particuliers
+(`order-intake.service.ts:61-63`). Le règlement au compte, lui, est refusé
+(`orders.settlement.account_not_granted`) faute de crédit — pas pour le
+statut. Le chemin client (`POST /orders` d'un acheteur de société suspendue)
+n'a pas été mesuré. Effet : une commande pro au prix public pour un compte
+que l'équipe a suspendu. _À trancher par Hugo_ : voulu (l'équipe sert
+encore un compte suspendu, au lien) ou trou de la porte ? Instantané :
+`refusal-order` → `suspended.only` (`apps/lfd-api/test/pricing-golden-master.snapshot.json`).
+
+**18 écarts** (17 au C0, É18 ajouté par le corpus L0).
 
 ## 4. Les preuves existantes (lues le 2026-11-03)
 
