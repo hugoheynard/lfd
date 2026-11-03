@@ -1,23 +1,25 @@
 <!-- Le récapitulatif ne paraît qu'avec une ligne : un panier vide n'a rien à
      résumer. Ce que l'écran ne calcule PAS est dit juste dessous, sinon le
      commercial annoncerait le sous-total comme un total. -->
-<fold-element-title
-  variant="title"
-  title="Panier"
-  [level]="2"
-  [subtitle]="
-    cart().isEmpty()
-      ? undefined
-      : 'Remise de retrait, frais de livraison, TVA et total TTC sont calculés à la validation.'
-  "
->
-  @if (!cart().isEmpty()) {
-    <span titleAction class="pan-summary">
-      {{ cart().itemCount() }} article{{ cart().itemCount() > 1 ? 's' : '' }} · Sous-total HT
-      {{ subtotal() }} HT
-    </span>
-  }
-</fold-element-title>
+@if (headed()) {
+  <fold-element-title
+    variant="title"
+    title="Panier"
+    [level]="2"
+    [subtitle]="cart().isEmpty() ? undefined : TOTALS_LATER"
+  >
+    @if (!cart().isEmpty()) {
+      <span titleAction class="pan-summary">{{ summary() }}</span>
+    }
+  </fold-element-title>
+} @else if (!cart().isEmpty()) {
+  <!-- Dans le panneau, son en-tête dit déjà « Panier » (Hugo, 2026-11-03) :
+       il ne reste que le récapitulatif. -->
+  <div class="pan-recap">
+    <strong class="pan-summary">{{ summary() }}</strong>
+    <span class="pan-later">{{ TOTALS_LATER }}</span>
+  </div>
+}
 
 <!-- Une bascule pleine largeur : les réglages OU les lignes, jamais les deux.
      La validation, en pied, reste visible dans les deux vues. -->

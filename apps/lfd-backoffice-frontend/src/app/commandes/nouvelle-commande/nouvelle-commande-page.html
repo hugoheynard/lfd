@@ -108,7 +108,7 @@
       }
     }
 
-    <div class="nc-columns">
+    <div class="nc-columns" [class.is-drawer]="narrow()">
       <app-source-produits
         class="nc-col nc-left"
         [kind]="source()"

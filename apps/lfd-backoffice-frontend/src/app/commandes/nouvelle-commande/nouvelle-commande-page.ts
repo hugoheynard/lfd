@@ -115,6 +115,9 @@ const EMPTY_SPECS: DeliverySpecs = {
   gps: null,
 };
 
+/** Sous cette largeur, le panier passe en tiroir (cf. `narrow`). */
+const CART_DRAWER_MEDIA = '(max-width: 1279px)';
+
 /**
  * **Saisir une commande pour un client** — l'écran du commercial au téléphone.
  *
@@ -136,6 +139,7 @@ const EMPTY_SPECS: DeliverySpecs = {
  * arrive depuis la fiche du client, qui est le seul endroit d'où la question a
  * déjà une réponse.
  */
+
 @Component({
   selector: 'app-nouvelle-commande-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -255,8 +259,14 @@ export class NouvelleCommandePage {
    * Écran étroit ⇒ le panier passe en tiroir, derrière la barre du bas. La
    * largeur est lue en TypeScript et non en CSS : c'est elle qui décide si la
    * colonne est **rendue**, pas seulement si on la voit.
+   *
+   * Seuil PROPRE à cet écran, plus large que celui du back-office : la colonne
+   * du panier n'est que le tiers du contenu, et sur un iPad mini à
+   * l'horizontale (1133 px, menu ouvert) elle tombait à ~280 px — onglets
+   * coupés, réglages écrasés (Hugo, 2026-11-03). Sous 1280 px, le tiroir
+   * (~490 px) le sert mieux.
    */
-  protected readonly narrow = narrowViewport();
+  protected readonly narrow = narrowViewport(CART_DRAWER_MEDIA);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<OrderEntryCustomer | null>(null);

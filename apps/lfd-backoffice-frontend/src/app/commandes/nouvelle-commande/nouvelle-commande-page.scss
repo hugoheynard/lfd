@@ -51,12 +51,11 @@
   flex-direction: column;
 }
 
-/* Sous 900 px, le panier passe en pleine largeur sous les sources, dans l'ordre
-   où on s'en sert : on choisit d'abord, on valide ensuite. */
-@media (max-width: 900px) {
-  .nc-columns {
-    grid-template-columns: 1fr;
-  }
+/* Le panier en tiroir (`narrow`, sous 1280 px) : les sources prennent toute la
+   largeur. Posé par le TypeScript, qui décide déjà du tiroir — une media query
+   ici aurait un second seuil à tenir d'accord. */
+.nc-columns.is-drawer {
+  grid-template-columns: 1fr;
 }
 
 /* La barre du panier, en mobile : collée en bas de la page, au-dessus de tout

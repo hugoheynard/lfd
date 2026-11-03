@@ -138,6 +138,21 @@ export class PanierCommande {
    * faux au comptoir, qui n'a pas `b2b_companies:write`.
    */
   readonly canKeepAddress = input(true);
+  /**
+   * Porte-t-il son propre titre ? Faux dans le panneau mobile, dont l'en-tête
+   * dit déjà « Panier » : deux titres l'un sous l'autre (Hugo, 2026-11-03).
+   */
+  readonly headed = input(true);
+
+  /** Ce que l'écran ne calcule PAS, dit près du sous-total. */
+  protected readonly TOTALS_LATER =
+    'Remise de retrait, frais de livraison, TVA et total TTC sont calculés à la validation.';
+
+  /** « 7 articles · Sous-total HT 123,45 € HT ». */
+  protected readonly summary = computed(() => {
+    const count = this.cart().itemCount();
+    return `${count} article${count > 1 ? 's' : ''} · Sous-total HT ${this.subtotal()} HT`;
+  });
   /** Le point du comptoir quand le « Retrait immédiat » est proposé — relayé à l'acheminement. */
   readonly counterPlaceId = input<string | null>(null);
   /**
