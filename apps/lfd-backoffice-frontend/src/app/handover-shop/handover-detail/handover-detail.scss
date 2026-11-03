@@ -229,7 +229,9 @@
    lire les quantités. */
 .hd-line {
   display: grid;
-  grid-template-columns: 2.25rem 1fr auto;
+  /* Quantité, nom, SKU, puis les deux coches — four et bac — en colonnes
+     fixes : on les parcourt de haut en bas, comme la quantité. */
+  grid-template-columns: 2.25rem 1fr auto 1.25rem 1.25rem;
   align-items: baseline;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) 0;
@@ -258,6 +260,23 @@
   /* Un nom long revient à la ligne plutôt que d'être coupé : on le lit pour
      trouver le produit sur une étagère, pas pour le reconnaître d'un préfixe. */
   overflow-wrap: anywhere;
+}
+
+/* Fait, en partie, pas fait : les trois tons sémantiques de fold. */
+.hd-mark {
+  align-self: center;
+
+  &[data-tone='success'] {
+    color: var(--fold-color-success);
+  }
+
+  &[data-tone='warning'] {
+    color: var(--fold-color-warning);
+  }
+
+  &[data-tone='alert'] {
+    color: var(--fold-color-alert);
+  }
 }
 
 .hd-sku {

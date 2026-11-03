@@ -161,6 +161,30 @@
                   <span class="hd-qty">{{ line.quantity | saleQuantity: line.saleUnit }}</span>
                   <span class="hd-name">{{ line.productName }}</span>
                   <span class="hd-sku">{{ line.sku }}</span>
+                  <!-- Les deux coches (Hugo, 2026-11-03) : le four, puis le bac.
+                       Le ton dit l'état, le libellé le dit à qui ne voit pas
+                       la couleur. -->
+                  @if (marks().get(line.sku); as mark) {
+                    <fold-icon
+                      class="hd-mark"
+                      name="croissant"
+                      [attr.data-tone]="mark.oven"
+                      data-mark="oven"
+                      size="sm"
+                      [title]="mark.ovenLabel"
+                    />
+                    <fold-icon
+                      class="hd-mark"
+                      name="package"
+                      [attr.data-tone]="mark.packing"
+                      data-mark="packing"
+                      size="sm"
+                      [title]="mark.packingLabel"
+                    />
+                  } @else {
+                    <span></span>
+                    <span></span>
+                  }
                 </li>
               }
             </ul>

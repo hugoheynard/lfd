@@ -19,6 +19,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldLoadingStateComponent,
   FoldMeterComponent,
   FoldPanelHostService,
@@ -37,7 +38,7 @@ import {
 import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
-import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
+import { bagReadiness, gestureCaution, lineMarks, readyVerdict } from './bag-readiness';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -95,6 +96,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldLoadingStateComponent,
     FoldMeterComponent,
     // 🔴 La directive, pas seulement l'attribut : sans elle `foldSurface` est
@@ -226,6 +228,8 @@ export class HandoverDetail {
    */
   private readonly sheet = signal<PackingSheet | null>(null);
   protected readonly readiness = computed(() => bagReadiness(this.sheet()));
+  /** Les coches fournil et colisage de chaque ligne, par SKU. */
+  protected readonly marks = computed(() => lineMarks(this.sheet()));
   protected readonly verdict = computed(() => readyVerdict(this.entry(), this.readiness()));
 
   /**

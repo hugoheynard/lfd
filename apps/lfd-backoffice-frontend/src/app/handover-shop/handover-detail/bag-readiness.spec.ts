@@ -1,7 +1,7 @@
-import type { PackingSheet } from '@lfd/contracts';
+import type { PackingLine, PackingSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
+import { bagReadiness, gestureCaution, lineMarks, readyVerdict } from './bag-readiness';
 
 function sheet(overrides: Partial<PackingSheet> = {}): PackingSheet {
   return {
@@ -105,5 +105,57 @@ describe('la retenue du contrôle qualité (lot QC5)', () => {
     expect(gestureCaution(held, closedBag)).toContain('contrôle qualité');
     expect(gestureCaution(ENTRY, closedBag)).toBeNull();
     expect(gestureCaution(ENTRY, null)).toContain('colisage');
+  });
+});
+
+function packingLine(sku: string, over: Partial<PackingLine> = {}): PackingLine {
+  return {
+    sku,
+    productName: sku,
+    quantity: 4,
+    saleUnit: 'piece',
+    packed: false,
+    initials: null,
+    packedAt: null,
+    awaitingProduction: false,
+    allocated: 0,
+    unallocated: 4,
+    ...over,
+  };
+}
+
+/** Les deux coches de chaque ligne (Hugo, 2026-11-03). */
+describe('lineMarks', () => {
+  it('sans fiche de colis, aucune coche', () => {
+    expect(lineMarks(null).size).toBe(0);
+  });
+
+  it('le fournil : sorti en succès, en attente en alerte — jamais « en partie »', () => {
+    const marks = lineMarks(
+      sheet({ lines: [packingLine('A'), packingLine('B', { awaitingProduction: true })] }),
+    );
+
+    expect(marks.get('A')?.oven).toBe('success');
+    expect(marks.get('B')?.oven).toBe('alert');
+    expect(marks.get('B')?.ovenLabel).toBe('Fournil : pas encore sorti');
+  });
+
+  it('le colisage : au bac, en partie, rien', () => {
+    const marks = lineMarks(
+      sheet({
+        lines: [
+          packingLine('A', { packed: true, allocated: 4, unallocated: 0 }),
+          packingLine('B', { allocated: 2, unallocated: 2 }),
+          packingLine('C'),
+        ],
+      }),
+    );
+
+    expect([marks.get('A')?.packing, marks.get('B')?.packing, marks.get('C')?.packing]).toEqual([
+      'success',
+      'warning',
+      'alert',
+    ]);
+    expect(marks.get('B')?.packingLabel).toBe('Colisage : en partie au bac');
   });
 });

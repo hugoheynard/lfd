@@ -133,3 +133,46 @@ export function gestureCaution(
     ? null
     : 'Le fournil ou le colisage n\u2019a pas fini\u00a0: vérifiez le sac avant de le remettre.';
 }
+
+/** Le ton d'une coche : fait, en partie, pas fait. */
+export type LineMarkTone = 'success' | 'warning' | 'alert';
+
+/** Les deux coches d'une ligne du sac, et ce qu'elles disent. */
+export interface LineMarks {
+  readonly oven: LineMarkTone;
+  readonly ovenLabel: string;
+  readonly packing: LineMarkTone;
+  readonly packingLabel: string;
+}
+
+/**
+ * **Les deux coches de chaque ligne** du sac — le fournil, puis le colisage
+ * (Hugo, 2026-11-03), par SKU.
+ *
+ * Le fournil n'a que deux tons : la fiche de colis dit d'une ligne qu'elle
+ * attend le four ou non (`awaitingProduction`), pas combien en est sorti. Un
+ * « en partie » au fournil inventerait une mesure que personne n'a prise. Le
+ * colisage en a trois : posée au bac, répartie en partie (`allocated`), rien.
+ *
+ * Sans fiche de colis, aucune coche : rien n'est suivi, et la phrase sous les
+ * barres le dit déjà.
+ */
+export function lineMarks(sheet: PackingSheet | null): ReadonlyMap<string, LineMarks> {
+  const marks = new Map<string, LineMarks>();
+  for (const line of sheet?.lines ?? []) {
+    const started = (line.allocated ?? 0) > 0;
+    const packing: LineMarkTone = line.packed ? 'success' : started ? 'warning' : 'alert';
+    marks.set(line.sku, {
+      oven: line.awaitingProduction ? 'alert' : 'success',
+      ovenLabel: line.awaitingProduction ? 'Fournil : pas encore sorti' : 'Fournil : sorti',
+      packing,
+      packingLabel:
+        packing === 'success'
+          ? 'Colisage : au bac'
+          : packing === 'warning'
+            ? 'Colisage : en partie au bac'
+            : 'Colisage : pas encore au bac',
+    });
+  }
+  return marks;
+}
