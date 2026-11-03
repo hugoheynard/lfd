@@ -35,6 +35,7 @@ import {
   lateLabel,
   lateMinutes,
   matchingQueue,
+  missingSummary,
   type QueueView,
   nowLineAfter,
   rowTone,
@@ -257,20 +258,8 @@ export class QueueTable {
     this.abandoned(entry) !== null ||
     entry.orderId === this.nowAfter();
 
-  /**
-   * « 228 pièces non données sur 18 produits » — le résumé du départ
-   * incomplet dans la file (Hugo, 2026-11-03). Une ligne au poids compte comme
-   * un produit, pas en pièces : des grammes ne s'additionnent pas à des pièces.
-   */
-  protected missingSummary(lines: readonly PackingAbandonedLine[]): string {
-    const pieces = lines
-      .filter((line) => line.saleUnit !== 'weight')
-      .reduce((sum, line) => sum + line.quantity, 0);
-    const products = `${String(lines.length)} produit${lines.length > 1 ? 's' : ''}`;
-    return pieces === 0
-      ? `${products} non donné${lines.length > 1 ? 's' : ''}`
-      : `${String(pieces)} pièce${pieces > 1 ? 's' : ''} non donnée${pieces > 1 ? 's' : ''} sur ${products}`;
-  }
+  /** Le résumé du départ incomplet, commun à la file et au rail. */
+  protected readonly missingSummary = missingSummary;
 
   /** Le reste abandonné d'un départ incomplet décidé, ou `null` s'il n'y en a pas. */
   protected abandoned(entry: HandoverQueueEntryView): readonly PackingAbandonedLine[] | null {

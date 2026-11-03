@@ -30,7 +30,6 @@ import { CounterIncompleteHandoverService } from '../../comptoir/counter-incompl
 import { NotifyService } from '../../notify.service';
 import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
-import { MissingItems } from '../missing-items/missing-items';
 import {
   CounterNotePanel,
   type CounterDocument,
@@ -42,7 +41,7 @@ import {
   type IncompleteHandoverOutcome,
 } from '../incomplete-handover-dialog/incomplete-handover-dialog';
 import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
-import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
+import { formatWindow, missingSummary, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
 import {
   bagReadiness,
@@ -104,7 +103,6 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     SaleQuantityPipe,
-    MissingItems,
     ShipmentChoice,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -191,6 +189,9 @@ export class HandoverDetail {
   );
 
   /** Le reste abandonné d'un départ incomplet décidé — vide sinon. */
+  /** Le résumé du départ incomplet, commun à la file et au rail. */
+  protected readonly missingSummary = missingSummary;
+
   protected readonly abandoned = computed<readonly PackingAbandonedLine[]>(
     () => this.entry()?.abandonedRemainder ?? [],
   );

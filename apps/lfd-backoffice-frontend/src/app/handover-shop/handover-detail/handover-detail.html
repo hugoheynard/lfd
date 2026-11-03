@@ -90,8 +90,13 @@
         <!-- Départ incomplet décidé (2026-10-25) : ce qui ne part pas, lu
              AVANT de tendre le sac. Il informe le vendeur ; prévenir le client
              est une décision du commerce (« Écrire au client », E6d). -->
+        <!-- Une ligne, pas la liste (Hugo, 2026-11-03) : la liste repoussait
+             « Ce qu'on tend » hors de vue et en bloquait le défilement ; chaque
+             article y montre déjà ce qui est au bac sur le commandé. -->
         @if (abandoned().length > 0) {
-          <app-missing-items [lines]="abandoned()" [fulfillmentMethod]="row.fulfillmentMethod" />
+          <fold-callout appearance="inset" variant="warning" icon="info" data-missing-summary>
+            <strong>Commande incomplète</strong> · {{ missingSummary(abandoned()) }}
+          </fold-callout>
         }
         <!-- Deux étapes, deux barres (Hugo, 2026-09-28) : le four PUIS le bac.
              « Déclarée prête » ne disait que la seconde. -->

@@ -485,7 +485,8 @@ describe('HandoverDetail', () => {
     expect(buttonSaying(fixture, 'Bon de commande')).not.toBeNull();
   });
 
-  it('🔴 une commande incomplète est annoncée AVANT le sac, article par article', async () => {
+  /** En une ligne (Hugo, 2026-11-03) : la liste bloquait le défilement du sac. */
+  it('🔴 une commande incomplète est annoncée AVANT le sac, en une ligne', async () => {
     const fixture = await render(
       entry({
         abandonedRemainder: [
@@ -495,7 +496,7 @@ describe('HandoverDetail', () => {
     );
 
     expect(text(fixture)).toContain('Commande incomplète');
-    expect(text(fixture)).toContain('2 Croissant nature');
+    expect(text(fixture)).toContain('2 pièces non données sur 1 produit');
     // Il informe ; prévenir le client est une décision du commerce (E6d).
     expect(text(fixture)).not.toMatch(/prévenez|dites-le/i);
   });

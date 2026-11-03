@@ -4,6 +4,7 @@ import type {
   HandoverQueueState,
   HandoverQueueWindowView,
   OrderHandoverView,
+  PackingAbandonedLine,
 } from '@lfd/contracts';
 import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
 
@@ -749,4 +750,20 @@ export function isoDay(date: Date): string {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * « 192 pièces non données sur 16 produits » — le résumé d'un départ
+ * incomplet, le même dans la file et dans le rail (Hugo, 2026-11-03 : la liste
+ * article par article mangeait la place). Une ligne au poids compte comme un
+ * produit, pas en pièces : des grammes ne s'additionnent pas à des pièces.
+ */
+export function missingSummary(lines: readonly PackingAbandonedLine[]): string {
+  const pieces = lines
+    .filter((line) => line.saleUnit !== 'weight')
+    .reduce((sum, line) => sum + line.quantity, 0);
+  const products = `${String(lines.length)} produit${lines.length > 1 ? 's' : ''}`;
+  return pieces === 0
+    ? `${products} non donné${lines.length > 1 ? 's' : ''}`
+    : `${String(pieces)} pièce${pieces > 1 ? 's' : ''} non donnée${pieces > 1 ? 's' : ''} sur ${products}`;
 }
