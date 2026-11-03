@@ -26712,6 +26712,12 @@
       "code": "orders.counter.company_suspended",
       "amounts": null,
       "notes": {}
+    },
+    "e18-suspended-on-account.C.admin-orders.counter-link": {
+      "status": 409,
+      "code": "orders.counter.company_suspended",
+      "amounts": null,
+      "notes": {}
     }
   }
 }

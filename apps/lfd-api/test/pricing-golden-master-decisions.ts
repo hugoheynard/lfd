@@ -167,7 +167,7 @@ async function audienceChangedSince(
 
 /**
  * É18 : une société suspendue au crédit accordé, saisie au compte — hors
- * comptoir puis au comptoir. Le crédit accordé écarte « faute de crédit » :
+ * comptoir puis au comptoir, puis par lien au comptoir. Le crédit accordé écarte « faute de crédit » :
  * seul le statut peut refuser.
  */
 async function suspendedOnAccount(
@@ -189,6 +189,8 @@ async function suspendedOnAccount(
   return {
     "C.admin-orders.account": await post({}),
     "C.admin-orders.counter-account": await post({ entryOrigin: "counter" }),
+    // Le lien au comptoir nomme la suspension, pas « Au compte » (rang 0, 2026-11-03).
+    "C.admin-orders.counter-link": await post({ entryOrigin: "counter", settlement: "link" }),
   };
 }
 

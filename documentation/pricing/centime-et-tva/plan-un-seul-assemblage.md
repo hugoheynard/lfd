@@ -85,6 +85,9 @@ Pas de moteur à deux modes (`vitruve` : il coûte un lot entier pour une dizain
 de règles, et une règle verrouillée a de toute façon deux codes). **L'ordre des
 refus, écrit une fois et testé** :
 
+0. le refus du lien au comptoir (`prepareStaffOrder`, avant le payeur) — il
+   nomme la suspension ou l'inactivité de la société quand « Au compte » serait
+   refusé aussi (Hugo, 2026-11-03) ;
 1. payeur (`order-drafting.service.ts` l. 153) ;
 2. décision de la marque, vitrine ou fabrication (l. 161) ;
 3. jour ouvert, sans verrou (l. 172) ;

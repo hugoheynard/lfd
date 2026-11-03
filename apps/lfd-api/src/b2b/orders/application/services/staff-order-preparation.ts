@@ -9,11 +9,12 @@ import {
 } from "../../domain/services/order-supply-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
+import { counterCompanyStatusRefusal } from "./staff-settlement-refusal.js";
 import type { OrderIntake } from "./order-intake.service.js";
 
 /** Ce que la préparation lit, et rien d'autre. */
 export interface StaffOrderPreparationPorts {
-  readonly guard: Pick<OrderGuardReader, "roleOf">;
+  readonly guard: Pick<OrderGuardReader, "roleOf" | "companyStatusOf">;
   readonly intake: Pick<OrderIntake, "admitStaffEntry">;
   readonly drafting: Pick<OrderDrafting, "draft">;
 }
@@ -36,6 +37,8 @@ export interface StaffOrderPreparationPorts {
  *
  * @throws {OrderCompanyNotFoundError} l'acheteur n'est pas membre de la société.
  * @throws {CounterLinkSettlementRefusedError} un lien de règlement au comptoir.
+ * @throws {CounterAccountSettlementNotGrantedError} le même lien, quand la
+ *   société est suspendue ou inactive : « Au compte » serait refusé aussi.
  * @throws {OrdersClosedForAudienceError} la boutique est fermée à sa clientèle.
  * @throws {ServiceDayBeforeFirstOrderableDayError} avant son premier jour commandable.
  */
@@ -49,10 +52,7 @@ export async function prepareStaffOrder(
   // Un 404 non-divulguant, comme sur le chemin client : le back-office a la
   // fiche sous les yeux, il n'a pas besoin d'un message plus bavard.
   ensureOrderMember(await ports.guard.roleOf(buyerUserId, companyId), companyId);
-  ensureCounterSettlement(
-    payload.settlement,
-    isCounterEntry(payload.entryOrigin, payload.entryShortcut),
-  );
+  await ensureCounterLinkCause(ports.guard, payload);
   await ports.intake.admitStaffEntry(
     companyId,
     { userId: buyerUserId },
@@ -82,4 +82,26 @@ export async function prepareStaffOrder(
     // Le « Retrait immédiat » du comptoir (lot L6) : une trace sur une `shelf`.
     payload.entryShortcut,
   );
+}
+
+/**
+ * **Le lien refusé au comptoir dit la cause réelle** (rang 0 du §2.4,
+ * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`) : si la
+ * société est suspendue ou inactive, « Choisissez Au compte » enverrait le
+ * vendeur vers un second refus — on lève directement celui-là. Le statut
+ * n'est lu que sur ce chemin de refus ; le payeur n'étant pas connu à ce
+ * rang, le délai et le prélèvement gardent le message du lien.
+ */
+async function ensureCounterLinkCause(
+  guard: Pick<OrderGuardReader, "companyStatusOf">,
+  payload: AdminPlaceOrderPayload,
+): Promise<void> {
+  const atCounter = isCounterEntry(payload.entryOrigin, payload.entryShortcut);
+  if (atCounter && payload.settlement === "link") {
+    const statusRefusal = await counterCompanyStatusRefusal(guard, payload.companyId);
+    if (statusRefusal) {
+      throw statusRefusal;
+    }
+  }
+  ensureCounterSettlement(payload.settlement, atCounter);
 }

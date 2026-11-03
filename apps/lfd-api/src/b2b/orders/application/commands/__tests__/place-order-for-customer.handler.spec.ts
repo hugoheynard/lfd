@@ -669,6 +669,50 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
     expect(sink.placed).toBeNull();
   });
 
+  /**
+   * Régression : au comptoir, une société SUSPENDUE qui tentait le lien
+   * recevait « Choisissez « Au compte » », qui la refusait à son tour
+   * (Hugo, 2026-11-03) ; le refus du lien dit désormais la cause réelle.
+   */
+  it("au comptoir, le lien d'une société suspendue nomme la suspension, pas « Au compte »", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const plans = gateOf();
+
+    const refusal = handler(guard("orders", "suspended", "granted"), sink, {
+      plans,
+      shelf: shelfFor(plans),
+    }).execute(
+      new PlaceOrderForCustomerCommand(
+        "staff_1",
+        shelfPayload({ settlement: "link", entryShortcut: "immediate_pickup" }),
+      ),
+    );
+
+    await expect(refusal).rejects.toMatchObject({
+      code: "orders.counter.company_suspended",
+    });
+    await expect(refusal).rejects.toBeInstanceOf(CounterAccountSettlementNotGrantedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("au comptoir, le lien d'une société active sans crédit garde le message du lien", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const plans = gateOf();
+
+    await expect(
+      handler(guard("orders", "active", "none"), sink, {
+        plans,
+        shelf: shelfFor(plans),
+      }).execute(
+        new PlaceOrderForCustomerCommand(
+          "staff_1",
+          shelfPayload({ settlement: "link", entryShortcut: "immediate_pickup" }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(CounterLinkSettlementRefusedError);
+    expect(sink.placed).toBeNull();
+  });
+
   it("au comptoir, au compte : le « Retrait immédiat » passe", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const plans = gateOf();

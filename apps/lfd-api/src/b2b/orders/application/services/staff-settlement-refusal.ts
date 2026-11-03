@@ -76,12 +76,9 @@ async function counterAccountRefusal(
   guard: StaffSettlementPorts["guard"],
   parties: { readonly companyId: string; readonly payerId: string | null },
 ): Promise<CounterAccountSettlementNotGrantedError | null> {
-  const status = await guard.companyStatusOf(parties.companyId);
-  if (status === "suspended") {
-    return new CounterAccountSettlementNotGrantedError("company_suspended");
-  }
-  if (status !== "active") {
-    return new CounterAccountSettlementNotGrantedError("company_inactive");
+  const statusRefusal = await counterCompanyStatusRefusal(guard, parties.companyId);
+  if (statusRefusal) {
+    return statusRefusal;
   }
   const standing = await guard.settlesOnAccount(parties.payerId ?? parties.companyId);
   if (standing === "none") {
@@ -90,4 +87,28 @@ async function counterAccountRefusal(
   return standing === "blocked"
     ? new CounterAccountSettlementNotGrantedError("direct_debit_blocked")
     : null;
+}
+
+/**
+ * **La part « statut » du refus du comptoir** — la société qui commande est
+ * suspendue ou inactive — ou `null`.
+ *
+ * Exportée pour le refus du lien au comptoir (`prepareStaffOrder`) : à ce
+ * rang, le payeur n'est pas encore connu, mais le statut de la société, lui,
+ * suffit à savoir que « Au compte » serait refusé aussi. Le refus du lien dit
+ * alors la cause réelle au lieu d'envoyer le vendeur vers un second refus
+ * (Hugo, 2026-11-03, option a).
+ */
+export async function counterCompanyStatusRefusal(
+  guard: Pick<StaffSettlementPorts["guard"], "companyStatusOf">,
+  companyId: string,
+): Promise<CounterAccountSettlementNotGrantedError | null> {
+  const status = await guard.companyStatusOf(companyId);
+  if (status === "suspended") {
+    return new CounterAccountSettlementNotGrantedError("company_suspended");
+  }
+  if (status !== "active") {
+    return new CounterAccountSettlementNotGrantedError("company_inactive");
+  }
+  return null;
 }
