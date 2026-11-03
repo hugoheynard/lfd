@@ -15,6 +15,7 @@ import {
   type OrderWithdrawalAllowance,
   type ServiceDay,
 } from "../src/production/channels/commerce/index.js";
+import { started, untilBlocked } from "./day-lock-race.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,
@@ -170,3 +171,26 @@ export const cancelledMails = () =>
   scene.mails.filter((mail) => mail.template === "customer.order-cancelled");
 
 export const withdrawals = () => context().prisma.orderWithdrawal.findMany();
+
+/**
+ * Lance `gesture` pendant la lecture des commandes par la clôture ou le
+ * retirage, et attend qu'il se range derrière leur verrou : depuis 52561f210
+ * la lecture se fait sous le verrou, et le geste ne peut plus passer avant.
+ * Rend de quoi lire sa réponse une fois l'arrêt terminé.
+ */
+export function gestureDuringRead(
+  gesture: () => PromiseLike<request.Response>,
+): () => Promise<request.Response> {
+  let pending: Promise<request.Response> | null = null;
+  scene.afterProducibleRead = async () => {
+    const response = started(gesture());
+    pending = response;
+    await untilBlocked(context(), 1, response);
+  };
+  return () => {
+    if (pending === null) {
+      throw new Error("la lecture sous verrou n'a pas eu lieu : le geste n'est jamais parti");
+    }
+    return pending;
+  };
+}

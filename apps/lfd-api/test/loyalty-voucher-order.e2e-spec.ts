@@ -217,8 +217,10 @@ describe("la passation avec un bon", () => {
     expect(responses.map((response) => response.status).sort()).toEqual([201, 409]);
     expect(await ctx.prisma.order.count()).toBe(1);
     expect(await ctx.prisma.orderIdempotency.count()).toBe(1);
-    // L'intention du perdant, déjà créée, est annulée.
-    expect(cancelledIntents).toHaveLength(1);
+    // Toute intention créée hors celle du gagnant est annulée. Régression
+    // (CI du 2026-11-03) : le test exigeait UNE annulation, or un perdant
+    // refusé avant d'avoir créé son intention n'en a aucune à annuler.
+    expect(cancelledIntents).toHaveLength(created - 1);
   });
 
   it("refuse le bon d'une autre personne (404), sans rien écrire", async () => {

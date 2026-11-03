@@ -18,6 +18,7 @@ import {
   deliver,
   orderState,
   resetScene,
+  gestureDuringRead,
   scene,
   withdrawals,
 } from "./order-staff-cancel-scene.js";
@@ -88,21 +89,27 @@ describe("deux annulations simultanées", () => {
 });
 
 describe("la course avec la clôture (C3.4)", () => {
-  it("annulée entre la lecture de la clôture et son verrou : absente du compte à produire", async () => {
+  /**
+   * Régression : la clôture lit désormais les commandes SOUS son verrou
+   * (52561f210) ; une annulation lancée pendant cette lecture attend la fin de
+   * l'arrêt, puis trouve la commande inscrite. L'ancien scénario (annulée entre
+   * lecture et verrou) n'existe plus, et l'attendre bloquait jusqu'à l'expiration.
+   */
+  it("annulée pendant la lecture de la clôture : elle attend l'arrêt, puis le refus « inscrite »", async () => {
     const paid = await seedOrder({ payment: PaymentStatus.paid });
     const free = await seedFreeOrder();
-    scene.afterProducibleRead = async () => {
-      await cancelRequest(free.orderId).expect(204);
-    };
+    const cancelling = gestureDuringRead(() => cancelRequest(free.orderId));
 
     const response = await closeDay();
+    const cancelled = await cancelling();
     await deliver();
 
     expect(response.status).toBe(201);
-    expect(jsonBody<{ readonly absorbed: number }>(response).absorbed).toBe(1);
-    expect(await inscribed()).toEqual([{ orderId: paid.orderId }]);
-    expect((await orderState(free.orderId)).status).toBe(OrderStatus.cancelled);
-    expect((await orderState(paid.orderId)).status).toBe(OrderStatus.confirmed);
+    expect(cancelled.status).toBe(409);
+    expect((await inscribed()).map((row) => row.orderId).sort()).toEqual(
+      [paid.orderId, free.orderId].sort(),
+    );
+    expect((await orderState(free.orderId)).status).not.toBe(OrderStatus.cancelled);
   });
 
   it("inscrite par le fournil mais encore `placed` (abonné en retard) : refus nommé, rien n'est écrit", async () => {
@@ -129,31 +136,25 @@ describe("la course avec la clôture (C3.4)", () => {
 });
 
 describe("la course avec le retirage (C3.4)", () => {
-  it("annulée entre la lecture du retirage et son verrou : non absorbée, absente du fait retiré", async () => {
+  /** Régression : même bascule que la clôture — le retirage lit sous son verrou (52561f210). */
+  it("annulée pendant la lecture du retirage : elle attend, puis le refus « inscrite »", async () => {
     const first = await seedOrder({ payment: PaymentStatus.paid });
     await closeDay().expect(201);
     await deliver();
     // Après l'arrêt, seule l'équipe saisit encore pour la journée.
     const late = await seedOrder({ payment: PaymentStatus.paid, byStaff: true });
     const cancelled = await seedOrder({ payment: PaymentStatus.not_required, byStaff: true });
-    scene.afterProducibleRead = async () => {
-      await cancelRequest(cancelled.orderId).expect(204);
-    };
+    const cancelling = gestureDuringRead(() => cancelRequest(cancelled.orderId));
 
     const response = await retakeDay();
+    const refused = await cancelling();
     await deliver();
 
     expect(response.status).toBe(201);
-    expect(jsonBody<{ readonly absorbed: number }>(response).absorbed).toBe(1);
+    expect(refused.status).toBe(409);
     expect((await inscribed()).map((row) => row.orderId).sort()).toEqual(
-      [first.orderId, late.orderId].sort(),
+      [first.orderId, late.orderId, cancelled.orderId].sort(),
     );
-    const retaken = await ctx.prisma.outboxMessage.findMany({
-      where: { type: "production.day_retaken" },
-      select: { payload: true },
-    });
-    expect(retaken).toHaveLength(1);
-    expect(retaken[0]?.payload).toMatchObject({ shipments: [{ orderId: late.orderId, rank: 1 }] });
   });
 });
 

@@ -30,6 +30,7 @@ import {
   cancelledMails,
   deliver,
   resetScene,
+  gestureDuringRead,
   scene,
   withdrawals,
 } from "./order-staff-cancel-scene.js";
@@ -436,27 +437,28 @@ describe("la course avec la clôture (C3.4, acteur client)", () => {
     expect(jsonBody<{ message: string }>(response).message).not.toMatch(/fournil/u);
   });
 
-  it("annulée entre la lecture de la clôture et son verrou : absente du compte à produire", async () => {
+  /** Régression : la clôture lit sous son verrou (52561f210) ; le client attend, puis « en préparation ». */
+  it("annulée pendant la lecture de la clôture : le client attend l'arrêt, puis « en préparation »", async () => {
     const paid = await seedOrder({ payment: PaymentStatus.paid });
     const pro = await freeProOrder();
-    scene.afterProducibleRead = async () => {
-      await customerCancel(pro.other.sub, pro.orderId).expect(204);
-    };
+    const cancelling = gestureDuringRead(() => customerCancel(pro.other.sub, pro.orderId));
 
     const response = await closeDay();
+    const refused = await cancelling();
     await deliver();
 
     expect(response.status).toBe(201);
+    expect(refused.status).toBe(409);
+    expect(codeOf(refused)).toBe("orders.customer_cancel.in_preparation");
     expect(
-      await ctx.prisma.productionOrder.findMany({
-        where: { serviceDay: DAY },
-        select: { orderId: true },
-      }),
-    ).toEqual([{ orderId: paid.orderId }]);
-    const state = await ctx.prisma.order.findUniqueOrThrow({
-      where: { id: pro.orderId },
-      select: { status: true },
-    });
-    expect(state.status).toBe(OrderStatus.cancelled);
+      (
+        await ctx.prisma.productionOrder.findMany({
+          where: { serviceDay: DAY },
+          select: { orderId: true },
+        })
+      )
+        .map((row) => row.orderId)
+        .sort(),
+    ).toEqual([paid.orderId, pro.orderId].sort());
   });
 });

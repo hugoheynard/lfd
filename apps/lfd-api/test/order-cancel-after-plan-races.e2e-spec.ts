@@ -137,14 +137,18 @@ describe("la réouverture de la journée (§ 2.5)", () => {
 
     await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/reopen`).expect(201);
     await ctx.drain();
-    // Rien n'avait commencé : la feuille intouchée s'efface, retrait compris.
-    expect(await packingRowOf(ctx, order.id)).toBeNull();
+    // Rien n'avait commencé : la feuille intouchée sort de la liste PAR STATUT
+    // (`withdrawnAt`, 1ee352bb3) — elle n'est plus effacée, sous verrou.
+    const withdrawn = await packingRowOf(ctx, order.id);
+    expect(withdrawn?.packedAt).toBeNull();
+    expect(withdrawn?.withdrawnAt).toBeInstanceOf(Date);
     await closePlan(ctx);
     await ctx.drain();
 
     expect(await inscriptionsOf(ctx, order.id)).toBe(0);
     expect(await inscriptionsOf(ctx, kept.id)).toBe(1);
-    expect(await packingRowOf(ctx, order.id)).toBeNull();
+    // La reclôture ne la rétablit pas : elle reste retirée.
+    expect((await packingRowOf(ctx, order.id))?.withdrawnAt).toBeInstanceOf(Date);
     expect(await withdrawalOf(ctx, order.id)).toEqual({ afterInscription: true });
     const status = await ctx.prisma.order.findUniqueOrThrow({
       where: { id: order.id },

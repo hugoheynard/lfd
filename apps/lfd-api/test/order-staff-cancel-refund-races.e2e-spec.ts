@@ -19,7 +19,7 @@ import {
   deliver,
   orderState,
   resetScene,
-  scene,
+  gestureDuringRead,
 } from "./order-staff-cancel-scene.js";
 import { seedOrder } from "./order-staff-cancel-orders.js";
 import {
@@ -213,18 +213,22 @@ describe("la course avec la clôture (C3, sur une payée)", () => {
   const inscribed = () =>
     ctx.prisma.productionOrder.findMany({ where: { serviceDay: DAY }, select: { orderId: true } });
 
-  it("annulée entre la lecture de la clôture et son verrou : absente du compte, remboursée", async () => {
+  /** Régression : la clôture lit sous son verrou (52561f210) ; l'annulation attend, puis est refusée. */
+  it("annulée pendant la lecture de la clôture : refusée après l'arrêt, ni demande ni remboursement", async () => {
     const kept = await seedPaidOrder();
     const cancelled = await seedPaidOrder();
-    scene.afterProducibleRead = async () => {
-      await cancelRequest(cancelled.orderId).expect(204);
-    };
+    const cancelling = gestureDuringRead(() => cancelRequest(cancelled.orderId));
 
     await closeDay().expect(201);
+    const refused = await cancelling();
     await deliver();
 
-    expect(await inscribed()).toEqual([{ orderId: kept.orderId }]);
-    expect(await refundRequestOf(cancelled.orderId)).not.toBeNull();
+    expect(refused.status).toBe(409);
+    expect((await inscribed()).map((row) => row.orderId).sort()).toEqual(
+      [kept.orderId, cancelled.orderId].sort(),
+    );
+    expect(await refundRequestOf(cancelled.orderId)).toBeNull();
+    expect(stripe.calls).toEqual([]);
   });
 
   it("inscrite d'abord : refus « inscrite », ni demande ni remboursement — jamais les deux", async () => {
