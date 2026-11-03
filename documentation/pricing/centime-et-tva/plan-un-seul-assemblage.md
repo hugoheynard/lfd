@@ -1,140 +1,161 @@
-# Du panier à la commande, par un seul chemin
+# Le prix d'un panier : charger, calculer, juger
 
-> 📝 Plan du 2026-11-03, doc-first : rien n'est bâti. **Révisé le même jour** :
-> la première version (« tout devis assemble un `Order` ») est tombée sur
-> trois objections bloquantes de `vitruve` (§7). Demandé par Hugo : « je veux
-> une seule manière de calculer » ; « on a bien déjà un cart ? pourquoi on ne
-> suit pas le même flow cart → order ? » ; « ça marchera aussi pour les
-> particuliers ? ». Il touche à l'argent : contredit par `vitruve` avant de
-> remonter à Hugo. Le nombre de lectures se simplifiera APRÈS (décision de
-> Hugo).
+> 📝 Plan du 2026-11-03, **quatrième version** (la troisième, « charger,
+> calculer, juger », corrigée par `vitruve` : refus de lecture en données,
+> instant jamais passé à la porte du prix, verdicts qui ont un prix, calcul
+> appelé par l'agrégat, pas de moteur de règles), doc-first : rien n'est bâti.
+> Hugo : « je veux une seule manière de calculer » ; « pourquoi on ne suit pas
+> le même flow cart → order ? » ; « ça marchera aussi pour les particuliers ? » ;
+> « je veux un système 10/10 ». Les deux premières versions extrayaient un code
+> commun de deux assemblages ; celle-ci sépare ce que tous les chemins
+> emmêlent. Il touche à l'argent : contredit par `vitruve` avant Hugo.
+> L'inventaire qui le fonde : [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md)
+> (26 étapes, 17 écarts, vérifié le 2026-11-03).
 
-## 1. Le principe
+## 1. Le diagnostic
 
-- **Un panier** (`Cart`) : l'objet qui se remplit — lignes, puis mode, point
-  ou adresse, jour, créneau, règlement, bon. **Incomplet par nature.**
-- **Un service de chiffrage** : `CartPricing.price(cart, parties)`, un
-  **service applicatif** (seconde lecture de `vitruve`) — ce qui diffère entre
-  les assemblages est la RÉSOLUTION, faite de lectures (prix de ligne,
-  ajustements du point ou de la zone, audience, bon, TVA du port) ; l'arithmétique
-  pure est déjà au domaine et déjà commune (`lineHtAmountsOf` →
-  `computeOrderTotals`, et `composeExactOrder` pour `exact_ht`, que le devis
-  appelle déjà). Le service rend ce qu'on sait à l'état du panier, et dit
-  **« incomplet »** tant qu'un montant attend une donnée (jour, créneau,
-  acheminement) : un total partiel ne se lit jamais comme un prix. Le choix
-  `line_ht` / `exact_ht` reste porté par la table `AMOUNTS_BY_METHOD`
-  (`order.ts`), une branche par méthode, pas un `if`. Rien d'autre ne
-  chiffre.
-- **La commande naît du panier complet** : `Order.fromCart` — le même
-  chiffrage, plus les contrôles qui exigent un panier complet (jour, créneau,
-  heure limite, ouverture, stock, crédit), puis l'écriture.
-- **Une forme de montants** (`CartAmounts`), produite par le chiffrage du
-  panier comme par la lecture d'un `Order` figé, mise en lignes par
-  `orderTotalRows` pour le panier, la fiche et le PDF.
+Chaque chemin — devis boutique et espace pro (`ShopCartQuoting`), devis du
+simulateur et du client (`QuoteOrderHandler`), passations
+(`OrderDrafting.draft` → `Order.draft`), estimation de la saisie, révision
+(`OrderRevising`) — fait **trois choses dans le même code** :
 
-## 2. L'état actuel (vérifié le 2026-11-03)
+1. **charger** : prix de ligne, ajustements du point ou de la zone, promotions,
+   audience, bon, mode de TVA du port, réglage du supplément ;
+2. **calculer** : lignes, remises, bon, port, supplément, TVA, TTC ;
+3. **juger** : payeur, admission, créneau, fenêtre du point, heure limite,
+   plan, vitrine, crédit, règlement au comptoir, gestes de l'équipe.
 
-Plus d'entrées qu'on ne le croyait (seconde lecture de `vitruve`) :
+Emmêlés, ils se refont par chemin : refus dans un ordre différent, supplément
+absent du devis (É11), règle E1 oubliée par la révision (É12), entrée de la
+ventilation assemblée deux fois (É15), 33 lectures dont des doublons.
 
-| Entrée                                                                                         | Ce qu'elle fait                                                                                            |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `GET/PUT /shop/cart` (`ShopCartRepository`)                                                    | range les **lignes seules**, par personne et espace ; n'alimente ni le devis ni la passation               |
-| `POST /shop/quote` (`ShopCartQuoting`)                                                         | **assemblage n°1** : reçoit lignes + acheminement au corps, chiffre, ne garde rien ; panier partiel permis |
-| passations (`PlaceOrder`, `PlaceShopOrder`, `PlaceOrderForCustomer`)                           | **recomposent** depuis leur corps, `OrderDrafting.draft` → `Order.draft`                                   |
-| `POST /admin/orders/estimate` (P2a, 7e93eec00)                                                 | **assemblage n°2** : la passation de l'équipe sans écriture, lit `Order.amounts()`                         |
-| révision (`OrderRevising`, `order-revising.service.ts` l. 231-262)                             | **assemblage n°3** : `composition.resolve`/`arrange`, remises figées rejouées, `Order.revise`/`recompose`  |
-| `POST /orders/quote`, `POST /admin/orders/quote` (`QuoteOrderHandler` → `OrderDrafting.quote`) | sous-total HT et trace par ligne (`explain`, paliers) : simulateur, devis client                           |
-| `POST /shop/quote/mine` (`quote-my-shop-cart.handler.ts`)                                      | le devis boutique, connecté, plus les points                                                               |
-| `GET admin/order-change-requests/:id/quote`                                                    | à ouvrir (C0)                                                                                              |
+## 2. La cible (quatrième version, après `vitruve`)
 
-Plus le brouillon de la saisie (store front + table `order_drafts`), qui est
-un troisième panier, et des affichages qui recalculent (PDF, panier boutique,
-simulateur — inventaire du 2026-11-03, croisé avec
-[`recensement-montants-de-commande.md`](recensement-montants-de-commande.md)).
+### 2.1 Charger — `PricingContext`, et ses refus en données
 
-## 3. Les exigences (ce que le panier unique doit tenir)
+`PricingContext.load(cart, buyer)` — service applicatif — lit **une fois**
+tout ce que le calcul consomme : paliers par SKU (`pricer.load`), point ou zone
+(par code postal), promotions vivantes et faits de l'acheteur, classement des
+articles (`known`, **toujours** classé : É2), bon, mode de TVA du port. Un seul
+temps de chargement suffit : aucune lecture n'attend un montant (vérifié par
+`vitruve`, 2026-11-03).
 
-| Exigence                                                                                             | Aujourd'hui                                                                                                                                                  |
-| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Panier partiel chiffré**                                                                           | `ShopCartQuoting` : sans acheminement, « marchandises seules » ; coursier au code postal seul ; sans jour                                                    |
-| **Visiteur non connecté**                                                                            | son panier vit dans le navigateur (consentement, `shop-cart.controller.ts`) : le `Cart` se reçoit aussi au corps, jamais un panier fabriqué en base pour lui |
-| **Particulier, prix ancré TTC** (`exact_ht`)                                                         | `exactQuote` / `composeExactOrder` : le chemin TTC vit DANS `priceCart`                                                                                      |
-| **Bon de fidélité**                                                                                  | imputé au devis et à la passation ; il entre dans `priceCart` ; les points à gagner restent une lecture autour                                               |
-| **Promotions terminées, libellés de remise, lignes retirées pour unité changée, offre de connexion** | habillage du devis boutique, gardé autour de `priceCart` sans montant à lui                                                                                  |
-| **Espace pro**                                                                                       | mercuriale, palier, audience : déjà dans la résolution de ligne                                                                                              |
-| **Saisie de l'équipe (écran admin)**                                                                 | remplit un panier du client ; ses gestes nommés (retrait immédiat, hors plan, dérogation, règlement au comptoir) restent hors du chiffrage                   |
-| **Aucune écriture pour chiffrer**                                                                    | `PlaceShopOrder` écrit avant `draft` (idempotence, inscription de l'invité) : ces écritures restent à la passation, jamais au chiffrage                      |
-| **Contrat public `ShopQuoteView` inchangé**                                                          | la boutique le lit en production : un ADAPTATEUR `CartAmounts` → `ShopQuoteView`, pas de rupture                                                             |
-| **Un `Cart` reçu au corps ne porte aucun montant**                                                   | ni prix, ni remise, ni total : tout se relit au serveur, l'adresse du carnet sous le mur (`draftOf`)                                                         |
-| **L'ordre des refus de la passation**                                                                | `Order.fromCart` lit le payeur en premier et refuse avant de chiffrer (`order-drafting.service.ts` l. 146-151), CGV et principal compris                     |
+**Les refus de lecture deviennent des données** (`context.refusals`) au lieu
+d'être levés au milieu : SKU inconnu, article réservé, unité ou pas de vente,
+minimum (`order-line-pricing.service.ts` l. 288-313), point non configuré ou
+fermé à la clientèle (`cart-adjustments.service.ts` l. 120-133). Le devis les
+montre, la passation les lève — **dans l'ordre écrit au §2.4**.
 
-## 4. Les lots
+**L'instant n'est pas une lecture datée.** La porte du prix dit « maintenant »
+par l'ABSENCE d'instant (`order-line-pricing.service.ts` l. 268-286) ; un
+instant explicite y déclenche la lecture datée, qui a fait payer le prix pro à
+un invité le 2026-10-30. Le chargeur ne lui passe donc **jamais** d'instant.
+L'unicité du « maintenant » est déjà tenue par le contexte de requête : un seul
+`now` gelé par requête (CLAUDE.md §3.2), que lisent les quatre lecteurs
+d'horloge du chiffrage (`BasketPromotions.resolve` l. 66, la porte du prix,
+`payers.standingAt`, `OrderCutoffGate`).
 
-- **C0 — l'inventaire exact, et les décisions** (aucun code) — inventaire
-  écrit le 2026-11-03 : [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md)
-  (26 étapes, 17 écarts, décisions à prendre par Hugo) : ce que chaque
-  assemblage calcule ou juge, ligne à ligne, et pour chaque écart relevé par
-  `vitruve` (§7) la décision écrite — ce qui entre dans `CartPricing`, ce qui
-  reste un contrôle de `Order.fromCart`, ce qui reste de l'habillage :
-  promotions au créneau (`handoverAt`), classement des articles (`known`,
-  `ineligibleSkus` contre `pickupDiscountEligible`), supplément de retard,
-  fenêtre du point (`windowFitsPickup`), adresse contre code postal, lignes
-  d'unité changée (retirées au devis, tarifées ou refusées à la passation),
-  imputation du bon (HT contre faciale TTC). Plus l'entrée
-  `order-change-requests` à ouvrir.
-- **C0b — la preuve AVANT le changement** : une parité e2e **pro** (devis
-  `/shop/quote/mine` avec une société ↔ commande `PlaceOrder`, au compte et au
-  lien, retrait et coursier) — `quote-order-parity` ne couvre que
-  `companyId: null`, et `staff-estimate-parity` compare `draft` à lui-même.
-  Plus une parité de la révision. Toutes vertes sur le code d'aujourd'hui.
-- **C1 — `CartPricing`** : la résolution commune extraite de
-  `ShopCartQuoting.termsOf` et `OrderComposition.resolve`/`resolveFulfillment`.
-  La passation (via `draft`), la révision, l'estimation et les deux devis
-  l'appellent. Les parités de C0b restent vertes sans qu'une valeur attendue
-  change. Fin des assemblages n°1 et n°3 comme chemins à part.
-- **C2 — `CartAmounts`** : la forme unique, avec son drapeau « incomplet » ;
-  `orderTotalRows` la lit ; un adaptateur la verse dans `ShopQuoteView` ;
-  l'estimation de la saisie la rend (fin des champs passés à vide).
-- **C4 — les affichages lisent** : PDF, panier boutique, simulateur,
-  sous-total par une seule fonction ; une porte refuse le retour d'un calcul
-  hors de la liste admise.
-- **C3 — le `Cart` comme objet**, deux paniers distincts (décision de Hugo,
-  §6), **sans fusion de tables ni migration** :
-  - **deux dépôts, deux ports, deux murs** : le panier du client
-    (`shop_carts`, `userId` + `companyId`) et le brouillon de l'équipe
-    (`order_drafts`, `companyId`, lu dans l'espace admin) gardent chacun son
-    port et son `where` ; jamais un `CartRepository` générique qui prendrait
-    un propriétaire en paramètre — c'est là que la société se perd ;
-  - **le type tient qui peut poser quoi** : `Cart` ne porte que ce qu'un
-    client peut demander ; le brouillon de l'équipe est un `Cart` **plus une
-    enveloppe de l'équipe** (`StaffCartEnvelope` : marque de circuit,
-    raccourci « retrait immédiat », intention de dérogation, origine
-    comptoir, `savedByStaffId`). `Order.fromCart` n'en reçoit l'enveloppe que
-    par la passation de l'équipe ;
-  - **pas de migration** : chaque dépôt garde son JSON et le lit en `Cart` par
-    son propre mapper. Si la forme devait changer un jour, ce serait une
-    migration en trois temps (lire les deux formes, écrire la nouvelle,
-    resserrer), jamais un effacement de brouillon illisible ;
-  - `Order.fromCart` remplace la recomposition depuis le corps dans les trois
-    passations et la révision.
+### 2.2 Calculer — `priceBasket`, pur, appelé PAR l'agrégat
 
-Ordre : C0 → C0b → C1 → C2 → C4 → C3.
+`priceBasket(context, cart, verdicts): BasketAmounts` — **synchrone,
+déterministe, au domaine** (tout ce qu'il consomme est déjà chargé, d'où sa
+place au domaine que la v2 refusait à un calcul qui lisait). Il réemploie
+`AMOUNTS_BY_METHOD`, `computeOrderTotals`, `ventilateVat`, `composeExactOrder`
+(ce qui déménage de `exactTermsOf`, `order-composition.service.ts` l. 290-297
+et 457, est listé au bâti).
+
+**`Order.draft` et `Order.recompose` l'APPELLENT** (correction de `vitruve`) :
+l'agrégat garde son argent et ses gardes (`order-amount-guards.ts`), et le
+devis appelle la même fonction. L'identité devis = commande est structurelle,
+sans que la commande recalcule après coup.
+
+### 2.3 Les verdicts qui ont un prix
+
+Le supplément de retard dépend d'un verdict — l'heure limite et la dérogation,
+jugées sur le point **effectivement retenu** (`order-drafting.service.ts`
+l. 175-196). `priceBasket` le reçoit en entrée (`verdicts.lateFee`), il ne le
+devine pas. En exécution, le verdict vient du jugement qui consomme la
+dérogation ; **en conseil, le même jugement sans consommation** (la dérogation
+ouverte est lue, pas dépensée) : le devis chiffre la surtaxe prévue (É11).
+
+### 2.4 Juger — les règles restent où elles sont, l'ordre est écrit
+
+Pas de moteur à deux modes (`vitruve` : il coûte un lot entier pour une dizaine
+de règles, et une règle verrouillée a de toute façon deux codes). **L'ordre des
+refus, écrit une fois et testé** :
+
+1. payeur (`order-drafting.service.ts` l. 153) ;
+2. décision de la marque, vitrine ou fabrication (l. 161) ;
+3. jour ouvert, sans verrou (l. 172) ;
+4. refus de chargement (§2.1 : tarification, point) ;
+5. circuit et heure limite (l. 179) ;
+6. opérations datées, réglages, TVA du port (`composition.arrange`) ;
+7. gardes de l'agrégat (`Order.draft`) ;
+8. sous verrou, dans la transaction : vitrine, plan (`hold`).
+
+Les règles à **deux implémentations** (sans verrou en conseil, sous verrou en
+exécution : jour/plan, vitrine) sont nommées par paires, et un test de
+concordance prouve qu'elles disent la même chose hors concurrence. Les gestes
+de l'équipe restent des exemptions nommées dans ces règles (D4).
+
+### 2.5 La complétude, les deux paniers, une forme de montants
+
+Inchangé sur le fond : `Cart` lignes → acheminé → daté → complet ;
+`BasketAmounts` dit ce qu'il ne sait pas encore ; `Order.fromCart` n'accepte
+qu'un panier complet ; deux paniers distincts (client / brouillon de l'équipe
+avec son enveloppe), chacun son mur ; le panier du visiteur arrive au corps
+sans aucun montant ; `orderTotalRows` lit `BasketAmounts`, un adaptateur sert
+`ShopQuoteView` et un autre relit les commandes passées.
+
+## 3. La preuve : un golden master avant tout changement
+
+- **G1 — le corpus**, à **horloge figée** et fixtures relatives à cet instant
+  (sinon il dérive au premier changement de jour — CLAUDE.md §5) : paniers
+  générés à graine fixe (générateur de `shop-quote-placement-property` étendu),
+  pro et particulier, sociétés des **deux méthodes** (`line_ht`, `exact_ht`),
+  retrait et coursier, compte / carte / lien, promotions cumulées et au
+  créneau, bon, dérogation, palier ; et la **révision en deux temps** (une
+  commande passée, puis modifiée).
+- **G2 — la règle d'or** : commande et révision reproduites **au centime**,
+  sans exception. Les refus se comparent par **code d'erreur**, jamais par
+  texte. Pour les devis, chaque différence est un écart de l'inventaire,
+  tranché par Hugo puis inscrit.
+- **G3 — les propriétés** : TTC = HT + TVA par taux ; aucun montant négatif ;
+  panier complet chiffré = commande qui en naît ; même panier, même contexte →
+  même résultat ; ordre des refus du §2.4 respecté.
+
+## 4. Les lots (un à la fois)
+
+| Lot     | Contenu                                                                                                                       | Ce qui le prouve                      |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **L0**  | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                                  | vert sur le code d'aujourd'hui        |
+| **L1**  | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose` (la révision bascule ici, contexte figé) | G2 au centime, commandes et révisions |
+| **L2**  | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil         | G2 ; écarts tranchés                  |
+| **L3**  | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                            | G2 ; écarts tranchés                  |
+| **L4**  | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                            | G3 (ordre) ; refus du corpus          |
+| **L5a** | fiche commande sur `BasketAmounts` (adaptateur depuis les colonnes)                                                           | rendu identique sur le corpus         |
+| **L5b** | PDF du bon                                                                                                                    | idem                                  |
+| **L5c** | panier de la boutique                                                                                                         | idem                                  |
+| **L5d** | panier de la saisie (fin des champs passés à vide)                                                                            | idem                                  |
+| **L6**  | suppression de l'ancien code ; porte : le calcul réservé à `priceBasket`, interdit aux fronts                                 | la porte, et G2                       |
+
+Chaque lot dit au bâti son nombre de fichiers et d'appelants, et son retour
+arrière (L6, la suppression, se fait seule et en dernier).
 
 ## 5. Ce que ce plan ne fait pas
 
-- Réduire les lectures (après, décision de Hugo).
 - Toucher aux montants FIGÉS des commandes passées.
-- Faire de la saisie l'espace du pro : elle reste un écran admin (Hugo).
+- Faire de la saisie l'espace du pro : elle reste un écran admin.
+- Fusionner les deux paniers.
 
-## 6. Questions pour Hugo
+## 6. Questions pour Hugo (à trancher avant L1)
 
-- ~~**Q1.**~~ **Tranché par Hugo le 2026-11-03 : deux paniers distincts,
-  chiffrés pareil.** Le panier du client (le sien, dans son espace) et celui
-  de l'équipe (le brouillon de la saisie, partagé par l'équipe pour cette
-  société) restent deux objets ; ils sont le même type `Cart`, passent par le
-  même `priceCart` et donnent la commande par le même `Order.fromCart`. C3 ne
-  fusionne donc pas les tables : il fait du brouillon de la saisie un `Cart`.
-- **Q2.** L'ordre C0 → C0b → C1 → C2 → C4 → C3 te convient ?
+- **É12** — la révision par l'équipe d'une commande pro suit-elle la règle E1
+  (créneaux du pro) ? Recommandation : oui (`ProWindowRule` en exécution).
+- **É13** — la révision garde-t-elle la clientèle de la commande, plutôt que
+  celle d'aujourd'hui ? Recommandation : oui (contexte figé).
+- **É9** — le mode de TVA du port : celui du jour pour un panier, celui de la
+  commande pour une révision. Recommandation : oui (la passation fait foi).
 
 ## 7. Ce que `vitruve` a contredit
 
@@ -156,3 +177,14 @@ aucune parité pro n'existe, à écrire AVANT C1 (C0b). SÉRIEUX intégrés : le
 écarts devis/passation à trancher en C0, la bifurcation `exact_ht` par
 `AMOUNTS_BY_METHOD`, l'adaptateur vers `ShopQuoteView`, les deux paniers sans
 fusion, ce qu'un `Cart` au corps ne doit pas porter.
+
+**Troisième version (2026-11-03)** — « charger, calculer, juger ». Fond validé :
+l'arithmétique est déjà pure, un seul temps de chargement suffit. BLOQUANT ×4,
+intégrés : un instant explicite déclenche la lecture datée de la porte du prix
+(→ jamais d'instant passé, unicité par le contexte de requête) ; le supplément
+dépend d'un verdict (→ §2.3) ; « l'agrégat fige » défaisait ses gardes
+(→ l'agrégat APPELLE `priceBasket`) ; L1 touchait déjà la révision (→ elle bascule
+en L1, É9/É13 tranchés avant). SÉRIEUX intégrés : refus de lecture en données,
+ordre des refus écrit, paires verrou/sans verrou, corpus à horloge figée et en
+deux temps, refus comparés par code, L5 coupé par lecteur. Simplification
+retenue : pas de moteur de règles.
