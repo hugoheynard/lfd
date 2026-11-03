@@ -1,7 +1,10 @@
 import type { StaffSettlement } from "@lfd/contracts";
 
 import type { Order } from "../../domain/entities/order.js";
-import { AccountSettlementNotGrantedError } from "../../domain/errors/order-errors.js";
+import {
+  AccountSettlementNotGrantedError,
+  SuspendedCompanyAccountSettlementError,
+} from "../../domain/errors/order-errors.js";
 import { CounterAccountSettlementNotGrantedError } from "../../domain/errors/shelf-order-errors.js";
 import { ShelfWithoutCreditRefusedError } from "../../domain/errors/shelf-circuit-errors.js";
 import { accountStanding, type SettlementPorts } from "./order-settlement.js";
@@ -23,7 +26,7 @@ export interface StaffSettlementPorts {
  * le dit en avertissement, avec les mêmes mots. Un seul prédicat pour les
  * deux, pour que le panier n'annonce pas un crédit que la validation refuse.
  *
- * - `account` exige un crédit réellement accordé, celui du PAYEUR (T44) ;
+ * - `account` est refusé à une société suspendue (É18), puis exige un crédit réellement accordé, celui du PAYEUR (T44) ;
  * - `link` sur la vitrine suit le réglage du pro sans crédit (Q7).
  *
  * Au comptoir (`atCounter`), le refus nomme sa cause et un geste qui existe
@@ -39,6 +42,7 @@ export async function staffSettlementRefusal(
   atCounter: boolean,
 ): Promise<
   | AccountSettlementNotGrantedError
+  | SuspendedCompanyAccountSettlementError
   | CounterAccountSettlementNotGrantedError
   | ShelfWithoutCreditRefusedError
   | null
@@ -48,6 +52,10 @@ export async function staffSettlementRefusal(
     return counterAccountRefusal(ports.guard, parties);
   }
   if (settlement === "account") {
+    // É18 : la suspendue est servie comme dans son espace (lot P0), jamais au compte.
+    if ((await ports.guard.companyStatusOf(companyId)) === "suspended") {
+      return new SuspendedCompanyAccountSettlementError();
+    }
     const standing = await accountStanding(ports.guard, parties);
     return standing === "granted"
       ? null
@@ -68,7 +76,11 @@ async function counterAccountRefusal(
   guard: StaffSettlementPorts["guard"],
   parties: { readonly companyId: string; readonly payerId: string | null },
 ): Promise<CounterAccountSettlementNotGrantedError | null> {
-  if ((await guard.companyStatusOf(parties.companyId)) !== "active") {
+  const status = await guard.companyStatusOf(parties.companyId);
+  if (status === "suspended") {
+    return new CounterAccountSettlementNotGrantedError("company_suspended");
+  }
+  if (status !== "active") {
     return new CounterAccountSettlementNotGrantedError("company_inactive");
   }
   const standing = await guard.settlesOnAccount(parties.payerId ?? parties.companyId);

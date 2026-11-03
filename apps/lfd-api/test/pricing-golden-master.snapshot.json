@@ -26700,6 +26700,18 @@
         ]
       },
       "notes": {}
+    },
+    "e18-suspended-on-account.C.admin-orders.account": {
+      "status": 409,
+      "code": "orders.settlement.company_suspended",
+      "amounts": null,
+      "notes": {}
+    },
+    "e18-suspended-on-account.C.admin-orders.counter-account": {
+      "status": 409,
+      "code": "orders.counter.company_suspended",
+      "amounts": null,
+      "notes": {}
     }
   }
 }

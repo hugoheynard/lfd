@@ -9,6 +9,10 @@
  * - **É13** : une commande pro retirée à un point réservé aux pros, dont la
  *   société est suspendue après la passation — la révision juge la clientèle
  *   de la COMMANDE, et le point reste ouvert.
+ * - **É18** (lot L1c) : une société SUSPENDUE, au crédit pourtant accordé,
+ *   saisie par l'équipe au compte — refusée pour sa suspension, hors
+ *   comptoir comme au comptoir. Au lien, elle passe (`refusal-order` →
+ *   `suspended.only`).
  */
 import {
   CompanyStatus,
@@ -99,16 +103,20 @@ async function unregisteredDeadline(
   return { ...paths, ...(await staffRevision(ctx, http, orderId, content)) };
 }
 
-/** Un pro actif, au compte, sans adresse du carnet : il retire. */
-async function creditedPro(ctx: E2eContext): Promise<ScenePro> {
-  const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+/** Un pro au compte, sans adresse du carnet : il retire. Actif sauf mention. */
+async function creditedPro(
+  ctx: E2eContext,
+  slug = "devenu-suspendu",
+  status: CompanyStatus = CompanyStatus.active,
+): Promise<ScenePro> {
+  const company = await createCompany(ctx.prisma, { status });
   await ctx.prisma.company.update({
     where: { id: company.id },
     data: { grantedTerms: [DeferredTerm.monthly] },
   });
   const buyer = await createUser(ctx.prisma, {
-    auth0Sub: "auth0|golden-devenu-suspendu",
-    email: "devenu-suspendu@golden.fr",
+    auth0Sub: `auth0|golden-${slug}`,
+    email: `${slug}@golden.fr`,
   });
   await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.owner);
   return { companyId: company.id, buyerUserId: buyer.id, addressId: "", percentAddressId: "" };
@@ -157,7 +165,34 @@ async function audienceChangedSince(
   return { ...paths, ...(await staffRevision(ctx, http, orderId, content)) };
 }
 
-/** Les deux cas, chacun sous son préfixe. */
+/**
+ * É18 : une société suspendue au crédit accordé, saisie au compte — hors
+ * comptoir puis au comptoir. Le crédit accordé écarte « faute de crédit » :
+ * seul le statut peut refuser.
+ */
+async function suspendedOnAccount(
+  ctx: E2eContext,
+  scene: GoldenScene,
+  http: Agents,
+): Promise<Paths> {
+  await arrange({ ctx, scene, basket: PICKUP, http });
+  const pro = await creditedPro(ctx, "suspendu-au-compte", CompanyStatus.suspended);
+  const body = staffBody({ ...scene, pro }, PICKUP, "account");
+  const post = async (extra: Record<string, unknown>): Promise<Paths[string]> =>
+    placed(
+      ctx,
+      await http
+        .as(E2E_STAFF_SUB)
+        .post("/admin/orders")
+        .send({ ...body, ...extra }),
+    );
+  return {
+    "C.admin-orders.account": await post({}),
+    "C.admin-orders.counter-account": await post({ entryOrigin: "counter" }),
+  };
+}
+
+/** Les cas, chacun sous son préfixe. */
 export async function revisionDecisionCases(
   ctx: E2eContext,
   scene: GoldenScene,
@@ -168,5 +203,6 @@ export async function revisionDecisionCases(
   return {
     ...prefixed("e12-unregistered-deadline", await unregisteredDeadline(ctx, scene, http)),
     ...prefixed("e13-suspended-since", await audienceChangedSince(ctx, scene, http)),
+    ...prefixed("e18-suspended-on-account", await suspendedOnAccount(ctx, scene, http)),
   };
 }

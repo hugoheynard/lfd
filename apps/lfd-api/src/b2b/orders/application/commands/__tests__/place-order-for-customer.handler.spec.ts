@@ -16,6 +16,7 @@ import type { OrderToPlace } from "../../../domain/entities/order.js";
 import {
   DeliveryClosedForAudienceError,
   AccountSettlementNotGrantedError,
+  SuspendedCompanyAccountSettlementError,
   OrderCompanyNotFoundError,
 } from "../../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
@@ -1269,6 +1270,13 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
   });
 
   it.each([
+    // É18 (2026-11-03) : la suspendue se disait « pas actif… tant que son compte n'est pas activé ».
+    [
+      "suspended",
+      "granted",
+      "company_suspended",
+      /est suspendu : il ne peut commander qu'au prix public/u,
+    ],
     ["pending", "granted", "company_inactive", /n'est pas actif/u],
     ["active", "none", "terms_not_granted", /paiement différé n'est pas ouvert/u],
     ["active", "blocked", "direct_debit_blocked", /suspendu par la comptabilité/u],
@@ -1289,6 +1297,33 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
       expect(sink.placed).toBeNull();
     },
   );
+
+  /**
+   * Régression É18 (2026-11-03) : une société suspendue était refusée au compte
+   * « faute de crédit » — un crédit accordé la laissait même passer au compte,
+   * là où son client, dans son espace, ne règle qu'immédiatement (lot P0).
+   */
+  it("hors comptoir, une société suspendue au crédit accordé est refusée au compte, pour sa suspension", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    const refusal = handler(guard("orders", "suspended", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(SuspendedCompanyAccountSettlementError);
+    await expect(refusal).rejects.toMatchObject({ code: "orders.settlement.company_suspended" });
+    expect(sink.placed).toBeNull();
+  });
+
+  it("hors comptoir, une société suspendue passe encore par le lien (prix public, règlement immédiat)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    const result = await handler(guard("orders", "suspended", "none"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+    );
+
+    expect(result.paymentUrl).toBeDefined();
+  });
 
   it("hors comptoir, le refus du compte garde son message « réglez par lien »", async () => {
     const sink = { placed: null as OrderToPlace | null };

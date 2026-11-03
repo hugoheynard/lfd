@@ -335,11 +335,14 @@ Voulu (la porte se lit sur la route, `SCQ:498-505`) ; à garder en tête pour le
 parités. _Recommandation_ : paramètre de `CartPricing`, jamais lu du corps.
 
 **É18 — Société suspendue : la saisie de l'équipe passe (relevé par le
-corpus L0, 2026-11-03).** 🟡 _Tranché (Hugo, 2026-11-03 : « refuser, comme
-le client dans son espace »), NON bâti : le client d'une société suspendue
-n'est pas refusé — il commande au prix public, par carte (lot P0,
-`test/served-company-status.e2e-spec.ts`) ; il n'y a pas de refus côté
-client à réemployer. À retrancher._ É14 suppose que C refuse une société suspendue ;
+corpus L0, 2026-11-03).** ✅ _Tranché (Hugo, 2026-11-03, option 2 : aligner
+la saisie sur le client de la société suspendue, lot P0 — prix public,
+règlement immédiat), bâti le 2026-11-03 (lot L1c) : au compte, refus
+`orders.settlement.company_suspended` (le crédit accordé n'y change rien) ;
+au comptoir, où il n'y a pas de lien (E4), `orders.counter.company_suspended` ;
+au lien, la commande passe au prix public (`suspended.only`, 201, inchangé).
+Le refus vit dans `staff-settlement-refusal.ts`, partagé par la passation et
+l'estimation de la saisie. Ce qui suit est le relevé d'origine._ É14 suppose que C refuse une société suspendue ;
 mesuré sur `POST /admin/orders` (règlement `link`), il ne la refuse pas. Ni
 `orderPayerOf` (`domain/services/order-payer.ts:22-37` : il ne refuse qu'un
 compte de groupe sans livraison ou un payeur suivi non actif), ni la porte

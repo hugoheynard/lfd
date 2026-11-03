@@ -172,7 +172,7 @@ describe("le golden master du chiffrage (L0)", () => {
     expect(met.has("É11")).toBe(true);
   }, 120_000);
 
-  it("les refus décidés de la révision (L1b) : É12, l'échéance inscrite ; É13, la clientèle de la commande", async () => {
+  it("les refus décidés (L1b, L1c) : É12, l'échéance inscrite ; É13, la clientèle de la commande ; É18, la suspendue hors compte", async () => {
     const paths = await revisionDecisionCases(ctx, scene, agentsFor(ctx, ipOf(202)));
     recorded["revision-decisions"] = paths;
     // É12 (Hugo, 2026-11-03) : l'équipe suit E1 en révision d'une commande pro.
@@ -181,6 +181,13 @@ describe("le golden master du chiffrage (L0)", () => {
     );
     // É13 (Hugo, 2026-11-03) : la clientèle figée garde le point réservé aux pros ouvert.
     expect(paths["e13-suspended-since.D.revision.staff"]?.status).toBe(200);
+    // É18 (Hugo, 2026-11-03, L1c) : la suspendue ne règle pas au compte, comme dans son espace.
+    expect(paths["e18-suspended-on-account.C.admin-orders.account"]?.code).toBe(
+      "orders.settlement.company_suspended",
+    );
+    expect(paths["e18-suspended-on-account.C.admin-orders.counter-account"]?.code).toBe(
+      "orders.counter.company_suspended",
+    );
   }, 120_000);
 
   it("🔴 l'instantané : chaque montant et chaque code, au centime", () => {

@@ -135,7 +135,8 @@ sans aucun montant ; `orderTotalRows` lit `BasketAmounts`, un adaptateur sert
 | --------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | **L0** ✅ 2026-11-03  | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                          | vert sur le code d'aujourd'hui                          |
 | **L1a** ✅ 2026-11-03 | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose`                                  | instantané identique, sans exception                    |
-| **L1b** 🟡 2026-11-03 | refus décidés : É12, É13 (contexte figé de la révision), ordre du crédit ✅ ; **É18 en suspens** (cf. ci-dessous)     | instantané régénéré pour CES cas seuls, chacun justifié |
+| **L1b** ✅ 2026-11-03 | refus décidés : É12, É13 (contexte figé de la révision), ordre du crédit ✅ ; É18 en L1c                              |
+| **L1c** ✅ 2026-11-03 | É18 : la saisie refuse le compte (et donc le comptoir) à une société suspendue ; le lien passe au prix public         | instantané régénéré pour CES cas seuls, chacun justifié |
 | **L2**                | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil | G2 ; écarts tranchés                                    |
 | **L3**                | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                    | G2 ; écarts tranchés                                    |
 | **L4**                | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                    | G3 (ordre) ; refus du corpus                            |
@@ -205,6 +206,18 @@ carte seule », lot P0) ; seule une société TERMINÉE est refusée
 (`catalog.company_closed`). Les deux moitiés de la décision se contredisent :
 à retrancher par Hugo.
 
+**L1c, bâti le 2026-11-03** (non commité au moment d'écrire) — É18 retranché
+(§6, option 2). `staffSettlementRefusal` refuse le compte à une société
+suspendue (`SuspendedCompanyAccountSettlementError`,
+`orders.settlement.company_suspended`) et, au comptoir, nomme la cause
+(`CounterAccountSettlementNotGrantedError("company_suspended")` ; elle tombait
+sous « n'est pas actif… tant que son compte n'est pas activé », faux pour un
+compte suspendu). Le statut est lu par le même `companyStatusOf` que la
+clientèle de P0 ; aucun montant ne change (le prix public l'était déjà).
+Instantané : **12 lignes ajoutées, aucune retirée** — les deux entrées
+`revision-decisions` → `e18-suspended-on-account.C.admin-orders.account` et
+`….counter-account` (409) ; `refusal-order` → `suspended.only` reste 201.
+
 ## 5. Ce que ce plan ne fait pas
 
 - Toucher aux montants FIGÉS des commandes passées.
@@ -214,7 +227,12 @@ carte seule », lot P0) ; seule une société TERMINÉE est refusée
 ## 6. Décisions de Hugo (2026-11-03)
 
 - **É18** — la saisie de l'équipe accepte une société SUSPENDUE (révélé par
-  le golden master L0). **Refuser**, comme le client dans son espace (D4).
+  le golden master L0). Première décision (« refuser ») contradictoire : le
+  client d'une société suspendue n'est PAS refusé dans son espace (lot P0 :
+  prix public, carte seule, `served-company-status.e2e-spec.ts`). **Tranché
+  ensuite (option 2) : aligner la saisie sur le client** — prix public,
+  règlement immédiat seulement : pas de règlement au compte ; au comptoir,
+  où il n'y a pas de lien (E4), refus qui nomme le cas. Lot **L1c**.
 - **Refus « règlement au compte sans crédit »** : placé dans l'ordre écrit
   (§2.4) **juste après les gardes de l'agrégat (7)**, avant les verrous (8).
 - **L1 se coupe en deux** : **L1a** ne change AUCUNE sortie (montants et refus
