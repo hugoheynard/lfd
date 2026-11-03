@@ -13,8 +13,8 @@ import {
   estimatedLines,
   estimateKeyOf,
   estimatesOf,
+  estimateRowsOf,
   estimateSummary,
-  estimateTotalRows,
   isBlockingRefusal,
   refusalViewOf,
   type EstimateRequest,
@@ -244,21 +244,49 @@ describe('le flux des estimations', () => {
 });
 
 describe('ce que le panier affiche de l’estimation', () => {
-  it('détaille remises, supplément à part (D1), TVA par taux et TTC', () => {
-    const rows = estimateTotalRows(AMOUNTS).map((row) => `${row.label} = ${row.value}`);
-    expect(rows.map((r) => r.replace(/\s/gu, ' '))).toEqual([
+  const context = (settlement: 'account' | 'link') => ({
+    settlement,
+    method: 'pickup' as const,
+    pickupAddressId: null,
+    pickups: [],
+  });
+
+  it('au lien : la règle partagée rend la TVA et le TTC, supplément à part (D1)', () => {
+    const rows = (estimateRowsOf(AMOUNTS, context('link')) ?? []).map((row) =>
+      `${row.label} = ${row.value}`.replace(/\s/gu, ' '),
+    );
+    expect(rows).toEqual([
       'Sous-total HT = 10,00 €',
-      'Remise de retrait = − 0,50 €',
-      'Supplément de retard HT · TVA 20 % = 3,00 €',
-      'TVA 5,5 % = 0,52 €',
-      'TVA 20 % = 0,60 €',
+      'Remise retrait = − 0,50 €',
+      'Surtaxe de retard HT = 3,00 €',
+      'TVA = 1,12 €',
       'Total TTC = 13,62 €',
     ]);
   });
 
-  it('l’en-tête dit le TTC quand l’estimation existe, le sous-total HT sinon', () => {
-    expect(estimateSummary(7, AMOUNTS, 900).replace(/\s/gu, ' ')).toBe(
+  it('au compte : le seul Total HT, ni TVA ni TTC (F5)', () => {
+    const rows = estimateRowsOf(AMOUNTS, context('account')) ?? [];
+    expect(rows.map((row) => row.label)).toEqual([
+      'Sous-total HT',
+      'Remise retrait',
+      'Surtaxe de retard HT',
+      'Total HT',
+    ]);
+    expect(rows.at(-1)?.value.replace(/\s/gu, ' ')).toBe('12,50 €');
+  });
+
+  it('sans estimation, rien', () => {
+    expect(estimateRowsOf(null, context('link'))).toBeNull();
+  });
+
+  it('l’en-tête dit le total de la règle, le sous-total HT sans estimation', () => {
+    const linked = estimateRowsOf(AMOUNTS, context('link'));
+    const account = estimateRowsOf(AMOUNTS, context('account'));
+    expect(estimateSummary(7, linked, 900).replace(/\s/gu, ' ')).toBe(
       '7 articles · Total TTC 13,62 €',
+    );
+    expect(estimateSummary(7, account, 900).replace(/\s/gu, ' ')).toBe(
+      '7 articles · Total HT 12,50 €',
     );
     expect(estimateSummary(1, null, 900).replace(/\s/gu, ' ')).toBe(
       '1 article · Sous-total HT 9,00 € HT',

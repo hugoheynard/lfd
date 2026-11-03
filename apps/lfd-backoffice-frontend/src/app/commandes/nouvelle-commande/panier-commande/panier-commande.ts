@@ -4,8 +4,6 @@ import {
   FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldElementTitleComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
   FoldSelectComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -14,13 +12,10 @@ import {
 import {
   STAFF_SETTLEMENT_LABELS,
   type AdminOrderEstimateView,
-  type BillingAddressPayload,
   type CustomerAudience,
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
   type DeliveryZoneView,
-  type FulfillmentMethod,
-  type FulfillmentWindow,
   type PickupAddressView,
   type StaffSettlement,
 } from '@lfd/contracts';
@@ -28,40 +23,23 @@ import { CartRow } from '@lfd/b2b-ui/cart';
 
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
-import { buyerOf, composedDraftOf } from '../draft-payload';
+import { buyerOf, composedDraftOf, type OrderDraft } from '../draft-payload';
 import {
   estimatedLines,
+  estimateRowsOf,
   estimateSummary,
-  estimateTotalRows,
   isBlockingRefusal,
-  refusalViewOf,
 } from '../order-estimate';
 import type { OrderEntryBuyer } from '../order-entry-customer';
 import {
   AcheminementCommande,
   type FulfillmentChoice,
 } from '../acheminement-commande/acheminement-commande';
+import { MontantsPanier } from '../montants-panier/montants-panier';
+import { panierBlockersOf, type PanierBlocker, type PanierView } from '../panier-blockers';
 
-/** Ce que la colonne rend au moment de valider — les lignes viennent de la page. */
-export interface OrderDraft {
-  readonly buyerUserId: string;
-  readonly fulfillmentMethod: FulfillmentMethod;
-  readonly pickupAddressId: string | null;
-  readonly deliveryAddress: BillingAddressPayload | null;
-  /** L'adresse dictée rejoint-elle le carnet du compte ? */
-  readonly saveAddressToBook: boolean;
-  /** Jour de retrait/livraison. Obligatoire : c'est la journée de production. */
-  readonly requestedDeliveryDate: string;
-  /** La tranche convenue — en retrait seul, et le panier ne part pas sans elle. */
-  readonly requestedWindow: FulfillmentWindow | null;
-  readonly note: string;
-  readonly settlement: StaffSettlement;
-  /**
-   * « Retrait immédiat » (lot L6) : la page passe la commande sur le stock
-   * (`supply: "shelf"`, `entryShortcut: "immediate_pickup"`), puis la remet.
-   */
-  readonly immediate: boolean;
-}
+export type { OrderDraft } from '../draft-payload';
+export type { PanierBlocker, PanierView } from '../panier-blockers';
 
 /** L'acheminement tant que le sélecteur n'a rien émis — le temps d'un rendu. */
 const NO_FULFILLMENT: FulfillmentChoice = {
@@ -94,15 +72,6 @@ const NO_FULFILLMENT: FulfillmentChoice = {
  * TVA et TTC tels que la passation les écrirait. Les recopier ici donnerait deux
  * règles d'arrondi, donc un écart d'un centime devant le client.
  */
-/** La vue visible du panier de droite. */
-export type PanierView = 'settings' | 'lines';
-
-/** Un refus, et la vue où se corrige ce qu'il nomme — `null` si on ne sait pas. */
-export interface PanierBlocker {
-  readonly text: string;
-  readonly view: PanierView | null;
-}
-
 @Component({
   selector: 'app-panier-commande',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -113,9 +82,8 @@ export interface PanierBlocker {
     FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldElementTitleComponent,
-    FoldFieldComponent,
-    FoldFieldListComponent,
     FoldSelectComponent,
+    MontantsPanier,
     FoldTabPanelComponent,
     FoldTabsComponent,
   ],
@@ -173,19 +141,26 @@ export class PanierCommande {
 
   protected readonly amounts = computed(() => this.estimate()?.amounts ?? null);
 
-  /** « 7 articles · Total TTC 123,45 € » — le sous-total HT sans estimation. */
+  /**
+   * Le détail des montants, par la règle de toute commande (`orderTotalRows`) :
+   * au compte le seul HT (F5), au lien TVA et TTC. `null` sans estimation.
+   */
+  protected readonly totalRows = computed(() =>
+    estimateRowsOf(this.amounts(), {
+      settlement: this.settlement(),
+      method: this.fulfillment().method,
+      pickupAddressId: this.fulfillment().pickupAddressId,
+      pickups: this.pickups(),
+    }),
+  );
+
+  /** « 7 articles · Total HT … » au compte, « … Total TTC … » au lien. */
   protected readonly summary = computed(() =>
-    estimateSummary(this.cart().itemCount(), this.amounts(), this.cart().subtotalCents()),
+    estimateSummary(this.cart().itemCount(), this.totalRows(), this.cart().subtotalCents()),
   );
 
   /** La phrase « calculés à la validation » — sans objet dès que l'estimation est là. */
   protected readonly later = computed(() => (this.amounts() === null ? this.TOTALS_LATER : null));
-
-  /** Le détail des montants de l'estimation (D1 : le supplément à part). */
-  protected readonly totalRows = computed(() => {
-    const amounts = this.amounts();
-    return amounts === null ? [] : estimateTotalRows(amounts);
-  });
 
   /** Les lignes au prix de l'estimation, prix barré compris, quand elle est là. */
   protected readonly shownLines = computed(() =>
@@ -256,49 +231,19 @@ export class PanierCommande {
    * Ce qui empêche de valider, dit en clair. Une liste et non un booléen : un
    * bouton grisé sans raison oblige à deviner ce qui manque.
    */
-  protected readonly blockers = computed<readonly PanierBlocker[]>(() => {
-    const issues: PanierBlocker[] = [];
-    if (this.cart().isEmpty()) {
-      issues.push({ text: 'Le panier est vide.', view: 'lines' });
-    }
-    if (this.buyer() === null) {
-      issues.push({
-        text: "Ce compte n'a aucun interlocuteur avec un accès : la commande n'a personne à qui être portée.",
-        view: 'settings',
-      });
-    }
-    if (this.draft().requestedDate() === '') {
-      issues.push({
-        text: "Aucun jour de retrait/livraison : la commande n'entrerait dans aucune journée de production.",
-        view: 'settings',
-      });
-    }
-    const acheminement = this.fulfillment().issue;
-    if (acheminement !== null) {
-      issues.push({ text: acheminement, view: 'settings' });
-    }
-    const shelf = this.shelfIssue();
-    if (this.immediate() && shelf !== null) {
-      issues.push({ text: shelf, view: 'lines' });
-    }
-    if (this.settlement() === 'link' && !this.linkOffered()) {
-      issues.push({
-        text: 'Le lien de règlement n’est pas proposé au comptoir : la commande part au compte.',
-        view: 'settings',
-      });
-    }
-    if (this.settlement() === 'account' && !this.settlesOnAccount()) {
-      issues.push({
-        text: 'Cette société ne règle pas au compte — aucun crédit ne lui a été accordé.',
-        view: 'settings',
-      });
-    }
-    const refusal = this.estimate()?.refusal ?? null;
-    if (refusal !== null && isBlockingRefusal(refusal)) {
-      issues.push({ text: refusal.message, view: refusalViewOf(refusal.code) });
-    }
-    return issues;
-  });
+  protected readonly blockers = computed<readonly PanierBlocker[]>(() =>
+    panierBlockersOf({
+      empty: this.cart().isEmpty(),
+      hasBuyer: this.buyer() !== null,
+      requestedDate: this.draft().requestedDate(),
+      fulfillmentIssue: this.fulfillment().issue,
+      shelfIssue: this.immediate() ? this.shelfIssue() : null,
+      settlement: this.settlement(),
+      linkOffered: this.linkOffered(),
+      settlesOnAccount: this.settlesOnAccount(),
+      refusal: this.estimate()?.refusal ?? null,
+    }),
+  );
 
   protected readonly canPlace = computed(() => this.blockers().length === 0 && !this.submitting());
 

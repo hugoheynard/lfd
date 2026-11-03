@@ -162,25 +162,34 @@ const squash = (text: string | null | undefined): string =>
   (text ?? '').replace(/\s+/gu, ' ').trim();
 
 describe('PanierCommande — l’estimation (lot P2)', () => {
-  it('en-tête au TTC, et la phrase « calculés à la validation » disparaît', () => {
-    const host = mount2({ estimate: ESTIMATE });
+  it('au lien : en-tête au TTC, et la phrase « calculés à la validation » disparaît', () => {
+    const host = mount2({ estimate: ESTIMATE, draft: draftSettled('link') });
     expect(squash(host.querySelector('.pan-summary')?.textContent)).toBe(
       '7 articles · Total TTC 17,77 €',
     );
     expect(host.textContent).not.toContain('calculés à la validation');
   });
 
-  it('le détail montre le supplément sur sa ligne et la TVA par taux', () => {
-    const { fixture, host, component } = mountFull(filledCart(), { estimate: ESTIMATE });
-    component.view.set('lines');
-    fixture.detectChanges();
-    const labels = [...host.querySelectorAll('fold-field')].map((f) =>
-      squash(f.getAttribute('ng-reflect-label') ?? f.textContent),
+  it('au compte : en-tête au seul Total HT (F5)', () => {
+    const host = mount2({ estimate: ESTIMATE, draft: draftSettled('account') });
+    expect(squash(host.querySelector('.pan-summary')?.textContent)).toBe(
+      '7 articles · Total HT 16,50 €',
     );
-    const text = squash(labels.join(' / '));
-    expect(text).toContain('Supplément de retard HT · TVA 20 %');
-    expect(text).toContain('TVA 5,5 %');
+  });
+
+  it('au lien : le détail, par la règle partagée, montre surtaxe, TVA et TTC', () => {
+    const text = detailOf(draftSettled('link'));
+    expect(text).toContain('Surtaxe de retard HT');
+    expect(text).toContain('TVA');
     expect(text).toContain('Total TTC');
+  });
+
+  it('au compte : le détail ne montre ni TVA ni TTC, et dit où les trouver', () => {
+    const text = detailOf(draftSettled('account'));
+    expect(text).toContain('Total HT');
+    expect(text).toContain('TVA et TTC sur la facture du mois');
+    expect(text).not.toContain('Total TTC');
+    expect(text).not.toMatch(/(^|\/ )TVA /u);
   });
 
   it('un refus du serveur bloque la validation, avec la flèche vers sa vue', () => {
@@ -220,6 +229,24 @@ describe('PanierCommande — l’estimation (lot P2)', () => {
     expect(radios.map((r) => r.value)).toEqual(['account']);
   });
 });
+
+function draftSettled(settlement: 'account' | 'link'): DraftStore {
+  const draft = new DraftStore();
+  draft.settlement.set(settlement);
+  return draft;
+}
+
+/** Les libellés du détail des montants, joints — vue « lignes ». */
+function detailOf(draft: DraftStore): string {
+  const { fixture, host, component } = mountFull(filledCart(), { estimate: ESTIMATE, draft });
+  component.view.set('lines');
+  fixture.detectChanges();
+  return squash(
+    [...host.querySelectorAll('app-montants-panier fold-field')]
+      .map((f) => f.textContent)
+      .join(' / '),
+  );
+}
 
 function mount2(extra: Readonly<Record<string, unknown>>): HTMLElement {
   return mountFull(filledCart(), extra).host;

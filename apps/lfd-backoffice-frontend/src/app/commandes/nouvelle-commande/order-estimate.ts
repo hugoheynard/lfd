@@ -3,8 +3,16 @@ import type {
   AdminOrderEstimateNotice,
   AdminOrderEstimateView,
   AdminPlaceOrderPayload,
+  FulfillmentMethod,
+  PickupAddressView,
+  StaffSettlement,
 } from '@lfd/contracts';
-import { formatCents, formatVatPercent } from '@lfd/b2b-ui/order';
+import {
+  formatCents,
+  orderTotalRows,
+  type OrderTotalsSource,
+  type TotalRow,
+} from '@lfd/b2b-ui/order';
 import { catchError, distinctUntilChanged, type Observable, of, switchMap, timer } from 'rxjs';
 
 import type { PricedCartLine } from './cart.store';
@@ -81,61 +89,82 @@ export function estimatesOf(
   );
 }
 
-/** Une ligne du détail des montants. */
-export interface EstimateTotalRow {
-  readonly key: string;
-  readonly label: string;
-  readonly value: string;
+/**
+ * **L'estimation, lue comme la commande qu'elle serait** — pour que le panier
+ * passe par `orderTotalRows`, la règle d'affichage de toute commande (au
+ * compte le seul HT, F5 ; sinon TVA et TTC). Aucune arithmétique : chaque
+ * montant est recopié tel que le serveur l'a rendu.
+ *
+ * Ce que l'estimation ne porte pas est rendu VIDE, jamais deviné :
+ * `discountAdjustment`, `lateFeeAdjustment` et `deliveryVatMode` à `null`,
+ * aucun bon de fidélité. Le lien de règlement se lit comme une commande en
+ * attente de paiement (`due`) : c'est sa seule différence avec le compte, ici.
+ */
+export function estimateTotalsSource(
+  amounts: AdminOrderEstimateAmountsView,
+  settlement: StaffSettlement,
+  fulfillmentMethod: FulfillmentMethod,
+  pickup: PickupAddressView | null,
+): OrderTotalsSource {
+  return {
+    settlement: settlement === 'account' ? 'account' : 'due',
+    fulfillmentMethod,
+    pickupAddress:
+      pickup === null
+        ? null
+        : {
+            label: pickup.label,
+            ligne1: pickup.ligne1,
+            ligne2: pickup.ligne2,
+            codePostal: pickup.codePostal,
+            ville: pickup.ville,
+            pays: pickup.pays,
+          },
+    subtotalCents: amounts.subtotalCents,
+    discountCents: amounts.discountCents,
+    discountAdjustment: null,
+    discounts: amounts.discounts.map((discount) => ({
+      ...(discount.label === null
+        ? {}
+        : { label: { fr: discount.label, en: discount.label, it: discount.label } }),
+      adjustment: null,
+      amountCents: discount.amountCents,
+      amountTtcCents: discount.amountTtcCents,
+    })),
+    voucherDiscountCents: 0,
+    deliveryFeeCents: amounts.deliveryFeeCents,
+    deliveryVatMode: null,
+    lateFeeCents: amounts.lateFeeCents,
+    lateFeeAdjustment: null,
+    vatCents: amounts.vatCents,
+    totalCents: amounts.totalCents,
+  };
 }
 
-/** Le libellé d'une remise sans promotion : celle du point de retrait. */
-const PICKUP_DISCOUNT_LABEL = 'Remise de retrait';
+/** Ce que la saisie a décidé et que le récapitulatif lit : règlement et acheminement. */
+export interface EstimateTotalsContext {
+  readonly settlement: StaffSettlement;
+  readonly method: FulfillmentMethod;
+  readonly pickupAddressId: string | null;
+  readonly pickups: readonly PickupAddressView[];
+}
 
 /**
- * **Le détail des montants**, dans l'ordre de la facture : sous-total HT,
- * chaque remise, frais de livraison, supplément de retard sur sa propre ligne
- * (D1 : « comme sur la facture »), TVA par taux, total TTC.
+ * **Le récapitulatif de l'estimation, par la règle partagée** — `null` sans
+ * estimation : le panier retombe alors sur son sous-total.
  */
-export function estimateTotalRows(
-  amounts: AdminOrderEstimateAmountsView,
-): readonly EstimateTotalRow[] {
-  const rows: EstimateTotalRow[] = [
-    { key: 'subtotal', label: 'Sous-total HT', value: formatCents(amounts.subtotalCents) },
-  ];
-  for (const discount of amounts.discounts) {
-    rows.push({
-      key: `discount-${String(discount.rank)}`,
-      label: discount.label ?? PICKUP_DISCOUNT_LABEL,
-      value: `− ${formatCents(discount.amountCents)}`,
-    });
+export function estimateRowsOf(
+  amounts: AdminOrderEstimateAmountsView | null,
+  context: EstimateTotalsContext,
+): readonly TotalRow[] | null {
+  if (amounts === null) {
+    return null;
   }
-  if (amounts.deliveryFeeCents > 0) {
-    rows.push({
-      key: 'delivery',
-      label: 'Livraison HT',
-      value: formatCents(amounts.deliveryFeeCents),
-    });
-  }
-  if (amounts.lateFeeCents > 0) {
-    const rate = amounts.lateFeeVatRatePercent;
-    rows.push({
-      key: 'late-fee',
-      label:
-        rate === null
-          ? 'Supplément de retard HT'
-          : `Supplément de retard HT · TVA ${formatVatPercent(rate)}`,
-      value: formatCents(amounts.lateFeeCents),
-    });
-  }
-  for (const share of amounts.vatShares) {
-    rows.push({
-      key: `vat-${String(share.rate)}`,
-      label: `TVA ${formatVatPercent(share.rate)}`,
-      value: formatCents(share.amountCents),
-    });
-  }
-  rows.push({ key: 'total', label: 'Total TTC', value: formatCents(amounts.totalCents) });
-  return rows;
+  const pickup =
+    context.method === 'pickup'
+      ? (context.pickups.find((point) => point.id === context.pickupAddressId) ?? null)
+      : null;
+  return orderTotalRows(estimateTotalsSource(amounts, context.settlement, context.method, pickup));
 }
 
 /**
@@ -166,16 +195,21 @@ export function estimatedLines(
   });
 }
 
-/** « 7 articles · Total TTC 123,45 € », ou le sous-total HT sans estimation. */
+/**
+ * « 7 articles · Total HT 123,45 € » au compte, « … · Total TTC … » au lien :
+ * le total est la ligne `total` de `orderTotalRows`, jamais recalculé. Sans
+ * estimation, le sous-total HT du devis.
+ */
 export function estimateSummary(
   count: number,
-  amounts: AdminOrderEstimateAmountsView | null,
+  rows: readonly TotalRow[] | null,
   subtotalCents: number,
 ): string {
   const articles = `${String(count)} article${count > 1 ? 's' : ''}`;
-  return amounts === null
+  const total = rows?.find((row) => row.key === 'total');
+  return total === undefined
     ? `${articles} · Sous-total HT ${formatCents(subtotalCents)} HT`
-    : `${articles} · Total TTC ${formatCents(amounts.totalCents)}`;
+    : `${articles} · ${total.label} ${total.value}`;
 }
 
 /** Où se corrige un refus : les lignes, les réglages, ou on ne sait pas. */

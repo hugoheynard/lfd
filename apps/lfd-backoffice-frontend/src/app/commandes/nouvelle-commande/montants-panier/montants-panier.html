@@ -1,0 +1,16 @@
+<fold-field-list>
+  @for (row of rows(); track row.key) {
+    <fold-field [label]="row.label">
+      <span class="mp-value">
+        @if (row.strong) {
+          <strong>{{ row.value }}</strong>
+        } @else {
+          {{ row.value }}
+        }
+        @if (row.hint) {
+          <span class="mp-hint">{{ row.hint }}</span>
+        }
+      </span>
+    </fold-field>
+  }
+</fold-field-list>

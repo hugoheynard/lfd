@@ -158,6 +158,9 @@
       <app-barre-panier
         class="nc-bar"
         [cart]="cart"
+        [draft]="draft"
+        [pickups]="pickups()"
+        [estimate]="estimate()"
         [saving]="savingDraft()"
         (open)="openPanier()"
         (save)="onSaveDraft()"

@@ -56,6 +56,32 @@ export function wasFloored(line: CustomerOrderLineView): boolean {
   return line.pricing?.floored ?? false;
 }
 
+/**
+ * **Ce que le récapitulatif lit d'une commande** — et rien de plus.
+ *
+ * Structurel plutôt que `CustomerOrderView` entier : la saisie de l'équipe
+ * montre la commande qu'elle s'apprête à passer (l'estimation du serveur) et
+ * doit suivre la MÊME règle d'affichage qu'une commande passée — au compte le
+ * seul HT (F5), sinon TVA et TTC. Une seule règle, deux sources.
+ */
+export type OrderTotalsSource = Pick<
+  CustomerOrderView,
+  | 'settlement'
+  | 'fulfillmentMethod'
+  | 'pickupAddress'
+  | 'subtotalCents'
+  | 'discountCents'
+  | 'discountAdjustment'
+  | 'discounts'
+  | 'voucherDiscountCents'
+  | 'deliveryFeeCents'
+  | 'deliveryVatMode'
+  | 'lateFeeCents'
+  | 'lateFeeAdjustment'
+  | 'vatCents'
+  | 'totalCents'
+>;
+
 /** Une ligne du récapitulatif de montants, dans le rail droit. */
 export interface TotalRow {
   readonly key: string;
@@ -72,7 +98,7 @@ export interface TotalRow {
  * son nom est déjà figé dans le snapshot d'adresse : on ne le redemande pas au
  * serveur, et il reste juste même si le point est renommé ou supprimé après coup.
  */
-function discountLabel(order: CustomerOrderView): string {
+function discountLabel(order: OrderTotalsSource): string {
   const point = order.fulfillmentMethod === 'pickup' ? order.pickupAddress : null;
   // « Remise retrait <point> », comme sur le bon et l'e-mail (2026-10-25) : la
   // règle figée suit en second niveau (`hint`).
@@ -90,7 +116,7 @@ const DISCOUNT_FALLBACK_LABEL = 'Remise';
  * promotions, § 18.6, lot M6) : chacune son libellé figé, sa règle, son HT.
  * Sinon LA ligne d'hier, inchangée.
  */
-function discountRows(order: CustomerOrderView): readonly TotalRow[] {
+function discountRows(order: OrderTotalsSource): readonly TotalRow[] {
   const discounts = order.discounts;
   if (discounts !== undefined && discounts.length > 1) {
     return discounts.map((discount, index) => ({
@@ -132,7 +158,7 @@ function discountRows(order: CustomerOrderView): readonly TotalRow[] {
  * Hors du composant, comme le reste de ce module : c'est de l'arithmétique de
  * lecture, et l'arithmétique se teste sans monter un gabarit.
  */
-export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
+export function orderTotalRows(order: OrderTotalsSource): readonly TotalRow[] {
   const rows: TotalRow[] = [
     {
       key: 'subtotal',
@@ -186,7 +212,7 @@ export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
  * Au compte et au prorata, AUCUN taux : il n'y en a pas un seul, et le bon ne
  * chiffre pas la TVA (F5) — la livraison s'y lit en HT, sans plus.
  */
-function deliveryVatHint(order: CustomerOrderView): { readonly hint?: string } {
+function deliveryVatHint(order: OrderTotalsSource): { readonly hint?: string } {
   if (order.deliveryVatMode === 'follows_goods') {
     return order.settlement === 'account' ? {} : { hint: 'TVA au prorata des produits' };
   }
@@ -203,7 +229,7 @@ const PRETAX_ONLY_NOTE = 'TVA et TTC sur la facture du mois';
  * écart ressemble à une erreur. Le HT est le total moins la TVA figés — rien
  * n'est recalculé, et aucun chiffre de TVA ni de TTC n'est rendu.
  */
-function pretaxTail(order: CustomerOrderView): readonly TotalRow[] {
+function pretaxTail(order: OrderTotalsSource): readonly TotalRow[] {
   return [
     {
       key: 'total',
@@ -216,7 +242,7 @@ function pretaxTail(order: CustomerOrderView): readonly TotalRow[] {
 }
 
 /** Le pied d'une commande réglée à la commande (carte, gratuite) : inchangé. */
-function taxedTail(order: CustomerOrderView): readonly TotalRow[] {
+function taxedTail(order: OrderTotalsSource): readonly TotalRow[] {
   return [
     { key: 'vat', label: 'TVA', value: formatCents(order.vatCents), strong: false },
     { key: 'total', label: 'Total TTC', value: formatCents(order.totalCents), strong: true },

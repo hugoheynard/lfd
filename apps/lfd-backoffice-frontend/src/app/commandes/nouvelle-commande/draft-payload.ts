@@ -3,6 +3,8 @@ import type {
   BillingAddressPayload,
   CatalogItemView,
   DeliveryAddressView,
+  FulfillmentMethod,
+  FulfillmentWindow,
   OrderDraftPayload,
   OrderDraftView,
   OrderLineInput,
@@ -16,7 +18,27 @@ import { NEW_ADDRESS, type DraftSnapshot } from './draft.store';
 import type { FulfillmentChoice } from './acheminement-commande/acheminement-commande';
 import type { OrderEntryBuyer } from './order-entry-customer';
 import type { OrderEntryOrigin } from './order-entry-origin';
-import type { OrderDraft } from './panier-commande/panier-commande';
+
+/** Ce que la colonne rend au moment de valider — les lignes viennent de la page. */
+export interface OrderDraft {
+  readonly buyerUserId: string;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly pickupAddressId: string | null;
+  readonly deliveryAddress: BillingAddressPayload | null;
+  /** L'adresse dictée rejoint-elle le carnet du compte ? */
+  readonly saveAddressToBook: boolean;
+  /** Jour de retrait/livraison. Obligatoire : c'est la journée de production. */
+  readonly requestedDeliveryDate: string;
+  /** La tranche convenue — en retrait seul, et le panier ne part pas sans elle. */
+  readonly requestedWindow: FulfillmentWindow | null;
+  readonly note: string;
+  readonly settlement: StaffSettlement;
+  /**
+   * « Retrait immédiat » (lot L6) : la page passe la commande sur le stock
+   * (`supply: "shelf"`, `entryShortcut: "immediate_pickup"`), puis la remet.
+   */
+  readonly immediate: boolean;
+}
 
 /**
  * La traduction entre **l'écran** et le **brouillon conservé**.

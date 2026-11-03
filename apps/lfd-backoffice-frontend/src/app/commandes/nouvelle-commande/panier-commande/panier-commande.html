@@ -132,13 +132,9 @@
           </li>
         }
       </ul>
-      <!-- Le détail de l'estimation : chaque montant vient du serveur (lot P2). -->
-      @if (totalRows().length > 0) {
-        <fold-field-list>
-          @for (row of totalRows(); track row.key) {
-            <fold-field [label]="row.label">{{ row.value }}</fold-field>
-          }
-        </fold-field-list>
+      <!-- Le détail de l'estimation, par la règle de toute commande (F5). -->
+      @if (totalRows(); as rows) {
+        <app-montants-panier [rows]="rows" />
       }
     }
   </div>

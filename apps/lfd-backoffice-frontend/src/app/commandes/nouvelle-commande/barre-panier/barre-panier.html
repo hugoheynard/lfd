@@ -4,6 +4,6 @@
 
 <button type="button" class="bar-cart" (click)="open.emit()">
   <span class="bar-count">{{ count() }} article{{ count() > 1 ? 's' : '' }}</span>
-  <span class="bar-total">{{ subtotal() }}</span>
+  <span class="bar-total">{{ total() }}</span>
   <span class="bar-go" aria-hidden="true">›</span>
 </button>
