@@ -6,7 +6,15 @@ import {
   ShortfallPreviewReader,
   type PackingShortfallPreview,
 } from "../../../../../packing/channels/commerce/index.js";
+import {
+  authorsKnownAs,
+  FixedStaffAuthorDirectory,
+} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import type { ShortfallDecisionSubject } from "../../../domain/entities/shortfall-decision.js";
+import {
+  CounterShortfallDecisionReader,
+  type DecidedShortfall,
+} from "../../../domain/ports/counter-shortfall-decision.reader.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import { ShortfallDecisionSubjectReader } from "../../../domain/ports/shortfall-decision-subject.reader.js";
 import { GetCounterIncompleteHandoverHandler } from "../get-counter-incomplete-handover.handler.js";
@@ -65,6 +73,28 @@ class Bins extends ShortfallPreviewReader {
   }
 }
 
+class Decisions extends CounterShortfallDecisionReader {
+  readonly asked: string[] = [];
+
+  constructor(private readonly found: DecidedShortfall | null) {
+    super();
+  }
+
+  decisionOf(orderId: string): Promise<DecidedShortfall | null> {
+    this.asked.push(orderId);
+    return Promise.resolve(this.found);
+  }
+}
+
+// Un instant comparé à rien d'autre qu'à lui-même : rendu tel quel en ISO.
+const DECIDED_AT = new Date(1_900_000_000_000);
+
+const DECIDED: DecidedShortfall = {
+  decidedAt: DECIDED_AT,
+  decidedBy: "staff_7",
+  lines: [{ sku: "CRO", productName: "Croissant", saleUnit: "piece", due: 3, departing: 1 }],
+};
+
 const SHORT: PackingShortfallPreview = {
   kind: "short",
   lines: [
@@ -96,16 +126,26 @@ interface Scene {
   readonly found?: ShortfallDecisionSubject | null;
   readonly counter?: CounterHandoverPreview;
   readonly bin?: PackingShortfallPreview;
+  readonly decided?: DecidedShortfall | null;
 }
 
 function scene(options: Scene = {}) {
   const bins = new Bins(options.bin ?? SHORT);
+  const decisions = new Decisions(options.decided === undefined ? DECIDED : options.decided);
   const handler = new GetCounterIncompleteHandoverHandler(
     new Subjects(options.found === undefined ? subject() : options.found),
     new Counter(options.counter ?? { kind: "open" }),
     bins,
+    decisions,
+    new FixedStaffAuthorDirectory(
+      authorsKnownAs({ firstName: "Léa", lastName: "Martin" }, "staff_7"),
+    ),
   );
-  return { bins, run: () => handler.execute(new GetCounterIncompleteHandoverQuery("ord_1")) };
+  return {
+    bins,
+    decisions,
+    run: () => handler.execute(new GetCounterIncompleteHandoverQuery("ord_1")),
+  };
 }
 
 describe("GetCounterIncompleteHandoverHandler — l'aperçu avant le geste", () => {
@@ -115,6 +155,7 @@ describe("GetCounterIncompleteHandoverHandler — l'aperçu avant le geste", () 
       refusal: null,
       handoverRefusalReason: null,
       lines: SHORT_LINES,
+      decision: null,
     });
   });
 
@@ -126,6 +167,7 @@ describe("GetCounterIncompleteHandoverHandler — l'aperçu avant le geste", () 
       refusal: "not_a_pickup",
       handoverRefusalReason: null,
       lines: [],
+      decision: null,
     });
     expect(bins.asked).toEqual([]);
   });
@@ -144,7 +186,6 @@ describe("GetCounterIncompleteHandoverHandler — l'aperçu avant le geste", () 
   });
 
   it.each([
-    [{ decided: true }, "already_decided"],
     [{ status: "ready" as const }, "not_confirmed"],
     [{ settlementRegime: "due" as const }, "card"],
     [{ voucherDiscountCents: 50 }, "voucher"],
@@ -156,20 +197,72 @@ describe("GetCounterIncompleteHandoverHandler — l'aperçu avant le geste", () 
     expect(view.lines).toEqual(SHORT_LINES);
   });
 
-  it.each([
-    "not_drawn",
-    "withdrawn",
-    "sealed",
-    "counted",
-    "already_authorized",
-    "nothing_short",
-  ] as const)("le colisage refuse « %s » : le code, sans lignes", async (refusal) => {
-    expect(await scene({ bin: { kind: "refused", refusal } }).run()).toEqual({
+  it.each(["not_drawn", "withdrawn", "sealed", "counted", "nothing_short"] as const)(
+    "le colisage refuse « %s » : le code, sans lignes ni décision lue",
+    async (refusal) => {
+      const { run, decisions } = scene({ bin: { kind: "refused", refusal } });
+
+      expect(await run()).toEqual({
+        orderId: "ord_1",
+        refusal,
+        handoverRefusalReason: null,
+        lines: [],
+        decision: null,
+      });
+      expect(decisions.asked).toEqual([]);
+    },
+  );
+
+  const DECIDED_LINES = [
+    {
+      sku: "CRO",
+      productName: "Croissant",
+      saleUnit: "piece",
+      due: 3,
+      departing: 1,
+      notDeparting: 2,
+    },
+  ];
+
+  it("déjà décidé : qui a validé, quand, et les lignes de la décision (Hugo, 2026-11-03)", async () => {
+    const view = await scene({
+      found: subject({ decided: true }),
+      bin: { kind: "refused", refusal: "already_authorized" },
+    }).run();
+
+    expect(view).toEqual({
       orderId: "ord_1",
-      refusal,
+      refusal: "already_decided",
       handoverRefusalReason: null,
-      lines: [],
+      lines: DECIDED_LINES,
+      decision: { decidedAt: DECIDED_AT.toISOString(), decidedByName: "Léa Martin" },
     });
+  });
+
+  it("départ autorisé au colisage : la décision aussi", async () => {
+    const view = await scene({ bin: { kind: "refused", refusal: "already_authorized" } }).run();
+
+    expect(view.refusal).toBe("already_authorized");
+    expect(view.lines).toEqual(DECIDED_LINES);
+    expect(view.decision).toEqual({
+      decidedAt: DECIDED_AT.toISOString(),
+      decidedByName: "Léa Martin",
+    });
+  });
+
+  it("déjà décidé, auteur hors de l'annuaire : le nom vaut null, jamais inventé", async () => {
+    const view = await scene({
+      found: subject({ decided: true }),
+      decided: { ...DECIDED, decidedBy: "sonde" },
+    }).run();
+
+    expect(view.decision).toEqual({ decidedAt: DECIDED_AT.toISOString(), decidedByName: null });
+  });
+
+  it("déjà décidé sans décision lisible : l'aperçu reste celui du bac, decision null", async () => {
+    const view = await scene({ found: subject({ decided: true }), decided: null }).run();
+
+    expect(view).toMatchObject({ refusal: "already_decided", lines: SHORT_LINES, decision: null });
   });
 
   it("rien au bac : « nothing_departs », les lignes à zéro montrées", async () => {

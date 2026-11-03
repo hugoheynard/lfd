@@ -12,7 +12,9 @@ import {
 import type { OrderHandover } from "../../../domain/entities/order-handover.js";
 import {
   CounterOutOfReachError,
+  CounterTokenMismatchError,
   HandoverRefusedError,
+  HandoverTokenNotFoundError,
 } from "../../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { FixedOrderLock } from "../../__tests__/fixed-order-lock.js";
@@ -50,12 +52,15 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
 }
 
 class OneSubject extends HandoverSubjectReader {
-  constructor(private readonly found: HandoverSubject | null) {
+  constructor(
+    private readonly found: HandoverSubject | null,
+    private readonly scanned: HandoverSubject | null = found,
+  ) {
     super();
   }
 
   byToken(): Promise<HandoverSubject | null> {
-    return Promise.resolve(this.found);
+    return Promise.resolve(this.scanned);
   }
 
   byReference(): Promise<HandoverSubject | null> {
@@ -98,7 +103,11 @@ class Facts extends DurablePublisher {
   }
 }
 
-function desk(found: HandoverSubject | null, held: readonly string[] = []) {
+function desk(
+  found: HandoverSubject | null,
+  held: readonly string[] = [],
+  scanned: HandoverSubject | null = found,
+) {
   const handovers = new Handovers();
   const facts = new Facts();
   const clock = new FixedClock(NOW);
@@ -114,7 +123,7 @@ function desk(found: HandoverSubject | null, held: readonly string[] = []) {
   return {
     handovers,
     facts,
-    desk: new AttestingCounterHandoverDesk(new OneSubject(found), attestation, clock),
+    desk: new AttestingCounterHandoverDesk(new OneSubject(found, scanned), attestation, clock),
   };
 }
 
@@ -122,7 +131,7 @@ describe("AttestingCounterHandoverDesk — juger, puis remettre, au comptoir", (
   it("juge un retrait du jour remettable sans rien écrire", async () => {
     const { desk: counter, handovers, facts } = desk(subject());
 
-    await counter.vet("ord_1", "staff_9");
+    await counter.vet("ord_1", "staff_9", null);
 
     expect(handovers.written).toEqual([]);
     expect(facts.facts).toEqual([]);
@@ -131,33 +140,39 @@ describe("AttestingCounterHandoverDesk — juger, puis remettre, au comptoir", (
   it("refuse une livraison (403), sans rien écrire", async () => {
     const { desk: counter, handovers } = desk(subject({ fulfillmentMethod: "delivery" }));
 
-    await expect(counter.vet("ord_1", "staff_9")).rejects.toBeInstanceOf(CounterOutOfReachError);
+    await expect(counter.vet("ord_1", "staff_9", null)).rejects.toBeInstanceOf(
+      CounterOutOfReachError,
+    );
     expect(handovers.written).toEqual([]);
   });
 
   it("refuse un retrait d'un autre jour (403)", async () => {
     const { desk: counter } = desk(subject({ requestedDeliveryDate: serviceDate(1) }));
 
-    await expect(counter.vet("ord_1", "staff_9")).rejects.toBeInstanceOf(CounterOutOfReachError);
+    await expect(counter.vet("ord_1", "staff_9", null)).rejects.toBeInstanceOf(
+      CounterOutOfReachError,
+    );
   });
 
   it("refuse par la règle de remise : non réglée, retenue au contrôle", async () => {
-    await expect(desk(subject({ settled: false })).desk.vet("ord_1", "s")).rejects.toBeInstanceOf(
-      HandoverRefusedError,
-    );
-    await expect(desk(subject(), ["ord_1"]).desk.vet("ord_1", "s")).rejects.toBeInstanceOf(
+    await expect(
+      desk(subject({ settled: false })).desk.vet("ord_1", "s", null),
+    ).rejects.toBeInstanceOf(HandoverRefusedError);
+    await expect(desk(subject(), ["ord_1"]).desk.vet("ord_1", "s", null)).rejects.toBeInstanceOf(
       HandoverRefusedError,
     );
   });
 
   it("refuse une commande que le commerce ne sert plus", async () => {
-    await expect(desk(null).desk.vet("ord_1", "s")).rejects.toBeInstanceOf(HandoverRefusedError);
+    await expect(desk(null).desk.vet("ord_1", "s", null)).rejects.toBeInstanceOf(
+      HandoverRefusedError,
+    );
   });
 
   it("remet en saisie, au nom du vendeur, et écrit le fait du retrait", async () => {
     const { desk: counter, handovers, facts } = desk(subject());
 
-    await counter.handOver("ord_1", "staff_9");
+    await counter.handOver("ord_1", "staff_9", null);
 
     expect(handovers.written).toHaveLength(1);
     expect(handovers.written[0]).toMatchObject({
@@ -168,5 +183,35 @@ describe("AttestingCounterHandoverDesk — juger, puis remettre, au comptoir", (
       via: "manual",
     });
     expect(facts.facts.map((fact) => fact.type)).toEqual(["handover.handed_over"]);
+  });
+
+  it("remet en scan quand le jeton lu désigne cette commande (Hugo, 2026-11-03)", async () => {
+    const { desk: counter, handovers } = desk(subject());
+
+    await counter.vet("ord_1", "staff_9", "tok_ord_1");
+    await counter.handOver("ord_1", "staff_9", "tok_ord_1");
+
+    expect(handovers.written[0]).toMatchObject({ orderId: "ord_1", via: "scan" });
+  });
+
+  it("refuse le jeton d'une autre commande, au jugement comme à la remise, sans rien écrire", async () => {
+    const other = subject({ orderId: "ord_2", orderNumber: "ORD-0002" });
+    const { desk: counter, handovers, facts } = desk(subject(), [], other);
+
+    await expect(counter.vet("ord_1", "staff_9", "tok_ord_2")).rejects.toBeInstanceOf(
+      CounterTokenMismatchError,
+    );
+    await expect(counter.handOver("ord_1", "staff_9", "tok_ord_2")).rejects.toThrow("ORD-0002");
+    expect(handovers.written).toEqual([]);
+    expect(facts.facts).toEqual([]);
+  });
+
+  it("refuse un jeton qui ne désigne aucune commande", async () => {
+    const { desk: counter, handovers } = desk(subject(), [], null);
+
+    await expect(counter.vet("ord_1", "staff_9", "tok_x")).rejects.toBeInstanceOf(
+      HandoverTokenNotFoundError,
+    );
+    expect(handovers.written).toEqual([]);
   });
 });

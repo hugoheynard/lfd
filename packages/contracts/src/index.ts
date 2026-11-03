@@ -800,6 +800,7 @@ export {
   shortfallRemainderSchema,
 } from "./admin-order-detail.js";
 export type {
+  CounterIncompleteHandoverDecision,
   CounterIncompleteHandoverLine,
   CounterIncompleteHandoverRefusal,
   CounterIncompleteHandoverView,

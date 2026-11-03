@@ -1,4 +1,5 @@
 import type {
+  CounterIncompleteHandoverDecision,
   CounterIncompleteHandoverLine,
   CounterIncompleteHandoverRefusal,
   CounterIncompleteHandoverView,
@@ -7,6 +8,7 @@ import type {
 import type { CounterHandoverPreview } from "../../../../handover/channels/commerce/index.js";
 import type { PackingShortfallPreview } from "../../../../packing/channels/commerce/index.js";
 import type { ShortfallDecisionSubject } from "../../domain/entities/shortfall-decision.js";
+import type { DecidedShortfall } from "../../domain/ports/counter-shortfall-decision.reader.js";
 import {
   decidabilityRefusalOf,
   departingOf,
@@ -50,12 +52,69 @@ export function counterIncompleteHandoverPreviewOf(
   const lines = facts.bin?.kind === "short" ? facts.bin.lines.map(lineOf) : [];
   const { counter } = facts;
   if (counter.kind === "out_of_reach") {
-    return { orderId, refusal: counter.refusal, handoverRefusalReason: null, lines: [] };
+    return {
+      orderId,
+      refusal: counter.refusal,
+      handoverRefusalReason: null,
+      lines: [],
+      decision: null,
+    };
   }
   if (counter.kind === "refused") {
-    return { orderId, refusal: "handover_refused", handoverRefusalReason: counter.reason, lines };
+    return {
+      orderId,
+      refusal: "handover_refused",
+      handoverRefusalReason: counter.reason,
+      lines,
+      decision: null,
+    };
   }
-  return { orderId, refusal: binRefusalOf(facts), handoverRefusalReason: null, lines };
+  return {
+    orderId,
+    refusal: binRefusalOf(facts),
+    handoverRefusalReason: null,
+    lines,
+    decision: null,
+  };
+}
+
+/** Les refus qui disent un départ incomplet DÉJÀ tranché — l'écran offre alors « Remettre ». */
+const DECIDED_REFUSALS: ReadonlySet<CounterIncompleteHandoverRefusal | null> = new Set([
+  "already_decided",
+  "already_authorized",
+]);
+
+/** L'aperçu montre-t-il un départ déjà tranché, dont il faut lire la décision ? */
+export function showsDecidedDeparture(view: CounterIncompleteHandoverView): boolean {
+  return DECIDED_REFUSALS.has(view.refusal);
+}
+
+/**
+ * **Le départ déjà tranché** (Hugo, 2026-11-03) : qui l'a validé, quand, et
+ * les lignes de la décision à la place du bac — que le colisage ne rend plus
+ * une fois le départ autorisé. Sans décision lisible, l'aperçu reste tel quel.
+ */
+export function withDecidedDeparture(
+  view: CounterIncompleteHandoverView,
+  decided: DecidedShortfall | null,
+  decidedByName: string | null,
+): CounterIncompleteHandoverView {
+  if (decided === null || !showsDecidedDeparture(view)) {
+    return view;
+  }
+  const decision: CounterIncompleteHandoverDecision = {
+    decidedAt: decided.decidedAt.toISOString(),
+    decidedByName,
+  };
+  const lines = decided.lines.map((line) => ({
+    sku: line.sku,
+    productName: line.productName,
+    saleUnit: line.saleUnit,
+    due: line.due,
+    departing: line.departing,
+    notDeparting: line.due - line.departing,
+  }));
+  return { ...view, lines, decision };
 }
 
 function binRefusalOf(

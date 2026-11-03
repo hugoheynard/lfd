@@ -120,6 +120,7 @@ describe("Aperçu du départ incomplet — chaque cas rend son code", () => {
           notDeparting: 2,
         },
       ],
+      decision: null,
     });
     expect(await ctx.prisma.orderShortfall.count()).toBe(0);
     expect(sheet.shortfallReportedAt).toBeNull();
@@ -222,13 +223,39 @@ describe("Aperçu du départ incomplet — chaque cas rend son code", () => {
     expect(await preview(order.id)).toMatchObject({ refusal: "nothing_short", lines: [] });
   });
 
-  it("décidé par l'équipe Commandes : « already_decided »", async () => {
+  it("décidé par l'équipe Commandes : « already_decided », qui, quand, et les lignes décidées (Hugo, 2026-11-03)", async () => {
     const order = await accountOrder(ctx, 1);
     expect(await report(ctx, order.id)).toBe(204);
     expect((await decide(ctx, order.id)).status).toBe(204);
     openCounterOnServiceDay();
+    const decision = await ctx.prisma.orderShortfallDecision.findFirstOrThrow({
+      where: { orderId: order.id },
+    });
+    const author = await ctx.prisma.staffUser.findFirstOrThrow({ where: { auth0Id: STAFF } });
+    const sheet = await sheetOf(ctx, order.orderNumber);
 
-    expect((await preview(order.id)).refusal).toBe("already_decided");
+    const view = await preview(order.id, await counterSeller());
+
+    expect(view).toEqual({
+      orderId: order.id,
+      refusal: "already_decided",
+      handoverRefusalReason: null,
+      lines: [
+        {
+          sku: CROISSANT,
+          productName: sheet.lines[0]?.productName,
+          saleUnit: "piece",
+          due: 3,
+          departing: 1,
+          notDeparting: 2,
+        },
+      ],
+      decision: {
+        decidedAt: decision.decidedAt.toISOString(),
+        decidedByName: `${author.firstName} ${author.lastName}`.trim(),
+      },
+    });
+    expect(decision.decidedByStaffId).toBe(author.id);
   });
 
   it("commande inconnue : 404", async () => {

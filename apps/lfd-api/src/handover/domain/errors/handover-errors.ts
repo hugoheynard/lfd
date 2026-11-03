@@ -100,3 +100,17 @@ export class CounterOutOfReachError extends AuthorizationError {
     super("handover.counter.out_of_reach", reason);
   }
 }
+
+/**
+ * **Le QR scanné est celui d'une autre commande** (départ incomplet au
+ * comptoir, Hugo, 2026-11-03) : le vendeur a scanné le mauvais code. Rien
+ * n'est écrit — ni signal, ni décision, ni remise.
+ */
+export class CounterTokenMismatchError extends BusinessError {
+  constructor(orderNumber: string) {
+    super(
+      "handover.counter.token_mismatch",
+      `Ce code de retrait est celui de la commande ${orderNumber}, pas de celle-ci : rien n'a été remis. Scannez le code du client présent, ou remettez sans scan.`,
+    );
+  }
+}

@@ -89,6 +89,9 @@ class Signals extends OrderShortfallRepository {
 }
 
 class Counter extends CounterHandoverDesk {
+  /** Le jeton reçu par chaque geste, dans l'ordre — `vet` puis `handOver`. */
+  readonly tokens: (string | null)[] = [];
+
   constructor(
     private readonly trace: Trace,
     private readonly refusal: BusinessError | null = null,
@@ -96,12 +99,14 @@ class Counter extends CounterHandoverDesk {
     super();
   }
 
-  vet(): Promise<void> {
+  vet(_orderId: string, _by: string, token: string | null): Promise<void> {
+    this.tokens.push(token);
     this.trace.push("vet-handover");
     return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
   }
 
-  handOver(_orderId: string, by: string): Promise<void> {
+  handOver(_orderId: string, by: string, token: string | null): Promise<void> {
+    this.tokens.push(token);
     this.trace.push(`hand-over:${by}`);
     return Promise.resolve();
   }
@@ -195,15 +200,16 @@ function scene(options: {
     new FixedIdGenerator("dec"),
     clock,
   );
+  const counter = new Counter(trace, options.counterRefusal ?? null);
   const handler = new HandOverPackedAtCounterHandler(
     orders,
-    new Counter(trace, options.counterRefusal ?? null),
+    counter,
     new Bins(trace, options.bin ?? IN_BIN),
     departure,
     clock,
     new DirectUnitOfWork(),
   );
-  return { trace, orders, signals, sheets, notes, durable, handler };
+  return { trace, orders, signals, sheets, notes, durable, handler, counter };
 }
 
 const COMMAND = new HandOverPackedAtCounterCommand("ord_1", "staff_9", "abandoned");
@@ -294,5 +300,17 @@ describe("HandOverPackedAtCounterHandler — le départ incomplet décidé au co
 
     await expect(handler.execute(COMMAND)).rejects.toBeInstanceOf(ShortfallSignalOutrunError);
     expect(trace).toEqual(["lock-order", "vet-handover", "freeze-bin"]);
+  });
+
+  it("passe le jeton du QR au jugement ET à la remise ; sans jeton, null (Hugo, 2026-11-03)", async () => {
+    const scanned = scene({});
+    await scanned.handler.execute(
+      new HandOverPackedAtCounterCommand("ord_1", "staff_9", "abandoned", "tok_1"),
+    );
+    expect(scanned.counter.tokens).toEqual(["tok_1", "tok_1"]);
+
+    const seized = scene({});
+    await seized.handler.execute(COMMAND);
+    expect(seized.counter.tokens).toEqual([null, null]);
   });
 });

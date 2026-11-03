@@ -135,6 +135,12 @@ export type AdminShortfallDecisionPayload = z.infer<typeof adminShortfallDecisio
  */
 export const counterIncompleteHandoverPayloadSchema = z.object({
   remainder: shortfallRemainderSchema,
+  /**
+   * Le jeton du QR lu au scan, s'il l'a été (Hugo, 2026-11-03) : la remise
+   * est alors gravée `scan`, sinon `manual`. Un jeton d'une autre commande
+   * est refusé (`handover.counter.token_mismatch`), rien n'est écrit.
+   */
+  token: z.string().min(1).optional(),
 });
 export type CounterIncompleteHandoverPayload = z.infer<
   typeof counterIncompleteHandoverPayloadSchema

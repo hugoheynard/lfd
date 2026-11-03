@@ -44,13 +44,16 @@ export class AdminCounterIncompleteHandoverController {
   }
 
   /**
-   * Corps `{ remainder: "abandoned" }`. `204` : la file du comptoir se relit.
+   * Corps `{ remainder: "abandoned", token? }`. `204` : la file du comptoir
+   * se relit. `token`, le jeton du QR lu au scan : la remise est `scan` ;
+   * sans, `manual` (Hugo, 2026-11-03).
    *
    * Refus, avec leur phrase : livraison, autre jour (`403`) ; annulée, déjà
    * retirée, non réglée, en vérification, transfert non reçu, carte, bon de
    * fidélité, pas confirmée, trop ancienne, déjà décidée, pas tirée au
    * colisage, bac fermé, compté par contenants, rien ne manque, rien au bac,
-   * signal du poste au même instant (`409`) ; commande inconnue (`404`).
+   * signal du poste au même instant, QR d'une autre commande (`409`) ;
+   * commande ou jeton inconnus (`404`).
    */
   @Post("incomplete-handover")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -61,7 +64,12 @@ export class AdminCounterIncompleteHandoverController {
     payload: CounterIncompleteHandoverPayload,
   ): Promise<void> {
     await this.commands.execute<HandOverPackedAtCounterCommand, void>(
-      new HandOverPackedAtCounterCommand(orderId, staffUserId, payload.remainder),
+      new HandOverPackedAtCounterCommand(
+        orderId,
+        staffUserId,
+        payload.remainder,
+        payload.token ?? null,
+      ),
     );
   }
 }

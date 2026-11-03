@@ -10,7 +10,9 @@ import {
 } from "../../channels/commerce/handover-subject.reader.js";
 import {
   CounterOutOfReachError,
+  CounterTokenMismatchError,
   HandoverRefusedError,
+  HandoverTokenNotFoundError,
 } from "../../domain/errors/handover-errors.js";
 import { counterReachBlocker } from "../../domain/services/counter-reach.js";
 import type { HandoverVia } from "../../domain/services/handover.js";
@@ -18,10 +20,12 @@ import { counterReachSubjectOf } from "./counter-reach-subject.js";
 import { HandoverAttestation } from "./handover-attestation.service.js";
 
 /**
- * Le départ décidé au comptoir est une remise SAISIE : le vendeur l'atteste
- * seul, sans le code du client — la même trace que « Remettre » par numéro.
+ * Sans jeton, le départ décidé au comptoir est une remise SAISIE : le vendeur
+ * l'atteste seul — la même trace que « Remettre » par numéro. Avec le jeton
+ * de la commande, c'est un scan (Hugo, 2026-11-03).
  */
-const COUNTER_VIA: HandoverVia = "manual";
+const SEIZED_VIA: HandoverVia = "manual";
+const SCANNED_VIA: HandoverVia = "scan";
 
 /** Le retrait ne connaît plus la commande : le commerce ne la sert plus. Partagée avec l'aperçu (C1b). */
 export const NOT_SERVED_REASON =
@@ -44,7 +48,7 @@ export class AttestingCounterHandoverDesk extends CounterHandoverDesk {
     super();
   }
 
-  async vet(orderId: string, by: string): Promise<void> {
+  async vet(orderId: string, by: string, token: string | null): Promise<void> {
     const subject = await this.subjectOf(orderId);
     const blocker = counterReachBlocker(
       counterReachSubjectOf(subject),
@@ -53,12 +57,29 @@ export class AttestingCounterHandoverDesk extends CounterHandoverDesk {
     if (blocker !== null) {
       throw new CounterOutOfReachError(blocker);
     }
-    await this.attestation.vet(subject, FIRST_SHIPMENT_RANK, by, COUNTER_VIA);
+    const via = await this.viaOf(orderId, token);
+    await this.attestation.vet(subject, FIRST_SHIPMENT_RANK, by, via);
   }
 
-  async handOver(orderId: string, by: string): Promise<void> {
+  async handOver(orderId: string, by: string, token: string | null): Promise<void> {
     const subject = await this.subjectOf(orderId);
-    await this.attestation.attestQuietly(subject, FIRST_SHIPMENT_RANK, by, COUNTER_VIA);
+    const via = await this.viaOf(orderId, token);
+    await this.attestation.attestQuietly(subject, FIRST_SHIPMENT_RANK, by, via);
+  }
+
+  /** Le jeton, s'il y en a un, doit désigner CETTE commande : c'est lui qui fait du geste un scan. */
+  private async viaOf(orderId: string, token: string | null): Promise<HandoverVia> {
+    if (token === null) {
+      return SEIZED_VIA;
+    }
+    const scanned = await this.subjects.byToken(token);
+    if (scanned === null) {
+      throw new HandoverTokenNotFoundError();
+    }
+    if (scanned.orderId !== orderId) {
+      throw new CounterTokenMismatchError(scanned.orderNumber);
+    }
+    return SCANNED_VIA;
   }
 
   private async subjectOf(orderId: string): Promise<HandoverSubject> {

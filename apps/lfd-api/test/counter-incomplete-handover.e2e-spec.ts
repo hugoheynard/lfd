@@ -93,10 +93,11 @@ async function counterSeller(): Promise<{ readonly agent: request.Agent; readonl
 async function handOverPacked(
   agent: request.Agent,
   orderId: string,
+  token?: string,
 ): Promise<{ readonly status: number; readonly code: unknown }> {
   const response = await agent
     .post(`/admin/counter/orders/${orderId}/incomplete-handover`)
-    .send({ remainder: "abandoned" });
+    .send(token === undefined ? { remainder: "abandoned" } : { remainder: "abandoned", token });
   await ctx.drain();
   const body: unknown = response.body;
   const code = typeof body === "object" && body !== null && "code" in body ? body.code : null;
@@ -120,6 +121,18 @@ async function expectNothingWritten(order: Drawn): Promise<void> {
   const sheet = await sheetOf(ctx, order.orderNumber);
   expect(sheet.shortfallReportedAt).toBeNull();
   expect(sheet.lines.map((line) => line.quantity)).toEqual([3]);
+}
+
+/** Le jeton du QR de la commande — posé à la passation. */
+async function tokenOf(orderId: string): Promise<string> {
+  const { handoverToken } = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { handoverToken: true },
+  });
+  if (handoverToken === null) {
+    throw new Error(`La commande ${orderId} n'a pas de jeton de retrait : la scène est fausse.`);
+  }
+  return handoverToken;
 }
 
 describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est abandonné", () => {
@@ -293,5 +306,43 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
 
     expect(await handOverPacked(ctx.asSub(STAFF), order.id)).toEqual({ status: 204, code: null });
     expect(await ctx.prisma.orderShortfallDecision.count({ where: { orderId: order.id } })).toBe(1);
+  });
+
+  it("avec le jeton du QR de la commande, la remise est gravée « scan » (Hugo, 2026-11-03)", async () => {
+    const order = await accountOrder(ctx, 1);
+    const seller = await counterSeller();
+    openCounterOnServiceDay();
+
+    expect(await handOverPacked(seller.agent, order.id, await tokenOf(order.id))).toEqual({
+      status: 204,
+      code: null,
+    });
+
+    const handover = await ctx.prisma.orderHandover.findFirstOrThrow({
+      where: { orderId: order.id },
+    });
+    expect(handover).toMatchObject({ handedOverBy: seller.id, handedOverVia: "scan" });
+    expect(await ctx.prisma.orderShortfallDecision.count({ where: { orderId: order.id } })).toBe(1);
+  });
+
+  it("refuse le jeton d'une AUTRE commande, en 409 nommé, sans rien écrire", async () => {
+    // L'autre commande d'abord : la scène du bac arrête le plan de la journée.
+    const otherBuyer = await createUser(ctx.prisma, { auth0Sub: "autre-client" });
+    const other = await placeOrder(ctx, {
+      buyerUserId: otherBuyer.id,
+      forDay: SERVICE_DAY,
+      fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+      lines: [{ sku: CROISSANT, quantity: 3 }],
+    });
+    const order = await accountOrder(ctx, 1);
+    const seller = await counterSeller();
+    openCounterOnServiceDay();
+
+    expect(await handOverPacked(seller.agent, order.id, await tokenOf(other.id))).toEqual({
+      status: 409,
+      code: "handover.counter.token_mismatch",
+    });
+    await expectNothingWritten(order);
+    expect(await ctx.prisma.orderHandover.count()).toBe(0);
   });
 });

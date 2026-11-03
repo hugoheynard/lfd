@@ -81,4 +81,20 @@ export interface CounterIncompleteHandoverView {
   /** La phrase du retrait, pour `handover_refused` seulement ; sinon `null`. */
   readonly handoverRefusalReason: string | null;
   readonly lines: readonly CounterIncompleteHandoverLine[];
+  /**
+   * Le départ incomplet DÉJÀ tranché — qui l'a validé, et quand — pour
+   * `already_decided` et `already_authorized` seulement ; `null` ailleurs, et
+   * `null` si aucune décision n'est lisible (Hugo, 2026-11-03 : l'écran offre
+   * alors « Remettre la commande » avec « Départ incomplet validé par <Nom> à
+   * <heure> »). Le serveur le rend toujours ; optionnel pour que les
+   * fixtures du front d'avant restent valides. Dans ces deux cas, `lines` est la décision prise : `departing`
+   * ce qui a été décidé de faire partir, `notDeparting` le reste abandonné.
+   */
+  readonly decision?: CounterIncompleteHandoverDecision | null;
+}
+
+/** La décision prise : l'instant (ISO) et l'auteur nommé par l'annuaire, `null` s'il n'y est plus. */
+export interface CounterIncompleteHandoverDecision {
+  readonly decidedAt: string;
+  readonly decidedByName: string | null;
 }
