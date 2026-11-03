@@ -167,6 +167,24 @@ function table(doc: Doc, paper: Paper, columns: Columns, top: number): number {
   return y;
 }
 
+/**
+ * Ce que le pied occupe sous la zone de réception : son filet, « Ce n'est pas
+ * une facture. » et la date (le BL de transport n'a pas d'autre mention).
+ */
+const FOOTER_BLOCK = 15 * MM;
+
+/**
+ * **La zone de réception, au bas de la page** (Hugo, 2026-11-03 : « toujours
+ * au bas d'une page, pas collé aux rows ») — juste au-dessus du pied, là où
+ * l'on signe une feuille qu'on tient. La table a réservé sa place
+ * (`TAIL_SPACE`) : elle tient toujours sur la dernière page ; si un contenu
+ * plus long la repousse, elle suit simplement ce contenu.
+ */
+function receiptAtBottom(doc: Doc, top: number): number {
+  const anchored = PAGE_HEIGHT - MARGIN_Y - FOOTER_BLOCK - RECEIPT_HEIGHT - 6 * MM;
+  return receipt(doc, Math.max(top, anchored));
+}
+
 /** La zone que remplit la personne qui réceptionne : trois cases, à la main. */
 function receipt(doc: Doc, top: number): number {
   const y = top + 6 * MM;
@@ -214,7 +232,7 @@ export function drawCarrierNote(
   const paper: Paper = { note, art, tail: undeliveredSpace(doc, undelivered) };
   const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
   const end = undeliveredMention(doc, undelivered, table(doc, paper, columns, top));
-  noteFooter(doc, note, noteRemark(doc, note, receipt(doc, end)), []);
+  noteFooter(doc, note, receiptAtBottom(doc, noteRemark(doc, note, end)), []);
 }
 
 /** Les colonnes chiffrées : PU et total, TTC quand le BL en porte (bon public). */
