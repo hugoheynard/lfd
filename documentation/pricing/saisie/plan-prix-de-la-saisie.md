@@ -244,9 +244,13 @@ E1-E5 change donc les deux ensemble, et c'est voulu.
 - **E5 → gardé, geste nommé du comptoir.** « Le client est déjà en train de
   parler avec nous. » La porte `counter` sur stock ne juge pas les créneaux
   pro restants : c'est le retrait immédiat, le client est devant le comptoir.
-- **E4** : en attente (réexpliqué à Hugo le 2026-11-03 ; proposition : le
-  garder comme geste de l'équipe — le lien de règlement remplace la carte,
-  parce que le client n'est pas devant l'écran).
+- **E4 → pas de lien de règlement au comptoir, pour l'instant.** Au
+  comptoir, la saisie de l'équipe se règle **au compte** seulement (rien ne
+  s'encaisse au comptoir par notre système). Un pro sans compte ne commande
+  pas au comptoir par la saisie : le refus le dit. Le lien de règlement reste
+  à la saisie du commercial hors comptoir. À bâtir avec P2 : le choix
+  « Lien de règlement au client » disparaît du panier quand la saisie est
+  ouverte depuis le comptoir, et le serveur le refuse aussi.
 
 ## 6. Ce que `vitruve` a contredit (2026-11-03)
 
