@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
 
 import type {
+  AdminOrderEstimateView,
   ActivityEventView,
   OrderSalesTermsResponse,
   AdminOrdersPage,
@@ -286,6 +287,20 @@ export class AdminOrdersService {
     return firstValueFrom(
       this.http.post<OrderQuoteView>(`${B2B_API_BASE}/admin/orders/quote`, payload),
     );
+  }
+
+  /**
+   * **Ce que la saisie coûterait, au centime** (plan
+   * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : le
+   * serveur compose la commande que `place` passerait, avec le même corps, et
+   * ne l'écrit pas.
+   *
+   * Un `Observable` et non une promesse, contrairement aux voisines : la
+   * saisie **annule** la requête en vol quand elle change, et seul un
+   * désabonnement interrompt l'appel HTTP.
+   */
+  estimate(payload: AdminPlaceOrderPayload): Observable<AdminOrderEstimateView> {
+    return this.http.post<AdminOrderEstimateView>(`${B2B_API_BASE}/admin/orders/estimate`, payload);
   }
 
   /**

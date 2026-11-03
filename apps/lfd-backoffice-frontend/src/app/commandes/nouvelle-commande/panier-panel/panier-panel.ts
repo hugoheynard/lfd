@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, type Signal } from '@angular/core';
 import { FoldPanelHeaderComponent, FoldPanelRef, type FoldPanelDefaults } from 'fold-ng';
 import type {
+  AdminOrderEstimateView,
   CustomerAudience,
   DeliveryAddressView,
   DeliveryAvailabilityView,
@@ -33,6 +34,10 @@ export interface PanierPanelData {
   readonly counterPlaceId: string | null;
   /** Ce que la vitrine ne couvre pas, au retrait immédiat. */
   readonly shelfIssue: Signal<string | null>;
+  /** L'estimation du serveur (lot P2), qui vit pendant que le tiroir est ouvert. */
+  readonly estimate: Signal<AdminOrderEstimateView | null>;
+  /** Le « Lien de règlement » est-il proposé ? Faux au comptoir (E4). */
+  readonly linkOffered: boolean;
 }
 
 /**

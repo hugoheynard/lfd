@@ -6,7 +6,7 @@
     variant="title"
     title="Panier"
     [level]="2"
-    [subtitle]="cart().isEmpty() ? undefined : TOTALS_LATER"
+    [subtitle]="cart().isEmpty() ? undefined : (later() ?? undefined)"
   >
     @if (!cart().isEmpty()) {
       <span titleAction class="pan-summary">{{ summary() }}</span>
@@ -17,7 +17,9 @@
        il ne reste que le récapitulatif. -->
   <div class="pan-recap">
     <strong class="pan-summary">{{ summary() }}</strong>
-    <span class="pan-later">{{ TOTALS_LATER }}</span>
+    @if (later(); as text) {
+      <span class="pan-later">{{ text }}</span>
+    }
   </div>
 }
 
@@ -89,7 +91,7 @@
 
     <fieldset class="pan-settle">
       <legend class="pan-label">Règlement</legend>
-      @for (mode of settlementModes; track mode) {
+      @for (mode of settlementModes(); track mode) {
         <label class="pan-radio" [class.is-off]="mode === 'account' && !settlesOnAccount()">
           <input
             type="radio"
@@ -107,12 +109,12 @@
 </fold-tab-panel>
 
 <fold-tab-panel class="pan-view" [tabs]="t" key="lines">
-  <div>
+  <div class="pan-lines">
     @if (cart().isEmpty()) {
       <p class="pan-empty">Ajoutez des articles depuis la colonne de gauche.</p>
     } @else {
       <ul class="pan-list">
-        @for (line of cart().pricedLines(); track line.sku) {
+        @for (line of shownLines(); track line.sku) {
           <li>
             <lfd-cart-row
               [name]="line.name"
@@ -130,6 +132,14 @@
           </li>
         }
       </ul>
+      <!-- Le détail de l'estimation : chaque montant vient du serveur (lot P2). -->
+      @if (totalRows().length > 0) {
+        <fold-field-list>
+          @for (row of totalRows(); track row.key) {
+            <fold-field [label]="row.label">{{ row.value }}</fold-field>
+          }
+        </fold-field-list>
+      }
     }
   </div>
 </fold-tab-panel>
@@ -141,7 +151,7 @@
     <fold-callout variant="warning">
       <div class="pan-blocker">
         <span>{{ blocker.text }}</span>
-        @if (blocker.view !== view()) {
+        @if (blocker.view !== null && blocker.view !== view()) {
           <!-- Une flèche sur la ligne du refus (Hugo, 2026-11-03) : le libellé
                complet ne tenait pas en mobile. -->
           <fold-button-icon
@@ -153,6 +163,11 @@
         }
       </div>
     </fold-callout>
+  }
+
+  <!-- Ce que la passation jugera sous verrou : dit, la validation reste possible. -->
+  @for (warning of warnings(); track warning) {
+    <fold-callout variant="info">{{ warning }}</fold-callout>
   }
 
   @if (blockers().length === 0) {

@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 
 import type { FulfillmentMethod, FulfillmentWindow, StaffSettlement } from '@lfd/contracts';
 
+import type { FulfillmentChoice } from './acheminement-commande/acheminement-commande';
 import type { OrderEntryKind } from './immediate-pickup';
 
 /** Le choix « une autre adresse » — sentinelle, jamais un identifiant. */
@@ -84,6 +85,15 @@ export class DraftStore {
    * devant le comptoir, jamais pour une saisie reprise plus tard.
    */
   readonly entry = signal<OrderEntryKind>('scheduled');
+
+  /**
+   * L'acheminement **résolu** par le sélecteur (point, adresse, tranche, et ce
+   * qui manque encore) — `null` tant qu'il n'a rien émis. Une dérivation, pas
+   * une décision : hors du brouillon conservé. Il vit ici et non dans la
+   * colonne parce que la page en a besoin pour composer l'estimation (lot P2),
+   * y compris quand le panier est replié dans son tiroir.
+   */
+  readonly fulfillment = signal<FulfillmentChoice | null>(null);
 
   /** Modifie un champ de l'adresse dictée. */
   patchAddress(patch: Partial<DraftAddress>): void {

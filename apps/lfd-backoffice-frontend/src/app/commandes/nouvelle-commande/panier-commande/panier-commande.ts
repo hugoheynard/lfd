@@ -4,6 +4,8 @@ import {
   FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldElementTitleComponent,
+  FoldFieldComponent,
+  FoldFieldListComponent,
   FoldSelectComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -11,6 +13,7 @@ import {
 } from 'fold-ng';
 import {
   STAFF_SETTLEMENT_LABELS,
+  type AdminOrderEstimateView,
   type BillingAddressPayload,
   type CustomerAudience,
   type DeliveryAddressView,
@@ -22,10 +25,17 @@ import {
   type StaffSettlement,
 } from '@lfd/contracts';
 import { CartRow } from '@lfd/b2b-ui/cart';
-import { formatCents } from '@lfd/b2b-ui/order';
 
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
+import { buyerOf, composedDraftOf } from '../draft-payload';
+import {
+  estimatedLines,
+  estimateSummary,
+  estimateTotalRows,
+  isBlockingRefusal,
+  refusalViewOf,
+} from '../order-estimate';
 import type { OrderEntryBuyer } from '../order-entry-customer';
 import {
   AcheminementCommande,
@@ -78,19 +88,19 @@ const NO_FULFILLMENT: FulfillmentChoice = {
  * personnelles ; l'écran l'annonçait, et faisait promettre au commercial un écran
  * qui n'affiche rien.
  *
- * **Le seul montant affiché est le sous-total HT.** Remise de retrait, frais de
- * zone, TVA par taux et total TTC sont calculés par le serveur à la validation —
- * les recopier ici donnerait deux implémentations de la même règle d'arrondi,
- * donc deux résultats à un centime près, et un client qui compare son écran à sa
- * facture.
+ * **Aucun montant n'est calculé ici.** Tant que la saisie ne compose pas une
+ * commande, la colonne montre le sous-total HT du devis ; dès qu'elle en compose
+ * une, elle montre l'estimation du serveur (lot P2) — remises, frais, supplément,
+ * TVA et TTC tels que la passation les écrirait. Les recopier ici donnerait deux
+ * règles d'arrondi, donc un écart d'un centime devant le client.
  */
 /** La vue visible du panier de droite. */
 export type PanierView = 'settings' | 'lines';
 
-/** Un refus, et la vue où se corrige ce qu'il nomme. */
+/** Un refus, et la vue où se corrige ce qu'il nomme — `null` si on ne sait pas. */
 export interface PanierBlocker {
   readonly text: string;
-  readonly view: PanierView;
+  readonly view: PanierView | null;
 }
 
 @Component({
@@ -103,6 +113,8 @@ export interface PanierBlocker {
     FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldElementTitleComponent,
+    FoldFieldComponent,
+    FoldFieldListComponent,
     FoldSelectComponent,
     FoldTabPanelComponent,
     FoldTabsComponent,
@@ -143,15 +155,52 @@ export class PanierCommande {
    * dit déjà « Panier » : deux titres l'un sous l'autre (Hugo, 2026-11-03).
    */
   readonly headed = input(true);
+  /**
+   * L'estimation du serveur (lot P2) — `null` tant que la saisie ne compose
+   * pas une commande, ou que la réponse n'est pas revenue. Rien n'est calculé
+   * ici : la colonne affiche ce que le serveur rend.
+   */
+  readonly estimate = input<AdminOrderEstimateView | null>(null);
+  /**
+   * Le « Lien de règlement » est-il proposé ? Faux au comptoir (E4, Hugo,
+   * 2026-11-03) : règlement au compte seulement.
+   */
+  readonly linkOffered = input(true);
 
   /** Ce que l'écran ne calcule PAS, dit près du sous-total. */
   protected readonly TOTALS_LATER =
     'Remise de retrait, frais de livraison, TVA et total TTC sont calculés à la validation.';
 
-  /** « 7 articles · Sous-total HT 123,45 € HT ». */
-  protected readonly summary = computed(() => {
-    const count = this.cart().itemCount();
-    return `${count} article${count > 1 ? 's' : ''} · Sous-total HT ${this.subtotal()} HT`;
+  protected readonly amounts = computed(() => this.estimate()?.amounts ?? null);
+
+  /** « 7 articles · Total TTC 123,45 € » — le sous-total HT sans estimation. */
+  protected readonly summary = computed(() =>
+    estimateSummary(this.cart().itemCount(), this.amounts(), this.cart().subtotalCents()),
+  );
+
+  /** La phrase « calculés à la validation » — sans objet dès que l'estimation est là. */
+  protected readonly later = computed(() => (this.amounts() === null ? this.TOTALS_LATER : null));
+
+  /** Le détail des montants de l'estimation (D1 : le supplément à part). */
+  protected readonly totalRows = computed(() => {
+    const amounts = this.amounts();
+    return amounts === null ? [] : estimateTotalRows(amounts);
+  });
+
+  /** Les lignes au prix de l'estimation, prix barré compris, quand elle est là. */
+  protected readonly shownLines = computed(() =>
+    estimatedLines(this.cart().pricedLines(), this.amounts()),
+  );
+
+  /** Ce que la passation jugera sous verrou : dit, sans retenir la validation. */
+  protected readonly warnings = computed(() => {
+    const estimate = this.estimate();
+    if (estimate === null) {
+      return [];
+    }
+    const refusal = estimate.refusal;
+    const soft = refusal !== null && !isBlockingRefusal(refusal) ? [refusal] : [];
+    return [...soft, ...estimate.warnings].map((notice) => notice.message);
   });
   /** Le point du comptoir quand le « Retrait immédiat » est proposé — relayé à l'acheminement. */
   readonly counterPlaceId = input<string | null>(null);
@@ -168,7 +217,9 @@ export class PanierCommande {
    * pour elle : c'est une **dérivation** du brouillon et des points/zones connus,
    * pas une décision de plus.
    */
-  protected readonly fulfillment = signal<FulfillmentChoice>(NO_FULFILLMENT);
+  protected readonly fulfillment = computed<FulfillmentChoice>(
+    () => this.draft().fulfillment() ?? NO_FULFILLMENT,
+  );
   /** La validation demande une confirmation explicite — cf. `blockers`. */
   protected readonly confirming = signal(false);
 
@@ -182,17 +233,14 @@ export class PanierCommande {
    * que c'est le régime négocié. Une liste typée et non deux littéraux dans le
    * gabarit — le compilateur vérifie alors l'indexation des libellés.
    */
-  protected readonly settlementModes: readonly StaffSettlement[] = ['account', 'link'];
+  protected readonly settlementModes = computed<readonly StaffSettlement[]>(() =>
+    this.linkOffered() ? ['account', 'link'] : ['account'],
+  );
 
   /** Le choix par défaut : le détenteur, sinon le premier membre venu. */
-  protected readonly buyer = computed<string | null>(() => {
-    const chosen = this.draft().buyerUserId();
-    if (chosen !== null) {
-      return chosen;
-    }
-    const members = this.buyers();
-    return (members.find((m) => m.role === 'owner') ?? members[0])?.userId ?? null;
-  });
+  protected readonly buyer = computed<string | null>(() =>
+    buyerOf(this.draft().buyerUserId(), this.buyers()),
+  );
 
   /** Le raccourci du comptoir est-il choisi ? */
   protected readonly immediate = computed(
@@ -233,18 +281,27 @@ export class PanierCommande {
     if (this.immediate() && shelf !== null) {
       issues.push({ text: shelf, view: 'lines' });
     }
+    if (this.settlement() === 'link' && !this.linkOffered()) {
+      issues.push({
+        text: 'Le lien de règlement n’est pas proposé au comptoir : la commande part au compte.',
+        view: 'settings',
+      });
+    }
     if (this.settlement() === 'account' && !this.settlesOnAccount()) {
       issues.push({
         text: 'Cette société ne règle pas au compte — aucun crédit ne lui a été accordé.',
         view: 'settings',
       });
     }
+    const refusal = this.estimate()?.refusal ?? null;
+    if (refusal !== null && isBlockingRefusal(refusal)) {
+      issues.push({ text: refusal.message, view: refusalViewOf(refusal.code) });
+    }
     return issues;
   });
 
   protected readonly canPlace = computed(() => this.blockers().length === 0 && !this.submitting());
 
-  /** Le sous-total HT du panier. Cf. l'avertissement de la classe. */
   /**
    * Les deux vues du panier (Hugo, 2026-11-03). Pas de bascule automatique au
    * premier ajout : l'ajout se fait depuis la colonne de gauche, et l'en-tête
@@ -257,10 +314,8 @@ export class PanierCommande {
   ];
   readonly view = signal<PanierView>('settings');
 
-  protected readonly subtotal = computed(() => formatCents(this.cart().subtotalCents()));
-
   protected onFulfillment(choice: FulfillmentChoice): void {
-    this.fulfillment.set(choice);
+    this.draft().fulfillment.set(choice);
     // Changer d'acheminement change ce qu'on s'apprêtait à confirmer.
     this.confirming.set(false);
   }
@@ -273,23 +328,19 @@ export class PanierCommande {
   }
 
   protected submit(): void {
-    const buyerUserId = this.buyer();
-    if (buyerUserId === null || !this.canPlace()) {
-      return;
-    }
-    const acheminement = this.fulfillment();
-    this.place.emit({
-      buyerUserId,
-      fulfillmentMethod: acheminement.method,
-      pickupAddressId: acheminement.pickupAddressId,
-      deliveryAddress: acheminement.deliveryAddress,
-      saveAddressToBook: acheminement.saveToBook,
-      requestedDeliveryDate: this.requestedDate(),
-      requestedWindow: acheminement.window,
+    const draft = composedDraftOf({
+      buyerUserId: this.buyer(),
+      fulfillment: this.draft().fulfillment(),
+      requestedDate: this.requestedDate(),
       note: this.note(),
       settlement: this.settlement(),
       immediate: this.immediate(),
+      empty: this.cart().isEmpty(),
     });
+    if (draft === null || !this.canPlace()) {
+      return;
+    }
+    this.place.emit(draft);
   }
 
   /** Le nom d'une personne, ou son adresse quand elle n'en a pas encore. */

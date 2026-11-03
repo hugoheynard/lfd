@@ -19,6 +19,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, filter, tap } from 'rxjs';
 
 import { quoteKeyOf } from './quote-key';
+import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
+import { estimateKeyOf, estimatesOf, type EstimateRequest } from './order-estimate';
 import {
   backLinkOf,
   COUNTER_PLACED_ORDER_KEY,
@@ -54,6 +56,7 @@ import {
 import {
   audienceOf,
   DEFAULT_DELIVERY_AVAILABILITY,
+  type AdminOrderEstimateView,
   type AdminOrderRow,
   type BillingAddressPayload,
   type DeliverySpecs,
@@ -352,6 +355,41 @@ export class NouvelleCommandePage {
    */
   private readonly quoteKey = computed(() => quoteKeyOf(this.id(), this.cart.lines()));
 
+  /**
+   * Le « Lien de règlement » est-il proposé ? Pas au comptoir (E4, Hugo,
+   * 2026-11-03) : règlement au compte seulement, et le serveur le refuse.
+   */
+  protected readonly linkOffered = this.origin !== 'counter';
+
+  /**
+   * **La commande qu'on passerait**, quand la saisie est assez complète pour
+   * se composer — la même définition que la validation (`composedDraftOf`).
+   */
+  private readonly composedDraft = computed(() =>
+    composedDraftOf({
+      buyerUserId: buyerOf(this.draft.buyerUserId(), this.buyers()),
+      fulfillment: this.draft.fulfillment(),
+      requestedDate: this.draft.requestedDate(),
+      note: this.draft.note(),
+      settlement: this.draft.settlement(),
+      immediate: this.immediate(),
+      empty: this.cart.isEmpty(),
+    }),
+  );
+
+  /** Le corps à estimer — celui même de la passation — et sa clé ; `null` avant. */
+  private readonly estimateRequest = computed<EstimateRequest | null>(() => {
+    const draft = this.composedDraft();
+    if (draft === null) {
+      return null;
+    }
+    const payload = placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin);
+    return { key: estimateKeyOf(payload), payload };
+  });
+
+  /** L'estimation du serveur (lot P2), gardée jusqu'à la suivante — cf. `estimatesOf`. */
+  protected readonly estimate = signal<AdminOrderEstimateView | null>(null);
+
   constructor() {
     effect(() => {
       void this.load(this.id());
@@ -419,6 +457,21 @@ export class NouvelleCommandePage {
       // la salve.
       .subscribe(() => {
         void this.refreshQuote(this.id(), this.cart.lines());
+      });
+
+    this.watchEstimate();
+  }
+
+  /**
+   * **Ce que la saisie coûterait** (lot P2), dès qu'elle compose une commande :
+   * 400 ms d'accalmie, la requête en vol annulée au changement suivant, et
+   * seulement quand le corps entier change. Cf. `order-estimate.ts`.
+   */
+  private watchEstimate(): void {
+    estimatesOf(toObservable(this.estimateRequest), (payload) => this.orders.estimate(payload))
+      .pipe(takeUntilDestroyed())
+      .subscribe((estimate) => {
+        this.estimate.set(estimate);
       });
   }
 
@@ -499,7 +552,8 @@ export class NouvelleCommandePage {
       this.deliveryAvailability.set(deliveryAvailability);
       // Le règlement se pré-remplit par le payeur (plan du jour J §11.3) : au
       // compte s'il y a droit, le lien sinon. Un brouillon repris garde le sien.
-      this.draft.settlement.set(company.settlesOnAccount ? 'account' : 'link');
+      // Au comptoir, le lien n'est pas proposé (E4) : au compte, toujours.
+      this.draft.settlement.set(company.settlesOnAccount || !this.linkOffered ? 'account' : 'link');
       this.resume(saved, catalogue, company.addresses);
       this.state.set('ready');
     } catch (error) {
@@ -598,6 +652,8 @@ export class NouvelleCommandePage {
         canKeepAddress: this.canKeepAddress,
         counterPlaceId: this.counterPlaceId(),
         shelfIssue: this.shelfIssue,
+        estimate: this.estimate.asReadonly(),
+        linkOffered: this.linkOffered,
       },
     });
     const placed = await ref.closed;
@@ -679,33 +735,9 @@ export class NouvelleCommandePage {
   protected async onPlace(draft: OrderDraft): Promise<void> {
     this.submitting.set(true);
     try {
-      const placed = await this.orders.place({
-        companyId: this.id(),
-        buyerUserId: draft.buyerUserId,
-        settlement: draft.settlement,
-        fulfillmentMethod: draft.fulfillmentMethod,
-        deliveryAddress: draft.deliveryAddress,
-        pickupAddressId: draft.pickupAddressId,
-        // L'adresse du carnet, quand elle en vient : c'est elle qui porte les
-        // consignes dont la commande se prérempli. Une adresse dictée n'en a
-        // aucune. Le sélecteur d'acheminement ne remonte pas encore l'id — il le
-        // fera avec l'écran d'override.
-        deliveryAddressId: null,
-        requestedDeliveryDate: draft.requestedDeliveryDate,
-        // 🔴 **La clé est OMISE quand aucune tranche n'est convenue**, jamais
-        // mise à `null` : le serveur lit l'absence comme « prends le défaut »
-        // (celui du carnet, en livraison) et un `null` explicite comme « le
-        // client n'en veut aucune ». Un `null` posé par commodité effacerait
-        // donc la fenêtre qu'un compte a déclarée sur son adresse. Même parti
-        // que le panier du client, et pour la même raison.
-        ...(draft.requestedWindow === null ? {} : { requestedWindow: draft.requestedWindow }),
-        note: draft.note,
-        lines: [...this.cart.toPayloadLines()],
-        // Le « Retrait immédiat » (lot L6) : pris sur la vitrine, et tracé.
-        ...(draft.immediate
-          ? { supply: 'shelf' as const, entryShortcut: 'immediate_pickup' as const }
-          : {}),
-      });
+      const placed = await this.orders.place(
+        placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin),
+      );
       this.cart.clear();
       // La commande est partie : le brouillon mis de côté n'a plus d'objet, et
       // le laisser ferait rouvrir l'écran sur une commande déjà passée. Son

@@ -263,6 +263,9 @@ E1-E5 change donc les deux ensemble, et c'est voulu.
 - **E2 → aligné sur le client.** La saisie passe par `intake.admit`. Un cas
   d'exception passe par le **système de dérogation existant**, pas par un
   contournement silencieux de l'équipe.
+  - _2026-11-03, Hugo :_ validé tel que bâti — `admitStaffEntry` juge la
+    porte de la boutique et le premier jour commandable, **sans** la case CGV
+    (l'équipe n'accepte pas les CGV à la place du client).
 - **E3 → gardé, et noté** : l'équipe ne dépense pas le bon de fidélité d'un
   client (sans effet tant que la fidélité pro n'est pas ouverte).
 - **E5 → gardé, geste nommé du comptoir.** « Le client est déjà en train de
@@ -275,6 +278,14 @@ E1-E5 change donc les deux ensemble, et c'est voulu.
   à la saisie du commercial hors comptoir. À bâtir avec P2 : le choix
   « Lien de règlement au client » disparaît du panier quand la saisie est
   ouverte depuis le comptoir, et le serveur le refuse aussi.
+  - _2026-11-03, Hugo — E4 étendu :_ le corps de la passation porte
+    `entryOrigin: "counter"` (facultatif, enum extensible) ; le serveur refuse
+    le lien dès que la saisie vient du comptoir — origine déclarée ou
+    « Retrait immédiat » — programmée comprise (`isCounterEntry`,
+    `ensureCounterSettlement`). Au comptoir, « Au compte » refusé dit sa cause
+    réelle, une phrase par cause (`CounterAccountSettlementNotGrantedError` :
+    compte non actif, paiement différé non ouvert, prélèvement suspendu) ;
+    hors comptoir, `AccountSettlementNotGrantedError` garde « réglez par lien ».
 
 ## 6. Ce que `vitruve` a contredit (2026-11-03)
 

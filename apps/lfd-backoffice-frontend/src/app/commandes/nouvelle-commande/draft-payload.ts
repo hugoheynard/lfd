@@ -1,15 +1,22 @@
 import type {
+  AdminPlaceOrderPayload,
   BillingAddressPayload,
   CatalogItemView,
   DeliveryAddressView,
   OrderDraftPayload,
   OrderDraftView,
+  OrderLineInput,
+  StaffSettlement,
 } from '@lfd/contracts';
 
 import { firstSaleQuantityOf, pieceMinimumOf, saleStepOf } from '@lfd/b2b-ui/catalog';
 
 import { requestedLineOf, type CartLine } from './cart.store';
 import { NEW_ADDRESS, type DraftSnapshot } from './draft.store';
+import type { FulfillmentChoice } from './acheminement-commande/acheminement-commande';
+import type { OrderEntryBuyer } from './order-entry-customer';
+import type { OrderEntryOrigin } from './order-entry-origin';
+import type { OrderDraft } from './panier-commande/panier-commande';
 
 /**
  * La traduction entre **l'écran** et le **brouillon conservé**.
@@ -168,5 +175,102 @@ export function saleTermsOf(
     saleUnit: 'weight',
     ...(step === null ? {} : { step }),
     ...(minimum === null ? {} : { minimum }),
+  };
+}
+
+/** Le choix par défaut de l'interlocuteur : celui retenu, sinon le détenteur, sinon le premier. */
+export function buyerOf(chosen: string | null, members: readonly OrderEntryBuyer[]): string | null {
+  if (chosen !== null) {
+    return chosen;
+  }
+  return (members.find((member) => member.role === 'owner') ?? members[0])?.userId ?? null;
+}
+
+/** Ce que la saisie a décidé, hors articles — l'entrée de {@link composedDraftOf}. */
+export interface DraftDecisions {
+  readonly buyerUserId: string | null;
+  readonly fulfillment: FulfillmentChoice | null;
+  readonly requestedDate: string;
+  readonly note: string;
+  readonly settlement: StaffSettlement;
+  readonly immediate: boolean;
+  readonly empty: boolean;
+}
+
+/**
+ * **La saisie est-elle assez complète pour qu'une commande se compose ?**
+ * (plan `plan-prix-de-la-saisie.md`, lot P2) — au moins une ligne, un
+ * interlocuteur, un acheminement résolu (point ou adresse, et la tranche du
+ * retrait), un jour, un règlement. Le brouillon qu'on passerait, ou `null`.
+ *
+ * Une seule définition pour la validation et pour l'estimation : estimer une
+ * saisie que la validation refuserait de partir, ou l'inverse, montrerait un
+ * total qu'aucun clic ne produit.
+ */
+export function composedDraftOf(decisions: DraftDecisions): OrderDraft | null {
+  const { buyerUserId, fulfillment } = decisions;
+  if (
+    decisions.empty ||
+    buyerUserId === null ||
+    decisions.requestedDate === '' ||
+    fulfillment === null ||
+    fulfillment.issue !== null
+  ) {
+    return null;
+  }
+  return {
+    buyerUserId,
+    fulfillmentMethod: fulfillment.method,
+    pickupAddressId: fulfillment.pickupAddressId,
+    deliveryAddress: fulfillment.deliveryAddress,
+    saveAddressToBook: fulfillment.saveToBook,
+    requestedDeliveryDate: decisions.requestedDate,
+    requestedWindow: fulfillment.window,
+    note: decisions.note,
+    settlement: decisions.settlement,
+    immediate: decisions.immediate,
+  };
+}
+
+/**
+ * **Le corps de la passation — et de l'estimation**, une seule fabrique pour
+ * les deux (lot P2) : une estimation d'un corps que la passation n'enverrait
+ * pas annoncerait un prix qu'aucune commande ne porte.
+ */
+export function placePayloadOf(
+  companyId: string,
+  draft: OrderDraft,
+  lines: readonly OrderLineInput[],
+  origin: OrderEntryOrigin,
+): AdminPlaceOrderPayload {
+  return {
+    companyId,
+    buyerUserId: draft.buyerUserId,
+    settlement: draft.settlement,
+    fulfillmentMethod: draft.fulfillmentMethod,
+    deliveryAddress: draft.deliveryAddress,
+    pickupAddressId: draft.pickupAddressId,
+    // L'adresse du carnet, quand elle en vient : c'est elle qui porte les
+    // consignes dont la commande se prérempli. Une adresse dictée n'en a
+    // aucune. Le sélecteur d'acheminement ne remonte pas encore l'id — il le
+    // fera avec l'écran d'override.
+    deliveryAddressId: null,
+    requestedDeliveryDate: draft.requestedDeliveryDate,
+    // 🔴 **La clé est OMISE quand aucune tranche n'est convenue**, jamais
+    // mise à `null` : le serveur lit l'absence comme « prends le défaut »
+    // (celui du carnet, en livraison) et un `null` explicite comme « le
+    // client n'en veut aucune ». Un `null` posé par commodité effacerait
+    // donc la fenêtre qu'un compte a déclarée sur son adresse. Même parti
+    // que le panier du client, et pour la même raison.
+    ...(draft.requestedWindow === null ? {} : { requestedWindow: draft.requestedWindow }),
+    note: draft.note,
+    lines: [...lines],
+    // Le « Retrait immédiat » (lot L6) : pris sur la vitrine, et tracé.
+    ...(draft.immediate
+      ? { supply: 'shelf' as const, entryShortcut: 'immediate_pickup' as const }
+      : {}),
+    // E4 (Hugo, 2026-11-03) : au comptoir, pas de lien de règlement — le
+    // serveur le refuse sur ce signal, l'écran ne le propose pas.
+    ...(origin === 'counter' ? { entryOrigin: 'counter' as const } : {}),
   };
 }

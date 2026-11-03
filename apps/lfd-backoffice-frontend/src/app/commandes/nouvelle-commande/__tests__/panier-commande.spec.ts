@@ -1,5 +1,5 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import type { DeliveryAvailabilityView } from '@lfd/contracts';
+import type { AdminOrderEstimateView, DeliveryAvailabilityView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { CartStore } from '../cart.store';
@@ -23,7 +23,10 @@ function mount(cart: CartStore): HTMLElement {
   return mountFull(cart).host;
 }
 
-function mountFull(cart: CartStore): {
+function mountFull(
+  cart: CartStore,
+  extra: Readonly<Record<string, unknown>> = {},
+): {
   fixture: ComponentFixture<PanierCommande>;
   host: HTMLElement;
   component: PanierCommande;
@@ -40,6 +43,9 @@ function mountFull(cart: CartStore): {
   set('deliveryAvailability', OPEN_TO_ALL);
   set('audience', 'b2b');
   set('settlesOnAccount', true);
+  for (const [name, value] of Object.entries(extra)) {
+    set(name, value);
+  }
   fixture.detectChanges();
   return {
     fixture,
@@ -120,4 +126,123 @@ function footButton(host: HTMLElement, label: string): HTMLButtonElement {
     throw new Error(`aucun bouton « ${label} » au pied`);
   }
   return found;
+}
+
+const ESTIMATE: AdminOrderEstimateView = {
+  amounts: {
+    vatMethod: 'line_ht',
+    lines: [],
+    subtotalCents: 1_400,
+    discountCents: 0,
+    discountTtcCents: null,
+    discounts: [],
+    deliveryFeeCents: 0,
+    deliveryFeeTtcCents: null,
+    lateFeeCents: 250,
+    lateFeeVatRatePercent: 20,
+    vatCents: 127,
+    vatShares: [
+      { rate: 5.5, amountCents: 77 },
+      { rate: 20, amountCents: 50 },
+    ],
+    totalCents: 1_777,
+  },
+  cutoff: null,
+  refusal: null,
+  warnings: [],
+};
+
+function filledCart(): CartStore {
+  const cart = new CartStore();
+  cart.add({ sku: 'VIE-001', name: 'Croissant', unitPriceMillicents: 200_000 }, 7);
+  return cart;
+}
+
+const squash = (text: string | null | undefined): string =>
+  (text ?? '').replace(/\s+/gu, ' ').trim();
+
+describe('PanierCommande — l’estimation (lot P2)', () => {
+  it('en-tête au TTC, et la phrase « calculés à la validation » disparaît', () => {
+    const host = mount2({ estimate: ESTIMATE });
+    expect(squash(host.querySelector('.pan-summary')?.textContent)).toBe(
+      '7 articles · Total TTC 17,77 €',
+    );
+    expect(host.textContent).not.toContain('calculés à la validation');
+  });
+
+  it('le détail montre le supplément sur sa ligne et la TVA par taux', () => {
+    const { fixture, host, component } = mountFull(filledCart(), { estimate: ESTIMATE });
+    component.view.set('lines');
+    fixture.detectChanges();
+    const labels = [...host.querySelectorAll('fold-field')].map((f) =>
+      squash(f.getAttribute('ng-reflect-label') ?? f.textContent),
+    );
+    const text = squash(labels.join(' / '));
+    expect(text).toContain('Supplément de retard HT · TVA 20 %');
+    expect(text).toContain('TVA 5,5 %');
+    expect(text).toContain('Total TTC');
+  });
+
+  it('un refus du serveur bloque la validation, avec la flèche vers sa vue', () => {
+    const refused = {
+      ...ESTIMATE,
+      amounts: null,
+      refusal: { code: 'orders.cutoff.past', message: 'L’heure limite est passée.' },
+    };
+    const { host } = mountFull(filledCart(), { estimate: refused });
+    expect(host.querySelector('.pan-foot')?.textContent).toContain('L’heure limite est passée.');
+    expect(validate(host)).toBeUndefined();
+  });
+
+  it('un avertissement se dit sans retenir la validation', () => {
+    const cart = filledCart();
+    const draft = readyDraft();
+    const warned = {
+      ...ESTIMATE,
+      warnings: [
+        { code: 'orders.shelf.short', message: 'Reste en vitrine au moment du calcul : 3.' },
+      ],
+    };
+    const { fixture, host } = mountFull(cart, { estimate: warned, draft });
+    // Le sélecteur d'acheminement, sans point connu, émet son propre refus au
+    // montage : on repose l'acheminement résolu par-dessus.
+    draft.fulfillment.set(readyDraft().fulfillment());
+    fixture.detectChanges();
+    expect(host.querySelector('.pan-foot fold-callout[variant="info"]')?.textContent).toContain(
+      'Reste en vitrine',
+    );
+    expect(validate(host)).toBeDefined();
+  });
+
+  it('au comptoir, le lien de règlement n’est pas proposé (E4)', () => {
+    const { host } = mountFull(filledCart(), { linkOffered: false });
+    const radios = [...host.querySelectorAll<HTMLInputElement>('input[name="settlement"]')];
+    expect(radios.map((r) => r.value)).toEqual(['account']);
+  });
+});
+
+function mount2(extra: Readonly<Record<string, unknown>>): HTMLElement {
+  return mountFull(filledCart(), extra).host;
+}
+
+/** Un brouillon où rien ne manque : interlocuteur, jour, acheminement résolu. */
+function readyDraft(): DraftStore {
+  const draft = new DraftStore();
+  draft.buyerUserId.set('u_1');
+  draft.settlement.set('account');
+  draft.fulfillment.set({
+    method: 'pickup',
+    pickupAddressId: 'pk_1',
+    deliveryAddress: null,
+    saveToBook: false,
+    window: null,
+    issue: null,
+  });
+  return draft;
+}
+
+function validate(host: HTMLElement): HTMLButtonElement | undefined {
+  return [...host.querySelectorAll<HTMLButtonElement>('.pan-foot button')].find(
+    (b) => b.textContent.trim() === 'Valider la commande',
+  );
 }
