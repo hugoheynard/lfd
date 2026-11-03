@@ -143,3 +143,20 @@
 .board app-handover-detail {
   --hd-height: calc(100cqh - 3.5rem);
 }
+
+/* La file à la HAUTEUR du sac (Hugo, 2026-11-03) : la colonne prend au moins
+   la hauteur du rail — même borne, `100cqh - 3.5rem` —, et la table s'étire
+   jusqu'en bas ; une file plus longue que le rail continue de grandir. */
+.board-queue {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100cqh - 3.5rem);
+}
+
+.board-queue > fold-tab-panel {
+  flex: 1 1 auto;
+}
+
+.board-queue app-queue-table {
+  flex: 1 1 auto;
+}

@@ -9,3 +9,10 @@
   align-items: center;
   gap: var(--fold-space-sm);
 }
+
+/* Sans transfert, la bande ne rend rien — et ne doit pas non plus prendre de
+   place : un hôte vide comptait dans le `gap` du panneau d'onglets, et
+   décalait la table de 24 px sous le haut du rail (2026-11-03). */
+:host {
+  display: contents;
+}

@@ -112,3 +112,13 @@
   gap: var(--fold-space-xs) var(--fold-space-md);
   width: 100%;
 }
+
+/* La table remplit la hauteur que la colonne lui donne (2026-11-03). */
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
+.qt-table {
+  flex: 1 1 auto;
+}
