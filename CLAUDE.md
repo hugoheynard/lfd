@@ -347,7 +347,7 @@ src/
 | **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | ✓          |
 | **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | ✓          |
 | **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | ✓          |
-| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | ✗                   | ✗     | ✗                   | —                   | ✓          |
+| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | ✓          |
 | **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✓          |
 | **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —          |
 | **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓          |
@@ -422,6 +422,13 @@ packing` reste interdit : le fournil publie, il ne sait pas qui écoute. Depuis
 K3c (2026-10-05), l'ancien poste du fournil, l'ombre et sa route de contrôle
 sont retirés : le colisage est le seul poste. `production_day.packing_owner`
 reste en base et nomme encore `legacy` les journées colisées avant la bascule.
+
+🔴 **Le colisage écoute le retrait par un canal** (2026-11-03, Hugo, option b ;
+[`documentation/comptoir/plan-depart-incomplet-au-comptoir.md`](documentation/comptoir/plan-depart-incomplet-au-comptoir.md) §7).
+Le retrait DÉCLARE `handover/channels/packing/` — le fait `handover.handed_over` —
+et le colisage s'y abonne (`@DurableHandler`) pour sortir de sa liste la fiche
+d'un envoi remis sans avoir été colisé. `handover → packing` reste interdit :
+le retrait publie, il ne sait pas qui écoute.
 
 🔴 **Le fournil lit ce qui attend le four au colisage** (2026-10-28, Hugo ;
 [`documentation/fournil/plan-fournee-v3.md`](documentation/fournil/plan-fournee-v3.md) §3).
