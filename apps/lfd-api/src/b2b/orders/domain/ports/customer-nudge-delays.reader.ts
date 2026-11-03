@@ -1,4 +1,10 @@
-/** Les délais des deux relances, en minutes après la fin du créneau. */
+/**
+ * Les délais des deux relances, en minutes après la fin du créneau — tolérance
+ * de retard COMPRISE (Hugo, 2026-11-03) : une relance compte depuis l'instant
+ * où la commande devient en retard, pas depuis la fin du créneau. Sans quoi
+ * « Avertir le client » se proposait avant que la Supervision ne dise le
+ * retard.
+ */
 export interface CustomerNudgeDelays {
   readonly pickupReminderMinutes: number;
   readonly delayWarningMinutes: number;

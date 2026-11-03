@@ -17,9 +17,9 @@ import { z } from "zod";
 export interface CustomerNudgesView {
   /** La date de service lue, `AAAA-MM-JJ`. */
   readonly date: string;
-  /** Minutes après la fin du créneau avant « Rappel au client ». */
+  /** Minutes après la fin du créneau avant « Rappel au client », tolérance de retard comprise (2026-11-03). */
   readonly pickupReminderDelayMinutes: number;
-  /** Minutes après la fin du créneau avant « Avertir le client ». */
+  /** Minutes après la fin du créneau avant « Avertir le client », tolérance de retard comprise (2026-11-03). */
   readonly delayWarningDelayMinutes: number;
   /** Les commandes du jour qui ont reçu au moins une relance — les autres n'y sont pas. */
   readonly orders: readonly OrderCustomerNudgesView[];
