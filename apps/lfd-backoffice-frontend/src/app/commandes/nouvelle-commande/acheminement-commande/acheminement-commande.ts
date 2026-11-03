@@ -155,11 +155,11 @@ export class AcheminementCommande {
   });
 
   protected readonly methods = computed<readonly FoldViewToggleOption[]>(() => [
-    { value: 'pickup', icon: 'store', label: 'Retrait' },
+    { value: 'pickup', icon: 'store', label: 'Retrait boutique' },
     {
       value: 'delivery',
       icon: 'truck',
-      label: 'Coursier',
+      label: 'Livraison coursier',
       disabled: this.deliveryClosedReason() !== null,
     },
   ]);
@@ -218,6 +218,12 @@ export class AcheminementCommande {
     const chosen = points.find((point) => point.id === this.draft().pickupId());
     if (chosen !== undefined) {
       return chosen;
+    }
+    // Au comptoir, le point où l'on se tient est le bon réglage par défaut
+    // (Hugo, 2026-11-03) ; ailleurs, la présélection de la boutique.
+    const here = points.find((point) => point.id === this.counterPlaceId());
+    if (here !== undefined) {
+      return here;
     }
     const preselected = preselectedPickupId(points, this.preferredPickupId());
     return points.find((point) => point.id === preselected) ?? null;

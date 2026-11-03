@@ -154,7 +154,10 @@
     </p>
   }
 } @else {
-  @if (pickupOptions().length > 1) {
+  <!-- Toujours une liste, même à un seul point (Hugo, 2026-11-03) : le
+       vendeur doit voir qu'il choisit, et pouvoir prendre l'autre boutique
+       quand elle est ouverte aux pros. -->
+  @if (pickupOptions().length > 0) {
     <fold-listbox
       label="Point de retrait"
       placeholder="Où le client retire-t-il ?"
@@ -162,11 +165,9 @@
       [value]="pickup()?.id ?? ''"
       (selectionChange)="onPickup($event)"
     />
-  } @else if (pickup(); as only) {
-    <p class="ach-line">
-      Retrait à <strong>{{ only.label || only.ville }}</strong> — {{ only.ligne1 }},
-      {{ only.codePostal }} {{ only.ville }}
-    </p>
+    @if (pickup(); as chosen) {
+      <p class="ach-line">{{ chosen.ligne1 }}, {{ chosen.codePostal }} {{ chosen.ville }}</p>
+    }
   }
 
   <!-- 🔴 OBLIGATOIRE, et jamais prérempli. Une heure qu'on suggère devient une

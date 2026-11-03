@@ -705,6 +705,19 @@ describe('AcheminementCommande — retrait immédiat', () => {
     });
   });
 
+  /** Hugo, 2026-11-03 : au comptoir, le point où l'on est se choisit par défaut, et reste changeable. */
+  it('🔴 en commande programmée, propose le point du comptoir par défaut, dans une liste', () => {
+    const { fixture, last } = mountCounter('pick_village');
+    fixture.componentInstance['onMethod']('pickup');
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('fold-listbox[label="Point de retrait"]')).not.toBeNull();
+    expect(last()).toMatchObject({ method: 'pickup', pickupAddressId: 'pick_village' });
+    expect(host.textContent).toContain('Retrait boutique');
+    expect(host.textContent).toContain('Livraison coursier');
+  });
+
   it('revient à une commande programmée pour demain en choisissant un mode', () => {
     const { fixture, draft } = mountCounter('pick_village');
     fixture.componentInstance['onImmediate']();
