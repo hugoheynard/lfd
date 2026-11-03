@@ -18,6 +18,7 @@ import { OrderIntake } from "../services/order-intake.service.js";
 import { ShelfCircuit } from "../services/shelf-circuit.service.js";
 import { prepareStaffOrder } from "../services/staff-order-preparation.js";
 import { staffSettlementRefusal } from "../services/staff-settlement-refusal.js";
+import { isCounterEntry } from "../../domain/services/order-supply-rules.js";
 import { EstimateOrderForCustomerQuery } from "./estimate-order-for-customer.query.js";
 
 /**
@@ -94,6 +95,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
       order,
       payload.settlement,
       payload.companyId,
+      isCounterEntry(payload.entryOrigin, payload.entryShortcut),
     );
     return [short, credit].flatMap((warning) =>
       warning === null ? [] : [{ code: warning.code, message: warning.message }],

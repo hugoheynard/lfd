@@ -1,5 +1,8 @@
-import { EntryShortcutOffShelfError } from "../../errors/shelf-order-errors.js";
-import { staffSupplyOf } from "../order-supply-rules.js";
+import {
+  CounterLinkSettlementRefusedError,
+  EntryShortcutOffShelfError,
+} from "../../errors/shelf-order-errors.js";
+import { ensureCounterSettlement, isCounterEntry, staffSupplyOf } from "../order-supply-rules.js";
 
 /**
  * **La marque d'une saisie de l'équipe, et son raccourci** (plan du jour J,
@@ -36,5 +39,19 @@ describe("staffSupplyOf — ce que l'écran de l'équipe envoie", () => {
     expect(() => staffSupplyOf(undefined, "immediate_pickup", TODAY)).toThrow(
       EntryShortcutOffShelfError,
     );
+  });
+});
+
+describe("ensureCounterSettlement — le comptoir ne règle qu'au compte (E4 étendu)", () => {
+  it("le comptoir se lit sur l'origine OU sur le « Retrait immédiat »", () => {
+    expect(isCounterEntry("counter", undefined)).toBe(true);
+    expect(isCounterEntry(undefined, "immediate_pickup")).toBe(true);
+    expect(isCounterEntry(undefined, undefined)).toBe(false);
+  });
+
+  it("refuse le lien au comptoir, l'admet ailleurs", () => {
+    expect(() => ensureCounterSettlement("link", true)).toThrow(CounterLinkSettlementRefusedError);
+    expect(() => ensureCounterSettlement("account", true)).not.toThrow();
+    expect(() => ensureCounterSettlement("link", false)).not.toThrow();
   });
 });

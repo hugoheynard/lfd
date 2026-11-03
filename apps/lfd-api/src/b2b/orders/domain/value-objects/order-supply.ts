@@ -26,6 +26,16 @@ export const ORDER_ENTRY_SHORTCUTS = ["immediate_pickup"] as const;
 export type OrderEntryShortcut = (typeof ORDER_ENTRY_SHORTCUTS)[number];
 
 /**
+ * **D'où vient la saisie de l'équipe** (Hugo, 2026-11-03, E4 étendu) :
+ * `counter` est le comptoir, qu'il prenne sur la vitrine ou programme. Absent,
+ * la saisie du commercial. Le serveur ne la garde pas : elle ne décide que du
+ * règlement admis.
+ */
+export const ORDER_ENTRY_ORIGINS = ["counter"] as const;
+
+export type OrderEntryOrigin = (typeof ORDER_ENTRY_ORIGINS)[number];
+
+/**
  * **La marque décidée par l'appelant**, telle que `Order.draft` la reçoit.
  *
  * Une commande `shelf` porte « aujourd'hui » (`AAAA-MM-JJ`) tel que

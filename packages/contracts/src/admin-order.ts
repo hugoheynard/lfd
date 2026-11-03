@@ -14,6 +14,7 @@ import {
   orderContentShape,
   orderLineInputSchema,
   type FulfillmentMethod,
+  staffEntryOriginSchema,
   staffEntryShortcutSchema,
   staffOrderSupplySchema,
 } from "./order.js";
@@ -126,6 +127,8 @@ export const adminPlaceOrderPayloadSchema = z
     supply: staffOrderSupplySchema.optional(),
     // Le « Retrait immédiat » du comptoir (lot L6) : seulement avec `supply: "shelf"`.
     entryShortcut: staffEntryShortcutSchema.optional(),
+    // D'où vient la saisie (E4 étendu) : `counter` refuse le lien de règlement.
+    entryOrigin: staffEntryOriginSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

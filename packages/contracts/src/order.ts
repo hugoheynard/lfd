@@ -1362,6 +1362,17 @@ export const staffEntryShortcutSchema = z.enum(["immediate_pickup"]);
 export type StaffEntryShortcut = z.infer<typeof staffEntryShortcutSchema>;
 
 /**
+ * **D'où vient la saisie de l'équipe** (Hugo, 2026-11-03, E4 étendu — plan
+ * `documentation/pricing/saisie/plan-prix-de-la-saisie.md` §5). Le raccourci
+ * ne couvre que le « Retrait immédiat » ; une commande PROGRAMMÉE ouverte au
+ * comptoir n'envoyait rien qui la distingue de celle du commercial. `counter`
+ * fait refuser le lien de règlement, quel que soit l'approvisionnement.
+ * Absent : la saisie du commercial, comme avant. Enum pour s'étendre.
+ */
+export const staffEntryOriginSchema = z.enum(["counter"]);
+export type StaffEntryOrigin = z.infer<typeof staffEntryOriginSchema>;
+
+/**
  * **Ce que le serveur facturera**, demandé avant de valider.
  *
  * Le panier du staff affichait le tarif du CATALOGUE pendant que le serveur

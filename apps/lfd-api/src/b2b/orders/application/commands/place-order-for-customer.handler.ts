@@ -14,6 +14,7 @@ import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repository.js";
 import { ShelfCircuit } from "../services/shelf-circuit.service.js";
 import { paymentUrlFor } from "../../domain/services/payment-link.js";
+import { isCounterEntry } from "../../domain/services/order-supply-rules.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { prepareStaffOrder } from "../services/staff-order-preparation.js";
@@ -83,7 +84,12 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       "checkout",
     );
 
-    const intent = await this.settle(order, payload.settlement, companyId);
+    const intent = await this.settle(
+      order,
+      payload.settlement,
+      companyId,
+      isCounterEntry(payload.entryOrigin, payload.entryShortcut),
+    );
     const placed = await this.persist(order, payload.requestedDeliveryDate, intent);
 
     // La dérogation se consomme APRÈS la persistance, et son échec ne s'absorbe
@@ -148,6 +154,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     order: Order,
     settlement: PlaceOrderForCustomerCommand["payload"]["settlement"],
     companyId: string,
+    atCounter: boolean,
   ): Promise<CreatedLink | null> {
     // Le prédicat que l'estimation partage (lot P2) : ici, il refuse.
     const refusal = await staffSettlementRefusal(
@@ -155,6 +162,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       order,
       settlement,
       companyId,
+      atCounter,
     );
     if (refusal !== null) {
       throw refusal;

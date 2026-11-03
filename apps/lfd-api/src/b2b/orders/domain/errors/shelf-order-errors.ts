@@ -1,4 +1,4 @@
-import { DomainError } from "../../../../platform/shared/errors/app-error.js";
+import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus d'une **commande prise sur la vitrine** (`supply = shelf`, plan
@@ -87,5 +87,38 @@ export class CounterLinkSettlementRefusedError extends DomainError {
       "orders.counter.link_settlement_refused",
       "Au comptoir, une commande saisie se règle au compte : le lien de règlement n'y est pas proposé. Choisissez « Au compte » si ce client a un crédit ; sinon, il commande depuis son espace, ou par le commercial qui peut lui envoyer un lien.",
     );
+  }
+}
+
+/**
+ * Pourquoi le règlement au compte n'est pas admis — les trois cas que lit
+ * `accountStanding` (vérifié le 2026-11-03 dans `order-settlement.ts` et
+ * `prisma-order-guard.reader.ts`) : la société qui commande n'est pas active,
+ * son payeur n'a aucun délai de paiement accordé, ou le prélèvement du payeur
+ * est suspendu par la comptabilité.
+ */
+export type CounterAccountRefusalCause =
+  "company_inactive" | "terms_not_granted" | "direct_debit_blocked";
+
+const COUNTER_ACCOUNT_REFUSALS: Readonly<Record<CounterAccountRefusalCause, string>> = {
+  company_inactive:
+    "Le compte de ce client n'est pas actif : il ne peut pas commander au comptoir tant que son compte n'est pas activé sur sa fiche client.",
+  terms_not_granted:
+    "Le paiement différé n'est pas ouvert pour ce client : il ne peut pas commander au comptoir. Il peut commander depuis son espace, ou le paiement différé s'ouvre sur sa fiche client (Informations, Moyens de paiement).",
+  direct_debit_blocked:
+    "Le prélèvement de ce client est suspendu par la comptabilité : il ne peut pas commander au comptoir. Il peut commander depuis son espace, ou la comptabilité lève la suspension.",
+};
+
+/**
+ * **Au comptoir, le règlement au compte refusé ne laisse aucun règlement**
+ * (Hugo, 2026-11-03, plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`
+ * §5) : le lien y est refusé ({@link CounterLinkSettlementRefusedError}). Le
+ * refus est distinct de `AccountSettlementNotGrantedError`, dont le geste de
+ * sortie — « réglez par lien » — n'existe pas au comptoir ; il dit la cause
+ * réelle, une phrase par cause.
+ */
+export class CounterAccountSettlementNotGrantedError extends BusinessError {
+  constructor(readonly reason: CounterAccountRefusalCause) {
+    super(`orders.counter.${reason}`, COUNTER_ACCOUNT_REFUSALS[reason]);
   }
 }

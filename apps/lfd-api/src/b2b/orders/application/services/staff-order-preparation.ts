@@ -3,7 +3,10 @@ import type { AdminPlaceOrderPayload } from "@lfd/contracts";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 import type { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
-import { ensureCounterSettlement } from "../../domain/services/order-supply-rules.js";
+import {
+  ensureCounterSettlement,
+  isCounterEntry,
+} from "../../domain/services/order-supply-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
 import type { OrderIntake } from "./order-intake.service.js";
@@ -46,7 +49,10 @@ export async function prepareStaffOrder(
   // Un 404 non-divulguant, comme sur le chemin client : le back-office a la
   // fiche sous les yeux, il n'a pas besoin d'un message plus bavard.
   ensureOrderMember(await ports.guard.roleOf(buyerUserId, companyId), companyId);
-  ensureCounterSettlement(payload.settlement, payload.entryShortcut);
+  ensureCounterSettlement(
+    payload.settlement,
+    isCounterEntry(payload.entryOrigin, payload.entryShortcut),
+  );
   await ports.intake.admitStaffEntry(
     companyId,
     { userId: buyerUserId },

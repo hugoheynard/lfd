@@ -74,7 +74,10 @@ import { EstimateOrderForCustomerQuery } from "../../queries/estimate-order-for-
 import { OrderCutoffNotice } from "../../services/order-cutoff-notice.service.js";
 import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
 import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
-import { CounterLinkSettlementRefusedError } from "../../../domain/errors/shelf-order-errors.js";
+import {
+  CounterAccountSettlementNotGrantedError,
+  CounterLinkSettlementRefusedError,
+} from "../../../domain/errors/shelf-order-errors.js";
 import type { OrderIntake } from "../../services/order-intake.service.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
 
@@ -1203,5 +1206,97 @@ describe("EstimateOrderForCustomerHandler", () => {
         message: new AccountSettlementNotGrantedError().message,
       },
     ]);
+  });
+
+  /**
+   * Régression : une commande PROGRAMMÉE saisie au comptoir n'envoyait rien
+   * qui la distingue, et l'estimation annonçait un lien de règlement que le
+   * comptoir n'admet pas (E4 étendu, Hugo, 2026-11-03).
+   */
+  it("au comptoir, une commande programmée avec un lien : le refus de la passation", async () => {
+    const estimate = await estimator(guard("orders", "active", "granted")).execute(
+      new EstimateOrderForCustomerQuery(
+        "staff_1",
+        payload({ settlement: "link", entryOrigin: "counter" }),
+      ),
+    );
+
+    expect(estimate.refusal?.code).toBe(new CounterLinkSettlementRefusedError().code);
+  });
+
+  it("au comptoir, sans paiement différé : l'avertissement dit la cause du comptoir", async () => {
+    const estimate = await estimator(guard("orders", "active", "none")).execute(
+      new EstimateOrderForCustomerQuery(
+        "staff_1",
+        payload({ settlement: "account", entryOrigin: "counter" }),
+      ),
+    );
+
+    const refusal = new CounterAccountSettlementNotGrantedError("terms_not_granted");
+    expect(estimate.warnings).toEqual([{ code: refusal.code, message: refusal.message }]);
+  });
+});
+
+describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu)", () => {
+  /**
+   * Régression : seul le « Retrait immédiat » refusait le lien ; une commande
+   * programmée ouverte au comptoir l'acceptait (Hugo, 2026-11-03).
+   */
+  it("une commande PROGRAMMÉE au comptoir avec un lien est refusée, sans intention", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = { intent: null as CreateIntentParams | null };
+
+    await expect(
+      handler(guard("orders", "active", "granted"), sink, { payments: payments(intents) }).execute(
+        new PlaceOrderForCustomerCommand(
+          "staff_1",
+          payload({ settlement: "link", entryOrigin: "counter" }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(CounterLinkSettlementRefusedError);
+    expect(intents.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+  });
+
+  it("hors comptoir, la même commande programmée avec un lien passe", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    const result = await handler(guard("orders", "active", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+    );
+
+    expect(result.paymentUrl).toBeDefined();
+  });
+
+  it.each([
+    ["pending", "granted", "company_inactive", /n'est pas actif/u],
+    ["active", "none", "terms_not_granted", /paiement différé n'est pas ouvert/u],
+    ["active", "blocked", "direct_debit_blocked", /suspendu par la comptabilité/u],
+  ] as const)(
+    "au compte, société %s / crédit %s : refusé pour la cause %s",
+    async (status, standing, reason, words) => {
+      const sink = { placed: null as OrderToPlace | null };
+
+      const refusal = handler(guard("orders", status, standing), sink).execute(
+        new PlaceOrderForCustomerCommand(
+          "staff_1",
+          payload({ settlement: "account", entryOrigin: "counter" }),
+        ),
+      );
+
+      await expect(refusal).rejects.toMatchObject({ reason, code: `orders.counter.${reason}` });
+      await expect(refusal).rejects.toThrow(words);
+      expect(sink.placed).toBeNull();
+    },
+  );
+
+  it("hors comptoir, le refus du compte garde son message « réglez par lien »", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      handler(guard("orders", "active", "none"), sink).execute(
+        new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+      ),
+    ).rejects.toThrow(new AccountSettlementNotGrantedError().message);
   });
 });

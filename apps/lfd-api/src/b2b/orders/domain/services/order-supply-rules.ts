@@ -8,6 +8,7 @@ import {
   ShelfOrderRouteChangeError,
 } from "../errors/shelf-order-errors.js";
 import type {
+  OrderEntryOrigin,
   OrderEntryShortcut,
   OrderSupply,
   OrderSupplyDecision,
@@ -65,20 +66,29 @@ export function staffSupplyOf(
 }
 
 /**
- * **Le comptoir ne règle qu'au compte** (Hugo, 2026-11-03, E4 du plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`). Le signal que le
- * serveur reçoit du comptoir est le raccourci « Retrait immédiat » : une
- * saisie programmée ouverte depuis le comptoir n'envoie rien qui la distingue
- * de celle du commercial (vérifié le 2026-11-03 dans `admin-order.ts` et
- * `nouvelle-commande-page.ts`) ; elle n'est donc pas couverte ici.
- *
- * @throws {CounterLinkSettlementRefusedError} un lien de règlement sur le « Retrait immédiat ».
+ * **La saisie vient-elle du comptoir ?** — l'origine déclarée `counter`, ou le
+ * « Retrait immédiat », qui n'existe qu'au comptoir (Hugo, 2026-11-03, E4
+ * étendu du plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`).
+ * Le raccourci reste un signal à lui seul : un écran plus ancien qui ne
+ * déclare pas l'origine est toujours couvert.
  */
-export function ensureCounterSettlement(
-  settlement: "account" | "link",
+export function isCounterEntry(
+  origin: OrderEntryOrigin | undefined,
   shortcut: OrderEntryShortcut | undefined,
-): void {
-  if (shortcut === "immediate_pickup" && settlement === "link") {
+): boolean {
+  return origin === "counter" || shortcut === "immediate_pickup";
+}
+
+/**
+ * **Le comptoir ne règle qu'au compte** (Hugo, 2026-11-03, E4 du plan
+ * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`) — sur la vitrine
+ * comme sur une commande programmée, dès que la saisie vient du comptoir
+ * ({@link isCounterEntry}).
+ *
+ * @throws {CounterLinkSettlementRefusedError} un lien de règlement au comptoir.
+ */
+export function ensureCounterSettlement(settlement: "account" | "link", atCounter: boolean): void {
+  if (atCounter && settlement === "link") {
     throw new CounterLinkSettlementRefusedError();
   }
 }

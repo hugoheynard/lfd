@@ -308,6 +308,33 @@ describe("« Valider et remettre » (lot L6)", () => {
     expect(await ctx.prisma.order.count()).toBe(before);
   });
 
+  /**
+   * Régression : une commande PROGRAMMÉE saisie au comptoir acceptait un lien
+   * de règlement — seul le raccourci signalait le comptoir (E4 étendu, 2026-11-03).
+   */
+  it("refuse le lien de règlement à une commande programmée saisie au comptoir", async () => {
+    const pro = await seedCreditedPro("pro-comptoir-programme-lien");
+    const before = await ctx.prisma.order.count();
+    const response = await staff()
+      .post("/admin/orders")
+      .send({
+        companyId: pro.companyId,
+        buyerUserId: pro.userId,
+        settlement: "link",
+        entryOrigin: "counter",
+        requestedDeliveryDate: day,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: siteId,
+        requestedWindow: { start: "12:00", end: "13:00" },
+        lines: [{ sku: CROISSANT, quantity: 1 }],
+      })
+      .expect(400);
+    expect(jsonBody<{ code: string }>(response).code).toBe(
+      "orders.counter.link_settlement_refused",
+    );
+    expect(await ctx.prisma.order.count()).toBe(before);
+  });
+
   it("refuse un « Retrait immédiat » sur une commande programmée", async () => {
     const pro = await seedCreditedPro("pro-programme");
     const response = await staff()
