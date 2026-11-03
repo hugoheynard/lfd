@@ -12,7 +12,9 @@ import {
   ReserveShopRelease,
   ShortfallDesk,
   ShortfallFreezeDesk,
+  ShortfallPreviewReader,
 } from "../packing/channels/commerce/index.js";
+import { PrismaShortfallPreviewReader } from "../packing/infrastructure/prisma-shortfall-preview.reader.js";
 import { PackingReserveShopRelease } from "../packing/application/shop-release/packing-reserve-shop-release.js";
 import { PackingSheetRevisionDesk } from "../packing/application/revision/packing-sheet-revision.desk.js";
 import { PackingSheetWithdrawalDesk } from "../packing/application/withdrawal/packing-sheet-withdrawal.desk.js";
@@ -90,6 +92,8 @@ import { ProductionModule } from "../production/production.module.js";
     // Le bac figé sans fait, pour le départ décidé au comptoir (plan
     // `comptoir/plan-depart-incomplet-au-comptoir.md`, 2026-11-03).
     { provide: ShortfallFreezeDesk, useExisting: PackingShortfallFreezeDesk },
+    // Son aperçu, avant le geste (C1b, 2026-11-03) — lu sans verrou.
+    { provide: ShortfallPreviewReader, useExisting: PrismaShortfallPreviewReader },
     // Le retrait d'une commande inscrite (plan A1, 2026-10-25) — le colisage
     // déclare ET implémente, le commerce l'appelle après le guichet du
     // fournil ; la pierre tombale lit l'en-tête que le fournil publie.
@@ -124,6 +128,7 @@ import { ProductionModule } from "../production/production.module.js";
     PackedResuppliesReader,
     ShortfallDesk,
     ShortfallFreezeDesk,
+    ShortfallPreviewReader,
     PackingWithdrawalDesk,
     OrderPackingStateReader,
     InscribedOrderHeaderReader,

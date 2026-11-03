@@ -1,14 +1,16 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   counterIncompleteHandoverPayloadSchema,
   type CounterIncompleteHandoverPayload,
+  type CounterIncompleteHandoverView,
 } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { HandOverPackedAtCounterCommand } from "../application/commands/hand-over-packed-at-counter.command.js";
+import { GetCounterIncompleteHandoverQuery } from "../application/queries/get-counter-incomplete-handover.query.js";
 
 /**
  * **« Remettre ce qui est au bac »** — le départ incomplet décidé au comptoir
@@ -22,7 +24,24 @@ import { HandOverPackedAtCounterCommand } from "../application/commands/hand-ove
 @Controller("admin/counter/orders/:orderId")
 @AdminSurface("handover_counter")
 export class AdminCounterIncompleteHandoverController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
+
+  /**
+   * L'aperçu AVANT le geste (lot C1b, 2026-11-03), sous
+   * `handover_counter:read` : le premier refus que `POST` rencontrerait, en
+   * code (l'écran choisit sa phrase), et le bac — ce qui part, ce qui ne
+   * part pas. `200` même refusé : le refus est la réponse. `404` : commande
+   * inconnue.
+   */
+  @Get("incomplete-handover")
+  async preview(@Param("orderId") orderId: string): Promise<CounterIncompleteHandoverView> {
+    return this.queries.execute<GetCounterIncompleteHandoverQuery, CounterIncompleteHandoverView>(
+      new GetCounterIncompleteHandoverQuery(orderId),
+    );
+  }
 
   /**
    * Corps `{ remainder: "abandoned" }`. `204` : la file du comptoir se relit.

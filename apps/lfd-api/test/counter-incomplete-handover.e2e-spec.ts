@@ -152,10 +152,12 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
     expect(
       await ctx.prisma.outboxMessage.count({ where: { type: "packing.shortfall_reported" } }),
     ).toBe(0);
-    // La fiche : réduite au bac, marque levée, bac encore ouvert au poste.
+    // La fiche : réduite au bac, marque levée — puis fermée telle quelle par
+    // le fait de la remise (2026-11-03, option b) : elle n'attend plus rien.
     const sheet = await sheetOf(ctx, order.orderNumber);
     expect(sheet.lines.map((line) => line.quantity)).toEqual([1]);
     expect(sheet.shortfallReportedAt).toBeNull();
+    expect(sheet.packedAt).not.toBeNull();
     expect(await ctx.prisma.outboxDelivery.count({ where: { lastError: { not: null } } })).toBe(0);
   });
 

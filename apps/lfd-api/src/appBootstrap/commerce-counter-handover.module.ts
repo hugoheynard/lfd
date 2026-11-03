@@ -1,7 +1,11 @@
 import { Global, Module } from "@nestjs/common";
 
 import { AttestingCounterHandoverDesk } from "../handover/application/services/attesting-counter-handover.desk.js";
-import { CounterHandoverDesk } from "../handover/channels/commerce/index.js";
+import { PreviewingCounterHandoverReader } from "../handover/application/services/previewing-counter-handover.reader.js";
+import {
+  CounterHandoverDesk,
+  CounterHandoverPreviewReader,
+} from "../handover/channels/commerce/index.js";
 import { HandoverModule } from "../handover/handover.module.js";
 
 /**
@@ -17,7 +21,11 @@ import { HandoverModule } from "../handover/handover.module.js";
 @Global()
 @Module({
   imports: [HandoverModule],
-  providers: [{ provide: CounterHandoverDesk, useExisting: AttestingCounterHandoverDesk }],
-  exports: [CounterHandoverDesk],
+  providers: [
+    { provide: CounterHandoverDesk, useExisting: AttestingCounterHandoverDesk },
+    // Son aperçu, avant le geste (C1b, 2026-11-03) — lu sans verrou.
+    { provide: CounterHandoverPreviewReader, useExisting: PreviewingCounterHandoverReader },
+  ],
+  exports: [CounterHandoverDesk, CounterHandoverPreviewReader],
 })
 export class CommerceCounterHandoverModule {}

@@ -799,6 +799,12 @@ export {
   counterIncompleteHandoverPayloadSchema,
   shortfallRemainderSchema,
 } from "./admin-order-detail.js";
+export type {
+  CounterIncompleteHandoverLine,
+  CounterIncompleteHandoverRefusal,
+  CounterIncompleteHandoverView,
+} from "./counter-incomplete-handover.js";
+export { COUNTER_INCOMPLETE_HANDOVER_REFUSALS } from "./counter-incomplete-handover.js";
 export {
   announcedOrderUntil,
   clockTimeSchema,

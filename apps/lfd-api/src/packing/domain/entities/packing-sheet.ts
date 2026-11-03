@@ -10,7 +10,6 @@ import {
   PackingLineNotFoundError,
 } from "../errors/packing-station-errors.js";
 import {
-  NothingShortError,
   ShortfallAlreadyAuthorizedError,
   ShortfallAwaitingDecisionError,
   ShortfallContentsChangedError,
@@ -21,6 +20,11 @@ import {
   PackingSheetWithdrawnError,
 } from "../errors/packing-withdrawal-errors.js";
 import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
+import {
+  type ShortfallRefusal,
+  shortfallRefusalError,
+  type ShortfallStanding,
+} from "../services/shortfall-standing.js";
 import { type DueRevision, type RevisedDueLine, revisedDueOf } from "../services/revised-due.js";
 import {
   type AuthorizedLine,
@@ -186,17 +190,40 @@ export class PackingSheet {
    * @throws {NothingShortError} chaque ligne due est entièrement répartie.
    */
   reportShortfall(at: Date): readonly ShortfallLine[] {
-    this.assertNotWithdrawn();
-    this.assertListedAndOpen();
-    if (this.authorizedValue !== null) {
-      throw new ShortfallAlreadyAuthorizedError(this.reference);
-    }
-    const lines = shortfallOf(this.linesValue, (sku) => this.contents.allocatedOf(sku));
-    if (lines === null) {
-      throw new NothingShortError(this.reference);
+    const standing = this.shortfallStanding;
+    if (standing.kind === "refused") {
+      throw shortfallRefusalError(standing.refusal, this.reference);
     }
     this.shortfallValue = at;
-    return lines;
+    return standing.lines;
+  }
+
+  /**
+   * Ce que « Il manque » ferait, sans muter — la règle de
+   * {@link reportShortfall}, lue par l'aperçu du départ incomplet au comptoir
+   * (C1b, Hugo, 2026-11-03). Un accesseur, pas un geste : il ne refuse pas une
+   * feuille retirée, il le dit.
+   */
+  get shortfallStanding(): ShortfallStanding {
+    // L'ordre des gardes d'avant l'extraction : retirée, fermée, comptée, autorisée.
+    // Pas une méthode privée : le test du prototype y verrait un geste.
+    const refusal: ShortfallRefusal | null =
+      this.withdrawnValue !== null
+        ? "withdrawn"
+        : this.packedValue !== null
+          ? "sealed"
+          : this.containerMode !== "listed"
+            ? "counted"
+            : this.authorizedValue !== null
+              ? "already_authorized"
+              : null;
+    if (refusal !== null) {
+      return { kind: "refused", refusal };
+    }
+    const lines = shortfallOf(this.linesValue, (sku) => this.contents.allocatedOf(sku));
+    return lines === null
+      ? { kind: "refused", refusal: "nothing_short" }
+      : { kind: "short", lines };
   }
 
   get shortfallReportedAt(): Date | null {
@@ -313,6 +340,41 @@ export class PackingSheet {
     }
     this.withdrawnValue = at;
     return true;
+  }
+
+  /**
+   * **L'envoi est parti sans que le bac soit fermé** — le retrait l'a remis
+   * (Hugo, 2026-11-03, option b ; plan
+   * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §7). La
+   * fiche n'attend plus rien : elle sort de la liste à coliser, telle quelle.
+   *
+   * - **Rien au bac** (aucun contenant vivant) : la feuille est RETIRÉE par
+   *   son statut, comme une annulation — sans contenant à annuler, rien ne
+   *   revient à la réserve. Plus aucun geste ne la touche.
+   * - **Quelque chose au bac** : elle est FERMÉE telle quelle, sans exiger que
+   *   tout soit réparti — ce qui est au bac est parti avec le client. Jamais
+   *   retirée : annuler ses contenants rendrait à la réserve des pièces qui
+   *   ont quitté la boutique.
+   *
+   * Ne publie rien : `packing.order_packed` ferait rendre « prête » une
+   * commande déjà retirée, et le commerce le refuserait en message mort.
+   *
+   * @returns ce qui a été écrit — `unchanged` sur un bac déjà fermé ou une
+   *   commande comptée par contenants (ancien poste, en lecture seule).
+   * @throws {PackingSheetWithdrawnError} l'appelant écarte d'abord une
+   *   feuille déjà retirée.
+   */
+  leaveAtHandover(mark: SheetMark): "withdrawn" | "sealed" | "unchanged" {
+    this.assertNotWithdrawn();
+    if (this.packedValue !== null || this.containerMode !== "listed") {
+      return "unchanged";
+    }
+    if (this.contents.liveCount === 0) {
+      this.withdrawnValue = mark.at;
+      return "withdrawn";
+    }
+    this.packedValue = mark;
+    return "sealed";
   }
 
   /** L'instant du retrait, ou `null` : la feuille vit. */

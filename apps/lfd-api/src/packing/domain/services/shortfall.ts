@@ -7,6 +7,8 @@ import type { SheetLine } from "../entities/packing-sheet.snapshot.js";
 export interface ShortfallLine {
   readonly sku: string;
   readonly productName: string;
+  /** L'unité de `due` et `packed` — des grammes au poids (lue par l'aperçu C1b, 2026-11-03). */
+  readonly saleUnit: SheetLine["saleUnit"];
   readonly due: number;
   /** Les pièces réparties dans les contenants vivants, bornées à la quantité due. */
   readonly packed: number;
@@ -25,6 +27,7 @@ export function shortfallOf(
   const counted = lines.map((line) => ({
     sku: line.sku,
     productName: line.productName,
+    saleUnit: line.saleUnit,
     due: line.quantity,
     packed: Math.min(allocatedOf(line.sku), line.quantity),
   }));

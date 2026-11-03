@@ -167,7 +167,10 @@ const ALLOWED = {
   delivery: new Set(["staff", "platform", "production", "packing"]),
   // Le fournil par son canal SEULEMENT (`PORT_SURFACE`) ; ⚠️ `production →
   // packing` reste interdit : le fournil publie, il ne sait pas qui écoute.
-  packing: new Set(["staff", "platform", "production"]),
+  // Et le retrait par son canal SEULEMENT depuis le 2026-11-03 (Hugo, option
+  // b) : le colisage écoute `handover.handed_over` pour sortir de sa liste la
+  // fiche d'un envoi déjà remis. `handover → packing` reste interdit.
+  packing: new Set(["staff", "platform", "production", "handover"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
   root: new Set([
@@ -265,6 +268,14 @@ const PORT_SURFACE = {
   // `colisage.md`, §11 et §13) : la liste à coliser, la remise
   // d'une fournée, la demande de retour. Contrats et faits, rien de l'agrégat.
   "packing→production": "production/channels/packing/",
+  // Le COLISAGE écoute le fait du RETRAIT (2026-11-03, Hugo, option b —
+  // `comptoir/plan-depart-incomplet-au-comptoir.md`, §7) : une commande remise
+  // sans être colisée laissait sa fiche ouverte au poste, et fermer le bac
+  // ensuite partait en message mort. Le fait seul, rien du retrait.
+  //
+  // ⚠️ `handover → packing` reste INTERDIT : le retrait publie, il ne sait pas
+  // qui écoute.
+  "packing→handover": "handover/channels/packing/",
   // La LIVRAISON écoute la clôture du fournil (2026-10-04, Hugo, option B,
   // `composition-automatique.md` §2.2) : le fait seul, rien de l'agrégat.
   // Le détail des commandes, elle le lit au commerce.

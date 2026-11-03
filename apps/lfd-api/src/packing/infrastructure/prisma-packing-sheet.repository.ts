@@ -1,42 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
-import { PackingSheet, type SheetLine } from "../domain/entities/packing-sheet.js";
-import {
-  CONTAINER_SELECT,
-  containerModeOf,
-  containerOf,
-  saveContainers,
-} from "./packing-container.mapper.js";
+import type { PackingSheet } from "../domain/entities/packing-sheet.js";
+import { saveContainers } from "./packing-container.mapper.js";
+import { loadPackingSheet } from "./packing-sheet.load.js";
 import { PackingSheetRepository } from "../domain/ports/packing-sheet.repository.js";
 import { assertInsideUnitOfWork } from "./packing-lock.js";
-import { packingSaleUnitOf } from "./sale-unit.column.js";
-
-/** Une ligne de `packing_line`, telle qu'on la relit. */
-interface LineRow {
-  readonly sku: string;
-  readonly productName: string;
-  readonly quantity: number;
-  /** `TEXT` contraint (`packing_line_sale_unit_check`). */
-  readonly saleUnit: string;
-  readonly packedAt: Date | null;
-  readonly packedBy: string | null;
-  readonly packedInitials: string;
-}
-
-function lineOf(row: LineRow): SheetLine {
-  return {
-    sku: row.sku,
-    productName: row.productName,
-    quantity: row.quantity,
-    saleUnit: packingSaleUnitOf(row.sku, row.saleUnit),
-    // Le CHECK de la table interdit l'un sans l'autre.
-    packed:
-      row.packedAt === null || row.packedBy === null
-        ? null
-        : { at: row.packedAt, by: row.packedBy, initials: row.packedInitials },
-  };
-}
 
 /**
  * L'adaptateur Prisma des bacs. `lock` pose `FOR UPDATE` sur la ligne du bac
@@ -55,54 +24,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
       SELECT "order_id" FROM "packing"."packing_order"
        WHERE "service_day" = ${serviceDay} AND "order_id" = ${orderId} AND "rank" = ${rank}
          FOR UPDATE`;
-    const row = await this.prisma.packingOrder.findUnique({
-      where: { serviceDay_orderId_rank: { serviceDay, orderId, rank } },
-      select: {
-        reference: true,
-        packedAt: true,
-        packedBy: true,
-        containerCount: true,
-        containerMode: true,
-        fulfillmentMethod: true,
-        shortfallReportedAt: true,
-        shortfallAuthorizedAt: true,
-        withdrawnAt: true,
-        containers: CONTAINER_SELECT,
-        lines: {
-          select: {
-            sku: true,
-            productName: true,
-            quantity: true,
-            saleUnit: true,
-            packedAt: true,
-            packedBy: true,
-            packedInitials: true,
-          },
-          orderBy: { sku: "asc" },
-        },
-      },
-    });
-    if (row === null) {
-      return null;
-    }
-    return PackingSheet.fromSnapshot({
-      serviceDay,
-      orderId,
-      rank,
-      reference: row.reference,
-      packed:
-        row.packedAt === null || row.packedBy === null
-          ? null
-          : { at: row.packedAt, by: row.packedBy },
-      containers: row.containerCount,
-      lines: row.lines.map(lineOf),
-      containerMode: containerModeOf(row.containerMode),
-      containerList: row.containers.map(containerOf),
-      fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
-      shortfallReportedAt: row.shortfallReportedAt,
-      shortfallAuthorizedAt: row.shortfallAuthorizedAt,
-      withdrawnAt: row.withdrawnAt,
-    });
+    return loadPackingSheet(this.prisma, serviceDay, orderId, rank);
   }
 
   async lockLatestOf(orderId: string, rank: number): Promise<PackingSheet | null> {

@@ -12,6 +12,7 @@ import { GetHandoverQueueHandler } from "./application/queries/get-handover-queu
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverCounterView } from "./application/services/handover-counter-view.js";
 import { AttestingCounterHandoverDesk } from "./application/services/attesting-counter-handover.desk.js";
+import { PreviewingCounterHandoverReader } from "./application/services/previewing-counter-handover.reader.js";
 import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
 import { RecordOrdersBroughtBack } from "./application/handlers/record-orders-brought-back.handler.js";
 import { RecordRoundDeparted } from "./application/handlers/record-round-departed.handler.js";
@@ -88,9 +89,16 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
     HandoverDepartureHolds,
     HandoverDoorstepAttestor,
     AttestingCounterHandoverDesk,
+    // Son aperçu, sans verrou (C1b, 2026-11-03), relié par `CommerceCounterHandoverModule`.
+    PreviewingCounterHandoverReader,
     RecordRoundDeparted,
     RecordOrdersBroughtBack,
   ],
-  exports: [HandoverDepartureHolds, HandoverDoorstepAttestor, AttestingCounterHandoverDesk],
+  exports: [
+    HandoverDepartureHolds,
+    HandoverDoorstepAttestor,
+    AttestingCounterHandoverDesk,
+    PreviewingCounterHandoverReader,
+  ],
 })
 export class HandoverModule {}

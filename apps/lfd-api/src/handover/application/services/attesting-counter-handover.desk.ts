@@ -14,6 +14,7 @@ import {
 } from "../../domain/errors/handover-errors.js";
 import { counterReachBlocker } from "../../domain/services/counter-reach.js";
 import type { HandoverVia } from "../../domain/services/handover.js";
+import { counterReachSubjectOf } from "./counter-reach-subject.js";
 import { HandoverAttestation } from "./handover-attestation.service.js";
 
 /**
@@ -21,6 +22,10 @@ import { HandoverAttestation } from "./handover-attestation.service.js";
  * seul, sans le code du client — la même trace que « Remettre » par numéro.
  */
 const COUNTER_VIA: HandoverVia = "manual";
+
+/** Le retrait ne connaît plus la commande : le commerce ne la sert plus. Partagée avec l'aperçu (C1b). */
+export const NOT_SERVED_REASON =
+  "Cette commande n'est plus servie par le commerce : ne la remettez pas, et rechargez la file du comptoir.";
 
 /**
  * L'implémentation du guichet (plan
@@ -42,11 +47,7 @@ export class AttestingCounterHandoverDesk extends CounterHandoverDesk {
   async vet(orderId: string, by: string): Promise<void> {
     const subject = await this.subjectOf(orderId);
     const blocker = counterReachBlocker(
-      {
-        fulfillmentMethod: subject.fulfillmentMethod,
-        // La clé de la file du comptoir, écrite comme elle (`expectedOn`).
-        serviceDay: subject.requestedDeliveryDate?.toISOString().slice(0, 10) ?? null,
-      },
+      counterReachSubjectOf(subject),
       instantToLocal(this.clock.now()).day,
     );
     if (blocker !== null) {
@@ -63,9 +64,7 @@ export class AttestingCounterHandoverDesk extends CounterHandoverDesk {
   private async subjectOf(orderId: string): Promise<HandoverSubject> {
     const subject = await this.subjects.byOrderId(orderId);
     if (subject === null) {
-      throw new HandoverRefusedError(
-        "Cette commande n'est plus servie par le commerce : ne la remettez pas, et rechargez la file du comptoir.",
-      );
+      throw new HandoverRefusedError(NOT_SERVED_REASON);
     }
     return subject;
   }

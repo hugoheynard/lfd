@@ -2,6 +2,9 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { DecideOrderShortfallHandler } from "./application/commands/decide-order-shortfall.handler.js";
 import { HandOverPackedAtCounterHandler } from "./application/commands/hand-over-packed-at-counter.handler.js";
+import { GetCounterIncompleteHandoverHandler } from "./application/queries/get-counter-incomplete-handover.handler.js";
+import { ShortfallDecisionSubjectReader } from "./domain/ports/shortfall-decision-subject.reader.js";
+import { PrismaShortfallDecisionSubjectReader } from "./infrastructure/prisma-shortfall-decision-subject.reader.js";
 import { ShortfallDeparture } from "./application/services/shortfall-departure.js";
 import { WriteShortfallLetterHandler } from "./application/commands/write-shortfall-letter.handler.js";
 import { GetShortfallLetterDraftHandler } from "./application/queries/get-shortfall-letter-draft.handler.js";
@@ -40,6 +43,9 @@ export const ORDER_SHORTFALL_PROVIDERS: readonly Provider[] = [
   // retrait vient de `CommerceCounterHandoverModule`, celui du colisage de
   // `PackingFeedModule`.
   HandOverPackedAtCounterHandler,
+  // Son aperçu, avant le geste (C1b, 2026-11-03) — trois lectures sans verrou.
+  GetCounterIncompleteHandoverHandler,
+  { provide: ShortfallDecisionSubjectReader, useClass: PrismaShortfallDecisionSubjectReader },
   { provide: ShortfallDecisionRepository, useClass: PrismaShortfallDecisionRepository },
   { provide: ShortfallDecisionReader, useClass: PrismaShortfallDecisionReader },
   { provide: RemainderDecisionReader, useClass: PrismaRemainderDecisionReader },

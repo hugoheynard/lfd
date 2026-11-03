@@ -76,15 +76,7 @@ export class OrderHandover {
   ): OrderHandover {
     // Refuse un rang hors forme avant toute règle : un envoi de rang 0 n'existe pas.
     const shipment = ShipmentRef.of(subject.orderId, rank);
-    const blocker = handoverBlocker({
-      status: subject.status,
-      rank: shipment.rank,
-      handedOverAt: standing.handedOverAt,
-      // Un reste pas encore colisé n'est pas un sac (L4c) ; le rang 1 l'est toujours.
-      prepared: shipmentPrepared(subject, shipment.rank),
-      qualityHold: standing.qualityHold,
-      settled: subject.settled,
-    });
+    const blocker = OrderHandover.refusalOf(subject, shipment.rank, standing);
     if (blocker !== null) {
       throw new HandoverRefusedError(blocker);
     }
@@ -102,6 +94,27 @@ export class OrderHandover {
       by,
       via,
     );
+  }
+
+  /**
+   * **La règle de {@link attest}, sans attester** — la phrase du refus, ou
+   * `null` : l'aperçu du départ incomplet au comptoir la dit AVANT le geste
+   * (lot C1b, Hugo, 2026-11-03). Une seule règle, deux lecteurs.
+   */
+  static refusalOf(
+    subject: HandoverSubject,
+    rank: number,
+    standing: HandoverStanding,
+  ): string | null {
+    return handoverBlocker({
+      status: subject.status,
+      rank,
+      handedOverAt: standing.handedOverAt,
+      // Un reste pas encore colisé n'est pas un sac (L4c) ; le rang 1 l'est toujours.
+      prepared: shipmentPrepared(subject, rank),
+      qualityHold: standing.qualityHold,
+      settled: subject.settled,
+    });
   }
 
   /**

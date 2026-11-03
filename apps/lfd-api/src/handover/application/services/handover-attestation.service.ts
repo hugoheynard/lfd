@@ -7,7 +7,8 @@ import { Clock } from "../../../platform/time/clock.js";
 import { HandoverOrderLock } from "../../channels/commerce/handover-order.lock.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { OrderHandedOverEvent } from "../../channels/commerce/order-handed-over.event.js";
-import { OrderHandover } from "../../domain/entities/order-handover.js";
+import { OrderHandover, type HandoverStanding } from "../../domain/entities/order-handover.js";
+import type { AppError } from "../../../platform/shared/errors/app-error.js";
 import { HandoverRefusedError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import type { HandoverVia } from "../../domain/services/handover.js";
@@ -18,7 +19,7 @@ import {
 } from "../../../production/channels/handover/index.js";
 import { isHeldForQuality } from "./quality-hold.js";
 import { TransferStatusReader } from "../../../delivery/channels/handover/index.js";
-import { ensureArrivedAtSite } from "./transfer-arrival.js";
+import { transferRefusalOf } from "./transfer-arrival.js";
 
 /**
  * **Graver un retrait** — le geste commun au scan et à la saisie.
@@ -160,6 +161,19 @@ export class HandoverAttestation {
   }
 
   /**
+   * **La règle, sans verrou ni écriture** — la phrase du refus que
+   * {@link vet} lèverait, ou `null` (lot C1b, plan
+   * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.1 —
+   * Hugo, 2026-11-03). Un aperçu, pas une promesse : le geste rejuge sous le
+   * verrou de la commande.
+   */
+  async refusalOf(subject: HandoverSubject, rank: number): Promise<string | null> {
+    const shipment = ShipmentRef.of(subject.orderId, rank);
+    const { standing, transfer } = await this.standingOf(subject, shipment);
+    return transfer?.message ?? OrderHandover.refusalOf(subject, shipment.rank, standing);
+  }
+
+  /**
    * La règle, par envoi (L4b) : le verrou de la COMMANDE d'abord — commun
    * avec l'annulation, quel que soit le rang : une commande annulée n'a plus
    * d'envoi à remettre —, puis « déjà retiré » lu sur CET envoi.
@@ -196,31 +210,42 @@ export class HandoverAttestation {
     via: HandoverVia,
   ): Promise<OrderHandover> {
     const current = await this.lockOrder(subject);
-    // 🔴 La retenue est lue ici, AVANT l'écriture et sans verrou commun avec le
-    // contrôle : un blocage rendu dans l'intervalle laisse partir le sac. C'est
-    // une vérification, pas une interdiction — assumé au plan
-    // (`plan-controle-qualite.md`, D4, « La course »).
-    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
-    // lectures partageraient le client de la transaction, que `pg` file en
-    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
-    const existing = await this.handovers.findByShipment(shipment);
-    const qualityHold = await isHeldForQuality(this.holds, subject);
-    // Lot T2 du transfert interne : pas de remise d'une commande dont le
-    // transfert n'a pas été reçu au site (Q-T2). Une commande déjà retirée
-    // passe à l'agrégat, qui dit « déjà retirée » — le mot juste.
-    if (existing === null) {
-      await ensureArrivedAtSite(this.transfers, subject);
+    const { standing, transfer } = await this.standingOf(subject, shipment);
+    if (transfer !== null) {
+      throw transfer;
     }
     // L'agrégat refuse ici — commande annulée, pas encore passée, déjà
     // retirée, retenue au contrôle.
-    return OrderHandover.attest(
-      current,
-      shipment.rank,
-      { handedOverAt: existing === null ? null : existing.handedOverAt, qualityHold },
-      this.clock.now(),
-      by,
-      via,
-    );
+    return OrderHandover.attest(current, shipment.rank, standing, this.clock.now(), by, via);
+  }
+
+  /**
+   * Ce que la règle lit hors du sujet — partagé par le geste et l'aperçu.
+   *
+   * 🔴 La retenue est lue ici, AVANT l'écriture et sans verrou commun avec le
+   * contrôle : un blocage rendu dans l'intervalle laisse partir le sac. C'est
+   * une vérification, pas une interdiction — assumé au plan
+   * (`plan-controle-qualite.md`, D4, « La course »). Séquentiel, pas
+   * `Promise.all` : appelé sous une unité de travail, les lectures
+   * partageraient le client de la transaction, que `pg` file en silence
+   * (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+   *
+   * Lot T2 du transfert interne : pas de remise d'une commande dont le
+   * transfert n'a pas été reçu au site (Q-T2). Une commande déjà retirée
+   * passe à l'agrégat, qui dit « déjà retirée » — le mot juste : le
+   * transfert n'est lu que pour un envoi pas encore retiré.
+   */
+  private async standingOf(
+    subject: HandoverSubject,
+    shipment: ShipmentRef,
+  ): Promise<{ readonly standing: HandoverStanding; readonly transfer: AppError | null }> {
+    const existing = await this.handovers.findByShipment(shipment);
+    const qualityHold = await isHeldForQuality(this.holds, subject);
+    const transfer = existing === null ? await transferRefusalOf(this.transfers, subject) : null;
+    return {
+      standing: { handedOverAt: existing === null ? null : existing.handedOverAt, qualityHold },
+      transfer,
+    };
   }
 
   /**

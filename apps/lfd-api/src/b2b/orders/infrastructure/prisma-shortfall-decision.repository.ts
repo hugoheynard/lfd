@@ -98,21 +98,7 @@ export class PrismaShortfallDecisionRepository extends ShortfallDecisionReposito
   async lockSubject(orderId: string, rank: number): Promise<LockedShortfallSubject | null> {
     await this.prisma.$queryRaw`
       SELECT "id" FROM "public"."orders" WHERE "id" = ${orderId} FOR UPDATE`;
-    const row = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      select: SUBJECT_SELECT,
-    });
-    if (row === null) {
-      return null;
-    }
-    const [shortfall, remainderNoteStatus] = await Promise.all([
-      this.prisma.orderShortfall.findUnique({
-        where: { orderId_rank: { orderId, rank } },
-        select: { ...SHORTFALL_STATE_SELECT, decision: { select: { id: true } } },
-      }),
-      this.remainderNoteStatusOf(orderId, rank),
-    ]);
-    return lockedOf(row, { rank, shortfall, remainderNoteStatus });
+    return readShortfallSubject(this.prisma, orderId, rank);
   }
 
   async save(decision: ShortfallDecision): Promise<void> {
@@ -130,19 +116,47 @@ export class PrismaShortfallDecisionRepository extends ShortfallDecisionReposito
       },
     });
   }
+}
 
-  /**
-   * Le statut du BL VIVANT de ce rang, au-delà du rang 1 (plan E7 reliquat,
-   * choix 11) ; `null` sans BL vivant. Le rang 1 suit sa commande : rien à lire.
-   */
-  private async remainderNoteStatusOf(orderId: string, rank: number): Promise<string | null> {
-    if (rank === FIRST_SHIPMENT_RANK) {
-      return null;
-    }
-    const note = await this.prisma.deliveryNote.findFirst({
-      where: { orderId, rank, status: { not: "voided" } },
-      select: { status: true },
-    });
-    return note?.status ?? null;
+/**
+ * La commande et l'envoi `rank`, relus SANS verrou — partagé par
+ * `lockSubject` (qui verrouille d'abord) et l'aperçu du départ incomplet au
+ * comptoir (C1b, 2026-11-03). `null` : commande inconnue.
+ */
+export async function readShortfallSubject(
+  prisma: PrismaService,
+  orderId: string,
+  rank: number,
+): Promise<LockedShortfallSubject | null> {
+  const row = await prisma.order.findUnique({ where: { id: orderId }, select: SUBJECT_SELECT });
+  if (row === null) {
+    return null;
   }
+  const [shortfall, remainderNoteStatus] = await Promise.all([
+    prisma.orderShortfall.findUnique({
+      where: { orderId_rank: { orderId, rank } },
+      select: { ...SHORTFALL_STATE_SELECT, decision: { select: { id: true } } },
+    }),
+    remainderNoteStatusOf(prisma, orderId, rank),
+  ]);
+  return lockedOf(row, { rank, shortfall, remainderNoteStatus });
+}
+
+/**
+ * Le statut du BL VIVANT de ce rang, au-delà du rang 1 (plan E7 reliquat,
+ * choix 11) ; `null` sans BL vivant. Le rang 1 suit sa commande : rien à lire.
+ */
+async function remainderNoteStatusOf(
+  prisma: PrismaService,
+  orderId: string,
+  rank: number,
+): Promise<string | null> {
+  if (rank === FIRST_SHIPMENT_RANK) {
+    return null;
+  }
+  const note = await prisma.deliveryNote.findFirst({
+    where: { orderId, rank, status: { not: "voided" } },
+    select: { status: true },
+  });
+  return note?.status ?? null;
 }

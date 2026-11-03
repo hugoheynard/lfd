@@ -50,8 +50,8 @@ describe("PackingSheet — « Il manque » (E6a)", () => {
     const target = shortOfThree();
 
     expect(target.reportShortfall(FIRST)).toEqual([
-      { sku: "CRO", productName: "Croissant", due: 12, packed: 9 },
-      { sku: "PAC", productName: "Pain au chocolat", due: 6, packed: 6 },
+      { sku: "CRO", productName: "Croissant", saleUnit: "piece", due: 12, packed: 9 },
+      { sku: "PAC", productName: "Pain au chocolat", saleUnit: "piece", due: 6, packed: 6 },
     ]);
     expect(target.shortfallReportedAt).toEqual(FIRST);
     expect(target.toSnapshot().shortfallReportedAt).toEqual(FIRST);
@@ -67,6 +67,7 @@ describe("PackingSheet — « Il manque » (E6a)", () => {
     expect(target.reportShortfall(LATER)[0]).toEqual({
       sku: "CRO",
       productName: "Croissant",
+      saleUnit: "piece",
       due: 12,
       packed: 11,
     });

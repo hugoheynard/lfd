@@ -2,14 +2,15 @@ import type { OrderStatus, SettlementRegime, ShortfallRemainder } from "@lfd/con
 
 import { NoShortfallToDecideError } from "../errors/order-shortfall-errors.js";
 import {
-  CardOrderShortfallError,
   NothingDepartsError,
-  OrderTooOldForShortfallError,
-  RemainderNotDecidableError,
   ShortfallAlreadyDecidedError,
-  ShortfallOrderNotConfirmedError,
-  VoucherOrderShortfallError,
 } from "../errors/shortfall-decision-errors.js";
+import {
+  decidabilityError,
+  decidabilityRefusalOf,
+  departingOf,
+  shipmentLabelOf,
+} from "../services/shortfall-decidability.js";
 import type { OrderShortfall } from "./order-shortfall.js";
 
 /** Ce qui part, par article : la quantité au bac au signal décidé. */
@@ -67,14 +68,6 @@ export interface ShortfallDecisionAct {
   readonly remainder: ShortfallRemainder;
 }
 
-const CARD_REGIMES: ReadonlySet<SettlementRegime> = new Set(["due", "paid"]);
-
-/** Le rang de la commande elle-même (comme `order-billing.ts`). */
-const FIRST_SHIPMENT_RANK = 1;
-
-/** Le seul état d'un reliquat dont le départ se décide : son bac n'est pas fermé. */
-const DECIDABLE_REMAINDER_NOTE = "planned";
-
 /**
  * **La décision du départ incomplet** (lot E6b,
  * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2 et § 13) :
@@ -116,9 +109,9 @@ export class ShortfallDecision {
     if (pending === null) {
       throw new NoShortfallToDecideError(shipment);
     }
-    ensureDecidable(subject);
-    const departing = pending.lines.map((line) => ({ sku: line.sku, quantity: line.packed }));
-    if (departing.every((line) => line.quantity === 0)) {
+    ShortfallDecision.assertDecidable(subject);
+    const departing = departingOf(pending.lines);
+    if (departing === null) {
       throw new NothingDepartsError(shipment);
     }
     shortfall.decide(act.decidedAt);
@@ -144,10 +137,10 @@ export class ShortfallDecision {
    * @throws {VoucherOrderShortfallError} @throws {OrderTooOldForShortfallError}
    */
   static assertDecidable(subject: ShortfallDecisionSubject): void {
-    if (subject.decided) {
-      throw new ShortfallAlreadyDecidedError(shipmentLabelOf(subject));
+    const refusal = decidabilityRefusalOf(subject);
+    if (refusal !== null) {
+      throw decidabilityError(refusal, subject);
     }
-    ensureDecidable(subject);
   }
 
   get departing(): readonly DepartingQuantity[] {
@@ -157,49 +150,4 @@ export class ShortfallDecision {
   toSnapshot(): ShortfallDecisionSnapshot {
     return this.state;
   }
-}
-
-function ensureDecidable(subject: ShortfallDecisionSubject): void {
-  ensureShipmentToPack(subject);
-  if (CARD_REGIMES.has(subject.settlementRegime)) {
-    throw new CardOrderShortfallError(subject.reference);
-  }
-  if (subject.voucherDiscountCents > 0) {
-    throw new VoucherOrderShortfallError(subject.reference);
-  }
-  if (subject.frozenTerms.some((term) => term.amountCents !== 0 && !term.hasAdjustment)) {
-    throw new OrderTooOldForShortfallError(subject.reference);
-  }
-}
-
-/**
- * L'envoi SIGNALÉ est encore à coliser (plan E7 reliquat, choix 11) : au
- * rang 1, la commande confirmée, comme avant ; au-delà, le BL du reliquat
- * prévu. Le même jour, la commande peut être prête pendant que son reste
- * colise : c'est le reste qui décide.
- */
-function ensureShipmentToPack(subject: ShortfallDecisionSubject): void {
-  if (subject.rank === FIRST_SHIPMENT_RANK) {
-    if (subject.status !== "confirmed") {
-      throw new ShortfallOrderNotConfirmedError(subject.reference, subject.status);
-    }
-    return;
-  }
-  if (subject.remainderNoteStatus !== DECIDABLE_REMAINDER_NOTE) {
-    throw new RemainderNotDecidableError(
-      subject.reference,
-      subject.rank,
-      subject.remainderNoteStatus,
-    );
-  }
-}
-
-/**
- * L'envoi tel que l'équipe le lit : le numéro de commande au rang 1,
- * `ORD-…-<rang>` au-delà — la référence du comptoir et du BL d'un reste.
- */
-function shipmentLabelOf(subject: ShortfallDecisionSubject): string {
-  return subject.rank === FIRST_SHIPMENT_RANK
-    ? subject.reference
-    : `${subject.reference}-${String(subject.rank)}`;
 }

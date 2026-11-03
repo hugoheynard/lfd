@@ -125,8 +125,8 @@ describe("PackingSheet — un manque partiel au poids", () => {
     target.allocate("c_1", "SAU", 1000, MARK);
 
     expect(target.reportShortfall(AT)).toEqual([
-      { sku: "CRO", productName: "Croissant", due: 12, packed: 12 },
-      { sku: "SAU", productName: "Saumon gravlax", due: 1250, packed: 1000 },
+      { sku: "CRO", productName: "Croissant", saleUnit: "piece", due: 12, packed: 12 },
+      { sku: "SAU", productName: "Saumon gravlax", saleUnit: "weight", due: 1250, packed: 1000 },
     ]);
   });
 

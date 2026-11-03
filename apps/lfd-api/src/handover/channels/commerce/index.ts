@@ -25,6 +25,10 @@
  *   ET implémenté par le retrait, appelé par le commerce dans la transaction
  *   du départ incomplet décidé au comptoir — juger, puis remettre.
  *
+ * - `CounterHandoverPreviewReader` (2026-11-03, lot C1b) : publié ET
+ *   implémenté par le retrait, lu par le commerce — la même garde, lue sans
+ *   verrou, pour dire les refus avant le geste.
+ *
  * - `HandoverOrderLock` (2026-10-25) : déclaré par le retrait, implémenté par
  *   le commerce — la ligne `orders` verrouillée avant d'attester, pour que
  *   remise et annulation ne passent jamais toutes les deux (C3.6).
@@ -58,6 +62,11 @@ export {
 export { HandoverProofReader } from "./handover-proof.reader.js";
 export { HandoverOrderLock } from "./handover-order.lock.js";
 export { CounterHandoverDesk } from "./counter-handover.desk.js";
+export {
+  CounterHandoverPreviewReader,
+  type CounterHandoverPreview,
+} from "./counter-handover-preview.reader.js";
+export type { CounterReachRefusal } from "../../domain/services/counter-reach.js";
 export { ShipmentHandoverReader } from "./shipment-handover.reader.js";
 export {
   OrderHandoverHistoryReader,

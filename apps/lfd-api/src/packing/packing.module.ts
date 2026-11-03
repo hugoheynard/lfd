@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { OnHandedToPacking } from "./application/handlers/on-handed-to-packing.handler.js";
 import { OnPackingListDrawn } from "./application/handlers/on-packing-list-drawn.handler.js";
 import { OnReturnRequested } from "./application/handlers/on-return-requested.handler.js";
+import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnProductionDayReopened } from "./application/handlers/on-production-day-reopened.handler.js";
 import { PackingListWithdrawal } from "./domain/ports/packing-list-withdrawal.js";
 import { PrismaPackingListWithdrawal } from "./infrastructure/prisma-packing-list-withdrawal.js";
@@ -56,6 +57,7 @@ import { PackingResupplyListing } from "./domain/ports/packing-resupply-listing.
 import { PackingResupplyRepository } from "./domain/ports/packing-resupply.repository.js";
 import { PrismaPackedResuppliesReader } from "./infrastructure/prisma-packed-resupplies.reader.js";
 import { PackingShortfallDesk } from "./application/station/packing-shortfall-desk.js";
+import { PrismaShortfallPreviewReader } from "./infrastructure/prisma-shortfall-preview.reader.js";
 import { PackingShortfallFreezeDesk } from "./application/station/packing-shortfall-freeze-desk.js";
 import { PackingReserveShopRelease } from "./application/shop-release/packing-reserve-shop-release.js";
 import { PackingContainerVoiding } from "./application/containers/packing-container-voiding.js";
@@ -128,6 +130,8 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     OnReturnRequested,
     // La réouverture d'une journée (2026-10-14) : la liste du jour se retire.
     OnProductionDayReopened,
+    // Un envoi remis sort de la liste à coliser (2026-11-03, option b).
+    OnOrderHandedOver,
     { provide: PackingListWithdrawal, useClass: PrismaPackingListWithdrawal },
     { provide: PackingShadowLedger, useClass: PrismaPackingShadowLedger },
     // Les retours du fournil (K2).
@@ -159,6 +163,8 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     // Le départ incomplet décidé par le commerce (E6b), relié par `PackingFeedModule`.
     PackingShortfallDesk,
     PackingShortfallFreezeDesk,
+    // L'aperçu du bac avant le départ incomplet au comptoir (C1b), relié par `PackingFeedModule`.
+    PrismaShortfallPreviewReader,
     // Le retrait d'une feuille par l'annulation (plan A1), relié par `PackingFeedModule`.
     PackingSheetWithdrawalDesk,
     // La révision d'une feuille après l'arrêt (plan A2), reliée par `PackingFeedModule`.
@@ -196,6 +202,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     PrismaOrderPackingStateReader,
     PackingShortfallDesk,
     PackingShortfallFreezeDesk,
+    PrismaShortfallPreviewReader,
     PackingSheetWithdrawalDesk,
     PackingSheetRevisionDesk,
     PackingReserveShopRelease,

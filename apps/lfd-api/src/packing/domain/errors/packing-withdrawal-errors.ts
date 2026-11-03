@@ -4,7 +4,8 @@ import { BusinessError } from "../../../platform/shared/errors/app-error.js";
  * **Les refus d'une feuille retirée** (plan A1,
  * `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
  * § 2.3) — la commande a été annulée après l'arrêt du plan ; ce qu'elle avait
- * au bac est revenu à la réserve.
+ * au bac est revenu à la réserve. Depuis le 2026-11-03 (Hugo, option b), aussi
+ * une commande remise au client sans rien au bac (`PackingSheet.leaveAtHandover`).
  */
 
 /** Tout geste sur une feuille retirée : elle ne bouge plus. */
@@ -12,7 +13,7 @@ export class PackingSheetWithdrawnError extends BusinessError {
   constructor(reference: string) {
     super(
       "packing.sheet.withdrawn",
-      `La commande ${reference} a été annulée après l'arrêt du plan : sa feuille est retirée du colisage et ne se modifie plus. Ce qui était au bac est revenu à la réserve du jour.`,
+      `La feuille de la commande ${reference} est retirée du colisage et ne se modifie plus : la commande a été annulée après l'arrêt du plan (ce qui était au bac est revenu à la réserve du jour), ou remise au client alors que rien n'était au bac. Rafraîchir le poste.`,
     );
   }
 }

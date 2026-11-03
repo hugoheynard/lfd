@@ -1,4 +1,9 @@
-import { counterReachBlocker, NOT_A_PICKUP_REASON, otherDayReason } from "../counter-reach.js";
+import {
+  counterReachBlocker,
+  counterReachOf,
+  NOT_A_PICKUP_REASON,
+  otherDayReason,
+} from "../counter-reach.js";
 
 // Des jours comparés entre eux, jamais à l'horloge.
 const TODAY = "2030-03-12";
@@ -31,5 +36,17 @@ describe("counterReachBlocker — ce que le comptoir décide lui-même (2026-11-
     expect(counterReachBlocker({ fulfillmentMethod: "pickup", serviceDay: null }, TODAY)).toBe(
       otherDayReason(null),
     );
+  });
+});
+
+describe("counterReachOf — le cas, sans sa phrase (aperçu C1b, 2026-11-03)", () => {
+  it.each([
+    ["pickup", TODAY, null],
+    ["delivery", TODAY, "not_a_pickup"],
+    ["delivery", TOMORROW, "not_a_pickup"],
+    ["pickup", TOMORROW, "other_day"],
+    ["pickup", null, "other_day"],
+  ] as const)("%s le %s → %s", (fulfillmentMethod, serviceDay, expected) => {
+    expect(counterReachOf({ fulfillmentMethod, serviceDay }, TODAY)).toBe(expected);
   });
 });

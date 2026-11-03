@@ -17,17 +17,20 @@ import {
  * la réception : une réception concurrente ne fait que rendre le refus
  * superflu, jamais l'inverse (un transfert reçu ne redevient pas prévu).
  *
- * @throws {TransferNotReceivedError} @throws {TransferNotYetComposedError}
+ * Le refus est RENDU, pas levé (2026-11-03) : le geste le lève, l'aperçu du
+ * départ incomplet au comptoir (C1b) le dit avant. `null` : la marchandise
+ * est au site, ou ne voyage pas.
  */
-export async function ensureArrivedAtSite(
+export async function transferRefusalOf(
   transfers: TransferStatusReader,
   subject: HandoverSubject,
-): Promise<void> {
+): Promise<TransferNotYetComposedError | TransferNotReceivedError | null> {
   const status = (await transfers.statusOf([subject.orderId])).get(subject.orderId);
   if (status?.state === "awaiting") {
-    throw new TransferNotYetComposedError(status.siteLabel);
+    return new TransferNotYetComposedError(status.siteLabel);
   }
   if (status !== undefined && status.state !== "received") {
-    throw new TransferNotReceivedError(status.siteLabel);
+    return new TransferNotReceivedError(status.siteLabel);
   }
+  return null;
 }
