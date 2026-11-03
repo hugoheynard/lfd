@@ -139,7 +139,9 @@ pas. Aucune migration de droit.
 ### 4.4 L'écran
 
 - Sac fini, ou « tout est réparti » : « Remettre la commande », sans dialogue.
-- Il manque des pièces : un dialogue (`dialogSide()`) — ce qui part (au bac),
+- Il manque des pièces : le bouton du rail ne dit plus « Remettre la commande »
+  mais **« Procédure commande incomplète »** (Hugo, 2026-11-03), et ouvre un
+  dialogue (`dialogSide()`) — ce qui part (au bac),
   ce qui ne part pas, et « Remettre ce qui est au bac — le reste est
   abandonné », ou « Annuler ». Les refus du §4.1 y sont dits avant le geste.
 - 🔴 **« Remettre la commande entière » malgré un manque n'est PAS offert**
