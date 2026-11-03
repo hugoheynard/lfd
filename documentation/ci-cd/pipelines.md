@@ -249,6 +249,15 @@ passe de 1,6× à 1,04×. Les shards n'ont plus le même nombre de suites
 > revient : la commande échoue en `SIGABRT` (code 134) alors que rien n'a
 > échoué — ce n'est pas un test rouge, c'est la mesure qui n'a pas tenu.
 
+**Les e2e de la commande en une chaîne** _(2026-11-03, Hugo)_ :
+`pnpm --filter lfd-api test:e2e:orders` lance toutes les suites qui touchent la
+passation, la révision, le chiffrage ou le comptoir. La liste se déduit du texte
+des suites (`dev-toolbox/e2e-orders/e2e-orders.mjs`, critère en tête du
+fichier ; `--list` l'imprime) : une route `/orders`, `/shop/quote`,
+`/admin/counter` ou `/estimate`, ou un import du golden master ou d'une scène de
+commande. Il refuse de démarrer si une autre chaîne e2e tourne. Mesuré en local
+le 2026-11-03 : **199 suites, 2145 tests, 23 min 33** (1413 s).
+
 **Les durées sont VERSIONNÉES** (`apps/lfd-api/test/e2e-durations.json`),
 régénérées à la main par `pnpm --filter lfd-api e2e:rebalance`, et non tirées
 d'un cache réécrit à chaque run. Un cache enregistrerait surtout le **bruit** :

@@ -154,6 +154,10 @@ sans aucun montant ; `orderTotalRows` lit `BasketAmounts`, un adaptateur sert
 Chaque lot dit au bâti son nombre de fichiers et d'appelants, et son retour
 arrière (L7, le nettoyage, se fait seul et en dernier).
 
+**Chaque lot passe `pnpm --filter lfd-api test:e2e:orders` en local, puis la
+CI verte sur `dev`, avant le lot suivant** (Hugo, 2026-11-03 ; ~23 min en
+local, cf. [`documentation/ci-cd/pipelines.md`](../../ci-cd/pipelines.md)).
+
 **L0, bâti le 2026-11-03** —
 `apps/lfd-api/test/pricing-golden-master.e2e-spec.ts` et ses sept modules
 `pricing-golden-master-*.ts`, l'instantané
