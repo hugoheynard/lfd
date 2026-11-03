@@ -70,7 +70,9 @@ simulateur — inventaire du 2026-11-03, croisé avec
 
 ## 4. Les lots
 
-- **C0 — l'inventaire exact, et les décisions** (aucun code) : ce que chaque
+- **C0 — l'inventaire exact, et les décisions** (aucun code) — inventaire
+  écrit le 2026-11-03 : [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md)
+  (26 étapes, 17 écarts, décisions à prendre par Hugo) : ce que chaque
   assemblage calcule ou juge, ligne à ligne, et pour chaque écart relevé par
   `vitruve` (§7) la décision écrite — ce qui entre dans `CartPricing`, ce qui
   reste un contrôle de `Order.fromCart`, ce qui reste de l'habillage :
