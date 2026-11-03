@@ -11,16 +11,18 @@
  * Frontière doublée : la signature du jeton staff. Le reste — guard, bus,
  * domaine, SQL — est réel.
  */
-import type { OrderDraftResponse, OrderDraftView } from "@lfd/contracts";
+import type { OrderDraftResponse, OrderDraftSummaryView, OrderDraftView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
+// Le jeton porteur EST le `sub` : un second membre du staff, sans le droit de
+// saisir, se joue par son seul jeton.
 const stubAdminVerifier = {
-  verify: (): Promise<{ subject: string; scopes: string[] }> =>
-    Promise.resolve({ subject: "staff-e2e", scopes: [] }),
+  verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: token, scopes: [] }),
 };
 
 let ctx: E2eContext;
@@ -127,5 +129,48 @@ describe("/admin/order-drafts", () => {
 
   it("refuse une société inconnue", async () => {
     await staff().put("/admin/order-drafts/cmp_inconnue").send({ note: "x" }).expect(404);
+  });
+
+  it("liste le brouillon enregistré, et ne le liste plus une fois jeté", async () => {
+    const companyId = await seedCompany();
+    const otherId = await seedCompany();
+    await staff().put(`/admin/order-drafts/${companyId}`).send({ note: "en cours" }).expect(200);
+
+    const listed = jsonBody<OrderDraftSummaryView[]>(
+      await staff().get("/admin/order-drafts").expect(200),
+    );
+    expect(listed.map((summary) => summary.companyId)).toEqual([companyId]);
+    expect(listed.map((summary) => summary.companyId)).not.toContain(otherId);
+    expect(listed[0]?.savedAt).not.toBe("");
+
+    await staff().delete(`/admin/order-drafts/${companyId}`).expect(204);
+    const after = jsonBody<OrderDraftSummaryView[]>(
+      await staff().get("/admin/order-drafts").expect(200),
+    );
+    expect(after).toEqual([]);
+  });
+
+  it("refuse la liste à un membre du staff qui ne peut pas passer de commande", async () => {
+    await staff()
+      .post("/admin/staff-roles")
+      .send({
+        key: "colisage-seul",
+        label: "colisage-seul",
+        grants: [{ resource: "production_packing", action: "write" }],
+      })
+      .expect(201);
+    await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: "Colisage",
+        email: "colisage-seul@lfc.test",
+        role: null,
+        roleKey: "colisage-seul",
+        status: "active",
+        auth0Id: "staff-colisage-seul",
+      },
+    });
+
+    await ctx.asSub("staff-colisage-seul").get("/admin/order-drafts").expect(403);
   });
 });

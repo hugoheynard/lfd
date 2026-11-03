@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { companyDisplayName, type CounterCustomerCard } from '@lfd/contracts';
 import {
+  companyDisplayName,
+  type CounterCustomerCard,
+  type OrderDraftSummaryView,
+} from '@lfd/contracts';
+import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -18,10 +23,12 @@ import {
   COUNTER_ORDER_PICKER_LINK,
   counterPlacedOrderOf,
 } from '../../commandes/nouvelle-commande/order-entry-origin';
+import { OrderDraftsService } from '../../commandes/order-drafts.service';
 import { NotifyService } from '../../notify.service';
 import { CounterCustomersService } from '../counter-customers.service';
 import { CounterDeliveryNoteService } from '../counter-delivery-note.service';
 import { matchesCounterSearch } from '../counter-customer-search';
+import { draftBadgeLabel } from './draft-badge-label';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -30,6 +37,8 @@ interface CompanyRow {
   readonly id: string;
   readonly name: string;
   readonly detail: string;
+  /** « Brouillon · 14 h 32 » quand une saisie attend pour ce compte, sinon `null`. */
+  readonly draft: string | null;
 }
 
 /**
@@ -58,6 +67,7 @@ interface CompanyRow {
   selector: 'app-nouvelle-commande-pro-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -76,6 +86,7 @@ export class NouvelleCommandeProPage {
   private readonly router = inject(Router);
   private readonly notify = inject(NotifyService);
   private readonly notes = inject(CounterDeliveryNoteService);
+  private readonly drafts = inject(OrderDraftsService);
   /** Le bon se réimprime-t-il en ce moment ? */
   protected readonly printing = signal(false);
 
@@ -91,6 +102,8 @@ export class NouvelleCommandeProPage {
   protected readonly state = signal<LoadState>('loading');
   private readonly active = signal<readonly CounterCustomerCard[]>([]);
   protected readonly query = signal('');
+  /** Le libellé de pastille de chaque compte qui a un brouillon. */
+  private readonly draftLabels = signal<ReadonlyMap<string, string>>(new Map());
 
   /** Aucun compte pro du tout — distinct d'une recherche qui ne trouve rien. */
   protected readonly noActiveCompany = computed(() => this.active().length === 0);
@@ -102,6 +115,7 @@ export class NouvelleCommandeProPage {
         id: card.id,
         name: companyDisplayName({ raisonSociale: card.name, enseigne: card.tradeName }),
         detail: `${card.reference} · SIRET ${card.siret}`,
+        draft: this.draftLabels().get(card.id) ?? null,
       })),
   );
 
@@ -111,12 +125,30 @@ export class NouvelleCommandeProPage {
 
   protected async load(): Promise<void> {
     this.state.set('loading');
+    // En parallèle de la liste, et sans jamais la retenir.
+    void this.loadDrafts();
     try {
       // Le serveur ne rend que les sociétés actives : aucun filtre à refaire ici.
       this.active.set(await this.customers.list());
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /**
+   * Les brouillons en attente, pour la pastille. Un échec — 403 compris — se
+   * tait : sans pastille, la page reste le sélecteur qu'elle était.
+   */
+  private async loadDrafts(): Promise<void> {
+    try {
+      const summaries: readonly OrderDraftSummaryView[] = await this.drafts.list();
+      const now = new Date();
+      this.draftLabels.set(
+        new Map(summaries.map((draft) => [draft.companyId, draftBadgeLabel(draft.savedAt, now)])),
+      );
+    } catch {
+      this.draftLabels.set(new Map());
     }
   }
 

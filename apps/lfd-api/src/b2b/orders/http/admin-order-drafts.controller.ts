@@ -2,6 +2,7 @@ import {
   orderDraftPayloadSchema,
   type OrderDraftPayload,
   type OrderDraftResponse,
+  type OrderDraftSummaryView,
   type OrderDraftView,
 } from "@lfd/contracts";
 import {
@@ -24,6 +25,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { DiscardOrderDraftCommand } from "../application/commands/discard-order-draft.command.js";
 import { SaveOrderDraftCommand } from "../application/commands/save-order-draft.command.js";
 import { GetOrderDraftQuery } from "../application/queries/get-order-draft.query.js";
+import { ListOrderDraftSummariesQuery } from "../application/queries/list-order-draft-summaries.query.js";
 
 /**
  * Les **brouillons de commande** du back-office — une saisie interrompue,
@@ -48,6 +50,19 @@ export class AdminOrderDraftsController {
     private readonly queries: QueryBus,
     private readonly commands: CommandBus,
   ) {}
+
+  /**
+   * Les brouillons en attente, sans leur contenu — la pastille des comptes au
+   * comptoir. Même garde que la lecture d'un brouillon. Déclarée AVANT
+   * `:companyId` : la route sans segment ne doit pas lui être confondue.
+   */
+  @Get()
+  @RequirePermission("b2b_place_order:write")
+  async list(): Promise<readonly OrderDraftSummaryView[]> {
+    return this.queries.execute<ListOrderDraftSummariesQuery, readonly OrderDraftSummaryView[]>(
+      new ListOrderDraftSummariesQuery(),
+    );
+  }
 
   /** Le brouillon de cette société — `{ draft: null }` s'il n'y en a pas. */
   @Get(":companyId")

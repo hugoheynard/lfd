@@ -149,6 +149,7 @@ import { GetAdminOrderHandler } from "./application/queries/get-admin-order.hand
 import { GetOrderHandoverProofImageHandler } from "./application/queries/get-order-handover-proof-image.handler.js";
 import { GetOrderHandoverProofHandler } from "./application/queries/get-order-handover-proof.handler.js";
 import { GetOrderDraftHandler } from "./application/queries/get-order-draft.handler.js";
+import { ListOrderDraftSummariesHandler } from "./application/queries/list-order-draft-summaries.handler.js";
 import { GetShopCartHandler } from "./application/queries/get-shop-cart.handler.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
@@ -599,6 +600,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     QuoteShopCartHandler,
     QuoteMyShopCartHandler,
     GetOrderDraftHandler,
+    ListOrderDraftSummariesHandler,
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,
     GetShopCartHandler,

@@ -7,7 +7,10 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { OrderDraftRepository } from "../domain/ports/order-draft.repository.js";
+import {
+  OrderDraftRepository,
+  type OrderDraftSummary,
+} from "../domain/ports/order-draft.repository.js";
 
 /** Une ligne de `order_drafts` telle qu'on la relit. */
 interface DraftRow {
@@ -38,6 +41,19 @@ export class PrismaOrderDraftRepository extends OrderDraftRepository {
       select: SELECT,
     });
     return row === null ? null : toView(row);
+  }
+
+  async listSummaries(): Promise<readonly OrderDraftSummary[]> {
+    // Ni le `payload` ni sa validation : la liste ne dit que l'existence.
+    const rows = await this.prisma.orderDraft.findMany({
+      select: { companyId: true, savedByStaffId: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    return rows.map((row) => ({
+      companyId: row.companyId,
+      savedAt: row.updatedAt,
+      savedByStaffId: row.savedByStaffId,
+    }));
   }
 
   async save(

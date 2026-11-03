@@ -91,7 +91,17 @@
               [ariaLabel]="'Commander pour ' + row.name"
               (activated)="choose(row.id)"
             >
-              <fold-element-title variant="title" [title]="row.name" [subtitle]="row.detail" />
+              <fold-element-title variant="title" [title]="row.name" [subtitle]="row.detail">
+                @if (row.draft; as draft) {
+                  <fold-badge
+                    titleAction
+                    variant="warning"
+                    radius="pill"
+                    [content]="draft"
+                    data-draft-badge
+                  />
+                }
+              </fold-element-title>
             </fold-card>
           } @empty {
             <fold-empty-state

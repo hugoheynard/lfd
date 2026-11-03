@@ -5,7 +5,10 @@ import {
 } from "@lfd/contracts";
 
 import { OrderCompanyNotFoundError } from "../../../domain/errors/order-errors.js";
-import { OrderDraftRepository } from "../../../domain/ports/order-draft.repository.js";
+import {
+  OrderDraftRepository,
+  type OrderDraftSummary,
+} from "../../../domain/ports/order-draft.repository.js";
 import {
   OrderGuardReader,
   type OrderCompanyStatus,
@@ -29,6 +32,7 @@ function repository(): OrderDraftRepository & { saved: OrderDraftView | null } {
   const store = {
     saved: null as OrderDraftView | null,
     find: (): Promise<OrderDraftView | null> => Promise.resolve(store.saved),
+    listSummaries: (): Promise<readonly OrderDraftSummary[]> => Promise.resolve([]),
     save: (
       companyId: string,
       payload: OrderDraftPayload,

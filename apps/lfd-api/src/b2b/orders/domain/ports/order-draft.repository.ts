@@ -20,6 +20,12 @@ export abstract class OrderDraftRepository {
   abstract find(companyId: string): Promise<OrderDraftView | null>;
 
   /**
+   * Tous les brouillons en attente, **sans leur contenu** — de quoi signaler
+   * qu'un compte en a un, pas de quoi le reprendre.
+   */
+  abstract listSummaries(): Promise<readonly OrderDraftSummary[]>;
+
+  /**
    * Écrit le brouillon de cette société — création ou remplacement. Rend la vue
    * enregistrée : l'écran affiche « mis de côté à … » sans relire.
    */
@@ -31,4 +37,12 @@ export abstract class OrderDraftRepository {
 
   /** Efface le brouillon. Idempotent : effacer deux fois n'est pas une erreur. */
   abstract discard(companyId: string): Promise<void>;
+}
+
+/** Qu'un brouillon existe pour cette société, et sa trace. */
+export interface OrderDraftSummary {
+  readonly companyId: string;
+  readonly savedAt: Date;
+  /** La fiche staff qui l'a enregistré, ou `null` si elle a disparu depuis. */
+  readonly savedByStaffId: string | null;
 }

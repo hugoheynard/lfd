@@ -3,7 +3,9 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { CounterCustomerCard } from '@lfd/contracts';
+import type { CounterCustomerCard, OrderDraftSummaryView } from '@lfd/contracts';
+
+import { OrderDraftsService } from '../../commandes/order-drafts.service';
 
 import { CounterCustomersService } from '../counter-customers.service';
 import { CounterDeliveryNoteService } from '../counter-delivery-note.service';
@@ -24,6 +26,9 @@ class Harness extends NouvelleCommandeProPage {
   get visibleIds(): string[] {
     return this.rows().map((row) => row.id);
   }
+  get draftOf(): Record<string, string | null> {
+    return Object.fromEntries(this.rows().map((row) => [row.id, row.draft]));
+  }
   get loadState(): string {
     return this.state();
   }
@@ -35,9 +40,25 @@ class Harness extends NouvelleCommandeProPage {
   }
 }
 
-async function setup(list: () => Promise<readonly CounterCustomerCard[]>): Promise<Harness> {
+type DraftList = () => Promise<readonly OrderDraftSummaryView[]>;
+
+/** Le double de la liste des brouillons : seule `list` est lue par la page. */
+function draftsProvider(list: DraftList): {
+  provide: typeof OrderDraftsService;
+  useValue: Pick<OrderDraftsService, 'list'>;
+} {
+  return { provide: OrderDraftsService, useValue: { list } };
+}
+
+const NO_DRAFT: DraftList = () => Promise.resolve([]);
+
+async function setup(
+  list: () => Promise<readonly CounterCustomerCard[]>,
+  drafts: DraftList = NO_DRAFT,
+): Promise<Harness> {
   TestBed.configureTestingModule({
     providers: [
+      draftsProvider(drafts),
       provideRouter([{ path: '**', children: [] }]),
       {
         provide: CounterDeliveryNoteService,
@@ -92,6 +113,27 @@ describe('NouvelleCommandeProPage', () => {
     expect(page.loadState).toBe('error');
   });
 
+  it('porte la pastille « Brouillon » sur le seul compte qui en a un', async () => {
+    // Enregistré à l'instant : aujourd'hui, donc à l'heure.
+    const savedAt = new Date().toISOString();
+    const page = await setup(
+      () => Promise.resolve(CARDS),
+      () => Promise.resolve([{ companyId: '2', savedAt, savedByName: 'Léa Martin' }]),
+    );
+    expect(page.draftOf['1']).toBeNull();
+    expect(page.draftOf['2']).toMatch(/^Brouillon · \d{1,2} h \d{2}$/);
+  });
+
+  it('reste utilisable, sans pastille, quand la liste des brouillons échoue (403)', async () => {
+    const page = await setup(
+      () => Promise.resolve(CARDS),
+      () => Promise.reject(new Error('403')),
+    );
+    expect(page.loadState).toBe('ready');
+    expect(page.visibleIds).toEqual(['1', '2']);
+    expect(page.draftOf).toEqual({ '1': null, '2': null });
+  });
+
   it('ouvre la saisie SOUS le comptoir, jamais vers /comptes-clients', async () => {
     const page = await setup(() => Promise.resolve(CARDS));
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -101,9 +143,13 @@ describe('NouvelleCommandeProPage', () => {
 });
 
 /** Arrive sur le sélecteur par une VRAIE navigation, avec l'état qu'y laisse la saisie. */
-async function arriveWith(state: Record<string, unknown>): Promise<HTMLElement> {
+async function arriveWith(
+  state: Record<string, unknown>,
+  drafts: DraftList = NO_DRAFT,
+): Promise<HTMLElement> {
   TestBed.configureTestingModule({
     providers: [
+      draftsProvider(drafts),
       provideRouter([{ path: 'comptoir/nouvelle-commande', component: NouvelleCommandeProPage }]),
       {
         provide: CounterDeliveryNoteService,
@@ -171,6 +217,16 @@ describe('NouvelleCommandeProPage — retour de la saisie', () => {
     });
     expect(host.textContent).toContain('Commande CMD-45 enregistrée et remise.');
     expect(host.querySelector('[data-handover-done]')?.textContent).toContain('Réimprimer le bon');
+  });
+
+  it('affiche la pastille dans la carte du compte qui a un brouillon', async () => {
+    const savedAt = new Date().toISOString();
+    const host = await arriveWith({}, () =>
+      Promise.resolve([{ companyId: '1', savedAt, savedByName: null }]),
+    );
+    const badges = host.querySelectorAll('[data-draft-badge]');
+    expect(badges).toHaveLength(1);
+    expect(badges[0]?.closest('fold-card')?.textContent).toContain('Café Périn');
   });
 
   it('ne montre rien quand on arrive sans commande', async () => {

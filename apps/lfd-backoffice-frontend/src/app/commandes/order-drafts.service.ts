@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { OrderDraftPayload, OrderDraftResponse, OrderDraftView } from '@lfd/contracts';
+import type {
+  OrderDraftPayload,
+  OrderDraftResponse,
+  OrderDraftSummaryView,
+  OrderDraftView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -20,6 +25,13 @@ import { B2B_API_BASE } from '../api/api-config';
 @Injectable({ providedIn: 'root' })
 export class OrderDraftsService {
   private readonly http = inject(HttpClient);
+
+  /** Les brouillons en attente, toutes sociétés, sans leur contenu. */
+  async list(): Promise<readonly OrderDraftSummaryView[]> {
+    return firstValueFrom(
+      this.http.get<readonly OrderDraftSummaryView[]>(`${B2B_API_BASE}/admin/order-drafts`),
+    );
+  }
 
   /** Le brouillon de cette société, ou `null`. */
   async find(companyId: string): Promise<OrderDraftView | null> {

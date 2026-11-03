@@ -1346,6 +1346,7 @@ export type {
   CustomerSkuStat,
   OrderDraftPayload,
   OrderDraftResponse,
+  OrderDraftSummaryView,
   OrderDraftView,
 } from "./admin-order.js";
 export type {

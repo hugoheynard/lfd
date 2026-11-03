@@ -272,3 +272,18 @@ export interface OrderDraftView extends OrderDraftPayload {
   /** La fiche staff qui l'a enregistré, ou `null` si elle a disparu depuis. */
   readonly savedByStaffId: string | null;
 }
+
+/**
+ * **Qu'un brouillon attend** pour cette société — sans son contenu.
+ *
+ * Ce que la liste des comptes du comptoir lit pour poser une pastille : il
+ * suffit de savoir qu'il existe, quand, et par qui. Le contenu reste derrière
+ * `GET admin/order-drafts/:companyId`, lu à l'ouverture de la saisie.
+ */
+export interface OrderDraftSummaryView {
+  readonly companyId: string;
+  /** ISO du dernier enregistrement. */
+  readonly savedAt: string;
+  /** « Prénom Nom » de qui l'a enregistré, ou `null` si la fiche ne le dit plus. */
+  readonly savedByName: string | null;
+}
