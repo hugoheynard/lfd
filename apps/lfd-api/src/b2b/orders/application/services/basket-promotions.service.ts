@@ -6,18 +6,18 @@ import {
   PromotionAudienceFactsResolver,
   type KnownBuyerFacts,
 } from "../../../promotions/application/promotion-audience-facts.resolver.js";
-import {
-  promotionsAdmitted,
-  promotionsAdmittedAtAnyHour,
-} from "../../../promotions/domain/live-promotion.js";
+import { promotionsAdmittedAtAnyHour } from "../../../promotions/domain/live-promotion.js";
 import { BasketPromotionReader } from "../../../promotions/domain/ports/basket-promotion.reader.js";
 import { endedBasketPromotions } from "../../domain/services/ended-basket-promotions.js";
 import {
-  chooseBasketPromotion,
   needsClassifications,
   type BasketLine,
   type BasketPromotionOutcome,
 } from "../../domain/services/basket-promotion-choice.js";
+import {
+  chooseLoadedBasketPromotion,
+  type LoadedBasketPromotions,
+} from "../../domain/services/loaded-basket-promotions.js";
 import {
   type OrderLineClassification,
   OrderLineClassificationReader,
@@ -63,28 +63,48 @@ export class BasketPromotions {
 
   /** La promotion panier de ce panier. */
   async resolve(request: BasketPromotionRequest): Promise<BasketPromotionOutcome> {
-    const at = this.clock.now();
-    const all = await this.promotions.live();
-    const facts = await this.facts.factsFor(request.buyer, all);
-    const candidates = promotionsAdmitted(all, at, facts, request.handoverAt);
+    const loaded = await this.load(request.buyer);
     // Jours et heures non jugés : ce qui a pris fin aujourd'hui se dit (§ 8).
-    const atAnyHour = promotionsAdmittedAtAnyHour(all, at, facts);
+    const atAnyHour = promotionsAdmittedAtAnyHour(loaded.live, loaded.at, loaded.facts);
     const known =
       request.known ??
       (needsClassifications(atAnyHour)
         ? await this.classifications.classify(request.lines.map((line) => line.sku))
         : new Map<string, OrderLineClassification>());
-    const outcome = chooseBasketPromotion(candidates, request.lines, known);
-    if (outcome.beyondCap !== undefined) {
-      // La pose refuse une sixième cumulable ; si l'on en trouve plus de cinq
-      // ici, la caisse ne tombe pas : elle garde les cinq premières, et
-      // l'équipe doit l'apprendre (plan des promotions, M7, 2026-10-31).
-      this.logger.warn(
-        `Plus de cinq promotions panier cumulables pour ce panier : écartées ${outcome.beyondCap.join(", ")}. ` +
-          "Archiver ou restreindre l'une d'elles à l'écran Promotions.",
-      );
-    }
-    const ended = endedBasketPromotions(atAnyHour, at, request.lines, known);
+    const outcome = chooseLoadedBasketPromotion(loaded, request.lines, known, request.handoverAt);
+    warnBeyondCap(this.logger, outcome);
+    const ended = endedBasketPromotions(atAnyHour, loaded.at, request.lines, known);
     return ended.length === 0 ? outcome : { ...outcome, ended };
+  }
+
+  /**
+   * **Ce que le choix lit, sans choisir** (plan `plan-un-seul-assemblage.md`,
+   * § 2.1) : l'instant, les promotions vivantes, les faits de l'acheteur —
+   * dans l'ordre de {@link resolve}, qui le réemploie. Le choix lui-même est
+   * `chooseLoadedBasketPromotion`, un calcul.
+   */
+  async load(buyer: KnownBuyerFacts): Promise<LoadedBasketPromotions> {
+    const at = this.clock.now();
+    const live = await this.promotions.live();
+    const facts = await this.facts.factsFor(buyer, live);
+    return { at, live, facts };
+  }
+}
+
+/**
+ * La pose refuse une sixième cumulable ; si l'on en trouve plus de cinq au
+ * choix, la caisse ne tombe pas : elle garde les cinq premières, et l'équipe
+ * doit l'apprendre (plan des promotions, M7, 2026-10-31). Partagé par le
+ * devis et la passation, qui choisissent par le même calcul.
+ */
+export function warnBeyondCap(
+  logger: Pick<Logger, "warn">,
+  outcome: { readonly beyondCap?: readonly string[] | undefined },
+): void {
+  if (outcome.beyondCap !== undefined) {
+    logger.warn(
+      `Plus de cinq promotions panier cumulables pour ce panier : écartées ${outcome.beyondCap.join(", ")}. ` +
+        "Archiver ou restreindre l'une d'elles à l'écran Promotions.",
+    );
   }
 }

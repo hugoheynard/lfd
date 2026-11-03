@@ -8,6 +8,7 @@ import {
   type PickupAddressView,
 } from "@lfd/contracts";
 
+import type { Clock } from "../../../../../platform/time/clock.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   FixedStopwatch,
@@ -168,9 +169,16 @@ export interface QuotingDecisions {
   readonly mercuriale?: CompanyMercuriale | null;
 }
 
-function pricingOf(
+/**
+ * La tarification des lignes sur ce catalogue et ces décisions. `clock` et
+ * `history` : la pendule et l'historique canonique de la porte du prix — par
+ * défaut figée et vide ; une suite qui éprouve « jamais d'instant passé »
+ * (`plan-un-seul-assemblage.md`, § 2.1) y met le mur qui avance.
+ */
+export function pricingOf(
   catalog: readonly UnsealedCatalogItem[],
   decisions: QuotingDecisions = {},
+  gate: { readonly clock?: Clock; readonly history?: CanonicalPriceHistoryReader } = {},
 ): OrderLinePricing {
   const rules = () => Promise.resolve([...(decisions.rules ?? [])]);
   const mercuriale = () => Promise.resolve(decisions.mercuriale ?? null);
@@ -198,11 +206,10 @@ function pricingOf(
     },
     linePromotionSupply(decisions.promotions ?? []),
   );
-  const clock = new FixedClock(PRICED_AT);
   const pricer = new Pricer(
     loader,
-    clock,
-    new NoPriceHistory(),
+    gate.clock ?? new FixedClock(PRICED_AT),
+    gate.history ?? new NoPriceHistory(),
     ownPricingParties(),
     new RecordingTimings(),
     new FixedStopwatch(),

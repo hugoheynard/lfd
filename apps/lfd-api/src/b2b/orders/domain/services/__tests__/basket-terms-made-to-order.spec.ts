@@ -1,37 +1,16 @@
-import type { OrderLineClassification } from "../../../domain/ports/order-line-classification.reader.js";
-import type { OrderLineInput } from "../../../domain/value-objects/order-line.js";
-import {
-  OrderComposition,
-  type ArrangedContent,
-  type ResolvedContent,
-} from "../order-composition.service.js";
-import type { OrderContent } from "../order-content.js";
+import type { OrderLineClassification } from "../../ports/order-line-classification.reader.js";
+import type { OrderLineInput } from "../../value-objects/order-line.js";
+import { basketTermsOf } from "../basket-terms.js";
 
 /**
- * La composition scelle le marqueur « sur mesure » lu au catalogue (plan
+ * Le chiffrage scelle le marqueur « sur mesure » lu au catalogue (plan
  * `documentation/catalogue/plan-sur-mesure-partout.md`, M1) : une ligne neuve
  * prend celui du jour, une ligne gardée en révision garde le sien.
+ *
+ * Déménagée d'`order-composition-made-to-order.spec.ts` avec la règle
+ * (`OrderComposition.draftOf` → `basketTermsOf`, lot L1a de
+ * `plan-un-seul-assemblage.md`) : mêmes cas.
  */
-const CONTENT: OrderContent = {
-  fulfillmentMethod: "pickup",
-  deliveryAddress: null,
-  deliveryAddressId: null,
-  pickupAddressId: "pickup_1",
-  requestedDeliveryDate: null,
-  note: "",
-  lines: [],
-};
-
-const ARRANGED: ArrangedContent = {
-  agreed: {
-    window: { value: null, source: "default" },
-    contact: { value: null, source: "default" },
-    signatureRequired: { value: false, source: "default" },
-  },
-  bookAddressId: null,
-  deliveryVatMode: "standard",
-};
-
 const LINE: OrderLineInput = {
   sku: "GAT-001",
   productName: "Gâteau",
@@ -54,16 +33,10 @@ function draftLine(
   line: OrderLineInput,
   known: ReadonlyMap<string, OrderLineClassification>,
 ): OrderLineInput | undefined {
-  const resolved: ResolvedContent = {
+  return basketTermsOf({
     lines: [line],
-    subtotalCents: 1_000,
     known,
-    audience: "b2b",
-    refusals: [],
-    fulfillment: {
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      pickupAddress: null,
+    discount: {
       discountCents: 0,
       discountAdjustment: null,
       discountLabel: null,
@@ -71,15 +44,14 @@ function draftLine(
       ineligibleSkus: new Set(),
       basketDiscounts: undefined,
       discountTerms: null,
-      deliveryFeeAdjustment: null,
-      deliveryFeeCents: 0,
-      globalWindowMode: null,
     },
-  };
-  return OrderComposition.draftOf(CONTENT, resolved, ARRANGED, "line_ht").lines[0];
+    deliveryFee: { cents: 0, adjustment: null },
+    deliveryVatMode: "standard",
+    vatMethod: "line_ht",
+  }).lines[0];
 }
 
-describe("OrderComposition — le marqueur « sur mesure » scellé", () => {
+describe("basketTermsOf — le marqueur « sur mesure » scellé", () => {
   it("une ligne neuve prend le marqueur du catalogue", () => {
     expect(draftLine(LINE, new Map([["GAT-001", marked(true)]]))?.madeToOrder).toBe(true);
     expect(draftLine(LINE, new Map([["GAT-001", marked(false)]]))?.madeToOrder).toBe(false);

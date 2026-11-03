@@ -13,6 +13,7 @@ import {
 import { lineHtBasketStepsOf, type BasketDiscountStepAmounts } from "./order-basket-discounts.js";
 import { ensureCumulatedShape, lineHtCumulatedStepsOf } from "./order-cumulated-discounts.js";
 import { clienteleOf } from "./order-fulfillment.js";
+import { exactAmountsOf } from "./order-exact-amounts.js";
 import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 
@@ -155,4 +156,34 @@ function lineHtBasketOf(
   }
   ensureCumulatedShape(input, cumulated, lines);
   return lineHtCumulatedStepsOf(lines, cumulated, input.discountCents);
+}
+
+/**
+ * Une composition par méthode de TVA (plan du centime, § 4) : on ajoute une
+ * méthode en ajoutant une entrée, pas une branche dans `compose`. Sortie
+ * d'`order.ts` le 2026-11-03 (lot L1a de `plan-un-seul-assemblage.md`) : le
+ * chiffrage d'un panier la réemploie, il ne la réécrit pas.
+ */
+const AMOUNTS_BY_METHOD: Readonly<
+  Record<
+    OrderVatMethod,
+    (input: DraftOrderInput, fulfillment: OrderFulfillmentInput) => DraftedAmounts
+  >
+> = {
+  line_ht: lineHtAmountsOf,
+  exact_ht: exactAmountsOf,
+};
+
+/**
+ * Les montants d'une commande dans SA méthode — décidée par `Order.draft`,
+ * relue par `Order.recompose`.
+ *
+ * @throws {InvalidOrderPaymentError} un terme qui ne découle pas de son ajustement.
+ */
+export function draftedAmountsOf(
+  input: DraftOrderInput,
+  fulfillment: OrderFulfillmentInput,
+  vatMethod: OrderVatMethod,
+): DraftedAmounts {
+  return AMOUNTS_BY_METHOD[vatMethod](input, fulfillment);
 }

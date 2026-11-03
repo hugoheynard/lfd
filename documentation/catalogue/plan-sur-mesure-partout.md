@@ -23,7 +23,7 @@
   (`apps/lfd-api/prisma/schema/public/orders.prisma:591-593`). Elle fige aussi
   un drapeau booléen tiré d'une règle du commerce, `pickupDiscountEligible`
   (`orders.prisma:724`), calculé à la composition
-  (`apps/lfd-api/src/b2b/orders/application/services/order-composition.service.ts:435`)
+  (`apps/lfd-api/src/b2b/orders/domain/services/basket-terms.ts:104`)
   et écrit par la fonction unique d'écriture de ligne
   (`apps/lfd-api/src/b2b/orders/infrastructure/order-line.data.ts:28`). **C'est
   le modèle à copier** : un fait du commerce, scellé à la passation, relu

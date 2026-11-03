@@ -126,18 +126,19 @@ sans aucun montant ; `orderTotalRows` lit `BasketAmounts`, un adaptateur sert
 
 ## 4. Les lots (un à la fois)
 
-| Lot                  | Contenu                                                                                                                       | Ce qui le prouve                      |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **L0** ✅ 2026-11-03 | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                                  | vert sur le code d'aujourd'hui        |
-| **L1**               | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose` (la révision bascule ici, contexte figé) | G2 au centime, commandes et révisions |
-| **L2**               | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil         | G2 ; écarts tranchés                  |
-| **L3**               | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                            | G2 ; écarts tranchés                  |
-| **L4**               | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                            | G3 (ordre) ; refus du corpus          |
-| **L5a**              | fiche commande sur `BasketAmounts` (adaptateur depuis les colonnes)                                                           | rendu identique sur le corpus         |
-| **L5b**              | PDF du bon                                                                                                                    | idem                                  |
-| **L5c**              | panier de la boutique                                                                                                         | idem                                  |
-| **L5d**              | panier de la saisie (fin des champs passés à vide)                                                                            | idem                                  |
-| **L6**               | suppression de l'ancien code ; porte : le calcul réservé à `priceBasket`, interdit aux fronts                                 | la porte, et G2                       |
+| Lot                   | Contenu                                                                                                               | Ce qui le prouve                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **L0** ✅ 2026-11-03  | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                          | vert sur le code d'aujourd'hui                          |
+| **L1a** ✅ 2026-11-03 | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose`                                  | instantané identique, sans exception                    |
+| **L1b**               | refus décidés : É12, É13 (contexte figé de la révision), É18, ordre du crédit                                         | instantané régénéré pour CES cas seuls, chacun justifié |
+| **L2**                | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil | G2 ; écarts tranchés                                    |
+| **L3**                | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                    | G2 ; écarts tranchés                                    |
+| **L4**                | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                    | G3 (ordre) ; refus du corpus                            |
+| **L5a**               | fiche commande sur `BasketAmounts` (adaptateur depuis les colonnes)                                                   | rendu identique sur le corpus                           |
+| **L5b**               | PDF du bon                                                                                                            | idem                                                    |
+| **L5c**               | panier de la boutique                                                                                                 | idem                                                    |
+| **L5d**               | panier de la saisie (fin des champs passés à vide)                                                                    | idem                                                    |
+| **L6**                | suppression de l'ancien code ; porte : le calcul réservé à `priceBasket`, interdit aux fronts                         | la porte, et G2                                         |
 
 Chaque lot dit au bâti son nombre de fichiers et d'appelants, et son retour
 arrière (L6, la suppression, se fait seule et en dernier).
@@ -155,13 +156,47 @@ nommés dans `apps/lfd-api/test/pricing-golden-master-properties.ts` : É11, É1
 (4), chargement (4) avant heure limite (5) ; le payeur (1) n'est pas mesuré
 (aucun compte de groupe ni site au payeur inactif dans la scène).
 
+**L1a, bâti le 2026-11-03** (non commité au moment d'écrire) — instantané
+**inchangé**, golden master 4/4 vert sans `LFD_GOLDEN_MASTER_WRITE`.
+21 fichiers sous `apps/lfd-api/src/b2b/orders/` (11 neufs, 8 modifiés, 2
+suites déménagées) et 3 docs repointées. Le chargement :
+`application/services/pricing-context.service.ts` (refus de lecture en
+données, chargement arrêté au premier, levé par `OrderComposition.load` au
+rang 4) ; le calcul : `domain/services/price-basket.ts`, ses formes
+`basket-pricing-context.ts`, les termes déménagés d'`exactTermsOf`/`draftOf`
+dans `basket-terms.ts`, le choix de promotion sur chargement
+`loaded-basket-promotions.ts` ; l'agrégat :
+`domain/entities/order-priced-draft.ts`, et `AMOUNTS_BY_METHOD` sorti
+d'`order.ts` vers `order-amounts.ts`. Appelants basculés : `OrderDrafting`
+(les trois passations et l'estimation de la saisie), `OrderRevising` (la
+révision, son devis, la demande de modification) ; `BasketPromotions.resolve`
+et `CartAdjustments.forPickup`/`forDelivery` réemploient les lectures
+séparées sans changer leur sortie. Les devis (`ShopCartQuoting`,
+`QuoteOrderHandler`) ne bougent pas. Écarts de forme, à relire en L2 :
+`BasketAmounts` ne porte pas encore la TVA ni le TTC (l'agrégat les calcule
+par `AMOUNTS_BY_METHOD` APRÈS ses gardes, pour que l'ordre des refus ne bouge
+pas) ; `Order.draft`/`recompose` acceptent encore l'entrée aux montants
+composés (suites du domaine, spécimens) jusqu'à L6. **Retour arrière** : un
+revert du commit — aucune migration, aucun contrat, aucune donnée écrite
+autrement.
+
 ## 5. Ce que ce plan ne fait pas
 
 - Toucher aux montants FIGÉS des commandes passées.
 - Faire de la saisie l'espace du pro : elle reste un écran admin.
 - Fusionner les deux paniers.
 
-## 6. Décisions de Hugo (2026-11-03, « oui aux trois »)
+## 6. Décisions de Hugo (2026-11-03)
+
+- **É18** — la saisie de l'équipe accepte une société SUSPENDUE (révélé par
+  le golden master L0). **Refuser**, comme le client dans son espace (D4).
+- **Refus « règlement au compte sans crédit »** : placé dans l'ordre écrit
+  (§2.4) **juste après les gardes de l'agrégat (7)**, avant les verrous (8).
+- **L1 se coupe en deux** : **L1a** ne change AUCUNE sortie (montants et refus
+  identiques à l'instantané) ; **L1b** applique les refus décidés (É12, É13,
+  É18, ordre du crédit), chacun réinscrit au corpus comme décision.
+
+« Oui aux trois » :
 
 - **É12** — la révision par l'équipe d'une commande pro suit-elle la règle E1
   (créneaux du pro) ? **Oui** : la révision suit E1, comme la passation.

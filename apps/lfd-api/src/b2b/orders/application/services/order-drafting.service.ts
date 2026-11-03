@@ -1,18 +1,18 @@
 import {
-  cartAdjustmentCents,
   type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
   type SalesTermsDocument,
   type StaffEntryShortcut,
   type StaffOrderSupply,
 } from "@lfd/contracts";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { DeliveryDefaultsReader } from "../../domain/ports/delivery-defaults.reader.js";
 import type { WindowRequester } from "../../domain/services/delivery-window.js";
 import { Order, type OrderSalesTerms, type OrderVoucher } from "../../domain/entities/order.js";
+import { pricedBasketOf } from "../../domain/entities/order-priced-draft.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
@@ -29,7 +29,8 @@ import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { orderPrincipalOf } from "../../domain/services/order-principal.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { OrderComposition } from "./order-composition.service.js";
+import { warnBeyondCap } from "./basket-promotions.service.js";
+import { OrderComposition, pickupSiteOf } from "./order-composition.service.js";
 import type { OrderContent } from "./order-content.js";
 import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
 import { OrderOperations } from "./order-operations.service.js";
@@ -81,6 +82,7 @@ export interface DraftedOrder {
  */
 @Injectable()
 export class OrderDrafting {
+  private readonly logger = new Logger(OrderDrafting.name);
   private readonly composition: OrderComposition;
   private readonly cutoffGate: OrderCutoffGate;
 
@@ -171,7 +173,16 @@ export class OrderDrafting {
     if (supply.supply === "planned") {
       await this.ensureDayOpen(content.requestedDeliveryDate, parties);
     }
-    const resolved = await this.composition.resolve(content, parties, null, caller);
+    // Le chargement (§ 2.4, étape 4) : ses refus de lecture se lèvent ici.
+    const vatMethod = placementVatMethodOf(parties.companyId);
+    const loaded = await this.composition.load({
+      content,
+      parties,
+      revised: null,
+      caller,
+      vatMethod,
+      frozenDeliveryVatMode: null,
+    });
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
@@ -180,30 +191,27 @@ export class OrderDrafting {
       supply,
       content,
       parties,
-      resolved.fulfillment.pickupAddress?.siteId ?? null,
+      pickupSiteOf(loaded.context),
     );
     // APRÈS le délai de fabrication, et sans la dérogation (D6 du plan des
     // opérations datées) : c'est le premier geste d'`arrange`.
     const arranged = await this.composition.arrange(
       content,
       parties,
-      resolved,
+      loaded.context,
       windowRequesterOf(parties),
     );
     // La surtaxe ne se lit QUE si une dérogation a servi : une requête de plus
     // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
-    // se paierait sur toutes les commandes à l'heure.
-    const late = await this.lateFeeFor(waiverUsed, resolved.subtotalCents);
+    // se paierait sur toutes les commandes à l'heure. C'est un VERDICT qui a un
+    // prix (§ 2.3) : `priceBasket` l'applique au sous-total.
+    const composed = OrderComposition.draftOf(content, loaded.context, arranged, {
+      lateFee: await this.lateFeeFor(waiverUsed),
+    });
+    warnBeyondCap(this.logger, pricedBasketOf(composed.pricing, vatMethod));
     const order = Order.draft(
       {
-        // La méthode de la PASSATION — celle qu'`Order.draft` décidera de son
-        // côté sur la même société : les montants partent dans son unité.
-        ...OrderComposition.draftOf(
-          content,
-          resolved,
-          arranged,
-          placementVatMethodOf(parties.companyId),
-        ),
+        ...composed,
         companyId: parties.companyId,
         billedCompanyId,
         principal,
@@ -215,12 +223,8 @@ export class OrderDrafting {
         // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et
         // les commandes passées gardent la leur.
         catalogVersionId: null,
-        // La surtaxe ne s'applique QUE si une dérogation a laissé passer : c'est
-        // elle qui atteste le retard. Sans réglage, elle vaut zéro.
-        lateFeeCents: late.cents,
-        lateFeeAdjustment: late.frozen,
         voucher,
-        salesTerms: await this.salesTermsIn(salesTermsOf(resolved.audience)),
+        salesTerms: await this.salesTermsIn(salesTermsOf(loaded.audience)),
         locale,
       },
       supply,
@@ -315,28 +319,23 @@ export class OrderDrafting {
   }
 
   /**
-   * Ce que le retard coûte, **et seulement quand il y a eu retard**.
+   * Ce que le retard coûte, **et seulement quand il y a eu retard** — le
+   * verdict, pas le montant : `priceBasket` l'applique au sous-total (§ 2.3).
    *
    * `null` de dérogation ⇒ rien à facturer. Réglage absent ⇒ rien non plus :
    * rattraper sans facturer est un choix valable, et inventer un montant
-   * facturerait une décision que personne n'a prise. Le taux voyage avec le
-   * montant : un montant sans son taux ne se justifie pas devant un comptable.
+   * facturerait une décision que personne n'a prise. Le taux voyage avec
+   * l'ajustement : un montant sans son taux ne se justifie pas devant un comptable.
    */
-  private async lateFeeFor(
-    waiverUsed: string | null,
-    subtotalCents: number,
-  ): Promise<{ cents: number; frozen: LateFeeAdjustment | null }> {
+  private async lateFeeFor(waiverUsed: string | null): Promise<LateFeeAdjustment | null> {
     if (waiverUsed === null) {
-      return { cents: 0, frozen: null };
+      return null;
     }
     const setting = await this.lateFees.current();
     if (setting === null) {
-      return { cents: 0, frozen: null };
+      return null;
     }
-    return {
-      cents: cartAdjustmentCents(setting.adjustment, subtotalCents),
-      frozen: { adjustment: setting.adjustment, vatRatePercent: setting.vatRatePercent },
-    };
+    return { adjustment: setting.adjustment, vatRatePercent: setting.vatRatePercent };
   }
 
   /**

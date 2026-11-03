@@ -1,8 +1,8 @@
-import { cartAdjustmentCents, type DeliveryVatMode } from "@lfd/contracts";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
-import { Order, type DraftOrderInput } from "../../domain/entities/order.js";
+import { Order } from "../../domain/entities/order.js";
+import { pricedBasketOf, type PricedDraftInput } from "../../domain/entities/order-priced-draft.js";
 import {
   type OrderRevisionToSave,
   type RevisableOrder,
@@ -29,6 +29,7 @@ import {
   type StandingRevisionBlock,
 } from "../../domain/services/order-revisability.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
+import { warnBeyondCap } from "./basket-promotions.service.js";
 import { CancellationRule } from "./cancellation-rule.js";
 import { revisionPriceErrorOf } from "../../domain/errors/revision-price-errors.js";
 import { replayableDiscountsOf } from "../../domain/services/basket-discount-replay.js";
@@ -68,6 +69,8 @@ import { ShelfRevising } from "./shelf-revising.service.js";
  */
 @Injectable()
 export class OrderRevising {
+  private readonly logger = new Logger(OrderRevising.name);
+
   constructor(
     private readonly composition: OrderComposition,
     private readonly cutoffs: OrderCutoffGate,
@@ -228,39 +231,43 @@ export class OrderRevising {
       placedByStaffId: order.placedByStaffId,
       buyerKind: order.buyerKind,
     };
-    const resolved = await this.composition.resolve(
+    const loaded = await this.composition.load({
       content,
       parties,
-      { lines: order.lines, discounts: replayableDiscountsOf(order) },
+      revised: { lines: order.lines, discounts: replayableDiscountsOf(order) },
       // Sans effet en révision : ses lignes passent `priceRevisedLines`.
-      "checkout",
-      order.vatMethod,
-    );
+      caller: "checkout",
+      // La méthode et le mode du port RELUS sur la commande (plan du centime,
+      // § 5 ; V3, É9) : la composition chiffre dans l'unité de la commande,
+      // avec le mode que l'agrégat appliquera.
+      vatMethod: order.vatMethod,
+      frozenDeliveryVatMode: order.deliveryVatMode,
+    });
     if (!fromShelf) {
       await this.ensureBeforeCutoff(order, content, actor);
     }
     const arranged = await this.composition.arrange(
       content,
       parties,
-      resolved,
+      loaded.context,
       requesterOf(order, actor),
     );
-    // La méthode et le mode du port RELUS sur la commande (plan du centime,
-    // § 5 ; V3) : la composition chiffre dans l'unité de la commande, avec
-    // le mode que l'agrégat appliquera.
-    const kept = {
-      ...arranged,
-      deliveryVatMode: order.deliveryVatMode ?? arranged.deliveryVatMode,
-    };
-    const input = draftInputOf(
+    const input = revisedInputOf(
       order,
-      OrderComposition.draftOf(content, resolved, kept, order.vatMethod),
-      { deliveryVatMode: arranged.deliveryVatMode, subtotalCents: resolved.subtotalCents },
+      // R4 : la surtaxe de la passation, ni créée ni retirée — son ajustement
+      // figé, que `priceBasket` applique au nouveau sous-total.
+      OrderComposition.draftOf(content, loaded.context, arranged, {
+        lateFee: order.lateFeeAdjustment,
+      }),
     );
+    // Les remises rejouées que la révision ferait perdre, lues sur LE calcul
+    // que l'agrégat refait — mêmes entrées, même fonction.
+    const priced = pricedBasketOf(input.pricing, order.vatMethod);
+    warnBeyondCap(this.logger, priced);
     const revision = options.requireChange
       ? Order.revise(order, input)
       : Order.recompose(order, input);
-    return { revision, refusals: resolved.refusals };
+    return { revision, refusals: [...loaded.keptRefusals, ...priced.refusals] };
   }
 
   /**
@@ -385,19 +392,13 @@ export interface QuotedRevision {
  *
  * @throws {OrderWithoutSalesTermsError} une commande d'avant les CGV figées.
  */
-function draftInputOf(
-  order: RevisableOrder,
-  composed: ComposedDraft,
-  current: { readonly deliveryVatMode: DeliveryVatMode; readonly subtotalCents: number },
-): DraftOrderInput {
+function revisedInputOf(order: RevisableOrder, composed: ComposedDraft): PricedDraftInput {
   const salesTerms = order.salesTerms;
   if (salesTerms === null) {
     throw new OrderWithoutSalesTermsError(order.orderId);
   }
   return {
     ...composed,
-    // V3 : la TVA du port se recalcule, mais selon le mode figé à la passation.
-    deliveryVatMode: order.deliveryVatMode ?? current.deliveryVatMode,
     companyId: order.companyId,
     billedCompanyId: order.billedCompanyId,
     principal: order.principal,
@@ -405,13 +406,6 @@ function draftInputOf(
     placedByStaffId: order.placedByStaffId,
     buyerKind: order.buyerKind,
     catalogVersionId: order.catalogVersionId,
-    // R4 : la surtaxe de la passation, ni créée ni retirée — son ajustement
-    // figé appliqué au nouveau sous-total, comme l'agrégat le vérifie.
-    lateFeeCents:
-      order.lateFeeAdjustment === null
-        ? 0
-        : cartAdjustmentCents(order.lateFeeAdjustment.adjustment, current.subtotalCents),
-    lateFeeAdjustment: order.lateFeeAdjustment,
     // Le bon garde la part déjà déduite : l'agrégat la borne au nouveau total,
     // et la révision refuse qu'elle baisse (§9). Dans l'unité de la méthode :
     // la valeur faciale TTC pour `exact_ht` (relue par `toRevisableOrder`).

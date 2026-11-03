@@ -6,7 +6,7 @@ import {
   type CustomerAudience,
   type LocalMoment,
 } from "@lfd/contracts";
-import type { PickupAddressView } from "@lfd/contracts";
+import type { DeliveryZoneView, PickupAddressView, WindowMode } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { DeliveryAvailabilityReader } from "../../../delivery-availability/domain/ports/delivery-availability.reader.js";
@@ -23,6 +23,8 @@ import { PickupChoiceRequiredError } from "../../domain/errors/pickup-choice-err
 import type { OrderLineClassification } from "../../domain/ports/order-line-classification.reader.js";
 import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reader.js";
 import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
+import type { KnownBuyerFacts } from "../../../promotions/application/promotion-audience-facts.resolver.js";
+import type { LoadedBasketPromotions } from "../../domain/services/loaded-basket-promotions.js";
 import { BasketPromotions } from "./basket-promotions.service.js";
 import type { PickupBuyer, ResolvedDelivery, ResolvedPickup } from "./cart-adjustments.types.js";
 
@@ -118,19 +120,7 @@ export class CartAdjustments {
     handoverAt: LocalMoment | null = null,
   ): Promise<ResolvedPickup> {
     const { audience, companyId } = buyer;
-    const point =
-      pickupAddressId === null
-        ? await this.preselected(audience, companyId)
-        : await this.pickups.resolve(pickupAddressId);
-    if (point === null) {
-      throw new PickupNotConfiguredError();
-    }
-    if (!pickupOpenTo(point, audience)) {
-      // Lu sur le refus seul : sans autre site ouvert, « choisissez un autre
-      // point » enverrait chercher ce qui n'existe pas.
-      const others = await this.pickups.list(audience);
-      throw new PickupClosedForAudienceError(point.label, audience, others.length > 0);
-    }
+    const point = await this.pickupPoint(pickupAddressId, audience, companyId);
     const served = await this.basket.resolve({
       lines,
       buyer: {
@@ -153,6 +143,68 @@ export class CartAdjustments {
       applied: served.applied,
       ended: served.ended ?? [],
     };
+  }
+
+  /**
+   * **Le point retenu, sans sa remise** — la lecture que le chargement du
+   * chiffrage fait seule (`plan-un-seul-assemblage.md`, § 2.1), et que
+   * {@link forPickup} réemploie : les deux opposent les mêmes refus.
+   *
+   * @throws {PickupNotConfiguredError} le point n'existe pas.
+   * @throws {PickupNotOfferedToAudienceError} aucun point choisi, et aucun n'est ouvert.
+   * @throws {PickupChoiceRequiredError} aucun point choisi, et aucun ne s'impose.
+   * @throws {PickupClosedForAudienceError} le site ne remet pas à cette clientèle.
+   */
+  async pickupPoint(
+    pickupAddressId: string | null,
+    audience: CustomerAudience,
+    companyId: string | null,
+  ): Promise<PickupAddressView> {
+    const point =
+      pickupAddressId === null
+        ? await this.preselected(audience, companyId)
+        : await this.pickups.resolve(pickupAddressId);
+    if (point === null) {
+      throw new PickupNotConfiguredError();
+    }
+    if (!pickupOpenTo(point, audience)) {
+      // Lu sur le refus seul : sans autre site ouvert, « choisissez un autre
+      // point » enverrait chercher ce qui n'existe pas.
+      const others = await this.pickups.list(audience);
+      throw new PickupClosedForAudienceError(point.label, audience, others.length > 0);
+    }
+    return point;
+  }
+
+  /**
+   * **La zone du code postal livré et le réglage de la livraison, sans
+   * promotion ni frais** — la lecture du chargement, que {@link forDelivery}
+   * réemploie. L'ouverture se juge AVANT la zone (cf. {@link forDelivery}).
+   *
+   * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
+   * @throws {NoDeliveryZoneForPostalCodeError} on ne livre pas ce code postal.
+   */
+  async deliveryRoute(
+    codePostal: string,
+    audience: CustomerAudience,
+  ): Promise<{ readonly zone: DeliveryZoneView; readonly globalWindowMode: WindowMode }> {
+    const settings = await this.delivery.current();
+    if (!deliveryOpenTo(settings, audience)) {
+      throw new DeliveryClosedForAudienceError();
+    }
+    const zone = await this.zones.resolveForPostalCode(codePostal);
+    if (zone === null) {
+      throw new NoDeliveryZoneForPostalCodeError(codePostal);
+    }
+    return { zone, globalWindowMode: settings.windowMode };
+  }
+
+  /**
+   * Ce que le choix d'une promotion panier lit pour CET acheteur et CET
+   * acheminement (§ 2.1) — délégué à la même source que {@link forPickup}.
+   */
+  promotionsFor(buyer: KnownBuyerFacts): Promise<LoadedBasketPromotions> {
+    return this.basket.load(buyer);
   }
 
   /**
@@ -204,14 +256,7 @@ export class CartAdjustments {
     known: ReadonlyMap<string, OrderLineClassification> | null = null,
     handoverAt: LocalMoment | null = null,
   ): Promise<ResolvedDelivery> {
-    const settings = await this.delivery.current();
-    if (!deliveryOpenTo(settings, buyer.audience)) {
-      throw new DeliveryClosedForAudienceError();
-    }
-    const zone = await this.zones.resolveForPostalCode(codePostal);
-    if (zone === null) {
-      throw new NoDeliveryZoneForPostalCodeError(codePostal);
-    }
+    const { zone, globalWindowMode } = await this.deliveryRoute(codePostal, buyer.audience);
     const subtotalCents = lines.reduce((sum, line) => sum + line.htCents, 0);
     const discount = await this.basket.resolve({
       lines,
@@ -227,7 +272,7 @@ export class CartAdjustments {
     });
     return {
       zone,
-      globalWindowMode: settings.windowMode,
+      globalWindowMode,
       feeCents: cartAdjustmentCents(zone.fee, subtotalCents),
       feeAdjustment: zone.fee,
       discount,

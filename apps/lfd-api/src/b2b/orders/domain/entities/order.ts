@@ -19,13 +19,13 @@ import type {
 import { InvalidOrderPaymentError } from "../errors/order-errors.js";
 
 import { ensureDraftable } from "./order-amount-guards.js";
-import { lineHtAmountsOf, type DraftedAmounts } from "./order-amounts.js";
+import { draftedAmountsOf, type DraftedAmounts } from "./order-amounts.js";
 import {
   appliedBasketDiscountsOf,
   basketTracesOf,
   type BasketDiscountTrace,
 } from "./order-basket-discounts.js";
-import { exactAmountsOf } from "./order-exact-amounts.js";
+import { draftInputOf, type PricedDraftInput } from "./order-priced-draft.js";
 import { orderAmountsReadingOf, type OrderAmountsReading } from "./order-amounts-reading.js";
 import { shelfClaimOf, type ShelfClaim } from "../services/shelf-circuit.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
@@ -73,20 +73,6 @@ export type {
   OrderToPlace,
   OrderVoucher,
 } from "./order-shapes.js";
-
-/**
- * Une composition par méthode de TVA (plan du centime, § 4) : on ajoute une
- * méthode en ajoutant une entrée, pas une branche dans `compose`.
- */
-const AMOUNTS_BY_METHOD: Readonly<
-  Record<
-    OrderVatMethod,
-    (input: DraftOrderInput, fulfillment: OrderFulfillmentInput) => DraftedAmounts
-  >
-> = {
-  line_ht: lineHtAmountsOf,
-  exact_ht: exactAmountsOf,
-};
 
 /** Décision de règlement : indécise (`null`), carte (intent), ou différée. */
 type Payment = { readonly status: PaymentStatus; readonly intentId: string | null } | null;
@@ -144,9 +130,16 @@ export class Order {
    * @throws {ShelfOrderNotPickupError} une commande sur stock qui n'est pas un retrait.
    * @throws {ShelfOrderNotTodayError} une commande sur stock qui ne vise pas aujourd'hui.
    */
-  static draft(input: DraftOrderInput, supply: OrderSupplyDecision = PLANNED_SUPPLY): Order {
+  static draft(
+    request: DraftOrderInput | PricedDraftInput,
+    supply: OrderSupplyDecision = PLANNED_SUPPLY,
+  ): Order {
+    const vatMethod = placementVatMethodOf(request.companyId);
+    // Le prix du panier d'abord, comme la composition le faisait avant
+    // l'agrégat : l'ordre des refus ne bouge pas (lot L1a).
+    const input = draftInputOf(request, vatMethod);
     ensureSupplyFits(supply, input.fulfillment, input.requestedDeliveryDate);
-    return Order.compose(input, placementVatMethodOf(input.companyId), supplyMarkOf(supply));
+    return Order.compose(input, vatMethod, supplyMarkOf(supply));
   }
 
   /**
@@ -161,7 +154,7 @@ export class Order {
   ): Order {
     ensureDraftable(input);
     const fulfillment = normalizeFulfillment(input.fulfillment, input.companyId);
-    const amounts = AMOUNTS_BY_METHOD[vatMethod](input, fulfillment);
+    const amounts = draftedAmountsOf(input, fulfillment, vatMethod);
     return new Order(
       input.companyId,
       input.billedCompanyId,
@@ -205,14 +198,22 @@ export class Order {
    * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement sort de la cible figée d'une remise (L9).
    * @throws {ShelfOrderRouteChangeError} une commande sur stock changerait de mode, de journée ou de point.
    */
-  static revise(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
+  static revise(
+    current: RevisableOrder,
+    input: DraftOrderInput | PricedDraftInput,
+  ): OrderRevisionToSave {
     const revision = Order.recompose(current, input);
     ensureChanged(revision);
     return revision;
   }
 
   /** La même recomposition, sans exiger de changement : ce que le devis de révision montre. */
-  static recompose(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
+  static recompose(
+    current: RevisableOrder,
+    request: DraftOrderInput | PricedDraftInput,
+  ): OrderRevisionToSave {
+    // Chiffrée dans la méthode RELUE sur la commande (plan du centime, § 5).
+    const input = draftInputOf(request, current.vatMethod);
     ensureRevisableSettlement(current);
     ensureNoShortfallDecision(current);
     // L9 avant les gardes de montant : une remise emportée hors de sa cible
