@@ -158,6 +158,25 @@ describe('lineMarks', () => {
     ]);
     expect(marks.get('B')?.packingLabel).toBe('Colisage : en partie au bac');
   });
+
+  it('le chiffre : « au bac / commandé », puis le commandé seul en succès', () => {
+    const marks = lineMarks(
+      sheet({
+        lines: [
+          packingLine('A', { packed: true, allocated: 4, unallocated: 0 }),
+          packingLine('B', { allocated: 2, unallocated: 2 }),
+          packingLine('C'),
+          // Au bac mais encore attendue au four : pas « faite ».
+          packingLine('D', { packed: true, allocated: 4, awaitingProduction: true }),
+        ],
+      }),
+    );
+
+    expect(marks.get('A')).toMatchObject({ allocated: null, count: 'success' });
+    expect(marks.get('B')).toMatchObject({ allocated: 2, count: 'warning' });
+    expect(marks.get('C')).toMatchObject({ allocated: 0, count: 'alert' });
+    expect(marks.get('D')).toMatchObject({ allocated: 4, count: 'warning' });
+  });
 });
 
 /** « au bac / total », puis le total seul en succès (Hugo, 2026-11-03). */

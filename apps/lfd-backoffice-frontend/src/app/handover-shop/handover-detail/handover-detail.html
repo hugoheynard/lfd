@@ -165,7 +165,19 @@
             <ul class="hd-lines">
               @for (line of lines(); track line.sku) {
                 <li class="hd-line">
-                  <span class="hd-qty">{{ line.quantity | saleQuantity: line.saleUnit }}</span>
+                  <!-- Le même principe que le compte du sac (Hugo, 2026-11-03) :
+                       « au bac / commandé », puis le commandé seul en succès. -->
+                  @if (marks().get(line.sku); as mark) {
+                    <span class="hd-qty" [attr.data-tone]="mark.count">
+                      @if (mark.allocated !== null) {
+                        {{ mark.allocated | saleQuantity: line.saleUnit
+                        }}<span class="hd-qty-of"> / </span>
+                      }
+                      {{ line.quantity | saleQuantity: line.saleUnit }}
+                    </span>
+                  } @else {
+                    <span class="hd-qty">{{ line.quantity | saleQuantity: line.saleUnit }}</span>
+                  }
                   <span class="hd-name">{{ line.productName }}</span>
                   <span class="hd-sku">{{ line.sku }}</span>
                   <!-- Les deux coches (Hugo, 2026-11-03) : le four, puis le bac.

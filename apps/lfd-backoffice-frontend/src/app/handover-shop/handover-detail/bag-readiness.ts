@@ -139,6 +139,13 @@ export type LineMarkTone = 'success' | 'warning' | 'alert';
 
 /** Les deux coches d'une ligne du sac, et ce qu'elles disent. */
 export interface LineMarks {
+  /**
+   * La quantité au bac, ou `null` quand la ligne est faite (le total seul,
+   * en succès) — le même principe que le compte de pièces du sac.
+   */
+  readonly allocated: number | null;
+  /** Le ton du chiffre : fait (sorti ET au bac), en partie au bac, rien. */
+  readonly count: LineMarkTone;
   readonly oven: LineMarkTone;
   readonly ovenLabel: string;
   readonly packing: LineMarkTone;
@@ -162,7 +169,10 @@ export function lineMarks(sheet: PackingSheet | null): ReadonlyMap<string, LineM
   for (const line of sheet?.lines ?? []) {
     const started = (line.allocated ?? 0) > 0;
     const packing: LineMarkTone = line.packed ? 'success' : started ? 'warning' : 'alert';
+    const done = line.packed && !line.awaitingProduction;
     marks.set(line.sku, {
+      allocated: done ? null : Math.min(line.allocated ?? 0, line.quantity),
+      count: done ? 'success' : started ? 'warning' : 'alert',
       oven: line.awaitingProduction ? 'alert' : 'success',
       ovenLabel: line.awaitingProduction ? 'Fournil : pas encore sorti' : 'Fournil : sorti',
       packing,
