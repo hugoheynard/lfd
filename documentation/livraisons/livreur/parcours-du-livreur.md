@@ -65,7 +65,7 @@ routes sont `admin/delivery/my-round/*` (`my-delivery-round`,
 
 **Une exception au mur, voulue** : `GET ma-tournee/version` rend un numéro de
 journée, toutes tournées confondues, sans livreur ni tournée
-(`get-my-round-version.handler.ts`) ; la page relit ensuite sous son mur. Qu'un
+(`my-round-day-version.source.ts`) ; la page relit ensuite sous son mur. Qu'un
 livreur lise ainsi le rythme d'activité de la journée est **accepté** (Hugo,
 2026-10-07) : le numéro ne dit ni client, ni adresse, ni tournée, et
 restreindre coûterait une lecture par interrogation. À rouvrir le jour où un

@@ -10,14 +10,16 @@ import { randomUUID } from "node:crypto";
  * version, un écran resterait figé sans le dire — c'est ce que cette suite
  * est là pour voir.
  *
- * La version se lit par les deux routes du lot V2, dont les droits sont
- * éprouvés à la fin.
+ * La version se lit par la porte unique `GET admin/day-versions` (D8,
+ * 2026-11-03), qui a remplacé les routes par journal du lot V2 ; ses droits,
+ * journal par journal, sont éprouvés à la fin.
  */
-import type { DayVersionView, OpenedPackingContainer } from "@lfd/contracts";
+import type { OpenedPackingContainer } from "@lfd/contracts";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { settleCardPayments } from "./card-payments.js";
+import { DAY_VERSIONS, dayVersionOf, dayVersionsOf } from "./day-versions-door.js";
 import {
   bootstrapE2e,
   E2E_STAFF_SUB,
@@ -89,17 +91,14 @@ beforeEach(async () => {
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
 type Journal = "commerce" | "production";
-const ROUTE: Readonly<Record<Journal, string>> = {
-  commerce: "/admin/supervision/version",
-  production: "/admin/production/version",
+/** Le journal du commerce s'appelle `orders` sur le fil. */
+const WIRE: Readonly<Record<Journal, "orders" | "production">> = {
+  commerce: "orders",
+  production: "production",
 };
 
 async function version(journal: Journal, day = DAY): Promise<number> {
-  const view = jsonBody<DayVersionView>(
-    await staff().get(`${ROUTE[journal]}?date=${day}`).expect(200),
-  );
-  expect(view.date).toBe(day);
-  return view.version;
+  return dayVersionOf(staff(), WIRE[journal], day);
 }
 
 /**
@@ -355,7 +354,7 @@ describe("le journal du FOURNIL avance à chaque geste du fournil", () => {
   });
 });
 
-describe("les routes de version (V2)", () => {
+describe("la porte unique des versions de journée (D8)", () => {
   /** Une fiche `communication` : ni commandes, ni supervision par son rôle. */
   async function communicationStaff(sub: string): Promise<string> {
     const row = await ctx.prisma.staffUser.create({
@@ -387,32 +386,40 @@ describe("les routes de version (V2)", () => {
     });
   }
 
-  it("rendent zéro pour une journée que rien n'a touchée", async () => {
+  /** Les journaux que cette fiche reçoit quand elle les demande tous. */
+  async function journalsOf(sub: string): Promise<readonly string[]> {
+    const view = await dayVersionsOf(ctx.asSub(sub), DAY, [
+      "orders",
+      "production",
+      "delivery",
+      "my-round",
+    ]);
+    return Object.keys(view.versions).sort();
+  }
+
+  it("rend zéro pour une journée que rien n'a touchée", async () => {
     expect(await version("commerce")).toBe(0);
     expect(await version("production")).toBe(0);
   });
 
-  it("la version du commerce se lit sous `b2b_supervision:read`, pas celle du fournil", async () => {
-    await allowRead("staff-version-supervision", "b2b_supervision");
-    const supervisor = ctx.asSub("staff-version-supervision");
-    await supervisor.get(`${ROUTE.commerce}?date=${DAY}`).expect(200);
-    await supervisor.get(`${ROUTE.production}?date=${DAY}`).expect(403);
-  });
-
-  it("la version du fournil se lit aussi sous `b2b_supervision:read`, par la porte de la Supervision", async () => {
+  it("rend les journaux demandés en UNE réponse, aux mêmes valeurs qu'un par un", async () => {
     await place([{ sku: CROISSANT, quantity: 2 }]);
     await close();
-    // La liste à coliser part au colisage par la boîte d'envoi (K2) : sans
-    // drain, sa livraison ferait bouger la version entre les deux lectures.
     await ctx.drain();
-    await allowRead("staff-version-sup-fournil", "b2b_supervision");
-    const supervisor = ctx.asSub("staff-version-sup-fournil");
-    const view = jsonBody<DayVersionView>(
-      await supervisor.get(`/admin/supervision/production-version?date=${DAY}`).expect(200),
-    );
-    expect(view).toEqual({ date: DAY, version: await version("production") });
-    expect(view.version).toBeGreaterThan(0);
-    await supervisor.get(`${ROUTE.production}?date=${DAY}`).expect(403);
+
+    const view = await dayVersionsOf(staff(), DAY, ["orders", "production"]);
+
+    expect(view.versions).toEqual({
+      orders: await version("commerce"),
+      production: await version("production"),
+    });
+    expect(view.versions.orders).toBeGreaterThan(0);
+    expect(view.versions.production).toBeGreaterThan(0);
+  });
+
+  it("`b2b_supervision:read` reçoit le commerce ET le fournil — les deux portes de la Supervision", async () => {
+    await allowRead("staff-version-supervision", "b2b_supervision");
+    expect(await journalsOf("staff-version-supervision")).toEqual(["orders", "production"]);
   });
 
   /**
@@ -420,20 +427,62 @@ describe("les routes de version (V2)", () => {
    * fournil s'ouvre à n'importe lequel des quatre gestes du fournil et du
    * retrait — et plus à `b2b_orders:read`, qui ne les porte plus.
    */
-  it.each([
-    "production_plan",
-    "production_worksheet",
-    "production_packing",
-    "handover_counter",
-  ] as const)(
-    "la version du fournil se lit sous `%s:read`, pas celle du commerce",
+  it.each(["production_plan", "production_worksheet", "production_packing"] as const)(
+    "`%s:read` reçoit le fournil, pas le commerce",
     async (resource) => {
       await allowRead(`staff-version-${resource}`, resource);
-      const baker = ctx.asSub(`staff-version-${resource}`);
-      await baker.get(`${ROUTE.production}?date=${DAY}`).expect(200);
-      await baker.get(`${ROUTE.commerce}?date=${DAY}`).expect(403);
+      expect(await journalsOf(`staff-version-${resource}`)).toEqual(["production"]);
     },
   );
+
+  /** Audit `livraisons/audit-2026-10-07.md`, B6 : le poste de retrait suit les deux. */
+  it("`handover_counter:read` reçoit le commerce et le fournil", async () => {
+    await allowRead("staff-version-retrait", "handover_counter");
+    expect(await journalsOf("staff-version-retrait")).toEqual(["orders", "production"]);
+  });
+
+  it("🔴 qui n'a que le droit du commerce ne reçoit PAS `production` — sans refus de la porte", async () => {
+    await place([{ sku: CROISSANT, quantity: 2 }]);
+    await allowRead("staff-version-commandes", "b2b_orders");
+
+    const view = await dayVersionsOf(ctx.asSub("staff-version-commandes"), DAY, [
+      "orders",
+      "production",
+    ]);
+
+    expect(view.versions).toEqual({ orders: await version("commerce") });
+    expect(view.versions.orders).toBeGreaterThan(0);
+  });
+
+  it("rend une réponse vide, sans refus, à une fiche sans aucun droit de journal", async () => {
+    await communicationStaff("staff-version-sans-droit");
+    expect(await journalsOf("staff-version-sans-droit")).toEqual([]);
+  });
+
+  it("refuse un journal inconnu en le nommant", async () => {
+    const response = await staff()
+      .get(`${DAY_VERSIONS}?date=${DAY}&journals=orders,stock`)
+      .expect(400);
+    expect(JSON.stringify(response.body)).toContain("stock");
+  });
+
+  it("refuse une date absente ou mal formée, et une liste absente", async () => {
+    await staff().get(`${DAY_VERSIONS}?journals=orders`).expect(400);
+    await staff().get(`${DAY_VERSIONS}?date=03/10/2026&journals=orders`).expect(400);
+    await staff().get(`${DAY_VERSIONS}?date=${DAY}`).expect(400);
+  });
+
+  /** Retirées le 2026-11-03 (D8) : une seule porte, pour ne pas dériver. */
+  it.each([
+    "/admin/supervision/version",
+    "/admin/orders/day-version",
+    "/admin/supervision/production-version",
+    "/admin/production/version",
+    "/admin/delivery/version",
+    "/admin/delivery/my-round/version",
+  ])("l'ancienne route %s n'existe plus (404)", async (route) => {
+    await staff().get(`${route}?date=${DAY}`).expect(404);
+  });
 
   /**
    * Le Prod manager montre la vue par tranche (2026-11-01) : la fiche datée se
@@ -448,37 +497,5 @@ describe("les routes de version (V2)", () => {
       .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
       .send({ initials: "PM" })
       .expect(403);
-  });
-
-  it("🔴 `b2b_orders:read` n'ouvre plus la version du fournil", async () => {
-    await allowRead("staff-version-commandes", "b2b_orders");
-    const reader = ctx.asSub("staff-version-commandes");
-    await reader.get(`${ROUTE.production}?date=${DAY}`).expect(403);
-  });
-
-  it("le comptoir lit la version du commerce sous `b2b_orders:read`, la même que la Supervision", async () => {
-    await place([{ sku: CROISSANT, quantity: 2 }]);
-    await allowRead("staff-version-comptoir", "b2b_orders");
-    const counter = ctx.asSub("staff-version-comptoir");
-    const view = jsonBody<DayVersionView>(
-      await counter.get(`/admin/orders/day-version?date=${DAY}`).expect(200),
-    );
-    expect(view).toEqual({ date: DAY, version: await version("commerce") });
-    expect(view.version).toBeGreaterThan(0);
-  });
-
-  it("refusent une personne sans aucun des deux droits", async () => {
-    await communicationStaff("staff-version-sans-droit");
-    const nobody = ctx.asSub("staff-version-sans-droit");
-    await nobody.get(`${ROUTE.commerce}?date=${DAY}`).expect(403);
-    await nobody.get(`${ROUTE.production}?date=${DAY}`).expect(403);
-    await nobody.get(`/admin/orders/day-version?date=${DAY}`).expect(403);
-  });
-
-  it("refusent une date absente ou mal formée", async () => {
-    for (const route of Object.values(ROUTE)) {
-      await staff().get(route).expect(400);
-      await staff().get(`${route}?date=03/10/2026`).expect(400);
-    }
   });
 });

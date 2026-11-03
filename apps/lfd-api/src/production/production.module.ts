@@ -73,10 +73,9 @@ import { RecordBatchHandler } from "./application/commands/record-batch.handler.
 import { DepositQualityPhotoHandler } from "./application/commands/deposit-quality-photo.handler.js";
 import { RenderQualityCheckHandler } from "./application/commands/render-quality-check.handler.js";
 import { PruneProductionDayChangesHandler } from "./application/commands/prune-production-day-changes.handler.js";
-import { GetProductionDayVersionHandler } from "./application/queries/get-production-day-version.handler.js";
+import { ProductionDayVersionSource } from "./application/services/production-day-version.source.js";
 import { ProductionDayChangePruner } from "./domain/ports/production-day-change.pruner.js";
 import { ProductionDayVersionReader } from "./domain/ports/production-day-version.reader.js";
-import { ProductionDayVersionController } from "./http/production-day-version.controller.js";
 import { PrismaProductionDayChangePruner } from "./infrastructure/prisma-production-day-change.pruner.js";
 import { PrismaProductionDayVersionReader } from "./infrastructure/prisma-production-day-version.reader.js";
 import { SweepQualityUploadsHandler } from "./application/commands/sweep-quality-uploads.handler.js";
@@ -197,7 +196,6 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ProductionQualityController,
     QualityControlSettingsController,
     QualityUploadSweepController,
-    ProductionDayVersionController,
     ProductionSettingsController,
     // La fiche d'atelier d'EXEMPLE de la planche des documents (2026-10-20).
     AdminAtelierSheetSpecimenController,
@@ -298,7 +296,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     },
     // La version par journée (`plan-version-par-journee.md`, V1-V2) : lire et
     // balayer le journal sont deux ports (ISP), sur le schéma `production`.
-    GetProductionDayVersionHandler,
+    ProductionDayVersionSource,
     PruneProductionDayChangesHandler,
     { provide: ProductionDayVersionReader, useClass: PrismaProductionDayVersionReader },
     { provide: ProductionDayChangePruner, useClass: PrismaProductionDayChangePruner },
@@ -383,6 +381,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
   // racine de composition, qui a besoin de ce port pour le construire.
   exports: [
+    // La source du journal du fournil, reliée au registre par `appBootstrap/day-version-sources.module.ts`.
+    ProductionDayVersionSource,
     QualityCheckReader,
     ChannelQualityHeldOrdersReader,
     DayPlannedDestinationsReader,

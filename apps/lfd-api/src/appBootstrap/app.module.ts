@@ -71,6 +71,7 @@ import { PostDeployOperationsModule } from "./post-deploy-operations.module.js";
 import { MediaCarriersModule } from "./media-carriers.module.js";
 import { OperationImageLibraryModule } from "./operation-image-library.module.js";
 import { JournalModule } from "./journal.module.js";
+import { DayVersionSourcesModule } from "./day-version-sources.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { StorefrontModule } from "../b2b/storefront/storefront.module.js";
@@ -222,6 +223,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     DeliveryFeedModule,
     ProductionDeliveryFeedModule,
     DeliveryHandoverFeedModule,
+    // La porte unique des versions de journée et son registre (plan version par journée, D8).
+    DayVersionSourcesModule,
     DeliveryRoundPlacementsModule,
     DeliveryTransferCounterModule,
     DebtorMandateModule,

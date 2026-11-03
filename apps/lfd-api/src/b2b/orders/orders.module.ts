@@ -279,7 +279,7 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
 import { GetDaySupervisionHandler } from "./application/queries/get-day-supervision.handler.js";
 import { DaySupervisionReader } from "./domain/ports/day-supervision.reader.js";
 import { PrismaDaySupervisionReader } from "./infrastructure/prisma-day-supervision.reader.js";
-import { GetOrderDayVersionHandler } from "./application/queries/get-order-day-version.handler.js";
+import { OrdersDayVersionSource } from "./application/services/orders-day-version.source.js";
 import { PruneOrderDayChangesHandler } from "./application/commands/prune-order-day-changes.handler.js";
 import { OrderDayVersionReader } from "./domain/ports/order-day-version.reader.js";
 import { AdminOrderSalesTermsController } from "./http/admin-order-sales-terms.controller.js";
@@ -561,7 +561,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetDaySupervisionHandler,
     // La version par journée (`plan-version-par-journee.md`, V1-V2) : lire et
     // balayer le journal du commerce sont deux ports (ISP).
-    GetOrderDayVersionHandler,
+    OrdersDayVersionSource,
     PruneOrderDayChangesHandler,
     { provide: OrderDayVersionReader, useClass: PrismaOrderDayVersionReader },
     // Les CGV figées sur une commande, pour son détail (plan des CGV, C4).
@@ -658,6 +658,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
   // une seconde copie. Cf. `PricingAdminModule`.
   exports: [
+    // La source du journal du commerce, reliée au registre par `appBootstrap/day-version-sources.module.ts`.
+    OrdersDayVersionSource,
     // Les trois adaptateurs que la production consomme par ses ports. Ils
     // sortent d'ici pour être RELIÉS dans la racine de composition, jamais
     // pour être importés par le fournil : le token qu'il connaît est le sien.

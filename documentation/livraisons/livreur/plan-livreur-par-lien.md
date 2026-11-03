@@ -37,7 +37,7 @@
   `delivery_driving`._ S'y ajoute `admin/delivery/my-data`
   (`my-driver-notice.controller.ts`, sous `delivery_driving`). Chaque route
   d'une tournée prend le livreur par `@StaffUserId()` — sauf `GET version`,
-  sans mur (voulu, `get-my-round-version.handler.ts`). Il n'est jamais un
+  sans mur (voulu, `my-round-day-version.source.ts`). Il n'est jamais un
   paramètre d'URL.
 - **Le mur est dans la requête** : `round: { driverStaffId: staffUserId }`
   (`prisma-doorstep-stop.repository.ts:34`), et les commandes « à moi »

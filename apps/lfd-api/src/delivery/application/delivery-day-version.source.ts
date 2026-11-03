@@ -1,0 +1,38 @@
+import type { DayJournal, StaffPermission } from "@lfd/contracts";
+import { Injectable } from "@nestjs/common";
+
+import { DayVersionSource } from "../../platform/day-versions/day-version-source.js";
+import { InvalidServiceDayError } from "../domain/errors/delivery-round-errors.js";
+import { DeliveryDayVersionReader } from "../domain/ports/delivery-day-version.reader.js";
+import { isCalendarDay } from "../domain/value-objects/service-day.js";
+
+/**
+ * **Le journal de la livraison** pour la porte unique des versions de journée
+ * (`plan-version-par-journee.md`, D8 ; `plan-schema-delivery.md`, SD-D3).
+ *
+ * Lisible sous `delivery_rounds:read` OU `delivery_loading:read`, les droits
+ * de son ancienne porte (relevés le 2026-11-03 dans
+ * `delivery-day-version.controller.ts`) : les tournées la suivent, et le
+ * panneau des bacs du colisage lit le chargement sous `delivery_loading`.
+ *
+ * @throws {InvalidServiceDayError} le jour n'existe pas au calendrier.
+ */
+@Injectable()
+export class DeliveryDayVersionSource extends DayVersionSource {
+  readonly journal: DayJournal = "delivery";
+  readonly readers: readonly [StaffPermission, ...StaffPermission[]] = [
+    "delivery_rounds:read",
+    "delivery_loading:read",
+  ];
+
+  constructor(private readonly versions: DeliveryDayVersionReader) {
+    super();
+  }
+
+  async versionOf(serviceDay: string): Promise<number> {
+    if (!isCalendarDay(serviceDay)) {
+      throw new InvalidServiceDayError(serviceDay);
+    }
+    return this.versions.versionOf(serviceDay);
+  }
+}

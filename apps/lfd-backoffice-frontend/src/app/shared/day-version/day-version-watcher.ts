@@ -13,7 +13,7 @@ export const SAFETY_NET_MS = 5 * 60_000;
 
 /** Ce qu'un écran confie au veilleur. */
 export interface DayWatch {
-  /** Les journaux dont l'écran dépend — chacun par la porte que son droit ouvre. */
+  /** Les journaux dont l'écran dépend. Un journal que le poste ne peut lire n'est jamais rendu. */
   readonly journals: readonly DayJournal[];
   /** La journée affichée ; `null` tant qu'elle n'est pas connue. Relue à chaque tick. */
   readonly date: () => string | null;
@@ -49,10 +49,13 @@ function keyOf(journal: DayJournal, date: string): string {
  * - 🔴 **Égalité, jamais ordre.** Le balayage à sept jours fait REDESCENDRE la
  *   version d'une journée ancienne (contrat `dayVersionViewSchema`) : une
  *   version différente est un changement, qu'elle monte ou qu'elle descende.
- * - **Une question par onglet et par journée** : un écran de plus sur la même
- *   journée n'ajoute aucune lecture de version.
+ * - **Une requête par onglet et par journée**, pour TOUS les journaux de tous
+ *   les écrans de l'onglet (porte unique `admin/day-versions`, D8,
+ *   2026-11-03) : un écran ou un journal de plus sur la même journée n'ajoute
+ *   aucune requête ; deux journées, deux requêtes.
  * - **Une lecture en échec ne relit rien** et garde la version d'avant : le
- *   tick suivant reposera la question. Le filet borne le retard.
+ *   tick suivant reposera la question. Le filet borne le retard. Un journal
+ *   ABSENT de la réponse (non permis) se traite comme une lecture en échec.
  * - La première version lue d'une journée est une **référence**, pas un
  *   changement : l'écran vient de lire. Changer de journée repart de zéro.
  */
@@ -111,7 +114,7 @@ export class DayVersionWatcher {
     document.removeEventListener('visibilitychange', this.onVisibility);
   }
 
-  /** Une question par `journal|date` de tout l'onglet, puis chaque écran compare. */
+  /** Une requête par journée de tout l'onglet, tous journaux réunis, puis chaque écran compare. */
   private async tick(): Promise<void> {
     if (this.ticking || document.visibilityState !== 'visible') {
       return;
@@ -119,27 +122,33 @@ export class DayVersionWatcher {
     this.ticking = true;
     try {
       this.followClock();
-      const asked = new Map<string, Promise<number | null>>();
-      for (const watcher of this.watchers) {
-        const date = watcher.spec.date();
-        if (date === null) {
-          continue;
-        }
-        for (const journal of watcher.spec.journals) {
-          const key = keyOf(journal, date);
-          if (!asked.has(key)) {
-            asked.set(key, this.read(journal, date));
-          }
-        }
-      }
-      const answers = new Map<string, number | null>();
-      await Promise.all([...asked].map(async ([key, answer]) => answers.set(key, await answer)));
+      const answers = new Map<string, number>();
+      await Promise.all(
+        [...this.journalsByDate()].map(([date, journals]) => this.read(date, journals, answers)),
+      );
       for (const watcher of this.watchers) {
         this.compare(watcher, answers);
       }
     } finally {
       this.ticking = false;
     }
+  }
+
+  /** Les journaux de tous les écrans de l'onglet, regroupés par journée affichée. */
+  private journalsByDate(): Map<string, Set<DayJournal>> {
+    const byDate = new Map<string, Set<DayJournal>>();
+    for (const watcher of this.watchers) {
+      const date = watcher.spec.date();
+      if (date === null) {
+        continue;
+      }
+      const journals = byDate.get(date) ?? new Set<DayJournal>();
+      for (const journal of watcher.spec.journals) {
+        journals.add(journal);
+      }
+      byDate.set(date, journals);
+    }
+    return byDate;
   }
 
   /** Minuit est passé au poste : l'écran relit, sans question à la base. */
@@ -153,15 +162,26 @@ export class DayVersionWatcher {
     }
   }
 
-  private async read(journal: DayJournal, date: string): Promise<number | null> {
+  /** Range dans `answers` les versions rendues ; un échec n'y range rien. */
+  private async read(
+    date: string,
+    journals: ReadonlySet<DayJournal>,
+    answers: Map<string, number>,
+  ): Promise<void> {
     try {
-      return await this.versions.version(journal, date);
+      const versions = await this.versions.versions(date, [...journals]);
+      for (const journal of journals) {
+        const version = versions[journal];
+        if (version !== undefined) {
+          answers.set(keyOf(journal, date), version);
+        }
+      }
     } catch {
-      return null;
+      // Rien relu : le tick suivant reposera la question, le filet borne le retard.
     }
   }
 
-  private compare(watcher: Watcher, answers: ReadonlyMap<string, number | null>): void {
+  private compare(watcher: Watcher, answers: ReadonlyMap<string, number>): void {
     // En pleine relecture, on ne note rien : le changement sera revu au tick suivant.
     if (watcher.reloading) {
       return;
@@ -175,8 +195,8 @@ export class DayVersionWatcher {
     }
     let changed = false;
     for (const key of keys) {
-      const version = answers.get(key) ?? null;
-      if (version === null) {
+      const version = answers.get(key);
+      if (version === undefined) {
         continue;
       }
       const previous = watcher.seen.get(key);

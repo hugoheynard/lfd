@@ -6,6 +6,11 @@
 >
 > C'est la **première étape** d'un chemin en trois (§8) ; la dernière est le
 > websocket. Celle-ci n'ajoute aucune infrastructure.
+>
+> 🔴 **2026-11-03 — une seule porte (D8).** Les routes par journal décrites en
+> D3, D4 et D6 sont **retirées** : un écran ne lit plus que
+> `GET admin/day-versions`, par le veilleur, une requête par journée pour
+> tout l'onglet. Ce qui suit en D3-D6 est l'histoire du bâti ; l'état est en D8.
 
 ---
 
@@ -132,7 +137,9 @@ ajouter la table.
 > moins `revision`), donc l'ancien et le nouveau jour avancent : la table reste
 > hors surveillance, et `apps/lfd-api/test/order-revision.e2e-spec.ts` l'éprouve.
 
-Chaque bloc lit son propre journal :
+Chaque bloc lit son propre journal. _(Les routes ci-dessous sont **retirées le
+2026-11-03** au profit de la porte unique, D8 ; le droit de chacune est passé
+tel quel à la source de son journal.)_
 
 - `b2b` : `GET admin/supervision/version?date=` — `b2b_supervision:read` ; et
   `GET admin/orders/day-version?date=` — `b2b_orders:read`, la même query pour le comptoir (D6, tranché le 2026-09-28) ;
@@ -153,6 +160,61 @@ pour les écrans d'une journée :
 - **plusieurs écrans d'un même onglet partagent le même veilleur** pour une
   même journée — c'est le « store par domaine » de la discussion, réduit à ce
   qu'il a d'utile : une seule question posée par onglet.
+
+### D8 — Une seule porte pour savoir si une journée a changé (Hugo, 2026-11-03)
+
+> « C'est important pour ne pas dériver. »
+
+En un mois, **six** routes de version avaient poussé — une par journal ET par
+droit (`supervision/version`, `orders/day-version`,
+`supervision/production-version`, `production/version`, `delivery/version`,
+`delivery/my-round/version`) — et le veilleur posait une question par journal.
+Chaque écran choisissait sa porte selon son droit : la Supervision lisait le
+fournil par l'une, l'atelier par l'autre, pour la même query.
+
+**La porte.** `GET admin/day-versions?date=AAAA-MM-JJ&journals=orders,production`
+→ `{ date, versions: { orders: n, production: n } }` (contrat
+`dayVersionsQuerySchema` / `dayVersionsViewSchema`, `@lfd/contracts`). Un
+journal inconnu est un **400 qui le nomme** ; un journal que l'appelant ne peut
+pas lire est **absent** — pas de refus global. La surface est réflexive
+(`@AdminSelfSurface`) : la porte exige une fiche staff, le droit se tranche
+journal par journal dans `GetDayVersionsHandler`.
+
+**Les journaux et leurs droits** (l'un suffit — repris exactement des routes
+retirées) :
+
+| Journal      | Droits                                                                                                                          | Source (bloc)                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `orders`     | `b2b_orders:read`, `handover_counter:read`, `b2b_supervision:read`                                                              | `OrdersDayVersionSource` (commerce)                           |
+| `production` | `production_plan:read`, `production_worksheet:read`, `production_packing:read`, `handover_counter:read`, `b2b_supervision:read` | `ProductionDayVersionSource` (fournil, + journal du colisage) |
+| `delivery`   | `delivery_rounds:read`, `delivery_loading:read`                                                                                 | `DeliveryDayVersionSource` (livraison)                        |
+| `my-round`   | `delivery_driving:read`                                                                                                         | `MyRoundDayVersionSource` (livraison + commerce par son port) |
+
+**La frontière.** `platform/day-versions/` DÉCLARE le port `DayVersionSource`
+(nom du journal, droits, lecture d'une date) et sert la porte ; il ne connaît
+aucun bloc. Chaque bloc l'implémente chez lui ;
+`apps/lfd-api/src/appBootstrap/day-version-sources.module.ts` les relie en un
+`DayVersionRegistry`. Aucune règle de la matrice n'a changé : c'est un port de
+plus, comme ceux que `platform` déclarait déjà.
+
+**Contre la dérive :**
+
+- **une déclaration par journal** : le registre refuse de se construire — donc
+  l'API de démarrer — si un journal de `DAY_JOURNALS` n'a pas de source ou en
+  a deux ;
+- **`lint:day-version-door`** : aucune route de l'API dont un mot du chemin est
+  `version`, hors la porte ; côté back-office, seul
+  `shared/day-version/day-version.service.ts` l'appelle ;
+- **e2e** (`day-version.e2e-spec.ts`) : les journaux permis, l'omission d'un
+  journal non permis (`b2b_orders` seul ne reçoit pas `production`), le 400
+  nommé, et les six anciennes routes en 404.
+
+**Côté écran.** Le veilleur réunit, à chaque tick, tous les journaux de tous
+les écrans de l'onglet par journée : **une requête par journée**, deux
+journées deux requêtes. Le reste ne change pas : égalité jamais ordre, la
+première version est une référence, un échec ne relit rien (un journal absent
+non plus), filet de 5 min. Un échec d'une source fait échouer la réponse
+entière — le veilleur ne relit rien, comme avant pour une porte.
 
 ### D5 — Ce qui change avec l'HEURE, sans écriture
 
@@ -220,11 +282,12 @@ compte suspendu reste actif une minute) ; hors plan.
 
 ## 5. Les lots
 
-| Lot                   | Contenu                                                                                                                                                 | Qui                                   |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **V1** ✅ `d50a97614` | Migration : les deux journaux, leurs déclencheurs au niveau de l'instruction, le balayage. e2e : chaque écriture connue avance la version. La porte D7. | `batisseur` + `lecteur-de-migrations` |
-| **V2** ✅ `d50a97614` | Les deux lectures de version, par le bus, et leurs routes.                                                                                              | `batisseur`                           |
-| **V3** ✅ 2026-09-28  | `DayVersionWatcher`, branché sur la Supervision, la fiche d'atelier, le colisage et le comptoir ; relecture du jour à 60 s, filet à 5 min.              | `pablo`                               |
+| Lot                   | Contenu                                                                                                                                                  | Qui                                   |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **V1** ✅ `d50a97614` | Migration : les deux journaux, leurs déclencheurs au niveau de l'instruction, le balayage. e2e : chaque écriture connue avance la version. La porte D7.  | `batisseur` + `lecteur-de-migrations` |
+| **V2** ✅ `d50a97614` | Les deux lectures de version, par le bus, et leurs routes.                                                                                               | `batisseur`                           |
+| **V4** ✅ 2026-11-03  | D8 — la porte unique `admin/day-versions`, son registre, les six routes par journal retirées, le veilleur regroupé par journée, `lint:day-version-door`. | `batisseur`                           |
+| **V3** ✅ 2026-09-28  | `DayVersionWatcher`, branché sur la Supervision, la fiche d'atelier, le colisage et le comptoir ; relecture du jour à 60 s, filet à 5 min.               | `pablo`                               |
 
 L'e2e de V1 est le cœur du lot : il passe par **chaque** écrivain connu (passer,
 payer, annuler, clôturer, cocher, poser, fermer, retirer, retirer à nouveau,

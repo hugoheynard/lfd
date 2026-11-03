@@ -18,12 +18,18 @@ describe('DayVersionService', () => {
 
   afterEach(() => http.verify());
 
-  /** Le journal de la livraison a sa porte, celle de `DeliveryDayVersionController`. */
-  it('lit la journée de la livraison sur sa route', async () => {
-    const asked = TestBed.inject(DayVersionService).version('delivery', '2026-10-02');
-    http
-      .expectOne(`${B2B_API_BASE}/admin/delivery/version?date=2026-10-02`)
-      .flush({ date: '2026-10-02', version: 7 });
-    expect(await asked).toBe(7);
+  /** D8 (2026-11-03) : une seule porte, tous les journaux d'une journée en une requête. */
+  it('lit plusieurs journaux d’une journée en UNE requête sur la porte unique', async () => {
+    const asked = TestBed.inject(DayVersionService).versions('2026-10-02', [
+      'orders',
+      'production',
+    ]);
+    const request = http.expectOne(
+      `${B2B_API_BASE}/admin/day-versions?date=2026-10-02&journals=orders,production`,
+    );
+    expect(request.request.method).toBe('GET');
+    request.flush({ date: '2026-10-02', versions: { orders: 7 } });
+
+    expect(await asked).toEqual({ orders: 7 });
   });
 });

@@ -5,7 +5,8 @@
  * - la fiche de chaque arrêt : les produits de la commande, SANS un champ
  *   d'argent alors que la base en porte ;
  * - l'avancement : un bac déclaré, une commande prête ;
- * - la version de « ma tournée » : elle bouge sur un bac déclaré (journal de
+ * - la version de « ma tournée » (journal `my-round` de la porte unique
+ *   `admin/day-versions` depuis le 2026-11-03) : elle bouge sur un bac déclaré (journal de
  *   la livraison, par le nouveau déclencheur de `delivery_bin`) et sur une
  *   commande prête (journal du commerce, par son port) ;
  * - le chargement de SA tournée : le scan charge le bac ; la tournée d'un
@@ -17,12 +18,12 @@
  * sans ligne de production à colisser.
  */
 import type {
-  DayVersionView,
   DeliveryLoadingPlanView,
   DeliveryLoadingRoundView,
   MyDeliveryRoundView,
 } from "@lfd/contracts";
 
+import { dayVersionOf, dayVersionsOf } from "./day-versions-door.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import {
   ADMIN_VERIFIER_OVERRIDE,
@@ -112,8 +113,7 @@ async function view(agent: ReturnType<E2eContext["asSub"]>, roundId: string) {
 }
 
 async function versionOf(agent: ReturnType<E2eContext["asSub"]>): Promise<number> {
-  return jsonBody<DayVersionView>(await agent.get(`${MY_ROUND}/version?date=${DAY}`).expect(200))
-    .version;
+  return dayVersionOf(agent, "my-round", DAY);
 }
 
 describe("la fiche de l'arrêt et l'avancement du colisage (PL4)", () => {
@@ -261,9 +261,9 @@ describe("la version de « ma tournée » (PL4)", () => {
     expect(await versionOf(paul.agent)).toBeGreaterThan(before);
   });
 
-  it("refuse sans le droit de conduire", async () => {
+  it("est omise sans le droit de conduire", async () => {
     const counter = await staffWithRole(ctx, "vendeur", "comptoir", "comptoir");
-    await counter.agent.get(`${MY_ROUND}/version?date=${DAY}`).expect(403);
+    expect((await dayVersionsOf(counter.agent, DAY, ["my-round"])).versions).toEqual({});
   });
 });
 

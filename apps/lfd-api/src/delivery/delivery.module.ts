@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { DeliveryDayVersionSource } from "./application/delivery-day-version.source.js";
+import { MyRoundDayVersionSource } from "./application/my-round-day-version.source.js";
 import { TransferReception } from "./application/transfer-reception.js";
 import { TransferArrivalStatus } from "./application/transfer-arrival-status.js";
 import { ResupplyTransfersAtCounter } from "./application/resupply-transfers-at-counter.js";
@@ -272,6 +274,9 @@ import {
     RoutedTravelTimeReader,
   ],
   exports: [
+    // Les sources `delivery` et `my-round`, reliées au registre par `appBootstrap/day-version-sources.module.ts`.
+    DeliveryDayVersionSource,
+    MyRoundDayVersionSource,
     DayComposer,
     DeliveryBinDesk,
     DeliveryStopsLocating,

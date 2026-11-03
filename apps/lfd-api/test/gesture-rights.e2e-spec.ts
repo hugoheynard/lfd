@@ -12,10 +12,16 @@
  * absentes, corps invalide) n'est pas le sujet. Un geste fermé se lit 403 :
  * le refus de la garde, avant tout pipe.
  */
-import type { RoleGrant } from "@lfd/contracts";
+import { DAY_JOURNALS, type DayVersionsView, type RoleGrant } from "@lfd/contracts";
 import type request from "supertest";
 
-import { bootstrapE2e, E2E_STAFF_SUB, serviceDay, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 
 const DAY = serviceDay();
@@ -63,14 +69,12 @@ const ROUTES = {
   quote: (agent) => agent.post("/admin/orders/quote").send({}),
   draft: (agent) => agent.get("/admin/order-drafts/societe-inconnue"),
   listOrders: (agent) => agent.get("/admin/orders"),
-  orderDayVersion: (agent) => agent.get(`/admin/orders/day-version?date=${DAY}`),
   batch: (agent) => agent.get(`/admin/production/batch?date=${DAY}`),
   dayStatus: (agent) => agent.get(`/admin/production/batch/${DAY}/status`),
   worksheet: (agent) => agent.get(`/admin/production/worksheet?date=${DAY}`),
   packing: (agent) => agent.get(`/admin/packing/${DAY}/board`),
   packingSheet: (agent) => agent.get("/admin/production/packing/ORD-INCONNUE"),
   packed: (agent) => agent.post(`/admin/packing/${DAY}/orders/commande-inconnue/close`),
-  version: (agent) => agent.get(`/admin/production/version?date=${DAY}`),
   handoverQueue: (agent) => agent.get(`/admin/handover/file?jour=${DAY}`),
   binsOfOrder: (agent) => agent.get("/admin/delivery/packing/bins?order=ORD-INCONNUE"),
   binSheet: (agent) => agent.get("/admin/delivery/packing/bins/bac-inconnu"),
@@ -82,6 +86,19 @@ type RouteName = keyof typeof ROUTES;
 
 async function statusOf(agent: request.Agent, route: RouteName): Promise<number> {
   return (await ROUTES[route](agent)).status;
+}
+
+/**
+ * Les journaux de journée que ce porteur reçoit de la porte unique
+ * (`plan-version-par-journee.md`, D8) : elle répond 200 à toute fiche staff et
+ * OMET un journal non permis — un droit se lit donc à la présence du journal,
+ * plus à un 403.
+ */
+async function journalsOf(agent: request.Agent): Promise<readonly string[]> {
+  const response = await agent
+    .get(`/admin/day-versions?date=${DAY}&journals=${DAY_JOURNALS.join(",")}`)
+    .expect(200);
+  return Object.keys(jsonBody<DayVersionsView>(response).versions).sort();
 }
 
 /** Les routes qu'un porteur DOIT atteindre, et celles qui lui restent fermées. */
@@ -106,9 +123,10 @@ describe("un geste, ses routes et elles seules", () => {
 
     await expectGates(
       agent,
-      ["packing", "packingSheet", "packed", "version", "binsOfOrder"],
+      ["packing", "packingSheet", "packed", "binsOfOrder"],
       ["placeOrder", "quote", "draft", "listOrders", "batch", "dayStatus", "worksheet"],
     );
+    expect(await journalsOf(agent)).toEqual(["production"]);
   });
 
   it("🔴 passer une commande seul : devis, brouillon, passation — pas de colisage", async () => {
@@ -119,8 +137,9 @@ describe("un geste, ses routes et elles seules", () => {
     await expectGates(
       agent,
       ["placeOrder", "quote", "draft"],
-      ["packing", "packed", "binsOfOrder", "handoverQueue", "version", "listOrders"],
+      ["packing", "packed", "binsOfOrder", "handoverQueue", "listOrders"],
     );
+    expect(await journalsOf(agent)).toEqual([]);
   });
 
   it("passer une commande exige l'ÉCRITURE : une lecture n'ouvre même pas le brouillon", async () => {
@@ -137,7 +156,8 @@ describe("un geste, ses routes et elles seules", () => {
   it("le plan du soir seul : l'état, le lot du jour et la fiche en lecture — pas le colisage", async () => {
     const agent = await holderOf("plan-seul", [{ resource: "production_plan", action: "read" }]);
 
-    await expectGates(agent, ["batch", "dayStatus", "version", "worksheet"], ["packing", "packed"]);
+    await expectGates(agent, ["batch", "dayStatus", "worksheet"], ["packing", "packed"]);
+    expect(await journalsOf(agent)).toEqual(["production"]);
   });
 
   it("la fiche d'atelier seule : la fiche — pas l'état de la journée", async () => {
@@ -145,7 +165,8 @@ describe("un geste, ses routes et elles seules", () => {
       { resource: "production_worksheet", action: "read" },
     ]);
 
-    await expectGates(agent, ["worksheet", "version"], ["dayStatus", "batch", "packing"]);
+    await expectGates(agent, ["worksheet"], ["dayStatus", "batch", "packing"]);
+    expect(await journalsOf(agent)).toEqual(["production"]);
   });
 
   it("le retrait seul : la file et la version du fournil — pas les commandes", async () => {
@@ -155,9 +176,10 @@ describe("un geste, ses routes et elles seules", () => {
 
     await expectGates(
       agent,
-      ["handoverQueue", "version"],
+      ["handoverQueue"],
       ["listOrders", "placeOrder", "packing", "worksheet"],
     );
+    expect(await journalsOf(agent)).toContain("production");
   });
 
   /**
@@ -171,7 +193,7 @@ describe("un geste, ses routes et elles seules", () => {
       { resource: "handover_counter", action: "read" },
     ]);
 
-    expect(await statusOf(agent, "orderDayVersion")).toBe(200);
+    expect(await journalsOf(agent)).toEqual(["orders", "production"]);
     await expectGates(agent, [], ["listOrders"]);
   });
 
@@ -181,8 +203,9 @@ describe("un geste, ses routes et elles seules", () => {
     await expectGates(
       agent,
       ["listOrders"],
-      ["placeOrder", "quote", "draft", "batch", "worksheet", "packing", "handoverQueue", "version"],
+      ["placeOrder", "quote", "draft", "batch", "worksheet", "packing", "handoverQueue"],
     );
+    expect(await journalsOf(agent)).toEqual(["orders"]);
   });
 
   it("le panneau « Bacs » s'ouvre au chargement comme au colisage — en écriture", async () => {
@@ -197,7 +220,8 @@ describe("un geste, ses routes et elles seules", () => {
     // 2026-10-10 (colisage.md §9, voie (b)) : le poste lit celle du colisage.
     await expectGates(loader, ["binsOfOrder"], ["packing"]);
     // Lire le colisage n'est pas le faire : le panneau reste fermé (5.3).
-    await expectGates(packingReader, ["packing", "version"], ["binsOfOrder", "packed"]);
+    await expectGates(packingReader, ["packing"], ["binsOfOrder", "packed"]);
+    expect(await journalsOf(packingReader)).toEqual(["production"]);
   });
 
   /**

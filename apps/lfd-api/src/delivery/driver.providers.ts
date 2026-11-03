@@ -10,7 +10,7 @@ import { GetMyDriverNoticeHandler } from "./application/queries/get-my-driver-no
 import { GetMyDeliveryRoundHandler } from "./application/queries/get-my-delivery-round.handler.js";
 import { GetMyLoadingPlanHandler } from "./application/queries/get-my-loading-plan.handler.js";
 import { GetMyLoadingRoundHandler } from "./application/queries/get-my-loading-round.handler.js";
-import { GetMyRoundVersionHandler } from "./application/queries/get-my-round-version.handler.js";
+import { MyRoundDayVersionSource } from "./application/my-round-day-version.source.js";
 import { GetMyStopStepPhotoHandler } from "./application/queries/get-my-stop-step-photo.handler.js";
 import { GetMyDeliveryRoundsHandler } from "./application/queries/get-my-delivery-rounds.handler.js";
 import { ListDeliveryDriversHandler } from "./application/queries/list-delivery-drivers.handler.js";
@@ -54,7 +54,7 @@ export const DRIVER_PROVIDERS: readonly Provider[] = [
   GetMyDeliveryRoundHandler,
   DepartMyRoundHandler,
   GetMyStopStepPhotoHandler,
-  GetMyRoundVersionHandler,
+  MyRoundDayVersionSource,
   GetMyLoadingRoundHandler,
   GetMyLoadingPlanHandler,
   LoadMyBinHandler,

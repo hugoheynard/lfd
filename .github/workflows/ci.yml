@@ -299,6 +299,12 @@ jobs:
       - name: "Gate : aucune réponse ne s'offre à un cache partagé"
         run: pnpm lint:cache-control
 
+      # Six routes de version par journal avaient poussé en un mois. Une seule
+      # porte (`GET admin/day-versions`) et un seul appelant au front, son
+      # veilleur : un journal de plus est une source au registre, pas une route.
+      - name: "Gate : une seule porte pour les versions de journée"
+        run: pnpm lint:day-version-door
+
       # ── Le prix ──
       # Ces portes ne tournaient qu'au pre-push, qu'un `--no-verify` saute :
       # constaté le 2026-11-02, 25 des 51 portes n'avaient aucune étape ici.

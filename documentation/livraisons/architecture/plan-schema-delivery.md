@@ -171,7 +171,7 @@ voient donc bouger les tournées par l'effet des déclencheurs :
 Le service commun (`shared/day-version/day-version.service.ts`) gagne une
 valeur de journal (`delivery`), sous le droit des tournées **ou** du
 chargement (`delivery_rounds:read` ou `delivery_loading:read`,
-`@RequireAnyPermission` de `delivery-day-version.controller.ts`). Chaque écran
+`@RequireAnyPermission` de `delivery-day-version.source.ts`, porte unique `admin/day-versions` depuis le 2026-11-03). Chaque écran
 qui a besoin des deux **compose les
 deux versions** : il relit dès que l'une bouge. **La décision écran par écran
 se prend en SD1, code ouvert**, et s'écrit dans ce tableau.

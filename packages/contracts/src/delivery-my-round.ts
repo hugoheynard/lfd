@@ -20,9 +20,9 @@ import type { OrderClientele } from "./order-handover.js";
  * - `GET /:roundId/arrets/:stopId/procedure/:stepId/photo` → l'image (octets,
  *   `Content-Type` relu dans les octets, `private, immutable`) — l'écran y
  *   ajoute `?rev=` + {@link MyDeliveryStepView.photoRevision} ;
- * - `GET /version?date=AAAA-MM-JJ` → `DayVersionView` — la version de « ma
- *   tournée » (PL4) : elle bouge quand le journal de la livraison OU celui du
- *   commerce bouge pour ce jour. Opaque, elle se compare par égalité ;
+ * - la version de « ma tournée » (PL4) n'a plus de route ici depuis le
+ *   2026-11-03 : c'est le journal `my-round` de la porte unique
+ *   `GET admin/day-versions` (`day-version.ts`) ;
  * - le chargement de MA tournée (PL1, mêmes vues et mêmes corps que l'écran
  *   de chargement, `delivery-loading.ts`) : `GET /:roundId/chargement` →
  *   `DeliveryLoadingRoundView` ; `GET /:roundId/chargement/plan` →

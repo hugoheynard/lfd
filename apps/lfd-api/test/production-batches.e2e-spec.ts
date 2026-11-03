@@ -16,10 +16,11 @@
  * ⚠️ Le verrou est éprouvé par l'adaptateur `pg`, pas à travers Prisma
  * Accelerate (le plan le laisse ouvert).
  */
-import type { DayVersionView, PackingSheet } from "@lfd/contracts";
+import type { PackingSheet } from "@lfd/contracts";
 
 import { createUser } from "./factories.js";
-import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { dayVersionOf } from "./day-versions-door.js";
+import type { E2eContext } from "./e2e-harness.js";
 import {
   CROISSANT,
   MEMBER,
@@ -83,9 +84,7 @@ async function bagOf(sheet: PackingSheet | undefined): Promise<number> {
 }
 
 async function version(): Promise<number> {
-  return jsonBody<DayVersionView>(
-    await ctx.asSub(STAFF).get(`/admin/production/version?date=${SERVICE_DAY}`).expect(200),
-  ).version;
+  return dayVersionOf(ctx.asSub(STAFF), "production", SERVICE_DAY);
 }
 
 describe("déclarer une fournée", () => {

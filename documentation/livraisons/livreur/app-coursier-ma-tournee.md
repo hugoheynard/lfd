@@ -210,7 +210,7 @@ de rôle (JSDoc de `my-delivery-round.controller.ts`).
 1. **`GET …/ma-tournee/version` n'a pas de mur** : il rend la somme de deux
    numéros de journée (journal de la livraison + journal du commerce), toutes
    tournées confondues ; ni livreur ni tournée n'y entrent
-   (`delivery/application/queries/get-my-round-version.handler.ts`). La page
+   (`delivery/application/my-round-day-version.source.ts`). La page
    relit sous son mur quand il change. _Accepté (audit Q6)._
 2. **Scanner le bac d'une autre tournée** nomme son véhicule, son jour et son
    passage : « Ce bac (…) part dans « … », le … (passage …) : ne le chargez pas
@@ -231,7 +231,7 @@ Toutes sous `/admin/delivery/`. L'action se déduit du verbe : `GET` demande
 | `GET`   | `ma-tournee/version?date=`                                   | `delivery_driving:read`   | `my-delivery-round.controller.ts:80`           |
 | `GET`   | `ma-tournee/:roundId`                                        | `delivery_driving:read`   | `my-delivery-round.controller.ts:89`           |
 | `POST`  | `ma-tournee/:roundId/depart`                                 | `delivery_driving:write`  | `my-delivery-round.controller.ts:99`           |
-| `GET`   | `ma-tournee/:roundId/arrets/:stopId/procedure/:stepId/photo` | `delivery_driving:read`   | `my-delivery-round.controller.ts:115`          |
+| `GET`   | `ma-tournee/:roundId/arrets/:stopId/procedure/:stepId/photo` | `delivery_driving:read`   | `my-delivery-round.controller.ts:97`           |
 | `GET`   | `ma-tournee/:roundId/chargement`                             | `delivery_driving:read`   | `my-delivery-loading.controller.ts:38`         |
 | `GET`   | `ma-tournee/:roundId/chargement/plan`                        | `delivery_driving:read`   | `my-delivery-loading.controller.ts:48`         |
 | `POST`  | `ma-tournee/:roundId/chargement/bacs`                        | `delivery_driving:write`  | `my-delivery-loading.controller.ts:58`         |

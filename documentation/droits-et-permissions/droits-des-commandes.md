@@ -81,7 +81,6 @@ ressource.
 | `GET /admin/orders/:id`                                    | `b2b_orders:read`                                                                     |
 | `GET /admin/orders/:id/history`                            | `b2b_orders:read`                                                                     |
 | `GET /admin/orders/:id/bon.pdf`                            | `b2b_orders:read`                                                                     |
-| `GET /admin/orders/day-version`                            | `b2b_orders:read` **ou** `handover_counter:read`                                      |
 | `GET /admin/orders/:id/lines/:sku/rules`                   | `b2b_orders:read` — l'explication du prix d'une ligne (`AdminOrderPricingController`) |
 | `GET /admin/catalog`, `/sellable`, `/companies/:companyId` | `b2b_orders:read` — le catalogue de la saisie (`AdminCatalogController`)              |
 | `POST /admin/orders/:id/pickup-reminder`                   | `b2b_orders:write` — **la seule route** que `b2b_orders:write` ouvre encore           |
@@ -155,9 +154,9 @@ La vue du jour, de la passation au retrait
 
 | Méthode et chemin                                                             | Exige                                                                                        |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `GET /admin/supervision/day`, `/version`                                      | `b2b_supervision:read` (commerce)                                                            |
+| `GET /admin/supervision/day`                                                  | `b2b_supervision:read` (commerce)                                                            |
 | `GET /admin/supervision/handover`                                             | `b2b_supervision:read` (retrait)                                                             |
-| `GET /admin/supervision/preparation`, `/production-version`                   | `b2b_supervision:read` (fournil)                                                             |
+| `GET /admin/supervision/preparation`                                          | `b2b_supervision:read` (fournil)                                                             |
 | `GET /admin/packing/:date/board`                                              | `production_packing:read` **ou** `b2b_supervision:read`                                      |
 | `GET /admin/supervision/quality`                                              | `b2b_supervision:read`                                                                       |
 | `GET /admin/supervision/quality/checks`, `…/checks/:checkId/photos/:position` | `b2b_supervision:write` (décision D3 : l'historique des verdicts est réservé à qui contrôle) |
@@ -167,6 +166,21 @@ La vue du jour, de la passation au retrait
 « Contrôler » (`QUALITY_WRITE = 'b2b_supervision:write'`).
 
 **Graine** : `admin` seul (en `W`). Aucun autre rôle.
+
+## Les versions de journée — une porte, un droit par journal
+
+Depuis le 2026-11-03 (`caching-usage/plan-version-par-journee.md`, D8), les
+six routes de version par journal sont retirées au profit de
+`GET /admin/day-versions?date=&journals=` (`DayVersionsController`, surface
+réflexive : il suffit d'une fiche staff). Le droit se tranche **par
+journal** ; un journal non permis est **absent** de la réponse, sans refus.
+
+| Journal      | Rendu à qui tient l'un de                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `orders`     | `b2b_orders:read`, `handover_counter:read`, `b2b_supervision:read`                                                              |
+| `production` | `production_plan:read`, `production_worksheet:read`, `production_packing:read`, `handover_counter:read`, `b2b_supervision:read` |
+| `delivery`   | `delivery_rounds:read`, `delivery_loading:read`                                                                                 |
+| `my-round`   | `delivery_driving:read`                                                                                                         |
 
 ## `handover_counter` — Retrait au comptoir
 
@@ -182,8 +196,8 @@ préfixes : `/admin/handover` et `/admin/production/handover`.
 | `POST …/:token`            | `handover_counter:write` — attester le retrait |
 | `POST …/manual/:reference` | `handover_counter:write` — retrait sans QR     |
 
-Il ouvre aussi `GET /admin/orders/day-version` (en alternative à
-`b2b_orders:read`).
+Il ouvre aussi les journaux `orders` et `production` de la porte unique des
+versions de journée (ci-dessus).
 
 **Back-office** : `/comptoir/retrait` et `/comptoir/reassort` (garde
 `handover_counter:read`), `/retrait/:token` (garde `handover_counter:write`),
@@ -194,7 +208,6 @@ l'entrée de menu et le bandeau du comptoir (`can('handover_counter:read')`).
 | Méthode et chemin                                                         | Exige                  |
 | ------------------------------------------------------------------------- | ---------------------- |
 | `GET /admin/production/batch`                                             | `production_plan:read` |
-| `GET /admin/production/version`                                           | `production_plan:read` |
 | `GET /admin/production/forecast`                                          | `production_plan:read` |
 | `GET /admin/production/batch/:date/compte-a-produire.pdf`, `/dossier.pdf` | `production_plan:read` |
 | `GET /admin/production/batch/:date/due-thresholds`, `/status`             | `production_plan:read` |

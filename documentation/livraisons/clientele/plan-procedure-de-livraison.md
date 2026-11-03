@@ -165,7 +165,7 @@ immutable` (l'URL côté écran porte `?rev=`).
   rôle `livreur`, lit la procédure de chaque arrêt **vivante** par le canal
   `delivery/channels/commerce/delivery-procedures.reader.ts`, que le commerce
   implémente sous le mur `(adresse, société)`, et sert la photo d'une étape
-  (`my-delivery-round.controller.ts:115`).
+  (`my-delivery-round.controller.ts:97`).
 
 ### 2.5 Routes
 

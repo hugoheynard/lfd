@@ -114,7 +114,7 @@ autre livreur rend **404** (pas 403 : on ne confirme pas qu'elle existe).
 _Relu le 2026-10-07 — deux écarts, laissés à Hugo (§ 5)._ `GET
 ma-tournee/version` ne porte **ni livreur ni mur** : il rend un numéro de
 journée, toutes tournées confondues, et la page relit sous son mur quand il
-change — voulu par le code (`get-my-round-version.handler.ts`). Et scanner,
+change — voulu par le code (`my-round-day-version.source.ts`). Et scanner,
 dans sa tournée, le bac d'une **autre** tournée ne rend pas 404 : le refus
 nomme le véhicule, le jour et le passage où ce bac doit partir
 (`BinInOtherRoundError`, `delivery-loading-errors.ts`) ; un bac dont la
@@ -225,7 +225,7 @@ y redirige) — pensé **téléphone d'abord** :
 | **MT-Q5**                    | Une tournée **sans livreur** peut-elle partir (par le chargeur) ?                                                                                                                                                | **Non** : sans livreur affecté, personne ne la voit côté livreur. Le refus dit comment affecter.                                                                                                        |
 | **MT-Q6**                    | Un livreur peut-il avoir **deux** tournées le même jour (deux passages) ?                                                                                                                                        | Oui : la page les liste, il ouvre la première non rentrée. _Bâti autrement (relu le 2026-10-07) : la page les liste et il choisit ; elle n'ouvre d'office que s'il n'en a qu'une (`my-round-page.ts`)._ |
 | **MT-Q7**                    | Le livreur se connecte comment ?                                                                                                                                                                                 | Comme tout staff : une invitation, un compte Auth0. Le livreur **sans** compte (lien à jeton, L6-C5) reste le lot 6 b.                                                                                  |
-| **Audit Q6** (2026-10-07)    | `GET ma-tournee/version` n'a pas de mur : un livreur lit un numéro de journée toutes tournées confondues, donc le rythme d'activité de la journée. Acceptable, alors que MT-D3 promet le mur sur toute lecture ? | **Accepté par Hugo le 2026-10-07.** Voulu par le code (`get-my-round-version.handler.ts`) : la page relit sous son mur quand le numéro change.                                                          |
+| **Audit Q6** (2026-10-07)    | `GET ma-tournee/version` n'a pas de mur : un livreur lit un numéro de journée toutes tournées confondues, donc le rythme d'activité de la journée. Acceptable, alors que MT-D3 promet le mur sur toute lecture ? | **Accepté par Hugo le 2026-10-07.** Voulu par le code (`my-round-day-version.source.ts`) : la page relit sous son mur quand le numéro change.                                                           |
 | **Audit § 3.3** (2026-10-07) | Scanner le bac d'une **autre** tournée nomme son véhicule, son jour et son passage ; MT-D3 veut qu'une tournée d'un autre ne soit pas confirmée (404). Lequel tient ?                                            | **Tranché le 2026-10-07 (Hugo) : on garde.** Choix assumé du chargement (L4-C2, « le bon bac, dans la mauvaise camionnette »), que la porte du livreur reprend.                                         |
 
 ## 6. v2 après `vitruve` (2026-10-01) — ce qui remplace les décisions ci-dessus
