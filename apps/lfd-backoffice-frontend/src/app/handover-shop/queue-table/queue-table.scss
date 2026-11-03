@@ -156,20 +156,9 @@
   display: none;
 }
 
-:host ::ng-deep tr:has(.qt-current-mark) > td {
-  box-shadow:
-    inset 0 2px 0 var(--fold-color-primary),
-    inset 0 -2px 0 var(--fold-color-primary);
-}
-
-:host ::ng-deep tr:has(.qt-current-mark) > td:first-child {
-  box-shadow:
-    inset 2px 2px 0 var(--fold-color-primary),
-    inset 0 -2px 0 var(--fold-color-primary);
-}
-
-:host ::ng-deep tr:has(.qt-current-mark) > td:last-child {
-  box-shadow:
-    inset -2px 2px 0 var(--fold-color-primary),
-    inset 0 -2px 0 var(--fold-color-primary);
+:host ::ng-deep tr:has(.qt-current-mark) {
+  /* Sur la LIGNE, et non sur ses cellules : la bande de ton que fold pose
+     à gauche d'une ligne en retard recouvrait le côté gauche (2026-11-03). */
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: -2px;
 }

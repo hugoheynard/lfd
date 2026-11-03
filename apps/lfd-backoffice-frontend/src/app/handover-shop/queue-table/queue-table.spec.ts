@@ -323,6 +323,8 @@ describe('QueueTable', () => {
       entry({
         abandonedRemainder: [
           { sku: 'CROI-NAT', productName: 'Croissant nature', quantity: 2, saleUnit: 'piece' },
+          { sku: 'PAIN-1', productName: 'Pain de campagne', quantity: 3, saleUnit: 'piece' },
+          { sku: 'FROM-1', productName: 'Comté', quantity: 250, saleUnit: 'weight' },
         ],
       }),
       entry({ orderId: 'o2', reference: 'CMD-2' }),
@@ -333,7 +335,10 @@ describe('QueueTable', () => {
 
     expect(notes).toHaveLength(1);
     expect(notes[0]).toContain('Commande incomplète');
-    expect(notes[0]).toContain('2 Croissant nature');
+    // Une ligne, pas la liste (Hugo, 2026-11-03) : les grammes ne comptent pas
+    // en pièces, mais le produit compte.
+    expect(notes[0]).toContain('5 pièces non données sur 3 produits');
+    expect(notes[0]).not.toContain('Croissant nature');
   });
 });
 

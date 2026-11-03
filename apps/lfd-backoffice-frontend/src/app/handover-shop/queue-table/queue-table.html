@@ -96,8 +96,12 @@
       <!-- Départ incomplet décidé (2026-10-25) : le comptoir voit ce qui ne part
            pas AVANT d'ouvrir la fiche. Il informe ; prévenir le client est une
            décision du commerce (« Écrire au client », E6d). -->
+      <!-- Une ligne, pas la liste (Hugo, 2026-11-03 : elle mangeait la file) :
+           le détail article par article est dans le rail. -->
       @if (abandoned(row); as lines) {
-        <app-missing-items [lines]="lines" [fulfillmentMethod]="row.fulfillmentMethod" />
+        <fold-callout appearance="inset" variant="warning" icon="info" data-missing-summary>
+          <strong>Commande incomplète</strong> · {{ missingSummary(lines) }}
+        </fold-callout>
       }
       <!-- Le transfert du site n'est pas reçu : la remise est refusée, et la
            ligne dit pourquoi (plan du transfert interne, §6.2). -->
