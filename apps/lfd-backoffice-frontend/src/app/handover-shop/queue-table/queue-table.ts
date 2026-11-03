@@ -30,10 +30,12 @@ import {
   entryStateVariant,
   formatHour,
   formatWindow,
+  inQueueView,
   isLate,
   lateLabel,
   lateMinutes,
   matchingQueue,
+  type QueueView,
   rowTone,
   sortedQueue,
 } from '../handover-queue';
@@ -124,6 +126,12 @@ export class QueueTable {
    */
   readonly query = input<string>('');
 
+  /** La vue choisie dans la barre de la file (Hugo, 2026-11-03). */
+  readonly view = input<QueueView>('all');
+
+  /** L'ordre de lecture inversé : le plus récent en tête. */
+  readonly reversed = input<boolean>(false);
+
   /**
    * **La commande ouverte dans le rail**, ou `null`.
    *
@@ -177,9 +185,15 @@ export class QueueTable {
    * même résultat — aujourd'hui. Le jour où le tri regarde le rang d'une ligne
    * dans la file, il le regarderait dans une file amputée.
    */
-  protected readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
-    matchingQueue(sortedQueue(this.entries()), this.query()),
-  );
+  protected readonly rows = computed<readonly HandoverQueueEntryView[]>(() => {
+    const kept = inQueueView(
+      matchingQueue(sortedQueue(this.entries()), this.query()),
+      this.view(),
+      this.day(),
+      this.now(),
+    );
+    return this.reversed() ? [...kept].reverse() : kept;
+  });
 
   protected readonly columns: readonly FoldTableColumn<HandoverQueueEntryView>[] = [
     // Le créneau en tête : c'est l'ordre de la file, et donc l'ordre dans
@@ -207,7 +221,7 @@ export class QueueTable {
    */
   protected readonly nothingFound: FoldTableEmpty = {
     title: 'Aucune ligne ne correspond',
-    subtitle: 'Videz la recherche pour retrouver toute la file du jour.',
+    subtitle: 'Videz la recherche ou repassez sur « Tout » pour retrouver la file du jour.',
   };
 
   protected readonly rowKey = (entry: HandoverQueueEntryView): string => entry.orderId;

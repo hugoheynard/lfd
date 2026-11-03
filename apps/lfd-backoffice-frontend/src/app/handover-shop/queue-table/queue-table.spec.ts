@@ -303,3 +303,31 @@ describe('QueueTable', () => {
     expect(notes[0]).toContain('2 Croissant nature');
   });
 });
+
+/** Le sens de lecture (Hugo, 2026-11-03). */
+describe('QueueTable — le sens de lecture', () => {
+  it('inversé, le plus récent passe en tête', () => {
+    TestBed.configureTestingModule({ imports: [QueueTable] });
+    const fixture = TestBed.createComponent(QueueTable);
+    fixture.componentRef.setInput('entries', [
+      entry({
+        orderId: 'a',
+        reference: 'CMD-A',
+        window: { start: '06:00', end: '07:00', source: 'override' },
+      }),
+      entry({
+        orderId: 'b',
+        reference: 'CMD-B',
+        window: { start: '08:00', end: '09:00', source: 'override' },
+      }),
+    ]);
+    fixture.componentRef.setInput('day', DAY);
+    fixture.componentRef.setInput('now', new Date(`${DAY}T05:00:00`));
+    fixture.componentRef.setInput('reversed', true);
+    fixture.detectChanges();
+
+    const rows = rowTexts(fixture);
+    expect(rows[0]).toContain('CMD-B');
+    expect(rows[1]).toContain('CMD-A');
+  });
+});

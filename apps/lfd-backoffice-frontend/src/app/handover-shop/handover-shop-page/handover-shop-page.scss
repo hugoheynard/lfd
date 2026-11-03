@@ -70,6 +70,15 @@
   flex: 0 0 auto;
 }
 
+/* La vue et le sens de lecture, sur une ligne qui passe à la ligne en bloc. */
+.file-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
 /* ── SUR ÉCRAN ÉTROIT : LE SAC MONTE SUR LA FILE ────────────────────────────
    Aucune media query ici, et c'est voulu : le seuil est déclaré UNE fois, en
    TypeScript, parce qu'il sert aussi à poser `inert` — et deux définitions de

@@ -22,10 +22,19 @@ import {
   FoldPanelHostService,
   FoldTabPanelComponent,
   FoldIconComponent,
+  FoldViewToggleComponent,
 } from 'fold-ng';
 
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { matchingQueue, scanNotice, type ScanProof } from '../handover-queue';
+import {
+  inQueueView,
+  matchingQueue,
+  QUEUE_VIEWS,
+  type QueueView,
+  queueViewOf,
+  scanNotice,
+  type ScanProof,
+} from '../handover-queue';
 import { HandoverQueueStore } from '../handover-queue.store';
 import { QueueTable } from '../queue-table/queue-table';
 import { HandoverDetail } from '../handover-detail/handover-detail';
@@ -78,6 +87,7 @@ const STACK_AT_PX = 1040;
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldTabPanelComponent,
+    FoldViewToggleComponent,
     QueueTable,
     HandoverDetail,
     TransferStrip,
@@ -100,6 +110,11 @@ export class HandoverShopPage {
    * ceux de la journée.
    */
   protected readonly query = signal<string>('');
+  /** La vue de la file et son sens de lecture (Hugo, 2026-11-03). */
+  protected readonly view = signal<QueueView>('all');
+  protected readonly reversed = signal(false);
+  protected readonly views = QUEUE_VIEWS;
+  protected readonly viewOf = queueViewOf;
 
   /**
    * **La file et le sac ne tiennent plus côte à côte.**
@@ -260,6 +275,12 @@ export class HandoverShopPage {
       !matchingQueue(this.store.rows(), this.query()).some((row) => row.orderId === view.orderId)
     ) {
       this.query.set('');
+    }
+    // Même règle pour la vue : une ligne scannée que la vue cache repasse sur
+    // « Tout » — on ne surligne pas une ligne qu'on ne voit pas.
+    const scannedRow = this.store.rows().filter((row) => row.orderId === view.orderId);
+    if (inQueueView(scannedRow, this.view(), this.store.day(), this.store.now()).length === 0) {
+      this.view.set('all');
     }
     this.selectedId.set(view.orderId);
     this.proof.set({

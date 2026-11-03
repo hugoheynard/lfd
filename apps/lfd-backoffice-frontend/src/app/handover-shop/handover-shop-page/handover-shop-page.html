@@ -85,7 +85,9 @@
                 <div class="file-head">
                   <div class="file-said">
                     <fold-element-title variant="eyebrow" [title]="eyebrow()" />
-                    <p class="file-hint">par créneau, le plus ancien en tête</p>
+                    <p class="file-hint">
+                      par créneau, le plus {{ reversed() ? 'récent' : 'ancien' }} en tête
+                    </p>
                   </div>
 
                   <!-- Les deux gestes ensemble : ils passent à la ligne EN BLOC
@@ -114,9 +116,36 @@
                   </div>
                 </div>
 
+                <!-- Le filtre de la file (Hugo, 2026-11-03) : la vue, et le sens
+                     de lecture. Sous la barre, pour ne pas serrer la recherche
+                     et le scan dans les ~390 px que le rail laisse. -->
+                <div class="file-filter" data-queue-filter>
+                  <fold-view-toggle
+                    ariaLabel="Lignes montrées dans la file"
+                    size="sm"
+                    activeStyle="raised"
+                    [options]="views"
+                    [value]="view()"
+                    (valueChange)="view.set(viewOf($event))"
+                  />
+                  <button
+                    foldButton
+                    emphasis="soft"
+                    size="sm"
+                    [icon]="reversed() ? 'chevron-up' : 'chevron-down'"
+                    data-queue-reverse
+                    [attr.aria-pressed]="reversed()"
+                    (click)="reversed.set(!reversed())"
+                  >
+                    {{ reversed() ? 'Plus ancien en tête' : 'Plus récent en tête' }}
+                  </button>
+                </div>
+
                 <app-queue-table
                   [entries]="store.rows()"
                   [query]="query()"
+                  [view]="view()"
+                  [reversed]="reversed()"
                   [day]="store.day()"
                   [now]="store.now()"
                   [currentId]="selected()?.orderId ?? null"

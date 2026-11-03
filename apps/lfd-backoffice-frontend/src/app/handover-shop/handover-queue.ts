@@ -606,3 +606,46 @@ export function scanNotice(
   }
   return outsideTheCounter(subject, openTab);
 }
+
+/**
+ * **Ce que la file montre** (Hugo, 2026-11-03) : tout, ce qui reste à remettre
+ * (sans les retirées ni les annulées), les seuls retards, ou les retirées.
+ */
+export type QueueView = 'all' | 'open' | 'late' | 'handed_over';
+
+/** Les options du sélecteur, dans l'ordre où on les lit. */
+export const QUEUE_VIEWS: readonly { readonly value: QueueView; readonly label: string }[] = [
+  { value: 'all', label: 'Tout' },
+  { value: 'open', label: 'À remettre' },
+  { value: 'late', label: 'En retard' },
+  { value: 'handed_over', label: 'Retirées' },
+];
+
+/** La valeur du sélecteur, lue telle quelle ; une inconnue retombe sur « Tout ». */
+export function queueViewOf(value: string): QueueView {
+  return QUEUE_VIEWS.find((view) => view.value === value)?.value ?? 'all';
+}
+
+/**
+ * Garde les lignes de la vue. « En retard » est jugé par `isLate`, la même
+ * règle que la note sous la ligne : la vue et l'alerte ne peuvent pas diverger.
+ */
+export function inQueueView(
+  entries: readonly HandoverQueueEntryView[],
+  view: QueueView,
+  day: string,
+  now: Date,
+): readonly HandoverQueueEntryView[] {
+  switch (view) {
+    case 'all':
+      return entries;
+    case 'open':
+      return entries.filter(
+        (entry) => entry.state !== 'handed_over' && entry.state !== 'cancelled',
+      );
+    case 'late':
+      return entries.filter((entry) => isLate(entry, day, now));
+    case 'handed_over':
+      return entries.filter((entry) => entry.state === 'handed_over');
+  }
+}

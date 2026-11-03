@@ -27,6 +27,8 @@ import {
   entryStateLabel,
   entryStateVariant,
   heldAtTheCounter,
+  inQueueView,
+  queueViewOf,
   rowTone,
   sortedQueue,
   stillRemittable,
@@ -624,5 +626,33 @@ describe('la retenue du contrôle qualité (lot QC5)', () => {
     expect(
       sortedQueue([entry({ orderId: 'b', placedAt: 'z' }), late]).map((e) => e.orderId),
     ).toEqual(['ord_1', 'b']);
+  });
+});
+
+/** Le filtre de la file (Hugo, 2026-11-03). */
+describe('inQueueView', () => {
+  const late = window({ source: 'override', end: '06:30' });
+  const lines = [
+    entry({ orderId: 'open', window: null }),
+    entry({ orderId: 'late', window: late }),
+    entry({ orderId: 'gone', state: 'handed_over' }),
+    entry({ orderId: 'off', state: 'cancelled' }),
+  ];
+  const ids = (view: Parameters<typeof inQueueView>[1]): readonly string[] =>
+    inQueueView(lines, view, DAY, new Date(`${DAY}T09:00:00`)).map((line) => line.orderId);
+
+  it('« Tout » garde tout, « À remettre » masque retirées et annulées', () => {
+    expect(ids('all')).toEqual(['open', 'late', 'gone', 'off']);
+    expect(ids('open')).toEqual(['open', 'late']);
+  });
+
+  it('« En retard » suit la règle de la note, « Retirées » ne garde que les retirées', () => {
+    expect(ids('late')).toEqual(['late']);
+    expect(ids('handed_over')).toEqual(['gone']);
+  });
+
+  it('une valeur inconnue retombe sur « Tout »', () => {
+    expect(queueViewOf('late')).toBe('late');
+    expect(queueViewOf('n’importe quoi')).toBe('all');
   });
 });
