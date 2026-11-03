@@ -663,27 +663,31 @@ describe('HandoverShopPage — changer de journée', () => {
       expect(api.scannedRemits).toEqual([]);
     });
 
-    it('🔴 depuis une fiche, le code d’une AUTRE commande ouvre l’autre fiche et nomme les deux', async () => {
-      const api = queueOfTwo();
+    /**
+     * Régression (Hugo, 2026-11-03) : sur l'onglet du Labo, le scan disait
+     * « rattachée à « Laboratoire », pas à « site_labo » » — il comparait le
+     * NOM du point à la CLÉ de l'onglet, devenue l'identifiant du site.
+     */
+    it('🔴 un code du point ouvert ne dit rien, même quand l’onglet porte l’identifiant du site', async () => {
+      const api = new FakeQueue();
+      api.entries = [
+        entry({ siteId: 'site_labo' }),
+        entry({
+          orderId: 'ord_2',
+          reference: 'CMD-2001',
+          customerLabel: 'Café Lumière',
+          siteId: 'site_labo',
+        }),
+      ];
       const panels = new FakePanels();
-      const fixture = await render(api, panels);
-      const first = rowTexts(fixture).findIndex((row) => row.includes('Boulangerie Marin'));
-      (fixture.nativeElement as HTMLElement)
-        .querySelectorAll<HTMLElement>('tbody tr.folddt-row')
-        [first]?.click();
-      await settle(fixture);
-
       panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
-      (fixture.nativeElement as HTMLElement)
-        .querySelector<HTMLButtonElement>('[data-action="scan"]')
-        ?.click();
+      const fixture = await render(api, panels);
+
+      button(fixture, 'Scanner le QR code du client')?.click();
       await settle(fixture);
 
-      const notice = (fixture.nativeElement as HTMLElement).querySelector('[data-scan-notice]');
-      expect(notice?.textContent).toContain('Ce code désigne CMD-2001, pas CMD-1042');
-      const current = (fixture.nativeElement as HTMLElement).querySelector('tbody [data-current]');
-      expect(current?.closest('tr')?.textContent).toContain('Café Lumière');
-      expect(api.scannedRemits).toEqual([]);
+      expect(text(fixture)).toContain('QR code lu');
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-scan-notice]')).toBeNull();
     });
   });
 });

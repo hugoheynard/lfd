@@ -19,6 +19,7 @@ import {
   type CounterPlace,
   entriesForTab,
   formatHour,
+  NO_PICKUP,
   pickupTabs,
   queueCounters,
   type QueueCounters,
@@ -170,6 +171,22 @@ export class HandoverQueueStore {
       return requested;
     }
     return tabs[0]?.key ?? '';
+  });
+
+  /**
+   * **Le nom de l'onglet ouvert**, que le scan compare au point du code.
+   *
+   * Régression (Hugo, 2026-11-03) : le scan comparait le NOM du point à la
+   * CLÉ de l'onglet, devenue l'identifiant du site — et disait « rattachée à
+   * « Le Labo », pas à « cmtp… » » sur l'onglet du Labo. `NO_PICKUP` et `''`
+   * passent tels quels : ce sont des sens, pas des noms.
+   */
+  readonly activeTabLabel = computed<string>(() => {
+    const key = this.activeTab();
+    if (key === '' || key === NO_PICKUP) {
+      return key;
+    }
+    return this.tabs().find((tab) => tab.key === key)?.label ?? key;
   });
 
   /**

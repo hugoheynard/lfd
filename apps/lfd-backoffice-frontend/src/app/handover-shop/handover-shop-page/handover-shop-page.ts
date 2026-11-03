@@ -216,39 +216,34 @@ export class HandoverShopPage {
   }
 
   /**
-   * **Ouvre le scanner**, avec ou sans commande attendue.
+   * **Ouvre le scanner**, depuis la barre de la file — sa seule place (Hugo,
+   * 2026-11-03 : le bouton du rail, remis le 2026-10-25, faisait le même appel).
    *
    * 🔴 **Le scan identifie, il ne remet pas** (Hugo, 2026-10-25). Le code lu
    * ouvre la fiche de SA commande, avec ses avertissements, et y laisse la
-   * preuve ; la remise est le geste « Remettre la commande » de la fiche.
+   * preuve ; la remise est le geste « Remettre la commande » de la fiche. On
+   * prend ce qui se présente, comme un comptoir : aucune commande attendue.
    *
-   * Depuis une fiche, il porte la référence : un code qui en désigne une autre
-   * ouvre l'autre fiche en nommant les deux numéros. Un scan lit ce qu'on lui
-   * présente, pas ce qu'on a cliqué. Depuis la bande, il vaut `null` : on
-   * prend ce qui se présente, comme un comptoir.
-   *
-   * ⚠️ L'onglet ouvert l'accompagne dans les deux cas. Prendre ce qui se
-   * présente ne veut pas dire le prendre en silence : l'écran affirme un point
-   * de retrait, et le dialogue doit pouvoir dire quand le code n'en est pas.
+   * ⚠️ L'onglet ouvert l'accompagne. Prendre ce qui se présente ne veut pas
+   * dire le prendre en silence : l'écran affirme un point de retrait, et le
+   * dialogue doit pouvoir dire quand le code n'en est pas.
    */
-  protected scan(entry: HandoverQueueEntryView | null): void {
+  protected scan(): void {
     const data: ScanDialogData = {
-      expected:
-        entry === null ? null : { reference: entry.reference, customerLabel: entry.customerLabel },
-      // 🔴 L'onglet voyage avec le geste. Depuis la bande, `expected` est
-      // `null` — on prend ce qui se présente — mais l'écran, lui, affirme un
-      // point de retrait dans son titre et dans ses trois compteurs. Sans cette
-      // clé, le scan remettait un sac du Village sans qu'une ligne ne l'ait
-      // jamais montré (revue du 2026-09-11, point 3).
-      openTab: this.store.activeTab(),
+      expected: null,
+      // 🔴 L'onglet voyage avec le geste : l'écran affirme un point de retrait
+      // dans son titre et dans ses trois compteurs. Sans cette clé, le scan
+      // remettait un sac du Village sans qu'une ligne ne l'ait jamais montré
+      // (revue du 2026-09-11, point 3).
+      openTab: this.store.activeTabLabel(),
       inQueue: (orderId) => this.store.entries().some((row) => row.orderId === orderId),
     };
     const ref = this.panels.open<ScanDialogData, ScanOutcome>(ScanDialog, { data });
-    void ref.closed.then((result) => this.scanned(result, entry?.reference ?? null));
+    void ref.closed.then((result) => this.scanned(result));
   }
 
   /** Ce que le scan a rendu : une fiche à ouvrir, ou une remise hors file. */
-  protected scanned(result: ScanOutcome | undefined, expected: string | null): void {
+  protected scanned(result: ScanOutcome | undefined): void {
     if (result?.kind === 'remitted') {
       void this.store.load();
       return;
@@ -259,7 +254,7 @@ export class HandoverShopPage {
     const { token, view } = result;
     // Comme un clic sur sa ligne : l'onglet qui la porte s'ouvre, et une
     // recherche qui la cacherait se vide — la ligne doit se voir surlignée.
-    const notice = scanNotice(view, expected, this.store.activeTab());
+    const notice = scanNotice(view, null, this.store.activeTabLabel());
     this.store.revealEntry(view.orderId);
     if (
       !matchingQueue(this.store.rows(), this.query()).some((row) => row.orderId === view.orderId)

@@ -108,7 +108,7 @@
                       placement="end"
                     />
 
-                    <button class="file-scan" foldButton icon="qr-code" (click)="scan(null)">
+                    <button class="file-scan" foldButton icon="qr-code" (click)="scan()">
                       Scanner le QR code du client
                     </button>
                   </div>
@@ -135,7 +135,6 @@
       [day]="store.day()"
       [proof]="selectedProof()"
       (remitted)="remitted()"
-      (scanned)="scan($event)"
       (cleared)="clearSelection()"
     />
   </fold-aside-layout>
