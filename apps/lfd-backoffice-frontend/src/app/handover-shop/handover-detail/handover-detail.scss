@@ -199,11 +199,23 @@
 
 .hd-bag-total strong {
   color: var(--fold-color-text);
+  white-space: nowrap;
   font-size: var(--fold-text-2xl);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--fold-tracking-tight);
   line-height: 1;
+}
+
+/* Le « / » se lit plus léger que les deux nombres qu'il sépare. */
+.hd-bag-of {
+  color: var(--fold-color-text-muted);
+  font-weight: var(--fold-weight-regular);
+}
+
+/* Tout est sorti et au bac : le total seul, dans le ton du succès. */
+.hd-bag-total[data-complete] strong {
+  color: var(--fold-color-success);
 }
 
 /* La liste défile DANS la carte : un sac de vingt références ne doit pas

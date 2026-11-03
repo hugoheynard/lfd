@@ -38,7 +38,7 @@ import {
 import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
-import { bagReadiness, gestureCaution, lineMarks, readyVerdict } from './bag-readiness';
+import { bagReadiness, gestureCaution, lineMarks, pieceCount, readyVerdict } from './bag-readiness';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -228,6 +228,10 @@ export class HandoverDetail {
    */
   private readonly sheet = signal<PackingSheet | null>(null);
   protected readonly readiness = computed(() => bagReadiness(this.sheet()));
+  /** « au bac / total », ou le total seul en succès quand tout est fait. */
+  protected readonly pieces = computed(() =>
+    pieceCount(this.sheet(), this.readiness(), this.entry()?.totalUnits ?? 0),
+  );
   /** Les coches fournil et colisage de chaque ligne, par SKU. */
   protected readonly marks = computed(() => lineMarks(this.sheet()));
   protected readonly verdict = computed(() => readyVerdict(this.entry(), this.readiness()));

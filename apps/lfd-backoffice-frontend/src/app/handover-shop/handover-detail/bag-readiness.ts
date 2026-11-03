@@ -176,3 +176,32 @@ export function lineMarks(sheet: PackingSheet | null): ReadonlyMap<string, LineM
   }
   return marks;
 }
+
+/** Le compte de pièces de l'en-tête du sac. */
+export interface PieceCount {
+  /** Les pièces au bac, ou `null` quand on n'affiche que le total. */
+  readonly packed: number | null;
+  readonly total: number;
+  /** Tout est sorti ET au bac : le total seul, en succès. */
+  readonly complete: boolean;
+}
+
+/**
+ * **« au bac / total »**, puis le total seul quand tout est fait (Hugo,
+ * 2026-11-03). Le total est celui de la commande, comme avant ; « au bac » est
+ * lu sur la fiche de colis. Sans fiche, rien n'est suivi : le total seul,
+ * sans ton.
+ */
+export function pieceCount(
+  sheet: PackingSheet | null,
+  bag: BagReadiness | null,
+  total: number,
+): PieceCount {
+  if (sheet === null || bag === null) {
+    return { packed: null, total, complete: false };
+  }
+  if (bag.ready) {
+    return { packed: null, total, complete: true };
+  }
+  return { packed: Math.min(sheet.packedPieces, total), total, complete: false };
+}

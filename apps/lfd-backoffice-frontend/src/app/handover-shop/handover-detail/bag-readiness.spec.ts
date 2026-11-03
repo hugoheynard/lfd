@@ -1,7 +1,7 @@
 import type { PackingLine, PackingSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { bagReadiness, gestureCaution, lineMarks, readyVerdict } from './bag-readiness';
+import { bagReadiness, gestureCaution, lineMarks, pieceCount, readyVerdict } from './bag-readiness';
 
 function sheet(overrides: Partial<PackingSheet> = {}): PackingSheet {
   return {
@@ -157,5 +157,36 @@ describe('lineMarks', () => {
       'alert',
     ]);
     expect(marks.get('B')?.packingLabel).toBe('Colisage : en partie au bac');
+  });
+});
+
+/** « au bac / total », puis le total seul en succès (Hugo, 2026-11-03). */
+describe('pieceCount', () => {
+  it('sans fiche : le total seul, sans ton', () => {
+    expect(pieceCount(null, null, 12)).toEqual({ packed: null, total: 12, complete: false });
+  });
+
+  it('en cours : au bac / total', () => {
+    const open = sheet({ lines: [packingLine('A')], lineCount: 1, packedPieces: 5 });
+    expect(pieceCount(open, bagReadiness(open), 12)).toEqual({
+      packed: 5,
+      total: 12,
+      complete: false,
+    });
+  });
+
+  it('four fini et sac fermé : le total seul, en succès', () => {
+    const done = sheet({
+      lines: [packingLine('A', { packed: true })],
+      lineCount: 1,
+      packedLines: 1,
+      packedPieces: 12,
+      packedAt: '2026-09-28T03:12:00.000Z',
+    });
+    expect(pieceCount(done, bagReadiness(done), 12)).toEqual({
+      packed: null,
+      total: 12,
+      complete: true,
+    });
   });
 });
