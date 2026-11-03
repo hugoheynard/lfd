@@ -1,45 +1,48 @@
-@if (image(); as src) {
-  <img class="line-img" [src]="src" [alt]="imageAlt()" />
-} @else {
-  <div class="line-img line-img--ph" aria-hidden="true">{{ initial() }}</div>
-}
+<div class="line">
+  @if (image(); as src) {
+    <img class="line-img" [src]="src" [alt]="imageAlt()" />
+  } @else {
+    <div class="line-img line-img--ph" aria-hidden="true">{{ initial() }}</div>
+  }
 
-<div class="line-main">
-  <p class="line-name">{{ name() }}</p>
-  <p class="line-unit">
-    @if (strikedPrice(); as striked) {
-      <!-- Le tarif d'entrée, barré : le commercial voit ce que le client
+  <div class="line-main">
+    <p class="line-name">{{ name() }}</p>
+    <p class="line-unit">
+      @if (strikedPrice(); as striked) {
+        <!-- Le tarif d'entrée, barré : le commercial voit ce que le client
            obtient, et peut le lui dire. `<s>` et non une classe seule — la
            rature doit exister pour un lecteur d'écran aussi. -->
-      <s class="line-was">{{ striked }}</s>
-    }
-    <span class="line-now">{{ unitPrice() }}</span> {{ unit() }}
-    @if (weight(); as shown) {
-      · <span data-weight>{{ shown }}</span>
-    }
-    @if (minimumText(); as minimum) {
-      · <span data-minimum>{{ minimum }}</span>
-    }
-  </p>
+        <s class="line-was">{{ striked }}</s>
+      }
+      <span class="line-now">{{ unitPrice() }}</span> {{ unit() }}
+      @if (weight(); as shown) {
+        · <span data-weight>{{ shown }}</span>
+      }
+      @if (minimumText(); as minimum) {
+        · <span data-minimum>{{ minimum }}</span>
+      }
+    </p>
+  </div>
+
+  <fold-number-input
+    class="line-qty"
+    size="sm"
+    [controls]="stepper() ? 'outside' : 'inside'"
+    [value]="quantity()"
+    [min]="min()"
+    [step]="step()"
+    [integer]="true"
+    (valueChange)="onQuantity($event)"
+  />
+
+  <span class="line-total">{{ lineTotal() }}</span>
+
+  <fold-button-icon
+    class="line-drop"
+    icon="bin"
+    size="sm"
+    tone="critical"
+    tooltip="Retirer du panier"
+    (clicked)="remove.emit()"
+  />
 </div>
-
-<fold-number-input
-  class="line-qty"
-  size="sm"
-  [controls]="stepper() ? 'outside' : 'inside'"
-  [value]="quantity()"
-  [min]="min()"
-  [step]="step()"
-  [integer]="true"
-  (valueChange)="onQuantity($event)"
-/>
-
-<span class="line-total">{{ lineTotal() }}</span>
-
-<fold-button-icon
-  icon="bin"
-  size="sm"
-  tone="critical"
-  tooltip="Retirer du panier"
-  (clicked)="remove.emit()"
-/>

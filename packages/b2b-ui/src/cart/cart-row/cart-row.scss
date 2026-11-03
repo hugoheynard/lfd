@@ -1,7 +1,26 @@
 :host {
-  display: flex;
+  /* Le conteneur de la requête plus bas : c'est la largeur de la LIGNE qui
+     décide, pas celle de l'écran — un panneau étroit au bureau se replie
+     comme un téléphone. */
+  display: block;
+  container-type: inline-size;
+}
+
+/**
+ * **Une ligne de ticket**, comme au panier de la boutique (Hugo, 2026-11-03,
+ * « s'aligner sur ce qui a été fait dans la boutique ») : au large, une seule
+ * rangée ; étroite, le nom et le total en haut, le prix unitaire et la
+ * quantité dessous — le nom n'est plus écrasé par les commandes.
+ */
+.line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    'img name qty sum drop'
+    'img unit qty sum drop';
+  column-gap: var(--fold-space-md);
+  row-gap: 1px;
   align-items: center;
-  gap: var(--fold-space-md);
   padding: var(--fold-space-sm) var(--fold-space-md);
   border: 1px solid var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-md);
@@ -9,9 +28,9 @@
 }
 
 .line-img {
+  grid-area: img;
   width: 3rem;
   height: 3rem;
-  flex: none;
   border-radius: var(--fold-radius-sm);
   object-fit: cover;
 }
@@ -24,44 +43,60 @@
   background: var(--fold-color-surface-sunken);
 }
 
+/* Le nom et sa mention se rangent chacun dans sa case de la grille. */
 .line-main {
-  flex: 1;
-  min-width: 0;
+  display: contents;
 }
 
 .line-name {
+  grid-area: name;
+  min-width: 0;
   margin: 0;
   font-weight: 600;
 }
 
 .line-unit {
+  grid-area: unit;
+  min-width: 0;
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
 
 .line-qty {
-  flex: none;
+  grid-area: qty;
   width: 7rem;
 }
 
 .line-total {
-  flex: none;
+  grid-area: sum;
   min-width: 5rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-/* Sous 640px, la ligne se replie : le total passe à la ligne plutôt que de
-   comprimer le nom du produit, qui est ce qu'on lit en premier. */
-@media (max-width: 640px) {
-  :host {
-    flex-wrap: wrap;
+.line-drop {
+  grid-area: drop;
+}
+
+@container (max-width: 479.98px) {
+  /* Sans vignette, comme le panier de la boutique : à cette largeur, ses
+     3 rem étaient pris au prix unitaire, qui butait contre le « − ». */
+  .line {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'name name sum'
+      'unit qty drop';
+    row-gap: var(--fold-space-xs);
   }
 
-  .line-total {
-    text-align: left;
+  .line-img {
+    display: none;
+  }
+
+  .line-qty {
+    justify-self: end;
   }
 }
 
