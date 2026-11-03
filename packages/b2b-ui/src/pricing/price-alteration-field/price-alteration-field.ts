@@ -1,4 +1,5 @@
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -54,6 +55,11 @@ export class PriceAlterationField {
   readonly lockedDirection = input<PriceDirection | null>(null);
   /** Étiquette de la case « pas d'altération ». Vide = pas de case, valeur exigée. */
   readonly noneLabel = input('');
+  /**
+   * Zéro est-il une valeur ? Faux par défaut : « 0 % de remise » n'altère rien.
+   * Vrai pour des frais qu'on peut offrir (zone de livraison, 2026-11-03).
+   */
+  readonly allowZero = input(false, { transform: booleanAttribute });
 
   readonly valueChange = output<PriceAlteration | null>();
 
@@ -66,7 +72,9 @@ export class PriceAlterationField {
 
   /** Le brouillon courant, tel qu'il sera émis. */
   protected readonly current = computed<PriceAlteration | null>(() =>
-    this.none() ? null : buildAlteration(this.amount(), this.mode(), this.direction()),
+    this.none()
+      ? null
+      : buildAlteration(this.amount(), this.mode(), this.direction(), this.allowZero()),
   );
 
   protected readonly sentence = computed(() => alterationSentence(this.current()));

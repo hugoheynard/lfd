@@ -37,6 +37,17 @@ describe('construire une altération depuis la saisie', () => {
     expect(buildAlteration(0, 'percent', 'decrease')).toBeNull();
     expect(buildAlteration(-5, 'amount', 'increase')).toBeNull();
   });
+
+  /** Hugo, 2026-11-03 : une zone de livraison aux frais offerts ne s'enregistrait pas. */
+  it('rend zéro quand l’appelant dit que zéro est une valeur', () => {
+    expect(buildAlteration(0, 'amount', 'increase', true)).toEqual({
+      direction: 'increase',
+      mode: 'amount',
+      cents: 0,
+    });
+    expect(buildAlteration(-5, 'amount', 'increase', true)).toBeNull();
+    expect(buildAlteration(null, 'amount', 'increase', true)).toBeNull();
+  });
 });
 
 describe('la phrase qui dit ce que ça fait', () => {

@@ -69,6 +69,11 @@ export function alterationSentence(alteration: PriceAlteration | null): string {
   // Le prix est le SUJET, pas le lecteur : ce fragment sert le client qui règle
   // sa propre remise ET le commercial qui règle celle d'un autre. « Vous
   // réduisez » était juste dans un cas et faux dans l'autre.
+  // Zéro n'arrive que là où l'appelant l'a voulu (`allowZero`) : des frais
+  // offerts, qu'on dit comme tels plutôt que « augmente de 0 € ».
+  if ((alteration.mode === 'amount' ? alteration.cents : alteration.bp) === 0) {
+    return 'Le prix reste inchangé : rien n’est ajouté.';
+  }
   const verb = alteration.direction === 'increase' ? 'augmente' : 'baisse';
   return `Le prix ${verb} de ${formatAlteration(alteration)}.`;
 }
@@ -108,14 +113,17 @@ export function fromCartAdjustment(
  * Rend `null` pour un champ vide ou une grandeur négative : une altération de
  * « rien » n'altère rien, et le signe se dit par le sens, pas par le nombre.
  * Zéro est refusé pour la même raison — « augmenter le prix de 0 € » est une
- * phrase que personne ne veut lire sur un écran de réglage.
+ * phrase que personne ne veut lire sur un écran de réglage — **sauf** quand
+ * l'appelant dit que zéro est une valeur (`allowZero`) : des frais de zone
+ * offerts sont un réglage, pas une absence (Hugo, 2026-11-03).
  */
 export function buildAlteration(
   value: number | null,
   mode: 'percent' | 'amount',
   direction: PriceDirection,
+  allowZero = false,
 ): PriceAlteration | null {
-  if (value === null || value <= 0) {
+  if (value === null || value < 0 || (value === 0 && !allowZero)) {
     return null;
   }
   const units = Math.round(value * 100);

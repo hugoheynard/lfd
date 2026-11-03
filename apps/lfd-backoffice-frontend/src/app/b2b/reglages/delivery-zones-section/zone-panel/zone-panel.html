@@ -48,11 +48,13 @@
     (valueChange)="label.set($event)"
   />
 
-  <!-- Pas de case « aucun frais » : une zone desservie gratuitement est une
-       tournée dont personne ne connaît le coût. Le frais est obligatoire. -->
+  <!-- Le frais reste OBLIGATOIRE, mais 0 en est une valeur (Hugo, 2026-11-03 :
+       « régler pas de frais de livraison sur une zone ») : une zone offerte se
+       dit en tapant 0, jamais en laissant le champ vide. -->
   <lfd-price-alteration-field
     label="Frais de livraison"
     lockedDirection="increase"
+    allowZero
     [value]="feeAlteration()"
     (valueChange)="setFee($event)"
   />
