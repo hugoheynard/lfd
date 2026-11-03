@@ -647,7 +647,7 @@ export type QueueView = 'all' | 'open' | 'late' | 'handed_over';
 export const QUEUE_VIEWS: readonly { readonly value: QueueView; readonly label: string }[] = [
   { value: 'all', label: 'Tout' },
   { value: 'open', label: 'À remettre' },
-  { value: 'late', label: 'En retard' },
+  { value: 'late', label: 'Nos retards' },
   { value: 'handed_over', label: 'Retirées' },
 ];
 
@@ -657,8 +657,11 @@ export function queueViewOf(value: string): QueueView {
 }
 
 /**
- * Garde les lignes de la vue. « En retard » est jugé par `isLate`, la même
- * règle que la note sous la ligne : la vue et l'alerte ne peuvent pas diverger.
+ * Garde les lignes de la vue. « Nos retards » (Hugo, 2026-11-03) ne garde que
+ * les retards dont on est responsables — le sac n'était pas prêt à la fin du
+ * créneau —, jugés par `isLate` puis `causeOf`, les règles mêmes de la note
+ * sous la ligne : la vue et l'alerte ne peuvent pas diverger. Un client pas
+ * venu n'y est pas : ce n'est pas un retard à rattraper au comptoir.
  */
 export function inQueueView(
   entries: readonly HandoverQueueEntryView[],
@@ -675,7 +678,12 @@ export function inQueueView(
         (entry) => entry.state !== 'handed_over' && entry.state !== 'cancelled',
       );
     case 'late':
-      return entries.filter((entry) => isLate(entry, day, now, toleranceMinutes));
+      return entries.filter(
+        (entry) =>
+          isLate(entry, day, now, toleranceMinutes) &&
+          entry.window !== null &&
+          causeOf(entry, day, entry.window.end) === 'kitchen',
+      );
     case 'handed_over':
       return entries.filter((entry) => entry.state === 'handed_over');
   }

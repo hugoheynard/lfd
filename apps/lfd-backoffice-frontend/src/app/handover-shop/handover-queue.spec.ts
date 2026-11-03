@@ -665,6 +665,8 @@ describe('inQueueView', () => {
   const lines = [
     entry({ orderId: 'open', window: null }),
     entry({ orderId: 'late', window: late }),
+    // Prête à 6 h 00 (heure de Paris), avant la fin du créneau : le client.
+    entry({ orderId: 'absent', window: late, readyAt: `${DAY}T04:00:00.000Z` }),
     entry({ orderId: 'gone', state: 'handed_over' }),
     entry({ orderId: 'off', state: 'cancelled' }),
   ];
@@ -672,11 +674,12 @@ describe('inQueueView', () => {
     inQueueView(lines, view, DAY, new Date(`${DAY}T09:00:00`), 0).map((line) => line.orderId);
 
   it('« Tout » garde tout, « À remettre » masque retirées et annulées', () => {
-    expect(ids('all')).toEqual(['open', 'late', 'gone', 'off']);
-    expect(ids('open')).toEqual(['open', 'late']);
+    expect(ids('all')).toEqual(['open', 'late', 'absent', 'gone', 'off']);
+    expect(ids('open')).toEqual(['open', 'late', 'absent']);
   });
 
-  it('« En retard » suit la règle de la note, « Retirées » ne garde que les retirées', () => {
+  it('« Nos retards » ne garde que les nôtres, « Retirées » ne garde que les retirées', () => {
+    // Le client pas venu (`absent`) n'est pas « notre » retard.
     expect(ids('late')).toEqual(['late']);
     expect(ids('handed_over')).toEqual(['gone']);
   });
