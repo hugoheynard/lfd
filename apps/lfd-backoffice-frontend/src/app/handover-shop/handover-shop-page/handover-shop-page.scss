@@ -80,11 +80,11 @@
      bundle le 2026-09-11). Une feuille qu'on voit à travers est pire qu'une
      feuille absente : on lit deux écrans superposés. */
   z-index: 201;
-  inset: auto 0 0;
-
-  /* Pas 100 % : la file reste visible en haut, et c'est ce qui dit d'où la
-     feuille sort et où l'on revient en la refermant. */
-  height: 88dvh;
+  /* Jusqu'à la barre de l'app (Hugo, 2026-11-03) : la feuille prend tout
+     l'écran sous elle, comme les feuilles du bas de la boutique. Le bas de la
+     barre est mesuré par la page (`--hd-sheet-top`) ; elle couvrait 88 % de
+     l'écran, et la bande du comptoir dépassait au-dessus. */
+  inset: var(--hd-sheet-top, 0) 0 0;
 
   /* Hors écran tant que rien n'est choisi. `translate` et non `display: none` :
      le retour se voit, donc on comprend où le sac est parti. */

@@ -26,6 +26,7 @@
     class="board"
     asideRightLabel="Détail du retrait"
     [class.is-stacked]="stacked()"
+    [style.--hd-sheet-top.px]="appHeaderBottom()"
     [class.has-selection]="selected() !== null"
   >
     <div class="board-queue" [inert]="stacked() && selected() !== null">

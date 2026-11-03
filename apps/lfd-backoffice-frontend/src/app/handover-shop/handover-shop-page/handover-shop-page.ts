@@ -133,6 +133,9 @@ export class HandoverShopPage {
   private readonly narrowWindow = narrowViewport('(max-width: 1040px)');
   private readonly boardRef = viewChild('board', { read: ElementRef<HTMLElement> });
   private readonly boardWidth = signal(0);
+  /** Le bas de la barre de l'app, en px — où s'arrête la feuille du sac. */
+  protected readonly appHeaderBottom = signal(0);
+
   protected readonly stacked = computed(
     () => this.narrowWindow() || (this.boardWidth() > 0 && this.boardWidth() <= STACK_AT_PX),
   );
@@ -192,6 +195,24 @@ export class HandoverShopPage {
         this.boardWidth.set(entry?.contentRect.width ?? 0);
       });
       observer.observe(board);
+      onCleanup(() => observer.disconnect());
+    });
+
+    // La feuille du sac monte jusqu'à la barre de l'app (Hugo, 2026-11-03) :
+    // on lit la hauteur de cette barre, parce que les jetons de chrome de fold
+    // valent `""` hors du shell (vu au prévisionnel, et ici le même jour).
+    effect((onCleanup) => {
+      const header =
+        typeof document === 'undefined'
+          ? null
+          : document.querySelector<HTMLElement>('fold-app-shell > header');
+      if (header === null || typeof ResizeObserver === 'undefined') {
+        return;
+      }
+      const observer = new ResizeObserver(() => {
+        this.appHeaderBottom.set(Math.round(header.getBoundingClientRect().bottom));
+      });
+      observer.observe(header);
       onCleanup(() => observer.disconnect());
     });
 
