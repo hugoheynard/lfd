@@ -182,6 +182,26 @@ async function noteNumberOf(orderId: string): Promise<string> {
 }
 
 describe("« Valider et remettre » (lot L6)", () => {
+  /**
+   * Option A (Hugo, 2026-11-03) : le comptoir ouvre le bon de commande chiffré
+   * — le même que celui du client — sous son seul droit, AVANT la remise.
+   */
+  it("le vendeur du comptoir ouvre le bon de commande avant la remise, sans le droit des Commandes", async () => {
+    const pro = await seedCreditedPro("pro-bon");
+    const placed = await placeImmediate(pro, "account");
+    const seller = await counterSeller();
+
+    const pdf = await seller
+      .get(`/admin/counter/orders/${placed.id}/bon.pdf`)
+      .buffer(true)
+      .expect(200);
+
+    expect(pdf.headers["content-type"]).toBe("application/pdf");
+    expect(pdf.headers["content-disposition"]).toMatch(/^inline/u);
+    // La route de l'équipe Commandes lui reste fermée.
+    await seller.get(`/admin/orders/${placed.id}/bon.pdf`).expect(403);
+  });
+
   it("donne une commande remise, son BL imprimable au comptoir, et la facture du mois", async () => {
     const pro = await seedCreditedPro("pro-immediat");
     const placed = await placeImmediate(pro, "account");

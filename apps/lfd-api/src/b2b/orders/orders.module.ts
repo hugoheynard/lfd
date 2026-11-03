@@ -264,6 +264,7 @@ import { ShelfStockTodayController } from "./http/shelf-stock-today.controller.j
 import { MyShelfStockTodayController } from "./http/my-shelf-stock-today.controller.js";
 import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.js";
 import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
+import { AdminCounterOrderSheetController } from "./http/admin-counter-order-sheet.controller.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { AdminProductionController } from "./http/admin-production.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
@@ -339,6 +340,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderAdmissionController,
     CompanyOrdersController,
     AdminOrdersController,
+    AdminCounterOrderSheetController,
     AdminOrderSalesTermsController,
     AdminProductionController,
     AdminOrderDraftsController,
