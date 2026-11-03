@@ -424,7 +424,7 @@ sont retirés : le colisage est le seul poste. `production_day.packing_owner`
 reste en base et nomme encore `legacy` les journées colisées avant la bascule.
 
 🔴 **Le colisage écoute le retrait par un canal** (2026-11-03, Hugo, option b ;
-[`documentation/comptoir/plan-depart-incomplet-au-comptoir.md`](documentation/comptoir/plan-depart-incomplet-au-comptoir.md) §7).
+[`documentation/comptoir/depart-incomplet.md`](documentation/comptoir/depart-incomplet.md) §7).
 Le retrait DÉCLARE `handover/channels/packing/` — le fait `handover.handed_over` —
 et le colisage s'y abonne (`@DurableHandler`) pour sortir de sa liste la fiche
 d'un envoi remis sans avoir été colisé. `handover → packing` reste interdit :
@@ -1274,7 +1274,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 51 portes du dépôt, d'un coup
+pnpm lint:gates         # les 52 portes du dépôt, d’un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

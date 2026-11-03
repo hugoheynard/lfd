@@ -1,6 +1,6 @@
 /**
  * E2E de **la fiche de colis d'un envoi remis** (Hugo, 2026-11-03, option b ;
- * plan `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §7).
+ * plan `documentation/comptoir/depart-incomplet.md`, §7).
  *
  * Une commande remise sans être colisée laissait sa fiche ouverte au poste ;
  * fermer le bac ensuite publiait `packing.order_packed`, que le commerce

@@ -90,7 +90,7 @@ import { ProductionModule } from "../production/production.module.js";
     // implémente, le commerce l'appelle dans la transaction de sa décision.
     { provide: ShortfallDesk, useExisting: PackingShortfallDesk },
     // Le bac figé sans fait, pour le départ décidé au comptoir (plan
-    // `comptoir/plan-depart-incomplet-au-comptoir.md`, 2026-11-03).
+    // `comptoir/depart-incomplet.md`, 2026-11-03).
     { provide: ShortfallFreezeDesk, useExisting: PackingShortfallFreezeDesk },
     // Son aperçu, avant le geste (C1b, 2026-11-03) — lu sans verrou.
     { provide: ShortfallPreviewReader, useExisting: PrismaShortfallPreviewReader },

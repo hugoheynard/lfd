@@ -6,7 +6,7 @@ import type { OrderSaleUnit } from "./order.js";
  * /admin/counter/orders/:orderId/incomplete-handover`, lot C1). La lecture
  * rend le PREMIER refus que le geste rencontrerait ; l'écran choisit sa
  * phrase (lot C1b, plan
- * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.1 —
+ * `documentation/comptoir/depart-incomplet.md`, §4.1 —
  * Hugo, 2026-11-03).
  *
  * | Code                 | Refus du geste (code d'erreur)                    |

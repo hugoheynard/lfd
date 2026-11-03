@@ -145,7 +145,7 @@ export class HandoverAttestation {
 
   /**
    * **Juge le retrait sans rien écrire** (plan
-   * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.2,
+   * `documentation/comptoir/depart-incomplet.md`, §4.2,
    * étape 2 — Hugo, 2026-11-03) : la même règle que {@link attest}, lue
    * sous le même verrou de la commande, dans l'unité de travail de
    * l'appelant. Le départ incomplet au comptoir la pose AVANT d'écrire sa
@@ -163,7 +163,7 @@ export class HandoverAttestation {
   /**
    * **La règle, sans verrou ni écriture** — la phrase du refus que
    * {@link vet} lèverait, ou `null` (lot C1b, plan
-   * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.1 —
+   * `documentation/comptoir/depart-incomplet.md`, §4.1 —
    * Hugo, 2026-11-03). Un aperçu, pas une promesse : le geste rejuge sous le
    * verrou de la commande.
    */

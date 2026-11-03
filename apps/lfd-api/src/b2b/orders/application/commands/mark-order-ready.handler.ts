@@ -160,7 +160,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
 
 /**
  * **Déjà retirée : un « prête » n'a plus rien à dire** (Hugo, 2026-11-03,
- * option b du plan `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`).
+ * option b du plan `documentation/comptoir/depart-incomplet.md`).
  *
  * Une fiche de colis fermée à la remise (le colisage écoute
  * `handover.handed_over`) peut être refermée au poste, ou rouverte puis

@@ -2,7 +2,7 @@ import type { FulfillmentMethod } from "@lfd/contracts";
 
 /**
  * **Ce que le comptoir a le droit de décider lui-même** (plan
- * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.3 —
+ * `documentation/comptoir/depart-incomplet.md`, §4.3 —
  * Hugo, 2026-11-03).
  *
  * Le vendeur du comptoir (`handover_counter:write`) décide d'un départ

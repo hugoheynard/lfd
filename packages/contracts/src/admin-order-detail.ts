@@ -127,7 +127,7 @@ export type AdminShortfallDecisionPayload = z.infer<typeof adminShortfallDecisio
 /**
  * Corps de `POST /admin/counter/orders/:orderId/incomplete-handover` — le
  * départ incomplet décidé au comptoir (plan
- * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.2 et
+ * `documentation/comptoir/depart-incomplet.md`, §4.2 et
  * §4.3, Hugo, 2026-11-03). Aucune quantité, aucun rang : ce qui part est ce
  * qui est au bac de la commande, relu par le serveur sous verrou. Le sort du
  * reste est un paramètre pour que le reliquat (lot R) s'y ajoute sans

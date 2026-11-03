@@ -1,6 +1,6 @@
 /**
  * **Le canal que le retrait publie POUR le colisage** (2026-11-03, Hugo,
- * option b — `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §7).
+ * option b — `documentation/comptoir/depart-incomplet.md`, §7).
  *
  * | Pièce                  | Nature       | Ce qu'elle porte                           |
  * | ---------------------- | ------------ | ------------------------------------------ |
