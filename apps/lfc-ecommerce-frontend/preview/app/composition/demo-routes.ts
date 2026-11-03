@@ -175,6 +175,12 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
   },
   {
     method: 'GET',
+    pattern: /^\/fulfillment-days\/mine$/u,
+    serves: 'le lendemain pour la clientèle du parcours',
+    answer: () => ok(demoFulfillmentDays()),
+  },
+  {
+    method: 'GET',
     pattern: /^\/me$/u,
     serves: 'la personne du parcours',
     answer: (_request, _match, world) =>
