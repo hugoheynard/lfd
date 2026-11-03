@@ -115,6 +115,13 @@ export class QueueTable {
   readonly now = input.required<Date>();
 
   /**
+   * La tolérance de retard réglée en admin (Hugo, 2026-11-03), `null` tant
+   * qu'elle n'est pas lue — et alors aucune ligne n'est en retard. Requise :
+   * une table qui l'oublierait sonnerait ou se tairait sans que rien le dise.
+   */
+  readonly lateTolerance = input.required<number | null>();
+
+  /**
    * Le terme cherché, ou `''` — un **filtre de ce qui est affiché**, jamais une
    * requête.
    *
@@ -191,6 +198,7 @@ export class QueueTable {
       this.view(),
       this.day(),
       this.now(),
+      this.lateTolerance(),
     );
     return this.reversed() ? [...kept].reverse() : kept;
   });
@@ -227,7 +235,7 @@ export class QueueTable {
   protected readonly rowKey = (entry: HandoverQueueEntryView): string => entry.orderId;
 
   protected readonly toneOf = (entry: HandoverQueueEntryView): FoldTableTone =>
-    rowTone(entry, this.day(), this.now());
+    rowTone(entry, this.day(), this.now(), this.lateTolerance());
 
   /**
    * **Quelles lignes portent une note.** L'autre moitié du câblage : le gabarit
@@ -262,7 +270,7 @@ export class QueueTable {
   }
 
   protected late(entry: HandoverQueueEntryView): boolean {
-    return isLate(entry, this.day(), this.now());
+    return isLate(entry, this.day(), this.now(), this.lateTolerance());
   }
 
   /**
@@ -280,7 +288,7 @@ export class QueueTable {
 
   /** « 56 min de retard », ou `null`. */
   protected lateText(entry: HandoverQueueEntryView): string | null {
-    const minutes = lateMinutes(entry, this.day(), this.now());
+    const minutes = lateMinutes(entry, this.day(), this.now(), this.lateTolerance());
     return minutes === null ? null : lateLabel(minutes);
   }
 

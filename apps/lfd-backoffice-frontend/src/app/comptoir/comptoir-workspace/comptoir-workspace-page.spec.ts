@@ -43,6 +43,11 @@ function entry(id: string, pickupLabel: string): HandoverQueueEntryView {
 /** La file doublée : elle compte les appels — c'est par eux qu'on voit un 403 évité. */
 class FakeQueue {
   readonly days: string[] = [];
+  /** Tolérance nulle : ces cas jugent le retard dès la fin du créneau. */
+  lateTolerance(): Promise<number> {
+    return Promise.resolve(0);
+  }
+
   forDay(day: string): Promise<HandoverQueueView> {
     this.days.push(day);
     return Promise.resolve({

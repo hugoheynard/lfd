@@ -135,6 +135,15 @@ export class HandoverQueueStore {
   private readonly nowState = signal<Date>(new Date());
   readonly now = this.nowState.asReadonly();
 
+  /**
+   * **La tolérance de retard** (Hugo, 2026-11-03), lue une fois. `null` tant
+   * qu'elle n'est pas lue — ET si sa lecture échoue : aucune ligne n'est
+   * alors dite en retard. On ne sonne pas sur une valeur inventée ; l'échec
+   * est journalisé en console, faute d'autre mécanisme dans ce store.
+   */
+  private readonly lateToleranceState = signal<number | null>(null);
+  readonly lateTolerance = this.lateToleranceState.asReadonly();
+
   private readonly entriesState = signal<readonly HandoverQueueEntryView[]>([]);
   readonly entries = this.entriesState.asReadonly();
 
@@ -231,7 +240,7 @@ export class HandoverQueueStore {
    * doit pas voir son nombre de retards tomber à zéro sous ses yeux.
    */
   readonly counters = computed<QueueCounters>(() =>
-    queueCounters(this.rows(), this.day(), this.now()),
+    queueCounters(this.rows(), this.day(), this.now(), this.lateTolerance()),
   );
 
   /** L'heure, telle qu'on la dit — « 7 h 26 ». */
@@ -255,6 +264,12 @@ export class HandoverQueueStore {
       .then((list) => this.places.set(list.map((place) => ({ id: place.id, label: place.label }))))
       .catch(() => undefined)
       .finally(() => this.placesState.set(true));
+    this.api
+      .lateTolerance()
+      .then((minutes) => this.lateToleranceState.set(minutes))
+      .catch((error: unknown) => {
+        console.error('Tolérance de retard illisible : aucun retard ne sera affiché.', error);
+      });
     effect(() => {
       void this.load(this.day());
     });

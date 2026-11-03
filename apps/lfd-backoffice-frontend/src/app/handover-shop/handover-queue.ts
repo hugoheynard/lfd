@@ -263,6 +263,8 @@ export function formatHour(value: string): string {
   return `${Number(hours)}\u00a0h\u00a0${minutes}`;
 }
 
+const MINUTE_MS = 60_000;
+
 /**
  * **Peut-on dire que cette ligne est en retard ?**
  *
@@ -288,10 +290,25 @@ export function formatHour(value: string): string {
  * Non plus sur une commande **retirée** (le sac est parti) ni **annulée** (rien
  * ne partira) : dans les deux cas l'heure ne promet plus rien.
  *
+ * 🔴 **La tolérance de retard** (Hugo, 2026-11-03) : « 0 min de retard » ne
+ * sonne plus. Une ligne n'est en retard qu'une fois `now > fin + tolérance`,
+ * la même règle qu'à la Supervision, réglée en admin. Tant que la tolérance
+ * n'est pas lue (`null`), rien n'est en retard : on ne sonne pas sur une
+ * valeur inventée.
+ *
  * @param day Le jour de service `AAAA-MM-JJ` de la file — le créneau ne porte
  *   qu'une heure, et l'heure seule ne se compare à rien.
+ * @param toleranceMinutes La tolérance réglée, `null` tant qu'elle n'est pas lue.
  */
-export function isLate(entry: HandoverQueueEntryView, day: string, now: Date): boolean {
+export function isLate(
+  entry: HandoverQueueEntryView,
+  day: string,
+  now: Date,
+  toleranceMinutes: number | null,
+): boolean {
+  if (toleranceMinutes === null) {
+    return false;
+  }
   const window = entry.window;
   if (window === null || window.source !== REQUESTED_SOURCE) {
     return false;
@@ -300,7 +317,10 @@ export function isLate(entry: HandoverQueueEntryView, day: string, now: Date): b
     return false;
   }
   const deadline = new Date(`${day}T${window.end}:00`);
-  return !Number.isNaN(deadline.getTime()) && now.getTime() > deadline.getTime();
+  return (
+    !Number.isNaN(deadline.getTime()) &&
+    now.getTime() > deadline.getTime() + toleranceMinutes * MINUTE_MS
+  );
 }
 
 /**
@@ -310,10 +330,16 @@ export function isLate(entry: HandoverQueueEntryView, day: string, now: Date): b
  * 🔴 C'est `isLate` qui décide, et non une seconde comparaison écrite ici : les
  * deux finiraient par diverger, et celle qui dérive est toujours celle qui
  * affiche — donc celle qu'on croit. Cette fonction ne fait que **chiffrer** une
- * décision déjà prise.
+ * décision déjà prise. Elle compte depuis la FIN du créneau, pas depuis la
+ * fin de la tolérance : à fin + 20, « 20 min de retard » (2026-11-03).
  */
-export function lateMinutes(entry: HandoverQueueEntryView, day: string, now: Date): number | null {
-  if (!isLate(entry, day, now)) {
+export function lateMinutes(
+  entry: HandoverQueueEntryView,
+  day: string,
+  now: Date,
+  toleranceMinutes: number | null,
+): number | null {
+  if (!isLate(entry, day, now, toleranceMinutes)) {
     return null;
   }
   const window = entry.window;
@@ -325,8 +351,6 @@ export function lateMinutes(entry: HandoverQueueEntryView, day: string, now: Dat
   const deadline = new Date(`${day}T${window.end}:00`);
   return Math.floor((now.getTime() - deadline.getTime()) / MINUTE_MS);
 }
-
-const MINUTE_MS = 60_000;
 
 /**
  * « 56 min de retard », puis « 1 h 20 de retard ».
@@ -389,6 +413,7 @@ export function queueCounters(
   entries: readonly HandoverQueueEntryView[],
   day: string,
   now: Date,
+  toleranceMinutes: number | null,
 ): QueueCounters {
   let handedOver = 0;
   let late = 0;
@@ -403,7 +428,7 @@ export function queueCounters(
     if (heldAtTheCounter(entry)) {
       held += 1;
     }
-    if (isLate(entry, day, now)) {
+    if (isLate(entry, day, now, toleranceMinutes)) {
       late += 1;
     }
   }
@@ -508,11 +533,16 @@ export function stateVariant(state: HandoverQueueState): FoldBadgeVariant {
  * annulée dont le client se présente est le cas où l'équipe a le moins de temps
  * pour lire.
  */
-export function rowTone(entry: HandoverQueueEntryView, day: string, now: Date): FoldTableTone {
+export function rowTone(
+  entry: HandoverQueueEntryView,
+  day: string,
+  now: Date,
+  toleranceMinutes: number | null,
+): FoldTableTone {
   if (entry.state === 'cancelled') {
     return 'alert';
   }
-  if (!isLate(entry, day, now) || entry.window === null) {
+  if (!isLate(entry, day, now, toleranceMinutes) || entry.window === null) {
     return null;
   }
   // Le retard dit son origine, comme en Supervision (Hugo, 2026-11-03) : en
@@ -635,6 +665,7 @@ export function inQueueView(
   view: QueueView,
   day: string,
   now: Date,
+  toleranceMinutes: number | null,
 ): readonly HandoverQueueEntryView[] {
   switch (view) {
     case 'all':
@@ -644,7 +675,7 @@ export function inQueueView(
         (entry) => entry.state !== 'handed_over' && entry.state !== 'cancelled',
       );
     case 'late':
-      return entries.filter((entry) => isLate(entry, day, now));
+      return entries.filter((entry) => isLate(entry, day, now, toleranceMinutes));
     case 'handed_over':
       return entries.filter((entry) => entry.state === 'handed_over');
   }

@@ -23,6 +23,11 @@ type LoadState = 'loading' | 'ready' | 'error';
  * client n'est pas venu) et « Avertir le client » (la commande n'est pas
  * prête). 0 par défaut : dès la fin du créneau.
  *
+ * Elle porte aussi **la tolérance de retard** (Hugo, 2026-11-03) : en deçà,
+ * ni la Supervision ni le comptoir ne disent la commande en retard. 15 minutes
+ * par défaut, posées par le serveur. Depuis le même jour, les deux délais de
+ * relance comptent depuis la FIN DE LA TOLÉRANCE, plus depuis la fin du créneau.
+ *
  * L'écran ne décide rien : il pose les deux délais, la Supervision n'affiche
  * le bouton qu'après, et le serveur refuse le geste avant (409), comme un
  * délai négatif ou non entier (400). Même droit que la page,
@@ -55,16 +60,25 @@ export class CustomerNudgeDelaysCard {
   /** Les brouillons ; `null` quand le champ est vidé (`fold-number-input`). */
   protected readonly reminder = signal<number | null>(null);
   protected readonly warning = signal<number | null>(null);
+  protected readonly tolerance = signal<number | null>(null);
 
   /** Ce qui diffère du réglage servi — seules ces clés partent. */
   protected readonly patch = computed<OrderCutoffSettingsPatch | null>(() => {
     const served = this.settings();
     const reminder = this.reminder();
     const warning = this.warning();
+    const tolerance = this.tolerance();
     if (served === null) {
       return null;
     }
-    const patch: { pickupReminderDelayMinutes?: number; delayWarningDelayMinutes?: number } = {};
+    const patch: {
+      pickupReminderDelayMinutes?: number;
+      delayWarningDelayMinutes?: number;
+      lateToleranceMinutes?: number;
+    } = {};
+    if (tolerance !== null && tolerance !== served.lateToleranceMinutes) {
+      patch.lateToleranceMinutes = tolerance;
+    }
     if (reminder !== null && reminder !== served.pickupReminderDelayMinutes) {
       patch.pickupReminderDelayMinutes = reminder;
     }
@@ -80,6 +94,7 @@ export class CustomerNudgeDelaysCard {
       this.patch() !== null &&
       this.reminder() !== null &&
       this.warning() !== null &&
+      this.tolerance() !== null &&
       !this.pending(),
   );
 
@@ -128,5 +143,6 @@ export class CustomerNudgeDelaysCard {
     this.settings.set(view);
     this.reminder.set(view.pickupReminderDelayMinutes);
     this.warning.set(view.delayWarningDelayMinutes);
+    this.tolerance.set(view.lateToleranceMinutes);
   }
 }

@@ -147,6 +147,7 @@
                   [reversed]="reversed()"
                   [day]="store.day()"
                   [now]="store.now()"
+                  [lateTolerance]="store.lateTolerance()"
                   [currentId]="selected()?.orderId ?? null"
                   (opened)="select($event)"
                 />

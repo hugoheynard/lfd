@@ -33,9 +33,8 @@ fait repasser la file sur « Tout ».
 nous »), en avertissement quand il l'était et que le client n'est pas venu. Il
 ne sonne qu'au-delà de la **tolérance de retard** (Réglages › Commandes, 15 min
 par défaut), la même que la Supervision lit côté serveur ; les relances au
-client comptent depuis la fin de cette tolérance. 🟦 La lecture de la tolérance
-par l'écran du comptoir est en cours de bâti le 2026-11-03 (le serveur et sa
-route `GET /admin/counter/late-tolerance` sont commités).
+client comptent depuis la fin de cette tolérance. L'écran la lit par `GET /admin/counter/late-tolerance`, sous son seul droit ;
+tant qu'elle n'est pas lue, aucun retard n'est dit.
 
 **Le rail** :
 

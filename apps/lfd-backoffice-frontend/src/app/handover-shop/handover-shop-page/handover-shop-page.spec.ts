@@ -95,6 +95,11 @@ class FakeQueue {
     return Promise.resolve({});
   }
 
+  /** Tolérance nulle : ces cas jugent le retard dès la fin du créneau. */
+  lateTolerance(): Promise<number> {
+    return Promise.resolve(0);
+  }
+
   forDay(day: string): Promise<HandoverQueueView> {
     this.days.push(day);
     if (this.fails) {

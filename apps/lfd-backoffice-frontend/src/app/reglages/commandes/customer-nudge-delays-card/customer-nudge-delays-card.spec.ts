@@ -37,6 +37,7 @@ async function mount(
                 patch.pickupReminderDelayMinutes ?? current.pickupReminderDelayMinutes,
               delayWarningDelayMinutes:
                 patch.delayWarningDelayMinutes ?? current.delayWarningDelayMinutes,
+              lateToleranceMinutes: patch.lateToleranceMinutes ?? current.lateToleranceMinutes,
             };
             return Promise.resolve();
           },
@@ -63,12 +64,13 @@ const root = (fixture: ComponentFixture<CustomerNudgeDelaysCard>): HTMLElement =
   fixture.nativeElement as HTMLElement;
 
 describe('CustomerNudgeDelaysCard', () => {
-  it('dit les deux gestes, comptés depuis la fin du créneau', async () => {
+  it('dit la tolérance et les deux gestes, comptés depuis la fin du créneau', async () => {
     const { fixture } = await mount(['lfc_order_settings:read'], VIEW);
 
     const text = root(fixture).textContent ?? '';
-    expect(text).toContain('Rappel au client : minutes après la fin du créneau');
-    expect(text).toContain('Avertir le client : minutes après la fin du créneau');
+    expect(text).toContain('Tolérance de retard : minutes après la fin du créneau');
+    expect(text).toContain('Rappel au client : minutes après le retard');
+    expect(text).toContain('Avertir le client : minutes après le retard');
     expect(root(fixture).querySelector('[data-customer-nudge-delays-save]')).toBeNull();
   });
 
@@ -80,6 +82,25 @@ describe('CustomerNudgeDelaysCard', () => {
 
     expect(patches).toEqual([{ delayWarningDelayMinutes: 15 }]);
     expect(fixture.componentInstance['settings']()?.delayWarningDelayMinutes).toBe(15);
+  });
+
+  it('envoie la seule tolérance changée (2026-11-03), puis relit', async () => {
+    const { fixture, patches } = await mount(WRITE, VIEW);
+    expect(fixture.componentInstance['tolerance']()).toBe(15);
+    fixture.componentInstance['tolerance'].set(20);
+    await fixture.componentInstance['save']();
+
+    expect(patches).toEqual([{ lateToleranceMinutes: 20 }]);
+    expect(fixture.componentInstance['settings']()?.lateToleranceMinutes).toBe(20);
+  });
+
+  it('n’enregistre pas une tolérance vidée', async () => {
+    const { fixture, patches } = await mount(WRITE, VIEW);
+    fixture.componentInstance['tolerance'].set(null);
+    fixture.componentInstance['warning'].set(5);
+    await fixture.componentInstance['save']();
+
+    expect(patches).toEqual([]);
   });
 
   it('n’envoie rien tant qu’un champ est vidé ou que rien n’a changé', async () => {

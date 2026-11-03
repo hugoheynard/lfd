@@ -263,7 +263,15 @@ export class HandoverShopPage {
     // Même règle pour la vue : une ligne scannée que la vue cache repasse sur
     // « Tout » — on ne surligne pas une ligne qu'on ne voit pas.
     const scannedRow = this.store.rows().filter((row) => row.orderId === view.orderId);
-    if (inQueueView(scannedRow, this.view(), this.store.day(), this.store.now()).length === 0) {
+    if (
+      inQueueView(
+        scannedRow,
+        this.view(),
+        this.store.day(),
+        this.store.now(),
+        this.store.lateTolerance(),
+      ).length === 0
+    ) {
       this.view.set('all');
     }
     this.selectedId.set(view.orderId);

@@ -242,28 +242,56 @@ describe('isLate', () => {
   it('🔴 ne parle JAMAIS de retard sur un créneau `default`', () => {
     const line = entry({ window: window({ source: 'default', end: '08:00' }) });
 
-    expect(isLate(line, DAY, passed)).toBe(false);
+    expect(isLate(line, DAY, passed, 0)).toBe(false);
   });
 
   it('parle de retard sur une tranche réellement demandée et dépassée', () => {
     const line = entry({ window: window({ source: 'override', end: '08:00' }) });
 
-    expect(isLate(line, DAY, passed)).toBe(true);
+    expect(isLate(line, DAY, passed, 0)).toBe(true);
   });
 
   it('se tait avant la fin de la tranche', () => {
     const line = entry({ window: window({ source: 'override', end: '08:00' }) });
 
-    expect(isLate(line, DAY, new Date(`${DAY}T07:30:00`))).toBe(false);
+    expect(isLate(line, DAY, new Date(`${DAY}T07:30:00`), 0)).toBe(false);
   });
 
   it('se tait sans créneau — il n’y a rien à dépasser', () => {
-    expect(isLate(entry({ window: null }), DAY, passed)).toBe(false);
+    expect(isLate(entry({ window: null }), DAY, passed, 0)).toBe(false);
   });
 
   it('se tait sur une commande retirée ou annulée : l’heure ne promet plus rien', () => {
-    expect(isLate(entry({ state: 'handed_over' }), DAY, passed)).toBe(false);
-    expect(isLate(entry({ state: 'cancelled' }), DAY, passed)).toBe(false);
+    expect(isLate(entry({ state: 'handed_over' }), DAY, passed, 0)).toBe(false);
+    expect(isLate(entry({ state: 'cancelled' }), DAY, passed, 0)).toBe(false);
+  });
+});
+
+/** La tolérance de retard (Hugo, 2026-11-03) : « 0 min de retard » ne sonne plus. */
+describe('isLate — tolérance de retard', () => {
+  const line = entry({ window: window({ source: 'override', end: '08:00' }) });
+
+  it('à fin + 10 avec une tolérance de 15, la ligne n’est pas en retard', () => {
+    const now = new Date(`${DAY}T08:10:00`);
+
+    expect(isLate(line, DAY, now, 15)).toBe(false);
+    expect(lateMinutes(line, DAY, now, 15)).toBeNull();
+  });
+
+  it('à fin + 16, elle l’est, et compte depuis la FIN du créneau', () => {
+    const now = new Date(`${DAY}T08:16:00`);
+
+    expect(isLate(line, DAY, now, 15)).toBe(true);
+    expect(lateLabel(lateMinutes(line, DAY, now, 15) ?? -1)).toBe('16\u00a0min de retard');
+  });
+
+  it('🔴 tolérance pas lue (`null`) : jamais en retard', () => {
+    const now = new Date(`${DAY}T23:00:00`);
+
+    expect(isLate(line, DAY, now, null)).toBe(false);
+    expect(queueCounters([line], DAY, now, null).late).toBe(0);
+    expect(rowTone(line, DAY, now, null)).toBeNull();
+    expect(inQueueView([line], 'late', DAY, now, null)).toEqual([]);
   });
 });
 
@@ -274,7 +302,7 @@ describe('rowTone', () => {
       window: window({ source: 'override', end: '08:00' }),
     });
 
-    expect(rowTone(line, DAY, new Date(`${DAY}T09:00:00`))).toBe('alert');
+    expect(rowTone(line, DAY, new Date(`${DAY}T09:00:00`), 0)).toBe('alert');
   });
 
   /** L'origine du retard, comme en Supervision (Hugo, 2026-11-03). */
@@ -282,15 +310,15 @@ describe('rowTone', () => {
     const late = window({ source: 'override', end: '06:30' });
     const now = new Date(`${DAY}T09:00:00`);
 
-    expect(rowTone(entry({ window: late, readyAt: null }), DAY, now)).toBe('alert');
+    expect(rowTone(entry({ window: late, readyAt: null }), DAY, now, 0)).toBe('alert');
     // Prêt à 6 h 00 (heure de Paris), avant la fin du créneau : le client.
-    expect(rowTone(entry({ window: late, readyAt: `${DAY}T04:00:00.000Z` }), DAY, now)).toBe(
+    expect(rowTone(entry({ window: late, readyAt: `${DAY}T04:00:00.000Z` }), DAY, now, 0)).toBe(
       'warning',
     );
   });
 
   it('une ligne ordinaire ne porte aucun ton', () => {
-    expect(rowTone(entry({ window: null }), DAY, new Date(`${DAY}T09:00:00`))).toBeNull();
+    expect(rowTone(entry({ window: null }), DAY, new Date(`${DAY}T09:00:00`), 0)).toBeNull();
   });
 });
 
@@ -298,16 +326,16 @@ describe('lateMinutes', () => {
   it('chiffre le dépassement de la borne haute', () => {
     const line = entry({ window: window({ source: 'override', end: '08:00' }) });
 
-    expect(lateMinutes(line, DAY, new Date(`${DAY}T08:56:00`))).toBe(56);
+    expect(lateMinutes(line, DAY, new Date(`${DAY}T08:56:00`), 0)).toBe(56);
   });
 
   it('🔴 se tait partout où `isLate` se tait — il ne rejuge rien', () => {
     const byDefault = entry({ window: window({ source: 'default', end: '08:00' }) });
     const done = entry({ state: 'handed_over', window: window({ source: 'override' }) });
 
-    expect(lateMinutes(byDefault, DAY, new Date(`${DAY}T23:00:00`))).toBeNull();
-    expect(lateMinutes(done, DAY, new Date(`${DAY}T23:00:00`))).toBeNull();
-    expect(lateMinutes(entry({ window: null }), DAY, new Date(`${DAY}T23:00:00`))).toBeNull();
+    expect(lateMinutes(byDefault, DAY, new Date(`${DAY}T23:00:00`), 0)).toBeNull();
+    expect(lateMinutes(done, DAY, new Date(`${DAY}T23:00:00`), 0)).toBeNull();
+    expect(lateMinutes(entry({ window: null }), DAY, new Date(`${DAY}T23:00:00`), 0)).toBeNull();
   });
 });
 
@@ -340,7 +368,7 @@ describe('queueCounters', () => {
       entry({ orderId: 'd', state: 'expected', window: null }),
     ];
 
-    expect(queueCounters(lines, DAY, at)).toEqual({
+    expect(queueCounters(lines, DAY, at, 0)).toEqual({
       total: 4,
       handedOver: 1,
       late: 1,
@@ -361,14 +389,14 @@ describe('queueCounters', () => {
       entry({ orderId: 'e', window: null }),
     ];
 
-    const counters = queueCounters(lines, DAY, new Date(`${DAY}T07:00:00`));
+    const counters = queueCounters(lines, DAY, new Date(`${DAY}T07:00:00`), 0);
 
     expect(counters.waiting).toBe(3);
     expect(counters.held).toBe(2);
   });
 
   it('une journée vide compte zéro partout', () => {
-    expect(queueCounters([], DAY, at)).toEqual({
+    expect(queueCounters([], DAY, at, 0)).toEqual({
       total: 0,
       handedOver: 0,
       late: 0,
@@ -622,7 +650,7 @@ describe('la retenue du contrôle qualité (lot QC5)', () => {
 
     // Le ton vient de l'origine du retard (pas prêt à temps : nous, donc en
     // alerte — Hugo, 2026-11-03), pas de la retenue.
-    expect(rowTone(late, DAY, new Date(`${DAY}T09:00:00`))).toBe('alert');
+    expect(rowTone(late, DAY, new Date(`${DAY}T09:00:00`), 0)).toBe('alert');
     expect(
       sortedQueue([entry({ orderId: 'b', placedAt: 'z' }), late]).map((e) => e.orderId),
     ).toEqual(['ord_1', 'b']);
@@ -639,7 +667,7 @@ describe('inQueueView', () => {
     entry({ orderId: 'off', state: 'cancelled' }),
   ];
   const ids = (view: Parameters<typeof inQueueView>[1]): readonly string[] =>
-    inQueueView(lines, view, DAY, new Date(`${DAY}T09:00:00`)).map((line) => line.orderId);
+    inQueueView(lines, view, DAY, new Date(`${DAY}T09:00:00`), 0).map((line) => line.orderId);
 
   it('« Tout » garde tout, « À remettre » masque retirées et annulées', () => {
     expect(ids('all')).toEqual(['open', 'late', 'gone', 'off']);

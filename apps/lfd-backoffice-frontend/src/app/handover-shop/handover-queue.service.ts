@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   ConfirmHandoverPayload,
+  CounterLateToleranceView,
   HandoverQueueView,
   OrderHandoverView,
   ReceiveTransferPayload,
@@ -41,6 +42,18 @@ export class HandoverQueueService {
         `${B2B_API_BASE}/admin/handover/file?jour=${encodeURIComponent(day)}`,
       ),
     );
+  }
+
+  /**
+   * **La tolérance de retard** (Hugo, 2026-11-03), en minutes après la fin du
+   * créneau. Sa propre route : le comptoir n'a que `handover_counter`, pas le
+   * réglage des commandes entier.
+   */
+  async lateTolerance(): Promise<number> {
+    const view = await firstValueFrom(
+      this.http.get<CounterLateToleranceView>(`${B2B_API_BASE}/admin/counter/late-tolerance`),
+    );
+    return view.lateToleranceMinutes;
   }
 
   /**

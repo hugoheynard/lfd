@@ -51,6 +51,7 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
 
 interface Options {
   readonly now?: Date;
+  readonly lateTolerance?: number | null;
 }
 
 function render(
@@ -62,6 +63,10 @@ function render(
   fixture.componentRef.setInput('entries', entries);
   fixture.componentRef.setInput('day', DAY);
   fixture.componentRef.setInput('now', options.now ?? new Date(`${DAY}T07:00:00`));
+  fixture.componentRef.setInput(
+    'lateTolerance',
+    options.lateTolerance === undefined ? 0 : options.lateTolerance,
+  );
   fixture.detectChanges();
   return fixture;
 }
@@ -244,6 +249,34 @@ describe('QueueTable', () => {
     ).toBeNull();
   });
 
+  /** La tolérance de retard (Hugo, 2026-11-03) : plus de « 0 min de retard ». */
+  it('🔴 à fin + 10 avec une tolérance de 15, aucune note de retard', () => {
+    const fixture = render([entry({ window: LATE })], {
+      now: new Date(`${DAY}T06:40:00`),
+      lateTolerance: 15,
+    });
+
+    expect(text(fixture)).not.toContain('de retard');
+  });
+
+  it('à fin + 16 avec une tolérance de 15 : « 16 min de retard »', () => {
+    const fixture = render([entry({ window: LATE })], {
+      now: new Date(`${DAY}T06:46:00`),
+      lateTolerance: 15,
+    });
+
+    expect(note(fixture)).toContain('16\u00a0min de retard');
+  });
+
+  it('🔴 tolérance pas lue : aucune ligne en retard', () => {
+    const fixture = render([entry({ window: LATE })], {
+      now: new Date(`${DAY}T23:00:00`),
+      lateTolerance: null,
+    });
+
+    expect(text(fixture)).not.toContain('de retard');
+  });
+
   /** L'origine du retard, comme en Supervision (Hugo, 2026-11-03). */
   it('🔴 le retard dit son origine : par nous quand le sac n’était pas prêt à temps', () => {
     const ours = render([entry({ window: LATE, readyAt: null })], {
@@ -323,6 +356,7 @@ describe('QueueTable — le sens de lecture', () => {
     ]);
     fixture.componentRef.setInput('day', DAY);
     fixture.componentRef.setInput('now', new Date(`${DAY}T05:00:00`));
+    fixture.componentRef.setInput('lateTolerance', 0);
     fixture.componentRef.setInput('reversed', true);
     fixture.detectChanges();
 

@@ -2,8 +2,8 @@
   <fold-element-title
     cardHeader
     variant="title"
-    title="Relances d’un retrait en retard"
-    subtitle="Quand la Supervision propose d’écrire au client, compté depuis la fin du créneau de retrait."
+    title="Retrait en retard"
+    subtitle="Quand une commande est dite en retard, puis quand la Supervision propose d’écrire au client, compté depuis la fin de la tolérance de retard."
   />
 
   @switch (state()) {
@@ -18,7 +18,18 @@
     @case ('ready') {
       <div class="form">
         <fold-number-input
-          label="Rappel au client : minutes après la fin du créneau"
+          label="Tolérance de retard : minutes après la fin du créneau"
+          hint="En deçà, ni la Supervision ni le comptoir ne disent la commande en retard."
+          [value]="tolerance()"
+          (valueChange)="tolerance.set($event)"
+          [min]="0"
+          integer
+          [readOnly]="!canWrite()"
+          [disabled]="pending()"
+          data-late-tolerance
+        />
+        <fold-number-input
+          label="Rappel au client : minutes après le retard"
           hint="La commande est prête, le client n’est pas venu."
           [value]="reminder()"
           (valueChange)="reminder.set($event)"
@@ -29,7 +40,7 @@
           data-pickup-reminder-delay
         />
         <fold-number-input
-          label="Avertir le client : minutes après la fin du créneau"
+          label="Avertir le client : minutes après le retard"
           hint="La commande n’est pas prête : il reçoit « Votre commande prend du retard »."
           [value]="warning()"
           (valueChange)="warning.set($event)"
@@ -40,8 +51,8 @@
           data-delay-warning-delay
         />
         <p class="help">
-          0 : le geste se propose dès la fin du créneau. Chaque relance ne part qu’une fois par
-          commande.
+          Tolérance à 0 : le retard compte dès la fin du créneau. Relance à 0 : le geste se propose
+          dès la fin de la tolérance. Chaque relance ne part qu’une fois par commande.
         </p>
 
         @if (failure(); as message) {
