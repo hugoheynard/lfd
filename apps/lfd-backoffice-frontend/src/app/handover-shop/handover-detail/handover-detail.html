@@ -58,18 +58,24 @@
           >
             Bon de commande
           </button>
-          <button
-            foldButton
-            emphasis="soft"
-            size="sm"
-            icon="truck"
-            data-document="delivery"
-            [disabled]="row.state !== 'handed_over'"
-            [title]="row.state === 'handed_over' ? '' : 'Le bon de livraison s’écrit à la remise.'"
-            (click)="openDocument('delivery')"
-          >
-            Bon de livraison
-          </button>
+          <!-- Pas de BL pour un particulier (Hugo, 2026-11-03) : il n'a que son
+               bon de commande ; son équivalent sera un ticket chiffré de ce qui a été donné, pas bâti. -->
+          @if (row.clientele !== 'public') {
+            <button
+              foldButton
+              emphasis="soft"
+              size="sm"
+              icon="truck"
+              data-document="delivery"
+              [disabled]="row.state !== 'handed_over'"
+              [title]="
+                row.state === 'handed_over' ? '' : 'Le bon de livraison s’écrit à la remise.'
+              "
+              (click)="openDocument('delivery')"
+            >
+              Bon de livraison
+            </button>
+          }
         </div>
       </div>
 

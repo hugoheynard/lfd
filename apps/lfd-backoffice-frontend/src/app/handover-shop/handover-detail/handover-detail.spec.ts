@@ -552,6 +552,21 @@ describe('HandoverDetail', () => {
 
     expect(buttonSaying(fixture, 'Bon de livraison')?.hasAttribute('disabled')).toBe(false);
   });
+
+  /** Hugo, 2026-11-03 : un particulier n'a pas de BL, seulement son bon de commande. */
+  it('🔴 une commande de particulier n’offre que le bon de commande', async () => {
+    const fixture = await render(
+      entry({
+        clientele: 'public',
+        state: 'handed_over',
+        handedOverAt: `${DAY}T06:41:00.000Z`,
+        handedOverVia: 'scan',
+      }),
+    );
+
+    expect(buttonSaying(fixture, 'Bon de commande')).not.toBeNull();
+    expect(buttonSaying(fixture, 'Bon de livraison')).toBeNull();
+  });
 });
 
 describe('HandoverDetail — les envois prêts (plan E7 reliquat, L4c)', () => {
