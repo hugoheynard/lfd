@@ -105,5 +105,17 @@
         </fold-callout>
       }
     }
+    <!-- La barre « maintenant » (Hugo, 2026-11-03) : sous la dernière ligne
+         d'un côté de l'heure, comme l'heure d'un agenda. -->
+    @if (row.orderId === nowAfter()) {
+      <div
+        class="qt-now"
+        role="separator"
+        [attr.aria-label]="'Maintenant, ' + nowLabel()"
+        data-now-line
+      >
+        <span class="qt-now-label">Maintenant · {{ nowLabel() }}</span>
+      </div>
+    }
   </ng-template>
 </fold-data-table>

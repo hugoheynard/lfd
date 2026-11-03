@@ -29,6 +29,7 @@ import {
   heldAtTheCounter,
   inQueueView,
   queueViewOf,
+  nowLineAfter,
   rowTone,
   settledLast,
   sortedQueue,
@@ -714,5 +715,33 @@ describe('settledLast', () => {
       'gone-1',
       'off',
     ]);
+  });
+});
+
+/** La barre « maintenant » (Hugo, 2026-11-03). */
+describe('nowLineAfter', () => {
+  const slot = (start: string): ReturnType<typeof window> =>
+    window({ source: 'override', start, end: start });
+  const lines = [
+    entry({ orderId: 'a', window: slot('06:00') }),
+    entry({ orderId: 'b', window: slot('07:00') }),
+    entry({ orderId: 'c', window: slot('09:00') }),
+    entry({ orderId: 'gone', state: 'handed_over', window: slot('10:00') }),
+  ];
+  const at = (clock: string): Date => new Date(`${DAY}T${clock}:00`);
+
+  it('passe sous la dernière ligne commencée', () => {
+    expect(nowLineAfter(lines, DAY, at('08:15'))).toBe('b');
+  });
+
+  it('dans le sens inverse, sous la dernière ligne à venir', () => {
+    const reversed = [...lines.slice(0, 3)].reverse();
+    expect(nowLineAfter(reversed, DAY, at('08:15'))).toBe('c');
+  });
+
+  it('se tait tout à venir, tout passé, ou un autre jour', () => {
+    expect(nowLineAfter(lines, DAY, at('05:00'))).toBeNull();
+    expect(nowLineAfter(lines, DAY, at('12:00'))).toBeNull();
+    expect(nowLineAfter(lines, '2000-01-01', at('08:15'))).toBeNull();
   });
 });

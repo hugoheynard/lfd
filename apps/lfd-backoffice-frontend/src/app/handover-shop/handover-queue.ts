@@ -701,3 +701,44 @@ export function settledLast(
     ...order(entries.filter((entry) => entry.state === 'cancelled')),
   ];
 }
+
+/**
+ * **Où passe la barre « maintenant »** (Hugo, 2026-11-03) : sous la ligne
+ * après laquelle la file change de côté de l'heure — celles dont le créneau a
+ * commencé d'un côté, celles à venir de l'autre, dans un sens de lecture comme
+ * dans l'autre. Rend l'`orderId` de cette ligne, ou `null` : un autre jour que
+ * celui de l'horloge, aucune bascule (tout passé ou tout à venir), ou une
+ * bascule vers une ligne sans créneau, qui n'a pas d'heure à opposer.
+ *
+ * Seules les lignes à tendre comptent : les retirées et les annulées sont en
+ * bas (`settledLast`), hors de l'axe du temps.
+ */
+export function nowLineAfter(
+  rows: readonly HandoverQueueEntryView[],
+  day: string,
+  now: Date,
+): string | null {
+  if (isoDay(now) !== day) {
+    return null;
+  }
+  const clock = clockOf(now);
+  const open = rows.filter((row) => row.state !== 'handed_over' && row.state !== 'cancelled');
+  for (let index = 0; index + 1 < open.length; index += 1) {
+    const here = open[index];
+    const next = open[index + 1];
+    if (here === undefined || next === undefined || here.window === null || next.window === null) {
+      continue;
+    }
+    if (windowRank(here.window) <= clock !== windowRank(next.window) <= clock) {
+      return here.orderId;
+    }
+  }
+  return null;
+}
+
+/** `AAAA-MM-JJ` d'un instant, en heure locale — le jour tel que l'équipe le dit. */
+export function isoDay(date: Date): string {
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}

@@ -36,6 +36,7 @@ import {
   lateMinutes,
   matchingQueue,
   type QueueView,
+  nowLineAfter,
   rowTone,
   settledLast,
   sortedQueue,
@@ -246,8 +247,17 @@ export class QueueTable {
    * comme une entrée, donc elle doit garder son `this`. Une méthode passée par
    * référence perdrait le composant et lèverait au premier rendu.
    */
+  /** La ligne sous laquelle passe la barre « maintenant », ou `null` (Hugo, 2026-11-03). */
+  protected readonly nowAfter = computed(() => nowLineAfter(this.rows(), this.day(), this.now()));
+
+  /** « 9 h 42 » — l'heure que dit la barre. */
+  protected readonly nowLabel = computed(() => formatHour(clockOf(this.now())));
+
   protected readonly hasNote = (entry: HandoverQueueEntryView): boolean =>
-    this.late(entry) || this.transferBlock(entry) !== null || this.abandoned(entry) !== null;
+    this.late(entry) ||
+    this.transferBlock(entry) !== null ||
+    this.abandoned(entry) !== null ||
+    entry.orderId === this.nowAfter();
 
   /** Le reste abandonné d'un départ incomplet décidé, ou `null` s'il n'y en a pas. */
   protected abandoned(entry: HandoverQueueEntryView): readonly PackingAbandonedLine[] | null {

@@ -79,3 +79,26 @@
   font-weight: var(--fold-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
+
+/* La barre « maintenant » (Hugo, 2026-11-03) : un trait de la couleur
+   primaire sur toute la largeur, l'heure posée dessus à gauche — l'heure
+   d'un agenda, lue d'un coup d'œil sans compter les créneaux. */
+.qt-now {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-primary);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+
+  &::after {
+    flex: 1 1 auto;
+    height: 2px;
+    background: currentColor;
+    content: '';
+  }
+}
+
+.qt-now-label {
+  white-space: nowrap;
+}

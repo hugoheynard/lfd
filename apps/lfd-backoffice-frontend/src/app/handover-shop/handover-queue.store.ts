@@ -19,6 +19,7 @@ import {
   type CounterPlace,
   entriesForTab,
   formatHour,
+  isoDay,
   NO_PICKUP,
   pickupTabs,
   queueCounters,
@@ -41,13 +42,6 @@ const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
   month: 'long',
 });
-
-/** `AAAA-MM-JJ` d'un instant, en heure locale — le jour tel que l'équipe le dit. */
-function isoDay(date: Date): string {
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
 
 /**
  * Le battement de l'horloge de comptoir. Trente secondes : une ligne bascule
