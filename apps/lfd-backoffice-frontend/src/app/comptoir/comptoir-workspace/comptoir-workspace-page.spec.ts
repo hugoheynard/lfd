@@ -119,8 +119,8 @@ describe('ComptoirWorkspacePage — les onglets du comptoir', () => {
     expect(labels).toHaveLength(3);
     // Ordre revu par Hugo le 2026-10-12 : le retrait en tête.
     expect(labels[0]).toContain('Retrait commande');
-    expect(labels[1]).toContain('Réassort');
-    expect(labels[2]).toContain('Nouvelle commande pro');
+    expect(labels[1]).toContain('Nouvelle commande pro');
+    expect(labels[2]).toContain('Réassort');
   });
 
   it('cache la commande pro à qui ne tient que le retrait', async () => {
