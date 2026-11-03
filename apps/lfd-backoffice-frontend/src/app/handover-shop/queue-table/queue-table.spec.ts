@@ -94,7 +94,7 @@ describe('QueueTable', () => {
     expect(body).toContain('Boulangerie Marin');
     expect(body).toContain('CMD-1042');
     expect(body).toContain('12');
-    expect(body).toContain('Attendue');
+    expect(body).toContain('En préparation');
     expect(body).toContain('6 h 00 – 8 h 00');
   });
 
@@ -114,7 +114,7 @@ describe('QueueTable', () => {
     expect(clienteleBadges(fixture)).toEqual([]);
     expect(text(fixture)).toContain('Boulangerie Marin');
     // Le badge d'état, lui, reste.
-    expect(text(fixture)).toContain('Attendue');
+    expect(text(fixture)).toContain('En préparation');
   });
 
   it('🔴 une commande sans créneau reste à l’écran et le DIT', () => {
@@ -212,7 +212,7 @@ describe('QueueTable', () => {
     );
 
     expect(note(fixture)).toBe('');
-    expect(text(fixture)).toContain('Attendue');
+    expect(text(fixture)).toContain('En préparation');
   });
 
   it('🔴 une ligne sans retard n’émet AUCUNE rangée de note', () => {
@@ -234,14 +234,28 @@ describe('QueueTable', () => {
   it('🔴 le retard est dit, sans aucun rappel : il est parti à la supervision', () => {
     // Hugo, 2026-10-25 : « Envoyer un rappel doit disparaître du comptoir et
     // passer au superviseur ».
-    const fixture = render([entry({ window: LATE, readyAt: `${DAY}T05:00:00.000Z` })], {
+    const fixture = render([entry({ window: LATE, readyAt: `${DAY}T04:00:00.000Z` })], {
       now: new Date(`${DAY}T09:00:00`),
     });
 
-    expect(note(fixture)).toContain('sur la tranche convenue');
+    expect(note(fixture)).toContain('client pas venu');
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('tr.folddt-note-row button'),
     ).toBeNull();
+  });
+
+  /** L'origine du retard, comme en Supervision (Hugo, 2026-11-03). */
+  it('🔴 le retard dit son origine : par nous quand le sac n’était pas prêt à temps', () => {
+    const ours = render([entry({ window: LATE, readyAt: null })], {
+      now: new Date(`${DAY}T09:00:00`),
+    });
+
+    expect(note(ours)).toContain('par nous');
+    expect(
+      (ours.nativeElement as HTMLElement)
+        .querySelector('[data-late-cause]')
+        ?.getAttribute('data-late-cause'),
+    ).toBe('kitchen');
   });
 
   it('🔴 aucune ligne ne porte de scan : il est UNIQUE, au-dessus de la table', () => {

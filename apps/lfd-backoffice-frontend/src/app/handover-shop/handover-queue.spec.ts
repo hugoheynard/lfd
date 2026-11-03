@@ -275,6 +275,18 @@ describe('rowTone', () => {
     expect(rowTone(line, DAY, new Date(`${DAY}T09:00:00`))).toBe('alert');
   });
 
+  /** L'origine du retard, comme en Supervision (Hugo, 2026-11-03). */
+  it('🔴 un retard de notre fait est en alerte, celui du client en avertissement', () => {
+    const late = window({ source: 'override', end: '06:30' });
+    const now = new Date(`${DAY}T09:00:00`);
+
+    expect(rowTone(entry({ window: late, readyAt: null }), DAY, now)).toBe('alert');
+    // Prêt à 6 h 00 (heure de Paris), avant la fin du créneau : le client.
+    expect(rowTone(entry({ window: late, readyAt: `${DAY}T04:00:00.000Z` }), DAY, now)).toBe(
+      'warning',
+    );
+  });
+
   it('une ligne ordinaire ne porte aucun ton', () => {
     expect(rowTone(entry({ window: null }), DAY, new Date(`${DAY}T09:00:00`))).toBeNull();
   });
@@ -606,7 +618,9 @@ describe('la retenue du contrôle qualité (lot QC5)', () => {
   it('la retenue ne touche ni au tri ni au ton de la ligne', () => {
     const late = entry({ heldForQuality: true, window: window({ end: '06:30' }) });
 
-    expect(rowTone(late, DAY, new Date(`${DAY}T09:00:00`))).toBe('warning');
+    // Le ton vient de l'origine du retard (pas prêt à temps : nous, donc en
+    // alerte — Hugo, 2026-11-03), pas de la retenue.
+    expect(rowTone(late, DAY, new Date(`${DAY}T09:00:00`))).toBe('alert');
     expect(
       sortedQueue([entry({ orderId: 'b', placedAt: 'z' }), late]).map((e) => e.orderId),
     ).toEqual(['ord_1', 'b']);

@@ -9,6 +9,7 @@ import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
 
 import { searchKey } from '../shared/search/search-key';
 import { fulfillmentWindowLabel } from '../shared/window-label';
+import { causeOf } from '../supervision/handover-slots';
 
 /**
  * **La logique de la file de retrait**, hors de tout composant : dérivation des
@@ -483,7 +484,8 @@ export function stateLabel(state: HandoverQueueState): string {
     case 'cancelled':
       return 'Annulée';
     default:
-      return 'Attendue';
+      // « Attendue » ne disait pas où était le sac (Hugo, 2026-11-03).
+      return 'En préparation';
   }
 }
 
@@ -510,7 +512,12 @@ export function rowTone(entry: HandoverQueueEntryView, day: string, now: Date): 
   if (entry.state === 'cancelled') {
     return 'alert';
   }
-  return isLate(entry, day, now) ? 'warning' : null;
+  if (!isLate(entry, day, now) || entry.window === null) {
+    return null;
+  }
+  // Le retard dit son origine, comme en Supervision (Hugo, 2026-11-03) : en
+  // alerte quand c'est nous, en avertissement quand le client n'est pas venu.
+  return causeOf(entry, day, entry.window.end) === 'kitchen' ? 'alert' : 'warning';
 }
 
 /**

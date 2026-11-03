@@ -90,10 +90,20 @@
     @if (transferBlock(row); as why) {
       <fold-callout appearance="inset" variant="info" icon="truck">{{ why }}</fold-callout>
     }
-    @if (late(row)) {
-      <fold-callout appearance="inset" variant="warning" icon="info">
-        <strong>{{ lateText(row) }}</strong> sur la tranche convenue.
-      </fold-callout>
+    <!-- L'origine du retard, comme en Supervision (Hugo, 2026-11-03) : en
+         alerte quand c'est nous, en avertissement quand le client n'est pas
+         venu. -->
+    @if (lateCause(row); as cause) {
+      @if (cause === 'kitchen') {
+        <fold-callout appearance="inset" variant="alert" icon="info" data-late-cause="kitchen">
+          <strong>{{ lateText(row) }}</strong> · par nous : le sac n'était pas prêt à la fin du
+          créneau.
+        </fold-callout>
+      } @else {
+        <fold-callout appearance="inset" variant="warning" icon="info" data-late-cause="customer">
+          <strong>{{ lateText(row) }}</strong> · client pas venu : le sac était prêt à temps.
+        </fold-callout>
+      }
     }
   </ng-template>
 </fold-data-table>

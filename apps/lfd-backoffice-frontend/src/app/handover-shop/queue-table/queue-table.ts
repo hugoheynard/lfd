@@ -37,6 +37,7 @@ import {
   rowTone,
   sortedQueue,
 } from '../handover-queue';
+import { causeOf, type OverdueCause } from '../../supervision/handover-slots';
 import { MissingItems } from '../missing-items/missing-items';
 import { transferBlockReason } from '../handover-transfer';
 
@@ -248,6 +249,19 @@ export class QueueTable {
 
   protected late(entry: HandoverQueueEntryView): boolean {
     return isLate(entry, this.day(), this.now());
+  }
+
+  /**
+   * **Qui a dépassé le créneau**, comme en Supervision (Hugo, 2026-11-03) :
+   * le sac n'était pas prêt à la fin du créneau — c'est nous —, ou il l'était
+   * et le client n'est pas venu. La règle est celle de la Supervision
+   * (`causeOf`), pas une seconde écrite ici.
+   */
+  protected lateCause(entry: HandoverQueueEntryView): OverdueCause | null {
+    if (!this.late(entry) || entry.window === null) {
+      return null;
+    }
+    return causeOf(entry, this.day(), entry.window.end);
   }
 
   /** « 56 min de retard », ou `null`. */
