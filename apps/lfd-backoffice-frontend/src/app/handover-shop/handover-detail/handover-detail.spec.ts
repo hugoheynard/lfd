@@ -248,10 +248,10 @@ describe('HandoverDetail', () => {
     expect(text(fixture)).toContain('Fournil · 1 / 2 produits sortis');
     expect(text(fixture)).toContain('Colisage · 1 / 2 posés dans le bac');
     expect(element.querySelector('[data-muted-note]')).not.toBeNull();
-    const scan = element.querySelector<HTMLButtonElement>('[data-action="scan"]');
-    expect(scan?.classList).toContain('neutral');
+    const remit = element.querySelector<HTMLButtonElement>('[data-action="remit"]');
+    expect(remit?.classList).toContain('neutral');
     // Atténué, JAMAIS désactivé : le client est là.
-    expect(scan?.disabled).toBe(false);
+    expect(remit?.disabled).toBe(false);
   });
 
   it('rend leur poids aux gestes quand le four et le bac ont fini', async () => {
@@ -284,10 +284,9 @@ describe('HandoverDetail', () => {
     expect(text(fixture)).not.toContain('prête à remettre');
 
     expect(element.querySelector('[data-muted-note]')?.textContent).toContain('contrôle qualité');
-    const scan = element.querySelector<HTMLButtonElement>('[data-action="scan"]');
-    expect(scan?.classList).toContain('neutral');
-    expect(scan?.disabled).toBe(false);
-    expect(element.querySelector<HTMLButtonElement>('[data-action="remit"]')?.disabled).toBe(false);
+    const remit = element.querySelector<HTMLButtonElement>('[data-action="remit"]');
+    expect(remit?.classList).toContain('neutral');
+    expect(remit?.disabled).toBe(false);
   });
 
   it('sans fiche de colis, le dit et atténue les gestes', async () => {
@@ -372,26 +371,18 @@ describe('HandoverDetail', () => {
     expect(buttonSaying(fixture, 'Remettre')).toBeNull();
   });
 
-  it('🔴 le scan sort du rail sans l’ouvrir, et nomme la commande visée', async () => {
-    // Le rail dit sur QUI on veut lire, l'écran ouvre : deux surfaces qui
-    // ouvriraient chacune leur panneau en donneraient deux au double-clic, et
-    // seule celle du dessus relirait la file en se fermant.
+  /**
+   * Le scan ne vit que dans la barre de la file (Hugo, 2026-11-03) : le bouton
+   * du rail, remis le 2026-10-25, faisait le même appel qu'elle.
+   */
+  it('🔴 le rail n’offre aucun scan : la remise seule, et sa mention de preuve', async () => {
     const fixture = await render(entry());
-    const asked: HandoverQueueEntryView[] = [];
-    fixture.componentInstance.scanned.subscribe((row) => asked.push(row));
-
-    buttonSaying(fixture, 'Scanner le QR code du client')?.click();
-    await fixture.whenStable();
-
-    expect(asked.map((row) => row.reference)).toEqual(['CMD-1042']);
-  });
-
-  it('🔴 une commande déjà retirée n’offre plus de scan non plus', async () => {
-    const fixture = await render(
-      entry({ state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z`, handedOverVia: 'scan' }),
-    );
+    const element: HTMLElement = fixture.nativeElement;
 
     expect(buttonSaying(fixture, 'Scanner le QR code du client')).toBeNull();
+    expect(element.querySelector('[data-action="scan"]')).toBeNull();
+    expect(element.querySelector('[data-action="remit"]')).not.toBeNull();
+    expect(element.querySelector('[data-proof="manual"]')).not.toBeNull();
   });
 
   it('🔴 sans QR scanné, UN seul geste, qui annonce « sans code » et part sur le numéro', async () => {
