@@ -17,6 +17,7 @@ import { ReviseOrderCommand } from "../revise-order.command.js";
 import { FixedClosedPlans, gateOf, RecordingAdmissionDesk } from "./plan-doubles.js";
 import {
   AFTER_CUTOFF,
+  BOOK_ADDRESS_ID,
   content,
   DAY,
   FixedEngagements,
@@ -31,6 +32,8 @@ const TO_DELIVERY = {
   pickupAddressId: null,
   // La zone livre à échéance : « avant 10 h », sans heure de début.
   requestedWindow: { start: null, end: "10:00" },
+  // L'échéance inscrite sur l'adresse du carnet (E1, étendue à la révision : É12).
+  deliveryAddressId: BOOK_ADDRESS_ID,
   deliveryAddress: {
     label: "",
     ligne1: "2 rue Neuve",

@@ -83,8 +83,9 @@ async function suspendedPro(ctx: E2eContext): Promise<{ companyId: string; buyer
 }
 
 /**
- * Deux paires, sur la passation de l'équipe : jour ouvert (3) avant
- * chargement (4) ; chargement (4) avant heure limite (5). L'heure limite est
+ * Trois paires, sur la passation de l'équipe : jour ouvert (3) avant
+ * chargement (4) ; chargement (4) avant heure limite (5) ; chargement (4)
+ * avant le crédit (rangé après 7 par Hugo, 2026-11-03). L'heure limite est
  * posée ici et reste posée pour la suite.
  *
  * ⚠️ Le payeur (1) n'est PAS mesuré : il ne refuse qu'un compte de groupe ou
@@ -124,7 +125,8 @@ export async function refusalOrderCases(
     "suspended.only": await place(FIXED, week, suspended),
     "suspended+unknown-sku": await place(WITH_UNKNOWN, week, suspended),
     "unknown-sku.only": await place(WITH_UNKNOWN, week),
-    // Le règlement au compte sans crédit : le §2.4 ne le range pas ; on fige où il tombe.
+    // Le règlement au compte sans crédit : rangé par Hugo le 2026-11-03 juste
+    // après les gardes de l'agrégat (7), avant les verrous (8) — donc après le chargement.
     "no-credit.only": await place(FIXED, week, scene.proWithoutCredit, "account"),
     "no-credit+unknown-sku": await place(WITH_UNKNOWN, week, scene.proWithoutCredit, "account"),
     "same-day.only": await place(FIXED, anchoredDay(0)),
@@ -137,6 +139,11 @@ export async function refusalOrderCases(
     paths,
     orders: [
       { label: "jour avant chargement", first: "same-day+unknown-sku", over: "same-day.only" },
+      {
+        label: "chargement avant crédit",
+        first: "no-credit+unknown-sku",
+        over: "unknown-sku.only",
+      },
       {
         label: "chargement avant heure limite",
         first: "cutoff-closed+unknown-sku",

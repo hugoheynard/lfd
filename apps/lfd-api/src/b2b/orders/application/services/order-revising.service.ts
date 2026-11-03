@@ -1,3 +1,4 @@
+import type { CustomerAudience } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
@@ -15,7 +16,7 @@ import {
   standingRevisionErrorOf,
 } from "../../domain/errors/order-revision-errors.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
-import type { WindowRequester } from "../../domain/services/delivery-window.js";
+import { windowRequesterOf } from "../../domain/services/delivery-window.js";
 import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
 import { cancellationOf } from "../../domain/services/order-cancellation.js";
 import {
@@ -28,6 +29,7 @@ import {
   type RevisionVerdict,
   type StandingRevisionBlock,
 } from "../../domain/services/order-revisability.js";
+import { audienceOfSalesTerms } from "../../domain/services/sales-terms-of.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { warnBeyondCap } from "./basket-promotions.service.js";
 import { CancellationRule } from "./cancellation-rule.js";
@@ -57,7 +59,11 @@ import { ShelfRevising } from "./shelf-revising.service.js";
  *   et l'heure limite de l'ancienne ET de la nouvelle date pour le client —
  *   jamais pour l'équipe, ni dérogation dépensée ;
  * - **R2** : payeur, société, principal, clientèle, CGV et langue relus sur la
- *   commande, jamais recalculés ;
+ *   commande, jamais recalculés — la clientèle se lit sur les CGV figées
+ *   (`salesTermsPro` ⇒ pro), et c'est elle qui ouvre ou ferme le point de
+ *   retrait et la livraison (É13, Hugo, 2026-11-03), pas le statut de la
+ *   société aujourd'hui. Le prix d'une ligne NOUVELLE, lui, se résout encore
+ *   au statut d'aujourd'hui (la porte du prix) ;
  * - **R3** : les lignes déjà présentes à leur prix figé — et une quantité
  *   qui changerait ce prix est refusée, comme une remise de panier qui
  *   tomberait sous son seuil ; les remises sont REJOUÉES, jamais rejugées
@@ -242,6 +248,9 @@ export class OrderRevising {
       // avec le mode que l'agrégat appliquera.
       vatMethod: order.vatMethod,
       frozenDeliveryVatMode: order.deliveryVatMode,
+      // R2 : la clientèle de la COMMANDE, lue sur ses CGV figées (É13, Hugo,
+      // 2026-11-03) — jamais le statut de la société aujourd'hui.
+      frozenAudience: frozenAudienceOf(order),
     });
     if (!fromShelf) {
       await this.ensureBeforeCutoff(order, content, actor);
@@ -250,7 +259,8 @@ export class OrderRevising {
       content,
       parties,
       loaded.context,
-      requesterOf(order, actor),
+      // É12 (Hugo, 2026-11-03) : la règle de la passation, E1 comprise.
+      windowRequesterOf(order.companyId, actor === "staff"),
     );
     const input = revisedInputOf(
       order,
@@ -418,6 +428,15 @@ function revisedInputOf(order: RevisableOrder, composed: ComposedDraft): PricedD
   };
 }
 
+/**
+ * La clientèle figée de la commande, tirée de ses CGV (`salesTermsOf` à
+ * rebours) ; `null` sans CGV figées — la révision les refuse plus loin
+ * ({@link revisedInputOf}), et le chargement retombe alors sur aujourd'hui.
+ */
+function frozenAudienceOf(order: RevisableOrder): CustomerAudience | null {
+  return order.salesTerms === null ? null : audienceOfSalesTerms(order.salesTerms.document);
+}
+
 /** L'état que la règle de l'annulation lit, tiré de la commande. */
 function subjectOf(order: RevisableOrder) {
   return {
@@ -436,12 +455,4 @@ function subjectOf(order: RevisableOrder) {
     loyaltyVoucherId: order.voucher?.id ?? null,
     refunds: order.refunds,
   };
-}
-
-/** Qui demande une tranche : l'équipe est libre de l'heure, le client selon sa clientèle. */
-function requesterOf(order: RevisableOrder, actor: RevisionActor["kind"]): WindowRequester {
-  if (actor === "staff") {
-    return "staff";
-  }
-  return order.companyId === null ? "individual" : "pro";
 }

@@ -42,6 +42,7 @@ function request(over: Partial<PricingRequest> = {}): PricingRequest {
     caller: "checkout",
     vatMethod: "exact_ht",
     frozenDeliveryVatMode: null,
+    frozenAudience: null,
     ...over,
   };
 }
@@ -120,6 +121,20 @@ describe("PricingContext — les refus de lecture sont des données", () => {
     const loaded = await loader.load(request());
 
     expect(loaded.refusals[0]).toBeInstanceOf(PickupClosedForAudienceError);
+  });
+
+  /**
+   * Régression É13 : la révision relisait la clientèle au statut d'AUJOURD'HUI,
+   * et une commande pro au point réservé aux pros devenait irrévisable si la
+   * société changeait de statut. Hugo, 2026-11-03 : contexte figé sur la commande.
+   */
+  it("révision : la clientèle FIGÉE ouvre le point réservé aux pros, quel que soit le statut du jour", async () => {
+    const reserved = { ...LABO, pickupAudiences: { b2b: true, b2c: false } };
+    const { loader } = pricingContextOf({ points: new CountedPoints(reserved) });
+
+    const { audience } = loadedOrRefused(await loader.load(request({ frozenAudience: "b2b" })));
+
+    expect(audience).toBe("b2b");
   });
 
   it("une tranche hors des fenêtres du point : rendue, après le point", async () => {

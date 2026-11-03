@@ -12,3 +12,13 @@ import type { CustomerAudience, SalesTermsDocument } from "@lfd/contracts";
 export function salesTermsOf(audience: CustomerAudience): SalesTermsDocument {
   return audience === "b2b" ? "salesTermsPro" : "salesTerms";
 }
+
+/**
+ * **La clientèle d'une commande passée**, lue sur les CGV qu'elle a figées —
+ * l'inverse de {@link salesTermsOf}. C'est la seule trace de la clientèle
+ * qui a tarifé la commande : la révision la relit là (É13, Hugo, 2026-11-03)
+ * plutôt qu'au statut de la société aujourd'hui.
+ */
+export function audienceOfSalesTerms(document: SalesTermsDocument): CustomerAudience {
+  return document === "salesTermsPro" ? "b2b" : "b2c";
+}

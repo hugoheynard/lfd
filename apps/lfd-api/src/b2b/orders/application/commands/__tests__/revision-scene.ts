@@ -43,6 +43,7 @@ import {
   type AccountEngagement,
 } from "../../../domain/ports/account-order-engagement.js";
 import { AccountOrderRevaluation } from "../../../domain/ports/account-order-revaluation.js";
+import type { OrderCompanyStatus } from "../../../domain/ports/company-status.reader.js";
 import { NO_DELIVERY_DEFAULTS } from "../../../domain/ports/delivery-defaults.reader.js";
 import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js";
 import type { OrderRole } from "../../../domain/ports/order-guard.reader.js";
@@ -138,6 +139,15 @@ export const LABO_POINT: PickupAddressView = {
   opening: { publicOpening: null, proPickup: null },
 };
 
+/**
+ * L'adresse du carnet de la société : livrée « avant 10 h », inscrite avec le
+ * commercial. Depuis É12 (Hugo, 2026-11-03), l'équipe qui révise une commande
+ * pro ne demande, comme le pro, qu'une échéance inscrite (règle E1).
+ */
+export const BOOK_ADDRESS_ID = "addr_book";
+
+const BOOK_ADDRESS_DEFAULTS = { ...NO_DELIVERY_DEFAULTS, deadlines: ["10:00"] };
+
 /** Une zone à 5 € forfaitaires, pour le passage en livraison. */
 export const ZONE: DeliveryZoneView = {
   id: "zone_1",
@@ -191,10 +201,12 @@ function pricer(clock: FixedClock): Pricer {
   );
 }
 
-const pickups: PickupAddressRepository = {
-  list: () => Promise.resolve([LABO_POINT]),
-  resolve: () => Promise.resolve(LABO_POINT),
-};
+function pickupsOf(point: PickupAddressView): PickupAddressRepository {
+  return {
+    list: () => Promise.resolve([point]),
+    resolve: () => Promise.resolve(point),
+  };
+}
 
 const zones: DeliveryZoneRepository = {
   list: () => Promise.resolve([ZONE]),
@@ -226,8 +238,14 @@ export function revisingAt(
     readonly intake?: OrderIntake;
     /** Le circuit du jour J (lot L5) — par défaut fermé, sur la porte du plan. */
     readonly shelf?: ShelfCircuit;
+    /** Le statut de la société AUJOURD'HUI — par défaut active (É13). */
+    readonly companyStatus?: OrderCompanyStatus;
+    /** Le point de retrait — par défaut le Labo, ouvert à tous. */
+    readonly point?: PickupAddressView;
   } = {},
 ): OrderRevising {
+  const pickups = pickupsOf(options.point ?? LABO_POINT);
+  const companyStatus = options.companyStatus ?? "active";
   const catalog = new InMemoryProductCatalog(options.catalogItems ?? CATALOG);
   const classifications = new FixedLineClassifications();
   const composition = new OrderComposition(
@@ -239,11 +257,11 @@ export function revisingAt(
       { preferredPickupOf: () => Promise.resolve(null) },
       pointDiscountPromotions(pickups, classifications),
     ),
-    { of: () => Promise.resolve(NO_DELIVERY_DEFAULTS) },
+    { of: () => Promise.resolve(BOOK_ADDRESS_DEFAULTS) },
     new OrderOperations(noSaleOperations(clock.now())),
     new FixedDeliveryVat(),
     classifications,
-    new CustomerAudiences({ companyStatusOf: () => Promise.resolve("active") }),
+    new CustomerAudiences({ companyStatusOf: () => Promise.resolve(companyStatus) }),
   );
   const cutoffs = new OrderCutoffGate(
     { list: () => Promise.resolve([]) },

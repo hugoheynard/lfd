@@ -26532,5 +26532,174 @@
       "amounts": null,
       "notes": {}
     }
+  },
+  "revision-decisions": {
+    "e12-unregistered-deadline.C.admin-orders.account": {
+      "status": 201,
+      "code": null,
+      "amounts": {
+        "vatMethod": "line_ht",
+        "subtotalCents": 1000,
+        "discountCents": 0,
+        "discounts": [],
+        "voucherCents": 0,
+        "deliveryFeeCents": 2000,
+        "lateFeeCents": 0,
+        "vat": [
+          {
+            "rate": 5.5,
+            "amountCents": 55
+          },
+          {
+            "rate": 20,
+            "amountCents": 400
+          }
+        ],
+        "vatCents": 455,
+        "totalCents": 3455,
+        "lines": [
+          {
+            "sku": "PAI-001-1",
+            "quantity": 2,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 400,
+            "lineTotalTtcCents": null
+          },
+          {
+            "sku": "VIE-001-1",
+            "quantity": 3,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 600,
+            "lineTotalTtcCents": null
+          }
+        ]
+      },
+      "notes": {}
+    },
+    "e12-unregistered-deadline.D.revision-quote.staff": {
+      "status": 409,
+      "code": "orders.fulfillment.deadline_not_registered",
+      "amounts": null,
+      "notes": {}
+    },
+    "e12-unregistered-deadline.D.revision.staff": {
+      "status": 409,
+      "code": "orders.fulfillment.deadline_not_registered",
+      "amounts": null,
+      "notes": {}
+    },
+    "e13-suspended-since.C.admin-orders.account": {
+      "status": 201,
+      "code": null,
+      "amounts": {
+        "vatMethod": "line_ht",
+        "subtotalCents": 1000,
+        "discountCents": 0,
+        "discounts": [],
+        "voucherCents": 0,
+        "deliveryFeeCents": 0,
+        "lateFeeCents": 0,
+        "vat": [
+          {
+            "rate": 5.5,
+            "amountCents": 55
+          }
+        ],
+        "vatCents": 55,
+        "totalCents": 1055,
+        "lines": [
+          {
+            "sku": "PAI-001-1",
+            "quantity": 2,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 400,
+            "lineTotalTtcCents": null
+          },
+          {
+            "sku": "VIE-001-1",
+            "quantity": 3,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 600,
+            "lineTotalTtcCents": null
+          }
+        ]
+      },
+      "notes": {}
+    },
+    "e13-suspended-since.D.revision-quote.staff": {
+      "status": 200,
+      "code": null,
+      "amounts": {
+        "vatMethod": null,
+        "subtotalCents": 1000,
+        "discountCents": 0,
+        "discounts": null,
+        "voucherCents": 0,
+        "deliveryFeeCents": 0,
+        "lateFeeCents": 0,
+        "vat": null,
+        "vatCents": 55,
+        "totalCents": 1055,
+        "lines": [
+          {
+            "sku": "PAI-001-1",
+            "quantity": 2,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 400,
+            "lineTotalTtcCents": null
+          },
+          {
+            "sku": "VIE-001-1",
+            "quantity": 3,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 600,
+            "lineTotalTtcCents": null
+          }
+        ]
+      },
+      "notes": {
+        "previousTotalCents": 1055,
+        "differenceCents": 0,
+        "lineRefusals": 0
+      }
+    },
+    "e13-suspended-since.D.revision.staff": {
+      "status": 200,
+      "code": null,
+      "amounts": {
+        "vatMethod": "line_ht",
+        "subtotalCents": 1000,
+        "discountCents": 0,
+        "discounts": [],
+        "voucherCents": 0,
+        "deliveryFeeCents": 0,
+        "lateFeeCents": 0,
+        "vat": [
+          {
+            "rate": 5.5,
+            "amountCents": 55
+          }
+        ],
+        "vatCents": 55,
+        "totalCents": 1055,
+        "lines": [
+          {
+            "sku": "PAI-001-1",
+            "quantity": 2,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 400,
+            "lineTotalTtcCents": null
+          },
+          {
+            "sku": "VIE-001-1",
+            "quantity": 3,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 600,
+            "lineTotalTtcCents": null
+          }
+        ]
+      },
+      "notes": {}
+    }
   }
 }

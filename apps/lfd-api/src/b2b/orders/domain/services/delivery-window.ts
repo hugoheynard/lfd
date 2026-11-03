@@ -45,12 +45,32 @@ export function preferredWindowOf(
  * Qui demande la fenêtre. Un client **pro** (`pro`) ne demande qu'une fenêtre
  * (échéance ou créneau) inscrite sur son adresse : elle a été définie avec le
  * commercial (Hugo, 2026-10-12) — y compris quand l'équipe saisit pour lui
- * (E1, Hugo, 2026-11-03 : `windowRequesterOf`). Un particulier (`individual`)
- * n'a ni carnet ni commercial. `staff` reste libre : la révision d'une
- * commande par l'équipe le porte encore (`order-revising.service.ts`, vérifié
- * le 2026-11-03), hors du périmètre de la décision E1.
+ * ou révise sa commande (E1 et É12, Hugo, 2026-11-03 : {@link windowRequesterOf}).
+ * Un particulier (`individual`) n'a ni carnet ni commercial. `staff`, libre
+ * de l'heure, ne reste qu'à l'équipe sur une commande sans société.
  */
 export type WindowRequester = "pro" | "individual" | "staff";
+
+/**
+ * **Qui demande la fenêtre**, pour la passation comme pour la révision — UNE
+ * règle, que les deux appellent : deux fonctions qui se ressemblaient ont
+ * laissé la révision par l'équipe échapper à E1 (É12 de
+ * `documentation/pricing/centime-et-tva/inventaire-c0-assemblages.md`).
+ *
+ * Le pro ne demande qu'une fenêtre inscrite, **aussi quand l'équipe agit pour
+ * lui** (Hugo, 2026-11-03 : « ça ferait un endroit pour échapper aux règles
+ * de livraison et de point de retrait »). Sans société, le particulier reste
+ * libre de l'heure, et l'équipe aussi.
+ *
+ * @param companyId la société de la commande, `null` sans société.
+ * @param byStaff l'équipe agit (saisie ou révision), et non le client.
+ */
+export function windowRequesterOf(companyId: string | null, byStaff: boolean): WindowRequester {
+  if (companyId !== null) {
+    return "pro";
+  }
+  return byStaff ? "staff" : "individual";
+}
 
 /**
  * Refuse la fenêtre d'une livraison qui ne tient pas son mode.
@@ -96,8 +116,8 @@ function slotLabel(slot: FulfillmentWindow): string {
 
 /**
  * Un client pro ne demande qu'une fenêtre inscrite sur l'adresse ce jour-là
- * (décision Hugo du 2026-10-12, étendue à la saisie de l'équipe le 2026-11-03) ;
- * le particulier et la révision par l'équipe restent libres. Rien de demandé =
+ * (décision Hugo du 2026-10-12, étendue à la saisie et à la révision de
+ * l'équipe le 2026-11-03) ; le particulier reste libre. Rien de demandé =
  * rien à juger : la préférence reprise vient de la liste.
  */
 function ensureRegisteredWindow(input: {

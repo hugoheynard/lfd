@@ -1,6 +1,6 @@
 import { audienceOf } from "@lfd/contracts";
 
-import { salesTermsOf } from "../sales-terms-of.js";
+import { audienceOfSalesTerms, salesTermsOf } from "../sales-terms-of.js";
 
 describe("salesTermsOf", () => {
   it("une clientèle pro lit les CGV professionnelles", () => {
@@ -15,5 +15,13 @@ describe("salesTermsOf", () => {
   it("une société en attente de validation lit les CGV particuliers", () => {
     expect(salesTermsOf(audienceOf("pending"))).toBe("salesTerms");
     expect(salesTermsOf(audienceOf("active"))).toBe("salesTermsPro");
+  });
+});
+
+describe("audienceOfSalesTerms", () => {
+  /** É13 (Hugo, 2026-11-03) : la révision relit la clientèle sur les CGV figées. */
+  it("rend la clientèle d'où les CGV ont été tirées, aller-retour exact", () => {
+    expect(audienceOfSalesTerms(salesTermsOf("b2b"))).toBe("b2b");
+    expect(audienceOfSalesTerms(salesTermsOf("b2c"))).toBe("b2c");
   });
 });

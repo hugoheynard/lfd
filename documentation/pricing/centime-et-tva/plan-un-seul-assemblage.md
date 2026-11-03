@@ -91,7 +91,12 @@ refus, écrit une fois et testé** :
 5. circuit et heure limite (l. 179) ;
 6. opérations datées, réglages, TVA du port (`composition.arrange`) ;
 7. gardes de l'agrégat (`Order.draft`) ;
-8. sous verrou, dans la transaction : vitrine, plan (`hold`).
+8. règlement au compte sans crédit (`orders.settlement.account_not_granted`
+   et ses variantes comptoir — `settleOrder`, `staffSettlementRefusal`) :
+   **juste après les gardes de l'agrégat, avant les verrous** (Hugo,
+   2026-11-03 ; il était « avant les verrous (8) » dans la décision, rang
+   devenu 9) ;
+9. sous verrou, dans la transaction : vitrine, plan (`hold`).
 
 Les règles à **deux implémentations** (sans verrou en conseil, sous verrou en
 exécution : jour/plan, vitrine) sont nommées par paires, et un test de
@@ -130,7 +135,7 @@ sans aucun montant ; `orderTotalRows` lit `BasketAmounts`, un adaptateur sert
 | --------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | **L0** ✅ 2026-11-03  | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                          | vert sur le code d'aujourd'hui                          |
 | **L1a** ✅ 2026-11-03 | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose`                                  | instantané identique, sans exception                    |
-| **L1b**               | refus décidés : É12, É13 (contexte figé de la révision), É18, ordre du crédit                                         | instantané régénéré pour CES cas seuls, chacun justifié |
+| **L1b** 🟡 2026-11-03 | refus décidés : É12, É13 (contexte figé de la révision), ordre du crédit ✅ ; **É18 en suspens** (cf. ci-dessous)     | instantané régénéré pour CES cas seuls, chacun justifié |
 | **L2**                | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil | G2 ; écarts tranchés                                    |
 | **L3**                | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                    | G2 ; écarts tranchés                                    |
 | **L4**                | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                    | G3 (ordre) ; refus du corpus                            |
@@ -179,6 +184,26 @@ pas) ; `Order.draft`/`recompose` acceptent encore l'entrée aux montants
 composés (suites du domaine, spécimens) jusqu'à L6. **Retour arrière** : un
 revert du commit — aucune migration, aucun contrat, aucune donnée écrite
 autrement.
+
+**L1b, bâti le 2026-11-03** (non commité au moment d'écrire), sauf É18 —
+**É12** : une seule règle, `windowRequesterOf(companyId, byStaff)`
+(`domain/services/delivery-window.ts`), appelée par la passation et par la
+révision ; l'équipe qui révise une commande pro ne demande qu'une échéance
+inscrite. **É13** : `PricingRequest.frozenAudience` ; la révision passe la
+clientèle lue sur les CGV figées (`audienceOfSalesTerms`), qui ouvre ou ferme
+le point et la livraison. Le prix d'une ligne NOUVELLE se résout encore au
+statut du jour (porte du prix) : non tranché. **Crédit** : déjà à ce rang
+dans les trois passations ; rang écrit ci-dessus, et mesuré au golden master
+(paire « chargement avant crédit »). Instantané : **169 lignes ajoutées,
+aucune retirée** — le seul ajout est le bloc `revision-decisions` (deux cas
+fixes neufs, `test/pricing-golden-master-decisions.ts`) ; aucune entrée
+existante, aucun montant n'a bougé. **É18 non bâti** : la décision dit
+« refuser, comme le client dans son espace » ; or le client d'une société
+SUSPENDUE n'est pas refusé — il passe au prix public, par carte
+(`test/served-company-status.e2e-spec.ts`, « société suspendue — public,
+carte seule », lot P0) ; seule une société TERMINÉE est refusée
+(`catalog.company_closed`). Les deux moitiés de la décision se contredisent :
+à retrancher par Hugo.
 
 ## 5. Ce que ce plan ne fait pas
 

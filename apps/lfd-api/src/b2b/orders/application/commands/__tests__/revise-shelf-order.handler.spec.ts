@@ -24,6 +24,7 @@ import { ReviseOrderCommand } from "../revise-order.command.js";
 import { FixedClosedPlans, FixedSameDay, RecordingAdmissionDesk } from "./plan-doubles.js";
 import {
   content,
+  BOOK_ADDRESS_ID,
   DAY,
   LABO_POINT,
   NEXT_DAY,
@@ -198,6 +199,8 @@ describe("ReviseOrderHandler — une commande sur stock (L5)", () => {
           fulfillmentMethod: "delivery",
           pickupAddressId: null,
           requestedWindow: { start: null, end: "10:00" },
+          // L'échéance inscrite (E1, étendue à la révision par l'équipe : É12).
+          deliveryAddressId: BOOK_ADDRESS_ID,
           deliveryAddress: {
             label: "",
             ligne1: "2 rue Neuve",

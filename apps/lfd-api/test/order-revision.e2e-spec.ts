@@ -99,6 +99,8 @@ interface Scene {
   readonly orderId: string;
   readonly companyId: string;
   readonly pickupId: string;
+  /** L'adresse du carnet, livrée « avant 10:00 » — l'échéance inscrite (E1, É12). */
+  readonly addressId: string;
 }
 
 /**
@@ -134,6 +136,7 @@ async function scene(options: { readonly discounted?: boolean } = {}): Promise<S
   });
   const user = await createUser(ctx.prisma, { auth0Sub: BUYER, email: "acheteur@test.fr" });
   await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
+  const address = await bookAddress(company.id);
   const placed = jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
@@ -145,7 +148,39 @@ async function scene(options: { readonly discounted?: boolean } = {}): Promise<S
       })
       .expect(201),
   );
-  return { orderId: placed.id, companyId: company.id, pickupId: point.id };
+  return { orderId: placed.id, companyId: company.id, pickupId: point.id, addressId: address };
+}
+
+/**
+ * L'adresse du carnet de la société, livrée « avant 10:00 ». Depuis É12
+ * (Hugo, 2026-11-03), l'équipe qui révise une commande pro ne demande, comme
+ * le pro, qu'une échéance inscrite sur l'adresse (règle E1).
+ */
+async function bookAddress(companyId: string): Promise<string> {
+  const address = await ctx.prisma.address.create({
+    data: {
+      label: "",
+      ligne1: "2 rue Neuve",
+      ligne2: "",
+      codePostal: "73150",
+      ville: "Val d'Isère",
+      pays: "France",
+      companyId,
+      kind: "delivery",
+      isDefault: true,
+      deliverySpecs: {
+        note: "",
+        slotList: { mode: "everyday", slots: [] },
+        deliveryContact: null,
+        gps: null,
+        signatureRequired: null,
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: ["10:00"] },
+      },
+    },
+    select: { id: true },
+  });
+  return address.id;
 }
 
 /** La commande voulue : un retrait au Labo, `DAY`, 10 croissants par défaut. */
@@ -244,7 +279,7 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
    * le passage reste permis.
    */
   it("retrait → livraison un autre jour : frais de zone, les deux jours marqués", async () => {
-    const { orderId, pickupId } = await scene({ discounted: false });
+    const { orderId, pickupId, addressId } = await scene({ discounted: false });
     const before = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
     expect(before.discountCents).toBe(0);
     await ctx.prisma.orderCollection.create({
@@ -267,6 +302,7 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
           fulfillmentMethod: "delivery",
           pickupAddressId: null,
           requestedWindow: { start: null, end: "10:00" },
+          deliveryAddressId: addressId,
           deliveryAddress: {
             label: "",
             ligne1: "2 rue Neuve",
@@ -302,7 +338,7 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
 
 describe("POST /orders/:id/revisions — les refus", () => {
   it("L9 : refuse retrait → livraison quand la commande perdrait la remise de son point", async () => {
-    const { orderId, pickupId } = await scene();
+    const { orderId, pickupId, addressId } = await scene();
 
     const refused = await staff()
       .post(`/admin/orders/${orderId}/revisions`)
@@ -312,6 +348,7 @@ describe("POST /orders/:id/revisions — les refus", () => {
           fulfillmentMethod: "delivery",
           pickupAddressId: null,
           requestedWindow: { start: null, end: "10:00" },
+          deliveryAddressId: addressId,
           deliveryAddress: {
             label: "",
             ligne1: "2 rue Neuve",

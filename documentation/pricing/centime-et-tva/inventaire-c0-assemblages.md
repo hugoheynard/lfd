@@ -284,7 +284,10 @@ il dépend d'une dérogation, donc d'un panier complet → reste au
 `Order.fromCart` ; `CartPricing` peut accepter un « supplément » en entrée pour
 que l'estimation (qui le connaît) le chiffre par le même code.
 
-**É12 — Acheminement convenu de l'équipe sur un pro (#13).** C (passation de
+**É12 — Acheminement convenu de l'équipe sur un pro (#13).** ✅ _Tranché
+(Hugo, 2026-11-03 : la révision suit E1), bâti le 2026-11-03 (L1b) :
+`windowRequesterOf(companyId, byStaff)` au domaine, seule règle de la
+passation et de la révision._ C (passation de
 l'équipe pour un pro) prend `pro` ; D (révision par l'équipe d'une commande
 pro) prend `staff`, libre de l'heure. Effet : pas de montant, mais un **refus
 différent** pour la même tranche horaire — la règle d'E1 (Hugo, 2026-11-03,
@@ -292,7 +295,10 @@ différent** pour la même tranche horaire — la règle d'E1 (Hugo, 2026-11-03,
 trancher par Hugo hors de `CartPricing` (contrôle de panier complet) ; si E1
 vaut aussi pour la révision, `requesterOf` doit suivre `windowRequesterOf`.
 
-**É13 — Audience de la révision (#9, D).** La docstring R2 dit la clientèle
+**É13 — Audience de la révision (#9, D).** ✅ _Tranché (Hugo, 2026-11-03 :
+contexte figé sur la commande), bâti le 2026-11-03 (L1b) : la révision passe
+au chargement la clientèle lue sur les CGV figées (`frozenAudience`). Reste
+ouvert : le prix d'une ligne NOUVELLE se résout au statut du jour._ La docstring R2 dit la clientèle
 « relue sur la commande » (`OR:58-59`), mais `composition.resolve` la relit au
 statut **d'aujourd'hui** (`OC:221`), et `forPickup` / `forDelivery` l'opposent
 (`pickupOpenTo`, `deliveryOpenTo`). La remise est rejouée, donc le montant ne
@@ -329,7 +335,11 @@ Voulu (la porte se lit sur la route, `SCQ:498-505`) ; à garder en tête pour le
 parités. _Recommandation_ : paramètre de `CartPricing`, jamais lu du corps.
 
 **É18 — Société suspendue : la saisie de l'équipe passe (relevé par le
-corpus L0, 2026-11-03).** É14 suppose que C refuse une société suspendue ;
+corpus L0, 2026-11-03).** 🟡 _Tranché (Hugo, 2026-11-03 : « refuser, comme
+le client dans son espace »), NON bâti : le client d'une société suspendue
+n'est pas refusé — il commande au prix public, par carte (lot P0,
+`test/served-company-status.e2e-spec.ts`) ; il n'y a pas de refus côté
+client à réemployer. À retrancher._ É14 suppose que C refuse une société suspendue ;
 mesuré sur `POST /admin/orders` (règlement `link`), il ne la refuse pas. Ni
 `orderPayerOf` (`domain/services/order-payer.ts:22-37` : il ne refuse qu'un
 compte de groupe sans livraison ou un payeur suivi non actif), ni la porte

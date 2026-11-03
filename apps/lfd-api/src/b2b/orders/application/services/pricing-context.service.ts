@@ -61,6 +61,11 @@ export interface PricingRequest {
   readonly vatMethod: OrderVatMethod;
   /** Le mode de TVA du port figé sur la commande qu'on révise (É9) ; `null` sinon. */
   readonly frozenDeliveryVatMode: DeliveryVatMode | null;
+  /**
+   * La clientèle figée sur la commande qu'on révise (É13, Hugo, 2026-11-03) ;
+   * `null` à la passation, qui la lit au statut de la société d'aujourd'hui.
+   */
+  readonly frozenAudience: CustomerAudience | null;
 }
 
 /**
@@ -98,8 +103,13 @@ export class PricingContext {
     // demain pourquoi une ligne était exclue de la remise (plan des exclusions).
     const known = await this.classifications.classify(priced.lines.map((line) => line.sku));
     // La clientèle, lue UNE fois, avec le statut d'où elle est tirée : les
-    // promotions panier le lisent (plan des promotions, L5).
-    const { audience, companyStatus } = await this.audiences.standingOf(request.parties.companyId);
+    // promotions panier le lisent (plan des promotions, L5). En révision, la
+    // clientèle est celle de la COMMANDE (É13, Hugo, 2026-11-03) : un point
+    // ou une livraison ouverts aux pros le restent pour une commande pro,
+    // même si la société a changé de statut depuis.
+    const standing = await this.audiences.standingOf(request.parties.companyId);
+    const audience = request.frozenAudience ?? standing.audience;
+    const { companyStatus } = standing;
     const buyer: PickupBuyer = {
       audience,
       companyId: request.parties.companyId,

@@ -10,7 +10,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { DeliveryDefaultsReader } from "../../domain/ports/delivery-defaults.reader.js";
-import type { WindowRequester } from "../../domain/services/delivery-window.js";
+import { windowRequesterOf } from "../../domain/services/delivery-window.js";
 import { Order, type OrderSalesTerms, type OrderVoucher } from "../../domain/entities/order.js";
 import { pricedBasketOf } from "../../domain/entities/order-priced-draft.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
@@ -182,6 +182,7 @@ export class OrderDrafting {
       caller,
       vatMethod,
       frozenDeliveryVatMode: null,
+      frozenAudience: null,
     });
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
@@ -199,7 +200,7 @@ export class OrderDrafting {
       content,
       parties,
       loaded.context,
-      windowRequesterOf(parties),
+      windowRequesterOf(parties.companyId, parties.placedByStaffId !== null),
     );
     // La surtaxe ne se lit QUE si une dérogation a servi : une requête de plus
     // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
@@ -372,19 +373,4 @@ export class OrderDrafting {
   private async salesTermsIn(document: SalesTermsDocument): Promise<OrderSalesTerms> {
     return { document, ...(await this.salesTerms.inForce(document)) };
   }
-}
-
-/**
- * Le pro ne demande qu'une fenêtre inscrite — **aussi quand l'équipe saisit
- * pour lui** (Hugo, 2026-11-03, E1 du plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md` : « ça ferait un
- * endroit pour échapper aux règles de livraison et de point de retrait »).
- * Le particulier reste libre de l'heure ; `staff` ne sert plus qu'à une saisie
- * sans société, que la passation de l'équipe n'accepte pas aujourd'hui.
- */
-export function windowRequesterOf(parties: OrderParties): WindowRequester {
-  if (parties.companyId !== null) {
-    return "pro";
-  }
-  return parties.placedByStaffId === null ? "individual" : "staff";
 }

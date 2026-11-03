@@ -43,6 +43,7 @@ import {
   KNOWN_GAPS,
   type Divergence,
 } from "./pricing-golden-master-properties.js";
+import { revisionDecisionCases } from "./pricing-golden-master-decisions.js";
 import { lateFeeCase, refusalOrderCases } from "./pricing-golden-master-refusals.js";
 import { GOLDEN_CLOCK, seedGoldenScene, type GoldenScene } from "./pricing-golden-master-scene.js";
 import { GOLDEN_MASTER_WRITE } from "./setup-env.js";
@@ -169,6 +170,17 @@ describe("le golden master du chiffrage (L0)", () => {
     for (const divergence of divergences) met.add(gapCovering(divergence)?.ecart ?? "?");
     // Le supplément que le devis n'annonce pas (É11) doit se VOIR ici, sinon le cas ne prouve rien.
     expect(met.has("É11")).toBe(true);
+  }, 120_000);
+
+  it("les refus décidés de la révision (L1b) : É12, l'échéance inscrite ; É13, la clientèle de la commande", async () => {
+    const paths = await revisionDecisionCases(ctx, scene, agentsFor(ctx, ipOf(202)));
+    recorded["revision-decisions"] = paths;
+    // É12 (Hugo, 2026-11-03) : l'équipe suit E1 en révision d'une commande pro.
+    expect(paths["e12-unregistered-deadline.D.revision.staff"]?.code).toBe(
+      "orders.fulfillment.deadline_not_registered",
+    );
+    // É13 (Hugo, 2026-11-03) : la clientèle figée garde le point réservé aux pros ouvert.
+    expect(paths["e13-suspended-since.D.revision.staff"]?.status).toBe(200);
   }, 120_000);
 
   it("🔴 l'instantané : chaque montant et chaque code, au centime", () => {
