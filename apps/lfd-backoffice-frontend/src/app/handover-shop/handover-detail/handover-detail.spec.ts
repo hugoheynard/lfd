@@ -426,7 +426,7 @@ describe('HandoverDetail', () => {
     const fixture = await render(entry(), { handovers });
 
     expect(text(fixture)).toContain('Contenu illisible');
-    expect(buttonSaying(fixture, 'Voir le bon')).not.toBeNull();
+    expect(buttonSaying(fixture, 'Bon de commande')).not.toBeNull();
   });
 
   it('🔴 le rail ne parle QU’AU service de la file', async () => {
@@ -439,7 +439,7 @@ describe('HandoverDetail', () => {
     const fixture = await render(entry());
 
     expect(text(fixture)).toContain('Croissant nature');
-    expect(buttonSaying(fixture, 'Voir le bon')).not.toBeNull();
+    expect(buttonSaying(fixture, 'Bon de commande')).not.toBeNull();
   });
 
   it('🔴 une commande incomplète est annoncée AVANT le sac, article par article', async () => {
@@ -505,14 +505,24 @@ describe('HandoverDetail', () => {
     expect(buttonSaying(fixture, 'Remettre la commande')).not.toBeNull();
   });
 
-  it('🔴 « Voir le bon » se lit près de l’identité, et la fiche ne parle plus de montant', async () => {
+  /** Les deux bons chiffrés sous la date (Hugo, 2026-11-03, option A). */
+  it('🔴 les deux bons se lisent près de l’identité ; le BL est grisé tant que rien n’est remis', async () => {
     const fixture = await render(entry());
-    const element: HTMLElement = fixture.nativeElement;
 
-    const bon = buttonSaying(fixture, 'Voir le bon');
-    expect(bon?.closest('.hd-identity')).not.toBeNull();
-    expect(bon?.closest('.hd-actions')).toBeNull();
-    expect(element.textContent).not.toContain('Aucun montant');
+    const order = buttonSaying(fixture, 'Bon de commande');
+    const delivery = buttonSaying(fixture, 'Bon de livraison');
+    expect(order?.closest('.hd-identity')).not.toBeNull();
+    expect(order?.closest('.hd-actions')).toBeNull();
+    expect(order?.hasAttribute('disabled')).toBe(false);
+    expect(delivery?.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('une commande remise ouvre son bon de livraison', async () => {
+    const fixture = await render(
+      entry({ state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z`, handedOverVia: 'scan' }),
+    );
+
+    expect(buttonSaying(fixture, 'Bon de livraison')?.hasAttribute('disabled')).toBe(false);
   });
 });
 

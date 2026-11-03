@@ -17,6 +17,16 @@ la remise, `packages/contracts/src/order-handover.ts`.
 
 ## 1. ✅ Les montants traversaient le comptoir — clos le 2026-09-11
 
+> ⚠️ **Levée en partie le 2026-11-03 (Hugo, option A).** Le rail ouvre
+> désormais deux bons **chiffrés** dans un dialogue : le bon de commande — le
+> même que celui du client, par `GET /admin/counter/orders/:orderId/bon.pdf`
+> sous `handover_counter` — et le bon de livraison, grisé tant que rien n'est
+> remis (il chiffre ce qui est parti, pas ce qui avait été commandé). Les
+> VUES du comptoir (`HandoverQueueEntry`, `OrderHandoverView`) restent sans
+> montant ; c'est le document, pas l'écran, qui porte les prix. La fiche
+> `sheet-panel` citée plus bas est retirée : elle redisait ce que le rail
+> montre déjà.
+
 ### Le fait, tel qu'il était
 
 Tout le contexte tient la même règle, et l'écrit trois fois :

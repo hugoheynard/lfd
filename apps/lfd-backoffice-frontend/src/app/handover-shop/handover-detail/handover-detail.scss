@@ -113,7 +113,6 @@
 }
 
 .hd-reference {
-  min-width: 0;
   margin: 0;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-2xl);
@@ -306,17 +305,10 @@
 }
 
 /* Le bon se lit près de l'identité, sans s'étirer sur la colonne. */
-/* Le numéro et « Voir le bon » sur une ligne (Hugo, 2026-11-03) : le bon se
-   lit À CÔTÉ du numéro qu'il imprime. Le numéro garde la place et défile s'il
-   déborde ; le bouton ne se contracte pas. */
-.hd-reference-row {
+/* Les deux bons, côte à côte sous la date ; ils passent à la ligne quand le
+   rail est étroit plutôt que de se tasser. */
+.hd-documents {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  min-width: 0;
-}
-
-.hd-bon {
-  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
 }

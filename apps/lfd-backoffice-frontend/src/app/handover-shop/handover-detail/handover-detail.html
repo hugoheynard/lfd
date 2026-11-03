@@ -40,24 +40,37 @@
             <span class="hd-legal">{{ row.customerLabel }}</span>
           }
         </p>
-        <!-- Le bon PRÈS de l'identité (Hugo, 2026-10-25) : c'est une lecture
-             de la commande, pas un geste de remise — il n'a rien à faire à
-             côté de « Remettre la commande ». Sur la ligne du numéro, à
-             droite (Hugo, 2026-11-03). -->
-        <div class="hd-reference-row">
-          <p class="hd-reference">{{ row.reference }}</p>
+        <p class="hd-reference">{{ row.reference }}</p>
+        <p class="hd-meta">Commandée le {{ placedAt() }}</p>
+        <!-- Les documents PRÈS de l'identité (Hugo, 2026-10-25) : ce sont des
+             lectures de la commande, pas des gestes de remise. Deux bons
+             chiffrés (Hugo, 2026-11-03) : celui que le client a reçu, et
+             celui de ce qui est parti — grisé tant que rien n'est parti, car
+             le BL naît à la remise. -->
+        <div class="hd-documents" data-documents>
           <button
             foldButton
-            class="hd-bon"
             emphasis="soft"
             size="sm"
-            iconTrailing="arrow-right"
-            (click)="openBon()"
+            icon="receipt"
+            data-document="order"
+            (click)="openDocument('order')"
           >
-            Voir le bon
+            Bon de commande
+          </button>
+          <button
+            foldButton
+            emphasis="soft"
+            size="sm"
+            icon="truck"
+            data-document="delivery"
+            [disabled]="row.state !== 'handed_over'"
+            [title]="row.state === 'handed_over' ? '' : 'Le bon de livraison s’écrit à la remise.'"
+            (click)="openDocument('delivery')"
+          >
+            Bon de livraison
           </button>
         </div>
-        <p class="hd-meta">Commandée le {{ placedAt() }}</p>
       </div>
 
       <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne

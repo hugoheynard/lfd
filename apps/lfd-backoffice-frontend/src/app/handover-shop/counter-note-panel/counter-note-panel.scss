@@ -1,0 +1,12 @@
+/* Une page A4 se lit en hauteur : le cadre prend ce que le dialogue laisse,
+   comme l'aperçu du mandat (`mandate-preview-panel.scss`). L'impression passe
+   par la barre du lecteur PDF du navigateur. */
+.cn-page {
+  display: block;
+  width: 100%;
+  height: min(82vh, 72rem);
+  min-height: 28rem;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
+}

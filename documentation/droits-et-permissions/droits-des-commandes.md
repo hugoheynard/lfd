@@ -352,8 +352,11 @@ droit exigé côté API n'a changé.
    `queue-table` (`canRemind`) ; sans lui, le retard reste dit sous la ligne,
    sans bouton ni phrase sur le rappel (une spec le tient).
 3. **Le bon PDF depuis la file.** Corrigé le 2026-10-12 : le panneau
-   `handover-shop/sheet-panel` n'offre le téléchargement qu'avec
-   `can('b2b_orders:read')` (une spec le tient).
+   `handover-shop/sheet-panel` n'offrait le téléchargement qu'avec
+   `can('b2b_orders:read')`. ⚠️ Plus vrai depuis le 2026-11-03 : la fiche est
+   retirée, et le rail ouvre le bon de commande chiffré par
+   `GET /admin/counter/orders/:orderId/bon.pdf`, sous `handover_counter`
+   (Hugo, option A) — le comptoir n'a plus besoin du droit des Commandes.
 4. **Le simulateur de prix appelle une route de saisie.** Corrigé le
    2026-10-12 : sans `b2b_place_order:write`, `/b2b/tarification/simulateur`
    remplace le banc de devis par une `fold-callout` qui nomme le droit

@@ -18,8 +18,8 @@ export interface PriceExplainPanelData {
 
 /**
  * **« Pourquoi ce prix », en panneau latéral** — le même contenu que
- * `app-price-explain`, ouvert par `FoldPanelHostService` comme le bon de
- * commande du comptoir (`handover-shop/sheet-panel`).
+ * `app-price-explain`, ouvert par `FoldPanelHostService` comme les bons du
+ * comptoir (`handover-shop/counter-note-panel`).
  *
  * Il s'ouvrait en bas de la page, sous l'historique : hors de vue au moment du
  * clic (Hugo, 2026-10-12). Le panneau occupe la fenêtre dès le geste, et la

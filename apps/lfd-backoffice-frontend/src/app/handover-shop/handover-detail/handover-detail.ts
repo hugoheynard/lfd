@@ -29,7 +29,11 @@ import { NotifyService } from '../../notify.service';
 import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { MissingItems } from '../missing-items/missing-items';
-import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
+import {
+  CounterNotePanel,
+  type CounterDocument,
+  type CounterNotePanelData,
+} from '../counter-note-panel/counter-note-panel';
 import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
@@ -304,29 +308,20 @@ export class HandoverDetail {
   }
 
   /**
-   * **Ouvre le bon**, tel qu'on le coche au comptoir — et sans montant.
-   *
-   * Il s'ouvrait en téléchargeant un PDF. Sur un poste de comptoir, un fichier
-   * qui atterrit dans un dossier n'est pas une lecture : on veut voir la liste,
-   * tout de suite, à côté du sac. Le PDF reste à un clic dans le panneau, pour
-   * quand on tire vraiment un papier.
+   * **Ouvre un des deux bons chiffrés** dans un dialogue (Hugo, 2026-11-03) :
+   * il remplace la fiche sans prix, qui redisait ce que le rail montre déjà.
    */
-  protected openBon(): void {
-    const order = this.order();
+  protected openDocument(document: CounterDocument): void {
     const entry = this.entry();
-    if (order === null || entry === null) {
+    if (entry === null) {
       return;
     }
-    const data: SheetPanelData = {
-      order,
-      pickupLabel: entry.pickupLabel,
-      customerLabel: entry.customerLabel,
-      // Le créneau vient de la LIGNE : la vue de retrait sert d'abord l'écran du
-      // scan, qui n'a pas de file derrière lui, et ne le porte donc pas.
-      window: entry.window,
-      abandoned: this.abandoned(),
+    const data: CounterNotePanelData = {
+      orderId: entry.orderId,
+      reference: entry.reference,
+      document,
     };
-    this.panels.open<SheetPanelData>(SheetPanel, { data });
+    this.panels.open<CounterNotePanelData>(CounterNotePanel, { data });
   }
 
   /**
