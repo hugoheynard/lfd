@@ -4,6 +4,7 @@ import type { CarrierNote, ClientNote } from "@lfd/contracts";
 
 import {
   type Doc,
+  drawPageFolios,
   LEFT,
   longDate,
   MM,
@@ -86,10 +87,12 @@ export function noteParties(doc: Doc, note: PrintableNote, top: number): number 
 /**
  * « ARTICLES — 3 lignes, 172 pièces » — la phrase du bon de commande : une
  * ligne au poids se compte à part (« 1 au poids »), jamais par ses grammes
- * (`vente-au-poids.md`, P5). Un BL à la pièce s'annonce comme avant.
+ * (`vente-au-poids.md`, P5). Un BL à la pièce s'annonce comme avant. Ne
+ * compte que les lignes imprimées : une ligne à zéro n'en est pas une
+ * (2026-11-03).
  */
 export function articlesHeading(note: PrintableNote): string {
-  return linesHeading(note.lines);
+  return linesHeading(note.lines.filter((line) => line.quantity > 0));
 }
 
 /** La note de la commande, si elle existe. */
@@ -123,4 +126,13 @@ export function noteFooter(
   put(doc, NOT_AN_INVOICE, LEFT, y, { size: 9, bold: true });
   y += 4 * MM;
   put(doc, `Établi le ${longDate(note.issuedAt)}`, LEFT, y, { size: 9 });
+}
+
+/**
+ * « Page n / N » au pied de chaque page, et le numéro du BL à gauche — posé
+ * une fois le total connu (`bufferPages`, comme le récapitulatif de
+ * commandes). Hugo, 2026-11-03.
+ */
+export function noteFolios(doc: Doc, note: PrintableNote): void {
+  drawPageFolios(doc, `Bon de livraison ${note.number}`);
 }

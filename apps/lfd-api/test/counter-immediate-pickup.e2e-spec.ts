@@ -228,12 +228,16 @@ describe("« Valider et remettre » (lot L6)", () => {
     });
     expect(order).toEqual({ status: "fulfilled", paymentStatus: "not_required" });
 
-    // Le BL est né à la remise ; le vendeur du comptoir l'imprime, sans son numéro.
+    // Le BL est né à la remise ; le vendeur du comptoir imprime celui de
+    // TRANSPORT, sans son numéro (Hugo, 2026-11-03 : non chiffré, comme en livraison).
     const pdf = await seller
-      .get(`/admin/counter/orders/${placed.id}/delivery-note/client.pdf`)
+      .get(`/admin/counter/orders/${placed.id}/delivery-note/carrier.pdf`)
       .buffer(true)
       .expect(200);
     expect(pdf.headers["content-type"]).toBe("application/pdf");
+    expect(pdf.headers["content-disposition"]).toContain("-transport.pdf");
+    // L'ancienne route du BL chiffré au comptoir est partie dans le même déploiement.
+    await seller.get(`/admin/counter/orders/${placed.id}/delivery-note/client.pdf`).expect(404);
 
     // La facture du mois la porte.
     const billable = await ctx.app
@@ -317,7 +321,7 @@ describe("le BL client au comptoir — le mur (lot L6)", () => {
 
     const seller = await counterSeller();
     const refused = await seller
-      .get(`/admin/counter/orders/${planned.id}/delivery-note/client.pdf`)
+      .get(`/admin/counter/orders/${planned.id}/delivery-note/carrier.pdf`)
       .expect(404);
     expect(jsonBody<{ code: string }>(refused).code).toBe("delivery_notes.counter.out_of_reach");
     // La route de l'équipe Commandes reste fermée au vendeur.

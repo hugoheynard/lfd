@@ -8,6 +8,7 @@ import {
   deliveryNotePdfFileName,
   renderClientNotePdf,
 } from "../../domain/services/delivery-note-pdf.js";
+import { undeliveredOf } from "../../domain/services/undelivered-lines.js";
 import { clientNoteOf } from "../../domain/services/delivery-note-sheet.js";
 import {
   type DeliveryNotePdf,
@@ -45,16 +46,19 @@ export class GetClientNotePdfHandler implements IQueryHandler<
       owned.companyId === null ? null : await this.access.accessToOrder(query.actorUserId, owned);
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
 
-    const handedOver = (await this.documents.listFor(query.orderId)).filter(
-      (note) => note.status === HANDED_OVER,
-    );
+    const notes = await this.documents.listFor(query.orderId);
+    const handedOver = notes.filter((note) => note.status === HANDED_OVER);
     const state = handedOver.at(-1);
     if (state === undefined) {
       throw new DeliveryNoteNotFoundError(query.orderId, "remis");
     }
     const parts = await this.documents.partsOf([state.id]);
     const note = clientNoteOf(state, head, billing, parts.get(state.id));
-    const bytes = await renderClientNotePdf(note, await this.documents.art());
+    const bytes = await renderClientNotePdf(
+      note,
+      await this.documents.art(),
+      undeliveredOf(owned.view.lines, notes, state),
+    );
     return { bytes, fileName: deliveryNotePdfFileName(note) };
   }
 }

@@ -133,14 +133,15 @@ export class NouvelleCommandeProPage {
   }
 
   /**
-   * Réimprime le bon chiffré d'un retrait immédiat remis (lot L6) — la
+   * Réimprime le bon de livraison de transport d'un retrait immédiat remis
+   * (lot L6 ; non chiffré depuis le 2026-11-03) — la
    * saisie l'a ouvert une fois ; un onglet bloqué ou fermé ne doit pas le
    * perdre.
    */
   protected async printNote(orderId: string): Promise<void> {
     this.printing.set(true);
     try {
-      await this.notes.openClient(orderId);
+      await this.notes.openCarrier(orderId);
     } catch (error) {
       this.notify.error(error, 'Le bon n’a pas pu s’ouvrir.');
     } finally {

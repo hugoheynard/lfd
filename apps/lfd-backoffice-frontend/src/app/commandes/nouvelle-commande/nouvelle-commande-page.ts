@@ -772,7 +772,8 @@ export class NouvelleCommandePage {
   /**
    * **« Valider et remettre »**, sa seconde moitié : la remise saisie
    * (`POST /admin/handover/manual/:orderNumber`, celle du bloc du retrait),
-   * puis le bon chiffré à imprimer. La commande est déjà passée : un refus de
+   * puis le bon de livraison de transport, non chiffré, à imprimer et faire
+   * signer (Hugo, 2026-11-03). La commande est déjà passée : un refus de
    * remise ne l'annule pas, il se DIT — elle attend dans la file du retrait.
    */
   private async handOver(orderId: string, orderNumber: string): Promise<CounterHandoverOutcome> {
@@ -784,7 +785,7 @@ export class NouvelleCommandePage {
       return { orderId, refusal };
     }
     try {
-      await this.counterNotes.openClient(orderId);
+      await this.counterNotes.openCarrier(orderId);
     } catch (error) {
       this.notify.info(
         `Commande ${orderNumber} remise, mais le bon n’a pas pu s’ouvrir : ${

@@ -6,7 +6,14 @@ import {
   renderClientNotePdf,
 } from "../delivery-note-pdf.js";
 import { carrierNoteOf, clientNoteOf } from "../delivery-note-sheet.js";
-import { handedOverNote, HEAD, PRO_BILLING } from "./delivery-note-sheet.fixture.js";
+import { undeliveredOf } from "../undelivered-lines.js";
+import {
+  BREAD,
+  CROISSANT,
+  handedOverNote,
+  HEAD,
+  PRO_BILLING,
+} from "./delivery-note-sheet.fixture.js";
 
 const DELIVERY_ART = { logo: ART.logo };
 
@@ -69,18 +76,6 @@ describe("le BL chiffré en PDF", () => {
     expect(text).toContain("* Non concerné par la remise retrait.");
   });
 
-  /** Le BL tendu au comptoir porte la zone de réception (Hugo, 2026-11-03). */
-  it("porte « Reçu par, le, signature » au comptoir, et nulle part ailleurs", async () => {
-    const note = clientNoteOf(handedOverNote(), HEAD, PRO_BILLING);
-    const counter = pdfText(await renderClientNotePdf(note, DELIVERY_ART, { receipt: true }));
-    const plain = pdfText(await renderClientNotePdf(note, DELIVERY_ART));
-
-    expect(counter).toMatch(/REÇU PAR|Reçu par/u);
-    expect(counter).toMatch(/SIGNATURE|Signature/u);
-    expect(counter).toContain("Total HT");
-    expect(plain).not.toMatch(/REÇU PAR|Reçu par/u);
-  });
-
   it("propose un nom de fichier par lecteur", () => {
     expect(deliveryNotePdfFileName(clientNoteOf(handedOverNote(), HEAD, PRO_BILLING))).toBe(
       "bon-de-livraison-BL-1042-1.pdf",
@@ -88,5 +83,103 @@ describe("le BL chiffré en PDF", () => {
     expect(deliveryNotePdfFileName(carrierNoteOf(handedOverNote(), HEAD))).toBe(
       "bon-de-livraison-BL-1042-1-transport.pdf",
     );
+  });
+});
+
+/** Le nombre d'occurrences de `needle` dans `text`. */
+function count(text: string, needle: string): number {
+  return text.split(needle).length - 1;
+}
+
+/** Un départ incomplet : le croissant ne part pas, sa ligne reste à zéro (`departingSourceOf`). */
+function croissantLeftBehind() {
+  const note = handedOverNote();
+  const lines = note.lines.map((line) =>
+    line.sku === CROISSANT.sku ? { ...line, quantity: 0 } : line,
+  );
+  const state = { ...note, lines };
+  return { state, undelivered: undeliveredOf([BREAD, CROISSANT], [state], state) };
+}
+
+describe("seulement les lignes remises (Hugo, 2026-11-03)", () => {
+  it("le BL de transport tait la ligne à zéro dans le tableau et la dit sous lui", async () => {
+    const { state, undelivered } = croissantLeftBehind();
+    const text = pdfText(
+      await renderCarrierNotePdf(carrierNoteOf(state, HEAD), DELIVERY_ART, undelivered),
+    );
+
+    expect(text).toContain("Non livré : 6 × Croissant.");
+    expect(count(text, "Croissant")).toBe(1);
+    expect(text).toContain("Pain de campagne");
+  });
+
+  it("le BL chiffré aussi", async () => {
+    const { state, undelivered } = croissantLeftBehind();
+    const text = pdfText(
+      await renderClientNotePdf(clientNoteOf(state, HEAD, PRO_BILLING), DELIVERY_ART, undelivered),
+    );
+
+    expect(text).toContain("Non livré : 6 × Croissant.");
+    expect(count(text, "Croissant")).toBe(1);
+  });
+
+  it("un BL sans manque n'a pas la mention", async () => {
+    const state = handedOverNote();
+    const undelivered = undeliveredOf([BREAD, CROISSANT], [state], state);
+    const carrier = pdfText(
+      await renderCarrierNotePdf(carrierNoteOf(state, HEAD), DELIVERY_ART, undelivered),
+    );
+    const client = pdfText(
+      await renderClientNotePdf(clientNoteOf(state, HEAD, PRO_BILLING), DELIVERY_ART, undelivered),
+    );
+
+    expect(undelivered).toEqual([]);
+    expect(carrier).not.toContain("Non livré");
+    expect(client).not.toContain("Non livré");
+  });
+});
+
+/** Un BL de vingt-deux lignes : il tient sur deux pages (treize sur la première). */
+function longNote() {
+  const note = handedOverNote();
+  const lines = Array.from({ length: 22 }, (_, index) => ({
+    ...BREAD,
+    sku: `PAIN-${String(index).padStart(3, "0")}`,
+    productName: `Pain n° ${String(index)}`,
+  }));
+  return { ...note, lines };
+}
+
+describe("le folio et l'en-tête sur chaque page (Hugo, 2026-11-03)", () => {
+  it.each([
+    [
+      "transport",
+      (state: ReturnType<typeof longNote>) =>
+        renderCarrierNotePdf(carrierNoteOf(state, HEAD), DELIVERY_ART),
+    ],
+    [
+      "chiffré",
+      (state: ReturnType<typeof longNote>) =>
+        renderClientNotePdf(clientNoteOf(state, HEAD, PRO_BILLING), DELIVERY_ART),
+    ],
+  ])(
+    "le BL %s de deux pages porte « Page 1 / 2 », « Page 2 / 2 » et l'en-tête deux fois",
+    async (_, draw) => {
+      const text = pdfText(await draw(longNote()));
+
+      expect(text).toContain("Page 1 / 2");
+      expect(text).toContain("Page 2 / 2");
+      expect(text).not.toContain("Page 3 / ");
+      expect(count(text, "BON DE LIVRAISON")).toBe(2);
+      expect(text).toContain("Pain n° 21");
+    },
+  );
+
+  it("un BL d'une page porte « Page 1 / 1 »", async () => {
+    const text = pdfText(
+      await renderCarrierNotePdf(carrierNoteOf(handedOverNote(), HEAD), DELIVERY_ART),
+    );
+
+    expect(text).toContain("Page 1 / 1");
   });
 });

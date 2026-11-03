@@ -10,7 +10,7 @@ const PDF = (): Blob => new Blob(['%PDF-1.7'], { type: 'application/pdf' });
 
 class FakeNotes {
   readonly asked: string[] = [];
-  clientPdf(orderId: string): Promise<Blob> {
+  carrierPdf(orderId: string): Promise<Blob> {
     this.asked.push(orderId);
     return Promise.resolve(PDF());
   }
@@ -55,7 +55,7 @@ async function settle(fixture: ComponentFixture<CounterNotePanel>): Promise<void
 const text = (fixture: ComponentFixture<CounterNotePanel>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-describe('CounterNotePanel — les deux bons chiffrés du comptoir', () => {
+describe('CounterNotePanel — les deux bons du comptoir', () => {
   beforeEach(() => {
     vi.stubGlobal('URL', { ...URL, createObjectURL: () => 'blob:bon', revokeObjectURL: vi.fn() });
   });

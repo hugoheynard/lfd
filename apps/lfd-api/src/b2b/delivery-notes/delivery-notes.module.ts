@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { BrandModule } from "../../platform/brand/brand.module.js";
 import { OrdersModule } from "../orders/orders.module.js";
-import { GetCounterClientNotePdfHandler } from "./application/queries/get-counter-client-note-pdf.handler.js";
+import { GetCounterCarrierNotePdfHandler } from "./application/queries/get-counter-carrier-note-pdf.handler.js";
 import { GetAdminClientNotePdfHandler } from "./application/queries/get-admin-client-note-pdf.handler.js";
 import { GetCarrierNotePdfHandler } from "./application/queries/get-carrier-note-pdf.handler.js";
 import { GetCarrierNoteSpecimenHandler } from "./application/queries/get-carrier-note-specimen.handler.js";
@@ -75,7 +75,7 @@ import {
     ListOrderDeliveryNotesHandler,
     GetCarrierNotePdfHandler,
     GetAdminClientNotePdfHandler,
-    GetCounterClientNotePdfHandler,
+    GetCounterCarrierNotePdfHandler,
     GetClientNotePdfHandler,
     GetCarrierNoteSpecimenHandler,
     GetClientNoteSpecimenHandler,

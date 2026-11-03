@@ -8,37 +8,40 @@ import {
 import { counterNoteReach } from "../../domain/services/counter-note-reach.js";
 import {
   deliveryNotePdfFileName,
-  renderClientNotePdf,
+  renderCarrierNotePdf,
 } from "../../domain/services/delivery-note-pdf.js";
-import { clientNoteOf } from "../../domain/services/delivery-note-sheet.js";
+import { carrierNoteOf } from "../../domain/services/delivery-note-sheet.js";
+import { undeliveredOf } from "../../domain/services/undelivered-lines.js";
 import { DeliveryNoteDocuments } from "../services/delivery-note-documents.js";
 import {
-  type CounterClientNotePdf,
-  GetCounterClientNotePdfQuery,
-} from "./get-counter-client-note-pdf.query.js";
+  type CounterCarrierNotePdf,
+  GetCounterCarrierNotePdfQuery,
+} from "./get-counter-carrier-note-pdf.query.js";
 
 /**
- * Le BL chiffré **pour le comptoir** (plan du jour J, lot L6) — le même
- * document que celui du client, derrière un mur plus étroit : le BL remis
- * d'un retrait ({@link counterNoteReach}). La remise se lit au canal du
+ * Le BL **de transport** pour le comptoir — celui qu'on tend et fait signer,
+ * sans aucun montant, comme en livraison (Hugo, 2026-11-03, qui revient sur
+ * le BL chiffré du lot L6 du 2026-11-02 : le chiffré reste dans l'espace
+ * client et sur la fiche commande). Le mur est étroit : le BL remis d'un
+ * retrait ({@link counterNoteReach}). La remise se lit au canal du
  * retrait : attestée sans BL encore écrit, c'est « pas encore », pas un refus.
  *
  * @throws {OrderNotFoundError} la commande n'existe pas.
  * @throws {CounterDeliveryNoteOutOfReachError} ce n'est pas un retrait remis.
  * @throws {CounterDeliveryNoteNotYetError} remise attestée, BL pas encore écrit.
  */
-@QueryHandler(GetCounterClientNotePdfQuery)
-export class GetCounterClientNotePdfHandler implements IQueryHandler<
-  GetCounterClientNotePdfQuery,
-  CounterClientNotePdf
+@QueryHandler(GetCounterCarrierNotePdfQuery)
+export class GetCounterCarrierNotePdfHandler implements IQueryHandler<
+  GetCounterCarrierNotePdfQuery,
+  CounterCarrierNotePdf
 > {
   constructor(
     private readonly documents: DeliveryNoteDocuments,
     private readonly handovers: OrderHandoverHistoryReader,
   ) {}
 
-  async execute(query: GetCounterClientNotePdfQuery): Promise<CounterClientNotePdf> {
-    const { owned, head, billing } = await this.documents.order(query.orderId);
+  async execute(query: GetCounterCarrierNotePdfQuery): Promise<CounterCarrierNotePdf> {
+    const { owned, head } = await this.documents.order(query.orderId);
     const notes = await this.documents.listFor(query.orderId);
     const handovers = await this.handovers.ofOrders([query.orderId]);
     const reach = counterNoteReach({
@@ -53,10 +56,9 @@ export class GetCounterClientNotePdfHandler implements IQueryHandler<
       throw new CounterDeliveryNoteOutOfReachError(query.orderId);
     }
     const state = reach.note;
-    const parts = await this.documents.partsOf([state.id]);
-    const note = clientNoteOf(state, head, billing, parts.get(state.id));
-    // Le BL tendu au comptoir porte la zone de réception (Hugo, 2026-11-03).
-    const bytes = await renderClientNotePdf(note, await this.documents.art(), { receipt: true });
+    const note = carrierNoteOf(state, head);
+    const undelivered = undeliveredOf(owned.view.lines, notes, state);
+    const bytes = await renderCarrierNotePdf(note, await this.documents.art(), undelivered);
     return { number: state.number, bytes, fileName: deliveryNotePdfFileName(note) };
   }
 }

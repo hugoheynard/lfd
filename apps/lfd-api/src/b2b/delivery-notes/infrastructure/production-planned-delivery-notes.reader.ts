@@ -12,6 +12,7 @@ import { orderPartsOf } from "../application/services/delivery-note-documents.js
 import type { DeliveryNoteState } from "../domain/entities/delivery-note.js";
 import { DeliveryNoteReader } from "../domain/ports/delivery-note.reader.js";
 import { drawCarrierNote } from "../domain/services/delivery-note-pdf.js";
+import { undeliveredOf } from "../domain/services/undelivered-lines.js";
 import { carrierNoteOf } from "../domain/services/delivery-note-sheet.js";
 
 /**
@@ -60,7 +61,7 @@ export class ProductionPlannedDeliveryNotesReader extends PlannedDeliveryNotesRe
       }
       const note = carrierNoteOf(travelling, orderPartsOf(owned).head);
       drawings.set(orderId, (doc) => {
-        drawCarrierNote(doc, note, art);
+        drawCarrierNote(doc, note, art, undeliveredOf(owned.view.lines, notes, travelling));
       });
     }
     return drawings;

@@ -275,6 +275,23 @@ forme du bon de commande
 | `clientNoteOf`  | client, service facturation, comptabilité   | le même, plus prix, totaux, TVA (pro HT, public TTC)                                                      | `GET orders/:orderId/delivery-note.pdf` (client, sous le mur, dernier BL remis) ; `…/:number/client.pdf` (équipe) |
 | `staffNoteOf`   | l'équipe                                    | la liste des BL de la commande, leur état, `reprintNeeded`                                                | `GET admin/orders/:orderId/delivery-notes` (`b2b_orders`)                                                         |
 
+- **Au comptoir** (Hugo, 2026-11-03) : le BL tendu et signé est celui de
+  transport, `GET admin/counter/orders/:orderId/delivery-note/carrier.pdf`
+  (`handover_counter`, le BL remis d'un retrait, sans numéro), comme en
+  livraison — cf. `limites-de-commande/jour-meme-sur-stock.md` § 8.
+- **Seulement les lignes remises** (Hugo, 2026-11-03) : sur les deux PDF,
+  partout, une ligne à zéro — l'article qui ne part pas d'un départ
+  incomplet, gardé à zéro dans les données pour que « livré = Σ des BL » —
+  n'est pas imprimée ; « Non livré : 3 × Gros florentin lait, … » la dit
+  sous le tableau (grammes pour le poids). Le manque est commandé − Σ des BL
+  non annulés de rang ≤ celui-ci, par article (`undeliveredOf`,
+  `apps/lfd-api/src/b2b/delivery-notes/domain/services/undelivered-lines.ts`) : un reliquat dit ce qui manque
+  encore après lui. Le dossier du jour du fournil l'imprime aussi.
+- **Chaque page** (Hugo, 2026-11-03) reprend l'en-tête complet (logo, titre,
+  numéro, dates) puis les titres de colonnes, et porte au pied « Bon de
+  livraison <numéro> — Page n / N » (`drawPageFolios`, `bufferPages`). Le BL
+  dessiné dans le dossier du fournil n'a pas de folio : la numérotation est
+  celle du dossier.
 - Titre « BON DE LIVRAISON », pied « Ce n'est pas une facture. »
   (`delivery-note-pdf-parts.ts`). Un BL sans en-tête (d'avant E4a) refuse le
   chiffré (`DeliveryNoteWithoutTermsError`, 409) et s'imprime en transport.

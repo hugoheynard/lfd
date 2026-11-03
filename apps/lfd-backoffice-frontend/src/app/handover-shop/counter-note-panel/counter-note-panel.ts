@@ -45,9 +45,11 @@ export const COUNTER_DOCUMENT_TITLES: Readonly<Record<CounterDocument, string>> 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **Un bon chiffré de la commande**, dans un dialogue, prêt à imprimer pour le
- * client (Hugo, 2026-11-03) : le bon de commande — celui que le client a reçu —
- * ou le bon de livraison — ce qui est vraiment parti.
+ * **Un bon de la commande**, dans un dialogue, prêt à imprimer pour le
+ * client (Hugo, 2026-11-03) : le bon de commande chiffré — celui que le client
+ * a reçu — ou le bon de livraison de TRANSPORT, non chiffré, à faire signer —
+ * ce qui est vraiment parti (Hugo, 2026-11-03 : « la même logique de chiffre
+ * qu'en livraison »).
  *
  * Il remplace la fiche sans prix d'avant, qui redisait ce que le rail montre
  * déjà. Le BL naît à la remise : le rail le grise avant, et son service
@@ -123,7 +125,7 @@ export class CounterNotePanel implements FoldPanelContent<CounterNotePanelData> 
     try {
       const blob =
         opened.document === 'delivery'
-          ? await this.notes.clientPdf(opened.orderId)
+          ? await this.notes.carrierPdf(opened.orderId)
           : await this.sheets.pdf(opened.orderId);
       this.objectUrl = URL.createObjectURL(blob);
       this.source.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl));

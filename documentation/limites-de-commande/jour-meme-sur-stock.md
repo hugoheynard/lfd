@@ -216,7 +216,7 @@ sequenceDiagram
     participant V as Vendeur
     participant O as POST /admin/orders
     participant R as POST /admin/handover/manual/:orderNumber
-    participant B as GET bon chiffré
+    participant B as GET BL de transport
     V->>O: supply shelf, entryShortcut immediate_pickup, settlement
     O-->>V: commande placed
     V->>R: remise saisie (manual)
@@ -225,7 +225,7 @@ sequenceDiagram
     else remise faite
         R-->>V: OrderHandedOver, puis BL et clôture au compte
         loop jusqu'à six fois, une seconde
-            V->>B: client.pdf
+            V->>B: carrier.pdf
             B-->>V: 404 delivery_notes.counter.not_yet, ou le PDF
         end
     end
@@ -249,9 +249,17 @@ sequenceDiagram
 - **La remise reste celle du bloc du retrait** : le commerce n'écrit jamais la
   remise. Le BL naît à la remise, le règlement au compte s'y clôt, la commande
   entre dans la facture du mois.
-- **Le bon remis au client** (Hugo, 2026-11-02 : BL client chiffré) :
-  `GET /admin/counter/orders/:orderId/delivery-note/client.pdf`
-  (`b2b/delivery-notes/http/admin-counter-delivery-notes.controller.ts:32-40`),
+- **Le bon remis au client** : le BL **de transport**, non chiffré, qu'on
+  tend et fait signer (articles, quantités, « Reçu par, le, signature ») —
+  `GET /admin/counter/orders/:orderId/delivery-note/carrier.pdf`
+  (`b2b/delivery-notes/http/admin-counter-delivery-notes.controller.ts`),
+  handler `get-counter-carrier-note-pdf.handler.ts`. ⚠️ **Décision du
+  2026-11-03 (Hugo)**, qui revient sur celle du 2026-11-02 (BL client chiffré,
+  `…/client.pdf`) : « respecter la même logique de chiffre qu'en livraison ».
+  Le chiffré reste dans l'espace client et sur la fiche commande ;
+  `…/client.pdf` du comptoir est retirée dans le même déploiement
+  (pré-release) et répond 404. Même mur, même « pas encore », même trace
+  d'impression qu'avant.
   sous `handover_counter:read`, sans numéro ; il sert le BL **remis** d'un
   **retrait** (`counterNoteReach`,
   `b2b/delivery-notes/domain/services/counter-note-reach.ts:33`). Côté écran :

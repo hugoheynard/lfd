@@ -33,12 +33,15 @@ import {
 import {
   articlesHeading,
   type DeliveryNoteArt,
+  noteFolios,
   noteFooter,
   noteHeader,
   noteParties,
   noteRemark,
   type PrintableNote,
 } from "./delivery-note-pdf-parts.js";
+import { undeliveredMention, undeliveredSpace } from "./delivery-note-pdf-undelivered.js";
+import type { UndeliveredLine } from "./undelivered-lines.js";
 
 /**
  * **Le bon de livraison en PDF** (plan
@@ -52,6 +55,11 @@ import {
  *   de totaux du bon de commande lu sur les totaux recopiés du BL.
  *
  * Déterministes : la date du document est celle du dernier pas du BL.
+ *
+ * Depuis le 2026-11-03 (Hugo) : une ligne à zéro — l'article qui ne part pas
+ * d'un départ incomplet, gardée à zéro dans les données pour que « livré = Σ
+ * des BL » — n'est plus imprimée ; une mention « Non livré : … » la dit sous
+ * le tableau. Chaque page reprend l'en-tête et porte « Page n / N ».
  */
 
 const COL_QTY = 16 * MM;
@@ -64,6 +72,14 @@ const X_UNIT_RIGHT = RIGHT - COL_TOTAL;
 const ROW_SPACE = 12 * MM;
 const TAIL_SPACE = 70 * MM;
 const RECEIPT_HEIGHT = 24 * MM;
+
+/** Ce que le tableau sait du papier qui l'entoure : l'en-tête à reprendre à chaque page. */
+interface Paper {
+  readonly note: PrintableNote;
+  readonly art: DeliveryNoteArt;
+  /** La place à garder sous le tableau, au-delà de la fin commune. */
+  readonly tail: number;
+}
 
 /** Les colonnes d'un lecteur : où finit le nom, et qui pose les prix. */
 interface Columns {
@@ -122,19 +138,31 @@ function articleRow(
   return bottom + 0.6;
 }
 
-/** Le tableau, paginé sans séparer une ligne de son filet ni le tableau de sa fin. */
-function table(doc: Doc, note: PrintableNote, columns: Columns, top: number): number {
+/** Une page neuve, l'en-tête du BL en haut : rend l'ordonnée sous son filet. */
+function nextPage(doc: Doc, paper: Paper): number {
+  doc.addPage();
+  return noteHeader(doc, paper.note, paper.art.logo);
+}
+
+/**
+ * Le tableau, paginé sans séparer une ligne de son filet ni le tableau de sa
+ * fin ; chaque page reprend l'en-tête, puis les titres de colonnes.
+ */
+function table(doc: Doc, paper: Paper, columns: Columns, top: number): number {
+  const { note } = paper;
+  const tail = TAIL_SPACE + paper.tail;
   let y = tableHead(doc, note, columns, top, true);
   for (let index = 0; index < note.lines.length; index += 1) {
-    if (y > PAGE_HEIGHT - MARGIN_Y - ROW_SPACE - TAIL_SPACE) {
-      doc.addPage();
-      y = tableHead(doc, note, columns, MARGIN_Y - 5 * MM, false);
+    if (note.lines[index]?.quantity === 0) {
+      continue;
+    }
+    if (y > PAGE_HEIGHT - MARGIN_Y - ROW_SPACE - tail) {
+      y = tableHead(doc, note, columns, nextPage(doc, paper), false);
     }
     y = articleRow(doc, note, columns, index, y);
   }
-  if (y > PAGE_HEIGHT - MARGIN_Y - TAIL_SPACE) {
-    doc.addPage();
-    y = MARGIN_Y;
+  if (y > PAGE_HEIGHT - MARGIN_Y - tail) {
+    y = nextPage(doc, paper);
   }
   return y;
 }
@@ -156,22 +184,36 @@ function receipt(doc: Doc, top: number): number {
 export async function renderCarrierNotePdf(
   note: CarrierNote,
   art: DeliveryNoteArt,
+  undelivered: readonly UndeliveredLine[] = [],
 ): Promise<Buffer> {
-  return render(new Date(note.issuedAt), `Bon de livraison ${note.number}`, (doc) => {
-    drawCarrierNote(doc, note, art);
-  });
+  return render(
+    new Date(note.issuedAt),
+    `Bon de livraison ${note.number}`,
+    (doc) => {
+      drawCarrierNote(doc, note, art, undelivered);
+      noteFolios(doc, note);
+    },
+    true,
+  );
 }
 
 /**
  * Le BL de transport, dessiné **sur la page courante d'un document qu'un
  * autre tient** — le dossier du jour du fournil le joint à chaque bon de
  * commande (Hugo, 2026-10-25). Le même dessin que `renderCarrierNotePdf`, au
- * point près : il tourne ses propres pages quand le tableau déborde.
+ * point près : il tourne ses propres pages quand le tableau déborde. Sans
+ * folio : la numérotation appartient au document qui le tient.
  */
-export function drawCarrierNote(doc: Doc, note: CarrierNote, art: DeliveryNoteArt): void {
+export function drawCarrierNote(
+  doc: Doc,
+  note: CarrierNote,
+  art: DeliveryNoteArt,
+  undelivered: readonly UndeliveredLine[] = [],
+): void {
   const columns: Columns = { skuRight: RIGHT, heads: () => undefined, row: () => undefined };
+  const paper: Paper = { note, art, tail: undeliveredSpace(doc, undelivered) };
   const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
-  const end = table(doc, note, columns, top);
+  const end = undeliveredMention(doc, undelivered, table(doc, paper, columns, top));
   noteFooter(doc, note, noteRemark(doc, note, receipt(doc, end)), []);
 }
 
@@ -235,35 +277,30 @@ function totals(doc: Doc, note: ClientNote, top: number): number {
   return y;
 }
 
-/** Ce que le BL chiffré ajoute selon qui l'imprime. */
-export interface ClientNoteOptions {
-  /**
-   * La zone « Reçu par, le, signature » du BL de transport, sous les totaux —
-   * pour le BL que le comptoir tend au client (Hugo, 2026-11-03 : « les
-   * champs comme en livraison »). Absente partout ailleurs : le client qui
-   * télécharge son BL n'a rien à signer.
-   */
-  readonly receipt?: boolean;
-}
-
 /** Le BL chiffré, pro ou public. */
 export async function renderClientNotePdf(
   note: ClientNote,
   art: DeliveryNoteArt,
-  options: ClientNoteOptions = {},
+  undelivered: readonly UndeliveredLine[] = [],
 ): Promise<Buffer> {
   const excluded = note.lines.some((line) => line.pickupDiscountEligible === false);
-  return render(new Date(note.issuedAt), `Bon de livraison ${note.number}`, (doc) => {
-    const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
-    const end = table(doc, note, pricedColumns(note), top);
-    const afterTotals = totals(doc, note, end);
-    noteFooter(
-      doc,
-      note,
-      noteRemark(doc, note, options.receipt === true ? receipt(doc, afterTotals) : afterTotals),
-      excluded ? [PICKUP_DISCOUNT_EXCLUDED_NOTE] : [],
-    );
-  });
+  return render(
+    new Date(note.issuedAt),
+    `Bon de livraison ${note.number}`,
+    (doc) => {
+      const paper: Paper = { note, art, tail: undeliveredSpace(doc, undelivered) };
+      const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
+      const end = undeliveredMention(doc, undelivered, table(doc, paper, pricedColumns(note), top));
+      noteFooter(
+        doc,
+        note,
+        noteRemark(doc, note, totals(doc, note, end)),
+        excluded ? [PICKUP_DISCOUNT_EXCLUDED_NOTE] : [],
+      );
+      noteFolios(doc, note);
+    },
+    true,
+  );
 }
 
 /** Le nom proposé au téléchargement. */

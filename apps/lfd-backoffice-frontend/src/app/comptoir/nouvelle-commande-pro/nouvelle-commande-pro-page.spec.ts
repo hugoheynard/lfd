@@ -41,9 +41,9 @@ async function setup(list: () => Promise<readonly CounterCustomerCard[]>): Promi
       provideRouter([{ path: '**', children: [] }]),
       {
         provide: CounterDeliveryNoteService,
-        useValue: { openClient: () => Promise.resolve() } satisfies Pick<
+        useValue: { openCarrier: () => Promise.resolve() } satisfies Pick<
           CounterDeliveryNoteService,
-          'openClient'
+          'openCarrier'
         >,
       },
       {
@@ -107,9 +107,9 @@ async function arriveWith(state: Record<string, unknown>): Promise<HTMLElement> 
       provideRouter([{ path: 'comptoir/nouvelle-commande', component: NouvelleCommandeProPage }]),
       {
         provide: CounterDeliveryNoteService,
-        useValue: { openClient: () => Promise.resolve() } satisfies Pick<
+        useValue: { openCarrier: () => Promise.resolve() } satisfies Pick<
           CounterDeliveryNoteService,
-          'openClient'
+          'openCarrier'
         >,
       },
       {

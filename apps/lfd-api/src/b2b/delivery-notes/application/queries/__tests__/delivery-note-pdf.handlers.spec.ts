@@ -29,8 +29,8 @@ import { GetCarrierNotePdfHandler } from "../get-carrier-note-pdf.handler.js";
 import { GetCarrierNotePdfQuery } from "../get-carrier-note-pdf.query.js";
 import { GetClientNotePdfHandler } from "../get-client-note-pdf.handler.js";
 import { GetClientNotePdfQuery } from "../get-client-note-pdf.query.js";
-import { GetCounterClientNotePdfHandler } from "../get-counter-client-note-pdf.handler.js";
-import { GetCounterClientNotePdfQuery } from "../get-counter-client-note-pdf.query.js";
+import { GetCounterCarrierNotePdfHandler } from "../get-counter-carrier-note-pdf.handler.js";
+import { GetCounterCarrierNotePdfQuery } from "../get-counter-carrier-note-pdf.query.js";
 import { ListOrderDeliveryNotesHandler } from "../list-order-delivery-notes.handler.js";
 import { ListOrderDeliveryNotesQuery } from "../list-order-delivery-notes.query.js";
 import { FixedNoteDiscountParts } from "../../__tests__/departure-doubles.js";
@@ -193,41 +193,42 @@ function counterHandler(
   notes: readonly DeliveryNoteState[],
   method: "pickup" | "delivery",
   attested: boolean,
-): GetCounterClientNotePdfHandler {
-  return new GetCounterClientNotePdfHandler(
+): GetCounterCarrierNotePdfHandler {
+  return new GetCounterCarrierNotePdfHandler(
     documents(notes, owned({ fulfillmentMethod: method })),
     new FixedHandovers(attested),
   );
 }
 
-describe("GetCounterClientNotePdfHandler — le bon remis au client, au comptoir (lot L6)", () => {
-  it("sert le BL chiffré d'un retrait remis, avec son numéro pour la trace", async () => {
+describe("GetCounterCarrierNotePdfHandler — le BL de transport remis au comptoir (Hugo, 2026-11-03)", () => {
+  it("sert le BL de transport d’un retrait remis, avec son numéro pour la trace", async () => {
     const note = handedOverNote();
 
     const pdf = await counterHandler([note], "pickup", true).execute(
-      new GetCounterClientNotePdfQuery("ord_1"),
+      new GetCounterCarrierNotePdfQuery("ord_1"),
     );
 
     expect(pdf.number).toBe(note.number);
     expect(pdf.bytes.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(pdf.fileName).toBe(`bon-de-livraison-${note.number}-transport.pdf`);
   });
 
   it("dit « pas encore » quand la remise est attestée sans BL écrit", async () => {
     await expect(
-      counterHandler([], "pickup", true).execute(new GetCounterClientNotePdfQuery("ord_1")),
+      counterHandler([], "pickup", true).execute(new GetCounterCarrierNotePdfQuery("ord_1")),
     ).rejects.toBeInstanceOf(CounterDeliveryNoteNotYetError);
   });
 
   it("refuse un retrait jamais remis", async () => {
     await expect(
       counterHandler([plannedNote().toState()], "pickup", false).execute(
-        new GetCounterClientNotePdfQuery("ord_1"),
+        new GetCounterCarrierNotePdfQuery("ord_1"),
       ),
     ).rejects.toBeInstanceOf(CounterDeliveryNoteOutOfReachError);
   });
 
   it("refuse une commande inconnue en 404 commande, sans rien imprimer", async () => {
-    const handler = new GetCounterClientNotePdfHandler(
+    const handler = new GetCounterCarrierNotePdfHandler(
       new DeliveryNoteDocuments(
         new OneOrderReader(null),
         new FixedNotes([handedOverNote()]),
@@ -237,15 +238,15 @@ describe("GetCounterClientNotePdfHandler — le bon remis au client, au comptoir
       new FixedHandovers(true),
     );
 
-    await expect(handler.execute(new GetCounterClientNotePdfQuery("ord_x"))).rejects.toBeInstanceOf(
-      OrderNotFoundError,
-    );
+    await expect(
+      handler.execute(new GetCounterCarrierNotePdfQuery("ord_x")),
+    ).rejects.toBeInstanceOf(OrderNotFoundError);
   });
 
   it("dit « pas encore » quand plusieurs BL existent mais aucun n'est remis", async () => {
     await expect(
       counterHandler([plannedNote().toState(), plannedNote().toState()], "pickup", true).execute(
-        new GetCounterClientNotePdfQuery("ord_1"),
+        new GetCounterCarrierNotePdfQuery("ord_1"),
       ),
     ).rejects.toBeInstanceOf(CounterDeliveryNoteNotYetError);
   });
@@ -253,7 +254,7 @@ describe("GetCounterClientNotePdfHandler — le bon remis au client, au comptoir
   it("refuse le BL d'une livraison, même remise", async () => {
     await expect(
       counterHandler([handedOverNote()], "delivery", true).execute(
-        new GetCounterClientNotePdfQuery("ord_1"),
+        new GetCounterCarrierNotePdfQuery("ord_1"),
       ),
     ).rejects.toBeInstanceOf(CounterDeliveryNoteOutOfReachError);
   });

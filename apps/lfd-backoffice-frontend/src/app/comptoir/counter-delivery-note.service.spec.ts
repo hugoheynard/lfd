@@ -1,7 +1,15 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { isNotYet, NOTE_NOT_YET_CODE, retryWhileNotYet } from './counter-delivery-note.service';
+import { B2B_API_BASE } from '../api/api-config';
+import {
+  CounterDeliveryNoteService,
+  isNotYet,
+  NOTE_NOT_YET_CODE,
+  retryWhileNotYet,
+} from './counter-delivery-note.service';
 
 /** Lot L6 : le BL naît après la remise ; « pas encore » se réessaie, le reste remonte. */
 
@@ -66,5 +74,27 @@ describe('retryWhileNotYet', () => {
       ),
     ).rejects.toBeInstanceOf(HttpErrorResponse);
     expect(calls).toBe(3);
+  });
+});
+
+/** Hugo, 2026-11-03 : au comptoir, on tend le BL de TRANSPORT, non chiffré. */
+describe('CounterDeliveryNoteService', () => {
+  it('lit le BL de transport du comptoir, jamais le chiffré', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(CounterDeliveryNoteService);
+    const ctrl = TestBed.inject(HttpTestingController);
+
+    const pending = service.carrierPdf('ord_1');
+    ctrl
+      .expectOne({
+        method: 'GET',
+        url: `${B2B_API_BASE}/admin/counter/orders/ord_1/delivery-note/carrier.pdf`,
+      })
+      .flush(new Blob(['%PDF-']));
+
+    expect(await pending).toBeInstanceOf(Blob);
+    ctrl.verify();
   });
 });

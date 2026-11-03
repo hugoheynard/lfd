@@ -206,6 +206,20 @@ export function rule(doc: Doc, y: number, thickness: number, color = BLACK): voi
 }
 
 /**
+ * Le folio de chaque page — `label` à gauche, « Page n / N » à droite —, posé
+ * une fois le total connu : le document doit être rendu avec `bufferPages`.
+ */
+export function drawPageFolios(doc: Doc, label: string): void {
+  const range = doc.bufferedPageRange();
+  const y = PAGE_HEIGHT - MARGIN_Y + 2 * MM;
+  for (let index = 0; index < range.count; index += 1) {
+    doc.switchToPage(range.start + index);
+    put(doc, label, LEFT, y, { size: 8 });
+    putRight(doc, `Page ${String(index + 1)} / ${String(range.count)}`, RIGHT, y, 8);
+  }
+}
+
+/**
  * Le QR, dessiné en **carrés pleins** plutôt qu'en image.
  *
  * Une image demanderait un encodeur PNG et ferait entrer des octets binaires

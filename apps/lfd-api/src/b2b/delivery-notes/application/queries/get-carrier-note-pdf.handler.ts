@@ -5,6 +5,7 @@ import {
   renderCarrierNotePdf,
 } from "../../domain/services/delivery-note-pdf.js";
 import { carrierNoteOf } from "../../domain/services/delivery-note-sheet.js";
+import { undeliveredOf } from "../../domain/services/undelivered-lines.js";
 import {
   type DeliveryNotePdf,
   DeliveryNoteDocuments,
@@ -20,9 +21,12 @@ export class GetCarrierNotePdfHandler implements IQueryHandler<
   constructor(private readonly documents: DeliveryNoteDocuments) {}
 
   async execute(query: GetCarrierNotePdfQuery): Promise<DeliveryNotePdf> {
-    const { head } = await this.documents.order(query.orderId);
-    const note = carrierNoteOf(await this.documents.note(query.orderId, query.noteNumber), head);
-    const bytes = await renderCarrierNotePdf(note, await this.documents.art());
+    const { owned, head } = await this.documents.order(query.orderId);
+    const notes = await this.documents.listFor(query.orderId);
+    const state = await this.documents.note(query.orderId, query.noteNumber);
+    const note = carrierNoteOf(state, head);
+    const undelivered = undeliveredOf(owned.view.lines, notes, state);
+    const bytes = await renderCarrierNotePdf(note, await this.documents.art(), undelivered);
     return { bytes, fileName: deliveryNotePdfFileName(note) };
   }
 }

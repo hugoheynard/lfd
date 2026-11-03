@@ -15,8 +15,10 @@ const NOT_YET_WAIT_MS = 1_000;
 
 /**
  * **Le bon remis au client, au comptoir** (plan du jour J, lot L6) —
- * `GET /admin/counter/orders/:orderId/delivery-note/client.pdf`, sous
- * `handover_counter:read`. Le BL chiffré du retrait remis, sans numéro : le
+ * `GET /admin/counter/orders/:orderId/delivery-note/carrier.pdf`, sous
+ * `handover_counter:read`. Le BL **de transport** du retrait remis — non
+ * chiffré, à faire signer, comme en livraison (Hugo, 2026-11-03 ; le chiffré
+ * reste dans l'espace client et sur la fiche commande) —, sans numéro : le
  * vendeur n'a pas le droit de lister les BL.
  *
  * Le BL naît à la remise, APRÈS la livraison durable du fait de remise : juste
@@ -29,7 +31,7 @@ export class CounterDeliveryNoteService {
   private readonly http = inject(HttpClient);
 
   /** Le PDF, en réessayant tant que le serveur dit « pas encore ». */
-  clientPdf(orderId: string): Promise<Blob> {
+  carrierPdf(orderId: string): Promise<Blob> {
     return retryWhileNotYet(() => this.download(orderId), NOT_YET_ATTEMPTS, NOT_YET_WAIT_MS);
   }
 
@@ -37,10 +39,10 @@ export class CounterDeliveryNoteService {
    * Ouvre le bon dans un onglet, d'où on l'imprime. Rejette avec le message du
    * serveur (lu dans le corps `Blob` du refus) quand il ne vient pas.
    */
-  async openClient(orderId: string): Promise<void> {
+  async openCarrier(orderId: string): Promise<void> {
     let blob: Blob;
     try {
-      blob = await this.clientPdf(orderId);
+      blob = await this.carrierPdf(orderId);
     } catch (error) {
       throw new Error(await blobRefusalMessage(error));
     }
@@ -54,7 +56,7 @@ export class CounterDeliveryNoteService {
   private download(orderId: string): Promise<Blob> {
     return firstValueFrom(
       this.http.get(
-        `${B2B_API_BASE}/admin/counter/orders/${encodeURIComponent(orderId)}/delivery-note/client.pdf`,
+        `${B2B_API_BASE}/admin/counter/orders/${encodeURIComponent(orderId)}/delivery-note/carrier.pdf`,
         { responseType: 'blob' },
       ),
     );
