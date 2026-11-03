@@ -5,7 +5,7 @@ import { HandoverProof } from "../domain/entities/handover-proof.js";
 import { HandoverProofEraser } from "../domain/ports/handover-proof.eraser.js";
 
 /**
- * L'effacement des pièces (`production.order_handover_proof`). Un DELETE
+ * L'effacement des pièces (`handover.order_handover_proof`). Un DELETE
  * physique, et c'est l'objet : une pièce effacée pour la conservation ou à la
  * demande d'une personne ne doit plus exister nulle part — un statut « effacé »
  * garderait le nom. L'attestation, elle, n'est pas touchée.

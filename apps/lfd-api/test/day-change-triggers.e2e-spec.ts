@@ -45,11 +45,11 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "écrite seulement avec la ligne de son transfert, dans la même transaction, dont le déclencheur avance déjà la journée",
   "delivery.delivery_internal_transfer_manifest_line":
     "figée au départ avec la ligne de son transfert, dans la même transaction, dont le déclencheur avance déjà la journée",
-  "production.order_handover":
+  "handover.order_handover":
     "un retrait change le statut de la commande, donc `public.orders` et son journal ; son jour n'existe que dans une table d'un autre bloc (D3)",
-  "production.order_departure":
+  "handover.order_departure":
     "la garde passée au livreur (BQ, 2026-10-01) : le départ fait déjà bouger la journée de la livraison, et son jour n'existe que dans une table d'un autre bloc (D3), comme `order_handover`",
-  "production.order_handover_proof":
+  "handover.order_handover_proof":
     "les pièces d'une remise à la porte (B1, 2026-10-01) : la remise clôt l'arrêt, qui fait déjà bouger la journée de la livraison ; son jour n'existe que dans une table d'un autre bloc (D3), comme `order_handover`",
   "production.order_withdrawal":
     "le retrait d'une commande annulée par l'équipe (plan d'annulation, C3.4, 2026-10-12) : écrit dans la transaction qui passe la commande `cancelled`, dont `orders` fait déjà bouger la journée du commerce ; aucun écran du fournil ne le lit, seuls la clôture et le retirage, sous le verrou",
@@ -190,7 +190,7 @@ async function tablesToWatch(): Promise<string[]> {
   const rows = await ctx.prisma.$queryRaw<{ tbl: string }[]>`
     SELECT table_schema || '.' || table_name AS tbl
       FROM information_schema.tables
-     WHERE table_type = 'BASE TABLE' AND table_schema IN ('production', 'delivery', 'packing')
+     WHERE table_type = 'BASE TABLE' AND table_schema IN ('production', 'delivery', 'packing', 'handover')
     UNION
     SELECT table_schema || '.' || table_name
       FROM information_schema.columns

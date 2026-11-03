@@ -7,8 +7,8 @@ import type { ShipmentRef } from "../../production/channels/handover/index.js";
 import { shipmentKey } from "./first-shipment.key.js";
 
 /**
- * Les pièces des remises à la porte (`production.order_handover_proof`,
- * rangée avec `order_handover` : le retrait n'a pas de schéma à lui).
+ * Les pièces des remises à la porte (`handover.order_handover_proof`, le
+ * schéma du retrait depuis le 2026-11-03 ; rangée dans `production` avant).
  *
  * `create` nu : la clé est l'envoi `(commande, rang)` (L3d), et l'attestation écrite juste avant
  * dans la même transaction est déjà unique — une seconde pièce pour la même

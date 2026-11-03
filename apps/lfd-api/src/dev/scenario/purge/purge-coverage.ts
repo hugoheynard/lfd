@@ -117,9 +117,9 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
   { table: "production.production_handoff", purgedIn: PRODUCTION, referencedBy: [] },
   { table: "production.production_return_request", purgedIn: PRODUCTION, referencedBy: [] },
   { table: "production.day_change", purgedIn: PRODUCTION, referencedBy: [] },
-  { table: "production.order_handover", purgedIn: PRODUCTION, referencedBy: [] },
-  { table: "production.order_handover_proof", purgedIn: PRODUCTION, referencedBy: [] },
-  { table: "production.order_departure", purgedIn: PRODUCTION, referencedBy: [] },
+  { table: "handover.order_handover", purgedIn: PRODUCTION, referencedBy: [] },
+  { table: "handover.order_handover_proof", purgedIn: PRODUCTION, referencedBy: [] },
+  { table: "handover.order_departure", purgedIn: PRODUCTION, referencedBy: [] },
 
   {
     table: "packing.packing_order",

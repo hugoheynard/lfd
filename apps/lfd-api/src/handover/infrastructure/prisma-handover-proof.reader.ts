@@ -21,7 +21,7 @@ import { handoverViaOf } from "./handover-via.mapper.js";
 
 /**
  * **Ce que le retrait montre au commerce de ses preuves de remise**
- * (`production.order_handover_proof`, `order_handover`, `order_departure`).
+ * (`handover.order_handover_proof`, `order_handover`, `order_departure`).
  *
  * Un adaptateur à part du dépôt qui grave (`PrismaHandoverProofRepository`) :
  * un écran de consultation ne dépend pas du port qui écrit des preuves (ISP).

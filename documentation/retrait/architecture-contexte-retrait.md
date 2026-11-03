@@ -129,18 +129,19 @@ perdant est justement celui qui peut réparer une propagation manquée.
 
 ## 6. Ce qui n'est pas fait
 
-**La table est encore dans le schéma `production`.** Le code la vise par Prisma,
-donc rien ne casse ; mais l'arborescence ment tant que la migration n'est pas
-passée.
+**Les tables ont leur schéma, `handover`, depuis le 2026-11-03** (plan
+[`plan-schema-handover.md`](plan-schema-handover.md), tranche A, migration
+`20261103110000_le_retrait_dans_son_schema`) : `order_handover`,
+`order_handover_proof` et `order_departure` y sont passées par `SET SCHEMA`,
+sans recopie. Trois **vues de transition** restent dans `production` le temps
+d'un déploiement — l'ancienne image les vise encore une à deux minutes — et
+partent à la tranche B.
 
-🔴 **Elle est bloquée par une vérification qui n'est pas la mienne** :
-`prisma migrate deploy` génère un `DROP TABLE` (Prisma ne connaît pas
-`SET SCHEMA`), et la parade — une vue de transition — n'a été éprouvée que sur
-l'adapter `pg`, le transport des **tests**. La production tourne sur Accelerate.
-
-⚠️ Et ce n'est pas qu'une affaire de données : pendant une à deux minutes après
-`migrate deploy`, l'ancienne image répond encore et viserait une table absente —
-un **500 au comptoir**, que la table ait été vide ou non.
+⚠️ Ce paragraphe disait le déplacement **bloqué** : la vue de transition
+n'avait été éprouvée que sur l'adaptateur `pg` des tests, et « la production
+tourne sur Accelerate ». C'était caduc depuis le 2026-09-19 (Accelerate quitté
+en production, un seul transport `pg` partout) — une justification qui a
+survécu à sa raison, relevée le 2026-11-03.
 
 **L'ancien chemin d'URL est encore servi**, déprécié. Son retrait est un
 déploiement à part, et un e2e l'atteste pour qu'on ne le retire pas trop tôt.

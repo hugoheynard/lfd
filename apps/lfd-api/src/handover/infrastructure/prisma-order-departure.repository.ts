@@ -5,8 +5,8 @@ import type { ShipmentRef } from "../../production/channels/handover/index.js";
 import { OrderDepartureRepository } from "../domain/ports/order-departure.repository.js";
 
 /**
- * Les départs annoncés (`production.order_departure`, rangée avec
- * `order_handover` : le retrait n'a pas de schéma à lui).
+ * Les départs annoncés (`handover.order_departure`, le schéma du retrait
+ * depuis le 2026-11-03 ; rangée dans `production` avant).
  *
  * **Monotone par instant, pas par ordre d'arrivée** (`plan-depart-durable.md`,
  * §5, B1, 2026-10-06). Départ et retour arrivent par la boîte d'envoi, qui
