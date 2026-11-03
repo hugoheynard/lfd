@@ -131,3 +131,16 @@
   flex-direction: column;
   border-bottom: 1px solid var(--fold-color-border-subtle);
 }
+
+/* 🔴 Le trait sous la DERNIÈRE ligne (Hugo, 2026-11-03). Fold l'efface
+   (`.folddt-row:last-child .folddt-cell { border-bottom: 0 }`, relu dans le
+   navigateur le 2026-11-03), pour une table qui s'arrête au bord de sa carte.
+   Celle-ci s'étire à la hauteur du rail : sans trait, la dernière commande se
+   fondait dans le vide sous elle. Fold n'a pas d'entrée pour le garder —
+   d'où `::ng-deep`, borné à cet hôte et à cette seule règle. À retirer le jour
+   où fold l'offre (une entrée de la table). Les classes sont doublées : la
+   règle de fold porte deux attributs de portée, et la nôtre un seul — à
+   spécificité égale de classes, elle perdait. */
+:host ::ng-deep .folddt-row.folddt-row:last-child .folddt-cell.folddt-cell {
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
