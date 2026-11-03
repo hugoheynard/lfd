@@ -186,6 +186,12 @@ mécanique.
 | S6 — une hausse sans borne                                                                      | Acceptée : le compte monte, la fiche montre ce qui reste à cuire. Le four décide ; aucun puisage dans la réserve.                                                                                                                                                                                     |
 | Mineurs                                                                                         | `releaseToStock` existe (rien à extraire) ; E6c n'est pas atteint avant « prête » ; irréversibles : `production.order_quantities_raised`, `packing_sheet.revised`, la valeur `staff_quantities`.                                                                                                      |
 
+> **Ajout du 2026-11-03 (audit final du réassort).** Le guichet du fournil
+> ne comparait pas le jour d'inscription au jour révisé. Il refuse
+> désormais une commande inscrite un autre jour
+> (`production.revision.inscribed_another_day`, 409, les deux jours nommés),
+> au lieu de la chercher au plan d'une journée où elle n'est pas.
+
 **Lots** : A2.1 le fournil (guichet élargi, dû révisé, compte plancher,
 fait de hausse) ; A2.2 le colisage (`reviseDue`, refus bac/feuille
 absente/baisse sous le bac, fait) ; A2.3 le commerce et l'écran (révision

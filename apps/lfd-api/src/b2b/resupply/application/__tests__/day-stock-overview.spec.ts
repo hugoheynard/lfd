@@ -6,6 +6,7 @@ import {
   type PlacedSiteResupplySnapshot,
   type SiteResupplySnapshot,
 } from "../../domain/site-resupply.js";
+import type { ShelfDraw } from "../../domain/shelf-draws.reader.js";
 import { StockAlert } from "../../domain/stock-alert.js";
 import { GetDayStockOverviewHandler } from "../get-day-stock-overview.handler.js";
 import { GetDayStockOverviewQuery } from "../get-day-stock-overview.query.js";
@@ -50,8 +51,13 @@ class InMemoryDayStockReader extends DayStockReader {
  * (PAC, 6 demandés, 5 emballés), un arrivé (BAG), un annulé ; une rupture sur
  * TAR. Le Labo : rien. Un point archivé : une alerte seule.
  */
-async function world(stopped: readonly string[], extra: readonly SiteResupplySnapshot[] = []) {
+async function world(
+  stopped: readonly string[],
+  extra: readonly SiteResupplySnapshot[] = [],
+  draws: readonly ShelfDraw[] = [],
+) {
   const bench = setup();
+  bench.draws.set(DAY, SITE, draws);
   extra.forEach((resupply) => bench.resupplies.put(resupply));
   bench.resupplies.put(placed("r_cro", CRO_24));
   bench.resupplies.put(
@@ -103,12 +109,12 @@ async function world(stopped: readonly string[], extra: readonly SiteResupplySna
     new SiteLabels(new Map([[ARCHIVED, "Ancien kiosque"]])),
     bench.stock,
   );
-  return handler.execute(new GetDayStockOverviewQuery(DAY));
+  return { view: await handler.execute(new GetDayStockOverviewQuery(DAY)), bench };
 }
 
 describe("l'onglet Stock de la Supervision (S1)", () => {
   it("rend chaque point dans l'ordre, ses réassorts et leur état, sans l'annulé non reçu", async () => {
-    const view = await world([DAY]);
+    const { view } = await world([DAY]);
 
     expect(view.serviceDay).toBe(DAY);
     expect(view.sites.map((site) => site.siteLabel)).toEqual(["Village", "Labo", "Ancien kiosque"]);
@@ -126,7 +132,7 @@ describe("l'onglet Stock de la Supervision (S1)", () => {
   });
 
   it("trie les produits : alertes, puis attendus (l'emballé l'emporte), puis le stock", async () => {
-    const view = await world([DAY]);
+    const { view } = await world([DAY]);
 
     expect(view.sites[0]?.products).toEqual([
       {
@@ -151,7 +157,7 @@ describe("l'onglet Stock de la Supervision (S1)", () => {
   });
 
   it("garde un point sans rien, et ne fige pas un « pour demain » tant que le plan est ouvert", async () => {
-    const view = await world([]);
+    const { view } = await world([]);
 
     expect(view.sites[1]).toEqual({
       siteId: OTHER,
@@ -167,7 +173,7 @@ describe("l'onglet Stock de la Supervision (S1)", () => {
     const launched = { at: AT, byName: "Paul" };
     const departed = { at: AT, byName: "Léa" };
     const line = [{ sku: "ECL", label: "Éclair", quantity: 2, saleUnit: "piece" as const }];
-    const view = await world(
+    const { view } = await world(
       [DAY],
       [
         placed("r_lau", line, { launched }),
@@ -182,5 +188,20 @@ describe("l'onglet Stock de la Supervision (S1)", () => {
     expect(states.get("r_lau")).toBe("launched");
     expect(states.get("r_dep")).toBe("departed");
     expect(states.get("r_arr")).toBe("arrived");
+  });
+
+  /**
+   * Régression (audit final, 2026-11-03) : les prélèvements des commandes sur
+   * stock se lisaient une fois PAR POINT ; ils se lisent une fois pour la
+   * journée, et chaque point garde les siens.
+   */
+  it("lit les prélèvements une seule fois pour la journée, et les déduit du bon point", async () => {
+    const sold = [{ sku: "CRO", label: "Croissant", saleUnit: "piece" as const, quantity: 4 }];
+    const { view, bench } = await world([DAY], [], sold);
+
+    expect(bench.draws.reads).toBe(1);
+    const croissant = view.sites[0]?.products.find((product) => product.sku === "CRO");
+    expect(croissant?.stock).toBe(20);
+    expect(view.sites[1]?.products).toEqual([]);
   });
 });

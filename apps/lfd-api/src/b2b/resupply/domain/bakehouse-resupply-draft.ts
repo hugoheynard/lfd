@@ -137,6 +137,18 @@ export class BakehouseResupplyDraft {
   }
 
   /**
+   * Le réassort né de l'envoi qui a suivi `readVersion`, et de lui seul —
+   * `null` sinon (E2, 2026-11-03, la politique de l'envoi du comptoir) :
+   * chaque écriture avance la version d'un, donc un brouillon envoyé en
+   * `readVersion + 1` est parti tel que le poste l'avait sous les yeux, et
+   * un second « Envoyer » n'a rien à refaire.
+   */
+  sentAfter(readVersion: number): string | null {
+    const replayed = this.currentStatus === "sent" && this.version === readVersion + 1;
+    return replayed ? this.resupplyId : null;
+  }
+
+  /**
    * Refuse d'écrire un brouillon clos, ou lu dans une version périmée.
    *
    * @throws {BakehouseResupplyDraftClosedError} envoyé ou supprimé.

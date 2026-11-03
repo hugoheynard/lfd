@@ -57,6 +57,7 @@ import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
+import { ShelfDrawsFeedModule } from "./shelf-draws-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
 import { CitedAllergensFeedModule } from "./cited-allergens-feed.module.js";
 import { ProductionDeskFeedModule } from "./production-desk-feed.module.js";
@@ -208,6 +209,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Le colisage, en ombre (plan `colisage/colisage.md`, K1).
     PackingModule,
     PackingFeedModule,
+    ShelfDrawsFeedModule,
     PackingDeliveryFeedModule,
     PackingCommerceFeedModule,
     CitedAllergensFeedModule,

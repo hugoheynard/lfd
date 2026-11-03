@@ -2,6 +2,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../platform/shared/errors/app-error.js";
 
 /**
@@ -134,6 +135,21 @@ export class EmptyProposalError extends BusinessError {
     super(
       "packing.proposal.empty",
       `Rien à proposer pour la commande ${reference} : aucun type de bac en service n'a de contenance pour ses produits. Créez les bacs à la main, ou demandez à un responsable de la livraison de remplir l'écran « Contenances ».`,
+    );
+  }
+}
+
+/**
+ * « Proposer » a réparti vers un bac ou un article que le geste n'a pas
+ * préparé (audit final du réassort, 2026-11-03) : la répartition et les
+ * verrous partent des mêmes entrées, c'est donc un défaut de code — avalé, il
+ * mettait des pièces au bac sans les retirer de la réserve.
+ */
+export class ProposalOutOfStepError extends TechnicalError {
+  constructor(reference: string, what: string) {
+    super(
+      "packing.proposal.out_of_step",
+      `« Proposer » sur la commande ${reference} a visé ${what}, que le geste n'avait pas préparé : rien n'a été écrit. Répartissez à la main et signalez-le à l'équipe technique.`,
     );
   }
 }

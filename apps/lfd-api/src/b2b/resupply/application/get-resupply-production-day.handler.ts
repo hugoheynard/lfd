@@ -22,8 +22,11 @@ import { resupplyDayView } from "./resupply-day-view.js";
  *
  * Lus au commerce plutôt qu'à la copie figée du fournil : sous le guichet du
  * plan, l'envoi et l'annulation d'un réassort pour demain sont refusés une
- * fois la journée arrêtée (R3a), donc les deux listes sont les mêmes ; et
- * l'onglet a besoin des « au plus tôt », que le fournil ne fige jamais.
+ * fois la journée arrêtée (R3a), donc les deux listes sont les mêmes
+ * (vérifié le 2026-11-03 : `assertPlaceable` et `assertCancellable` refusent
+ * un « pour demain » d'un plan arrêté, et les deux gestes prennent le verrou
+ * de la journée) ; et l'onglet a besoin des « au plus tôt », que le fournil
+ * ne fige jamais.
  *
  * Depuis l'arrivée au point (R3e), il dit quels points sont servis par transfert : aux autres,
  * l'onglet propose « Monté ».

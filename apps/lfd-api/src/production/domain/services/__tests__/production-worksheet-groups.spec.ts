@@ -70,7 +70,7 @@ describe("worksheetGroupsOf", () => {
     expect(groups[1]).toMatchObject({ family: null, label: SHELF_LABEL_OFF_CATALOG });
   });
 
-  it("🔴 une table ILLISIBLE range tout en « Rayon inconnu », jamais « Hors catalogue »", () => {
+  it("une table ILLISIBLE range tout en « Rayon inconnu », jamais « Hors catalogue »", () => {
     // « Hors catalogue » affirmerait que le fournil fabrique des articles retirés
     // de la vente — alors qu'on ne sait simplement pas.
     const groups = worksheetGroupsOf([line("VIE-1", 10), line("PAI-1", 5)], null);

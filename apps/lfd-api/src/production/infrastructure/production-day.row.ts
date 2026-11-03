@@ -42,8 +42,15 @@ export const DAY_COLUMNS = {
           saleUnit: true,
           madeToOrder: true,
         },
+        orderBy: { id: "asc" },
       },
     },
+    // Ordonnées : sans `orderBy`, Postgres rend l'ordre physique, qui change
+    // après un `UPDATE` (audit final du réassort, 2026-11-03). Par `id` —
+    // un cuid tiré dans l'ordre d'écriture — pour garder l'ordre de
+    // l'agrégat que les papiers servent : un tri par SKU ou par commande
+    // inversait les lignes du dossier (e2e `resupply-village-flow`).
+    orderBy: { id: "asc" },
   },
   // Les réassorts figés à l'arrêt du soir et les « au plus tôt » lancés dans
   // la journée — à part des commandes.
@@ -58,12 +65,16 @@ export const DAY_COLUMNS = {
       doneBy: true,
       doneInitials: true,
     },
+    orderBy: { sku: "asc" },
   },
   // Annulées comprises : « aucune fournée » (qui décide d'une fournée
   // implicite, §5.2 des fournées) se lit annulées comprises.
   batches: { select: BATCH_COLUMNS, orderBy: [{ recordedAt: "asc" }, { id: "asc" }] },
   // Les retours demandés au colisage (K2) : ce qu'il a rendu, ce qui attend.
-  returns: { select: { batchId: true, quantity: true, returned: true } },
+  returns: {
+    select: { batchId: true, quantity: true, returned: true },
+    orderBy: [{ batchId: "asc" }, { requestId: "asc" }],
+  },
 } satisfies Prisma.ProductionDaySelect;
 
 /** Une journée telle que `DAY_COLUMNS` la rend. */

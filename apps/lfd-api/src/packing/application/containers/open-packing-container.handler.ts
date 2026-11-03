@@ -5,7 +5,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { BinDesk } from "../../channels/delivery/index.js";
+import { BinDesk, type DeskBin } from "../../channels/delivery/index.js";
 import type { ContainerBin } from "../../domain/entities/order-contents.js";
 import { PackingSettings } from "../../domain/entities/packing-settings.js";
 import {
@@ -92,22 +92,28 @@ export class OpenPackingContainerHandler implements ICommandHandler<
     if (request.nature === "bag") {
       return null;
     }
+    const declared = await this.declare(orderId, request);
+    return { binId: declared.binId, code: declared.code, half: declared.half };
+  }
+
+  /** Une moitié partagée (si le réglage le permet), ou un bac neuf : une seule question. */
+  private async declare(
+    orderId: string,
+    request: Exclude<OpenPackingContainer, { readonly nature: "bag" }>,
+  ): Promise<DeskBin> {
     if ("partnerBinId" in request) {
       ((await this.settings.current()) ?? PackingSettings.defaults()).assertCanShareHalf();
+      return this.desk.shareHalf({
+        orderId,
+        partnerBinId: request.partnerBinId,
+        innerBags: request.innerBags,
+      });
     }
-    const declared =
-      "partnerBinId" in request
-        ? await this.desk.shareHalf({
-            orderId,
-            partnerBinId: request.partnerBinId,
-            innerBags: request.innerBags,
-          })
-        : await this.desk.declareBin({
-            orderId,
-            binTypeId: request.binTypeId,
-            half: request.half,
-            innerBags: request.innerBags,
-          });
-    return { binId: declared.binId, code: declared.code, half: declared.half };
+    return this.desk.declareBin({
+      orderId,
+      binTypeId: request.binTypeId,
+      half: request.half,
+      innerBags: request.innerBags,
+    });
   }
 }

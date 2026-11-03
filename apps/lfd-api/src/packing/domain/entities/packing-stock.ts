@@ -6,6 +6,7 @@ import {
 } from "../errors/packing-resupply-errors.js";
 import {
   PackedStockInconsistentError,
+  PackingStockOverdrawnError,
   ReserveShopQuantityInvalidError,
   StockMoveQuantityInvalidError,
   ReserveShortForShopError,
@@ -54,6 +55,12 @@ export interface PackingStockSnapshot {
  * tout le monde. Une réservation ne prend JAMAIS une pièce déjà au bac : si
  * le four n'a pas encore remis assez, elle attend les remises suivantes
  * (« en attente du four »), et le libre des commandes reste à zéro d'ici là.
+ *
+ * ⚠️ Le `packed` d'une RÉSERVATION n'est pas écrit par le dépôt de la réserve :
+ * il se relit de la ligne de la fiche (`reservationsOn`, vérifié le
+ * 2026-11-03). `takeForResupply` et `releaseFromResupply` le tiennent à jour
+ * en mémoire seulement — leur appelant DOIT écrire la ligne de la fiche dans
+ * la même unité de travail, sans quoi la prochaine relecture le perd.
  */
 export class PackingStock {
   private constructor(
@@ -66,7 +73,18 @@ export class PackingStock {
     private reservationsValue: readonly StockReservationSnapshot[],
   ) {}
 
+  /**
+   * Relit une réserve, et refuse une réserve à découvert (audit final du
+   * réassort, 2026-11-03) : l'invariant que les gestes tiennent l'est aussi
+   * à la relecture, sans quoi une ligne écrite hors de l'agrégat le romprait
+   * en silence.
+   *
+   * @throws {PackingStockOverdrawnError} `au bac + rendu + envoyé > reçu`.
+   */
   static fromSnapshot(snapshot: PackingStockSnapshot): PackingStock {
+    if (snapshot.packed + snapshot.returned + snapshot.sentToShop > snapshot.received) {
+      throw new PackingStockOverdrawnError(snapshot.serviceDay, snapshot.sku, snapshot);
+    }
     return new PackingStock(
       snapshot.serviceDay,
       snapshot.sku,

@@ -20,7 +20,14 @@ import { placedSnapshotOf, SITE_RESUPPLY_LINES } from "./site-resupply.row.js";
  * tronquerait EN SILENCE : le stock affiché compterait moins que ce qui est
  * arrivé, ce qui est pire qu'une lecture plus longue. Si un point devait un
  * jour envoyer des centaines de réassorts par jour, c'est l'onglet qu'il
- * faudrait paginer, pas cette lecture qu'il faudrait couper.
+ * faudrait paginer, pas cette lecture qu'il faudrait couper. *
+ * Lit la table `site` en direct, et c'est admis (audit final, 2026-11-03) :
+ * elle appartient au contexte `b2b/sites`, dont `PrismaSiteRepository` est le
+ * seul écrivain, et c'est le MÊME bloc `b2b` (`lint:prisma-model-ownership`
+ * raisonne par bloc). Un port de `sites` pour quatre lectures d'une colonne
+ * coûterait plus qu'il ne rend ; le jour où `site` quitte le bloc, ces quatre
+ * lecteurs (`PrismaResupplySites`, `PrismaResupplySiteLabels`,
+ * `PrismaTransferServedSites`, `PrismaDayStockReader.sites`) passent par lui.
  */
 @Injectable()
 export class PrismaDayStockReader extends DayStockReader {

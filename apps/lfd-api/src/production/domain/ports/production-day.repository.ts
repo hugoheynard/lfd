@@ -27,12 +27,19 @@ export abstract class ProductionDayRepository {
    * L'écriture est **atomique** : un compte à produire enregistré sans ses
    * commandes décrirait une journée que personne ne pourrait relire.
    *
-   * 🔴 Elle prend le verrou de la journée (D4 des fournées), et l'appelant doit
-   * avoir chargé l'agrégat SOUS ce verrou, dans la même unité de travail.
+   * 🔴 Elle ne prend QUE le verrou de la LIGNE (`SELECT … FOR UPDATE` sur
+   * `production_day`, D4 des fournées) — pas le verrou consultatif de la
+   * journée (`ProductionDayLock`), qui seul tient aussi une journée sans
+   * ligne. Le verrou de ligne protège l'écriture, il ne rend pas juste un
+   * agrégat chargé avant lui : l'appelant qui décide prend `ProductionDayLock`
+   * dans son unité de travail, PUIS charge, mute et sauve (vérifié dans
+   * `PrismaProductionDayRepository.save` le 2026-11-03).
    *
-   * Elle n'écrit plus le colisage (`packed_*`, `container_count`) depuis K3c :
-   * ces colonnes restent en base, mortes — et une journée réécrite les remet à
-   * leur valeur par défaut, ce qui ne détruit rien que quelqu'un lise.
+   * Elle n'écrit plus le colisage (`packed_*`, `container_count`) depuis K3c,
+   * mais elle ne l'efface pas non plus : ces colonnes restent en base, et
+   * une commande que le geste réécrit les RECOPIE (`carriedPacking`), une
+   * commande qu'il ne touche pas les garde — les journées colisées avant la
+   * bascule restent lisibles (vérifié le 2026-11-03).
    */
   abstract save(day: ProductionDay): Promise<void>;
 }

@@ -169,6 +169,24 @@ describe("les brouillons du réassort du fournil", () => {
     expect(row).toMatchObject({ status: "sent", sentResupplyId: sent.id, version: 3 });
     expect(await drafts()).toEqual([]);
 
+    // Décision E2 (audit final, 2026-11-03) : le second « Envoyer » sur la même
+    // version rend le réassort déjà créé, au lieu d'un 409 « brouillon clos ».
+    const again = jsonBody<{ id: string }>(
+      await ctx
+        .asSub(STAFF)
+        .post(`/admin/bakehouse-resupplies/drafts/${created.id}/send`)
+        .send({
+          siteId: site,
+          target: "tomorrow",
+          name: "Goûter",
+          lines: [{ sku, quantity: 9 }],
+          version: 2,
+        })
+        .expect(201),
+    );
+    expect(again).toEqual({ id: sent.id });
+    expect(await ctx.prisma.siteResupply.count({ where: { origin: "bakehouse" } })).toBe(1);
+
     // La demande en cours du comptoir n'a pas bougé ; le réassort du fournil est à part.
     const counterAfter = await counterView(site);
     expect(counterAfter.drafts).toEqual(counterBefore.drafts);

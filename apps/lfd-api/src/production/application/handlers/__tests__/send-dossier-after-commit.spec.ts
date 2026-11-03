@@ -60,7 +60,7 @@ describe("le dossier part après la validation du reçu", () => {
    * transaction tombait avec le reçu et la trace `claim`/`settle`, et le fait
    * relivré redemandait chaque envoi.
    */
-  it("🔴 à l'arrêt, n'envoie pas dans la transaction de la garde : rien n'est même pris avant", async () => {
+  it("à l'arrêt, n'envoie pas dans la transaction de la garde : rien n'est même pris avant", async () => {
     const { handlers, mailer, log, work } = setup([PAUL, JEANNE]);
     const commits = new CommitQueue();
 
@@ -75,7 +75,7 @@ describe("le dossier part après la validation du reçu", () => {
     expect(mailer.underTransaction).toEqual([false, false]);
   });
 
-  it("🔴 au retirage non plus : le dossier complété part après la validation", async () => {
+  it("au retirage non plus : le dossier complété part après la validation", async () => {
     const { handlers, mailer, work } = setup([PAUL], retakenDay());
     const commits = new CommitQueue();
 
@@ -131,7 +131,7 @@ describe("le dossier part après la validation du reçu", () => {
    * qu'une ligne de log, et personne ne savait que le dossier n'était pas
    * parti.
    */
-  it("🔴 un papier qui ne se fabrique pas après la validation sonne la cloche pour tous, et se journalise", async () => {
+  it("un papier qui ne se fabrique pas après la validation sonne la cloche pour tous, et se journalise", async () => {
     const { closed, mailer, log, bell, events } = setup([PAUL, JEANNE], closedDay(), {
       store: new UnreadableArchive(),
     });

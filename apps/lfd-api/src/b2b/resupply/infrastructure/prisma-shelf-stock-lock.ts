@@ -2,21 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
-import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { ShelfStockLock } from "../domain/shelf-stock-lock.js";
+import { ShelfStockLockOutsideTransactionError } from "../domain/shelf-stock-lock-errors.js";
 
 /** Espace de noms du verrou (L2, `documentation/limites-de-commande/jour-meme-sur-stock.md`). */
 const LOCK_NAMESPACE = "shelf:";
-
-/** Demandé hors transaction : relâché aussitôt, il ne protégerait rien. */
-export class ShelfStockLockOutsideTransactionError extends TechnicalError {
-  constructor() {
-    super(
-      "resupply.shelf_stock.lock_outside_transaction",
-      "Le verrou du stock de la vitrine exige une transaction ouverte : appeler ce port sous UnitOfWork.run.",
-    );
-  }
-}
 
 /**
  * `pg_advisory_xact_lock` sur `shelf:<jour>:<point>`, relâché au `COMMIT` ou

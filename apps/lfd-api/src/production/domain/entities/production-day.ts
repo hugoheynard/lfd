@@ -11,7 +11,7 @@ import * as batching from "./production-day.batches.js";
 import { ProductionDayState } from "./production-day.state.js";
 import { type ProductionDayChanges, UNCHANGED_DAY, WHOLE_DAY } from "./production-day.changes.js";
 import {
-  assertNeverArrested,
+  assertNotReopened,
   assertNotLaunched,
   assertNothingElseToFreeze,
   launchedOf,
@@ -107,7 +107,14 @@ export class ProductionDay extends ProductionDayState {
   /**
    * **Matérialise** les coches héritées (§5.3) et les rend pour que l'appelant
    * les écrive — raisons : `inheritedBatchesOf`, `production-day.batches.ts`.
-   * Ne marque pas {@link changes} : les fournées ne passent pas par `save`.
+   *
+   * Ne marque PAS {@link changes}, et c'est voulu : `changes` ne décrit que
+   * ce que `ProductionDayRepository.save` écrit, et les fournées ont leur port
+   * (`ProductionBatchRepository.recordInherited`). L'appelant écrit donc
+   * lui-même ce qui est rendu ici, dans la même unité de travail. Ce que le
+   * domaine impose : un geste qui refait le compte refuse une coche héritée
+   * encore vivante, non matérialisée (`assertChecksCarried`) — le compte
+   * réécrit l'effacerait. Qu'elle soit ensuite ÉCRITE reste à l'appelant.
    */
   materialize(sku?: string): readonly ProductionBatchSnapshot[] {
     const inherited = batching.inheritedBatchesOf(this, sku);
@@ -144,6 +151,7 @@ export class ProductionDay extends ProductionDayState {
     if (this.isClosed) {
       throw new ProductionDayAlreadyClosedError(this.day.value);
     }
+    batching.assertChecksCarried(this);
     const kept = withoutWithdrawn(orders, withdrawn);
     if (this.planValue.isEmptyWith(kept, resupplies)) {
       throw new ProductionDayEmptyError(this.day.value);
@@ -166,6 +174,7 @@ export class ProductionDay extends ProductionDayState {
    * @returns le nombre de commandes absorbées. Zéro = rien n'était arrivé,
    *   et c'est une information, pas une erreur : rien ne change.
    * @throws {ProductionDayNotClosedError} il n'y a pas de tirage à reprendre.
+   * @throws {UncarriedInheritedChecksError} une coche héritée non matérialisée.
    */
   retake(
     orders: readonly ProducibleOrder[],
@@ -177,6 +186,7 @@ export class ProductionDay extends ProductionDayState {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
+    batching.assertChecksCarried(this);
     const { plan, count } = this.planValue.absorbed(withoutWithdrawn(orders, withdrawn));
     if (count === 0) {
       return 0;
@@ -234,9 +244,10 @@ export class ProductionDay extends ProductionDayState {
     pending: PendingPlan,
   ): boolean {
     assertNotLaunched(this.day.value, this.planValue.launched, resupply.resupplyId);
+    batching.assertChecksCarried(this);
     const opening = !this.isClosed;
     if (opening) {
-      assertNeverArrested(this.day.value, this.reopenedValue);
+      assertNotReopened(this.day.value, this.reopenedValue);
       assertNothingElseToFreeze(this.day.value, pending);
     }
     this.planValue = this.planValue.withLaunched(launchedOf(resupply, gesture));
@@ -263,6 +274,7 @@ export class ProductionDay extends ProductionDayState {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
+    batching.assertChecksCarried(this);
     const { plan, raised } = this.planValue.revised(this.day.value, orderId, lines);
     this.planValue = plan;
     return raised;

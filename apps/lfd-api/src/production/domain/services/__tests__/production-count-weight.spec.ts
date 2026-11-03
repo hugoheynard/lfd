@@ -1,3 +1,4 @@
+import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import type {
   PlacedResupply,
@@ -54,18 +55,7 @@ function resupply(lines: readonly PlacedResupplyLine[]): PlacedResupply {
 }
 
 function order(orderId: string, lines: readonly Line[]): ProducibleOrder {
-  return {
-    orderId,
-    reference: `ORD-${orderId}`,
-    customerLabel: "Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: "pro",
-    siteId: null,
-    sheetDetails: null,
-    lines,
-  };
+  return producibleOrder(orderId, { clientele: "pro", lines });
 }
 
 describe("countOf — au poids", () => {

@@ -11,11 +11,21 @@ export interface ResupplySendingKey {
   readonly origin: ResupplyOrigin;
 }
 
+/** Les deux temps d'un envoi : lire (hors transaction), puis écrire (dedans). */
+export interface ResupplySendingSteps<P> {
+  readonly prepare: () => Promise<P>;
+  readonly write: (prepared: P) => Promise<void>;
+}
+
 /**
  * **Un envoi, une fois** — la clé fournie par l'écran, une par ouverture du
  * panneau, devient l'identifiant du réassort (la sortie de réserve, A1.4 ; étendu à
  * « Envoyer un réassort » du fournil, audit du réassort C-A, 2026-11-02).
  * Sa clé primaire est la contrainte unique : deux clics ne font qu'un réassort.
+ *
+ * La clé est relue AVANT toute lecture (`prepare` : point, catalogue) : un
+ * rejeu après qu'un article a été retiré du catalogue ou le point archivé
+ * était refusé (404) pour un envoi déjà parti (audit final, 2026-11-03).
  *
  * Dans l'unité de travail : un réassort déjà écrit sous cette clé, à CE point
  * et de CE geste, est un rejeu — rien ne se refait. Deux envois de la même clé
@@ -29,18 +39,22 @@ export interface ResupplySendingKey {
  *
  * @throws {ResupplySendingKeyTakenError}
  */
-export async function sendOnceUnderKey(
+export async function sendOnceUnderKey<P>(
   uow: UnitOfWork,
   resupplies: SiteResupplyRepository,
   sending: ResupplySendingKey,
-  write: () => Promise<void>,
+  steps: ResupplySendingSteps<P>,
 ): Promise<void> {
+  if (await alreadySent(resupplies, sending)) {
+    return;
+  }
+  const prepared = await steps.prepare();
   try {
     await uow.run(async () => {
       if (await alreadySent(resupplies, sending)) {
         return;
       }
-      await write();
+      await steps.write(prepared);
     });
   } catch (error) {
     if (!(error instanceof SiteResupplyAlreadyWrittenError)) {

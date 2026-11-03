@@ -9,12 +9,22 @@ import {
   ReceiptNotYetReceivedError,
   ResupplyAlreadyReceivedError,
   ResupplyDayNotYetComeError,
+  UnorderedReceiptNotTodayError,
 } from "./resupply-receipt-errors.js";
 import { ResupplyReceiptLine, type ResupplyReceiptLineSnapshot } from "./resupply-receipt-line.js";
-import type { SaleUnit } from "./resupply-sale-unit.js";
 import { ResupplyLineUnitMismatchError } from "./resupply-sale-unit-errors.js";
 import type { ResupplyTrace } from "./resupply-trace.js";
-import type { ResupplyLineShape } from "./resupply-line-shape.js";
+import {
+  expectedLinesOf,
+  type PackedLines,
+  type ReceivableResupply,
+} from "./resupply-receipt-expected.js";
+
+export {
+  expectedLinesOf,
+  type PackedLines,
+  type ReceivableResupply,
+} from "./resupply-receipt-expected.js";
 
 const SERVICE_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -33,14 +43,6 @@ export interface ResupplyReceiptSnapshot {
   /** Le geste « Réceptionner », ou la première saisie d'un réassort sans commande. */
   readonly received: ResupplyTrace | null;
   readonly lastChange: ResupplyTrace | null;
-}
-
-/** Ce qu'il faut d'un réassort envoyé pour en attendre la réception. */
-export interface ReceivableResupply {
-  readonly id: string;
-  readonly siteId: string;
-  readonly serviceDay: string;
-  readonly lines: readonly ResupplyLineShape[];
 }
 
 /**
@@ -69,10 +71,8 @@ export class ResupplyReceipt {
     readonly serviceDay: string,
     readonly resupplyId: string | null,
     /**
-     * La version LUE en base (`0` : pas encore écrite). Elle n'avance pas en
-     * mémoire : l'adaptateur écrit `version + 1` sous ce verrou, et un agrégat
-     * ne se sauve qu'une fois par unité de travail — un second `save` sur la
-     * même instance buterait sur son propre verrou (choix du 2026-11-02).
+     * La version LUE en base (`0` : pas encore écrite), qui n'avance pas en mémoire : l'adaptateur
+     * écrit `version + 1`, et un agrégat ne se sauve qu'une fois par unité de travail (2026-11-02).
      */
     readonly version: number,
     private lineList: readonly ResupplyReceiptLine[],
@@ -168,14 +168,31 @@ export class ResupplyReceipt {
   }
 
   /**
-   * Réassort sans commande : ajoute un article reçu. Refusé s'il y est déjà —
-   * et, dans une autre unité, refusé en le disant (L2b-1).
+   * Réassort sans commande : ajoute un article reçu, le jour même seulement
+   * (E1, 2026-11-03 : la journée du geste à l'heure de Paris, celle de
+   * l'horloge du serveur). Dans une autre unité, refusé en le disant (L2b-1).
+   *
+   * **Un double clic ne fait pas d'erreur** (E2, 2026-11-03) : le même
+   * article, dans la même unité et à la même quantité, déjà sur la liste, est
+   * le geste déjà fait — rien ne change, et `false` le dit pour que
+   * l'appelant n'écrive rien. Une autre quantité reste refusée : c'est une
+   * correction, et elle a son geste.
+   *
+   * @returns `true` si l'article vient d'être ajouté.
+   * @throws {UnorderedReceiptNotTodayError} @throws {ReceiptLineAlreadyPresentError}
    */
-  receive(line: ResupplyReceiptLine, trace: ResupplyTrace): void {
+  receive(line: ResupplyReceiptLine, trace: ResupplyTrace): boolean {
     this.assertUnordered();
+    const today = instantToLocal(trace.at).day;
+    if (this.serviceDay !== today) {
+      throw new UnorderedReceiptNotTodayError(this.serviceDay, today);
+    }
     const existing = this.lineList.find((candidate) => candidate.sku === line.sku);
     if (existing !== undefined && existing.saleUnit !== line.saleUnit) {
       throw new ResupplyLineUnitMismatchError(existing.sku, existing.label);
+    }
+    if (this.holds(line)) {
+      return false;
     }
     if (existing !== undefined) {
       throw new ReceiptLineAlreadyPresentError(line.sku);
@@ -183,6 +200,17 @@ export class ResupplyReceipt {
     this.lineList = [...this.lineList, line];
     this.receivedTrace ??= trace;
     this.trace = trace;
+    return true;
+  }
+
+  /** Vrai si cet article est déjà reçu, dans la même unité et à la même quantité (E2). */
+  holds(line: ResupplyReceiptLine): boolean {
+    return this.lineList.some(
+      (candidate) =>
+        candidate.sku === line.sku &&
+        candidate.saleUnit === line.saleUnit &&
+        candidate.receivedQuantity === line.receivedQuantity,
+    );
   }
 
   /** Corrige le reçu d'un article — un écart, après réception seulement. */
@@ -240,39 +268,4 @@ function assertServiceDay(serviceDay: string): void {
   if (!SERVICE_DAY.test(serviceDay)) {
     throw new InvalidServiceDayError(serviceDay);
   }
-}
-
-/**
- * L'emballé d'une fiche de réassort close, tel que le colisage le rend :
- * SKU → quantité et unité (L2b-3). Déclaré ici pour que le domaine ne
- * dépende pas du canal ; `PackedResupplyLines` lui est conforme.
- */
-export type PackedLines = ReadonlyMap<
-  string,
-  { readonly quantity: number; readonly saleUnit: SaleUnit }
->;
-
-function packedOf(packed: PackedLines | null, sku: string, saleUnit: SaleUnit): number | undefined {
-  const line = packed?.get(sku);
-  return line !== undefined && line.saleUnit === saleUnit ? line.quantity : undefined;
-}
-
-/**
- * Les lignes attendues : l'emballé s'il est connu, sinon le demandé (lot
- * R3b, §13.1 point 6). Partagé avec la page de réception, qui montre
- * l'attendu avant « Réceptionner ». L'emballé du colisage porte son unité
- * (L2b-3) : des grammes au poids. Un emballé d'une autre unité que la
- * ligne ne la remplace pas — la ligne garde son demandé plutôt que de lire
- * des grammes comme des pièces (le fournil refuse ce mélange à l'arrêt).
- */
-export function expectedLinesOf(
-  resupply: Pick<ReceivableResupply, "lines">,
-  packed: PackedLines | null,
-): readonly ResupplyLineShape[] {
-  return resupply.lines.map((line) => ({
-    sku: line.sku,
-    label: line.label,
-    quantity: packedOf(packed, line.sku, line.saleUnit) ?? line.quantity,
-    saleUnit: line.saleUnit,
-  }));
 }

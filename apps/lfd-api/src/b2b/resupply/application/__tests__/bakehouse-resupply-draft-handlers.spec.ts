@@ -6,10 +6,8 @@ import {
   BakehouseResupplyDraftClosedError,
   BakehouseResupplyDraftNotFoundError,
 } from "../../domain/bakehouse-resupply-draft-errors.js";
-import {
-  ResupplyArticleUnknownError,
-  ResupplySiteUnknownError,
-} from "../../domain/resupply-receipt-errors.js";
+import { ResupplyArticleUnknownError } from "../../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../../domain/resupply-site-errors.js";
 import { BakehouseResupplyDraftKeyTakenError } from "../../domain/bakehouse-resupply-draft-errors.js";
 import { serviceDayFor } from "../../domain/site-resupply.js";
 import { BakehouseResupplyAfterStopError } from "../../domain/site-resupply-gate-errors.js";
@@ -32,24 +30,16 @@ import {
 } from "./bakehouse-draft-doubles.js";
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
 import { FixedLaunches, FixedResupplyCutoff, freshSendingKey } from "./site-resupply-doubles.js";
+import { CROISSANT, PAIN_AU_CHOCOLAT } from "./resupply-articles.js";
 
 const SITE = "site_village";
-const ARTICLES = [
-  {
-    sku: "CRO",
-    name: "Croissant",
-    categoryId: "fam",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece" as const,
-  },
-  {
-    sku: "PAC",
-    name: "Pain au chocolat",
-    categoryId: "fam",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece" as const,
-  },
-];
+const ARTICLES = [CROISSANT, PAIN_AU_CHOCOLAT];
+/**
+ * L'instant du banc, figé : toutes les journées s'en déduisent par
+ * `serviceDayFor`, et l'heure limite est absente — rien ne le compare au
+ * calendrier réel. Il était l'horloge murale jusqu'au 2026-11-03.
+ */
+const NOW = new Date("2026-03-10T09:00:00Z");
 const CONTENT = {
   siteId: SITE,
   target: "tomorrow" as const,
@@ -59,13 +49,12 @@ const CONTENT = {
 
 function world(
   options: {
-    readonly now?: Date;
     readonly stoppedDays?: readonly string[];
     readonly sites?: readonly string[];
   } = {},
 ) {
   const log = new WriteLog();
-  const clock = new FixedClock(options.now ?? new Date());
+  const clock = new FixedClock(NOW);
   const drafts = new InMemoryBakehouseDrafts(log);
   const resupplies = new LoggedSiteResupplies(log);
   const staff = new Directory({ name: "Lou Martin", role: "bakehouse" });
@@ -225,9 +214,46 @@ describe("les brouillons du réassort du fournil", () => {
     expect(await w.list.execute()).toEqual([]);
   });
 
+  /**
+   * Décision E2 (audit final, 2026-11-03) : un second « Envoyer » sur la
+   * version déjà envoyée était refusé (brouillon clos, 409) — un double clic
+   * affichait une erreur pour un réassort bien parti.
+   */
+  it("un second « Envoyer » sur la même version rend le réassort déjà créé, sans rien écrire", async () => {
+    const w = world();
+    const { id } = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", freshSendingKey()),
+    );
+    const first = await w.send.execute(new SendBakehouseResupplyDraftCommand(id, CONTENT, 1, "s"));
+    const writes = w.log.entries.length;
+
+    const second = await w.send.execute(new SendBakehouseResupplyDraftCommand(id, CONTENT, 1, "s"));
+
+    expect(second).toBe(first);
+    expect(w.log.entries).toHaveLength(writes);
+    await expect(
+      w.send.execute(new SendBakehouseResupplyDraftCommand(id, CONTENT, 0, "s")),
+    ).rejects.toThrow(BakehouseResupplyDraftClosedError);
+  });
+
+  it("deux « Envoyer » qui se croisent : le second rend le réassort du premier", async () => {
+    const w = world();
+    const { id } = await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(CONTENT, "s", freshSendingKey()),
+    );
+    let winner = "";
+    w.resupplies.beforeNextSave = async () => {
+      winner = await w.send.execute(new SendBakehouseResupplyDraftCommand(id, CONTENT, 1, "s"));
+    };
+
+    const loser = await w.send.execute(new SendBakehouseResupplyDraftCommand(id, CONTENT, 1, "s"));
+
+    expect(loser).toBe(winner);
+    expect(w.drafts.row(id)).toMatchObject({ status: "sent", sentResupplyId: winner });
+  });
+
   it("un envoi refusé (article retiré, plan arrêté, version périmée) laisse le brouillon ouvert et intact", async () => {
-    const now = new Date();
-    const w = world({ now, stoppedDays: [serviceDayFor("tomorrow", now)] });
+    const w = world({ stoppedDays: [serviceDayFor("tomorrow", NOW)] });
     const { id } = await w.create.execute(
       new CreateBakehouseResupplyDraftCommand(CONTENT, "s", freshSendingKey()),
     );

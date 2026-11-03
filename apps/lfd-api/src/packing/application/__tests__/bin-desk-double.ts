@@ -94,6 +94,14 @@ export class ScriptedBinDesk extends BinDesk {
     return Promise.resolve(new Set(binIds.filter((binId) => !this.dead.has(binId))));
   }
 
+  /** Les bacs tenus par un geste, dans l'ordre. */
+  readonly heldBins: string[] = [];
+
+  holdLiveBin(binId: string): Promise<boolean> {
+    this.heldBins.push(binId);
+    return Promise.resolve(!this.dead.has(binId));
+  }
+
   private answer(half: DeskBin["half"]): Promise<DeskBin> {
     if (this.refusal !== null) {
       return Promise.reject(this.refusal);

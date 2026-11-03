@@ -10,6 +10,7 @@ import type {
   SiteResupplyStatus,
 } from "./site-resupply-snapshot.js";
 import type { ResupplyTrace } from "./resupply-trace.js";
+import type { MountCheck } from "./site-resupply-checks.js";
 
 /** Ce que le suivi lit du réassort qui le porte, à l'instant du geste. */
 export interface ProgressContext {
@@ -123,12 +124,8 @@ export class SiteResupplyProgress {
    * @returns `true` si le réassort vient de passer d'attendu à arrivé.
    * @throws {ResupplyNotArrivableError} @throws {ResupplyNotLaunchedNotMountableError}
    */
-  markMounted(
-    context: ProgressContext,
-    trace: ResupplyTrace,
-    reception: ResupplyTrace | null,
-    launched: boolean,
-  ): boolean {
+  markMounted(context: ProgressContext, trace: ResupplyTrace, check: MountCheck): boolean {
+    const { reception, launched } = check;
     const awaited = context.status === "placed" && this.arrivedTrace === null && reception === null;
     const mustBeLaunched = context.target === "asap" && context.origin !== "reserve";
     if (awaited && mustBeLaunched && !launched) {

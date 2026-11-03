@@ -9,6 +9,7 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
+import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import type { PlacedResupply } from "../../../channels/commerce/day-resupplies.reader.js";
 import {
   PRODUCTION_RESUPPLY_LAUNCHED,
@@ -43,26 +44,7 @@ const EVENING = new Date("2026-09-07T18:00:00.000Z");
 const NOW = new Date("2026-09-08T07:30:00.000Z");
 const DAY = "2026-09-08";
 
-const ORDER: ProducibleOrder = {
-  orderId: "ord_1",
-  reference: "ORD-0001",
-  customerLabel: "Trois Ponts",
-  fulfillmentMethod: "pickup",
-  destination: "Le Labo",
-  dueAt: null,
-  clientele: null,
-  siteId: null,
-  sheetDetails: null,
-  lines: [
-    {
-      sku: "VIE-001",
-      productName: "Croissant",
-      quantity: 40,
-      saleUnit: "piece",
-      madeToOrder: null,
-    },
-  ],
-};
+const ORDER = producibleOrder("ord_1", { reference: "ORD-0001" });
 
 const ASAP: PlacedResupply = {
   resupplyId: "rs_asap",

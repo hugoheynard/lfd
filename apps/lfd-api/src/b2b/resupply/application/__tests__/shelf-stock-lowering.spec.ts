@@ -70,6 +70,26 @@ describe("une baisse de reçu sous le déjà-vendu (lot L2)", () => {
     expect(bench.lock.taken).toEqual([`${DAY}:${SITE}`]);
   });
 
+  /**
+   * Régression (audit final, 2026-11-03) : le reçu était chargé AVANT le
+   * verrou du stock ; une correction d'un autre poste glissée pendant
+   * l'attente faisait échouer celle-ci sur la version (409).
+   */
+  it("une correction d'un autre poste pendant l'attente du verrou ne fait pas échouer la sienne", async () => {
+    const bench = await stocked();
+    bench.lock.whileWaiting = () =>
+      bench.correctReceived.execute(
+        new CorrectReceivedResupplyLineCommand(SITE, "r_cro", "CRO", 20, "s"),
+      );
+
+    await bench.correctReceived.execute(
+      new CorrectReceivedResupplyLineCommand(SITE, "r_cro", "CRO", 18, "s"),
+    );
+
+    const [receipt] = bench.receipts.all().filter((row) => row.resupplyId === "r_cro");
+    expect(receipt?.lines[0]?.receivedQuantity).toBe(18);
+  });
+
   it("accepte de corriger jusqu'au déjà-vendu, sous le verrou du stock", async () => {
     const bench = await stocked();
     bench.draws.set(DAY, SITE, [

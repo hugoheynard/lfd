@@ -43,7 +43,7 @@ describe("PackingListDrawnEvent", () => {
    * commande. Après une réouverture, le nouveau tirage de la même commande
    * avait la clé de l'ancien, et la boîte d'envoi l'avalait.
    */
-  it("🔴 une clé neuve après une réouverture, l'ancienne sinon", () => {
+  it("une clé neuve après une réouverture, l'ancienne sinon", () => {
     const reopenedAt = new Date(AT.getTime() + 1);
     const before = new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().key;
     const after = new PackingListDrawnEvent(DAY, AT, ORDER, reopenedAt).durableFact().key;
@@ -62,7 +62,7 @@ describe("PackingListDrawnEvent", () => {
     );
   });
 
-  it("🔴 un fait écrit SANS rang (binaire d'avant) se lit au rang 1 ; un rang nul est refusé", () => {
+  it("un fait écrit SANS rang (binaire d'avant) se lit au rang 1 ; un rang nul est refusé", () => {
     const { rank: _absent, ...older } = ORDER;
     const payload = { ...new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().payload };
     expect(PackingListDrawnEvent.fromPayload({ ...payload, order: older }).order.rank).toBe(1);
@@ -88,7 +88,7 @@ describe("PackingListDrawnEvent", () => {
     }
   });
 
-  it("🔴 un fait écrit SANS clientèle (binaire d'avant) se lit « inconnue », il n'est pas refusé", () => {
+  it("un fait écrit SANS clientèle (binaire d'avant) se lit « inconnue », il n'est pas refusé", () => {
     const { clientele: _absent, ...older } = { ...ORDER, clientele: "pro" };
     const payload = {
       ...new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().payload,
@@ -102,7 +102,7 @@ describe("PackingListDrawnEvent", () => {
     expect(PackingListDrawnEvent.fromPayload(fact.payload).order.siteId).toBe("site_vv");
   });
 
-  it("🔴 un fait écrit SANS site (binaire d'avant) se lit « sans site », il n'est pas refusé", () => {
+  it("un fait écrit SANS site (binaire d'avant) se lit « sans site », il n'est pas refusé", () => {
     const { siteId: _absent, ...older } = { ...ORDER, siteId: "site_vv" };
     const payload = {
       ...new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().payload,

@@ -21,20 +21,22 @@ flowchart LR
 ```
 
 L'agrégat `ResupplyReceipt`
-(`apps/lfd-api/src/b2b/resupply/domain/resupply-receipt.ts:65`) a deux
+(`apps/lfd-api/src/b2b/resupply/domain/resupply-receipt.ts:67`) a deux
 sortes, une seule règle — seul le reçu compte au stock :
 
 - **le reçu d'un réassort envoyé** : `expecting` (l. 88) le fait naître
-  attendu (`expectedLinesOf`, l. 268 : l'emballé lu par
+  attendu (`expectedLinesOf`, `apps/lfd-api/src/b2b/resupply/domain/resupply-receipt-expected.ts:35` : l'emballé lu par
   `PackedResuppliesReader` si la fiche du colisage est close, sinon le
   demandé) ; `receiveAll` (l. 156) recopie l'attendu en reçu d'un geste ;
   une ligne ne se corrige (`correct`, l. 189) qu'**après**
   (`resupply.receipt.not_yet_received`). On n'y ajoute ni n'en retire
   d'article : un article en plus va au sans commande, un manquant se corrige
-  à zéro. Un second « Réceptionner » est refusé
-  (`resupply.receipt.already_received`, qui et quand), jamais rejoué — même
-  quand deux postes se croisent à l'écriture : l'adaptateur relit le reçu
-  gagnant et nomme son auteur et son heure réels (2026-11-02). Seul un
+  à zéro. **Un second « Réceptionner » rend succès sans rien écrire**
+  (décision E2 du 2026-11-03, la politique de l'envoi du comptoir) : le
+  handler relit la réception avant d'écrire, et, si deux postes se croisent
+  à l'écriture, la relit HORS de la transaction défaite. Le domaine refuse
+  toujours un second `receiveAll` (`resupply.receipt.already_received`, qui
+  et quand) : c'est l'application qui ne le lui demande plus. Seul un
   réassort envoyé et non annulé se réceptionne
   (`resupply.receipt.resupply_not_receivable`, tenu par
   `SiteResupply.assertReceivable`), et pas avant sa journée
@@ -42,10 +44,15 @@ sortes, une seule règle — seul le reçu compte au stock :
   avant le reçu : une annulation ou une arrivée lues avant échouent en 409
   (G1, 2026-11-02) ;
 - **le réassort sans commande** (`resupplyId` nul, `openUnordered`, l. 110) :
-  `receive`, `correct`, `withdraw` ligne par ligne — « Réceptionner » d'un
+  `receive` (l. 184), `correct`, `withdraw` ligne par ligne — « Réceptionner » d'un
   geste y est refusé (`resupply.receipt.not_bound_to_resupply`) —, au plus un par (point,
-  journée) (index unique partiel `resupply_receipt_unordered_key`) ; un même
-  article deux fois est refusé (`resupply.receipt.line_already_present`).
+  journée) (index unique partiel `resupply_receipt_unordered_key`). **Il ne
+  se saisit qu'aujourd'hui** (décision E1, 2026-11-03 : la journée du geste
+  à l'heure de Paris, horloge du serveur ; sinon
+  `resupply.receipt.unordered_not_today`, 409). Le même article à la même
+  quantité, saisi deux fois, rend succès sans rien écrire (E2, `holds`) ; à
+  une autre quantité, il est refusé (`resupply.receipt.line_already_present`
+  — c'est une correction).
 
 Le reçu n'est écrit en base qu'une fois reçu : avant, l'attendu se lit du
 réassort. Ses lignes s'écrivent par différence avec la base
@@ -59,7 +66,9 @@ emballé connu après ne change rien (le comptoir fait foi).
 
 **Routes** — `admin/resupply-receipts` (`http/admin-resupply-receipts.controller.ts:47`),
 `handover_counter` : `GET articles` (le catalogue publié, pièces et poids,
-avec la famille), `GET :siteId/:day` (les réassorts envoyés de la journée
+avec la famille — ce que le rayon montre, `isShownAsTile` : le défaut et
+les déclinaisons en vignette ; la validation d'un article saisi suit le même
+critère depuis le 2026-11-03, décision E4), `GET :siteId/:day` (les réassorts envoyés de la journée
 avec leur réception, le sans commande, le stock),
 `POST :siteId/resupplies/:resupplyId/receive`,
 `PATCH :siteId/resupplies/:resupplyId/lines/:sku`, et
@@ -88,7 +97,11 @@ ligne. Le reçu sans commande est dans le menu de chaque ligne de la table.
   poids a un stock en grammes entiers (Hugo, 2026-11-02). `DayShelfStock`
   (`application/day-shelf-stock.ts:19`) est le seul à lui passer les
   prélèvements, lus par `ShelfDrawsReader` (déclaré par le réassort,
-  implémenté par les commandes).
+  implémenté par les commandes, relié par
+  `apps/lfd-api/src/appBootstrap/shelf-draws-feed.module.ts` depuis le 2026-11-03 — un
+  câblage dans `OrdersModule` ferait un cycle). La Supervision les lit en
+  une fois pour la journée (`drawsOn`, `DayShelfStock.allOn`), plus point
+  par point.
 - **Toute baisse d'un reçu** (corriger une ligne réceptionnée, corriger ou
   retirer une ligne sans commande) passe par `ReceivedStockLowering.lower`
   (`application/received-stock-lowering.ts:39`), sous `ShelfStockLock`, et

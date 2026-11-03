@@ -40,7 +40,7 @@ dossier du jour.
 
 L'arrêt lit, **sous le verrou de la journée**, les réassorts « pour demain »
 envoyés et non annulés (`DayResuppliesReader`, implémenté par le commerce,
-`apps/lfd-api/src/b2b/resupply/application/production-day-resupplies.ts`) et les fige à part
+`apps/lfd-api/src/b2b/resupply/infrastructure/production-day-resupplies.ts`) et les fige à part
 des commandes (`production.production_resupply` + `_line`, aucune clé vers
 `public`). Le compte à produire est le **total** commandes + réassorts — les
 fournées se cochent sur lui ; le journal compte toujours les seules
@@ -105,6 +105,8 @@ sequenceDiagram
 Ce paragraphe vivait dans la JSDoc de `CloseProductionDayHandler` jusqu'au
 2026-11-02 (cent lignes au-dessus d'une classe de cent) ; le handler n'en garde
 que le plan, et renvoie ici. Code : `application/commands/close-production-day.handler.ts`,
+ce qui précède le verrou (heure limite, balayage, signataire)
+`apps/lfd-api/src/production/application/services/plan-arrest-admission.ts` (depuis le 2026-11-03),
 lectures sous verrou `apps/lfd-api/src/production/application/services/plan-intake-reading.ts`,
 écriture et faits `apps/lfd-api/src/production/application/services/plan-arrest-recording.ts`.
 
@@ -114,7 +116,15 @@ lectures sous verrou `apps/lfd-api/src/production/application/services/plan-inta
   réassort (`PlanStopRules`). Un arrêt demandé plus tôt, à la main, est refusé
   AVANT le balayage, qui annulerait sinon les paiements de clients encore en
   train de commander. Une réannonce n'est pas un arrêt : elle n'est pas
-  refusée.
+  refusée. **La décision se reprend sous le verrou** (depuis le 2026-11-03) :
+  le contrôle d'avant le balayage ne se fait que si l'en-tête lu hors verrou
+  dit « ouverte », et une réouverture validée pendant que l'arrêt attendait
+  le verrou laissait jusque-là figer la journée avant l'heure. La journée
+  RELUE ouverte sous le verrou repasse le contrôle ; l'e2e
+  `production-day-close-race` rejoue la course (rouge sur l'ancien code :
+  201 au lieu de 409). Ce qui reste : dans cette course, le balayage a déjà
+  tourné quand le refus tombe — il tranche les règlements en l'air d'une
+  journée qu'on croyait arrêtée.
 - **Balayer d'abord, compter ensuite** (depuis le 2026-09-26). Le fournil
   DEMANDE au commerce de trancher les règlements restés en l'air pour la
   journée (`PendingSettlementSweeper`, port déclaré par le fournil,
@@ -152,7 +162,9 @@ lectures sous verrou `apps/lfd-api/src/production/application/services/plan-inta
   non plus (2026-11-02) : le fait annoncerait au commerce et à la livraison
   un arrêt du plan qui n'a pas eu lieu. Le fait du lancement (`openedPlan`)
   l'a déjà dit. `ProductionDay.openedByLaunch` le reconnaît : l'instant de
-  l'arrêt est celui d'un lancé.
+  l'arrêt est celui d'un lancé — **déduit, pas stocké** (aucune colonne ; le
+  cas où un lancement sur une journée déjà arrêtée tomberait à la
+  milliseconde de l'arrêt est écrit au type, 2026-11-03).
 - **Le journal et la boîte d'envoi dans la MÊME transaction.** L'arrêt écrit
   `production_day.closed` au journal et `production.day_closed` dans la boîte
   d'envoi, dans l'unité de travail qui tient le verrou et où la journée
@@ -204,9 +216,11 @@ rouverte), `never_arrested` (sinon). Branché le 2026-11-02 :
 
 - au **colisage** — ouvrir un contenant, appliquer « Proposer », mettre au
   bac, fermer le bac, saisir ou clore une fiche de réassort : en premier dans
-  la transaction, refus `packing.plan_reopened` si le plan n'est pas
-  `arrested` ([colisage](../colisage/colisage.md) §2 ; e2e
-  `packing-plan-hold-race`) ;
+  la transaction, refus `packing.plan_reopened` si le plan est `reopened`.
+  Une journée jamais arrêtée passe la garde, et le geste refuse lui-même
+  (« pas encore arrivé au poste de colisage ») : la garde disait « rouvert »,
+  ce qui était faux (corrigé le 2026-11-03) ([colisage](../colisage/colisage.md)
+  §2 ; e2e `packing-plan-hold-race`) ;
 - à la **livraison** — charger un bac (`LoadDeliveryBinHandler`, que le
   chargement du livreur réutilise), faire partir une tournée
   (`departAndFreeze`, commun aux deux portes du départ) : après la lecture qui
@@ -260,7 +274,14 @@ Ce qui **ne l'est pas** :
   est passée, l'arrêt à la main est donc permis).
 
 L'ordre des faits n'est pas garanti par la boîte d'envoi : chaque abonné ne
-défait que si la journée est **toujours ouverte** (`ClosedPlansReader`) ; le
+défait que si la journée est **toujours ouverte**. Le colisage et la livraison
+le lisent par `ArrestedPlanHold`, sous le verrou partagé, dans la transaction
+du reçu et jusqu'à son `COMMIT` (audit final du réassort, 2026-11-03 — lue
+avant par `ClosedPlansReader`, sans verrou, un réarrêt validé entre la
+question et le retrait voyait son nouveau colisage retiré et ses tournées
+défaites ; e2e `reopened-fact-rearrest-race`). La livraison ne juge une
+tournée « partie » qu'une fois verrouillée et relue, et sort les réassorts de
+leur transfert sous le verrou des transferts du jour ; le
 commerce ne rend que les commandes dont `confirmed_at` est l'instant de l'arrêt
 défait. Le fait de la liste à coliser porte la réouverture dans sa clé : sans
 elle, le nouveau tirage d'une commande avait la clé de l'ancien et la boîte
@@ -292,7 +313,9 @@ Un arrêt à la main avant l'heure limite (rattrapage compris) est refusé en 40
 « Le plan du mardi 8 septembre s'arrête tout seul à l'heure limite générale,
 rattrapage compris : le lundi 7 septembre à 23:00. … Pour figer le plan plus
 tôt, avancez l'heure limite dans Réglages › Commandes › Heure limite. » Une
-journée déjà arrêtée se réannonce sans ce contrôle. Sans heure limite posée,
+journée déjà arrêtée se réannonce sans ce contrôle — à condition de l'être
+encore SOUS le verrou : rouverte entre-temps, elle repasse le contrôle
+(2026-11-03). Sans heure limite posée,
 rien n'arrête le plan tout seul et l'arrêt à la main reste ouvert.
 
 **Le calendrier des jours fermés du fournil** se tient sur la même page. La

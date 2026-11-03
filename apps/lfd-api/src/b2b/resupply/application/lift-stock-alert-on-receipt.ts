@@ -11,9 +11,9 @@ export interface ReceivedArticle {
  * **Le point d'accroche de la réception** (les alertes de stock, R1b) : les articles reçus au
  * point lèvent leurs alertes vivantes, dans la transaction de l'appelant.
  * C'est le SEUL chemin de la levée par réception ; l'appellent
- * `ReceiveSiteResupplyHandler` (« Réceptionner », toutes les lignes d'un
- * coup, la réception en un geste, R2) et `ReceiveUnorderedReceiptLineHandler` (le réassort sans commande,
- * une ligne) — vérifié le 2026-11-02.
+ * `ResupplyReceiving` (pour « Réceptionner », toutes les lignes d'un coup, la
+ * réception en un geste, R2) et `ReceiveUnorderedReceiptLineHandler` (le
+ * réassort sans commande, une ligne) — vérifié le 2026-11-03.
  *
  * Les alertes vivantes sont lues en UNE requête pour tous les articles
  * (audit du réassort, 2026-11-02 : une lecture par ligne auparavant) ; seule
@@ -31,6 +31,10 @@ export async function liftStockAlertsOnReceipt(
   if (skus.length === 0) {
     return;
   }
+  // Une écriture par alerte levée, à la suite, et c'est voulu (audit final,
+  // 2026-11-03) : chacune se sauve sous SA version — un `updateMany` groupé
+  // perdrait le refus par alerte —, et dans la transaction de l'appelant les
+  // requêtes passent de toute façon une à une sur la même connexion.
   for (const live of await alerts.liveForSkus(siteId, skus)) {
     live.liftOnReceipt(trace);
     await alerts.save(live);

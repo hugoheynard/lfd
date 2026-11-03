@@ -108,7 +108,7 @@ describe("heldOrderIds — la règle de retenue (D4, D6)", () => {
     expect(heldOrderIds(DAY, checks, PLAN).size).toBe(0);
   });
 
-  it("🔴 un blocage périmé RESTE bloquant : le compte a changé, pas le jugement", () => {
+  it("un blocage périmé RESTE bloquant : le compte a changé, pas le jugement", () => {
     const blocked = check(croissants(96), "blocking", 0);
     expect(isStale(blocked, 120)).toBe(true);
     expect([...heldOrderIds(DAY, [blocked], PLAN)].sort()).toEqual(["ord_a", "ord_b"]);

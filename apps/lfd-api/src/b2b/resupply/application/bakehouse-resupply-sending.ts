@@ -1,6 +1,6 @@
 import type { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import type { ResupplyCutoff } from "../domain/resupply-cutoff.js";
-import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
 import type { ResupplySites } from "../domain/resupply-sites.js";
 import { type ResupplyTarget, serviceDayFor, SiteResupply } from "../domain/site-resupply.js";
 import type { SiteResupplyLine } from "../domain/site-resupply-line.js";
@@ -40,12 +40,11 @@ export interface BakehouseSendingRequest {
   readonly lines: readonly RequestedResupplyLine[];
 }
 
-/** L'envoi prêt à écrire : tout ce qui se lit est lu. */
+/** L'envoi prêt à écrire : tout ce qui se lit hors verrou est lu. */
 export interface PreparedBakehouseResupply {
   readonly request: BakehouseSendingRequest;
   readonly lines: readonly SiteResupplyLine[];
   readonly trace: ResupplyTrace;
-  readonly serviceDay: string;
 }
 
 /** @throws {ResupplySiteUnknownError} le point n'existe pas ou est archivé. */
@@ -57,17 +56,17 @@ export async function prepareBakehouseResupply(
   if (!(await ports.sites.exists(request.siteId))) {
     throw new ResupplySiteUnknownError(request.siteId);
   }
-  const lines: SiteResupplyLine[] = [];
-  for (const requested of request.lines) {
-    lines.push(await catalogueLine(ports.catalogue, requested));
-  }
-  return { request, lines, trace, serviceDay: serviceDayFor(request.target, trace.at) };
+  const lines = await Promise.all(
+    request.lines.map((requested) => catalogueLine(ports.catalogue, requested)),
+  );
+  return { request, lines, trace };
 }
 
 /**
  * Crée et envoie le réassort sous l'identifiant `id` ; à appeler DANS une
- * unité de travail. Le verrou de la journée d'abord, puis l'heure du
- * réassort : les deux sont lues sous lui.
+ * unité de travail. La journée, puis son verrou, puis l'heure du réassort :
+ * tout ce qui décide est établi dans la transaction qui écrit (la journée se
+ * calculait à la préparation — audit final, 2026-11-03).
  */
 export async function writeBakehouseResupply(
   ports: BakehouseSendingPorts,
@@ -75,8 +74,9 @@ export async function writeBakehouseResupply(
   id: string,
 ): Promise<void> {
   const { request, trace } = prepared;
-  const planStopped = await ports.gate.hold(request.target, prepared.serviceDay);
-  const deadline = await ports.cutoff.deadlineFor(prepared.serviceDay);
+  const serviceDay = serviceDayFor(request.target, trace.at);
+  const planStopped = await ports.gate.hold(request.target, serviceDay);
+  const deadline = await ports.cutoff.deadlineFor(serviceDay);
   const resupply = SiteResupply.sentByBakehouse({
     id,
     siteId: request.siteId,

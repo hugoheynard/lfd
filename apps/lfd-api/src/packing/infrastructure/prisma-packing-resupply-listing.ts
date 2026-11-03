@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
+import { assertInsideUnitOfWork } from "./packing-lock.js";
 import {
   PackingResupplyListing,
   type ResupplyToDraw,
@@ -30,7 +31,15 @@ export class PrismaPackingResupplyListing extends PackingResupplyListing {
     super();
   }
 
+  /**
+   * Trois écritures qui ne valent qu'ensemble : hors d'une unité de travail,
+   * une fiche rétablie sans ses lignes resterait au poste (audit final du
+   * réassort, 2026-11-03).
+   *
+   * @throws {PackingLockOutsideTransactionError} hors d'une unité de travail.
+   */
   async draw(resupply: ResupplyToDraw): Promise<void> {
+    assertInsideUnitOfWork(`du tirage de la fiche de réassort ${resupply.resupplyId}`);
     const key = { serviceDay: resupply.serviceDay, resupplyId: resupply.resupplyId };
     const header = {
       siteId: resupply.siteId,

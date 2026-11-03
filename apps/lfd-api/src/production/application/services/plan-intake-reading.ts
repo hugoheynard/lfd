@@ -10,7 +10,6 @@ import {
 } from "../../channels/commerce/day-resupplies.reader.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
-import { ProductionDayStatusReader } from "../../domain/ports/production-day-status.reader.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
@@ -33,22 +32,18 @@ export interface ArrestIntake extends OrderIntake {
  * qu'après lui — la passation, l'annulation et l'envoi d'un réassort prennent
  * le même verrou par leur guichet, donc ce qui est lu ici est définitif.
  *
- * Seule {@link isClosed} se lit hors verrou, et ne décide de rien.
+ * Rien ne s'y lit hors verrou : le coup d'œil à l'en-tête qui précède l'arrêt
+ * est passé à `PlanArrestAdmission` le 2026-11-03, avec l'heure limite qu'il
+ * servait à contrôler.
  */
 @Injectable()
 export class PlanIntakeReading {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly status: ProductionDayStatusReader,
     private readonly orders: DayOrdersReader,
     private readonly withdrawals: OrderWithdrawalsReader,
     private readonly resupplies: DayResuppliesReader,
   ) {}
-
-  /** Hors verrou, l'en-tête seul : épargner une question au commerce, jamais décider. */
-  isClosed(day: ServiceDay): Promise<boolean> {
-    return this.status.isClosed(day);
-  }
 
   /** La journée RECHARGÉE sous le verrou : c'est elle qui décide. */
   dayUnderLock(day: ServiceDay): Promise<ProductionDay> {

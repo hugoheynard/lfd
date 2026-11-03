@@ -322,13 +322,19 @@ describe("Un plan rouvert : chaque geste refuse sans rien verrouiller ni écrire
     expect(log).toEqual([`hold ${DAY}`]);
   });
 
-  it("une journée jamais arrêtée : le colisage refuse aussi, il n'y a pas de plan sous le geste", async () => {
+  // Régression (2026-11-03) : la garde répondait « le plan a été rouvert » pour une
+  // journée jamais arrêtée, au lieu de laisser le geste dire « pas encore au
+  // colisage » (`test/production-batch.e2e-spec.ts`).
+  it("une journée jamais arrêtée : la garde laisse passer, le geste dit lui-même pourquoi", async () => {
     const { log, open } = sheetGestures("never_arrested", snapshot());
 
-    await expect(
-      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF)),
-    ).rejects.toThrow(PackingPlanReopenedError);
+    await open
+      .execute(new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF))
+      .catch((error: unknown) => {
+        expect(error).not.toBeInstanceOf(PackingPlanReopenedError);
+      });
 
-    expect(log).toEqual([`hold ${DAY}`]);
+    expect(log[0]).toBe(`hold ${DAY}`);
+    expect(log.length).toBeGreaterThan(1);
   });
 });

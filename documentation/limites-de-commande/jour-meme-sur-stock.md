@@ -105,7 +105,8 @@ flowchart LR
   (`b2b/resupply/application/day-shelf-stock.ts:19`) est le seul endroit qui
   lui passe les prélèvements, lus par le port `ShelfDrawsReader`
   (`b2b/resupply/domain/shelf-draws.reader.ts:24`), déclaré par le réassort et
-  implémenté par les commandes (`b2b/orders/infrastructure/prisma-shelf-draws.reader.ts:25`).
+  implémenté par les commandes (`b2b/orders/infrastructure/prisma-shelf-draws.reader.ts:25`),
+  relié par `apps/lfd-api/src/appBootstrap/shelf-draws-feed.module.ts` (2026-11-03).
 - **Toute baisse d'une quantité reçue** (corriger une ligne réceptionnée,
   corriger ou retirer une ligne du réassort sans commande) passe par
   `ReceivedStockLowering.lower` (`b2b/resupply/application/received-stock-lowering.ts:34`),
@@ -324,7 +325,7 @@ elle reste en base, aucune décision ne la lit
 
 Définis dans `b2b/orders/domain/errors/shelf-circuit-errors.ts`,
 `shelf-order-errors.ts`, `same-day-order-closed.error.ts`,
-`b2b/resupply/domain/resupply-receipt-errors.ts:178` et
+`b2b/resupply/domain/resupply-receipt-errors.ts:183` et
 `b2b/delivery-notes/domain/errors/delivery-note-errors.ts:219-234`.
 
 ### Les lecteurs d'une journée

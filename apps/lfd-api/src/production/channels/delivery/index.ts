@@ -2,12 +2,14 @@
  * **Le canal que la production publie POUR la livraison** (2026-10-04, Hugo,
  * option B — `documentation/livraisons/tournees/composition-automatique.md`, §2.2).
  *
- * Deux faits : la clôture d'une journée, qui fige les commandes à livrer, et
- * son retirage (§16.5, CA6b), qui en ajoute. La livraison s'y abonne ; le
- * détail des commandes (adresses, échéances), elle le lit au commerce, qui en
- * est le propriétaire. `lint:context-boundaries` n'autorise
- * `delivery → production` que par ce dossier, et `production → delivery`
- * jamais.
+ * Ce qu'il porte (relu le 2026-11-03) : les faits de la clôture (qui fige les
+ * commandes à livrer), du retirage (§16.5, CA6b, qui en ajoute), de la
+ * réouverture et du lancement « au plus tôt » ; les lecteurs des plans
+ * arrêtés, de l'avancement du départ et des réassorts figés ; et la tenue du
+ * plan arrêté (`ArrestedPlanHold`). Le détail des commandes (adresses,
+ * échéances), la livraison le lit au commerce, qui en est le propriétaire.
+ * `lint:context-boundaries` n'autorise `delivery → production` que par ce
+ * dossier, et `production → delivery` jamais.
  */
 export {
   PRODUCTION_DAY_CLOSED,

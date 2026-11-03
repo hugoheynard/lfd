@@ -1,7 +1,7 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { ShipmentRef } from "../../domain/value-objects/shipment-ref.value-object.js";
-import { instantOf, piecesOf, textOf } from "../packing/payload-fields.js";
+import { instantOf, piecesOf, textOf } from "../payload-fields.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_DAY_RETAKEN = "production.day_retaken";

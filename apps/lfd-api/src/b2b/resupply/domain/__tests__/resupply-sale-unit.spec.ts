@@ -10,6 +10,7 @@ import {
 } from "../resupply-sale-unit-errors.js";
 import { type PlacedSiteResupplySnapshot, SiteResupply } from "../site-resupply.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
+import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
 
 /** Les dates ne sont comparées qu'entre elles et à l'instant figé du geste. */
 const DAY = "2026-01-02";
@@ -68,7 +69,7 @@ describe("la demande de réassort au poids", () => {
     );
     resupply.addLine(SiteResupplyLine.of({ ...SALMON_GRAMS, quantity: 500 }));
 
-    resupply.place(TRACE, null, false);
+    resupply.place(TRACE, UNGATED_PLACEMENT);
 
     expect(resupply.status).toBe("placed");
     expect(resupply.lines.map((line) => [line.sku, line.quantity, line.saleUnit])).toEqual([

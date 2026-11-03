@@ -5,6 +5,8 @@ import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { draftContentOf } from "../domain/bakehouse-resupply-draft-content.js";
+import type { BakehouseResupplyDraft } from "../domain/bakehouse-resupply-draft.js";
+import { BakehouseResupplyDraftChangedMeanwhileError } from "../domain/bakehouse-resupply-draft-errors.js";
 import { BakehouseResupplyDraftRepository } from "../domain/bakehouse-resupply-draft.repository.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplyCutoff } from "../domain/resupply-cutoff.js";
@@ -27,6 +29,13 @@ import { SendBakehouseResupplyDraftCommand } from "./send-bakehouse-resupply-dra
  * passe `sent` avec son id — dans UNE unité de travail : un refus de l'envoi
  * (heure limite, plan arrêté, article retiré) laisse le brouillon ouvert et
  * intact, et une version périmée n'envoie rien.
+ *
+ * **Un double clic ne fait pas d'erreur** (E2, 2026-11-03 — la politique
+ * de l'envoi du comptoir) : un second « Envoyer » posé sur la version que
+ * l'envoi gagnant a lue rend l'identifiant du réassort déjà créé, sans rien
+ * écrire ({@link BakehouseResupplyDraft.sentAfter}). Deux clics qui se
+ * croisent : le second bute sur la version du brouillon, sa transaction est
+ * défaite (son réassort avec), et le brouillon est relu HORS d'elle.
  *
  * @sans-journal comme l'envoi du fournil (R1d), dont il emprunte le chemin.
  */
@@ -54,6 +63,29 @@ export class SendBakehouseResupplyDraftHandler implements ICommandHandler<
 
   async execute(command: SendBakehouseResupplyDraftCommand): Promise<string> {
     const draft = await loadBakehouseDraft(this.drafts, command.draftId);
+    const replayed = draft.sentAfter(command.version);
+    if (replayed !== null) {
+      return replayed;
+    }
+    try {
+      return await this.send(draft, command);
+    } catch (error) {
+      if (!(error instanceof BakehouseResupplyDraftChangedMeanwhileError)) {
+        throw error;
+      }
+      const winner = await loadBakehouseDraft(this.drafts, command.draftId);
+      const sent = winner.sentAfter(command.version);
+      if (sent === null) {
+        throw error;
+      }
+      return sent;
+    }
+  }
+
+  private async send(
+    draft: BakehouseResupplyDraft,
+    command: SendBakehouseResupplyDraftCommand,
+  ): Promise<string> {
     // Refusé AVANT de rien lire : un brouillon clos ou périmé n'envoie rien.
     draft.ensureWritable(command.version);
     const content = draftContentOf(command.content);

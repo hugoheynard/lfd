@@ -113,6 +113,10 @@ export class DeliveryBinDesk extends BinDesk {
     return this.office.liveAmong(binIds);
   }
 
+  async holdLiveBin(binId: string): Promise<boolean> {
+    return this.office.holdIfLive(binId);
+  }
+
   /**
    * Le froid vient de la fiche produit (relayée par le commerce), l'isotherme
    * du type de bac — deux faits que seule la livraison tient ensemble. Trois

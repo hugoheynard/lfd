@@ -1,7 +1,12 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
+import { RevisedOrderInscribedElsewhereError } from "../../../domain/errors/order-revision-errors.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
@@ -100,26 +105,11 @@ function closedPlan(marked = false): ProductionDay {
   const open = ProductionDay.open(EARLY);
   open.close(
     [
-      {
-        orderId: "ord_1",
+      producibleOrder("ord_1", {
         reference: "ORD-0001",
-        customerLabel: "Hôtel des Trois Ponts",
-        fulfillmentMethod: "pickup",
-        destination: "Le Labo",
-        dueAt: null,
         clientele: "pro",
-        siteId: null,
-        sheetDetails: null,
-        lines: [
-          {
-            sku: "BAG",
-            productName: "Baguette",
-            quantity: 10,
-            saleUnit: "piece",
-            madeToOrder: null,
-          },
-        ],
-      },
+        lines: [orderLine("BAG", 10, "Baguette")],
+      }),
     ],
     new Set<string>(),
     NOW,
@@ -196,6 +186,30 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
 
     expect(outcome).toBe("inscribed");
     expect(days.saved).toBe(0);
+  });
+
+  /**
+   * Régression (audit final du réassort, 2026-11-03) : le jour d'inscription
+   * n'était pas comparé au jour révisé. Inscrite le 25, révisée « le 24 »,
+   * la commande était cherchée au plan du 24, où elle n'est pas.
+   */
+  it("une commande inscrite un autre jour que celui qu'on révise est refusée en nommant les deux jours", async () => {
+    const { desk, days, durable } = subject(new Map([["ord_1", LATE.value]]), closedPlan());
+
+    const revising = desk.note(
+      [EARLY],
+      "ord_1",
+      3,
+      [{ sku: "BAG", quantity: 12 }],
+      "staff_quantities",
+    );
+
+    await expect(revising).rejects.toThrow(RevisedOrderInscribedElsewhereError);
+    await expect(revising).rejects.toThrow(
+      `inscrite au plan du ${LATE.value}, pas à celui du ${EARLY.value}`,
+    );
+    expect(days.saved).toBe(0);
+    expect(durable.facts).toEqual([]);
   });
 
   it("sous `before_inscription`, une commande inscrite reste refusée", async () => {

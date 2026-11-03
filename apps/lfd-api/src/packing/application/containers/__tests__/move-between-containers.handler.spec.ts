@@ -108,6 +108,15 @@ describe("MoveBetweenContainersHandler — un geste, la réserve immobile", () =
     ).rejects.toThrow(ContainerBinGoneError);
   });
 
+  /** Régression (audit final du réassort, 2026-11-03) : le bac d'arrivée était lu sans verrou. */
+  it("tient le bac d'arrivée chez la livraison avant d'y déplacer des pièces", async () => {
+    const { move, desk, from, to } = await setup(BIN);
+
+    await move.execute(new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 1));
+
+    expect(desk.heldBins).toEqual(["bin_1"]);
+  });
+
   it("refuse une commande dont la liste n'est pas arrivée", async () => {
     const { move, from, to } = await setup();
 

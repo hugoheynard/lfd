@@ -1,5 +1,4 @@
-import { estimateStock } from "../estimated-stock.js";
-import { type ReceivableResupply, ResupplyReceipt } from "../resupply-receipt.js";
+import { ResupplyReceipt } from "../resupply-receipt.js";
 import {
   IncompleteReceiptLineError,
   InvalidReceivedQuantityError,
@@ -11,44 +10,18 @@ import {
   ReceiptNotYetReceivedError,
   ResupplyAlreadyReceivedError,
   ResupplyDayNotYetComeError,
+  UnorderedReceiptNotTodayError,
 } from "../resupply-receipt-errors.js";
 import { ResupplyReceiptLine } from "../resupply-receipt-line.js";
 
-const DAY = "2026-01-02";
-/** 9 h à Paris le jour du réassort : seules des dates comparées entre elles. */
-const MORNING = new Date("2026-01-02T08:00:00Z");
-const TRACE = { at: MORNING, author: { staffUserId: "staff_1", name: "Lou", role: "counter" } };
-const LATER = {
-  at: new Date(MORNING.getTime() + 60_000),
-  author: { staffUserId: "staff_2", name: "Max", role: "counter" },
-};
-
-const RESUPPLY: ReceivableResupply = {
-  id: "resupply_1",
-  siteId: "site_1",
-  serviceDay: DAY,
-  lines: [
-    { sku: "CRO", label: "Croissant", quantity: 24, saleUnit: "piece" as const },
-    { sku: "PAC", label: "Pain au chocolat", quantity: 12, saleUnit: "piece" as const },
-  ],
-};
-
-function unorderedLine(sku: string, quantity: number): ResupplyReceiptLine {
-  return ResupplyReceiptLine.unordered({
-    sku,
-    label: `Article ${sku}`,
-    quantity,
-    saleUnit: "piece",
-  });
-}
-
-function unordered(): ResupplyReceipt {
-  return ResupplyReceipt.openUnordered({ id: "u1", siteId: "site_1", serviceDay: DAY });
-}
-
-function expecting(resupply: ReceivableResupply = RESUPPLY): ResupplyReceipt {
-  return ResupplyReceipt.expecting(`receipt_${resupply.id}`, resupply);
-}
+import {
+  expecting,
+  LATER,
+  RESUPPLY,
+  TRACE,
+  unordered,
+  unorderedLine,
+} from "./resupply-receipt-fixtures.js";
 
 describe("ResupplyReceiptLine", () => {
   it("accepte zéro : rien reçu de cet article aujourd'hui", () => {
@@ -204,6 +177,36 @@ describe("ResupplyReceipt — le réassort sans commande", () => {
     );
   });
 
+  /** Décision E2 (audit final, 2026-11-03) : un double clic était refusé comme un doublon. */
+  it("le même article à la même quantité est le geste déjà fait : rien ne change, et il le dit", () => {
+    const receipt = unordered();
+    receipt.receive(unorderedLine("CRO", 12), TRACE);
+
+    expect(receipt.receive(unorderedLine("CRO", 12), LATER)).toBe(false);
+    expect(receipt.lastChange).toBe(TRACE);
+    expect(receipt.lines).toHaveLength(1);
+  });
+
+  /** Décision E1 (audit final, 2026-11-03) : un sans-commande se posait sur n'importe quelle journée. */
+  it("refuse une saisie posée un autre jour que celui du réassort sans commande, à l'heure de Paris", () => {
+    const yesterday = ResupplyReceipt.openUnordered({
+      id: "u0",
+      siteId: "site_1",
+      serviceDay: "2026-01-01",
+    });
+    // 23 h 30 le 1er janvier en UTC : déjà le 2 à Paris.
+    const parisMidnight = { ...TRACE, at: new Date("2026-01-01T23:30:00Z") };
+
+    expect(() => yesterday.receive(unorderedLine("CRO", 1), TRACE)).toThrow(
+      UnorderedReceiptNotTodayError,
+    );
+    expect(() => yesterday.receive(unorderedLine("CRO", 1), parisMidnight)).toThrow(
+      UnorderedReceiptNotTodayError,
+    );
+    expect(yesterday.lines).toEqual([]);
+    expect(unordered().receive(unorderedLine("CRO", 1), parisMidnight)).toBe(true);
+  });
+
   it("corrige et retire une ligne ; refuse un article absent", () => {
     const receipt = unordered();
     receipt.receive(unorderedLine("CRO", 12), TRACE);
@@ -216,141 +219,6 @@ describe("ResupplyReceipt — le réassort sans commande", () => {
     expect(() => receipt.withdraw("PAC", TRACE)).toThrow(ReceiptLineNotFoundError);
     expect(() => receipt.correct("CRO", -1, TRACE)).toThrow(InvalidReceivedQuantityError);
     expect(receipt.lines[0]?.receivedQuantity).toBe(10);
-  });
-});
-
-describe("estimateStock", () => {
-  it("additionne les reçus du jour, tous reçus confondus, sans compter un attendu", () => {
-    const morning = expecting();
-    morning.receiveAll(TRACE);
-    const noon = expecting({
-      ...RESUPPLY,
-      id: "resupply_2",
-      lines: [{ sku: "CRO", label: "Croissant", quantity: 10, saleUnit: "piece" as const }],
-    });
-    noon.receiveAll(TRACE);
-    noon.correct("CRO", 8, TRACE);
-    const notYet = expecting({ ...RESUPPLY, id: "resupply_3" });
-    const rescue = unordered();
-    rescue.receive(unorderedLine("BAG", 5), TRACE);
-    rescue.receive(unorderedLine("PAC", 2), TRACE);
-
-    expect(estimateStock([morning, noon, notYet, rescue], [])).toEqual([
-      {
-        sku: "CRO",
-        label: "Croissant",
-        receivedQuantity: 32,
-        estimatedStock: 32,
-        saleUnit: "piece",
-      },
-      {
-        sku: "PAC",
-        label: "Pain au chocolat",
-        receivedQuantity: 14,
-        estimatedStock: 14,
-        saleUnit: "piece",
-      },
-      {
-        sku: "BAG",
-        label: "Article BAG",
-        receivedQuantity: 5,
-        estimatedStock: 5,
-        saleUnit: "piece",
-      },
-    ]);
-  });
-
-  it("une journée sans reçu n'a pas de stock", () => {
-    expect(estimateStock([expecting()], [])).toEqual([]);
-  });
-});
-
-describe("estimateStock — les prélèvements des commandes sur stock (lot L2)", () => {
-  function receivedMorning(): ResupplyReceipt {
-    const morning = expecting();
-    morning.receiveAll(TRACE);
-    return morning;
-  }
-
-  it("soustrait ce que les commandes sur stock ont pris, sans toucher au reçu", () => {
-    expect(
-      estimateStock(
-        [receivedMorning()],
-        [{ sku: "CRO", label: "Croissant", quantity: 5, saleUnit: "piece" as const }],
-      ),
-    ).toEqual([
-      {
-        sku: "CRO",
-        label: "Croissant",
-        receivedQuantity: 24,
-        estimatedStock: 19,
-        saleUnit: "piece",
-      },
-      {
-        sku: "PAC",
-        label: "Pain au chocolat",
-        receivedQuantity: 12,
-        estimatedStock: 12,
-        saleUnit: "piece",
-      },
-    ]);
-  });
-
-  it("additionne plusieurs prélèvements d'un même article", () => {
-    const rescue = unordered();
-    rescue.receive(unorderedLine("BAG", 5), TRACE);
-
-    expect(
-      estimateStock(
-        [rescue],
-        [
-          { sku: "BAG", label: "Baguette", quantity: 2, saleUnit: "piece" as const },
-          { sku: "BAG", label: "Baguette", quantity: 3, saleUnit: "piece" as const },
-        ],
-      ),
-    ).toEqual([
-      {
-        sku: "BAG",
-        label: "Article BAG",
-        receivedQuantity: 5,
-        estimatedStock: 0,
-        saleUnit: "piece",
-      },
-    ]);
-  });
-
-  it("montre en négatif un article pris sans avoir été reçu, avec le libellé de la commande", () => {
-    expect(
-      estimateStock(
-        [],
-        [{ sku: "TAR", label: "Tartelette", quantity: 2, saleUnit: "piece" as const }],
-      ),
-    ).toEqual([
-      {
-        sku: "TAR",
-        label: "Tartelette",
-        receivedQuantity: 0,
-        estimatedStock: -2,
-        saleUnit: "piece",
-      },
-    ]);
-  });
-
-  it("ne déduit rien d'un reçu encore attendu : le prélèvement reste seul", () => {
-    expect(
-      estimateStock(
-        [expecting()],
-        [{ sku: "CRO", label: "Croissant", quantity: 1, saleUnit: "piece" as const }],
-      ),
-    ).toEqual([
-      {
-        sku: "CRO",
-        label: "Croissant",
-        receivedQuantity: 0,
-        estimatedStock: -1,
-        saleUnit: "piece",
-      },
-    ]);
   });
 });
 

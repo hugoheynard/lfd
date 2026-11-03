@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -27,26 +31,10 @@ const NOW = new Date("2026-10-14T19:00:00.000Z");
 const DAY = "2026-10-15";
 
 function order(orderId: string): ProducibleOrder {
-  return {
-    orderId,
-    reference: `ORD-${orderId}`,
-    customerLabel: "Trois Ponts",
+  return producibleOrder(orderId, {
     fulfillmentMethod: "delivery",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [
-      {
-        sku: "PAI-SEI",
-        productName: "Pain de seigle",
-        quantity: 8,
-        saleUnit: "piece",
-        madeToOrder: null,
-      },
-    ],
-  };
+    lines: [orderLine("PAI-SEI", 8, "Pain de seigle")],
+  });
 }
 
 class Days extends ProductionDayRepository {

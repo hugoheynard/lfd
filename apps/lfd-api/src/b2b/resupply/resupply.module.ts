@@ -23,8 +23,8 @@ import { MarkResupplyMountedHandler } from "./application/mark-resupply-mounted.
 import { RecordLaunchOnResupplyLaunched } from "./application/record-launch-on-resupply-launched.handler.js";
 import { RecordDepartureOnTransferDeparted } from "./application/record-departure-on-transfer-departed.handler.js";
 import { ResupplyArrivedBell } from "./application/resupply-arrived-bell.js";
-import { ProductionDayResupplies } from "./application/production-day-resupplies.js";
-import { ProductionRangeResupplies } from "./application/production-range-resupplies.js";
+import { ProductionDayResupplies } from "./infrastructure/production-day-resupplies.js";
+import { ProductionRangeResupplies } from "./infrastructure/production-range-resupplies.js";
 import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
 import { ReceiveUnorderedReceiptLineHandler } from "./application/receive-unordered-receipt-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
@@ -84,11 +84,10 @@ import { PrismaStockAlertReader } from "./infrastructure/prisma-stock-alert.read
 import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.repository.js";
 import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-served-sites.js";
 import { PrismaShelfStockLock } from "./infrastructure/prisma-shelf-stock-lock.js";
-import { PrismaShelfDrawsReader } from "../orders/infrastructure/prisma-shelf-draws.reader.js";
 import { ShelfStockLock } from "./domain/shelf-stock-lock.js";
-import { ShelfDrawsReader } from "./domain/shelf-draws.reader.js";
 import { DayShelfStock } from "./application/day-shelf-stock.js";
 import { ReceivedStockLowering } from "./application/received-stock-lowering.js";
+import { ResupplyArrival } from "./application/resupply-arrival.js";
 
 /**
  * **Le réapprovisionnement d'un site** (modèle B de
@@ -122,7 +121,8 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
  *
  * Depuis le plan du jour J (L2, 2026-11-02), le stock est DÉCOMPTÉ : les
  * prélèvements des commandes sur stock (`ShelfDrawsReader`, déclaré ici,
- * implémenté par `orders` qui possède les lignes — même bloc `b2b`) et le
+ * implémenté par `orders` qui possède les lignes, relié par
+ * `appBootstrap/shelf-draws-feed.module.ts` depuis le 2026-11-03) et le
  * verrou du stock (`ShelfStockLock`). Le module ne lit toujours aucune table
  * des commandes lui-même.
  */
@@ -155,11 +155,6 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     { provide: StockAlertReader, useClass: PrismaStockAlertReader },
     { provide: DayStockReader, useClass: PrismaDayStockReader },
     { provide: ShelfStockLock, useClass: PrismaShelfStockLock },
-    // Câblé ici, pas dans `appBootstrap/` : `orders` et `resupply` sont deux
-    // contextes du MÊME bloc `b2b`, que `lint:context-boundaries` laisse se
-    // lier (vérifié le 2026-11-02, même figure qu'`order-cutoffs` et
-    // `pricing-admin`). `appBootstrap/` relie les blocs entre eux.
-    { provide: ShelfDrawsReader, useClass: PrismaShelfDrawsReader },
     DayShelfStock,
     ReceivedStockLowering,
     ReceiveUnorderedReceiptLineHandler,
@@ -199,6 +194,7 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     MarkResupplyMountedHandler,
     MarkArrivedOnTransferReceived,
     ResupplyArrivedBell,
+    ResupplyArrival,
     // L'affichage « Lancé par X à HH:MM » (R4a), abonné durable du fait du fournil.
     RecordLaunchOnResupplyLaunched,
     // « Parti » (R4d) : le départ du transfert qui porte le réassort, un affichage.

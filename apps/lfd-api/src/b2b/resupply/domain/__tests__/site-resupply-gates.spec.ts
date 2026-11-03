@@ -24,40 +24,41 @@ import {
   line,
   trace,
 } from "./site-resupply-fixtures.js";
+import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
 
 describe("SiteResupply — l'heure limite", () => {
   it("« pour demain » passe jusqu'à la seconde de la limite incluse", () => {
     const resupply = draft("tomorrow", DEADLINE);
-    resupply.place(trace(DEADLINE), DEADLINE, false);
+    resupply.place(trace(DEADLINE), { deadline: DEADLINE, planStopped: false });
     expect(resupply.status).toBe("placed");
     expect(resupply.placed).toEqual(trace(DEADLINE));
   });
 
   it("« pour demain » est refusé après l'heure du réassort", () => {
     const resupply = draft("tomorrow", LATE_NIGHT);
-    expect(() => resupply.place(trace(LATE_NIGHT), DEADLINE, false)).toThrow(
-      ResupplyPastCutoffError,
-    );
+    expect(() =>
+      resupply.place(trace(LATE_NIGHT), { deadline: DEADLINE, planStopped: false }),
+    ).toThrow(ResupplyPastCutoffError);
     expect(resupply.status).toBe("draft");
   });
 
   it("« pour demain » passe tard quand l'heure du réassort n'existe pas ce jour-là", () => {
     const resupply = draft("tomorrow", LATE_NIGHT);
-    resupply.place(trace(LATE_NIGHT), null, false);
+    resupply.place(trace(LATE_NIGHT), UNGATED_PLACEMENT);
     expect(resupply.status).toBe("placed");
   });
 
   it("« au plus tôt » n'a jamais d'heure limite", () => {
     const resupply = draft("asap", LATE_NIGHT);
-    resupply.place(trace(LATE_NIGHT), DEADLINE, false);
+    resupply.place(trace(LATE_NIGHT), { deadline: DEADLINE, planStopped: false });
     expect(resupply.status).toBe("placed");
   });
 
   it("le refus nomme la limite à l'heure de Paris et le geste de sortie", () => {
     const resupply = draft("tomorrow", LATE_NIGHT);
-    expect(() => resupply.place(trace(LATE_NIGHT), DEADLINE, false)).toThrow(
-      /la veille à 18:00.*Demandez au fournil/u,
-    );
+    expect(() =>
+      resupply.place(trace(LATE_NIGHT), { deadline: DEADLINE, planStopped: false }),
+    ).toThrow(/la veille à 18:00.*Demandez au fournil/u);
   });
 });
 
@@ -69,7 +70,7 @@ describe("SiteResupply — une journée passée", () => {
 
   it("une demande « pour demain » restée en cours ne s'envoie plus le surlendemain", () => {
     const resupply = draft("tomorrow");
-    expect(() => resupply.place(trace(TWO_DAYS_LATER), null, false)).toThrow(
+    expect(() => resupply.place(trace(TWO_DAYS_LATER), UNGATED_PLACEMENT)).toThrow(
       ResupplyDayPassedError,
     );
     expect(resupply.status).toBe("draft");
@@ -77,12 +78,12 @@ describe("SiteResupply — une journée passée", () => {
 
   it("le matin de sa journée, « pour demain » part encore si aucune limite ne s'y oppose", () => {
     const resupply = draft("tomorrow");
-    resupply.place(trace(NEXT_MORNING), null, false);
+    resupply.place(trace(NEXT_MORNING), UNGATED_PLACEMENT);
     expect(resupply.status).toBe("placed");
   });
 
   it("une demande « au plus tôt » de la veille ne s'envoie plus", () => {
-    expect(() => draft("asap").place(trace(NEXT_MORNING), null, false)).toThrow(
+    expect(() => draft("asap").place(trace(NEXT_MORNING), UNGATED_PLACEMENT)).toThrow(
       ResupplyDayPassedError,
     );
   });
@@ -91,33 +92,37 @@ describe("SiteResupply — une journée passée", () => {
 describe("SiteResupply — l'annulation", () => {
   it("annule un réassort passé, une seule fois", () => {
     const resupply = draft("asap");
-    resupply.place(trace(EVENING), null, false);
-    resupply.cancel(trace(LATE_NIGHT), null, false, false);
+    resupply.place(trace(EVENING), UNGATED_PLACEMENT);
+    resupply.cancel(trace(LATE_NIGHT), { reception: null, planStopped: false, launched: false });
     expect(resupply.status).toBe("cancelled");
     expect(resupply.cancelled).toEqual(trace(LATE_NIGHT));
-    expect(() => resupply.cancel(trace(LATE_NIGHT), null, false, false)).toThrow(
-      ResupplyNotCancellableError,
-    );
+    expect(() =>
+      resupply.cancel(trace(LATE_NIGHT), { reception: null, planStopped: false, launched: false }),
+    ).toThrow(ResupplyNotCancellableError);
   });
 
   it("un brouillon ne s'annule pas : il n'a jamais été passé", () => {
-    expect(() => draft("asap").cancel(trace(EVENING), null, false, false)).toThrow(
-      ResupplyNotCancellableError,
-    );
+    expect(() =>
+      draft("asap").cancel(trace(EVENING), {
+        reception: null,
+        planStopped: false,
+        launched: false,
+      }),
+    ).toThrow(ResupplyNotCancellableError);
   });
 
   /** Trou laissé par R2 : un réassort arrivé et réceptionné s'annulait encore. */
   it("un réassort déjà réceptionné ne s'annule plus, et le refus nomme qui et à quelle heure", () => {
     const resupply = draft("asap");
-    resupply.place(trace(EVENING), null, false);
+    resupply.place(trace(EVENING), UNGATED_PLACEMENT);
     const reception = { at: LATE_NIGHT, author: { ...AUTHOR, name: "Léa Roux" } };
 
-    expect(() => resupply.cancel(trace(LATE_NIGHT), reception, false, false)).toThrow(
-      ResupplyAlreadyReceivedNotCancellableError,
-    );
-    expect(() => resupply.cancel(trace(LATE_NIGHT), reception, false, false)).toThrow(
-      /déjà réceptionné par Léa Roux à 23:30/u,
-    );
+    expect(() =>
+      resupply.cancel(trace(LATE_NIGHT), { reception, planStopped: false, launched: false }),
+    ).toThrow(ResupplyAlreadyReceivedNotCancellableError);
+    expect(() =>
+      resupply.cancel(trace(LATE_NIGHT), { reception, planStopped: false, launched: false }),
+    ).toThrow(/déjà réceptionné par Léa Roux à 23:30/u);
     expect(resupply.status).toBe("placed");
   });
 });
@@ -177,13 +182,15 @@ describe("SiteResupply — l'origine (R1d)", () => {
 describe("SiteResupply — le plan du fournil arrêté (lot R3a)", () => {
   it("« pour demain » est refusé sur un plan arrêté, même avant l'heure du réassort", () => {
     const resupply = draft("tomorrow", EVENING);
-    expect(() => resupply.place(trace(EVENING), DEADLINE, true)).toThrow(ResupplyPlanStoppedError);
+    expect(() => resupply.place(trace(EVENING), { deadline: DEADLINE, planStopped: true })).toThrow(
+      ResupplyPlanStoppedError,
+    );
     expect(resupply.status).toBe("draft");
   });
 
   it("« au plus tôt » n'entre pas au plan : un arrêt ne l'empêche pas", () => {
     const resupply = draft("asap", EVENING);
-    resupply.place(trace(EVENING), DEADLINE, true);
+    resupply.place(trace(EVENING), { deadline: DEADLINE, planStopped: true });
     expect(resupply.status).toBe("placed");
   });
 
@@ -204,23 +211,23 @@ describe("SiteResupply — le plan du fournil arrêté (lot R3a)", () => {
 
   it("figé dans un plan arrêté, « pour demain » ne s'annule plus ; rouvert, si", () => {
     const resupply = draft("tomorrow", EVENING);
-    resupply.place(trace(EVENING), DEADLINE, false);
+    resupply.place(trace(EVENING), { deadline: DEADLINE, planStopped: false });
 
-    expect(() => resupply.cancel(trace(LATE_NIGHT), null, true, false)).toThrow(
-      /arrêté.*Réceptionnez-le avec un écart/u,
-    );
-    expect(() => resupply.cancel(trace(LATE_NIGHT), null, true, false)).toThrow(
-      ResupplyFrozenInPlanError,
-    );
+    expect(() =>
+      resupply.cancel(trace(LATE_NIGHT), { reception: null, planStopped: true, launched: false }),
+    ).toThrow(/arrêté.*Réceptionnez-le avec un écart/u);
+    expect(() =>
+      resupply.cancel(trace(LATE_NIGHT), { reception: null, planStopped: true, launched: false }),
+    ).toThrow(ResupplyFrozenInPlanError);
     expect(resupply.status).toBe("placed");
-    resupply.cancel(trace(LATE_NIGHT), null, false, false);
+    resupply.cancel(trace(LATE_NIGHT), { reception: null, planStopped: false, launched: false });
     expect(resupply.status).toBe("cancelled");
   });
 
   it("« au plus tôt » s'annule quel que soit l'état du plan", () => {
     const resupply = draft("asap", EVENING);
-    resupply.place(trace(EVENING), null, false);
-    resupply.cancel(trace(LATE_NIGHT), null, true, false);
+    resupply.place(trace(EVENING), UNGATED_PLACEMENT);
+    resupply.cancel(trace(LATE_NIGHT), { reception: null, planStopped: true, launched: false });
     expect(resupply.status).toBe("cancelled");
   });
 });

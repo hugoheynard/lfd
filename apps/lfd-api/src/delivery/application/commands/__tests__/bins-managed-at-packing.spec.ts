@@ -196,4 +196,14 @@ describe("DeliveryBinDesk — la porte du colisage, aux règles de la livraison"
 
     expect(await target.liveBins(["b_1"])).toEqual(new Set());
   });
+
+  /** Audit final du réassort (2026-11-03) : le colisage tient le bac avant d'y mettre des pièces. */
+  it("tient un bac vivant, et dit mort un bac annulé ou inconnu", async () => {
+    const { desk: target } = desk();
+
+    expect(await target.holdLiveBin("b_1")).toBe(true);
+    expect(await target.holdLiveBin("b_unknown")).toBe(false);
+    await target.voidBin("b_1");
+    expect(await target.holdLiveBin("b_1")).toBe(false);
+  });
 });

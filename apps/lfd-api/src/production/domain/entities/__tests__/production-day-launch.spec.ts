@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import type { PlacedResupply } from "../../../channels/commerce/day-resupplies.reader.js";
 import {
@@ -23,20 +27,11 @@ const NO_WITHDRAWAL = new Set<string>();
 const GESTURE: ResupplyLaunchGesture = { at: MORNING, staffUserId: "s_max", name: "Max Martin" };
 
 function order(orderId = "ord_1", quantity = 40): ProducibleOrder {
-  return {
-    orderId,
+  return producibleOrder(orderId, {
     reference: "ORD-0001",
     customerLabel: "Hôtel des Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [
-      { sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece", madeToOrder: null },
-    ],
-  };
+    lines: [orderLine("VIE-001", quantity, "Croissant")],
+  });
 }
 
 function resupply(resupplyId: string, quantity: number, servedByTransfer = true): PlacedResupply {
@@ -167,7 +162,7 @@ describe("ProductionDay.launchResupply — une journée jamais arrêtée (Q5)", 
     expect(quantities(day)).toEqual([["VIE-001", 8]]);
   });
 
-  it("🔴 refuse de l'ouvrir s'il reste des commandes à figer : elles sortiraient du plan", () => {
+  it("refuse de l'ouvrir s'il reste des commandes à figer : elles sortiraient du plan", () => {
     const day = opened();
     const pending = { ...NOTHING_PENDING, orders: [order()] };
 
@@ -201,7 +196,7 @@ describe("ProductionDay.launchResupply — une journée jamais arrêtée (Q5)", 
  * hors du plan, sans refus.
  */
 describe("ProductionDay.launchResupply — une journée rouverte (D1)", () => {
-  it("🔴 refuse de l'ouvrir par un lancement, en nommant le geste de sortie", () => {
+  it("refuse de l'ouvrir par un lancement, en nommant le geste de sortie", () => {
     const day = closed();
     day.reopen({ packingStarted: false, dispatchStarted: false }, LATER, "s_max");
 

@@ -56,7 +56,7 @@ export class CancelSiteResupplyHandler implements ICommandHandler<CancelSiteResu
         throw new SiteResupplyNotFoundError(resupplyId);
       }
       const reception = await this.receptions.receptionOf(siteId, resupply.id);
-      resupply.cancel(trace, reception, stopped, launched);
+      resupply.cancel(trace, { reception, planStopped: stopped, launched });
       await this.resupplies.save(resupply);
     });
   }

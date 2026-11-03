@@ -16,7 +16,11 @@ export interface StockReservationSnapshot {
   readonly resupplyId: string;
   /** Les pièces réservées au lancement — la quantité demandée par la ligne. */
   readonly quantity: number;
-  /** Ce que la ligne de la fiche a déjà emballé (pris dans la réserve). */
+  /**
+   * Ce que la ligne de la fiche a déjà emballé (pris dans la réserve). Relu
+   * de la ligne, jamais écrit par la réserve : qui le change en mémoire
+   * écrit la ligne dans la même unité de travail (cf. `PackingStock`).
+   */
   readonly packed: number;
   /** L'instant où le fait du lancement a été reçu au colisage. */
   readonly reservedAt: Date;

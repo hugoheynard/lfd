@@ -13,6 +13,7 @@ import { PlanStopRules } from "./application/services/plan-stop-rules.js";
 import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
 import { ProductionLaunchedResupplies } from "./application/services/production-launched-resupplies.js";
 import { PlanArrestRecording } from "./application/services/plan-arrest-recording.js";
+import { PlanArrestAdmission } from "./application/services/plan-arrest-admission.js";
 import { PlanIntakeReading } from "./application/services/plan-intake-reading.js";
 import { RetakeRecording } from "./application/services/retake-recording.js";
 import { LaunchResupplyHandler } from "./application/commands/launch-resupply.handler.js";
@@ -145,10 +146,8 @@ import { PrismaProductionDayRepository } from "./infrastructure/prisma-productio
 import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
 import { PrismaProductionDayLock } from "./infrastructure/prisma-production-day.lock.js";
 import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
-import {
-  PrismaLaunchedResupplyLookup,
-  PrismaProductionDayStatusReader,
-} from "./infrastructure/prisma-production-day-status.reader.js";
+import { PrismaLaunchedResupplyLookup } from "./infrastructure/prisma-launched-resupply.lookup.js";
+import { PrismaProductionDayStatusReader } from "./infrastructure/prisma-production-day-status.reader.js";
 import { ArrestedPlanHold } from "./channels/packing/arrested-plan.hold.js";
 import { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
 import { ProductionDayStatusReader } from "./domain/ports/production-day-status.reader.js";
@@ -318,6 +317,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // L'arrêt et le retirage : ce qu'ils lisent sous le verrou, ce qu'ils
     // écrivent et publient (sortis des handlers le 2026-11-02).
     PlanIntakeReading,
+    PlanArrestAdmission,
     PlanArrestRecording,
     RetakeRecording,
     // Publiés pour le poste servi par le colisage (K3a) ; reliés par

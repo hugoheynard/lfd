@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import type { PlacedResupply } from "../../../channels/commerce/day-resupplies.reader.js";
 import { ServiceDay } from "../../value-objects/service-day.value-object.js";
@@ -16,20 +20,11 @@ const NONE = new Set<string>();
 const IDLE = { packingStarted: false, dispatchStarted: false };
 
 function order(orderId: string, quantity = 4): ProducibleOrder {
-  return {
-    orderId,
+  return producibleOrder(orderId, {
     reference: `REF-${orderId}`,
     customerLabel: "Hôtel des Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [
-      { sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece", madeToOrder: null },
-    ],
-  };
+    lines: [orderLine("VIE-001", quantity, "Croissant")],
+  });
 }
 
 function resupply(resupplyId: string): PlacedResupply {

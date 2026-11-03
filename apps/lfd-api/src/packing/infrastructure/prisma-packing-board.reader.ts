@@ -69,6 +69,13 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
     super();
   }
 
+  /**
+   * Quatre lectures sans transaction commune — assumé (audit final du
+   * réassort, 2026-11-03) : en `READ COMMITTED`, une transaction ne donnerait
+   * pas une photo commune (chaque requête voit son propre instant). Un geste
+   * concurrent peut décaler une réserve d'une feuille le temps d'un
+   * rafraîchissement ; chaque geste relit tout sous verrou avant d'écrire.
+   */
   async dayOf(serviceDay: string): Promise<PackingBoardDay> {
     // Les retirées séparées EN BASE (audit du réassort, 2026-11-02) : les
     // deux listes sortent triées, sans tri ni filtre à refaire ici.

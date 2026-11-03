@@ -2,6 +2,7 @@ import { resupplyNameOf } from "../resupply-name.js";
 import { SiteResupply } from "../site-resupply.js";
 import { ResupplyAlreadyPlacedError, ResupplyNameTooLongError } from "../site-resupply-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
+import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
 
 /** 17 h à Paris le 2 janvier : seule date du fichier, comparée à elle-même. */
 const EVENING = new Date("2026-01-02T16:00:00Z");
@@ -48,7 +49,7 @@ describe("le nom d'un réassort (R1g)", () => {
   it("envoyé, il ne se renomme plus, et garde son nom", () => {
     const resupply = draft();
     resupply.rename("Vitrine du matin");
-    resupply.place(TRACE, null, false);
+    resupply.place(TRACE, UNGATED_PLACEMENT);
     expect(() => resupply.rename("Autre")).toThrow(ResupplyAlreadyPlacedError);
     expect(resupply.name).toBe("Vitrine du matin");
   });

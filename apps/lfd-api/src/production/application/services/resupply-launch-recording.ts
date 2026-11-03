@@ -33,9 +33,10 @@ export interface DecidedLaunch {
  * reste au handler : c'est lui que la porte `lint:journal-tracked` lit.
  *
  * Il ne publie pas `production.day_closed`, même quand le lancement ouvre la
- * journée : le fait déclencherait l'envoi du dossier du jour. Le fait du
- * lancement le dit (`openedPlan`), et c'est par lui que la livraison apprend
- * l'arrêt.
+ * journée : le fait déclencherait l'envoi du dossier du jour (abonné du
+ * dossier, Q6). Le fait du lancement le dit (`openedPlan`), et c'est par lui
+ * que la livraison apprend l'arrêt (`AttachLaunchedResupply`, vérifié le
+ * 2026-11-03).
  */
 @Injectable()
 export class ResupplyLaunchRecording {

@@ -11,8 +11,8 @@ import { CancelSiteResupplyCommand } from "../cancel-site-resupply.command.js";
 import { CancelSiteResupplyHandler } from "../cancel-site-resupply.handler.js";
 import { GetResupplyProductionDayHandler } from "../get-resupply-production-day.handler.js";
 import { GetResupplyProductionDayQuery } from "../get-resupply-production-day.query.js";
-import { ProductionDayResupplies } from "../production-day-resupplies.js";
-import { ProductionRangeResupplies } from "../production-range-resupplies.js";
+import { ProductionDayResupplies } from "../../infrastructure/production-day-resupplies.js";
+import { ProductionRangeResupplies } from "../../infrastructure/production-range-resupplies.js";
 import { ResupplyPlanGate } from "../resupply-plan-gate.js";
 import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
 import { SendBakehouseResupplyHandler } from "../send-bakehouse-resupply.handler.js";
@@ -28,6 +28,7 @@ import {
   freshSendingKey,
   InMemorySiteResupplyPlanKeys,
 } from "./site-resupply-doubles.js";
+import { CROISSANT, PAIN_AU_CHOCOLAT } from "./resupply-articles.js";
 
 /** 17 h à Paris le 2 janvier : les journées sont le SUJET, l'horloge est fixée. */
 const NOW = new Date("2026-01-02T16:00:00Z");
@@ -35,22 +36,7 @@ const TODAY = "2026-01-02";
 const TOMORROW = "2026-01-03";
 const VILLAGE = "site_village";
 const LABO = "site_labo";
-const ARTICLES = [
-  {
-    sku: "CRO",
-    name: "Croissant",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece" as const,
-  },
-  {
-    sku: "PAC",
-    name: "Pain au chocolat",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece" as const,
-  },
-];
+const ARTICLES = [CROISSANT, PAIN_AU_CHOCOLAT];
 
 /** Des réassorts envoyés par le fournil, plan ouvert, puis lus par l'onglet et le prévisionnel. */
 async function world() {

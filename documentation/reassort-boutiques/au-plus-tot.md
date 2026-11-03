@@ -158,7 +158,7 @@ sequenceDiagram
 ## 5. Le suivi
 
 `SiteResupply.recordLaunch` et `recordDeparture`
-(`b2b/resupply/domain/site-resupply.ts:203`, `:215`, la règle dans
+(`b2b/resupply/domain/site-resupply.ts:213`, `:225`, la règle dans
 `site-resupply-progress.ts`) posent l'affichage ;
 rejoués, ils ne changent rien. Le comptoir (`resupply-receptions-card`,
 `shared/resupply-steps.ts`) montre Envoyé → Lancé → Parti → Arrivé, chacun

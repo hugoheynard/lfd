@@ -7,7 +7,7 @@ import {
   shipmentRankOf,
 } from "../../domain/value-objects/shipment-ref.value-object.js";
 import type { Clientele } from "../commerce/day-orders.reader.js";
-import { instantOf, piecesOf, recordOf, saleUnitOf, textOf } from "./payload-fields.js";
+import { instantOf, piecesOf, recordOf, saleUnitOf, textOf } from "../payload-fields.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_PACKING_LIST_DRAWN = "production.packing_list_drawn";

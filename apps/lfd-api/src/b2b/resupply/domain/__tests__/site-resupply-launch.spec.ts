@@ -5,6 +5,7 @@ import {
 } from "../site-resupply-gate-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 import type { ResupplyTarget, SiteResupplySnapshot } from "../site-resupply.js";
+import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
 
 /**
  * Le réassort « au plus tôt » lancé au fournil (R4a,
@@ -27,7 +28,7 @@ function placed(target: ResupplyTarget = "asap"): SiteResupply {
       saleUnit: "piece" as const,
     }),
   );
-  resupply.place({ at: PLACED_AT, author: LOU }, null, false);
+  resupply.place({ at: PLACED_AT, author: LOU }, UNGATED_PLACEMENT);
   return resupply;
 }
 
@@ -49,15 +50,21 @@ function snapshotOf(resupply: SiteResupply): SiteResupplySnapshot {
 }
 
 describe("SiteResupply.cancel — un « au plus tôt » lancé (R4a)", () => {
-  it("🔴 refuse d'annuler un réassort que le fournil a lancé, et nomme la sortie", () => {
+  it("refuse d'annuler un réassort que le fournil a lancé, et nomme la sortie", () => {
     const resupply = placed();
 
-    expect(() => resupply.cancel({ at: LATER, author: LOU }, null, false, true)).toThrow(
-      ResupplyLaunchedNotCancellableError,
-    );
-    expect(() => resupply.cancel({ at: LATER, author: LOU }, null, false, true)).toThrow(
-      /Réceptionnez-le avec un écart/u,
-    );
+    expect(() =>
+      resupply.cancel(
+        { at: LATER, author: LOU },
+        { reception: null, planStopped: false, launched: true },
+      ),
+    ).toThrow(ResupplyLaunchedNotCancellableError);
+    expect(() =>
+      resupply.cancel(
+        { at: LATER, author: LOU },
+        { reception: null, planStopped: false, launched: true },
+      ),
+    ).toThrow(/Réceptionnez-le avec un écart/u);
     expect(resupply.status).toBe("placed");
   });
 
@@ -65,15 +72,21 @@ describe("SiteResupply.cancel — un « au plus tôt » lancé (R4a)", () => {
     const resupply = placed();
     resupply.recordLaunch({ at: LAUNCHED_AT, byName: "Max" });
 
-    resupply.cancel({ at: LATER, author: LOU }, null, false, false);
+    resupply.cancel(
+      { at: LATER, author: LOU },
+      { reception: null, planStopped: false, launched: false },
+    );
 
     expect(resupply.status).toBe("cancelled");
   });
 
   it("un plan arrêté garde son refus propre pour un « pour demain »", () => {
-    expect(() => placed("tomorrow").cancel({ at: LATER, author: LOU }, null, true, false)).toThrow(
-      ResupplyFrozenInPlanError,
-    );
+    expect(() =>
+      placed("tomorrow").cancel(
+        { at: LATER, author: LOU },
+        { reception: null, planStopped: true, launched: false },
+      ),
+    ).toThrow(ResupplyFrozenInPlanError);
   });
 });
 
@@ -95,7 +108,10 @@ describe("SiteResupply.recordLaunch — l'affichage « Lancé par X à HH:MM »"
 
   it("ignore un « pour demain », une demande en cours et un réassort annulé", () => {
     const cancelled = placed();
-    cancelled.cancel({ at: LATER, author: LOU }, null, false, false);
+    cancelled.cancel(
+      { at: LATER, author: LOU },
+      { reception: null, planStopped: false, launched: false },
+    );
     const draft = SiteResupply.draft({
       id: "rs2",
       siteId: "site_1",

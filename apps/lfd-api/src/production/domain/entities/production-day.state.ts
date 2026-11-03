@@ -67,6 +67,15 @@ export abstract class ProductionDayState implements batching.BatchState {
    * n'a jamais publié `production.day_closed` ni envoyé de dossier (Q6), et
    * sa réannonce n'en publie pas non plus. Un arrêt ultérieur (après une
    * réouverture) porte un instant neuf, et redevient un arrêt du plan.
+   *
+   * ⚠️ **DÉDUIT, pas stocké** : le lancement qui ouvre la journée pose
+   * `closedAt` à l'instant même du lancé (`launchResupply`), et c'est cette
+   * égalité qu'on relit — aucune colonne ne dit « ouverte par un lancement ».
+   * Elle ne ment que si un lancement sur une journée DÉJÀ arrêtée portait au
+   * milliseconde près l'instant de l'arrêt : deux requêtes distinctes dont
+   * l'horloge (gelée à l'entrée) tomberait sur la même milliseconde. Le
+   * stocker demanderait une colonne (migration), non faite tant que ce cas
+   * reste théorique (constaté le 2026-11-03).
    */
   get openedByLaunch(): boolean {
     const closedAt = this.closedAtValue;

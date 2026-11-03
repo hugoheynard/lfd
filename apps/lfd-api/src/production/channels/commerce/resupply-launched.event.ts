@@ -1,7 +1,7 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
-import { instantOf, recordOf, textOf } from "../packing/payload-fields.js";
-import { resupplyLinesOf } from "../packing/resupply-list-drawn.event.js";
+import { instantOf, recordOf, textOf } from "../payload-fields.js";
+import { resupplyLinesOf } from "../resupply-lines.js";
 import type { PlacedResupply } from "./day-resupplies.reader.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
@@ -39,7 +39,10 @@ export class ResupplyLaunchedEvent implements DurableEvent {
      * s'ouvre arrêtée avec ce seul réassort), à l'instant `launchedAt` (le transport du « au plus
      * tôt », R4c). Le fournil ne publie pas `production.day_closed` dans ce cas — il
      * renverrait le dossier du jour, ce que le lancement ne fait pas (Q6) : c'est ce champ qui
-     * apprend l'arrêt à la livraison. Absent des faits écrits avant R4c : relu `false`.
+     * apprend l'arrêt à la livraison (`ResupplyLaunchRecording` ne publie que ce fait,
+     * `PlanArrestRecording.republish` se tait sur une telle journée, et la livraison le lit
+     * dans `AttachLaunchedResupply` — vérifié le 2026-11-03). Absent des faits écrits avant
+     * R4c : relu `false`.
      */
     readonly openedPlan: boolean = false,
   ) {}

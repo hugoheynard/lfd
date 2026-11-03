@@ -11,12 +11,10 @@ import {
 } from "../../../platform/outbox/durable-handler.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { authorOf } from "../../feature-access/application/feature-access-author.js";
-import { ResupplyReceptions } from "../domain/resupply-receptions.js";
-import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import type { SiteResupply } from "../domain/site-resupply.js";
 import { ResupplyNotArrivableError } from "../domain/site-resupply-gate-errors.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
-import { ResupplyArrivedBell } from "./resupply-arrived-bell.js";
+import { ResupplyArrival } from "./resupply-arrival.js";
 import type { ResupplyTrace } from "../domain/resupply-trace.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -53,10 +51,8 @@ export class MarkArrivedOnTransferReceived implements DurableSubscriber {
 
   constructor(
     private readonly resupplies: SiteResupplyRepository,
-    private readonly receptions: ResupplyReceptions,
-    private readonly labels: ResupplySiteLabels,
+    private readonly arrival: ResupplyArrival,
     private readonly staff: StaffDirectory,
-    private readonly bell: ResupplyArrivedBell,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -68,29 +64,21 @@ export class MarkArrivedOnTransferReceived implements DurableSubscriber {
       at: fact.receivedAt,
       author: await authorOf(this.staff, fact.receivedByStaffId),
     };
-    const label = (await this.labels.labelsOf([fact.siteId])).get(fact.siteId) ?? null;
+    // Une lecture pour tout le transfert, comme le départ (M6) ; chaque
+    // réassort se sauve ensuite sous SA version.
+    const found = await this.resupplies.loadMany(fact.siteId, fact.resupplyIds);
+    const arrived: SiteResupply[] = [];
     for (const resupplyId of fact.resupplyIds) {
-      await this.arrive(fact.siteId, resupplyId, trace, label);
+      const resupply = found.find((candidate) => candidate.id === resupplyId);
+      if (resupply === undefined) {
+        this.skip(fact.siteId, resupplyId, "introuvable sous ce point");
+      } else if (
+        await this.arrival.mark(resupply, (reception) => this.arrived(resupply, trace, reception))
+      ) {
+        arrived.push(resupply);
+      }
     }
-  }
-
-  private async arrive(
-    siteId: string,
-    resupplyId: string,
-    trace: ResupplyTrace,
-    label: string | null,
-  ): Promise<void> {
-    const resupply = await this.resupplies.load(siteId, resupplyId);
-    if (resupply === null) {
-      this.skip(siteId, resupplyId, "introuvable sous ce point");
-      return;
-    }
-    const reception = await this.receptions.receptionOf(siteId, resupplyId);
-    if (!this.arrived(resupply, trace, reception)) {
-      return;
-    }
-    await this.resupplies.save(resupply);
-    this.bell.ring(resupply, label, trace.at);
+    await this.arrival.ring(fact.siteId, arrived, trace.at);
   }
 
   /**

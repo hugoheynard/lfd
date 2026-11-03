@@ -4,6 +4,7 @@ import { isUniqueViolation } from "../../../platform/database/json-columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { alreadyReceivedBy, ResupplyReceipt } from "../domain/resupply-receipt.js";
 import {
+  type ResupplyAlreadyReceivedError,
   ResupplyReceiptChangedMeanwhileError,
   UnreceivedReceiptNotPersistableError,
 } from "../domain/resupply-receipt-errors.js";
@@ -101,7 +102,8 @@ export class PrismaResupplyReceiptRepository extends ResupplyReceiptRepository {
           siteId: receipt.siteId,
           serviceDay: dayColumn(receipt.serviceDay),
           resupplyId: receipt.resupplyId,
-          version: 1,
+          // Chaque écriture avance la version d'un, la première comprise (0 → 1).
+          version: receipt.version + 1,
           receivedAt: received.at,
           receivedByStaffId: received.author.staffUserId,
           receivedByName: received.author.name,
@@ -123,7 +125,9 @@ export class PrismaResupplyReceiptRepository extends ResupplyReceiptRepository {
    * refus nomme le geste qui a gagné, relu en base — jamais un « un autre
    * poste, à l'instant » fabriqué (audit du réassort, 2026-11-02).
    */
-  private async refusalAfterRace(receipt: ResupplyReceipt): Promise<Error> {
+  private async refusalAfterRace(
+    receipt: ResupplyReceipt,
+  ): Promise<ResupplyReceiptChangedMeanwhileError | ResupplyAlreadyReceivedError> {
     if (receipt.resupplyId === null) {
       return new ResupplyReceiptChangedMeanwhileError();
     }

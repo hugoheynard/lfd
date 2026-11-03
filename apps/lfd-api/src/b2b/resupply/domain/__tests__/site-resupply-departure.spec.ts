@@ -1,5 +1,6 @@
 import { SiteResupply } from "../site-resupply.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
+import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
 
 /**
  * « Parti » (R4d) : un affichage posé une fois, sur un réassort envoyé, qui
@@ -30,7 +31,7 @@ function draft(): SiteResupply {
 
 function placed(): SiteResupply {
   const resupply = draft();
-  resupply.place({ at: PLACED_AT, author: LOU }, null, false);
+  resupply.place({ at: PLACED_AT, author: LOU }, UNGATED_PLACEMENT);
   return resupply;
 }
 
@@ -52,7 +53,10 @@ describe("SiteResupply.recordDeparture (R4d)", () => {
 
   it("ignore une demande en cours ou un réassort annulé", () => {
     const cancelled = placed();
-    cancelled.cancel({ at: LATER, author: LOU }, null, false, false);
+    cancelled.cancel(
+      { at: LATER, author: LOU },
+      { reception: null, planStopped: false, launched: false },
+    );
 
     expect(draft().recordDeparture({ at: DEPARTED_AT, byName: null })).toBe(false);
     expect(cancelled.recordDeparture({ at: DEPARTED_AT, byName: null })).toBe(false);

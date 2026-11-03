@@ -198,6 +198,114 @@ Après, le même jour et le lendemain :
   `packing_order.withdrawn_at` dit déjà « retirée par le commerce » ; une
   colonne à part (`unlisted_at`) est proposée — **décision de Hugo en
   attente** (noté le 2026-11-03).
+- **Corrigé le 2026-11-03 (audit final, section C)** : les deux abonnés à la
+  réouverture tiennent le plan (`ArrestedPlanHold`) au lieu de lire
+  `ClosedPlansReader` sans verrou (e2e `reopened-fact-rearrest-race`) ; la
+  livraison juge une tournée partie sous verrou et sort les réassorts sous le
+  verrou des transferts du jour ; mettre au bac tient le bac
+  (`BinDesk.holdLiveBin`) ; une réserve à découvert se refuse à la relecture.
+  **Pas d'e2e de course pour le bac** : aucun chemin n'annule un bac du
+  colisage sans le verrou de sa feuille, la course n'a pas de geste réel pour
+  la jouer (vérifié le 2026-11-03).
+- **Les lectures du poste** (`ListPackingResuppliesHandler`,
+  `PrismaPackingBoardReader`) restent sans transaction commune : en
+  `READ COMMITTED` elle ne donnerait pas une photo commune ; il faudrait une
+  unité de travail en `REPEATABLE READ`, que la plateforme n'offre pas.
+
+## 4 sexies. L'audit final, section B — le fournil (2026-11-03)
+
+Corrigé, chacun avec son test de régression :
+
+- **L'heure limite n'est plus contournable par course** : l'arrêt la
+  reprend sur la journée RELUE sous le verrou (`PlanArrestAdmission`,
+  [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md)). L'e2e
+  `production-day-close-race` tient la réouverture et l'arrêt en file
+  derrière un verrou tenu (`test/day-lock-race.ts`) ; il est rouge sur
+  l'ancien code (201 au lieu de 409), vérifié le 2026-11-03.
+- **Révision d'une commande inscrite un autre jour** : refus nommé
+  (`production.revision.inscribed_another_day`).
+- **Refaire le compte par-dessus une coche de l'ancien poste** : l'agrégat
+  le refuse (`assertChecksCarried`) au lieu d'une phrase dans l'adaptateur.
+- **L'annulation d'une fournée** lit son nombre de lignes touchées ; absente,
+  c'est `production.batch.cancel_missing` (e2e `production-batch-cancel`).
+- La doc du port de la journée dit ce que `save` fait (verrou de ligne
+  seulement ; colisage recopié, pas remis à zéro) ; `assertNeverArrested`
+  s'appelle `assertNotReopened` ; les lectures de la journée sont ordonnées ;
+  les deux adaptateurs d'état ont chacun leur fichier ; les champs de charge
+  utile et les lignes de réassort partagés vivent à la racine des canaux.
+- Specs : la clôture (749 lignes) en cinq specs sur une scène, le retirage
+  et l'agrégat découpés, une fixture `producibleOrder` partagée, une spec par
+  service (`plan-arrest-admission`, `plan-intake-reading`,
+  `plan-arrest-recording`, `retake-recording`, `resupply-launch-services`).
+
+Laissé, et pourquoi :
+
+- **Un `durable.publish` par commande sous le verrou exclusif** (arrêt,
+  retirage) : la boîte d'envoi n'a pas d'écriture en lot ; l'ajouter change
+  le port de `platform/` et ses sept doubles, dont trois au commerce.
+- **Dans la course de l'heure limite, le balayage a déjà tourné** quand le
+  refus tombe : il tranche les règlements en l'air d'une journée qu'on
+  croyait arrêtée. Le déplacer sous le verrou ferait écrire le commerce sous
+  le verrou du fournil.
+- **`openedByLaunch` reste déduit** d'une égalité d'instants : le stocker
+  demande une colonne (migration), non faite ; le cas où il ment est écrit
+  au type.
+- **Specs du fournil encore au-delà de 300 lignes**, hors du périmètre de
+  l'audit : `day-dossier-pdf.spec.ts` (626), `run-auto-close-round` (420),
+  `production-worksheet.spec.ts` (401), `get-production-forecast` (320),
+  `get-production-worksheet` (314), `render-quality-check` (301).
+
+## 4 septies. L'audit final, section A — le commerce (2026-11-03)
+
+Corrigé, chacun avec son test de régression :
+
+- **Double clic, une seule politique** (E2) : un geste déjà fait avec la
+  même intention rend succès sans effet — « Réceptionner » un réassort déjà
+  reçu, « Envoyer » un brouillon du fournil déjà envoyé (rend l'id du
+  réassort créé), ajouter au sans-commande le même article à la même
+  quantité. Course de deux clics : le perdant bute sur la version, relit
+  hors de sa transaction défaite, et rend succès si le gagnant a fait le
+  même geste.
+- **Le réassort sans commande ne se saisit qu'aujourd'hui** (E1,
+  `resupply.receipt.unordered_not_today`).
+- **Un critère pour proposer et valider un article** (E4, `isShownAsTile`).
+- **La demande du comptoir a une borne** (200 articles,
+  `resupply.order.too_many_lines`) ; **`restore` refuse un état impossible**
+  (`resupply.order.impossible_state`) ; les lectures sous verrou passent en
+  objets nommés.
+- **Clé, verrou, chargement** pour la correction d'un reçu réceptionné ;
+  **le nom** se repose sur la demande relue quand un ajout l'a croisé ;
+  **la clé d'envoi** se relit avant le catalogue ; **le lancement écarté**
+  d'un réassort annulé est journalisé.
+- La Supervision lit les prélèvements une fois pour la journée ; l'arrivée
+  par transfert lit ses réassorts en une fois (`ResupplyArrival`, partagé
+  avec « Monté ») ; `PrismaShelfDrawsReader` est relié par
+  `apps/lfd-api/src/appBootstrap/shelf-draws-feed.module.ts` ; les adaptateurs du fournil
+  (`ProductionDayResupplies`, `ProductionRangeResupplies`) sont rangés en
+  `infrastructure/`.
+- Specs : plus aucune au-delà de 300 lignes dans `b2b/resupply` ; un jeu
+  d'articles partagé (`apps/lfd-api/src/b2b/resupply/application/__tests__/resupply-articles.ts`) ; plus d'horloge murale.
+
+Choix assumé, pas une dette :
+
+- **« Ajouter une ligne » au comptoir CUMULE** (E3) : un second ajout du
+  même article additionne sa quantité, double clic compris. Hugo l'a voulu
+  « un clic » : le comptoir ajoute en plein service, et la quantité se
+  corrige d'un geste. Ce n'est donc PAS la politique E2.
+
+Laissé, et pourquoi :
+
+- **Le domaine importe le baril `@lfd/contracts`, qui tire Zod** (E5,
+  M-D) : 432 fichiers de `domain/` hors tests (560 avec les tests) dans
+  `apps/lfd-api/src` l'importent, dont 4 au réassort (compté le
+  2026-11-03). C'est une décision de dépôt — un point d'entrée sans Zod
+  pour les types et les fonctions pures —, pas une correction du réassort.
+- **Les quatre lecteurs de la table `site`** restent en Prisma direct : même
+  bloc `b2b`, un seul écrivain (`b2b/sites`), la raison est écrite et datée
+  au-dessus de chacun.
+- **La levée des alertes à la réception** sauve alerte par alerte : chacune
+  sous sa version, dans la transaction de l'appelant ; un lot perdrait le
+  refus par alerte.
 
 ## 5. Décidé, puis abandonné
 

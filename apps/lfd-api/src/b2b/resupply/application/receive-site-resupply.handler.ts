@@ -5,7 +5,12 @@ import { Clock } from "../../../platform/time/clock.js";
 import { PackedResuppliesReader } from "../../../packing/channels/commerce/index.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import type { SiteResupply } from "../domain/site-resupply.js";
-import { SiteResupplyNotFoundError } from "../domain/site-resupply-errors.js";
+import { ResupplyAlreadyReceivedError } from "../domain/resupply-receipt-errors.js";
+import { ResupplyReceptions } from "../domain/resupply-receptions.js";
+import {
+  SiteResupplyChangedMeanwhileError,
+  SiteResupplyNotFoundError,
+} from "../domain/site-resupply-errors.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { ReceiveSiteResupplyCommand } from "./receive-site-resupply.command.js";
 import { traceOf } from "./resupply-receipt-trace.js";
@@ -22,9 +27,14 @@ import { ResupplyReceiving } from "./resupply-receiving.js";
  * autre bloc ne se fait pas sous verrou. Le compte du comptoir fait foi : un
  * emballé connu APRÈS la réception ne change rien.
  *
- * Seul un réassort envoyé et non annulé se réceptionne. Un second
- * « Réceptionner » est refusé (409), y compris en course entre deux postes.
- * Chaque article reçu (> 0) lève l'alerte de stock vivante du point, dans la
+ * Seul un réassort envoyé et non annulé se réceptionne. **Un second
+ * « Réceptionner » ne fait pas d'erreur** (E2, 2026-11-03 — la politique de
+ * l'envoi du comptoir) : le réassort déjà réceptionné, le geste rend succès
+ * sans rien écrire, quel que soit le poste qui l'a fait — l'intention, « il
+ * est là », est la même. Deux clics qui se croisent : le second bute sur la
+ * version du réassort, et la réception est relue HORS de la transaction
+ * défaite ; présente, c'était le même geste. Une annulation gagnante, elle,
+ * reste un refus (409). Chaque article reçu (> 0) lève l'alerte de stock vivante du point, dans la
  * même transaction ({@link ResupplyReceiving}).
  *
  * ## La réception passe par l'agrégat, sous sa version (2026-11-02)
@@ -49,17 +59,34 @@ export class ReceiveSiteResupplyHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly packed: PackedResuppliesReader,
+    private readonly receptions: ResupplyReceptions,
   ) {}
 
   async execute(command: ReceiveSiteResupplyCommand): Promise<void> {
     const trace = await traceOf(this.staff, this.clock, command.staffUserId);
     const packed =
       (await this.packed.packedOf([command.resupplyId])).get(command.resupplyId) ?? null;
-    await this.uow.run(async () => {
-      const resupply = await this.receivable(command.siteId, command.resupplyId);
-      await this.resupplies.save(resupply);
-      await this.receiving.receiveAll(resupply, packed, trace);
-    });
+    try {
+      await this.uow.run(async () => {
+        const resupply = await this.receivable(command.siteId, command.resupplyId);
+        if (await this.alreadyReceived(command)) {
+          return;
+        }
+        await this.resupplies.save(resupply);
+        await this.receiving.receiveAll(resupply, packed, trace);
+      });
+    } catch (error) {
+      const raced =
+        error instanceof SiteResupplyChangedMeanwhileError ||
+        error instanceof ResupplyAlreadyReceivedError;
+      if (!raced || !(await this.alreadyReceived(command))) {
+        throw error;
+      }
+    }
+  }
+
+  private async alreadyReceived(command: ReceiveSiteResupplyCommand): Promise<boolean> {
+    return (await this.receptions.receptionOf(command.siteId, command.resupplyId)) !== null;
   }
 
   private async receivable(siteId: string, resupplyId: string): Promise<SiteResupply> {

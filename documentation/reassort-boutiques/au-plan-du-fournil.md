@@ -35,7 +35,7 @@ sequenceDiagram
   de la journée** (`DayResuppliesReader.placedFor`,
   `apps/lfd-api/src/production/channels/commerce/day-resupplies.reader.ts:54`,
   implémenté par `ProductionDayResupplies`,
-  `b2b/resupply/application/production-day-resupplies.ts:25`) et les fige
+  `b2b/resupply/infrastructure/production-day-resupplies.ts:25`) et les fige
   dans `production.production_resupply` + `_line` (clé (journée, réassort),
   aucune clé étrangère vers `public`) — avec le point, le nom, l'unité et
   `served_by_transfer`. Le « au plus tôt » n'y entre pas.
@@ -172,7 +172,7 @@ fournil, figé à l'arrêt (`served_by_transfer`) ; le fait
   l'annuaire et figé). Affichage seulement.
 - **Arrivé** : les deux chemins de la réception d'un transfert écrivent
   `delivery.transfer_received` ; `MarkArrivedOnTransferReceived` appelle
-  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:220`, règle dans `site-resupply-progress.ts`) à
+  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:230`, règle dans `site-resupply-progress.ts`) à
   l'instant et sous l'auteur de la réception. Au Labo, « Monté » :
   `POST admin/bakehouse-resupplies/sites/:siteId/:resupplyId/mounted`
   (`production_resupply:write`). Déjà arrivé ou déjà réceptionné : rien ne

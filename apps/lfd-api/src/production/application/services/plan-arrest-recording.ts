@@ -37,21 +37,23 @@ export class PlanArrestRecording {
    * n'a jamais publié `production.day_closed` (décision Q6,
    * `reassort-boutiques/au-plus-tot.md` : ni fait d'arrêt, ni dossier), et en
    * réannoncer un apprendrait au commerce et à la livraison un arrêt du plan
-   * qui n'a pas eu lieu. Le fait du lancement (`openedPlan`) l'a déjà dit.
+   * qui n'a pas eu lieu. Le fait du lancement (`openedPlan`) l'a déjà dit
+   * (comportement vérifié dans `ResupplyLaunchRecording` le 2026-11-03).
    *
-   * @returns `false` quand rien n'a été republié.
+   * Ne rend rien : l'accusé de la réannonce est le même dans les deux cas
+   * (`alreadyClosed: true`), et aucun appelant ne distinguait « rien
+   * republié » (le booléen d'avant n'était lu par personne, 2026-11-03).
    */
   async republish(
     day: ServiceDay,
     current: ProductionDay,
     closedAt: Date,
     reannouncedAt: Date,
-  ): Promise<boolean> {
+  ): Promise<void> {
     if (current.openedByLaunch) {
-      return false;
+      return;
     }
     await this.publish(day, current, closedAt, reannouncedAt);
-    return true;
   }
 
   private async publish(
@@ -72,6 +74,11 @@ export class PlanArrestRecording {
       ).durableFact(),
     );
     const reopenedAt = current.reopened?.at ?? null;
+    // Un `publish` par fait, donc une instruction par commande, sous le verrou
+    // EXCLUSIF de la journée : `OutboxDurablePublisher` n'a pas d'écriture en
+    // lot (une CTE par fait, vérifié le 2026-11-03). L'ajouter est un
+    // changement du port de `platform/` et de ses sept doubles, hors du
+    // fournil — laissé au reste à faire du réassort.
     for (const fact of packingListFactsOf(day, current.orders, closedAt, reopenedAt)) {
       await this.durable.publish(fact.durableFact());
     }

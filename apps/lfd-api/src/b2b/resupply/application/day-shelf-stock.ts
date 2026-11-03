@@ -13,7 +13,8 @@ import { ShelfDrawsReader } from "../domain/shelf-draws.reader.js";
  * dire deux restes.
  *
  * Lecture seule. Lu sous `ShelfStockLock` quand il sert à décider
- * (`ReceivedStockLowering`) ; sans verrou pour afficher.
+ * (`ReceivedStockLowering`, `ShelfCircuit`) ; sans verrou pour afficher
+ * (Supervision, réception, boutique — appelants relus le 2026-11-03).
  */
 @Injectable()
 export class DayShelfStock {
@@ -31,6 +32,25 @@ export class DayShelfStock {
   async receiptsAt(siteId: string, serviceDay: string): Promise<readonly ResupplyReceipt[]> {
     const snapshots = await this.receipts.on(siteId, serviceDay);
     return snapshots.map((snapshot) => ResupplyReceipt.restore(snapshot));
+  }
+
+  /**
+   * Le reste de chaque point listé, pour un appelant qui a déjà les reçus de
+   * la journée (tous points) : les prélèvements se lisent en UNE fois pour
+   * la journée, pas une par point (audit final, 2026-11-03).
+   */
+  async allOn(
+    serviceDay: string,
+    siteIds: readonly string[],
+    receipts: readonly ResupplyReceipt[],
+  ): Promise<ReadonlyMap<string, readonly EstimatedStockLine[]>> {
+    const draws = await this.draws.drawsOn(serviceDay);
+    return new Map(
+      siteIds.map((siteId) => {
+        const own = receipts.filter((receipt) => receipt.siteId === siteId);
+        return [siteId, estimateStock(own, draws.get(siteId) ?? [])] as const;
+      }),
+    );
   }
 
   /** Le reste au point, pour un appelant qui a déjà les reçus de CE point et de CE jour. */

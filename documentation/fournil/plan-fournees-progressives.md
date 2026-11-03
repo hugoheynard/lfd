@@ -115,7 +115,10 @@ dangereux qu'il nommait.
 - **`CancelBatchCommand(serviceDay, batchId)`** — une fournée saisie par erreur
   s'annule **entière**, tracée (`cancelled_at/by`), jamais supprimée. Pour
   corriger 48 en 36 : annuler, redéclarer 36. Annuler une fournée déjà annulée
-  est un succès silencieux.
+  est un succès silencieux. Une fournée **absente** de la base, que l'agrégat
+  a pourtant laissé passer, est un défaut nommé
+  (`production.batch.cancel_missing`, 500) : l'écriture conditionnée lit
+  désormais son nombre de lignes touchées (2026-11-03).
 - **Refus d'annuler** si, après annulation, il resterait moins de pièces sorties
   que de pièces au bac pour ce SKU ce jour — **toutes** les lignes au bac,
   bacs fermés compris (§D4) : « 24 croissants sont déjà dans des sacs :
@@ -250,7 +253,11 @@ vérité. `done_*` ne sert plus qu'à dire « coché par l'ancien système ».
    geste qui change `quantity`. Sous le verrou de journée (§D4), **avant**
    d'absorber les arrivées, il écrit en vraie fournée (même `id` que le
    rattrapage) chaque coche implicite. Sans ça, 30 cochés puis 30 → 42
-   deviendrait 42 sortis.
+   deviendrait 42 sortis. Le lancement « au plus tôt » et la révision d'une
+   commande inscrite refont aussi le compte, et matérialisent de même.
+   **Depuis le 2026-11-03, l'agrégat l'impose** : refaire le compte par-dessus
+   une coche non matérialisée lève `UncarriedInheritedChecksError`
+   (`assertChecksCarried`) au lieu d'effacer la coche en silence.
 4. **Le retirage cesse de recopier les coches** (`absorbArrivals`,
    `production-count.ts`) : elles sont matérialisées au pas 3, et la copie
    ferait renaître une coche sur une quantité qui a changé.

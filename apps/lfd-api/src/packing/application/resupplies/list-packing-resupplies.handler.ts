@@ -16,6 +16,13 @@ import { ListPackingResuppliesQuery } from "./list-packing-resupplies.query.js";
  * Les fiches « au plus tôt » (R4b) viennent en tête, dans l'ordre de leur
  * lancement ; chacune de leurs lignes dit ce qu'elle attend encore du four —
  * la règle même de `PackingStock.takeForResupply`.
+ *
+ * Deux lectures, sans transaction commune — assumé (audit final du réassort,
+ * 2026-11-03) : en `READ COMMITTED`, une transaction ne donnerait pas une
+ * photo commune aux deux (chaque requête voit son propre instant), et
+ * l'unité de travail n'en ouvre pas d'autre. L'écart possible est d'un geste
+ * au poste : « attend le four » peut retarder d'un rafraîchissement, jamais
+ * changer ce qui s'écrit.
  */
 @QueryHandler(ListPackingResuppliesQuery)
 export class ListPackingResuppliesHandler implements IQueryHandler<
@@ -35,7 +42,7 @@ export class ListPackingResuppliesHandler implements IQueryHandler<
     const bySku = new Map(stocks.map((stock) => [stock.sku, stock] as const));
     return {
       date: query.serviceDay,
-      resupplies: [...launchedFirst(sheets)].map((sheet) => viewOf(sheet, bySku)),
+      resupplies: launchedFirst(sheets).map((sheet) => viewOf(sheet, bySku)),
     };
   }
 }

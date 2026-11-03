@@ -26,6 +26,13 @@ import {
   type SiteResupplyStatus,
 } from "./site-resupply-snapshot.js";
 import type { ResupplyTrace } from "./resupply-trace.js";
+import {
+  assertRestorable,
+  type CancellationCheck,
+  type MountCheck,
+  type PlacementCheck,
+  UNGATED_PLACEMENT,
+} from "./site-resupply-checks.js";
 
 export {
   isPlaced,
@@ -68,10 +75,8 @@ export class SiteResupply {
     readonly target: ResupplyTarget,
     readonly serviceDay: string,
     /**
-     * La version LUE en base (`0` : pas encore écrite). Elle n'avance pas en
-     * mémoire : l'adaptateur écrit `version + 1` sous ce verrou, et un agrégat
-     * ne se sauve qu'une fois par unité de travail — un second `save` sur la
-     * même instance buterait sur son propre verrou (choix du 2026-11-02).
+     * La version LUE en base (`0` : pas encore écrite), qui n'avance pas en mémoire : l'adaptateur
+     * écrit `version + 1`, et un agrégat ne se sauve qu'une fois par unité de travail (2026-11-02).
      */
     readonly version: number,
     readonly origin: ResupplyOrigin,
@@ -96,7 +101,7 @@ export class SiteResupply {
     for (const line of input.lines) {
       resupply.addLine(line);
     }
-    resupply.place(input.trace, input.deadline, input.planStopped);
+    resupply.place(input.trace, { deadline: input.deadline, planStopped: input.planStopped });
     return resupply;
   }
 
@@ -117,12 +122,17 @@ export class SiteResupply {
     for (const line of input.lines) {
       resupply.addLine(line);
     }
-    resupply.place(input.trace, null, false);
+    resupply.place(input.trace, UNGATED_PLACEMENT);
     return resupply;
   }
 
-  /** Réhydrate un réassort, brouillon compris ; chaque ligne revalide. */
+  /**
+   * Réhydrate un réassort, brouillon compris ; chaque ligne revalide.
+   *
+   * @throws {ImpossibleSiteResupplyStateError} un geste d'après l'envoi sur un brouillon.
+   */
   static restore(snapshot: SiteResupplySnapshot): SiteResupply {
+    assertRestorable(snapshot);
     return new SiteResupply(
       snapshot.id,
       snapshot.siteId,
@@ -222,8 +232,8 @@ export class SiteResupply {
   }
 
   /** Cf. {@link SiteResupplyProgress.markMounted} : la règle et ses refus. */
-  markMounted(trace: ResupplyTrace, reception: ResupplyTrace | null, launched: boolean): boolean {
-    return this.progress.markMounted(this.gateContext(), trace, reception, launched);
+  markMounted(trace: ResupplyTrace, check: MountCheck): boolean {
+    return this.progress.markMounted(this.gateContext(), trace, check);
   }
 
   /** Ajoute un article au brouillon ; cf. `withLineAdded` (somme, unité). */
@@ -244,34 +254,23 @@ export class SiteResupply {
     this.content.withdraw(sku);
   }
 
-  /**
-   * Refuse un geste posé sur une version que le poste n'a plus sous les
-   * yeux : deux postes ne s'écrasent pas, même l'un après l'autre.
-   */
+  /** Refuse un geste posé sur une version que le poste n'a plus sous les yeux. */
   assertSeen(version: number): void {
     if (version !== this.version) {
       throw new SiteResupplyChangedMeanwhileError();
     }
   }
 
-  /**
-   * L'envoi qui a suivi `seenVersion`, et lui seul (D5, double clic) : chaque
-   * `save` avance la version d'un, donc un envoyé en `seenVersion + 1` est
-   * parti tel que le poste l'a vu.
-   */
+  /** L'envoi qui a suivi `seenVersion`, et lui seul (double clic) : `save` avance la version d'un. */
   isPlacementOf(seenVersion: number): boolean {
     return this.placedTrace !== null && this.version === seenVersion + 1;
   }
 
-  /**
-   * Passe le réassort. `deadline` (l'heure du réassort pour sa journée, ou
-   * `null`) et `planStopped` (lu SOUS le verrou de la journée) : cf.
-   * {@link assertPlaceable}.
-   */
-  place(trace: ResupplyTrace, deadline: Date | null, planStopped: boolean): void {
+  /** Passe le réassort ; `check` est lu SOUS le verrou de la journée (cf. {@link assertPlaceable}). */
+  place(trace: ResupplyTrace, check: PlacementCheck): void {
     this.assertDraft();
     const lineCount = this.content.lines.length;
-    assertPlaceable({ ...this.gateContext(), lineCount, at: trace.at, deadline, planStopped });
+    assertPlaceable({ ...this.gateContext(), ...check, lineCount, at: trace.at });
     this.placedTrace = trace;
   }
 
@@ -280,17 +279,9 @@ export class SiteResupply {
     assertReceivableStatus(this.status);
   }
 
-  /**
-   * Annule un réassort passé. `reception`, `planStopped` et `launched` sont
-   * lus par l'appelant sous le verrou de la journée : cf. {@link assertCancellable}.
-   */
-  cancel(
-    trace: ResupplyTrace,
-    reception: ResupplyTrace | null,
-    planStopped: boolean,
-    launched: boolean,
-  ): void {
-    assertCancellable({ ...this.gateContext(), reception, planStopped, launched });
+  /** Annule un réassort passé ; `check` est lu SOUS le verrou de la journée (cf. {@link assertCancellable}). */
+  cancel(trace: ResupplyTrace, check: CancellationCheck): void {
+    assertCancellable({ ...this.gateContext(), ...check });
     this.cancelledTrace = trace;
   }
 

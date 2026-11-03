@@ -1,4 +1,8 @@
 import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
+import {
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
   addDays,
@@ -41,26 +45,7 @@ const DAY = instantToLocal(NOW).day;
 const TIRAGE = new Date(NOW.getTime() - 60 * 60 * 1000);
 
 function order(orderId: string, quantity: number): ProducibleOrder {
-  return {
-    orderId,
-    reference: `ORD-${orderId}`,
-    customerLabel: "Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [
-      {
-        sku: "PAI-SEI",
-        productName: "Pain de seigle",
-        quantity,
-        saleUnit: "piece",
-        madeToOrder: null,
-      },
-    ],
-  };
+  return producibleOrder(orderId, { lines: [orderLine("PAI-SEI", quantity, "Pain de seigle")] });
 }
 
 class Days extends ProductionDayRepository {
@@ -205,7 +190,7 @@ describe("GetProductionWorksheetHandler", () => {
     expect(view.lines[0]?.quantity).toBe(30);
   });
 
-  it("🔴 ÉCARTE les commandes que la journée porte déjà, par `orderId`", async () => {
+  it("ÉCARTE les commandes que la journée porte déjà, par `orderId`", async () => {
     // Le bus vit en processus : un abonné en échec laisse des commandes `placed`
     // DÉJÀ inscrites au plan. Sans le filtre, la fiche annoncerait un écart qui
     // n'existe pas et compterait deux fois des pièces déjà au compte.
@@ -275,7 +260,7 @@ describe("GetProductionWorksheetHandler", () => {
     expect(view.groups[0]?.pending[0]).toMatchObject({ sku: "PAI-SEI", done: false });
   });
 
-  it("🔴 SERT la fiche quand les rayons sont illisibles — tout en « Rayon inconnu »", async () => {
+  it("SERT la fiche quand les rayons sont illisibles — tout en « Rayon inconnu »", async () => {
     // Les quantités ne dépendent pas du catalogue : refuser la fiche pour un
     // rangement ferait d'un confort une panne de production.
     const handler = handlerFor(

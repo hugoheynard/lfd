@@ -20,7 +20,7 @@ import type {
   SiteResuppliesView,
   SiteStockAlertsView,
 } from "@lfd/contracts";
-import { instantToLocal, localToInstant } from "@lfd/contracts";
+import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 import type request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -172,8 +172,9 @@ describe("« Réceptionner » un réassort", () => {
     expect(early.body).toMatchObject({ code: "resupply.receipt.not_yet_received" });
 
     await agent.post(`${route}/receive`).expect(204);
-    const again = await agent.post(`${route}/receive`).expect(409);
-    expect(again.body).toMatchObject({ code: "resupply.receipt.already_received" });
+    // Décision E2 (audit final, 2026-11-03) : le second clic rend succès, sans rien réécrire.
+    await agent.post(`${route}/receive`).expect(204);
+    expect(await ctx.prisma.resupplyReceipt.count({ where: { resupplyId: id } })).toBe(1);
     await agent.patch(`${route}/lines/${first.sku}`).send({ quantity: 10 }).expect(204);
 
     const after = await readReceipt(agent, siteId);
@@ -418,6 +419,35 @@ describe("le réassort sans commande", () => {
         saleUnit: "piece",
       },
     ]);
+  });
+
+  /**
+   * Décisions E1 et E2 (audit final, 2026-11-03) : une saisie sans commande
+   * passait sur n'importe quelle journée, et un double clic était refusé
+   * comme un doublon.
+   */
+  it("une saisie sans commande ne se pose qu'aujourd'hui (409 sinon), et un double clic rend succès", async () => {
+    const agent = await counter();
+    const siteId = await seedSite();
+    const [article] = jsonBody<readonly ResupplyArticleView[]>(
+      await agent.get("/admin/resupply-receipts/articles").expect(200),
+    );
+    if (article === undefined) {
+      throw new Error("Le catalogue semé doit proposer un article.");
+    }
+    const day = await today(agent, siteId);
+    const yesterday = addDays(day, -1);
+
+    const refused = await agent
+      .post(`/admin/resupply-receipts/${siteId}/${yesterday}/lines`)
+      .send({ sku: article.sku, quantity: 3 })
+      .expect(409);
+    expect(refused.body).toMatchObject({ code: "resupply.receipt.unordered_not_today" });
+    const lines = `/admin/resupply-receipts/${siteId}/${day}/lines`;
+    await agent.post(lines).send({ sku: article.sku, quantity: 3 }).expect(204);
+    await agent.post(lines).send({ sku: article.sku, quantity: 3 }).expect(204);
+
+    expect(await ctx.prisma.resupplyReceiptLine.count()).toBe(1);
   });
 
   it("refuse un doublon (409), une quantité négative (400) et un article inconnu (404)", async () => {

@@ -49,7 +49,9 @@ export class RetakeRecording {
     await this.days.save(current);
     const arrivals = arrivalsBetween(retake.before, current.orders);
     const reopenedAt = current.reopened?.at ?? null;
-    // La liste à coliser des seules arrivées, datée du retirage.
+    // La liste à coliser des seules arrivées, datée du retirage. Un `publish`
+    // par arrivée sous le verrou exclusif : la boîte d'envoi n'écrit pas en
+    // lot (cf. `PlanArrestRecording.publish`, vérifié le 2026-11-03).
     for (const fact of packingListFactsOf(day, arrivals, at, reopenedAt)) {
       await this.durable.publish(fact.durableFact());
     }

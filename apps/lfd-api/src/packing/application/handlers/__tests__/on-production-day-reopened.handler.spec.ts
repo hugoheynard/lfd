@@ -1,8 +1,8 @@
 import {
-  ClosedPlansReader,
   PRODUCTION_DAY_REOPENED,
   ProductionDayReopenedEvent,
 } from "../../../../production/channels/packing/index.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 import { PackingListWithdrawal } from "../../../domain/ports/packing-list-withdrawal.js";
 import {
   InMemoryResupplies,
@@ -15,21 +15,20 @@ const DAY = "2026-10-15";
 const CLOSED = new Date("2026-10-14T17:00:00.000Z");
 const REOPENED = new Date("2026-10-14T19:00:00.000Z");
 
-class ClosedPlans extends ClosedPlansReader {
-  constructor(private readonly closed: readonly string[]) {
-    super();
-  }
-
-  closedBetween(from: string, to: string): Promise<readonly string[]> {
-    return Promise.resolve(this.closed.filter((day) => from <= day && day <= to));
-  }
-}
-
 class RecordingWithdrawal extends PackingListWithdrawal {
   readonly calls: { readonly serviceDay: string; readonly orderIds: readonly string[] }[] = [];
 
+  /** `plan` : pour vérifier que le plan était tenu AVANT le retrait. */
+  constructor(private readonly plan?: RecordingPlanHold) {
+    super();
+  }
+
+  /** Les journées tenues au moment du retrait. */
+  readonly heldAtWithdrawal: (readonly string[])[] = [];
+
   withdrawUntouched(serviceDay: string, orderIds: readonly string[]): Promise<number> {
     this.calls.push({ serviceDay, orderIds });
+    this.heldAtWithdrawal.push([...(this.plan?.held ?? [])]);
     return Promise.resolve(orderIds.length);
   }
 }
@@ -46,11 +45,25 @@ describe("OnProductionDayReopened (colisage)", () => {
 
     await new OnProductionDayReopened(
       withdrawal,
-      new ClosedPlans([]),
+      RecordingPlanHold.reopened(),
       new InMemoryResupplies(),
     ).handle(DELIVERY);
 
     expect(withdrawal.calls).toEqual([{ serviceDay: DAY, orderIds: ["ord_1"] }]);
+  });
+
+  /**
+   * Régression (audit final du réassort, 2026-11-03) : « de nouveau arrêtée ? »
+   * se lisait sans verrou, et un réarrêt validé entre la question et le
+   * retrait voyait son nouveau colisage retiré.
+   */
+  it("tient le plan de la journée avant de retirer quoi que ce soit", async () => {
+    const plan = RecordingPlanHold.reopened();
+    const withdrawal = new RecordingWithdrawal(plan);
+
+    await new OnProductionDayReopened(withdrawal, plan, new InMemoryResupplies()).handle(DELIVERY);
+
+    expect(withdrawal.heldAtWithdrawal).toEqual([[DAY]]);
   });
 
   it("ne retire rien si la journée est de nouveau arrêtée", async () => {
@@ -58,7 +71,7 @@ describe("OnProductionDayReopened (colisage)", () => {
 
     await new OnProductionDayReopened(
       withdrawal,
-      new ClosedPlans([DAY]),
+      new RecordingPlanHold(true),
       new InMemoryResupplies(),
     ).handle(DELIVERY);
 
@@ -82,10 +95,14 @@ describe("OnProductionDayReopened (colisage)", () => {
     }
     const repository = new InMemoryResupplyRepository(resupplies);
     const started = await repository.lock(DAY, "rs_2");
-    started?.enterPacked("CRO", 6, { at: CLOSED, by: "staff_lou" });
-    if (started) {
-      await repository.save(started);
+    // Régression du test lui-même (audit final, 2026-11-03) : une fiche
+    // introuvable le faisait passer sans rien éprouver.
+    expect(started).not.toBeNull();
+    if (started === null) {
+      return;
     }
+    started.enterPacked("CRO", 6, { at: CLOSED, by: "staff_lou" });
+    await repository.save(started);
     const delivery = {
       ...DELIVERY,
       payload: new ProductionDayReopenedEvent(
@@ -99,7 +116,7 @@ describe("OnProductionDayReopened (colisage)", () => {
 
     await new OnProductionDayReopened(
       new RecordingWithdrawal(),
-      new ClosedPlans([]),
+      RecordingPlanHold.reopened(),
       resupplies,
     ).handle(delivery);
 
@@ -128,7 +145,7 @@ describe("OnProductionDayReopened (colisage)", () => {
 
     await new OnProductionDayReopened(
       new RecordingWithdrawal(),
-      new ClosedPlans([]),
+      RecordingPlanHold.reopened(),
       resupplies,
     ).handle(delivery);
 
@@ -159,7 +176,7 @@ describe("OnProductionDayReopened (colisage)", () => {
 
     await new OnProductionDayReopened(
       new RecordingWithdrawal(),
-      new ClosedPlans([]),
+      RecordingPlanHold.reopened(),
       resupplies,
     ).handle(delivery);
 

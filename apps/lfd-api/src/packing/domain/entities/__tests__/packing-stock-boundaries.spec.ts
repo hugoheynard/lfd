@@ -1,5 +1,6 @@
 import {
   PackedStockInconsistentError,
+  PackingStockOverdrawnError,
   StockMoveQuantityInvalidError,
 } from "../../errors/packing-shop-release-errors.js";
 import { LineNotProducedYetError } from "../../errors/packing-station-errors.js";
@@ -27,6 +28,28 @@ function expectInvariant(held: PackingStock): void {
 }
 
 describe("PackingStock — frontières de l'invariant", () => {
+  /**
+   * Régression (audit final du réassort, 2026-11-03) : une réserve relue à
+   * découvert passait, et son libre faux (borné à zéro) se taisait.
+   */
+  it.each([
+    [10, 0, 11, 0],
+    [10, 4, 4, 3],
+    [10, 11, 0, 0],
+    [10, 0, 0, 11],
+  ])(
+    "refuse de relire une réserve de %s reçus qui en a rendu %s, mis %s au bac et envoyé %s en boutique",
+    (received, returned, packed, sentToShop) => {
+      expect(() => stock(received, returned, packed, sentToShop)).toThrow(
+        PackingStockOverdrawnError,
+      );
+    },
+  );
+
+  it("relit une réserve dont toutes les entrées sont sorties", () => {
+    expectInvariant(stock(10, 3, 4, 3));
+  });
+
   /**
    * Régression : take(-3) passait la garde de manque (rien ne manque pour
    * moins que rien) et faisait BAISSER le bac (2026-10-25).
@@ -90,8 +113,13 @@ describe("PackingStock — frontières de l'invariant", () => {
     expect(held.free).toBe(7);
   });
 
-  it("un libre jamais négatif même si la base est en dette", () => {
-    expect(stock(5, 0, 9).free).toBe(0);
+  /**
+   * Remplace « un libre jamais négatif même si la base est en dette » : une
+   * base en dette n'est plus relue en silence (audit final du réassort,
+   * 2026-11-03) — elle se refuse, nommée, au lieu de servir un libre à zéro.
+   */
+  it("une base en dette se refuse à la relecture au lieu de servir un libre à zéro", () => {
+    expect(() => stock(5, 0, 9)).toThrow(PackingStockOverdrawnError);
   });
 
   /**

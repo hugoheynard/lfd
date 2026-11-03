@@ -31,3 +31,25 @@ export class RevisedLinesMismatchError extends DomainError {
     );
   }
 }
+
+/**
+ * **Inscrite un autre jour** que celui qu'on révise. Une révision après
+ * l'arrêt ne change pas de jour (plan A2, § 7) : le fournil révise le dû au
+ * plan du jour où la commande est INSCRITE. Jusqu'au 2026-11-03, ce jour
+ * n'était pas comparé à celui demandé — le guichet révisait le plan du jour
+ * demandé, où la commande n'est pas, et la journée refusait plus bas sans
+ * dire où elle était vraiment.
+ */
+export class RevisedOrderInscribedElsewhereError extends BusinessError {
+  constructor(
+    readonly orderId: string,
+    readonly requestedDay: string,
+    readonly inscribedDay: string,
+  ) {
+    super(
+      "production.revision.inscribed_another_day",
+      `La commande est inscrite au plan du ${inscribedDay}, pas à celui du ${requestedDay} : ses quantités se révisent sur ce jour-là seulement. ` +
+        "Rechargez la commande : sa date a peut-être changé entre-temps. Rien n'a été modifié.",
+    );
+  }
+}

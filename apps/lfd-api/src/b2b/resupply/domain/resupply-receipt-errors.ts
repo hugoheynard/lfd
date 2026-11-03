@@ -71,16 +71,6 @@ export class ResupplyArticleUnknownError extends ResourceNotFoundError {
   }
 }
 
-/** Le point de retrait n'existe pas, ou est archivé. */
-export class ResupplySiteUnknownError extends ResourceNotFoundError {
-  constructor(readonly siteId: string) {
-    super(
-      "resupply.receipt.site_unknown",
-      "Ce point de retrait n'existe pas ou a été archivé : choisissez-en un autre.",
-    );
-  }
-}
-
 /** Deux postes ont corrigé la même liste en même temps : le second ne l'écrase pas. */
 export class ResupplyReceiptChangedMeanwhileError extends BusinessError {
   constructor() {
@@ -115,6 +105,24 @@ export class ResupplyDayNotYetComeError extends BusinessError {
     super(
       "resupply.receipt.day_not_yet_come",
       `Ce réassort est pour le ${serviceDay}, une journée qui n'est pas encore venue : il se réceptionne ce jour-là, à son arrivée. S'il est déjà là, saisissez-le dans « Réassort sans commande » d'aujourd'hui.`,
+    );
+  }
+}
+
+/**
+ * Un réassort sans commande saisi pour une autre journée que celle du geste
+ * (décision E1 de l'audit final, 2026-11-03) : ce qui arrive sans commande
+ * arrive AUJOURD'HUI. Hier ferait remonter le stock d'une journée close ;
+ * demain compterait ce que la vitrine n'a pas encore.
+ */
+export class UnorderedReceiptNotTodayError extends BusinessError {
+  constructor(
+    readonly serviceDay: string,
+    readonly today: string,
+  ) {
+    super(
+      "resupply.receipt.unordered_not_today",
+      `Un réassort sans commande se saisit le jour où il arrive : aujourd'hui, le ${today} (journée demandée : le ${serviceDay}). Revenez à la journée d'aujourd'hui, puis saisissez l'article.`,
     );
   }
 }

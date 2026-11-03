@@ -67,7 +67,7 @@ export function assertNothingElseToFreeze(serviceDay: string, pending: PendingPl
  *
  * @throws {ResupplyLaunchOnReopenedPlanError}
  */
-export function assertNeverArrested(serviceDay: string, reopened: PackedMark | null): void {
+export function assertNotReopened(serviceDay: string, reopened: PackedMark | null): void {
   if (reopened !== null) {
     throw new ResupplyLaunchOnReopenedPlanError(serviceDay);
   }

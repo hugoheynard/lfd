@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import {
   RevisedLinesMismatchError,
@@ -22,23 +26,11 @@ function order(
   orderId: string,
   lines: readonly { sku: string; quantity: number }[],
 ): ProducibleOrder {
-  return {
-    orderId,
-    reference: `ORD-${orderId}`,
+  return producibleOrder(orderId, {
     customerLabel: "Hôtel des Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
     clientele: "pro",
-    siteId: null,
-    sheetDetails: null,
-    lines: lines.map((line) => ({
-      ...line,
-      productName: `Article ${line.sku}`,
-      saleUnit: "piece",
-      madeToOrder: null,
-    })),
-  };
+    lines: lines.map((line) => orderLine(line.sku, line.quantity, `Article ${line.sku}`)),
+  });
 }
 
 function closedWith(...orders: ProducibleOrder[]): ProductionDay {

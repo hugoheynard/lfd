@@ -52,13 +52,17 @@ export class SendBakehouseResupplyHandler implements ICommandHandler<
       cutoff: this.cutoff,
       gate: this.gate,
     };
-    const trace = await traceOf(this.staff, this.clock, command.staffUserId);
-    const prepared = await prepareBakehouseResupply(ports, command, trace);
     await sendOnceUnderKey(
       this.uow,
       this.resupplies,
       { key: command.key, siteId: command.siteId, origin: "bakehouse" },
-      () => writeBakehouseResupply(ports, prepared, command.key),
+      {
+        prepare: async () => {
+          const trace = await traceOf(this.staff, this.clock, command.staffUserId);
+          return prepareBakehouseResupply(ports, command, trace);
+        },
+        write: (prepared) => writeBakehouseResupply(ports, prepared, command.key),
+      },
     );
     return command.key;
   }

@@ -41,7 +41,10 @@ export type ResupplyReceptionStatus = "expected" | "received";
 export interface ResupplyReceptionLineView {
   readonly sku: string;
   readonly label: string;
-  /** L'attendu : la quantité DEMANDÉE (la quantité emballée la remplacera, R3). */
+  /**
+   * L'attendu : la quantité EMBALLÉE au colisage quand sa fiche est close
+   * (R3b), sinon la quantité DEMANDÉE.
+   */
   readonly expectedQuantity: number;
   /** Le reçu ; `null` tant que le réassort n'est pas réceptionné. */
   readonly receivedQuantity: number | null;

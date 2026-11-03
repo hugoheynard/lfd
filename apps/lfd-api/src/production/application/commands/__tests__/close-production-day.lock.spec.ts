@@ -1,4 +1,3 @@
-import { FixedStaffAuthorDirectory } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
@@ -8,13 +7,13 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
-import { PendingSettlementSweeper } from "../../../channels/commerce/pending-settlement.sweeper.js";
+import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { ProductionDayStatusReader } from "../../../domain/ports/production-day-status.reader.js";
-import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
-import { DayResupplies, stopRulesOf } from "../../__tests__/settings-doubles.js";
+import { admissionOf, FixedStatus, intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
+import { DayResupplies } from "../../__tests__/settings-doubles.js";
 import { PlanArrestRecording } from "../../services/plan-arrest-recording.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
@@ -31,26 +30,7 @@ const NOW = new Date("2026-09-07T18:00:00.000Z");
 const EARLIER = new Date("2026-09-07T17:00:00.000Z");
 const DAY = "2026-09-08";
 
-const ORDER: ProducibleOrder = {
-  orderId: "ord_1",
-  reference: "ORD-0001",
-  customerLabel: "Trois Ponts",
-  fulfillmentMethod: "pickup",
-  destination: "Le Labo",
-  dueAt: null,
-  clientele: null,
-  siteId: null,
-  sheetDetails: null,
-  lines: [
-    {
-      sku: "VIE-001",
-      productName: "Croissant",
-      quantity: 40,
-      saleUnit: "piece",
-      madeToOrder: null,
-    },
-  ],
-};
+const ORDER = producibleOrder();
 
 /** Rend, appel après appel, les journées qu'on lui donne ; note chaque lecture. */
 class SequencedDays extends ProductionDayRepository {
@@ -90,12 +70,6 @@ class Commerce extends DayOrdersReader {
   }
 }
 
-class Sweeper extends PendingSettlementSweeper {
-  sweep(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
 class Durable extends DurablePublisher {
   readonly facts: DurableFact[] = [];
 
@@ -125,32 +99,18 @@ function subject(sequence: ProductionDay[], status?: ProductionDayStatusReader) 
     orders: new Commerce(trace),
     withdrawals: new InMemoryWithdrawals(trace),
     resupplies: new DayResupplies([], trace),
-    ...(status === undefined ? {} : { status }),
   });
+  const clock = new FixedClock(NOW);
   const handler = new CloseProductionDayHandler(
+    admissionOf({ days, clock, ...(status === undefined ? {} : { status }) }),
     reading,
     new PlanArrestRecording(days, durable),
-    new Sweeper(),
-    stopRulesOf(),
-    new FixedStaffAuthorDirectory(),
     events,
-    new FixedClock(NOW),
+    clock,
     new DirectUnitOfWork(),
     new RecordingDayLock(trace),
   );
   return { handler, days, events, durable, trace };
-}
-
-/** L'en-tête seul : il note qu'on l'a lu, et dit « ouverte ». */
-class HeaderOnly extends ProductionDayStatusReader {
-  constructor(private readonly trace: string[]) {
-    super();
-  }
-
-  isClosed(): Promise<boolean> {
-    this.trace.push("status");
-    return Promise.resolve(false);
-  }
 }
 
 describe("clore sous le verrou de la journée", () => {
@@ -210,7 +170,7 @@ describe("clore sous le verrou de la journée", () => {
    */
   it("hors verrou, ne lit que l'en-tête ; la journée entière n'est relue que sous lui", async () => {
     const trace: string[] = [];
-    const { handler, trace: steps } = subject([open()], new HeaderOnly(trace));
+    const { handler, trace: steps } = subject([open()], new FixedStatus(false, trace));
 
     await handler.execute(new CloseProductionDayCommand(DAY));
 

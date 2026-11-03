@@ -75,9 +75,12 @@ describe("SiteResupply.sentFromReserve — une sortie de réserve", () => {
   it("ne s'annule pas : le pain est parti", () => {
     const resupply = fromReserve();
 
-    expect(() => resupply.cancel({ at: LAUNCHED_AT, author: LOU }, null, false, false)).toThrow(
-      ReserveResupplyNotCancellableError,
-    );
+    expect(() =>
+      resupply.cancel(
+        { at: LAUNCHED_AT, author: LOU },
+        { reception: null, planStopped: false, launched: false },
+      ),
+    ).toThrow(ReserveResupplyNotCancellableError);
     expect(resupply.status).toBe("placed");
   });
 
@@ -95,7 +98,9 @@ describe("SiteResupply.sentFromReserve — une sortie de réserve", () => {
   it("n'exige pas de lancement pour arriver : il n'y a rien à lancer", () => {
     const resupply = fromReserve();
 
-    expect(resupply.markMounted({ at: LAUNCHED_AT, author: LOU }, null, false)).toBe(true);
+    expect(
+      resupply.markMounted({ at: LAUNCHED_AT, author: LOU }, { reception: null, launched: false }),
+    ).toBe(true);
     expect(resupply.arrived).toEqual({ at: LAUNCHED_AT, author: LOU });
   });
 

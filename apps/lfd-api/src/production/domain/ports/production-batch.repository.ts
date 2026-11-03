@@ -44,6 +44,17 @@ export abstract class ProductionBatchRepository {
   /**
    * Annule une fournée, **conditionné en base** (`cancelled_at IS NULL`) : la
    * première annulation est la seule tracée. Rien n'est jamais supprimé.
+   *
+   * Une écriture CIBLÉE, et c'est voulu (justification relue le 2026-11-03) :
+   * les trois appelants — l'annulation, la décoche, la réponse du colisage —
+   * relisent la journée SOUS le verrou et laissent l'agrégat refuser
+   * (`batchToCancel`, `batchesToUncheck`) avant d'appeler ; la fournée vit
+   * hors de `save`, qui ne l'écrit pas. Ce port n'écrit que ce que
+   * l'agrégat a laissé passer.
+   *
+   * Déjà annulée : succès sans effet. Absente du jour : c'est un défaut.
+   *
+   * @throws {BatchToCancelMissingError} aucune fournée de ce jour sous cet `id`.
    */
   abstract cancel(day: ServiceDay, id: string, mark: PackedMark): Promise<void>;
 }

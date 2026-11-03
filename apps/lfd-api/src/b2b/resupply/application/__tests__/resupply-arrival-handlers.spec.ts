@@ -18,6 +18,7 @@ import { RecordingAdmissionDesk } from "../../../orders/application/commands/__t
 import { MarkArrivedOnTransferReceived } from "../mark-arrived-on-transfer-received.handler.js";
 import { MarkResupplyMountedCommand } from "../mark-resupply-mounted.command.js";
 import { MarkResupplyMountedHandler } from "../mark-resupply-mounted.handler.js";
+import { ResupplyArrival } from "../resupply-arrival.js";
 import { ResupplyArrivedBell } from "../resupply-arrived-bell.js";
 import { ResupplyPlanGate } from "../resupply-plan-gate.js";
 import { Directory } from "./resupply-doubles.js";
@@ -88,17 +89,16 @@ function world() {
   const work = new BackgroundWork();
   const bell = new ResupplyArrivedBell(notifier, afterCommit, work);
   const launches = new FixedLaunches();
+  const arrival = new ResupplyArrival(resupplies, receptions, labels, bell);
   const mounted = new MarkResupplyMountedHandler(
     resupplies,
-    receptions,
-    labels,
+    arrival,
     staff,
     new FixedClock(NOW),
-    bell,
     new ResupplyPlanGate(new RecordingAdmissionDesk([]), launches),
     new DirectUnitOfWork(),
   );
-  const onTransfer = new MarkArrivedOnTransferReceived(resupplies, receptions, labels, staff, bell);
+  const onTransfer = new MarkArrivedOnTransferReceived(resupplies, arrival, staff);
   const rung = async (): Promise<readonly StaffNotice[]> => {
     await afterCommit.commit();
     await work.whenIdle();
@@ -236,6 +236,8 @@ describe("la réception du transfert (R3e, point servi par transfert)", () => {
     await onTransfer.handle(transferReceived(["rs_1", "rs_2"]));
 
     expect(resupplies.all().map((row) => row.arrived?.at)).toEqual([RECEIVED_AT, RECEIVED_AT]);
+    // Régression (audit final, 2026-11-03) : un `load` par réassort ; une lecture pour le transfert.
+    expect(resupplies.manyReads).toBe(1);
     expect(resupplies.all()[0]?.arrived?.author.staffUserId).toBe("staff_driver");
     expect((await rung()).map((notice) => notice.subject)).toEqual([
       "Réassort arrivé — à réceptionner : Vitrine du matin — Val Village",

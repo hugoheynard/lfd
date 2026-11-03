@@ -160,7 +160,7 @@ describe("RecordBatchHandler", () => {
     expect(store.batches[0]?.cancelled).toEqual({ at: NOW, by: "staff-3" });
   });
 
-  it("🔴 le même id pour une autre charge est refusé (409), rien n'est compté", async () => {
+  it("le même id pour une autre charge est refusé (409), rien n'est compté", async () => {
     const { store, record: handler } = setup();
     await handler.execute(record(FIRST, 12));
 
@@ -187,7 +187,7 @@ describe("RecordBatchHandler", () => {
     );
   });
 
-  it("🔴 matérialise la coche héritée AVANT la première fournée réelle : 30 + 5", async () => {
+  it("matérialise la coche héritée AVANT la première fournée réelle : 30 + 5", async () => {
     // Sans ça, la fournée réelle effacerait la fournée implicite, et la ligne
     // tomberait de 30 sortis à 5.
     const { store, trace, record: handler } = setup(legacyChecked());

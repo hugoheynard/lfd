@@ -305,7 +305,7 @@ Ce qui s'ajoute :
 - **L'heure requise se calcule à la volée, et c'est le snapshot du fournil
   qui la fige** (objection B1 du §12.3). Pas de table figée à part : le
   fournil lit `DayOrdersReader` **pendant** la clôture
-  (`close-production-day.handler.ts:117`, `run-auto-close-round.handler.ts:62`)
+  (`plan-intake-reading.ts:57`, sous le verrou de l'arrêt, et `run-auto-close-round.handler.ts:150`)
   et **avant** (fiche d'atelier, `production-worksheet-reading.service.ts:53`) —
   une table posée « à la clôture » n'existerait pas encore quand il la lit.
   `dueAtOf` (`b2b/orders/infrastructure/prisma-day-orders.source.ts`,

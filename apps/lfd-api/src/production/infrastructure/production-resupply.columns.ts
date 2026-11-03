@@ -24,7 +24,11 @@ export const RESUPPLY_COLUMNS = {
     kind: true,
     launchedAt: true,
     launchedBy: true,
-    lines: { select: { sku: true, productName: true, quantity: true, saleUnit: true } },
+    lines: {
+      select: { sku: true, productName: true, quantity: true, saleUnit: true },
+      // Dans l'ordre d'écriture (cuid), celui de l'agrégat — cf. `production-day.row.ts`.
+      orderBy: { id: "asc" },
+    },
   },
   orderBy: { resupplyId: "asc" },
 } as const;

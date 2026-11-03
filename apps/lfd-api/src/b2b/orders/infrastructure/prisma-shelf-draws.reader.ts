@@ -28,7 +28,24 @@ export class PrismaShelfDrawsReader extends ShelfDrawsReader {
   }
 
   async drawsAt(serviceDay: string, siteId: string): Promise<readonly ShelfDraw[]> {
-    const rows = await this.prisma.order.findMany({
+    const orders = await this.ordersOn(serviceDay);
+    return totalsOf(orders.filter((order) => siteIdOf(order.pickupAddress) === siteId));
+  }
+
+  async drawsOn(serviceDay: string): Promise<ReadonlyMap<string, readonly ShelfDraw[]>> {
+    const bySite = new Map<string, DrawnOrder[]>();
+    for (const order of await this.ordersOn(serviceDay)) {
+      const siteId = siteIdOf(order.pickupAddress);
+      if (siteId !== null) {
+        bySite.set(siteId, [...(bySite.get(siteId) ?? []), order]);
+      }
+    }
+    return new Map([...bySite].map(([siteId, orders]) => [siteId, totalsOf(orders)]));
+  }
+
+  /** Les commandes sur stock retirées ce jour-là, tous points confondus. */
+  private ordersOn(serviceDay: string): Promise<readonly DrawnOrder[]> {
+    return this.prisma.order.findMany({
       where: {
         supply: SUPPLY_SHELF,
         fulfillmentMethod: "pickup",
@@ -44,20 +61,35 @@ export class PrismaShelfDrawsReader extends ShelfDrawsReader {
         },
       },
     });
-    const totals = new Map<string, ShelfDraw>();
-    for (const row of rows.filter((r) => siteIdOf(r.pickupAddress) === siteId)) {
-      for (const line of row.lines) {
-        const saleUnit = resupplySaleUnitOf(line.sku, line.saleUnit);
-        const key = stockKeyOf(line.sku, saleUnit);
-        const known = totals.get(key);
-        totals.set(key, {
-          sku: line.sku,
-          label: known?.label ?? line.productNameSnapshot,
-          saleUnit,
-          quantity: (known?.quantity ?? 0) + line.quantity,
-        });
-      }
-    }
-    return [...totals.values()];
   }
+}
+
+/** Une commande sur stock, telle que la lecture la rend. */
+interface DrawnOrder {
+  readonly pickupAddress: unknown;
+  readonly lines: readonly {
+    readonly sku: string;
+    readonly productNameSnapshot: string;
+    readonly quantity: number;
+    readonly saleUnit: string;
+  }[];
+}
+
+/** Un total par (article, unité), dans l'ordre de première apparition. */
+function totalsOf(orders: readonly DrawnOrder[]): readonly ShelfDraw[] {
+  const totals = new Map<string, ShelfDraw>();
+  for (const order of orders) {
+    for (const line of order.lines) {
+      const saleUnit = resupplySaleUnitOf(line.sku, line.saleUnit);
+      const key = stockKeyOf(line.sku, saleUnit);
+      const known = totals.get(key);
+      totals.set(key, {
+        sku: line.sku,
+        label: known?.label ?? line.productNameSnapshot,
+        saleUnit,
+        quantity: (known?.quantity ?? 0) + line.quantity,
+      });
+    }
+  }
+  return [...totals.values()];
 }

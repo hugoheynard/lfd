@@ -19,7 +19,7 @@ describe("la journée relative — selon l'horloge du serveur", () => {
     expect(relativeDayOf(addDays(TODAY, -1), NOW)).toBeNull();
   });
 
-  it("🔴 lit le jour à l'heure de PARIS, pas en UTC", () => {
+  it("lit le jour à l'heure de PARIS, pas en UTC", () => {
     // À 00 h 30 à Paris, il est encore la VEILLE en UTC (22 h 30 l'été, 23 h 30
     // l'hiver). Un `toISOString().slice(0, 10)` dirait « demain » d'une journée
     // que le fournil a déjà commencée.

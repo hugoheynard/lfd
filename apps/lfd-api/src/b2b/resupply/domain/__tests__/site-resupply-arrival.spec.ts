@@ -4,6 +4,7 @@ import {
   ResupplyNotLaunchedNotMountableError,
 } from "../site-resupply-gate-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
+import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
 
 /**
  * « Réassort arrivé » (R3e) : un seul signal, deux gestes — la réception
@@ -31,7 +32,7 @@ function placed(): SiteResupply {
       saleUnit: "piece" as const,
     }),
   );
-  resupply.place({ at: PLACED_AT, author: LOU }, null, false);
+  resupply.place({ at: PLACED_AT, author: LOU }, UNGATED_PLACEMENT);
   return resupply;
 }
 
@@ -77,7 +78,10 @@ describe("SiteResupply.markArrived", () => {
 
   it("refuse un réassort annulé", () => {
     const resupply = placed();
-    resupply.cancel({ at: ARRIVED_AT, author: LOU }, null, false, false);
+    resupply.cancel(
+      { at: ARRIVED_AT, author: LOU },
+      { reception: null, planStopped: false, launched: false },
+    );
 
     expect(() => resupply.markArrived({ at: LATER, author: PAUL }, null)).toThrow(
       ResupplyNotArrivableError,
@@ -110,16 +114,18 @@ describe("SiteResupply.markMounted (R4c, Q4 : « Lancer » puis « Monté »)", 
   it("refuse un « au plus tôt » que le fournil n'a pas lancé", () => {
     const resupply = placed();
 
-    expect(() => resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, null, false)).toThrow(
-      ResupplyNotLaunchedNotMountableError,
-    );
+    expect(() =>
+      resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, { reception: null, launched: false }),
+    ).toThrow(ResupplyNotLaunchedNotMountableError);
     expect(resupply.arrived).toBeNull();
   });
 
   it("lancé, il passe à arrivé", () => {
     const resupply = placed();
 
-    expect(resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, null, true)).toBe(true);
+    expect(
+      resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, { reception: null, launched: true }),
+    ).toBe(true);
     expect(resupply.arrived).toEqual({ at: ARRIVED_AT, author: PAUL });
   });
 
@@ -127,7 +133,10 @@ describe("SiteResupply.markMounted (R4c, Q4 : « Lancer » puis « Monté »)", 
     const resupply = placed();
 
     expect(
-      resupply.markMounted({ at: LATER, author: PAUL }, { at: ARRIVED_AT, author: LOU }, false),
+      resupply.markMounted(
+        { at: LATER, author: PAUL },
+        { reception: { at: ARRIVED_AT, author: LOU }, launched: false },
+      ),
     ).toBe(false);
   });
 
@@ -146,8 +155,10 @@ describe("SiteResupply.markMounted (R4c, Q4 : « Lancer » puis « Monté »)", 
         saleUnit: "piece" as const,
       }),
     );
-    resupply.place({ at: PLACED_AT, author: LOU }, null, false);
+    resupply.place({ at: PLACED_AT, author: LOU }, UNGATED_PLACEMENT);
 
-    expect(resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, null, false)).toBe(true);
+    expect(
+      resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, { reception: null, launched: false }),
+    ).toBe(true);
   });
 });

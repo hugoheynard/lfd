@@ -7,6 +7,7 @@ import {
   InvalidBatchQuantityError,
   BatchNotFoundError,
   BatchReturnPendingError,
+  UncarriedInheritedChecksError,
 } from "../errors/batch-errors.js";
 import {
   activeBatchesOf,
@@ -249,4 +250,22 @@ export function inheritedBatchesOf(
   return implicitBatchesOf(state.day.value, state.counts, state.batches).filter(
     (batch) => sku === undefined || batch.sku === sku,
   );
+}
+
+/**
+ * Refuse de refaire le compte tant qu'une coche héritée n'est pas reportée en
+ * fournée : le compte réécrit l'effacerait (cf. `replaceCounts`, côté
+ * adaptateur). Après `materialize`, la ligne a sa fournée, et plus rien
+ * n'est implicite.
+ *
+ * @throws {UncarriedInheritedChecksError}
+ */
+export function assertChecksCarried(state: BatchState): void {
+  const pending = inheritedBatchesOf(state);
+  if (pending.length > 0) {
+    throw new UncarriedInheritedChecksError(
+      state.day.value,
+      pending.map((batch) => batch.sku),
+    );
+  }
 }

@@ -5,9 +5,19 @@ import { ShelfStockLock } from "../../domain/shelf-stock-lock.js";
 export class RecordingShelfStockLock extends ShelfStockLock {
   readonly taken: string[] = [];
 
-  lock(serviceDay: string, siteId: string): Promise<void> {
+  /**
+   * Un geste d'un autre poste, joué pendant que celui-ci attend le verrou —
+   * ce qu'il a lu AVANT est alors périmé. Consommé à son premier usage.
+   */
+  whileWaiting: (() => Promise<unknown>) | null = null;
+
+  async lock(serviceDay: string, siteId: string): Promise<void> {
+    const other = this.whileWaiting;
+    this.whileWaiting = null;
+    if (other !== null) {
+      await other();
+    }
     this.taken.push(`${serviceDay}:${siteId}`);
-    return Promise.resolve();
   }
 }
 
@@ -25,5 +35,17 @@ export class FixedShelfDraws extends ShelfDrawsReader {
   drawsAt(serviceDay: string, siteId: string): Promise<readonly ShelfDraw[]> {
     this.reads += 1;
     return Promise.resolve(this.draws.get(`${serviceDay}:${siteId}`) ?? []);
+  }
+
+  drawsOn(serviceDay: string): Promise<ReadonlyMap<string, readonly ShelfDraw[]>> {
+    this.reads += 1;
+    const prefix = `${serviceDay}:`;
+    return Promise.resolve(
+      new Map(
+        [...this.draws]
+          .filter(([key]) => key.startsWith(prefix))
+          .map(([key, draws]) => [key.slice(prefix.length), draws]),
+      ),
+    );
   }
 }

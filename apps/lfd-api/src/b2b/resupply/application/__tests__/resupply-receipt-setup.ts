@@ -20,11 +20,13 @@ import {
   Directory,
   InMemoryReceiptReader,
   InMemoryReceipts,
+  InMemoryReceptions,
   Sites,
 } from "./resupply-doubles.js";
 import { InMemorySiteResupplies, InMemorySiteResupplyReader } from "./site-resupply-doubles.js";
 import { InMemoryStockAlerts } from "./stock-alert-doubles.js";
 import { FixedShelfDraws, RecordingShelfStockLock } from "./shelf-stock-doubles.js";
+import { CROISSANT, PAIN_AU_CHOCOLAT, SALMON } from "./resupply-articles.js";
 
 /** Le banc des handlers de la réception (R2) : doubles partagés, une horloge fixe. */
 /** 09:00 à Paris le jour du réassort : « Réceptionner » n'est permis qu'à partir de sa journée. */
@@ -32,30 +34,7 @@ export const AT = new Date("2026-01-02T08:00:00Z");
 export const SITE = "site_village";
 export const OTHER = "site_labo";
 export const DAY = "2026-01-02";
-export const CATALOGUE = new Catalogue([
-  {
-    sku: "CRO",
-    name: "Croissant",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece",
-  },
-  {
-    sku: "PAC",
-    name: "Pain au chocolat",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece",
-  },
-  // Au poids : la quantité compte des grammes (L2b-1).
-  {
-    sku: "SAU",
-    name: "Saumon gravlax",
-    categoryId: "fam_deli",
-    categoryName: "Traiteur",
-    saleUnit: "weight",
-  },
-]);
+export const CATALOGUE = new Catalogue([CROISSANT, PAIN_AU_CHOCOLAT, SALMON]);
 export const AUTHOR = { staffUserId: "staff_lou", name: "Lou Martin", role: "counter" };
 
 /** Un réassort envoyé, tel que la base le rendrait. */
@@ -120,6 +99,7 @@ export function setup() {
       clock,
       uow,
       packed,
+      new InMemoryReceptions(receipts),
     ),
     correctReceived: new CorrectReceivedResupplyLineHandler(receipts, staff, clock, uow, lowering),
     receive: new ReceiveUnorderedReceiptLineHandler(

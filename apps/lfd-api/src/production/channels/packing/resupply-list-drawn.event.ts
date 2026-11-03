@@ -1,26 +1,12 @@
-import type { SaleUnit } from "@lfd/money";
-
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
-import { instantOf, piecesOf, recordOf, saleUnitOf, textOf } from "./payload-fields.js";
+import { instantOf, recordOf, textOf } from "../payload-fields.js";
+import { type ResupplyListLine, resupplyLinesOf } from "../resupply-lines.js";
+
+export type { ResupplyListLine } from "../resupply-lines.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_RESUPPLY_LIST_DRAWN = "production.resupply_list_drawn";
-
-/** Une ligne d'un réassort à coliser : l'article, son nom, la quantité demandée. */
-export interface ResupplyListLine {
-  readonly sku: string;
-  readonly productName: string;
-  /** Des pièces, ou des GRAMMES si `saleUnit = "weight"` — toujours un entier. */
-  readonly quantity: number;
-  /**
-   * L'unité figée sur la ligne au commerce (L2b-3 du plan
-   * `limites-de-commande/jour-meme-sur-stock.md`). Additive : une ligne
-   * écrite avant le champ se relit `piece` — aucun réassort au poids n'a pu
-   * partir au fournil avant elle (garde d'envoi de L2b-1).
-   */
-  readonly saleUnit: SaleUnit;
-}
 
 /** Un réassort à coliser, tel que le fournil l'a figé au plan. */
 export interface ResupplyToPack {
@@ -113,28 +99,6 @@ function resupplyOf(value: unknown): ResupplyToPack | null {
     return null;
   }
   return { resupplyId, siteId, siteLabel, name, lines };
-}
-
-/** Les lignes d'un réassort relues d'un payload, ou `null` hors contrat — partagé avec `ResupplyLaunchedEvent`. */
-export function resupplyLinesOf(value: unknown): readonly ResupplyListLine[] | null {
-  if (!Array.isArray(value) || value.length === 0) {
-    return null;
-  }
-  const lines: ResupplyListLine[] = [];
-  for (const entry of value) {
-    const raw = recordOf(entry);
-    const sku = textOf(raw?.["sku"]);
-    const productName = raw?.["productName"];
-    const quantity = piecesOf(raw?.["quantity"]);
-    // Une unité inconnue rend le fait illisible : relue en pièces, elle ferait
-    // coliser des grammes un par un.
-    const saleUnit = saleUnitOf(raw?.["saleUnit"]);
-    if (sku === null || typeof productName !== "string" || quantity === null || saleUnit === null) {
-      return null;
-    }
-    lines.push({ sku, productName, quantity, saleUnit });
-  }
-  return lines;
 }
 
 /** Le fait `production.resupply_list_drawn` reçu ne respecte pas son contrat. */

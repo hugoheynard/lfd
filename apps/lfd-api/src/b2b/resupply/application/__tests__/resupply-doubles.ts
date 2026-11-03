@@ -10,7 +10,9 @@ import {
 } from "../../domain/resupply-receipt-errors.js";
 import { ResupplyReceiptReader } from "../../domain/resupply-receipt.reader.js";
 import { ResupplyReceiptRepository } from "../../domain/resupply-receipt.repository.js";
+import { ResupplyReceptions } from "../../domain/resupply-receptions.js";
 import { ResupplySites } from "../../domain/resupply-sites.js";
+import type { ResupplyTrace } from "../../domain/resupply-trace.js";
 
 /** L'instantané d'un reçu, tel que la base le rendrait. */
 function snapshotOf(receipt: ResupplyReceipt, version: number): ResupplyReceiptSnapshot {
@@ -45,7 +47,19 @@ export class InMemoryReceipts extends ResupplyReceiptRepository {
     return this.restored((row) => row.siteId === siteId && row.resupplyId === resupplyId);
   }
 
-  save(receipt: ResupplyReceipt): Promise<void> {
+  /** Un geste d'un autre poste, joué juste avant la prochaine écriture ; consommé à l'usage. */
+  beforeNextSave: (() => Promise<unknown>) | null = null;
+
+  async save(receipt: ResupplyReceipt): Promise<void> {
+    const racer = this.beforeNextSave;
+    this.beforeNextSave = null;
+    if (racer !== null) {
+      await racer();
+    }
+    return this.write(receipt);
+  }
+
+  private write(receipt: ResupplyReceipt): Promise<void> {
     if (receipt.version === 0) {
       if (
         receipt.resupplyId !== null &&
@@ -86,9 +100,35 @@ export class InMemoryReceiptReader extends ResupplyReceiptReader {
   }
 }
 
-export class Catalogue extends ResupplyCatalogue {
-  constructor(private readonly known: readonly ResupplyArticle[]) {
+/** La réception d'un réassort, lue sur le même stockage que les reçus. */
+export class InMemoryReceptions extends ResupplyReceptions {
+  constructor(private readonly store: InMemoryReceipts) {
     super();
+  }
+
+  receptionOf(siteId: string, resupplyId: string): Promise<ResupplyTrace | null> {
+    const row = this.store
+      .all()
+      .find((candidate) => candidate.siteId === siteId && candidate.resupplyId === resupplyId);
+    return Promise.resolve(row?.received ?? null);
+  }
+}
+
+export class Catalogue extends ResupplyCatalogue {
+  private known: readonly ResupplyArticle[];
+
+  constructor(known: readonly ResupplyArticle[]) {
+    super();
+    this.known = known;
+  }
+
+  /** L'article retiré du catalogue publié (masqué au référentiel) ; rend le catalogue d'avant. */
+  withdraw(sku: string): () => void {
+    const before = this.known;
+    this.known = before.filter((article) => article.sku !== sku);
+    return () => {
+      this.known = before;
+    };
   }
   articles(): Promise<readonly ResupplyArticle[]> {
     return Promise.resolve(this.known);

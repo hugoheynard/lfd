@@ -9,7 +9,7 @@ const AT = new Date(1_000);
 const DAY = ServiceDay.of("2030-03-12");
 
 describe("SealedDayReading — la journée et ses bacs fermés (K3a)", () => {
-  it("🔴 une journée `legacy` aussi demande au colisage — le fournil ne lit plus ses colonnes (K3c)", async () => {
+  it("une journée `legacy` aussi demande au colisage — le fournil ne lit plus ses colonnes (K3c)", async () => {
     const legacy = closedDay(DAY, AT, ["ord_2"]);
     const packed = new FixedPackedOrders(new Map([["ord_1", { at: AT, by: "x" }]]));
 

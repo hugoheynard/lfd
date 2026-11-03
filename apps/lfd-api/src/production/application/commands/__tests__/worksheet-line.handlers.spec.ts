@@ -138,7 +138,7 @@ describe("MarkWorksheetLineHandler — « rendre la ligne complète »", () => {
     expect(store.writes).toHaveLength(1);
   });
 
-  it("🔴 recocher APRÈS un décocher rend la ligne complète de nouveau", async () => {
+  it("recocher APRÈS un décocher rend la ligne complète de nouveau", async () => {
     // L'écart au plan : avec `mark-<jour>-<sku>-<produced>` seul, le second
     // cocher recalculait l'id de la fournée annulée, et l'idempotence le lisait
     // comme un rejeu — 204, ligne restée vide.

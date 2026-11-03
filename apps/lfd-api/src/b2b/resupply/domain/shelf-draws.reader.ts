@@ -24,4 +24,11 @@ export interface ShelfDraw {
 export abstract class ShelfDrawsReader {
   /** Un total par (article, unité), dans l'ordre de première apparition. */
   abstract drawsAt(serviceDay: string, siteId: string): Promise<readonly ShelfDraw[]>;
+
+  /**
+   * Les mêmes totaux pour TOUS les points de la journée, en une lecture —
+   * la Supervision lisait point par point (audit final, 2026-11-03). Un
+   * point sans prélèvement est absent de la réponse.
+   */
+  abstract drawsOn(serviceDay: string): Promise<ReadonlyMap<string, readonly ShelfDraw[]>>;
 }

@@ -55,11 +55,10 @@ export class AllocateToContainerHandler implements ICommandHandler<
       await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
       const container = sheet.liveContainer(command.containerId);
-      if (container.bin !== null) {
-        const live = await this.desk.liveBins([container.bin.binId]);
-        if (!live.has(container.bin.binId)) {
-          throw new ContainerBinGoneError(container.bin.code);
-        }
+      // Verrouillé jusqu'au COMMIT : une annulation ne se glisse plus entre
+      // la question et l'écriture (audit final du réassort, 2026-11-03).
+      if (container.bin !== null && !(await this.desk.holdLiveBin(container.bin.binId))) {
+        throw new ContainerBinGoneError(container.bin.code);
       }
       const line = sheet.lineToTouch(command.sku);
       const pieces = sheet.allocate(command.containerId, command.sku, command.quantity, {

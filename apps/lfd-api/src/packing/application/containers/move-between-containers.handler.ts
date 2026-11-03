@@ -54,11 +54,10 @@ export class MoveBetweenContainersHandler implements ICommandHandler<
         command.quantity,
       );
       const target = sheet.liveContainer(command.toContainerId);
-      if (target.bin !== null) {
-        const live = await this.desk.liveBins([target.bin.binId]);
-        if (!live.has(target.bin.binId)) {
-          throw new ContainerBinGoneError(target.bin.code);
-        }
+      // Verrouillé jusqu'au COMMIT : une annulation ne se glisse plus entre
+      // la question et l'écriture (audit final du réassort, 2026-11-03).
+      if (target.bin !== null && !(await this.desk.holdLiveBin(target.bin.binId))) {
+        throw new ContainerBinGoneError(target.bin.code);
       }
       await this.sheets.save(sheet);
       const order = citedOrderOf(sheet);

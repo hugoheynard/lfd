@@ -230,6 +230,24 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
       context.allocate.execute(new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 1, STAFF)),
     ).rejects.toThrow(ContainerBinGoneError);
   });
+
+  /**
+   * Régression (audit final du réassort, 2026-11-03) : le bac était dit
+   * vivant par une lecture sans verrou, et une annulation pouvait passer
+   * entre la question et la mise au bac.
+   */
+  it("tient le bac chez la livraison avant d'y mettre des pièces", async () => {
+    const context = setup();
+    const id = await context.open.execute(
+      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF),
+    );
+
+    await context.allocate.execute(
+      new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 1, STAFF),
+    );
+
+    expect(context.desk.heldBins).toEqual(["bin_1"]);
+  });
 });
 
 describe("VoidPackingContainerHandler — un bac s'annule d'abord chez la livraison", () => {

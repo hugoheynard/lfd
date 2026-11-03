@@ -21,4 +21,21 @@ describe("bakehouseResupplyDraftLineSchema", () => {
         .success,
     ).toBe(false);
   });
+
+  /**
+   * Convention unique (audit final, 2026-11-03) : la quantité n'est validée
+   * qu'en FORME par le contrat ; le domaine refuse un zéro ou une fraction
+   * en nommant le cas, comme pour la demande du comptoir et la réception.
+   */
+  it("laisse au domaine le refus d'une quantité nulle ou fractionnaire, et refuse ce qui n'est pas un nombre", () => {
+    expect(bakehouseResupplyDraftLineSchema.safeParse({ sku: "CRO", quantity: 0 }).success).toBe(
+      true,
+    );
+    expect(bakehouseResupplyDraftLineSchema.safeParse({ sku: "CRO", quantity: 1.5 }).success).toBe(
+      true,
+    );
+    expect(bakehouseResupplyDraftLineSchema.safeParse({ sku: "CRO", quantity: "4" }).success).toBe(
+      false,
+    );
+  });
 });

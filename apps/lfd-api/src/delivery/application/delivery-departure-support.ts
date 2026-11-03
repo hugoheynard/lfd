@@ -59,28 +59,31 @@ export interface DepartureDeps {
  * pas leur handler : chacune charge la tournée à sa façon — avec ou sans mur
  * — dans SA transaction, et vérifie la version.
  *
- * 00. le plan de la journée est tenu (`ArrestedPlanHold`) et un plan rouvert
- *     refuse — avant toute écriture (2026-11-02) ;
- * 0. le livreur affecté doit ENCORE tenir les deux droits — conduire et les
- *    gestes à la porte (Hugo, 2026-10-07, audit § 3.3) : affecté avec les
- *    deux, puis privé de l'un, il partait et prenait 403 au premier arrêt.
- *    Une tournée sans livreur part comme avant ;
- * 1. les lignes de chargement sont verrouillées APRÈS la tournée ;
- * 2. la tournée refuse ou part (`depart`) ;
- * 3. l'exécution fige, pour chaque arrêt, la feuille du commerce, son rang de
- *    passage et son point GPS du carnet (MT-D5 v2), lus à cet instant — et
- *    la décision réglée d'avance à la porte, résolue avec le réglage global
- *    (B3 bis) : une tournée partie ne change plus de règle ;
- * 4. une commande retenue au contrôle qualité arrête tout, en nommant l'arrêt
- *    (`a-la-porte.md`, BQ) — lue au retrait, dans la transaction ;
- * 4 bis. chaque **transfert interne** de la tournée part avec elle, et fige
- *    son manifeste (plan du transfert interne, §5, lot T1) — dans la même
- *    transaction. Ses commandes ne sont ni dans les feuilles, ni dans les
- *    retenues, ni dans le fait de départ : ce sont des retraits ;
- * 5. le fait DURABLE `delivery.round_departed` est écrit dans la boîte
- *    d'envoi, dans la même transaction (`plan-depart-durable.md`, DD1) : ici
- *    et pas dans les handlers, pour qu'aucune des deux portes ne l'oublie. Le
- *    retrait (la garde) et le commerce (le courriel) s'y abonnent.
+ * Les étapes, dans l'ordre où elles s'exécutent :
+ *
+ * - **tenir le plan** — le plan de la journée est tenu (`ArrestedPlanHold`)
+ *   et un plan rouvert refuse, avant toute écriture (2026-11-02) ;
+ * - **revérifier le livreur** — le livreur affecté doit ENCORE tenir les deux
+ *   droits, conduire et les gestes à la porte (Hugo, 2026-10-07, audit § 3.3) :
+ *   affecté avec les deux, puis privé de l'un, il partait et prenait 403 au
+ *   premier arrêt. Une tournée sans livreur part comme avant ;
+ * - **verrouiller le chargement** — les lignes de chargement APRÈS la tournée ;
+ * - **partir** — la tournée refuse ou part (`depart`) ;
+ * - **figer les arrêts** — pour chaque arrêt, la feuille du commerce, son rang
+ *   de passage et son point GPS du carnet (MT-D5 v2), lus à cet instant — et
+ *   la décision réglée d'avance à la porte, résolue avec le réglage global
+ *   (B3 bis) : une tournée partie ne change plus de règle ;
+ * - **refuser une retenue** — une commande retenue au contrôle qualité arrête
+ *   tout, en nommant l'arrêt (`a-la-porte.md`, BQ), lue au retrait, dans la
+ *   transaction ;
+ * - **faire partir les transferts** — chaque transfert interne de la tournée
+ *   part avec elle et fige son manifeste (plan du transfert interne, §5, lot
+ *   T1), dans la même transaction. Ses commandes ne sont ni dans les feuilles,
+ *   ni dans les retenues, ni dans le fait de départ : ce sont des retraits ;
+ * - **écrire le fait durable** — `delivery.round_departed` dans la boîte
+ *   d'envoi, dans la même transaction (`plan-depart-durable.md`, DD1) : ici et
+ *   pas dans les handlers, pour qu'aucune des deux portes ne l'oublie. Le
+ *   retrait (la garde) et le commerce (le courriel) s'y abonnent.
  *
  * À appeler DANS l'unité de travail, la tournée déjà chargée et verrouillée.
  * Rend le fait de JOURNAL du départ : c'est au handler de le publier, dans sa

@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import { localToInstant } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -42,26 +46,10 @@ function at(time: string, day = TODAY): Date {
 }
 
 function order(orderId: string): ProducibleOrder {
-  return {
-    orderId,
+  return producibleOrder(orderId, {
     reference: orderId,
-    customerLabel: "Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [
-      {
-        sku: "VIE-001",
-        productName: "Croissant",
-        quantity: 4,
-        saleUnit: "piece",
-        madeToOrder: null,
-      },
-    ],
-  };
+    lines: [orderLine("VIE-001", 4, "Croissant")],
+  });
 }
 
 /** Le fournil doublé : les journées arrêtées et la trace des tentatives, ensemble. */

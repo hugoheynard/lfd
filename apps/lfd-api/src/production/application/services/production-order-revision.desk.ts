@@ -11,6 +11,7 @@ import {
   type OrderRevisionOutcome,
   type RevisedOrderLine,
 } from "../../channels/commerce/order-revision.desk.js";
+import { RevisedOrderInscribedElsewhereError } from "../../domain/errors/order-revision-errors.js";
 import { OrderQuantitiesRaisedEvent } from "../../domain/events/order-quantities-raised.events.js";
 import { OrderRevisionNoticeLedger } from "../../domain/ports/order-revision-notice.ledger.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
@@ -31,8 +32,9 @@ interface InscribedRevision {
  * lecture de l'inscription, PUIS les notes : la clôture prend le même verrou
  * avant d'inscrire, donc elle voit la note, ou la note voit son inscription.
  *
- * Inscrite, sous `staff_quantities` (plan A2, § 7, B3) — toujours sous le
- * verrou de la journée, seule : la journée est rechargée, les coches
+ * Inscrite, sous `staff_quantities` (plan A2, § 7, B3), et au jour même
+ * qu'on révise (sinon `RevisedOrderInscribedElsewhereError`) — toujours sous
+ * le verrou de la journée, seule : la journée est rechargée, les coches
  * héritées matérialisées et écrites en fournées (le chemin du retirage), le
  * dû de la commande révisé et le compte refait sans baisser. Une hausse
  * publie `production.order_quantities_raised`, durable et journalisé.
@@ -71,11 +73,15 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
       for (const day of ordered) {
         await this.lock.lock(day);
       }
-      if ((await this.inscriptions.inscribedDayOf(orderId)) !== null) {
+      const inscribedDay = await this.inscriptions.inscribedDayOf(orderId);
+      if (inscribedDay !== null) {
         const [only] = ordered;
         // Une révision après l'arrêt ne change pas de jour : deux journées, c'est « inscrite ».
         if (allowance !== "staff_quantities" || only === undefined || ordered.length > 1) {
           return "inscribed";
+        }
+        if (only.value !== inscribedDay) {
+          throw new RevisedOrderInscribedElsewhereError(orderId, only.value, inscribedDay);
         }
         return this.reviseInscribed(only, { orderId, revision, lines });
       }

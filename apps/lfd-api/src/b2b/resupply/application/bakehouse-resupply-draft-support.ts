@@ -3,7 +3,7 @@ import type { SavedBakehouseResupplyDraftResponse } from "@lfd/contracts";
 import type { BakehouseResupplyDraft } from "../domain/bakehouse-resupply-draft.js";
 import { BakehouseResupplyDraftNotFoundError } from "../domain/bakehouse-resupply-draft-errors.js";
 import type { BakehouseResupplyDraftRepository } from "../domain/bakehouse-resupply-draft.repository.js";
-import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
 import type { ResupplySites } from "../domain/resupply-sites.js";
 
 /** Gardes PARTAGÉES par les cas des brouillons du fournil. */

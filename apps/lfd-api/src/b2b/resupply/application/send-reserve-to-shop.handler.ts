@@ -5,7 +5,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import { ReserveShopRelease } from "../../../packing/channels/commerce/index.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
-import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
 import { SiteResupply } from "../domain/site-resupply.js";
@@ -32,10 +32,18 @@ import type { ResupplyTrace } from "../domain/resupply-trace.js";
  * Les libellés sont lus au catalogue publié, comme pour un réassort du
  * fournil, et lus AVANT l'unité de travail, comme l'auteur et le nom du point.
  * La clé de l'écran est l'identifiant du réassort ({@link sendOnceUnderKey}) :
- * déjà écrite à ce point par une sortie de réserve, rien ne se refait — y
+ * relue AVANT ces lectures, et déjà écrite à ce point par une sortie de
+ * réserve, rien ne se refait ni ne se relit — y
  * compris quand deux envois de la même clé se croisent. Prise par un autre
  * point ou un autre geste, elle est refusée en le nommant (C-B, 2026-11-02).
  */
+/** La sortie prête à écrire : tout ce qui se lit est lu. */
+interface PreparedRelease {
+  readonly lines: readonly SiteResupplyLine[];
+  readonly trace: ResupplyTrace;
+  readonly siteLabel: string | null;
+}
+
 @CommandHandler(SendReserveToShopCommand)
 export class SendReserveToShopHandler implements ICommandHandler<SendReserveToShopCommand, string> {
   constructor(
@@ -50,31 +58,34 @@ export class SendReserveToShopHandler implements ICommandHandler<SendReserveToSh
   ) {}
 
   async execute(command: SendReserveToShopCommand): Promise<string> {
-    if (!(await this.sites.exists(command.siteId))) {
-      throw new ResupplySiteUnknownError(command.siteId);
-    }
-    const trace = await traceOf(this.staff, this.clock, command.staffUserId);
-    const lines: SiteResupplyLine[] = [];
-    for (const requested of command.lines) {
-      lines.push(await catalogueLine(this.catalogue, requested));
-    }
-    const siteLabel = (await this.labels.labelsOf([command.siteId])).get(command.siteId) ?? null;
     await sendOnceUnderKey(
       this.uow,
       this.resupplies,
       { key: command.key, siteId: command.siteId, origin: "reserve" },
-      () => this.send(command, lines, trace, siteLabel),
+      {
+        prepare: () => this.prepare(command),
+        write: (prepared) => this.send(command, prepared),
+      },
     );
     return command.key;
   }
 
+  /** Tout ce qui se lit HORS de la transaction : le point, l'auteur, les libellés. */
+  private async prepare(command: SendReserveToShopCommand): Promise<PreparedRelease> {
+    if (!(await this.sites.exists(command.siteId))) {
+      throw new ResupplySiteUnknownError(command.siteId);
+    }
+    const trace = await traceOf(this.staff, this.clock, command.staffUserId);
+    const lines = await Promise.all(
+      command.lines.map((requested) => catalogueLine(this.catalogue, requested)),
+    );
+    const siteLabel = (await this.labels.labelsOf([command.siteId])).get(command.siteId) ?? null;
+    return { lines, trace, siteLabel };
+  }
+
   /** Le réassort, puis la sortie de réserve — dans l'unité de travail de la clé. */
-  private async send(
-    command: SendReserveToShopCommand,
-    lines: readonly SiteResupplyLine[],
-    trace: ResupplyTrace,
-    siteLabel: string | null,
-  ): Promise<void> {
+  private async send(command: SendReserveToShopCommand, prepared: PreparedRelease): Promise<void> {
+    const { lines, trace, siteLabel } = prepared;
     const resupply = SiteResupply.sentFromReserve({
       id: command.key,
       siteId: command.siteId,

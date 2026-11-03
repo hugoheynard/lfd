@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import type { CatalogFamilyView } from "@lfd/contracts";
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { instantToLocal } from "@lfd/contracts";
@@ -39,26 +43,7 @@ const RETAKEN = new Date(NOW.getTime() - 60 * 60 * 1000);
 const VIENNOISERIES: CatalogFamilyView = { id: "fam-vien", name: "Viennoiseries", position: 0 };
 
 function order(orderId: string): ProducibleOrder {
-  return {
-    orderId,
-    reference: `ORD-${orderId}`,
-    customerLabel: "Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [
-      {
-        sku: "VIE-001",
-        productName: "Croissant",
-        quantity: 12,
-        saleUnit: "piece",
-        madeToOrder: null,
-      },
-    ],
-  };
+  return producibleOrder(orderId, { lines: [orderLine("VIE-001", 12, "Croissant")] });
 }
 
 class Days extends ProductionDayRepository {

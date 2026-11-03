@@ -27,7 +27,8 @@ export const RECORD_LAUNCH_ON_RESUPPLY_LAUNCHED = "b2b.resupply-launch-on-resupp
  *
  * Abonné DURABLE (`lint:durable-cross-block`). Rejoué, il ne pose rien de
  * plus (`recordLaunch` rend `false`). Un réassort introuvable sous son point,
- * ou qui n'est plus un « au plus tôt » envoyé, est écarté et journalisé :
+ * ou qui n'est plus un « au plus tôt » envoyé, est écarté et journalisé (le
+ * rejeu d'un lancement déjà affiché, lui, est silencieux) :
  * lever ferait relivrer le fait jusqu'à épuiser ses dix essais
  * (`MAX_DELIVERY_ATTEMPTS`, vérifié le 2026-11-02), puis le laisserait en
  * échec, pour un affichage sans objet. Un conflit de version, lui, lève :
@@ -54,8 +55,17 @@ export class RecordLaunchOnResupplyLaunched implements DurableSubscriber {
       );
       return;
     }
+    const replayed = resupply.launched !== null;
     if (resupply.recordLaunch({ at: fact.launchedAt, byName: fact.launchedByName })) {
       await this.resupplies.save(resupply);
+    } else if (!replayed) {
+      // Annulé, sortie de réserve, « pour demain » : la promesse « écarté ET
+      // journalisé » ne valait que pour l'introuvable (audit final, 2026-11-03).
+      this.logger.warn(
+        `Réassort ${resupplyId} lancé au fournil pour le point ${siteId} : il n'est pas un ` +
+          `« au plus tôt » envoyé (état ${resupply.status}, origine ${resupply.origin}), ` +
+          `« lancé » n'est pas affiché.`,
+      );
     }
   }
 }

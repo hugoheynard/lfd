@@ -6,10 +6,8 @@ import {
 } from "../../../../packing/channels/commerce/index.js";
 import { ServiceDay } from "../../../../production/channels/commerce/index.js";
 import { FixedClosedPlans } from "../../../orders/application/commands/__tests__/plan-doubles.js";
-import {
-  ResupplyArticleUnknownError,
-  ResupplySiteUnknownError,
-} from "../../domain/resupply-receipt-errors.js";
+import { ResupplyArticleUnknownError } from "../../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../../domain/resupply-site-errors.js";
 import { ResupplySendingKeyTakenError } from "../../domain/resupply-sending-key-errors.js";
 import { EmptyResupplyError } from "../../domain/site-resupply-errors.js";
 import { ReserveNotTodayError } from "../../domain/site-resupply-gate-errors.js";
@@ -17,7 +15,7 @@ import type { SiteResupply } from "../../domain/site-resupply.js";
 import { GetResupplyProductionDayHandler } from "../get-resupply-production-day.handler.js";
 import { GetResupplyProductionDayQuery } from "../get-resupply-production-day.query.js";
 import { ListResuppliesToProduceHandler } from "../list-resupplies-to-produce.handler.js";
-import { ProductionDayResupplies } from "../production-day-resupplies.js";
+import { ProductionDayResupplies } from "../../infrastructure/production-day-resupplies.js";
 import { SendReserveToShopCommand } from "../send-reserve-to-shop.command.js";
 import { SendReserveToShopHandler } from "../send-reserve-to-shop.handler.js";
 import { CRO_24, placed } from "./resupply-receipt-setup.js";
@@ -28,6 +26,7 @@ import {
   InMemorySiteResupplyReader,
   SiteLabels,
 } from "./site-resupply-doubles.js";
+import { BAGUETTE, CROISSANT } from "./resupply-articles.js";
 
 /**
  * « Envoyer en boutique » depuis la réserve (A1.4). L'horloge
@@ -37,22 +36,7 @@ const NOW = new Date("2026-01-02T08:00:00Z");
 const TODAY = "2026-01-02";
 const VILLAGE = "site_village";
 const KEY = "panel_key_1";
-const CATALOGUE = new Catalogue([
-  {
-    sku: "CRO",
-    name: "Croissant",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece",
-  },
-  {
-    sku: "BAG",
-    name: "Baguette",
-    categoryId: "fam_bread",
-    categoryName: "Pains",
-    saleUnit: "piece",
-  },
-]);
+const CATALOGUE = new Catalogue([CROISSANT, BAGUETTE]);
 
 /** Le colisage doublé : retient chaque sortie, et combien de réassorts étaient écrits à cet instant. */
 class RecordingRelease extends ReserveShopRelease {
@@ -78,12 +62,14 @@ class RecordingRelease extends ReserveShopRelease {
 
 /**
  * Deux envois de la même clé qui se croisent : chacun a lu « pas encore
- * écrit » dans SA transaction, avant que l'autre ne valide — les deux
- * premières lectures ne voient rien, la clé primaire refuse le second. La
- * relecture hors transaction, elle, voit ce qui a été validé.
+ * écrit », avant la transaction puis dans la sienne, avant que l'autre ne
+ * valide — les quatre premières lectures ne voient rien (deux par envoi
+ * depuis que la clé se relit aussi avant le catalogue, 2026-11-03), la clé
+ * primaire refuse le second. La relecture hors transaction, elle, voit ce
+ * qui a été validé.
  */
 class RacingSiteResupplies extends InMemorySiteResupplies {
-  private blindReads = 2;
+  private blindReads = 4;
 
   override load(siteId: string, resupplyId: string): Promise<SiteResupply | null> {
     if (this.blindReads > 0) {
@@ -168,6 +154,25 @@ describe("SendReserveToShopHandler — envoyer en boutique depuis la réserve", 
 
     await send([{ sku: "CRO", quantity: 4 }]);
     await send([{ sku: "CRO", quantity: 4 }]);
+
+    expect(store.saves).toBe(1);
+    expect(release.sent).toHaveLength(1);
+  });
+
+  /**
+   * Régression (audit final, 2026-11-03) : le catalogue était lu AVANT la
+   * clé ; un article retiré entre les deux clics faisait refuser (404) un
+   * envoi déjà parti.
+   */
+  it("un second envoi de la même clé, l'article retiré entre-temps, rend la clé sans relire le catalogue", async () => {
+    const { store, release, send } = setup();
+    await send([{ sku: "CRO", quantity: 4 }]);
+    const restore = CATALOGUE.withdraw("CRO");
+    try {
+      await expect(send([{ sku: "CRO", quantity: 4 }])).resolves.toBe(KEY);
+    } finally {
+      restore();
+    }
 
     expect(store.saves).toBe(1);
     expect(release.sent).toHaveLength(1);

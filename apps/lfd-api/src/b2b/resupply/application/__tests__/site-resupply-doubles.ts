@@ -84,7 +84,22 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
     return Promise.resolve(row === undefined ? null : SiteResupply.restore(row));
   }
 
-  save(resupply: SiteResupply): Promise<void> {
+  /**
+   * Un geste d'un autre poste, joué juste avant la prochaine écriture — la
+   * course de deux clics, sans base. Consommé à son premier usage.
+   */
+  beforeNextSave: (() => Promise<unknown>) | null = null;
+
+  async save(resupply: SiteResupply): Promise<void> {
+    const racer = this.beforeNextSave;
+    this.beforeNextSave = null;
+    if (racer !== null) {
+      await racer();
+    }
+    return this.write(resupply);
+  }
+
+  private write(resupply: SiteResupply): Promise<void> {
     if (resupply.version === 0) {
       const open = this.openRow(resupply.siteId, resupply.target, resupply.serviceDay);
       if (resupply.placed === null && open !== undefined) {

@@ -105,6 +105,21 @@ export abstract class BinDesk {
   abstract liveBins(binIds: readonly string[]): Promise<ReadonlySet<string>>;
 
   /**
+   * **Ce bac est-il vivant — et qu'il le reste jusqu'au `COMMIT` de
+   * l'appelant** (audit final du réassort, 2026-11-03). Le bac est VERROUILLÉ
+   * dans la transaction de l'appelant, dans l'ordre des gestes de la livraison
+   * (la tournée en partage, puis le bac), puis relu : une annulation
+   * concurrente est passée et se voit, ou attend que le geste soit validé.
+   * `liveBins` ne verrouille rien — c'est une lecture, pour l'affichage.
+   *
+   * Pour mettre des pièces dans un contenant à bac : vérifier sans verrou
+   * laissait une annulation se glisser entre la question et l'écriture.
+   *
+   * @returns `false` si le bac n'existe pas ou est annulé.
+   */
+  abstract holdLiveBin(binId: string): Promise<boolean>;
+
+  /**
    * Le froid de ces commandes (2026-10-07, audit livraisons Q3) : quels SKU
    * demandent le froid, et lesquels de leurs bacs sont isothermes. Une
    * LECTURE, pour AVERTIR au poste — jamais refuser « Déclarer prête ».

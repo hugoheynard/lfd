@@ -7,7 +7,10 @@ import { Clock } from "../../../platform/time/clock.js";
 import { BinDesk } from "../../channels/delivery/index.js";
 import type { PackingSheet, SheetMark } from "../../domain/entities/packing-sheet.js";
 import type { PackingStock } from "../../domain/entities/packing-stock.js";
-import { EmptyProposalError } from "../../domain/errors/packing-container-errors.js";
+import {
+  EmptyProposalError,
+  ProposalOutOfStepError,
+} from "../../domain/errors/packing-container-errors.js";
 import {
   citeContainer,
   PackingContainerMovedEvent,
@@ -44,6 +47,7 @@ import { holdArrestedPlan } from "../arrested-plan-support.js";
  * @throws {ContainersCountedError} @throws {ProposalOverContainersError}
  * @throws {EmptyProposalError} @throws {ContainerCeilingReachedError}
  *   et les refus de la livraison (commande hors livraison, tournée partie…).
+ * @throws {ProposalOutOfStepError} un défaut : la répartition sort de ce qui a été préparé.
  */
 @CommandHandler(ApplyPackingProposalCommand)
 export class ApplyPackingProposalHandler implements ICommandHandler<
@@ -149,11 +153,18 @@ export class ApplyPackingProposalHandler implements ICommandHandler<
     mark: SheetMark,
   ): Promise<void> {
     for (const [index, proposed] of bins.entries()) {
-      const containerId = containerIds[index] ?? "";
+      const containerId = containerIds[index];
+      if (containerId === undefined) {
+        throw new ProposalOutOfStepError(sheet.reference, `le bac n° ${String(index + 1)}`);
+      }
       for (const { sku, quantity } of proposed.lines) {
+        const stock = stocks.get(sku);
+        if (stock === undefined) {
+          throw new ProposalOutOfStepError(sheet.reference, `l'article ${sku}`);
+        }
         const line = sheet.lineToTouch(sku);
         const pieces = sheet.allocate(containerId, sku, quantity, mark);
-        stocks.get(sku)?.take(pieces, line.productName, line.saleUnit);
+        stock.take(pieces, line.productName, line.saleUnit);
         await this.events.publishTraced(
           new PackingContainerMovedEvent(
             "filled",

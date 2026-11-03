@@ -17,7 +17,7 @@ flowchart LR
 
 ## 1. L'agrégat `SiteResupply`
 
-`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:64` — un point, une
+`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:71` — un point, une
 visée (`tomorrow` | `asap`), une **journée déduite** de l'instant du geste à
 l'heure de Paris (demain ou aujourd'hui), jamais saisie ; des lignes (SKU,
 libellé figé du catalogue publié, **unité** `piece` | `weight`, quantité
@@ -26,19 +26,26 @@ origine, l'auteur et l'instant de chaque geste. Aucun champ monétaire.
 
 | Méthode                       | Ligne    | Règle                                                                                                                                  |
 | ----------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `draft`                       | 85       | la demande en cours du comptoir                                                                                                        |
-| `sentByBakehouse`             | 93       | créé et envoyé d'un geste, jamais de brouillon ; un article donné deux fois s'additionne                                               |
-| `sentFromReserve`             | 111      | « au plus tôt », ne se lance ni ne s'annule ; une autre journée que celle du geste refusée (`resupply.order.reserve_not_today`)        |
-| `rename`                      | 164      | la demande en cours seulement ; envoyée, elle ne se renomme plus                                                                       |
-| `addLine`                     | 230      | un article déjà présent voit sa quantité **s'additionner** ; deux unités pour un même article refusées (`resupply.sale_unit.mismatch`) |
-| `correctLine`, `withdrawLine` | 236, 242 | entier ≥ 1 ; la demande peut rester vide                                                                                               |
-| `assertSeen`                  | 251      | verrou de version : `resupply.order.changed_meanwhile` (409)                                                                           |
-| `isPlacementOf`               | 262      | le double clic sur « Envoyer » (D5) : envoyé en `version + 1`, il est parti tel que le poste l'a vu                                    |
-| `place`                       | 271      | vide refusé (400) ; « pour demain » refusé après l'heure du réassort ou sur un plan arrêté ; journée passée refusée                    |
-| `assertReceivable`            | 279      | réceptionner : une commande envoyée seulement (un sans-commande n'a rien à réceptionner)                                               |
-| `cancel`                      | 287      | une fois, jamais une suppression ; refus ci-dessous                                                                                    |
+| `draft`                       | 90       | la demande en cours du comptoir                                                                                                        |
+| `sentByBakehouse`             | 98       | créé et envoyé d'un geste, jamais de brouillon ; un article donné deux fois s'additionne                                               |
+| `sentFromReserve`             | 116      | « au plus tôt », ne se lance ni ne s'annule ; une autre journée que celle du geste refusée (`resupply.order.reserve_not_today`)        |
+| `rename`                      | 174      | la demande en cours seulement ; envoyée, elle ne se renomme plus                                                                       |
+| `addLine`                     | 240      | un article déjà présent voit sa quantité **s'additionner** ; deux unités pour un même article refusées (`resupply.sale_unit.mismatch`) |
+| `correctLine`, `withdrawLine` | 246, 252 | entier ≥ 1 ; la demande peut rester vide                                                                                               |
+| `assertSeen`                  | 258      | verrou de version : `resupply.order.changed_meanwhile` (409)                                                                           |
+| `isPlacementOf`               | 265      | le double clic sur « Envoyer » (D5) : envoyé en `version + 1`, il est parti tel que le poste l'a vu                                    |
+| `place`                       | 270      | vide refusé (400) ; « pour demain » refusé après l'heure du réassort ou sur un plan arrêté ; journée passée refusée                    |
+| `assertReceivable`            | 278      | réceptionner : une commande envoyée seulement (un sans-commande n'a rien à réceptionner)                                               |
+| `cancel`                      | 283      | une fois, jamais une suppression ; refus ci-dessous                                                                                    |
 
-Lignes relues le 2026-11-02, après l'audit du réassort.
+Lignes relues le 2026-11-03, après l'audit final du réassort. Depuis ce
+jour : `addLine` refuse le 201ᵉ article (`resupply.order.too_many_lines`,
+borne `SITE_RESUPPLY_MAX_LINES` = 200, celle du brouillon du fournil) ;
+`place`, `cancel` et `markMounted` reçoivent ce que l'appelant a lu sous
+verrou en objet NOMMÉ (`PlacementCheck`, `CancellationCheck`, `MountCheck`,
+`apps/lfd-api/src/b2b/resupply/domain/site-resupply-checks.ts`), plus en booléens positionnels ; `restore`
+(l. 134) refuse un brouillon qui porterait une annulation, une arrivée, un
+lancement ou un départ (`resupply.order.impossible_state`, 500).
 
 `resupplyNameOf` (`domain/resupply-name.ts:13`) : rogné, blancs intérieurs
 ramenés à un espace, vide → `null`, plus de 60 caractères refusé (400),
@@ -97,15 +104,15 @@ base.
 **Routes** — `admin/site-resupplies/sites` (`http/admin-site-resupplies.controller.ts`),
 `handover_counter` :
 
-| Route                                          | Geste                                                                                                            |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `GET :siteId`                                  | réassorts envoyés d'aujourd'hui et demain, demandes en cours, jusqu'à quand « pour demain » passe, noms employés |
-| `POST :siteId/drafts/:target/lines`            | ajouter                                                                                                          |
-| `PUT :siteId/drafts/:target/name`              | nommer (ouvre la demande au besoin ; sans version, le dernier nom l'emporte)                                     |
-| `PATCH :siteId/:resupplyId/lines/:sku`         | corriger                                                                                                         |
-| `POST :siteId/:resupplyId/lines/:sku/withdraw` | retirer                                                                                                          |
-| `POST :siteId/:resupplyId/send`                | envoyer                                                                                                          |
-| `POST :siteId/:resupplyId/cancel`              | annuler                                                                                                          |
+| Route                                          | Geste                                                                                                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET :siteId`                                  | réassorts envoyés d'aujourd'hui et demain, demandes en cours, jusqu'à quand « pour demain » passe, noms employés                            |
+| `POST :siteId/drafts/:target/lines`            | ajouter                                                                                                                                     |
+| `PUT :siteId/drafts/:target/name`              | nommer (ouvre la demande au besoin ; sans version, le dernier nom l'emporte — reposé sur la demande relue si un ajout l'a croisé, 3 essais) |
+| `PATCH :siteId/:resupplyId/lines/:sku`         | corriger                                                                                                                                    |
+| `POST :siteId/:resupplyId/lines/:sku/withdraw` | retirer                                                                                                                                     |
+| `POST :siteId/:resupplyId/send`                | envoyer                                                                                                                                     |
+| `POST :siteId/:resupplyId/cancel`              | annuler                                                                                                                                     |
 
 **L'écran** — Comptoir › Réassort (`/comptoir/reassort`,
 `apps/lfd-backoffice-frontend/src/app/comptoir/reassort-boutique-page/`),
@@ -140,7 +147,7 @@ jamais. Le réassort naît `origin = bakehouse`, créé et envoyé d'un geste
 (CHECK `site_resupply_bakehouse_placed`), avec les règles du comptoir. Le
 chemin d'envoi est un seul, partagé par l'envoi direct et l'envoi d'un
 brouillon : `prepareBakehouseResupply` / `writeBakehouseResupply`
-(`application/bakehouse-resupply-sending.ts:52`, `:72`).
+(`application/bakehouse-resupply-sending.ts:51`, `:71`).
 
 **Les brouillons** (Hugo, 2026-10-28 : « un enregistrer comme brouillon »,
 retrouvé depuis n'importe quel poste) vivent dans leur propre table,
@@ -157,6 +164,10 @@ si et seulement si `sent`. Pas de suppression : « Supprimer » le passe
 l'enregistrement ; un article dont l'unité a changé aussi
 (`resupply.sale_unit.changed`). Envoyer un brouillon reçoit le contenu
 entier de l'écran et la version lue ; un refus laisse le brouillon `open`.
+**Un second « Envoyer » sur la version déjà envoyée rend l'identifiant du
+réassort créé** (201, rien d'écrit — décision E2 du 2026-11-03,
+`BakehouseResupplyDraft.sentAfter`) ; deux clics qui se croisent : le second
+bute sur la version, et le brouillon relu donne le réassort du premier.
 **Un brouillon ne change pas de point** (D3, 2026-11-02) : son point est figé
 à l'ouverture, et l'enregistrer ou l'envoyer vers un autre est refusé
 (`resupply.bakehouse_draft.site_frozen`, 409) ; la carte grise le choix du
@@ -179,10 +190,13 @@ et la première création d'un brouillon en font leur identifiant : deux clics,
 ou un renvoi après une réponse perdue, rendent le même réassort ou le même
 brouillon. Une clé déjà prise par un autre point, ou par un autre geste, est
 refusée en 409 (`resupply.sending_key.taken`,
-`resupply.bakehouse_draft.key_taken`) — jamais rendue
+`resupply.bakehouse_draft.key_taken`) — jamais rendue. La clé se relit
+AVANT le point et le catalogue (2026-11-03) : un rejeu après le retrait d'un
+article rend la clé au lieu d'un 404
 (`apps/lfd-api/src/b2b/resupply/application/resupply-sending-key.ts`, partagé
-avec la réserve). L'heure du
-réassort se lit sous le verrou de la journée, à l'écriture.
+avec la réserve). La journée,
+puis l'heure du réassort, s'établissent sous le verrou de la journée, à
+l'écriture.
 
 **Les écrans** — Prod manager › Réassorts (`/prod-manager/reassorts`) liste
 les réassorts demandés, les brouillons ouverts au-dessus (« Reprendre »,

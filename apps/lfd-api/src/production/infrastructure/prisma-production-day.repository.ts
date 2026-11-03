@@ -58,9 +58,10 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
    * Un compte à produire enregistré sans ses commandes décrirait une journée que
    * personne ne pourrait relire ; d'où la transaction, et non trois écritures.
    *
-   * 🔴 Elle prend d'abord le verrou de la journée (verrou des fournées) — la
-   * même requête que `PrismaProductionDayLock`, écrite ici parce qu'elle doit
-   * viser `tx`. Ce verrou-ci ne protège QUE l'écriture : il ne rend pas juste
+   * 🔴 Elle prend d'abord le verrou de LIGNE de la journée (D4 des fournées)
+   * — la SECONDE requête de `PrismaProductionDayLock`, pas le verrou
+   * consultatif ; écrite ici parce qu'elle doit viser `tx`. Ce verrou-ci ne
+   * protège QUE l'écriture : il ne rend pas juste
    * un agrégat chargé avant lui. Les appelants qui décident sur la journée
    * (clôture, retirage) prennent `ProductionDayLock` dans leur unité de
    * travail PUIS la rechargent (vérifié le 2026-10-06).

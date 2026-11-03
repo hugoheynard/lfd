@@ -85,8 +85,18 @@ export class TransferAttachment {
    * ne bouge (le fournil a refusé la réouverture si une tournée était partie).
    * Le transfert reste, même vide : un nouvel arrêt y rangera de nouveau.
    * Rend le nombre de réassorts sortis.
+   *
+   * Sous le verrou des transferts de la journée, comme l'attache (audit final
+   * du réassort, 2026-11-03) : sans lui, un lancement « au plus tôt » qui
+   * rangeait en même temps lisait le transfert avant la sortie et l'écrivait
+   * après — la version de l'agrégat le refusait, mais au prix d'un échec de
+   * l'un des deux abonnés.
    */
-  async detachResupplies(resupplyIds: readonly string[]): Promise<number> {
+  async detachResupplies(serviceDay: string, resupplyIds: readonly string[]): Promise<number> {
+    if (resupplyIds.length === 0) {
+      return 0;
+    }
+    await this.dayLock.hold([serviceDay]);
     let detached = 0;
     for (const resupplyId of resupplyIds) {
       const item = { kind: "resupply", resupplyId } as const;

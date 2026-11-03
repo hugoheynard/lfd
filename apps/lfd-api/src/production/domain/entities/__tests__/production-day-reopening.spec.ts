@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDayNotClosedError } from "../../errors/production-errors.js";
 import {
@@ -20,26 +24,7 @@ const REOPENED = new Date("2026-10-14T19:00:00.000Z");
 const NOTHING: DownstreamProgress = { packingStarted: false, dispatchStarted: false };
 
 function order(orderId: string): ProducibleOrder {
-  return {
-    orderId,
-    reference: `ORD-${orderId}`,
-    customerLabel: "Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [
-      {
-        sku: "PAI-SEI",
-        productName: "Pain de seigle",
-        quantity: 12,
-        saleUnit: "piece",
-        madeToOrder: null,
-      },
-    ],
-  };
+  return producibleOrder(orderId, { lines: [orderLine("PAI-SEI", 12, "Pain de seigle")] });
 }
 
 function closedDay(): ProductionDay {

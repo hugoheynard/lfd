@@ -19,11 +19,16 @@ import { RESUPPLY_TARGETS, type ResupplyTarget } from "./site-resupply.js";
  * le lit au catalogue. `saleUnit` (lot L2b-1) : l'unité de la quantité, des
  * grammes si `weight` ; absente, la ligne se lit à la pièce (tout brouillon
  * d'avant). À l'envoi, elle doit être celle du catalogue.
+ *
+ * `quantity` : un nombre, sa FORME seulement — l'entier ≥ 1 est la règle du
+ * domaine (`InvalidRequestedQuantityError`), comme pour toutes les quantités
+ * du réassort (une seule convention depuis le 2026-11-03 ; ce schéma était
+ * le seul à la resserrer, et son refus ne nommait pas le cas).
  */
 export const bakehouseResupplyDraftLineSchema = z
   .object({
     sku: z.string().trim().min(1),
-    quantity: z.number().int().positive(),
+    quantity: z.number(),
     saleUnit: orderSaleUnitSchema.optional(),
   })
   .strict();

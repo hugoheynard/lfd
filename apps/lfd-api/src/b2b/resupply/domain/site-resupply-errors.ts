@@ -130,3 +130,16 @@ export class SiteResupplyAlreadyWrittenError extends BusinessError {
     );
   }
 }
+
+/**
+ * Une demande qui dépasserait {@link SITE_RESUPPLY_MAX_LINES} articles : la
+ * même borne que le brouillon du fournil (`BAKEHOUSE_DRAFT_MAX_LINES`).
+ */
+export class TooManySiteResupplyLinesError extends DomainError {
+  constructor(readonly max: number) {
+    super(
+      "resupply.order.too_many_lines",
+      `Une demande de réassort porte au plus ${String(max)} articles : envoyez celle-ci, puis ouvrez-en une autre pour le reste.`,
+    );
+  }
+}

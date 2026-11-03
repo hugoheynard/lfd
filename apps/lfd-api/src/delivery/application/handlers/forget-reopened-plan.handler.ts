@@ -7,7 +7,7 @@ import {
 } from "../../../platform/outbox/durable-handler.js";
 import { Clock } from "../../../platform/time/clock.js";
 import {
-  ClosedPlansReader,
+  ArrestedPlanHold,
   PRODUCTION_DAY_REOPENED,
   ProductionDayReopenedEvent,
 } from "../../../production/channels/delivery/index.js";
@@ -43,6 +43,15 @@ export const FORGET_REOPENED_PLAN = "delivery.forget-reopened-plan";
  * d'envoi ne garantit pas l'ordre) : défaire défairait le nouveau plan. Une
  * tournée partie n'est jamais touchée — le fournil a refusé la réouverture
  * dans ce cas ; si elle part entre sa question et ce fait, on l'écrit au log.
+ *
+ * 🔴 **Sous verrous** (audit final du réassort, 2026-11-03). « De nouveau
+ * arrêtée ? » se lit par `ArrestedPlanHold`, dans la transaction du reçu et
+ * jusqu'à son `COMMIT` — un réarrêt en cours est attendu puis vu, un réarrêt
+ * suivant attend ce retrait. Et une tournée n'est jugée « partie ou pas »
+ * qu'une fois VERROUILLÉE et relue (`loadForDeparture`, le verrou même de
+ * « Partir ») : lue avant, une tournée partie entre-temps faisait lever
+ * `DeliveryRoundDepartedError` à `remove`, et l'abonné échouait à chaque
+ * nouvel essai sans jamais finir.
  */
 @Injectable()
 @DurableHandler({ type: PRODUCTION_DAY_REOPENED, subscriber: FORGET_REOPENED_PLAN })
@@ -50,7 +59,7 @@ export class ForgetReopenedPlan implements DurableSubscriber {
   private readonly logger = new Logger(ForgetReopenedPlan.name);
 
   constructor(
-    private readonly plans: ClosedPlansReader,
+    private readonly plan: ArrestedPlanHold,
     private readonly days: DeliveryDayReadinessRepository,
     private readonly reader: DeliveryRoundsReader,
     private readonly rounds: DeliveryRoundRepository,
@@ -60,8 +69,7 @@ export class ForgetReopenedPlan implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = ProductionDayReopenedEvent.fromPayload(delivery.payload);
-    const closed = await this.plans.closedBetween(event.serviceDay, event.serviceDay);
-    if (closed.includes(event.serviceDay)) {
+    if ((await this.plan.hold(event.serviceDay)) === "arrested") {
       return;
     }
     const now = this.clock.now();
@@ -71,7 +79,7 @@ export class ForgetReopenedPlan implements DurableSubscriber {
       await this.days.save(day);
     }
     await this.removeStops(event.serviceDay, new Set(event.orderIds), now);
-    await this.attachment.detachResupplies(event.resupplyIds);
+    await this.attachment.detachResupplies(event.serviceDay, event.resupplyIds);
   }
 
   /** Sort les commandes du plan défait des tournées du jour restées au dépôt. */
@@ -81,14 +89,15 @@ export class ForgetReopenedPlan implements DurableSubscriber {
       if (!held) {
         continue;
       }
-      if (row.departedAt !== null) {
-        this.logger.warn(
-          `Tournée ${row.id} du ${serviceDay} partie : ses arrêts restent malgré la réouverture.`,
-        );
+      // Verrouillée puis relue : la lecture ci-dessus a pu précéder un départ.
+      const round = await this.rounds.loadForDeparture(row.id);
+      if (round === null) {
         continue;
       }
-      const round = await this.rounds.load(row.id);
-      if (round === null) {
+      if (round.departedAt !== null) {
+        this.logger.warn(
+          `Tournée ${round.id} du ${serviceDay} partie : ses arrêts restent malgré la réouverture.`,
+        );
         continue;
       }
       for (const stop of round.liveStops) {

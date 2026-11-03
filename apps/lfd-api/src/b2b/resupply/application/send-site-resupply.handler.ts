@@ -58,7 +58,7 @@ export class SendSiteResupplyHandler implements ICommandHandler<SendSiteResupply
       }
       draft.assertSeen(command.seenVersion);
       const deadline = await this.cutoff.deadlineFor(draft.serviceDay);
-      draft.place(trace, deadline, stopped);
+      draft.place(trace, { deadline, planStopped: stopped });
       await this.resupplies.save(draft);
     });
   }

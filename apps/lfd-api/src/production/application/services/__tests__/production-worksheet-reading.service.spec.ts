@@ -1,3 +1,7 @@
+import {
+  orderLine,
+  producibleOrder,
+} from "../../../channels/commerce/__tests__/producible-order.fixture.js";
 import { instantToLocal, type CatalogFamilyView } from "@lfd/contracts";
 
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
@@ -38,18 +42,7 @@ const SEIGLE = "PAI-SEI";
 const BAGUETTE = "PAI-BAG";
 
 function order(orderId: string, sku: string, quantity: number): ProducibleOrder {
-  return {
-    orderId,
-    reference: `ORD-${orderId}`,
-    customerLabel: "Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    siteId: null,
-    sheetDetails: null,
-    lines: [{ sku, productName: sku, quantity, saleUnit: "piece", madeToOrder: null }],
-  };
+  return producibleOrder(orderId, { lines: [orderLine(sku, quantity)] });
 }
 
 class Days extends ProductionDayRepository {
@@ -181,7 +174,7 @@ describe("ProductionWorksheetReading — paliers et contrôle qualité", () => {
     expect(grouped.find((line) => line.sku === SEIGLE)?.deadlines).toHaveLength(2);
   });
 
-  it("🔴 SERT la fiche quand les besoins sont illisibles — sans paliers", async () => {
+  it("SERT la fiche quand les besoins sont illisibles — sans paliers", async () => {
     const view = await readingWith("down", new CheckTable()).read(DAY);
 
     expect(view.lines).toHaveLength(2);
@@ -231,7 +224,7 @@ describe("ProductionWorksheetReading — ce qui attend le four (§3)", () => {
     expect(grouped.find((line) => line.sku === SEIGLE)?.waitingOrders?.count).toBe(2);
   });
 
-  it("🔴 SERT la fiche quand le colisage ne répond pas — `null` partout", async () => {
+  it("SERT la fiche quand le colisage ne répond pas — `null` partout", async () => {
     const view = await readingWith(DUE, new CheckTable(), new FixedOvenWaitingOrders("down")).read(
       DAY,
     );

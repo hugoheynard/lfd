@@ -27,6 +27,8 @@ import {
   freshSendingKey,
   InMemorySiteResupplyPlanKeys,
 } from "./site-resupply-doubles.js";
+import { CapturedWarnings } from "./captured-warnings.js";
+import { CROISSANT } from "./resupply-articles.js";
 
 /**
  * Le commerce face au lancement d'un « au plus tôt » (R4a,
@@ -38,15 +40,7 @@ const NOW = new Date("2026-01-02T08:00:00Z");
 const LAUNCHED_AT = new Date("2026-01-02T08:30:00Z");
 const TODAY = "2026-01-02";
 const VILLAGE = "site_village";
-const CATALOGUE = new Catalogue([
-  {
-    sku: "CRO",
-    name: "Croissant",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece",
-  },
-]);
+const CATALOGUE = new Catalogue([CROISSANT]);
 
 function setup() {
   const store = new InMemorySiteResupplies();
@@ -120,7 +114,7 @@ async function sendAsap(place: SendBakehouseResupplyHandler): Promise<string> {
 }
 
 describe("annuler un « au plus tôt » lancé (R4a)", () => {
-  it("🔴 refuse quand le fournil répond « lancé », sous le verrou, sans rien écrire", async () => {
+  it("refuse quand le fournil répond « lancé », sous le verrou, sans rien écrire", async () => {
     const { place, cancel, list, launches, store } = setup();
     const id = await sendAsap(place);
     launches.launched.add(id);
@@ -190,6 +184,31 @@ describe("l'affichage « Lancé par X à HH:MM » (R4a)", () => {
     await onLaunched.handle(launched(id, "site_other"));
 
     expect(store.saves).toBe(saves);
+  });
+
+  /**
+   * Régression (audit final, 2026-11-03) : un lancement reçu pour un réassort
+   * annulé était écarté en silence, alors que le JSDoc promettait de le
+   * journaliser.
+   */
+  it("un lancement reçu pour un réassort annulé est écarté et journalisé ; un rejeu ne l'est pas", async () => {
+    const { place, cancel, onLaunched, store } = setup();
+    const cancelled = await sendAsap(place);
+    await cancel.execute(new CancelSiteResupplyCommand(VILLAGE, cancelled, "s"));
+    const kept = await sendAsap(place);
+    await onLaunched.handle(launched(kept));
+    const saves = store.saves;
+    const captured = CapturedWarnings.capture();
+    try {
+      await onLaunched.handle(launched(cancelled));
+      await onLaunched.handle(launched(kept));
+    } finally {
+      captured.release();
+    }
+
+    expect(store.saves).toBe(saves);
+    expect(captured.warnings).toEqual([expect.stringContaining(`Réassort ${cancelled}`)]);
+    expect(captured.warnings[0]).toContain("état cancelled");
   });
 
   it("« Réassorts à produire » ne montre plus un lancé : il est au plan du jour", async () => {

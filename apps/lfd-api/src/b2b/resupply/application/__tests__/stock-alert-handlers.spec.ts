@@ -1,10 +1,8 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import {
-  ResupplyArticleUnknownError,
-  ResupplySiteUnknownError,
-} from "../../domain/resupply-receipt-errors.js";
+import { ResupplyArticleUnknownError } from "../../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../../domain/resupply-site-errors.js";
 import {
   StockAlertAlreadyLiftedError,
   StockAlertNotFoundError,
@@ -21,28 +19,14 @@ import { ReceiveUnorderedReceiptLineHandler } from "../receive-unordered-receipt
 import { Catalogue, Directory, InMemoryReceipts, Sites } from "./resupply-doubles.js";
 import { SiteLabels } from "./site-resupply-doubles.js";
 import { InMemoryStockAlertReader, InMemoryStockAlerts } from "./stock-alert-doubles.js";
+import { CROISSANT, PAIN_AU_CHOCOLAT } from "./resupply-articles.js";
 
 /** Le 2 janvier au matin ; l'horloge double avance d'elle, jamais du calendrier. */
 const NOW = new Date("2026-01-02T08:00:00Z");
 const DAY_MS = 24 * 60 * 60 * 1000;
 const VILLAGE = "site_village";
 const LABO = "site_labo";
-const CATALOGUE = new Catalogue([
-  {
-    sku: "CRO",
-    name: "Croissant",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece",
-  },
-  {
-    sku: "PAC",
-    name: "Pain au chocolat",
-    categoryId: "fam_morning",
-    categoryName: "Viennoiseries",
-    saleUnit: "piece",
-  },
-]);
+const CATALOGUE = new Catalogue([CROISSANT, PAIN_AU_CHOCOLAT]);
 
 function setup() {
   const store = new InMemoryStockAlerts();

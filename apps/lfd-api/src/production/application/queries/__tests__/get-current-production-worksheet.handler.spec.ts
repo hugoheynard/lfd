@@ -149,7 +149,7 @@ describe("GetCurrentProductionWorksheetHandler", () => {
     expect(view.generatedAt).not.toBeNull();
   });
 
-  it("🔴 lit « demain » au jour de PARIS, pas en UTC", () => {
+  it("lit « demain » au jour de PARIS, pas en UTC", () => {
     // À 00 h 30 à Paris l'été, il est 22 h 30 UTC la VEILLE : un calcul en UTC
     // servirait la fiche d'aujourd'hui en la prenant pour demain.
     const justAfterMidnight = localToInstant(TOMORROW, "00:30");

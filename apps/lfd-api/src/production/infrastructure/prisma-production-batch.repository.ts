@@ -6,6 +6,7 @@ import {
   ProductionBatchRepository,
   type RecordedBatch,
 } from "../domain/ports/production-batch.repository.js";
+import { BatchToCancelMissingError } from "../domain/errors/batch-errors.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 
 /** Les colonnes d'une fournée qu'on relit — la même forme au chargement de la journée. */
@@ -123,11 +124,25 @@ export class PrismaProductionBatchRepository extends ProductionBatchRepository {
     });
   }
 
+  /**
+   * Le compte des lignes touchées est lu : zéro veut dire « déjà annulée »
+   * (succès sans effet) OU « absente » (défaut) — la relecture tranche.
+   */
   async cancel(day: ServiceDay, id: string, mark: PackedMark): Promise<void> {
-    await this.prisma.productionBatch.updateMany({
+    const { count } = await this.prisma.productionBatch.updateMany({
       where: { id, serviceDay: day.value, cancelledAt: null },
       data: { cancelledAt: mark.at, cancelledBy: mark.by },
     });
+    if (count > 0) {
+      return;
+    }
+    const stored = await this.prisma.productionBatch.findFirst({
+      where: { id, serviceDay: day.value },
+      select: { id: true },
+    });
+    if (stored === null) {
+      throw new BatchToCancelMissingError(id, day.value);
+    }
   }
 }
 

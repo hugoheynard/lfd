@@ -84,6 +84,21 @@ prendrait le verrou exclusif (vérifié le 2026-11-02 : ils n'appellent que
 `BinDesk`, la livraison, et publient par la boîte d'envoi). Le refus vit dans
 l'application, pas dans `PackingSheet` : l'état du plan est au fournil.
 
+L'abonné à la réouverture (`OnProductionDayReopened`) tient le même verrou
+avant de retirer quoi que ce soit, et ne retire rien si le plan est de nouveau
+`arrested` (audit final du réassort, 2026-11-03 ; e2e
+`reopened-fact-rearrest-race`).
+
+**Le bac tenu pendant qu'on le remplit** (audit final du réassort,
+2026-11-03). Mettre au bac et déplacer vers un contenant à bac demandent
+`BinDesk.holdLiveBin` : la livraison verrouille le bac (la tournée en partage,
+puis le bac — l'ordre de son annulation) jusqu'au `COMMIT` du geste, et le
+relit. `liveBins` reste une lecture sans verrou, pour le poste. Aucun chemin
+d'aujourd'hui n'annule un bac du colisage sans le verrou de sa feuille
+(vérifié le 2026-11-03 : l'annulation par la route de la livraison refuse une
+commande gérée au colisage) : c'est une défense en profondeur, comme
+`liveBins` avant elle.
+
 ### 2.1 Les faits
 
 Tous passent par la boîte d'envoi, et leurs abonnés sont des
@@ -181,7 +196,7 @@ sequenceDiagram
   Note over P: le poste lit GET admin/packing/:date/board
   P->>D: BinDesk.declareBin (livraison) — même transaction
   Note over P: ouvrir des contenants, y répartir les lignes
-  P->>D: BinDesk.liveBins / assertAtHand
+  P->>D: BinDesk.holdLiveBin / assertAtHand
   Note over P: toutes les lignes réparties : fermer
   P->>C: packing.order_packed
   C->>C: markReady (la commande est prête)
@@ -258,8 +273,9 @@ stateDiagram-v2
   409, `packing.half_sharing.disabled`). Les bacs déjà partagés restent
   lisibles tels quels.
 - **Répartir** (`allocate`) et **retirer** (`withdraw`, partiel permis) bougent
-  une quantité d'un article dans un contenant vivant. Répartir vérifie que le
-  bac est encore vivant chez la livraison (`liveBins`).
+  une quantité d'un article dans un contenant vivant. Répartir (et déplacer
+  vers un bac) tient le bac chez la livraison et vérifie qu'il est encore
+  vivant (`holdLiveBin`, verrouillé jusqu'au `COMMIT` depuis le 2026-11-03).
 - **Annuler** un contenant (`voidContainer`) rend son contenu à la réserve ; un
   bac annulé l'est aussi chez la livraison (`BinDesk.voidBin`).
 - Le nombre de contenants vivants est borné (`MAX_CONTAINERS_PER_ORDER`).
@@ -274,7 +290,12 @@ qui est dans les contenants, tous confondus. C'est la ligne verrouillée
 elle, ce qui empêche deux postes de prendre les mêmes pièces et le fournil de
 reprendre ce qui est déjà dans un bac. Répartir plus que le disponible est
 refusé (`LineNotProducedYetError`) ; l'écran montre ce qui reste « à
-répartir ».
+répartir ». Une réserve relue à découvert (`au bac + rendu + envoyé en
+boutique > reçu`) est refusée par `PackingStock.fromSnapshot`
+(`packing.stock.overdrawn`, erreur technique, 2026-11-03) au lieu de servir un
+libre borné à zéro. Le `packed` d'une réservation de réassort n'est pas écrit
+par la réserve : il se relit de la ligne de la fiche, que l'appelant écrit
+dans la même unité de travail.
 
 L'ordre des verrous, le même pour tous les gestes : la commande, puis les bacs
 chez la livraison, puis la réserve de chaque article dans l'ordre des SKU.

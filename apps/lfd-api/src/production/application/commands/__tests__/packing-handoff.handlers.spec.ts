@@ -133,7 +133,7 @@ describe("déclarer une fournée, c'est la remettre au colisage", () => {
     expect(durable.of(HANDED)).toHaveLength(1);
   });
 
-  it("🔴 ne remet JAMAIS la coche héritée qu'elle matérialise", async () => {
+  it("ne remet JAMAIS la coche héritée qu'elle matérialise", async () => {
     const { record: handler, store, ledger } = setup(legacyChecked());
 
     await handler.execute(record(FIRST, 5));

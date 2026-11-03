@@ -1,10 +1,10 @@
-import { RESUPPLY_USED_NAMES_MAX } from "@lfd/contracts";
+import { RESUPPLY_NAME_MAX, RESUPPLY_USED_NAMES_MAX } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { RecordingAdmissionDesk } from "../../../orders/application/commands/__tests__/plan-doubles.js";
-import { ResupplySiteUnknownError } from "../../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../../domain/resupply-site-errors.js";
 import {
   ResupplyAlreadyPlacedError,
   ResupplyNameTooLongError,
@@ -32,6 +32,7 @@ import {
   FixedLaunches,
   freshSendingKey,
 } from "./site-resupply-doubles.js";
+import { CROISSANT } from "./resupply-articles.js";
 
 /** 17 h à Paris le 2 janvier : les journées ne sont comparées qu'à cette horloge figée. */
 const NOW = new Date("2026-01-02T16:00:00Z");
@@ -43,15 +44,7 @@ function setup() {
   const clock = new FixedClock(NOW);
   const cutoff = new FixedResupplyCutoff(null);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
-  const catalogue = new Catalogue([
-    {
-      sku: "CRO",
-      name: "Croissant",
-      categoryId: "fam_morning",
-      categoryName: "Viennoiseries",
-      saleUnit: "piece",
-    },
-  ]);
+  const catalogue = new Catalogue([CROISSANT]);
   const sites = new Sites([VILLAGE, LABO]);
   const ids = new FixedIdGenerator("resupply");
   const launches = new FixedLaunches();
@@ -130,6 +123,34 @@ describe("nommer la demande en cours (R1g)", () => {
 
     await name.execute(new NameSiteResupplyCommand(VILLAGE, "asap", null));
     expect(store.all()[0]?.name).toBeNull();
+  });
+
+  it("accepte un nom de soixante caractères, la borne du contrat", async () => {
+    const { name, store } = setup();
+    const longest = "x".repeat(RESUPPLY_NAME_MAX);
+
+    await name.execute(new NameSiteResupplyCommand(VILLAGE, "asap", longest));
+
+    expect(store.all()[0]?.name).toBe(longest);
+  });
+
+  /**
+   * Régression (audit final, 2026-11-03) : le contrat promet « le dernier nom
+   * l'emporte », mais un ajout glissé entre la lecture et l'écriture faisait
+   * échouer le nom sur la version (409).
+   */
+  it("un ajout d'un autre poste pendant le nommage ne fait pas échouer le nom, ni ne se perd", async () => {
+    const { add, name, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1));
+    store.beforeNextSave = () =>
+      add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 2));
+
+    await expect(
+      name.execute(new NameSiteResupplyCommand(VILLAGE, "asap", "Goûter")),
+    ).resolves.toBe(id);
+
+    expect(store.all()).toEqual([expect.objectContaining({ id, name: "Goûter" })]);
+    expect(store.all()[0]?.lines.map((line) => line.quantity)).toEqual([3]);
   });
 
   it("un point inconnu est refusé", async () => {

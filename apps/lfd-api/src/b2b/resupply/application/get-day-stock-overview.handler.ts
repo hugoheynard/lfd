@@ -49,8 +49,11 @@ export class GetDayStockOverviewHandler implements IQueryHandler<
       this.plans.closedBetween(day, day),
     ]);
     const receipts = snapshots.map((snapshot) => ResupplyReceipt.restore(snapshot));
-    const packed = await this.packed.packedOf(resupplies.map((resupply) => resupply.id));
-    const stocks = await this.stocksOf(day, [...sites.map((site) => site.id)], receipts);
+    // Indépendants l'un de l'autre : lus ensemble (audit final, 2026-11-03).
+    const [packed, stocks] = await Promise.all([
+      this.packed.packedOf(resupplies.map((resupply) => resupply.id)),
+      this.stocksOf(day, [...sites.map((site) => site.id)], receipts),
+    ]);
     const dayOf = (siteId: string): DayStock =>
       dayStockOf({
         resupplies: resupplies.filter((r) => r.siteId === siteId),
@@ -83,13 +86,7 @@ export class GetDayStockOverviewHandler implements IQueryHandler<
     receipts: readonly ResupplyReceipt[],
   ): Promise<ReadonlyMap<string, readonly EstimatedStockLine[]>> {
     const siteIds = [...new Set([...listed, ...receipts.map((r) => r.siteId)])];
-    const entries = await Promise.all(
-      siteIds.map(async (siteId) => {
-        const own = receipts.filter((r) => r.siteId === siteId);
-        return [siteId, await this.stock.of(siteId, day, own)] as const;
-      }),
-    );
-    return new Map(entries);
+    return this.stock.allOn(day, siteIds, receipts);
   }
 
   /** Les points hors de la liste qui portent quelque chose ce jour-là. */

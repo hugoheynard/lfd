@@ -12,6 +12,7 @@ import {
 import { ResupplyNotReceivableError } from "../site-resupply-gate-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 import { AFTER_MIDNIGHT, draft, EVENING, line, trace } from "./site-resupply-fixtures.js";
+import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
 
 describe("SiteResupplyLine", () => {
   it.each([0, -1, 1.5, Number.NaN])("refuse la quantité demandée %p", (quantity) => {
@@ -67,7 +68,7 @@ describe("SiteResupply — les lignes", () => {
     const resupply = draft("asap");
     resupply.withdrawLine("CRO");
     expect(resupply.lines).toEqual([]);
-    expect(() => resupply.place(trace(EVENING), null, false)).toThrow(EmptyResupplyError);
+    expect(() => resupply.place(trace(EVENING), UNGATED_PLACEMENT)).toThrow(EmptyResupplyError);
   });
 
   it("corriger ou retirer un article absent est refusé", () => {
@@ -96,16 +97,18 @@ describe("SiteResupply — les lignes", () => {
 
   it("refuse de passer un réassort vide", () => {
     const resupply = SiteResupply.draft({ id: "r", siteId: "s", target: "asap", at: EVENING });
-    expect(() => resupply.place(trace(EVENING), null, false)).toThrow(EmptyResupplyError);
+    expect(() => resupply.place(trace(EVENING), UNGATED_PLACEMENT)).toThrow(EmptyResupplyError);
   });
 
   it("une fois passé, ses lignes ne bougent plus et il ne se repasse pas", () => {
     const resupply = draft("asap");
-    resupply.place(trace(EVENING), null, false);
+    resupply.place(trace(EVENING), UNGATED_PLACEMENT);
     expect(() => resupply.addLine(line("PAC", 1))).toThrow(ResupplyAlreadyPlacedError);
     expect(() => resupply.correctLine("CRO", 1)).toThrow(ResupplyAlreadyPlacedError);
     expect(() => resupply.withdrawLine("CRO")).toThrow(ResupplyAlreadyPlacedError);
-    expect(() => resupply.place(trace(EVENING), null, false)).toThrow(ResupplyAlreadyPlacedError);
+    expect(() => resupply.place(trace(EVENING), UNGATED_PLACEMENT)).toThrow(
+      ResupplyAlreadyPlacedError,
+    );
   });
 });
 
@@ -149,7 +152,7 @@ describe("SiteResupply — ce que l'adaptateur réécrit, et la réception (audi
     });
 
     expect(restored.linesChanged).toBe(false);
-    restored.place(trace(EVENING), null, false);
+    restored.place(trace(EVENING), UNGATED_PLACEMENT);
     expect(restored.linesChanged).toBe(false);
   });
 
@@ -162,9 +165,9 @@ describe("SiteResupply — ce que l'adaptateur réécrit, et la réception (audi
   it("se laisse réceptionner envoyé, jamais en brouillon ni annulé", () => {
     const resupply = draft("asap");
     expect(() => resupply.assertReceivable()).toThrow(ResupplyNotReceivableError);
-    resupply.place(trace(EVENING), null, false);
+    resupply.place(trace(EVENING), UNGATED_PLACEMENT);
     expect(() => resupply.assertReceivable()).not.toThrow();
-    resupply.cancel(trace(EVENING), null, false, false);
+    resupply.cancel(trace(EVENING), { reception: null, planStopped: false, launched: false });
     expect(() => resupply.assertReceivable()).toThrow(ResupplyNotReceivableError);
   });
 });

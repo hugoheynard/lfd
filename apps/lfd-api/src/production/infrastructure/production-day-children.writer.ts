@@ -112,9 +112,10 @@ async function replaceEveningPlan(tx: Prisma.TransactionClient, snapshot: DaySna
  * tôt » et la révision matérialisent d'abord les coches en fournées
  * (`ProductionDay.materialize`, écrites par `recordInherited`) ; l'arrêt part
  * d'une journée ouverte, dont le compte est vide ; la réouverture refuse une
- * journée cochée (`assertReopenable`). Un nouveau geste qui refait le compte
- * doit matérialiser AVANT, ou cette fonction efface une coche en silence.
- * Une journée `fromSnapshot` (base inconnue) n'a aucun appelant qui l'écrive.
+ * journée cochée (`assertReopenable`). Depuis le 2026-11-03, le domaine
+ * l'impose au lieu de cette phrase : chaque geste qui refait le compte
+ * refuse une coche héritée non matérialisée (`assertChecksCarried`). Une
+ * journée `fromSnapshot` (base inconnue) n'a aucun appelant qui l'écrive.
  */
 async function replaceCounts(tx: Prisma.TransactionClient, snapshot: DaySnapshot) {
   await tx.productionCount.deleteMany({ where: { serviceDay: snapshot.serviceDay } });

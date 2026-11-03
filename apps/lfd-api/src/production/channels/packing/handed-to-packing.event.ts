@@ -1,6 +1,6 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
-import { instantOf, piecesOf, textOf } from "./payload-fields.js";
+import { instantOf, piecesOf, textOf } from "../payload-fields.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_HANDED_TO_PACKING = "production.handed_to_packing";

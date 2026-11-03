@@ -228,7 +228,27 @@ export class DeliveryBinOffice {
     return bin === null ? null : orderOfBin(bin.subject);
   }
 
-  /** Ceux de ces bacs qui existent et ne sont pas annulés. */
+  /**
+   * Ce bac existe-t-il, non annulé — VERROUILLÉ jusqu'à la fin de l'unité de
+   * travail de l'appelant (audit final du réassort, 2026-11-03). Les verrous
+   * de l'annulation, dans son ordre (la tournée en partage, puis le bac), puis
+   * la relecture : une annulation concurrente est vue, ou attend.
+   *
+   * @throws {DeliveryLoadingStaleError} l'arrêt a bougé entre la lecture et le verrou.
+   */
+  async holdIfLive(binId: string): Promise<boolean> {
+    return this.uow.run(async () => {
+      const found = await this.bins.load(binId);
+      if (found === null) {
+        return false;
+      }
+      await loadingOfBin(this.loadings, found);
+      const bin = await this.bins.load(binId);
+      return bin !== null && bin.voidedAt === null;
+    });
+  }
+
+  /** Ceux de ces bacs qui existent et ne sont pas annulés — une lecture, sans verrou. */
   async liveAmong(binIds: readonly string[]): Promise<ReadonlySet<string>> {
     const live = new Set<string>();
     for (const binId of new Set(binIds)) {

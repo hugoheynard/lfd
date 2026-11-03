@@ -2892,13 +2892,8 @@ export type {
   NameSiteResupplyPayload,
   PlacedSiteResupplyResponse,
   PlaceSiteResupplyPayload,
-  ResuppliesToProduceView,
-  ResupplyDayToProduceView,
-  ResupplyProductionDayView,
   ResupplyOrigin,
-  ResupplySiteToProduceView,
   ResupplyTarget,
-  ResupplyTotalView,
   ResupplyUsedNamesView,
   SeenSiteResupplyVersionPayload,
   SendReserveToShopPayload,
@@ -2908,6 +2903,13 @@ export type {
   SiteResupplyStatus,
   SiteResupplyView,
 } from "./site-resupply.js";
+export type {
+  ResuppliesToProduceView,
+  ResupplyDayToProduceView,
+  ResupplyProductionDayView,
+  ResupplySiteToProduceView,
+  ResupplyTotalView,
+} from "./site-resupply-production.js";
 export { declareStockAlertSchema, STOCK_ALERT_LEVELS } from "./site-stock-alert.js";
 export type {
   DeclareStockAlertPayload,

@@ -18,8 +18,8 @@ import { SitedDayOrders } from "../b2b/orders/application/services/sited-day-ord
 import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { ProductionOrderPrintColorsReader } from "../b2b/orders/infrastructure/production-order-print-colors.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
-import { ProductionDayResupplies } from "../b2b/resupply/application/production-day-resupplies.js";
-import { ProductionRangeResupplies } from "../b2b/resupply/application/production-range-resupplies.js";
+import { ProductionDayResupplies } from "../b2b/resupply/infrastructure/production-day-resupplies.js";
+import { ProductionRangeResupplies } from "../b2b/resupply/infrastructure/production-range-resupplies.js";
 import { ResupplyModule } from "../b2b/resupply/resupply.module.js";
 import { SiteResupplyPrintColorsReader } from "../b2b/sites/infrastructure/site-resupply-print-colors.reader.js";
 import { SitesModule } from "../b2b/sites/sites.module.js";

@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
-import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { AddSiteResupplyLineCommand } from "./add-site-resupply-line.command.js";

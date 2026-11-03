@@ -41,6 +41,12 @@ export const ATTACH_LAUNCHED_RESUPPLY = "delivery.attach-launched-resupply";
  *
  * Idempotent : un fait rejoué ne range rien deux fois, et l'arrêt déjà connu
  * ne bouge pas.
+ *
+ * Vérifié le 2026-11-03 (audit final du réassort) : `placeSoon` ne part
+ * qu'APRÈS la validation du reçu (`AfterCommit.defer` dans
+ * `AsapTransferDispatch`) — un placement ne lit jamais un rangement annulé ;
+ * et `learnOpenedPlan` charge par `DeliveryDayReadinessRepository.load`,
+ * qui prend le verrou de la journée dans la transaction du reçu.
  */
 @Injectable()
 @DurableHandler({ type: PRODUCTION_RESUPPLY_LAUNCHED, subscriber: ATTACH_LAUNCHED_RESUPPLY })

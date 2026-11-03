@@ -182,7 +182,7 @@ describe("worksheetOf — l'écart", () => {
     expect(sheet.drift?.lines[0]).toMatchObject({ sku: "PAI-SEI", from: 30, to: 42 });
   });
 
-  it("🔴 dit qu'une ligne qui monte est DÉJÀ COCHÉE", () => {
+  it("dit qu'une ligne qui monte est DÉJÀ COCHÉE", () => {
     // Le seul cas réellement dangereux du lot : quelqu'un a déclaré avoir sorti
     // 30 pièces d'un article qui en demande 42, et personne ne s'en apercevrait
     // avant le colisage.
@@ -365,7 +365,7 @@ describe("worksheetOf — les fournées (plan des fournées, D2, §4)", () => {
     expect(sheet.lines[0]?.batches.map((entry) => entry.id)).toEqual(["a", "b"]);
   });
 
-  it("🔴 30 cochés puis 30 → 42 : la ligne n'est PAS complète", () => {
+  it("30 cochés puis 30 → 42 : la ligne n'est PAS complète", () => {
     const sheet = worksheetOf(
       sources({
         closedAt: TIRAGE,

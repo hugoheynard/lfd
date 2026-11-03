@@ -5,10 +5,8 @@ import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
-import {
-  ResupplyArticleUnknownError,
-  ResupplySiteUnknownError,
-} from "../domain/resupply-receipt-errors.js";
+import { ResupplyArticleUnknownError } from "../domain/resupply-receipt-errors.js";
+import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
 import { StockAlert } from "../domain/stock-alert.js";
 import { StockAlertRepository } from "../domain/stock-alert.repository.js";

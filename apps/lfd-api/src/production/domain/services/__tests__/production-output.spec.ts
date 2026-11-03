@@ -108,7 +108,7 @@ describe("implicitBatchesOf — la coche de l'ancien binaire", () => {
     expect(implicitBatchId(DAY, "VIE-001")).toBe(`backfill-${DAY}-VIE-001`);
   });
 
-  it("🔴 disparaît dès qu'une fournée existe pour ce SKU — ANNULÉE comprise", () => {
+  it("disparaît dès qu'une fournée existe pour ce SKU — ANNULÉE comprise", () => {
     // Sinon décocher (qui annule tout) ferait renaître la coche héritée.
     expect(implicitBatchesOf(DAY, [count(30, coche)], [batch("a", 30, FIVE, true)])).toEqual([]);
   });

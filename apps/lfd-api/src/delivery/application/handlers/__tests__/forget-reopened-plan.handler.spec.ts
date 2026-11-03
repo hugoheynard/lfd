@@ -1,14 +1,20 @@
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
-  ClosedPlansReader,
   PRODUCTION_DAY_REOPENED,
   ProductionDayReopenedEvent,
 } from "../../../../production/channels/delivery/index.js";
+import type { RoundRow } from "../../../domain/ports/delivery-rounds.reader.js";
 import { DeliveryDayReadiness } from "../../../domain/entities/delivery-day-readiness.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
 import { InMemoryDeliveryRounds, roundWith } from "../../commands/__tests__/round-doubles.js";
 import { RoundsReaderOver } from "../../commands/__tests__/routing-doubles.js";
-import { attachmentOver, InMemoryInternalTransfers } from "../../__tests__/transfer-doubles.js";
+import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
+import {
+  attachmentOver,
+  InMemoryInternalTransfers,
+  RecordingTransferDayLock,
+} from "../../__tests__/transfer-doubles.js";
+import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { frozenResupply } from "../../__tests__/resupply-transfer-doubles.js";
 import { ForgetReopenedPlan } from "../forget-reopened-plan.handler.js";
 import { InMemoryDayReadiness, firsts } from "./day-readiness-doubles.js";
@@ -19,14 +25,11 @@ const REOPENED = new Date("2026-10-14T19:00:00.000Z");
 const NOW = new Date("2026-10-14T19:00:05.000Z");
 const DAY = "2026-10-15";
 
-/** Les journées arrêtées, données par le test. */
-class ClosedPlans extends ClosedPlansReader {
-  constructor(private readonly closed: readonly string[] = []) {
-    super();
-  }
-
-  closedBetween(from: string, to: string): Promise<readonly string[]> {
-    return Promise.resolve(this.closed.filter((day) => from <= day && day <= to));
+/** Une lecture d'avant le départ : la tournée y est encore au dépôt. */
+class StaleRoundsReader extends RoundsReaderOver {
+  override async roundsOn(serviceDay: string): Promise<readonly RoundRow[]> {
+    const rows = await super.roundsOn(serviceDay);
+    return rows.map((row) => ({ ...row, departedAt: null }));
   }
 }
 
@@ -38,6 +41,7 @@ function setup(
   rounds: InMemoryDeliveryRounds,
   closed: readonly string[] = [],
   transfers = new InMemoryInternalTransfers(),
+  options: { readonly reader?: RoundsReaderOver; readonly log?: string[] } = {},
 ) {
   const days = new InMemoryDayReadiness();
   const ready = DeliveryDayReadiness.start(DAY, CLOSED);
@@ -49,16 +53,23 @@ function setup(
     createdAt: ready.createdAt,
     updatedAt: ready.updatedAt,
   });
-  const attachment = attachmentOver([], transfers, undefined, [frozenResupply("res_1", DAY)]);
+  const dayLock = new RecordingTransferDayLock(transfers);
+  const attachment = attachmentOver(
+    [],
+    transfers,
+    new RecordingPublisher(),
+    [frozenResupply("res_1", DAY)],
+    dayLock,
+  );
   const handler = new ForgetReopenedPlan(
-    new ClosedPlans(closed),
+    new ScriptedPlanHold(closed.includes(DAY) ? "arrested" : "reopened", options.log),
     days,
-    new RoundsReaderOver(rounds),
+    options.reader ?? new RoundsReaderOver(rounds),
     rounds,
     new FixedClock(NOW),
     attachment,
   );
-  return { handler, days, attachment };
+  return { handler, days, attachment, dayLock };
 }
 
 function fact(orderIds: readonly string[], resupplyIds: readonly string[] = []) {
@@ -97,6 +108,38 @@ describe("ForgetReopenedPlan", () => {
     expect(rounds.saved).toEqual([]);
   });
 
+  /**
+   * Régression (audit final du réassort, 2026-11-03) : la tournée était jugée
+   * sur une lecture sans verrou. Partie entre cette lecture et son chargement,
+   * elle faisait lever « tournée partie » à `remove`, et l'abonné échouait à
+   * chaque nouvel essai.
+   */
+  it("une tournée partie après la première lecture est laissée telle quelle, sans échec", async () => {
+    const rounds = new InMemoryDeliveryRounds(departed(roundWith("r1", DAY, "v1", ["ord_1"])));
+    const { handler } = setup(rounds, [], undefined, { reader: new StaleRoundsReader(rounds) });
+
+    await handler.handle(fact(["ord_1"]));
+
+    expect(rounds.all()[0]?.orderIds).toEqual(["ord_1"]);
+    expect(rounds.saved).toEqual([]);
+  });
+
+  /**
+   * Régression (audit final du réassort, 2026-11-03) : « de nouveau
+   * arrêtée ? » se lisait sans verrou ; un réarrêt validé juste après voyait
+   * ses tournées défaites.
+   */
+  it("tient le plan de la journée avant de défaire quoi que ce soit", async () => {
+    const log: string[] = [];
+    const rounds = new InMemoryDeliveryRounds(roundWith("r1", DAY, "v1", ["ord_1"]));
+    const { handler, days } = setup(rounds, [], undefined, { log });
+
+    await handler.handle(fact(["ord_1"]));
+
+    expect(log).toEqual([`hold ${DAY}`]);
+    expect(days.rows.get(DAY)?.closedAt).toBeNull();
+  });
+
   it("ne défait rien quand la journée est de nouveau arrêtée (faits dans le désordre)", async () => {
     const rounds = new InMemoryDeliveryRounds(roundWith("r1", DAY, "v1", ["ord_1"]));
     const { handler, days } = setup(rounds, [DAY]);
@@ -128,6 +171,22 @@ describe("ForgetReopenedPlan", () => {
     const [transfer] = transfers.all();
     expect(transfer?.resupplyIds).toEqual([]);
     expect(transfer?.status).toBe("planned");
+  });
+
+  /**
+   * Régression (audit final du réassort, 2026-11-03) : la sortie d'un
+   * réassort ne prenait pas le verrou des transferts du jour, que l'attache
+   * d'un lancement « au plus tôt » prend.
+   */
+  it("prend le verrou des transferts du jour avant de sortir un réassort", async () => {
+    const transfers = new InMemoryInternalTransfers();
+    const { handler, attachment, dayLock } = setup(new InMemoryDeliveryRounds(), [], transfers);
+    await attachment.attachResupplies(DAY, ["res_1"]);
+    const savesBefore = transfers.saves.length;
+
+    await handler.handle(fact([], ["res_1"]));
+
+    expect(dayLock.held.at(-1)).toEqual({ days: [DAY], savesBefore });
   });
 
   it("ne sort aucun réassort quand la journée est de nouveau arrêtée", async () => {
