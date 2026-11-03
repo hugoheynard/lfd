@@ -12,7 +12,7 @@ import type { OrderSheetPdf } from "../application/services/order-sheet-archive.
  * client, chiffré (Hugo, 2026-11-03, option A).
  *
  * 🔴 Lève, pour ce document, la règle du 2026-09-11 « aucun montant au
- * comptoir » (`documentation/todos/todo-revue-retrait-boutique.md`, §1) : le
+ * comptoir » (`documentation/comptoir/todo-revue-retrait-boutique.md`, §1) : le
  * vendeur ouvre le bon que le client a reçu, et non une feuille de bureau. Il
  * n'y a toujours qu'UN bon de commande — la route admin (`b2b_orders`) et
  * celle-ci servent les mêmes octets, par la même requête et la même archive.
