@@ -52,6 +52,7 @@ import { NotificationBell } from './shared/notifications/notification-bell/notif
 import { BRAND_PINK_TINT } from './shared/menu-tints';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/workspaces';
+import { publishAppHeaderBottom } from './shared/viewport/app-header-bottom';
 import { UserMenu } from './shared/user-menu/user-menu';
 
 /**
@@ -561,6 +562,9 @@ export class App {
   );
 
   constructor() {
+    // Les feuilles du bas montent jusqu'à la barre (Hugo, 2026-11-03).
+    publishAppHeaderBottom();
+
     // La lecture ne peut pas partir avant la session : sans jeton, `/admin/me`
     // rendrait 401 et on conclurait « aucun accès » à tort.
     effect(() => {

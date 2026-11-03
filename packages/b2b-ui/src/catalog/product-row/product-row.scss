@@ -126,3 +126,8 @@
 .pr-qty {
   width: 6.5rem;
 }
+/* Au panier, les boutons sont hors du champ : il ne porte que le chiffre, et
+   6,5 rem en faisaient une boîte vide à côté de la corbeille (2026-11-03). */
+.pr-qty--bare {
+  width: 3.5rem;
+}

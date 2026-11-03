@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   input,
+  booleanAttribute,
   numberAttribute,
   output,
 } from '@angular/core';
@@ -78,6 +79,13 @@ export class CartRow {
   readonly saleUnit = input<'piece' | 'weight'>('piece');
   /** Le pas du stepper : une pièce, ou le pas de l'article au poids. */
   readonly step = input(1, { transform: numberAttribute });
+  /**
+   * « − » et « + » de part et d'autre du chiffre, hors de la boîte, plutôt
+   * que dedans.
+   * Le back-office le demande au doigt, sur tablette (Hugo, 2026-11-03) ; la
+   * boutique garde son champ.
+   */
+  readonly stepper = input(false, { transform: booleanAttribute });
 
   readonly quantityChange = output<number>();
   readonly remove = output<void>();

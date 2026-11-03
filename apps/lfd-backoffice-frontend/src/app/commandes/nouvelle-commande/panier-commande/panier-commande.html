@@ -123,6 +123,7 @@
               [unit]="line.saleUnit === 'weight' ? '/ kg' : ''"
               [step]="line.step ?? 1"
               [min]="line.minimum ?? 1"
+              stepper
               (quantityChange)="cart().setQuantity(line.sku, $event)"
               (remove)="cart().remove(line.sku)"
             />

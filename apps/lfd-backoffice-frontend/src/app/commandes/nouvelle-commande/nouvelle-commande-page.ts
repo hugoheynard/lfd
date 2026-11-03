@@ -577,7 +577,12 @@ export class NouvelleCommandePage {
     if (company === null) {
       return;
     }
+    // Toujours par le bas (Hugo, 2026-11-03) : le tiroir ne s'ouvre que sous
+    // 1280 px, téléphone et tablette, et la feuille monte jusqu'à la barre.
     const ref = this.panels.open<PanierPanelData, OrderDraft>(PanierPanel, {
+      side: 'bottom',
+      // Opaque : un formulaire long ne se lit pas par-dessus le menu.
+      surface: 'solid',
       data: {
         cart: this.cart,
         draft: this.draft,

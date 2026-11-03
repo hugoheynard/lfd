@@ -249,6 +249,29 @@ body {
   }
 }
 
+/* ── Les feuilles du bas montent jusqu'à la barre de l'app ───────────────────
+   Hugo, 2026-11-03 : « en mobile les bottom panel doivent toujours toucher le
+   app header ». Même règle que la boutique (`_lfc-app-theme.scss`) : fold fixe
+   la feuille à `min(85dvh, 40rem)` sans réglage (fold-ng 0.36), et la règle
+   gagne sur son encapsulation par la spécificité. Une montée de version de
+   fold peut la rendre muette : c'est l'écran qui le dira. Le bas de la barre
+   est mesuré (`publishAppHeaderBottom`), pas supposé. */
+fold-panel-host .panel-dock .panel[data-side='bottom'] {
+  /* La HAUTEUR seule, et non `position: fixed` comme la boutique : ici le
+     dock s'arrête au bord du rail, et une feuille fixée depuis la gauche
+     passait SOUS ses libellés. */
+  height: calc(100dvh - var(--lfd-app-header-bottom, 56px));
+  max-height: none;
+}
+
+/* `auto` devient une feuille du bas sous 640 px chez fold : même hauteur. */
+@media (max-width: 640px) {
+  fold-panel-host .panel-dock .panel[data-side='auto'] {
+    height: calc(100dvh - var(--lfd-app-header-bottom, 56px));
+    max-height: none;
+  }
+}
+
 /* La feuille : A4, des marges d'imprimeur, et non celles du navigateur. */
 @page {
   size: A4;

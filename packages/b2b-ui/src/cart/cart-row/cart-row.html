@@ -26,6 +26,7 @@
 <fold-number-input
   class="line-qty"
   size="sm"
+  [controls]="stepper() ? 'outside' : 'inside'"
   [value]="quantity()"
   [min]="min()"
   [step]="step()"
