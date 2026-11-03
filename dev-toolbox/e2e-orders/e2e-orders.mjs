@@ -16,7 +16,7 @@
  *  - ou importe le golden master (`./pricing-golden-master*`) ou une scène
  *    de commande (`./order-*-scene`, `./shortfall-decision-scene`).
  *
- * Refuse de démarrer si une autre chaîne e2e tourne (`pgrep -f jest.e2e.cjs`) :
+ * Refuse de démarrer si une autre chaîne e2e tourne (un `node` dont la commande porte `jest.e2e.cjs`) :
  * deux chaînes ont déjà fait tomber le Postgres local.
  *
  * `--list` imprime la liste et s'arrête.
@@ -49,12 +49,28 @@ export function orderSuites(dir = TEST_DIR) {
     .map((name) => join(dir, name));
 }
 
+/**
+ * Les pid d'un JEST e2e en cours — un processus `node` dont la commande porte
+ * `jest.e2e.cjs`. Pas un `pgrep -f jest.e2e.cjs` nu : une boucle d'attente du
+ * genre `until ! pgrep -f jest.e2e.cjs` porte ce texte dans SA commande, se
+ * trouvait elle-même, et bloquait le script pour toujours (2026-11-03).
+ */
 function otherChainRunning() {
+  let listing = "";
   try {
-    return execFileSync("pgrep", ["-f", "jest.e2e.cjs"], { encoding: "utf8" }).trim();
+    listing = execFileSync("ps", ["-axo", "pid=,comm=,args="], { encoding: "utf8" });
   } catch {
-    return ""; // pgrep rend 1 quand rien ne correspond
+    return "";
   }
+  return listing
+    .split("\n")
+    .map((line) => line.trim().split(/\s+/))
+    .filter(
+      ([, comm, ...args]) =>
+        /(^|\/)node$/.test(comm ?? "") && args.join(" ").includes("jest.e2e.cjs"),
+    )
+    .map(([pid]) => pid)
+    .join("\n");
 }
 
 function main() {
