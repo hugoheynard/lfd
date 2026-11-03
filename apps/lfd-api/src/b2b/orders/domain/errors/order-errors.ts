@@ -259,15 +259,17 @@ export class AccountSettlementNotGrantedError extends BusinessError {
  * **Une société suspendue ne règle pas au compte** (É18, Hugo, 2026-11-03 —
  * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md` §6) : la
  * saisie de l'équipe s'aligne sur ce que le client a dans son espace (lot P0,
- * `test/served-company-status.e2e-spec.ts`) — prix public, règlement
- * immédiat. Distinct d'{@link AccountSettlementNotGrantedError} : la cause
+ * `test/served-company-status.e2e-spec.ts`) — son tarif à elle depuis le
+ * 2026-11-03 (`documentation/comptes-client/plan-suspendue-au-prix-pro.md`),
+ * règlement immédiat. Levée aussi quand c'est le PAYEUR qui est suspendu
+ * (décision 2 du même plan). Distinct d'{@link AccountSettlementNotGrantedError} : la cause
  * n'est pas un crédit absent, et rouvrir un délai n'y changerait rien.
  */
 export class SuspendedCompanyAccountSettlementError extends BusinessError {
   constructor() {
     super(
       "orders.settlement.company_suspended",
-      "Le compte de ce client est suspendu : il ne peut commander qu'au prix public, réglé immédiatement — pas au compte. Choisissez le lien de paiement, ou réactivez son compte sur sa fiche client.",
+      "Le compte de ce client est suspendu : il commande à son tarif, mais réglé immédiatement — pas au compte. Choisissez le lien de paiement, ou réactivez son compte sur sa fiche client.",
     );
   }
 }

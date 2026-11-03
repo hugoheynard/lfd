@@ -91,8 +91,9 @@ async function suspendedPro(ctx: E2eContext): Promise<{ companyId: string; buyer
  * ⚠️ Le payeur (1) n'est PAS mesuré : il ne refuse qu'un compte de groupe ou
  * un site dont le payeur n'est pas actif (`order-payer.ts`), que cette scène
  * ne sème pas. Une société SUSPENDUE, elle, n'est pas un refus de payeur : la
- * saisie de l'équipe la passe au lien, au prix public, comme son client dans
- * son espace (`suspended.only`) ; au compte, elle est refusée (É18, L1c —
+ * saisie de l'équipe la passe au lien, à son tarif (pro depuis le 2026-11-03,
+ * `plan-suspendue-au-prix-pro.md` ; c'était le prix public), comme son client
+ * dans son espace (`suspended.only`) ; au compte, elle est refusée (É18, L1c —
  * `pricing-golden-master-decisions.ts`).
  */
 export async function refusalOrderCases(

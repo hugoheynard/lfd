@@ -96,15 +96,17 @@ export class CounterLinkSettlementRefusedError extends DomainError {
  * `prisma-order-guard.reader.ts`) : la société qui commande n'est pas active,
  * son payeur n'a aucun délai de paiement accordé, ou le prélèvement du payeur
  * est suspendu par la comptabilité. La société SUSPENDUE se nomme à part
- * (É18, Hugo, 2026-11-03) : comme dans son espace, elle ne commande qu'au
- * prix public, réglée immédiatement — et le comptoir n'a pas de lien (E4).
+ * (É18, Hugo, 2026-11-03) : comme dans son espace, elle commande à son tarif
+ * (`documentation/comptes-client/plan-suspendue-au-prix-pro.md`), réglée
+ * immédiatement — et le comptoir n'a pas de lien (E4). Un payeur suspendu
+ * fait le même refus (décision 2 du même plan).
  */
 export type CounterAccountRefusalCause =
   "company_suspended" | "company_inactive" | "terms_not_granted" | "direct_debit_blocked";
 
 const COUNTER_ACCOUNT_REFUSALS: Readonly<Record<CounterAccountRefusalCause, string>> = {
   company_suspended:
-    "Le compte de ce client est suspendu : il ne peut commander qu'au prix public, réglé immédiatement, et ce règlement ne se fait pas au comptoir. Il peut commander depuis son espace, ou son compte se réactive sur sa fiche client.",
+    "Le compte de ce client est suspendu : il commande à son tarif, mais réglé immédiatement — pas au compte, et ce règlement ne se fait pas au comptoir. Il peut commander depuis son espace, ou son compte se réactive sur sa fiche client.",
   company_inactive:
     "Le compte de ce client n'est pas actif : il ne peut pas commander au comptoir tant que son compte n'est pas activé sur sa fiche client.",
   terms_not_granted:

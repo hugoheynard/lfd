@@ -1,4 +1,4 @@
-import type { PickupAnnouncementKey } from "@lfd/contracts";
+import { audienceOf as customerAudienceOf, type PickupAnnouncementKey } from "@lfd/contracts";
 
 import { companyServiceOf } from "../../catalog/domain/company-service.js";
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
@@ -110,10 +110,12 @@ export interface PromotionAudienceFacts {
  * **Ce public vise-t-il ces faits ?**
  *
  * « Pro ou pas » est LA décision de P0 (`companyServiceOf`) : une société en
- * attente est servie en pro, une suspendue au public. `everyone_but_active_pros`
- * est l'autre règle, celle de `audienceOf` (pro pour une société ACTIVE
- * seulement) — la clientèle qui recevait la remise de retrait des
- * particuliers, reprise telle quelle (§ 13.2).
+ * attente ou suspendue est servie en pro. `pros_active` et
+ * `everyone_but_active_pros` suivent l'autre règle, celle de `audienceOf`
+ * (clientèle `b2b` : société active ou suspendue) — la clientèle qui recevait
+ * la remise de retrait des particuliers, reprise telle quelle (§ 13.2). Une
+ * suspendue est admise partout où l'active l'est (Hugo, 2026-11-03,
+ * `documentation/comptes-client/plan-suspendue-au-prix-pro.md` § 5).
  */
 export function audienceAdmits(
   audience: PromotionAudience,
@@ -139,6 +141,7 @@ function byStatus(kind: StatusAudience, facts: PromotionAudienceFacts): boolean 
     return false;
   }
   const pro = companyServiceOf(status) === "pro";
+  const clientele = customerAudienceOf(status);
   switch (kind) {
     case "individuals":
       return !pro;
@@ -149,11 +152,11 @@ function byStatus(kind: StatusAudience, facts: PromotionAudienceFacts): boolean 
     case "pros":
       return pro;
     case "pros_active":
-      return status === "active";
+      return clientele === "b2b";
     case "pros_pending":
       return status === "pending";
     case "everyone_but_active_pros":
-      return status !== "active";
+      return clientele !== "b2b";
   }
 }
 

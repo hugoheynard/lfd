@@ -42,8 +42,9 @@ describe('ClientAudience — la clientèle de l’écran', () => {
     expect(resolve(true, 'cmp_1', [company('pending')]).current()).toBe('b2c');
   });
 
-  it('une société suspendue est B2C', () => {
-    expect(resolve(true, 'cmp_1', [company('suspended')]).current()).toBe('b2c');
+  // Une suspendue est servie comme une active, sauf le crédit (Hugo, 2026-11-03).
+  it('une société suspendue est B2B', () => {
+    expect(resolve(true, 'cmp_1', [company('suspended')]).current()).toBe('b2b');
   });
 
   it('une société active est B2B', () => {
@@ -88,8 +89,8 @@ describe('ClientAudience — servi en pro par la caisse', () => {
     expect(audience.current()).toBe('b2c');
   });
 
-  it('une société suspendue ne l’est pas', () => {
-    expect(resolve(true, 'cmp_1', [company('suspended')]).servedAsPro()).toBe(false);
+  it('une société suspendue l’est aussi (2026-11-03)', () => {
+    expect(resolve(true, 'cmp_1', [company('suspended')]).servedAsPro()).toBe(true);
   });
 
   it('reconnu avant `/me` : pas encore, par prudence', () => {

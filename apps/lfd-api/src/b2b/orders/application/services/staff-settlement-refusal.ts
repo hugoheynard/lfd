@@ -1,17 +1,14 @@
 import type { StaffSettlement } from "@lfd/contracts";
 
 import type { Order } from "../../domain/entities/order.js";
+import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
 import {
   AccountSettlementNotGrantedError,
   SuspendedCompanyAccountSettlementError,
 } from "../../domain/errors/order-errors.js";
 import { CounterAccountSettlementNotGrantedError } from "../../domain/errors/shelf-order-errors.js";
 import { ShelfWithoutCreditRefusedError } from "../../domain/errors/shelf-circuit-errors.js";
-import {
-  accountStanding,
-  accountStandingOfStatus,
-  type SettlementPorts,
-} from "./order-settlement.js";
+import { accountStanding, settlingStatusOf, type SettlementPorts } from "./order-settlement.js";
 import type { ShelfCircuit } from "./shelf-circuit.service.js";
 
 /** Les deux lectures dont le jugement du crédit a besoin, et elles seules. */
@@ -30,7 +27,9 @@ export interface StaffSettlementPorts {
  * le dit en avertissement, avec les mêmes mots. Un seul prédicat pour les
  * deux, pour que le panier n'annonce pas un crédit que la validation refuse.
  *
- * - `account` est refusé à une société suspendue (É18), puis exige un crédit réellement accordé, celui du PAYEUR (T44) ;
+ * - `account` est refusé à une société suspendue (É18) — elle, ou son PAYEUR
+ *   (décision 2 de `plan-suspendue-au-prix-pro.md`, 2026-11-03) — puis exige
+ *   un crédit réellement accordé, celui du payeur (T44) ;
  * - `link` sur la vitrine suit le réglage du pro sans crédit (Q7).
  *
  * Au comptoir (`atCounter`), le refus nomme sa cause et un geste qui existe
@@ -56,18 +55,18 @@ export async function staffSettlementRefusal(
     return counterAccountRefusal(ports.guard, parties);
   }
   if (settlement === "account") {
-    // É18 : la suspendue est servie comme dans son espace (lot P0), jamais au compte.
+    // É18 : la suspendue est servie comme dans son espace (lot P0), jamais au
+    // compte — et un payeur suspendu ferme le compte de ses sites (décision 2).
     const status = await ports.guard.companyStatusOf(companyId);
-    if (status === "suspended") {
+    const settling = await settlingStatusOf(ports.guard, companyId, order.billedCompanyId, status);
+    if (settling === "suspended") {
       return new SuspendedCompanyAccountSettlementError();
     }
-    // Le statut se lit UNE fois : le relire pour le crédit doublait la lecture.
-    const standing = await accountStandingOfStatus(
-      ports.guard,
-      companyId,
-      order.billedCompanyId,
-      status,
-    );
+    // Les statuts se lisent UNE fois : les relire pour le crédit doublait la lecture.
+    const standing =
+      settling === "active"
+        ? await ports.guard.settlesOnAccount(order.billedCompanyId ?? companyId)
+        : "none";
     return standing === "granted"
       ? null
       : new AccountSettlementNotGrantedError(standing === "blocked");
@@ -87,7 +86,10 @@ async function counterAccountRefusal(
   guard: StaffSettlementPorts["guard"],
   parties: { readonly companyId: string; readonly payerId: string | null },
 ): Promise<CounterAccountSettlementNotGrantedError | null> {
-  const statusRefusal = await counterCompanyStatusRefusal(guard, parties.companyId);
+  const status = await guard.companyStatusOf(parties.companyId);
+  const statusRefusal = counterStatusRefusalOf(
+    await settlingStatusOf(guard, parties.companyId, parties.payerId, status),
+  );
   if (statusRefusal) {
     return statusRefusal;
   }
@@ -114,7 +116,13 @@ export async function counterCompanyStatusRefusal(
   guard: Pick<StaffSettlementPorts["guard"], "companyStatusOf">,
   companyId: string,
 ): Promise<CounterAccountSettlementNotGrantedError | null> {
-  const status = await guard.companyStatusOf(companyId);
+  return counterStatusRefusalOf(await guard.companyStatusOf(companyId));
+}
+
+/** La règle, sur un statut déjà lu — de la société, ou de son payeur. */
+function counterStatusRefusalOf(
+  status: OrderCompanyStatus | null,
+): CounterAccountSettlementNotGrantedError | null {
   if (status === "suspended") {
     return new CounterAccountSettlementNotGrantedError("company_suspended");
   }

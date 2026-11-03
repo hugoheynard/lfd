@@ -34,16 +34,18 @@ type Row = [StatusKind, StandingCompanyStatus | null, PromotionBuyerKind, boolea
 describe("audienceAdmits — les publics de clientèle contre le statut relu en base", () => {
   it.each<Row>([
     ["pros", "active", "registered", true],
-    // P0 : une société en attente est servie en pro, une suspendue au public.
+    // P0 : une société en attente est servie en pro ; une suspendue aussi depuis
+    // le 2026-11-03, et admise partout où l'active l'est (`plan-suspendue-au-prix-pro.md`).
     ["pros", "pending", "registered", true],
-    ["pros", "suspended", "registered", false],
+    ["pros", "suspended", "registered", true],
     ["pros", null, "guest", false],
     ["pros_active", "active", "registered", true],
+    ["pros_active", "suspended", "registered", true],
     ["pros_active", "pending", "registered", false],
     ["pros_pending", "pending", "registered", true],
     ["pros_pending", "active", "registered", false],
     ["individuals", null, "guest", true],
-    ["individuals", "suspended", "registered", true],
+    ["individuals", "suspended", "registered", false],
     ["individuals", "pending", "registered", false],
     ["individuals_guest", null, "guest", true],
     ["individuals_guest", null, "registered", false],
@@ -54,7 +56,7 @@ describe("audienceAdmits — les publics de clientèle contre le statut relu en 
     // n'est pas une société active — en attente et suspendue comprises.
     ["everyone_but_active_pros", null, "guest", true],
     ["everyone_but_active_pros", "pending", "registered", true],
-    ["everyone_but_active_pros", "suspended", "registered", true],
+    ["everyone_but_active_pros", "suspended", "registered", false],
     ["everyone_but_active_pros", "active", "registered", false],
   ])("%s · statut %s · %s → %s", (kind, status, buyerKind, expected) => {
     const audience: PromotionAudience = { kind };

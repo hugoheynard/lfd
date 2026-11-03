@@ -104,10 +104,12 @@ export interface SettlementParties {
  * prélèvement non bloqué, peut régler au compte.
  *
  * 🔴 Les termes lus sont ceux du payeur (`sous-comptes.md` §2.3, T44) :
- * un site qui suit `billing` commande au compte de son principal. Le statut lu
- * reste celui de la société qui commande — un site en attente ne commande pas
- * au compte de qui que ce soit ; celui du payeur a déjà été jugé à la
- * composition (`orderPayerOf`).
+ * un site qui suit `billing` commande au compte de son principal. Le statut
+ * lu est celui de la société qui commande — un site en attente ne commande
+ * pas au compte de qui que ce soit — PUIS celui du payeur
+ * ({@link settlingStatusOf}) : un principal suspendu après la passation ne
+ * règle plus au compte (Hugo, 2026-11-03,
+ * `documentation/comptes-client/plan-suspendue-au-prix-pro.md` § 5, décision 2).
  *
  * Sans entreprise, ou entreprise non activée : jamais. Le crédit se négocie
  * avec une société cliente, pas avec un panier.
@@ -120,27 +122,33 @@ export async function accountStanding(
   if (companyId === null) {
     return "none";
   }
-  return accountStandingOfStatus(
+  const status = await settlingStatusOf(
     guard,
     companyId,
     parties.payerId,
     await guard.companyStatusOf(companyId),
   );
+  return status === "active" ? guard.settlesOnAccount(parties.payerId ?? companyId) : "none";
 }
 
 /**
- * La même règle, le statut déjà lu par l'appelant — pour ne pas relire la
- * société quand il vient de la juger (la saisie, É18 : une lecture en double
- * mesurée par `pricing-budget` le 2026-11-03).
+ * **Le statut qui juge le crédit** : celui de la société qui commande, déjà
+ * lu par l'appelant, puis celui du PAYEUR quand c'en est un autre (décision
+ * 2 du plan `plan-suspendue-au-prix-pro.md`, 2026-11-03). Une suspension ne
+ * touche plus qu'au crédit, et le crédit est celui du payeur : un site actif
+ * dont le principal payeur est suspendu ne règle plus au compte.
+ *
+ * Le payeur n'est relu que s'il est distinct et que la société est active —
+ * la lecture du statut d'une société qui paie seule ne double pas.
  */
-export async function accountStandingOfStatus(
-  guard: Pick<SettlementPorts["guard"], "settlesOnAccount">,
+export async function settlingStatusOf(
+  guard: Pick<SettlementPorts["guard"], "companyStatusOf">,
   companyId: string,
   payerId: string | null,
   status: OrderCompanyStatus | null,
-): Promise<AccountSettlementStanding> {
-  if (status !== "active") {
-    return "none";
+): Promise<OrderCompanyStatus | null> {
+  if (status !== "active" || payerId === null || payerId === companyId) {
+    return status;
   }
-  return guard.settlesOnAccount(payerId ?? companyId);
+  return guard.companyStatusOf(payerId);
 }

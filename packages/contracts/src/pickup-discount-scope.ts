@@ -1,4 +1,5 @@
 import type { CartAdjustment } from "./cart-adjustment.js";
+import { audienceOf } from "./customer-audience.js";
 import type { CompanyStatus } from "./customer-sheet.js";
 import type { DiscountLabelView } from "./discount-label.js";
 
@@ -91,15 +92,16 @@ export const NO_PICKUP_DISCOUNTS: AnnouncedPickupDiscounts = {
 };
 
 /**
- * **Quelle annonce lire, selon le statut de la société agissante** : active
- * → `b2b`, en attente → `b2bPending`, sinon `b2c`. Distincte d'`audienceOf`,
+ * **Quelle annonce lire, selon le statut de la société agissante** : la
+ * clientèle `b2b` d'`audienceOf` (active ou suspendue, 2026-11-03) → `b2b`,
+ * en attente → `b2bPending`, sinon `b2c`. Distincte d'`audienceOf`,
  * qui règle aussi les CGV et le contact : seule l'annonce d'une remise doit
  * suivre ce que la caisse appliquera à une société en attente.
  */
 export function pickupAnnouncementOf(
   actingCompanyStatus: CompanyStatus | null,
 ): PickupAnnouncementKey {
-  if (actingCompanyStatus === "active") {
+  if (audienceOf(actingCompanyStatus) === "b2b") {
     return "b2b";
   }
   return actingCompanyStatus === "pending" ? "b2bPending" : "b2c";

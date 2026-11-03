@@ -26486,7 +26486,7 @@
       "code": null,
       "amounts": {
         "vatMethod": "line_ht",
-        "subtotalCents": 2090,
+        "subtotalCents": 1700,
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
@@ -26495,35 +26495,35 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 69
+            "amountCents": 55
           },
           {
             "rate": 10,
-            "amountCents": 84
+            "amountCents": 70
           }
         ],
-        "vatCents": 153,
-        "totalCents": 2243,
+        "vatCents": 125,
+        "totalCents": 1825,
         "lines": [
           {
             "sku": "PAI-001-1",
             "quantity": 2,
-            "unitPriceMillicents": 250237,
-            "lineTotalCents": 500,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 400,
             "lineTotalTtcCents": null
           },
           {
             "sku": "SAL-001-1",
             "quantity": 1,
-            "unitPriceMillicents": 839091,
-            "lineTotalCents": 839,
+            "unitPriceMillicents": 700000,
+            "lineTotalCents": 700,
             "lineTotalTtcCents": null
           },
           {
             "sku": "VIE-001-1",
             "quantity": 3,
-            "unitPriceMillicents": 250237,
-            "lineTotalCents": 751,
+            "unitPriceMillicents": 200000,
+            "lineTotalCents": 600,
             "lineTotalTtcCents": null
           }
         ]

@@ -54,10 +54,17 @@
 
 ## 4. Le lot
 
-**S1** — la règle (`companyServiceOf`) et tout lecteur parallèle trouvé au §2 ;
+**S1** ✅ bâti le 2026-11-03, non commité — la règle (`companyServiceOf`) et tout lecteur parallèle trouvé au §2 ;
 les messages et textes du §3 ; les tests (P0, golden master) ; la doc P0
 annotée (la décision Q9 est révisée, datée). Après T2/T3 du plan du total vu,
 ou avant sur décision de Hugo.
+
+Bâti : `companyServiceOf` et `audienceOf` disent pro pour une suspendue
+(`pickupAnnouncementOf` et `servedAsPro` en dérivent) ; `pros_active` et
+`everyone_but_active_pros` suivent `audienceOf` ; le statut du PAYEUR est lu
+par `settlingStatusOf` (`order-settlement.ts`) dans `accountStanding` et
+`staffSettlementRefusal` ; golden master : seul `refusal-order/suspended.only`
+a bougé (prix pro). Reste ouvert : voir § 5, note du bâti.
 
 ## 5. Après `vitruve`, décisions de Hugo (2026-11-03)
 
@@ -88,3 +95,14 @@ Et :
 
 À noter : les abonnements ne génèrent pas encore de commande ; le jour où ils
 le feront, ils suivront la même règle.
+
+**Note du bâti S1 (2026-11-03), à trancher par Hugo** : la décision 2 suppose
+qu'un site actif dont le principal payeur est suspendu commande encore. Or
+`orderPayerOf` (`order-payer.ts`, Q4 de `sous-comptes.md`) refuse toute
+passation d'un tel site (`OrderPayerNotActiveError`, e2e
+`sub-account-billing` « refuse un site dont le principal est suspendu ») : le
+refus du compte par le payeur est donc posé, mais aucun chemin de passation ne
+l'atteint aujourd'hui. Lever Q4 pour la suspension (le site commande, réglé
+immédiatement) n'a pas été fait. De même, un principal suspendu n'ouvre plus
+ses articles réservés ni l'héritage des droits à ses sites
+(`reservationHoldersOf`, `inheritedSiteWhere`, Q8) : laissé tel quel.

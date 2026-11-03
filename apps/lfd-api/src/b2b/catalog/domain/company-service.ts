@@ -19,8 +19,9 @@ export type CompanyService = "pro" | "public" | "closed";
  * - `active` → pro.
  * - `pending` → pro, **inchangé au lot P0** : la case « traiter en pro les
  *   sociétés en cours d'inscription » vient au lot P1/P3, cochée par défaut.
- * - `suspended` → public : tant que le staff n'a pas choisi le tarif de la
- *   suspension (lot P1), c'est le moins coûteux à se tromper (§ 4, Q9).
+ * - `suspended` → pro, son tarif à elle : une suspension ne touche plus qu'au
+ *   crédit (Hugo, 2026-11-03, `plan-suspendue-au-prix-pro.md` § 5 — révise
+ *   Q9 du P0, qui disait public ; P1 abandonné pour la suspension).
  * - `terminated` → fermée (« Ce compte est clos. »).
  * - société inconnue (`null`) → public : rien de négocié sans société lue.
  */
@@ -28,10 +29,10 @@ export function companyServiceOf(status: StandingCompanyStatus | null): CompanyS
   switch (status) {
     case "active":
     case "pending":
+    case "suspended":
       return "pro";
     case "terminated":
       return "closed";
-    case "suspended":
     case null:
       return "public";
   }

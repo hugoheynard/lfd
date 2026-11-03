@@ -30,15 +30,16 @@ describe("CustomerAudiences", () => {
     expect(reader.reads).toBe(0);
   });
 
-  it("une société active est B2B", async () => {
-    expect(await new CustomerAudiences(new StatusReader("active")).of("co_1")).toBe("b2b");
+  /** Une suspendue est servie comme une active, sauf le crédit (Hugo, 2026-11-03, `plan-suspendue-au-prix-pro.md`). */
+  it.each<OrderCompanyStatus>(["active", "suspended"])("une société %s est B2B", async (status) => {
+    expect(await new CustomerAudiences(new StatusReader(status)).of("co_1")).toBe("b2b");
   });
 
   /**
    * Déclarer une société ne demande aucune vérification : une remise « pros
    * seulement » ne doit pas s'obtenir en tapant un SIRET.
    */
-  it.each<OrderCompanyStatus>(["pending", "suspended", "terminated"])(
+  it.each<OrderCompanyStatus>(["pending", "terminated"])(
     "une société %s suit les règles B2C",
     async (status) => {
       expect(await new CustomerAudiences(new StatusReader(status)).of("co_1")).toBe("b2c");

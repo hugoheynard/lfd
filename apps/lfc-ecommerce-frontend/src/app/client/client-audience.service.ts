@@ -18,9 +18,9 @@ import { ClientWorkspace } from './client-workspace.service';
  * comme à la commande. Ce service n'a donc aucun pouvoir : il évite seulement
  * d'afficher une remise que la caisse refusera.
  *
- * B2B seulement pour une société **active** (Hugo, 2026-09-15, Q3) : un
- * visiteur, l'espace perso et une société `pending`, `suspended` ou
- * `terminated` sont B2C. La règle est `audienceOf`, la MÊME que le serveur lit —
+ * B2B pour une société **active** ou **suspendue** (Hugo, 2026-09-15, Q3 ;
+ * la suspendue depuis le 2026-11-03, `plan-suspendue-au-prix-pro.md`) : un
+ * visiteur, l'espace perso et une société `pending` ou `terminated` sont B2C. La règle est `audienceOf`, la MÊME que le serveur lit —
  * ce service ne fait que lui passer le statut de l'espace courant.
  *
  * Un seul endroit la calcule : deux écrans qui la déduiraient chacun finiraient

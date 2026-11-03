@@ -26,7 +26,7 @@ import { TYPICAL_BUYER, type PromotionAudienceFacts } from "./promotion-targetin
  * donc posée avec les faits d'un acheteur TYPE, au même juge que la caisse
  * (`promotionsAdmitted`, puis le rang du public et de l'acheminement) :
  *
- * - `b2b` : une société active, sans identité (aucun public « société » ne
+ * - `b2b` : une société active (ou suspendue, 2026-11-03), sans identité (aucun public « société » ne
  *   la vise), porte d'entrée inconnue ;
  * - `b2bPending` : une société EN ATTENTE, sans identité, porte inconnue ;
  * - `b2c` : aucune société, porte d'entrée inconnue.

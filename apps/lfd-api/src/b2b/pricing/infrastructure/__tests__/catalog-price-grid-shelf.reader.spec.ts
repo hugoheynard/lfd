@@ -87,15 +87,25 @@ describe("le rayon d'un public pour la grille de prix", () => {
     expect(catalog.viewers).toEqual([PRO_ANONYMOUS_VIEWER]);
   });
 
-  it("le lecteur d'une société se décide comme la vitrine : une suspendue au public", async () => {
+  // Une suspendue est servie pro depuis le 2026-11-03 (`plan-suspendue-au-prix-pro.md`) ;
+  // une terminée lit toujours le rayon public.
+  it("le lecteur d'une société se décide comme la vitrine : une terminée au public", async () => {
     const viewers = new CatalogPriceGridViewerReader(
-      new CatalogViewers(new InMemoryServedCompanies(new Map([["co_suspendue", "suspended"]]))),
+      new CatalogViewers(
+        new InMemoryServedCompanies(
+          new Map([
+            ["co_suspendue", "suspended"],
+            ["co_close", "terminated"],
+          ]),
+        ),
+      ),
     );
 
     expect(await viewers.viewerOf("co_folie")).toMatchObject({
       kind: "pro",
       holders: { companyId: "co_folie" },
     });
-    expect(await viewers.viewerOf("co_suspendue")).toEqual(PUBLIC_VIEWER);
+    expect(await viewers.viewerOf("co_suspendue")).toMatchObject({ kind: "pro" });
+    expect(await viewers.viewerOf("co_close")).toEqual(PUBLIC_VIEWER);
   });
 });

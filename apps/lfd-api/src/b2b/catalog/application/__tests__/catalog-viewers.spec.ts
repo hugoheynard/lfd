@@ -25,32 +25,27 @@ class NoCompany extends ServedCompanyReader {
 }
 
 describe("CatalogViewers — la fabrique unique (plan pros en cours d'inscription, P0)", () => {
-  describe.each<[StandingCompanyStatus]>([["active"], ["pending"]])("société %s", (status) => {
-    it("lit et facture en pro, avec sa société au tarificateur", async () => {
-      const viewers = viewersAt(status);
-      const read = await viewers.forCompany(COMPANY, "served_and_locked");
-      const billed = await viewers.forBilling(COMPANY, "served_and_locked");
-      expect(read).toEqual({
-        kind: "pro",
-        holders: { companyId: COMPANY, activePrincipalId: PRINCIPAL },
-        show: "served_and_locked",
+  describe.each<[StandingCompanyStatus]>([["active"], ["pending"], ["suspended"]])(
+    "société %s",
+    (status) => {
+      it("lit et facture en pro, avec sa société au tarificateur", async () => {
+        const viewers = viewersAt(status);
+        const read = await viewers.forCompany(COMPANY, "served_and_locked");
+        const billed = await viewers.forBilling(COMPANY, "served_and_locked");
+        expect(read).toEqual({
+          kind: "pro",
+          holders: { companyId: COMPANY, activePrincipalId: PRINCIPAL },
+          show: "served_and_locked",
+        });
+        expect(billed).toEqual(read);
+        expect(pricingCompanyOf(billed)).toBe(COMPANY);
+        expect((await viewers.forKeptLines(COMPANY)).kind).toBe("pro");
       });
-      expect(billed).toEqual(read);
-      expect(pricingCompanyOf(billed)).toBe(COMPANY);
-      expect((await viewers.forKeptLines(COMPANY)).kind).toBe("pro");
-    });
-  });
+    },
+  );
 
-  /** Régression : une suspendue lisait le rayon pro, sa mercuriale, et le devis tarifait pro. */
-  it("sert une suspendue au public, sans société au tarificateur", async () => {
-    const viewers = viewersAt("suspended");
-    const read = await viewers.forCompany(COMPANY, "served_and_locked");
-    const billed = await viewers.forBilling(COMPANY, "served_and_locked");
-    expect(read).toBe(PUBLIC_VIEWER);
-    expect(billed).toBe(PUBLIC_VIEWER);
-    expect(pricingCompanyOf(billed)).toBeNull();
-    expect(await viewers.forKeptLines(COMPANY)).toBe(PUBLIC_VIEWER);
-  });
+  // Une suspendue est servie pro, à son tarif, depuis le 2026-11-03 (Hugo,
+  // `plan-suspendue-au-prix-pro.md` § 5) : couverte par le `describe.each` ci-dessus.
 
   /** Régression : une terminée devisait et commandait au prix pro. */
   it("refuse de facturer une terminée, par son nom", async () => {

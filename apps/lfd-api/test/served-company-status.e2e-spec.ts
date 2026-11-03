@@ -11,6 +11,11 @@
  *
  * Au lot P0 : active → pro ; en attente → pro (inchangé) ; suspendue → public,
  * carte seule ; terminée → commande et devis refusés par leur nom.
+ *
+ * Révisé le 2026-11-03 (Hugo, lot S1 de
+ * `documentation/comptes-client/plan-suspendue-au-prix-pro.md`) : une
+ * suspendue est servie comme une active, à son tarif (mercuriale comprise),
+ * et seul le crédit lui est retiré — carte seule.
  */
 import { randomUUID } from "node:crypto";
 
@@ -132,9 +137,10 @@ const quoteMine = () =>
       fulfillment: { method: "pickup", pickupAddressId: pickupId },
     });
 
-const placeMine = (workspace?: string) => {
+const placeMine = (workspace?: string, settlement?: "account") => {
   const call = ctx.asSub(MEMBER).post("/orders");
   return (workspace === undefined ? call : call.set(WORKSPACE_HEADER, workspace)).send({
+    ...(settlement === undefined ? {} : { settlement }),
     idempotencyKey: randomUUID(),
     salesTerms: null,
     fulfillmentMethod: "pickup",
@@ -179,28 +185,42 @@ describe("société en attente — inchangé au lot P0", () => {
   });
 });
 
-describe("société suspendue — public, carte seule", () => {
-  /** Régression : la suspendue lisait le rayon pro ET sa mercuriale. */
-  it("rayon au prix public, sans mercuriale ni tarif barré", async () => {
+/**
+ * Était « public, carte seule » au lot P0 (Q9) ; pro depuis le 2026-11-03 —
+ * une suspension ne touche plus qu'au crédit (`plan-suspendue-au-prix-pro.md` § 5).
+ */
+describe("société suspendue — pro, carte seule", () => {
+  it("rayon à sa mercuriale", async () => {
     await setStatus(CompanyStatus.suspended);
 
-    const item = itemOf(await mine(), SKU);
-    expect(item?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
-    expect(item?.catalogPriceMillicents).toBeUndefined();
+    expect(itemOf(await mine(), SKU)?.unitPriceMillicents).toBe(NEGOTIATED_MILLICENTS);
   });
 
-  /** Régression : le devis et la passation d'une suspendue tarifaient pro. */
-  it("devis et passation au prix public, réglés par carte", async () => {
+  it("devis et passation à sa mercuriale, réglés par carte", async () => {
     await setStatus(CompanyStatus.suspended);
 
     const quoted = jsonBody<ShopQuoteView>(await quoteMine().expect(200));
-    expect(quoted.lines[0]?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
+    expect(quoted.lines[0]?.unitPriceMillicents).toBe(NEGOTIATED_MILLICENTS);
     const response = await placeMine().expect(201);
-    expect(await placedLinePrice(response)).toBe(PUBLIC_MILLICENTS);
+    expect(await placedLinePrice(response)).toBe(NEGOTIATED_MILLICENTS);
     expect(jsonBody<PlacedOrderResponse>(response).payment?.clientSecret).toBeDefined();
   });
 
-  it("habituels au prix public", async () => {
+  /** Le crédit seul est retiré : un délai accordé ne règle plus au compte. */
+  it("refuse le compte malgré un délai accordé, et passe par carte sans rien demander", async () => {
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { grantedTerms: ["monthly"] },
+    });
+    await setStatus(CompanyStatus.suspended);
+
+    const refused = await placeMine(undefined, "account").expect(409);
+    expect(JSON.stringify(refused.body)).toContain("order.terms_not_granted");
+    const response = await placeMine().expect(201);
+    expect(jsonBody<PlacedOrderResponse>(response).payment?.clientSecret).toBeDefined();
+  });
+
+  it("habituels à sa mercuriale", async () => {
     await threeTuesdays();
     await setStatus(CompanyStatus.suspended);
 
@@ -212,11 +232,11 @@ describe("société suspendue — public, carte seule", () => {
         .expect(200),
     );
     expect(usuals.map(({ sku, item }) => [sku, item.unitPriceMillicents])).toEqual([
-      [SKU, PUBLIC_MILLICENTS],
+      [SKU, NEGOTIATED_MILLICENTS],
     ]);
   });
 
-  it("suggestions du panier au prix public", async () => {
+  it("suggestions du panier à sa mercuriale", async () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/suggestions")
@@ -241,7 +261,7 @@ describe("société suspendue — public, carte seule", () => {
         .expect(200),
     );
     expect(shown.map(({ sku, item }) => [sku, item.unitPriceMillicents])).toEqual([
-      [SKU, PUBLIC_MILLICENTS],
+      [SKU, NEGOTIATED_MILLICENTS],
     ]);
   });
 });

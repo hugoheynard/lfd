@@ -1319,7 +1319,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
       "suspended",
       "granted",
       "company_suspended",
-      /est suspendu : il ne peut commander qu'au prix public/u,
+      /est suspendu : il commande à son tarif, mais réglé immédiatement/u,
     ],
     ["pending", "granted", "company_inactive", /n'est pas actif/u],
     ["active", "none", "terms_not_granted", /paiement différé n'est pas ouvert/u],
@@ -1359,7 +1359,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
     expect(sink.placed).toBeNull();
   });
 
-  it("hors comptoir, une société suspendue passe encore par le lien (prix public, règlement immédiat)", async () => {
+  it("hors comptoir, une société suspendue passe encore par le lien (son tarif, règlement immédiat)", async () => {
     const sink = { placed: null as OrderToPlace | null };
 
     const result = await handler(guard("orders", "suspended", "none"), sink).execute(

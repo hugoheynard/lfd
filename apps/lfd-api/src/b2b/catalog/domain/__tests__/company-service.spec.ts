@@ -9,9 +9,12 @@ describe("companyServiceOf — la décision « pro ou pas » (plan pros en cours
     expect(companyServiceOf("pending")).toBe("pro");
   });
 
-  /** Régression : une suspendue était tarifée pro au rayon, au devis et à la passation. */
-  it("sert une société suspendue au public tant que le staff n'a pas choisi", () => {
-    expect(companyServiceOf("suspended")).toBe("public");
+  /**
+   * Révisé le 2026-11-03 (Hugo, `plan-suspendue-au-prix-pro.md` § 5) : la
+   * suspension ne touche plus qu'au crédit, le prix reste le sien.
+   */
+  it("sert une société suspendue en pro, à son tarif", () => {
+    expect(companyServiceOf("suspended")).toBe("pro");
   });
 
   /** Régression : une terminée commandait encore au prix pro. */
