@@ -155,9 +155,10 @@ export async function refusalOrderCases(
 }
 
 /**
- * La dérogation : J+2 en grâce, une dérogation ouverte pour le pro. Le
- * conseil ne connaît pas le supplément (É11) ; l'estimation et la passation
- * de l'équipe, si. Le client repasse ensuite sur la dérogation dépensée.
+ * La dérogation : J+2 en grâce, une dérogation ouverte pour le pro. Le devis
+ * de la société, l'estimation et la passation de l'équipe chiffrent le même
+ * supplément (É11 tranché, `plan-total-vu.md`, T1) ; le devis ne dépense pas
+ * la dérogation. Le client repasse ensuite sur la dérogation dépensée.
  */
 export async function lateFeeCase(
   ctx: E2eContext,

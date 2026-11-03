@@ -27,6 +27,7 @@
  * requête. Les cas ci-dessous prennent donc un instantané avant et après, et
  * s'assurent qu'aucun travail hors requête ne tourne entre les deux (`drain`).
  */
+import { WORKSPACE_HEADER } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
@@ -191,11 +192,19 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * jour-là : 10, constant, pour une ligne comme pour dix ; le détail requête
  * par requête n'a pas été relevé.
  *
+ * 🔴 **De 10 à 11 le 2026-11-03** (lot L2 de `plan-un-seul-assemblage.md`,
+ * d43dbfe76) : le devis CLASSE toujours ses articles (`PricingContext.loadCart`
+ * → `classify`, une lecture de `catalog_items` en lot) — décision É2 de
+ * l'inventaire C0 : avant, il ne classait que si une promotion admise à toute
+ * heure portait des règles, et la question « classer ou non » pouvait rater
+ * une promotion. Ce n'est pas un doublon : la résolution des prix ne rend ni
+ * produit ni chemin de famille. Mesuré par trace des modèles, avant/après.
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
  * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 10;
+const COLD_QUOTE_OPS = 11;
 
 /**
  * Sème `count` règles **distinctes** — d'étage `geste` depuis L12
@@ -638,5 +647,55 @@ describe("l'estimation de la saisie", () => {
     );
 
     expect(cost).toBe(COLD_ESTIMATE_OPS);
+  });
+});
+
+/**
+ * **Le devis d'un client rattaché à une société, avec un jour** (plan
+ * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T1) : il juge la
+ * surtaxe de retard comme la passation — l'heure limite, la dérogation lue
+ * sans être consommée. Ces lectures sont constantes : elles ne dépendent pas
+ * du nombre de lignes, et la surtaxe ne se lit que si une dérogation sert.
+ *
+ * Mesuré le 2026-11-03 : **20**, dont **3** pour le jugement (17 sans jour,
+ * même panier) — les règles d'heure limite, les limites des articles en un
+ * lot, la dérogation ouverte. Le jour choisi n'est pas aujourd'hui : l'arrêt
+ * du plan n'est pas relu.
+ */
+const COLD_COMPANY_QUOTE_OPS = 20;
+
+describe("le devis d'une société, un jour choisi", () => {
+  async function seedBuyer(): Promise<string> {
+    const company = await createCompany(ctx.prisma, { status: "active" });
+    const buyer = await createUser(ctx.prisma, { auth0Sub: "auth0|budget-societe" });
+    await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.orders);
+    return company.id;
+  }
+
+  const quote = (companyId: string, lines: readonly { sku: string; quantity: number }[]) =>
+    ctx
+      .asSub("auth0|budget-societe")
+      .set(WORKSPACE_HEADER, companyId)
+      .post("/shop/quote/mine")
+      .send({ lines: [...lines], fulfillment: null, requestedDeliveryDate: serviceDay() })
+      .expect(200);
+
+  it("coûte le budget à froid pour une seule ligne", async () => {
+    const companyId = await seedBuyer();
+    const cost = await coldOperationsOf(() =>
+      quote(companyId, [{ sku: "VIE-001-1", quantity: 2 }]),
+    );
+    expect(cost).toBe(COLD_COMPANY_QUOTE_OPS);
+  });
+
+  it("🔴 coûte EXACTEMENT AUTANT pour dix lignes que pour une", async () => {
+    const companyId = await seedBuyer();
+    const cost = await coldOperationsOf(() =>
+      quote(
+        companyId,
+        SKUS.map((sku) => ({ sku, quantity: 2 })),
+      ),
+    );
+    expect(cost).toBe(COLD_COMPANY_QUOTE_OPS);
   });
 });

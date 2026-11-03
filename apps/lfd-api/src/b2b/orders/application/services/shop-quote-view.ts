@@ -76,6 +76,8 @@ export function shopQuoteOf(priced: BasketAmounts, order: QuotedOrder): ShopCart
     ...(base === null ? {} : { pickupDiscountBase: base }),
     voucherDiscountCents: amounts.voucherDiscountCents,
     deliveryFeeCents: amounts.deliveryFeeCents,
+    // La surtaxe prévue (T1) : absente à zéro, « 0 € ne dit rien » (Hugo).
+    ...(terms.lateFeeCents === 0 ? {} : { lateFeeCents: terms.lateFeeCents }),
     deliveryVatMode: terms.deliveryVatMode,
     vat: amounts.vatShares.map((share) => ({ rate: share.rate, amountCents: share.amountCents })),
     totalCents: amounts.totalCents,

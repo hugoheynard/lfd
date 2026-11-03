@@ -8,6 +8,7 @@ import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.ga
 import {
   decideStrictestOrderCutoff,
   ensureWithinOrderCutoff,
+  foreseenWaiver,
   type LineOrderLimit,
 } from "../../domain/services/order-cutoff-guard.js";
 import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
@@ -49,23 +50,48 @@ export class OrderCutoffGate {
     companyId: string | null,
     { withWaiver }: { readonly withWaiver: boolean },
   ): Promise<string | null> {
+    return ensureWithinOrderCutoff(
+      await this.inputsOf(skus, fulfillmentDate, withWaiver ? companyId : null),
+    );
+  }
+
+  /**
+   * **La dérogation que la passation dépenserait**, lue sans être consommée et
+   * sans refuser — `null` hors de la grâce ou sans dérogation ouverte. Le devis
+   * d'une société s'en sert pour chiffrer la surtaxe prévue (plan
+   * `plan-total-vu.md`, T1) ; `consume` reste à la seule passation.
+   */
+  async foresee(
+    skus: readonly string[],
+    fulfillmentDate: string,
+    companyId: string,
+  ): Promise<string | null> {
+    return foreseenWaiver(await this.inputsOf(skus, fulfillmentDate, companyId));
+  }
+
+  /** Les règles, les limites des articles et la dérogation ouverte, lues ensemble. */
+  private async inputsOf(
+    skus: readonly string[],
+    fulfillmentDate: string,
+    waiverOwner: string | null,
+  ): Promise<Parameters<typeof ensureWithinOrderCutoff>[0]> {
     const [fallback, items, waiver] = await Promise.all([
       this.cutoffs.list(),
       // `pro` : la saisie par le staff exige une société (cf. `place-order-for-customer`).
       this.catalog.resolveMany(skus, staffViewer("pro")),
       // Une commande sans entreprise n'a pas de dérogation possible : elle
       // n'appartient à personne à qui on aurait pu en accorder une.
-      !withWaiver || companyId === null
+      waiverOwner === null
         ? Promise.resolve(null)
-        : this.waivers.openFor(companyId, fulfillmentDate),
+        : this.waivers.openFor(waiverOwner, fulfillmentDate),
     ]);
-    return ensureWithinOrderCutoff({
+    return {
       lines: limitsOf(skus, items),
       fallback,
       fulfillmentDate,
       waiver,
       now: this.clock.now(),
-    });
+    };
   }
 
   /**

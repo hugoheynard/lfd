@@ -26234,7 +26234,7 @@
         "discounts": [],
         "voucherCents": 0,
         "deliveryFeeCents": 0,
-        "lateFeeCents": null,
+        "lateFeeCents": 500,
         "vat": [
           {
             "rate": 5.5,
@@ -26243,10 +26243,14 @@
           {
             "rate": 10,
             "amountCents": 70
+          },
+          {
+            "rate": 20,
+            "amountCents": 100
           }
         ],
-        "vatCents": 125,
-        "totalCents": 1825,
+        "vatCents": 225,
+        "totalCents": 2425,
         "lines": [
           {
             "sku": "PAI-001-1",

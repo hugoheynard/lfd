@@ -125,6 +125,7 @@ import { AdminOrderEstimatesController } from "./http/admin-order-estimates.cont
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
 import { ShopCartQuoting } from "./application/services/shop-cart-quoting.service.js";
+import { LateFeeJudgement } from "./application/services/late-fee-judgement.service.js";
 import { GuestSignInOffer } from "./application/services/guest-sign-in-offer.service.js";
 import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
 import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
@@ -600,6 +601,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     EstimateOrderForCustomerHandler,
     ReadMyShopCatalogueHandler,
     ShopCartQuoting,
+    // La surtaxe prévue au devis d'une société (plan `plan-total-vu.md`, T1).
+    LateFeeJudgement,
     GuestSignInOffer,
     QuoteShopCartHandler,
     QuoteMyShopCartHandler,

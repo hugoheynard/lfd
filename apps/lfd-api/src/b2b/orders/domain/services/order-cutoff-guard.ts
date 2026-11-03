@@ -102,13 +102,42 @@ export function ensureWithinOrderCutoff(input: {
   if (decision.status === "open") {
     return null;
   }
+  const spent = waiverSpentBy(decision, input.waiver);
+  if (spent !== null) {
+    return spent;
+  }
   if (decision.status === "grace" && decision.graceEnd !== null) {
-    if (input.waiver !== null) {
-      return input.waiver.id;
-    }
     throw new OrderCutoffGraceError(input.fulfillmentDate, decision.graceEnd);
   }
   throw new PastOrderCutoffError(input.fulfillmentDate);
+}
+
+/**
+ * **La dérogation que la passation dépenserait**, sans refuser — ou `null`.
+ *
+ * Le devis d'une société chiffre la surtaxe prévue (plan
+ * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T1) par la MÊME
+ * décision qu'{@link ensureWithinOrderCutoff} : seule la sortie diffère. Là où
+ * la passation refuse, le devis ne chiffre rien — le refus viendra au
+ * paiement, nommé par la passation.
+ */
+export function foreseenWaiver(
+  input: Parameters<typeof ensureWithinOrderCutoff>[0],
+): string | null {
+  return waiverSpentBy(decideStrictestOrderCutoff(input), input.waiver);
+}
+
+/**
+ * 🔴 **Une dérogation n'ouvre que la GRÂCE** — écrit une fois, lu par la
+ * passation et par le devis. Hors de la grâce, aucune branche ne la rend.
+ */
+function waiverSpentBy(
+  decision: OrderCutoffDecision,
+  waiver: { readonly id: string } | null,
+): string | null {
+  return decision.status === "grace" && decision.graceEnd !== null && waiver !== null
+    ? waiver.id
+    : null;
 }
 
 /**

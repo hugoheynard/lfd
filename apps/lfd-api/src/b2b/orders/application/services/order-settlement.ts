@@ -3,6 +3,7 @@ import type { OrderSettlement } from "@lfd/contracts";
 import type { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
 import { TermsNotGrantedError } from "../../domain/errors/order-errors.js";
+import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
 import type {
   AccountSettlementStanding,
   OrderGuardReader,
@@ -119,8 +120,27 @@ export async function accountStanding(
   if (companyId === null) {
     return "none";
   }
-  if ((await guard.companyStatusOf(companyId)) !== "active") {
+  return accountStandingOfStatus(
+    guard,
+    companyId,
+    parties.payerId,
+    await guard.companyStatusOf(companyId),
+  );
+}
+
+/**
+ * La même règle, le statut déjà lu par l'appelant — pour ne pas relire la
+ * société quand il vient de la juger (la saisie, É18 : une lecture en double
+ * mesurée par `pricing-budget` le 2026-11-03).
+ */
+export async function accountStandingOfStatus(
+  guard: Pick<SettlementPorts["guard"], "settlesOnAccount">,
+  companyId: string,
+  payerId: string | null,
+  status: OrderCompanyStatus | null,
+): Promise<AccountSettlementStanding> {
+  if (status !== "active") {
     return "none";
   }
-  return guard.settlesOnAccount(parties.payerId ?? companyId);
+  return guard.settlesOnAccount(payerId ?? companyId);
 }

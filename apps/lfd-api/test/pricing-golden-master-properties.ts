@@ -77,6 +77,8 @@ export interface KnownGap {
  * disparaissent un par un aux lots L2-L3 : une ligne retirée ici est la
  * preuve qu'un écart a été tranché.
  */
+// É11 retiré le 2026-11-03 (plan `plan-total-vu.md`, T1) : le devis d'une
+// société chiffre la surtaxe prévue, et le cas `late-fee` prouve l'égalité.
 export const KNOWN_GAPS: readonly KnownGap[] = [
   {
     ecart: "É16",
@@ -85,15 +87,6 @@ export const KNOWN_GAPS: readonly KnownGap[] = [
     order: "C.orders.personal.card",
     fields: ["subtotalCents"],
     why: "en `exact_ht`, le sous-total du devis client « peut encore bouger d'un centime » à la passation",
-  },
-  {
-    ecart: "É11",
-    since: "2026-11-03",
-    advice: "A.shop-quote.mine.company",
-    order: "C.admin-orders.account",
-    fields: ["vat", "vatCents", "totalCents"],
-    baskets: ["late-fee"],
-    why: "le devis ne connaît pas la dérogation : la commande porte un supplément (et sa TVA) qu'il n'annonce pas",
   },
 ];
 

@@ -8,7 +8,7 @@ import type { PackingSheet } from "@lfd/contracts";
 
 import { DeferredTerm } from "../src/platform/database/client/client.js";
 import { binTypeId } from "./delivery-loading-scene.js";
-import { E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
+import { E2E_STAFF_ID, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import {
   type FulfillmentSeed,
@@ -89,10 +89,10 @@ export async function accountOrder(
     staffUserId: E2E_STAFF_ID,
     settlement: "account",
     forDay: SERVICE_DAY,
-    fulfillment: how?.fulfillment ?? {
-      method: "pickup",
-      pickupSiteId: await pickupSite(ctx.prisma),
-    },
+    fulfillment:
+      how === undefined
+        ? { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) }
+        : await bookedFulfillment(ctx, company.id, how),
     ...(how?.window === undefined ? {} : { window: how.window }),
     lines: [{ sku: CROISSANT, quantity: 3 }, ...extra],
   });
@@ -101,6 +101,43 @@ export async function accountOrder(
       ? { nature: "bin", binTypeId: await binTypeId(ctx), half: false, innerBags: 0 }
       : undefined;
   return drawn(ctx, placed, packed, container);
+}
+
+/**
+ * Une livraison part d'une adresse INSCRITE au carnet de la société, qui porte
+ * l'échéance demandée : depuis E1 (Hugo, 2026-11-03, P2a 7e93eec00 —
+ * `plan-prix-de-la-saisie.md`), la saisie de l'équipe pour un pro ne demande
+ * qu'une fenêtre inscrite sur l'adresse, comme le pro lui-même. Une adresse
+ * dictée n'en porte aucune, et la scène était refusée
+ * (`orders.fulfillment.deadline_not_registered`). Le retrait passe tel quel.
+ */
+async function bookedFulfillment(
+  ctx: E2eContext,
+  companyId: string,
+  how: SceneFulfillment,
+): Promise<FulfillmentSeed> {
+  const { fulfillment, window } = how;
+  if (fulfillment.method !== "delivery" || window === undefined) {
+    return fulfillment;
+  }
+  const created = await ctx
+    .asSub(E2E_STAFF_SUB)
+    .post(`/admin/companies/${companyId}/delivery-addresses`)
+    .send({
+      ...fulfillment.address,
+      isDefault: true,
+      specs: {
+        signatureRequired: null,
+        note: "",
+        slotList: { mode: "everyday", slots: [] },
+        deliveryContact: null,
+        gps: null,
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: [window.end] },
+      },
+    })
+    .expect(201);
+  return { ...fulfillment, addressId: jsonBody<{ id: string }>(created).id };
 }
 
 /** `container` : le contenant ouvert au colisage — un sac par défaut, un bac pour une livraison. */

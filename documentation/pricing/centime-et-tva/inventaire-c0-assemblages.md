@@ -283,8 +283,14 @@ Effet : A n'annonce pas qu'une passation sera refusée ou surtaxée.
 _Recommandation_ : contrôle de `Order.fromCart` (panier complet) ; le signal de
 B est de l'habillage à généraliser à A quand le jour est connu.
 
-**É11 — Supplément de retard (#20).** _Laissé ouvert en L2 (Hugo,
-2026-11-03 : incertain pour un panier qui traîne)._ Seuls C (si dérogation) et D (figé)
+**É11 — Supplément de retard (#20).** ✅ _Tranché pour A (devis d'un client
+rattaché à une société) le 2026-11-03, lot T1 de
+[`plan-total-vu.md`](plan-total-vu.md) : le devis juge la surtaxe comme la
+passation, dérogation lue sans être consommée, et rend `lateFeeCents` (absent
+à zéro). Reste vrai pour B (le devis client et celui de l'équipe s'arrêtent au
+sous-total HT, ils ne chiffrent aucun terme du bas de facture) ; l'estimation
+(E) le chiffrait déjà. Laissé ouvert en L2 (Hugo, 2026-11-03 : incertain pour
+un panier qui traîne)._ Seuls C (si dérogation) et D (figé)
 le portent. A et B ne peuvent pas le prédire. Effet : un total devis inférieur
 au total facturé pour un pro qui commande sous dérogation. _Recommandation_ :
 il dépend d'une dérogation, donc d'un panier complet → reste au

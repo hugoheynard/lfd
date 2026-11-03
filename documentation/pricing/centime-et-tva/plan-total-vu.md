@@ -85,8 +85,13 @@ espace pro, saisie de l'équipe), carte comme compte, et pour la révision.
 
 ## 4. Les lots
 
-- **T1** — la surtaxe prévue au devis d'un client connecté avec société, par
-  le jugement de `draft` (0 € = rien).
+- **T1** ✅ _(bâti le 2026-11-03, non commité à l'écriture)_ — la surtaxe
+  prévue au devis d'un client connecté avec société, par le jugement de
+  `draft` (0 € = rien). `LateFeeJudgement` (`late-fee-judgement.service.ts`)
+  porte le verdict pour la passation et le devis ; `OrderCutoffGate.foresee`
+  lit la dérogation sans la consommer (`foreseenWaiver`, même décision
+  qu'`ensureWithinOrderCutoff`). Le devis rend `lateFeeCents`, absent à zéro
+  (champ additif de `ShopQuoteView`). Golden master : É11 retiré.
 - **T2** — après L2 et sa parité : `expectedTotalCents` au contrat, hors
   empreinte ; refus 409 `orders.total_changed` après `draft` et avant
   `settleOrder` dans les trois passations ; e2e (surtaxe apparue, promotion

@@ -72,7 +72,7 @@ export class ShelfCircuit {
    * @throws {EntryShortcutOffShelfError} l'équipe envoie un raccourci sans `shelf`.
    */
   async decide(
-    parties: OrderParties,
+    parties: Pick<OrderParties, "placedByStaffId">,
     day: string | null,
     requested: StaffOrderSupply | undefined,
     shortcut?: StaffEntryShortcut,

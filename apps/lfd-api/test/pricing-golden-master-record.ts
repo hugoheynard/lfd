@@ -121,7 +121,8 @@ export function fromShopQuote(response: request.Response): Recorded {
         discounts.length > 0 ? discounts : [int(view["discountCents"])].filter((c) => c > 0),
       voucherCents: int(view["voucherDiscountCents"]),
       deliveryFeeCents: int(view["deliveryFeeCents"]),
-      lateFeeCents: null,
+      // Absente à zéro (T1) : `null` = « le devis n'en dit rien ».
+      lateFeeCents: num(view["lateFeeCents"]),
       vat,
       vatCents: vat.reduce((sum, share) => sum + share.amountCents, 0),
       totalCents: int(view["totalCents"]),

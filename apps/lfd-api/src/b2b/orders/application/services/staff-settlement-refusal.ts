@@ -7,7 +7,11 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { CounterAccountSettlementNotGrantedError } from "../../domain/errors/shelf-order-errors.js";
 import { ShelfWithoutCreditRefusedError } from "../../domain/errors/shelf-circuit-errors.js";
-import { accountStanding, type SettlementPorts } from "./order-settlement.js";
+import {
+  accountStanding,
+  accountStandingOfStatus,
+  type SettlementPorts,
+} from "./order-settlement.js";
 import type { ShelfCircuit } from "./shelf-circuit.service.js";
 
 /** Les deux lectures dont le jugement du crédit a besoin, et elles seules. */
@@ -53,10 +57,17 @@ export async function staffSettlementRefusal(
   }
   if (settlement === "account") {
     // É18 : la suspendue est servie comme dans son espace (lot P0), jamais au compte.
-    if ((await ports.guard.companyStatusOf(companyId)) === "suspended") {
+    const status = await ports.guard.companyStatusOf(companyId);
+    if (status === "suspended") {
       return new SuspendedCompanyAccountSettlementError();
     }
-    const standing = await accountStanding(ports.guard, parties);
+    // Le statut se lit UNE fois : le relire pour le crédit doublait la lecture.
+    const standing = await accountStandingOfStatus(
+      ports.guard,
+      companyId,
+      order.billedCompanyId,
+      status,
+    );
     return standing === "granted"
       ? null
       : new AccountSettlementNotGrantedError(standing === "blocked");

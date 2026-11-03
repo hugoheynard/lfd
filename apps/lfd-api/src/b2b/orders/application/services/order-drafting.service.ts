@@ -1,5 +1,4 @@
 import {
-  type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
   type SalesTermsDocument,
   type StaffEntryShortcut,
@@ -33,6 +32,7 @@ import { warnBeyondCap } from "./basket-promotions.service.js";
 import { OrderComposition, pickupSiteOf } from "./order-composition.service.js";
 import type { OrderContent } from "./order-content.js";
 import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
+import { LateFeeJudgement } from "./late-fee-judgement.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
@@ -85,6 +85,7 @@ export class OrderDrafting {
   private readonly logger = new Logger(OrderDrafting.name);
   private readonly composition: OrderComposition;
   private readonly cutoffGate: OrderCutoffGate;
+  private readonly lateFee: LateFeeJudgement;
 
   constructor(
     private readonly linePricing: OrderLinePricing,
@@ -94,7 +95,7 @@ export class OrderDrafting {
     private readonly clock: Clock,
     catalog: ProductCatalogReader,
     waivers: OrderCutoffWaiverGate,
-    private readonly lateFees: OrderLateFeeReader,
+    lateFees: OrderLateFeeReader,
     audiences: CustomerAudiences,
     private readonly operations: OrderOperations,
     private readonly payers: OrderPayerReader,
@@ -114,6 +115,7 @@ export class OrderDrafting {
       audiences,
     );
     this.cutoffGate = new OrderCutoffGate(cutoffs, catalog, waivers, clock);
+    this.lateFee = new LateFeeJudgement(this.cutoffGate, shelf, lateFees);
   }
 
   /**
@@ -202,12 +204,10 @@ export class OrderDrafting {
       loaded.context,
       windowRequesterOf(parties.companyId, parties.placedByStaffId !== null),
     );
-    // La surtaxe ne se lit QUE si une dérogation a servi : une requête de plus
-    // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
-    // se paierait sur toutes les commandes à l'heure. C'est un VERDICT qui a un
-    // prix (§ 2.3) : `priceBasket` l'applique au sous-total.
+    // C'est un VERDICT qui a un prix (§ 2.3) : `priceBasket` l'applique au
+    // sous-total ; le devis d'une société le prévoit par la même source.
     const composed = OrderComposition.draftOf(content, loaded.context, arranged, {
-      lateFee: await this.lateFeeFor(waiverUsed),
+      lateFee: await this.lateFee.forWaiver(waiverUsed),
     });
     warnBeyondCap(this.logger, pricedBasketOf(composed.pricing, vatMethod));
     const order = Order.draft(
@@ -317,26 +317,6 @@ export class OrderDrafting {
     // le paiement (D6).
     await this.operations.ensure(lines, parties.companyId);
     return explained;
-  }
-
-  /**
-   * Ce que le retard coûte, **et seulement quand il y a eu retard** — le
-   * verdict, pas le montant : `priceBasket` l'applique au sous-total (§ 2.3).
-   *
-   * `null` de dérogation ⇒ rien à facturer. Réglage absent ⇒ rien non plus :
-   * rattraper sans facturer est un choix valable, et inventer un montant
-   * facturerait une décision que personne n'a prise. Le taux voyage avec
-   * l'ajustement : un montant sans son taux ne se justifie pas devant un comptable.
-   */
-  private async lateFeeFor(waiverUsed: string | null): Promise<LateFeeAdjustment | null> {
-    if (waiverUsed === null) {
-      return null;
-    }
-    const setting = await this.lateFees.current();
-    if (setting === null) {
-      return null;
-    }
-    return { adjustment: setting.adjustment, vatRatePercent: setting.vatRatePercent };
   }
 
   /**

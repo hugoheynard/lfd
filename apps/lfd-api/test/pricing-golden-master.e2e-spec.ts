@@ -165,11 +165,15 @@ describe("le golden master du chiffrage (L0)", () => {
     );
     expect(faults).toEqual([]);
     expect(paths["C.admin-orders.account"]?.amounts?.lateFeeCents).toBeGreaterThan(0);
-    const divergences = divergencesOf("late-fee", paths);
-    expect(divergences.filter((divergence) => gapCovering(divergence) === undefined)).toEqual([]);
-    for (const divergence of divergences) met.add(gapCovering(divergence)?.ecart ?? "?");
-    // Le supplément que le devis n'annonce pas (É11) doit se VOIR ici, sinon le cas ne prouve rien.
-    expect(met.has("É11")).toBe(true);
+    // É11 tranché (T1) : le devis de la société annonce le supplément de la
+    // commande, au centime — aucune divergence, même couverte.
+    expect(divergencesOf("late-fee", paths)).toEqual([]);
+    const quoted = paths["A.shop-quote.mine.company"]?.amounts;
+    const written = paths["C.admin-orders.account"]?.amounts;
+    expect({ lateFee: quoted?.lateFeeCents, total: quoted?.totalCents }).toEqual({
+      lateFee: written?.lateFeeCents,
+      total: written?.totalCents,
+    });
   }, 120_000);
 
   it("les refus décidés (L1b, L1c) : É12, l'échéance inscrite ; É13, la clientèle de la commande ; É18, la suspendue hors compte", async () => {

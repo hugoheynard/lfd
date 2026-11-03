@@ -210,6 +210,15 @@ export interface ShopQuoteView {
   /** Les frais de coursier, HT. Zéro en retrait — et alors aucune ligne. */
   readonly deliveryFeeCents: number;
   /**
+   * **La surtaxe de retard prévue**, HT, positive (plan
+   * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T1) — celle que
+   * la passation facturerait maintenant à une société dont la dérogation à
+   * l'heure limite est ouverte ; sa TVA est dans `vat`, et elle est comptée
+   * dans `totalCents`. **Absente** à zéro : sans dérogation, sans réglage ou
+   * réglage à 0 €, rien n'est dit (Hugo, 2026-11-03). Additive et facultative.
+   */
+  readonly lateFeeCents?: number;
+  /**
    * Le mode de TVA du port que la passation appliquerait — le réglage courant
    * (plan `architecture-tva-des-frais-de-port.md`, V4). Présent même en retrait : il
    * dit la règle, pas un montant.
