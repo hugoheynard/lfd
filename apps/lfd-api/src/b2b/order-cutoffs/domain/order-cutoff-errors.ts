@@ -56,6 +56,16 @@ export class InvalidNudgeDelayError extends DomainError {
   }
 }
 
+/** La tolérance de retard n'est pas un nombre entier de minutes ≥ 0 (Hugo, 2026-11-03). */
+export class InvalidLateToleranceError extends DomainError {
+  constructor(readonly minutes: number) {
+    super(
+      "order_cutoff_settings.invalid_late_tolerance",
+      `La tolérance de retard se compte en minutes entières après la fin du créneau, 0 ou plus (reçu : ${String(minutes)}). Saisissez par exemple 15 pour qu'une commande ne passe en retard qu'un quart d'heure après la fin de son créneau, ou 0 pour dès la première minute.`,
+    );
+  }
+}
+
 /**
  * La durée pendant laquelle un paiement en cours tient le stock de la vitrine
  * sort de ses bornes, ou n'est pas un nombre entier de minutes (lot L3, 2026-11-02).

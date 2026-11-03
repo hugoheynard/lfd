@@ -19,6 +19,7 @@ export class PrismaOrderCutoffSettingsRepository extends OrderCutoffSettingsRepo
       resupplyCutoffTime: settings.resupplyCutoffTime,
       pickupReminderDelayMinutes: settings.pickupReminderDelayMinutes,
       delayWarningDelayMinutes: settings.delayWarningDelayMinutes,
+      lateToleranceMinutes: settings.lateToleranceMinutes,
       sameDayPublicAllowed: settings.sameDayPublicAllowed,
       sameDayProAllowed: settings.sameDayProAllowed,
       sameDayProOnline: settings.sameDayProOnline,

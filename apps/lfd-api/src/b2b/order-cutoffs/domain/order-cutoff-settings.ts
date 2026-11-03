@@ -6,6 +6,7 @@ import {
 
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 import {
+  InvalidLateToleranceError,
   InvalidNudgeDelayError,
   InvalidResupplyCutoffTimeError,
   InvalidShelfHoldMinutesError,
@@ -46,6 +47,7 @@ export class OrderCutoffSettings implements OrderCutoffSettingsState {
   readonly resupplyCutoffTime: string;
   readonly pickupReminderDelayMinutes: number;
   readonly delayWarningDelayMinutes: number;
+  readonly lateToleranceMinutes: number;
   readonly sameDayPublicAllowed: boolean;
   readonly sameDayProAllowed: boolean;
   readonly sameDayProOnline: boolean;
@@ -61,6 +63,7 @@ export class OrderCutoffSettings implements OrderCutoffSettingsState {
     this.resupplyCutoffTime = state.resupplyCutoffTime;
     this.pickupReminderDelayMinutes = state.pickupReminderDelayMinutes;
     this.delayWarningDelayMinutes = state.delayWarningDelayMinutes;
+    this.lateToleranceMinutes = state.lateToleranceMinutes;
     this.sameDayPublicAllowed = state.sameDayPublicAllowed;
     this.sameDayProAllowed = state.sameDayProAllowed;
     this.sameDayProOnline = state.sameDayProOnline;
@@ -75,6 +78,7 @@ export class OrderCutoffSettings implements OrderCutoffSettingsState {
    *
    * @throws {InvalidResupplyCutoffTimeError} l'heure du réassort n'existe pas.
    * @throws {InvalidNudgeDelayError} un délai de relance n'est pas un entier ≥ 0.
+   * @throws {InvalidLateToleranceError} la tolérance de retard n'est pas un entier ≥ 0.
    * @throws {InvalidShelfHoldMinutesError} la tenue du stock sort de ses bornes.
    */
   static pose(input: {
@@ -96,6 +100,9 @@ export class OrderCutoffSettings implements OrderCutoffSettingsState {
       ),
       delayWarningDelayMinutes: nudgeDelay(
         patch.delayWarningDelayMinutes ?? current.delayWarningDelayMinutes,
+      ),
+      lateToleranceMinutes: lateTolerance(
+        patch.lateToleranceMinutes ?? current.lateToleranceMinutes,
       ),
       sameDayPublicAllowed: patch.sameDayPublicAllowed ?? current.sameDayPublicAllowed,
       sameDayProAllowed: patch.sameDayProAllowed ?? current.sameDayProAllowed,
@@ -122,6 +129,11 @@ export interface OrderCutoffSettingsState {
   /** « Avertir le client » : minutes après la fin du créneau d'un retrait (2026-10-25). */
   readonly delayWarningDelayMinutes: number;
   /**
+   * La tolérance de retard (Hugo, 2026-11-03) : minutes après la fin du
+   * créneau avant qu'une commande soit « créneau dépassé ».
+   */
+  readonly lateToleranceMinutes: number;
+  /**
    * Le circuit du jour J (lot L3, `limites-de-commande/jour-meme-sur-stock.md`
    * §3, 2026-11-02) : autoriser les particuliers, les pros, les pros en ligne ;
    * le sort d'un pro sans crédit au comptoir ; la tenue du stock par un
@@ -145,6 +157,7 @@ const STATE_KEYS = [
   "resupplyCutoffTime",
   "pickupReminderDelayMinutes",
   "delayWarningDelayMinutes",
+  "lateToleranceMinutes",
   "sameDayPublicAllowed",
   "sameDayProAllowed",
   "sameDayProOnline",
@@ -168,6 +181,17 @@ function shelfHold(minutes: number): number {
 function nudgeDelay(minutes: number): number {
   if (!Number.isInteger(minutes) || minutes < 0) {
     throw new InvalidNudgeDelayError(minutes);
+  }
+  return minutes;
+}
+
+/**
+ * La tolérance de retard : un nombre entier de minutes, jamais négatif. Pas
+ * de borne haute, comme les délais de relance voisins (2026-11-03).
+ */
+function lateTolerance(minutes: number): number {
+  if (!Number.isInteger(minutes) || minutes < 0) {
+    throw new InvalidLateToleranceError(minutes);
   }
   return minutes;
 }

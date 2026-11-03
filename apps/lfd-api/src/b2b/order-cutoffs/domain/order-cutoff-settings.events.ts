@@ -41,6 +41,7 @@ function stateOf(state: OrderCutoffSettingsState): OrderCutoffSettingsState {
     resupplyCutoffTime: state.resupplyCutoffTime,
     pickupReminderDelayMinutes: state.pickupReminderDelayMinutes,
     delayWarningDelayMinutes: state.delayWarningDelayMinutes,
+    lateToleranceMinutes: state.lateToleranceMinutes,
     sameDayPublicAllowed: state.sameDayPublicAllowed,
     sameDayProAllowed: state.sameDayProAllowed,
     sameDayProOnline: state.sameDayProOnline,

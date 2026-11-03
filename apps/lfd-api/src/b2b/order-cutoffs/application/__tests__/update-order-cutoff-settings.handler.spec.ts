@@ -121,12 +121,14 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
       resupplyCutoffTime: "20:00",
       pickupReminderDelayMinutes: 0,
       delayWarningDelayMinutes: 0,
+      lateToleranceMinutes: 15,
       previous: {
         ...JOUR_J_CLOSED,
         sameDayAllowed: true,
         resupplyCutoffTime: "20:00",
         pickupReminderDelayMinutes: 0,
         delayWarningDelayMinutes: 0,
+        lateToleranceMinutes: 15,
       },
     });
   });
@@ -148,12 +150,14 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
       resupplyCutoffTime: "21:30",
       pickupReminderDelayMinutes: 0,
       delayWarningDelayMinutes: 0,
+      lateToleranceMinutes: 15,
       previous: {
         ...JOUR_J_CLOSED,
         sameDayAllowed: true,
         resupplyCutoffTime: "20:00",
         pickupReminderDelayMinutes: 0,
         delayWarningDelayMinutes: 0,
+        lateToleranceMinutes: 15,
       },
     });
   });
@@ -177,6 +181,23 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
       pickupReminderDelayMinutes: 15,
       delayWarningDelayMinutes: 5,
       previous: { pickupReminderDelayMinutes: 0, delayWarningDelayMinutes: 0 },
+    });
+  });
+
+  /** La tolérance de retard (Hugo, 2026-11-03) : posée seule, journalisée avec l'ancienne. */
+  it("pose la tolérance de retard sans toucher au reste, et la journalise", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await handler(SAME_DAY_OPEN, written, events).execute(
+      new UpdateOrderCutoffSettingsCommand({ lateToleranceMinutes: 20 }, "staff_agent"),
+    );
+
+    expect(written.puts[0]?.lateToleranceMinutes).toBe(20);
+    expect(written.puts[0]?.pickupReminderDelayMinutes).toBe(0);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      lateToleranceMinutes: 20,
+      previous: { lateToleranceMinutes: 15 },
     });
   });
 

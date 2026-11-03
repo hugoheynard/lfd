@@ -18,6 +18,9 @@ const at = (utc: string): Date => new Date(`${DAY}T${utc}:00.000Z`);
 
 const PROMISED: HandoverQueueWindow = { start: "07:00", end: "08:00", source: "override" };
 const NO_START: HandoverQueueWindow = { start: null, end: "08:00", source: "override" };
+/** Sans tolérance : la règle d'avant le 2026-11-03, la première minute sonne. */
+const NO_TOLERANCE = 0;
+
 const OPENING_HOURS: HandoverQueueWindow = { start: "07:00", end: "08:00", source: "default" };
 
 describe("stageOf", () => {
@@ -41,23 +44,68 @@ describe("stageOf", () => {
 
 describe("latenessOf — pas retirée après son créneau", () => {
   it("ne signale rien pile à la fin du créneau", () => {
-    expect(latenessOf("ready", PROMISED, DAY, at("07:00"))).toBeNull();
+    expect(latenessOf("ready", PROMISED, DAY, at("07:00"), NO_TOLERANCE)).toBeNull();
   });
 
   it("signale une minute après la fin du créneau", () => {
-    expect(latenessOf("ready", PROMISED, DAY, at("07:01"))).toBe("not_handed_over_after_window");
+    expect(latenessOf("ready", PROMISED, DAY, at("07:01"), NO_TOLERANCE)).toBe(
+      "not_handed_over_after_window",
+    );
   });
 
   it("prime sur l'approche : pas prête ET créneau passé = pas retirée", () => {
-    expect(latenessOf("placed", PROMISED, DAY, at("07:01"))).toBe("not_handed_over_after_window");
+    expect(latenessOf("placed", PROMISED, DAY, at("07:01"), NO_TOLERANCE)).toBe(
+      "not_handed_over_after_window",
+    );
   });
 
   it("ne signale jamais une commande retirée", () => {
-    expect(latenessOf("handed_over", PROMISED, DAY, at("12:00"))).toBeNull();
+    expect(latenessOf("handed_over", PROMISED, DAY, at("12:00"), NO_TOLERANCE)).toBeNull();
   });
 
   it("ne signale jamais une commande annulée", () => {
-    expect(latenessOf("cancelled", PROMISED, DAY, at("12:00"))).toBeNull();
+    expect(latenessOf("cancelled", PROMISED, DAY, at("12:00"), NO_TOLERANCE)).toBeNull();
+  });
+});
+
+describe("latenessOf — la tolérance de retard (Hugo, 2026-11-03)", () => {
+  const TOLERANCE = 15;
+  const afterEnd = (minutes: number): Date => new Date(at("07:00").getTime() + minutes * 60_000);
+
+  it("n'est pas en retard à la fin du créneau plus la tolérance", () => {
+    expect(latenessOf("ready", PROMISED, DAY, afterEnd(15), TOLERANCE)).toBeNull();
+  });
+
+  it("est en retard une minute au-delà de la tolérance", () => {
+    expect(latenessOf("ready", PROMISED, DAY, afterEnd(16), TOLERANCE)).toBe(
+      "not_handed_over_after_window",
+    );
+  });
+
+  it("une tolérance nulle rend la règle d'avant : la première minute sonne", () => {
+    expect(latenessOf("ready", PROMISED, DAY, afterEnd(1), 0)).toBe("not_handed_over_after_window");
+  });
+
+  it("pas prête dans la tolérance : c'est « pas prête avant le créneau », qui ne change pas", () => {
+    expect(latenessOf("placed", PROMISED, DAY, afterEnd(5), TOLERANCE)).toBe(
+      "not_ready_before_window",
+    );
+  });
+
+  it("superviseDay passe la tolérance à la règle", () => {
+    const ready: SupervisedOrder = {
+      orderId: "1",
+      reference: "ORD-1",
+      customerName: null,
+      fulfillmentMethod: "pickup",
+      status: "ready",
+      supply: "planned",
+      window: PROMISED,
+      shortfallReportedAt: null,
+      shortfallLines: [],
+    };
+    expect(superviseDay(DAY, [ready], afterEnd(5), TOLERANCE).late).toEqual([]);
+    expect(superviseDay(DAY, [ready], afterEnd(16), TOLERANCE).late).toHaveLength(1);
   });
 });
 
@@ -67,24 +115,26 @@ describe("latenessOf — pas prête à l'approche du créneau", () => {
   const minutesAfter = (minutes: number): Date => new Date(threshold + minutes * 60_000);
 
   it("ne signale rien pile au seuil", () => {
-    expect(latenessOf("in_production", PROMISED, DAY, minutesAfter(0))).toBeNull();
+    expect(latenessOf("in_production", PROMISED, DAY, minutesAfter(0), NO_TOLERANCE)).toBeNull();
   });
 
   it("signale une minute après le seuil, commandée ou en production", () => {
-    expect(latenessOf("placed", PROMISED, DAY, minutesAfter(1))).toBe("not_ready_before_window");
-    expect(latenessOf("in_production", PROMISED, DAY, minutesAfter(1))).toBe(
+    expect(latenessOf("placed", PROMISED, DAY, minutesAfter(1), NO_TOLERANCE)).toBe(
+      "not_ready_before_window",
+    );
+    expect(latenessOf("in_production", PROMISED, DAY, minutesAfter(1), NO_TOLERANCE)).toBe(
       "not_ready_before_window",
     );
   });
 
   it("ne signale pas une commande déjà prête avant la fin du créneau", () => {
-    expect(latenessOf("ready", PROMISED, DAY, minutesAfter(1))).toBeNull();
+    expect(latenessOf("ready", PROMISED, DAY, minutesAfter(1), NO_TOLERANCE)).toBeNull();
   });
 
   it("prend la fin comme repère quand le créneau n'a pas de début", () => {
     const endThreshold = at("07:00").getTime() - READY_BEFORE_WINDOW_MINUTES * 60_000;
-    expect(latenessOf("placed", NO_START, DAY, new Date(endThreshold))).toBeNull();
-    expect(latenessOf("placed", NO_START, DAY, new Date(endThreshold + 60_000))).toBe(
+    expect(latenessOf("placed", NO_START, DAY, new Date(endThreshold), NO_TOLERANCE)).toBeNull();
+    expect(latenessOf("placed", NO_START, DAY, new Date(endThreshold + 60_000), NO_TOLERANCE)).toBe(
       "not_ready_before_window",
     );
   });
@@ -92,19 +142,25 @@ describe("latenessOf — pas prête à l'approche du créneau", () => {
 
 describe("latenessOf — ce qui n'est jamais jugé", () => {
   it("un créneau nul", () => {
-    expect(latenessOf("placed", null, DAY, at("23:00"))).toBeNull();
+    expect(latenessOf("placed", null, DAY, at("23:00"), NO_TOLERANCE)).toBeNull();
   });
 
   it("une heure d'ouverture recopiée (`source: default`)", () => {
-    expect(latenessOf("placed", OPENING_HOURS, DAY, at("23:00"))).toBeNull();
+    expect(latenessOf("placed", OPENING_HOURS, DAY, at("23:00"), NO_TOLERANCE)).toBeNull();
   });
 
   it("une heure qui n'existe pas ce jour-là (passage à l'heure d'été)", () => {
     // Le 2027-03-28, 02:30 n'existe pas à Paris : `localToInstant` rend `null`.
     const missing: HandoverQueueWindow = { start: null, end: "02:30", source: "override" };
-    expect(latenessOf("placed", missing, "2027-03-28", new Date("2027-03-28T20:00:00.000Z"))).toBe(
-      null,
-    );
+    expect(
+      latenessOf(
+        "placed",
+        missing,
+        "2027-03-28",
+        new Date("2027-03-28T20:00:00.000Z"),
+        NO_TOLERANCE,
+      ),
+    ).toBe(null);
   });
 });
 
@@ -140,6 +196,7 @@ describe("superviseDay", () => {
         order("8", "ready", "delivery"),
       ],
       at("03:00"),
+      NO_TOLERANCE,
     );
 
     expect(flow).toEqual([
@@ -169,6 +226,7 @@ describe("superviseDay", () => {
       DAY,
       [order("1", "cancelled"), order("2", "cancelled"), order("3", "ready")],
       at("03:00"),
+      NO_TOLERANCE,
       new Set(["2", "3"]),
     );
 
@@ -176,17 +234,21 @@ describe("superviseDay", () => {
   });
 
   it("garde une ligne par acheminement même sans commande", () => {
-    expect(superviseDay(DAY, [], at("03:00")).flow.map((line) => line.fulfillmentMethod)).toEqual([
-      "pickup",
-      "delivery",
-    ]);
+    expect(
+      superviseDay(DAY, [], at("03:00"), NO_TOLERANCE).flow.map((line) => line.fulfillmentMethod),
+    ).toEqual(["pickup", "delivery"]);
   });
 
   it("montre prête une commande prise sur la vitrine — jamais en attente ni en préparation (lot L1)", () => {
     const shelf: SupervisedOrder = { ...order("1", "placed", "pickup", PROMISED), supply: "shelf" };
 
     // Le créneau promis approche (07:00 à Paris = 06:00 UTC, marge d'une heure).
-    const { flow, late } = superviseDay(DAY, [shelf, order("2", "placed")], at("05:30"));
+    const { flow, late } = superviseDay(
+      DAY,
+      [shelf, order("2", "placed")],
+      at("05:30"),
+      NO_TOLERANCE,
+    );
 
     expect(flow[0]).toMatchObject({ placed: 1, inProduction: 0, ready: 1 });
     expect(late).toEqual([]);
@@ -202,6 +264,7 @@ describe("superviseDay", () => {
         order("4", "placed", "delivery", null),
       ],
       at("09:00"),
+      NO_TOLERANCE,
     );
 
     expect(late.map((entry) => [entry.order.orderId, entry.stage, entry.rule])).toEqual([

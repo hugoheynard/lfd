@@ -330,3 +330,21 @@ describe("le BL client au comptoir — le mur (lot L6)", () => {
     expect(note.printedAt).toBeNull();
   });
 });
+
+describe("la tolérance de retard au comptoir (Hugo, 2026-11-03)", () => {
+  it("rend au vendeur la tolérance du réglage — 15 par défaut, puis celle posée", async () => {
+    const seller = await counterSeller();
+
+    const initial = await seller.get("/admin/counter/late-tolerance").expect(200);
+    expect(initial.body).toEqual({ lateToleranceMinutes: 15 });
+
+    await staff()
+      .patch("/admin/order-cutoff-settings")
+      .send({ lateToleranceMinutes: 25 })
+      .expect(204);
+    const posed = await seller.get("/admin/counter/late-tolerance").expect(200);
+    expect(posed.body).toEqual({ lateToleranceMinutes: 25 });
+    // Le réglage entier, lui, reste à l'équipe Commandes.
+    await seller.get("/admin/order-cutoff-settings").expect(403);
+  });
+});

@@ -9,6 +9,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { OrderPackingStateReader } from "../../../../packing/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { DaySupervisionReader } from "../../domain/ports/day-supervision.reader.js";
+import { LateToleranceReader } from "../../domain/ports/late-tolerance.reader.js";
 import {
   awaitingDecisionOf,
   superviseDay,
@@ -27,6 +28,9 @@ import { GetDaySupervisionQuery } from "./get-day-supervision.query.js";
  * la feuille — annulées APRÈS l'arrêt, gardées au compte à produire — sont
  * comptées à part (`cancelledAfterPlan`). Le colisage le dit par son canal ;
  * seules les annulées lui sont demandées.
+ *
+ * La tolérance de retard (Hugo, 2026-11-03) est lue du réglage à chaque
+ * lecture : un créneau n'est dépassé qu'une fois sa fin passée de ce délai.
  */
 @QueryHandler(GetDaySupervisionQuery)
 export class GetDaySupervisionHandler implements IQueryHandler<
@@ -37,6 +41,7 @@ export class GetDaySupervisionHandler implements IQueryHandler<
     private readonly reader: DaySupervisionReader,
     private readonly clock: Clock,
     private readonly packing: OrderPackingStateReader,
+    private readonly tolerance: LateToleranceReader,
   ) {}
 
   async execute(query: GetDaySupervisionQuery): Promise<DaySupervisionView> {
@@ -44,11 +49,18 @@ export class GetDaySupervisionHandler implements IQueryHandler<
     // Le jour de Paris, et non `toISOString().slice(0, 10)` : à 00 h 30 l'été,
     // il est encore la veille en UTC.
     const day = query.day ?? instantToLocal(now).day;
-    const [orders, undated] = await Promise.all([
+    const [orders, undated, lateToleranceMinutes] = await Promise.all([
       this.reader.ordersOn(day),
       this.reader.countUndated(),
+      this.tolerance.lateToleranceMinutes(),
     ]);
-    const { flow, late } = superviseDay(day, orders, now, await this.withdrawnAmong(orders));
+    const { flow, late } = superviseDay(
+      day,
+      orders,
+      now,
+      lateToleranceMinutes,
+      await this.withdrawnAmong(orders),
+    );
     return {
       date: day,
       asOf: now.toISOString(),

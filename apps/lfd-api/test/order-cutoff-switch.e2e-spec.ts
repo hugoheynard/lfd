@@ -201,6 +201,8 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
       // Les délais des relances d'un retrait en retard (2026-10-25), 0 par défaut.
       pickupReminderDelayMinutes: 0,
       delayWarningDelayMinutes: 0,
+      // La tolérance de retard (Hugo, 2026-11-03), 15 par défaut.
+      lateToleranceMinutes: 15,
       // Le circuit du jour J (lot L3, 2026-11-02) : fermé tant que personne ne l'a réglé.
       ...JOUR_J_CLOSED,
       updatedAt: null,
@@ -256,12 +258,14 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
           resupplyCutoffTime: "20:00",
           pickupReminderDelayMinutes: 0,
           delayWarningDelayMinutes: 0,
+          lateToleranceMinutes: 15,
           ...JOUR_J_CLOSED,
           previous: {
             sameDayAllowed: false,
             resupplyCutoffTime: "20:00",
             pickupReminderDelayMinutes: 0,
             delayWarningDelayMinutes: 0,
+            lateToleranceMinutes: 15,
             ...JOUR_J_CLOSED,
           },
         },

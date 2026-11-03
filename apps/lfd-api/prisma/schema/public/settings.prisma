@@ -362,6 +362,10 @@ model OrderCutoffSettings {
   /// ne propose pas le geste et le serveur le refuse. 0 par défaut, ≥ 0 (CHECK).
   pickupReminderDelayMinutes Int                     @default(0) @map("pickup_reminder_delay_minutes")
   delayWarningDelayMinutes   Int                     @default(0) @map("delay_warning_delay_minutes")
+  /// **La tolérance de retard** (Hugo, 2026-11-03), en minutes APRÈS LA FIN
+  /// DU CRÉNEAU : avant, une commande n'est pas « créneau dépassé », ni à la
+  /// Supervision ni au comptoir. 15 par défaut, ≥ 0 (CHECK).
+  lateToleranceMinutes       Int                     @default(15) @map("late_tolerance_minutes")
   /// **Le circuit du jour J** (lot L3, `limites-de-commande/jour-meme-sur-stock.md`
   /// Hugo 2026-11-02) : « autoriser le jour même » séparé par clientèle.
   /// Recopié de `same_day_allowed` à la migration ; font foi depuis L4.

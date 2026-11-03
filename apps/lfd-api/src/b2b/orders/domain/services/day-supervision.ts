@@ -89,18 +89,25 @@ export function supervisedStageOf(order: SupervisedOrder): SupervisionStage | nu
  * Une heure qui n'existe pas ce jour-là (passage à l'heure d'été) rend
  * `localToInstant` nul : la règle qui en dépend ne juge pas, plutôt que
  * d'inventer un instant.
+ *
+ * `lateToleranceMinutes` (Hugo, 2026-11-03) : le créneau n'est dépassé qu'une
+ * fois sa fin passée de cette tolérance — un retard ne sonne plus à la
+ * première minute. Réglée en admin, elle vient de l'appelant ; `0` rend la
+ * règle d'avant. Seul le créneau dépassé l'applique : « pas prête avant le
+ * créneau » juge l'ouverture, pas la fin.
  */
 export function latenessOf(
   stage: SupervisionStage,
   window: HandoverQueueWindow | null,
   day: string,
   now: Date,
+  lateToleranceMinutes: number,
 ): LatenessRule | null {
   if (window === null || window.source === "default" || SETTLED.has(stage)) {
     return null;
   }
   const end = localToInstant(day, window.end);
-  if (end !== null && now > end) {
+  if (end !== null && now > addMinutes(end, lateToleranceMinutes)) {
     return "not_handed_over_after_window";
   }
   if (!NOT_READY.has(stage)) {
@@ -152,6 +159,7 @@ export function superviseDay(
   day: string,
   orders: readonly SupervisedOrder[],
   now: Date,
+  lateToleranceMinutes: number,
   withdrawnAfterPlan: ReadonlySet<string> = new Set(),
 ): DaySupervision {
   const staged = orders.flatMap((order) => {
@@ -172,7 +180,7 @@ export function superviseDay(
       };
     }),
     late: staged.flatMap(({ order, stage }) => {
-      const rule = latenessOf(stage, order.window, day, now);
+      const rule = latenessOf(stage, order.window, day, now, lateToleranceMinutes);
       return rule === null || order.window === null
         ? []
         : [{ order, window: order.window, stage, rule }];

@@ -4,6 +4,7 @@ import {
   DaySupervisionReader,
   type SupervisedOrder,
 } from "../../../domain/ports/day-supervision.reader.js";
+import { LateToleranceReader } from "../../../domain/ports/late-tolerance.reader.js";
 import { GetDaySupervisionHandler } from "../get-day-supervision.handler.js";
 import { GetDaySupervisionQuery } from "../get-day-supervision.query.js";
 
@@ -31,6 +32,17 @@ class StubReader extends DaySupervisionReader {
   }
 }
 
+/** La tolérance de retard, posée par le test (Hugo, 2026-11-03). */
+class FixedLateTolerance extends LateToleranceReader {
+  constructor(private readonly minutes: number) {
+    super();
+  }
+
+  lateToleranceMinutes(): Promise<number> {
+    return Promise.resolve(this.minutes);
+  }
+}
+
 const LATE: SupervisedOrder = {
   orderId: "o1",
   reference: "ORD-0001",
@@ -50,6 +62,7 @@ describe("GetDaySupervisionHandler", () => {
       reader,
       new FixedClock(NOW),
       new FixedPackingStates(),
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(reader.days).toEqual([DAY]);
@@ -64,6 +77,7 @@ describe("GetDaySupervisionHandler", () => {
       reader,
       new FixedClock(new Date(`${DAY}T23:30:00.000Z`)),
       new FixedPackingStates(),
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery());
 
     expect(reader.days).toEqual(["2026-11-11"]);
@@ -75,6 +89,7 @@ describe("GetDaySupervisionHandler", () => {
       new StubReader([], 3),
       new FixedClock(NOW),
       new FixedPackingStates(),
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.undated).toBe(3);
@@ -99,6 +114,7 @@ describe("GetDaySupervisionHandler", () => {
       ),
       new FixedClock(NOW),
       new FixedPackingStates(),
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.awaitingDecision).toEqual([
@@ -119,6 +135,7 @@ describe("GetDaySupervisionHandler", () => {
       new StubReader([LATE], 0),
       new FixedClock(NOW),
       new FixedPackingStates(),
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.late).toEqual([
@@ -140,6 +157,7 @@ describe("GetDaySupervisionHandler", () => {
       new StubReader([{ ...LATE, supply: "shelf" }], 0),
       new FixedClock(NOW),
       new FixedPackingStates(),
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.late.map((late) => late.supply)).toEqual(["shelf"]);
@@ -162,6 +180,7 @@ describe("GetDaySupervisionHandler", () => {
       new StubReader([LATE, onTime], 0),
       new FixedClock(NOW),
       new FixedPackingStates(),
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.late.map((late) => late.orderId)).toEqual(["o1"]);
@@ -175,10 +194,30 @@ describe("GetDaySupervisionHandler", () => {
       new StubReader([cancelled, { ...LATE, orderId: "o9" }], 0),
       new FixedClock(NOW),
       packing,
+      new FixedLateTolerance(0),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.flow[0]).toMatchObject({ cancelled: 1, cancelledAfterPlan: 1 });
     // Seules les annulées sont demandées au colisage.
     expect(packing.asked).toEqual([["o1"]]);
+  });
+
+  it("applique la tolérance de retard lue au réglage (Hugo, 2026-11-03)", async () => {
+    // NOW = 10 h à Paris, fin du créneau 8 h : deux heures après.
+    const within = await new GetDaySupervisionHandler(
+      new StubReader([LATE], 0),
+      new FixedClock(NOW),
+      new FixedPackingStates(),
+      new FixedLateTolerance(120),
+    ).execute(new GetDaySupervisionQuery(DAY));
+    const beyond = await new GetDaySupervisionHandler(
+      new StubReader([LATE], 0),
+      new FixedClock(NOW),
+      new FixedPackingStates(),
+      new FixedLateTolerance(119),
+    ).execute(new GetDaySupervisionQuery(DAY));
+
+    expect(within.late).toEqual([]);
+    expect(beyond.late.map((late) => late.orderId)).toEqual(["o1"]);
   });
 });

@@ -18,7 +18,7 @@
  * Toutes les dates sont RELATIVES (`serviceDay`) : la vue compare le créneau à
  * l'horloge.
  */
-import type { DaySupervisionView, StaffRole } from "@lfd/contracts";
+import { instantToLocal, type DaySupervisionView, type StaffRole } from "@lfd/contracts";
 import type request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -307,5 +307,43 @@ describe("la Supervision du jour", () => {
     });
 
     expect((await supervise(YESTERDAY)).late).toEqual([]);
+  });
+
+  /**
+   * La tolérance de retard (Hugo, 2026-11-03) : une commande prête dont le
+   * créneau a fini il y a cinq minutes n'est pas en retard sous la tolérance
+   * de 15 minutes, et l'est dès qu'on la ramène à 0 — la preuve que la
+   * fixture juge bien ce créneau.
+   */
+  it("ne signale pas un créneau dépassé de cinq minutes sous la tolérance de 15", async () => {
+    const { guestId } = await seedParties();
+    const FIVE_MINUTES_MS = 5 * 60_000;
+    // Relatif à l'horloge : la fin du créneau est il y a cinq minutes, à Paris.
+    const ended = instantToLocal(new Date(Date.now() - FIVE_MINUTES_MS));
+    // Un créneau d'une demi-heure : un début égal à la fin n'est pas une tranche.
+    const opened = instantToLocal(new Date(Date.now() - FIVE_MINUTES_MS - 30 * 60_000));
+    await seedOrder({
+      reference: "ORD-13",
+      day: ended.day,
+      status: "ready",
+      // Réglée, comme ORD-11 : un règlement en vol n'est pas supervisé.
+      clientele: "public",
+      paymentStatus: "paid",
+      placedByUserId: guestId,
+      fulfillment: {
+        window: { value: { start: opened.time, end: ended.time }, source: "override" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
+      },
+    });
+
+    expect((await supervise(ended.day)).late).toEqual([]);
+
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .patch("/admin/order-cutoff-settings")
+      .send({ lateToleranceMinutes: 0 })
+      .expect(204);
+    expect((await supervise(ended.day)).late.map((late) => late.reference)).toEqual(["ORD-13"]);
   });
 });

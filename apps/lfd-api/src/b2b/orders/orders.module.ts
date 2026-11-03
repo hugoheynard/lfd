@@ -53,6 +53,7 @@ import {
   ORDER_SHORTFALL_PROVIDERS,
 } from "./order-shortfall.providers.js";
 import { ORDER_CUSTOMER_NUDGES_PROVIDERS } from "./order-customer-nudges.providers.js";
+import { ORDER_LATE_TOLERANCE_PROVIDERS } from "./order-late-tolerance.providers.js";
 import {
   CUSTOMER_CANCELLATION_CONTROLLERS,
   CUSTOMER_CANCELLATION_PROVIDERS,
@@ -265,6 +266,7 @@ import { MyShelfStockTodayController } from "./http/my-shelf-stock-today.control
 import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.js";
 import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
 import { AdminCounterOrderSheetController } from "./http/admin-counter-order-sheet.controller.js";
+import { AdminCounterLateToleranceController } from "./http/admin-counter-late-tolerance.controller.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
 import { AdminProductionController } from "./http/admin-production.controller.js";
 import { OrdersController } from "./http/orders.controller.js";
@@ -341,6 +343,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     CompanyOrdersController,
     AdminOrdersController,
     AdminCounterOrderSheetController,
+    AdminCounterLateToleranceController,
     AdminOrderSalesTermsController,
     AdminProductionController,
     AdminOrderDraftsController,
@@ -551,6 +554,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     DeliveryEnRouteMail,
     MailDeliveryEnRoute,
     ...ORDER_CUSTOMER_NUDGES_PROVIDERS,
+    ...ORDER_LATE_TOLERANCE_PROVIDERS,
     { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },
     ListOrdersAwaitingPaymentHandler,
     { provide: DaySupervisionReader, useClass: PrismaDaySupervisionReader },

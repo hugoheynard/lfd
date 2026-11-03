@@ -2317,6 +2317,7 @@ export type {
   OrderCancellability,
 } from "./customer-cancellation.js";
 export {
+  DEFAULT_LATE_TOLERANCE_MINUTES,
   DEFAULT_ORDER_CUTOFF_SETTINGS,
   DEFAULT_RESUPPLY_CUTOFF_TIME,
   DEFAULT_SHELF_HOLD_MINUTES,
@@ -2326,6 +2327,7 @@ export {
   SHELF_HOLD_MINUTES_MIN,
 } from "./order-cutoff-settings.js";
 export type {
+  CounterLateToleranceView,
   OrderCutoffSettingsPatch,
   OrderCutoffSettingsView,
   SameDayProWithoutCredit,

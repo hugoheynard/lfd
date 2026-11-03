@@ -88,6 +88,8 @@ const orderCutoffSettingsState = () => ({
   resupplyCutoffTime: z.string(),
   pickupReminderDelayMinutes: minutes(),
   delayWarningDelayMinutes: minutes(),
+  // Optionnelle : les faits écrits avant le 2026-11-03 ne la portent pas.
+  lateToleranceMinutes: minutes().optional(),
   sameDayPublicAllowed: z.boolean(),
   sameDayProAllowed: z.boolean(),
   sameDayProOnline: z.boolean(),

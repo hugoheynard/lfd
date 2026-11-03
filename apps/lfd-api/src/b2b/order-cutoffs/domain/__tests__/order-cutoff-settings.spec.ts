@@ -1,6 +1,10 @@
 import { DEFAULT_ORDER_CUTOFF_SETTINGS } from "@lfd/contracts";
 
-import { InvalidNudgeDelayError, InvalidShelfHoldMinutesError } from "../order-cutoff-errors.js";
+import {
+  InvalidLateToleranceError,
+  InvalidNudgeDelayError,
+  InvalidShelfHoldMinutesError,
+} from "../order-cutoff-errors.js";
 import { OrderCutoffSettings } from "../order-cutoff-settings.js";
 
 /** Le réglage du jour même et de ses voisins — le circuit du jour J (lot L3, 2026-11-02). */
@@ -43,6 +47,22 @@ describe("OrderCutoffSettings", () => {
 
   it("refuse toujours un délai de relance négatif", () => {
     expect(() => pose({ pickupReminderDelayMinutes: -1 })).toThrow(InvalidNudgeDelayError);
+  });
+
+  it("une ligne neuve tolère 15 minutes de retard (Hugo, 2026-11-03)", () => {
+    expect(pose({}).lateToleranceMinutes).toBe(15);
+  });
+
+  it.each([0, 15, 90])("accepte une tolérance de retard de %s minutes", (minutes) => {
+    expect(pose({ lateToleranceMinutes: minutes }).lateToleranceMinutes).toBe(minutes);
+  });
+
+  it.each([-1, 2.5, Number.NaN])("refuse une tolérance de retard de %s minutes", (minutes) => {
+    expect(() => pose({ lateToleranceMinutes: minutes })).toThrow(InvalidLateToleranceError);
+  });
+
+  it("sameAs voit un changement de la tolérance de retard", () => {
+    expect(pose({ lateToleranceMinutes: 16 }).sameAs(DEFAULT_ORDER_CUTOFF_SETTINGS)).toBe(false);
   });
 
   it("sameAs voit un changement sur chaque réglage du jour J", () => {

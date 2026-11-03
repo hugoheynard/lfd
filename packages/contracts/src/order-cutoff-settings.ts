@@ -35,6 +35,13 @@ export interface OrderCutoffSettingsView {
   /** **« Avertir le client »** (sa commande prend du retard) : même règle, son propre délai. */
   readonly delayWarningDelayMinutes: number;
   /**
+   * **La tolérance de retard** (Hugo, 2026-11-03), en minutes après la FIN DU
+   * CRÉNEAU : avant, une commande n'est pas « créneau dépassé » — ni à la
+   * Supervision, ni au comptoir. Entier ≥ 0, `DEFAULT_LATE_TOLERANCE_MINUTES`
+   * par défaut ; `0` rend le comportement d'avant (la première minute sonne).
+   */
+  readonly lateToleranceMinutes: number;
+  /**
    * **Le circuit du jour J** (lot L3, `documentation/limites-de-commande/jour-meme-sur-stock.md`
    * §3, Hugo 2026-11-02) : les particuliers peuvent-ils commander pour
    * aujourd'hui, sur le stock de la vitrine. Aucun effet avant le lot L4 ;
@@ -77,12 +84,24 @@ export const SHELF_HOLD_MINUTES_MAX = 120;
 /** La tenue tant que personne ne l'a posée : l'expiration boutique d'aujourd'hui, 30 minutes. */
 export const DEFAULT_SHELF_HOLD_MINUTES = 30;
 
+/** La tolérance de retard tant que personne ne l'a posée : 15 minutes (Hugo, 2026-11-03). */
+export const DEFAULT_LATE_TOLERANCE_MINUTES = 15;
+
+/**
+ * `GET /admin/counter/late-tolerance` — la tolérance de retard, lue par le
+ * comptoir, qui n'a que `handover_counter` et pas le réglage entier.
+ */
+export interface CounterLateToleranceView {
+  readonly lateToleranceMinutes: number;
+}
+
 /** Le réglage tant que personne ne l'a posé : jour même fermé — rien ne s'ouvre au déploiement. */
 export const DEFAULT_ORDER_CUTOFF_SETTINGS: OrderCutoffSettingsView = {
   sameDayAllowed: false,
   resupplyCutoffTime: DEFAULT_RESUPPLY_CUTOFF_TIME,
   pickupReminderDelayMinutes: 0,
   delayWarningDelayMinutes: 0,
+  lateToleranceMinutes: DEFAULT_LATE_TOLERANCE_MINUTES,
   sameDayPublicAllowed: false,
   sameDayProAllowed: false,
   sameDayProOnline: false,
@@ -111,6 +130,8 @@ export const orderCutoffSettingsPatchSchema = z
     // La FORME seulement — un entier ; « pas négatif » est la règle du domaine.
     pickupReminderDelayMinutes: z.number().int("nombre entier de minutes attendu").optional(),
     delayWarningDelayMinutes: z.number().int("nombre entier de minutes attendu").optional(),
+    // La tolérance de retard (2026-11-03) : la FORME ; « pas négatif » est au domaine.
+    lateToleranceMinutes: z.number().int("nombre entier de minutes attendu").optional(),
     // Le circuit du jour J (lot L3, 2026-11-02).
     sameDayPublicAllowed: z.boolean().optional(),
     sameDayProAllowed: z.boolean().optional(),
