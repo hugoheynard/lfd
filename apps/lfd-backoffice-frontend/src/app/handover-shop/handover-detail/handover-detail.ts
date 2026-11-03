@@ -38,7 +38,14 @@ import {
 import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
-import { bagReadiness, gestureCaution, lineMarks, pieceCount, readyVerdict } from './bag-readiness';
+import {
+  bagReadiness,
+  gestureCaution,
+  gesturesMuted,
+  lineMarks,
+  pieceCount,
+  readyVerdict,
+} from './bag-readiness';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -241,8 +248,8 @@ export class HandoverDetail {
    * (Hugo, 2026-09-28), ou que le contrôle qualité retient la commande (QC5). **Atténués, jamais désactivés** : le client est
    * physiquement là, et le monde réel prime sur l'écran (`handoverBlocker`).
    */
-  protected readonly caution = computed(() => gestureCaution(this.entry(), this.readiness()));
-  protected readonly muted = computed(() => this.caution() !== null);
+  protected readonly caution = computed(() => gestureCaution(this.entry()));
+  protected readonly muted = computed(() => gesturesMuted(this.entry(), this.readiness()));
 
   /** Peut-on encore tendre ce sac ? La règle vit dans `handover-queue.ts`. */
   protected readonly remittable = computed<boolean>(() => {

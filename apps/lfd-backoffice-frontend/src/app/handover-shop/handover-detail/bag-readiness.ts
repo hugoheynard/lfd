@@ -113,25 +113,29 @@ export function readyVerdict(
 }
 
 /**
- * **Pourquoi les gestes du comptoir passent en retrait** — ou `null` s'ils
- * gardent leur poids.
- *
- * Deux raisons, une seule règle : **atténués, jamais désactivés**. Le serveur
- * refuse de toute façon une commande retenue, et c'est lui qui fait foi ; un
- * bouton grisé côté écran ne ferait que cacher la phrase qu'il rendrait.
- *
- * La retenue gagne sur le sac : elle ne se règle pas en regardant dans le bac.
+ * **Les gestes du comptoir passent-ils en retrait ?** Deux raisons, une seule
+ * règle : **atténués, jamais désactivés**. Le serveur refuse de toute façon une
+ * commande retenue, et c'est lui qui fait foi.
  */
-export function gestureCaution(
+export function gesturesMuted(
   entry: HandoverQueueEntryView | null,
   bag: BagReadiness | null,
-): string | null {
-  if (entry !== null && heldAtTheCounter(entry)) {
-    return 'Le contrôle qualité retient cette commande\u00a0: attendez sa levée.';
-  }
-  return bag?.ready === true
-    ? null
-    : 'Le fournil ou le colisage n\u2019a pas fini\u00a0: vérifiez le sac avant de le remettre.';
+): boolean {
+  return gestureCaution(entry) !== null || bag?.ready !== true;
+}
+
+/**
+ * **La phrase sous les gestes** — seulement pour la retenue qualité, qui ne
+ * se voit pas dans le sac.
+ *
+ * Le sac pas fini n'a plus de phrase (Hugo, 2026-11-03) : les coches et les
+ * chiffres de chaque ligne le disent déjà, en couleur ; les gestes restent
+ * atténués sans qu'on le répète.
+ */
+export function gestureCaution(entry: HandoverQueueEntryView | null): string | null {
+  return entry !== null && heldAtTheCounter(entry)
+    ? 'Le contrôle qualité retient cette commande\u00a0: attendez sa levée.'
+    : null;
 }
 
 /** Le ton d'une coche : fait, en partie, pas fait. */

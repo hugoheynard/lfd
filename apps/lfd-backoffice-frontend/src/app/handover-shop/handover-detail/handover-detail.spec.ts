@@ -247,7 +247,8 @@ describe('HandoverDetail', () => {
 
     expect(text(fixture)).toContain('Fournil · 1 / 2 produits sortis');
     expect(text(fixture)).toContain('Colisage · 1 / 2 posés dans le bac');
-    expect(element.querySelector('[data-muted-note]')).not.toBeNull();
+    // Sans phrase (Hugo, 2026-11-03) : les coches de chaque ligne le disent.
+    expect(element.querySelector('[data-muted-note]')).toBeNull();
     const remit = element.querySelector<HTMLButtonElement>('[data-action="remit"]');
     expect(remit?.classList).toContain('neutral');
     // Atténué, JAMAIS désactivé : le client est là.
@@ -291,18 +292,18 @@ describe('HandoverDetail', () => {
 
   it('sans fiche de colis, le dit et atténue les gestes', async () => {
     const fixture = await render(entry());
+    const element: HTMLElement = fixture.nativeElement;
 
     expect(text(fixture)).toContain('Ni fournil ni colisage à suivre');
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('[data-muted-note]'),
-    ).not.toBeNull();
+    expect(element.querySelector('[data-action="remit"]')?.classList).toContain('neutral');
   });
 
   it('montre ce qu’il y a dans le sac', async () => {
     const fixture = await render(entry());
 
     expect(text(fixture)).toContain('Croissant nature');
-    expect(text(fixture)).toContain('CROI-NAT');
+    // La référence produit est retirée (Hugo, 2026-11-03).
+    expect(text(fixture)).not.toContain('CROI-NAT');
     expect(text(fixture)).toContain('Boulangerie Marin');
     expect(text(fixture)).toContain('CMD-1042');
   });

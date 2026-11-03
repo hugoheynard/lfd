@@ -1,7 +1,14 @@
 import type { PackingLine, PackingSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { bagReadiness, gestureCaution, lineMarks, pieceCount, readyVerdict } from './bag-readiness';
+import {
+  bagReadiness,
+  gestureCaution,
+  gesturesMuted,
+  lineMarks,
+  pieceCount,
+  readyVerdict,
+} from './bag-readiness';
 
 function sheet(overrides: Partial<PackingSheet> = {}): PackingSheet {
   return {
@@ -102,9 +109,15 @@ describe('la retenue du contrôle qualité (lot QC5)', () => {
   });
 
   it('atténue les gestes d’une retenue même sac fermé, et dit pourquoi', () => {
-    expect(gestureCaution(held, closedBag)).toContain('contrôle qualité');
-    expect(gestureCaution(ENTRY, closedBag)).toBeNull();
-    expect(gestureCaution(ENTRY, null)).toContain('colisage');
+    expect(gestureCaution(held)).toContain('contrôle qualité');
+    expect(gesturesMuted(held, closedBag)).toBe(true);
+  });
+
+  /** Hugo, 2026-11-03 : les coches le disent déjà, la phrase est retirée. */
+  it('un sac pas fini atténue les gestes, sans phrase', () => {
+    expect(gestureCaution(ENTRY)).toBeNull();
+    expect(gesturesMuted(ENTRY, null)).toBe(true);
+    expect(gesturesMuted(ENTRY, closedBag)).toBe(false);
   });
 });
 
