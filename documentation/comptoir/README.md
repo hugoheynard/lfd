@@ -63,6 +63,9 @@ tant qu'elle n'est pas lue, aucun retard n'est dit.
 
 ## Reste à faire
 
+- 📐 Le départ incomplet décidé au comptoir, puis le reliquat :
+  [`plan-depart-incomplet-au-comptoir.md`](plan-depart-incomplet-au-comptoir.md).
+
 - La revue de l'écran : [`todo-revue-retrait-boutique.md`](todo-revue-retrait-boutique.md).
 - Les statuts du comptoir et la Production sous son propre droit (en suspens) :
   [`todo-comptoir-statuts-et-droit-production.md`](todo-comptoir-statuts-et-droit-production.md).
