@@ -219,9 +219,12 @@ class FakeIncomplete {
 /** L'hôte des panneaux : retient ce qu'on ouvre, et se ferme sur `result`. */
 class FakePanels {
   readonly opened: unknown[] = [];
-  result: boolean | undefined = undefined;
+  result: 'partial' | 'remit' | undefined = undefined;
 
-  open(_component: unknown, options: { data: unknown }): { closed: Promise<boolean | undefined> } {
+  open(
+    _component: unknown,
+    options: { data: unknown },
+  ): { closed: Promise<'partial' | 'remit' | undefined> } {
     this.opened.push(options.data);
     return { closed: Promise.resolve(this.result) };
   }
@@ -674,7 +677,7 @@ describe('HandoverDetail — les envois prêts (plan E7 reliquat, L4c)', () => {
       const handovers = new FakeHandovers();
       const incomplete = new FakeIncomplete();
       const panels = new FakePanels();
-      panels.result = true;
+      panels.result = 'partial';
       const fixture = await render(entry(), {
         handovers,
         incomplete,
@@ -686,11 +689,51 @@ describe('HandoverDetail — les envois prêts (plan E7 reliquat, L4c)', () => {
       buttonSaying(fixture, 'Procédure commande incomplète')?.click();
       await fixture.whenStable();
       expect(panels.opened).toEqual([
-        { orderId: 'ord_1', reference: 'CMD-1042', view: incomplete.view },
+        { orderId: 'ord_1', reference: 'CMD-1042', view: incomplete.view, token: null },
       ]);
       // Le rail ne remet rien lui-même : c'est le dialogue qui a remis.
       expect(handovers.remitted).toEqual([]);
       expect(remitted).toBe(1);
+    });
+
+    it('ouverte par le code : le dialogue reçoit le jeton lu', async () => {
+      const panels = new FakePanels();
+      const fixture = await render(entry(), {
+        handovers: new FakeHandovers(),
+        panels,
+        packing: unfinished(),
+      });
+      fixture.componentRef.setInput('proof', { orderId: 'ord_1', token: 'tok_1', notice: null });
+      fixture.detectChanges();
+      buttonSaying(fixture, 'Procédure commande incomplète')?.click();
+      await fixture.whenStable();
+      expect(panels.opened).toEqual([expect.objectContaining({ token: 'tok_1' })]);
+    });
+
+    it('manque déjà tranché (`remit`) : le rail fait la remise ordinaire, avec la preuve', async () => {
+      const handovers = new FakeHandovers();
+      const panels = new FakePanels();
+      panels.result = 'remit';
+      const fixture = await render(entry(), { handovers, panels, packing: unfinished() });
+      fixture.componentRef.setInput('proof', { orderId: 'ord_1', token: 'tok_1', notice: null });
+      fixture.detectChanges();
+      let remitted = 0;
+      fixture.componentInstance.remitted.subscribe(() => (remitted += 1));
+      buttonSaying(fixture, 'Procédure commande incomplète')?.click();
+      await fixture.whenStable();
+      expect(handovers.scanned).toEqual(['tok_1']);
+      expect(remitted).toBe(1);
+    });
+
+    it('manque déjà tranché sans scan : remise ordinaire sur le numéro', async () => {
+      const handovers = new FakeHandovers();
+      const panels = new FakePanels();
+      panels.result = 'remit';
+      const fixture = await render(entry(), { handovers, panels, packing: unfinished() });
+      buttonSaying(fixture, 'Procédure commande incomplète')?.click();
+      await fixture.whenStable();
+      expect(handovers.remitted).toEqual(['CMD-1042']);
+      expect(handovers.scanned).toEqual([]);
     });
 
     it('dialogue refermé sans geste : rien n’est annoncé', async () => {

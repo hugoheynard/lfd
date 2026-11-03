@@ -26,9 +26,13 @@ export class CounterIncompleteHandoverService {
     return firstValueFrom(this.http.get<CounterIncompleteHandoverView>(this.url(orderId)));
   }
 
-  /** Remet ce qui est au bac ; le reste est abandonné. 204. */
-  handOver(orderId: string): Promise<void> {
-    const body: CounterIncompleteHandoverPayload = { remainder: 'abandoned' };
+  /**
+   * Remet ce qui est au bac ; le reste est abandonné. 204. `token` : le jeton
+   * du QR quand un scan a ouvert la fiche — le serveur grave alors `scan`.
+   */
+  handOver(orderId: string, token: string | null = null): Promise<void> {
+    const body: CounterIncompleteHandoverPayload =
+      token === null ? { remainder: 'abandoned' } : { remainder: 'abandoned', token };
     return firstValueFrom(this.http.post<void>(this.url(orderId), body));
   }
 

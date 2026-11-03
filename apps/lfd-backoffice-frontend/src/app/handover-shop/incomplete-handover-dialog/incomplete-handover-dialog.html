@@ -6,6 +6,16 @@
 
 <fold-panel-body>
   <div class="ihd-body">
+    @if (settled(); as done) {
+      <fold-callout variant="success" icon="check" data-settled>
+        <strong>{{ done }}</strong>
+        @if (settledByDecision()) {
+          Remettez ce qui est au bac&nbsp;: le reste est abandonné, le bon de livraison ne chiffre
+          que ce qui part.
+        }
+      </fold-callout>
+    }
+
     @if (refusal(); as why) {
       <fold-callout variant="warning" icon="info" data-refusal>{{ why }}</fold-callout>
     }
@@ -38,7 +48,14 @@
 </fold-panel-body>
 
 <fold-panel-footer align="end">
-  @if (refusal() === null) {
+  @if (settled() !== null) {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      Annuler
+    </button>
+    <button foldButton icon="check" type="button" data-action="remit" (click)="remitWhole()">
+      Remettre la commande
+    </button>
+  } @else if (refusal() === null) {
     <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
       Annuler
     </button>

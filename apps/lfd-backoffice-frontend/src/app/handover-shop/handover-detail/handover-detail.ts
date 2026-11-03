@@ -39,6 +39,7 @@ import {
 import {
   IncompleteHandoverDialog,
   type IncompleteHandoverDialogData,
+  type IncompleteHandoverOutcome,
 } from '../incomplete-handover-dialog/incomplete-handover-dialog';
 import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
@@ -362,8 +363,9 @@ export class HandoverDetail {
    * « Remettre la commande », sans dialogue ; sinon ouvre le dialogue, qui
    * offre le geste partiel ou dit le refus.
    *
-   * ⚠️ Le geste partiel est gravé `manual` par le serveur (C1), même quand un
-   * QR a ouvert la fiche : il ne porte pas le jeton lu.
+   * Le geste partiel porte le jeton du QR quand un scan a ouvert la fiche
+   * (Hugo, 2026-11-03) : le serveur grave alors `scan`. Un manque déjà
+   * tranché ferme le dialogue sur `remit` : le rail fait la remise ordinaire.
    */
   protected async startIncomplete(): Promise<void> {
     const entry = this.entry();
@@ -374,7 +376,12 @@ export class HandoverDetail {
     let data: IncompleteHandoverDialogData;
     try {
       const view = await this.incomplete.preview(entry.orderId);
-      data = { orderId: entry.orderId, reference: entry.reference, view };
+      data = {
+        orderId: entry.orderId,
+        reference: entry.reference,
+        view,
+        token: this.activeProof()?.token ?? null,
+      };
     } catch (caught) {
       this.notify.error(caught, "L'état du bac n'a pas pu être relu.");
       return;
@@ -385,11 +392,16 @@ export class HandoverDetail {
       await this.remit();
       return;
     }
-    const ref = this.panels.open<IncompleteHandoverDialogData, boolean>(IncompleteHandoverDialog, {
-      data,
-    });
-    if ((await ref.closed) === true) {
+    const ref = this.panels.open<IncompleteHandoverDialogData, IncompleteHandoverOutcome>(
+      IncompleteHandoverDialog,
+      { data },
+    );
+    const outcome = await ref.closed;
+    if (outcome === 'partial') {
       this.remitted.emit();
+    } else if (outcome === 'remit') {
+      // Manque déjà tranché, ou sac fermé : la remise ordinaire, avec sa preuve.
+      await this.remit();
     }
   }
 

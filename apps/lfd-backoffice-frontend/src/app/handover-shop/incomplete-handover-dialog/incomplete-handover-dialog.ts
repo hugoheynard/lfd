@@ -16,6 +16,7 @@ import {
 } from 'fold-ng';
 
 import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
+import { clockOf, formatHour } from '../handover-queue';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 /** La commande, et l'aperçu lu juste avant d'ouvrir. */
@@ -23,7 +24,24 @@ export interface IncompleteHandoverDialogData {
   readonly orderId: string;
   readonly reference: string;
   readonly view: CounterIncompleteHandoverView;
+  /** Le jeton du QR quand un scan a ouvert la fiche, sinon `null`. */
+  readonly token: string | null;
 }
+
+/**
+ * Comment le dialogue se ferme : `partial` — il a remis ce qui est au bac ;
+ * `remit` — le départ incomplet est déjà tranché (ou le sac fermé), et c'est
+ * au rail de faire la remise ORDINAIRE, avec sa preuve. Fermé sans geste :
+ * `undefined`.
+ */
+export type IncompleteHandoverOutcome = 'partial' | 'remit';
+
+/** Les refus où le manque est déjà tranché : on remet la commande telle qu'elle est décidée. */
+const SETTLED_REFUSALS: ReadonlySet<CounterIncompleteHandoverRefusal> = new Set([
+  'already_decided',
+  'already_authorized',
+  'sealed',
+]);
 
 /**
  * La phrase de chaque refus, pour un vendeur qui n'a pas le code sous les
@@ -56,7 +74,9 @@ export const INCOMPLETE_HANDOVER_REFUSAL_TEXT: Readonly<
  * **« Procédure commande incomplète »** — ce qui part, ce qui ne part pas, et
  * le seul geste partiel offert : « Remettre ce qui est au bac — le reste est
  * abandonné ». Un refus de l'aperçu cache ce geste et dit pourquoi ; un refus
- * du geste reste dans le dialogue ; un succès ferme sur `true`.
+ * du geste reste dans le dialogue ; un succès ferme sur `partial`. Un manque
+ * déjà tranché (validé, ou sac fermé) offre « Remettre la commande » : le
+ * dialogue ferme sur `remit` et le rail fait la remise ordinaire.
  *
  * 🔴 « Remettre la commande entière » malgré un manque n'est PAS offert (Q1,
  * Hugo, 2026-11-03) : il facturerait le commandé sur la seule parole du
@@ -82,17 +102,41 @@ export class IncompleteHandoverDialog implements FoldPanelContent<IncompleteHand
   readonly data = input.required<IncompleteHandoverDialogData>();
 
   private readonly api = inject(CounterIncompleteHandoverService);
-  private readonly panel = inject(FoldPanelRef<boolean>);
+  private readonly panel = inject(FoldPanelRef<IncompleteHandoverOutcome>);
 
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 
   protected readonly lines = computed(() => this.data().view.lines);
 
+  /**
+   * La phrase quand le manque est déjà tranché (Hugo, 2026-11-03) — la remise
+   * ordinaire est alors le geste — sinon `null`.
+   */
+  protected readonly settled = computed<string | null>(() => {
+    const view = this.data().view;
+    if (view.refusal === null || !SETTLED_REFUSALS.has(view.refusal)) {
+      return null;
+    }
+    if (view.refusal === 'sealed') {
+      return 'Le colisage a fermé ce sac.';
+    }
+    const decision = view.decision ?? null;
+    const by = decision?.decidedByName ?? 'un manager';
+    const at = decision === null ? '' : ` à ${formatHour(clockOf(new Date(decision.decidedAt)))}`;
+    return `Départ incomplet validé par ${by}${at}.`;
+  });
+
+  /** Les refus « validés » disent aussi ce que vaut la remise ; le sac fermé non. */
+  protected readonly settledByDecision = computed<boolean>(() => {
+    const refusal = this.data().view.refusal;
+    return refusal === 'already_decided' || refusal === 'already_authorized';
+  });
+
   /** La phrase du refus de l'aperçu, ou `null` quand le geste est offert. */
   protected readonly refusal = computed<string | null>(() => {
     const view = this.data().view;
-    if (view.refusal === null) {
+    if (view.refusal === null || this.settled() !== null) {
       return null;
     }
     if (view.refusal === 'handover_refused' && view.handoverRefusalReason !== null) {
@@ -102,19 +146,24 @@ export class IncompleteHandoverDialog implements FoldPanelContent<IncompleteHand
   });
 
   protected async submit(): Promise<void> {
-    if (this.saving() || this.refusal() !== null) {
+    if (this.saving() || this.refusal() !== null || this.settled() !== null) {
       return;
     }
     this.saving.set(true);
     this.error.set(null);
     try {
-      await this.api.handOver(this.data().orderId);
-      this.panel.close(true);
+      await this.api.handOver(this.data().orderId, this.data().token);
+      this.panel.close('partial');
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, "Ce départ incomplet n'a pas pu être enregistré."));
     } finally {
       this.saving.set(false);
     }
+  }
+
+  /** Rend la main au rail pour la remise ordinaire. */
+  protected remitWhole(): void {
+    this.panel.close('remit');
   }
 
   protected cancel(): void {

@@ -7,6 +7,7 @@ import { CounterIncompleteHandoverService } from '../../comptoir/counter-incompl
 import {
   IncompleteHandoverDialog,
   type IncompleteHandoverDialogData,
+  type IncompleteHandoverOutcome,
 } from './incomplete-handover-dialog';
 
 /**
@@ -41,9 +42,11 @@ const VIEW: CounterIncompleteHandoverView = {
 
 class FakeApi {
   readonly calls: string[] = [];
+  readonly tokens: (string | null)[] = [];
   refuse: unknown = null;
 
-  handOver(orderId: string): Promise<void> {
+  handOver(orderId: string, token: string | null = null): Promise<void> {
+    this.tokens.push(token);
     if (this.refuse !== null) {
       return Promise.reject(this.refuse);
     }
@@ -54,25 +57,36 @@ class FakeApi {
 
 interface Rendered {
   readonly fixture: ComponentFixture<IncompleteHandoverDialog>;
-  readonly closedWith: (boolean | undefined)[];
+  readonly closedWith: (IncompleteHandoverOutcome | undefined)[];
   readonly text: () => string;
   readonly button: (label: string) => HTMLButtonElement | null;
 }
 
-async function render(api: FakeApi, view: CounterIncompleteHandoverView): Promise<Rendered> {
-  const closedWith: (boolean | undefined)[] = [];
+async function render(
+  api: FakeApi,
+  view: CounterIncompleteHandoverView,
+  token: string | null = null,
+): Promise<Rendered> {
+  const closedWith: (IncompleteHandoverOutcome | undefined)[] = [];
   TestBed.configureTestingModule({
     imports: [IncompleteHandoverDialog],
     providers: [
       { provide: CounterIncompleteHandoverService, useValue: api },
       {
         provide: FoldPanelRef,
-        useValue: new FoldPanelRef<boolean>(1, (result) => closedWith.push(result)),
+        useValue: new FoldPanelRef<IncompleteHandoverOutcome>(1, (result) =>
+          closedWith.push(result),
+        ),
       },
     ],
   });
   const fixture = TestBed.createComponent(IncompleteHandoverDialog);
-  const data: IncompleteHandoverDialogData = { orderId: 'ord_1', reference: 'CMD-1042', view };
+  const data: IncompleteHandoverDialogData = {
+    orderId: 'ord_1',
+    reference: 'CMD-1042',
+    view,
+    token,
+  };
   fixture.componentRef.setInput('data', data);
   await fixture.whenStable();
   const element = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -99,14 +113,77 @@ describe('IncompleteHandoverDialog', () => {
     expect(text()).toContain('250 g');
   });
 
-  it('sans refus : le geste partiel remet et ferme sur `true`', async () => {
+  it('sans scan : le geste partiel part sans jeton', async () => {
+    const api = new FakeApi();
+    const { fixture, button } = await render(api, VIEW);
+    button(PARTIAL)?.click();
+    await fixture.whenStable();
+    expect(api.tokens).toEqual([null]);
+  });
+
+  it('ouvert par un scan : le geste partiel envoie le jeton lu', async () => {
+    const api = new FakeApi();
+    const { fixture, button } = await render(api, VIEW, 'tok_1');
+    button(PARTIAL)?.click();
+    await fixture.whenStable();
+    expect(api.tokens).toEqual(['tok_1']);
+  });
+
+  // Deux instants « locaux » : l'heure attendue ne dépend pas du fuseau du poste.
+  const DECIDED_AT = new Date(2026, 10, 3, 9, 5).toISOString();
+  const REMIT = 'Remettre la commande';
+
+  it.each(['already_decided', 'already_authorized'] as const)(
+    '%s, auteur nommé : « validé par <Nom> à <heure> », et « Remettre la commande » rend la main au rail',
+    async (refusal) => {
+      const api = new FakeApi();
+      const { fixture, closedWith, text, button } = await render(api, {
+        ...VIEW,
+        refusal,
+        decision: { decidedAt: DECIDED_AT, decidedByName: 'Camille Martin' },
+      });
+      expect(text()).toContain('Départ incomplet validé par Camille Martin à 9\u00a0h\u00a005.');
+      expect(text()).toContain('le bon de livraison ne chiffre que ce qui part');
+      expect(text()).toContain('Croissant nature');
+      expect(button(PARTIAL)).toBeNull();
+      button(REMIT)?.click();
+      await fixture.whenStable();
+      expect(closedWith).toEqual(['remit']);
+      expect(api.calls).toEqual([]);
+    },
+  );
+
+  it('décidé sans auteur lisible : « validé par un manager »', async () => {
+    const { text, button } = await render(new FakeApi(), {
+      ...VIEW,
+      refusal: 'already_decided',
+      decision: { decidedAt: DECIDED_AT, decidedByName: null },
+    });
+    expect(text()).toContain('Départ incomplet validé par un manager à 9\u00a0h\u00a005.');
+    expect(button(REMIT)).not.toBeNull();
+  });
+
+  it('sac fermé : « Le colisage a fermé ce sac. », sans auteur, et « Remettre la commande »', async () => {
+    const { fixture, closedWith, text, button } = await render(new FakeApi(), {
+      ...VIEW,
+      refusal: 'sealed',
+      lines: [],
+    });
+    expect(text()).toContain('Le colisage a fermé ce sac.');
+    expect(text()).not.toContain('validé par');
+    button(REMIT)?.click();
+    await fixture.whenStable();
+    expect(closedWith).toEqual(['remit']);
+  });
+
+  it('sans refus : le geste partiel remet et ferme sur `partial`', async () => {
     const api = new FakeApi();
     const { fixture, closedWith, button } = await render(api, VIEW);
     expect(button('Annuler')).not.toBeNull();
     button(PARTIAL)?.click();
     await fixture.whenStable();
     expect(api.calls).toEqual(['ord_1']);
-    expect(closedWith).toEqual([true]);
+    expect(closedWith).toEqual(['partial']);
   });
 
   it('🔴 réglée par carte : pas de geste partiel, la phrase, et « Fermer » seul', async () => {
