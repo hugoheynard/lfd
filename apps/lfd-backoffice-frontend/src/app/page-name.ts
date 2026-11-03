@@ -1,7 +1,7 @@
 /**
  * **Le nom de l'écran**, tiré du titre de sa route.
  *
- * Les routes déclarent un titre de DOCUMENT — « Retrait boutique — LFC B2B
+ * Les routes déclarent un titre de DOCUMENT — « Retrait commande — LFC B2B
  * admin » — parce que c'est ce qu'un onglet de navigateur doit porter : le nom
  * de l'écran ET celui de l'application, dans cet ordre, pour qu'une rangée
  * d'onglets reste lisible. La barre de l'app, elle, dit déjà de quelle

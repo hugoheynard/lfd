@@ -23,8 +23,15 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
  * Sur le chrome, et à la taille d'une tablette : cibles de 48 px et texte de
  * corps plein, parce que le comptoir se sert au doigt.
  */
-/** La vue du réassort, par sa clé dans `COMPTOIR_VIEWS`. */
-const REASSORT_KEY = 'reassort';
+/**
+ * Les onglets qui nomment le point ouvert, par leur clé dans `COMPTOIR_VIEWS` :
+ * « Réassort Labo » (Hugo, 2026-10-21), « Retrait commande Labo » (Hugo,
+ * 2026-11-03). Sans point ouvert, le nom seul.
+ */
+const SITED_LABELS: Readonly<Record<string, string>> = {
+  retrait: 'Retrait commande',
+  reassort: 'Réassort',
+};
 
 @Component({
   selector: 'app-comptoir-masthead',
@@ -47,8 +54,8 @@ export class ComptoirMasthead {
   private readonly permitted = inject(WorkspaceCatalogue).views('comptoir');
 
   /**
-   * Les onglets permis, dans l'ordre de `COMPTOIR_VIEWS` — et celui du
-   * réassort nomme le point ouvert : « Réassort Labo » (Hugo, 2026-10-21).
+   * Les onglets permis, dans l'ordre de `COMPTOIR_VIEWS` — le retrait et le
+   * réassort nomment le point ouvert (`SITED_LABELS`).
    *
    * ⚠️ La file est lue par l'injecteur, et seulement pour qui tient le
    * retrait : un `inject` de champ l'instancierait pour tout poste, et
@@ -57,11 +64,13 @@ export class ComptoirMasthead {
   protected readonly views = computed(() => {
     const views = this.permitted();
     const place = this.holdsCounter() ? this.injector.get(HandoverQueueStore).activePlace() : null;
-    return views.map((view) =>
-      view.key === REASSORT_KEY
-        ? { ...view, label: place === null ? 'Réassort' : `Réassort ${place.label}` }
-        : view,
-    );
+    return views.map((view) => {
+      const base = SITED_LABELS[view.key];
+      if (base === undefined) {
+        return view;
+      }
+      return { ...view, label: place === null ? base : `${base} ${place.label}` };
+    });
   });
 
   /** Monte-t-on la part du retrait — et donc la file ? */

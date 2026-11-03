@@ -37,7 +37,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     // Aucun écran ne liste toutes les commandes du jour (vérifié le 2026-10-05) :
     // le comptoir et Tour manager les montrent, chacun pour son mode.
     links: [
-      { label: 'Retrait boutique', route: '/comptoir/retrait' },
+      { label: 'Retrait commande', route: '/comptoir/retrait' },
       { label: 'Tour manager', route: '/tour-manager/tournees' },
     ],
   },

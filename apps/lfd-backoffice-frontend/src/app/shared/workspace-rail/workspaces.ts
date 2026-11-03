@@ -491,7 +491,7 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
   // l'entrée « Comptoir » (le premier permis).
   {
     key: 'retrait',
-    label: 'Retrait boutique',
+    label: 'Retrait commande',
     link: '/comptoir/retrait',
     icon: 'package-check',
     needs: 'handover_counter:read',

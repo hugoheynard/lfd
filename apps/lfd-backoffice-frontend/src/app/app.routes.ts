@@ -913,7 +913,7 @@ export const routes: Routes = [
       {
         path: 'retrait',
         canActivate: [permissionGuard('handover_counter:read')],
-        title: 'Retrait boutique — LFC B2B admin',
+        title: 'Retrait commande — LFC B2B admin',
         loadComponent: () =>
           import('./handover-shop/handover-shop-page/handover-shop-page').then(
             (m) => m.HandoverShopPage,
