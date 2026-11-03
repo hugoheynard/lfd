@@ -22,6 +22,7 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repository.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
+import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
@@ -166,6 +167,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     // Le délai d'annulation du réglage d'AUJOURD'HUI, celui que les CGV ont
     // rappelé : figé avant l'écriture (Hugo, 2026-10-26).
     await this.cancellationDeadline.fixOn(order);
+    // Le total vu, avant le règlement : aucune intention sans commande (T2).
+    ensureTotalSeen(order.totalCents, payload.expectedTotalCents);
 
     const intent = await settleOrder(
       { guard: this.guard, payments: this.payments },

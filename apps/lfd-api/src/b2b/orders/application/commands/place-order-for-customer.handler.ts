@@ -1,4 +1,5 @@
 import { Clock } from "../../../../platform/time/clock.js";
+import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -83,6 +84,9 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       payload,
       "checkout",
     );
+    // Le total que l'estimation a montré, avant le règlement (T2) : un refus ici
+    // précède celui du compte sans crédit et ne crée aucun lien.
+    ensureTotalSeen(order.totalCents, payload.expectedTotalCents);
 
     const intent = await this.settle(
       order,

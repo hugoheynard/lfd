@@ -92,11 +92,21 @@ espace pro, saisie de l'équipe), carte comme compte, et pour la révision.
   lit la dérogation sans la consommer (`foreseenWaiver`, même décision
   qu'`ensureWithinOrderCutoff`). Le devis rend `lateFeeCents`, absent à zéro
   (champ additif de `ShopQuoteView`). Golden master : É11 retiré.
-- **T2** — après L2 et sa parité : `expectedTotalCents` au contrat, hors
+- **T2** ✅ _(bâti le 2026-11-03, non commité à l'écriture)_ — après L2 et sa parité : `expectedTotalCents` au contrat, hors
   empreinte ; refus 409 `orders.total_changed` après `draft` et avant
   `settleOrder` dans les trois passations ; e2e (surtaxe apparue, promotion
   terminée, prix changé, bon expiré, écart nul = commande normale, renvoi
   sous la même clé).
+  Bâti : `ensureTotalSeen` (`domain/services/seen-total.ts`) lève
+  `OrderTotalChangedError` dans les trois passations, au rang 7 bis de l'ordre
+  des refus ; la réponse porte `expectedTotalCents` et `totalCents` en faits
+  publiables (nombres). ⚠️ **Pas encore** : la forme de devis complète ni le
+  détail « par terme » dans le 409 — l'enveloppe d'erreur ne publie que des
+  nombres (`PublicErrorFacts`), et le serveur ne reçoit qu'un total, il ne
+  peut pas savoir quel terme le client avait vu. Question ouverte pour T3
+  (le front rechiffre et compare à son dernier devis ?). Un bon déjà servi
+  garde son propre refus (rang inférieur) : un écart, un message.
+  E2e : `test/order-total-seen.e2e-spec.ts`.
 - **T3** — la boutique et la saisie l'envoient, et montrent l'écart en un
   seul message avant de confirmer. **Le bouton de validation est désactivé
   tant qu'un devis est en vol** (Hugo, 2026-11-03, sur un changement
@@ -112,3 +122,18 @@ espace pro, saisie de l'équipe), carte comme compte, et pour la révision.
   cache non rechargé se ferait refuser jusqu'au rechargement), ou facultatif
   avec un compteur nommé des passations qui arrivent sans lui, puis
   obligatoire à une date ? **Tranché : obligatoire dès T3.**
+
+## 6. Le détail « par terme » (tranché le 2026-11-03, au bâti de T2)
+
+Le serveur ne reçoit que le total vu : il ne peut pas savoir quel terme le
+client avait vu, et l'enveloppe d'erreur ne publie que des nombres
+(`PublicErrorFacts`). Le 409 `orders.total_changed` porte donc
+`expectedTotalCents` et `totalCents`, et nomme les deux montants. **Le détail
+« ce qui a changé » est fait par T3, à l'écran** : sur un 409, la boutique et
+la saisie redemandent un devis (ou une estimation) et comparent, terme à
+terme, le dernier devis affiché au nouveau — surtaxe (`lateFeeCents`), port,
+remises, `endedDiscounts`, `removedLines`, prix des lignes. C'est une
+comparaison de deux réponses du serveur, pas un calcul : la règle « une seule
+arithmétique » tient. Le front envoie le total du devis A (boutique, espace
+pro) ou de l'estimation (saisie), jamais celui du devis B, qui ne garantit pas
+le TTC (É16).

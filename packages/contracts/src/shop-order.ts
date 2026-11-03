@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   acceptedSalesTermsSchema,
   deliveryAddressIssue,
+  expectedTotalCentsSchema,
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
   idempotencyKeySchema,
@@ -104,6 +105,8 @@ export const placeShopOrderPayloadSchema = z
     locale: orderLocaleSchema.optional(),
     /** Les CGV cochées au panier — mêmes règles que la passation connectée. */
     salesTerms: acceptedSalesTermsSchema,
+    /** Le TTC vu au panier, ou absent (`expectedTotalCentsSchema`, lot T2). */
+    expectedTotalCents: expectedTotalCentsSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

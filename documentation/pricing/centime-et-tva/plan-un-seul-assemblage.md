@@ -95,6 +95,11 @@ refus, écrit une fois et testé** :
 5. circuit et heure limite (l. 179) ;
 6. opérations datées, réglages, TVA du port (`composition.arrange`) ;
 7. gardes de l'agrégat (`Order.draft`) ;
+   7 bis. le total vu (`orders.total_changed`, `ensureTotalSeen` — plan
+   [total vu](plan-total-vu.md), T2, 2026-11-03) : le TTC composé contre
+   `expectedTotalCents`, **après les gardes de l'agrégat et avant le
+   règlement** (8), pour qu'aucun refus ne laisse d'intention Stripe ; un
+   refus d'un rang inférieur (bon servi, heure limite…) parle seul ;
 8. règlement au compte sans crédit (`orders.settlement.account_not_granted`
    et ses variantes comptoir — `settleOrder`, `staffSettlementRefusal`) :
    **juste après les gardes de l'agrégat, avant les verrous** (Hugo,

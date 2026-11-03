@@ -39,6 +39,11 @@ export interface OrderFingerprintMaterial {
  * dire — la note libre en fait partie, et c'est un choix : corriger une faute
  * de frappe dans « merci de sonner » ne doit pas transformer un rejeu en refus.
  *
+ * Le total vu (`expectedTotalCents`, plan `plan-total-vu.md`, T2) n'y entre
+ * pas non plus, et c'est vital : après un refus `orders.total_changed`, le
+ * client renvoie le MÊME panier avec le nouveau total sous la même clé ; s'il
+ * entrait, ce renvoi serait pris pour une réutilisation de clé.
+ *
  * Les lignes sont **triées** avant hachage. Deux paniers identiques dont l'écran
  * a réordonné l'affichage sont le même panier ; les traiter comme deux
  * demandes différentes rendrait un refus à un client qui n'a rien changé.

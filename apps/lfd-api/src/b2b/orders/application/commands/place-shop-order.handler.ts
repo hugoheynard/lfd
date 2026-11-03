@@ -19,6 +19,7 @@ import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repo
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ShopOrderIdempotencyStore } from "../../domain/ports/shop-order-idempotency.store.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
+import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { GuestIdentity } from "../../domain/value-objects/guest-identity.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
@@ -174,6 +175,8 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     );
     // Le délai d'annulation du réglage d'AUJOURD'HUI, figé (Hugo, 2026-10-26).
     await this.cancellationDeadline.fixOn(order);
+    // Le total vu, avant le règlement : aucune intention sans commande (T2).
+    ensureTotalSeen(order.totalCents, payload.expectedTotalCents);
 
     const intent = await this.settle(order);
     const placed = await this.persist(order, payload, intent);

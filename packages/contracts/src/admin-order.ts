@@ -7,6 +7,7 @@ import {
 } from "./address.js";
 import {
   deliveryAddressIssue,
+  expectedTotalCentsSchema,
   fulfillmentMethodSchema,
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
@@ -129,6 +130,8 @@ export const adminPlaceOrderPayloadSchema = z
     entryShortcut: staffEntryShortcutSchema.optional(),
     // D'où vient la saisie (E4 étendu) : `counter` refuse le lien de règlement.
     entryOrigin: staffEntryOriginSchema.optional(),
+    // Le TTC que l'estimation a montré, ou absent (`expectedTotalCentsSchema`, lot T2).
+    expectedTotalCents: expectedTotalCentsSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

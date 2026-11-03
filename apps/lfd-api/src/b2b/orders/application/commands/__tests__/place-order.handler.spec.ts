@@ -38,6 +38,7 @@ import {
   TermsNotGrantedError,
 } from "../../../domain/errors/order-errors.js";
 import { SalesTermsOutdatedError } from "../../../domain/errors/sales-terms-outdated.error.js";
+import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import { UnknownSkuError } from "../../../../catalog/domain/errors/unknown-sku.error.js";
 import {
   OrderGuardReader,
@@ -2642,5 +2643,87 @@ describe("PlaceOrderHandler — le délai d'annulation figé", () => {
 
     expect(sink.placed?.customerCancellableUntil).toBeNull();
     expect(sink.placed?.customerCancellation).toEqual({ kind: "not_fixed" });
+  });
+});
+
+/** Plan `plan-total-vu.md`, T2 : la passation compare le TTC composé au total vu. */
+describe("PlaceOrderHandler — le total vu", () => {
+  /** Les clés rendues : un refus avant l'écriture doit rendre la sienne. */
+  class ReleasingKeys extends OrderIdempotencyStore {
+    readonly released: string[] = [];
+    claim(): Promise<{ kind: "claimed" }> {
+      return Promise.resolve({ kind: "claimed" });
+    }
+    release(_userId: string, key: string): Promise<void> {
+      this.released.push(key);
+      return Promise.resolve();
+    }
+    resolve(): Promise<void> {
+      return Promise.resolve();
+    }
+  }
+
+  function handlerWith(
+    sink: { placed: OrderToPlace | null },
+    paid: { intent: CreateIntentParams | null },
+    keys: OrderIdempotencyStore = freeKeys,
+  ): PlaceOrderHandler {
+    return new PlaceOrderHandler(
+      guard(null, null),
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(sink),
+      payments(paid),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      keys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
+    );
+  }
+
+  async function composedTotal(): Promise<number> {
+    const sink = { placed: null as OrderToPlace | null };
+    await handlerWith(sink, { intent: null }).execute(new PlaceOrderCommand("u1", payload(), null));
+    return sink.placed?.totalCents ?? Number.NaN;
+  }
+
+  it("absent, la commande naît comme aujourd'hui", async () => {
+    expect(await composedTotal()).toBeGreaterThan(0);
+  });
+
+  it("égal au TTC composé, la commande naît", async () => {
+    const total = await composedTotal();
+    const sink = { placed: null as OrderToPlace | null };
+    await handlerWith(sink, { intent: null }).execute(
+      new PlaceOrderCommand("u1", payload({ expectedTotalCents: total }), null),
+    );
+    expect(sink.placed?.totalCents).toBe(total);
+  });
+
+  it("différent, refuse 409 avec les deux totaux, sans intention ni écriture, et rend la clé", async () => {
+    const total = await composedTotal();
+    const sink = { placed: null as OrderToPlace | null };
+    const paid = { intent: null as CreateIntentParams | null };
+    const keys = new ReleasingKeys();
+    const seen = total - 1;
+
+    const refusal = handlerWith(sink, paid, keys).execute(
+      new PlaceOrderCommand("u1", payload({ expectedTotalCents: seen }), null),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(OrderTotalChangedError);
+    await expect(refusal).rejects.toMatchObject({
+      code: "orders.total_changed",
+      facts: { expectedTotalCents: seen, totalCents: total },
+    });
+    expect(paid.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+    expect(keys.released).toEqual(["3f2504e0-4f89-41d3-9a0c-0305e82c3301"]);
   });
 });

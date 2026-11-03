@@ -1,4 +1,5 @@
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
+import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import {
   addDays,
   DEFAULT_DELIVERY_AVAILABILITY,
@@ -1035,5 +1036,40 @@ describe("PlaceShopOrderHandler — le délai d'annulation figé", () => {
     await handler.execute(new PlaceShopOrderCommand(payload()));
 
     expect(sink.placed?.customerCancellableUntil).toBeNull();
+  });
+});
+
+/** Plan `plan-total-vu.md`, T2 : la boutique compare le TTC composé au total vu. */
+describe("PlaceShopOrderHandler — le total vu", () => {
+  async function composedTotal(): Promise<number> {
+    const { handler, sink } = scene();
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+    return sink.placed?.totalCents ?? Number.NaN;
+  }
+
+  it("égal au TTC composé, la commande naît", async () => {
+    const total = await composedTotal();
+    const { handler, sink } = scene();
+
+    await handler.execute(new PlaceShopOrderCommand(payload({ expectedTotalCents: total })));
+
+    expect(sink.placed?.totalCents).toBe(total);
+  });
+
+  it("différent, refuse 409 avec les deux totaux, sans intention ni écriture, et rend la clé", async () => {
+    const total = await composedTotal();
+    const { handler, sink, paid, keys } = scene();
+
+    const refusal = handler.execute(
+      new PlaceShopOrderCommand(payload({ expectedTotalCents: total + 500 })),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(OrderTotalChangedError);
+    await expect(refusal).rejects.toMatchObject({
+      facts: { expectedTotalCents: total + 500, totalCents: total },
+    });
+    expect(paid.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+    expect(keys.released).toEqual([KEY]);
   });
 });

@@ -1192,6 +1192,8 @@ export {
   orderQuantitySchema,
   orderSaleUnitSchema,
   saleUnitOfLine,
+  expectedTotalCentsSchema,
+  ORDER_TOTAL_CHANGED,
   idempotencyKeySchema,
   MAX_LINE_QUANTITY,
   MAX_LINE_WEIGHT_GRAMS,

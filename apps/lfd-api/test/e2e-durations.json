@@ -334,6 +334,7 @@
   "test/order-staff-cancel-voucher-races.e2e-spec.ts": 9000,
   "test/order-staff-cancel-voucher.e2e-spec.ts": 13000,
   "test/order-staff-cancel.e2e-spec.ts": 16000,
+  "test/order-total-seen.e2e-spec.ts": 7213,
   "test/order-unsettled-shop-expiry.e2e-spec.ts": 5000,
   "test/order-waivers-journal.e2e-spec.ts": 5340,
   "test/order-waivers-open-list.e2e-spec.ts": 5000,

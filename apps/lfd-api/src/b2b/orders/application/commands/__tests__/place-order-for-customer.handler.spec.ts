@@ -1,4 +1,5 @@
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
+import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
@@ -1377,5 +1378,67 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
         new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
       ),
     ).rejects.toThrow(new AccountSettlementNotGrantedError().message);
+  });
+});
+
+/** Plan `plan-total-vu.md`, T2 : la saisie compare le TTC composé au total que l'estimation a montré. */
+describe("PlaceOrderForCustomerHandler — le total vu", () => {
+  async function composedTotal(): Promise<number> {
+    const sink = { placed: null as OrderToPlace | null };
+    await handler(guard("orders", "active", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+    );
+    return sink.placed?.totalCents ?? Number.NaN;
+  }
+
+  it("égal au TTC composé, la commande naît", async () => {
+    const total = await composedTotal();
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders", "active", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand(
+        "staff_1",
+        payload({ settlement: "account", expectedTotalCents: total }),
+      ),
+    );
+
+    expect(sink.placed?.totalCents).toBe(total);
+  });
+
+  it("différent, refuse 409 avec les deux totaux, sans lien ni écriture", async () => {
+    const total = await composedTotal();
+    const intents = { intent: null as CreateIntentParams | null };
+    const sink = { placed: null as OrderToPlace | null };
+
+    const refusal = handler(guard("orders", "active", "granted"), sink, {
+      payments: payments(intents),
+    }).execute(
+      new PlaceOrderForCustomerCommand(
+        "staff_1",
+        payload({ settlement: "link", expectedTotalCents: total + 1 }),
+      ),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(OrderTotalChangedError);
+    await expect(refusal).rejects.toMatchObject({
+      facts: { expectedTotalCents: total + 1, totalCents: total },
+    });
+    expect(intents.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+  });
+
+  /** L'ordre des refus (`plan-un-seul-assemblage.md`, § 2.4) : 7 bis passe avant 8. */
+  it("le total changé se dit AVANT le compte sans crédit", async () => {
+    const total = await composedTotal();
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      handler(guard("orders", "active", "none"), sink).execute(
+        new PlaceOrderForCustomerCommand(
+          "staff_1",
+          payload({ settlement: "account", expectedTotalCents: total + 1 }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderTotalChangedError);
   });
 });

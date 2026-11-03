@@ -51,3 +51,16 @@ describe("orderFingerprint — le bon de fidélité", () => {
     expect(orderFingerprint(two, null)).toBe(orderFingerprint(swapped, null));
   });
 });
+
+describe("orderFingerprint — le total vu (plan total vu, T2)", () => {
+  /**
+   * Après un refus `orders.total_changed`, le client renvoie le même panier
+   * avec le nouveau total sous la même clé : la même demande, pas une clé réutilisée.
+   */
+  it("le total vu ne change pas l'empreinte", () => {
+    const seenBefore = { ...BASKET, expectedTotalCents: 4230 };
+    const seenAfter = { ...BASKET, expectedTotalCents: 4730 };
+    expect(orderFingerprint(seenBefore, null)).toBe(orderFingerprint(seenAfter, null));
+    expect(orderFingerprint(seenAfter, null)).toBe(orderFingerprint(BASKET, null));
+  });
+});
