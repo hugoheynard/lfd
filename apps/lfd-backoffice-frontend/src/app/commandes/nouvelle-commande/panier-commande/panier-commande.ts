@@ -1,5 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { FoldButtonComponent, FoldCalloutComponent, FoldSelectComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldElementTitleComponent,
+  FoldSelectComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
+} from 'fold-ng';
 import {
   STAFF_SETTLEMENT_LABELS,
   type BillingAddressPayload,
@@ -75,6 +83,15 @@ const NO_FULFILLMENT: FulfillmentChoice = {
  * donc deux résultats à un centime près, et un client qui compare son écran à sa
  * facture.
  */
+/** La vue visible du panier de droite. */
+export type PanierView = 'settings' | 'lines';
+
+/** Un refus, et la vue où se corrige ce qu'il nomme. */
+export interface PanierBlocker {
+  readonly text: string;
+  readonly view: PanierView;
+}
+
 @Component({
   selector: 'app-panier-commande',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -83,7 +100,10 @@ const NO_FULFILLMENT: FulfillmentChoice = {
     CartRow,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldElementTitleComponent,
     FoldSelectComponent,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
   ],
   templateUrl: './panier-commande.html',
   styleUrl: './panier-commande.scss',
@@ -171,31 +191,36 @@ export class PanierCommande {
    * Ce qui empêche de valider, dit en clair. Une liste et non un booléen : un
    * bouton grisé sans raison oblige à deviner ce qui manque.
    */
-  protected readonly blockers = computed<readonly string[]>(() => {
-    const issues: string[] = [];
+  protected readonly blockers = computed<readonly PanierBlocker[]>(() => {
+    const issues: PanierBlocker[] = [];
     if (this.cart().isEmpty()) {
-      issues.push('Le panier est vide.');
+      issues.push({ text: 'Le panier est vide.', view: 'lines' });
     }
     if (this.buyer() === null) {
-      issues.push(
-        "Ce compte n'a aucun interlocuteur avec un accès : la commande n'a personne à qui être portée.",
-      );
+      issues.push({
+        text: "Ce compte n'a aucun interlocuteur avec un accès : la commande n'a personne à qui être portée.",
+        view: 'settings',
+      });
     }
     if (this.draft().requestedDate() === '') {
-      issues.push(
-        "Aucun jour de retrait/livraison : la commande n'entrerait dans aucune journée de production.",
-      );
+      issues.push({
+        text: "Aucun jour de retrait/livraison : la commande n'entrerait dans aucune journée de production.",
+        view: 'settings',
+      });
     }
     const acheminement = this.fulfillment().issue;
     if (acheminement !== null) {
-      issues.push(acheminement);
+      issues.push({ text: acheminement, view: 'settings' });
     }
     const shelf = this.shelfIssue();
     if (this.immediate() && shelf !== null) {
-      issues.push(shelf);
+      issues.push({ text: shelf, view: 'lines' });
     }
     if (this.settlement() === 'account' && !this.settlesOnAccount()) {
-      issues.push('Cette société ne règle pas au compte — aucun crédit ne lui a été accordé.');
+      issues.push({
+        text: 'Cette société ne règle pas au compte — aucun crédit ne lui a été accordé.',
+        view: 'settings',
+      });
     }
     return issues;
   });
@@ -203,6 +228,18 @@ export class PanierCommande {
   protected readonly canPlace = computed(() => this.blockers().length === 0 && !this.submitting());
 
   /** Le sous-total HT du panier. Cf. l'avertissement de la classe. */
+  /**
+   * Les deux vues du panier (Hugo, 2026-11-03). Pas de bascule automatique au
+   * premier ajout : l'ajout se fait depuis la colonne de gauche, et l'en-tête
+   * dit déjà le compte et le sous-total — retirer les réglages de sous les yeux
+   * du commercial serait la surprise.
+   */
+  protected readonly viewTabs: FoldTabItem<PanierView>[] = [
+    { key: 'settings', label: 'Paramétrer la commande', icon: 'sliders' },
+    { key: 'lines', label: 'Voir le panier', icon: 'list' },
+  ];
+  readonly view = signal<PanierView>('settings');
+
   protected readonly subtotal = computed(() => formatCents(this.cart().subtotalCents()));
 
   protected onFulfillment(choice: FulfillmentChoice): void {

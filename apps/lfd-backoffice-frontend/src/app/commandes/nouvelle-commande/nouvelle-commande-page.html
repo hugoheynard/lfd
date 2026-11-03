@@ -123,6 +123,7 @@
         (selectOrder)="onSelectOrder($event)"
         (add)="onAdd($event)"
         (addAll)="onAddAll($event)"
+        (quantityChange)="cart.setQuantity($event.product.id, $event.quantity)"
       />
 
       <!-- En large, le panier tient sa colonne ; en étroit, il passe en tiroir et

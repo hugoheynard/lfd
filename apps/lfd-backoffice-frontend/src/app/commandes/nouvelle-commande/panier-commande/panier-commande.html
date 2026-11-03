@@ -1,119 +1,157 @@
-<header class="pan-head">
-  <h2 class="pan-title">Panier</h2>
-  <span class="pan-count"
-    >{{ cart().itemCount() }} article{{ cart().itemCount() > 1 ? 's' : '' }}</span
-  >
-</header>
-
-<div class="pan-lines">
-  @if (cart().isEmpty()) {
-    <p class="pan-empty">Ajoutez des articles depuis la colonne du milieu.</p>
-  } @else {
-    <ul class="pan-list">
-      @for (line of cart().pricedLines(); track line.sku) {
-        <li>
-          <lfd-cart-row
-            [name]="line.name"
-            [unitPriceMillicents]="line.unitPriceMillicents"
-            [canonicalPriceMillicents]="line.canonicalPriceMillicents"
-            [quantity]="line.quantity"
-            [saleUnit]="line.saleUnit ?? 'piece'"
-            [unit]="line.saleUnit === 'weight' ? '/ kg' : ''"
-            [step]="line.step ?? 1"
-            [min]="line.minimum ?? 1"
-            (quantityChange)="cart().setQuantity(line.sku, $event)"
-            (remove)="cart().remove(line.sku)"
-          />
-        </li>
-      }
-    </ul>
+<!-- Le récapitulatif ne paraît qu'avec une ligne : un panier vide n'a rien à
+     résumer. Ce que l'écran ne calcule PAS est dit juste dessous, sinon le
+     commercial annoncerait le sous-total comme un total. -->
+<fold-element-title
+  variant="title"
+  title="Panier"
+  [level]="2"
+  [subtitle]="
+    cart().isEmpty()
+      ? undefined
+      : 'Remise de retrait, frais de livraison, TVA et total TTC sont calculés à la validation.'
+  "
+>
+  @if (!cart().isEmpty()) {
+    <span titleAction class="pan-summary">
+      {{ cart().itemCount() }} article{{ cart().itemCount() > 1 ? 's' : '' }} · Sous-total HT
+      {{ subtotal() }} HT
+    </span>
   }
-</div>
+</fold-element-title>
 
-<div class="pan-form">
-  <fold-select
-    label="Commande portée par"
-    [hint]="
-      'Elle appartient au compte ' +
-      companyName() +
-      ' ; cette personne en est l’interlocuteur, et la destinataire d’un éventuel lien de règlement.'
-    "
-    [value]="buyer() ?? ''"
-    (valueChange)="draft().buyerUserId.set($event)"
-  >
-    @for (member of buyers(); track member.userId) {
-      <option [value]="member.userId">{{ nameOf(member) }}</option>
-    }
-  </fold-select>
+<!-- Une bascule pleine largeur : les réglages OU les lignes, jamais les deux.
+     La validation, en pied, reste visible dans les deux vues. -->
+<fold-tabs
+  #t="foldTabs"
+  activeStyle="fill"
+  direction="horizontal"
+  justify="stretch"
+  background="transparent"
+  [tabs]="viewTabs"
+  [(activeKey)]="view"
+/>
 
-  <app-acheminement-commande
-    [pickups]="pickups()"
-    [addresses]="addresses()"
-    [zones]="zones()"
-    [deliveryAvailability]="deliveryAvailability()"
-    [audience]="audience()"
-    [preferredPickupId]="preferredPickupId()"
-    [draft]="draft()"
-    [canKeepAddress]="canKeepAddress()"
-    [counterPlaceId]="counterPlaceId()"
-    (choiceChange)="onFulfillment($event)"
-  />
+<fold-tab-panel class="pan-view" [tabs]="t" key="settings">
+  <div class="pan-form">
+    <fold-select
+      label="Commande portée par"
+      [hint]="
+        'Elle appartient au compte ' +
+        companyName() +
+        ' ; cette personne en est l’interlocuteur, et la destinataire d’un éventuel lien de règlement.'
+      "
+      [value]="buyer() ?? ''"
+      (valueChange)="draft().buyerUserId.set($event)"
+    >
+      @for (member of buyers(); track member.userId) {
+        <option [value]="member.userId">{{ nameOf(member) }}</option>
+      }
+    </fold-select>
 
-  <!-- `<input type="date">` en natif : Signal Forms ne couvre pas les dates, et
+    <app-acheminement-commande
+      [pickups]="pickups()"
+      [addresses]="addresses()"
+      [zones]="zones()"
+      [deliveryAvailability]="deliveryAvailability()"
+      [audience]="audience()"
+      [preferredPickupId]="preferredPickupId()"
+      [draft]="draft()"
+      [canKeepAddress]="canKeepAddress()"
+      [counterPlaceId]="counterPlaceId()"
+      (choiceChange)="onFulfillment($event)"
+    />
+
+    <!-- `<input type="date">` en natif : Signal Forms ne couvre pas les dates, et
        le contrôle du navigateur bat tout masque maison. Absent au retrait
        immédiat : la journée y est aujourd'hui, posée par le raccourci. -->
-  @if (!immediate()) {
-    <label class="pan-field">
-      <span class="pan-label">{{ dateLabel() }}</span>
-      <input
-        type="date"
-        [value]="requestedDate()"
-        (change)="draft().requestedDate.set($any($event.target).value)"
-      />
-    </label>
-  }
-
-  <label class="pan-field">
-    <span class="pan-label">Note</span>
-    <textarea
-      rows="2"
-      placeholder="Ce que l'atelier doit savoir."
-      [value]="note()"
-      (input)="draft().note.set($any($event.target).value)"
-    ></textarea>
-  </label>
-
-  <fieldset class="pan-settle">
-    <legend class="pan-label">Règlement</legend>
-    @for (mode of settlementModes; track mode) {
-      <label class="pan-radio" [class.is-off]="mode === 'account' && !settlesOnAccount()">
+    @if (!immediate()) {
+      <label class="pan-field">
+        <span class="pan-label">{{ dateLabel() }}</span>
         <input
-          type="radio"
-          name="settlement"
-          [value]="mode"
-          [checked]="settlement() === mode"
-          [disabled]="mode === 'account' && !settlesOnAccount()"
-          (change)="onSettlement(mode)"
+          type="date"
+          [value]="requestedDate()"
+          (change)="draft().requestedDate.set($any($event.target).value)"
         />
-        <span>{{ labels[mode] }}</span>
       </label>
     }
-  </fieldset>
-</div>
+
+    <label class="pan-field">
+      <span class="pan-label">Note</span>
+      <textarea
+        rows="2"
+        placeholder="Ce que l'atelier doit savoir."
+        [value]="note()"
+        (input)="draft().note.set($any($event.target).value)"
+      ></textarea>
+    </label>
+
+    <fieldset class="pan-settle">
+      <legend class="pan-label">Règlement</legend>
+      @for (mode of settlementModes; track mode) {
+        <label class="pan-radio" [class.is-off]="mode === 'account' && !settlesOnAccount()">
+          <input
+            type="radio"
+            name="settlement"
+            [value]="mode"
+            [checked]="settlement() === mode"
+            [disabled]="mode === 'account' && !settlesOnAccount()"
+            (change)="onSettlement(mode)"
+          />
+          <span>{{ labels[mode] }}</span>
+        </label>
+      }
+    </fieldset>
+  </div>
+</fold-tab-panel>
+
+<fold-tab-panel class="pan-view" [tabs]="t" key="lines">
+  <div>
+    @if (cart().isEmpty()) {
+      <p class="pan-empty">Ajoutez des articles depuis la colonne de gauche.</p>
+    } @else {
+      <ul class="pan-list">
+        @for (line of cart().pricedLines(); track line.sku) {
+          <li>
+            <lfd-cart-row
+              [name]="line.name"
+              [unitPriceMillicents]="line.unitPriceMillicents"
+              [canonicalPriceMillicents]="line.canonicalPriceMillicents"
+              [quantity]="line.quantity"
+              [saleUnit]="line.saleUnit ?? 'piece'"
+              [unit]="line.saleUnit === 'weight' ? '/ kg' : ''"
+              [step]="line.step ?? 1"
+              [min]="line.minimum ?? 1"
+              (quantityChange)="cart().setQuantity(line.sku, $event)"
+              (remove)="cart().remove(line.sku)"
+            />
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</fold-tab-panel>
 
 <footer class="pan-foot">
-  <div class="pan-sum">
-    <span>Sous-total HT</span>
-    <strong>{{ subtotal() }}</strong>
-  </div>
-  <!-- Ce que l'écran ne calcule PAS, dit à l'écran : sinon le commercial
-       annoncerait le sous-total comme un total. -->
-  <p class="pan-note">
-    Remise de retrait, frais de livraison, TVA et total TTC sont calculés à la validation.
-  </p>
-
-  @for (blocker of blockers(); track blocker) {
-    <fold-callout variant="warning">{{ blocker }}</fold-callout>
+  <!-- Le même pied dans les deux vues ; un refus qui vit dans l'autre vue y
+       renvoie d'un geste. -->
+  @for (blocker of blockers(); track blocker.text) {
+    <fold-callout variant="warning">
+      <div class="pan-blocker">
+        <span>{{ blocker.text }}</span>
+        @if (blocker.view !== view()) {
+          <button
+            foldButton
+            type="button"
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            (click)="view.set(blocker.view)"
+          >
+            {{ blocker.view === 'settings' ? 'Paramétrer la commande' : 'Voir le panier' }}
+          </button>
+        }
+      </div>
+    </fold-callout>
   }
 
   @if (blockers().length === 0) {

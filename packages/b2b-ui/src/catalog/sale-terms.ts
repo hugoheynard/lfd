@@ -88,3 +88,48 @@ export function saleQuantityLabel(quantity: number, unit: OrderSaleUnit | undefi
 export function lineSaleQuantity(quantity: number, unit: OrderSaleUnit | undefined): SaleQuantity {
   return saleQuantity(quantity, unit ?? 'piece');
 }
+
+/**
+ * **La règle unique d'une quantité saisie** : jamais sous le plancher
+ * (`floorQuantityOf`), toujours sur la grille du pas. Une saisie hors règle est
+ * ramenée au multiple du pas le plus proche, et vers le haut sous le plancher —
+ * jamais envoyée telle quelle (décision Hugo, 2026-11-03).
+ *
+ * La rangée et le panier du back-office la partagent : deux implémentations
+ * d'une même règle finiraient par ne pas dire la même quantité.
+ */
+export function settleSaleQuantity(
+  quantity: number,
+  minimum: number | undefined,
+  step: number,
+): number {
+  const floor = floorQuantityOf(minimum, step);
+  if (!Number.isFinite(quantity) || quantity <= floor) {
+    return floor;
+  }
+  return Math.max(floor, Math.round(quantity / step) * step);
+}
+
+/** Un cran au-dessus : le multiple du pas suivant, réglé par `settleSaleQuantity`. */
+export function nextSaleQuantity(
+  quantity: number,
+  minimum: number | undefined,
+  step: number,
+): number {
+  return settleSaleQuantity(Math.floor(quantity / step) * step + step, minimum, step);
+}
+
+/**
+ * Un cran au-dessous ; **0** quand on est déjà au plancher — le geste qui
+ * retire la ligne.
+ */
+export function previousSaleQuantity(
+  quantity: number,
+  minimum: number | undefined,
+  step: number,
+): number {
+  if (quantity <= floorQuantityOf(minimum, step)) {
+    return 0;
+  }
+  return settleSaleQuantity(Math.ceil(quantity / step) * step - step, minimum, step);
+}

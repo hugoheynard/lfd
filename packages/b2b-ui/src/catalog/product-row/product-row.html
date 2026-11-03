@@ -21,9 +21,6 @@
   <div class="pr-main">
     <div class="pr-line1">
       <span class="pr-name">{{ p.name }}</span>
-      @if (inCart() > 0) {
-        <span class="pr-incart">✓ {{ inCartText() }}</span>
-      }
     </div>
     <div class="pr-line2">
       @if (p.price) {
@@ -75,6 +72,41 @@
       >
         {{ notifyLabel() }}
       </button>
+    } @else if (inCartMode()) {
+      <!-- Déjà au panier : la rangée édite la ligne, elle n'en ajoute pas. -->
+      <button
+        foldButton
+        type="button"
+        emphasis="outline"
+        [intent]="atFloor() ? 'danger' : 'neutral'"
+        size="sm"
+        [icon]="atFloor() ? 'bin' : 'minus'"
+        [attr.aria-label]="atFloor() ? removeText() : 'Diminuer'"
+        (click)="onDecrement()"
+      ></button>
+      <fold-number-input
+        class="pr-qty"
+        spinner="none"
+        size="sm"
+        align="center"
+        integer
+        [attr.aria-label]="byWeight() ? 'Poids au panier, en grammes' : 'Quantité au panier'"
+        [min]="minQty()"
+        [step]="step()"
+        [(value)]="cartDraft"
+        (focusout)="onCommitDraft()"
+        (keydown.enter)="onCommitDraft()"
+      />
+      <button
+        foldButton
+        type="button"
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        icon="plus"
+        aria-label="Augmenter"
+        (click)="onIncrement()"
+      ></button>
     } @else {
       <fold-number-input
         class="pr-qty"
@@ -83,6 +115,7 @@
         size="sm"
         align="center"
         snapToStep
+        integer
         [attr.aria-label]="byWeight() ? 'Poids en grammes' : 'Quantité'"
         [min]="minQty()"
         [step]="step()"
@@ -95,10 +128,11 @@
         intent="primary"
         size="sm"
         icon="plus"
-        class="pr-add"
         [attr.aria-label]="addText()"
         (click)="onAction()"
-      ></button>
+      >
+        Ajouter
+      </button>
     }
   </div>
 </div>

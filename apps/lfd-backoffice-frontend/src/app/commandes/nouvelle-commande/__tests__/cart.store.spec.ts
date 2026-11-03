@@ -106,13 +106,82 @@ describe('CartStore', () => {
     expect(cart.toPayloadLines()).toEqual([{ sku: 'VIE-001', quantity: 3 }]);
   });
 
-  it('tronque une quantité fractionnaire — on ne commande pas 2,5 croissants', () => {
+  it('ramène une quantité fractionnaire à l’entier le plus proche — on ne commande pas 2,7 croissants', () => {
+    // Elle était tronquée (2) ; depuis le 2026-11-03, la règle unique ramène
+    // au multiple du pas le PLUS PROCHE, comme la rangée.
     const cart = new CartStore();
     cart.add(CROISSANT, 4);
 
     cart.setQuantity('VIE-001', 2.7);
 
-    expect(cart.quantityOf('VIE-001')).toBe(2);
+    expect(cart.quantityOf('VIE-001')).toBe(3);
+  });
+
+  /**
+   * Décision Hugo du 2026-11-03 : le panier tient lui-même le plancher et le
+   * pas — une rangée ou une ligne de panier qui enverrait une quantité hors
+   * règle ne doit pas pouvoir la poser.
+   */
+  describe('le plancher et le pas, tenus par le panier', () => {
+    const PAIN_MIN = { ...BAGUETTE, minimum: 10 };
+    const GRAVLAX = {
+      sku: 'SAU-001',
+      name: 'Saumon gravlax',
+      unitPriceMillicents: 4_200_000,
+      saleUnit: 'weight' as const,
+      step: 100,
+      minimum: 250,
+    };
+
+    it('remonte au plancher une pièce ajoutée sous son minimum', () => {
+      const cart = new CartStore();
+      cart.add(PAIN_MIN, 3);
+      expect(cart.quantityOf('PAI-001')).toBe(10);
+    });
+
+    it('remonte au plancher une quantité fixée sous le minimum, sans retirer la ligne', () => {
+      const cart = new CartStore();
+      cart.add(PAIN_MIN, 12);
+      cart.setQuantity('PAI-001', 4);
+      expect(cart.quantityOf('PAI-001')).toBe(10);
+    });
+
+    it('retire la ligne à 0, même avec un minimum', () => {
+      const cart = new CartStore();
+      cart.add(PAIN_MIN, 12);
+      cart.setQuantity('PAI-001', 0);
+      expect(cart.isEmpty()).toBe(true);
+    });
+
+    it('au poids, part du premier multiple du pas qui atteint le minimum', () => {
+      const cart = new CartStore();
+      cart.add(GRAVLAX, 100);
+      expect(cart.quantityOf('SAU-001')).toBe(300);
+    });
+
+    it('au poids, ramène une saisie hors pas au multiple le plus proche', () => {
+      const cart = new CartStore();
+      cart.add(GRAVLAX, 500);
+      cart.setQuantity('SAU-001', 1_234);
+      expect(cart.quantityOf('SAU-001')).toBe(1_200);
+      cart.setQuantity('SAU-001', 1_260);
+      expect(cart.quantityOf('SAU-001')).toBe(1_300);
+    });
+
+    it('au poids, le cumul reste sur le pas', () => {
+      const cart = new CartStore();
+      cart.add(GRAVLAX, 300);
+      cart.add(GRAVLAX, 300);
+      expect(cart.quantityOf('SAU-001')).toBe(600);
+    });
+
+    it('accepte un colis entier sur une pièce : son pas au panier est 1', () => {
+      // Le colis est un choix de la rangée ; la ligne ne le garde pas.
+      const cart = new CartStore();
+      cart.add(PAIN_MIN, 12);
+      cart.add(PAIN_MIN, 6);
+      expect(cart.quantityOf('PAI-001')).toBe(18);
+    });
   });
 
   /**
@@ -125,7 +194,8 @@ describe('CartStore', () => {
       name: 'Saumon gravlax',
       unitPriceMillicents: 4_200_000, // 42,00 € HT le kilo
       saleUnit: 'weight' as const,
-      step: 100,
+      // Au pas de 50 g : 1 250 g est sur la grille, le panier le garde tel quel.
+      step: 50,
       minimum: 300,
     };
 

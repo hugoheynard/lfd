@@ -6,8 +6,11 @@ import {
   floorQuantityOf,
   pieceMinimumOf,
   lineSaleQuantity,
+  nextSaleQuantity,
+  previousSaleQuantity,
   saleQuantityLabel,
   saleStepOf,
+  settleSaleQuantity,
 } from '../sale-terms';
 import { toCatalogProduct } from '../to-catalog-product';
 
@@ -119,5 +122,52 @@ describe('sale-terms — le minimum de pièces', () => {
     expect(floorQuantityOf(10, 6)).toBe(12);
     expect(floorQuantityOf(undefined, 6)).toBe(6);
     expect(floorQuantityOf(300, 100)).toBe(300);
+  });
+});
+
+/**
+ * La règle unique d'une quantité saisie (décision Hugo, 2026-11-03) : la rangée
+ * de saisie et le panier du back-office la partagent.
+ */
+describe('settleSaleQuantity', () => {
+  it('remonte au plancher toute saisie dessous', () => {
+    expect(settleSaleQuantity(3, 10, 1)).toBe(10);
+    expect(settleSaleQuantity(3, 10, 6)).toBe(12);
+    expect(settleSaleQuantity(-5, undefined, 1)).toBe(1);
+  });
+
+  it('ramène une saisie hors pas au multiple le plus proche', () => {
+    expect(settleSaleQuantity(1_234, 250, 100)).toBe(1_200);
+    expect(settleSaleQuantity(1_250, 250, 100)).toBe(1_300);
+    expect(settleSaleQuantity(14, 10, 6)).toBe(12);
+    expect(settleSaleQuantity(16, 10, 6)).toBe(18);
+  });
+
+  it('ne descend jamais sous le plancher en arrondissant', () => {
+    // 13 au pas de 6, minimum 10 : le plus proche serait 12, le plancher l'est aussi.
+    expect(settleSaleQuantity(13, 10, 6)).toBe(12);
+  });
+
+  it('rend le plancher pour une saisie illisible', () => {
+    expect(settleSaleQuantity(Number.NaN, 250, 100)).toBe(300);
+  });
+});
+
+describe('nextSaleQuantity / previousSaleQuantity', () => {
+  it('monte et descend d’un pas', () => {
+    expect(nextSaleQuantity(12, 10, 6)).toBe(18);
+    expect(previousSaleQuantity(18, 10, 6)).toBe(12);
+  });
+
+  it('se recale sur la grille depuis une quantité hors pas', () => {
+    // 7 pièces au panier, la rangée en colis de 6 : un cran = le colis suivant.
+    expect(nextSaleQuantity(7, undefined, 6)).toBe(12);
+    expect(previousSaleQuantity(7, undefined, 6)).toBe(6);
+  });
+
+  it('au plancher, descendre RETIRE (0)', () => {
+    expect(previousSaleQuantity(12, 10, 6)).toBe(0);
+    expect(previousSaleQuantity(300, 250, 100)).toBe(0);
+    expect(previousSaleQuantity(1, undefined, 1)).toBe(0);
   });
 });

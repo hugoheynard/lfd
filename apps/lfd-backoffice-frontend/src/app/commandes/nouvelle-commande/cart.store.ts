@@ -1,7 +1,7 @@
 import { computed, signal, type Signal } from '@angular/core';
 
 import type { OrderLineInput, OrderQuoteView, OrderSaleUnit } from '@lfd/contracts';
-import { lineSaleQuantity } from '@lfd/b2b-ui/catalog';
+import { lineSaleQuantity, settleSaleQuantity } from '@lfd/b2b-ui/catalog';
 import { lineTotalCents } from '@lfd/money';
 
 /** Une ligne du panier en cours de saisie. Le prix n'est là que pour l'écran. */
@@ -78,6 +78,19 @@ export function requestedLineOf(line: CartLine): OrderLineInput {
 export interface PricedCartLine extends CartLine {
   /** Le tarif d'entrée en **millicentimes**, ou `null` si rien ne l'a fait bouger. */
   readonly canonicalPriceMillicents: number | null;
+}
+
+/**
+ * La quantité qu'une ligne peut réellement porter : au plancher et sur le pas
+ * de l'article (`settleSaleQuantity`, la règle même de la rangée). Une pièce
+ * n'a de pas qu'en colis, choix d'écran que la ligne ne garde pas : son pas au
+ * panier est 1.
+ */
+export function settledLineQuantity(
+  line: Pick<CartLine, 'minimum' | 'step'>,
+  quantity: number,
+): number {
+  return settleSaleQuantity(quantity, line.minimum, line.step ?? 1);
 }
 
 export class CartStore {
@@ -182,20 +195,29 @@ export class CartStore {
     }
     const existing = this.lines$().find((line) => line.sku === item.sku);
     if (existing === undefined) {
-      this.lines$.update((lines) => [...lines, { ...item, quantity }]);
+      this.lines$.update((lines) => [
+        ...lines,
+        { ...item, quantity: settledLineQuantity(item, quantity) },
+      ]);
       return;
     }
     this.setQuantity(item.sku, existing.quantity + quantity);
   }
 
-  /** Fixe la quantité d'une ligne. Zéro ou moins la retire — c'est le même geste. */
+  /**
+   * Fixe la quantité d'une ligne, **ramenée au plancher et au pas** : le panier
+   * ne peut pas porter une quantité que le serveur refuserait. Zéro ou moins la
+   * retire — c'est le même geste.
+   */
   setQuantity(sku: string, quantity: number): void {
     if (quantity <= 0) {
       this.remove(sku);
       return;
     }
     this.lines$.update((lines) =>
-      lines.map((line) => (line.sku === sku ? { ...line, quantity: Math.floor(quantity) } : line)),
+      lines.map((line) =>
+        line.sku === sku ? { ...line, quantity: settledLineQuantity(line, quantity) } : line,
+      ),
     );
   }
 

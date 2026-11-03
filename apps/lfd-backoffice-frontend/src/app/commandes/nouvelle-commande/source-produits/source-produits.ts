@@ -123,6 +123,11 @@ export class SourceProduits {
   /** Une commande choisie dans le volet gauche — la page va la relire en détail. */
   readonly selectOrder = output<string>();
   readonly add = output<ProposedLine>();
+  /**
+   * Une rangée déjà au panier change sa ligne : la quantité est **absolue**
+   * (0 = retirer), et le panier la ramène à la règle de l'article.
+   */
+  readonly quantityChange = output<CatalogOrder>();
   /** « Tout reprendre » : les lignes d'une commande, d'un coup. */
   readonly addAll = output<readonly ProposedLine[]>();
 

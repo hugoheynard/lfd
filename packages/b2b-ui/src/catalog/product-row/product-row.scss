@@ -69,13 +69,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pr-incart {
-  flex: none;
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 700;
-  color: var(--fold-color-primary-text, var(--fold-color-primary));
-  font-variant-numeric: tabular-nums;
-}
 .pr-line2 {
   display: flex;
   align-items: center;

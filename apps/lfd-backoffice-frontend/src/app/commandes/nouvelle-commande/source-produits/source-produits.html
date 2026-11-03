@@ -119,6 +119,7 @@
       priceSuffix="HT"
       notifyLabel="Retiré du catalogue"
       (action)="onRowAction(line, $event)"
+      (quantityChange)="quantityChange.emit($event)"
     />
     <span class="src-hint">{{ line.hint }}</span>
   </li>

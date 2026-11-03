@@ -45,7 +45,10 @@
 }
 
 .nc-right {
-  overflow-y: auto;
+  /* Le panier tient sa bascule et son pied fixes ; seule sa vue défile
+     (2026-11-03). La colonne ne défile donc plus d'un bloc. */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Sous 900 px, le panier passe en pleine largeur sous les sources, dans l'ordre

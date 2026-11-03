@@ -9,10 +9,13 @@ export {
   firstSaleQuantityOf,
   floorQuantityOf,
   lineSaleQuantity,
+  nextSaleQuantity,
   pieceMinimumOf,
+  previousSaleQuantity,
   saleQuantityLabel,
   saleStepOf,
   saleUnitOf,
+  settleSaleQuantity,
 } from './sale-terms';
 export type { SaleTerms } from './sale-terms';
 export { CatalogShelfNav } from './shelf-nav/shelf-nav';
