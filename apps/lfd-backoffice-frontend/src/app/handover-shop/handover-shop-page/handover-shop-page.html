@@ -106,6 +106,7 @@
                          au bout — le seul geste plein de la barre. -->
                     <fold-view-toggle
                       class="file-views"
+                      size="sm"
                       ariaLabel="Lignes montrées dans la file"
                       activeStyle="accent"
                       [options]="views"
@@ -114,6 +115,7 @@
                     />
                     <fold-button-icon
                       data-queue-reverse
+                      size="sm"
                       [icon]="reversed() ? 'chevron-up' : 'chevron-down'"
                       [tooltip]="
                         reversed()
@@ -130,12 +132,13 @@
                       class="file-search"
                       placeholder="Rechercher…"
                       ariaLabel="Filtrer la file"
+                      size="sm"
                       [(value)]="query"
                       [resultCount]="matches()"
                       [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
                       placement="end"
                     />
-                    <button class="file-scan" foldButton icon="qr-code" (click)="scan()">
+                    <button class="file-scan" foldButton size="sm" icon="qr-code" (click)="scan()">
                       Scanner le QR code client
                     </button>
                   </div>

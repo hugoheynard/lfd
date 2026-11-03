@@ -18,8 +18,9 @@
 /* ── LA BARRE DE LA FILE ────────────────────────────────────────────────────
    Une ligne, une hauteur (Hugo, 2026-11-03) : le filtre et son sens à gauche,
    la recherche qui prend le milieu et rétrécit la première, le scan au bout.
-   Tout en taille `md` : des contrôles de hauteurs différentes côte à côte se
-   lisent comme une barre mal finie. */
+   Tout en taille `sm`, la même pour tous : des contrôles de hauteurs
+   différentes côte à côte se lisent comme une barre mal finie, et `md`
+   débordait de la colonne à 1440 px. */
 .file-head {
   display: flex;
   flex: 1 1 auto;
@@ -34,7 +35,7 @@
 
 .file-search {
   flex: 1 1 12rem;
-  min-width: 7rem;
+  min-width: 8rem;
 }
 
 .file-scan {
