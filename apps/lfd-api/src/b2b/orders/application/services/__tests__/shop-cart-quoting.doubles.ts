@@ -277,5 +277,6 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
     new FixedClock(PRICED_AT),
     new FixedDeliveryVat(setup.deliveryVatMode ?? "standard"),
     setup.signIn ?? guestSignInOffer(),
+    new FixedLineClassifications(setup.classified ?? {}),
   );
 }

@@ -9,10 +9,9 @@ import {
 import { composeExactOrder } from "../services/exact-order-composition.js";
 import { OrderLine, type OrderLineInput } from "../value-objects/order-line.js";
 import { ensurePickupDiscountOnlyOnPickup, ensureVoucherUsable } from "./order-amount-guards.js";
-import type { DraftedAmounts } from "./order-amounts.js";
+import type { AmountsFulfillment, DraftAmountsInput, DraftedAmounts } from "./order-amounts.js";
 import { exactBasketStepsOf } from "./order-basket-discounts.js";
 import { ensureCumulatedShape, exactCumulatedStepsOf } from "./order-cumulated-discounts.js";
-import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
 
 /**
  * **`exact_ht`** — la commande d'un particulier, composée en TTC (plan
@@ -33,8 +32,8 @@ import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
  * @throws {MisplacedPickupDiscountError} remise de retrait hors d'un retrait.
  */
 export function exactAmountsOf(
-  input: DraftOrderInput,
-  fulfillment: OrderFulfillmentInput,
+  input: DraftAmountsInput,
+  fulfillment: AmountsFulfillment,
 ): DraftedAmounts {
   if (input.companyId !== null) {
     throw new ExactVatMethodForCompanyError();

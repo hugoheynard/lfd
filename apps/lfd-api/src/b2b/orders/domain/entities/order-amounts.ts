@@ -1,3 +1,4 @@
+import type { FulfillmentMethod } from "@lfd/contracts";
 import type { VatBasketDiscount, VatShare } from "@lfd/money";
 
 import { computeOrderTotals } from "../services/vat.js";
@@ -14,8 +15,25 @@ import { lineHtBasketStepsOf, type BasketDiscountStepAmounts } from "./order-bas
 import { ensureCumulatedShape, lineHtCumulatedStepsOf } from "./order-cumulated-discounts.js";
 import { clienteleOf } from "./order-fulfillment.js";
 import { exactAmountsOf } from "./order-exact-amounts.js";
-import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
+import type { BasketTerms } from "../services/basket-pricing-context.js";
+import type { DraftOrderInput } from "./order-shapes.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
+
+/**
+ * Ce que le calcul des montants lit d'une commande : ses termes chiffrés
+ * (`priceBasket`), la société et le bon. Plus étroit que `DraftOrderInput`
+ * pour que le devis appelle la MÊME fonction sans fabriquer une identité de
+ * commande qu'il n'a pas (plan `plan-un-seul-assemblage.md`, L2, É15).
+ */
+export type DraftAmountsInput = Pick<DraftOrderInput, "companyId" | "voucher" | keyof BasketTerms>;
+
+/**
+ * L'acheminement, tel que les montants le lisent : sa méthode seule — `null`
+ * pour le panier partiel d'un devis, qui n'a ni remise ni frais.
+ */
+export interface AmountsFulfillment {
+  readonly method: FulfillmentMethod | null;
+}
 
 /**
  * **Les montants d'une commande, selon sa méthode** — plan
@@ -66,8 +84,8 @@ export interface DraftedAmounts {
  * Les montants reçus sont HT, l'ajustement figé doit les reproduire.
  */
 export function lineHtAmountsOf(
-  input: DraftOrderInput,
-  fulfillment: OrderFulfillmentInput,
+  input: DraftAmountsInput,
+  fulfillment: AmountsFulfillment,
 ): DraftedAmounts {
   // 🔴 **L'audience est décidée UNE fois, ici** — le seul endroit qui la
   // connaisse au moment où elle est encore vraie. Chaque ligne scelle alors
@@ -139,7 +157,7 @@ export function lineHtAmountsOf(
  * @throws {InvalidOrderPaymentError} un montant qui ne découle pas de ses ajustements.
  */
 function lineHtBasketOf(
-  input: DraftOrderInput,
+  input: DraftAmountsInput,
   lines: readonly { amountCents: number; vatRate: number; eligible: boolean }[],
   eligibleSubtotalCents: number,
 ): {
@@ -167,7 +185,7 @@ function lineHtBasketOf(
 const AMOUNTS_BY_METHOD: Readonly<
   Record<
     OrderVatMethod,
-    (input: DraftOrderInput, fulfillment: OrderFulfillmentInput) => DraftedAmounts
+    (input: DraftAmountsInput, fulfillment: AmountsFulfillment) => DraftedAmounts
   >
 > = {
   line_ht: lineHtAmountsOf,
@@ -176,13 +194,14 @@ const AMOUNTS_BY_METHOD: Readonly<
 
 /**
  * Les montants d'une commande dans SA méthode — décidée par `Order.draft`,
- * relue par `Order.recompose`.
+ * relue par `Order.recompose` ; appelée aussi par le devis de la boutique
+ * (L2), qui ne recompose plus l'entrée de `ventilateVat` à la main.
  *
  * @throws {InvalidOrderPaymentError} un terme qui ne découle pas de son ajustement.
  */
 export function draftedAmountsOf(
-  input: DraftOrderInput,
-  fulfillment: OrderFulfillmentInput,
+  input: DraftAmountsInput,
+  fulfillment: AmountsFulfillment,
   vatMethod: OrderVatMethod,
 ): DraftedAmounts {
   return AMOUNTS_BY_METHOD[vatMethod](input, fulfillment);

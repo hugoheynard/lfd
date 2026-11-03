@@ -4,18 +4,24 @@ import { lineTotalCents } from "@lfd/money";
 import { quantityOf } from "../value-objects/order-line.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import { replayBasketDiscounts } from "./basket-discount-replay.js";
-import type { BasketLine, BasketPromotionOutcome } from "./basket-promotion-choice.js";
+import {
+  NO_BASKET_PROMOTION,
+  type BasketLine,
+  type BasketPromotionOutcome,
+} from "./basket-promotion-choice.js";
 import { cumulatedDiscountsOf } from "./basket-promotion-plan.js";
-import type {
-  BasketAmounts,
-  BasketCart,
-  BasketPricingContext,
-  BasketRoute,
-  BasketVerdicts,
+import {
+  type BasketAmounts,
+  type BasketAwaiting,
+  type BasketCart,
+  type BasketPricingContext,
+  type BasketVerdicts,
+  type PartialBasketPricingContext,
+  type PricedRoute,
 } from "./basket-pricing-context.js";
 import { basketTermsOf, type BasketDeliveryFee, type BasketDiscount } from "./basket-terms.js";
 import { exactLineTtcsOf } from "./exact-order-composition.js";
-import { chooseLoadedBasketPromotion } from "./loaded-basket-promotions.js";
+import { basketHourNotices } from "./loaded-basket-promotions.js";
 
 /**
  * **Le prix d'un panier** (plan
@@ -32,7 +38,7 @@ import { chooseLoadedBasketPromotion } from "./loaded-basket-promotions.js";
  * (lot L1a ; le golden master `test/pricing-golden-master.e2e-spec.ts` le tient).
  */
 export function priceBasket(
-  context: BasketPricingContext,
+  context: PartialBasketPricingContext,
   cart: BasketCart,
   verdicts: BasketVerdicts,
 ): BasketAmounts {
@@ -41,12 +47,13 @@ export function priceBasket(
   // par la même fonction que la ligne persistée. Deux arithmétiques ici
   // feraient diverger le seuil de franco du total facturé.
   const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
-  const chosen = chooseLoadedBasketPromotion(
-    context.promotions,
-    priced,
-    context.known,
-    cart.handoverAt,
-  );
+  // Sans acheminement, aucune promotion panier n'a été lue (§ 2.5) : la
+  // remise attend le point ou la zone, elle ne se devine pas.
+  const notices =
+    context.promotions === null
+      ? null
+      : basketHourNotices(context.promotions, priced, context.known, cart.handoverAt);
+  const chosen = notices?.chosen ?? NO_BASKET_PROMOTION;
   // La révision rejoue les remises de la commande, jamais la caisse du
   // moment (plan des remises acquises, § 10.2) : le point, la zone et les
   // frais restent, la remise est remplacée.
@@ -68,7 +75,22 @@ export function priceBasket(
     subtotalCents,
     refusals: replay?.refusals ?? [],
     beyondCap: chosen.beyondCap,
+    ended: notices?.ended ?? [],
+    awaiting: awaitingOf(context, notices?.windowUnjudged ?? false),
   };
+}
+
+/**
+ * Ce que ce chiffrage attend encore (§ 2.5) — l'acheminement, le créneau.
+ */
+function awaitingOf(
+  context: PartialBasketPricingContext,
+  windowUnjudged: boolean,
+): readonly BasketAwaiting[] {
+  const awaiting: BasketAwaiting[] = [];
+  if (context.route === null) awaiting.push("fulfillment");
+  if (windowUnjudged) awaiting.push("window");
+  return awaiting;
 }
 
 /**
@@ -109,9 +131,9 @@ function discountOf(lines: readonly BasketLine[], outcome: BasketPromotionOutcom
   };
 }
 
-/** Les frais de la zone sur le sous-total des marchandises ; aucun en retrait. */
-function deliveryFeeOf(route: BasketRoute, subtotalCents: number): BasketDeliveryFee {
-  if (route.method === "pickup") {
+/** Les frais de la zone sur le sous-total des marchandises ; aucun en retrait ni sans acheminement. */
+function deliveryFeeOf(route: PricedRoute | null, subtotalCents: number): BasketDeliveryFee {
+  if (route === null || route.method === "pickup") {
     return { cents: 0, adjustment: null };
   }
   return { cents: cartAdjustmentCents(route.fee, subtotalCents), adjustment: route.fee };

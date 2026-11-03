@@ -211,7 +211,8 @@ devis comme **habillage autour** de `CartPricing` (le service reçoit le panier
 déjà nettoyé et rend `removedLines`) ; `Order.fromCart` garde le refus — une
 commande ne perd pas une ligne en silence.
 
-**É2 — Classement des articles (`known`) (#7).** A ne classe que si une
+**É2 — Classement des articles (`known`) (#7).** ✅ _Fermé pour A le
+2026-11-03 (L2) : `PricingContext.loadCart` classe toujours._ A ne classe que si une
 promotion admise à toute heure a des règles ; C classe toujours. Le même
 classeur, donc le même résultat quand il est appelé — mais `needsClassifications`
 regarde `atAnyHour`, pas les candidates. Effet aujourd'hui : aucun montant
@@ -220,7 +221,9 @@ voie. _Recommandation_ : `CartPricing` classe **toujours** (une lecture par
 panier) et passe `known` explicitement ; la question « classer ou non » sort
 de `BasketPromotions`.
 
-**É3 — Audience lue seulement avec un acheminement (#9).** A ne lit
+**É3 — Audience lue seulement avec un acheminement (#9).** ✅ _L2
+(2026-11-03) : l'audience est lue une fois, et `awaiting: ["fulfillment"]`
+dit le panier sans acheminement._ A ne lit
 `standingOf` que si `fulfillment !== null`. Sans acheminement, aucune remise
 n'est calculée, donc aucun montant n'en dépend aujourd'hui (vérifié le
 2026-11-03). _Recommandation_ : dans `CartPricing`, l'audience est lue une fois
@@ -241,7 +244,9 @@ que la passation refusera (`PickupClosedAtRequestedTimeError`). _Recommandation_
 : contrôle de `Order.fromCart` (il exige jour et créneau), mais `CartPricing`
 peut l'exposer en **avertissement** quand le panier porte déjà le créneau.
 
-**É6 — Promotions jugées au créneau (#14).** A passe `null` sans jour ou sans
+**É6 — Promotions jugées au créneau (#14).** ✅ _L2 (2026-11-03) : sans
+créneau et avec une promotion « au retrait » admise, `awaiting` porte
+`window`._ A passe `null` sans jour ou sans
 créneau : une promotion « au retrait » ne s'applique pas ; C a toujours un
 jour (contrat) mais peut ne pas avoir de créneau. Les deux appellent la même
 `handoverMomentOf`. Effet : un panier partiel annonce un total **sans** une
@@ -250,7 +255,8 @@ change). _Recommandation_ : dans `CartPricing`, une promotion jugée au créneau
 sans créneau connu rend le chiffrage **« incomplet »** (le plan §1 le prévoit),
 plutôt qu'un total silencieusement sans elle.
 
-**É7 — Promotions terminées et libellés (#15).** `ended` est calculé en C puis
+**É7 — Promotions terminées et libellés (#15).** ✅ _L2 (2026-11-03) :
+`priceBasket` rend `ended` ; le devis A le sert, la commande l'ignore._ `ended` est calculé en C puis
 jeté ; servi en A. _Recommandation_ : habillage — `CartPricing` rend `ended`
 dans `CartAmounts` (déjà calculé), chaque vue choisit de le montrer. Aucun
 montant.
@@ -277,7 +283,8 @@ Effet : A n'annonce pas qu'une passation sera refusée ou surtaxée.
 _Recommandation_ : contrôle de `Order.fromCart` (panier complet) ; le signal de
 B est de l'habillage à généraliser à A quand le jour est connu.
 
-**É11 — Supplément de retard (#20).** Seuls C (si dérogation) et D (figé)
+**É11 — Supplément de retard (#20).** _Laissé ouvert en L2 (Hugo,
+2026-11-03 : incertain pour un panier qui traîne)._ Seuls C (si dérogation) et D (figé)
 le portent. A et B ne peuvent pas le prédire. Effet : un total devis inférieur
 au total facturé pour un pro qui commande sous dérogation. _Recommandation_ :
 il dépend d'une dérogation, donc d'un panier complet → reste au
@@ -313,7 +320,9 @@ refusera. _Recommandation_ : contrôles de `Order.fromCart`, dans l'ordre de
 droit.
 
 **É15 — Ventilation : `ventilateVat` direct contre `computeOrderTotals`
-(#23-#24).** A assemble `VatVentilationInput` à la main (`SCQ:239-259`) et
+(#23-#24).** ✅ _Fermé le 2026-11-03 (lot L2) : le devis A lit
+`draftedAmountsOf` par l'adaptateur `shop-quote-view.ts` ; instantané
+inchangé. Ce qui suit est le relevé d'origine._ A assemble `VatVentilationInput` à la main (`SCQ:239-259`) et
 `lineHtCumulatedQuoteOf` ; C passe par `lineHtAmountsOf` → `lineHtBasketOf` →
 `computeOrderTotals`. Le même `ventilateVat` en bout, mais deux assemblages de
 son entrée (remise unique contre cumulées, surtaxe absente en A). Effet : un

@@ -2,8 +2,10 @@ import type { LocalMoment } from "@lfd/contracts";
 
 import {
   promotionsAdmitted,
+  promotionsAdmittedAtAnyHour,
   type LivePromotion,
 } from "../../../promotions/domain/live-promotion.js";
+import { weeklyHoursOf } from "../../../promotions/domain/promotion-condition.js";
 import type { PromotionAudienceFacts } from "../../../promotions/domain/promotion-targeting.js";
 import type { OrderLineClassification } from "../ports/order-line-classification.reader.js";
 import {
@@ -11,6 +13,7 @@ import {
   type BasketLine,
   type BasketPromotionOutcome,
 } from "./basket-promotion-choice.js";
+import { endedBasketPromotions, type EndedBasketPromotion } from "./ended-basket-promotions.js";
 
 /**
  * **Ce que la caisse a LU pour choisir une promotion panier** — l'instant de
@@ -44,4 +47,38 @@ export function chooseLoadedBasketPromotion(
 ): BasketPromotionOutcome {
   const candidates = promotionsAdmitted(loaded.live, loaded.at, loaded.facts, handoverAt);
   return chooseBasketPromotion(candidates, lines, known);
+}
+
+/** Le choix, et ce que les heures des promotions en disent au panier. */
+export interface BasketPromotionNotices {
+  readonly chosen: BasketPromotionOutcome;
+  /** Les remises à heures finies aujourd'hui qui auraient touché ce panier (§ 8). */
+  readonly ended: readonly EndedBasketPromotion[];
+  /**
+   * Une promotion admise se juge « au créneau » et le panier n'en a pas :
+   * elle n'a pas pu s'appliquer, le chiffrage attend le créneau (É6).
+   */
+  readonly windowUnjudged: boolean;
+}
+
+/**
+ * Le choix de {@link chooseLoadedBasketPromotion}, et ce que `BasketPromotions.resolve`
+ * en dit au devis — les remises finies (`endedBasketPromotions`, la même
+ * fonction) — calculés sur le même chargement : le devis et la commande
+ * lisent un seul chiffrage (plan `plan-un-seul-assemblage.md`, L2).
+ */
+export function basketHourNotices(
+  loaded: LoadedBasketPromotions,
+  lines: readonly BasketLine[],
+  known: ReadonlyMap<string, OrderLineClassification>,
+  handoverAt: LocalMoment | null,
+): BasketPromotionNotices {
+  const atAnyHour = promotionsAdmittedAtAnyHour(loaded.live, loaded.at, loaded.facts);
+  return {
+    chosen: chooseLoadedBasketPromotion(loaded, lines, known, handoverAt),
+    ended: endedBasketPromotions(atAnyHour, loaded.at, lines, known),
+    windowUnjudged:
+      handoverAt === null &&
+      atAnyHour.some((promotion) => weeklyHoursOf(promotion.conditions)?.moment === "handover_at"),
+  };
 }

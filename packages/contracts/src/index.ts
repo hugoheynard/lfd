@@ -883,6 +883,7 @@ export type {
   ShopQuoteView,
   ShopQuoteRemovedLineView,
   ShopQuoteEndedDiscountView,
+  ShopQuoteAwaiting,
 } from "./shop-quote.js";
 export type {
   CreatedOrderCutoffWaiverResponse,

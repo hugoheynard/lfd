@@ -9,7 +9,8 @@
 > « je veux un système 10/10 ». Les deux premières versions extrayaient un code
 > commun de deux assemblages ; celle-ci sépare ce que tous les chemins
 > emmêlent. Il touche à l'argent : contredit par `vitruve` avant Hugo.
-> L'inventaire qui le fonde : [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md)
+> Le lot voisin [« le total vu est le total facturé »](plan-total-vu.md)
+> passe après L2. L'inventaire qui le fonde : [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md)
 > (26 étapes, 17 écarts, vérifié le 2026-11-03 ; É18 ajouté par le corpus L0).
 
 ## 1. Le diagnostic
@@ -131,20 +132,20 @@ sans aucun montant ; `orderTotalRows` lit `BasketAmounts`, un adaptateur sert
 
 ## 4. Les lots (un à la fois)
 
-| Lot                   | Contenu                                                                                                               | Ce qui le prouve                                        |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **L0** ✅ 2026-11-03  | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                          | vert sur le code d'aujourd'hui                          |
-| **L1a** ✅ 2026-11-03 | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose`                                  | instantané identique, sans exception                    |
-| **L1b** ✅ 2026-11-03 | refus décidés : É12, É13 (contexte figé de la révision), ordre du crédit ✅ ; É18 en L1c                              |
-| **L1c** ✅ 2026-11-03 | É18 : la saisie refuse le compte (et donc le comptoir) à une société suspendue ; le lien passe au prix public         | instantané régénéré pour CES cas seuls, chacun justifié |
-| **L2**                | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur ; verdict de surtaxe en conseil | G2 ; écarts tranchés                                    |
-| **L3**                | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                    | G2 ; écarts tranchés                                    |
-| **L4**                | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                    | G3 (ordre) ; refus du corpus                            |
-| **L5a**               | fiche commande sur `BasketAmounts` (adaptateur depuis les colonnes)                                                   | rendu identique sur le corpus                           |
-| **L5b**               | PDF du bon                                                                                                            | idem                                                    |
-| **L5c**               | panier de la boutique                                                                                                 | idem                                                    |
-| **L5d**               | panier de la saisie (fin des champs passés à vide)                                                                    | idem                                                    |
-| **L6**                | suppression de l'ancien code ; porte : le calcul réservé à `priceBasket`, interdit aux fronts                         | la porte, et G2                                         |
+| Lot                   | Contenu                                                                                                            | Ce qui le prouve                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| **L0** ✅ 2026-11-03  | golden master G1 et propriétés G3 sur le code actuel ; É9, É12, É13 tranchés                                       | vert sur le code d'aujourd'hui                          |
+| **L1a** ✅ 2026-11-03 | `PricingContext` + `priceBasket`, appelés par `Order.draft` **et** `Order.recompose`                               | instantané identique, sans exception                    |
+| **L1b** ✅ 2026-11-03 | refus décidés : É12, É13 (contexte figé de la révision), ordre du crédit ✅ ; É18 en L1c                           |
+| **L1c** ✅ 2026-11-03 | É18 : la saisie refuse le compte (et donc le comptoir) à une société suspendue ; le lien passe au prix public      | instantané régénéré pour CES cas seuls, chacun justifié |
+| **L2** ✅ 2026-11-03  | le devis boutique / espace pro appelle `priceBasket` ; `ShopQuoteView` par adaptateur (surtaxe en conseil retirée) | G2 ; écarts tranchés                                    |
+| **L3**                | les devis du simulateur et du client (`explain` reste de l'habillage) et l'estimation de la saisie                 | G2 ; écarts tranchés                                    |
+| **L4**                | l'ordre des refus écrit et testé ; paires verrou / sans verrou et leur concordance                                 | G3 (ordre) ; refus du corpus                            |
+| **L5a**               | fiche commande sur `BasketAmounts` (adaptateur depuis les colonnes)                                                | rendu identique sur le corpus                           |
+| **L5b**               | PDF du bon                                                                                                         | idem                                                    |
+| **L5c**               | panier de la boutique                                                                                              | idem                                                    |
+| **L5d**               | panier de la saisie (fin des champs passés à vide)                                                                 | idem                                                    |
+| **L6**                | suppression de l'ancien code ; porte : le calcul réservé à `priceBasket`, interdit aux fronts                      | la porte, et G2                                         |
 
 Chaque lot dit au bâti son nombre de fichiers et d'appelants, et son retour
 arrière (L6, la suppression, se fait seule et en dernier).
@@ -217,6 +218,30 @@ clientèle de P0 ; aucun montant ne change (le prix public l'était déjà).
 Instantané : **12 lignes ajoutées, aucune retirée** — les deux entrées
 `revision-decisions` → `e18-suspended-on-account.C.admin-orders.account` et
 `….counter-account` (409) ; `refusal-order` → `suspended.only` reste 201.
+
+**L2, bâti le 2026-11-03** (non commité au moment d'écrire) — instantané
+**inchangé** (golden master 5/5 vert sans `LFD_GOLDEN_MASTER_WRITE`) :
+aucune sortie d'un devis A n'a bougé, `KNOWN_GAPS` reste É11 et É16.
+`ShopCartQuoting` charge par `PricingContext.loadCart` (panier partiel :
+`route`/`promotions` nuls sans acheminement, code postal seul en coursier,
+tranche non opposée — É4, É5 inchangés), calcule par `priceBasket`, et les
+totaux sortent de `draftedAmountsOf` par l'adaptateur
+`application/services/shop-quote-view.ts` (**É15 fermé** : plus d'entrée de
+`ventilateVat` assemblée au devis ; le gain du bon = total sans bon − total
+avec, même composition). Lectures d'acheminement partagées :
+`basket-route-loading.ts`. `priceBasket` rend en plus `ended` (É7) et
+`awaiting` (§ 2.5 : `fulfillment`, `window` — É3, É6), servi à
+`ShopQuoteView.awaiting`, **clé additive et facultative** du contrat
+(`@lfd/contracts`, absente d'un panier complet ; admise dans
+`test/shop-quote.e2e-spec.ts`). Le classement est toujours lu (É2). Les
+montants lisent une entrée étroite (`DraftAmountsInput`,
+`AmountsFulfillment` à méthode nullable). **Verdict de surtaxe en conseil
+non bâti** (Hugo, 2026-11-03 : incertain pour un panier qui traîne) : le
+devis passe `lateFee: null`, É11 reste ouvert. Appelants : les deux
+handlers `quote-shop-cart`, `quote-my-shop-cart` (inchangés).
+`exact-shop-quote.ts`, `cumulated-shop-quote.ts`, `voucherTotalEffectCents`
+ne sont plus appelés : retirés en L6. **Retour arrière** : revert — aucune
+migration, contrat seulement étendu.
 
 ## 5. Ce que ce plan ne fait pas
 

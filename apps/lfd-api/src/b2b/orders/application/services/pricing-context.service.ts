@@ -1,9 +1,4 @@
-import type {
-  CustomerAudience,
-  DeliveryVatMode,
-  PickupAddressView,
-  PickupSnapshot,
-} from "@lfd/contracts";
+import type { CustomerAudience, DeliveryVatMode, ShopQuoteFulfillment } from "@lfd/contracts";
 
 import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import {
@@ -16,14 +11,23 @@ import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
 import type {
   BasketPricingContext,
   BasketRoute,
+  PartialBasketPricingContext,
+  PartialBasketRouting,
 } from "../../domain/services/basket-pricing-context.js";
 import type { KeptLineRefusal } from "../../domain/services/kept-line-prices.js";
 import type { OrderVatMethod } from "../../domain/value-objects/order-vat-method.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
+import {
+  loadDeliveryZone,
+  loadPickupPoint,
+  refusalOrValue,
+  toSnapshot,
+  type Attempt,
+} from "./basket-route-loading.js";
 import type { CartAdjustments, PickupBuyer } from "./cart-adjustments.service.js";
 import type { CustomerAudiences } from "./customer-audiences.service.js";
 import type { OrderContent } from "./order-content.js";
-import type { OrderLinePricing } from "./order-line-pricing.service.js";
+import type { OrderLinePricing, ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
 import {
   priceRevisedLines,
@@ -48,6 +52,19 @@ export interface LoadedBasket {
  */
 export type LoadedPricing =
   | { readonly refusals: readonly []; readonly loaded: LoadedBasket }
+  | { readonly refusals: readonly [AppError]; readonly loaded: null };
+
+/** Ce que le chargement du panier partiel reçoit du devis. */
+export interface CartPricingRequest {
+  readonly resolved: readonly ResolvedOrderLine[];
+  readonly parties: Pick<OrderParties, "companyId" | "buyerKind">;
+  /** `null` : l'acheminement n'est pas encore choisi. */
+  readonly fulfillment: ShopQuoteFulfillment | null;
+}
+
+/** Le panier partiel chargé, ou le premier refus de lecture. */
+export type LoadedCartPricing =
+  | { readonly refusals: readonly []; readonly loaded: PartialBasketPricingContext }
   | { readonly refusals: readonly [AppError]; readonly loaded: null };
 
 /** Ce que le chargement reçoit de l'appelant. */
@@ -142,6 +159,63 @@ export class PricingContext {
   }
 
   /**
+   * **Le panier partiel du devis** (§ 2.5) : lignes déjà tarifées (le devis
+   * retire d'abord les unités changées, É1), acheminement s'il est choisi.
+   * Les lectures de {@link load}, dans son ordre ; la tranche n'est pas
+   * opposée (É5) : le devis ne refuse pas ce qu'il ne refusait pas.
+   */
+  async loadCart(request: CartPricingRequest): Promise<LoadedCartPricing> {
+    const { resolved, parties } = request;
+    const lines = resolved.map((entry) => entry.line);
+    // Toujours classé (É2) : une lecture par panier, sans prédicat.
+    const known = await this.classifications.classify(lines.map((line) => line.sku));
+    const { audience, companyStatus } = await this.audiences.standingOf(parties.companyId);
+    const buyer: PickupBuyer = {
+      audience,
+      companyId: parties.companyId,
+      companyStatus,
+      buyerKind: parties.buyerKind,
+    };
+    const routed = await this.cartRouteOf(request.fulfillment, buyer);
+    if ("refusal" in routed) {
+      return { refusals: [routed.refusal], loaded: null };
+    }
+    const deliveryVatMode = await this.deliveryVat.current();
+    return {
+      refusals: [],
+      loaded: {
+        ...routed.value,
+        lines,
+        sealing: sealingBySku(resolved),
+        known,
+        replayed: null,
+        deliveryVatMode,
+      },
+    };
+  }
+
+  private async cartRouteOf(
+    fulfillment: ShopQuoteFulfillment | null,
+    buyer: PickupBuyer,
+  ): Promise<Attempt<PartialBasketRouting>> {
+    if (fulfillment === null) {
+      return { value: { route: null, promotions: null } };
+    }
+    if (fulfillment.method === "pickup") {
+      const loaded = await loadPickupPoint(this.adjustments, fulfillment.pickupAddressId, buyer);
+      return "refusal" in loaded
+        ? loaded
+        : { value: { route: { method: "pickup" }, promotions: loaded.value.promotions } };
+    }
+    const zone = await loadDeliveryZone(this.adjustments, fulfillment.codePostal, buyer);
+    if ("refusal" in zone) {
+      return zone;
+    }
+    const { zoneId, fee, promotions } = zone.value;
+    return { value: { route: { method: "delivery", zoneId, fee }, promotions } };
+  }
+
+  /**
    * Les lignes tarifées. À la passation, toutes passent par la résolution qui
    * facture ; en révision, {@link priceRevisedLines} — les lignes gardées à
    * leur prix figé, retarifées pour être comparées quand leur quantité change.
@@ -178,25 +252,12 @@ export class PricingContext {
         refusal: new InvalidOrderFulfillmentError("Adresse de livraison requise en coursier."),
       };
     }
-    const delivery = await refusalOrValue(() =>
-      this.adjustments.deliveryRoute(address.codePostal, buyer.audience),
-    );
-    if ("refusal" in delivery) {
-      return delivery;
+    const zone = await loadDeliveryZone(this.adjustments, address.codePostal, buyer);
+    if ("refusal" in zone) {
+      return zone;
     }
-    const { zone, globalWindowMode } = delivery.value;
-    // La zone des frais entre dans le fait (`promotions.md`, § 2.14).
-    const promotions = await this.adjustments.promotionsFor({
-      ...factsOf(buyer),
-      fulfillment: { method: "delivery", zoneId: zone.id },
-    });
-    const route: BasketRoute = {
-      method: "delivery",
-      zoneId: zone.id,
-      address,
-      fee: zone.fee,
-      globalWindowMode,
-    };
+    const { zoneId, fee, globalWindowMode, promotions } = zone.value;
+    const route: BasketRoute = { method: "delivery", zoneId, address, fee, globalWindowMode };
     return { value: { route, promotions } };
   }
 
@@ -204,72 +265,23 @@ export class PricingContext {
     content: OrderContent,
     buyer: PickupBuyer,
   ): Promise<Attempt<Pick<BasketPricingContext, "route" | "promotions">>> {
-    const point = await refusalOrValue(() =>
-      this.adjustments.pickupPoint(content.pickupAddressId, buyer.audience, buyer.companyId),
-    );
-    if ("refusal" in point) {
-      return point;
+    const loaded = await loadPickupPoint(this.adjustments, content.pickupAddressId, buyer);
+    if ("refusal" in loaded) {
+      return loaded;
     }
-    const promotions = await this.adjustments.promotionsFor({
-      ...factsOf(buyer),
-      // Le point RETENU — choisi ou présélectionné (§ 13.6).
-      fulfillment: { method: "pickup", pickupId: point.value.id },
-    });
+    const { point, promotions } = loaded.value;
     // La tranche doit tenir dans l'UNE des fenêtres du point — jamais dans
     // leur union : entre le créneau pro et l'ouverture publique il peut y
     // avoir porte close.
-    if (!windowFitsPickup(content.requestedWindow ?? null, point.value.opening)) {
+    if (!windowFitsPickup(content.requestedWindow ?? null, point.opening)) {
       return { refusal: new PickupClosedAtRequestedTimeError() };
     }
-    return { value: { route: { method: "pickup", point: toSnapshot(point.value) }, promotions } };
-  }
-}
-
-/** Une lecture qui a rendu sa valeur, ou un refus. */
-type Attempt<T> = { readonly value: T } | { readonly refusal: AppError };
-
-/**
- * Lit, et rend un refus métier en DONNÉE au lieu de le lever. Une panne
- * technique, elle, n'est pas un refus : elle remonte telle quelle.
- */
-async function refusalOrValue<T>(read: () => Promise<T>): Promise<Attempt<T>> {
-  try {
-    return { value: await read() };
-  } catch (error) {
-    if (error instanceof AppError && error.category !== "technical") {
-      return { refusal: error };
-    }
-    throw error;
+    return { value: { route: { method: "pickup", point: toSnapshot(point) }, promotions } };
   }
 }
 
 function refused(refusal: AppError): LoadedPricing {
   return { refusals: [refusal], loaded: null };
-}
-
-/** Les faits que les promotions panier lisent de l'acheteur, l'acheminement à part. */
-function factsOf(buyer: PickupBuyer): Omit<PickupBuyer, "audience"> {
-  return {
-    companyId: buyer.companyId,
-    companyStatus: buyer.companyStatus,
-    buyerKind: buyer.buyerKind,
-  };
-}
-
-/**
- * Le point de retrait résolu, réduit à ses champs postaux — et à l'id du site
- * qui remet (lot S2). L'id est celui du point RÉSOLU.
- */
-function toSnapshot(point: PickupAddressView): PickupSnapshot {
-  return {
-    siteId: point.id,
-    label: point.label,
-    ligne1: point.ligne1,
-    ligne2: point.ligne2,
-    codePostal: point.codePostal,
-    ville: point.ville,
-    pays: point.pays,
-  };
 }
 
 /**

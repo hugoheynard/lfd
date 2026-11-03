@@ -14,6 +14,7 @@ import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-l
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { BasketDiscountRefusal, RevisableDiscount } from "./basket-discount-replay.js";
 import type { LineSealing } from "./basket-promotion-choice.js";
+import type { EndedBasketPromotion } from "./ended-basket-promotions.js";
 import type { LoadedBasketPromotions } from "./loaded-basket-promotions.js";
 
 /*
@@ -43,6 +44,15 @@ export interface DeliveryBasketRoute {
 
 export type BasketRoute = PickupBasketRoute | DeliveryBasketRoute;
 
+/**
+ * Ce que le CALCUL lit d'un acheminement : la méthode, et le barème de la
+ * zone en coursier. Le devis de la boutique ne connaît du coursier que le
+ * code postal (É4) : l'adresse et le point figé sont l'affaire de la
+ * commande, pas du prix.
+ */
+export type PricedRoute =
+  Pick<PickupBasketRoute, "method"> | Pick<DeliveryBasketRoute, "method" | "zoneId" | "fee">;
+
 /** La commande qu'on révise : ses lignes figées et ses remises, REJOUÉES (§ 10.2 des remises acquises). */
 export interface ReplayedFrom {
   readonly lines: readonly OrderLineSnapshot[];
@@ -68,6 +78,20 @@ export interface BasketPricingContext {
   readonly deliveryVatMode: DeliveryVatMode;
 }
 
+/**
+ * **Le panier partiel** (§ 2.5) : ce que le devis chiffre avant que
+ * l'acheminement soit choisi. Sans acheminement, ni point ni zone, donc
+ * aucune promotion panier à lire — jamais un acheminement inventé.
+ * `BasketPricingContext` (le panier de la commande) en est un cas.
+ */
+export type PartialBasketPricingContext = Omit<BasketPricingContext, "route" | "promotions"> &
+  PartialBasketRouting;
+
+/** L'acheminement et ses promotions, ou ni l'un ni l'autre. */
+export type PartialBasketRouting =
+  | { readonly route: PricedRoute; readonly promotions: LoadedBasketPromotions }
+  | { readonly route: null; readonly promotions: null };
+
 /** Ce que le calcul tient du panier lui-même, hors chargement. */
 export interface BasketCart {
   /** Décidée par l'agrégat (`placementVatMethodOf`), relue sur la commande en révision. */
@@ -84,6 +108,14 @@ export interface BasketCart {
 export interface BasketVerdicts {
   readonly lateFee: LateFeeAdjustment | null;
 }
+
+/**
+ * Ce qu'un chiffrage partiel attend encore pour être le prix de la commande
+ * (§ 2.5, É3, É6) : l'acheminement (ni remise ni frais sans lui), le créneau
+ * (une promotion « au créneau » n'a pas pu être jugée). La surtaxe de retard
+ * n'est pas chiffrée au devis (É11, laissé ouvert le 2026-11-03).
+ */
+export type BasketAwaiting = "fulfillment" | "window";
 
 /** La part de `DraftOrderInput` que le chiffrage décide — l'argent, dans l'unité de la méthode. */
 export type BasketTerms = Pick<
@@ -103,9 +135,9 @@ export type BasketTerms = Pick<
 >;
 
 /**
- * Ce que `priceBasket` rend. ⚠️ Pas encore la TVA ni le TTC (lot L1a) : ils
- * restent calculés par l'agrégat (`AMOUNTS_BY_METHOD`) APRÈS ses gardes,
- * pour que l'ordre des refus ne bouge pas.
+ * Ce que `priceBasket` rend. ⚠️ Pas la TVA ni le TTC : l'agrégat les calcule
+ * par `AMOUNTS_BY_METHOD` APRÈS ses gardes, pour que l'ordre des refus ne
+ * bouge pas ; le devis appelle la même fonction (`draftedAmountsOf`, L2).
  */
 export interface BasketAmounts {
   readonly terms: BasketTerms;
@@ -115,4 +147,8 @@ export interface BasketAmounts {
   readonly refusals: readonly BasketDiscountRefusal[];
   /** Les promotions cumulables écartées au-delà de cinq, que l'équipe doit apprendre. */
   readonly beyondCap: readonly string[] | undefined;
+  /** Les remises à heures finies aujourd'hui qui auraient touché ce panier (É7). */
+  readonly ended: readonly EndedBasketPromotion[];
+  /** Vide : ce chiffrage est le prix de la commande. Sinon, ce qui manque (§ 2.5). */
+  readonly awaiting: readonly BasketAwaiting[];
 }

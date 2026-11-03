@@ -244,7 +244,21 @@ export interface ShopQuoteView {
    * explication. **Absente** sinon.
    */
   readonly endedDiscounts?: readonly ShopQuoteEndedDiscountView[];
+  /**
+   * **Ce que ce décompte attend encore pour être le prix de la commande**
+   * (plan `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`,
+   * § 2.5, lot L2) : `fulfillment` — aucun acheminement, donc ni remise ni
+   * frais ; `window` — une promotion « au créneau » n'a pas pu être
+   * jugée faute de créneau. Le total reste servi, et il est exact pour ce que
+   * le panier dit ; il n'est pas encore celui de la commande. **Absente**
+   * quand rien n'attend — additive et facultative : une boutique qui ne la
+   * lit pas affiche ce qu'elle affichait.
+   */
+  readonly awaiting?: readonly ShopQuoteAwaiting[];
 }
+
+/** Ce qu'un décompte partiel attend : l'acheminement, le créneau. */
+export type ShopQuoteAwaiting = "fulfillment" | "window";
 
 /** Une remise à heures finie : son libellé et l'heure de sa fin (`HH:MM`, Paris). */
 export interface ShopQuoteEndedDiscountView {

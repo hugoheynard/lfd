@@ -341,6 +341,10 @@ describe("le devis de la vitrine", () => {
     );
 
     expect(Object.keys(view).sort()).toEqual([
+      // Ajouté le 2026-11-03 (plan `plan-un-seul-assemblage.md`, L2) et admis
+      // DÉLIBÉRÉMENT : ce que le panier n'a pas encore dit (ici l'acheminement)
+      // — rien de la façon dont un prix est fabriqué. Absent d'un panier complet.
+      "awaiting",
       "deliveryFeeCents",
       // Ajouté le 2026-10-08 (plan TVA des frais de port, V4) et admis
       // DÉLIBÉRÉMENT : la règle fiscale du port, la même pour tous — elle dit
@@ -357,6 +361,7 @@ describe("le devis de la vitrine", () => {
       // dont le prix a été fabriqué. Zéro sans bon, et la route anonyme en refuse.
       "voucherDiscountCents",
     ]);
+    expect(view.awaiting).toEqual(["fulfillment"]);
     for (const line of view.lines) {
       expect(Object.keys(line).sort()).toEqual([
         "lineTotalCents",

@@ -162,8 +162,15 @@ export function ensureDiscountMatches(
  * à côté de frais de livraison sur un retrait.
  */
 export function ensurePickupDiscountOnlyOnPickup(
-  input: DraftOrderInput,
-  fulfillment: OrderFulfillmentInput,
+  input: Pick<
+    DraftOrderInput,
+    | "basketDiscounts"
+    | "discountCents"
+    | "discountAdjustment"
+    | "discountPromotionId"
+    | "deliveryFeeCents"
+  >,
+  fulfillment: { readonly method: OrderFulfillmentInput["method"] | null },
 ): void {
   const cumulated = (input.basketDiscounts?.length ?? 0) > 0;
   if (input.discountCents === 0 && input.discountAdjustment === null && !cumulated) {
