@@ -230,6 +230,24 @@ retrait immédiat (L6) et marque `shelf` (L4) ; porte « jour même »
 L'estimation (P2) hérite de ce que la passation de l'équipe fait : trancher
 E1-E5 change donc les deux ensemble, et c'est voulu.
 
+**Tranché par Hugo le 2026-11-03** :
+
+- **E1 → aligné sur le client.** « Ça ferait un endroit pour échapper aux
+  règles de livraison et de point de retrait. » Pour un pro, la saisie de
+  l'équipe demande la fenêtre comme le pro (`windowRequesterOf` rend `"pro"`) ;
+  le « à trancher » du code est levé.
+- **E2 → aligné sur le client.** La saisie passe par `intake.admit`. Un cas
+  d'exception passe par le **système de dérogation existant**, pas par un
+  contournement silencieux de l'équipe.
+- **E3 → gardé, et noté** : l'équipe ne dépense pas le bon de fidélité d'un
+  client (sans effet tant que la fidélité pro n'est pas ouverte).
+- **E5 → gardé, geste nommé du comptoir.** « Le client est déjà en train de
+  parler avec nous. » La porte `counter` sur stock ne juge pas les créneaux
+  pro restants : c'est le retrait immédiat, le client est devant le comptoir.
+- **E4** : en attente (réexpliqué à Hugo le 2026-11-03 ; proposition : le
+  garder comme geste de l'équipe — le lien de règlement remplace la carte,
+  parce que le client n'est pas devant l'écran).
+
 ## 6. Ce que `vitruve` a contredit (2026-11-03)
 
 Première version : déléguer le devis à `ShopCartQuoting`. **BLOQUANT** ×3, tous
