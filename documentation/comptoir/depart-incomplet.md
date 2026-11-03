@@ -33,6 +33,11 @@ Ce que le domaine impose : **carte** et **bon de fidélité** n'ont pas de
 départ incomplet (il faudrait un remboursement partiel, E9, pas bâti) ; **rien
 au bac**, pas de départ — on annule.
 
+🔴 **Pas encore de retrait partiel pour une commande de particulier** (noté
+par Hugo le 2026-11-03). Un particulier paie en ligne par carte : le dialogue
+lui oppose `card`, et seule « Fermer » s'offre. Il faut d'abord le
+remboursement partiel (E9), qui n'est pas bâti.
+
 ## 3. Le circuit
 
 ```mermaid
@@ -139,6 +144,8 @@ et dit le reste sous le tableau (« Non livré : … ») —
 
 ## 6. Ce qui reste ouvert
 
+- **Le retrait partiel d'une commande de particulier** : refusé (`card`)
+  tant que le remboursement partiel (E9) n'existe pas (§2).
 - Les cas `not_drawn`, `withdrawn`, `sealed`, `counted` et
   `already_authorized` de l'aperçu ne sont éprouvés qu'en unitaire : la scène
   e2e ne les atteint pas au rang 1.
