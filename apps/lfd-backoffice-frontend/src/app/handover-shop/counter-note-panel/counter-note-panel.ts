@@ -71,7 +71,11 @@ export class CounterNotePanel implements FoldPanelContent<CounterNotePanelData> 
   static readonly foldPanel: FoldPanelDefaults = {
     // CENTRÉ et large, comme l'aperçu du mandat : on lit une page A4.
     side: 'center',
-    width: 'xl',
+    // Plus large que `xl`, la plus grande taille nommée (Hugo, 2026-11-03 :
+    // « un plus gros dialog ») : une page A4 se lit à sa taille, sans loupe.
+    // Fold borne un panneau à la fenêtre, donc rien ne déborde sur un écran
+    // plus étroit.
+    width: 1100,
   };
 
   readonly data = input<CounterNotePanelData | undefined>();
