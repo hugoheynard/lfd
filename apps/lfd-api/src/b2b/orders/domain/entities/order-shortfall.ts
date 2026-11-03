@@ -118,6 +118,11 @@ export class OrderShortfall {
    * @throws {EmptyShortfallError} un signalement sans aucune ligne.
    */
   report(at: Date, lines: readonly ShortfallQuantity[]): boolean {
+    return this.place(at, lines, false);
+  }
+
+  /** Pose le signal si `at` est postérieur à l'état connu (ou égal, avec `orEqual`). */
+  private place(at: Date, lines: readonly ShortfallQuantity[], orEqual: boolean): boolean {
     if (lines.length === 0) {
       throw new EmptyShortfallError(this.reference);
     }
@@ -126,7 +131,7 @@ export class OrderShortfall {
     if (this.decided) {
       return false;
     }
-    if (!isAfter(at, this.reportedAtValue) || !isAfter(at, this.clearedAtValue)) {
+    if (!isAfter(at, this.reportedAtValue, orEqual) || !isAfter(at, this.clearedAtValue, orEqual)) {
       return false;
     }
     this.reportedAtValue = at;
@@ -146,11 +151,17 @@ export class OrderShortfall {
    * prendre : la décision qui suit lirait sinon des quantités qui ne sont
    * pas celles du bac.
    *
+   * Un fait du poste daté du **même instant** ne le fait pas refuser : il
+   * n'est pas « plus récent » (§4.2), et le bac relu sous verrou l'a vu.
+   * Régression du 2026-11-03 : à la milliseconde égale (horloge figée en
+   * e2e, deux requêtes dans la même ms en vrai), la comparaison stricte
+   * renvoyait `signal_outrun` selon que le fait du poste était déjà livré.
+   *
    * @throws {EmptyShortfallError} @throws {ShortfallSignalOutrunError} un fait
    * plus récent est déjà connu, ou la décision est déjà prise.
    */
   reportForDecision(at: Date, lines: readonly ShortfallQuantity[]): void {
-    if (!this.report(at, lines)) {
+    if (!this.place(at, lines, true)) {
       throw new ShortfallSignalOutrunError(this.reference);
     }
   }

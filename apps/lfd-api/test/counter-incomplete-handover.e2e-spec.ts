@@ -299,6 +299,23 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
     expect(await ctx.prisma.outboxDelivery.count({ where: { lastError: { not: null } } })).toBe(0);
   });
 
+  /**
+   * Régression : même scène, mais le fait du poste est LIVRÉ avant le
+   * comptoir, au même instant figé — l'ordre que la CI tombait au hasard
+   * (`signal_outrun` au lieu de 204, 2026-11-03). Égal n'est pas « plus récent ».
+   */
+  it("« Il manque » au même instant, fait déjà livré au commerce : la décision reprend le bac", async () => {
+    const order = await accountOrder(ctx, 1);
+    openCounterOnServiceDay();
+    expect((await ctx.asSub(STAFF).post(`${packingOrderPath(order.id)}/shortfall`)).status).toBe(
+      204,
+    );
+    await ctx.drain();
+
+    expect(await handOverPacked(ctx.asSub(STAFF), order.id)).toEqual({ status: 204, code: null });
+    expect(await ctx.prisma.orderHandover.count({ where: { orderId: order.id } })).toBe(1);
+  });
+
   it("le signal déjà reçu du poste est repris, pas refusé", async () => {
     const order = await accountOrder(ctx, 1);
     expect(await report(ctx, order.id)).toBe(204);

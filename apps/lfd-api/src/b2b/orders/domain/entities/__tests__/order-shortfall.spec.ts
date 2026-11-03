@@ -111,6 +111,30 @@ describe("OrderShortfall.reportForDecision — le signal posé au comptoir (2026
     expect(shortfall.pending).toEqual({ reportedAt: T3, lines: FIRST });
   });
 
+  /**
+   * Régression : un « Il manque » du poste daté du même instant que le
+   * comptoir faisait refuser `signal_outrun` quand son fait était déjà livré
+   * (e2e instable en CI, 2026-11-03). Égal n'est pas « plus récent ».
+   */
+  it("reprend un signal du poste daté du même instant", () => {
+    const shortfall = none();
+    shortfall.report(T2, FIRST);
+
+    shortfall.reportForDecision(new Date(T2.getTime()), SECOND);
+
+    expect(shortfall.pending).toEqual({ reportedAt: T2, lines: SECOND });
+  });
+
+  it("reprend un bac fermé complet au même instant", () => {
+    const shortfall = none();
+    shortfall.report(T1, FIRST);
+    shortfall.clear(T2);
+
+    shortfall.reportForDecision(T2, SECOND);
+
+    expect(shortfall.pending).toEqual({ reportedAt: T2, lines: SECOND });
+  });
+
   it("refuse sur un signal déjà décidé", () => {
     const shortfall = none();
     shortfall.report(T1, FIRST);
