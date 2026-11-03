@@ -1,4 +1,4 @@
-import type { PackingLine, PackingSheet } from '@lfd/contracts';
+import type { CounterPackingSheetLine, CounterPackingSheetView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -10,29 +10,15 @@ import {
   readyVerdict,
 } from './bag-readiness';
 
-function sheet(overrides: Partial<PackingSheet> = {}): PackingSheet {
+function sheet(overrides: Partial<CounterPackingSheetView> = {}): CounterPackingSheetView {
   return {
     reference: 'CMD-1',
     orderId: 'o-CMD-1',
-    containers: 0,
-    customerLabel: 'Client',
-    clientele: null,
-    fulfillmentMethod: 'pickup',
-    destination: 'Boutique',
     lines: [],
     lineCount: 0,
     packedLines: 0,
-    remainingLines: 0,
-    pieces: 0,
     packedPieces: 0,
-    canReportShortfall: false,
-    shortfallReportedAt: null,
-    deliveryNoteReprintNeeded: false,
-    canDeclareReady: false,
-    coldOutsideIsotherm: [],
     packedAt: null,
-    packedBy: null,
-    packedByName: null,
     ...overrides,
   };
 }
@@ -121,20 +107,11 @@ describe('la retenue du contrôle qualité (lot QC5)', () => {
   });
 });
 
-function packingLine(sku: string, over: Partial<PackingLine> = {}): PackingLine {
-  return {
-    sku,
-    productName: sku,
-    quantity: 4,
-    saleUnit: 'piece',
-    packed: false,
-    initials: null,
-    packedAt: null,
-    awaitingProduction: false,
-    allocated: 0,
-    unallocated: 4,
-    ...over,
-  };
+function packingLine(
+  sku: string,
+  over: Partial<CounterPackingSheetLine> = {},
+): CounterPackingSheetLine {
+  return { sku, quantity: 4, packed: false, awaitingProduction: false, allocated: 0, ...over };
 }
 
 /** Les deux coches de chaque ligne (Hugo, 2026-11-03). */
@@ -157,8 +134,8 @@ describe('lineMarks', () => {
     const marks = lineMarks(
       sheet({
         lines: [
-          packingLine('A', { packed: true, allocated: 4, unallocated: 0 }),
-          packingLine('B', { allocated: 2, unallocated: 2 }),
+          packingLine('A', { packed: true, allocated: 4 }),
+          packingLine('B', { allocated: 2 }),
           packingLine('C'),
         ],
       }),
@@ -176,8 +153,8 @@ describe('lineMarks', () => {
     const marks = lineMarks(
       sheet({
         lines: [
-          packingLine('A', { packed: true, allocated: 4, unallocated: 0 }),
-          packingLine('B', { allocated: 2, unallocated: 2 }),
+          packingLine('A', { packed: true, allocated: 4 }),
+          packingLine('B', { allocated: 2 }),
           packingLine('C'),
           // Au bac mais encore attendue au four : pas « faite ».
           packingLine('D', { packed: true, allocated: 4, awaitingProduction: true }),

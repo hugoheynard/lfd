@@ -1,4 +1,4 @@
-import type { HandoverQueueEntryView, PackingSheet } from '@lfd/contracts';
+import type { CounterPackingSheetView, HandoverQueueEntryView } from '@lfd/contracts';
 import type { FoldCalloutVariant, FoldIconName } from 'fold-ng';
 
 import { clockLabel } from '../../supervision/supervision-labels';
@@ -29,7 +29,7 @@ export interface BagReadiness {
 }
 
 /** `null` = aucune fiche : la journée n'est pas arrêtée, ou la commande est hors plan. */
-export function bagReadiness(sheet: PackingSheet | null): BagReadiness | null {
+export function bagReadiness(sheet: CounterPackingSheetView | null): BagReadiness | null {
   if (sheet === null) {
     return null;
   }
@@ -168,14 +168,14 @@ export interface LineMarks {
  * Sans fiche de colis, aucune coche : rien n'est suivi, et la phrase sous les
  * barres le dit déjà.
  */
-export function lineMarks(sheet: PackingSheet | null): ReadonlyMap<string, LineMarks> {
+export function lineMarks(sheet: CounterPackingSheetView | null): ReadonlyMap<string, LineMarks> {
   const marks = new Map<string, LineMarks>();
   for (const line of sheet?.lines ?? []) {
-    const started = (line.allocated ?? 0) > 0;
+    const started = line.allocated > 0;
     const packing: LineMarkTone = line.packed ? 'success' : started ? 'warning' : 'alert';
     const done = line.packed && !line.awaitingProduction;
     marks.set(line.sku, {
-      allocated: done ? null : Math.min(line.allocated ?? 0, line.quantity),
+      allocated: done ? null : Math.min(line.allocated, line.quantity),
       count: done ? 'success' : started ? 'warning' : 'alert',
       oven: line.awaitingProduction ? 'alert' : 'success',
       ovenLabel: line.awaitingProduction ? 'Fournil : pas encore sorti' : 'Fournil : sorti',
@@ -207,7 +207,7 @@ export interface PieceCount {
  * sans ton.
  */
 export function pieceCount(
-  sheet: PackingSheet | null,
+  sheet: CounterPackingSheetView | null,
   bag: BagReadiness | null,
   total: number,
 ): PieceCount {

@@ -41,6 +41,10 @@ import { ReportPackingShortfallHandler } from "./application/station/report-pack
 import { ReopenPackingOrderHandler } from "./application/station/reopen-packing-order.handler.js";
 import { PackingBoardReader } from "./domain/ports/packing-board.reader.js";
 import { PackingBoardController } from "./http/packing-board.controller.js";
+import { CounterPackingSheetController } from "./http/counter-packing-sheet.controller.js";
+import { GetCounterPackingSheetHandler } from "./application/counter/get-counter-packing-sheet.handler.js";
+import { CounterPackingSheetReader } from "./domain/ports/counter-packing-sheet.reader.js";
+import { PrismaCounterPackingSheetReader } from "./infrastructure/prisma-counter-packing-sheet.reader.js";
 import { PackingOrdersController } from "./http/packing-orders.controller.js";
 import { PrismaPackedOrdersReader } from "./infrastructure/prisma-packed-orders.reader.js";
 import { PrismaOrderPackingStateReader } from "./infrastructure/prisma-order-packing-state.reader.js";
@@ -119,6 +123,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
   controllers: [
     PackingContainersController,
     PackingBoardController,
+    CounterPackingSheetController,
     PackingOrdersController,
     PackingResuppliesController,
     PackingSettingsController,
@@ -174,6 +179,9 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     { provide: PackingSheetTombstones, useClass: PrismaPackingSheetTombstones },
     ReopenPackingOrderHandler,
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
+    // La fiche d'une commande, au comptoir (2026-11-03).
+    GetCounterPackingSheetHandler,
+    { provide: CounterPackingSheetReader, useClass: PrismaCounterPackingSheetReader },
     PrismaPackedOrdersReader,
     BoardOvenWaitingOrdersReader,
     // La fiche de réassort (R3b).

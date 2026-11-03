@@ -13,7 +13,7 @@ import type {
   OrderHandoverLine,
   OrderHandoverView,
   PackingAbandonedLine,
-  PackingSheet,
+  CounterPackingSheetView,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -27,8 +27,8 @@ import {
 } from 'fold-ng';
 
 import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
+import { CounterPackingSheetService } from '../../comptoir/counter-packing-sheet.service';
 import { NotifyService } from '../../notify.service';
-import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import {
   CounterNotePanel,
@@ -120,8 +120,6 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
 export class HandoverDetail {
   /** La ligne choisie dans la file, ou `null` — le rail existe dans les deux cas. */
   readonly entry = input<HandoverQueueEntryView | null>(null);
-  /** Le jour de service de la file — celui dont on lit le colisage. */
-  readonly day = input.required<string>();
 
   /**
    * Le code lu juste avant, quand c'est LUI qui a ouvert cette fiche — sinon
@@ -145,7 +143,7 @@ export class HandoverDetail {
   readonly cleared = output<void>();
 
   private readonly handovers = inject(HandoverQueueService);
-  private readonly packing = inject(PackingService);
+  private readonly packingSheets = inject(CounterPackingSheetService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly incomplete = inject(CounterIncompleteHandoverService);
@@ -241,7 +239,7 @@ export class HandoverDetail {
    * La fiche de colis de la commande ouverte, relue au colisage du jour —
    * `null` avant l'arrêt du plan ou pour une commande hors plan.
    */
-  private readonly sheet = signal<PackingSheet | null>(null);
+  private readonly sheet = signal<CounterPackingSheetView | null>(null);
   protected readonly readiness = computed(() => bagReadiness(this.sheet()));
   /** « au bac / total », ou le total seul en succès quand tout est fait. */
   protected readonly pieces = computed(() =>
@@ -304,7 +302,7 @@ export class HandoverDetail {
         return;
       }
       void this.load();
-      void this.loadSheet(entry.reference, this.day());
+      void this.loadSheet(entry.orderId);
     });
   }
 
@@ -328,13 +326,18 @@ export class HandoverDetail {
     }
   }
 
-  /** Une fiche illisible se tait : les barres disparaissent, le retrait reste possible. */
-  private async loadSheet(reference: string, day: string): Promise<void> {
+  /**
+   * La fiche de SA commande, à la route du comptoir (2026-11-03) — plus le
+   * poste entier du colisage, qu'un vendeur sans droit du colisage prenait en
+   * 403. Une fiche illisible se tait : les barres disparaissent, le retrait
+   * reste possible.
+   */
+  private async loadSheet(orderId: string): Promise<void> {
     this.sheet.set(null);
     try {
-      const packing = await this.packing.packing(day);
-      if (this.entry()?.reference === reference) {
-        this.sheet.set(packing.sheets.find((sheet) => sheet.reference === reference) ?? null);
+      const sheet = await this.packingSheets.sheet(orderId);
+      if (this.entry()?.orderId === orderId) {
+        this.sheet.set(sheet);
       }
     } catch {
       this.sheet.set(null);

@@ -4,16 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { FoldPanelHostService } from 'fold-ng';
 import type {
   CounterIncompleteHandoverView,
+  CounterPackingSheetLine,
+  CounterPackingSheetView,
   HandoverQueueEntryView,
   OrderHandoverLine,
   OrderHandoverView,
-  PackingLine,
-  PackingSheet,
-  ProductionPackingView,
 } from '@lfd/contracts';
 
 import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
-import { PackingService } from '../../production/packing.service';
+import { CounterPackingSheetService } from '../../comptoir/counter-packing-sheet.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverDetail } from './handover-detail';
 
@@ -139,63 +138,36 @@ class FakeHandovers {
   }
 }
 
-/** Le colisage du jour, tel que le rail le relit : zéro, une ou plusieurs fiches. */
-class FakePacking {
-  constructor(private readonly sheets: readonly PackingSheet[] = []) {}
+/** La fiche de colis au comptoir : celle de la commande demandée, ou `null` (pas de fiche). */
+class FakePackingSheets {
+  readonly asked: string[] = [];
 
-  packing(date: string): Promise<ProductionPackingView> {
-    return Promise.resolve({
-      date,
-      closedAt: this.sheets.length === 0 ? null : 'x',
-      sheets: this.sheets,
-      withdrawnSheets: [],
-      resources: [],
-      orderCount: this.sheets.length,
-      todoCount: 0,
-      readyCount: 0,
-      relativeDay: 'today',
-    });
+  constructor(private readonly sheets: readonly CounterPackingSheetView[] = []) {}
+
+  sheet(orderId: string): Promise<CounterPackingSheetView | null> {
+    this.asked.push(orderId);
+    return Promise.resolve(this.sheets.find((one) => one.orderId === orderId) ?? null);
   }
 }
 
-function packingLine(sku: string, overrides: Partial<PackingLine> = {}): PackingLine {
-  return {
-    sku,
-    productName: sku,
-    quantity: 1,
-    saleUnit: 'piece',
-    packed: false,
-    initials: null,
-    packedAt: null,
-    awaitingProduction: false,
-    ...overrides,
-  };
+function packingLine(
+  sku: string,
+  overrides: Partial<CounterPackingSheetLine> = {},
+): CounterPackingSheetLine {
+  return { sku, quantity: 1, packed: false, awaitingProduction: false, allocated: 0, ...overrides };
 }
 
-function sheet(reference: string, overrides: Partial<PackingSheet> = {}): PackingSheet {
+/** La fiche de la commande choisie par défaut (`ord_1`, CMD-1042). */
+function sheet(overrides: Partial<CounterPackingSheetView> = {}): CounterPackingSheetView {
   const lines = overrides.lines ?? [packingLine('a'), packingLine('b')];
   return {
-    reference,
-    orderId: `o-${reference}`,
-    containers: 0,
-    customerLabel: reference,
-    clientele: null,
-    fulfillmentMethod: 'pickup',
-    destination: 'Boutique',
+    orderId: 'ord_1',
+    reference: 'CMD-1042',
     lines,
     lineCount: lines.length,
     packedLines: 0,
-    remainingLines: lines.length,
-    pieces: lines.length,
     packedPieces: 0,
-    canReportShortfall: false,
-    shortfallReportedAt: null,
-    deliveryNoteReprintNeeded: false,
-    canDeclareReady: false,
-    coldOutsideIsotherm: [],
     packedAt: null,
-    packedBy: null,
-    packedByName: null,
     ...overrides,
   };
 }
@@ -232,7 +204,7 @@ class FakePanels {
 
 interface Doubles {
   readonly handovers: FakeHandovers;
-  readonly packing?: FakePacking;
+  readonly packing?: FakePackingSheets;
   readonly incomplete?: FakeIncomplete;
   readonly panels?: FakePanels;
 }
@@ -245,7 +217,7 @@ async function render(
     imports: [HandoverDetail],
     providers: [
       { provide: HandoverQueueService, useValue: doubles.handovers },
-      { provide: PackingService, useValue: doubles.packing ?? new FakePacking() },
+      { provide: CounterPackingSheetService, useValue: doubles.packing ?? new FakePackingSheets() },
       {
         provide: CounterIncompleteHandoverService,
         useValue: doubles.incomplete ?? new FakeIncomplete(),
@@ -256,7 +228,6 @@ async function render(
     ],
   });
   const fixture: ComponentFixture<HandoverDetail> = TestBed.createComponent(HandoverDetail);
-  fixture.componentRef.setInput('day', '2026-09-28');
   fixture.componentRef.setInput('entry', selected);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -278,8 +249,8 @@ const buttonSaying = (
 describe('HandoverDetail', () => {
   /** Hugo, 2026-09-28 : « déclarée prête » ne disait pas où en était le bac. */
   it('montre le fournil PUIS le colisage, et atténue les gestes tant que le sac n’est pas fini', async () => {
-    const packing = new FakePacking([
-      sheet('CMD-1042', {
+    const packing = new FakePackingSheets([
+      sheet({
         lines: [packingLine('a'), packingLine('b', { awaitingProduction: true })],
         packedLines: 1,
       }),
@@ -297,9 +268,22 @@ describe('HandoverDetail', () => {
     expect(remit?.disabled).toBe(false);
   });
 
+  /**
+   * Régression 2026-11-03 : le rail lisait le poste entier du colisage, sous
+   * un droit que le vendeur n'a pas ; il prenait un 403 et ne voyait aucune
+   * fiche. Il demande désormais la fiche de SA commande, au comptoir.
+   */
+  it('🔴 demande la fiche de la commande choisie, par son identifiant', async () => {
+    const packing = new FakePackingSheets([sheet({ packedLines: 1 })]);
+    const fixture = await render(entry(), { handovers: new FakeHandovers(), packing });
+
+    expect(packing.asked).toEqual(['ord_1']);
+    expect(text(fixture)).toContain('Colisage · 1 / 2 posés dans le bac');
+  });
+
   it('rend leur poids aux gestes quand le four et le bac ont fini', async () => {
-    const packing = new FakePacking([
-      sheet('CMD-1042', { packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
+    const packing = new FakePackingSheets([
+      sheet({ packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
     ]);
     const fixture = await render(entry(), { handovers: new FakeHandovers(), packing });
     const element: HTMLElement = fixture.nativeElement;
@@ -312,8 +296,8 @@ describe('HandoverDetail', () => {
 
   /** Lot QC5 : le comptoir le lit AVANT de tendre le lecteur. */
   it('🔴 une commande retenue l’annonce en alerte et atténue les gestes, sans les désactiver', async () => {
-    const packing = new FakePacking([
-      sheet('CMD-1042', { packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
+    const packing = new FakePackingSheets([
+      sheet({ packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
     ]);
     const fixture = await render(entry({ state: 'ready', heldForQuality: true }), {
       handovers: new FakeHandovers(),
@@ -622,7 +606,7 @@ describe('HandoverDetail — les envois prêts (plan E7 reliquat, L4c)', () => {
     expect(remit?.disabled).toBe(true);
   });
   describe('procédure commande incomplète (C2)', () => {
-    const unfinished = (): FakePacking => new FakePacking([sheet('CMD-1042', { packedLines: 1 })]);
+    const unfinished = (): FakePackingSheets => new FakePackingSheets([sheet({ packedLines: 1 })]);
 
     it('sac pas fini : le bouton dit « Procédure commande incomplète »', async () => {
       const fixture = await render(entry(), {
@@ -641,8 +625,8 @@ describe('HandoverDetail — les envois prêts (plan E7 reliquat, L4c)', () => {
         handovers,
         incomplete,
         panels,
-        packing: new FakePacking([
-          sheet('CMD-1042', { packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
+        packing: new FakePackingSheets([
+          sheet({ packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
         ]),
       });
       expect(buttonSaying(fixture, 'Procédure commande incomplète')).toBeNull();

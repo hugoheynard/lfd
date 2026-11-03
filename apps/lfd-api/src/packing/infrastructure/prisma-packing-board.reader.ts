@@ -18,7 +18,7 @@ import { reservationsOn } from "./packing-stock-reservation.rows.js";
 import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /** Ce qu'on relit d'une commande pour le poste. */
-const ORDER_SELECT = {
+export const ORDER_SELECT = {
   orderId: true,
   rank: true,
   reference: true,
@@ -112,7 +112,7 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
 }
 
 /** Une ligne de `packing_order`, telle que `ORDER_SELECT` la relit. */
-interface OrderRow {
+export interface OrderRow {
   readonly orderId: string;
   readonly rank: number;
   readonly reference: string;
@@ -142,7 +142,7 @@ interface OrderRow {
   }[];
 }
 
-function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder {
+export function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder {
   const mode = containerModeOf(row.containerMode);
   const all = row.containers.map(containerOf);
   const live = all.filter((container) => isLive(container, liveBins));

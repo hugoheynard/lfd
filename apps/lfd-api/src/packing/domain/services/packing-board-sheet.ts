@@ -282,7 +282,7 @@ export function sumOfQuantities(lines: readonly SheetLine[]): number {
 }
 
 /** Ce qu'une ligne posée pèse en pièces : ses pièces, ou un lot au poids entier au bac. */
-function placedPieces(line: SheetLine, allocated: number): number {
+export function placedPieces(line: SheetLine, allocated: number): number {
   if (line.saleUnit !== "weight") {
     return allocated;
   }

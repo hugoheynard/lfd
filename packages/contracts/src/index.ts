@@ -992,6 +992,7 @@ export type {
   PackingResupplyLineView,
   PackingResupplyView,
 } from "./packing-resupplies.js";
+export type { CounterPackingSheetLine, CounterPackingSheetView } from "./counter-packing-sheet.js";
 export { productionPackingQuerySchema } from "./production-packing.js";
 export type {
   PackingAbandonedLine,
