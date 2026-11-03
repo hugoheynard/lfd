@@ -13,6 +13,15 @@
   flex: 1;
 }
 
+/* Le corps du layout fold grandit avec son contenu (`.tl-body` sans
+   `min-height: 0`, fold-ng 0.36) : sans cette contrainte, la colonne entière
+   était coupée et le panneau ne défilait jamais (2026-11-03). */
+.src-layout ::ng-deep > .tl-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .src-search {
   margin: var(--fold-space-md) 0;
 }
@@ -106,8 +115,4 @@
   padding-left: var(--fold-space-sm);
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
-}
-
-.src-pages {
-  padding-top: var(--fold-space-md);
 }

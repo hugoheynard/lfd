@@ -1,17 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  linkedSignal,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import {
   FoldEmptyStateComponent,
   FoldNavLayoutComponent,
-  FoldPaginatorComponent,
   FoldSearchComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -57,13 +48,6 @@ export interface ProposedLine {
   readonly available: boolean;
 }
 
-/**
- * Combien de produits par page de catalogue. Assez pour qu'un rayon entier tienne
- * le plus souvent d'un bloc, assez peu pour que le défilement reste court au
- * pouce.
- */
-const CATALOGUE_PAGE_SIZE = 24;
-
 /** Les trois façons de regarder ce qu'on peut ajouter. */
 export type SourceKind = 'habituels' | 'catalogue' | 'commande';
 
@@ -91,7 +75,6 @@ export type SourceKind = 'habituels' | 'catalogue' | 'commande';
   imports: [
     FoldEmptyStateComponent,
     FoldNavLayoutComponent,
-    FoldPaginatorComponent,
     FoldSearchComponent,
     FoldTabPanelComponent,
     FoldTabsComponent,
@@ -128,31 +111,18 @@ export class SourceProduits {
 
   protected readonly search = signal('');
 
-  /** Le catalogue filtré par la recherche, à plat — ce que le paginateur compte. */
+  /** Le catalogue filtré par la recherche, à plat. */
   protected readonly matching = computed(() => {
     const needle = normalise(this.search());
     return this.catalogue().filter((item) => matches(item, needle));
   });
 
-  /** La page de catalogue courante. Une recherche rejoue la liste, donc page 1. */
-  protected readonly page = linkedSignal<string, number>({
-    source: this.search,
-    computation: () => 1,
-  });
-
-  protected readonly pageSize = CATALOGUE_PAGE_SIZE;
-
   /**
-   * Les rayons de la page courante. On **découpe puis regroupe**, et pas
-   * l'inverse : paginer les rayons donnerait des pages de tailles très
-   * différentes — 40 viennoiseries d'un côté, 3 chocolats de l'autre. Un rayon
-   * peut donc s'étaler sur deux pages, et son titre reparaît en tête de la
-   * seconde.
+   * Les rayons du catalogue filtré, en une seule liste qui défile (Hugo,
+   * 2026-11-03) : plus de pages, un rayon ne se coupe plus en deux.
    */
   protected readonly shelves = computed<readonly CatalogShelf<ProposedLine>[]>(() => {
-    const start = (this.page() - 1) * CATALOGUE_PAGE_SIZE;
-    const slice = this.matching().slice(start, start + CATALOGUE_PAGE_SIZE);
-    return catalogShelves(slice, (item) => item.family).map((shelf) => ({
+    return catalogShelves(this.matching(), (item) => item.family).map((shelf) => ({
       ...shelf,
       items: shelf.items.map((item) => fromCatalog(item, this.shelfLeft())),
     }));
