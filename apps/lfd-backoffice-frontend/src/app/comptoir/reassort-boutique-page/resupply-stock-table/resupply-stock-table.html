@@ -90,6 +90,7 @@
       }
     </ng-template>
     <ng-template foldCell="actions" let-row>
+      <!-- La colonne n'est servie que pour aujourd'hui (`unorderedOpen`). -->
       <fold-dropdown placement="bottom-end" ariaLabel="Autres gestes">
         <button
           foldPopoverTrigger="menu"

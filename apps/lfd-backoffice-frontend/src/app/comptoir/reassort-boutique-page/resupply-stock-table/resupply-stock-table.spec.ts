@@ -55,6 +55,7 @@ async function settle(fixture: ComponentFixture<ResupplyStockTable>): Promise<vo
 async function mount(
   options: {
     readonly canWrite?: boolean;
+    readonly day?: string;
     readonly stock?: readonly ResupplyReceiptLineView[];
     readonly unordered?: readonly UnorderedReceiptLineView[];
     readonly alerts?: FakeAlerts;
@@ -82,7 +83,7 @@ async function mount(
   await TestBed.inject(SiteStockAlertsStore).load('site_v');
   const fixture = TestBed.createComponent(ResupplyStockTable);
   fixture.componentRef.setInput('siteId', 'site_v');
-  fixture.componentRef.setInput('day', TODAY);
+  fixture.componentRef.setInput('day', options.day ?? TODAY);
   fixture.componentRef.setInput('articles', options.articles ?? ARTICLES);
   fixture.componentRef.setInput('stock', options.stock ?? []);
   fixture.componentRef.setInput('unordered', options.unordered ?? []);
@@ -453,5 +454,57 @@ describe('ResupplyStockTable', () => {
 
       expect(receipts.calls).toEqual(['correct GRA 2500']);
     });
+  });
+
+  /**
+   * Régression (audit final du 2026-11-03, E1) : « + reçu sans commande »
+   * était offert sur toute journée de la bande, et le serveur refuse désormais
+   * hors d'aujourd'hui (409 `resupply.receipt.unordered_not_today`).
+   */
+  it('n’offre pas le reçu sans commande sur une autre journée qu’aujourd’hui', async () => {
+    const { fixture, table } = await mount({ day: '2000-01-01' });
+    expect(table['unorderedOpen']()).toBe(false);
+    expect(table['columns']().map((column) => column.key)).not.toContain('actions');
+    expect(root(fixture).textContent).not.toContain('reçu sans commande');
+  });
+
+  it('offre le reçu sans commande aujourd’hui, jour du serveur', async () => {
+    const { table } = await mount();
+    expect(table['unorderedOpen']()).toBe(true);
+    expect(table['columns']().map((column) => column.key)).toContain('actions');
+  });
+
+  /**
+   * E4 (audit final du 2026-11-03) : la liste porte aussi les déclinaisons
+   * d'une fiche en vignette — chacune sa ligne, sous son propre nom, dans la
+   * famille de sa fiche.
+   */
+  it('range les déclinaisons en vignette chacune sur sa ligne, dans leur famille', async () => {
+    const variants: readonly ResupplyArticleView[] = [
+      ...ARTICLES,
+      {
+        sku: 'TAR-6',
+        name: 'Tarte citron 6 parts',
+        categoryId: 'fam_tart',
+        categoryName: 'Tartes',
+        saleUnit: 'piece',
+      },
+      {
+        sku: 'TAR-1',
+        name: 'Tarte citron part',
+        categoryId: 'fam_tart',
+        categoryName: 'Tartes',
+        saleUnit: 'piece',
+      },
+    ];
+    const { fixture, table } = await mount({ articles: variants });
+    expect(rowOf(table, 'TAR-6').name).toBe('Tarte citron 6 parts');
+    expect(rowOf(table, 'TAR-1').name).toBe('Tarte citron part');
+    expect(table['categoryOptions']().filter((option) => option.label === 'Tartes')).toHaveLength(
+      1,
+    );
+    table['category'].set('fam_tart');
+    await settle(fixture);
+    expect(order(fixture)).toEqual(['TAR-6', 'TAR-1']);
   });
 });

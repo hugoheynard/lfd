@@ -1,4 +1,7 @@
-<div class="page">
-  <fold-back-link icon="arrow-back" label="Réassorts" [routerLink]="list" />
+<!-- Au gabarit de page (audit du 2026-11-03) : la page était routée sans
+     `fold-page-layout`. La carte porte son propre titre ; l'en-tête ne garde
+     que le retour à la liste. -->
+<fold-page-layout>
+  <fold-back-link pageEyebrow icon="arrow-back" label="Réassorts" [routerLink]="list" />
   <app-bakehouse-resupply-card [draftId]="draftId() ?? null" (sent)="back()" />
-</div>
+</fold-page-layout>

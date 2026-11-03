@@ -127,13 +127,25 @@ export class ResupplyStockTable {
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly stateLabel = rowStateLabel;
 
-  /** Les colonnes ; « Actions » seulement pour qui écrit. */
+  /**
+   * Le reçu sans commande ne s'écrit que pour AUJOURD'HUI, selon l'horloge du
+   * serveur (`SiteResuppliesView.today`) : sur une autre journée de la bande,
+   * le serveur refuse (409 `resupply.receipt.unordered_not_today`, audit
+   * final du 2026-11-03). Le geste n'est donc pas offert ; sans la vue, non plus.
+   */
+  protected readonly unorderedOpen = computed(
+    () => this.canWrite() && this.resupplies.view()?.today === this.day(),
+  );
+
+  /** Les colonnes ; « Actions » seulement quand le reçu sans commande s'écrit. */
   protected readonly columns = computed<readonly FoldTableColumn<StockRow>[]>(() => [
     { key: 'product', label: 'Produit' },
     { key: 'stock', label: 'Stock du jour', numeric: true },
     { key: 'state', label: 'État' },
     { key: 'quantity', label: this.targetLabel() },
-    ...(this.canWrite() ? [{ key: 'actions', label: 'Actions', align: 'right' as const }] : []),
+    ...(this.unorderedOpen()
+      ? [{ key: 'actions', label: 'Actions', align: 'right' as const }]
+      : []),
   ]);
   protected readonly skuOf = (row: StockRow): string => row.sku;
   /** La rupture en alerte, le stock faible en avertissement. */

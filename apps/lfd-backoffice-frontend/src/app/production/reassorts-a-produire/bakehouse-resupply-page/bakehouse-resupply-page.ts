@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FoldBackLinkComponent } from 'fold-ng';
+import { FoldBackLinkComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 import { BakehouseResupplyCard } from '../bakehouse-resupply-card/bakehouse-resupply-card';
 
@@ -16,9 +16,8 @@ const LIST = '/prod-manager/reassorts';
 @Component({
   selector: 'app-bakehouse-resupply-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BakehouseResupplyCard, FoldBackLinkComponent, RouterLink],
+  imports: [BakehouseResupplyCard, FoldBackLinkComponent, FoldPageLayoutComponent, RouterLink],
   templateUrl: './bakehouse-resupply-page.html',
-  styleUrl: './bakehouse-resupply-page.scss',
 })
 export class BakehouseResupplyPage {
   private readonly router = inject(Router);
