@@ -2,7 +2,7 @@
   "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`), et des tiers — prestataire, partenaire, agence (`tiers`, 2026-10-18). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
   "texteInformation": {
     "version": 3,
-    "empreinte": "84c2108d32430d44"
+    "empreinte": "b9f91594585842d2"
   },
   "entrees": [
     {
@@ -558,7 +558,7 @@
       "information": false
     },
     {
-      "colonne": "production.order_handover.handed_over_by",
+      "colonne": "handover.order_handover.handed_over_by",
       "personne": "livreur",
       "categorie": "auteur-geste",
       "finalite": "Qui a remis la commande, au comptoir ou à la porte : l'attestation de remise.",
@@ -567,7 +567,7 @@
       "information": true
     },
     {
-      "colonne": "production.order_handover_proof.photo_key",
+      "colonne": "handover.order_handover_proof.photo_key",
       "personne": "receptionnaire",
       "categorie": "photo",
       "finalite": "Photo de la marchandise remise : preuve de remise.",
@@ -576,7 +576,7 @@
       "information": true
     },
     {
-      "colonne": "production.order_handover_proof.receiver_name",
+      "colonne": "handover.order_handover_proof.receiver_name",
       "personne": "receptionnaire",
       "categorie": "identite",
       "finalite": "Nom de la personne qui a reçu la commande — demandé seulement quand l'arrêt exige une signature, nul sinon (Hugo, 2026-10-25) : preuve de remise.",
@@ -585,7 +585,7 @@
       "information": true
     },
     {
-      "colonne": "production.order_handover_proof.recorded_by",
+      "colonne": "handover.order_handover_proof.recorded_by",
       "personne": "livreur",
       "categorie": "auteur-geste",
       "finalite": "Qui a constitué la pièce de remise (preuve de livraison).",
@@ -594,7 +594,7 @@
       "information": true
     },
     {
-      "colonne": "production.order_handover_proof.signed_slip_key",
+      "colonne": "handover.order_handover_proof.signed_slip_key",
       "personne": "receptionnaire",
       "categorie": "photo",
       "finalite": "Photo du bon signé par le réceptionnaire, quand l'arrêt exige une signature (Hugo, 2026-10-25) : preuve de remise.",
@@ -603,7 +603,7 @@
       "information": true
     },
     {
-      "colonne": "production.order_handover_proof.signature_key",
+      "colonne": "handover.order_handover_proof.signature_key",
       "personne": "receptionnaire",
       "categorie": "signature",
       "finalite": "Signature tracée au doigt par le réceptionnaire : preuve de remise.",
