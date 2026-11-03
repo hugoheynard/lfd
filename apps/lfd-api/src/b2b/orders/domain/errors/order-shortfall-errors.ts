@@ -19,3 +19,19 @@ export class NoShortfallToDecideError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Le signal du comptoir arrive après un fait plus récent** (plan
+ * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.2 —
+ * Hugo, 2026-11-03) : le bac a été signalé ou fermé au colisage au même
+ * instant. Les quantités lues ne sont peut-être plus celles du bac ; rien
+ * n'est décidé, rien n'est remis.
+ */
+export class ShortfallSignalOutrunError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "orders.shortfall.signal_outrun",
+      `Le bac de ${reference} vient d'être signalé ou fermé au poste de colisage : rien n'a été décidé ni remis. Rechargez la file du comptoir, puis recommencez.`,
+    );
+  }
+}

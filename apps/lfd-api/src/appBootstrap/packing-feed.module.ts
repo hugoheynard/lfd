@@ -11,11 +11,13 @@ import {
   PackingWithdrawalDesk,
   ReserveShopRelease,
   ShortfallDesk,
+  ShortfallFreezeDesk,
 } from "../packing/channels/commerce/index.js";
 import { PackingReserveShopRelease } from "../packing/application/shop-release/packing-reserve-shop-release.js";
 import { PackingSheetRevisionDesk } from "../packing/application/revision/packing-sheet-revision.desk.js";
 import { PackingSheetWithdrawalDesk } from "../packing/application/withdrawal/packing-sheet-withdrawal.desk.js";
 import { PackingShortfallDesk } from "../packing/application/station/packing-shortfall-desk.js";
+import { PackingShortfallFreezeDesk } from "../packing/application/station/packing-shortfall-freeze-desk.js";
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
 import { PrismaOrderPackingStateReader } from "../packing/infrastructure/prisma-order-packing-state.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
@@ -85,6 +87,9 @@ import { ProductionModule } from "../production/production.module.js";
     // Le départ incomplet (E6b, 2026-10-25) — le colisage déclare ET
     // implémente, le commerce l'appelle dans la transaction de sa décision.
     { provide: ShortfallDesk, useExisting: PackingShortfallDesk },
+    // Le bac figé sans fait, pour le départ décidé au comptoir (plan
+    // `comptoir/plan-depart-incomplet-au-comptoir.md`, 2026-11-03).
+    { provide: ShortfallFreezeDesk, useExisting: PackingShortfallFreezeDesk },
     // Le retrait d'une commande inscrite (plan A1, 2026-10-25) — le colisage
     // déclare ET implémente, le commerce l'appelle après le guichet du
     // fournil ; la pierre tombale lit l'en-tête que le fournil publie.
@@ -118,6 +123,7 @@ import { ProductionModule } from "../production/production.module.js";
     DayPackingProgressReader,
     PackedResuppliesReader,
     ShortfallDesk,
+    ShortfallFreezeDesk,
     PackingWithdrawalDesk,
     OrderPackingStateReader,
     InscribedOrderHeaderReader,

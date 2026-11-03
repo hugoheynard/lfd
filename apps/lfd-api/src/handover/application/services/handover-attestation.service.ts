@@ -143,11 +143,53 @@ export class HandoverAttestation {
   }
 
   /**
+   * **Juge le retrait sans rien écrire** (plan
+   * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.2,
+   * étape 2 — Hugo, 2026-11-03) : la même règle que {@link attest}, lue
+   * sous le même verrou de la commande, dans l'unité de travail de
+   * l'appelant. Le départ incomplet au comptoir la pose AVANT d'écrire sa
+   * décision : un client parti sans rien ne doit pas laisser derrière lui
+   * une décision définitive.
+   *
+   * @throws {HandoverRefusedError} @throws {TransferNotReceivedError}
+   * @throws {TransferNotYetComposedError}
+   */
+  async vet(subject: HandoverSubject, rank: number, by: string, via: HandoverVia): Promise<void> {
+    const shipment = ShipmentRef.of(subject.orderId, rank);
+    await this.uow.run(() => this.judge(subject, shipment, by, via));
+  }
+
+  /**
    * La règle, par envoi (L4b) : le verrou de la COMMANDE d'abord — commun
    * avec l'annulation, quel que soit le rang : une commande annulée n'a plus
    * d'envoi à remettre —, puis « déjà retiré » lu sur CET envoi.
    */
   private async engrave(
+    subject: HandoverSubject,
+    shipment: ShipmentRef,
+    by: string,
+    via: HandoverVia,
+  ): Promise<OrderHandover> {
+    const handover = await this.judge(subject, shipment, by, via);
+    const won = await this.handovers.attest(handover);
+    if (!won) {
+      // Perdu la course : un autre poste a scanné, ou saisi, entre notre lecture
+      // et notre écriture. On ne réécrit rien — l'attestation de l'autre est la
+      // seule vraie, et elle est peut-être la FORTE —, et on lève : l'unité de
+      // travail est déjà condamnée par la violation d'unicité.
+      throw new HandoverRefusedError(
+        shipment.rank === FIRST_SHIPMENT_RANK
+          ? "Cette commande vient d'être retirée à un autre poste."
+          : "Le reste de cette commande vient d'être retiré à un autre poste.",
+      );
+    }
+
+    await this.durable.publish(factOf(handover, null));
+    return handover;
+  }
+
+  /** L'attestation que la règle accepte, construite sans être écrite. */
+  private async judge(
     subject: HandoverSubject,
     shipment: ShipmentRef,
     by: string,
@@ -169,34 +211,16 @@ export class HandoverAttestation {
     if (existing === null) {
       await ensureArrivedAtSite(this.transfers, subject);
     }
-    const at = this.clock.now();
-
     // L'agrégat refuse ici — commande annulée, pas encore passée, déjà
     // retirée, retenue au contrôle.
-    const handover = OrderHandover.attest(
+    return OrderHandover.attest(
       current,
       shipment.rank,
       { handedOverAt: existing === null ? null : existing.handedOverAt, qualityHold },
-      at,
+      this.clock.now(),
       by,
       via,
     );
-
-    const won = await this.handovers.attest(handover);
-    if (!won) {
-      // Perdu la course : un autre poste a scanné, ou saisi, entre notre lecture
-      // et notre écriture. On ne réécrit rien — l'attestation de l'autre est la
-      // seule vraie, et elle est peut-être la FORTE —, et on lève : l'unité de
-      // travail est déjà condamnée par la violation d'unicité.
-      throw new HandoverRefusedError(
-        shipment.rank === FIRST_SHIPMENT_RANK
-          ? "Cette commande vient d'être retirée à un autre poste."
-          : "Le reste de cette commande vient d'être retiré à un autre poste.",
-      );
-    }
-
-    await this.durable.publish(factOf(handover, null));
-    return handover;
   }
 
   /**

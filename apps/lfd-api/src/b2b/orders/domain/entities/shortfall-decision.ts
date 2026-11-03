@@ -132,6 +132,24 @@ export class ShortfallDecision {
     });
   }
 
+  /**
+   * **Les refus qui ne dépendent pas du bac**, jugés avant de le lire (plan
+   * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.1 et
+   * §4.2 — Hugo, 2026-11-03) : le comptoir pose le signal lui-même, et ne
+   * doit rien écrire — ni fiche, ni signal — pour une commande dont le
+   * départ ne se décidera pas. `decide` les rejuge : ce sont les mêmes.
+   *
+   * @throws {ShortfallAlreadyDecidedError} @throws {ShortfallOrderNotConfirmedError}
+   * @throws {RemainderNotDecidableError} @throws {CardOrderShortfallError}
+   * @throws {VoucherOrderShortfallError} @throws {OrderTooOldForShortfallError}
+   */
+  static assertDecidable(subject: ShortfallDecisionSubject): void {
+    if (subject.decided) {
+      throw new ShortfallAlreadyDecidedError(shipmentLabelOf(subject));
+    }
+    ensureDecidable(subject);
+  }
+
   get departing(): readonly DepartingQuantity[] {
     return this.state.departing;
   }

@@ -298,3 +298,29 @@ describe("ShortfallDecision — le manque d'un reliquat (LB)", () => {
     );
   });
 });
+
+describe("ShortfallDecision.assertDecidable — les refus jugés avant de lire le bac (2026-11-03)", () => {
+  it("laisse passer une commande au compte, confirmée, aux termes figés", () => {
+    expect(() => ShortfallDecision.assertDecidable(subject())).not.toThrow();
+  });
+
+  it("refuse chaque cas que le comptoir doit dire avant le geste", () => {
+    expect(() => ShortfallDecision.assertDecidable(subject({ decided: true }))).toThrow(
+      ShortfallAlreadyDecidedError,
+    );
+    expect(() => ShortfallDecision.assertDecidable(subject({ status: "ready" }))).toThrow(
+      ShortfallOrderNotConfirmedError,
+    );
+    expect(() => ShortfallDecision.assertDecidable(subject({ settlementRegime: "paid" }))).toThrow(
+      CardOrderShortfallError,
+    );
+    expect(() => ShortfallDecision.assertDecidable(subject({ voucherDiscountCents: 100 }))).toThrow(
+      VoucherOrderShortfallError,
+    );
+    expect(() =>
+      ShortfallDecision.assertDecidable(
+        subject({ frozenTerms: [{ amountCents: 500, hasAdjustment: false }] }),
+      ),
+    ).toThrow(OrderTooOldForShortfallError);
+  });
+});

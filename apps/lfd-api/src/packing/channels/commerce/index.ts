@@ -8,6 +8,7 @@
  * | `PackingShortfallReportedEvent` | fait durable publié ici        | « il manque » : les quantités au bac    |
  * | `PackingShortfallClearedEvent`  | fait durable publié ici        | le bac s'est fermé complet, signal levé |
  * | `ShortfallDesk`                 | port déclaré ET implémenté ici | le départ incomplet décidé (E6b)        |
+ * | `ShortfallFreezeDesk`           | port déclaré ET implémenté ici | le bac figé sans fait, au comptoir      |
  * | `PackingWithdrawalDesk`         | port déclaré ET implémenté ici | la feuille retirée par l'annulation (A1) |
  * | `OrderPackingStateReader`       | port déclaré ET implémenté ici | bac fermé, feuille retirée (A1.3)       |
  * | `DeliveryNoteReprintsReader`    | port déclaré ici, implémenté par le commerce | BL à réimprimer (§ 14) |
@@ -35,6 +36,7 @@ export {
   PackingShortfallClearedEvent,
 } from "./packing-shortfall-cleared.event.js";
 export { ShortfallDesk, type DepartingLine } from "./shortfall-desk.js";
+export { ShortfallFreezeDesk } from "./shortfall-freeze.desk.js";
 export { PackingWithdrawalDesk, type PackingWithdrawalOutcome } from "./packing-withdrawal.desk.js";
 export { OrderPackingStateReader, type OrderPackingState } from "./order-packing-state.reader.js";
 export { DeliveryNoteReprintsReader } from "./delivery-note-reprints.reader.js";

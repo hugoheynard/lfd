@@ -1,4 +1,7 @@
-import { EmptyShortfallError } from "../../errors/order-shortfall-errors.js";
+import {
+  EmptyShortfallError,
+  ShortfallSignalOutrunError,
+} from "../../errors/order-shortfall-errors.js";
 import { OrderShortfall, type ShortfallQuantity } from "../order-shortfall.js";
 
 // Instants comparés entre eux, jamais à l'horloge.
@@ -87,5 +90,36 @@ describe("OrderShortfall — « Manque signalé — décision attendue » (E6a)"
 
     expect(shortfall.report(T3, SECOND)).toBe(true);
     expect(shortfall.awaitingDecision).toBe(true);
+  });
+});
+
+describe("OrderShortfall.reportForDecision — le signal posé au comptoir (2026-11-03)", () => {
+  it("remplace un signal du poste plus ancien : c'est le bac relu qui part", () => {
+    const shortfall = none();
+    shortfall.report(T1, FIRST);
+
+    shortfall.reportForDecision(T2, SECOND);
+
+    expect(shortfall.pending).toEqual({ reportedAt: T2, lines: SECOND });
+  });
+
+  it("refuse en le nommant quand un fait plus récent est déjà connu", () => {
+    const shortfall = none();
+    shortfall.report(T3, FIRST);
+
+    expect(() => shortfall.reportForDecision(T2, SECOND)).toThrow(ShortfallSignalOutrunError);
+    expect(shortfall.pending).toEqual({ reportedAt: T3, lines: FIRST });
+  });
+
+  it("refuse sur un signal déjà décidé", () => {
+    const shortfall = none();
+    shortfall.report(T1, FIRST);
+    shortfall.decide(T2);
+
+    expect(() => shortfall.reportForDecision(T3, SECOND)).toThrow(ShortfallSignalOutrunError);
+  });
+
+  it("refuse un signal sans ligne", () => {
+    expect(() => none().reportForDecision(T1, [])).toThrow(EmptyShortfallError);
   });
 });

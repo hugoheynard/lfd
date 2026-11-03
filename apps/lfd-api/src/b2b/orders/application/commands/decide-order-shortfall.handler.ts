@@ -1,17 +1,10 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { ShortfallDesk } from "../../../../packing/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
-import { IdGenerator } from "../../../../platform/id/id-generator.js";
-import { Clock } from "../../../../platform/time/clock.js";
 import { OrderShortfall } from "../../domain/entities/order-shortfall.js";
-import { ShortfallDecision } from "../../domain/entities/shortfall-decision.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
-import { OrderShortfallDecidedEvent } from "../../domain/events/order-shortfall-decided.event.js";
-import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
-import { OrderShortfallRepository } from "../../domain/ports/order-shortfall.repository.js";
 import { ShortfallDecisionRepository } from "../../domain/ports/shortfall-decision.repository.js";
+import { ShortfallDeparture } from "../services/shortfall-departure.js";
 import { DecideOrderShortfallCommand } from "./decide-order-shortfall.command.js";
 
 /**
@@ -39,6 +32,9 @@ import { DecideOrderShortfallCommand } from "./decide-order-shortfall.command.js
  *    E6c2, § 5) : une décision d'argent prise par une personne apparaît au
  *    journal d'activité — auteur, ce qui part, le reste.
  *
+ * Le corps (étapes 1 à 5 après le verrou) est `ShortfallDeparture`, partagé
+ * avec le départ décidé au comptoir (2026-11-03).
+ *
  * @throws {OrderNotFoundError} et les refus de {@link ShortfallDecision.decide}
  * et de `ShortfallDesk.authorize`.
  */
@@ -49,12 +45,7 @@ export class DecideOrderShortfallHandler implements ICommandHandler<
 > {
   constructor(
     private readonly decisions: ShortfallDecisionRepository,
-    private readonly shortfalls: OrderShortfallRepository,
-    private readonly desk: ShortfallDesk,
-    private readonly deliveryNotes: DeliveryNoteFollowing,
-    private readonly durable: DurablePublisher,
-    private readonly ids: IdGenerator,
-    private readonly clock: Clock,
+    private readonly departure: ShortfallDeparture,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -64,34 +55,10 @@ export class DecideOrderShortfallHandler implements ICommandHandler<
       if (locked === null) {
         throw new OrderNotFoundError(command.orderId);
       }
-      const shortfall = OrderShortfall.fromSnapshot(locked.shortfall);
-      const decision = ShortfallDecision.decide(locked.subject, shortfall, {
-        id: this.ids.next(),
-        decidedAt: this.clock.now(),
-        decidedBy: command.staffUserId,
+      await this.departure.decide(locked, OrderShortfall.fromSnapshot(locked.shortfall), {
+        staffUserId: command.staffUserId,
         remainder: command.remainder,
       });
-      await this.desk.authorize(
-        command.orderId,
-        command.rank,
-        decision.departing,
-        command.staffUserId,
-      );
-      // Le signal d'abord : la décision désigne sa ligne (clé étrangère).
-      await this.shortfalls.save(shortfall);
-      await this.decisions.save(decision);
-      await this.deliveryNotes.followDecision(command.orderId, command.rank);
-      await this.durable.publish(
-        new OrderShortfallDecidedEvent(
-          command.orderId,
-          command.rank,
-          locked.subject.reference,
-          locked.placedByUserId,
-          command.staffUserId,
-          decision.departing,
-          command.remainder,
-        ).durableFact(),
-      );
     });
   }
 }

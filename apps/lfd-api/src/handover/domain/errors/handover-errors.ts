@@ -1,4 +1,8 @@
-import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
+import {
+  AuthorizationError,
+  BusinessError,
+  ResourceNotFoundError,
+} from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus propres au **retrait**.
@@ -81,5 +85,18 @@ export class TransferNotYetComposedError extends BusinessError {
         "la porte encore : sa journée de production n'est pas clôturée. Attendez la clôture, " +
         "puis l'arrivée du transfert au site, avant de la remettre.",
     );
+  }
+}
+
+/**
+ * **La commande est hors de portée du comptoir** (plan
+ * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.3 —
+ * Hugo, 2026-11-03) : une livraison, ou une commande d'un autre jour. Un
+ * 403 : le vendeur a le droit du poste, pas celui de décider pour cette
+ * commande-là. La phrase vient de `counterReachBlocker`.
+ */
+export class CounterOutOfReachError extends AuthorizationError {
+  constructor(reason: string) {
+    super("handover.counter.out_of_reach", reason);
   }
 }

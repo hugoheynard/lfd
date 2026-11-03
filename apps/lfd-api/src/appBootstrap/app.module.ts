@@ -46,6 +46,7 @@ import { DeliveryModule } from "../delivery/delivery.module.js";
 import { DeliveryFeedModule } from "./delivery-feed.module.js";
 import { ProductionDeliveryFeedModule } from "./production-delivery-feed.module.js";
 import { DeliveryHandoverFeedModule } from "./delivery-handover-feed.module.js";
+import { CommerceCounterHandoverModule } from "./commerce-counter-handover.module.js";
 import { DeliveryRoundPlacementsModule } from "./delivery-round-placements.module.js";
 import { DeliveryTransferCounterModule } from "./delivery-transfer-counter.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
@@ -206,6 +207,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     ProductionDeskFeedModule,
     HandoverModule,
     HandoverFeedModule,
+    // Le départ incomplet décidé au comptoir (plan comptoir, 2026-11-03).
+    CommerceCounterHandoverModule,
     // Le colisage, en ombre (plan `colisage/colisage.md`, K1).
     PackingModule,
     PackingFeedModule,

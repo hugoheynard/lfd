@@ -26,6 +26,7 @@ import {
 } from "../../../domain/ports/shortfall-decision.repository.js";
 import { DecideOrderShortfallCommand } from "../decide-order-shortfall.command.js";
 import { DecideOrderShortfallHandler } from "../decide-order-shortfall.handler.js";
+import { ShortfallDeparture } from "../../services/shortfall-departure.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
 import { RecordingDurable } from "./durable-doubles.js";
 
@@ -155,7 +156,7 @@ function scene(subject: LockedShortfallSubject | null, refusal: BusinessError | 
   const desk = new RecordingDesk(trace, refusal);
   const notes = new RecordingDeliveryNoteFollowing();
   const durable = new RecordingDurable();
-  const handler = new DecideOrderShortfallHandler(
+  const departure = new ShortfallDeparture(
     decisions,
     shortfalls,
     desk,
@@ -163,8 +164,8 @@ function scene(subject: LockedShortfallSubject | null, refusal: BusinessError | 
     durable,
     new FixedIdGenerator("dec"),
     new FixedClock(NOW),
-    new DirectUnitOfWork(),
   );
+  const handler = new DecideOrderShortfallHandler(decisions, departure, new DirectUnitOfWork());
   return { trace, decisions, shortfalls, desk, notes, durable, handler };
 }
 

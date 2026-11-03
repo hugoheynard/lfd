@@ -20,6 +20,11 @@
  *   implémenté par le retrait, lu par l'annulation — un envoi, quel qu'il
  *   soit, est-il déjà retiré ?
  *
+ * - `CounterHandoverDesk` (2026-11-03, plan
+ *   `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`) : publié
+ *   ET implémenté par le retrait, appelé par le commerce dans la transaction
+ *   du départ incomplet décidé au comptoir — juger, puis remettre.
+ *
  * - `HandoverOrderLock` (2026-10-25) : déclaré par le retrait, implémenté par
  *   le commerce — la ligne `orders` verrouillée avant d'attester, pour que
  *   remise et annulation ne passent jamais toutes les deux (C3.6).
@@ -52,6 +57,7 @@ export {
 } from "./handover-subject.reader.js";
 export { HandoverProofReader } from "./handover-proof.reader.js";
 export { HandoverOrderLock } from "./handover-order.lock.js";
+export { CounterHandoverDesk } from "./counter-handover.desk.js";
 export { ShipmentHandoverReader } from "./shipment-handover.reader.js";
 export {
   OrderHandoverHistoryReader,

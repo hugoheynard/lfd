@@ -56,6 +56,7 @@ import { PackingResupplyListing } from "./domain/ports/packing-resupply-listing.
 import { PackingResupplyRepository } from "./domain/ports/packing-resupply.repository.js";
 import { PrismaPackedResuppliesReader } from "./infrastructure/prisma-packed-resupplies.reader.js";
 import { PackingShortfallDesk } from "./application/station/packing-shortfall-desk.js";
+import { PackingShortfallFreezeDesk } from "./application/station/packing-shortfall-freeze-desk.js";
 import { PackingReserveShopRelease } from "./application/shop-release/packing-reserve-shop-release.js";
 import { PackingContainerVoiding } from "./application/containers/packing-container-voiding.js";
 import { PackingSheetWithdrawalDesk } from "./application/withdrawal/packing-sheet-withdrawal.desk.js";
@@ -157,6 +158,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     ReportPackingShortfallHandler,
     // Le départ incomplet décidé par le commerce (E6b), relié par `PackingFeedModule`.
     PackingShortfallDesk,
+    PackingShortfallFreezeDesk,
     // Le retrait d'une feuille par l'annulation (plan A1), relié par `PackingFeedModule`.
     PackingSheetWithdrawalDesk,
     // La révision d'une feuille après l'arrêt (plan A2), reliée par `PackingFeedModule`.
@@ -193,6 +195,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     PrismaPackedResuppliesReader,
     PrismaOrderPackingStateReader,
     PackingShortfallDesk,
+    PackingShortfallFreezeDesk,
     PackingSheetWithdrawalDesk,
     PackingSheetRevisionDesk,
     PackingReserveShopRelease,

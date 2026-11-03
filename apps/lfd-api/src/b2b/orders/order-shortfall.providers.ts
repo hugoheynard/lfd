@@ -1,6 +1,8 @@
 import type { Provider, Type } from "@nestjs/common";
 
 import { DecideOrderShortfallHandler } from "./application/commands/decide-order-shortfall.handler.js";
+import { HandOverPackedAtCounterHandler } from "./application/commands/hand-over-packed-at-counter.handler.js";
+import { ShortfallDeparture } from "./application/services/shortfall-departure.js";
 import { WriteShortfallLetterHandler } from "./application/commands/write-shortfall-letter.handler.js";
 import { GetShortfallLetterDraftHandler } from "./application/queries/get-shortfall-letter-draft.handler.js";
 import { OrderBasketDiscountsReader } from "./domain/ports/order-basket-discounts.reader.js";
@@ -12,6 +14,7 @@ import {
 import { ShortfallDecisionRepository } from "./domain/ports/shortfall-decision.repository.js";
 import { ShortfallLetterReader } from "./domain/ports/shortfall-letter.reader.js";
 import { ShortfallNoticeRepository } from "./domain/ports/shortfall-notice.repository.js";
+import { AdminCounterIncompleteHandoverController } from "./http/admin-counter-incomplete-handover.controller.js";
 import { AdminOrderShortfallController } from "./http/admin-order-shortfall.controller.js";
 import { PrismaOrderBasketDiscountsReader } from "./infrastructure/prisma-order-basket-discounts.reader.js";
 import { PrismaOrderBillingRepository } from "./infrastructure/prisma-order-billing.repository.js";
@@ -32,6 +35,11 @@ import { PrismaShortfallNoticeRepository } from "./infrastructure/prisma-shortfa
  */
 export const ORDER_SHORTFALL_PROVIDERS: readonly Provider[] = [
   DecideOrderShortfallHandler,
+  ShortfallDeparture,
+  // Le départ incomplet décidé au comptoir (2026-11-03) : le guichet du
+  // retrait vient de `CommerceCounterHandoverModule`, celui du colisage de
+  // `PackingFeedModule`.
+  HandOverPackedAtCounterHandler,
   { provide: ShortfallDecisionRepository, useClass: PrismaShortfallDecisionRepository },
   { provide: ShortfallDecisionReader, useClass: PrismaShortfallDecisionReader },
   { provide: RemainderDecisionReader, useClass: PrismaRemainderDecisionReader },
@@ -51,4 +59,7 @@ export const ORDER_SHORTFALL_EXPORTS = [
   OrderBillingRepository,
 ] as const;
 
-export const ORDER_SHORTFALL_CONTROLLERS: readonly Type[] = [AdminOrderShortfallController];
+export const ORDER_SHORTFALL_CONTROLLERS: readonly Type[] = [
+  AdminOrderShortfallController,
+  AdminCounterIncompleteHandoverController,
+];

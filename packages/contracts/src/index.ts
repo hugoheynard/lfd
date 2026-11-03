@@ -789,12 +789,14 @@ export type {
   AdminShortfallDecisionPayload,
   AdminShortfallLetterDraft,
   AdminShortfallLetterPayload,
+  CounterIncompleteHandoverPayload,
   ShortfallRemainder,
 } from "./admin-order-detail.js";
 export {
   adminCancelOrderPayloadSchema,
   adminShortfallDecisionPayloadSchema,
   adminShortfallLetterPayloadSchema,
+  counterIncompleteHandoverPayloadSchema,
   shortfallRemainderSchema,
 } from "./admin-order-detail.js";
 export {

@@ -1,4 +1,8 @@
-import { EmptyShortfallError, NoShortfallToDecideError } from "../errors/order-shortfall-errors.js";
+import {
+  EmptyShortfallError,
+  NoShortfallToDecideError,
+  ShortfallSignalOutrunError,
+} from "../errors/order-shortfall-errors.js";
 
 /** Une ligne de la commande au signalement : la quantité due et ce qui est au bac. */
 export interface ShortfallQuantity {
@@ -128,6 +132,27 @@ export class OrderShortfall {
     this.reportedAtValue = at;
     this.linesValue = lines;
     return true;
+  }
+
+  /**
+   * **Le signal posé par le commerce lui-même**, pour une décision prise
+   * dans la même transaction — le départ incomplet au comptoir (plan
+   * `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`, §4.2,
+   * étape 4 — Hugo, 2026-11-03). Il remplace un signal du poste en vigueur
+   * (« Il manque » pressé juste avant) : le bac vient d'être relu sous le
+   * verrou de la fiche, c'est lui qui part.
+   *
+   * Là où un fait du colisage en retard est sans effet, ce signal-ci DOIT
+   * prendre : la décision qui suit lirait sinon des quantités qui ne sont
+   * pas celles du bac.
+   *
+   * @throws {EmptyShortfallError} @throws {ShortfallSignalOutrunError} un fait
+   * plus récent est déjà connu, ou la décision est déjà prise.
+   */
+  reportForDecision(at: Date, lines: readonly ShortfallQuantity[]): void {
+    if (!this.report(at, lines)) {
+      throw new ShortfallSignalOutrunError(this.reference);
+    }
   }
 
   /**
