@@ -6,7 +6,7 @@ import { ShopStore } from './shop.store';
 import { ClientLocale } from '../client-locale.service';
 import { operationKeyOf, operationText } from './operations';
 import { ALL_SHELVES, FEATURED_SHELF } from './shelves';
-import { inSubtree, shelfTreeOf } from './shelf-tree';
+import { inSubtree, shelfTreeOf } from '@lfd/b2b-ui/catalog';
 
 /**
  * Retire accents et casse : « éclair » et « eclair » cherchent la même chose.

@@ -54,7 +54,8 @@ export interface CatalogFamilyAncestor {
  * La famille telle qu'un écran la reçoit — sans slug. Sa **racine** et son
  * chemin y voyagent depuis le 2026-10-30 : le fournil range par catégorie
  * racine (« Viennoiserie fine » sous « Viennoiserie »), et il ne lit pas le
- * miroir — il reçoit cette vue par `WorkshopShelvesReader`.
+ * miroir — il reçoit cette vue par `WorkshopShelvesReader`. Ses parentes
+ * aussi depuis le 2026-11-03, quand elle en a.
  */
 export function familyView(family: CatalogFamily): CatalogFamilyView {
   return {
@@ -63,7 +64,21 @@ export function familyView(family: CatalogFamily): CatalogFamilyView {
     position: family.position,
     root: rootOf(family),
     path: [...family.path],
+    ...ancestorsOf(family),
   };
+}
+
+/**
+ * Ses parentes, réduites à ce qu'un rayon lit — absentes pour une famille de
+ * tête. La saisie de commande du staff range son catalogue en arbre comme la
+ * boutique (2026-11-03) : une parente sans article à elle n'apparaît dans
+ * aucune ligne, et son nom ne viendrait de nulle part ailleurs.
+ */
+function ancestorsOf(family: CatalogFamily): Pick<CatalogFamilyView, "ancestors"> {
+  const ancestors = family.ancestors ?? [];
+  return ancestors.length === 0
+    ? {}
+    : { ancestors: ancestors.map(({ id, name, position }) => ({ id, name, position })) };
 }
 
 /** La plus lointaine des parentes, ou la famille elle-même si elle n'en a pas. */

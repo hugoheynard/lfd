@@ -825,6 +825,42 @@ describe("GET /admin/catalog/sellable", () => {
   });
 
   /**
+   * La saisie de commande range son catalogue en arbre comme la boutique
+   * (2026-11-03) : une parente sans article à elle n'est dans aucune ligne, son
+   * nom ne vient que des parentes servies sur la famille de l'article.
+   */
+  it("sert les parentes d'une famille imbriquée, parente sans article comprise", async () => {
+    const base = snapshot(millicentsFromCents(200));
+    await deliverAsFacts(
+      ctx,
+      {
+        ...base,
+        categories: [
+          {
+            id: "fam-matin",
+            name: "Le matin",
+            slug: "le-matin",
+            parentId: null,
+            position: 0,
+            vatRatePercent: 5.5,
+          },
+          ...base.categories.map((category) => ({ ...category, parentId: "fam-matin" })),
+        ],
+      },
+      { alone: true },
+    );
+
+    const items = jsonBody<CatalogItemView[]>(
+      await asStaff().get("/admin/catalog/sellable").expect(200),
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.family?.ancestors).toEqual([
+      { id: "fam-matin", name: "Le matin", position: 0 },
+    ]);
+  });
+
+  /**
    * L'autre contrôleur garde son adresse, et sa forme. Sans ce cas, « réparer »
    * la collision en déplaçant le mauvais des deux casserait l'écran du
    * catalogue B2B — qui, lui, marche depuis toujours.

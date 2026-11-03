@@ -3,8 +3,9 @@
  * le rail « Plonger » et le filtre de la grille les lisent (handoff du
  * 2026-10-29, SPEC §1).
  *
- * Fonctions pures, sans Angular : le rail en tire ses niveaux, la boutique son
- * filtre par sous-arbre. Une seule définition de « qui est sous qui » — deux
+ * Fonctions pures, sans Angular : le rail en tire ses niveaux, la boutique et la
+ * saisie de commande du staff leur filtre par sous-arbre (partagé le 2026-11-03).
+ * Une seule définition de « qui est sous qui » — deux
  * auraient fini par ne plus s'accorder sur ce qu'une parente montre.
  *
  * L'arbre se construit depuis une liste plate `{ id, parentId }` : le serveur

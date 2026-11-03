@@ -10,7 +10,11 @@ import {
 } from 'fold-ng';
 import type { AdminOrderRow, CatalogItemView, CustomerSkuStat, OrderView } from '@lfd/contracts';
 import {
+  CatalogShelfNav,
   catalogShelves,
+  shelfTreeOf,
+  UNKNOWN_FAMILY_LABEL,
+  type CatalogShelfNavLabels,
   firstSaleQuantityOf,
   ProductRow,
   saleQuantityLabel,
@@ -26,6 +30,18 @@ import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import type { CartStore } from '../cart.store';
 import { HistoriqueCommandes } from '../historique-commandes/historique-commandes';
 import { shelfHintOf } from '../immediate-pickup';
+import { ALL_FAMILIES, familyShelvesOf, inChosenShelf, shelfIdOf } from '../catalog-shelf-filter';
+
+/** Les mots du rail des rayons, en français : le back-office n'a qu'une langue. */
+const SHELF_NAV_LABELS: CatalogShelfNavLabels = {
+  group: 'Rayons',
+  all: 'Tout',
+  root: 'Catalogue',
+  climbToRoot: 'Remonter à tout le catalogue',
+  climbTo: (shelf) => `Remonter à ${shelf}`,
+  level: (shelf) => `Familles de ${shelf}`,
+  withChildren: (shelf, n) => `${shelf}, ${String(n)} sous-familles`,
+};
 
 /**
  * Une ligne proposée : le produit tel que la rangée partagée le rend, plus la
@@ -78,6 +94,7 @@ export type SourceKind = 'habituels' | 'catalogue' | 'commande';
     FoldSearchComponent,
     FoldTabPanelComponent,
     FoldTabsComponent,
+    CatalogShelfNav,
     HistoriqueCommandes,
     NgTemplateOutlet,
     ProductRow,
@@ -111,10 +128,34 @@ export class SourceProduits {
 
   protected readonly search = signal('');
 
-  /** Le catalogue filtré par la recherche, à plat. */
+  /**
+   * Le rayon choisi au rail — « Tout » par défaut (2026-11-03). Le même filtre
+   * que la boutique : une parente montre son sous-arbre entier. Il se combine
+   * à la recherche au lieu de s'effacer devant elle : le commercial cherche
+   * souvent DANS un rayon.
+   */
+  protected readonly shelf = signal<string>(ALL_FAMILIES);
+  protected readonly allFamilies = ALL_FAMILIES;
+  protected readonly shelfLabels = SHELF_NAV_LABELS;
+
+  /** Les pastilles du rail : les familles des articles et leurs parentes. */
+  protected readonly familyShelves = computed(() =>
+    familyShelvesOf(this.catalogue(), SHELF_NAV_LABELS.all, UNKNOWN_FAMILY_LABEL),
+  );
+  private readonly shelfTree = computed(() => shelfTreeOf(this.familyShelves().entries));
+  /** Ce que le rail compte : chaque article sous son rayon. */
+  protected readonly shelfItems = computed(() =>
+    this.catalogue().map((item) => ({ shelfId: shelfIdOf(item) })),
+  );
+
+  /** Le catalogue filtré par le rayon choisi et la recherche, à plat. */
   protected readonly matching = computed(() => {
     const needle = normalise(this.search());
-    return this.catalogue().filter((item) => matches(item, needle));
+    const tree = this.shelfTree();
+    const chosen = this.shelf();
+    return this.catalogue().filter(
+      (item) => inChosenShelf(tree, item, chosen) && matches(item, needle),
+    );
   });
 
   /**

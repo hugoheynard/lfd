@@ -24,6 +24,22 @@
     />
   }
 
+  <!-- Le rail des rayons, partagé avec la boutique : hors du panneau qui
+       défile, il reste en place pendant qu'on parcourt la liste. -->
+  @if (kind() === 'catalogue' && catalogue().length > 0) {
+    <lfd-catalog-shelf-nav
+      class="src-shelves"
+      appearance="compact"
+      [shelves]="familyShelves().entries"
+      [families]="familyShelves().families"
+      [items]="shelfItems()"
+      [allId]="allFamilies"
+      [labels]="shelfLabels"
+      [active]="shelf()"
+      (picked)="shelf.set($event)"
+    />
+  }
+
   <fold-tab-panel class="src-panel" [tabs]="t" key="catalogue">
     @if (shelves().length === 0) {
       <fold-empty-state title="Aucun produit" subtitle="Rien ne correspond à cette recherche." />

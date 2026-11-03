@@ -7,7 +7,7 @@ import {
   pathOf,
   ROOT_LEVEL,
   shelfTreeOf,
-} from './shelf-tree';
+} from '../shelf-tree';
 
 /** L'arbre de la maquette (SPEC §1), réduit : Pâtisseries › Entremets › 8 parts. */
 const TREE = shelfTreeOf([

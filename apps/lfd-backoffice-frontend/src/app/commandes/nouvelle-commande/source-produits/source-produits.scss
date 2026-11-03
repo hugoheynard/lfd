@@ -26,6 +26,12 @@
   margin: var(--fold-space-md) 0;
 }
 
+/* Le rail garde sa hauteur pendant que le panneau, dessous, défile. */
+.src-shelves {
+  flex: none;
+  padding-block-end: var(--fold-space-sm);
+}
+
 .src-panel {
   min-height: 0;
   overflow-y: auto;

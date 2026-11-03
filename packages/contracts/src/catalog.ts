@@ -39,6 +39,12 @@ export interface CatalogFamilyView {
   readonly root?: CatalogFamilyNodeView;
   /** Son chemin d'ids, elle en tête puis ses parentes — la lignée que lit la tarification. */
   readonly path?: readonly string[];
+  /**
+   * **Ses parentes**, de la plus proche à la plus lointaine (2026-11-03) — de
+   * quoi ranger les rayons en arbre, parentes sans article comprises. Absente
+   * pour une famille de tête ; le serveur l'émet dès qu'elle en a.
+   */
+  readonly ancestors?: readonly CatalogFamilyNodeView[];
 }
 
 /** Une famille réduite à ce qu'un rayon lit : son nom et sa place. */
