@@ -86,43 +86,48 @@
     aucune autre.
   -->
   <ng-template foldRowNote let-row>
-    <!-- Départ incomplet décidé (2026-10-25) : le comptoir voit ce qui ne part
-         pas AVANT d'ouvrir la fiche. Il informe ; prévenir le client est une
-         décision du commerce (« Écrire au client », E6d). -->
-    @if (abandoned(row); as lines) {
-      <app-missing-items [lines]="lines" [fulfillmentMethod]="row.fulfillmentMethod" />
-    }
-    <!-- Le transfert du site n'est pas reçu : la remise est refusée, et la
-         ligne dit pourquoi (plan du transfert interne, §6.2). -->
-    @if (transferBlock(row); as why) {
-      <fold-callout appearance="inset" variant="info" icon="truck">{{ why }}</fold-callout>
-    }
-    <!-- L'origine du retard, comme en Supervision (Hugo, 2026-11-03) : en
-         alerte quand c'est nous, en avertissement quand le client n'est pas
-         venu. -->
-    @if (lateCause(row); as cause) {
-      @if (cause === 'kitchen') {
-        <fold-callout appearance="inset" variant="alert" icon="info" data-late-cause="kitchen">
-          <strong>{{ lateText(row) }}</strong> · par nous : le sac n'était pas prêt à la fin du
-          créneau.
-        </fold-callout>
-      } @else {
-        <fold-callout appearance="inset" variant="warning" icon="info" data-late-cause="customer">
-          <strong>{{ lateText(row) }}</strong> · client pas venu : le sac était prêt à temps.
-        </fold-callout>
+    <!-- Le trait sous la note (Hugo, 2026-11-03) : fold trace le sien sous la
+         ligne, donc ENTRE la ligne et sa note ; sans celui-ci, rien ne séparait
+         la note de la commande suivante. -->
+    <div class="qt-note">
+      <!-- Départ incomplet décidé (2026-10-25) : le comptoir voit ce qui ne part
+           pas AVANT d'ouvrir la fiche. Il informe ; prévenir le client est une
+           décision du commerce (« Écrire au client », E6d). -->
+      @if (abandoned(row); as lines) {
+        <app-missing-items [lines]="lines" [fulfillmentMethod]="row.fulfillmentMethod" />
       }
-    }
-    <!-- La barre « maintenant » (Hugo, 2026-11-03) : sous la dernière ligne
-         d'un côté de l'heure, comme l'heure d'un agenda. -->
-    @if (row.orderId === nowAfter()) {
-      <div
-        class="qt-now"
-        role="separator"
-        [attr.aria-label]="'Maintenant, ' + nowLabel()"
-        data-now-line
-      >
-        <span class="qt-now-label">Maintenant · {{ nowLabel() }}</span>
-      </div>
-    }
+      <!-- Le transfert du site n'est pas reçu : la remise est refusée, et la
+           ligne dit pourquoi (plan du transfert interne, §6.2). -->
+      @if (transferBlock(row); as why) {
+        <fold-callout appearance="inset" variant="info" icon="truck">{{ why }}</fold-callout>
+      }
+      <!-- L'origine du retard, comme en Supervision (Hugo, 2026-11-03) : en
+           alerte quand c'est nous, en avertissement quand le client n'est pas
+           venu. -->
+      @if (lateCause(row); as cause) {
+        @if (cause === 'kitchen') {
+          <fold-callout appearance="inset" variant="alert" icon="info" data-late-cause="kitchen">
+            <strong>{{ lateText(row) }}</strong> · par nous : le sac n'était pas prêt à la fin du
+            créneau.
+          </fold-callout>
+        } @else {
+          <fold-callout appearance="inset" variant="warning" icon="info" data-late-cause="customer">
+            <strong>{{ lateText(row) }}</strong> · client pas venu : le sac était prêt à temps.
+          </fold-callout>
+        }
+      }
+      <!-- La barre « maintenant » (Hugo, 2026-11-03) : sous la dernière ligne
+           d'un côté de l'heure, comme l'heure d'un agenda. -->
+      @if (row.orderId === nowAfter()) {
+        <div
+          class="qt-now"
+          role="separator"
+          [attr.aria-label]="'Maintenant, ' + nowLabel()"
+          data-now-line
+        >
+          <span class="qt-now-label">Maintenant · {{ nowLabel() }}</span>
+        </div>
+      }
+    </div>
   </ng-template>
 </fold-data-table>

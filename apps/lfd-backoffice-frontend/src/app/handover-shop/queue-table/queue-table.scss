@@ -122,3 +122,12 @@
 .qt-table {
   flex: 1 1 auto;
 }
+
+/* Le bloc de la note porte le trait que fold pose sous chaque ligne : une
+   commande se lit d'un trait à l'autre, note comprise. Même ton que le
+   séparateur de fold, relu dans le navigateur le 2026-11-03. */
+.qt-note {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
