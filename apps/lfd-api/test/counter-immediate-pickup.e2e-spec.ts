@@ -195,12 +195,11 @@ describe("« Valider et remettre » (lot L6)", () => {
     ).toEqual({ supply: "shelf", entryShortcut: "immediate_pickup" });
 
     await staff().post(`/admin/handover/manual/${placed.orderNumber}`).send({}).expect(201);
-    // Remise attestée, fait de remise pas encore livré : le BL n'est pas écrit.
+    // Le refus « pas encore écrit » (`delivery_notes.counter.not_yet`) se
+    // prouve en unitaire (delivery-note-pdf.handlers.spec.ts) : ici, le relais
+    // peut livrer le fait de remise avant la lecture. Régression (CI du
+    // 2026-11-03) : l'attendre ici rendait la suite rouge selon la vitesse.
     const seller = await counterSeller();
-    const early = await seller
-      .get(`/admin/counter/orders/${placed.id}/delivery-note/client.pdf`)
-      .expect(404);
-    expect(jsonBody<{ code: string }>(early).code).toBe("delivery_notes.counter.not_yet");
     await ctx.drain();
 
     const order = await ctx.prisma.order.findUniqueOrThrow({
