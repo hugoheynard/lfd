@@ -13,7 +13,6 @@ import type { HandoverQueueEntryView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldSearchComponent,
   FoldLoadingStateComponent,
@@ -80,7 +79,6 @@ const STACK_AT_PX = 1040;
     FoldIconComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldElementTitleComponent,
     FoldSearchComponent,
     FoldAsideLayoutComponent,
     FoldEmptyStateComponent,
@@ -182,20 +180,6 @@ export class HandoverShopPage {
     return id === null
       ? null
       : (this.store.entries().find((entry) => entry.orderId === id) ?? null);
-  });
-
-  /**
-   * Le sur-titre de la file. Il nomme l'onglet ouvert parce que c'est ce qu'on
-   * lit : « la file » seule laisserait croire qu'on voit tout le comptoir alors
-   * qu'un onglet en cache la moitié.
-   */
-  protected readonly eyebrow = computed<string>(() => {
-    const active = this.store.activeTab();
-    if (active === '') {
-      return 'La file';
-    }
-    const tab = this.store.tabs().find((item) => item.key === active);
-    return `La file · ${tab?.label ?? active}`;
   });
 
   constructor() {
