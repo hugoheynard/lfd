@@ -60,12 +60,21 @@
 }
 
 /* Lot L6 : « Retrait immédiat » à gauche, le groupe « Commande programmée » à
-   droite — à parts égales (Hugo, 2026-11-03). */
+   droite — à parts égales (Hugo, 2026-11-03). Le panneau fait ~350 px au
+   bureau comme au téléphone, trop peu pour les deux côte à côte sans défiler
+   de côté : chacun prend alors toute la largeur, l'un sous l'autre. */
 .ach-entry {
+  container-type: inline-size;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: end;
   gap: var(--fold-space-md);
+}
+
+@container (max-width: 30rem) {
+  .ach-entry {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .ach-group {

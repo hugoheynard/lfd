@@ -104,7 +104,7 @@ describe('PanierCommande — en-tête et ordre', () => {
     fixture.detectChanges();
 
     expect(component.view()).toBe('settings');
-    expect(host.querySelector('.pan-foot')?.textContent).not.toContain('Voir le panier');
+    expect(host.querySelector('.pan-foot [aria-label="Voir le panier"]')).toBeNull();
   });
 });
 
@@ -114,7 +114,7 @@ function firstLine(text: string): string {
 
 function footButton(host: HTMLElement, label: string): HTMLButtonElement {
   const found = [...host.querySelectorAll<HTMLButtonElement>('.pan-foot button')].find(
-    (b) => b.textContent.trim() === label,
+    (b) => b.textContent.trim() === label || b.getAttribute('aria-label') === label,
   );
   if (found === undefined) {
     throw new Error(`aucun bouton « ${label} » au pied`);

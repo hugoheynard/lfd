@@ -139,16 +139,14 @@
       <div class="pan-blocker">
         <span>{{ blocker.text }}</span>
         @if (blocker.view !== view()) {
-          <button
-            foldButton
-            type="button"
-            emphasis="outline"
-            intent="neutral"
+          <!-- Une flèche sur la ligne du refus (Hugo, 2026-11-03) : le libellé
+               complet ne tenait pas en mobile. -->
+          <fold-button-icon
             size="sm"
-            (click)="view.set(blocker.view)"
-          >
-            {{ blocker.view === 'settings' ? 'Paramétrer la commande' : 'Voir le panier' }}
-          </button>
+            icon="arrow-right"
+            [tooltip]="blocker.view === 'settings' ? 'Paramétrer la commande' : 'Voir le panier'"
+            (clicked)="view.set(blocker.view)"
+          />
         }
       </div>
     </fold-callout>

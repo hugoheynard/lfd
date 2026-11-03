@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldElementTitleComponent,
   FoldSelectComponent,
@@ -99,6 +100,7 @@ export interface PanierBlocker {
     AcheminementCommande,
     CartRow,
     FoldButtonComponent,
+    FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldElementTitleComponent,
     FoldSelectComponent,
