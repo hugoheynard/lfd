@@ -146,7 +146,7 @@ pas. Aucune migration de droit.
   (objection de `vitruve`) : il facturerait le commandé sur la seule parole du
   vendeur — exactement le défaut du §1. Si le sac contient plus que ce que le
   colisage a posé, c'est le colisage qu'on corrige, au poste. À confirmer par
-  Hugo (Q1).
+  Hugo le 2026-11-03 (Q1).
 
 ## 5. Les lots
 
@@ -159,9 +159,9 @@ pas. Aucune migration de droit.
 
 ## 6. Les questions à Hugo
 
-- **Q1** — « Remettre la commande entière » malgré un manque au colisage :
-  retiré (recommandé : le colisage se corrige au poste), ou gardé avec une
-  trace dédiée ?
+- ~~**Q1**~~ — tranchée le 2026-11-03 (Hugo : « oui retire-le ») : « Remettre la
+  commande entière » malgré un manque au colisage n'est **pas** offert ; le
+  colisage se corrige au poste.
 
 ## 7. Ce qui n'est pas vérifié
 
