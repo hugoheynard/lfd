@@ -46,9 +46,12 @@
       @if (clienteleLabel(row); as who) {
         <fold-badge radius="square" [variant]="clienteleVariant(row)" [content]="who" />
       }
-      <!-- La commande ouverte dans le rail — par un clic ou par le QR. -->
+      <!-- La commande ouverte dans le rail — par un clic ou par le QR. Plus de
+           badge « Ouverte » (Hugo, 2026-11-03 : il se lisait comme un état de
+           la commande) : un marqueur invisible, que le contour de la ligne et
+           le défilement lisent. -->
       @if (isCurrent(row)) {
-        <fold-badge variant="info" content="Ouverte" data-current />
+        <span class="qt-current-mark" data-current aria-hidden="true"></span>
       }
     </span>
     @if (handedOverAt(row); as done) {

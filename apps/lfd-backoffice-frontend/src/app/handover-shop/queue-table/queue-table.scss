@@ -144,3 +144,32 @@
 :host ::ng-deep .folddt-row.folddt-row:last-child .folddt-cell.folddt-cell {
   border-bottom: 1px solid var(--fold-color-border-subtle);
 }
+
+/* La ligne ouverte dans le rail : un contour de la couleur primaire, à
+   l'intérieur de la ligne (Hugo, 2026-11-03, à la place du badge
+   « Ouverte »). Un contour et non un fond : le fond d'une ligne en retard
+   porte déjà son ton, et le couvrir cacherait le retard. Fold n'a pas
+   d'entrée pour marquer une ligne (ses tons sont succès, avertissement,
+   alerte) — d'où `::ng-deep`, borné à cet hôte, sur la ligne qui contient
+   le marqueur. */
+.qt-current-mark {
+  display: none;
+}
+
+:host ::ng-deep tr:has(.qt-current-mark) > td {
+  box-shadow:
+    inset 0 2px 0 var(--fold-color-primary),
+    inset 0 -2px 0 var(--fold-color-primary);
+}
+
+:host ::ng-deep tr:has(.qt-current-mark) > td:first-child {
+  box-shadow:
+    inset 2px 2px 0 var(--fold-color-primary),
+    inset 0 -2px 0 var(--fold-color-primary);
+}
+
+:host ::ng-deep tr:has(.qt-current-mark) > td:last-child {
+  box-shadow:
+    inset -2px 2px 0 var(--fold-color-primary),
+    inset 0 -2px 0 var(--fold-color-primary);
+}
