@@ -1,6 +1,7 @@
 import type { RevisableOrder } from "../entities/order-revision.js";
 import type { OrderFulfillmentInput } from "../entities/order-shapes.js";
 import {
+  CounterLinkSettlementRefusedError,
   EntryShortcutOffShelfError,
   ShelfOrderNotPickupError,
   ShelfOrderNotTodayError,
@@ -61,6 +62,25 @@ export function staffSupplyOf(
     throw new EntryShortcutOffShelfError();
   }
   return { supply: "planned" };
+}
+
+/**
+ * **Le comptoir ne règle qu'au compte** (Hugo, 2026-11-03, E4 du plan
+ * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`). Le signal que le
+ * serveur reçoit du comptoir est le raccourci « Retrait immédiat » : une
+ * saisie programmée ouverte depuis le comptoir n'envoie rien qui la distingue
+ * de celle du commercial (vérifié le 2026-11-03 dans `admin-order.ts` et
+ * `nouvelle-commande-page.ts`) ; elle n'est donc pas couverte ici.
+ *
+ * @throws {CounterLinkSettlementRefusedError} un lien de règlement sur le « Retrait immédiat ».
+ */
+export function ensureCounterSettlement(
+  settlement: "account" | "link",
+  shortcut: OrderEntryShortcut | undefined,
+): void {
+  if (shortcut === "immediate_pickup" && settlement === "link") {
+    throw new CounterLinkSettlementRefusedError();
+  }
 }
 
 /**

@@ -524,6 +524,7 @@
   "test/staff-author-conversion.e2e-spec.ts": 4018,
   "test/staff-authors.e2e-spec.ts": 4192,
   "test/staff-catalog-right-transfer.e2e-spec.ts": 8124,
+  "test/staff-estimate-parity.e2e-spec.ts": 5800,
   "test/staff-invitation.e2e-spec.ts": 5570,
   "test/staff-journal-backfill.e2e-spec.ts": 4181,
   "test/staff-journal.e2e-spec.ts": 7256,

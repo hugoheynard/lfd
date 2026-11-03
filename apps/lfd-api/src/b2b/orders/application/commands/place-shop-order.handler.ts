@@ -170,6 +170,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       // Un invité n'a pas de bons : son contrat n'en nomme aucun (plan des points, C3).
       null,
       OrderLocale.ofOptional(payload.locale),
+      "checkout",
     );
     // Le délai d'annulation du réglage d'AUJOURD'HUI, figé (Hugo, 2026-10-26).
     await this.cancellationDeadline.fixOn(order);

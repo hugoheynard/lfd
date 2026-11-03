@@ -44,9 +44,11 @@ export function preferredWindowOf(
 /**
  * Qui demande la fenêtre. Un client **pro** (`pro`) ne demande qu'une fenêtre
  * (échéance ou créneau) inscrite sur son adresse : elle a été définie avec le
- * commercial (Hugo, 2026-10-12). Un particulier (`individual`) n'a ni carnet
- * ni commercial, et la saisie staff (`staff`) reste libre — deux choix
- * provisoires du 2026-10-12, que Hugo doit encore trancher.
+ * commercial (Hugo, 2026-10-12) — y compris quand l'équipe saisit pour lui
+ * (E1, Hugo, 2026-11-03 : `windowRequesterOf`). Un particulier (`individual`)
+ * n'a ni carnet ni commercial. `staff` reste libre : la révision d'une
+ * commande par l'équipe le porte encore (`order-revising.service.ts`, vérifié
+ * le 2026-11-03), hors du périmètre de la décision E1.
  */
 export type WindowRequester = "pro" | "individual" | "staff";
 
@@ -94,7 +96,8 @@ function slotLabel(slot: FulfillmentWindow): string {
 
 /**
  * Un client pro ne demande qu'une fenêtre inscrite sur l'adresse ce jour-là
- * (décision Hugo du 2026-10-12) ; le particulier et le staff restent libres. Rien de demandé =
+ * (décision Hugo du 2026-10-12, étendue à la saisie de l'équipe le 2026-11-03) ;
+ * le particulier et la révision par l'équipe restent libres. Rien de demandé =
  * rien à juger : la préférence reprise vient de la liste.
  */
 function ensureRegisteredWindow(input: {

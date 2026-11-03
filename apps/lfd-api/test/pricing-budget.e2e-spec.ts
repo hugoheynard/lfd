@@ -33,7 +33,13 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
@@ -554,5 +560,83 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
     expect(avant).toBeDefined();
     // −50 % : le cache a vu l'estampille bouger et rechargé.
     expect(apres).toBe(Math.round((avant ?? 0) / 2));
+  });
+});
+
+/**
+ * **Le budget de l'estimation de la saisie** (`POST /admin/orders/estimate`,
+ * plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2).
+ *
+ * Elle compose la commande entière sans l'écrire : le payeur, la porte de la
+ * boutique, la marque, la résolution des prix, l'acheminement et sa remise,
+ * l'heure limite, les CGV — puis le jugement du crédit et l'heure limite
+ * affichée. `vitruve` l'estimait à une quinzaine de lectures ; le chiffre
+ * ci-dessous est MESURÉ (2026-11-03), à froid, au retrait et au compte :
+ * **33**, porte de la surface staff comprise (identité, droits — leur part
+ * n'a pas été isolée), le même pour une ligne et pour dix.
+ *
+ * Il est plus cher qu'un devis, et c'est le prix d'une seule arithmétique :
+ * le front ne l'appelle qu'une fois la saisie assez complète, après 400 ms
+ * d'inactivité. Ce qui compte ici, comme pour le devis, est qu'il ne suive
+ * pas la taille du panier.
+ */
+const COLD_ESTIMATE_OPS = 33;
+
+describe("l'estimation de la saisie", () => {
+  async function seedBuyer(): Promise<Record<string, unknown>> {
+    const site = await ctx.prisma.site.create({
+      data: {
+        label: "Labo",
+        ligne1: "1 rue du Four",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "France",
+        isDefault: true,
+      },
+      select: { id: true },
+    });
+    const company = await createCompany(ctx.prisma, { status: "active" });
+    await ctx.prisma.company.update({
+      where: { id: company.id },
+      data: { grantedTerms: ["monthly"] },
+    });
+    const buyer = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|budget-estimation",
+      email: "budget-estimation@test.fr",
+    });
+    await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.owner);
+    return {
+      companyId: company.id,
+      buyerUserId: buyer.id,
+      settlement: "account",
+      requestedDeliveryDate: serviceDay(),
+      fulfillmentMethod: "pickup",
+      pickupAddressId: site.id,
+      requestedWindow: { start: "07:00", end: "08:00" },
+      note: "",
+    };
+  }
+
+  const estimate = (body: Record<string, unknown>) =>
+    staff().post("/admin/orders/estimate").send(body).expect(200);
+
+  it("coûte le budget à froid pour une seule ligne", async () => {
+    const body = await seedBuyer();
+
+    const cost = await coldOperationsOf(() =>
+      estimate({ ...body, lines: [{ sku: "VIE-001-1", quantity: 2 }] }),
+    );
+
+    expect(cost).toBe(COLD_ESTIMATE_OPS);
+  });
+
+  it("🔴 coûte EXACTEMENT AUTANT pour dix lignes que pour une", async () => {
+    const body = await seedBuyer();
+
+    const cost = await coldOperationsOf(() =>
+      estimate({ ...body, lines: SKUS.map((sku) => ({ sku, quantity: 2 })) }),
+    );
+
+    expect(cost).toBe(COLD_ESTIMATE_OPS);
   });
 });

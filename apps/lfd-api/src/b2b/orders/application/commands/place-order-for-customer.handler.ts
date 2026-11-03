@@ -9,21 +9,19 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
-import { AccountSettlementNotGrantedError } from "../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repository.js";
-import { ShelfWithoutCreditRefusedError } from "../../domain/errors/shelf-circuit-errors.js";
 import { ShelfCircuit } from "../services/shelf-circuit.service.js";
-import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { paymentUrlFor } from "../../domain/services/payment-link.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
-import { accountStanding } from "../services/order-settlement.js";
+import { OrderIntake } from "../services/order-intake.service.js";
+import { prepareStaffOrder } from "../services/staff-order-preparation.js";
+import { staffSettlementRefusal } from "../services/staff-settlement-refusal.js";
 import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
 } from "./place-order-for-customer.command.js";
-import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
@@ -69,36 +67,20 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly unitOfWork: UnitOfWork,
     private readonly durable: DurablePublisher,
     private readonly shelf: ShelfCircuit,
+    private readonly intake: OrderIntake,
   ) {}
 
   async execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
     const { payload } = command;
     const { companyId, buyerUserId } = payload;
 
-    // Le mur : l'acheteur désigné doit appartenir à la société. Un 404
-    // non-divulguant sinon, comme sur le chemin client — le back-office n'a pas
-    // besoin d'un message plus bavard, il a la fiche sous les yeux.
-    const role = await this.guard.roleOf(buyerUserId, companyId);
-    ensureOrderMember(role, companyId);
-
-    const { order, waiverUsed } = await this.drafting.draft(
-      // Le client porté est membre d'une société : un compte, pas un invité (§ 13.7).
-      {
-        companyId,
-        placedByUserId: buyerUserId,
-        placedByStaffId: command.staffUserId,
-        buyerKind: REGISTERED_BUYER,
-      },
+    // La préparation que l'estimation partage (lot P2) : le mur sur
+    // l'acheteur, le comptoir, la porte de la boutique, puis la composition.
+    const { order, waiverUsed } = await prepareStaffOrder(
+      { guard: this.guard, intake: this.intake, drafting: this.drafting },
+      command.staffUserId,
       payload,
-      // Le staff ne dépense pas le bon d'un client : son contrat n'en nomme aucun (plan des points, C3).
-      null,
-      // Ni de langue : celle de l'écran du back-office ne dit rien du client (lot A3).
-      null,
-      // La marque que l'écran envoie — `shelf` pour le « Retrait immédiat »
-      // (plan du jour J, §11.1, lot L4) ; absente, fabriquée comme avant.
-      payload.supply,
-      // Le « Retrait immédiat » du comptoir (lot L6) : une trace sur une `shelf`.
-      payload.entryShortcut,
+      "checkout",
     );
 
     const intent = await this.settle(order, payload.settlement, companyId);
@@ -167,17 +149,19 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     settlement: PlaceOrderForCustomerCommand["payload"]["settlement"],
     companyId: string,
   ): Promise<CreatedLink | null> {
-    if (settlement === "account") {
-      await this.ensureSettlesOnAccount(companyId, order.billedCompanyId);
-      order.deferPayment();
-      return null;
+    // Le prédicat que l'estimation partage (lot P2) : ici, il refuse.
+    const refusal = await staffSettlementRefusal(
+      { guard: this.guard, shelf: this.shelf },
+      order,
+      settlement,
+      companyId,
+    );
+    if (refusal !== null) {
+      throw refusal;
     }
-    if (order.isFromShelf) {
-      await this.ensureShelfLinkAllowed(companyId, order.billedCompanyId);
-    }
-    if (order.totalCents <= 0) {
-      // Rien à encaisser : un lien de règlement à 0 € enverrait le client sur une
-      // page qui n'a rien à lui demander.
+    if (settlement === "account" || order.totalCents <= 0) {
+      // Au compte, ou rien à encaisser : un lien de règlement à 0 € enverrait
+      // le client sur une page qui n'a rien à lui demander.
       order.deferPayment();
       return null;
     }
@@ -188,32 +172,5 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     });
     order.payByCard(intent.paymentIntentId);
     return { paymentIntentId: intent.paymentIntentId };
-  }
-
-  /**
-   * **Un pro sans crédit, sur la vitrine** (plan du jour J, §11.3, Q7) : le
-   * réglage « Pro sans crédit » refuse, ou l'envoie au lien de paiement — et
-   * la commande attend alors dans la file, règlement non clos. Un pro qui a
-   * un crédit peut toujours être envoyé au lien : c'est le choix du vendeur.
-   *
-   * @throws {ShelfWithoutCreditRefusedError} sans crédit, et le réglage refuse.
-   */
-  private async ensureShelfLinkAllowed(companyId: string, payerId: string | null): Promise<void> {
-    const standing = await accountStanding(this.guard, { companyId, payerId });
-    if (standing !== "granted" && (await this.shelf.refusesWithoutCredit())) {
-      throw new ShelfWithoutCreditRefusedError(companyId);
-    }
-  }
-
-  /**
-   * Le crédit se négocie société par société : il se constate, il ne se
-   * suppose pas. Celui du PAYEUR (T44) — la règle est celle du client, écrite
-   * une fois dans `accountStanding`.
-   */
-  private async ensureSettlesOnAccount(companyId: string, payerId: string | null): Promise<void> {
-    const standing = await accountStanding(this.guard, { companyId, payerId });
-    if (standing !== "granted") {
-      throw new AccountSettlementNotGrantedError(standing === "blocked");
-    }
   }
 }

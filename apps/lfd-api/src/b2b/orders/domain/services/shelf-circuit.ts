@@ -93,11 +93,20 @@ export interface ShelfClaim {
 }
 
 /**
+ * Ce que la prise lit d'une commande composée — sa forme persistée, ou
+ * l'agrégat lui-même avant que son règlement soit décidé (estimation, lot P2).
+ */
+export type ShelfClaimSource = Pick<
+  OrderToPlace,
+  "supply" | "requestedDeliveryDate" | "pickupAddress"
+> & { readonly lines: readonly ShelfClaimLine[] };
+
+/**
  * La prise d'une commande composée, ou `null` si elle est fabriquée
  * (`planned`). Lue sur la forme persistée : c'est elle que le dépôt écrira,
  * et donc elle que les prélèvements reliront.
  */
-export function shelfClaimOf(order: OrderToPlace): ShelfClaim | null {
+export function shelfClaimOf(order: ShelfClaimSource): ShelfClaim | null {
   if (order.supply !== "shelf" || order.requestedDeliveryDate === null) {
     return null;
   }
@@ -154,12 +163,27 @@ export function ensureShelfStockCovers(
   lines: readonly ShelfClaimLine[],
   stock: readonly ShelfStockLeft[],
 ): void {
+  const short = shelfStockShortfallOf(lines, stock);
+  if (short !== null) {
+    throw short;
+  }
+}
+
+/**
+ * Le même jugement, sans le lever : le premier manque, ou `null`. Partagé
+ * par la passation (sous verrou, {@link ensureShelfStockCovers}) et par
+ * l'estimation de la saisie, qui le dit sans verrou (lot P2).
+ */
+export function shelfStockShortfallOf(
+  lines: readonly ShelfClaimLine[],
+  stock: readonly ShelfStockLeft[],
+): ShelfStockShortError | null {
   for (const line of totalsOf(lines).values()) {
     const left =
       stock.find((entry) => entry.sku === line.sku && entry.saleUnit === line.saleUnit)
         ?.estimatedStock ?? 0;
     if (line.quantity > left) {
-      throw new ShelfStockShortError(
+      return new ShelfStockShortError(
         line.sku,
         line.productName,
         saleQuantity(Math.max(left, 0), line.saleUnit),
@@ -167,6 +191,7 @@ export function ensureShelfStockCovers(
       );
     }
   }
+  return null;
 }
 
 /**

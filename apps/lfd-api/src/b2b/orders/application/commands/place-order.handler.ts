@@ -161,6 +161,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       payload,
       voucher,
       OrderLocale.ofOptional(payload.locale),
+      "checkout",
     );
     // Le délai d'annulation du réglage d'AUJOURD'HUI, celui que les CGV ont
     // rappelé : figé avant l'écriture (Hugo, 2026-10-26).

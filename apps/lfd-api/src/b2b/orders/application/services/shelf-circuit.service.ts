@@ -12,7 +12,10 @@ import { DayShelfStock } from "../../../resupply/application/day-shelf-stock.js"
 import { ShelfStockLock } from "../../../resupply/domain/shelf-stock-lock.js";
 import type { Order } from "../../domain/entities/order.js";
 import { SameDayOrderClosedError } from "../../domain/errors/same-day-order-closed.error.js";
-import { NoPickupLeftTodayError } from "../../domain/errors/shelf-circuit-errors.js";
+import {
+  NoPickupLeftTodayError,
+  type ShelfStockShortError,
+} from "../../domain/errors/shelf-circuit-errors.js";
 import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js";
 import { SiteDaySettingsReader } from "../../domain/ports/site-day-settings.reader.js";
 import { staffSupplyOf } from "../../domain/services/order-supply-rules.js";
@@ -20,7 +23,7 @@ import {
   ensureShelfRevisionCovered,
   ensureShelfStockCovers,
   pickupLeftToday,
-  shelfClaimOf,
+  shelfStockShortfallOf,
   type ShelfClaim,
 } from "../../domain/services/shelf-circuit.js";
 import {
@@ -137,17 +140,36 @@ export class ShelfCircuit {
    * @throws {NoPickupLeftTodayError} la commande n'a pas de site à décompter.
    */
   async hold(order: Order): Promise<boolean> {
-    const claim = shelfClaimOf(order.toPersistence());
+    const claim = order.shelfClaim;
     if (claim === null) {
       return false;
     }
-    if (claim.siteId === null) {
-      // Un point sans site ne porte aucun stock : jamais un reste inventé.
-      throw new NoPickupLeftTodayError(null);
-    }
-    await this.lock.lock(claim.serviceDay, claim.siteId);
-    ensureShelfStockCovers(claim.lines, await this.stock.at(claim.siteId, claim.serviceDay));
+    const siteId = siteOf(claim);
+    await this.lock.lock(claim.serviceDay, siteId);
+    ensureShelfStockCovers(claim.lines, await this.stock.at(siteId, claim.serviceDay));
     return true;
+  }
+
+  /**
+   * **Le reste couvre-t-il la commande, au moment du calcul ?** — le jugement
+   * de {@link hold}, par la même prise et le même prédicat, SANS verrou ni
+   * refus levé : ce que l'estimation de la saisie dit en avertissement (plan
+   * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2). La
+   * passation reste seule juge, sous verrou.
+   *
+   * @returns `null` pour une commande fabriquée, ou quand le reste couvre.
+   */
+  async stockShortfallOf(
+    order: Order,
+  ): Promise<ShelfStockShortError | NoPickupLeftTodayError | null> {
+    const claim = order.shelfClaim;
+    if (claim === null) {
+      return null;
+    }
+    if (claim.siteId === null) {
+      return new NoPickupLeftTodayError(null);
+    }
+    return shelfStockShortfallOf(claim.lines, await this.stock.at(claim.siteId, claim.serviceDay));
   }
 
   /**
@@ -182,6 +204,18 @@ export class ShelfCircuit {
 
 function shelfOn(today: string): OrderSupplyDecision {
   return { supply: "shelf", today, entryShortcut: null };
+}
+
+/**
+ * Le site dont la vitrine se décompte.
+ *
+ * @throws {NoPickupLeftTodayError} un point sans site ne porte aucun stock : jamais un reste inventé.
+ */
+function siteOf(claim: ShelfClaim): string {
+  if (claim.siteId === null) {
+    throw new NoPickupLeftTodayError(null);
+  }
+  return claim.siteId;
 }
 
 function doorOf(parties: OrderParties): SameDayDoor {

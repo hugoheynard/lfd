@@ -154,6 +154,9 @@ interface Placed {
 async function placeImmediate(
   pro: { readonly companyId: string; readonly userId: string },
   settlement: "account" | "link",
+  // Sans le raccourci : une prise sur la vitrine qui n'est pas le « Retrait
+  // immédiat » — le seul chemin qui règle encore par lien depuis E4.
+  shortcut: "immediate_pickup" | null = "immediate_pickup",
 ): Promise<Placed> {
   const response = await staff()
     .post("/admin/orders")
@@ -162,7 +165,7 @@ async function placeImmediate(
       buyerUserId: pro.userId,
       settlement,
       supply: "shelf",
-      entryShortcut: "immediate_pickup",
+      ...(shortcut === null ? {} : { entryShortcut: shortcut }),
       requestedDeliveryDate: day,
       fulfillmentMethod: "pickup",
       pickupAddressId: siteId,
@@ -255,11 +258,15 @@ describe("« Valider et remettre » (lot L6)", () => {
    * commande au lien de paiement — la file ne montre une commande non réglée
    * à personne (`showsInQueue`, `commande-carte-reglee.md` §4.4, vérifié le
    * 2026-11-02). Elle y entre à son paiement. Remonté au plan, non tranché ici.
+   *
+   * Depuis le 2026-11-03 (E4, `plan-prix-de-la-saisie.md` §5), le « Retrait
+   * immédiat » ne se règle plus par lien : la commande au lien est prise ici
+   * sur la vitrine SANS le raccourci, le seul chemin du serveur qui la permet.
    */
   it("une remise refusée laisse la commande passée, sans BL ni facture", async () => {
     const pro = await seedCreditedPro("pro-lien");
     // Envoyée au lien de paiement : son règlement n'est pas clos, la remise refuse.
-    const placed = await placeImmediate(pro, "link");
+    const placed = await placeImmediate(pro, "link", null);
 
     const refused = await staff()
       .post(`/admin/handover/manual/${placed.orderNumber}`)
@@ -274,6 +281,31 @@ describe("« Valider et remettre » (lot L6)", () => {
     });
     expect(order).toEqual({ status: "placed", handedOverAt: null });
     expect(await ctx.prisma.deliveryNote.count({ where: { orderId: placed.id } })).toBe(0);
+  });
+
+  /** Régression : le « Retrait immédiat » acceptait un lien de règlement (E4, 2026-11-03). */
+  it("refuse le lien de règlement au « Retrait immédiat », sans rien écrire", async () => {
+    const pro = await seedCreditedPro("pro-comptoir-lien");
+    const before = await ctx.prisma.order.count();
+    const response = await staff()
+      .post("/admin/orders")
+      .send({
+        companyId: pro.companyId,
+        buyerUserId: pro.userId,
+        settlement: "link",
+        supply: "shelf",
+        entryShortcut: "immediate_pickup",
+        requestedDeliveryDate: day,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: siteId,
+        requestedWindow: { start: "12:00", end: "13:00" },
+        lines: [{ sku: CROISSANT, quantity: 1 }],
+      })
+      .expect(400);
+    expect(jsonBody<{ code: string }>(response).code).toBe(
+      "orders.counter.link_settlement_refused",
+    );
+    expect(await ctx.prisma.order.count()).toBe(before);
   });
 
   it("refuse un « Retrait immédiat » sur une commande programmée", async () => {

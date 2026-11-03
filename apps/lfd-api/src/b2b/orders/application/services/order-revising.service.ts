@@ -232,6 +232,8 @@ export class OrderRevising {
       content,
       parties,
       { lines: order.lines, discounts: replayableDiscountsOf(order) },
+      // Sans effet en révision : ses lignes passent `priceRevisedLines`.
+      "checkout",
       order.vatMethod,
     );
     if (!fromShelf) {

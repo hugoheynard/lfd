@@ -68,6 +68,14 @@ import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
+import { intakeAt } from "./intake-doubles.js";
+import { EstimateOrderForCustomerHandler } from "../../queries/estimate-order-for-customer.handler.js";
+import { EstimateOrderForCustomerQuery } from "../../queries/estimate-order-for-customer.query.js";
+import { OrderCutoffNotice } from "../../services/order-cutoff-notice.service.js";
+import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
+import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
+import { CounterLinkSettlementRefusedError } from "../../../domain/errors/shelf-order-errors.js";
+import type { OrderIntake } from "../../services/order-intake.service.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
 
 /**
@@ -327,20 +335,78 @@ function payload(over: Partial<AdminPlaceOrderPayload> = {}): AdminPlaceOrderPay
   };
 }
 
+interface HandlerOptions {
+  readonly payments?: PaymentGateway;
+  readonly events?: RecordingPublisher;
+  readonly clientBaseUrl?: string | null;
+  readonly delivery?: DeliveryAvailabilityView;
+  readonly payers?: FixedOrderPayers;
+  readonly plans?: OrderPlanGate;
+  readonly salesTerms?: FixedSalesTerms;
+  readonly durable?: RecordingDurable;
+  readonly shelf?: ShelfCircuit;
+  readonly intake?: OrderIntake;
+}
+
+/** Ce que le constructeur de la composition lit des options d'un cas. */
+type DraftingOptions = Pick<
+  HandlerOptions,
+  "delivery" | "payers" | "plans" | "salesTerms" | "shelf"
+>;
+
+/** La composition sur les doubles de ces suites — partagée par la passation et l'estimation. */
+function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {}): OrderDrafting {
+  return new OrderDrafting(
+    new OrderLinePricing(
+      catalog,
+      // LA porte du prix, montée sur la seule séquence de chargement du dépôt.
+      new Pricer(
+        new PricingMaterialsLoader(
+          noPriceRules,
+          noMercuriales,
+          noPriceFloors,
+          noSkuVolumes,
+          noVolumeLadders,
+          noCommitments,
+          noCustomerVolumes,
+          noLinePromotionSupply(),
+        ),
+        new FixedClock(PRICED_AT),
+        noPriceHistory,
+        ownPricingParties(),
+        new RecordingTimings(),
+        new FixedStopwatch(),
+      ),
+      new CatalogViewers(new InMemoryServedCompanies()),
+    ),
+    new CartAdjustments(
+      pickups,
+      zones,
+      deliveryAvailability(options.delivery),
+      noPreferredPickup,
+      pointDiscountPromotions(pickups),
+    ),
+    noDeliveryDefaults(),
+    noOrderCutoffs,
+    new FixedClock(PRICED_AT),
+    catalog,
+    noWaivers,
+    noLateFee,
+    new CustomerAudiences(guardDouble),
+    new OrderOperations(noSaleOperations(PRICED_AT)),
+    options.payers ?? ownPayers(),
+    new FixedDeliveryVat(),
+    options.plans ?? openPlanGate(),
+    options.salesTerms ?? new FixedSalesTerms(),
+    new FixedLineClassifications(),
+    options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
+  );
+}
+
 function handler(
   guardDouble: OrderGuardReader,
   sink: { placed: OrderToPlace | null },
-  options: {
-    readonly payments?: PaymentGateway;
-    readonly events?: RecordingPublisher;
-    readonly clientBaseUrl?: string | null;
-    readonly delivery?: DeliveryAvailabilityView;
-    readonly payers?: FixedOrderPayers;
-    readonly plans?: OrderPlanGate;
-    readonly salesTerms?: FixedSalesTerms;
-    readonly durable?: RecordingDurable;
-    readonly shelf?: ShelfCircuit;
-  } = {},
+  options: HandlerOptions = {},
 ): PlaceOrderForCustomerHandler {
   // `in` et non `??` : `null` est une valeur que les tests passent EXPRÈS, et
   // `??` la remplacerait par le défaut — le test aurait alors vérifié le cas
@@ -349,51 +415,7 @@ function handler(
     "clientBaseUrl" in options ? (options.clientBaseUrl ?? null) : "https://boutique.lfc.fr";
   return new PlaceOrderForCustomerHandler(
     guardDouble,
-    new OrderDrafting(
-      new OrderLinePricing(
-        catalog,
-        // LA porte du prix, montée sur la seule séquence de chargement du dépôt.
-        new Pricer(
-          new PricingMaterialsLoader(
-            noPriceRules,
-            noMercuriales,
-            noPriceFloors,
-            noSkuVolumes,
-            noVolumeLadders,
-            noCommitments,
-            noCustomerVolumes,
-            noLinePromotionSupply(),
-          ),
-          new FixedClock(PRICED_AT),
-          noPriceHistory,
-          ownPricingParties(),
-          new RecordingTimings(),
-          new FixedStopwatch(),
-        ),
-        new CatalogViewers(new InMemoryServedCompanies()),
-      ),
-      new CartAdjustments(
-        pickups,
-        zones,
-        deliveryAvailability(options.delivery),
-        noPreferredPickup,
-        pointDiscountPromotions(pickups),
-      ),
-      noDeliveryDefaults(),
-      noOrderCutoffs,
-      new FixedClock(PRICED_AT),
-      catalog,
-      noWaivers,
-      noLateFee,
-      new CustomerAudiences(guardDouble),
-      new OrderOperations(noSaleOperations(PRICED_AT)),
-      options.payers ?? ownPayers(),
-      new FixedDeliveryVat(),
-      options.plans ?? openPlanGate(),
-      options.salesTerms ?? new FixedSalesTerms(),
-      new FixedLineClassifications(),
-      options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
-    ),
+    draftingFor(guardDouble, options),
     repo(sink),
     options.payments ?? payments(),
     options.events ?? new RecordingPublisher(),
@@ -403,6 +425,7 @@ function handler(
     { run: <T>(work: () => Promise<T>): Promise<T> => work() },
     options.durable ?? new RecordingDurable(),
     options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
+    options.intake ?? intakeAt(),
   );
 }
 
@@ -614,6 +637,49 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
       }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload())),
     ).rejects.toBeInstanceOf(ShelfStockShortError);
     expect(sink.placed).toBeNull();
+  });
+
+  /**
+   * Régression : le « Retrait immédiat » du comptoir acceptait un lien de
+   * règlement, crédit ou pas (E4, Hugo, 2026-11-03) ; au comptoir, la saisie
+   * se règle au compte seulement.
+   */
+  it("au comptoir, le lien de règlement est refusé même avec un crédit, sans intention", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = { intent: null as CreateIntentParams | null };
+    const plans = gateOf();
+
+    await expect(
+      handler(guard("orders", "active", "granted"), sink, {
+        plans,
+        shelf: shelfFor(plans),
+        payments: payments(intents),
+      }).execute(
+        new PlaceOrderForCustomerCommand(
+          "staff_1",
+          shelfPayload({ settlement: "link", entryShortcut: "immediate_pickup" }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(CounterLinkSettlementRefusedError);
+    expect(intents.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+  });
+
+  it("au comptoir, au compte : le « Retrait immédiat » passe", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const plans = gateOf();
+
+    await handler(guard("orders", "active", "granted"), sink, {
+      plans,
+      shelf: shelfFor(plans),
+    }).execute(
+      new PlaceOrderForCustomerCommand(
+        "staff_1",
+        shelfPayload({ settlement: "account", entryShortcut: "immediate_pickup" }),
+      ),
+    );
+
+    expect(sink.placed).toMatchObject({ supply: "shelf", entryShortcut: "immediate_pickup" });
   });
 
   it("un pro sans crédit, réglage « refuser » : le lien de paiement est refusé, sans intention", async () => {
@@ -873,6 +939,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       { run: <T>(work: () => Promise<T>): Promise<T> => work() },
       new RecordingDurable(),
       shelfCircuitOf(openPlanGate()),
+      intakeAt(),
     );
 
     const result = await free.execute(
@@ -968,5 +1035,173 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
       revision: null,
       fileId: null,
     });
+  });
+});
+
+/**
+ * **La saisie de l'équipe, comme si le client commandait lui-même** (D4 de
+ * Hugo, 2026-11-03 — `documentation/pricing/saisie/plan-prix-de-la-saisie.md` §5).
+ */
+describe("PlaceOrderForCustomerHandler — la porte de la boutique (E2)", () => {
+  /**
+   * Régression : la saisie de l'équipe passait outre une boutique fermée à
+   * la clientèle du client porté (E2) ; elle passe désormais la même porte.
+   */
+  it("refuse la saisie pour un pro quand la boutique est fermée aux pros, sans rien écrire", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      handler(guard("orders"), sink, {
+        intake: intakeAt({ ordersOpenToB2b: false }, "active"),
+      }).execute(new PlaceOrderForCustomerCommand("staff_1", payload())),
+    ).rejects.toBeInstanceOf(OrdersClosedForAudienceError);
+    expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * **L'estimation de la saisie** (`EstimateOrderForCustomerHandler`, plan
+ * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : la même
+ * préparation que la passation, lue sans être écrite. Ici, dans la suite de
+ * la passation, parce que c'est la parité avec elle qu'on éprouve.
+ */
+describe("EstimateOrderForCustomerHandler", () => {
+  const TODAY = "2026-01-01";
+
+  function estimator(
+    guardDouble: OrderGuardReader,
+    options: HandlerOptions = {},
+  ): EstimateOrderForCustomerHandler {
+    const plans = options.plans ?? openPlanGate();
+    const shelf = options.shelf ?? shelfCircuitOf(plans);
+    return new EstimateOrderForCustomerHandler(
+      guardDouble,
+      options.intake ?? intakeAt(),
+      draftingFor(guardDouble, { ...options, plans, shelf }),
+      shelf,
+      new OrderCutoffNotice(noOrderCutoffs, catalog, new FixedClock(PRICED_AT)),
+    );
+  }
+
+  function shelfWith(
+    plans: OrderPlanGate,
+    left: number,
+    lock: RecordingShelfStockLock,
+  ): ShelfCircuit {
+    return shelfCircuitOf(plans, {
+      sameDay: new FixedSameDay({ sameDayProAllowed: true }),
+      lock,
+      stock: new FixedShelfStock().set(TODAY, LABO.id, [
+        {
+          sku: "VIE-001",
+          label: "Croissant",
+          saleUnit: "piece",
+          receivedQuantity: 5,
+          estimatedStock: left,
+        },
+      ]),
+    });
+  }
+
+  it("rend les montants que la passation écrit, au centime", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    await handler(guard("orders"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    const estimate = await estimator(guard("orders")).execute(
+      new EstimateOrderForCustomerQuery("staff_1", payload()),
+    );
+
+    expect(estimate.refusal).toBeNull();
+    expect(estimate.amounts).toMatchObject({
+      subtotalCents: sink.placed?.subtotalCents,
+      discountCents: sink.placed?.discountCents,
+      deliveryFeeCents: sink.placed?.deliveryFeeCents,
+      vatCents: sink.placed?.vatCents,
+      totalCents: sink.placed?.totalCents,
+    });
+  });
+
+  // Elle ne reçoit ni dépôt, ni passerelle de paiement, ni publieur : écrire
+  // lui est inexprimable. Reste le verrou de la vitrine, qu'elle pourrait prendre.
+  it("ne prend pas le verrou de la vitrine", async () => {
+    const lock = new RecordingShelfStockLock();
+    const plans = openPlanGate();
+
+    await estimator(guard("orders"), { plans, shelf: shelfWith(plans, 5, lock) }).execute(
+      new EstimateOrderForCustomerQuery(
+        "staff_1",
+        payload({ requestedDeliveryDate: TODAY, supply: "shelf" }),
+      ),
+    );
+
+    expect(lock.taken).toEqual([]);
+  });
+
+  it("rend le refus de la composition avec les mots de la passation, sans montants", async () => {
+    const estimate = await estimator(guard("orders"), {
+      intake: intakeAt({ ordersOpenToB2b: false }, "active"),
+    }).execute(new EstimateOrderForCustomerQuery("staff_1", payload()));
+
+    expect(estimate.amounts).toBeNull();
+    expect(estimate.refusal?.code).toBe(new OrdersClosedForAudienceError("b2b").code);
+    expect(estimate.refusal?.message).toBe(new OrdersClosedForAudienceError("b2b").message);
+  });
+
+  it("refuse le lien de règlement au comptoir, comme la passation (E4)", async () => {
+    const estimate = await estimator(guard("orders")).execute(
+      new EstimateOrderForCustomerQuery(
+        "staff_1",
+        payload({
+          settlement: "link",
+          requestedDeliveryDate: TODAY,
+          supply: "shelf",
+          entryShortcut: "immediate_pickup",
+        }),
+      ),
+    );
+
+    expect(estimate.refusal?.code).toBe(new CounterLinkSettlementRefusedError().code);
+  });
+
+  it("garde le mur : un acheteur qui n'est pas membre reste une 404, jamais un refus rendu", async () => {
+    await expect(
+      estimator(guard(null)).execute(new EstimateOrderForCustomerQuery("staff_1", payload())),
+    ).rejects.toBeInstanceOf(OrderCompanyNotFoundError);
+  });
+
+  it("avertit, sans verrou, que le reste en vitrine ne couvre plus le panier", async () => {
+    const lock = new RecordingShelfStockLock();
+    const plans = openPlanGate();
+
+    const estimate = await estimator(guard("orders"), {
+      plans,
+      shelf: shelfWith(plans, 1, lock),
+    }).execute(
+      new EstimateOrderForCustomerQuery(
+        "staff_1",
+        payload({ requestedDeliveryDate: TODAY, supply: "shelf" }),
+      ),
+    );
+
+    expect(estimate.refusal).toBeNull();
+    expect(estimate.amounts).not.toBeNull();
+    expect(estimate.warnings.map((warning) => warning.code)).toEqual(["orders.shelf.stock_short"]);
+    expect(lock.taken).toEqual([]);
+  });
+
+  it("avertit qu'une société sans crédit ne règle pas au compte, par le refus de la passation", async () => {
+    const estimate = await estimator(guard("orders", "active", "none")).execute(
+      new EstimateOrderForCustomerQuery("staff_1", payload({ settlement: "account" })),
+    );
+
+    expect(estimate.amounts).not.toBeNull();
+    expect(estimate.warnings).toEqual([
+      {
+        code: new AccountSettlementNotGrantedError().code,
+        message: new AccountSettlementNotGrantedError().message,
+      },
+    ]);
   });
 });

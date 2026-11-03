@@ -26,6 +26,8 @@ import {
   type BasketDiscountTrace,
 } from "./order-basket-discounts.js";
 import { exactAmountsOf } from "./order-exact-amounts.js";
+import { orderAmountsReadingOf, type OrderAmountsReading } from "./order-amounts-reading.js";
+import { shelfClaimOf, type ShelfClaim } from "../services/shelf-circuit.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
   ensureChanged,
@@ -115,7 +117,7 @@ export class Order {
     private readonly requestedDeliveryDate: Date | null,
     private readonly note: string,
     private readonly catalogVersionId: string | null,
-    private readonly amounts: DraftedAmounts,
+    private readonly drafted: DraftedAmounts,
     private readonly discountAdjustment: CartAdjustment | null,
     private readonly discountLabel: OrderDiscountLabel | null,
     private readonly discountPromotionId: string | null,
@@ -246,7 +248,7 @@ export class Order {
 
   /** Total **TTC** à encaisser — la source pour dimensionner l'intention Stripe. */
   get totalCents(): number {
-    return this.amounts.totalCents;
+    return this.drafted.totalCents;
   }
 
   /** La part du bon réellement imputée, HT — `0` sans bon. La colonne `voucher_discount_cents`. */
@@ -263,7 +265,7 @@ export class Order {
     if (this.voucher === null) {
       return 0;
     }
-    return this.amounts.ttcTerms?.voucherCents ?? this.voucher.appliedCents;
+    return this.drafted.ttcTerms?.voucherCents ?? this.voucher.appliedCents;
   }
 
   /**
@@ -277,15 +279,45 @@ export class Order {
     readonly voucherDiscountCents: number;
   } {
     return {
-      subtotalCents: this.amounts.subtotalCents,
-      discountCents: this.amounts.discountCents,
+      subtotalCents: this.drafted.subtotalCents,
+      discountCents: this.drafted.discountCents,
       voucherDiscountCents: this.voucherDiscountCents,
     };
   }
 
+  /**
+   * **Les montants de la commande composée, sans rien décider** (plan
+   * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : ce que
+   * l'estimation de la saisie rend. Les valeurs mêmes de `toPersistence()`,
+   * sans exiger de règlement décidé — un devis n'en décide aucun.
+   */
+  amounts(): OrderAmountsReading {
+    return orderAmountsReadingOf({
+      drafted: this.drafted,
+      basketTraces: this.basketTraces,
+      lateFeeCents: this.lateFeeCents,
+      lateFeeAdjustment: this.lateFeeAdjustment,
+      voucherDiscountCents: this.voucherDiscountCents,
+    });
+  }
+
+  /**
+   * Ce qu'elle prend à la vitrine de son point, ou `null` si elle est
+   * fabriquée — lu sans règlement décidé, pour que l'estimation juge le reste
+   * par la même prise que la passation sous verrou (lot P2).
+   */
+  get shelfClaim(): ShelfClaim | null {
+    return shelfClaimOf({
+      supply: this.supplyMark.supply,
+      requestedDeliveryDate: this.requestedDeliveryDate,
+      pickupAddress: this.fulfillment.pickupAddress,
+      lines: this.drafted.lines,
+    });
+  }
+
   /** Règlement **carte** : rattache l'intention Stripe. Refuse un total nul. */
   payByCard(paymentIntentId: string): void {
-    if (this.amounts.totalCents <= 0) {
+    if (this.drafted.totalCents <= 0) {
       throw new InvalidOrderPaymentError("Une carte ne peut régler un total nul.");
     }
     this.payment = { status: "pending", intentId: paymentIntentId };
@@ -305,7 +337,7 @@ export class Order {
     if (this.payment === null) {
       throw new InvalidOrderPaymentError("Le règlement de la commande n'est pas décidé.");
     }
-    return settlementRegimeOf(this.payment.status, this.amounts.totalCents);
+    return settlementRegimeOf(this.payment.status, this.drafted.totalCents);
   }
 
   /** Prise sur la vitrine (`shelf`) — lu avant que le règlement soit décidé (Q7, lot L4). */
@@ -389,32 +421,32 @@ export class Order {
       requestedDeliveryDate: this.requestedDeliveryDate,
       note: this.note,
       catalogVersionId: this.catalogVersionId,
-      vatMethod: this.amounts.vatMethod,
-      subtotalCents: this.amounts.subtotalCents,
-      discountCents: this.amounts.discountCents,
-      discountTtcCents: this.amounts.ttcTerms?.discountCents ?? null,
+      vatMethod: this.drafted.vatMethod,
+      subtotalCents: this.drafted.subtotalCents,
+      discountCents: this.drafted.discountCents,
+      discountTtcCents: this.drafted.ttcTerms?.discountCents ?? null,
       discountAdjustment: this.discountAdjustment,
       discountLabel: this.discountLabel,
       discountPromotionId: this.discountPromotionId,
-      basketDiscounts: appliedBasketDiscountsOf(this.amounts.basketSteps, this.basketTraces),
-      deliveryFeeCents: this.amounts.deliveryFeeCents,
-      deliveryFeeTtcCents: this.amounts.ttcTerms?.deliveryFeeCents ?? null,
+      basketDiscounts: appliedBasketDiscountsOf(this.drafted.basketSteps, this.basketTraces),
+      deliveryFeeCents: this.drafted.deliveryFeeCents,
+      deliveryFeeTtcCents: this.drafted.ttcTerms?.deliveryFeeCents ?? null,
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,
       lateFeeCents: this.lateFeeCents,
       lateFeeAdjustment: this.lateFeeAdjustment,
       deliveryVatMode: this.deliveryVatMode,
       voucherDiscountCents: this.voucherDiscountCents,
-      voucherTtcCents: this.amounts.ttcTerms?.voucherCents ?? null,
+      voucherTtcCents: this.drafted.ttcTerms?.voucherCents ?? null,
       loyaltyVoucherId: this.voucher?.id ?? null,
-      vatCents: this.amounts.vatCents,
-      vatShares: this.amounts.vatShares,
-      ttcByRate: this.amounts.ttcByRate,
-      totalCents: this.amounts.totalCents,
+      vatCents: this.drafted.vatCents,
+      vatShares: this.drafted.vatShares,
+      ttcByRate: this.drafted.ttcByRate,
+      totalCents: this.drafted.totalCents,
       paymentStatus: this.payment.status,
       stripePaymentIntentId: this.payment.intentId,
       salesTerms: this.salesTerms,
       locale: this.locale?.code ?? null,
-      lines: this.amounts.lines.map((line) => line.toSnapshot()),
+      lines: this.drafted.lines.map((line) => line.toSnapshot()),
     };
   }
 }

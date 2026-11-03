@@ -73,3 +73,19 @@ export class EntryShortcutOffShelfError extends DomainError {
     );
   }
 }
+
+/**
+ * **Au comptoir, la saisie de l'équipe se règle au compte** (Hugo,
+ * 2026-11-03, E4 — `documentation/pricing/saisie/plan-prix-de-la-saisie.md`
+ * §5) : rien ne s'encaisse au comptoir par notre système, et un lien de
+ * règlement envoyé à un client qui est devant le vendeur n'a pas de sens.
+ * Un pro sans compte ne commande pas au comptoir par la saisie.
+ */
+export class CounterLinkSettlementRefusedError extends DomainError {
+  constructor() {
+    super(
+      "orders.counter.link_settlement_refused",
+      "Au comptoir, une commande saisie se règle au compte : le lien de règlement n'y est pas proposé. Choisissez « Au compte » si ce client a un crédit ; sinon, il commande depuis son espace, ou par le commercial qui peut lui envoyer un lien.",
+    );
+  }
+}

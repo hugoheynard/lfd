@@ -60,6 +60,7 @@ import { CustomerAudiences } from "./customer-audiences.service.js";
 import type { OrderContent } from "./order-content.js";
 import { OrderLinePricing } from "./order-line-pricing.service.js";
 import { OrderOperations } from "./order-operations.service.js";
+import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 import type { OrderParties } from "./order-parties.js";
 import {
   priceRevisedLines,
@@ -177,20 +178,23 @@ export class OrderComposition {
    * et ses remises de panier, REJOUÉES au lieu d'être rejugées (plan des
    * remises acquises, § 10.2) —, ou `null` à la passation.
    *
+   * `caller` : l'étiquette de la sonde de coût pour les lignes tarifées à la
+   * passation — `checkout`, ou `estimate` pour l'estimation de la saisie
+   * (lot P2). La révision garde la sienne (`priceRevisedLines`).
+   *
    * @throws {PickupClosedAtRequestedTimeError} la tranche ne tient dans aucune fenêtre du point.
    */
   async resolve(
     content: OrderContent,
     parties: OrderParties,
     revised: RevisedFrom | null,
+    caller: PricingCaller,
     vatMethod: OrderVatMethod = placementVatMethodOf(parties.companyId),
   ): Promise<ResolvedContent> {
-    const { lines, refusals, sealing } = await this.priceLines(
-      content.lines,
-      parties,
-      revised,
+    const { lines, refusals, sealing } = await this.priceLines(content.lines, parties, revised, {
       vatMethod,
-    );
+      caller,
+    });
     // Les plans de remise se comparent dans l'unité de la commande (M7) :
     // en TTC pour `exact_ht`, par la composition même de l'agrégat.
     const ttcLines = vatMethod === "exact_ht" ? exactLineTtcsOf(lines) : null;
@@ -329,10 +333,10 @@ export class OrderComposition {
     requested: readonly OrderLineRequest[],
     parties: OrderParties,
     revised: RevisedFrom | null,
-    vatMethod: OrderVatMethod,
+    { vatMethod, caller }: { readonly vatMethod: OrderVatMethod; readonly caller: PricingCaller },
   ): Promise<RevisedLines> {
     if (revised === null) {
-      const resolved = await this.linePricing.resolve(requested, parties, "checkout");
+      const resolved = await this.linePricing.resolve(requested, parties, caller);
       return {
         lines: resolved.map((entry) => entry.line),
         refusals: [],

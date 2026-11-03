@@ -7,7 +7,8 @@
 > additive, `NULL` = pas de restriction). Une commande client pour une journée
 > antérieure est refusée en 409 (`orders.service_day_before_first_orderable_day`,
 > la date nommée), à la passation et quand un client change la date d'une
-> commande ; **une exemption passe outre**, **l'équipe n'y est pas soumise**. La
+> commande ; **une exemption passe outre** ; l'équipe y est soumise pour son
+> client depuis le 2026-11-03 (E2, cf. plus bas). La
 > boutique lit la date qui vise la personne (`firstServiceDay` de
 > `/order-admission/*`, sinon celle de la clientèle par `GET /order-opening`), ne
 > propose aucun jour avant, et ramène à la date une journée déjà choisie plus
@@ -62,9 +63,13 @@ flowchart LR
   lieu **avant** toute composition : la clé d'idempotence est rendue, et la
   commande sans compte n'inscrit pas de porteur. Un **rejeu** d'une commande
   déjà passée sous la même clé passe toujours.
-- **Le staff n'est jamais bloqué** : `OrderIntake` n'est appelé que par les
-  deux passations client, et pas par `OrderDrafting`, que la saisie de
-  l'équipe partage. Une commande prise au téléphone se saisit boutique fermée.
+- **La saisie de l'équipe passe la même porte que son client** (Hugo,
+  2026-11-03, E2 de
+  [`plan-prix-de-la-saisie.md`](../../pricing/saisie/plan-prix-de-la-saisie.md) §5) :
+  `OrderIntake.admitStaffEntry` — la fermeture et le premier jour de la
+  clientèle du client porté, exemptions comprises, sans CGV à cocher. Une
+  exception passe par une exemption. Jusqu'au 2026-11-03, l'équipe n'y était
+  jamais soumise (Hugo, 2026-10-09).
 - **Le devis et le panier ne sont pas gardés** : ils calculent des prix, ce
   que la fermeture laisse voir ; la commande se décide à la passation.
 - **La boutique** lit `GET /order-opening` (`OrderOpeningStore`) et remplace,

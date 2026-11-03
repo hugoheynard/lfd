@@ -41,6 +41,7 @@ import { placementVatMethodOf } from "../../domain/value-objects/order-vat-metho
 import type { OrderSupplyDecision } from "../../domain/value-objects/order-supply.js";
 import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
 import { ShelfCircuit } from "./shelf-circuit.service.js";
+import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 
 export type { OrderContent } from "./order-content.js";
 
@@ -138,6 +139,9 @@ export class OrderDrafting {
     // La langue du CLIENT à la passation (lot A3) ; `null` pour la saisie du
     // staff et pour une boutique qui ne l'a pas envoyée.
     locale: OrderLocale | null,
+    // Qui demande ce prix, pour la sonde (`pricing-caller.ts`) : la passation
+    // se déclare `checkout`, l'estimation de la saisie `estimate` (lot P2).
+    caller: PricingCaller,
     requestedSupply?: StaffOrderSupply,
     // Le « Retrait immédiat » que l'écran de l'équipe déclare (lot L6).
     requestedShortcut?: StaffEntryShortcut,
@@ -167,7 +171,7 @@ export class OrderDrafting {
     if (supply.supply === "planned") {
       await this.ensureDayOpen(content.requestedDeliveryDate, parties);
     }
-    const resolved = await this.composition.resolve(content, parties, null);
+    const resolved = await this.composition.resolve(content, parties, null, caller);
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
@@ -372,12 +376,16 @@ export class OrderDrafting {
 }
 
 /**
- * Le pro ne demande qu'une fenêtre inscrite ; la saisie staff et le
- * particulier restent libres de l'heure (2026-10-12, à trancher par Hugo).
+ * Le pro ne demande qu'une fenêtre inscrite — **aussi quand l'équipe saisit
+ * pour lui** (Hugo, 2026-11-03, E1 du plan
+ * `documentation/pricing/saisie/plan-prix-de-la-saisie.md` : « ça ferait un
+ * endroit pour échapper aux règles de livraison et de point de retrait »).
+ * Le particulier reste libre de l'heure ; `staff` ne sert plus qu'à une saisie
+ * sans société, que la passation de l'équipe n'accepte pas aujourd'hui.
  */
 export function windowRequesterOf(parties: OrderParties): WindowRequester {
-  if (parties.placedByStaffId !== null) {
-    return "staff";
+  if (parties.companyId !== null) {
+    return "pro";
   }
-  return parties.companyId === null ? "individual" : "pro";
+  return parties.placedByStaffId === null ? "individual" : "staff";
 }

@@ -1,6 +1,7 @@
 # Le prix que la saisie annonce
 
-> 📝 Plan du 2026-11-03, doc-first : rien n'est bâti. **Révisé le même jour
+> 📝 Plan du 2026-11-03, doc-first. P2a (serveur) bâti le 2026-11-03 — cf.
+> « État du bâti » au §3 ; P2b et P1 restent à bâtir. **Révisé le même jour
 > après `vitruve`** : sa première version déléguait le devis à celui de la
 > boutique ; trois objections bloquantes (§6) l'ont fait tomber, et le devis
 > compose désormais la commande elle-même. Demandé par Hugo :
@@ -141,6 +142,29 @@ C'est ce qui règle d'un coup ce que la première version manquait :
   colonnes de la commande : retrait (remise pro), coursier (frais de zone),
   retrait immédiat (sur stock), dérogation à l'heure limite (supplément et sa
   TVA), règlement au compte.
+
+#### État du bâti
+
+- [x] **P2a — serveur** (2026-11-03, non commité à l'écriture de cette ligne) :
+  - [x] `Order.amounts()` (`OrderAmountsReading`) et `Order.shelfClaim`,
+        testés au domaine ;
+  - [x] `POST /admin/orders/estimate` (`AdminOrderEstimatesController` — un
+        contrôleur à part, celui des commandes dépassant déjà 300 lignes),
+        `EstimateOrderForCustomerQuery` / `…Handler`, vue
+        `AdminOrderEstimateView` au contrat ;
+  - [x] préparation partagée `prepareStaffOrder` (passation et estimation) ;
+        prédicats partagés `staffSettlementRefusal` et
+        `ShelfCircuit.stockShortfallOf` (`shelfStockShortfallOf`) ;
+  - [x] prix barré : `basePriceMillicents` par ligne, lu sur la trace que la
+        résolution fige déjà (`pricing.basePriceMillicents`) — aucun ajout à
+        la résolution ;
+  - [x] sonde : `caller` porté par `draft` → `resolve` ; `"estimate"` ajouté à
+        `PricingCaller` ; budget mesuré dans `pricing-budget.e2e-spec.ts` ;
+  - [x] E1 (`windowRequesterOf`), E2 (`OrderIntake.admitStaffEntry`, sans CGV),
+        E4 (`CounterLinkSettlementRefusedError`, sur le seul signal reçu : le
+        raccourci « Retrait immédiat ») ; E3, E5 notés dans le code ;
+  - [x] parité : l’e2e « staff-estimate-parity ».
+- [ ] **P2b — front** : à bâtir.
 
 ### Lot P1 — la liste de gauche au prix du client (après P2, à re-planifier)
 

@@ -8,6 +8,7 @@ import {
   ServiceDayBeforeFirstOrderableDayError,
 } from "../../../domain/errors/service-day-before-first-orderable-day.error.js";
 import { intakeAt } from "../../commands/__tests__/intake-doubles.js";
+import { FixedSalesTerms } from "../../commands/__tests__/fixed-sales-terms.js";
 
 const STAMP = { at: new Date(0), author: { staffUserId: "s1", name: "Colette", role: "admin" } };
 const BUYER = { userId: "u1" };
@@ -148,5 +149,57 @@ describe("OrderIntake — le premier jour commandable", () => {
     await expect(intake.ensureServiceDayFor(null, GUEST, TODAY)).rejects.toBeInstanceOf(
       ServiceDayBeforeFirstOrderableDayError,
     );
+  });
+});
+
+/**
+ * **La porte de la saisie de l'équipe** (E2, Hugo, 2026-11-03) : la même
+ * ouverture et le même premier jour que le client porté, sans CGV à cocher.
+ */
+describe("OrderIntake.admitStaffEntry", () => {
+  const CLOCK = new FixedClock(new Date(0));
+  const TODAY = instantToLocal(CLOCK.now()).day;
+  const FIRST = addDays(TODAY, 3);
+
+  it("refuse la saisie pour un pro quand la boutique est fermée aux pros", async () => {
+    const intake = intakeAt({ ordersOpenToB2b: false }, "active");
+
+    await expect(intake.admitStaffEntry("c1", BUYER, TODAY)).rejects.toBeInstanceOf(
+      OrdersClosedForAudienceError,
+    );
+  });
+
+  it("laisse passer la société exemptée : l'exception passe par l'exemption", async () => {
+    const exempt = OrderOpeningExemption.grantToCompany({
+      id: "x1",
+      companyId: "c1",
+      company: { name: "Chez Paul", status: "active" },
+      active: [],
+      stamp: STAMP,
+    });
+    const intake = intakeAt({ ordersOpenToB2b: false }, "active", [exempt]);
+
+    await expect(intake.admitStaffEntry("c1", BUYER, TODAY)).resolves.toBeUndefined();
+  });
+
+  it("refuse une journée d'avant le premier jour commandable des pros", async () => {
+    const intake = intakeAt({ firstServiceDayB2b: FIRST }, "active", [], {}, undefined, CLOCK);
+
+    await expect(intake.admitStaffEntry("c1", BUYER, addDays(FIRST, -1))).rejects.toBeInstanceOf(
+      ServiceDayBeforeFirstOrderableDayError,
+    );
+    await expect(intake.admitStaffEntry("c1", BUYER, FIRST)).resolves.toBeUndefined();
+  });
+
+  it("n'exige pas de CGV cochées : le client ne coche rien quand l'équipe saisit", async () => {
+    const intake = intakeAt(
+      undefined,
+      "active",
+      [],
+      {},
+      new FixedSalesTerms({ salesTermsPro: { revision: 2, fileId: null } }),
+    );
+
+    await expect(intake.admitStaffEntry("c1", BUYER, TODAY)).resolves.toBeUndefined();
   });
 });

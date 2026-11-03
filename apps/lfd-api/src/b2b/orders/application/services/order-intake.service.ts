@@ -49,11 +49,14 @@ export interface IntakeStanding {
  * boutique » appliqué à la clientèle de qui commande, puis, s'il la ferme,
  * les exemptions (décision de Hugo du 2026-10-26).
  *
- * Appelé par les deux passations CLIENT seulement (`PlaceOrderHandler`,
- * `PlaceShopOrderHandler`), et jamais par `OrderDrafting` : la composition est
- * partagée avec la saisie du staff (`PlaceOrderForCustomerHandler`), que la
- * fermeture ne bloque PAS — l'équipe qui prend une commande au téléphone doit
- * pouvoir la saisir boutique fermée (Hugo, 2026-10-09).
+ * Appelé par les deux passations CLIENT (`PlaceOrderHandler`,
+ * `PlaceShopOrderHandler`) et, depuis le 2026-11-03, par la saisie de
+ * l'équipe et son estimation ({@link admitStaffEntry}) — jamais par
+ * `OrderDrafting`. La saisie de l'équipe passait outre la fermeture (Hugo,
+ * 2026-10-09) ; Hugo l'a alignée sur le client le 2026-11-03 (E2 du plan
+ * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`) : « comme s'il
+ * commandait lui-même », et une exception passe par une exemption, pas par
+ * l'équipe.
  *
  * La clientèle se déduit par {@link CustomerAudiences}, la même règle que la
  * remise et la livraison : B2B pour une société active seulement. La décision
@@ -61,8 +64,7 @@ export interface IntakeStanding {
  *
  * Depuis le 2026-10-28, la même porte tient le **premier jour commandable**
  * de la clientèle (`plan-premier-jour-commandable.md`) : une journée plus tôt
- * est refusée, sauf exemption — et l'équipe, qui n'appelle pas ce service, n'y
- * est pas soumise non plus.
+ * est refusée, sauf exemption — l'équipe comprise depuis le 2026-11-03 (E2).
  */
 @Injectable()
 export class OrderIntake {
@@ -104,6 +106,24 @@ export class OrderIntake {
     const document = salesTermsOf(standing.audience);
     const { revision } = await this.salesTerms.inForce(document);
     ensureSalesTermsAccepted(accepted, document, revision);
+  }
+
+  /**
+   * **La porte de la saisie de l'équipe** (E2, Hugo, 2026-11-03) : la boutique
+   * ouverte à la clientèle du client porté, puis son premier jour commandable
+   * — exemptions comprises, sur la société et l'adresse de l'ACHETEUR. Sans
+   * les CGV : le client ne coche rien quand l'équipe saisit pour lui, et
+   * celles qui s'appliquent se figent sur la commande comme avant.
+   *
+   * @throws {OrdersClosedForAudienceError} cf. {@link ensureOpenFor}.
+   * @throws {ServiceDayBeforeFirstOrderableDayError} cf. {@link ensureServiceDayFor}.
+   */
+  async admitStaffEntry(
+    companyId: string,
+    buyer: IntakeBuyer,
+    serviceDay: string | null,
+  ): Promise<void> {
+    ensureDayAdmitted(await this.openStandingOf(companyId, buyer), serviceDay);
   }
 
   /**

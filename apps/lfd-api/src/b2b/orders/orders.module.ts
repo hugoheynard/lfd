@@ -120,6 +120,8 @@ import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.h
 import { SaveShopCartHandler } from "./application/commands/save-shop-cart.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
+import { EstimateOrderForCustomerHandler } from "./application/queries/estimate-order-for-customer.handler.js";
+import { AdminOrderEstimatesController } from "./http/admin-order-estimates.controller.js";
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
 import { ShopCartQuoting } from "./application/services/shop-cart-quoting.service.js";
@@ -343,6 +345,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderAdmissionController,
     CompanyOrdersController,
     AdminOrdersController,
+    AdminOrderEstimatesController,
     AdminCounterOrderSheetController,
     AdminCounterLateToleranceController,
     AdminOrderSalesTermsController,
@@ -594,6 +597,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ListCatalogHandler,
     ListCustomerSkusHandler,
     QuoteOrderHandler,
+    EstimateOrderForCustomerHandler,
     ReadMyShopCatalogueHandler,
     ShopCartQuoting,
     GuestSignInOffer,
