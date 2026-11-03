@@ -21,6 +21,7 @@ import { localToInstant } from "@lfd/contracts";
 
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
+import { gate, holdDayLock, started, untilWaiters } from "./day-lock-race.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import {
@@ -30,6 +31,7 @@ import {
   STAFF,
   worksheetLine,
 } from "./production-day-fixture.js";
+import { seedLabo } from "./site-resupply-scene.js";
 
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
@@ -54,21 +56,6 @@ afterAll(async () => {
 
 const staff = () => ctx.asSub(STAFF);
 const launchPath = (id: string) => `/admin/production/batch/${SERVICE_DAY}/resupplies/${id}/launch`;
-
-async function seedLabo(): Promise<string> {
-  const labo = await ctx.prisma.site.create({
-    data: {
-      label: "Le Labo",
-      ligne1: "1 place",
-      codePostal: "73150",
-      ville: "Val",
-      pays: "France",
-      supply: "on_site",
-    },
-    select: { id: true },
-  });
-  return labo.id;
-}
 
 /** Le comptoir pose ses croissants « au plus tôt » et envoie la demande. */
 async function counterSendsAsap(site: string, quantity: number): Promise<string> {
@@ -99,7 +86,7 @@ async function prodManagerTab(): Promise<ResupplyProductionDayView> {
 
 describe("Lancer un réassort « au plus tôt » (R4a)", () => {
   it("ouvre la journée jamais arrêtée avec ce seul réassort, le compte, et l'affiche « lancé »", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await counterSendsAsap(labo, 12);
 
     await staff().post(launchPath(id)).expect(204);
@@ -125,7 +112,7 @@ describe("Lancer un réassort « au plus tôt » (R4a)", () => {
   });
 
   it("refuse un second « Lancer » (409) et l'annulation au comptoir, avec le message du serveur", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await counterSendsAsap(labo, 6);
     const before = await counted();
     await staff().post(launchPath(id)).expect(204);
@@ -140,7 +127,7 @@ describe("Lancer un réassort « au plus tôt » (R4a)", () => {
   });
 
   it("un réassort annulé avant le lancement n'est plus lançable (404)", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await counterSendsAsap(labo, 6);
     await staff().post(`/admin/site-resupplies/sites/${labo}/${id}/cancel`).expect(204);
 
@@ -153,15 +140,8 @@ describe("Lancer un réassort « au plus tôt » (R4a)", () => {
     ).toBe(0);
   });
 
-  it("🔴 la course « Lancer » / « Annuler » : une seule gagne, et l'état le dit", async () => {
-    const labo = await seedLabo();
-    const id = await counterSendsAsap(labo, 9);
-
-    const [launch, cancel] = await Promise.all([
-      staff().post(launchPath(id)),
-      staff().post(`/admin/site-resupplies/sites/${labo}/${id}/cancel`),
-    ]);
-
+  /** Ce que le plan et le commerce disent du réassort, après la course. */
+  async function outcomeOf(id: string): Promise<{ inPlan: number; cancelled: boolean }> {
     const inPlan = await ctx.prisma.productionResupply.count({
       where: { serviceDay: SERVICE_DAY, resupplyId: id },
     });
@@ -169,19 +149,54 @@ describe("Lancer un réassort « au plus tôt » (R4a)", () => {
       where: { id },
       select: { cancelledAt: true },
     });
-    if (launch.status === 204) {
-      expect(cancel.status).toBe(409);
-      expect(inPlan).toBe(1);
-      expect(row.cancelledAt).toBeNull();
-    } else {
-      expect([launch.status, cancel.status]).toEqual([404, 204]);
-      expect(inPlan).toBe(0);
-      expect(row.cancelledAt).not.toBeNull();
-    }
+    return { inPlan, cancelled: row.cancelledAt !== null };
+  }
+
+  /**
+   * La course « Lancer » / « Annuler », l'ordre imposé : la journée est tenue,
+   * le premier geste se met en file, le second derrière lui. L'annulation
+   * doit attendre le verrou que le lancement prend (`LaunchedResupplies`) —
+   * sans lui, elle passerait devant et le réassort finirait annulé ET lancé.
+   */
+  it("🔴 « Lancer » en file avant « Annuler » : le lancement gagne, l'annulation est refusée", async () => {
+    const labo = await seedLabo(ctx);
+    const id = await counterSendsAsap(labo, 9);
+    const release = gate();
+    const holder = await holdDayLock(ctx, SERVICE_DAY, release.opened);
+
+    const launched = started(staff().post(launchPath(id)));
+    await untilWaiters(ctx, 1, launched);
+    const cancelled = started(staff().post(`/admin/site-resupplies/sites/${labo}/${id}/cancel`));
+    // Un premier geste qui n'a pas attendu le verrou ne fera jamais file : on cesse d'attendre.
+    await untilWaiters(ctx, 2, Promise.race([launched, cancelled]));
+    release.open();
+    await holder.done;
+
+    const answers = await Promise.all([launched, cancelled]);
+    expect(answers.map((answer) => answer.status)).toEqual([204, 409]);
+    expect(await outcomeOf(id)).toEqual({ inPlan: 1, cancelled: false });
+  });
+
+  it("🔴 « Annuler » en file avant « Lancer » : l'annulation gagne, le lancement ne trouve plus rien", async () => {
+    const labo = await seedLabo(ctx);
+    const id = await counterSendsAsap(labo, 9);
+    const release = gate();
+    const holder = await holdDayLock(ctx, SERVICE_DAY, release.opened);
+
+    const cancelled = started(staff().post(`/admin/site-resupplies/sites/${labo}/${id}/cancel`));
+    await untilWaiters(ctx, 1, cancelled);
+    const launched = started(staff().post(launchPath(id)));
+    await untilWaiters(ctx, 2, Promise.race([cancelled, launched]));
+    release.open();
+    await holder.done;
+
+    const answers = await Promise.all([cancelled, launched]);
+    expect(answers.map((answer) => answer.status)).toEqual([204, 404]);
+    expect(await outcomeOf(id)).toEqual({ inPlan: 0, cancelled: true });
   });
 
   it("un réassort lancé survit à la réouverture et revient au ré-arrêt", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await counterSendsAsap(labo, 5);
     await staff().post(launchPath(id)).expect(204);
     const launched = await ctx.prisma.productionResupply.count({

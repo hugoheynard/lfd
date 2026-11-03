@@ -13,12 +13,13 @@
  * passer commande et arrêter le plan, puis avancée au matin de la journée
  * pour envoyer et lancer « au plus tôt ». Aucune date du calendrier.
  */
-import type { PackingResuppliesView } from "@lfd/contracts";
+import type { PackingResuppliesView, PackingSheet } from "@lfd/contracts";
 import { addDays, localToInstant } from "@lfd/contracts";
 
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
+import { gate, holdPackingStock, started, untilBlocked } from "./day-lock-race.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import {
@@ -39,6 +40,7 @@ import { counterSent } from "./site-resupply-scene.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const FIRST_BATCH = "01K6A0000000000000000000R4";
+const CROISSANT_STOCK = { serviceDay: SERVICE_DAY, sku: CROISSANT };
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
 let issued: string[];
@@ -135,7 +137,7 @@ describe("le réassort « au plus tôt » au colisage (R4b)", () => {
     expect(reservation).toEqual({ quantity: 6, releasedAt: clock.now() });
   });
 
-  it("🔴 deux saisies concurrentes : la fiche du soir ne prend pas la pièce réservée", async () => {
+  it("la fiche du soir ne prend pas la pièce réservée au « au plus tôt »", async () => {
     const village = await seedVillage(ctx);
     const evening = await counterSent(ctx.asSub(STAFF), village, "tomorrow", [
       { sku: CROISSANT, quantity: 4 },
@@ -148,15 +150,51 @@ describe("le réassort « au plus tôt » au colisage (R4b)", () => {
     expect(await recordBatch(ctx, FIRST_BATCH, 8)).toBe(204);
     await settle();
 
-    const [eveningEntry, asapEntry] = await Promise.all([enter(evening, 4), enter(asap, 6)]);
+    // Huit sortis, six réservés : il en reste deux pour la fiche du soir.
+    const refused = await enter(evening, 4);
+    expect(refused.status).toBe(409);
+    await enter(asap, 6).expect(204);
 
-    expect([eveningEntry.status, asapEntry.status]).toEqual([409, 204]);
-    const stock = await stockRow();
-    expect(stock.packed).toBe(6);
-    expect(stock.packed).toBeLessThanOrEqual(stock.received - stock.returned);
+    expect((await stockRow()).packed).toBe(6);
   });
 
-  it("🔴 une commande qui alloue PENDANT le lancement : la réserve ne prend rien au bac", async () => {
+  /**
+   * La course, l'ordre imposé : la réserve est tenue, la saisie du soir se met
+   * en file, celle du « au plus tôt » derrière elle. Les deux tiennent dans le
+   * stock — deux sur huit libres, six réservés — et l'emballé doit faire leur
+   * somme : sans le `FOR UPDATE` de la réserve, les deux lisent zéro et la
+   * seconde écrase la première.
+   */
+  it("🔴 deux saisies en file sur la même réserve : l'emballé fait la somme des deux", async () => {
+    const village = await seedVillage(ctx);
+    const evening = await counterSent(ctx.asSub(STAFF), village, "tomorrow", [
+      { sku: CROISSANT, quantity: 4 },
+    ]);
+    await closePlan(ctx);
+    await settle();
+    const asap = await asapSent(village, 6);
+    await launch(asap).expect(204);
+    await settle();
+    expect(await recordBatch(ctx, FIRST_BATCH, 8)).toBe(204);
+    await settle();
+    const release = gate();
+    const holder = await holdPackingStock(ctx, CROISSANT_STOCK, release.opened);
+
+    const eveningEntry = started(enter(evening, 2));
+    await untilBlocked(ctx, 1, eveningEntry);
+    const asapEntry = started(enter(asap, 6));
+    await untilBlocked(ctx, 2, Promise.race([eveningEntry, asapEntry]));
+    release.open();
+    await holder.done;
+    const answers = await Promise.all([eveningEntry, asapEntry]);
+
+    expect(answers.map((answer) => answer.status)).toEqual([204, 204]);
+    const stock = await stockRow();
+    expect(stock).toMatchObject({ received: 8, packed: 8 });
+  });
+
+  /** Une commande de six au bac, un « au plus tôt » de six envoyé, une fournée de six sortie. */
+  async function orderAndAsapOverSixCroissants(): Promise<{ id: string; order: PackingSheet }> {
     await createUser(ctx.prisma, { auth0Sub: MEMBER });
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 6 }]);
     const village = await seedVillage(ctx);
@@ -166,29 +204,63 @@ describe("le réassort « au plus tôt » au colisage (R4b)", () => {
     expect(await recordBatch(ctx, FIRST_BATCH, 6)).toBe(204);
     await settle();
     const [reference] = await references(ctx);
-    const order = await sheetOf(ctx, reference ?? "");
+    return { id, order: await sheetOf(ctx, reference ?? "") };
+  }
 
-    const [bagged] = await Promise.all([
-      bagLines(ctx, order),
+  /**
+   * La course entre une commande mise au bac et la réserve que pose le
+   * lancement, l'ordre imposé par la réserve tenue. La commande en file la
+   * première prend les six : la fiche attend le four.
+   */
+  it("🔴 la commande en file avant la réserve : elle prend les six, la fiche attend le four", async () => {
+    const { id, order } = await orderAndAsapOverSixCroissants();
+    const release = gate();
+    const holder = await holdPackingStock(ctx, CROISSANT_STOCK, release.opened);
+
+    const bagged = started(bagLines(ctx, order));
+    await untilBlocked(ctx, 1, bagged);
+    const reserved = started(
       launch(id)
         .expect(204)
         .then(() => settle()),
-    ]);
+    );
+    await untilBlocked(ctx, 2, Promise.race([bagged, reserved]));
+    release.open();
+    await holder.done;
+    const [status] = await Promise.all([bagged, reserved]);
     await settle();
 
-    const stock = await stockRow();
-    expect(stock.packed).toBeLessThanOrEqual(stock.received - stock.returned);
-    const line = (await sheets()).resupplies[0]?.lines[0];
-    if (bagged === 204) {
-      // La commande a pris les six avant la réservation : la fiche attend le four.
-      expect(stock.packed).toBe(6);
-      expect(line?.awaitingOven).toBe(6);
-    } else {
-      // La réservation est passée d'abord : la commande est refusée, rien au bac.
-      expect(bagged).toBe(409);
-      expect(stock.packed).toBe(0);
-      expect(line?.awaitingOven).toBe(0);
-    }
+    expect(status).toBe(204);
+    expect((await stockRow()).packed).toBe(6);
+    expect((await sheets()).resupplies[0]?.lines[0]?.awaitingOven).toBe(6);
+  });
+
+  /**
+   * L'autre ordre : la réserve passe d'abord, la commande est refusée et rien
+   * n'entre au bac. Sans le verrou, la commande lirait la réserve d'avant le
+   * lancement et prendrait les pièces promises au point.
+   */
+  it("🔴 la réserve en file avant la commande : la commande est refusée, rien au bac", async () => {
+    const { id, order } = await orderAndAsapOverSixCroissants();
+    const release = gate();
+    const holder = await holdPackingStock(ctx, CROISSANT_STOCK, release.opened);
+
+    const reserved = started(
+      launch(id)
+        .expect(204)
+        .then(() => settle()),
+    );
+    await untilBlocked(ctx, 1, reserved);
+    const bagged = started(bagLines(ctx, order));
+    await untilBlocked(ctx, 2, Promise.race([bagged, reserved]));
+    release.open();
+    await holder.done;
+    const [, status] = await Promise.all([reserved, bagged]);
+    await settle();
+
+    expect(status).toBe(409);
+    expect((await stockRow()).packed).toBe(0);
+    expect((await sheets()).resupplies[0]?.lines[0]?.awaitingOven).toBe(0);
   });
 
   it("un réassort lancé du Labo, servi sur place, n'a ni fiche ni réserve", async () => {

@@ -104,7 +104,7 @@ sequenceDiagram
 - **L'abonné** `OnResupplyLaunched`
   (`packing/application/handlers/on-resupply-launched.handler.ts:42`) : rien
   pour un point servi sur place. Rejeu sans effet.
-- **La réserve** (`PackingStock.reserve`, `packing/domain/entities/packing-stock.ts:139` ;
+- **La réserve** (`PackingStock.reserve`, `packing/domain/entities/packing-stock.ts:158` ;
   règle pure dans `packing/domain/services/stock-reservations.ts`) : le reste
   dû d'une réservation = sa quantité − l'emballé de sa ligne, déduit. Le
   libre des commandes = reçu − rendu − au bac − réservé dû. Les réservations
@@ -135,7 +135,7 @@ sequenceDiagram
 ```
 
 - **L'abonné** `AttachLaunchedResupply`
-  (`delivery/application/handlers/attach-launched-resupply.handler.ts:47`) —
+  (`delivery/application/handlers/attach-launched-resupply.handler.ts:53`) —
   les mécanismes du soir, sans réinvention. Une journée ouverte par un
   lancement pose l'arrêt côté livraison (`delivery_day_readiness.closed_at`),
   sans livraison à annoncer.
@@ -158,7 +158,7 @@ sequenceDiagram
 ## 5. Le suivi
 
 `SiteResupply.recordLaunch` et `recordDeparture`
-(`b2b/resupply/domain/site-resupply.ts:213`, `:225`, la règle dans
+(`b2b/resupply/domain/site-resupply.ts:213`, `:226`, la règle dans
 `site-resupply-progress.ts`) posent l'affichage ;
 rejoués, ils ne changent rien. Le comptoir (`resupply-receptions-card`,
 `shared/resupply-steps.ts`) montre Envoyé → Lancé → Parti → Arrivé, chacun

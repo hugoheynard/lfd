@@ -29,8 +29,7 @@ import {
   SERVICE_DAY,
   STAFF,
 } from "./production-day-fixture.js";
-
-const POLL_MS = 25;
+import { gate, untilWaiters } from "./day-lock-race.js";
 
 let ctx: E2eContext;
 let issued: string[];
@@ -47,28 +46,6 @@ beforeEach(async () => {
   await ctx.reset();
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
 });
-
-/** Le nombre de demandes de verrou consultatif encore en attente. */
-async function advisoryWaiters(): Promise<number> {
-  const rows = await ctx.prisma.$queryRaw<{ readonly waiting: bigint }[]>`
-    SELECT count(*) AS waiting FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`;
-  return Number(rows[0]?.waiting ?? 0n);
-}
-
-async function untilWaiters(count: number): Promise<void> {
-  while ((await advisoryWaiters()) < count) {
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  }
-}
-
-/** Une porte qu'on ouvre de l'extérieur. */
-function gate(): { readonly opened: Promise<void>; readonly open: () => void } {
-  let open: () => void = () => undefined;
-  const opened = new Promise<void>((resolve) => {
-    open = resolve;
-  });
-  return { opened, open };
-}
 
 async function closedAt(): Promise<Date | null> {
   const day = await ctx.prisma.productionDay.findUniqueOrThrow({
@@ -104,7 +81,7 @@ describe("rouvrir pendant que le colisage commence", () => {
       .asSub(STAFF)
       .post(`/admin/production/batch/${SERVICE_DAY}/reopen`)
       .then((response) => response);
-    await untilWaiters(1);
+    await untilWaiters(ctx, 1);
     // La réouverture attend tant que le geste tient le plan.
     expect(await closedAt()).not.toBeNull();
     release.open();

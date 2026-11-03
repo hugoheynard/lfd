@@ -36,6 +36,7 @@ import {
 } from "./e2e-harness.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { untilWaiters } from "./day-lock-race.js";
 
 const DAY = serviceDay(7);
 const NEXT_DAY = serviceDay(8);
@@ -71,7 +72,6 @@ const fakeGateway = {
 const DAY_LOCK_KEY = `production_day:${DAY}`;
 /** Assez pour mettre deux requêtes en file sur une machine lente. */
 const HOLD_TIMEOUT_MS = 20_000;
-const POLL_MS = 25;
 
 let ctx: E2eContext;
 
@@ -419,19 +419,6 @@ describe("POST /orders/:id/revisions — les refus", () => {
   });
 });
 
-/** Le nombre de demandes de verrou consultatif encore en attente. */
-async function advisoryWaiters(): Promise<number> {
-  const rows = await ctx.prisma.$queryRaw<{ readonly waiting: bigint }[]>`
-    SELECT count(*) AS waiting FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`;
-  return Number(rows[0]?.waiting ?? 0n);
-}
-
-async function untilWaiters(count: number): Promise<void> {
-  while ((await advisoryWaiters()) < count) {
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  }
-}
-
 /** Tient le verrou de la journée dans une troisième transaction, jusqu'à `release()`. */
 async function holdDayLock(): Promise<{ readonly release: () => Promise<void> }> {
   let release: () => void = () => undefined;
@@ -480,11 +467,11 @@ describe("§9.1 — la course avec la clôture", () => {
         ...content(pickupId, { lines: [{ sku: "VIE-001-1", quantity: 33 }] }),
       })
       .then((response) => response);
-    await untilWaiters(1);
+    await untilWaiters(ctx, 1);
     const closing = staff()
       .post(`/admin/production/batch/${DAY}/close`)
       .then((response) => response);
-    await untilWaiters(2);
+    await untilWaiters(ctx, 2);
     await lock.release();
 
     expect((await revision).status).toBe(200);

@@ -1,7 +1,7 @@
 import type { ResupplyTarget, SiteResuppliesView } from "@lfd/contracts";
 import type request from "supertest";
 
-import { jsonBody } from "./e2e-harness.js";
+import { jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /**
  * Le geste du comptoir pour envoyer un réassort, par ses vraies routes (lot
@@ -41,8 +41,25 @@ export async function counterSent(
   lines: readonly { readonly sku: string; readonly quantity: number }[],
 ): Promise<string> {
   const { id, sent } = await counterSends(agent, siteId, target, lines);
-  if (sent.status !== 204) {
-    throw new Error(`L'envoi du réassort a répondu ${String(sent.status)} au lieu de 204.`);
-  }
+  expect(sent.status).toBe(204);
   return id;
+}
+
+/**
+ * Le Labo, servi sur place (ni transfert ni tournée) — écrit par Prisma faute
+ * de route de création de point dans le harnais du fournil.
+ */
+export async function seedLabo(ctx: E2eContext): Promise<string> {
+  const labo = await ctx.prisma.site.create({
+    data: {
+      label: "Le Labo",
+      ligne1: "1 place",
+      codePostal: "73150",
+      ville: "Val",
+      pays: "France",
+      supply: "on_site",
+    },
+    select: { id: true },
+  });
+  return labo.id;
 }

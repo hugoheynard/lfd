@@ -32,7 +32,7 @@ import {
   SERVICE_DAY,
   STAFF,
 } from "./production-day-fixture.js";
-import { counterSent } from "./site-resupply-scene.js";
+import { counterSent, seedLabo } from "./site-resupply-scene.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const clock = new FixedClock(new Date());
@@ -70,21 +70,6 @@ async function settle(): Promise<void> {
   for (let round = 0; round < 4; round += 1) {
     await ctx.drain();
   }
-}
-
-/** Le Labo : servi sur place, de la feuille à la vitrine. */
-async function seedLabo(): Promise<string> {
-  const labo = await ctx.prisma.site.create({
-    data: {
-      label: "Le Labo",
-      ligne1: "1 place",
-      codePostal: "73150",
-      ville: "Val",
-      pays: "France",
-    },
-    select: { id: true },
-  });
-  return labo.id;
 }
 
 function croissants(site: string, quantity: number): Promise<string> {
@@ -160,7 +145,7 @@ describe("le réassort arrivé (R3e)", () => {
   });
 
   it("Labo : « Monté » le passe à arrivé ; un second ne change rien et ne sonne pas", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await croissants(labo, 4);
     const bakehouse = await holderOf("r3e-fournil", [
       { resource: "production_resupply", action: "write" },
@@ -186,7 +171,7 @@ describe("le réassort arrivé (R3e)", () => {
   });
 
   it("le comptoir fait foi : un réassort attendu se réceptionne, puis « Monté » n'a plus d'objet", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await croissants(labo, 4);
     const morning = localToInstant(SERVICE_DAY, "07:00");
     if (morning === null) {
@@ -206,7 +191,7 @@ describe("le réassort arrivé (R3e)", () => {
   });
 
   it("le droit : ni le comptoir ni la lecture du fournil ne disent « Monté »", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await croissants(labo, 4);
     const counter = await holderOf("r3e-comptoir", [
       { resource: "handover_counter", action: "write" },
@@ -223,7 +208,7 @@ describe("le réassort arrivé (R3e)", () => {
   });
 
   it("la base refuse une arrivée sans auteur, ou sur une demande en cours", async () => {
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const id = await croissants(labo, 4);
 
     await expect(

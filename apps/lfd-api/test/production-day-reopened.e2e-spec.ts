@@ -178,7 +178,10 @@ describe("un chemin mal formé", () => {
 
     expect(responses.map((response) => response.status)).toEqual(Array(8).fill(400));
     for (const response of responses) {
-      expect(JSON.stringify(response.body)).toContain("date");
+      // Le refus nomme le paramètre du chemin, pas seulement « invalide ».
+      const body = jsonBody<{ code: string; message: string }>(response);
+      expect(body.code).toBe("http.payload.invalid");
+      expect(body.message).toMatch(/^Requête invalide : date : /u);
     }
   });
 });

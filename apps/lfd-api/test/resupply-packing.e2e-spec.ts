@@ -29,7 +29,7 @@ import {
   STAFF,
 } from "./production-day-fixture.js";
 import { FixedRoad, seedVillage } from "./internal-transfer-scene.js";
-import { counterSent } from "./site-resupply-scene.js";
+import { counterSent, seedLabo } from "./site-resupply-scene.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const BATCH = "01K6A0000000000000000000R3";
@@ -66,21 +66,6 @@ async function settle(): Promise<void> {
   }
 }
 
-/** Le Labo : servi sur place, de la feuille à la vitrine. */
-async function seedLabo(): Promise<string> {
-  const labo = await ctx.prisma.site.create({
-    data: {
-      label: "Le Labo",
-      ligne1: "1 place",
-      codePostal: "73150",
-      ville: "Val",
-      pays: "France",
-    },
-    select: { id: true },
-  });
-  return labo.id;
-}
-
 const path = `/admin/packing/${SERVICE_DAY}/resupplies`;
 
 async function sheets(): Promise<PackingResuppliesView> {
@@ -106,7 +91,7 @@ function reopen() {
 describe("le réassort au colisage (R3b)", () => {
   it("une fiche s'ouvre pour le point servi par transfert, aucune pour le Labo", async () => {
     const village = await seedVillage(ctx);
-    const labo = await seedLabo();
+    const labo = await seedLabo(ctx);
     const toVillage = await counterSent(ctx.asSub(STAFF), village, "tomorrow", [
       { sku: CROISSANT, quantity: 6 },
     ]);

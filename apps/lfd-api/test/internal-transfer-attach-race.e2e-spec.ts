@@ -23,12 +23,12 @@ import {
   FrozenResuppliesReader,
 } from "../src/production/channels/delivery/index.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { untilWaiters } from "./day-lock-race.js";
 
 const DAY = serviceDay();
 /** La clé du verrou — celle de `PrismaInternalTransferDayLock`. */
 const TRANSFER_DAY_LOCK_KEY = `delivery_internal_transfer_day:${DAY}`;
 const HOLD_TIMEOUT_MS = 20_000;
-const POLL_MS = 25;
 
 function frozen(resupplyId: string): FrozenResupply {
   return {
@@ -69,18 +69,6 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-async function advisoryWaiters(): Promise<number> {
-  const rows = await ctx.prisma.$queryRaw<{ readonly waiting: bigint }[]>`
-    SELECT count(*) AS waiting FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`;
-  return Number(rows[0]?.waiting ?? 0n);
-}
-
-async function untilWaiters(count: number): Promise<void> {
-  while ((await advisoryWaiters()) < count) {
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  }
-}
-
 function attach(resupplyId: string): Promise<number> {
   return ctx.app
     .get(UnitOfWork)
@@ -111,7 +99,7 @@ describe("ranger deux réassorts d'un même point en même temps", () => {
 
     const evening = attach("r_soir");
     const asap = attach("r_tot");
-    await untilWaiters(2);
+    await untilWaiters(ctx, 2);
     release();
     await holder;
 

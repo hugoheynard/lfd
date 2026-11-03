@@ -72,7 +72,7 @@ flowchart TD
 | ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | commerce    | demande, envoi, brouillons, réception, alertes, stock du jour, Supervision Stock | `apps/lfd-api/src/b2b/resupply/` (module `resupply.module.ts`)                                                                                                                                           |
 | fournil     | copie figée, « Lancer », dossier du jour, part sur place                         | `apps/lfd-api/src/production/` — `domain/entities/production-day.ts` (`launchResupply`), `domain/services/on-site-share.ts:37`                                                                           |
-| colisage    | fiche de réassort, emballé, réserve d'un lancé                                   | `apps/lfd-api/src/packing/domain/entities/packing-resupply.ts:76`, `packing-stock.ts:139` (`reserve`)                                                                                                    |
+| colisage    | fiche de réassort, emballé, réserve d'un lancé                                   | `apps/lfd-api/src/packing/domain/entities/packing-resupply.ts:76`, `packing-stock.ts:158` (`reserve`)                                                                                                    |
 | livraison   | élément `resupply` du transfert, placement, départ, réception                    | `apps/lfd-api/src/delivery/application/transfer-attachment.ts:62` (`attachResupplies`)                                                                                                                   |
 | back-office | comptoir, Prod manager, colisage, Supervision                                    | `comptoir/reassort-boutique-page/`, `production/reassorts-a-produire/`, `production/colisage/packing-resupplies/`, `supervision/stock-board/`                                                            |
 | contrats    | vues et charges                                                                  | `packages/contracts/src/site-resupply.ts`, `resupply-receipt.ts`, `bakehouse-resupply-draft.ts`, `site-stock-alert.ts`, `day-stock-overview.ts`, `production-day-resupplies.ts`, `packing-resupplies.ts` |
@@ -187,23 +187,41 @@ Le code cite ses lots ; voici ce qu'ils désignent et où ils sont décrits.
 | A1.4         | la sortie de réserve, origine `reserve`                                              | `a362a3823`                                        | [`commander.md`](commander.md)                   |
 | brouillons   | les brouillons du fournil, au serveur                                                | `a1dfdc980`, `8065d7c9c`                           | [`commander.md`](commander.md)                   |
 | L2, L2b      | le stock du jour décompte les commandes sur stock ; le réassort au poids             | `6fc29c23a`, `c1e016e66`…`15fc8a475`               | [`reception-et-stock.md`](reception-et-stock.md) |
+| R5           | le semis : un « au plus tôt » du Village l'après-midi de J, par les vrais handlers   | `ae8a79414`                                        | [`reste-a-faire.md`](reste-a-faire.md) §4        |
 | audit        | l'audit du 2026-11-02 : dette, courses, clés d'envoi, index, écrans, cinq tranches   | `ae8a79414`…`2b6ff7197`                            | [`reste-a-faire.md`](reste-a-faire.md) §3–4      |
 
 ## 7. Les e2e
 
-`apps/lfd-api/test/` : `site-resupply`, `site-resupply-draft`,
-`bakehouse-resupply-drafts`, `site-stock-alert`, `resupply-receipt`,
-`resupply-name`, `resupply-frozen-plan`, `resupply-packing`,
-`resupply-transfer`, `resupply-transfer-reception`, `resupply-arrived`,
-`supervision-stock`, `resupply-launch`, `resupply-asap-packing`,
-`resupply-asap-transfer`, `reserve-sent-to-shop`, `shelf-stock`,
-`shelf-stock-weight` (`.e2e-spec.ts`). Deux parcours de bout en bout, chacun
-sous une horloge figée qui saute d'une étape à l'autre :
-`resupply-village-flow` (envoi la veille, arrêt automatique, colisage,
-transfert, « Remis au site », réception pré-remplie de l'emballé, Supervision ;
-ses étapes de la veille vivent dans `test/resupply-village-scene.ts`)
-et `resupply-labo-flow` (le même au Labo, sans colisage ni transfert,
-« Monté ») ; et `resupply-asap-village-flow` pour le « au plus tôt ».
+La liste est **complète** au 2026-11-03 (relevée dans `apps/lfd-api/test/`) ;
+toutes sont des `.e2e-spec.ts`.
+
+- **Le comptoir et le fournil** : `site-resupply`, `site-resupply-draft`,
+  `bakehouse-resupply-drafts`, `resupply-name`, `resupply-refusal-codes` (les
+  refus lus par leur code, et le double clic sur « Envoyer »).
+- **La réception et le stock** : `resupply-receipt`, `site-stock-alert`,
+  `shelf-stock`, `shelf-stock-weight`, `shelf-stock-today`,
+  `supervision-stock`, `reserve-sent-to-shop`.
+- **Le plan, le colisage et le transport** : `resupply-frozen-plan`,
+  `resupply-frozen-plan-race`,
+  `resupply-launch`, `resupply-packing`, `resupply-asap-packing`,
+  `resupply-transfer`, `resupply-transfer-reception`, `resupply-asap-transfer`,
+  `resupply-arrived`.
+- **Les parcours de bout en bout**, chacun sous une horloge figée qui saute
+  d'une étape à l'autre : `resupply-village-flow` (envoi la veille, arrêt
+  automatique, colisage, transfert, « Remis au site », réception pré-remplie
+  de l'emballé, Supervision ; ses étapes de la veille vivent dans
+  `test/resupply-village-scene.ts`), `resupply-labo-flow` (le même au Labo,
+  sans colisage ni transfert, « Monté ») et `resupply-asap-village-flow` pour
+  le « au plus tôt ».
+
+**Les courses** imposent leur entrelacement — un verrou tenu par la suite,
+puis `untilWaiters` / `untilBlocked` (`test/day-lock-race.ts`) mettent les
+deux gestes en file dans l'ordre voulu — au lieu de lancer deux requêtes et
+d'accepter l'issue : réceptionner/annuler (`resupply-receipt`), lancer/annuler
+(`resupply-launch`), arrêter/annuler (`resupply-frozen-plan-race`), deux saisies et
+la réserve contre une commande au bac (`resupply-asap-packing`). Chacune a été
+vue échouer, le 2026-11-03, sur le code qu'elle protège — l'ancien commit, ou
+le même code privé de son verrou ([`reste-a-faire.md`](reste-a-faire.md) §3).
 
 ## 8. Les documents voisins
 

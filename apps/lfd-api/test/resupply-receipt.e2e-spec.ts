@@ -27,6 +27,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { gate, holdTableForReading, started, untilBlocked } from "./day-lock-race.js";
 import { counterSent } from "./site-resupply-scene.js";
 
 const stubAdminVerifier = {
@@ -268,32 +269,30 @@ describe("les courses de la réception (audit du réassort, 2026-11-02)", () => 
   /**
    * Régression G1 : « Réceptionner » n'avançait pas la version du réassort ;
    * une annulation qui avait lu « pas encore réceptionné » sauvait quand même,
-   * et le réassort finissait annulé ET réceptionné. Deux transactions
-   * concurrentes, plusieurs tours : jamais les deux.
+   * et le réassort finissait annulé ET réceptionné. L'ordre qui cassait est
+   * imposé : « Réceptionner » attend d'écrire son reçu, l'annulation passe.
    */
-  it("🔴 « Réceptionner » et « Annuler » en même temps : un seul passe, et l'état le dit", async () => {
+  it("🔴 l'annulation passe pendant que « Réceptionner » écrit : une seule des deux réussit", async () => {
     const agent = await counter();
     const siteId = await seedSite();
     const [first] = await articlesOf(agent);
-    for (let round = 0; round < 5; round += 1) {
-      const id = await placeAsap(agent, siteId, [{ sku: first.sku, quantity: 2 }]);
+    const id = await placeAsap(agent, siteId, [{ sku: first.sku, quantity: 2 }]);
+    const release = gate();
+    const holder = await holdTableForReading(ctx, "resupply_receipt", release.opened);
 
-      const [received, cancelled] = await Promise.all([
-        agent.post(`/admin/resupply-receipts/${siteId}/resupplies/${id}/receive`),
-        agent.post(`/admin/site-resupplies/sites/${siteId}/${id}/cancel`),
-      ]);
+    const received = started(
+      agent.post(`/admin/resupply-receipts/${siteId}/resupplies/${id}/receive`),
+    );
+    await untilBlocked(ctx, 1, received);
+    const cancelled = started(agent.post(`/admin/site-resupplies/sites/${siteId}/${id}/cancel`));
+    await untilBlocked(ctx, 2, cancelled);
+    release.open();
+    await holder.done;
+    const answers = await Promise.all([received, cancelled]);
 
-      const row = await ctx.prisma.siteResupply.findUniqueOrThrow({
-        where: { id },
-        select: { cancelledAt: true },
-      });
-      const receipts = await ctx.prisma.resupplyReceipt.count({ where: { resupplyId: id } });
-      expect([received.status, cancelled.status].filter((status) => status === 204)).toHaveLength(
-        1,
-      );
-      expect([received.status, cancelled.status]).toContain(409);
-      expect(row.cancelledAt === null).toBe(receipts === 1);
-    }
+    expect(answers.map((answer) => answer.status)).toEqual([204, 409]);
+    expect(await ctx.prisma.siteResupply.count({ where: { id, cancelledAt: null } })).toBe(1);
+    expect(await ctx.prisma.resupplyReceipt.count({ where: { resupplyId: id } })).toBe(1);
   });
 
   /**

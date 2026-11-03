@@ -147,7 +147,7 @@ jamais. Le réassort naît `origin = bakehouse`, créé et envoyé d'un geste
 (CHECK `site_resupply_bakehouse_placed`), avec les règles du comptoir. Le
 chemin d'envoi est un seul, partagé par l'envoi direct et l'envoi d'un
 brouillon : `prepareBakehouseResupply` / `writeBakehouseResupply`
-(`application/bakehouse-resupply-sending.ts:51`, `:71`).
+(`application/bakehouse-resupply-sending.ts:51`, `:72`).
 
 **Les brouillons** (Hugo, 2026-10-28 : « un enregistrer comme brouillon »,
 retrouvé depuis n'importe quel poste) vivent dans leur propre table,

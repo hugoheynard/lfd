@@ -32,7 +32,7 @@
   non tranché)
 - **« Monté » à un point servi par transfert** : seul l'écran le réserve aux
   points servis sur place ; le serveur l'accepte
-  (`b2b/resupply/application/mark-resupply-mounted.handler.ts:22`). Choix du
+  (`b2b/resupply/application/mark-resupply-mounted.handler.ts:32`). Choix du
   bâtisseur faute d'écrit (2026-10-22) : faut-il le refuser ?
 - **L'arrêt relit toute la liste des réassorts sous le verrou de la
   journée** (lecture d'un autre bloc, verrou tenu) plutôt que « lire avant,
@@ -44,8 +44,12 @@
   l'audit, `63e1797ab`) : « Réceptionner » passe par l'agrégat
   (`SiteResupply.assertReceivable`) et le SAUVE sous sa version avant le
   reçu ; l'annulation et l'arrivée par transfert, qui sauvent aussi sous la
-  version lue, échouent alors en 409. E2E à deux transactions dans
-  `resupply-receipt.e2e-spec.ts`.
+  version lue, échouent alors en 409. **Prouvée le 2026-11-03** seulement :
+  l'e2e d'origine lançait les deux requêtes et acceptait l'issue, sans
+  imposer l'ordre qui cassait. Elle l'impose désormais (la table des reçus
+  tenue, « Réceptionner » arrêté au moment d'écrire, l'annulation passe
+  pendant ce temps — `resupply-receipt.e2e-spec.ts`), et elle échoue sur le
+  code d'avant `63e1797ab` : les deux gestes y répondent 204.
 - **« Réceptionné » n'apparaît pas à Prod manager** : la carte « Au plus
   tôt » lit `SiteResupplyView`, qui ne porte pas la réception ; elle
   s'arrête à « Arrivé ».
@@ -119,12 +123,10 @@ Laissé, et pourquoi :
   fichiers de domaine du backend (compté le 2026-11-02) : un sous-chemin sans
   Zod pour quatre fichiers ferait une seconde convention. À trancher pour
   tout le dépôt.
-- **`site-resupply.ts` au-dessus de 300 lignes** : 339, ramené à 295 le
-  2026-11-02 (`3968aa218` : le nom et les lignes de la demande en cours
-  sortent dans `site-resupply-content.ts`, les refus des gardes dans
-  `site-resupply-gate-errors.ts`), il est remonté à **308** avec les
-  corrections de `83df1eacb` (`assertReceivable`, le sans-commande) —
-  mesuré le 2026-11-03. Encore à découper.
+- ~~**`site-resupply.ts` au-dessus de 300 lignes**~~ : 339, ramené à 295 le
+  2026-11-02 (`3968aa218`), remonté à 308 avec `83df1eacb`, il fait **299**
+  lignes au 2026-11-03 (mesuré sur l'arbre de `1ee352bb3`). Sous le seuil,
+  de peu.
 
 ## 4 ter. Le contrôle de l'audit, 2026-11-02 (`3968aa218`)
 
@@ -161,7 +163,7 @@ les lignes d'un reçu écrites par différence ; l'index `(site_id, name)`
 (migration additive `20261102280000_les_noms_du_reassort_par_index`,
 `0a5eef1ce`, retour dans `prisma/rollback/`) ; le `:sku` du chemin validé ; les gestes du sans
 commande renommés `*UnorderedReceiptLine*` ; `site-resupply.spec.ts`
-découpé (les gardes dans
+découpé en partie — il garde 173 lignes au 2026-11-03 (les gardes dans
 `apps/lfd-api/src/b2b/resupply/domain/__tests__/site-resupply-gates.spec.ts`,
 les données communes dans
 `apps/lfd-api/src/b2b/resupply/domain/__tests__/site-resupply-fixtures.ts`).
@@ -306,6 +308,61 @@ Laissé, et pourquoi :
 - **La levée des alertes à la réception** sauve alerte par alerte : chacune
   sous sa version, dans la transaction de l'appelant ; un lot perdrait le
   refus par alerte.
+
+## 4 octies. L'audit final, section E — les e2e (2026-11-03)
+
+Fait (non commité à l'écriture de ces lignes) :
+
+- **Les courses imposent leur ordre** au lieu de lancer deux requêtes et
+  d'accepter l'issue : un verrou tenu par la suite (`holdDayLock`,
+  `holdTableForReading`, `holdPackingStock`), puis `untilWaiters` /
+  `untilBlocked` (`apps/lfd-api/test/day-lock-race.ts`, attentes bornées à
+  15 s avec un message). Chacune a été vue ÉCHOUER, dans un arbre de travail
+  à part :
+  - réceptionner / annuler (`resupply-receipt`) — sur le code d'avant
+    `63e1797ab` ;
+  - le retrait d'une liste contre un geste au bac
+    (`packing-reopen-withdrawal-race`), désormais par le VRAI geste (ouvrir
+    un sac par la route) — sur le code d'avant `83df1eacb`, où le retrait
+    bute en interblocage ;
+  - lancer / annuler (`resupply-launch`), arrêter / annuler
+    (`resupply-frozen-plan-race`, sorti de `resupply-frozen-plan`), deux saisies sur la même réserve et la réserve
+    contre une commande au bac (`resupply-asap-packing`) : aucun commit n'a
+    porté ces courses ouvertes ; elles échouent sur le code d'aujourd'hui
+    privé de son verrou (`LaunchedResupplies.isLaunched`,
+    `PlanAdmissionDesk.admit`, le `FOR UPDATE` de
+    `PrismaPackingStockRepository.lock`). Les sens « l'annulation d'abord »
+    (lancement, arrêt) et « la commande au bac d'abord » passent aussi sans
+    le verrou : ils fixent l'issue, ils ne prouvent rien de plus.
+- **Des refus lus par leur code, à la route** (`resupply-refusal-codes`) :
+  `resupply.order.plan_stopped`, `production.resupply.launch_on_reopened_plan`,
+  et le double clic sur « Envoyer » du comptoir (D5 : le second répondait
+  409 avant `83df1eacb`).
+- Les assertions faibles de `production-day-reopened` (le refus nomme
+  `date`) et de `shelf-stock-today` (la liste attendue, pas « non vide ») ;
+  `seedLabo` partagé (`site-resupply-scene.ts`) ; `untilWaiters` et `gate`
+  partagés au lieu de trois copies sans borne.
+- Les dates fixes de `resupply-arrival-handlers.spec.ts` (`2030-03-12`) et
+  de `resupply-arrived` (`now()` dans deux `UPDATE` refusés par un CHECK) ne
+  sont comparées à aucune horloge murale : conformes au §5 de `CLAUDE.md`,
+  laissées.
+
+Reste :
+
+- **Les autres codes ne sont éprouvés qu'au domaine ou à l'application**,
+  par leur classe, pas par le code servi à l'écran :
+  `launch_on_unarrested_plan`, `bakehouse_draft.site_frozen`,
+  `bakehouse_draft.key_taken`, `order.not_arrivable`, `sale_unit.mismatch`,
+  `sale_unit.changed`, `row.unreadable`, `order.too_many_lines`,
+  `order.impossible_state`, `production.revision.inscribed_another_day`.
+- **Les fichiers e2e de plus de 300 lignes**, dont
+  `production-batch.e2e-spec.ts` (1407) et `site-resupply.e2e-spec.ts` (430) ;
+  `stepEveStop` (56 lignes, `resupply-village-scene.ts`) ; `relayGate`, objet
+  exporté mutable de `production-day-fixture.ts` ; les constantes magiques
+  et les codes de lot seuls dans les titres des tests.
+- **`stubAdminVerifier` recopié dans plus de deux cents suites**, `holderOf`
+  dans une vingtaine, `todayAtNoon` dans quatre : hors du seul réassort, à
+  faire d'un bloc.
 
 ## 5. Décidé, puis abandonné
 

@@ -168,6 +168,13 @@ async function recognized(sub: string): Promise<ShelfStockTodayView> {
   );
 }
 
+/** Tout ce que la journée a reçu, intact : ce qu'un pro voit quand rien ne le retient. */
+const FULL_SHELF = [
+  { sku: CROISSANT, saleUnit: "piece", left: CROISSANTS_RECEIVED },
+  { sku: BREAD, saleUnit: "piece", left: BREADS_RECEIVED },
+  { sku: GRAVLAX, saleUnit: "weight", left: GRAVLAX_GRAMS },
+];
+
 describe("le reste d'aujourd'hui servi à la boutique (L7b)", () => {
   it("plan d'aujourd'hui non arrêté : vide, pour toutes les clientèles", async () => {
     await openSameDay();
@@ -181,13 +188,8 @@ describe("le reste d'aujourd'hui servi à la boutique (L7b)", () => {
     await openSameDay();
     await closeToday();
 
-    const expected = [
-      { sku: CROISSANT, saleUnit: "piece", left: CROISSANTS_RECEIVED },
-      { sku: BREAD, saleUnit: "piece", left: BREADS_RECEIVED },
-      { sku: GRAVLAX, saleUnit: "weight", left: GRAVLAX_GRAMS },
-    ];
-    expect(await anonymous("pro")).toEqual(expected);
-    expect(await recognized(PRO_SUB)).toEqual(expected);
+    expect(await anonymous("pro")).toEqual(FULL_SHELF);
+    expect(await recognized(PRO_SUB)).toEqual(FULL_SHELF);
   });
 
   it("le particulier, quand seuls les pros sont ouverts : vide — et le pro voit toujours", async () => {
@@ -196,7 +198,7 @@ describe("le reste d'aujourd'hui servi à la boutique (L7b)", () => {
 
     expect(await anonymous()).toEqual([]);
     expect(await anonymous("public")).toEqual([]);
-    expect((await anonymous("pro")).length).toBeGreaterThan(0);
+    expect(await anonymous("pro")).toEqual(FULL_SHELF);
   });
 
   it("un article sur mesure attribué à personne n'est servi à aucun pro : absent", async () => {
@@ -216,7 +218,7 @@ describe("le reste d'aujourd'hui servi à la boutique (L7b)", () => {
     clock.set(todayAt("17:30"));
 
     expect(await anonymous()).toEqual([]);
-    expect((await anonymous("pro")).length).toBeGreaterThan(0);
+    expect(await anonymous("pro")).toEqual(FULL_SHELF);
   });
 
   it("refuse une lecture sans point", async () => {

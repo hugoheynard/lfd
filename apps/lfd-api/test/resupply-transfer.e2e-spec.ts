@@ -27,7 +27,7 @@ import {
   SERVICE_DAY,
   STAFF,
 } from "./production-day-fixture.js";
-import { counterSent } from "./site-resupply-scene.js";
+import { counterSent, seedLabo } from "./site-resupply-scene.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const BATCH = "01K6A0000000000000000000R4";
@@ -60,21 +60,6 @@ async function settle(): Promise<void> {
   }
 }
 
-/** Le Labo : servi sur place, de la feuille à la vitrine. */
-async function seedLabo(): Promise<string> {
-  const labo = await ctx.prisma.site.create({
-    data: {
-      label: "Le Labo",
-      ligne1: "1 place",
-      codePostal: "73150",
-      ville: "Val",
-      pays: "France",
-    },
-    select: { id: true },
-  });
-  return labo.id;
-}
-
 function croissants(site: string, quantity: number): Promise<string> {
   return counterSent(ctx.asSub(STAFF), site, "tomorrow", [{ sku: CROISSANT, quantity }]);
 }
@@ -96,7 +81,7 @@ describe("le réassort dans le transfert (R3c)", () => {
   it("le réassort du Village ouvre le transfert de son point, sans commande ; le Labo jamais", async () => {
     const village = await seedVillage(ctx);
     const toVillage = await croissants(village, 6);
-    await croissants(await seedLabo(), 4);
+    await croissants(await seedLabo(ctx), 4);
 
     await closePlan(ctx);
     await settle();
@@ -166,7 +151,7 @@ describe("le réassort dans le transfert (R3c)", () => {
 
   it("la part du Labo ne descend pas au colisage : seule celle du Village est remise", async () => {
     await croissants(await seedVillage(ctx), 6);
-    await croissants(await seedLabo(), 4);
+    await croissants(await seedLabo(ctx), 4);
     await closePlan(ctx);
     await settle();
 

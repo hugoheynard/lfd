@@ -95,7 +95,7 @@ ligne. Le reçu sans commande est dans le menu de chaque ligne de la table.
   (`b2b/resupply/domain/estimated-stock.ts:50`), **par (article, unité)**
   (`stockKeyOf`, `domain/stock-tally.ts:4`) — jamais pièces et grammes ensemble ; un article au
   poids a un stock en grammes entiers (Hugo, 2026-11-02). `DayShelfStock`
-  (`application/day-shelf-stock.ts:19`) est le seul à lui passer les
+  (`application/day-shelf-stock.ts:20`) est le seul à lui passer les
   prélèvements, lus par `ShelfDrawsReader` (déclaré par le réassort,
   implémenté par les commandes, relié par
   `apps/lfd-api/src/appBootstrap/shelf-draws-feed.module.ts` depuis le 2026-11-03 — un
@@ -157,7 +157,7 @@ flowchart LR
   H --> S["dayStockOf"]
 ```
 
-- **Le calcul** `dayStockOf` (`domain/day-stock.ts:75`) : l'état d'un
+- **Le calcul** `dayStockOf` (`domain/day-stock.ts:76`) : l'état d'un
   réassort est le plus avancé de réceptionné › arrivé › parti › lancé › figé ›
   envoyé ; un annulé n'y est que s'il avait été réceptionné. Par produit et
   unité : le stock du jour, l'alerte vivante, l'attendu (l'emballé, sinon le

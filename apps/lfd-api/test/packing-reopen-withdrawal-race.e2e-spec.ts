@@ -8,23 +8,48 @@
  * et le reliquat (rang 2) d'une commande emportait la feuille de rang 1, qu'on
  * avait touchée. Désormais : `FOR UPDATE` sur les feuilles — le verrou de
  * chaque geste au bac —, le filtre relu sous verrou, l'effacement par paires.
+ *
+ * Le geste au bac est le VRAI — ouvrir un sac (`POST …/containers`), le
+ * premier de tout geste au bac : il prend le verrou de sa feuille, puis
+ * attend d'écrire son contenant, la table des contenants étant tenue par la
+ * suite. Le retrait se met en file derrière la feuille ; la table rendue, le
+ * sac naît, et le retrait relit une feuille touchée.
+ * Le retrait est appelé par son port : par la route, la réouverture prendrait
+ * d'abord le verrou EXCLUSIF de la journée, que le geste tient en partagé, et
+ * la course ne se jouerait jamais sur la feuille.
  */
+import { addDays, localToInstant } from "@lfd/contracts";
+
 import { PackingListWithdrawal } from "../src/packing/domain/ports/packing-list-withdrawal.js";
 import { PackingShadowLedger } from "../src/packing/domain/ports/packing-shadow.ledger.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { Clock } from "../src/platform/time/clock.js";
+import { FixedClock } from "../src/platform/time/fixed-clock.js";
+import { gate, holdTableForReading, started, untilBlocked } from "./day-lock-race.js";
+import type { E2eContext } from "./e2e-harness.js";
+import { createUser } from "./factories.js";
+import {
+  bootstrapProductionDay,
+  closePlan,
+  CROISSANT,
+  MEMBER,
+  packingOrderPath,
+  place,
+  references,
+  SERVICE_DAY,
+  sheetOf,
+  STAFF,
+} from "./production-day-fixture.js";
 
-const DAY = serviceDay();
 const ORDER = "order_race";
 const SKU = "SKU-CROISSANT";
-/** Assez pour mettre le retrait en file sur une machine lente. */
-const HOLD_TIMEOUT_MS = 20_000;
-const POLL_MS = 25;
+const clock = new FixedClock(new Date());
 
 let ctx: E2eContext;
+let issued: string[];
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ({ ctx, issued } = await bootstrapProductionDay([{ token: Clock, value: clock }]));
 });
 
 afterAll(async () => {
@@ -33,13 +58,18 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  const eve = localToInstant(addDays(SERVICE_DAY, -1), "12:00");
+  if (eve === null) {
+    throw new TypeError(`heure locale inexistante : la veille de ${SERVICE_DAY} à 12:00`);
+  }
+  clock.set(eve);
 });
 
 /** Inscrit une feuille par l'écrivain réel du tirage. */
 async function draw(rank: number): Promise<void> {
   await ctx.app.get(UnitOfWork).run(() =>
     ctx.app.get(PackingShadowLedger, { strict: false }).drawOrder({
-      serviceDay: DAY,
+      serviceDay: SERVICE_DAY,
       orderId: ORDER,
       rank,
       reference: `CMD-${String(rank)}`,
@@ -48,36 +78,26 @@ async function draw(rank: number): Promise<void> {
       dueAt: null,
       clientele: "pro",
       siteId: null,
-      drawnAt: new Date(),
+      drawnAt: clock.now(),
       containerMode: "counted",
       lines: [{ sku: SKU, productName: "Croissant", quantity: 4, saleUnit: "piece" }],
     }),
   );
 }
 
-function withdraw(): Promise<number> {
+function withdraw(orderId: string): Promise<number> {
   return ctx.app
     .get(UnitOfWork)
     .run(() =>
-      ctx.app.get(PackingListWithdrawal, { strict: false }).withdrawUntouched(DAY, [ORDER]),
+      ctx.app
+        .get(PackingListWithdrawal, { strict: false })
+        .withdrawUntouched(SERVICE_DAY, [orderId]),
     );
 }
 
-/** Les demandes de verrou de ligne encore en attente (le retrait, en file). */
-async function untilRowWaiter(): Promise<void> {
-  for (;;) {
-    const rows = await ctx.prisma.$queryRaw<{ readonly waiting: bigint }[]>`
-      SELECT count(*) AS waiting FROM pg_locks WHERE NOT granted`;
-    if (Number(rows[0]?.waiting ?? 0n) > 0) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  }
-}
-
-async function sheets(): Promise<readonly { rank: number; packed: number }[]> {
+async function sheets(orderId: string): Promise<readonly { rank: number; packed: number }[]> {
   const orders = await ctx.prisma.packingOrder.findMany({
-    where: { serviceDay: DAY, orderId: ORDER },
+    where: { serviceDay: SERVICE_DAY, orderId },
     select: { rank: true, lines: { select: { packedAt: true } } },
     orderBy: { rank: "asc" },
   });
@@ -88,43 +108,33 @@ async function sheets(): Promise<readonly { rank: number; packed: number }[]> {
 }
 
 describe("rouvrir une journée pendant qu'on met au bac", () => {
-  it("une ligne mise au bac pendant le retrait garde sa feuille", async () => {
-    await draw(1);
-    let release: () => void = () => undefined;
-    const released = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    let held: () => void = () => undefined;
-    const lockHeld = new Promise<void>((resolve) => {
-      held = resolve;
-    });
-    // Le geste au bac : le verrou de la feuille, puis l'écriture de la ligne.
-    const gesture = ctx.prisma.$transaction(
-      async (tx) => {
-        await tx.$queryRaw`
-          SELECT "order_id" FROM "packing"."packing_order"
-           WHERE "service_day" = ${DAY} AND "order_id" = ${ORDER} AND "rank" = 1
-             FOR UPDATE`;
-        held();
-        await released;
-        await tx.packingLine.update({
-          where: {
-            serviceDay_orderId_rank_sku: { serviceDay: DAY, orderId: ORDER, rank: 1, sku: SKU },
-          },
-          data: { packedAt: new Date(), packedBy: "staff-e2e", packedInitials: "E2" },
-        });
-      },
-      { timeout: HOLD_TIMEOUT_MS },
+  it("un sac ouvert pendant le retrait garde sa feuille", async () => {
+    await createUser(ctx.prisma, { auth0Sub: MEMBER });
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
+    await closePlan(ctx);
+    await ctx.drain();
+    const [reference] = await references(ctx);
+    const sheet = await sheetOf(ctx, reference ?? "");
+    const release = gate();
+    const holder = await holdTableForReading(ctx, "packing_container", release.opened);
+
+    // Le geste tient sa feuille et attend d'écrire son sac ; le retrait attend la feuille.
+    const opened = started(
+      ctx
+        .asSub(STAFF)
+        .post(`${packingOrderPath(sheet.orderId)}/containers`)
+        .send({ nature: "bag" }),
     );
-    await lockHeld;
+    await untilBlocked(ctx, 1, opened);
+    const withdrawal = started(withdraw(sheet.orderId));
+    await untilBlocked(ctx, 2, Promise.race([opened, withdrawal]));
+    release.open();
+    await holder.done;
 
-    const withdrawal = withdraw();
-    await untilRowWaiter();
-    release();
-    await gesture;
-
-    expect(await withdrawal).toBe(0);
-    expect(await sheets()).toEqual([{ rank: 1, packed: 1 }]);
+    const [answer, withdrawn] = await Promise.all([opened, withdrawal]);
+    expect([answer.status, withdrawn]).toEqual([201, 0]);
+    expect(await sheets(sheet.orderId)).toEqual([{ rank: 1, packed: 0 }]);
+    expect(await ctx.prisma.packingContainer.count({ where: { orderId: sheet.orderId } })).toBe(1);
   });
 
   it("le reliquat intouché se retire sans emporter la feuille touchée de la commande", async () => {
@@ -132,12 +142,17 @@ describe("rouvrir une journée pendant qu'on met au bac", () => {
     await draw(2);
     await ctx.prisma.packingLine.update({
       where: {
-        serviceDay_orderId_rank_sku: { serviceDay: DAY, orderId: ORDER, rank: 1, sku: SKU },
+        serviceDay_orderId_rank_sku: {
+          serviceDay: SERVICE_DAY,
+          orderId: ORDER,
+          rank: 1,
+          sku: SKU,
+        },
       },
-      data: { packedAt: new Date(), packedBy: "staff-e2e", packedInitials: "E2" },
+      data: { packedAt: clock.now(), packedBy: "staff-e2e", packedInitials: "E2" },
     });
 
-    expect(await withdraw()).toBe(1);
-    expect(await sheets()).toEqual([{ rank: 1, packed: 1 }]);
+    expect(await withdraw(ORDER)).toBe(1);
+    expect(await sheets(ORDER)).toEqual([{ rank: 1, packed: 1 }]);
   });
 });
