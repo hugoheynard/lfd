@@ -82,7 +82,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     if (order === null) {
       throw new OrderReferenceNotFoundError(command.reference);
     }
-    if (order.readyAt !== null) {
+    if (order.readyAt !== null || alreadyHandedOver(order)) {
       return this.viewOf(order);
     }
     const blocker = packingBlocker(order);
@@ -144,7 +144,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     if (reloaded === null) {
       throw new OrderReferenceNotFoundError(reference);
     }
-    if (reloaded.readyAt !== null) {
+    if (reloaded.readyAt !== null || alreadyHandedOver(reloaded)) {
       return this.viewOf(reloaded);
     }
     throw new PackingRefusedError(
@@ -156,4 +156,20 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     const authors = await this.staffAuthors.identify([order.readyBy]);
     return toPackingView(order, authors);
   }
+}
+
+/**
+ * **Déjà retirée : un « prête » n'a plus rien à dire** (Hugo, 2026-11-03,
+ * option b du plan `documentation/comptoir/plan-depart-incomplet-au-comptoir.md`).
+ *
+ * Une fiche de colis fermée à la remise (le colisage écoute
+ * `handover.handed_over`) peut être refermée au poste, ou rouverte puis
+ * refermée : le fait `packing.order_packed` arrive alors sur une commande
+ * déjà partie. Le refuser envoyait le message en erreur sur la carte de
+ * santé, pour un sac qui est déjà dans les mains du client. Succès sans
+ * effet, comme « déjà prête » — `MarkOrderReadyCommand` n'a qu'un appelant,
+ * l'abonné de ce fait (vérifié le 2026-11-03).
+ */
+function alreadyHandedOver(order: PackingOrder): boolean {
+  return order.status === "fulfilled" || order.status === "partially_handed_over";
 }

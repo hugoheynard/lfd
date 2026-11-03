@@ -205,6 +205,35 @@ describe("déclarer une commande prête", () => {
     await expect(handler.execute(ready())).rejects.toBeInstanceOf(PackingRefusedError);
   });
 
+  /**
+   * Régression (Hugo, 2026-11-03, option b) : une fiche fermée à la remise puis
+   * refermée au poste envoyait « prête » sur une commande déjà retirée, et le
+   * refus partait en message mort sur la carte de santé.
+   */
+  it("une commande DÉJÀ retirée est un succès sans effet — ni écriture, ni événement, ni BL", async () => {
+    for (const status of ["fulfilled", "partially_handed_over"] as const) {
+      const { handler, repository, events, afterCommit, durable, notes } = subject([
+        order({ status }),
+      ]);
+
+      await handler.execute(ready());
+      await afterCommit.commit();
+
+      expect(repository.writes).toBe(0);
+      expect(events.published).toEqual([]);
+      expect(durable.facts).toEqual([]);
+      expect(notes.calls).toEqual([]);
+    }
+  });
+
+  it("une course perdue contre une remise est un succès sans effet", async () => {
+    const { handler, events } = subject([order(), order({ status: "fulfilled" })], false);
+
+    await handler.execute(ready());
+
+    expect(events.published).toEqual([]);
+  });
+
   it("une commande annulée reste refusée — la divergence doit se voir", async () => {
     const { handler, repository } = subject([order({ status: "cancelled" })]);
 
