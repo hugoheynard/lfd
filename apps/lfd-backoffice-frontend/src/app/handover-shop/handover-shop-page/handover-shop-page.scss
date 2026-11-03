@@ -23,8 +23,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  flex: 1 1 auto;
   gap: var(--fold-space-xs) var(--fold-space-md);
-  margin-bottom: var(--fold-space-sm);
 }
 
 /* La vue et le sens de lecture, ensemble. */

@@ -102,3 +102,13 @@
 .qt-now-label {
   white-space: nowrap;
 }
+
+/* L'en-tête de la table porte la barre de la file : elle prend toute la
+   largeur, et ses deux groupes passent à la ligne en bloc. */
+.qt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  width: 100%;
+}

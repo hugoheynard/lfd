@@ -12,6 +12,13 @@
   [empty]="nothingFound"
   (rowClick)="opened.emit($event)"
 >
+  <!-- La barre de la file dans l'en-tête de la table (Hugo, 2026-11-03) :
+       l'écran la fournit (filtre, sens, recherche, scan), la table la pose dans
+       l'emplacement prévu par fold — une bande de moins au-dessus d'elle. -->
+  <div foldToolbar class="qt-toolbar">
+    <ng-content />
+  </div>
+
   <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
        `foldCell` rend une cellule vide. Chaque `key` a donc son gabarit. -->
 
