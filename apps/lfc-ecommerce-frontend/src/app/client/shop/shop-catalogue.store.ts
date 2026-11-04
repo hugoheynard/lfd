@@ -14,12 +14,20 @@ import { AuthFacade } from '../../auth/auth.facade';
 import { ClientWorkspace } from '../client-workspace.service';
 import { ProShelfSource } from './pro-shelf.source';
 import { ProVisit } from './pro-visit.service';
+import { ShopClock } from './shop-clock';
 
 /** La clé de la photo d'un visiteur non reconnu — la vitrine publique. */
 const VISITOR = 'visiteur';
 
 /** La clé de la photo d'un visiteur venu de `/pro` — la vitrine pro publique. */
 const PRO_VISITOR = 'visiteur-pro';
+
+/**
+ * L'âge à partir duquel une photo se relit au retour sur l'onglet (lot C4) :
+ * une minute, le grain de {@link ShopClock}. Le serveur garde le rayon 30 s ;
+ * relire plus souvent ne rapporterait rien.
+ */
+export const STALE_PHOTO_MS = 60_000;
 
 /** Où en est l'hydratation. `idle` = personne n'a encore ouvert la boutique. */
 export type CatalogueStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -70,6 +78,15 @@ export type CatalogueStatus = 'idle' | 'loading' | 'ready' | 'failed';
  * paie le catalogue — donc la photo se rejoue, et pour la même raison. Tant que
  * l'espace d'une personne reconnue n'est pas connu, la vitrine **attend** au
  * lieu de partir sans en-tête (plan espace de travail, D6).
+ *
+ * ## Une seconde exception : le retour sur l'onglet, panier VIDE
+ *
+ * _(2026-11-04, Hugo, option b — `plan-cache-du-catalogue.md`, lot C4)_ Une
+ * personne qui revient sur un onglet laissé ouvert retrouve une photo d'une
+ * heure. {@link refreshIfStale} la relit — mais seulement quand le panier est
+ * vide (c'est `ShelfRefreshOnReturn` qui en décide) : personne n'est alors en
+ * train de choisir, et la règle ci-dessus tient. La photo affichée reste en
+ * place pendant la relecture, et un échec la laisse telle quelle.
  */
 @Injectable({ providedIn: 'root' })
 export class ShopCatalogue {
@@ -79,6 +96,7 @@ export class ShopCatalogue {
   private readonly workspace = inject(ClientWorkspace);
   private readonly proVisit = inject(ProVisit);
   private readonly proShelf = inject(ProShelfSource);
+  private readonly clock = inject(ShopClock);
 
   private readonly state = signal<CatalogueStatus>('idle');
   /**
@@ -90,6 +108,8 @@ export class ShopCatalogue {
    * d'un autre espace.
    */
   private photoFor: string | null = null;
+  /** Quand la photo a été posée — sur l'horloge de la boutique, à la minute. */
+  private photoTakenAt: Date | null = null;
 
   /** Quelqu'un a-t-il demandé la vitrine ? Sans demande, une bascule ne relit rien. */
   private wanted = false;
@@ -180,6 +200,37 @@ export class ShopCatalogue {
     // aucun appel. La réponse juste est la même dans les deux cas — la photo
     // vaut pour le lecteur du moment.
     this.photoFor = this.readerKey();
+    this.photoTakenAt = this.clock.now();
+  }
+
+  /**
+   * Relit la photo si elle a au moins {@link STALE_PHOTO_MS} et qu'elle vaut
+   * pour le lecteur du moment (lot C4). Rien ne s'efface pendant la relecture ;
+   * une réponse revenue après une bascule de lecteur est écartée, comme dans
+   * {@link hydrate} ; un échec garde la photo en place.
+   */
+  async refreshIfStale(): Promise<void> {
+    const reader = this.readerKey();
+    const takenAt = this.photoTakenAt;
+    if (
+      this.state() !== 'ready' ||
+      reader === null ||
+      this.photoFor !== reader ||
+      takenAt === null
+    ) {
+      return;
+    }
+    if (this.clock.now().getTime() - takenAt.getTime() < STALE_PHOTO_MS) {
+      return;
+    }
+    try {
+      const view = await this.shelfFor(reader);
+      if (this.photoFor === reader) {
+        this.receive(view);
+      }
+    } catch {
+      // La photo d'avant reste : moins fraîche, mais vraie au moment où elle a été prise.
+    }
   }
 
   async hydrate(): Promise<void> {

@@ -13,6 +13,7 @@ import { AUTH_CONFIG } from './auth/auth.config';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
 import { SHOP_COPY_STARTUP_BUDGET_MS, ShopCopyLoader } from './client/copy/shop-copy-loader';
 import { InstallPrompt } from './client/install-prompt.service';
+import { ShelfRefreshOnReturn } from './client/shop/shelf-refresh-on-return.service';
 import { workspaceInterceptor } from './client/client-workspace.interceptor';
 import { sessionExpiredInterceptor } from './auth/session-expired';
 import { identityConflictInterceptor } from './auth/identity-conflict';
@@ -84,6 +85,11 @@ export const appConfig: ApplicationConfig = {
     // bandeau d'installation ne soit monté, sans quoi il n'a rien à rejouer.
     provideAppInitializer(() => {
       inject(InstallPrompt).listen();
+    }),
+    // Le rayon relu au retour sur l'onglet, panier vide seulement (lot C4 du
+    // cache du catalogue) : une photo d'une heure ne se montre plus à qui revient.
+    provideAppInitializer(() => {
+      inject(ShelfRefreshOnReturn).listen();
     }),
     // Toasts d'opération (succès/échec) : succès bref, erreur sticky (défauts fold).
     provideFoldToasts({}),
