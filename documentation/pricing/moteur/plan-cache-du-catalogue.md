@@ -3,7 +3,9 @@
 > 📝 **Plan, rien n'est bâti.** Réécrit le 2026-11-04 (cinquième forme) après
 > quatre contradictions de `vitruve` et la vérification de la doc Cloudflare.
 > La quatrième a fermé la route publique vers l'objet des pros : le conteneur
-> le joint par un **gestionnaire de sortie** interne, sans route ni jeton.
+> le joint par un **gestionnaire de sortie** interne, sans route ni jeton. La
+> cinquième (aucun BLOQUANT) a nommé ses prérequis : date de compatibilité,
+> `ContainerProxy`, et un contrôle de l'appelant.
 > Le **public** est caché par **Workers Cache**, au plus près du visiteur ;
 > les **pros** dans **un Durable Object** qui range une table par société, la
 > seule copie, donc sans dérive le jour où l'API aura plusieurs instances.
@@ -172,8 +174,13 @@ Ce qui serait grave : servir le rayon d'une société à une autre. D'où la cl�
   intercepté et traité dans le Worker (`outboundByHost`, `ctx.containerId`)
   ([Connect to Workers and Bindings](https://developers.cloudflare.com/containers/platform-details/workers-connections/),
   [Handle outbound traffic](https://developers.cloudflare.com/containers/platform-details/outbound-traffic/)).
-  La doc ne dit ni la version de `@cloudflare/containers` qui le porte, ni que
-  le trafic ne touche jamais internet, ni si c'est en bêta ;
+  Notre `@cloudflare/containers` 0.3.7 le porte (`outboundByHost`,
+  `OutboundHandlerContext.containerId`, dans les types du paquet), avec deux
+  prérequis : un `ctx.exports` que notre date de compatibilité
+  (`2025-06-01`, `wrangler.jsonc`) ne donne peut-être pas, et un point d'entrée
+  `ContainerProxy` exporté par le Worker. Seul `http://` est intercepté par
+  défaut : une adresse `https://` partirait sur internet. La doc ne dit pas si
+  c'est en bêta ;
 - Cloudflare KV ne convient pas : une écriture n'est pas visible partout tout
   de suite (non relu dans la doc ce jour).
 
@@ -234,6 +241,16 @@ max-age=…` et `Cache-Tag: rayon-public`. Toute autre réponse garde le
   n'importe quelle société à qui a le secret. À établir en C0 : la version de
   `@cloudflare/containers` qui le porte (nous sommes en 0.3.7), et le temps de
   l'aller-retour.
+- **Le gestionnaire refuse tout appel qui ne vient pas de `Backend`** :
+  `ContainerProxy` est un point d'entrée exporté, qu'un autre Worker du compte
+  pourrait lier sans les `props` du conteneur. Il exige `ctx.containerId` et le
+  compare à l'identifiant de `Backend` (`worker.ts`, `PRIMARY_INSTANCE`), sans
+  supposer qu'il n'y a qu'un conteneur. `lint:cache-control` étendue le tient.
+- **Si l'objet est injoignable** (au démarrage, ou en panne) : le rayon pro est
+  calculé et servi, sans être rangé — le comportement d'aujourd'hui.
+- **La version est globale, et doit le rester** : c'est elle qui fait refuser
+  un `put` relevé avant un rattachement de site. Une version par société, pour
+  réduire les refus, rouvrirait ce trou.
 - **Purger « une société et ses sites »** : chaque entrée range aussi
   l'identifiant du principal de la société ; une purge par société efface
   l'entrée et celles dont le principal est cette société.
@@ -280,7 +297,7 @@ Relevé par recherche des écritures Prisma sur les modèles que le rayon lit
 | heures limites                  | `b2b/order-cutoffs/infrastructure/prisma-general-order-cutoff.repository.ts`                                                                                                                                                                                                                                                                                           | tous                                                                    |
 | statut, principal d'une société | `b2b/account/infrastructure/prisma-company.repository.ts`                                                                                                                                                                                                                                                                                                              | cette société et ses sites                                              |
 | suivi d'un pro                  | `b2b/account/infrastructure/prisma-company-follows.repository.ts`                                                                                                                                                                                                                                                                                                      | cette société et ses sites                                              |
-| engagement de volume            | `b2b/pricing/infrastructure/prisma-volume-commitment.repository.ts` (passe-t-il par `PricingActWriter` ? à vérifier)                                                                                                                                                                                                                                                   | cette société et ses sites                                              |
+| engagement de volume            | `b2b/pricing/infrastructure/prisma-volume-commitment.repository.ts` (son handler `sign-volume-commitment.handler.ts` n'injecte **pas** `PricingActWriter` : à brancher sur la purge)                                                                                                                                                                                   | cette société et ses sites                                              |
 
 À compléter avant de bâtir : prix au kilo, offres d'acheminement, traductions.
 
@@ -328,9 +345,15 @@ lot C2 ne se bâtit pas : les pros restent sans cache, et le plan le dit.
 
 ## 9. Les lots
 
+⚠️ **Le gestionnaire de sortie demande d'avancer la date de compatibilité** du
+Worker de l'API. Ça change le comportement de **tout** ce Worker (limite de
+débit, crons, `guardedFetch`) : c'est un lot à part, **C0b**, avec sa propre
+vérification sur dev, avant C2.
+
 | Lot | Contenu                                                                                                                                                                                                                                                          |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | C0  | sur dev déployé : clé de Workers Cache (paramètre d'URL, en-têtes de la passerelle, `Vary: Origin`) ; gestionnaire de sortie et version de `@cloudflare/containers` ; aller-retour conteneur → objet ; taille d'un rayon ; coût ; secondes d'une première visite |
+| C0b | la date de compatibilité du Worker de l'API avancée, `ContainerProxy` exporté, vérifié seul sur dev                                                                                                                                                              |
 | C1  | le port de purge, `AfterCommit.defer`, les écritures, la porte des écritures, le regroupement                                                                                                                                                                    |
 | C2  | l'objet des rayons pro, sa version, le gestionnaire de sortie ; budget froid / chaud à l'égalité                                                                                                                                                                 |
 | C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                                                                                                                      |
@@ -354,6 +377,14 @@ promotion qui se ferme n'est plus servie après la durée.
 - le paramètre d'URL dans la clé de Workers Cache ; son statut (bêta ou non) ;
 - le gestionnaire de sortie dans notre version de `@cloudflare/containers`, et
   que son trafic reste interne ;
+- que `ctx.cache.purge` soit disponible depuis le gestionnaire de sortie (un
+  point d'entrée nommé du même Worker compte-t-il comme propriétaire ?) : à
+  tester en C0 ; sinon, la purge publique doit repasser par le `fetch`
+  principal du Worker ;
+- si une société peut être principal ET site d'une autre (plus d'un niveau) :
+  la purge « un niveau » ne suffirait plus ;
+- la date de compatibilité qui donne `ctx.exports`, et ce qu'elle change
+  d'autre ;
 - que Workers Cache respecte `Vary: Origin` et ignore les en-têtes de la
   passerelle ;
 - que l'engagement de volume passe par `PricingActWriter` ;
