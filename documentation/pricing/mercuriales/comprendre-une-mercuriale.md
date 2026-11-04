@@ -30,7 +30,9 @@ flowchart LR
 
 1. **Elle fixe le prix** des articles qu'elle cite, en euros. Jamais en
    pourcentage : un « −13 % » suivrait le tarif du catalogue, et le prix
-   promis monterait avec lui.
+   promis monterait avec lui. Un article peut avoir **plusieurs paliers** dans
+   la mercuriale (« 0,90 € dès 1, 0,85 € dès 50 ») : le prix baisse avec la
+   quantité, jamais l'inverse.
 2. **Elle arrête les autres remises** sur ces articles : paliers, promotions et
    gestes ne s'ajoutent pas, sauf ce qu'elle accepte explicitement. Un client
    au prix négocié n'empoche pas en plus la promotion publique.
@@ -70,14 +72,18 @@ si la mercuriale est close.
   `company_mercuriales_no_overlap` sur `(company_id, [valid_from, valid_to))`,
   partielle sur les lignes non rangées (migration `20260908160000_mercuriale_objet`).
   Deux mercuriales qui se recouvrent chez un même client sont inexprimables.
-- **Les fenêtres** s'ouvrent à minuit à Paris (`businessDayStart`), tenu par
-  `lint:business-day`.
+- **Les fenêtres** s'ouvrent à minuit à Paris : l'écran convertit un jour par
+  `businessDayStart` (`fiche-client/tarifs/mercuriale-amendments/amendment-draft.ts`),
+  et `lint:business-day` refuse une conversion en minuit UTC.
 
 ## 2. Comment elle entre dans le calcul
 
 `asRuleFor(contexte)` présente la ligne en cours de l'article comme une règle
-de l'étage `mercuriale` (`mercuriale-rule.ts`) : effet `replace`, audience la
-société. Elle passe par la même chaîne que tout le reste
+de l'étage `mercuriale` (`mercurialeRuleFor`, `mercuriale-rule.ts`) : effet
+`replace`, audience la société, montant **le palier le plus haut atteint** par
+la quantité (`highestTierReached`), fenêtre de la ligne (grille ou avenant,
+coupée par un arrêt), identifiant **du document**. Si l'article est dans la
+grille mais qu'aucun palier n'est atteint, `missesTierFor` le dit. Elle passe par la même chaîne que tout le reste
 ([`../comment-un-prix-se-fabrique.md`](../comment-un-prix-se-fabrique.md)).
 
 - **Le scellement** : `passesSeal` (`mercuriale-seal.ts`) laisse passer une
@@ -93,21 +99,22 @@ société. Elle passe par la même chaîne que tout le reste
   remise de panier l'exclut de son assiette si elle ne l'accepte pas ; au
   rayon, une promotion exclue n'est pas mentionnée sur l'article.
 - **Un sous-compte** qui suit le tarif de son principal paie le prix de la
-  mercuriale du principal.
+  mercuriale du principal : le chargeur lit la mercuriale du compte de
+  tarification (`pricingAccountOf`, `pricing-parties.resolver.ts`).
 
 ## 3. Les refus
 
-| Où                                                    | Refus                                                                       | Erreur                                                                                                                          |
-| ----------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Pose                                                  | une fenêtre inversée                                                        | `ReversedValidityWindowError`                                                                                                   |
-| Pose                                                  | une grille vide, un article en double, des paliers qui ne baissent pas      | `EmptyMercurialeError`, `DuplicateMercurialeSkuError`, `NonDecreasingMercurialeTiersError`                                      |
-| Pose                                                  | une mercuriale qui court déjà sur la période                                | contrainte `company_mercuriales_no_overlap`, `RunningMercurialeError`                                                           |
-| Avenant                                               | une mercuriale close                                                        | `ArchivedMercurialeIsSealedError`                                                                                               |
-| Avenant                                               | un motif vide, un avenant qui ne change rien                                | `MissingAmendmentReasonError`, `EmptyAmendmentError`                                                                            |
-| Avenant                                               | une politique « Au choix » vide, ou une liste hors « Au choix »             | `InconsistentPromotionSelectionError`                                                                                           |
-| Avenant                                               | une fenêtre inversée ou hors du document ; un début passé                   | `ReversedValidityWindowError`, `AmendmentOutsideMercurialeError`, `RetroactiveAmendmentError`                                   |
-| Avenant                                               | arrêter une ligne qui ne court pas ; un article déjà négocié sur la période | `NoNegotiatedLineToEndError`, `SkuAlreadyNegotiatedError`                                                                       |
-| Règle de prix écrite à la main à l'étage `mercuriale` | un pourcentage ; une audience autre qu'une société ; `stacksOverMercuriale` | `MercurialeMustPoseAPriceError`, `MercurialeTargetsOneCompanyError`, `MercurialeCannotStackOverItselfError` (`pricing-rule.ts`) |
+| Où                                                    | Refus                                                                                                                                  | Erreur                                                                                                                          |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Pose                                                  | une fenêtre inversée                                                                                                                   | `ReversedValidityWindowError`                                                                                                   |
+| Pose                                                  | une grille vide ou un article sans palier ; un article en double ; deux paliers au même seuil, ou un prix qui remonte avec la quantité | `EmptyMercurialeError`, `DuplicateMercurialeSkuError`, `NonDecreasingMercurialeTiersError` (`normalizeGrid`, `pricing-grid.ts`) |
+| Pose                                                  | une mercuriale qui court déjà sur la période                                                                                           | contrainte `company_mercuriales_no_overlap`, traduite en `RunningMercurialeError` par le dépôt                                  |
+| Avenant                                               | une mercuriale close                                                                                                                   | `ArchivedMercurialeIsSealedError`                                                                                               |
+| Avenant                                               | un motif vide, un avenant qui ne change rien                                                                                           | `MissingAmendmentReasonError`, `EmptyAmendmentError`                                                                            |
+| Avenant                                               | une politique « Au choix » vide, ou une liste hors « Au choix »                                                                        | `InconsistentPromotionSelectionError`                                                                                           |
+| Avenant                                               | une fenêtre inversée ou hors du document ; un début passé                                                                              | `ReversedValidityWindowError`, `AmendmentOutsideMercurialeError`, `RetroactiveAmendmentError`                                   |
+| Avenant                                               | arrêter une ligne qui ne court pas, ou la même deux fois ; un article déjà négocié sur la période                                      | `NoNegotiatedLineToEndError`, `DuplicateEndedSkuError`, `SkuAlreadyNegotiatedError` (`mercuriale-amendment-checks.ts`)          |
+| Règle de prix écrite à la main à l'étage `mercuriale` | un pourcentage ; une audience autre qu'une société ; `stacksOverMercuriale`                                                            | `MercurialeMustPoseAPriceError`, `MercurialeTargetsOneCompanyError`, `MercurialeCannotStackOverItselfError` (`pricing-rule.ts`) |
 
 Les erreurs sont dans `b2b/pricing/domain/errors/mercuriale-errors.ts` et
 `mercuriale-amendment-errors.ts`.
@@ -134,8 +141,10 @@ flowchart LR
   avenant du 1er novembre 2026 »).
 - Une pause suspend les avenants ; la clôture les range avec la mercuriale.
 - Deux commerciaux en même temps : le document est verrouillé
-  (`FOR UPDATE`), relu et amendé dans la même transaction.
-- Au journal : un acte `amended`, daté de sa prise d'effet, avec son motif.
+  (`SELECT … FOR UPDATE`, `prisma-company-mercuriale.repository.ts`), relu et
+  amendé dans la même transaction.
+- Au journal : un acte `amended` (`amend-company-mercuriale.handler.ts`),
+  daté de sa prise d'effet, avec son motif.
 - **Le report** sur une référence détachée est un avenant d'origine écrite
   (`{ kind: "detached", fromSku, fromMercurialeId }`), aux paliers de la ligne
   en cours, jusqu'à la fin réelle de cette ligne. Garde : la filiation
@@ -165,14 +174,15 @@ corrige directement : il ne participe à aucun calcul.
 
 - Un **prix unitaire** vit en millicentimes (10⁻⁵ €) : `173270` = 1,73270 € ;
   un **montant** de panier en centimes ; jamais de flottant.
-- Un export de mercuriale sort les prix à **cinq décimales** : arrondir au
-  centime ferait d'un fichier envoyé au client un document qui ne correspond
+- L'export CSV d'une mercuriale (`fiche-client/tarifs/mercuriale-csv.ts`)
+  sort les prix à **cinq décimales**, virgule décimale : arrondir au centime ferait d'un fichier envoyé au client un document qui ne correspond
   plus au tarif appliqué.
 
 ## 8. Limites connues
 
-- `MercurialeNameTakenError` est encore définie mais plus levée nulle part :
-  elle compensait l'époque où une mercuriale se reconnaissait à son nom
-  (registre, R10).
+- Deux mercuriales **homonymes** chez un même client ne sont plus refusées :
+  le refus d'homonymie compensait l'époque où une mercuriale se reconnaissait
+  à son nom, et il a été retiré le 2026-11-04. Elles ne peuvent de toute façon
+  pas courir en même temps (une seule par client et par période).
 - Le **volume prévu** d'une simulation appartient au gabarit, pas au client
   (registre, R11).

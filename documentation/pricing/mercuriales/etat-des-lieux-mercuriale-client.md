@@ -155,13 +155,7 @@ Chacune est ici sous la forme qui compte : **ce qui est vrai maintenant**.
 Ni l'une ni l'autre ne fausse quoi que ce soit ; les nommer évite qu'on les prenne
 pour des mécanismes vivants.
 
-- **`MercurialeNameTakenError` n'est levée nulle part.** Elle refusait un nom déjà
-  pris sur la même fenêtre, parce qu'une mercuriale se recollait par
-  (libellé, fenêtre) et que deux homonymes auraient fusionné. Son propre JSDoc
-  annonçait sa fin : « le jour où la pose portera son propre identifiant, ce refus
-  n'aura plus de raison d'être ». Ce jour est passé. **Rien, métier, n'interdit
-  plus à un client d'avoir deux grilles homonymes** — c'était notre modèle de
-  lecture qui l'interdisait.
+- **`MercurialeNameTakenError` est retirée** (2026-11-04) : elle refusait un nom déjà pris sur la même fenêtre, à l'époque où une mercuriale se recollait par (libellé, fenêtre). Rien, métier, n'interdit plus deux homonymes chez un client ; ils ne peuvent pas courir en même temps.
 - **`templateToRules` n'existe plus** ; seuls des commentaires la citent encore
   comme référence historique.
 
