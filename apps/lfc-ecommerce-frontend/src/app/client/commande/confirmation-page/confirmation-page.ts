@@ -7,6 +7,7 @@ import { AuthFacade } from '../../../auth/auth.facade';
 import { storedGuestIdentity } from '../../cart/guest-identity-form/guest-identity-form';
 import { formatCents, formatRate } from '../../../client/format-money';
 import { adjustmentValue, quoteDiscountRows } from '../../cart/quote-discount-rows';
+import { quotePretaxCents } from '../../cart/shown-cart-total';
 import { ClientLocale } from '../../../client/client-locale.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
@@ -204,7 +205,7 @@ export class ConfirmationPage {
    */
   protected readonly onAccount = computed(() => this.order()?.onAccount === true);
 
-  /** Le total montré : HT au compte (total moins TVA du décompte), TTC sinon. */
+  /** Le total montré : HT au compte (la règle du bon PDF), TTC sinon. */
   protected readonly shownTotalCents = computed(() => {
     const totals = this.order()?.totals;
     if (totals === undefined) {
@@ -213,7 +214,7 @@ export class ConfirmationPage {
     if (!this.onAccount()) {
       return totals.totalCents;
     }
-    return totals.totalCents - totals.vat.reduce((sum, share) => sum + share.amountCents, 0);
+    return quotePretaxCents(totals);
   });
 
   protected readonly vatLines = computed(() => {

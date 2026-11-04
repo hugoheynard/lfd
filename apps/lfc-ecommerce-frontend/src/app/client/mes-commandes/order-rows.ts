@@ -6,6 +6,7 @@ import type {
   FulfillmentWindow,
 } from '@lfd/contracts';
 import { isSettled } from '@lfd/contracts/shop-values';
+import { orderPretaxCents } from '@lfd/money';
 
 import { formatWindow } from '../format-hour';
 import { discountLinesOf, type HistoryDiscountLine } from './order-discount-lines';
@@ -492,12 +493,13 @@ function paymentOf(order: CustomerOrderView): OrderPayment {
 
 /**
  * **Le montant que la commande montre** : le TTC, sauf pour un pro au compte,
- * qui ne lit que le HT — total moins TVA figés, rien n'est recalculé. Sa TVA se
+ * qui ne lit que le HT — la règle du bon PDF (`orderPretaxCents`), sur les
+ * gestes HT figés. Sa TVA se
  * calcule une fois sur la facture du mois, et un TTC par commande la
  * contredirait de quelques centimes (plan `bons-et-facture-concordants`, F5).
  */
 function amountOf(order: CustomerOrderView): number {
-  return order.settlement === 'account' ? order.totalCents - order.vatCents : order.totalCents;
+  return order.settlement === 'account' ? orderPretaxCents(order) : order.totalCents;
 }
 
 /** `refunded` fait foi pour « en totalité » ; un cumul positif sans lui est partiel. */

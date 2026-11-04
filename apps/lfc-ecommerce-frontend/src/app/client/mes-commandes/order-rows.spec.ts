@@ -32,6 +32,10 @@ const ORDER = {
   pickupAddress: { label: 'Le Labo', ligne1: '', ligne2: '', codePostal: '', ville: '', pays: '' },
   fulfillment: { window: { value: { start: '07:00', end: '08:00' }, source: 'request' } },
   subtotalCents: 9_000,
+  discountCents: 0,
+  voucherDiscountCents: 0,
+  deliveryFeeCents: 0,
+  lateFeeCents: 0,
   vatCents: 640,
   totalCents: 9_640,
   origin: 'self_service',
@@ -84,7 +88,7 @@ describe('les lignes de l’écran des commandes', () => {
 
   /**
    * F5 (plan `bons-et-facture-concordants`) : un pro au compte ne lit que le
-   * HT — total moins TVA figés ; la TVA et le TTC sont sur la facture du mois.
+   * HT, par la règle du bon PDF ; la TVA et le TTC sont sur la facture du mois.
    */
   it('montre le HT d’une commande au compte, et le TTC des autres', () => {
     expect(historyRowOf(ORDER, '', COPY)).toMatchObject({ total: 90, pretax: true });
@@ -94,6 +98,16 @@ describe('les lignes de l’écran des commandes', () => {
       expect(historyRowOf(other, '', COPY)).toMatchObject({ total: 96.4, pretax: false });
       expect(trackedOf(other, COPY)).toMatchObject({ total: 96.4, pretax: false });
     }
+  });
+
+  /**
+   * Régression : la liste lisait « total moins TVA », une seconde formule à côté
+   * de celle du bon PDF (`orderPretaxCents`). Totaux volontairement
+   * incohérents pour que les deux divergent (2026-11-04).
+   */
+  it('au compte, le HT se lit sur les gestes figés, pas total moins TVA', () => {
+    const order = { ...ORDER, deliveryFeeCents: 500, vatCents: 0, totalCents: 1_234 };
+    expect(historyRowOf(order, '', COPY)).toMatchObject({ total: 95, pretax: true });
   });
 
   /** Lu sur `paymentStatus` et le cumul réussi, jamais sur le régime (lot R1). */

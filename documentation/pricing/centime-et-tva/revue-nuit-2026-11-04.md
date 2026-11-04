@@ -85,6 +85,12 @@ un nettoyage.
   le choix du mode, les lignes montrent le prix du catalogue et « Prix à
   confirmer ». Le sous-total calculé dans le panier est retiré. B ne sert plus
   qu'au simulateur de prix.
+- **L5c** : la boutique n'additionnait rien, mais trois endroits disaient le
+  HT d'un pro au compte par « total − TVA » : le panier (et le seuil des
+  suggestions du staff), la page de confirmation, la liste « Mes commandes ».
+  Ils lisent `orderPretaxCents` à leur tour. Le reliquat d'un bon plus gros que
+  le panier reste une soustraction à l'écran (valeur − part imputée), non
+  touchée.
 - **Le particulier lit le TTC**, figé ligne par ligne et geste par geste
   (`exact_ht`) ; seules les commandes d'avant ces colonnes gardent la
   répartition au prorata du PDF, qui retombe sur le total figé.

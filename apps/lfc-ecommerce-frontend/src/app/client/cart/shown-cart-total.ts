@@ -1,5 +1,6 @@
 import { computed, inject, type Signal } from '@angular/core';
 import type { ShopQuoteView } from '@lfd/contracts';
+import { orderPretaxCents } from '@lfd/money';
 
 import { settlesOnAccount } from '../../account/settles-on-account';
 import { ClientCompany } from '../client-company.service';
@@ -8,9 +9,10 @@ import { formatCents } from '../format-money';
 import { ClientCart } from './client-cart.service';
 
 /**
- * **Le total que le client LIT au panier** — HT au compte (le total du devis
- * moins sa TVA), TTC sinon. Une soustraction de deux montants du serveur, pas
- * un calcul : la remise, le bon et le port y sont déjà.
+ * **Le total que le client LIT au panier** — HT au compte, TTC sinon. Le HT
+ * se lit sur les montants HT du devis par la règle du bon PDF
+ * (`orderPretaxCents`) ; il était « total moins TVA » jusqu'au 2026-11-04, une
+ * seconde formule pour le même nombre.
  *
  * Deux lecteurs : la ligne « Total » du panier (`CartSummary`), et le seuil
  * des suggestions du staff (RS8, `StaffCartSuggestion`), qui se juge sur ce
@@ -21,7 +23,18 @@ export function shownCartTotalCents(totals: ShopQuoteView, onAccount: boolean): 
   if (!onAccount) {
     return totals.totalCents;
   }
-  return totals.totalCents - totals.vat.reduce((sum, share) => sum + share.amountCents, 0);
+  return quotePretaxCents(totals);
+}
+
+/** Le HT d'un devis : la règle du bon PDF, sur ses montants HT. */
+export function quotePretaxCents(totals: ShopQuoteView): number {
+  return orderPretaxCents({
+    subtotalCents: totals.subtotalHtCents,
+    discountCents: totals.discountCents,
+    voucherDiscountCents: totals.voucherDiscountCents,
+    deliveryFeeCents: totals.deliveryFeeCents,
+    lateFeeCents: totals.lateFeeCents ?? 0,
+  });
 }
 
 /**
