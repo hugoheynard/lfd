@@ -60,15 +60,16 @@ flowchart LR
 
 # Partie 2 — Les documents
 
-| Document                                                                       | État                              | Sujet                                                                                                       |
-| ------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md)                     | C1 à C4 bâtis sur dev, C5 à faire | le rayon pro dans un Durable Object, le rayon public dans Workers Cache, la purge, l'interrupteur, le repli |
-| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)             | 📝 plan                           | un seul chargement du catalogue par requête, par construction                                               |
-| [`plan-aucun-cache-sur-le-personnel.md`](plan-aucun-cache-sur-le-personnel.md) | ✅ bâti                           | aucune réponse personnelle dans un cache partagé : le middleware et la porte                                |
-| [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md)               | 📝 plan                           | le changement d'espace lent : mesurer le plancher par appel, aplatir la cascade, un appel d'entrée          |
-| [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md)                 | 📝 plan                           | le principal gardé en mémoire de l'API, relu sur une estampille posée par la base                           |
-| [`version-par-journee.md`](version-par-journee.md)                             | ✅ bâti                           | ne relire que ce qui a bougé, une porte par journée                                                         |
-| [`cache-compte-client.md`](cache-compte-client.md)                             | 📝 doc-first                      | le cache des comptes clients du back-office                                                                 |
+| Document                                                                               | État                              | Sujet                                                                                                       |
+| -------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md)                             | C1 à C4 bâtis sur dev, C5 à faire | le rayon pro dans un Durable Object, le rayon public dans Workers Cache, la purge, l'interrupteur, le repli |
+| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                     | 📝 plan                           | un seul chargement du catalogue par requête, par construction                                               |
+| [`plan-aucun-cache-sur-le-personnel.md`](plan-aucun-cache-sur-le-personnel.md)         | ✅ bâti                           | aucune réponse personnelle dans un cache partagé : le middleware et la porte                                |
+| [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md)                       | 📝 plan                           | le changement d'espace lent : mesurer le plancher par appel, aplatir la cascade, un appel d'entrée          |
+| [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md)                         | 📝 plan                           | le principal gardé en mémoire de l'API, relu sur une estampille posée par la base                           |
+| [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md) | 📝 plan                           | le rayon pro gardé jusqu'à la prochaine heure qui change un prix ; le stock, limite du système              |
+| [`version-par-journee.md`](version-par-journee.md)                                     | ✅ bâti                           | ne relire que ce qui a bougé, une porte par journée                                                         |
+| [`cache-compte-client.md`](cache-compte-client.md)                                     | 📝 doc-first                      | le cache des comptes clients du back-office                                                                 |
 
 Ailleurs, mais à lire avec : [`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md),
 ce que coûte un prix et le cache des règles de prix.
