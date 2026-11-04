@@ -1,12 +1,13 @@
 # Première visite rapide et pas chère — le cache du catalogue
 
-> 📝 **Plan, rien n'est bâti.** Réécrit le 2026-11-04 après la première
-> contradiction de `vitruve` (trois BLOQUANT : le plan se contredisait sur
-> l'endroit du cache, un objet par société ne peut pas recevoir la requête
-> avant la résolution des droits, et `lint:cache-control` ne voit pas le Worker
-> de l'API). Touche les prix affichés et une frontière de sécurité (un cache
-> partagé ne doit jamais servir un appelant à un autre) : seconde contradiction
-> avant Hugo.
+> 📝 **Plan, rien n'est bâti.** Réécrit le 2026-11-04 après deux
+> contradictions de `vitruve`. La première a déplacé les pros dans le
+> conteneur (un objet devant lui ne sait pas quelle société sert un pro) ; la
+> seconde a démoli la purge par en-tête (une course qui fige un vieux rayon, un
+> délai « au pire cinq minutes » faux, un Worker sans mémoire partagée). La
+> purge suit désormais le modèle d'un Redis : l'écrivain efface, après la
+> validation. Touche les prix affichés et une frontière de sécurité :
+> troisième contradiction avant Hugo.
 
 # Partie 1 — Comprendre
 
@@ -19,7 +20,7 @@ particuliers, et 200 à 1 000 pros qui commandent aux mêmes heures.
 
 ## Deux caches, parce que deux sortes de visiteurs
 
-- **Le public** (visiteur sans compte) : tout le monde voit **le même rayon**.
+- **Le public** (la boutique sans espace personnel) : tout le monde voit **le même rayon**.
   On peut le garder tout prêt **devant** l'API : la visite ne réveille pas
   l'API et ne lit pas la base.
 - **Le pro** : chaque société voit **son** rayon (sa mercuriale, ses
@@ -41,8 +42,9 @@ flowchart LR
   O2 --> R2["Rayon servi"]
 ```
 
-Une visite **avec un jeton** ne passe jamais par l'objet public : elle va
-directement à l'API, même sur la route publique.
+La route publique ne lit jamais qui appelle : un visiteur connecté peut y
+être servi par l'objet. Le rayon **personnel** (`/mine`) ne passe jamais par
+lui.
 
 ### Le chemin d'un pro
 
@@ -63,21 +65,28 @@ suite un compte désactivé.
 
 ### Comment un changement arrive dans les caches
 
+C'est le modèle d'un Redis : **celui qui écrit efface**, après
+l'enregistrement. Aucune visite n'est nécessaire pour que le changement
+arrive, même la nuit.
+
 ```mermaid
 sequenceDiagram
-  participant E as Équipe
+  participant E as Équipe ou ingestion
   participant A as API
   participant B as Base
-  participant W as Worker de l'API
-  participant O as Objet public
+  participant O as Objet du rayon public
   E->>A: change un prix, un article, une heure limite
   A->>B: enregistre
   B-->>A: enregistré
-  A->>A: vide le cache pro, monte la version du rayon
-  Note over A,W: toute réponse de l'API porte la version du rayon
-  A-->>W: prochaine réponse, version nouvelle
-  W->>O: version changée, oublie le rayon
+  A->>A: monte la version du rayon, vide le cache pro
+  A->>O: purge, nouvelle version
+  O->>O: oublie le rayon, retient la version
 ```
+
+Un rayon calculé **pendant** une écriture porte la version relevée **avant**
+son calcul : l'objet refuse de garder un rayon plus vieux que la dernière
+version qu'il connaît. C'est la parade habituelle d'un cache Redis à la même
+course.
 
 Et ce qui change **sans que personne n'écrive** — une promotion qui s'ouvre à
 midi, une opération datée, l'heure limite — est rattrapé par une **durée de
@@ -102,17 +111,23 @@ C'est pour ça que le pro ne passe jamais par l'objet public.
   paie le catalogue une fois, au chargement ;
 - l'API est un Cloudflare Container (`apps/lfd-api/wrangler.jsonc`,
   `max_instances: 1`), **tenu chaud** par le cron `*/5` (`keepWarm` dans
-  `container/worker.ts`, qui frappe `/health`) malgré `sleepAfter = "1h"` ;
-  le Worker de l'API n'a pas d'adresse publique (`workers_dev: false`) ;
+  `container/worker.ts`, qui frappe `/health` depuis `scheduled`, directement
+  sur le conteneur) malgré `sleepAfter = "1h"` ; le Worker de l'API n'a pas
+  d'adresse publique (`workers_dev: false`) ;
 - la passerelle sert toute la zone `lafoliecoffee.info/*`
   (`gateway/wrangler.toml`), et rejoint l'API par service binding ;
 - le Worker de l'API déclare **déjà** un Durable Object : le conteneur
   (`Backend extends Container`, `BACKEND`, `new_sqlite_classes`) ;
-- **toute** requête vers le conteneur traverse le Worker de l'API, y compris
-  le `keepWarm` toutes les cinq minutes ;
-- `GET /shop/catalogue` est `@Public()` mais **reconnaît** un appelant qui
-  porte un jeton (`shop-catalogue-pricing.service.ts`, `recognised`) : la même
-  route sert un rayon personnel ;
+- les requêtes `fetch` traversent le Worker de l'API par `guardedFetch`
+  (`edge-guard.ts`, limite de débit comprise) ; les tâches de `scheduled`
+  vont au conteneur directement ;
+- `GET /shop/catalogue` ne reconnaît **jamais** l'appelant
+  (`read-shop-catalogue.ts`) : il sert le rayon invité, ou le pro de **base**
+  sans société (`audience=pro`). Seul `/shop/catalogue/mine` est personnel.
+  (`recognised` ne sert que les suggestions de panier, `pricedItems`.) L'API
+  ne lit aucun cookie d'identité ;
+- le conteneur sort déjà sur internet (Stripe, Resend, la base) : il peut
+  joindre une route du Worker de l'API par la passerelle ;
 - la boutique ne se rafraîchit jamais seule (seule `shop-clock.ts` avance
   chaque minute).
 
@@ -133,25 +148,31 @@ le nombre de visites publiques d'une journée réelle.
 ## 3. Le public — un Durable Object devant le conteneur
 
 - **Où** : une seconde classe de Durable Object dans le Worker de l'API
-  (`container/worker.ts`), à côté de `Backend`. Le Worker y adresse une requête
-  **seulement si** elle est un `GET` d'une route publique admise
-  (`/shop/catalogue`, `/shop/featured`) **et** ne porte ni `Authorization` ni
-  cookie de session. Toute autre requête va au conteneur, inchangée.
-- **Clé** : la route et ses paramètres qui changent la réponse (audience,
-  langue). La liste des paramètres admis est écrite, pas déduite : un paramètre
-  inconnu fait passer la requête au conteneur.
+  (`container/worker.ts`), à côté de `Backend`, **après** la limite de débit
+  (`guardedFetch`). Le Worker y adresse une requête **seulement si** elle est
+  un `GET` de `/shop/catalogue` ou de `/shop/featured`, avec des paramètres
+  admis. Ces routes ne lisent pas l'appelant (§1) : une requête avec jeton peut
+  y être servie aussi. `/mine` et toute autre route vont au conteneur.
+- **Clé** : la route et les paramètres qui changent la réponse (audience,
+  langue). La liste des paramètres admis est écrite : un paramètre inconnu fait
+  passer la requête au conteneur.
 - **La clé chaude** : tous les visiteurs tombent sur la même clé. On la
   **duplique** sur N objets identiques (N à mesurer, 8 pour commencer), un tiré
-  au hasard par visite. Un objet traite une requête à la fois.
-- **Ce qu'il garde** : le corps et les en-têtes de la réponse du conteneur, sa
-  version de rayon (§5) et son heure. Il repose lui-même `Cache-Control:
-private, no-cache`, l'en-tête qu'un visiteur reçoit aujourd'hui
-  (`cache-control-by-default.middleware.ts`).
+  au hasard par visite ; la purge les vise tous.
+- **Le remplissage** : l'objet appelle le conteneur **sans** `If-None-Match`
+  ni en-tête d'identité ; il ne garde qu'une réponse **200**, avec son corps et
+  son `Content-Type`, la version du rayon relevée par le conteneur **avant**
+  son calcul, et l'heure. Il refuse de garder un rayon dont la version est
+  plus vieille que la dernière qu'il connaît. Il retire `Set-Cookie` et
+  l'en-tête de version.
+- **La réponse** : il repose lui-même `Cache-Control: private, no-cache`
+  (`cache-control-by-default.middleware.ts`) et son propre `ETag`, et répond
+  304 à un `If-None-Match` qui correspond.
 - **Mémoire perdue** : un objet endormi oublie ; il redemande au conteneur. La
   justesse n'en dépend pas.
 - **Alternative écartée pour l'instant** : le cache de Cloudflare (CDN). Il ne
-  connaît pas la version du rayon, donc il ne se purge que par l'API de purge,
-  avec un secret de plus.
+  se purge que par l'API de purge de Cloudflare, avec un secret de plus, et ne
+  connaît pas la version.
 
 ## 4. Les pros — en mémoire du conteneur, par société
 
@@ -168,23 +189,34 @@ private, no-cache`, l'en-tête qu'un visiteur reçoit aujourd'hui
 - `/mine` ignore la langue (`my-shop-catalogue.controller.ts`) : déjà le cas
   aujourd'hui, la clé n'en a donc pas besoin. À dire, pas à corriger ici.
 
-## 5. La purge — une version du rayon
+## 5. La purge — l'écrivain efface, comme avec un Redis
 
-- Le conteneur tient une **version du rayon**, en mémoire, qu'il **monte après
-  la validation** de toute écriture qui change un rayon. Après, et non pendant :
-  sinon une lecture concurrente remplit le cache avec l'état d'avant, et le
-  garde (le geste de `PricingActWriter` pour le cache des prix).
-- Monter la version vide aussi **tout** le cache pro : une réservation ou un
+- **La version du rayon** : un nombre en mémoire du conteneur, composé avec un
+  identifiant d'instance tiré au démarrage. Deux versions se comparent par
+  **égalité** de l'instance, puis par **ordre** du nombre ; une instance
+  différente vaut « inconnue », donc purge.
+- **Relevée avant de lire** : le calcul d'un rayon (public ou pro) relève la
+  version **avant** sa première lecture. Le cache pro ne range le résultat que
+  si la version n'a pas bougé pendant le calcul ; l'objet public refuse un
+  rayon plus vieux que sa dernière version connue.
+- **Montée après la validation** de toute écriture qui change un rayon. Après,
+  et non pendant : sinon une lecture concurrente remplit le cache avec l'état
+  d'avant (le geste de `PricingActWriter` pour le cache des prix).
+- **Le cache pro est vidé entier** à chaque montée : une réservation ou un
   statut de société change le rayon des **autres** sociétés et du public
-  (`catalog-viewers.service.ts`), et vider tout est plus sûr que d'énumérer.
-- Le conteneur pose la version sur **chaque réponse** (un en-tête interne). Le
-  Worker de l'API la lit au passage et prévient les objets publics si elle a
-  changé ; il retire l'en-tête avant de répondre. Comme le `keepWarm` passe
-  toutes les cinq minutes, une version change atteint les objets au pire en
-  cinq minutes, et dès la prochaine requête en pratique.
-- ⚠️ Au redémarrage du conteneur, la version repart de zéro : elle se compose
-  donc avec un **identifiant d'instance**, pour qu'une version neuve ne soit
-  jamais prise pour l'ancienne.
+  (`catalog-viewers.service.ts`), et vider tout est plus sûr qu'énumérer.
+- **L'objet public est purgé par le conteneur**, par une route interne du
+  Worker de l'API (`POST`, jeton secret comme `RECOMPUTE_TOKEN`), qui vise les
+  N objets. La route n'est jamais servie au conteneur : le Worker la traite
+  lui-même. Une purge qui échoue n'est pas rejouée : la durée rattrape, et
+  l'échec est journalisé.
+- **Les rafales** : une ingestion du référentiel émet un fait par fiche
+  (`on-catalog-product-changed.handler.ts`) ; 200 fiches feraient 200 purges.
+  Les montées se **regroupent** : une purge au plus par seconde, la dernière
+  version gagnant.
+- **Hors requête** : les abonnés `@DurableHandler` du catalogue et le balayage
+  de l'outbox écrivent sans visite derrière ; ils montent la version comme les
+  autres, et la purge part du conteneur, pas d'une réponse.
 
 ### Les écritures qui doivent monter la version
 
@@ -200,13 +232,13 @@ Relevé par recherche des écritures Prisma sur les modèles que le rayon lit
 | heures limites          | `b2b/order-cutoffs/infrastructure/prisma-general-order-cutoff.repository.ts`                                                                                                                                                                                                                                                                                           |
 | statut d'une société    | `b2b/account/infrastructure/prisma-company.repository.ts`                                                                                                                                                                                                                                                                                                              |
 
-À compléter avant de bâtir : prix au kilo, offres d'acheminement, traductions,
-et le suivi (`CompanyFollow`) d'un pro.
-
-Piste à évaluer : le balayage de la **vitrine** (`admin/vitrine/sweep`, sur le
-cron `*/5`) compare déjà la vue publique à sa dernière empreinte. Il ne tourne
-que pour des abonnés allumés, et compare par empreinte, pas par écriture : il
-ne remplace pas la version, il pourrait la vérifier.
+À compléter avant de bâtir : prix au kilo, offres d'acheminement,
+traductions. Relevé par la seconde contradiction, à ajouter :
+`b2b/account/infrastructure/prisma-company-follows.repository.ts` (le suivi
+d'un pro), `b2b/pricing/infrastructure/prisma-volume-commitment.repository.ts`
+(à vérifier : passe-t-il par `PricingActWriter` ?), et
+`prisma-made-to-order-admin.reader.ts`, qui écrit des réservations malgré son
+nom.
 
 ## 6. La durée
 
@@ -215,14 +247,19 @@ proposées, à trancher. La durée se calcule sur `Clock.now()` dans le conteneu
 (`lint:clock-port`) ; dans le Worker de l'API, hors de `src/`, sur l'horloge du
 Worker — ce que `lint:clock-port` ne voit pas, à écrire.
 
-## 7. Les portes
+## 7. Les portes — avant le premier cache
 
-- **`lint:cache-control`** ne parcourt que `apps/lfd-api/src` et `gateway/src`.
-  Elle doit gagner `apps/lfd-api/container/`, avec une liste admise datée : la
-  classe de l'objet public et la condition « pas de jeton, pas de cookie ».
 - **Une porte des écritures du rayon** : tout fichier qui écrit un modèle lu
   par le rayon passe par le port qui monte la version. Même forme que
   `lint:prisma-model-ownership` : la liste des modèles dérivée, pas recopiée.
+  Elle se bâtit **avant** C2 et C3 : sans elle, la liste du § 5 fait foi, et
+  c'est une recherche.
+- **`lint:cache-control`** ne parcourt que `apps/lfd-api/src` et
+  `gateway/src`. Elle gagne `apps/lfd-api/container/`, avec une liste admise
+  datée : la classe de l'objet public, ses deux routes, et la route de purge.
+- **L'horloge du Worker** (la durée de l'objet) n'est tenue par aucune porte :
+  la lecture de l'heure s'isole dans une seule fonction de `container/`, et
+  `lint:clock-port` y gagne une dérogation nommée.
 
 ## 8. Le coût
 
@@ -232,17 +269,19 @@ la durée d'un objet par visite publique, contre les 6 opérations Prisma
 
 ## 9. Les lots
 
-| Lot | Contenu                                                                                                  |
-| --- | -------------------------------------------------------------------------------------------------------- |
-| C0  | la mesure sur dev déployé, et le coût                                                                    |
-| C1  | la version du rayon : le port, les écritures, la porte des écritures, l'en-tête sur chaque réponse       |
-| C2  | le cache pro en mémoire du conteneur, vidé par la version et la durée ; budget froid / chaud à l'égalité |
-| C3  | l'objet public dans le Worker de l'API, dupliqué ; `lint:cache-control` étendue                          |
-| C4  | la boutique relit le rayon au retour sur l'onglet                                                        |
+| Lot | Contenu                                                                                                |
+| --- | ------------------------------------------------------------------------------------------------------ |
+| C0  | la mesure sur dev déployé, et le coût                                                                  |
+| C1  | la version du rayon : le port, les écritures, la porte des écritures, le regroupement des rafales      |
+| C2  | le cache pro en mémoire du conteneur, version relevée avant de lire ; budget froid / chaud à l'égalité |
+| C3  | l'objet public, dupliqué ; la route de purge ; `lint:cache-control` étendue                            |
+| C4  | la boutique relit le rayon au retour sur l'onglet                                                      |
 
 Chaque lot a ses tests : une promotion qui se ferme n'est plus servie après la
-durée ; une écriture de prix vide l'entrée ; une requête avec jeton ne touche
-jamais l'objet public ; une réservation change le rayon des autres sociétés.
+durée ; une écriture de prix vide l'entrée ; une écriture **pendant** un
+calcul ne laisse pas l'ancien rayon en cache ; `/mine` ne touche jamais
+l'objet public ; une réservation change le rayon des autres sociétés ; un 304
+du conteneur n'est jamais gardé.
 
 ## 10. Ce que ce plan ne fait pas
 
@@ -255,4 +294,8 @@ jamais l'objet public ; une réservation change le rayon des autres sociétés.
 - la liste complète des écritures (§5) ;
 - que le rayon public filtre bien les articles réservés : inféré de
   `catalog-viewers.service.ts`, pas tracé jusqu'au filtre ;
-- le coût d'un Durable Object (§8).
+- qu'aucun champ du rayon ne dépend de l'heure au point d'être faux en 30 s
+  (compte à rebours, `sealing`) ;
+- si deux conteneurs cohabitent pendant un déploiement (l'identifiant
+  d'instance le couvre, mais le cas n'est pas observé) ;
+- le coût d'un Durable Object, et d'une purge vers N objets (§8).
