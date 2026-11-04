@@ -162,7 +162,7 @@ avec le palier ». Le front n'a donc rien à calculer : il **sélectionne** le
 palier qui correspond à la quantité affichée.
 
 C'est de la lecture, pas de l'arithmétique — exactement ce que le lot 2 de
-`plan-boutique-sur-api.md` cherche (« le front cesse de calculer »), et ça
+`../obsolete/plan-boutique-sur-api.md` cherche (« le front cesse de calculer »), et ça
 s'obtient sans un appel de plus.
 
 ### Les deux risques, et pourquoi ils sont petits
@@ -172,7 +172,7 @@ s'obtient sans un appel de plus.
   toute façon : le client n'est jamais **facturé** un prix périmé — au pire il en
   voit un corrigé au dernier écran.
 
-  ⚠️ À distinguer de ce que `plan-boutique-sur-api.md` refuse, et qui se
+  ⚠️ À distinguer de ce que `../obsolete/plan-boutique-sur-api.md` refuse, et qui se
   ressemble de loin : là, c'est le prix **canonique** contre le **négocié**, un
   écart systématique, sur chaque ligne, tout le temps. Ici, une dérive rare sur
   un prix déjà négocié. Ce n'est pas la même faute, et la seconde s'assume.

@@ -99,7 +99,7 @@ const DELIVERED: DraftOrderInput["fulfillment"] = {
 
 /**
  * Une commande de SOCIÉTÉ : composée HT (`line_ht`). Depuis la voie B (plan
- * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, lot C2), l'arithmétique
+ * `documentation/pricing/obsolete/plan-centime-particuliers.md`, lot C2), l'arithmétique
  * HT de ce bloc n'est plus celle d'un particulier — elle reste celle du pro, et
  * c'est sur lui qu'elle s'éprouve. Le particulier a sa spec
  * (`order-exact-ht.spec.ts`).

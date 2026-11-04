@@ -2,7 +2,7 @@ import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus propres à la commande d'un particulier composée en TTC — plan
- * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 5, voie B).
+ * `documentation/pricing/obsolete/plan-centime-particuliers.md` (§ 5, voie B).
  */
 
 /**

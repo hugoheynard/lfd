@@ -1,5 +1,7 @@
 # Inventaire C0 : ce que chaque assemblage chiffre et juge
 
+> 📜 **Historique, ne décrit plus le code** (2026-11-04). C'est l'état des assemblages au 2026-11-03 ; la refonte l'a remplacé ([`le-prix-d-un-panier.md`](le-prix-d-un-panier.md)). Il reste la **référence des codes É1 à É18**, que le golden master et des suites citent encore. Voir [`../obsolete/README.md`](../obsolete/README.md).
+
 > 📝 Lot C0 du plan [`le-prix-d-un-panier.md`](le-prix-d-un-panier.md),
 > écrit le 2026-11-03. **Aucun code modifié.** Toutes les références
 > `fichier:ligne` ont été ouvertes ce jour-là sur `dev` (`4afc94947`). Les

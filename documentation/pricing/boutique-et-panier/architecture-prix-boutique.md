@@ -9,10 +9,10 @@
 >
 > **Ce qui a été renversé, et où c'est décidé.**
 >
-> | Ce document tranche                                       | Ce qui est en service                               | Où la décision a été prise                                                  |
-> | --------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
-> | `GET /catalog`, **muré**, société prise du principal (§2) | `GET /shop/catalogue`, **`@Public()`**, sans client | [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md), livré le 2026-09-05 |
-> | `canonicalMillicents`, pour le barré (§4)                 | **absent** de `ShopItemView`                        | conséquence de la précédente : sans client, il n'y a aucun écart à barrer   |
+> | Ce document tranche                                       | Ce qui est en service                               | Où la décision a été prise                                                                          |
+> | --------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+> | `GET /catalog`, **muré**, société prise du principal (§2) | `GET /shop/catalogue`, **`@Public()`**, sans client | [`../obsolete/plan-boutique-sur-api.md`](../obsolete/plan-boutique-sur-api.md), livré le 2026-09-05 |
+> | `canonicalMillicents`, pour le barré (§4)                 | **absent** de `ShopItemView`                        | conséquence de la précédente : sans client, il n'y a aucun écart à barrer                           |
 >
 > La boutique est **publique par décision** — on visite d'abord, on s'identifie
 > pour régler. Ce document supposait l'inverse, et tout son §2 en découle. Le
@@ -47,7 +47,7 @@
 code. Il tranche ce qui doit l'être **avant** — parce que ce chantier touche le
 nombre auquel un client consent.
 
-> Le contexte et l'ordre des lots : [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md).
+> Le contexte et l'ordre des lots : [`../obsolete/plan-boutique-sur-api.md`](../obsolete/plan-boutique-sur-api.md).
 > Le moteur lui-même : [`architecture-resolution-de-prix.md`](../moteur/architecture-resolution-de-prix.md).
 
 🔴 **Périmètre : la commande de base et la mercuriale à prix fixe.** Les

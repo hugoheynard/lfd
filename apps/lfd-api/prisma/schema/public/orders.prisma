@@ -299,7 +299,7 @@ model Order {
   loyaltyVoucherId      String?         @map("loyalty_voucher_id")
   loyaltyVoucher        LoyaltyVoucher? @relation(fields: [loyaltyVoucherId], references: [id], onDelete: Restrict)
   /// **Comment les montants ont été composés** (plan
-  /// `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 7) : `line_ht`
+  /// `documentation/pricing/obsolete/plan-centime-particuliers.md`, § 7) : `line_ht`
   /// (le calcul pro, et toute commande d'avant le 2026-10-27) ou `exact_ht`
   /// (particulier : composée en TTC, TVA extraite par taux). Décidée une fois
   /// par l'agrégat, relue ensuite — une révision ne la change pas. Tenue par

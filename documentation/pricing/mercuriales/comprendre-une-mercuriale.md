@@ -9,7 +9,7 @@
 > fiche client. Pour l'état du chantier, voir
 > [`./etat-des-lieux-mercuriale-client.md`](./etat-des-lieux-mercuriale-client.md).
 > Pour ce qui va changer, voir
-> [`./plan-la-mercuriale-devient-un-objet.md`](./plan-la-mercuriale-devient-un-objet.md).
+> [`../obsolete/plan-la-mercuriale-devient-un-objet.md`](../obsolete/plan-la-mercuriale-devient-un-objet.md).
 
 ---
 

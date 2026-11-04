@@ -8,7 +8,7 @@
 > qu'il a été écrit — c'est le raisonnement qui vaut, et notamment les **deux
 > versions contredites** avant celle-ci.
 >
-> Pour l'état réel : [`comprendre-une-mercuriale.md`](comprendre-une-mercuriale.md).
+> Pour l'état réel : [`comprendre-une-mercuriale.md`](../mercuriales/comprendre-une-mercuriale.md).
 
 > **Décision de Hugo, 2026-09-08 :** une mercuriale se prend **en bloc**. On la
 > pose entière, on la clôt entière ; si un prix est faux, on assume et on

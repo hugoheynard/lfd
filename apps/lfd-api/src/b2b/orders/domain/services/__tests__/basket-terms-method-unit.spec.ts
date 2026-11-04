@@ -5,7 +5,7 @@ import { basketTermsOf, type BasketDeliveryFee, type BasketDiscount } from "../b
 
 /**
  * `basketTermsOf` rend la remise et le port **dans l'unité de la méthode** —
- * plan `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`
+ * plan `documentation/pricing/obsolete/plan-centime-particuliers.md`
  * (§ 5, lot C2) : HT tels que la caisse les rend pour `line_ht`, TTC par la
  * composition de l'agrégat pour `exact_ht`.
  *

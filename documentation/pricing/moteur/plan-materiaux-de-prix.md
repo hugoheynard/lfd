@@ -212,7 +212,7 @@ réponse : différer y serait un défaut, pas une économie. Cf.
 ### Où l'idiome vit
 
 Dans le back-office d'abord, là où le besoin est. **Second consommateur connu** :
-le lot 2 de [`plan-boutique-sur-api.md`](../boutique-et-panier/plan-boutique-sur-api.md), qui branchera
+le lot 2 de [`../obsolete/plan-boutique-sur-api.md`](../obsolete/plan-boutique-sur-api.md), qui branchera
 la boutique sur `POST /orders/quote`. Le jour où il arrive, l'idiome monte dans
 `@lfd/b2b-ui` — pas avant : un utilitaire partagé écrit pour un seul appelant se
 révèle toujours mal découpé quand le second arrive.

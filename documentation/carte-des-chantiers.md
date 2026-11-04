@@ -124,14 +124,14 @@ modèle des réglages), sous-comptes S6.
 
 ## 5. Bloqués par l'extérieur
 
-| Qui                          | Ce qu'on attend                                                                                                                                                           | Doc                                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Le cabinet comptable**     | l'écart du centime (TVA « en dedans » pour un particulier) ; S4 des sous-comptes (Q3) ; fidélité et cartes cadeaux ; remboursement réussi puis échoué ; BT-26 sur l'avoir | `pricing/centime-et-tva/ecart-du-centime-particuliers.md`, `comptabilite/arbitrages-en-absence.md` |
-| **La Caisse d'Épargne**      | répondu le 2026-10-23, sauf les questions 3, 5 et 26 ; les réponses 3 et 22 se contredisent                                                                               | `comptabilite/prelevement/question-banque.md`                                                      |
-| **Un vrai fichier bancaire** | l'import pain.002 / camt.054 est bâti (`bank-return-file.ts`), reste à l'éprouver sur un vrai fichier                                                                     | `comptabilite/prelevement/retours-bancaires.md`                                                    |
-| **Un achat**                 | les imprimantes thermiques : Brother TD-2350DSAH300 choisie le 2026-10-26, pas encore achetée                                                                             | `impression/plan-imprimantes-thermiques.md`                                                        |
-| **Le terrain**               | la mesure MAX_WAYPOINTS sur iPhone ; le DPO pour la position du livreur                                                                                                   | `livraisons/livreur/gps-y-aller-et-position.md` §7                                                 |
-| **Un téléphone**             | le bandeau d'installation de l'app cliente, et le contrôle en production de l'invitation expirée                                                                          | `todos/todo-installation-app-cliente.md`                                                           |
+| Qui                          | Ce qu'on attend                                                                                                                                                           | Doc                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Le cabinet comptable**     | l'écart du centime (TVA « en dedans » pour un particulier) ; S4 des sous-comptes (Q3) ; fidélité et cartes cadeaux ; remboursement réussi puis échoué ; BT-26 sur l'avoir | `pricing/obsolete/ecart-du-centime-particuliers.md`, `comptabilite/arbitrages-en-absence.md` |
+| **La Caisse d'Épargne**      | répondu le 2026-10-23, sauf les questions 3, 5 et 26 ; les réponses 3 et 22 se contredisent                                                                               | `comptabilite/prelevement/question-banque.md`                                                |
+| **Un vrai fichier bancaire** | l'import pain.002 / camt.054 est bâti (`bank-return-file.ts`), reste à l'éprouver sur un vrai fichier                                                                     | `comptabilite/prelevement/retours-bancaires.md`                                              |
+| **Un achat**                 | les imprimantes thermiques : Brother TD-2350DSAH300 choisie le 2026-10-26, pas encore achetée                                                                             | `impression/plan-imprimantes-thermiques.md`                                                  |
+| **Le terrain**               | la mesure MAX_WAYPOINTS sur iPhone ; le DPO pour la position du livreur                                                                                                   | `livraisons/livreur/gps-y-aller-et-position.md` §7                                           |
+| **Un téléphone**             | le bandeau d'installation de l'app cliente, et le contrôle en production de l'invitation expirée                                                                          | `todos/todo-installation-app-cliente.md`                                                     |
 
 ## 6. Le ménage documentaire
 
@@ -143,7 +143,7 @@ d'état, ou à corriger) :
 
 - `promotions/plan-jours-et-heures.md`, `promotions/plan-la-mercuriale-decide.md` (« rien n'est bâti ») ; `promotions/plan-chaque-audience-son-information.md`, `promotions/plan-texte-de-la-vignette.md` (« non commité ») ; `promotions/promotions.md` dit encore une partie « sur `dev` seulement » (`main` = `e35b566c9`).
 - `catalogue/plan-quantite-minimale.md` (« rien bâti » en tête, M4 écrans faits le 2026-10-29) ; `pim/plan-propager-allergenes-d-un-ingredient.md` (« rien n'est bâti », P1–P2 faits le 2026-10-27).
-- `pricing/plan-export-grille-de-prix.md` (« non commité »), `pricing/centime-et-tva/plan-centime-particuliers.md` (C1 « sans appelant », appelé depuis C2).
+- `pricing/plan-export-grille-de-prix.md` (« non commité »), `pricing/obsolete/plan-centime-particuliers.md` (C1 « sans appelant », appelé depuis C2).
 - `retrait/plan-contexte-retrait.md` (« rien de ce document n'est bâti »).
 - `colisage/todo-colisage-tri-par-echeance.md` : pris par L2, à retirer.
 - `comptes-client/sous-comptes.md` l.541 « rien n'est bâti ».
@@ -155,8 +155,8 @@ présents) : `comptabilite/fidelite/plan-points-de-fidelite.md`,
 `commandes/bon-et-pieces/plan-agregation-des-commandes.md`,
 `pricing/moteur/plan-materiaux-de-prix.md`,
 `pricing/moteur/plan-la-trace-qui-explique.md`,
-`pricing/saisie/plan-familles-en-donnees.md`,
-`pricing/mercuriales/plan-la-mercuriale-devient-un-objet.md`,
+`pricing/obsolete/plan-familles-en-donnees.md`,
+`pricing/obsolete/plan-la-mercuriale-devient-un-objet.md`,
 `livraisons/architecture/plan-schema-delivery.md`,
 `livraisons/chargement/plan-geometrie-du-plancher.md`,
 `livraisons/clientele/plan-remise-et-livraison-par-clientele.md`,
