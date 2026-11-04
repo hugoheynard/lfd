@@ -39,14 +39,14 @@ flowchart LR
 ## La limite : le stock (Hugo, 2026-11-04)
 
 **Le stock d'un produit est la limite de ce système pour l'instant.** Ce qui
-reste en rayon aujourd'hui bouge avec les commandes des AUTRES clients ; le
-rayon gardé peut donc montrer un stock en retard sur la réalité. Ce n'est pas
-un prix : la passation de commande relit tout et refuse ce qui manque. Mais
-c'est ce qui borne la durée qu'on peut se permettre, et c'est à vérifier
-avant de bâtir : **le stock est-il dans la vue gardée ?** Si oui, et qu'une
-réservation purge déjà « tout » (constaté le 2026-11-04 dans
-`public-shelf-rules.ts`, `orderTouchesPublicShelf`), le retard est borné par
-l'éc# Partie 2 — Le code
+reste en rayon bouge avec les commandes des AUTRES clients. **Vérifié par
+`vitruve` le 2026-11-04 : la vue gardée (`ShopCatalogueView`) ne porte aucun
+stock** — garder le rayon plus longtemps ne retarde donc aucun stock affiché.
+Et aucune commande ne vide le rayon : la « réservation qui purge tout » est
+celle d'un article sur mesure, pas une réservation de stock. La limite qui
+pèse vraiment côté commandes est le **plancher dynamique** (§ 0).
+
+# Partie 2 — Le code
 
 ## 0. Ce que `vitruve` a établi (2026-11-04)
 
