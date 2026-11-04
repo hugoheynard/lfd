@@ -50,7 +50,9 @@ const ADMITTED = new Map([
     {
       since: "2026-11-02",
       reason:
-        "les textes publiés de la boutique, identiques pour tous, étiquetés par version et langue",
+        "les textes publiés de la boutique, identiques pour tous, étiquetés par version et langue ; " +
+        "purgés de Workers Cache à chaque publication (`Cache-Tag: textes-boutique`, 2026-11-04)",
+      readers: ["apps/lfd-api/src/b2b/shop-copy/http/shop-copy.controller.ts"],
     },
   ],
   [

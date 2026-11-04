@@ -1,3 +1,5 @@
+import { SHOP_COPY_CACHE_TAG } from "../domain/ports/shop-copy-edge-cache.js";
+
 /**
  * Combien de temps un navigateur sert les textes sans redemander. Court : une
  * publication doit se voir dans la minute, et une revalidation coûte une
@@ -11,6 +13,13 @@ export const SHOP_COPY_MAX_AGE_S = 60;
  * son démarrage sur une revalidation.
  */
 export const SHOP_COPY_STALE_WHILE_REVALIDATE_S = 600;
+
+/**
+ * L'étiquette que Workers Cache attache à la réponse, et que la publication
+ * purge (`ShopCopyEdgeCache`) : sans elle, un texte publié attendrait
+ * l'échéance du cache de bordure.
+ */
+export { SHOP_COPY_CACHE_TAG };
 
 export const SHOP_COPY_CACHE_CONTROL = `public, max-age=${SHOP_COPY_MAX_AGE_S}, stale-while-revalidate=${SHOP_COPY_STALE_WHILE_REVALIDATE_S}`;
 

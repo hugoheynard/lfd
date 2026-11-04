@@ -10,7 +10,7 @@
 //   API ──http://rayons.interne/public/purge──▶ gestionnaire de sortie
 //        (point d'entrée `ContainerProxy`, appelant contrôlé par `containerId`)
 //     ──boucle locale, `props` de purge──▶ point d'entrée PAR DÉFAUT
-//     ──▶ `ctx.cache.purge({ tags: ["rayon-public"] })`
+//     ──▶ `ctx.cache.purge({ tags: [<étiquette de la liste fermée>] })`
 //
 // La doc Cloudflare (relue le 2026-11-04) dit que « des points d'entrée
 // différents ont des caches séparés » et que seul le Worker propriétaire
@@ -26,7 +26,39 @@
  */
 export const PUBLIC_SHELF_TAG = "rayon-public";
 
-/** Le chemin que l'API appelle chez `rayons.interne` pour purger le rayon public. */
+/**
+ * L'étiquette des textes publiés de la boutique (`GET /shop/copy`), gardés par
+ * Workers Cache comme toute réponse `public` du Worker — la même que celle que
+ * l'API pose (`SHOP_COPY_CACHE_TAG`, `shop-copy-edge-cache.ts`). Purgée à
+ * chaque publication (décision de Hugo, 2026-11-04).
+ */
+export const SHOP_COPY_TAG = "textes-boutique";
+
+/**
+ * **La liste fermée des étiquettes purgeables.** Une purge ne vise jamais une
+ * étiquette venue de l'appel : seulement l'une de celles-ci, relue des deux
+ * côtés de la boucle locale.
+ */
+export const PURGEABLE_TAGS = [PUBLIC_SHELF_TAG, SHOP_COPY_TAG] as const;
+
+export type PurgeableTag = (typeof PURGEABLE_TAGS)[number];
+
+/** Le paramètre d'URL qui nomme l'étiquette à purger. */
+export const PURGE_TAG_PARAM = "tag";
+
+/**
+ * L'étiquette que l'appel demande, si elle est dans {@link PURGEABLE_TAGS} ;
+ * `null` sinon — absente, répétée, inconnue : la purge est refusée.
+ */
+export function purgeableTagOf(url: URL): PurgeableTag | null {
+  const asked = url.searchParams.getAll(PURGE_TAG_PARAM);
+  if (asked.length !== 1) {
+    return null;
+  }
+  return PURGEABLE_TAGS.find((tag) => tag === asked[0]) ?? null;
+}
+
+/** Le chemin que l'API appelle chez `rayons.interne` pour purger une étiquette de Workers Cache. */
 export const PUBLIC_SHELF_PURGE_PATH = "/public/purge";
 
 /**
@@ -67,11 +99,14 @@ export function isPublicPurgeCall(props: unknown, method: string, pathname: stri
 export type PublicPurgeOutcome =
   | { readonly kind: "purged" }
   | { readonly kind: "cache_unavailable" }
+  | { readonly kind: "unknown_tag" }
   | { readonly kind: "refused"; readonly errors: readonly string[] };
 
 const STATUS_PURGED = 204;
 /** `ctx.cache` absent : Workers Cache n'est pas activé sur ce Worker (`wrangler.jsonc`). */
 const STATUS_CACHE_UNAVAILABLE = 503;
+/** Étiquette hors de la liste fermée : rien n'est purgé. */
+const STATUS_UNKNOWN_TAG = 400;
 /** Cloudflare a refusé la purge (débit de l'offre gratuite, par exemple). */
 const STATUS_REFUSED = 502;
 
@@ -82,6 +117,8 @@ export function purgeStatusOf(outcome: PublicPurgeOutcome): number {
       return STATUS_PURGED;
     case "cache_unavailable":
       return STATUS_CACHE_UNAVAILABLE;
+    case "unknown_tag":
+      return STATUS_UNKNOWN_TAG;
     case "refused":
       return STATUS_REFUSED;
   }

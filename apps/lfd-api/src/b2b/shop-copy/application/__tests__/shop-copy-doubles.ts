@@ -1,3 +1,4 @@
+import { ShopCopyEdgeCache } from "../../domain/ports/shop-copy-edge-cache.js";
 import {
   PublishedShopCopyCache,
   PublishedShopCopyReader,
@@ -73,6 +74,16 @@ export class InMemoryReleases extends ShopCopyReleaseRepository {
       this.texts.rows.set(`${state.key}|${state.locale}`, state);
     }
     return Promise.resolve();
+  }
+}
+
+/** La bordure : compte les purges, et peut échouer. */
+export class RecordingEdgeCache extends ShopCopyEdgeCache {
+  purges = 0;
+  fails = false;
+  purge(): Promise<void> {
+    this.purges += 1;
+    return this.fails ? Promise.reject(new RangeError("Worker injoignable")) : Promise.resolve();
   }
 }
 

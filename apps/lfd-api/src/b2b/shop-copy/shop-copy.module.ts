@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AppConfig } from "../../platform/config/app-config.js";
 import { GrowthModule } from "../growth/growth.module.js";
 import { ApplyShopCopyRenames } from "./application/apply-shop-copy-renames.js";
 import { PublishShopCopyHandler } from "./application/commands/publish-shop-copy.handler.js";
@@ -14,6 +15,7 @@ import {
   PublishedShopCopyReader,
 } from "./domain/ports/published-shop-copy.reader.js";
 import { ShopCopyAdminReader } from "./domain/ports/shop-copy-admin.reader.js";
+import { ShopCopyEdgeCache } from "./domain/ports/shop-copy-edge-cache.js";
 import { ShopCopyReleaseRepository } from "./domain/ports/shop-copy-release.repository.js";
 import { ShopCopyRenamer } from "./domain/ports/shop-copy-renamer.js";
 import { ShopCopyRepository } from "./domain/ports/shop-copy.repository.js";
@@ -21,6 +23,8 @@ import { ShopCopyManifest } from "./domain/shop-copy-manifest.js";
 import { AdminShopCopyController } from "./http/admin-shop-copy.controller.js";
 import { ShopCopyController } from "./http/shop-copy.controller.js";
 import { CachedPublishedShopCopyReader } from "./infrastructure/cached-published-shop-copy.reader.js";
+import { InternalShopCopyEdgeCache } from "./infrastructure/internal-shop-copy-edge-cache.js";
+import { NoShopCopyEdgeCache } from "./infrastructure/no-shop-copy-edge-cache.js";
 import { embeddedShopCopyManifest } from "./infrastructure/embedded-shop-copy.js";
 import { PrismaPublishedShopCopyStore } from "./infrastructure/prisma-published-shop-copy.store.js";
 import { PublishedShopCopyStore } from "./infrastructure/published-shop-copy.store.js";
@@ -56,6 +60,16 @@ import { ShopCopyRenamesOnBoot } from "./infrastructure/shop-copy-renames.on-boo
     CachedPublishedShopCopyReader,
     { provide: PublishedShopCopyReader, useExisting: CachedPublishedShopCopyReader },
     { provide: PublishedShopCopyCache, useExisting: CachedPublishedShopCopyReader },
+    {
+      // Le Worker pose `SHOP_SHELF_CACHE_URL` : son chemin interne est aussi
+      // celui de la purge de Workers Cache. Sans lui, aucune bordure.
+      provide: ShopCopyEdgeCache,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): ShopCopyEdgeCache => {
+        const url = config.shopShelfCacheUrl();
+        return url === null ? new NoShopCopyEdgeCache() : new InternalShopCopyEdgeCache(url);
+      },
+    },
     ApplyShopCopyRenames,
     ShopCopyRenamesOnBoot,
     SaveShopCopyDraftHandler,

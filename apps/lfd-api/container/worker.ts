@@ -20,9 +20,11 @@ import {
   isPublicPurgeRelay,
   PUBLIC_PURGE_PROPS,
   PUBLIC_SHELF_PURGE_PATH,
-  PUBLIC_SHELF_TAG,
+  PURGE_TAG_PARAM,
+  purgeableTagOf,
   purgeStatusOf,
   type PublicPurgeOutcome,
+  type PurgeableTag,
 } from "./public-shelf";
 import type { ProShelves } from "./pro-shelves";
 import {
@@ -232,8 +234,12 @@ async function proShelvesGateway(
   if (!isTrustedCaller(ctx.containerId, trusted)) {
     return new Response(null, { status: 403 });
   }
-  if (isPublicPurgeRelay(request.method, new URL(request.url).pathname)) {
-    return relayPublicPurge();
+  const url = new URL(request.url);
+  if (isPublicPurgeRelay(request.method, url.pathname)) {
+    const tag = purgeableTagOf(url);
+    return tag === null
+      ? new Response(null, { status: purgeStatusOf({ kind: "unknown_tag" }) })
+      : relayPublicPurge(tag);
   }
   return proShelves(env).fetch(request);
 }
@@ -255,7 +261,7 @@ function isDefaultLoopback(value: unknown): value is DefaultLoopback {
  * démarrage — ici, il ne fait qu'échouer la purge (503), que l'API compte et
  * que la durée de 30 s rattrape. ⚠️ Non prouvé en production (2026-11-04).
  */
-async function relayPublicPurge(): Promise<Response> {
+async function relayPublicPurge(tag: PurgeableTag): Promise<Response> {
   const loopbacks: unknown = Reflect.get(workersModule, "exports");
   const loopback: unknown =
     typeof loopbacks === "object" && loopbacks !== null ? Reflect.get(loopbacks, "default") : null;
@@ -263,25 +269,36 @@ async function relayPublicPurge(): Promise<Response> {
     return new Response(null, { status: purgeStatusOf({ kind: "cache_unavailable" }) });
   }
   return loopback({ props: PUBLIC_PURGE_PROPS }).fetch(
-    new Request(`http://loopback${PUBLIC_SHELF_PURGE_PATH}`, { method: "POST" }),
+    new Request(
+      `http://loopback${PUBLIC_SHELF_PURGE_PATH}?${PURGE_TAG_PARAM}=${encodeURIComponent(tag)}`,
+      { method: "POST" },
+    ),
   );
 }
 
-/** Purge l'étiquette du rayon public dans le cache de CE point d'entrée. */
-async function purgePublicShelf(ctx: ExecutionContext): Promise<Response> {
-  const outcome = await publicPurgeOutcome(ctx);
+/**
+ * Purge, dans le cache de CE point d'entrée, l'étiquette demandée — relue
+ * contre la liste fermée ici aussi : la boucle locale ne fait pas foi.
+ */
+async function purgeTag(request: Request, ctx: ExecutionContext): Promise<Response> {
+  const tag = purgeableTagOf(new URL(request.url));
+  const outcome: PublicPurgeOutcome =
+    tag === null ? { kind: "unknown_tag" } : await publicPurgeOutcome(ctx, tag);
   return new Response(
     outcome.kind === "refused" ? JSON.stringify({ errors: outcome.errors }) : null,
     { status: purgeStatusOf(outcome) },
   );
 }
 
-async function publicPurgeOutcome(ctx: ExecutionContext): Promise<PublicPurgeOutcome> {
+async function publicPurgeOutcome(
+  ctx: ExecutionContext,
+  tag: PurgeableTag,
+): Promise<PublicPurgeOutcome> {
   if (ctx.cache === undefined) {
     return { kind: "cache_unavailable" };
   }
   try {
-    const result = await ctx.cache.purge({ tags: [PUBLIC_SHELF_TAG] });
+    const result = await ctx.cache.purge({ tags: [tag] });
     return result.success
       ? { kind: "purged" }
       : { kind: "refused", errors: result.errors.map((error) => `${error.code} ${error.message}`) };
@@ -736,7 +753,7 @@ export default {
     // de ses `props` : une requête du dehors n'en porte pas, et suit le chemin
     // ordinaire (`public-shelf.ts`, `isPublicPurgeCall`).
     if (isPublicPurgeCall(ctx.props, request.method, new URL(request.url).pathname)) {
-      return purgePublicShelf(ctx);
+      return purgeTag(request, ctx);
     }
     // Toute la politique d'edge (limite + réécriture de l'IP cliente) vit dans
     // `edge-guard.ts`, sous tests. Ici on ne fait que câbler le binding et la

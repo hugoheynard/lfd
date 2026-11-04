@@ -70,6 +70,8 @@ describe("la lecture publique", () => {
     expect(response.headers["cache-control"]).toBe(
       "public, max-age=60, stale-while-revalidate=600",
     );
+    // L'étiquette que la publication purge dans Workers Cache (2026-11-04).
+    expect(response.headers["cache-tag"]).toBe("textes-boutique");
   });
 
   it("refuse une langue inconnue", async () => {

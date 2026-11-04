@@ -1,3 +1,4 @@
+import { PUBLIC_SHELF_CACHE_TAG } from "../domain/public-shelf-tag.js";
 import type { PublicShelfReply } from "../application/public-shelf-cacheability.js";
 
 /**
@@ -14,11 +15,7 @@ export const PUBLIC_SHELF_MAX_AGE_S = 30;
  */
 export const PUBLIC_SHELF_CACHE_CONTROL = `public, max-age=${PUBLIC_SHELF_MAX_AGE_S}`;
 
-/**
- * L'étiquette que le Worker purge (`ctx.cache.purge({ tags })`) — la même que
- * `PUBLIC_SHELF_TAG` de `container/public-shelf.ts`.
- */
-export const PUBLIC_SHELF_CACHE_TAG = "rayon-public";
+export { PUBLIC_SHELF_CACHE_TAG };
 
 /** La seule méthode de la réponse que la décision appelle. */
 export interface PublicShelfHeaderSink {

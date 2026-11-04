@@ -1,3 +1,4 @@
+import { PUBLIC_SHELF_CACHE_TAG } from "../domain/public-shelf-tag.js";
 import { UnreadableShelfReplyError } from "../domain/errors/unreadable-shelf-reply.error.js";
 import type { PublicShelfEraser } from "../domain/ports/public-shelf-eraser.js";
 import {
@@ -9,8 +10,11 @@ import type { ShelfFetch } from "./durable-object-shop-shelf-cache.js";
 /** Contrat de `container/shelf-store.ts` (`PUBLIC_SHELF_STATE_PATH`) : servi par l'objet. */
 const STATE_PATH = "/public/state";
 
-/** Contrat de `container/public-shelf.ts` (`PUBLIC_SHELF_PURGE_PATH`) : servi par le Worker. */
-const PURGE_PATH = "/public/purge";
+/**
+ * Contrat de `container/public-shelf.ts` (`PUBLIC_SHELF_PURGE_PATH`, `PURGE_TAG_PARAM`,
+ * `PUBLIC_SHELF_TAG`) : servi par le Worker, qui refuse toute étiquette hors de sa liste fermée.
+ */
+const PURGE_PATH = `/public/purge?tag=${PUBLIC_SHELF_CACHE_TAG}`;
 
 /** Le filet du socket, au-delà du délai du repli : libère un appel abandonné. */
 const SOCKET_TIMEOUT_MS = 2000;

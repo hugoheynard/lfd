@@ -56,7 +56,9 @@ describe("InternalPublicShelf", () => {
   it("purge par un POST au Worker ; seul 204 vaut « purgé »", async () => {
     const ok = replying(() => new Response(null, { status: 204 }));
     await new InternalPublicShelf(ORIGIN, ok.fetchFn).purge();
-    expect(ok.sent).toEqual([{ url: "http://rayons.interne/public/purge", method: "POST" }]);
+    expect(ok.sent).toEqual([
+      { url: "http://rayons.interne/public/purge?tag=rayon-public", method: "POST" },
+    ]);
 
     for (const status of [502, 503, 200]) {
       const refused = replying(() => new Response(null, { status }));

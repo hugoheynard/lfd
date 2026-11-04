@@ -11,7 +11,12 @@ import type { Response } from "express";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetPublishedShopCopyQuery } from "../application/queries/get-published-shop-copy.query.js";
-import { clientHasEtag, SHOP_COPY_CACHE_CONTROL, shopCopyEtag } from "./shop-copy-cache-headers.js";
+import {
+  clientHasEtag,
+  SHOP_COPY_CACHE_CONTROL,
+  SHOP_COPY_CACHE_TAG,
+  shopCopyEtag,
+} from "./shop-copy-cache-headers.js";
 
 /**
  * **Les textes de la boutique, pour la boutique** — les remplacements publiés
@@ -45,6 +50,7 @@ export class ShopCopyController {
     const etag = shopCopyEtag(view.version, view.locale);
     response.setHeader("ETag", etag);
     response.setHeader("Cache-Control", SHOP_COPY_CACHE_CONTROL);
+    response.setHeader("Cache-Tag", SHOP_COPY_CACHE_TAG);
     if (clientHasEtag(ifNoneMatch, etag)) {
       response.status(304);
       return undefined;

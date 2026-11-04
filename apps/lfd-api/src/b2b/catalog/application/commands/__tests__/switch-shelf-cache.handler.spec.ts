@@ -38,6 +38,7 @@ function setup(shelfSwitch: ShopShelfSwitch = new InMemoryShelfSwitch()) {
   return {
     signals: rig.signals,
     publicShelf: rig.shelf,
+    cacheability: rig.cacheability,
     handler: new SwitchShelfCacheHandler(shelfSwitch, rig.publicShelf, rig.signals),
   };
 }
@@ -117,6 +118,31 @@ describe("SwitchShelfCacheHandler", () => {
     expect(outcome).toMatchObject({ publicEnabled: false, publicPurge: "failed" });
     expect(signals.names()).toContain("public_purge_failed");
     expect(signals.emitted).toContainEqual({ name: "public_switched", enabled: false, version: 3 });
+  });
+
+  it("une bascule dans cette instance oublie la mémoire du drapeau : la réponse suivante relit l'objet", async () => {
+    const { handler, publicShelf, cacheability } = setup();
+    await cacheability.around(() => Promise.resolve("rayon"));
+    expect(publicShelf.reads).toBe(1);
+
+    await handler.execute(new SwitchShelfCacheCommand("public-on"));
+    publicShelf.enabled = true;
+    const reply = await cacheability.around(() => Promise.resolve("rayon"));
+
+    expect(reply.cacheable).toBe(true);
+    expect(publicShelf.reads).toBe(3);
+  });
+
+  it("un geste refusé oublie aussi la mémoire : il a pu basculer avant de répondre", async () => {
+    const { handler, publicShelf, cacheability } = setup(new NoShopShelfSwitch());
+    await cacheability.around(() => Promise.resolve("rayon"));
+
+    await expect(handler.execute(new SwitchShelfCacheCommand("public-on"))).rejects.toBeInstanceOf(
+      ShelfCacheNotConfiguredError,
+    );
+    await cacheability.around(() => Promise.resolve("rayon"));
+
+    expect(publicShelf.reads).toBe(2);
   });
 
   it("sans magasin configuré, refuse en le nommant et ne signale ni ne purge rien", async () => {

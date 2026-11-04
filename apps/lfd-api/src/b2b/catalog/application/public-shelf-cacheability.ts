@@ -17,6 +17,10 @@ export interface PublicShelfReply<T> {
  * allumé aux deux relevés et que la version n'a pas bougé
  * ({@link publicShelfVerdict}).
  *
+ * Drapeau connu éteint depuis moins de 5 s (`PublicShelfFlagMemory`) : aucun
+ * relevé du tout. Sinon, les deux relevés lisent l'objet — la version ne
+ * vient jamais de la mémoire.
+ *
  * Drapeau éteint au premier relevé : pas de second appel — la réponse ne se
  * gardera pas, quoi qu'il arrive. Le calcul, lui, a lieu dans tous les cas :
  * le rayon est TOUJOURS servi, le cache ne fait que décider s'il se garde.
@@ -29,6 +33,11 @@ export class PublicShelfCacheability {
   ) {}
 
   async around<T>(compute: () => Promise<T>): Promise<PublicShelfReply<T>> {
+    if (this.shelf.knownDisabled()) {
+      const view = await compute();
+      this.signals.emit({ name: "public_not_cacheable", reason: "disabled" });
+      return { view, cacheable: false };
+    }
     const before = await this.shelf.state();
     const view = await compute();
     const after = before?.enabled === true ? await this.shelf.state() : before;

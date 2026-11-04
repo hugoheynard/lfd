@@ -29,6 +29,9 @@ import {
  * Son échec ne fait pas échouer le geste — le drapeau a basculé — mais se
  * dit dans la réponse.
  *
+ * La mémoire du drapeau public de CETTE instance est oubliée à chaque geste
+ * (`PublicShelfFlagMemory`) ; les autres instances le voient en 5 s au plus.
+ *
  * Rend l'état relu par le magasin — une exception assumée à « une commande
  * rend `void` » : la route est machine, son appelant (un workflow) n'a pas de
  * lecture à relancer, et l'état ne se lit nulle part ailleurs.
@@ -47,7 +50,11 @@ export class SwitchShelfCacheHandler implements ICommandHandler<
   ) {}
 
   async execute(command: SwitchShelfCacheCommand): Promise<ShelfSwitchOutcome> {
-    const state = await this.shelfSwitch.apply(command.action);
+    // Oubliée même si le geste échoue : il a peut-être basculé avant de
+    // répondre, et la mémoire de cette instance ne doit pas le contredire.
+    const state = await this.shelfSwitch.apply(command.action).finally(() => {
+      this.publicShelf.forgetFlag();
+    });
     this.signals.emit(signalOf(command.action, state));
     return { ...state, publicPurge: await this.publicPurge(command.action) };
   }

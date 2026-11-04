@@ -587,11 +587,24 @@ l'écouter. Il peut partir en production seul, sans effet visible.
   `ctx.cache.purge`. **Non prouvé** : que `exports` existe avec notre date de
   compatibilité et `enable_ctx_exports`, et que la boucle atteigne le cache du
   point d'entrée par défaut. Un échec ne fait qu'échouer la purge (503).
-- ⚠️ **`/shop/copy` sera gardé aussi** dès que le bloc `cache` est déployé : il
-  répond déjà `public, max-age=60, stale-while-revalidate=600`, sans drapeau
-  ni purge à la publication.
+- **`/shop/copy` est gardé aussi** dès que le bloc `cache` est déployé : il
+  répond `public, max-age=60, stale-while-revalidate=600`, sans drapeau.
+  Depuis le 2026-11-04 (Hugo), il porte `Cache-Tag: textes-boutique`, et la
+  publication des textes (`PublishShopCopyHandler`) purge cette étiquette
+  après la validation (`AfterCommit`), par le même relais que le rayon public.
+  Le relais n'accepte que `?tag=` d'une liste fermée (`PURGEABLE_TAGS` :
+  `rayon-public`, `textes-boutique`), relue des deux côtés de la boucle ; une
+  autre étiquette rend 400. Une purge perdue est journalisée et la
+  publication se voit à l'échéance (onze minutes au plus). L'interrupteur ne
+  purge pas les textes : ils ne dépendent d'aucun drapeau, et un texte faux se
+  corrige en republiant.
 - Le relevé d'état coûte un appel à l'objet par réponse publique non servie
-  du cache, deux quand le drapeau est allumé.
+  du cache, deux quand le drapeau est allumé. Depuis le 2026-11-04, l'état
+  « éteint » se garde **5 s par instance** (`PublicShelfFlagMemory`, sur
+  `Clock`) : éteint, plus d'aller-retour. La version ne se garde jamais —
+  allumé, les deux relevés lisent toujours l'objet. Un échec ne se range pas ;
+  une bascule par l'interrupteur oublie la mémoire de cette instance. Le prix :
+  une bascule faite ailleurs met au plus 5 s à être vue.
 
 ## 10. Ce que ce plan ne fait pas
 

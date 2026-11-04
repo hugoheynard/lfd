@@ -1,6 +1,8 @@
 import { SHELF_BREAKER_FAILURES } from "../shelf-cache-breaker.js";
 import { InMemoryPublicShelf, publicRig, type PublicShelfFailure } from "./public-shelf-doubles.js";
 import { BrokenShelfCache, resilientAround } from "./shelf-cache-doubles.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { PUBLIC_FLAG_MEMORY_MS, PublicShelfFlagMemory } from "../public-shelf-flag-memory.js";
 import { PublicShelfCacheability } from "../public-shelf-cacheability.js";
 import { ResilientPublicShelf } from "../resilient-public-shelf.js";
 
@@ -85,7 +87,13 @@ describe("PublicShelfCacheability", () => {
     const shelf = new InMemoryPublicShelf();
     shelf.enabled = true;
     const cacheability = new PublicShelfCacheability(
-      new ResilientPublicShelf(shelf, shelf, rig.guard, rig.signals),
+      new ResilientPublicShelf(
+        shelf,
+        shelf,
+        rig.guard,
+        rig.signals,
+        new PublicShelfFlagMemory(new FixedClock(new Date(0))),
+      ),
       rig.signals,
     );
     for (let i = 0; i < SHELF_BREAKER_FAILURES; i += 1) {
@@ -109,5 +117,76 @@ describe("PublicShelfCacheability", () => {
     await expect(
       cacheability.around(() => Promise.reject(new RangeError("base"))),
     ).rejects.toBeInstanceOf(RangeError);
+  });
+});
+
+/**
+ * **La mémoire du drapeau** (Hugo, 2026-11-04) : éteint, l'état se garde 5 s
+ * par instance et épargne l'aller-retour ; la version, elle, se relit
+ * toujours. Ces tests échouent si un échec se garde, si la mémoire survit à
+ * son délai, ou si un drapeau allumé saute un relevé.
+ */
+describe("PublicShelfCacheability — la mémoire du drapeau", () => {
+  const compute = (): Promise<typeof VIEW> => Promise.resolve(VIEW);
+
+  it("éteint : lu une fois, puis plus pendant 5 s", async () => {
+    const { cacheability, shelf, clock } = publicRig();
+
+    await cacheability.around(compute);
+    clock.advanceMs(PUBLIC_FLAG_MEMORY_MS - 1);
+    const reply = await cacheability.around(compute);
+
+    expect(reply).toEqual({ view: VIEW, cacheable: false });
+    expect(shelf.reads).toBe(1);
+  });
+
+  it("éteint : relu passé 5 s, et l'allumage d'une autre instance est vu", async () => {
+    const { cacheability, shelf, clock } = publicRig();
+    await cacheability.around(compute);
+    shelf.enabled = true;
+
+    clock.advanceMs(PUBLIC_FLAG_MEMORY_MS);
+    const reply = await cacheability.around(compute);
+
+    expect(reply.cacheable).toBe(true);
+    expect(shelf.reads).toBe(3);
+  });
+
+  it("allumé : la version est relevée avant ET après à chaque réponse, jamais gardée", async () => {
+    const { cacheability, shelf } = rigWith(true);
+    await cacheability.around(compute);
+
+    const reply = await cacheability.around(() => {
+      shelf.writeDuringCompute();
+      return compute();
+    });
+
+    expect(shelf.reads).toBe(4);
+    expect(reply.cacheable).toBe(false);
+  });
+
+  it("un objet en panne ne remplit pas la mémoire : le relevé suivant relit l'objet", async () => {
+    const { cacheability, shelf } = publicRig();
+    shelf.failure = "throws";
+    await cacheability.around(compute);
+    shelf.failure = null;
+    shelf.enabled = true;
+
+    const reply = await cacheability.around(compute);
+
+    expect(reply.cacheable).toBe(true);
+    expect(shelf.reads).toBe(3);
+  });
+
+  it("oubliée par une bascule de cette instance : relue tout de suite", async () => {
+    const { cacheability, shelf, publicShelf } = publicRig();
+    await cacheability.around(compute);
+    shelf.enabled = true;
+
+    publicShelf.forgetFlag();
+    const reply = await cacheability.around(compute);
+
+    expect(reply.cacheable).toBe(true);
+    expect(shelf.reads).toBe(3);
   });
 });

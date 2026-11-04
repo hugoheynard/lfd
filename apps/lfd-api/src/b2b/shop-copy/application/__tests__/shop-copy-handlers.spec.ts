@@ -1,3 +1,4 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -23,6 +24,7 @@ import {
   InMemoryReleases,
   InMemoryShopCopy,
   RecordingCache,
+  RecordingEdgeCache,
   RecordingRenamer,
   StaticPublished,
 } from "./shop-copy-doubles.js";
@@ -37,14 +39,27 @@ function world() {
   const events = new RecordingPublisher();
   const clock = new FixedClock(AT);
   const uow = new DirectUnitOfWork();
+  const afterCommit = new HeldAfterCommit();
+  const edge = new RecordingEdgeCache();
   return {
     texts,
+    afterCommit,
+    edge,
     releases,
     cache,
     events,
     draft: new SaveShopCopyDraftHandler(texts, MANIFEST, clock, uow),
     reset: new ResetShopCopyDraftHandler(texts, clock, uow),
-    publish: new PublishShopCopyHandler(releases, MANIFEST, cache, events, clock, uow),
+    publish: new PublishShopCopyHandler(
+      releases,
+      MANIFEST,
+      cache,
+      events,
+      clock,
+      uow,
+      afterCommit,
+      edge,
+    ),
   };
 }
 
@@ -156,6 +171,63 @@ describe("publier", () => {
       ShopCopyPublishedMeanwhileError,
     );
     expect(w.cache.forgotten).toBe(0);
+  });
+});
+
+/**
+ * Les textes gardés par Workers Cache (décision de Hugo, 2026-11-04) : sans
+ * purge, une publication mettait jusqu'à onze minutes à se voir. Ces tests
+ * échouent si la purge part avant la validation, ou malgré son échec.
+ */
+describe("publier purge les textes gardés en bordure", () => {
+  async function drafted() {
+    const w = world();
+    await w.draft.execute(
+      new SaveShopCopyDraftCommand(CART_TITLE.key, "fr", "Mon panier", 0, STAFF),
+    );
+    return w;
+  }
+
+  it("après la validation, et pas avant", async () => {
+    const w = await drafted();
+
+    await w.publish.execute(new PublishShopCopyCommand(STAFF));
+    expect(w.edge.purges).toBe(0);
+
+    await w.afterCommit.commit();
+    expect(w.edge.purges).toBe(1);
+  });
+
+  it("rien si la transaction échoue", async () => {
+    const w = await drafted();
+    w.releases.raceVersion = true;
+
+    await expect(w.publish.execute(new PublishShopCopyCommand(STAFF))).rejects.toBeInstanceOf(
+      ShopCopyPublishedMeanwhileError,
+    );
+    w.afterCommit.discard();
+    await w.afterCommit.commit();
+
+    expect(w.edge.purges).toBe(0);
+  });
+
+  it("rien sans brouillon à publier", async () => {
+    const w = world();
+
+    await expect(w.publish.execute(new PublishShopCopyCommand(STAFF))).rejects.toBeInstanceOf(
+      NothingToPublishError,
+    );
+    await w.afterCommit.commit();
+
+    expect(w.edge.purges).toBe(0);
+  });
+
+  it("une purge qui échoue ne retient pas la publication : la version est rendue", async () => {
+    const w = await drafted();
+    w.edge.fails = true;
+
+    expect(await w.publish.execute(new PublishShopCopyCommand(STAFF))).toBe(1);
+    expect(w.texts.version).toBe(1);
   });
 });
 

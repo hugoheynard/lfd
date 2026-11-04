@@ -4,8 +4,10 @@ import {
   PublicShelfStateReader,
   type PublicShelfState,
 } from "../../domain/ports/public-shelf-state.reader.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { InMemoryShopShelfCache } from "../../infrastructure/in-memory-shop-shelf-cache.js";
 import { PublicShelfCacheability } from "../public-shelf-cacheability.js";
+import { PublicShelfFlagMemory } from "../public-shelf-flag-memory.js";
 import { PublicShelfPurge } from "../public-shelf-purge.js";
 import { ResilientPublicShelf } from "../resilient-public-shelf.js";
 import { resilientAround, type ResilientRig } from "./shelf-cache-doubles.js";
@@ -59,13 +61,23 @@ export interface PublicRig extends ResilientRig {
   readonly publicShelf: ResilientPublicShelf;
   readonly cacheability: PublicShelfCacheability;
   readonly purge: PublicShelfPurge;
+  /** L'horloge de la mémoire du drapeau : on l'avance pour la périmer. */
+  readonly clock: FixedClock;
 }
 
 export function publicRig(shelf: InMemoryPublicShelf = new InMemoryPublicShelf()): PublicRig {
   const rig = resilientAround(new InMemoryShopShelfCache());
-  const publicShelf = new ResilientPublicShelf(shelf, shelf, rig.guard, rig.signals);
+  const clock = new FixedClock(new Date(0));
+  const publicShelf = new ResilientPublicShelf(
+    shelf,
+    shelf,
+    rig.guard,
+    rig.signals,
+    new PublicShelfFlagMemory(clock),
+  );
   return {
     ...rig,
+    clock,
     shelf,
     publicShelf,
     cacheability: new PublicShelfCacheability(publicShelf, rig.signals),

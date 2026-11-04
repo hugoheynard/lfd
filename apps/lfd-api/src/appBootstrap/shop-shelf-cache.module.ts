@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 
 import { ProShelfPurge } from "../b2b/catalog/application/pro-shelf-purge.js";
 import { PublicShelfCacheability } from "../b2b/catalog/application/public-shelf-cacheability.js";
+import { PublicShelfFlagMemory } from "../b2b/catalog/application/public-shelf-flag-memory.js";
 import { PublicShelfPurge } from "../b2b/catalog/application/public-shelf-purge.js";
 import { ResilientPublicShelf } from "../b2b/catalog/application/resilient-public-shelf.js";
 import { ResilientShopShelfCache } from "../b2b/catalog/application/resilient-shop-shelf-cache.js";
@@ -77,6 +78,7 @@ import { AppConfig } from "../platform/config/app-config.js";
     { provide: ShelfCacheSignals, useClass: LoggingShelfCacheSignals },
     ShelfCallGuard,
     ResilientShopShelfCache,
+    PublicShelfFlagMemory,
     ResilientPublicShelf,
     PublicShelfCacheability,
     ProShelfPurge,

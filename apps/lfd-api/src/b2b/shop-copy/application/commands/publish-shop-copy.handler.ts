@@ -1,9 +1,11 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PublishedShopCopyCache } from "../../domain/ports/published-shop-copy.reader.js";
+import { ShopCopyEdgeCache } from "../../domain/ports/shop-copy-edge-cache.js";
 import { ShopCopyReleaseRepository } from "../../domain/ports/shop-copy-release.repository.js";
 import { ShopCopyManifest } from "../../domain/shop-copy-manifest.js";
 import { ShopCopyPublishedEvent } from "../../domain/shop-copy.events.js";
@@ -17,6 +19,11 @@ import { PublishShopCopyCommand } from "./publish-shop-copy.command.js";
  * Le cache de lecture de CETTE instance est oublié **après** la validation :
  * l'oublier pendant laisserait une lecture concurrente recharger l'état
  * d'avant, et le garder.
+ *
+ * Les textes gardés par Workers Cache sont purgés, eux aussi, **après** la
+ * validation (`AfterCommit`) : une publication qui échoue ne purge rien.
+ * La purge n'est pas attendue ; son échec est journalisé et ne retient pas
+ * la publication — les visiteurs la voient alors à l'échéance du cache.
  */
 @CommandHandler(PublishShopCopyCommand)
 export class PublishShopCopyHandler implements ICommandHandler<PublishShopCopyCommand, number> {
@@ -27,6 +34,8 @@ export class PublishShopCopyHandler implements ICommandHandler<PublishShopCopyCo
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: ShopCopyEdgeCache,
   ) {}
 
   /**
@@ -41,6 +50,7 @@ export class PublishShopCopyHandler implements ICommandHandler<PublishShopCopyCo
       const changes = release.publish(this.manifest, stamp);
       await this.releases.save(release, stamp);
       await this.events.publishTraced(new ShopCopyPublishedEvent(release.version, changes));
+      this.afterCommit.defer(() => this.edge.purge(), "shop-copy.edge-purge");
       return release.version;
     });
     this.cache.forget();
