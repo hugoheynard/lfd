@@ -1,5 +1,7 @@
 # Le prix d'un panier : charger, calculer, juger
 
+> 🌙 Compte rendu de la nuit du 2026-11-04 (L3, L4, code mort, lectures ; L5 arrêté) : [revue-nuit-2026-11-04.md](revue-nuit-2026-11-04.md).
+
 > 📝 Plan du 2026-11-03, **quatrième version** (la troisième, « charger,
 > calculer, juger », corrigée par `vitruve` : refus de lecture en données,
 > instant jamais passé à la porte du prix, verdicts qui ont un prix, calcul
