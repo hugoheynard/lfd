@@ -26537,6 +26537,221 @@
       "notes": {}
     }
   },
+  "refusal-order-paths": {
+    "client.cutoff-closed+unknown-sku": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.cutoff-closed.only": {
+      "status": 409,
+      "code": "orders.cutoff.past",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.no-credit+unknown-sku": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.no-credit+unseen-total": {
+      "status": 409,
+      "code": "orders.total_changed",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.no-credit.only": {
+      "status": 409,
+      "code": "order.terms_not_granted",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.same-day+unknown-sku": {
+      "status": 409,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.same-day.only": {
+      "status": 409,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.unknown-sku.only": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.unseen-total+unknown-sku": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "client.unseen-total.only": {
+      "status": 409,
+      "code": "orders.total_changed",
+      "amounts": null,
+      "notes": {}
+    },
+    "estimate.cutoff-closed+unknown-sku": {
+      "status": 200,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {
+        "warnings": null,
+        "cutoff": "closed"
+      }
+    },
+    "estimate.cutoff-closed.only": {
+      "status": 200,
+      "code": "orders.cutoff.past",
+      "amounts": null,
+      "notes": {
+        "warnings": null,
+        "cutoff": "closed"
+      }
+    },
+    "estimate.same-day+unknown-sku": {
+      "status": 200,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {
+        "warnings": null,
+        "cutoff": "closed"
+      }
+    },
+    "estimate.same-day.only": {
+      "status": 200,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {
+        "warnings": null,
+        "cutoff": "closed"
+      }
+    },
+    "estimate.unknown-sku.only": {
+      "status": 200,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {
+        "warnings": null,
+        "cutoff": "open"
+      }
+    },
+    "guest.cutoff-closed+unknown-sku": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "guest.cutoff-closed.only": {
+      "status": 409,
+      "code": "orders.cutoff.past",
+      "amounts": null,
+      "notes": {}
+    },
+    "guest.same-day+unknown-sku": {
+      "status": 409,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {}
+    },
+    "guest.same-day.only": {
+      "status": 409,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {}
+    },
+    "guest.unknown-sku.only": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "guest.unseen-total+unknown-sku": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.counter-link+same-day+unknown-sku": {
+      "status": 400,
+      "code": "orders.counter.link_settlement_refused",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.counter-link.only": {
+      "status": 400,
+      "code": "orders.counter.link_settlement_refused",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.cutoff-closed+unknown-sku": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.cutoff-closed.only": {
+      "status": 409,
+      "code": "orders.cutoff.past",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.no-credit+unseen-total": {
+      "status": 409,
+      "code": "orders.total_changed",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.same-day+unknown-sku": {
+      "status": 409,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.same-day.only": {
+      "status": 409,
+      "code": "orders.same_day_closed",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.shortcut-off-shelf+same-day+unknown-sku": {
+      "status": 400,
+      "code": "orders.shelf.shortcut_off_shelf",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.shortcut-off-shelf.only": {
+      "status": 400,
+      "code": "orders.shelf.shortcut_off_shelf",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.unknown-sku.only": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.unseen-total+unknown-sku": {
+      "status": 400,
+      "code": "orders.sku.unknown",
+      "amounts": null,
+      "notes": {}
+    },
+    "staff.unseen-total.only": {
+      "status": 409,
+      "code": "orders.total_changed",
+      "amounts": null,
+      "notes": {}
+    }
+  },
   "revision-decisions": {
     "e12-unregistered-deadline.C.admin-orders.account": {
       "status": 201,

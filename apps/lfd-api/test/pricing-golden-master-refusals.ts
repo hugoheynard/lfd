@@ -28,7 +28,7 @@ import {
 const MINUTE_MS = 60_000;
 const UNKNOWN_SKU = "ZZZ-999-1";
 
-const FIXED: GoldenBasket = {
+export const FIXED: GoldenBasket = {
   key: "fixed",
   lines: [
     { sku: "VIE-001-1", quantity: 3 },
@@ -43,7 +43,7 @@ const FIXED: GoldenBasket = {
   staffRevision: [],
 };
 
-const WITH_UNKNOWN: GoldenBasket = {
+export const WITH_UNKNOWN: GoldenBasket = {
   ...FIXED,
   lines: [...FIXED.lines, { sku: UNKNOWN_SKU, quantity: 1 }],
 };

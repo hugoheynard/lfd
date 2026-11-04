@@ -44,7 +44,14 @@ import {
   type Divergence,
 } from "./pricing-golden-master-properties.js";
 import { revisionDecisionCases } from "./pricing-golden-master-decisions.js";
-import { lateFeeCase, refusalOrderCases } from "./pricing-golden-master-refusals.js";
+import { planPairVerdicts, waiverPair } from "./pricing-golden-master-pairs.js";
+import { refusalOrderOnEveryPath } from "./pricing-golden-master-refusal-paths.js";
+import {
+  FIXED,
+  lateFeeCase,
+  refusalOrderCases,
+  WITH_UNKNOWN,
+} from "./pricing-golden-master-refusals.js";
 import { GOLDEN_CLOCK, seedGoldenScene, type GoldenScene } from "./pricing-golden-master-scene.js";
 import { GOLDEN_MASTER_WRITE } from "./setup-env.js";
 
@@ -146,7 +153,7 @@ describe("le golden master du chiffrage (L0)", () => {
     expect(unexplained).toEqual([]);
   }, 600_000);
 
-  it("l'ordre des refus mesurable aujourd'hui (§2.4) — payeur, jour, chargement, heure limite", async () => {
+  it("l'ordre des refus (§2.4) — comptoir, marque, jour, chargement, heure limite, total vu, crédit, sur chaque porte", async () => {
     const cases = await refusalOrderCases(ctx, scene, agentsFor(ctx, ipOf(200)));
     recorded["refusal-order"] = cases.paths;
     for (const { first, over, label } of cases.orders) {
@@ -155,7 +162,22 @@ describe("le golden master du chiffrage (L0)", () => {
         code: cases.paths[over]?.code,
       });
     }
-  }, 120_000);
+    // L4 : les mêmes paires, et les rangs 0, 2, 7 bis, sur chaque porte.
+    const everyPath = await refusalOrderOnEveryPath(
+      ctx,
+      scene,
+      agentsFor(ctx, ipOf(203)),
+      { fixed: FIXED, withUnknown: WITH_UNKNOWN },
+      (index) => `198.51.101.${String(index)}`,
+    );
+    recorded["refusal-order-paths"] = everyPath.paths;
+    for (const { first, over, label } of everyPath.orders) {
+      expect({ label, code: everyPath.paths[first]?.code }).toEqual({
+        label,
+        code: everyPath.paths[over]?.code,
+      });
+    }
+  }, 240_000);
 
   it("la dérogation à l'heure limite : le supplément, au conseil et à la passation", async () => {
     const paths = await lateFeeCase(ctx, scene, agentsFor(ctx, ipOf(201)));
@@ -173,6 +195,25 @@ describe("le golden master du chiffrage (L0)", () => {
     expect({ lateFee: quoted?.lateFeeCents, total: quoted?.totalCents }).toEqual({
       lateFee: written?.lateFeeCents,
       total: written?.totalCents,
+    });
+  }, 120_000);
+
+  it("les paires sans verrou / sous verrou (L4) : le plan, la dérogation", async () => {
+    for (const verdict of await planPairVerdicts(ctx)) {
+      expect({ day: verdict.day, underLock: verdict.underLock }).toEqual({
+        day: verdict.day,
+        underLock: verdict.withoutLock,
+      });
+    }
+    const pair = await waiverPair(ctx, scene, agentsFor(ctx, ipOf(204)));
+    expect(pair.placedStatus).toBe(201);
+    expect(pair.openBefore).not.toBeNull();
+    // La dérogation prévue est celle qui est ouverte, puis celle que la passation dépense.
+    expect(pair.foreseenBefore).toBe(pair.openBefore);
+    expect(pair.consumedBy).toBe(pair.placedOrderId);
+    expect({ foreseen: pair.foreseenAfter, open: pair.openAfter }).toEqual({
+      foreseen: null,
+      open: null,
     });
   }, 120_000);
 

@@ -55,3 +55,36 @@ describe("foreseenWaiver — la décision de la passation, sans refus", () => {
     expect(foreseenWaiver(inputAt(BEFORE, { id: "w_1" }))).toBeNull();
   });
 });
+
+/**
+ * **La concordance, minute par minute** (lot L4, plan
+ * `plan-un-seul-assemblage.md`, §2.4) : de 15:00Z à 18:00Z (avant l'heure,
+ * la grâce, après), avec et sans dérogation, ce que le devis prévoit est ce
+ * que la passation dépense — et là où la passation refuse, le devis ne
+ * prévoit rien.
+ */
+describe("foreseenWaiver ≡ ensureWithinOrderCutoff — sur les trois heures qui bordent la limite", () => {
+  const START_MS = new Date(BEFORE).getTime();
+  const STEP_MS = 5 * 60_000;
+  const STEPS = 36;
+  const instants = Array.from({ length: STEPS + 1 }, (_, step) =>
+    new Date(START_MS + step * STEP_MS).toISOString(),
+  );
+
+  it.each([{ id: "w_1" }, null])("dérogation %p : même décision à chaque instant", (waiver) => {
+    for (const now of instants) {
+      const input = inputAt(now, waiver);
+      // Ce que la passation dépense ; `null` aussi quand elle refuse.
+      let spent: string | null = null;
+      try {
+        spent = ensureWithinOrderCutoff(input);
+      } catch {
+        spent = null;
+      }
+      expect({ now, foreseen: foreseenWaiver(input) }).toEqual({
+        now,
+        foreseen: spent,
+      });
+    }
+  });
+});

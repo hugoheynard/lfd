@@ -116,8 +116,9 @@ export class OrderCutoffGate {
 
 /**
  * Un SKU absent du catalogue n'a pas de limite propre : il retombe sur la
- * règle du commerce. Il sera refusé plus loin pour ce qu'il est — inconnu —,
- * et pas ici pour une heure.
+ * règle du commerce. Il est refusé pour ce qu'il est — inconnu — par le
+ * chargement, que la passation juge AVANT l'heure limite (rangs 4 et 5 du
+ * §2.4, `plan-un-seul-assemblage.md`), et jamais ici pour une heure.
  */
 function limitsOf(
   skus: readonly string[],

@@ -1,14 +1,10 @@
-import { millicentsFromCents } from "@lfd/money";
-
 import { EntryShortcutOffShelfError } from "../../../domain/errors/shelf-order-errors.js";
 import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
-import { Order, type DraftOrderInput } from "../../../domain/entities/order.js";
 import { SameDayOrderClosedError } from "../../../domain/errors/same-day-order-closed.error.js";
 import {
   NoPickupLeftTodayError,
   ShelfStockShortError,
 } from "../../../domain/errors/shelf-circuit-errors.js";
-import type { OrderSupplyDecision } from "../../../domain/value-objects/order-supply.js";
 import {
   FixedClosedPlans,
   FixedSameDay,
@@ -23,6 +19,7 @@ import {
   shelfCircuitOf,
   siteDay,
 } from "./shelf-circuit-doubles.js";
+import { CROISSANTS, SHELF_TODAY, shelfOrder, SITE, TODAY } from "./shelf-circuit-fixtures.js";
 
 /**
  * Le circuit du jour J à la passation (plan `jour-meme-sur-stock.md`,
@@ -31,9 +28,7 @@ import {
  * ne sont comparés qu'à cette horloge figée (exception étroite du CLAUDE.md §5).
  */
 
-const TODAY = "2026-01-01";
 const TOMORROW = "2026-01-02";
-const SITE = "site_village";
 
 const CLIENT: OrderParties = {
   companyId: null,
@@ -43,8 +38,6 @@ const CLIENT: OrderParties = {
 };
 const PRO: OrderParties = { ...CLIENT, companyId: "co_1" };
 const STAFF: OrderParties = { ...PRO, placedByStaffId: "staff_1" };
-
-const SHELF_TODAY: OrderSupplyDecision = { supply: "shelf", today: TODAY, entryShortcut: null };
 
 describe("ShelfCircuit.decide — le serveur décide la marque", () => {
   it("un client, aujourd'hui, plan arrêté : sur la vitrine", async () => {
@@ -161,77 +154,6 @@ describe("ShelfCircuit.ensureOpen — clientèle et créneaux restants", () => {
     await expect(circuit.ensureOpen(STAFF, null)).resolves.toBeUndefined();
   });
 });
-
-function shelfOrder(
-  quantity: number,
-  supply: OrderSupplyDecision = SHELF_TODAY,
-  siteId: string | null = SITE,
-): Order {
-  const input: DraftOrderInput = {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
-    principal: null,
-    placedByUserId: "usr_1",
-    placedByStaffId: "staff_1",
-    buyerKind: "registered",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: {
-        label: "Village",
-        ligne1: "1 place du Village",
-        ligne2: "",
-        codePostal: "73150",
-        ville: "Val d'Isère",
-        pays: "France",
-        ...(siteId === null ? {} : { siteId }),
-      },
-    },
-    agreed: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
-    note: "",
-    catalogVersionId: null,
-    lines: [
-      {
-        sku: "VIE-001-1",
-        productName: "Croissant",
-        unitPriceMillicents: millicentsFromCents(120),
-        vatRate: 5.5,
-        saleUnit: "piece",
-        quantity,
-      },
-    ],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-  };
-  const order = Order.draft(input, supply);
-  order.deferPayment();
-  return order;
-}
-
-const CROISSANTS = (left: number) => [
-  {
-    sku: "VIE-001-1",
-    label: "Croissant",
-    saleUnit: "piece" as const,
-    receivedQuantity: 10,
-    estimatedStock: left,
-  },
-];
 
 describe("ShelfCircuit.hold — le reste sous le verrou du stock", () => {
   it("prend le verrou de la vitrine du point AVANT de lire le reste, et laisse passer", async () => {
