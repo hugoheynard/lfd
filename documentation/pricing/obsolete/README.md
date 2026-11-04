@@ -25,14 +25,13 @@ lien « remplacé par ».
 | [`plan-familles-en-donnees.md`](plan-familles-en-donnees.md)                           | Le plan qui remplace les rayons écrits dans le code par des familles en données.                                                                                              | Bâti : `SHELF_BY_PIM_CATEGORY`, `shelfOfCategory`, `catalogCategorySchema`, `CATALOG_CATEGORY_ORDER` et le fichier « snapshot-limits » n'existent plus ; son inventaire du § 1 et son en-tête « doc-first » sont faux. La porte `lint:no-shelf-literals` tient la règle.               | `lint:no-shelf-literals` (CLAUDE.md, porte 39)                                               |
 | [`plan-la-mercuriale-devient-un-objet.md`](plan-la-mercuriale-devient-un-objet.md)     | Le plan v3 qui fait de la mercuriale un agrégat au lieu de N règles dans `price_rules`.                                                                                       | Livré le 2026-09-08 (il le dit) ; son § 1 « aujourd'hui » décrit l'état d'avant. Garde le raisonnement des versions contredites.                                                                                                                                                       | [`../mercuriales/comprendre-une-mercuriale.md`](../mercuriales/comprendre-une-mercuriale.md) |
 
-## 2. Gardé en place, avec un bandeau
+## 2. Gardé en place, réécrit
 
 - [`../centime-et-tva/inventaire-c0-assemblages.md`](../centime-et-tva/inventaire-c0-assemblages.md)
-  — les cinq assemblages de chiffrage au 2026-11-03 et les écarts É1 à É18.
-  Ce qu'il décrit n'existe plus (`CartPricing` est devenu `PricingContext`,
-  les assemblages ont été retirés), mais le golden master et plusieurs suites
-  **citent ses codes É** : il reste la référence de ces codes. Bandeau
-  « historique » posé en tête.
+  — l'inventaire décrivait les cinq assemblages de chiffrage du 2026-11-03,
+  remplacés depuis. Réécrit le 2026-11-04 en **état des écarts É1 à É18**
+  (fermés, voulus, ouverts), parce que le golden master et le code citent
+  encore ces codes.
 
 ## 3. Partiellement périmés — le fond tient, des passages sont faux
 
