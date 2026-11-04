@@ -1,7 +1,6 @@
 import type { ShopQuoteFulfillment } from "@lfd/contracts";
 
 import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
-import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { guestSignInOffer } from "./basket-promotions.doubles.js";
 import { catalogItem, quotingOf } from "./shop-cart-quoting.doubles.js";
 
@@ -31,7 +30,7 @@ function quoting() {
   return quotingOf({
     catalog: CATALOG,
     classified: CLASSIFIED,
-    signIn: guestSignInOffer({ line: [INSCRITS] }, new FixedLineClassifications(CLASSIFIED)),
+    signIn: guestSignInOffer({ line: [INSCRITS] }),
   });
 }
 
@@ -42,6 +41,30 @@ describe("ShopCartQuoting — ce qu'une connexion ouvrirait (L10)", () => {
       companyId: null,
       buyerUserId: null,
     });
+
+    expect(view.signInOffer).toEqual({ effect: { kind: "percent", basisPoints: 2_000 } });
+  });
+
+  /**
+   * L'offre juge sa portée sur le rangement que le CHARGEMENT du devis a lu
+   * (2026-11-04) : elle ne relit plus `catalog_items`. Une promotion bornée à
+   * une famille ne se dit donc que si ce rangement arrive jusqu'à elle.
+   */
+  it("juge une portée par famille sur le rangement lu par le chargement du devis", async () => {
+    const pains = livePromotion({
+      id: "pains",
+      audience: { kind: "individuals_registered" },
+      validFrom: new Date(Date.UTC(2020, 0, 1)),
+      scope: {
+        mode: "only",
+        rules: [{ target: "category", targetId: "c_pains", eligible: true, targetRank: null }],
+      },
+    });
+    const { view } = await quotingOf({
+      catalog: CATALOG,
+      classified: CLASSIFIED,
+      signIn: guestSignInOffer({ line: [pains] }),
+    }).quote({ payload: PAYLOAD, companyId: null, buyerUserId: null });
 
     expect(view.signInOffer).toEqual({ effect: { kind: "percent", basisPoints: 2_000 } });
   });
@@ -79,7 +102,7 @@ describe("GuestSignInOffer — seulement ce qu'une connexion ouvrirait vraiment"
       readonly lines?: readonly { sku: string }[];
     } = {},
   ) {
-    return guestSignInOffer(promotions, new FixedLineClassifications(CLASSIFIED)).offerFor(
+    return guestSignInOffer(promotions).offerFor(
       {
         companyId: over.companyId ?? null,
         buyerUserId: over.buyerUserId ?? null,
@@ -88,6 +111,7 @@ describe("GuestSignInOffer — seulement ce qu'une connexion ouvrirait vraiment"
       (over.lines ?? [{ sku: "PAI-001" }]).map(({ sku }) => ({
         line: { sku, saleUnit: "piece" as const, quantity: 1 },
       })),
+      new Map(Object.entries(CLASSIFIED)),
     );
   }
 

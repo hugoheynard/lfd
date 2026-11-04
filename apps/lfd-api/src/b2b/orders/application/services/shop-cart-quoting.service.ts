@@ -10,6 +10,7 @@ import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-qu
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { OrderLineClassificationReader } from "../../domain/ports/order-line-classification.reader.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
+import type { PartialBasketPricingContext } from "../../domain/services/basket-pricing-context.js";
 import { priceBasket } from "../../domain/services/price-basket.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
 import {
@@ -115,12 +116,13 @@ export class ShopCartQuoting {
       { companyId: request.companyId, buyerKind: buyerKindOf(request) },
       "cart",
     );
-    const quoted = await this.quoteKept(
+    const { quoted, known } = await this.quoteKept(
       { ...request, payload: { ...request.payload, lines: [...kept] } },
       resolved,
     );
-    // Ce qu'une connexion ouvrirait (L10) — au seul devis anonyme.
-    const signInOffer = await this.signIn.offerFor(request, resolved);
+    // Ce qu'une connexion ouvrirait (L10) — au seul devis anonyme, sur le
+    // rangement que le chargement vient de lire pour les mêmes lignes.
+    const signInOffer = await this.signIn.offerFor(request, resolved, known);
     const view: ShopQuoteView = {
       ...quoted.view,
       ...(removed.length === 0
@@ -135,7 +137,7 @@ export class ShopCartQuoting {
     query: ShopCartQuoteRequest,
     // Tarifées par la même lecture du catalogue que le tri des unités.
     resolved: readonly ResolvedOrderLine[],
-  ): Promise<ShopCartQuote> {
+  ): Promise<KeptQuote> {
     // Sans jour — le devis de la boutique n'en porte pas —, mais une bûche
     // pas encore ouverte, close ou introuvable le dit ici, au panier, plutôt
     // qu'au paiement ; et une ligne qui ne passera plus nomme son cas au lieu
@@ -177,12 +179,13 @@ export class ShopCartQuoting {
       },
     );
     warnBeyondCap(this.logger, priced);
-    return shopQuoteOf(priced, {
+    const quoted = shopQuoteOf(priced, {
       companyId: query.companyId,
       voucher,
       method: query.payload.fulfillment?.method ?? null,
       vatMethod,
     });
+    return { quoted, known: loaded.loaded.known };
   }
 
   /**
@@ -204,6 +207,12 @@ export class ShopCartQuoting {
     }
     return this.voucherQuotes.quote(voucherId, query.buyerUserId, this.clock.now());
   }
+}
+
+/** Le devis des lignes gardées, et le rangement de leurs articles lu pour le chiffrer. */
+interface KeptQuote {
+  readonly quoted: ShopCartQuote;
+  readonly known: PartialBasketPricingContext["known"];
 }
 
 /**

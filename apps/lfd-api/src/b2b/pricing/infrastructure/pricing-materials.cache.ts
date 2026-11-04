@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 
 /**
@@ -73,6 +74,29 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
  * estampille à eux trois. Elle est oubliée une fois résolue — la garder ferait
  * revenir exactement le problème qu'elle résout, à une fenêtre près.
  *
+ * ### Une estampille par REQUÊTE (2026-11-04)
+ *
+ * Le partage « en vol » ne couvrait qu'un `Promise.all` : un devis questionne
+ * le cache à trois ou quatre moments séparés (prix de ligne, remise du point,
+ * promotions panier, offre de connexion), et payait autant d'estampilles —
+ * mesuré le 2026-11-04 sur `/shop/quote` : quatre lectures du journal à
+ * froid, trois à chaud, sur dix ou quinze.
+ *
+ * L'estampille se lit désormais **une fois par requête**, gardée sur le
+ * contexte de la requête (l'objet même que porte l'AsyncLocalStorage, jamais
+ * une clé qu'un client pourrait renvoyer, comme le `traceId`). Une requête a
+ * déjà UN instant (`RequestContext.now`) ; elle a maintenant un état du monde
+ * tarifaire, lu à sa première question. Hors requête (cron, semis), rien
+ * n'est gardé : chaque question relit, comme avant.
+ *
+ * Pourquoi ça ne sert jamais un prix périmé : une table n'est gardée que sous
+ * l'estampille lue AVANT son chargement, donc son contenu est au moins aussi
+ * récent que son étiquette. Une requête qui la retrouve sous SA propre
+ * estampille lit un état au moins aussi récent que celui qu'elle a constaté ;
+ * une requête suivante relit l'estampille et recharge si elle a bougé. Le
+ * pire cas est une requête qui finit sur l'état qu'elle a vu en commençant
+ * — ce que fait déjà son instant gelé.
+ *
  * ### `invalidate()` n'est pas devenu inutile
  *
  * Il reste le chemin **court** : après sa propre écriture, une instance n'a pas
@@ -90,6 +114,12 @@ export class PricingMaterialsCache {
    * de péremption que cette estampille existe pour fermer.
    */
   private pending: Promise<string> | null = null;
+  /**
+   * L'estampille de chaque requête en cours, rangée sous SON contexte — un
+   * objet que seule cette requête porte. Faible : la requête finie, l'entrée
+   * part avec son contexte.
+   */
+  private readonly perRequest = new WeakMap<object, Promise<string>>();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -140,7 +170,22 @@ export class PricingMaterialsCache {
    * mieux que ne pas servir de prix — et c'est le seul endroit de cette chaîne
    * où ce compromis est le bon, parce que l'alternative est un refus de vente.
    */
-  private async stamp(): Promise<string> {
+  private stamp(): Promise<string> {
+    const request = currentRequestContext();
+    if (request === null) {
+      return this.freshStamp();
+    }
+    const held = this.perRequest.get(request);
+    if (held !== undefined) {
+      return held;
+    }
+    const reading = this.freshStamp();
+    this.perRequest.set(request, reading);
+    return reading;
+  }
+
+  /** L'estampille relue en base, partagée tant qu'elle est en vol. */
+  private async freshStamp(): Promise<string> {
     if (this.pending !== null) {
       return this.pending;
     }

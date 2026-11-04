@@ -118,13 +118,17 @@ export class PricingContext {
     const priced = lines.value;
     // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
     // demain pourquoi une ligne était exclue de la remise (plan des exclusions).
-    const known = await this.classifications.classify(priced.lines.map((line) => line.sku));
     // La clientèle, lue UNE fois, avec le statut d'où elle est tirée : les
     // promotions panier le lisent (plan des promotions, L5). En révision, la
     // clientèle est celle de la COMMANDE (É13, Hugo, 2026-11-03) : un point
     // ou une livraison ouverts aux pros le restent pour une commande pro,
     // même si la société a changé de statut depuis.
-    const standing = await this.audiences.standingOf(request.parties.companyId);
+    // Les deux lectures partent ensemble : aucune ne refuse, et aucune
+    // n'attend l'autre (2026-11-04).
+    const [known, standing] = await Promise.all([
+      this.classifications.classify(priced.lines.map((line) => line.sku)),
+      this.audiences.standingOf(request.parties.companyId),
+    ]);
     const audience = request.frozenAudience ?? standing.audience;
     const { companyStatus } = standing;
     const buyer: PickupBuyer = {
@@ -168,8 +172,11 @@ export class PricingContext {
     const { resolved, parties } = request;
     const lines = resolved.map((entry) => entry.line);
     // Toujours classé (É2) : une lecture par panier, sans prédicat.
-    const known = await this.classifications.classify(lines.map((line) => line.sku));
-    const { audience, companyStatus } = await this.audiences.standingOf(parties.companyId);
+    // Le classement et la clientèle ne refusent rien : ils partent ensemble.
+    const [known, { audience, companyStatus }] = await Promise.all([
+      this.classifications.classify(lines.map((line) => line.sku)),
+      this.audiences.standingOf(parties.companyId),
+    ]);
     const buyer: PickupBuyer = {
       audience,
       companyId: parties.companyId,

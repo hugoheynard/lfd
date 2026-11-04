@@ -96,13 +96,11 @@ export function guestSignInOffer(
     readonly line?: readonly LivePromotion[];
     readonly basket?: readonly LivePromotion[];
   } = {},
-  classifications: OrderLineClassificationReader = new FixedLineClassifications({}),
   clock: FixedClock = new FixedClock(NOW),
 ): GuestSignInOffer {
   return new GuestSignInOffer(
     new FixedLinePromotions(promotions.line ?? []),
     new FixedBasketPromotions(promotions.basket ?? []),
-    classifications,
     new FixedZoneOfPostalCode(),
     clock,
   );

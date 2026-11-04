@@ -8,7 +8,7 @@ import { LinePromotionReader } from "../../../promotions/domain/ports/line-promo
 import { signInOfferFor } from "../../../promotions/domain/promotion-offers.js";
 import type { FulfillmentFact } from "../../../promotions/domain/promotion-targeting.js";
 import { DeliveryZoneOfPostalCodeReader } from "../../domain/ports/delivery-zone-of-postal-code.reader.js";
-import { OrderLineClassificationReader } from "../../domain/ports/order-line-classification.reader.js";
+import type { OrderLineClassification } from "../../domain/ports/order-line-classification.reader.js";
 
 /** Le devis demandé : la route (personne, société) et l'acheminement choisi. */
 interface QuoteRequest {
@@ -33,14 +33,16 @@ interface QuotedLine {
  *
  * Lit les deux points (ligne et panier) : une promotion « inscrits » de l'un
  * comme de l'autre est ce qu'une connexion ouvrirait. Le rangement des lignes
- * n'est lu que s'il y a une candidate.
+ * n'est pas relu : c'est celui que le chargement du devis vient de faire
+ * pour les mêmes lignes (`PricingContext.loadCart`, É2) — le relire coûtait
+ * une lecture de `catalog_items` de plus par devis anonyme (mesuré le
+ * 2026-11-04).
  */
 @Injectable()
 export class GuestSignInOffer {
   constructor(
     private readonly lines: LinePromotionReader,
     private readonly basket: BasketPromotionReader,
-    private readonly classifications: OrderLineClassificationReader,
     private readonly zones: DeliveryZoneOfPostalCodeReader,
     private readonly clock: Clock,
   ) {}
@@ -48,11 +50,13 @@ export class GuestSignInOffer {
   /**
    * `undefined` hors du devis ANONYME — un devis reconnu a déjà ce qu'il peut
    * avoir, un devis de société n'est pas celui d'un particulier — et quand
-   * rien ne serait ouvert.
+   * rien ne serait ouvert. `known` : le rangement des lignes que le devis a
+   * déjà lu, pour ces mêmes SKU.
    */
   async offerFor(
     request: QuoteRequest,
     resolved: readonly QuotedLine[],
+    known: ReadonlyMap<string, OrderLineClassification>,
   ): Promise<SignInOfferView | undefined> {
     if (request.buyerUserId !== null || request.companyId !== null || resolved.length === 0) {
       return undefined;
@@ -65,10 +69,7 @@ export class GuestSignInOffer {
     if (promotions.length === 0) {
       return undefined;
     }
-    const [known, fulfillment] = await Promise.all([
-      this.classifications.classify(quoted.map((entry) => entry.sku)),
-      this.fulfillmentFactOf(request.payload.fulfillment),
-    ]);
+    const fulfillment = await this.fulfillmentFactOf(request.payload.fulfillment);
     return signInOfferFor(
       promotions,
       this.clock.now(),

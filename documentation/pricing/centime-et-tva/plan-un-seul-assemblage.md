@@ -273,6 +273,80 @@ et peut toujours bouger d'un centime ; `KNOWN_GAPS` le garde.
 `OrderDrafting.quote` n'a plus d'appelant : retiré en L7. **Retour
 arrière** : revert — aucune migration, aucun contrat.
 
+### Les lectures du chiffrage, mesurées (2026-11-04)
+
+Chantier « optimisation des lectures », non commité au moment d'écrire.
+**Méthode** : une sonde e2e jetable (non versionnée) a remplacé
+`SchemaOpsCounter` par un compteur qui note le modèle et le site d'appel de
+chaque opération ORM, sur la scène du golden master (un panier à
+promotions, retrait puis coursier forfaitaire). **Froid** : cache des
+matériaux vidé juste avant l'appel ; **chaud** : le même appel rejoué
+aussitôt. Pour une passation, le total vu est demandé hors mesure (une
+tentative refusée, clé rendue), et le compte inclut les abonnés qui
+tournent après le commit (alertes, croissance, courriel), d'où un bruit de
+quelques opérations entre deux passations semblables.
+
+| Chemin (retrait ; coursier entre parenthèses) | froid avant → après | chaud avant → après |
+| --------------------------------------------- | ------------------- | ------------------- |
+| A `/shop/quote` anonyme                       | 15 → 11 (16 → 13)   | 10 → 6 (11 → 8)     |
+| A `/shop/quote/mine` société                  | 24 → 22 (23 → 22)   | 18 → 16 (18 → 17)   |
+| A `/shop/quote/mine` espace personnel         | 16 → 14 (16 → 15)   | 11 → 9 (11 → 10)    |
+| B `/orders/quote` société                     | 19 → 19 (19 → 19)   | 15 → 15 (15 → 15)   |
+| B `/admin/orders/quote`                       | 16 → 16 (16 → 16)   | 12 → 12 (12 → 12)   |
+| E `/admin/orders/estimate`                    | 32 → 30 (33 → 32)   | 27 → 25 (28 → 27)   |
+| C `/shop/orders` invité                       | 53 → 51 (57 → 56)   | 48 → 46 (52 → 51)   |
+| C `/orders` société au compte                 | 78 → 76 (84 → 83)   | 70 → 68 (79 → 78)   |
+| C `/orders` espace personnel, carte           | 53 → 51 (71 → 70)   | 62 → 60 (66 → 65)   |
+| C `/admin/orders` au compte                   | 68 → 66 (77 → 76)   | 63 → 61 (72 → 71)   |
+
+Ce qui a changé, et pourquoi c'est sûr :
+
+1. **L'estampille du cache, une fois par requête**
+   (`pricing/infrastructure/pricing-materials.cache.ts`). Elle se relisait à
+   chaque question au cache (prix de ligne, remise du point, promotions
+   panier, offre de connexion) : jusqu'à quatre lectures de
+   `pricing_events` par devis. Elle est gardée sur l'objet de contexte de la
+   requête (AsyncLocalStorage, jamais une clé fournie par le client), hors
+   requête rien n'est gardé. Une table n'est gardée que sous l'estampille lue
+   avant son chargement, donc jamais plus vieille que son étiquette ; la
+   requête suivante relit l'estampille. Le cas « autre instance » de
+   `pricing-budget.e2e-spec.ts` reste vert.
+2. **L'offre de connexion ne reclasse plus le panier**
+   (`guest-sign-in-offer.service.ts`) : elle reçoit le rangement que
+   `PricingContext.loadCart` vient de lire pour les mêmes lignes (une
+   lecture de `catalog_items` de moins sur un devis anonyme à promotion
+   « inscrits »).
+3. **Classement et clientèle en parallèle** dans `PricingContext.load` et
+   `loadCart` (`Promise.all`) : ni l'un ni l'autre ne refuse, l'ordre des
+   refus est intact ; le gain est en latence, pas en nombre.
+
+Golden master **inchangé** (aucune écriture d'instantané). Budgets
+abaissés : `COLD_QUOTE_OPS` 11 → 10, `COLD_ESTIMATE_OPS` 33 → 31 ;
+`COLD_COMPANY_QUOTE_OPS` reste 20 (une seule question au cache sans
+acheminement). Nouveau : `WARM_QUOTE_OPS` = 5.
+
+**Écarté, et pourquoi** (redondances vues, non traitées) :
+
+- le statut de la société lu trois fois par passation ou estimation
+  (`companyStatusOf` : la porte de la boutique, `PricingContext`, le
+  règlement) et la société relue par le principal, les réservations et le
+  payeur — chaque lecture appartient à un service différent ; les réunir
+  demande de faire circuler le statut entre eux (ou un cache par requête
+  d'une table qui s'écrit), décision de conception, pas mécanique ;
+- les CGV lues deux fois par passation client (`OrderIntake.admit`, puis
+  `OrderDrafting`) : les relier figerait la version admise au lieu de la
+  version relue, ce que le JSDoc d'`OrderIntake` assume aujourd'hui ;
+- l'heure limite relue par l'estimation (`OrderCutoffNotice`) après la
+  composition : mêmes règles et mêmes limites d'articles, à faire remonter
+  de `OrderCutoffGate` ;
+- `order_delivery_vat`, la source des articles réservés aux opérations et
+  le catalogue : candidats au cache des matériaux, mais leurs écritures
+  n'écrivent pas au journal de tarification — sans invalidation, pas de
+  cache.
+
+Index : non examinés par ce chantier (il compte des opérations, pas des
+plans d'exécution) ; aucun n'est proposé.
+
 ## 5. Ce que ce plan ne fait pas
 
 - Toucher aux montants FIGÉS des commandes passées.

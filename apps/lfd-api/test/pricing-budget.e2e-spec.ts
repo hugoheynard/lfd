@@ -200,11 +200,27 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * une promotion. Ce n'est pas un doublon : la résolution des prix ne rend ni
  * produit ni chemin de famille. Mesuré par trace des modèles, avant/après.
  *
+ * 🔴 **De 11 à 10 le 2026-11-04** (chantier « optimisation des lectures »,
+ * `plan-un-seul-assemblage.md`, § « Les lectures du chiffrage, mesurées ») :
+ * l'estampille du cache des matériaux se lit UNE fois par requête au lieu
+ * d'une fois par question au cache (`PricingMaterialsCache.stamp`) — le devis
+ * anonyme en payait deux (le chargeur des prix, l'offre de connexion). Mesuré
+ * par trace des modèles, avant/après.
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
  * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 11;
+const COLD_QUOTE_OPS = 10;
+
+/**
+ * **Le même devis, à chaud** (2026-11-04) : les matériaux sont en mémoire, il
+ * reste le catalogue (prix de ligne, articles réservés aux opérations,
+ * classement), le mode de TVA du port — et UNE estampille. Ce chiffre garde
+ * l'estampille par requête : une question de plus au cache qui relirait le
+ * journal le ferait monter.
+ */
+const WARM_QUOTE_OPS = 5;
 
 /**
  * Sème `count` règles **distinctes** — d'étage `geste` depuis L12
@@ -298,6 +314,20 @@ describe("le devis d'un panier", () => {
     );
 
     expect(cost).toBe(COLD_QUOTE_OPS);
+  });
+
+  /**
+   * À chaud, une seule estampille par requête, quelle que soit la taille du
+   * panier. Un premier devis, non compté, chauffe le cache.
+   */
+  it("coûte le budget à chaud, une seule estampille par requête", async () => {
+    await seedRules(40);
+    const lines = SKUS.map((sku) => ({ sku, quantity: 2 }));
+    await quote(lines).expect(200);
+
+    const cost = await coldOperationsOf(() => quote(lines).expect(200));
+
+    expect(cost).toBe(WARM_QUOTE_OPS);
   });
 
   /**
@@ -584,12 +614,16 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
  * **33**, porte de la surface staff comprise (identité, droits — leur part
  * n'a pas été isolée), le même pour une ligne et pour dix.
  *
+ * 🔴 **De 33 à 31 le 2026-11-04** : l'estampille du cache des matériaux se
+ * lit une fois par requête (le chargeur des prix, la remise du point et les
+ * promotions panier la relisaient chacun). Mesuré par trace des modèles.
+ *
  * Il est plus cher qu'un devis, et c'est le prix d'une seule arithmétique :
  * le front ne l'appelle qu'une fois la saisie assez complète, après 400 ms
  * d'inactivité. Ce qui compte ici, comme pour le devis, est qu'il ne suive
  * pas la taille du panier.
  */
-const COLD_ESTIMATE_OPS = 33;
+const COLD_ESTIMATE_OPS = 31;
 
 describe("l'estimation de la saisie", () => {
   async function seedBuyer(): Promise<Record<string, unknown>> {
