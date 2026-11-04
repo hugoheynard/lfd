@@ -171,7 +171,7 @@ export interface OrderRevisionToSave {
    * Ce que le chiffrage de la révision a dit en plus des montants — les
    * remises rejouées refusées, les promotions écartées. Jamais persisté.
    */
-  readonly pricingNotes?: OrderPricingNotes;
+  readonly pricingNotes: OrderPricingNotes;
   /** Mode, date, point ou adresse ont changé : la livraison doit la reprendre. */
   readonly routeChanged: boolean;
   /** Au compte : la ligne d'encaissement suit le nouveau total. */
@@ -216,7 +216,10 @@ export function ensureNoShortfallDecision(order: RevisableOrder): void {
  * @throws {RevisionRequiresPaymentError} une commande gratuite deviendrait payante.
  * @throws {RevisionFreesAccountOrderError} une commande au compte deviendrait gratuite.
  */
-export function revisionOf(order: RevisableOrder, state: OrderToPlace): OrderRevisionToSave {
+export function revisionOf(
+  order: RevisableOrder,
+  state: OrderToPlace,
+): Omit<OrderRevisionToSave, "pricingNotes"> {
   ensureFrozenPrices(order.lines, state);
   ensureVoucherCovered(order, state);
   const before = settlementRegimeOf(order.paymentStatus, order.totalCents);

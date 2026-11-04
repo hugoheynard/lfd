@@ -1,12 +1,15 @@
 import type { BillingAddressPayload } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
-import {
-  InvalidOrderPaymentError,
-  MisplacedPickupDiscountError,
-} from "../../errors/order-errors.js";
+import type { OrderLineClassification } from "../../ports/order-line-classification.reader.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order, type DraftOrderInput } from "../order.js";
+import {
+  deliveryPromotion,
+  draftFrom,
+  pickupPromotion,
+  type DraftSpec,
+} from "./priced-input.fixture.js";
 
 /**
  * La remise de retrait sur ses seules lignes éligibles — la garde de
@@ -29,8 +32,6 @@ const PAIN: OrderLineInput = {
   vatRate: 5.5,
   saleUnit: "piece",
   quantity: 1,
-  productId: "p_pain",
-  categoryId: "c_pains",
 };
 const BOISSON: OrderLineInput = {
   sku: "BOI-001",
@@ -39,11 +40,28 @@ const BOISSON: OrderLineInput = {
   vatRate: 20,
   saleUnit: "piece",
   quantity: 1,
-  pickupDiscountEligible: false,
-  productId: "p_jus",
-  categoryId: "c_boissons",
 };
 const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
+
+/** Le rangement au catalogue, que le panier lit et que la ligne fige. */
+const KNOWN: ReadonlyMap<string, OrderLineClassification> = new Map([
+  [
+    "PAI-001",
+    { productId: "p_pain", categoryId: "c_pains", categoryPath: ["c_pains"], madeToOrder: false },
+  ],
+  [
+    "BOI-001",
+    {
+      productId: "p_jus",
+      categoryId: "c_boissons",
+      categoryPath: ["c_boissons"],
+      madeToOrder: false,
+    },
+  ],
+]);
+
+/** −10 % au retrait, la boisson hors de sa portée. */
+const PICKUP_TEN = pickupPromotion(TEN_PERCENT, { excludedSkus: ["BOI-001"] });
 
 /**
  * Une commande de SOCIÉTÉ par défaut : la remise de retrait y est un montant
@@ -52,46 +70,38 @@ const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
  * particulier se prend sur le TTC — cf. le dernier bloc et
  * `order-exact-ht.spec.ts`.
  */
-function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
-    principal: null,
-    placedByStaffId: null,
-    buyerKind: "registered",
-    agreed: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    placedByUserId: "user_1",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: ADDRESS,
-    },
-    requestedDeliveryDate: null,
-    note: "",
-    catalogVersionId: null,
-    lines: [PAIN, BOISSON],
-    discountCents: 100,
-    discountAdjustment: TEN_PERCENT,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTerms", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
-}
+const BASE: DraftSpec = {
+  companyId: "co_1",
+  billedCompanyId: "co_1",
+  principal: null,
+  placedByStaffId: null,
+  buyerKind: "registered",
+  agreed: {
+    window: { value: null, source: "default" },
+    contact: { value: null, source: "default" },
+    signatureRequired: { value: false, source: "default" },
+  },
+  placedByUserId: "user_1",
+  fulfillment: {
+    method: "pickup",
+    deliveryZoneId: null,
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddress: ADDRESS,
+  },
+  requestedDeliveryDate: null,
+  note: "",
+  catalogVersionId: null,
+  lines: [PAIN, BOISSON],
+  promotions: [PICKUP_TEN],
+  known: KNOWN,
+  voucher: null,
+  salesTerms: { document: "salesTerms", revision: null, fileId: null },
+  locale: null,
+};
 
-function placed(over: Partial<DraftOrderInput> = {}): ReturnType<Order["toPersistence"]> {
-  const order = Order.draft(input(over));
+function placed(over: Partial<DraftSpec> = {}): ReturnType<Order["toPersistence"]> {
+  const order = Order.draft(draftFrom(BASE, over));
   order.deferPayment();
   return order.toPersistence();
 }
@@ -123,15 +133,12 @@ describe("Order.draft — la remise de retrait sur les lignes éligibles", () =>
     ]);
   });
 
-  /** V1 : avant, l'agrégat recalculait sur le sous-total entier et refusait ce bon. */
-  it("recalcule l'assiette lui-même, sur le drapeau des lignes", () => {
-    expect(() => placed({ discountCents: 200 })).toThrow(InvalidOrderPaymentError);
-  });
+  // « recalcule l'assiette lui-même » (V1) : un montant pris sur le
+  // sous-total entier, qu'aucun panier ne produit depuis L7 (2a) — en filet
+  // dans `order-amount-guards.spec.ts`.
 
-  it("tient une ligne sans drapeau pour éligible — les bons d'avant", () => {
-    const { pickupDiscountEligible: _dropped, ...unflagged } = BOISSON;
-
-    expect(placed({ lines: [PAIN, unflagged], discountCents: 200 }).discountCents).toBe(200);
+  it("prend pour assiette toutes les lignes qu'une promotion couvre", () => {
+    expect(placed({ promotions: [pickupPromotion(TEN_PERCENT)] }).discountCents).toBe(200);
   });
 
   /**
@@ -143,7 +150,6 @@ describe("Order.draft — la remise de retrait sur les lignes éligibles", () =>
     const state = placed({
       companyId: null,
       billedCompanyId: null,
-      discountCents: 106,
       voucher: { id: "v_1", valueCents: 190 },
     });
 
@@ -161,7 +167,6 @@ describe("Order.draft — la remise de retrait sur les lignes éligibles", () =>
 /** V5 du plan : une remise de retrait n'existe que sur une commande retirée. */
 describe("Order.draft — la remise de retrait seulement sur un retrait", () => {
   const FEE = { mode: "amount", cents: 1_500 } as const;
-  const FREE = { mode: "amount", cents: 0 } as const;
   const DELIVERED: DraftOrderInput["fulfillment"] = {
     method: "delivery",
     deliveryZoneId: "zone_1",
@@ -170,29 +175,12 @@ describe("Order.draft — la remise de retrait seulement sur un retrait", () => 
     pickupAddress: null,
   };
 
-  it("refuse une remise de retrait sur une livraison avec port", () => {
-    expect(() =>
-      placed({ fulfillment: DELIVERED, deliveryFeeCents: 1_500, deliveryFeeAdjustment: FEE }),
-    ).toThrow(new MisplacedPickupDiscountError("not_picked_up"));
-  });
-
-  it("refuse une remise de retrait sur une livraison à 0 €", () => {
-    expect(() =>
-      placed({ fulfillment: DELIVERED, deliveryFeeCents: 0, deliveryFeeAdjustment: FREE }),
-    ).toThrow(new MisplacedPickupDiscountError("not_picked_up"));
-  });
-
-  it("refuse une remise figée qui rend zéro, sur une livraison", () => {
-    expect(() => placed({ fulfillment: DELIVERED, lines: [BOISSON], discountCents: 0 })).toThrow(
-      new MisplacedPickupDiscountError("not_picked_up"),
-    );
-  });
-
-  it("refuse un retrait remisé qui porterait des frais de livraison", () => {
-    expect(() => placed({ deliveryFeeCents: 1_500, deliveryFeeAdjustment: FEE })).toThrow(
-      new MisplacedPickupDiscountError("with_delivery_fee"),
-    );
-  });
+  // « refuse une remise de retrait sur une livraison » (avec port, à 0 €,
+  // figée à zéro) et « refuse un retrait remisé qui porterait des frais » :
+  // aucun panier ne les produit depuis L7 (2a) — une remise en livraison
+  // vient d'une promotion de livraison, un retrait n'a pas de port. Les
+  // gardes restent, en filet : `order-amount-guards.spec.ts`, et la révision
+  // d'une commande d'avant les promotions : `order-revision-promotion.spec.ts`.
 
   it("accepte le retrait remisé, sans port", () => {
     expect(placed().discountCents).toBe(100);
@@ -201,10 +189,7 @@ describe("Order.draft — la remise de retrait seulement sur un retrait", () => 
   it("accepte la livraison avec son port, sans remise", () => {
     const state = placed({
       fulfillment: DELIVERED,
-      discountCents: 0,
-      discountAdjustment: null,
-      deliveryFeeCents: 1_500,
-      deliveryFeeAdjustment: FEE,
+      deliveryFee: FEE,
     });
 
     expect(state.deliveryFeeCents).toBe(1_500);
@@ -216,11 +201,13 @@ describe("Order.draft — la remise de retrait seulement sur un retrait", () => 
   it("accepte la livraison remisée par une promotion de livraison, avec son port", () => {
     const state = placed({
       fulfillment: DELIVERED,
-      deliveryFeeCents: 1_500,
-      deliveryFeeAdjustment: FEE,
-      discountPromotionId: "promo_livraison",
+      deliveryFee: FEE,
+      promotions: [
+        deliveryPromotion(TEN_PERCENT, { id: "promo_livraison", excludedSkus: ["BOI-001"] }),
+      ],
     });
 
+    expect(state.discountPromotionId).toBe("promo_livraison");
     expect(state.discountCents).toBe(100);
     expect(state.deliveryFeeCents).toBe(1_500);
   });

@@ -1,8 +1,9 @@
 import { priceBasket } from "../../services/price-basket.js";
 import { contextOf, DELIVERY, PICKUP } from "../../services/__tests__/price-basket.fixture.js";
 import type { BasketPricingContext } from "../../services/basket-pricing-context.js";
-import { Order, type DraftOrderInput } from "../order.js";
-import type { PricedDraftInput } from "../order-priced-draft.js";
+import { Order } from "../order.js";
+import { draftedAmountsOf } from "../order-amounts.js";
+import { draftInputOf, type PricedDraftInput } from "../order-priced-draft.js";
 
 /**
  * **L'agrégat chiffre lui-même** (plan
@@ -46,20 +47,21 @@ function identity(
 
 function bothWays(companyId: string | null, context: BasketPricingContext) {
   const verdicts = { lateFee: null };
-  const priced = Order.draft({
+  const request: PricedDraftInput = {
     ...identity(companyId, context),
     pricing: { context, handoverAt: null, verdicts },
-  });
-  const terms = priceBasket(
-    context,
-    { vatMethod: companyId === null ? "exact_ht" : "line_ht", handoverAt: null },
-    verdicts,
-  ).terms;
-  const given: DraftOrderInput = { ...identity(companyId, context), ...terms };
-  const composed = Order.draft(given);
+  };
+  const vatMethod = companyId === null ? "exact_ht" : "line_ht";
+  const terms = priceBasket(context, { vatMethod, handoverAt: null }, verdicts).terms;
+  const given = { ...identity(companyId, context), ...terms };
+  const priced = Order.draft(request);
   priced.deferPayment();
-  composed.deferPayment();
-  return { priced: priced.toPersistence(), composed: composed.toPersistence() };
+  return {
+    received: draftInputOf(request, vatMethod).input,
+    given,
+    priced: priced.toPersistence(),
+    composed: draftedAmountsOf(given, given.fulfillment, vatMethod),
+  };
 }
 
 describe("Order.draft sur un panier chargé — l'agrégat appelle priceBasket", () => {
@@ -69,9 +71,19 @@ describe("Order.draft sur un panier chargé — l'agrégat appelle priceBasket",
     ["un particulier, en retrait", null, PICKUP],
     ["un particulier, en coursier", null, DELIVERY],
   ] as const)("%s : la commande est celle des termes du calcul", (_, companyId, route) => {
-    const { priced, composed } = bothWays(companyId, contextOf({ route }));
+    const { received, given, priced, composed } = bothWays(companyId, contextOf({ route }));
 
-    expect(priced).toEqual(composed);
+    // La composition reçoit EXACTEMENT les termes du calcul…
+    expect(received).toEqual(given);
+    // … et la commande porte les montants qu'ils composent.
+    expect(priced).toMatchObject({
+      subtotalCents: composed.subtotalCents,
+      discountCents: composed.discountCents,
+      deliveryFeeCents: composed.deliveryFeeCents,
+      vatCents: composed.vatCents,
+      vatShares: composed.vatShares,
+      totalCents: composed.totalCents,
+    });
   });
 
   it("la méthode est celle que l'agrégat décide, pas celle d'un appelant", () => {
@@ -101,20 +113,6 @@ describe("Order.draft — ce que son chiffrage dit en plus des montants", () => 
     expect(order.pricingNotes()).toEqual({
       refusals: direct.refusals,
       beyondCap: direct.beyondCap,
-    });
-  });
-
-  it("une entrée aux montants déjà composés n'a rien à dire", () => {
-    const context = contextOf();
-    const terms = priceBasket(
-      context,
-      { vatMethod: "line_ht", handoverAt: null },
-      { lateFee: null },
-    ).terms;
-
-    expect(Order.draft({ ...identity("co_1", context), ...terms }).pricingNotes()).toEqual({
-      refusals: [],
-      beyondCap: undefined,
     });
   });
 });

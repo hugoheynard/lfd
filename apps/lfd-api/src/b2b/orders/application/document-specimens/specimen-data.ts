@@ -10,12 +10,18 @@ import {
 } from "@lfd/contracts";
 import { millicentsFromCents, orderPretaxCents } from "@lfd/money";
 
-import { Order, type DraftOrderInput, type OrderToPlace } from "../../domain/entities/order.js";
+import { Order, type OrderToPlace } from "../../domain/entities/order.js";
+import type { PricedDraftInput } from "../../domain/entities/order-priced-draft.js";
 import { frozenPickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
-import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
+import {
+  specimenDeliveryRoute,
+  specimenPickupPromotion,
+  specimenPickupRoute,
+  specimenPricing,
+} from "./specimen-pricing.js";
 
 /**
  * **Les données d'exemple du bon de commande** — la planche des documents de
@@ -72,19 +78,12 @@ const LINES: readonly OrderLineInput[] = [
   line("EXEMPLE-TAS", "Tasse La Folie Coffee", 1250, 20, 2),
 ];
 
-/**
- * Le panier du bon public : le même, la tasse **hors remise de retrait** —
- * c'est elle qui montre « sur X € éligibles » et l'astérisque (lot C du plan
- * des exclusions). Le drapeau est celui qu'une passation aurait figé.
- */
-const PUBLIC_LINES: readonly OrderLineInput[] = LINES.map((input) =>
-  input.sku === "EXEMPLE-TAS" ? { ...input, pickupDiscountEligible: false } : input,
-);
+/** L'article du bon public **hors remise de retrait** — il montre « sur X € éligibles » et l'astérisque. */
+const EXCLUDED_SKU = "EXEMPLE-TAS";
 
 /** La remise du point (5 %), et le barème d'une zone de livraison. */
-const DISCOUNT: CartAdjustment = { mode: "percent", bp: 500 };
-const DELIVERY_FEE_CENTS = 1_500;
-const DELIVERY_FEE: CartAdjustment = { mode: "amount", cents: DELIVERY_FEE_CENTS };
+const DISCOUNT = { mode: "percent", bp: 500 } as const;
+const DELIVERY_FEE: CartAdjustment = { mode: "amount", cents: 1_500 };
 
 const NOTE = "EXEMPLE — Livrer par l'entrée de service, sonner à la réception.";
 
@@ -106,49 +105,25 @@ function line(
 }
 
 /**
- * La commande d'exemple de la variante demandée, composée par l'agrégat.
+ * La commande d'exemple de la variante demandée, chiffrée par l'agrégat sur
+ * un panier chargé (`specimen-pricing.ts`), à `now`.
  *
  * 🔴 **Seul le bon public porte la remise** : elle est celle d'un point de
  * retrait, et le bon pro part en livraison avec son port. Les deux ensemble
  * sont refusés par l'agrégat (V5 de l'ancien plan des exclusions, cf. `promotions.md`, § 2.17, 2026-10-22).
- *
- * La remise se calcule sur l'assiette TTC des lignes éligibles, par
- * `composeExactOrder` — exactement la garde que l'agrégat refait.
+ * Le bon public est celui d'un particulier : composé en TTC (`exact_ht`), sa
+ * remise se prend sur l'assiette TTC des lignes éligibles.
  */
-function specimenOrder(variant: SheetVariant, requestedFor: Date): Order {
-  if (variant === "pro") {
-    return Order.draft(proInput(requestedFor), PLANNED_SUPPLY);
-  }
-  const base = publicInput(requestedFor);
-  // Le bon public est celui d'un particulier : sa commande est composée en
-  // TTC (`exact_ht`, plan du centime, lot C2), et la remise y arrive en TTC —
-  // par la composition même que l'agrégat rejoue pour la vérifier.
-  const composed = composeExactOrder({
-    lines: base.lines,
-    discountAdjustment: DISCOUNT,
-    deliveryFeeAdjustment: null,
-    deliveryVatMode: base.deliveryVatMode,
-    voucherFaceCents: 0,
-  });
-  return Order.draft(
-    {
-      ...base,
-      discountCents: composed.pickupDiscount.ttcCents,
-      discountAdjustment: DISCOUNT,
-    },
-    PLANNED_SUPPLY,
-  );
+function specimenOrder(variant: SheetVariant, now: Date): Order {
+  const requestedFor = tomorrowOf(now);
+  const input = variant === "pro" ? proInput(requestedFor, now) : publicInput(requestedFor, now);
+  return Order.draft(input, PLANNED_SUPPLY);
 }
 
 /** Ce que les deux variantes partagent — tout sauf qui commande et comment ça part. */
 type CommonInput = Omit<
-  DraftOrderInput,
-  | "companyId"
-  | "billedCompanyId"
-  | "fulfillment"
-  | "agreed"
-  | "deliveryFeeCents"
-  | "deliveryFeeAdjustment"
+  PricedDraftInput,
+  "companyId" | "billedCompanyId" | "fulfillment" | "agreed" | "pricing"
 >;
 
 function common(requestedFor: Date): CommonInput {
@@ -160,26 +135,21 @@ function common(requestedFor: Date): CommonInput {
     requestedDeliveryDate: requestedFor,
     note: NOTE,
     catalogVersionId: null,
-    lines: LINES,
-    discountCents: 0,
-    discountAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
     voucher: null,
     salesTerms: { document: "salesTerms", revision: null, fileId: null },
     locale: null,
   };
 }
 
-function proInput(requestedFor: Date): DraftOrderInput {
+function proInput(requestedFor: Date, now: Date): PricedDraftInput {
+  const zoneId = "specimen-zone";
   return {
     ...common(requestedFor),
     companyId: SPECIMEN_COMPANY_ID,
     billedCompanyId: SPECIMEN_COMPANY_ID,
     fulfillment: {
       method: "delivery",
-      deliveryZoneId: "specimen-zone",
+      deliveryZoneId: zoneId,
       deliveryAddress: DELIVERY_ADDRESS,
       deliveryAddressId: null,
       pickupAddress: null,
@@ -193,15 +163,18 @@ function proInput(requestedFor: Date): DraftOrderInput {
       signatureRequired: { value: true, source: "override" },
     },
     // Un montant fixe : le barème ne dépend pas du panier.
-    deliveryFeeCents: DELIVERY_FEE_CENTS,
-    deliveryFeeAdjustment: DELIVERY_FEE,
+    pricing: specimenPricing(
+      LINES,
+      specimenDeliveryRoute(zoneId, DELIVERY_ADDRESS, DELIVERY_FEE),
+      [],
+      now,
+    ),
   };
 }
 
-function publicInput(requestedFor: Date): DraftOrderInput {
+function publicInput(requestedFor: Date, now: Date): PricedDraftInput {
   return {
     ...common(requestedFor),
-    lines: PUBLIC_LINES,
     companyId: null,
     billedCompanyId: null,
     fulfillment: {
@@ -216,8 +189,12 @@ function publicInput(requestedFor: Date): DraftOrderInput {
       contact: { value: null, source: "default" },
       signatureRequired: { value: false, source: "default" },
     },
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
+    pricing: specimenPricing(
+      LINES,
+      specimenPickupRoute(PICKUP_ADDRESS),
+      [specimenPickupPromotion(DISCOUNT, EXCLUDED_SKU, now)],
+      now,
+    ),
   };
 }
 
@@ -228,7 +205,7 @@ function publicInput(requestedFor: Date): DraftOrderInput {
  * régime est lu par `settlementRegimeOf`, comme celui d'une vraie commande.
  */
 export function specimenClientSheet(variant: SheetVariant, now: Date): ClientSheet {
-  const order = specimenOrder(variant, tomorrowOf(now));
+  const order = specimenOrder(variant, now);
   if (variant === "pro") {
     order.deferPayment();
   } else {
@@ -320,7 +297,7 @@ function sheetOf(
  * de la planche reprend les montants du bon de la planche, au centime.
  */
 export function specimenProOrderState(now: Date): OrderToPlace {
-  const order = specimenOrder("pro", tomorrowOf(now));
+  const order = specimenOrder("pro", now);
   order.deferPayment();
   return order.toPersistence();
 }

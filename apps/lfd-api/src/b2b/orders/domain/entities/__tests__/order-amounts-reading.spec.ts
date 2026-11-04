@@ -6,6 +6,8 @@ import { shelfClaimOf } from "../../services/shelf-circuit.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import type { OrderSupplyDecision } from "../../value-objects/order-supply.js";
 import { Order, type DraftOrderInput } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
+import { draftFrom, pickupPromotion, type DraftSpec } from "./priced-input.fixture.js";
 
 /**
  * **`Order.amounts()`** — la lecture des montants que l'estimation de la
@@ -61,41 +63,38 @@ const DELIVERY: DraftOrderInput["fulfillment"] = {
   pickupAddress: null,
 };
 
-function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
-    principal: null,
-    placedByStaffId: "staff_1",
-    buyerKind: "registered",
-    agreed: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
+function input(over: Partial<DraftSpec> = {}): PricedDraftInput {
+  return draftFrom(
+    {
+      companyId: "co_1",
+      billedCompanyId: "co_1",
+      principal: null,
+      placedByStaffId: "staff_1",
+      buyerKind: "registered",
+      agreed: {
+        window: { value: null, source: "default" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
+      },
+      placedByUserId: "usr_1",
+      fulfillment: PICKUP,
+      requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
+      note: "",
+      catalogVersionId: null,
+      // 6,00 € à 5,5 % et 6,00 € à 20 % : un sous-total de 12,00 € HT.
+      lines: [line("VIE-001", 3, 200, 5.5), line("PAT-001", 2, 300, 20)],
+      promotions: [pickupPromotion(TEN_PERCENT)],
+      lateFee: LATE_FEE,
+      voucher: null,
+      salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
+      locale: null,
     },
-    placedByUserId: "usr_1",
-    fulfillment: PICKUP,
-    requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
-    note: "",
-    catalogVersionId: null,
-    // 6,00 € à 5,5 % et 6,00 € à 20 % : un sous-total de 12,00 € HT.
-    lines: [line("VIE-001", 3, 200, 5.5), line("PAT-001", 2, 300, 20)],
-    discountCents: 120,
-    discountAdjustment: TEN_PERCENT,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 100,
-    lateFeeAdjustment: LATE_FEE,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
+    over,
+  );
 }
 
 /** La même commande, règlement décidé, telle que l'adaptateur l'écrirait. */
-function persisted(draft: DraftOrderInput, supply?: OrderSupplyDecision) {
+function persisted(draft: PricedDraftInput, supply?: OrderSupplyDecision) {
   const order = Order.draft(draft, supply);
   order.deferPayment();
   return order.toPersistence();
@@ -132,7 +131,7 @@ describe("Order.amounts()", () => {
 
   it("ventile le supplément à son propre taux : la part à 20 % le porte", () => {
     const withFee = Order.draft(input()).amounts();
-    const withoutFee = Order.draft(input({ lateFeeCents: 0, lateFeeAdjustment: null })).amounts();
+    const withoutFee = Order.draft(input({ lateFee: null })).amounts();
     const at20 = (shares: readonly { rate: number; amountCents: number }[]) =>
       shares.find((share) => share.rate === 20)?.amountCents ?? 0;
 
@@ -143,10 +142,7 @@ describe("Order.amounts()", () => {
   it("rend les frais de zone d'une livraison, tels qu'écrits", () => {
     const delivery = input({
       fulfillment: DELIVERY,
-      discountCents: 0,
-      discountAdjustment: null,
-      deliveryFeeCents: 800,
-      deliveryFeeAdjustment: { mode: "amount", cents: 800 },
+      deliveryFee: { mode: "amount", cents: 800 },
     });
 
     const reading = Order.draft(delivery).amounts();
@@ -159,7 +155,7 @@ describe("Order.amounts()", () => {
     const reading = Order.draft(input()).amounts();
 
     expect(reading.discounts).toEqual([
-      expect.objectContaining({ rank: 1, amountCents: 120, promotionId: null }),
+      expect.objectContaining({ rank: 1, amountCents: 120, promotionId: "promo_panier" }),
     ]);
     expect(reading.discounts.map((each) => each.amountCents)).toEqual(
       persisted(input()).basketDiscounts.map((each) => each.amountCents),
@@ -178,9 +174,7 @@ describe("Order.amounts()", () => {
 
   it("rend un tarif d'entrée `null` pour une ligne sans trace, jamais un prix inventé", () => {
     const untraced = { ...line("VIE-001", 3, 200, 5.5), pricing: null };
-    const [first] = Order.draft(
-      input({ lines: [untraced], discountCents: 60, lateFeeCents: 100 }),
-    ).amounts().lines;
+    const [first] = Order.draft(input({ lines: [untraced] })).amounts().lines;
 
     expect(first?.basePriceMillicents).toBeNull();
   });
@@ -189,10 +183,8 @@ describe("Order.amounts()", () => {
     const individual = input({
       companyId: null,
       billedCompanyId: null,
-      discountCents: 0,
-      discountAdjustment: null,
-      lateFeeCents: 0,
-      lateFeeAdjustment: null,
+      promotions: [],
+      lateFee: null,
       salesTerms: { document: "salesTerms", revision: null, fileId: null },
     });
     const reading = Order.draft(individual).amounts();

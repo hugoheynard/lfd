@@ -43,22 +43,16 @@ export interface OrderPricingNotes {
   readonly beyondCap: BasketAmounts["beyondCap"];
 }
 
-/** Une entrée aux montants déjà composés n'a rien à dire. */
-export const NO_PRICING_NOTES: OrderPricingNotes = { refusals: [], beyondCap: undefined };
-
 /**
- * L'entrée complète de la composition, et ce que son chiffrage dit. Une entrée
- * chiffrée passe par `priceBasket`, une seule fois ; une entrée aux montants
- * déjà composés (les suites du domaine qui éprouvent les gardes, les
- * spécimens) passe telle quelle, jusqu'à son retrait (L7, 2a).
+ * L'entrée complète de la composition, et ce que son chiffrage dit. Le panier
+ * passe par `priceBasket`, une seule fois. Depuis le 2026-11-04 (L7, 2a), il
+ * n'existe plus d'entrée aux montants déjà composés : une commande dont le
+ * domaine ne peut pas produire les montants n'est pas une commande.
  */
 export function draftInputOf(
-  input: DraftOrderInput | PricedDraftInput,
+  input: PricedDraftInput,
   vatMethod: OrderVatMethod,
 ): { readonly input: DraftOrderInput; readonly notes: OrderPricingNotes } {
-  if (!("pricing" in input)) {
-    return { input, notes: NO_PRICING_NOTES };
-  }
   const { pricing, ...identity } = input;
   const priced = priceBasket(
     pricing.context,

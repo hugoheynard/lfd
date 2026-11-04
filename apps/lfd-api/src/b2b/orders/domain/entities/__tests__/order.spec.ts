@@ -19,6 +19,7 @@ import {
 } from "../../errors/order-errors.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order, type DraftOrderInput } from "../order.js";
+import { draftFrom, pickupPromotion, type DraftSpec } from "./priced-input.fixture.js";
 import { millicentsFromCents } from "@lfd/money";
 
 const ADDRESS: BillingAddressPayload = {
@@ -44,53 +45,57 @@ const food = (qty: number, priceCents = 200, rate = 5.5): OrderLineInput => ({
   quantity: qty,
 });
 
-function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: null,
-    billedCompanyId: null,
-    principal: null,
-    placedByStaffId: null,
-    buyerKind: "registered",
-    // L'acheminement CONVENU, figé à la commande : ici, le défaut du point.
-    agreed: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    placedByUserId: "user_1",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: ADDRESS,
-    },
-    requestedDeliveryDate: null,
-    note: "",
-    // Aucune version posée : le cas de toutes les commandes antérieures à la
-    // première validation, et le seul défaut honnête — « on ne sait pas ».
-    catalogVersionId: null,
-    lines: [food(2)],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTerms", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
+const BASE: DraftSpec = {
+  companyId: null,
+  billedCompanyId: null,
+  principal: null,
+  placedByStaffId: null,
+  buyerKind: "registered",
+  // L'acheminement CONVENU, figé à la commande : ici, le défaut du point.
+  agreed: {
+    window: { value: null, source: "default" },
+    contact: { value: null, source: "default" },
+    signatureRequired: { value: false, source: "default" },
+  },
+  placedByUserId: "user_1",
+  fulfillment: {
+    method: "pickup",
+    deliveryZoneId: null,
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddress: ADDRESS,
+  },
+  requestedDeliveryDate: null,
+  note: "",
+  // Aucune version posée : le cas de toutes les commandes antérieures à la
+  // première validation, et le seul défaut honnête — « on ne sait pas ».
+  catalogVersionId: null,
+  lines: [food(2)],
+  voucher: null,
+  salesTerms: { document: "salesTerms", revision: null, fileId: null },
+  locale: null,
+};
+
+/** La commande de base, modifiée ; son panier, chiffré par l'agrégat. */
+function draftInput(over: Partial<DraftSpec> = {}) {
+  return draftFrom(BASE, over);
 }
 
 /** Compose puis règle en différé (le chemin le plus court vers `toPersistence`). */
-function deferred(over: Partial<DraftOrderInput> = {}): ReturnType<Order["toPersistence"]> {
+function deferred(over: Partial<DraftSpec> = {}): ReturnType<Order["toPersistence"]> {
   const order = Order.draft(draftInput(over));
   order.deferPayment();
   return order.toPersistence();
 }
+
+/** Une livraison en zone `z1` à l'adresse de test. */
+const DELIVERED: DraftOrderInput["fulfillment"] = {
+  method: "delivery",
+  deliveryZoneId: "z1",
+  deliveryAddress: ADDRESS,
+  deliveryAddressId: null,
+  pickupAddress: null,
+};
 
 /**
  * Une commande de SOCIÉTÉ : composée HT (`line_ht`). Depuis la voie B (plan
@@ -135,8 +140,12 @@ describe("Order.draft — calcul monétaire", () => {
   });
 
   it("déduit la remise avant la TVA et le total", () => {
-    // 400 HT, taux 0, remise 80 → total = max(0, 400 − 80) = 320.
-    const state = deferred({ ...PRO, lines: [food(2, 200, 0)], discountCents: 80 });
+    // 400 HT, taux 0, promotion −0,80 € → total = max(0, 400 − 80) = 320.
+    const state = deferred({
+      ...PRO,
+      lines: [food(2, 200, 0)],
+      promotions: [pickupPromotion({ mode: "amount", cents: 80 })],
+    });
     expect(state.subtotalCents).toBe(400);
     expect(state.discountCents).toBe(80);
     expect(state.totalCents).toBe(320);
@@ -147,19 +156,8 @@ describe("Order.draft — calcul monétaire", () => {
     const state = deferred({
       ...PRO,
       lines: [food(2, 200, 0)],
-      // Le barème qui les produit, exigé depuis le 2026-09-09 : des frais sans
-      // origine ne se relisent pas sur une facture.
-      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
-      fulfillment: {
-        method: "delivery",
-        deliveryZoneId: "z1",
-        deliveryAddress: ADDRESS,
-        deliveryAddressId: null,
-        pickupAddress: null,
-      },
-      deliveryFeeCents: 2000,
-      lateFeeCents: 0,
-      lateFeeAdjustment: null,
+      fulfillment: DELIVERED,
+      deliveryFee: { mode: "amount", cents: 2_000 },
     });
     expect(state.deliveryFeeCents).toBe(2000);
     expect(state.vatCents).toBe(400);
@@ -172,15 +170,8 @@ describe("Order.draft — calcul monétaire", () => {
     const state = deferred({
       ...PRO,
       lines: [food(2)],
-      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
-      fulfillment: {
-        method: "delivery",
-        deliveryZoneId: "z1",
-        deliveryAddress: ADDRESS,
-        deliveryAddressId: null,
-        pickupAddress: null,
-      },
-      deliveryFeeCents: 2000,
+      fulfillment: DELIVERED,
+      deliveryFee: { mode: "amount", cents: 2_000 },
       deliveryVatMode: "follows_goods",
     });
     expect(state.vatShares).toEqual([{ rate: 5.5, amountCents: 132 }]);
@@ -196,37 +187,22 @@ describe("Order.draft — calcul monétaire", () => {
     expect(() => Order.draft(draftInput({ lines: [] }))).toThrow(EmptyOrderError);
   });
 
-  it("refuse une remise ou un frais négatif", () => {
-    expect(() => Order.draft(draftInput({ discountCents: -1 }))).toThrow(InvalidOrderPaymentError);
-    expect(() => Order.draft(draftInput({ deliveryFeeCents: -1 }))).toThrow(
-      InvalidOrderPaymentError,
-    );
-  });
+  // « refuse une remise ou un frais négatif », « refuse un ajustement qui ne
+  // reproduit pas le montant », « refuse des frais que leur barème ne
+  // reproduit pas / sans barème » et « refuse une remise fixe annoncée
+  // au-delà de la borne » : des montants qu'aucun panier ne produit depuis
+  // L7 (2a). Les gardes restent, en filet : `order-amount-guards.spec.ts`.
 
   it("fige l'ajustement qui a produit la remise", () => {
     // 400 HT, -20 % → 80. Le taux part en persistance À CÔTÉ du montant : c'est
     // lui qui permettra d'écrire « Retrait −20 % » et pas juste « Remise 0,80 € ».
     const state = deferred({
       lines: [food(2, 200, 0)],
-      discountCents: 80,
-      discountAdjustment: { mode: "percent", bp: 2000 },
+      promotions: [pickupPromotion({ mode: "percent", bp: 2000 })],
     });
 
+    expect(state.discountCents).toBe(80);
     expect(state.discountAdjustment).toEqual({ mode: "percent", bp: 2000 });
-  });
-
-  it("refuse un ajustement qui NE REPRODUIT PAS le montant retenu", () => {
-    // Sans ce refus, une commande porterait « −20 % » à côté d'une remise de
-    // 0,12 € : le libellé et le chiffre se contrediraient sur la facture.
-    expect(() =>
-      Order.draft(
-        draftInput({
-          lines: [food(2, 200, 0)],
-          discountCents: 12,
-          discountAdjustment: { mode: "percent", bp: 2000 },
-        }),
-      ),
-    ).toThrow(InvalidOrderPaymentError);
   });
 
   /**
@@ -242,29 +218,12 @@ describe("Order.draft — calcul monétaire", () => {
     const state = deferred({
       ...PRO,
       lines: [food(2, 200, 0)],
-      deliveryFeeCents: 2_000,
-      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
+      fulfillment: DELIVERED,
+      deliveryFee: { mode: "amount", cents: 2_000 },
     });
 
+    expect(state.deliveryFeeCents).toBe(2_000);
     expect(state.deliveryFeeAdjustment).toEqual({ mode: "amount", cents: 2_000 });
-  });
-
-  it("refuse des frais de zone que leur barème ne reproduit pas", () => {
-    expect(() =>
-      Order.draft(
-        draftInput({
-          lines: [food(2, 200, 0)],
-          deliveryFeeCents: 2_000,
-          deliveryFeeAdjustment: { mode: "amount", cents: 1_500 },
-        }),
-      ),
-    ).toThrow(InvalidOrderPaymentError);
-  });
-
-  it("refuse des frais de zone sans barème qui les justifie", () => {
-    expect(() =>
-      Order.draft(draftInput({ lines: [food(2, 200, 0)], deliveryFeeCents: 2_000 })),
-    ).toThrow(InvalidOrderPaymentError);
   });
 
   /**
@@ -277,8 +236,8 @@ describe("Order.draft — calcul monétaire", () => {
     const state = deferred({
       ...PRO,
       lines: [food(1, 200, 0)],
-      deliveryFeeCents: 2_000,
-      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
+      fulfillment: DELIVERED,
+      deliveryFee: { mode: "amount", cents: 2_000 },
     });
 
     expect(state.deliveryFeeCents).toBe(2_000);
@@ -292,10 +251,10 @@ describe("Order.draft — calcul monétaire", () => {
   it("accepte une remise en euros fixes, elle aussi vérifiée", () => {
     const state = deferred({
       lines: [food(2, 200, 0)],
-      discountCents: 150,
-      discountAdjustment: { mode: "amount", cents: 150 },
+      promotions: [pickupPromotion({ mode: "amount", cents: 150 })],
     });
 
+    expect(state.discountCents).toBe(150);
     expect(state.discountAdjustment).toEqual({ mode: "amount", cents: 150 });
   });
 
@@ -315,8 +274,7 @@ describe("Order.draft — calcul monétaire", () => {
   it("BORNE une remise fixe plus grande que le panier", () => {
     const state = deferred({
       lines: [food(2, 200, 0)],
-      discountCents: 400,
-      discountAdjustment: { mode: "amount", cents: 5000 },
+      promotions: [pickupPromotion({ mode: "amount", cents: 5000 })],
     });
 
     expect(state.subtotalCents).toBe(400);
@@ -326,20 +284,6 @@ describe("Order.draft — calcul monétaire", () => {
     // produit la remise, pas la remise. Ce que la facture additionne est
     // `discountCents`, et lui tient dans le panier.
     expect(state.discountAdjustment).toEqual({ mode: "amount", cents: 5000 });
-  });
-
-  it("refuse une remise fixe annoncée AU-DELÀ de la borne", () => {
-    // L'appelant qui n'a pas borné se fait refuser, plutôt que d'écrire une
-    // ligne qui ne s'additionne pas.
-    expect(() =>
-      Order.draft(
-        draftInput({
-          lines: [food(2, 200, 0)],
-          discountCents: 5000,
-          discountAdjustment: { mode: "amount", cents: 5000 },
-        }),
-      ),
-    ).toThrow(InvalidOrderPaymentError);
   });
 });
 
@@ -548,8 +492,7 @@ describe("Order — le bon de fidélité", () => {
   it("s'impute APRÈS la remise du point, plafonné à ce qui reste", () => {
     // Remise saisie 3,50 € HT → 369 TTC ; reste 53 : un bon de 100 n'en impute que 53.
     const state = deferred({
-      discountCents: 369,
-      discountAdjustment: { mode: "amount", cents: 350 },
+      promotions: [pickupPromotion({ mode: "amount", cents: 350 })],
       voucher: { id: "v1", valueCents: 100 },
     });
     expect(state.discountTtcCents).toBe(369);
@@ -567,8 +510,7 @@ describe("Order — le bon de fidélité", () => {
         pickupAddress: null,
       },
       // Le barème saisi 10,00 € HT, converti à 20 % : 12,00 € TTC.
-      deliveryFeeCents: 1_200,
-      deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
+      deliveryFee: { mode: "amount", cents: 1_000 },
       voucher: { id: "v1", valueCents: 5_000 },
     });
     expect(state.voucherTtcCents).toBe(422);

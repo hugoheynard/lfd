@@ -10,7 +10,9 @@ import type { ResupplyArticleView } from "@lfd/contracts";
 import { instantToLocal } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
-import { Order, type DraftOrderInput } from "../src/b2b/orders/domain/entities/order.js";
+import { Order } from "../src/b2b/orders/domain/entities/order.js";
+import type { PricedDraftInput } from "../src/b2b/orders/domain/entities/order-priced-draft.js";
+import { pricedInput } from "../src/b2b/orders/domain/entities/__tests__/priced-input.fixture.js";
 import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
 import type { Clock } from "../src/platform/time/clock.js";
 import { E2E_STAFF_ID, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -68,58 +70,55 @@ export function pieces(scene: Scene, quantity: number): SoldLine {
 }
 
 /** Un retrait au compte, au Village, aujourd'hui — composé par l'agrégat. */
-export function draftOf(scene: Scene, line: SoldLine): DraftOrderInput {
-  return {
-    companyId: scene.companyId,
-    billedCompanyId: scene.companyId,
-    principal: null,
-    placedByUserId: scene.userId,
-    placedByStaffId: E2E_STAFF_ID,
-    buyerKind: "registered",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: {
-        label: "Val Village",
-        ligne1: "Route du Village",
-        ligne2: "",
-        codePostal: "73150",
-        ville: "Val d'Isère",
-        pays: "France",
-        siteId: scene.siteId,
+export function draftOf(scene: Scene, line: SoldLine): PricedDraftInput {
+  return pricedInput(
+    {
+      companyId: scene.companyId,
+      billedCompanyId: scene.companyId,
+      principal: null,
+      placedByUserId: scene.userId,
+      placedByStaffId: E2E_STAFF_ID,
+      buyerKind: "registered",
+      fulfillment: {
+        method: "pickup",
+        deliveryZoneId: null,
+        deliveryAddress: null,
+        deliveryAddressId: null,
+        pickupAddress: {
+          label: "Val Village",
+          ligne1: "Route du Village",
+          ligne2: "",
+          codePostal: "73150",
+          ville: "Val d'Isère",
+          pays: "France",
+          siteId: scene.siteId,
+        },
       },
-    },
-    agreed: {
-      window: { value: { start: "08:00", end: "09:00" }, source: "override" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    requestedDeliveryDate: new Date(`${scene.day}T00:00:00.000Z`),
-    note: "",
-    catalogVersionId: null,
-    lines: [
-      {
-        sku: line.sku,
-        productName: line.productName,
-        unitPriceMillicents: millicentsFromCents(120),
-        vatRate: 5.5,
-        saleUnit: line.saleUnit,
-        quantity: line.quantity,
+      agreed: {
+        window: { value: { start: "08:00", end: "09:00" }, source: "override" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
       },
-    ],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-  };
+      requestedDeliveryDate: new Date(`${scene.day}T00:00:00.000Z`),
+      note: "",
+      catalogVersionId: null,
+      voucher: null,
+      salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
+      locale: null,
+    },
+    {
+      lines: [
+        {
+          sku: line.sku,
+          productName: line.productName,
+          unitPriceMillicents: millicentsFromCents(120),
+          vatRate: 5.5,
+          saleUnit: line.saleUnit,
+          quantity: line.quantity,
+        },
+      ],
+    },
+  );
 }
 
 /** Une commande sur stock (`supply = shelf`) du jour, écrite par le vrai dépôt. */

@@ -1,6 +1,10 @@
 import { millicentsFromCents } from "@lfd/money";
 
-import { Order, type DraftOrderInput } from "../../../domain/entities/order.js";
+import { Order } from "../../../domain/entities/order.js";
+import {
+  pricedInput,
+  type OrderIdentity,
+} from "../../../domain/entities/__tests__/priced-input.fixture.js";
 import type { OrderSupplyDecision } from "../../../domain/value-objects/order-supply.js";
 
 /**
@@ -25,7 +29,7 @@ export function shelfOrder(
   supply: OrderSupplyDecision = SHELF_TODAY,
   siteId: string | null = SITE,
 ): Order {
-  const input: DraftOrderInput = {
+  const identity: OrderIdentity = {
     companyId: "co_1",
     billedCompanyId: "co_1",
     principal: null,
@@ -55,28 +59,25 @@ export function shelfOrder(
     requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
     note: "",
     catalogVersionId: null,
-    lines: [
-      {
-        sku: "VIE-001-1",
-        productName: "Croissant",
-        unitPriceMillicents: millicentsFromCents(120),
-        vatRate: 5.5,
-        saleUnit: "piece",
-        quantity,
-      },
-    ],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
     voucher: null,
     salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
     locale: null,
   };
-  const order = Order.draft(input, supply);
+  const order = Order.draft(
+    pricedInput(identity, {
+      lines: [
+        {
+          sku: "VIE-001-1",
+          productName: "Croissant",
+          unitPriceMillicents: millicentsFromCents(120),
+          vatRate: 5.5,
+          saleUnit: "piece",
+          quantity,
+        },
+      ],
+    }),
+    supply,
+  );
   order.deferPayment();
   return order;
 }

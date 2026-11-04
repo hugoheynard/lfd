@@ -1,7 +1,9 @@
 import { millicentsFromCents } from "@lfd/money";
 
 import type { FixedCustomerCancellation } from "../../services/customer-cancellation-window.js";
-import { Order, type DraftOrderInput } from "../order.js";
+import { Order } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
+import { pricedInput } from "./priced-input.fixture.js";
 import type { RevisableOrder } from "../order-revision.js";
 
 /**
@@ -13,57 +15,54 @@ import type { RevisableOrder } from "../order-revision.js";
 const DAY = "2030-01-15";
 const LATER_DAY = "2030-01-17";
 
-function input(day: string, start: string): DraftOrderInput {
-  return {
-    companyId: null,
-    billedCompanyId: null,
-    principal: null,
-    placedByStaffId: null,
-    buyerKind: "registered",
-    agreed: {
-      window: { value: { start, end: "12:00" }, source: "override" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    placedByUserId: "usr_1",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: {
-        label: "",
-        ligne1: "1 rue du Test",
-        ligne2: "",
-        codePostal: "73000",
-        ville: "Chambéry",
-        pays: "France",
+function input(day: string, start: string): PricedDraftInput {
+  return pricedInput(
+    {
+      companyId: null,
+      billedCompanyId: null,
+      principal: null,
+      placedByStaffId: null,
+      buyerKind: "registered",
+      agreed: {
+        window: { value: { start, end: "12:00" }, source: "override" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
       },
-    },
-    requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
-    note: "",
-    catalogVersionId: null,
-    lines: [
-      {
-        sku: "VIE-001",
-        productName: "Croissant",
-        unitPriceMillicents: millicentsFromCents(0),
-        vatRate: 5.5,
-        saleUnit: "piece",
-        quantity: 1,
+      placedByUserId: "usr_1",
+      fulfillment: {
+        method: "pickup",
+        deliveryZoneId: null,
+        deliveryAddress: null,
+        deliveryAddressId: null,
+        pickupAddress: {
+          label: "",
+          ligne1: "1 rue du Test",
+          ligne2: "",
+          codePostal: "73000",
+          ville: "Chambéry",
+          pays: "France",
+        },
       },
-    ],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTerms", revision: null, fileId: null },
-    locale: null,
-  };
+      requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
+      note: "",
+      catalogVersionId: null,
+      voucher: null,
+      salesTerms: { document: "salesTerms", revision: null, fileId: null },
+      locale: null,
+    },
+    {
+      lines: [
+        {
+          sku: "VIE-001",
+          productName: "Croissant",
+          unitPriceMillicents: millicentsFromCents(0),
+          vatRate: 5.5,
+          saleUnit: "piece",
+          quantity: 1,
+        },
+      ],
+    },
+  );
 }
 
 /** La commande passée le 15 à 08:30, avec le délai et l'instant donnés. */

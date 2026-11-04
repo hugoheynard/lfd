@@ -11,8 +11,10 @@ import {
   UnchangedOrderRevisionError,
 } from "../../errors/order-revision-errors.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
-import { Order, type DraftOrderInput } from "../order.js";
+import { Order } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
 import type { RevisableOrder } from "../order-revision.js";
+import { draftFrom, replayedOf, type DraftSpec } from "./priced-input.fixture.js";
 
 /**
  * **La révision d'une commande, jugée par l'agrégat** (plan
@@ -44,48 +46,48 @@ const line = (sku: string, qty: number, priceCents = 200): OrderLineInput => ({
   quantity: qty,
 });
 
-function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
-    principal: null,
-    placedByStaffId: null,
-    buyerKind: "registered",
-    agreed: {
-      window: { value: { start: "07:00", end: "08:00" }, source: "override" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    placedByUserId: "usr_1",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: { ...LABO, siteId: "site_1" },
-    },
-    requestedDeliveryDate: new Date(`${DAY}T00:00:00.000Z`),
-    note: "",
-    catalogVersionId: null,
-    lines: [line("VIE-001", 10)],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
+const BASE: DraftSpec = {
+  companyId: "co_1",
+  billedCompanyId: "co_1",
+  principal: null,
+  placedByStaffId: null,
+  buyerKind: "registered",
+  agreed: {
+    window: { value: { start: "07:00", end: "08:00" }, source: "override" },
+    contact: { value: null, source: "default" },
+    signatureRequired: { value: false, source: "default" },
+  },
+  placedByUserId: "usr_1",
+  fulfillment: {
+    method: "pickup",
+    deliveryZoneId: null,
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddress: { ...LABO, siteId: "site_1" },
+  },
+  requestedDeliveryDate: new Date(`${DAY}T00:00:00.000Z`),
+  note: "",
+  catalogVersionId: null,
+  lines: [line("VIE-001", 10)],
+  voucher: null,
+  salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
+  locale: null,
+};
+
+/** Une passation : la commande de base, modifiée. */
+function input(over: Partial<DraftSpec> = {}): PricedDraftInput {
+  return draftFrom(BASE, over);
+}
+
+/** Une révision de `order` : la même entrée, ses remises rejouées. */
+function revised(order: RevisableOrder, over: Partial<DraftSpec> = {}): PricedDraftInput {
+  return draftFrom(BASE, { replayed: replayedOf(order), ...over });
 }
 
 /** La commande telle que passée, d'après une entrée : au compte, 10 croissants par défaut. */
 function placed(
   over: Partial<RevisableOrder> = {},
-  from: DraftOrderInput = input(),
+  from: PricedDraftInput = input(),
 ): RevisableOrder {
   const order = Order.draft(from);
   order.deferPayment();
@@ -141,7 +143,7 @@ function placed(
 
 describe("Order.revise — ce que M1 sert", () => {
   it("révise une commande au compte : nouvelle révision, nouveau total, lignes changées", () => {
-    const revision = Order.revise(placed(), input({ lines: [line("VIE-001", 20)] }));
+    const revision = Order.revise(placed(), revised(placed(), { lines: [line("VIE-001", 20)] }));
 
     expect(revision).toMatchObject({
       fromRevision: 0,
@@ -159,10 +161,10 @@ describe("Order.revise — ce que M1 sert", () => {
   it("refuse une commande dont la carte est attendue, avec la phrase de sortie", () => {
     const due = placed({ paymentStatus: "pending", stripePaymentIntentId: "pi_1" });
 
-    expect(() => Order.revise(due, input({ lines: [line("VIE-001", 20)] }))).toThrow(
+    expect(() => Order.revise(due, revised(due, { lines: [line("VIE-001", 20)] }))).toThrow(
       CardOrderNotRevisableError,
     );
-    expect(() => Order.revise(due, input({ lines: [line("VIE-001", 20)] }))).toThrow(
+    expect(() => Order.revise(due, revised(due, { lines: [line("VIE-001", 20)] }))).toThrow(
       "Commande réglée par carte : annulez-la et recommandez, ou demandez au commerce.",
     );
   });
@@ -170,7 +172,7 @@ describe("Order.revise — ce que M1 sert", () => {
   it("refuse une commande dont le départ incomplet est décidé (E6b)", () => {
     const decided = placed({ shortfallDecided: true });
 
-    expect(() => Order.revise(decided, input({ lines: [line("VIE-001", 20)] }))).toThrow(
+    expect(() => Order.revise(decided, revised(decided, { lines: [line("VIE-001", 20)] }))).toThrow(
       ShortfallDecidedRevisionError,
     );
   });
@@ -178,7 +180,7 @@ describe("Order.revise — ce que M1 sert", () => {
   it("refuse une commande déjà payée par carte", () => {
     const paid = placed({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
 
-    expect(() => Order.revise(paid, input({ lines: [line("VIE-001", 20)] }))).toThrow(
+    expect(() => Order.revise(paid, revised(paid, { lines: [line("VIE-001", 20)] }))).toThrow(
       CardOrderNotRevisableError,
     );
   });
@@ -187,28 +189,28 @@ describe("Order.revise — ce que M1 sert", () => {
     const free = placed({}, input({ lines: [line("VIE-001", 10, 0)] }));
 
     expect(() =>
-      Order.revise(free, input({ lines: [line("VIE-001", 10, 0), line("PAI-001", 1)] })),
+      Order.revise(free, revised(free, { lines: [line("VIE-001", 10, 0), line("PAI-001", 1)] })),
     ).toThrow(RevisionRequiresPaymentError);
   });
 
   it("refuse qu'une commande au compte tombe à zéro", () => {
-    expect(() => Order.revise(placed(), input({ lines: [line("PAI-001", 1, 0)] }))).toThrow(
-      RevisionFreesAccountOrderError,
-    );
+    expect(() =>
+      Order.revise(placed(), revised(placed(), { lines: [line("PAI-001", 1, 0)] })),
+    ).toThrow(RevisionFreesAccountOrderError);
   });
 });
 
 describe("Order.revise — R3, les prix figés", () => {
   it("refuse une ligne déjà présente qui n'a pas gardé son prix d'origine", () => {
-    expect(() => Order.revise(placed(), input({ lines: [line("VIE-001", 12, 250)] }))).toThrow(
-      FrozenLinePriceChangedError,
-    );
+    expect(() =>
+      Order.revise(placed(), revised(placed(), { lines: [line("VIE-001", 12, 250)] })),
+    ).toThrow(FrozenLinePriceChangedError);
   });
 
   it("laisse une ligne NOUVELLE à son prix du jour", () => {
     const revision = Order.revise(
       placed(),
-      input({ lines: [line("VIE-001", 10), line("PAI-001", 1, 350)] }),
+      revised(placed(), { lines: [line("VIE-001", 10), line("PAI-001", 1, 350)] }),
     );
 
     expect(revision.state.lines.map((entry) => entry.sku)).toEqual(["VIE-001", "PAI-001"]);
@@ -217,17 +219,17 @@ describe("Order.revise — R3, les prix figés", () => {
 
 describe("Order.revise — R6, une révision change quelque chose", () => {
   it("refuse une révision qui ne change rien", () => {
-    expect(() => Order.revise(placed(), input())).toThrow(UnchangedOrderRevisionError);
+    expect(() => Order.revise(placed(), revised(placed()))).toThrow(UnchangedOrderRevisionError);
   });
 
   it("le devis, lui, recompose un panier intact sans refuser", () => {
-    expect(Order.recompose(placed(), input()).changes).toEqual([]);
+    expect(Order.recompose(placed(), revised(placed())).changes).toEqual([]);
   });
 
   it("nomme ce qui a changé, et dit quand l'acheminement a bougé", () => {
     const revision = Order.revise(
       placed(),
-      input({
+      revised(placed(), {
         requestedDeliveryDate: new Date("2026-11-11T00:00:00.000Z"),
         note: "Sonner deux fois",
       }),
@@ -255,20 +257,20 @@ describe("Order.revise — R6, une révision change quelque chose", () => {
       },
     });
 
-    expect(() => Order.revise(reordered, input())).toThrow(UnchangedOrderRevisionError);
+    expect(() => Order.revise(reordered, revised(reordered))).toThrow(UnchangedOrderRevisionError);
   });
 });
 
 describe("Order.revise — §9, le bon de fidélité imputé", () => {
   /** Une commande personnelle, dont un bon de 15 € HT a couvert une part. */
-  function personal(): { readonly order: RevisableOrder; readonly base: DraftOrderInput } {
-    const base = input({
+  function personal(): { readonly order: RevisableOrder; readonly base: Partial<DraftSpec> } {
+    const base: Partial<DraftSpec> = {
       companyId: null,
       billedCompanyId: null,
       salesTerms: { document: "salesTerms", revision: null, fileId: null },
       voucher: { id: "vch_1", valueCents: 1_500 },
-    });
-    const order = placed({ voucher: { id: "vch_1", appliedCents: 1_500 } }, base);
+    };
+    const order = placed({ voucher: { id: "vch_1", appliedCents: 1_500 } }, input(base));
     return { order, base };
   }
 
@@ -276,22 +278,28 @@ describe("Order.revise — §9, le bon de fidélité imputé", () => {
     const { order, base } = personal();
 
     expect(() =>
-      Order.revise(order, {
-        ...base,
-        lines: [line("VIE-001", 5)],
-        voucher: { id: "vch_1", valueCents: order.voucher?.appliedCents ?? 0 },
-      }),
+      Order.revise(
+        order,
+        revised(order, {
+          ...base,
+          lines: [line("VIE-001", 5)],
+          voucher: { id: "vch_1", valueCents: order.voucher?.appliedCents ?? 0 },
+        }),
+      ),
     ).toThrow(RevisionBelowVoucherError);
   });
 
   it("garde le bon entier quand la commande grossit", () => {
     const { order, base } = personal();
 
-    const revision = Order.revise(order, {
-      ...base,
-      lines: [line("VIE-001", 20)],
-      voucher: { id: "vch_1", valueCents: order.voucher?.appliedCents ?? 0 },
-    });
+    const revision = Order.revise(
+      order,
+      revised(order, {
+        ...base,
+        lines: [line("VIE-001", 20)],
+        voucher: { id: "vch_1", valueCents: order.voucher?.appliedCents ?? 0 },
+      }),
+    );
 
     // Composée en TTC (`exact_ht`) : le bon y vaut sa valeur faciale TTC, et
     // sa part HT est ce que la composition lui laisse (plan du centime, § 10 Q2).
@@ -309,11 +317,14 @@ describe("Order.revise — §9, le bon de fidélité imputé", () => {
     const { order, base } = personal();
     const before = { ...order, vatMethod: "line_ht" as const };
 
-    const revision = Order.revise(before, {
-      ...base,
-      lines: [line("VIE-001", 20)],
-      voucher: { id: "vch_1", valueCents: 1_500 },
-    });
+    const revision = Order.revise(
+      before,
+      revised(before, {
+        ...base,
+        lines: [line("VIE-001", 20)],
+        voucher: { id: "vch_1", valueCents: 1_500 },
+      }),
+    );
 
     expect(revision.state.vatMethod).toBe("line_ht");
     expect(revision.state.voucherDiscountCents).toBe(1_500);

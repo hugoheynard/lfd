@@ -1,12 +1,7 @@
-import {
-  cartAdjustmentCents,
-  discountCentsOf,
-  type CartAdjustment,
-  type DeliveryVatMode,
-} from "@lfd/contracts";
-import { lineTotalCents, pieces } from "@lfd/money";
+import type { CartAdjustment, DeliveryVatMode } from "@lfd/contracts";
 
-import type { DraftOrderInput } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
+import { pickupPromotion, pricedInput, type OrderIdentity } from "./priced-input.fixture.js";
 
 /**
  * **Vingt paniers PRO** passés à `Order.draft` — la contre-épreuve du plan
@@ -160,30 +155,27 @@ export const PRO_BASKETS: readonly ProBasket[] = [
   },
 ];
 
-/** Le panier en entrée d'`Order.draft`, pour la société `co_pro`. */
-export function proDraftInput(basket: ProBasket): DraftOrderInput {
-  const lines = basket.lines.map(([price, quantity, vatRate, eligible], i) => ({
-    sku: `SKU-${String(i)}`,
+/**
+ * Le panier en entrée d'`Order.draft`, pour la société `co_pro` — chiffré par
+ * l'agrégat depuis L7 (2a) : la remise vient d'une promotion au retrait qui
+ * exclut les lignes non éligibles, le port du barème de la zone, la surtaxe
+ * d'un verdict.
+ */
+export function proDraftInput(basket: ProBasket): PricedDraftInput {
+  const skuOf = (i: number): string => `SKU-${String(i)}`;
+  const lines = basket.lines.map(([price, quantity, vatRate], i) => ({
+    sku: skuOf(i),
     productName: `Article ${String(i)}`,
     unitPriceMillicents: price,
     vatRate,
     quantity,
     saleUnit: "piece" as const,
-    pickupDiscountEligible: eligible ?? true,
   }));
-  const subtotal = lines.reduce(
-    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
-    0,
-  );
-  const eligible = lines.reduce(
-    (sum, line) =>
-      line.pickupDiscountEligible
-        ? sum + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity))
-        : sum,
-    0,
+  const excludedSkus = basket.lines.flatMap(([, , , eligible], i) =>
+    eligible === false ? [skuOf(i)] : [],
   );
   const delivery = basket.fee !== undefined;
-  return {
+  const identity: OrderIdentity = {
     companyId: "co_pro",
     billedCompanyId: "co_pro",
     principal: null,
@@ -227,20 +219,19 @@ export function proDraftInput(basket: ProBasket): DraftOrderInput {
     requestedDeliveryDate: null,
     note: "",
     catalogVersionId: null,
-    lines,
-    discountCents: basket.discount === undefined ? 0 : discountCentsOf(basket.discount, eligible),
-    discountAdjustment: basket.discount ?? null,
-    deliveryFeeCents: basket.fee === undefined ? 0 : cartAdjustmentCents(basket.fee, subtotal),
-    deliveryFeeAdjustment: basket.fee ?? null,
-    lateFeeCents:
-      basket.lateFee === undefined ? 0 : cartAdjustmentCents(basket.lateFee.adjustment, subtotal),
-    lateFeeAdjustment:
-      basket.lateFee === undefined
-        ? null
-        : { adjustment: basket.lateFee.adjustment, vatRatePercent: basket.lateFee.rate },
-    deliveryVatMode: basket.vatMode ?? "standard",
     voucher: null,
     salesTerms: { document: "salesTerms", revision: null, fileId: null },
     locale: null,
   };
+  return pricedInput(identity, {
+    lines,
+    promotions:
+      basket.discount === undefined ? [] : [pickupPromotion(basket.discount, { excludedSkus })],
+    deliveryFee: basket.fee,
+    deliveryVatMode: basket.vatMode,
+    lateFee:
+      basket.lateFee === undefined
+        ? null
+        : { adjustment: basket.lateFee.adjustment, vatRatePercent: basket.lateFee.rate },
+  });
 }

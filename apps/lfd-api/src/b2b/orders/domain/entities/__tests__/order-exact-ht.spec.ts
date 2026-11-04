@@ -11,6 +11,7 @@ import {
 } from "../../errors/order-vat-method-errors.js";
 import { exactAmountsOf } from "../order-exact-amounts.js";
 import { Order, type DraftOrderInput } from "../order.js";
+import { draftFrom, pickupPromotion, type DraftSpec } from "./priced-input.fixture.js";
 
 /**
  * **La commande d'un particulier, composée en TTC** — plan
@@ -46,7 +47,11 @@ const BANANA = {
   quantity: 1,
 };
 
-function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
+/**
+ * Une entrée aux montants déjà composés — seulement pour appeler
+ * `exactAmountsOf` en direct : depuis L7 (2a), `Order.draft` ne la reçoit plus.
+ */
+function composedInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
   return {
     companyId: null,
     billedCompanyId: null,
@@ -84,7 +89,41 @@ function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
   };
 }
 
-function placed(over: Partial<DraftOrderInput> = {}): ReturnType<Order["toPersistence"]> {
+const BASE: DraftSpec = {
+  companyId: null,
+  billedCompanyId: null,
+  principal: null,
+  placedByUserId: "user_1",
+  placedByStaffId: null,
+  buyerKind: "registered",
+  agreed: {
+    window: { value: null, source: "default" },
+    contact: { value: null, source: "default" },
+    signatureRequired: { value: false, source: "default" },
+  },
+  fulfillment: {
+    method: "pickup",
+    deliveryZoneId: null,
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddress: ADDRESS,
+  },
+  requestedDeliveryDate: null,
+  note: "",
+  catalogVersionId: null,
+  lines: [BANANA],
+  voucher: null,
+  salesTerms: { document: "salesTerms", revision: null, fileId: null },
+  locale: null,
+};
+
+function input(over: Partial<DraftSpec> = {}) {
+  return draftFrom(BASE, over);
+}
+
+const TEN_OFF = pickupPromotion({ mode: "percent", bp: 1_000 });
+
+function placed(over: Partial<DraftSpec> = {}): ReturnType<Order["toPersistence"]> {
   const order = Order.draft(input(over));
   order.deferPayment();
   return order.toPersistence();
@@ -110,9 +149,10 @@ describe("Order.draft — la part figée de chaque taux (ttc_by_rate)", () => {
   it("est la composition par taux : HT, TVA, TTC, taux croissants", () => {
     const state = placed({
       lines: [BANANA, JUICE],
-      discountAdjustment: { mode: "percent", bp: 1_000 },
-      discountCents: 270,
+      promotions: [TEN_OFF],
     });
+
+    expect(state.discountTtcCents).toBe(270);
 
     expect(state.ttcByRate).toEqual([
       { rate: 5.5, htCents: 1_791, vatCents: 99, ttcCents: 1_890 },
@@ -170,10 +210,7 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
   });
 
   it("prend la remise retrait en pourcentage sur le TTC : −10 % de 21,00 = 2,10 €", () => {
-    const state = placed({
-      discountCents: 210,
-      discountAdjustment: { mode: "percent", bp: 1_000 },
-    });
+    const state = placed({ promotions: [TEN_OFF] });
 
     expect(state.discountTtcCents).toBe(210);
     expect(state.totalCents).toBe(1_890);
@@ -181,10 +218,7 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
   });
 
   it("convertit une remise fixe saisie HT en TTC au taux des lignes : 2,00 € HT → 2,11 €", () => {
-    const state = placed({
-      discountCents: 211,
-      discountAdjustment: { mode: "amount", cents: 200 },
-    });
+    const state = placed({ promotions: [pickupPromotion({ mode: "amount", cents: 200 })] });
 
     expect(state.discountTtcCents).toBe(211);
     expect(state.discountAdjustment).toEqual({ mode: "amount", cents: 200 });
@@ -192,17 +226,12 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
     expectAdditive(state);
   });
 
-  it("refuse une remise reçue en HT : la garde compare des TTC", () => {
-    expect(() =>
-      placed({ discountCents: 200, discountAdjustment: { mode: "amount", cents: 200 } }),
-    ).toThrow(InvalidOrderPaymentError);
-  });
+  // « refuse une remise reçue en HT » : déplacé plus bas, sur `exactAmountsOf`.
 
   it("convertit le port standard à 20 % : 10,00 € HT → 12,00 € TTC", () => {
     const state = placed({
       fulfillment: DELIVERED,
-      deliveryFeeCents: 1_200,
-      deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
+      deliveryFee: { mode: "amount", cents: 1_000 },
     });
 
     expect(state.deliveryFeeTtcCents).toBe(1_200);
@@ -218,8 +247,7 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
   it("convertit le port qui suit la marchandise à son taux : 10,00 € HT → 10,55 €", () => {
     const state = placed({
       fulfillment: DELIVERED,
-      deliveryFeeCents: 1_055,
-      deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
+      deliveryFee: { mode: "amount", cents: 1_000 },
       deliveryVatMode: "follows_goods",
     });
 
@@ -231,8 +259,7 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
   it("applique un port en pourcentage au TTC des marchandises (R1 bis)", () => {
     const state = placed({
       fulfillment: DELIVERED,
-      deliveryFeeCents: 105,
-      deliveryFeeAdjustment: { mode: "percent", bp: 500 },
+      deliveryFee: { mode: "percent", bp: 500 },
     });
 
     expect(state.deliveryFeeTtcCents).toBe(105);
@@ -240,27 +267,8 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
     expectAdditive(state);
   });
 
-  it("refuse un port reçu en HT", () => {
-    expect(() =>
-      placed({
-        fulfillment: DELIVERED,
-        deliveryFeeCents: 1_000,
-        deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
-      }),
-    ).toThrow(InvalidOrderPaymentError);
-  });
-
-  it("refuse une remise retrait sur une livraison, comme le pro", () => {
-    expect(() =>
-      placed({
-        fulfillment: DELIVERED,
-        discountCents: 210,
-        discountAdjustment: { mode: "percent", bp: 1_000 },
-        deliveryFeeCents: 1_200,
-        deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
-      }),
-    ).toThrow(MisplacedPickupDiscountError);
-  });
+  // « refuse un port reçu en HT » et « refuse une remise retrait sur une
+  // livraison » : déplacés plus bas, sur `exactAmountsOf`.
 
   it("impute le bon à sa valeur faciale TTC : un bon de 5 € retire 5,00 €", () => {
     const order = Order.draft(input({ voucher: { id: "v1", valueCents: 500 } }));
@@ -278,8 +286,7 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
 
   it("borne le bon au TTC restant après la remise", () => {
     const state = placed({
-      discountCents: 210,
-      discountAdjustment: { mode: "percent", bp: 1_000 },
+      promotions: [TEN_OFF],
       voucher: { id: "v1", valueCents: 5_000 },
     });
 
@@ -307,7 +314,6 @@ describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht
             vatRate: 20,
           },
         ],
-        discountCents: 0,
       });
       expectAdditive(state);
       for (const share of state.vatShares) {
@@ -325,16 +331,15 @@ describe("Order.draft — les refus propres à exact_ht", () => {
     expect(() =>
       Order.draft(
         input({
-          lateFeeCents: 100,
-          lateFeeAdjustment: { adjustment: { mode: "amount", cents: 100 }, vatRatePercent: 20 },
+          lateFee: { adjustment: { mode: "amount", cents: 100 }, vatRatePercent: 20 },
         }),
       ),
     ).toThrow(LateFeeOnPersonalOrderError);
   });
 
   it("refuse de composer en TTC une commande de société", () => {
-    const fulfillment = input().fulfillment;
-    expect(() => exactAmountsOf(input({ companyId: "co_1" }), fulfillment)).toThrow(
+    const fulfillment = composedInput().fulfillment;
+    expect(() => exactAmountsOf(composedInput({ companyId: "co_1" }), fulfillment)).toThrow(
       ExactVatMethodForCompanyError,
     );
   });
@@ -347,5 +352,40 @@ describe("Order.draft — les refus propres à exact_ht", () => {
     expect(state.vatMethod).toBe("line_ht");
     expect(state.totalCents).toBe(2_101);
     expect(state.lines[0]?.unitPriceTtcCents).toBeNull();
+  });
+});
+
+/**
+ * **Les gardes TTC, en filet** (L7, 2a, 2026-11-04) — déplacées du bloc
+ * « un particulier paie la somme des étiquettes ». Des montants HT reçus sur
+ * une commande TTC, qu'aucun panier ne produit : `exactAmountsOf` en direct.
+ */
+describe("exactAmountsOf — les montants reçus sont des TTC", () => {
+  it("refuse une remise reçue en HT : la garde compare des TTC", () => {
+    const input = composedInput({
+      discountCents: 200,
+      discountAdjustment: { mode: "amount", cents: 200 },
+    });
+    expect(() => exactAmountsOf(input, input.fulfillment)).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("refuse un port reçu en HT", () => {
+    const input = composedInput({
+      fulfillment: DELIVERED,
+      deliveryFeeCents: 1_000,
+      deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
+    });
+    expect(() => exactAmountsOf(input, input.fulfillment)).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("refuse une remise retrait sur une livraison, comme le pro", () => {
+    const input = composedInput({
+      fulfillment: DELIVERED,
+      discountCents: 210,
+      discountAdjustment: { mode: "percent", bp: 1_000 },
+      deliveryFeeCents: 1_200,
+      deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
+    });
+    expect(() => exactAmountsOf(input, input.fulfillment)).toThrow(MisplacedPickupDiscountError);
   });
 });

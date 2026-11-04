@@ -1,10 +1,15 @@
-import { discountCentsOf, type BillingAddressPayload, type CartAdjustment } from "@lfd/contracts";
+import type { BillingAddressPayload, CartAdjustment } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
+import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
+import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order, type DraftOrderInput } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
 import type { RevisableOrder } from "../order-revision.js";
 import type { RevisableDiscount } from "../../services/basket-discount-replay.js";
 import type { FrozenDiscountTerms } from "../../services/frozen-discount-terms.js";
+import { pricedInput, replayedOf, type OrderIdentity } from "./priced-input.fixture.js";
 
 /**
  * Une commande passée avec une remise de panier, et sa révision — la
@@ -40,12 +45,23 @@ export const DELIVERY: DraftOrderInput["fulfillment"] = {
   pickupAddress: null,
 };
 
-export function input(
+/** 10 croissants à 2 € HT : la ligne que les remises couvrent. */
+export const CROISSANTS: readonly OrderLineInput[] = [
+  {
+    sku: "VIE-001",
+    productName: "Croissant",
+    unitPriceMillicents: millicentsFromCents(200),
+    vatRate: 5.5,
+    saleUnit: "piece",
+    quantity: 10,
+  },
+];
+
+/** L'identité de la commande, au point `siteId` ou à l'acheminement donné. */
+export function identity(
   siteId: string,
-  discount: Discount,
   fulfillment?: DraftOrderInput["fulfillment"],
-): DraftOrderInput {
-  const adjustment = discount.adjustment;
+): OrderIdentity {
   return {
     companyId: "co_1",
     billedCompanyId: "co_1",
@@ -68,28 +84,54 @@ export function input(
     requestedDeliveryDate: new Date(`${DAY}T00:00:00.000Z`),
     note: "",
     catalogVersionId: null,
-    lines: [
-      {
-        sku: "VIE-001",
-        productName: "Croissant",
-        unitPriceMillicents: millicentsFromCents(200),
-        vatRate: 5.5,
-        saleUnit: "piece",
-        quantity: 10,
-      },
-    ],
-    discountCents: adjustment === null ? 0 : discountCentsOf(adjustment, SUBTOTAL_CENTS),
-    discountAdjustment: adjustment,
-    discountPromotionId: discount.promotionId,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
     voucher: null,
     salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
     locale: null,
   };
+}
+
+/** La promotion panier qui produit cette remise, au retrait comme en livraison. */
+function promotionsOf(discount: Discount): readonly LivePromotion[] {
+  const { adjustment } = discount;
+  if (adjustment === null) {
+    return [];
+  }
+  return [
+    livePromotion({
+      id: discount.promotionId ?? "promo_sans_id",
+      label: "Remise panier",
+      effect:
+        adjustment.mode === "percent"
+          ? { kind: "percent_off", basisPoints: adjustment.bp }
+          : { kind: "basket_amount_off", cents: adjustment.cents },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "all" },
+    }),
+  ];
+}
+
+/** La passation : la remise vient d'une promotion vivante, chiffrée par l'agrégat. */
+export function input(
+  siteId: string,
+  discount: Discount,
+  fulfillment?: DraftOrderInput["fulfillment"],
+): PricedDraftInput {
+  return pricedInput(identity(siteId, fulfillment), {
+    lines: CROISSANTS,
+    promotions: promotionsOf(discount),
+  });
+}
+
+/**
+ * La révision de `order` : ses remises REJOUÉES (plan des remises acquises,
+ * § 10.2), jamais rejugées — aucune promotion vivante n'y entre.
+ */
+export function revisedInput(
+  order: RevisableOrder,
+  siteId: string,
+  fulfillment?: DraftOrderInput["fulfillment"],
+  lines: readonly OrderLineInput[] = CROISSANTS,
+): PricedDraftInput {
+  return pricedInput(identity(siteId, fulfillment), { lines, replayed: replayedOf(order) });
 }
 
 /** La commande passée au site `site_a` avec cette remise ; `frozenId` simule une commande d'avant L9. */

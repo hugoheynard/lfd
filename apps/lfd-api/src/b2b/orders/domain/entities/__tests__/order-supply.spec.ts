@@ -9,6 +9,8 @@ import {
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import type { OrderSupplyDecision } from "../../value-objects/order-supply.js";
 import { Order, type DraftOrderInput } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
+import { draftFrom, type DraftSpec } from "./priced-input.fixture.js";
 import type { RevisableOrder } from "../order-revision.js";
 
 /**
@@ -53,36 +55,31 @@ const atShop = (siteId: string): DraftOrderInput["fulfillment"] => ({
   pickupAddress: { ...SHOP, siteId },
 });
 
-function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
-    principal: null,
-    placedByStaffId: "staff_1",
-    buyerKind: "registered",
-    agreed: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
+function input(over: Partial<DraftSpec> = {}): PricedDraftInput {
+  return draftFrom(
+    {
+      companyId: "co_1",
+      billedCompanyId: "co_1",
+      principal: null,
+      placedByStaffId: "staff_1",
+      buyerKind: "registered",
+      agreed: {
+        window: { value: null, source: "default" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
+      },
+      placedByUserId: "usr_1",
+      fulfillment: atShop("site_village"),
+      requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
+      note: "",
+      catalogVersionId: null,
+      lines: [line("VIE-001", 3)],
+      voucher: null,
+      salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
+      locale: null,
     },
-    placedByUserId: "usr_1",
-    fulfillment: atShop("site_village"),
-    requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
-    note: "",
-    catalogVersionId: null,
-    lines: [line("VIE-001", 3)],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
+    over,
+  );
 }
 
 /** La commande telle qu'on la relit pour la modifier, d'après sa passation. */

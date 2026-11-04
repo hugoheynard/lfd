@@ -1,12 +1,16 @@
 import type { BillingAddressPayload, CartAdjustment } from "@lfd/contracts";
 import { lineTotalCents, millicentsFromCents, saleQuantity } from "@lfd/money";
 
-import { TooManyBasketDiscountsError } from "../../errors/basket-discount-errors.js";
-import { InvalidOrderPaymentError } from "../../errors/order-errors.js";
 import { chainLineHtBasketDiscounts } from "../../services/basket-discounts.js";
 import { composeExactOrder } from "../../services/exact-order-composition.js";
 import { Order, type DraftOrderInput, type OrderToPlace } from "../order.js";
 import type { DraftBasketDiscount } from "../order-shapes.js";
+import {
+  deliveryPromotion,
+  draftFrom,
+  pickupPromotion,
+  type DraftSpec,
+} from "./priced-input.fixture.js";
 
 /**
  * **Plusieurs remises de panier sur une commande** — `documentation/promotions/promotions.md`, § 2.11, lot M7. L'agrégat rejoue la chaîne de M1 sur ses
@@ -23,7 +27,6 @@ const POINT: BillingAddressPayload = {
   pays: "France",
 };
 const TEN_PERCENT: CartAdjustment = { mode: "percent", bp: 1_000 };
-const LABEL = { fr: "Remise retrait", en: "Pickup discount", it: "Sconto ritiro" };
 
 const CROISSANT: DraftOrderInput["lines"][number] = {
   sku: "VIE-001",
@@ -52,50 +55,39 @@ const LINES: DraftOrderInput["lines"] = [
     vatRate: 5.5,
     saleUnit: "piece",
     quantity: 1,
-    pickupDiscountEligible: false,
   },
 ];
 
-function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
-    principal: null,
-    placedByUserId: "usr_1",
-    placedByStaffId: null,
-    buyerKind: "registered",
-    agreed: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: { ...POINT, siteId: "site_a" },
-    },
-    requestedDeliveryDate: null,
-    note: "",
-    catalogVersionId: null,
-    lines: LINES,
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
-}
+const BASE: DraftSpec = {
+  companyId: "co_1",
+  billedCompanyId: "co_1",
+  principal: null,
+  placedByUserId: "usr_1",
+  placedByStaffId: null,
+  buyerKind: "registered",
+  agreed: {
+    window: { value: null, source: "default" },
+    contact: { value: null, source: "default" },
+    signatureRequired: { value: false, source: "default" },
+  },
+  fulfillment: {
+    method: "pickup",
+    deliveryZoneId: null,
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddress: { ...POINT, siteId: "site_a" },
+  },
+  requestedDeliveryDate: null,
+  note: "",
+  catalogVersionId: null,
+  lines: LINES,
+  voucher: null,
+  salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
+  locale: null,
+};
 
-function placed(over: Partial<DraftOrderInput>): OrderToPlace {
-  const order = Order.draft(input(over));
+function placed(over: Partial<DraftSpec>): OrderToPlace {
+  const order = Order.draft(draftFrom(BASE, over));
   order.deferPayment();
   return order.toPersistence();
 }
@@ -108,11 +100,21 @@ const CUMULATED: readonly DraftBasketDiscount[] = [
   {
     promotionId: "promo_a",
     adjustment: TEN_PERCENT,
-    label: LABEL,
+    label: null,
     coveredLines: [0, 1],
     terms: null,
   },
   { promotionId: "promo_b", adjustment: FIVE_PERCENT, label: null, coveredLines: [0], terms: null },
+];
+
+/** Les deux promotions cumulables qui produisent {@link CUMULATED} ; le gâteau hors portée. */
+const CUMULATIVE_AT_PICKUP = [
+  pickupPromotion(TEN_PERCENT, { id: "promo_a", excludedSkus: ["GAT-001"], cumulative: true }),
+  pickupPromotion(FIVE_PERCENT, {
+    id: "promo_b",
+    excludedSkus: ["BOI-001", "GAT-001"],
+    cumulative: true,
+  }),
 ];
 
 /** Le total HT que la chaîne de M1 rend sur ces lignes — ce que la composition enverra. */
@@ -126,13 +128,8 @@ function chainedHt(discounts: readonly DraftBasketDiscount[]): readonly number[]
   ).steps.map((step) => step.amountCents);
 }
 
-function cumulatedPro(over: Partial<DraftOrderInput> = {}): OrderToPlace {
-  return placed({
-    basketDiscounts: CUMULATED,
-    discountCents: sum(chainedHt(CUMULATED)),
-    discountLabel: GENERIC,
-    ...over,
-  });
+function cumulatedPro(over: Partial<DraftSpec> = {}): OrderToPlace {
+  return placed({ promotions: CUMULATIVE_AT_PICKUP, ...over });
 }
 
 function sum(values: readonly number[]): number {
@@ -180,9 +177,7 @@ describe("plusieurs remises de panier (M7)", () => {
       companyId: null,
       billedCompanyId: null,
       salesTerms: { document: "salesTerms", revision: null, fileId: null },
-      basketDiscounts: CUMULATED,
-      discountCents: composed.pickupDiscount.ttcCents,
-      discountLabel: GENERIC,
+      promotions: CUMULATIVE_AT_PICKUP,
     });
 
     expect(state.totalCents).toBe(composed.total.ttcCents);
@@ -195,79 +190,19 @@ describe("plusieurs remises de panier (M7)", () => {
     );
   });
 
-  it("refuse un total que la chaîne ne redonne pas", () => {
-    expect(() => cumulatedPro({ discountCents: sum(chainedHt(CUMULATED)) + 1 })).toThrow(
-      InvalidOrderPaymentError,
-    );
+  it("fige les deux remises que la caisse a cumulées, et les termes qui les rejouent", () => {
+    const state = cumulatedPro();
+
+    expect(state.basketDiscounts.map((discount) => discount.coveredLines)).toEqual([[0, 1], [0]]);
+    // Le gâteau n'est couvert par aucune : il sort de l'assiette, drapeau compris.
+    expect(state.lines.map((line) => line.pickupDiscountEligible)).toEqual([true, true, false]);
   });
 
-  it("refuse une remise unique à côté des remises cumulées", () => {
-    expect(() => cumulatedPro({ discountAdjustment: TEN_PERCENT })).toThrow(
-      InvalidOrderPaymentError,
-    );
-    expect(() => cumulatedPro({ discountPromotionId: "promo_a" })).toThrow(
-      InvalidOrderPaymentError,
-    );
-  });
-
-  it("refuse une liste d'une seule remise : la remise unique garde son chemin", () => {
-    const [first] = CUMULATED;
-    expect(() =>
-      placed({
-        basketDiscounts: first === undefined ? [] : [first],
-        discountCents: chainedHt(CUMULATED)[0] ?? 0,
-      }),
-    ).toThrow(InvalidOrderPaymentError);
-  });
-
-  it("refuse un drapeau d'éligibilité qui ne vaut pas le OU des couvertures", () => {
-    const narrower: readonly DraftBasketDiscount[] = CUMULATED.map((discount) => ({
-      ...discount,
-      coveredLines: [0],
-    }));
-    expect(() =>
-      placed({
-        basketDiscounts: narrower,
-        discountCents: sum(chainedHt(narrower)),
-        discountLabel: GENERIC,
-      }),
-    ).toThrow(/éligibilité/u);
-  });
-
-  it("refuse une remise que la chaîne ramène à zéro", () => {
-    const exhausting: readonly DraftBasketDiscount[] = [
-      {
-        promotionId: "promo_a",
-        adjustment: { mode: "amount", cents: 99_999 },
-        label: null,
-        coveredLines: [0, 1],
-        terms: null,
-      },
-      {
-        promotionId: "promo_b",
-        adjustment: FIVE_PERCENT,
-        label: null,
-        coveredLines: [0, 1],
-        terms: null,
-      },
-    ];
-    expect(() =>
-      placed({ basketDiscounts: exhausting, discountCents: sum(chainedHt(exhausting)) }),
-    ).toThrow(/ne retire rien/u);
-  });
-
-  it("refuse au-delà de cinq remises, en le nommant", () => {
-    const six: readonly DraftBasketDiscount[] = Array.from({ length: 6 }, (_, index) => ({
-      promotionId: `promo_${index}`,
-      adjustment: { mode: "percent", bp: 100 },
-      label: null,
-      coveredLines: [0, 1],
-      terms: null,
-    }));
-    expect(() => placed({ basketDiscounts: six, discountCents: 1 })).toThrow(
-      TooManyBasketDiscountsError,
-    );
-  });
+  // « refuse un total que la chaîne ne redonne pas », « une remise unique à
+  // côté », « une liste d'une seule remise », « un drapeau d'éligibilité
+  // faux », « une remise que la chaîne ramène à zéro », « au-delà de cinq » :
+  // des formes qu'aucun panier ne produit depuis L7 (2a). Les gardes restent,
+  // en filet : `order-cumulated-guards.spec.ts`.
 
   it("admet des remises cumulées sur une commande livrée : elles viennent de promotions", () => {
     const delivered = (fee: number): OrderToPlace =>
@@ -279,8 +214,19 @@ describe("plusieurs remises de panier (M7)", () => {
           deliveryAddressId: null,
           pickupAddress: null,
         },
-        deliveryFeeCents: fee,
-        deliveryFeeAdjustment: { mode: "amount", cents: fee },
+        deliveryFee: { mode: "amount", cents: fee },
+        promotions: [
+          deliveryPromotion(TEN_PERCENT, {
+            id: "promo_a",
+            excludedSkus: ["GAT-001"],
+            cumulative: true,
+          }),
+          deliveryPromotion(FIVE_PERCENT, {
+            id: "promo_b",
+            excludedSkus: ["BOI-001", "GAT-001"],
+            cumulative: true,
+          }),
+        ],
       });
     expect(delivered(500).basketDiscounts).toHaveLength(2);
   });

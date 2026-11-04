@@ -1,10 +1,11 @@
-import { discountCentsOf, type BillingAddressPayload, type CartAdjustment } from "@lfd/contracts";
+import type { BillingAddressPayload, CartAdjustment } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
 import { InvalidOrderPaymentError } from "../../errors/order-errors.js";
-import { composeExactOrder } from "../../services/exact-order-composition.js";
 import { lineHtBasketStepsOf } from "../order-basket-discounts.js";
 import { Order, type DraftOrderInput, type OrderToPlace } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
+import { draftFrom, pickupPromotion, type DraftSpec } from "./priced-input.fixture.js";
 
 /**
  * **La passation fige ses remises de panier, une ligne par remise** — `documentation/promotions/promotions.md`, § 2.11, lot M3. Ce que l'agrégat rend ici est ce que `order_discounts`
@@ -50,82 +51,66 @@ const LINES: DraftOrderInput["lines"] = [
     vatRate: 5.5,
     saleUnit: "piece",
     quantity: 1,
-    pickupDiscountEligible: false,
   },
 ];
 /** HT des deux lignes éligibles : 7 × 1,33 + 3 × 3,17. */
 const ELIGIBLE_HT = 7 * 133 + 3 * 317;
 
-function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
-    principal: null,
-    placedByUserId: "usr_1",
-    placedByStaffId: null,
-    buyerKind: "registered",
-    agreed: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
+function input(over: Partial<DraftSpec> = {}): PricedDraftInput {
+  return draftFrom(
+    {
+      companyId: "co_1",
+      billedCompanyId: "co_1",
+      principal: null,
+      placedByUserId: "usr_1",
+      placedByStaffId: null,
+      buyerKind: "registered",
+      agreed: {
+        window: { value: null, source: "default" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
+      },
+      fulfillment: {
+        method: "pickup",
+        deliveryZoneId: null,
+        deliveryAddress: null,
+        deliveryAddressId: null,
+        pickupAddress: { ...POINT, siteId: "site_a" },
+      },
+      requestedDeliveryDate: null,
+      note: "",
+      catalogVersionId: null,
+      lines: LINES,
+      voucher: null,
+      salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
+      locale: null,
     },
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: { ...POINT, siteId: "site_a" },
-    },
-    requestedDeliveryDate: null,
-    note: "",
-    catalogVersionId: null,
-    lines: LINES,
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
+    over,
+  );
 }
 
-function placed(over: Partial<DraftOrderInput>): OrderToPlace {
+function placed(over: Partial<DraftSpec>): OrderToPlace {
   const order = Order.draft(input(over));
   order.deferPayment();
   return order.toPersistence();
 }
 
-function proWith(adjustment: CartAdjustment): OrderToPlace {
-  return placed({
-    discountAdjustment: adjustment,
-    discountCents: discountCentsOf(adjustment, ELIGIBLE_HT),
-    discountPromotionId: "promo_1",
-    discountLabel: LABEL,
-  });
+/** La promotion « promo_1 » au retrait, le gâteau hors de sa portée. */
+function promotionOf(adjustment: CartAdjustment) {
+  return pickupPromotion(adjustment, { id: "promo_1", labels: LABEL, excludedSkus: ["GAT-001"] });
 }
 
-/** Un particulier : la remise arrive en TTC, par la composition que l'agrégat rejoue. */
+function proWith(adjustment: CartAdjustment): OrderToPlace {
+  return placed({ promotions: [promotionOf(adjustment)] });
+}
+
+/** Un particulier : la remise se prend sur le TTC, composée par l'agrégat. */
 function individualWith(adjustment: CartAdjustment): OrderToPlace {
-  const personal = { companyId: null, billedCompanyId: null } as const;
-  const composed = composeExactOrder({
-    lines: LINES,
-    discountAdjustment: adjustment,
-    deliveryFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucherFaceCents: 0,
-  });
   return placed({
-    ...personal,
+    companyId: null,
+    billedCompanyId: null,
     salesTerms: { document: "salesTerms", revision: null, fileId: null },
-    discountAdjustment: adjustment,
-    discountCents: composed.pickupDiscount.ttcCents,
-    discountPromotionId: "promo_1",
-    discountLabel: LABEL,
+    promotions: [promotionOf(adjustment)],
   });
 }
 
@@ -179,19 +164,26 @@ describe("les remises de panier figées par la passation (M3)", () => {
 
   /**
    * Une remise arrondie à zéro n'a pas de ligne : une part vide ne somme à
-   * rien, et le déclencheur la refuserait. Les colonnes gardent l'ajustement.
+   * rien, et le déclencheur la refuserait. Depuis L7 (2a), la caisse ne
+   * retient plus une promotion qui ne retire rien : l'agrégat n'en reçoit
+   * pas. Sa règle reste, en filet, sur `lineHtBasketStepsOf`.
    */
-  it("une remise de montant nul n'a pas de ligne, l'ajustement reste figé", () => {
+  it("une promotion qui ne retire rien au panier n'est pas retenue", () => {
     const tiny: CartAdjustment = { mode: "percent", bp: 1 };
     const state = placed({
       lines: [{ ...CROISSANT, quantity: 1 }],
-      discountAdjustment: tiny,
-      discountCents: discountCentsOf(tiny, 133),
+      promotions: [promotionOf(tiny)],
     });
 
     expect(state.discountCents).toBe(0);
-    expect(state.discountAdjustment).toEqual(tiny);
+    expect(state.discountAdjustment).toBeNull();
     expect(state.basketDiscounts).toEqual([]);
+  });
+
+  it("une remise de montant nul n'a pas de ligne", () => {
+    const lines = [{ amountCents: 133, vatRate: 5.5, eligible: true }];
+
+    expect(lineHtBasketStepsOf(lines, { mode: "percent", bp: 1 }, 0)).toEqual([]);
   });
 
   it("refuse une remise que la chaîne ne redonne pas au centime", () => {

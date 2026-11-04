@@ -1,7 +1,9 @@
 import { millicentsFromCents } from "@lfd/money";
 
 import type { FixedCustomerCancellation } from "../../services/customer-cancellation-window.js";
-import { Order, type DraftOrderInput } from "../order.js";
+import { Order } from "../order.js";
+import type { PricedDraftInput } from "../order-priced-draft.js";
+import { draftFrom, type DraftSpec } from "./priced-input.fixture.js";
 
 /**
  * Le délai d'annulation figé à la passation (Hugo, 2026-10-26). Les dates
@@ -10,64 +12,59 @@ import { Order, type DraftOrderInput } from "../order.js";
  */
 const DELAY_24 = { delayEnabled: true, hoursBefore: 24 };
 
-function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
-  return {
-    companyId: null,
-    billedCompanyId: null,
-    principal: null,
-    placedByStaffId: null,
-    buyerKind: "registered",
-    agreed: {
-      window: { value: { start: "08:30", end: "10:00" }, source: "override" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    placedByUserId: "user_1",
-    fulfillment: {
-      method: "pickup",
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: {
-        label: "",
-        ligne1: "1 rue du Test",
-        ligne2: "",
-        codePostal: "73000",
-        ville: "Chambéry",
-        pays: "France",
+function draftInput(over: Partial<DraftSpec> = {}): PricedDraftInput {
+  return draftFrom(
+    {
+      companyId: null,
+      billedCompanyId: null,
+      principal: null,
+      placedByStaffId: null,
+      buyerKind: "registered",
+      agreed: {
+        window: { value: { start: "08:30", end: "10:00" }, source: "override" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
       },
-    },
-    // Composé comme `OrderComposition` le fait : minuit UTC du jour.
-    requestedDeliveryDate: new Date("2030-01-15"),
-    note: "",
-    catalogVersionId: null,
-    lines: [
-      {
-        sku: "VIE-001",
-        productName: "Croissant",
-        unitPriceMillicents: millicentsFromCents(200),
-        vatRate: 5.5,
-        saleUnit: "piece",
-        quantity: 1,
+      placedByUserId: "user_1",
+      fulfillment: {
+        method: "pickup",
+        deliveryZoneId: null,
+        deliveryAddress: null,
+        deliveryAddressId: null,
+        pickupAddress: {
+          label: "",
+          ligne1: "1 rue du Test",
+          ligne2: "",
+          codePostal: "73000",
+          ville: "Chambéry",
+          pays: "France",
+        },
       },
-    ],
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    deliveryVatMode: "standard",
-    voucher: null,
-    salesTerms: { document: "salesTerms", revision: null, fileId: null },
-    locale: null,
-    ...over,
-  };
+      // Composé comme `OrderComposition` le fait : minuit UTC du jour.
+      requestedDeliveryDate: new Date("2030-01-15"),
+      note: "",
+      catalogVersionId: null,
+      lines: [
+        {
+          sku: "VIE-001",
+          productName: "Croissant",
+          unitPriceMillicents: millicentsFromCents(200),
+          vatRate: 5.5,
+          saleUnit: "piece",
+          quantity: 1,
+        },
+      ],
+      voucher: null,
+      salesTerms: { document: "salesTerms", revision: null, fileId: null },
+      locale: null,
+    },
+    over,
+  );
 }
 
 function untilOf(
   policy: { readonly delayEnabled: boolean; readonly hoursBefore: number } | null,
-  over: Partial<DraftOrderInput> = {},
+  over: Partial<DraftSpec> = {},
 ): Date | null {
   const order = Order.draft(draftInput(over));
   if (policy !== null) {
@@ -79,7 +76,7 @@ function untilOf(
 
 function fixedOf(
   policy: { readonly delayEnabled: boolean; readonly hoursBefore: number } | null,
-  over: Partial<DraftOrderInput> = {},
+  over: Partial<DraftSpec> = {},
 ): FixedCustomerCancellation {
   const order = Order.draft(draftInput(over));
   if (policy !== null) {

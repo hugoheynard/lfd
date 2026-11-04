@@ -27,7 +27,6 @@ import {
 } from "./order-basket-discounts.js";
 import {
   draftInputOf,
-  NO_PRICING_NOTES,
   type OrderPricingNotes,
   type PricedDraftInput,
 } from "./order-priced-draft.js";
@@ -95,8 +94,6 @@ export class Order {
   private offPlan = false;
   private customerCancellation: FixedCustomerCancellation = NOT_FIXED_CANCELLATION;
   private customerCancellableUntil: Date | null = null;
-  private pricingNotesValue: OrderPricingNotes = NO_PRICING_NOTES;
-
   private constructor(
     private readonly companyId: string | null,
     private readonly billedCompanyIdValue: string | null,
@@ -122,6 +119,7 @@ export class Order {
     private readonly salesTerms: OrderSalesTerms,
     private readonly locale: OrderLocale | null,
     private readonly supplyMark: OrderSupplyMark,
+    private readonly pricingNotesValue: OrderPricingNotes,
   ) {}
 
   /**
@@ -136,18 +134,13 @@ export class Order {
    * @throws {ShelfOrderNotPickupError} une commande sur stock qui n'est pas un retrait.
    * @throws {ShelfOrderNotTodayError} une commande sur stock qui ne vise pas aujourd'hui.
    */
-  static draft(
-    request: DraftOrderInput | PricedDraftInput,
-    supply: OrderSupplyDecision = PLANNED_SUPPLY,
-  ): Order {
+  static draft(request: PricedDraftInput, supply: OrderSupplyDecision = PLANNED_SUPPLY): Order {
     const vatMethod = placementVatMethodOf(request.companyId);
     // Le prix du panier d'abord, comme la composition le faisait avant
     // l'agrégat : l'ordre des refus ne bouge pas (lot L1a).
     const { input, notes } = draftInputOf(request, vatMethod);
     ensureSupplyFits(supply, input.fulfillment, input.requestedDeliveryDate);
-    const order = Order.compose(input, vatMethod, supplyMarkOf(supply));
-    order.pricingNotesValue = notes;
-    return order;
+    return Order.compose(input, vatMethod, supplyMarkOf(supply), notes);
   }
 
   /**
@@ -168,6 +161,7 @@ export class Order {
     input: DraftOrderInput,
     vatMethod: OrderVatMethod,
     supply: OrderSupplyMark,
+    notes: OrderPricingNotes,
   ): Order {
     ensureDraftable(input);
     const fulfillment = normalizeFulfillment(input.fulfillment, input.companyId);
@@ -199,6 +193,7 @@ export class Order {
       input.salesTerms,
       input.locale,
       supply,
+      notes,
     );
   }
 
@@ -215,20 +210,14 @@ export class Order {
    * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement sort de la cible figée d'une remise (L9).
    * @throws {ShelfOrderRouteChangeError} une commande sur stock changerait de mode, de journée ou de point.
    */
-  static revise(
-    current: RevisableOrder,
-    input: DraftOrderInput | PricedDraftInput,
-  ): OrderRevisionToSave {
+  static revise(current: RevisableOrder, input: PricedDraftInput): OrderRevisionToSave {
     const revision = Order.recompose(current, input);
     ensureChanged(revision);
     return revision;
   }
 
   /** La même recomposition, sans exiger de changement : ce que le devis de révision montre. */
-  static recompose(
-    current: RevisableOrder,
-    request: DraftOrderInput | PricedDraftInput,
-  ): OrderRevisionToSave {
+  static recompose(current: RevisableOrder, request: PricedDraftInput): OrderRevisionToSave {
     // Chiffrée dans la méthode RELUE sur la commande (plan du centime, § 5).
     const { input, notes } = draftInputOf(request, current.vatMethod);
     ensureRevisableSettlement(current);
@@ -242,10 +231,12 @@ export class Order {
     // Le créneau, contre les heures figées d'une promotion « au retrait ».
     ensureSlotKeepsPromotionHours(current, revisedFulfillment);
     // La marque se relit sur la commande : elle n'a aucun setter.
-    const revised = Order.compose(input, current.vatMethod, {
-      supply: current.supply,
-      entryShortcut: current.entryShortcut,
-    });
+    const revised = Order.compose(
+      input,
+      current.vatMethod,
+      { supply: current.supply, entryShortcut: current.entryShortcut },
+      notes,
+    );
     revised.carryCustomerCancellation(
       effectiveFixedCancellation(current.customerCancellation, current.customerCancellableUntil, {
         serviceDay: current.serviceDay,
