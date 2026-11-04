@@ -438,13 +438,18 @@ describe('CartSummary — le bon de fidélité', () => {
     expect(amounts.reduce((sum, value) => sum + value, 0)).toBe(total);
   });
 
-  it('annonce le reliquat d’un bon plus gros que le panier', () => {
+  /**
+   * Régression : le reliquat se disait « HT » alors qu'un bon ne sert qu'à un
+   * particulier, dont la valeur du bon est un TTC (2026-11-04).
+   */
+  it('annonce le reliquat d’un bon plus gros que le panier, sans le dire HT', () => {
     boot();
     pick(260, 274, { voucherRemainderCents: 240 });
 
     expect(el().textContent).toContain(
-      `Le reste, ${formatCents(240)} HT, vous sera rendu en bon une fois la commande réglée.`,
+      `Le reste, ${formatCents(240)}, vous sera rendu en bon une fois la commande réglée.`,
     );
+    expect(el().textContent).not.toContain(`${formatCents(240)} HT`);
   });
 
   /** Plan L6 : le reliquat est compté par le serveur ; l'écran ne soustrait plus rien. */
@@ -452,7 +457,7 @@ describe('CartSummary — le bon de fidélité', () => {
     boot();
     pick(260, 274, { voucherRemainderCents: 123 });
 
-    expect(el().textContent).toContain(`Le reste, ${formatCents(123)} HT`);
+    expect(el().textContent).toContain(`Le reste, ${formatCents(123)},`);
     expect(el().textContent).not.toContain(formatCents(240));
   });
 

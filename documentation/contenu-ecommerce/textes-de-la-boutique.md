@@ -769,7 +769,7 @@ Source : `fr.ts · en.ts · it.ts` · 98 textes.
 | `cart.voucherOption` | {value} HT — jusqu’au {date} | {value} excl. VAT — until {date} | {value} IVA esclusa — fino al {date} | `{value}` `{date}` |
 | `cart.voucherLine` | Bon de fidélité | Loyalty voucher | Buono fedeltà |  |
 | `cart.voucherHt` | {value} HT | {value} excl. VAT | {value} IVA esclusa | `{value}` |
-| `cart.voucherRemainder` | Le reste, {value} HT, vous sera rendu en bon une fois la commande réglée. | The remaining {value} excl. VAT will be returned to you as a voucher once the order is paid. | Il resto, {value} IVA esclusa, ti sarà restituito in buono una volta saldato l’ordine. | `{value}` |
+| `cart.voucherRemainder` | Le reste, {value}, vous sera rendu en bon une fois la commande réglée. | The remaining {value} will be returned to you as a voucher once the order is paid. | Il resto, {value}, ti sarà restituito in buono una volta saldato l’ordine. | `{value}` |
 | `cart.voucherEffect` | soit −{value} sur votre total | i.e. −{value} off your total | cioè −{value} sul totale | `{value}` |
 | `cart.voucherHtLine` | Bon de fidélité (HT) | Loyalty voucher (excl. VAT) | Buono fedeltà (IVA esclusa) |  |
 | `cart.clear` | Vider le panier | Empty the basket | Svuota il carrello |  |

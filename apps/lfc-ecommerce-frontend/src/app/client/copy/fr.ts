@@ -394,7 +394,7 @@ export const FR: ClientCopy = {
     voucherOption: '{value} HT — jusqu’au {date}',
     voucherLine: 'Bon de fidélité',
     voucherHt: '{value} HT',
-    voucherRemainder: 'Le reste, {value} HT, vous sera rendu en bon une fois la commande réglée.',
+    voucherRemainder: 'Le reste, {value}, vous sera rendu en bon une fois la commande réglée.',
     voucherEffect: 'soit −{value} sur votre total',
     voucherHtLine: 'Bon de fidélité (HT)',
     clear: 'Vider le panier',

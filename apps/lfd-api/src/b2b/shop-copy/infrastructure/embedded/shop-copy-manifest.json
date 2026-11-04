@@ -3814,9 +3814,9 @@
         },
         {
           "key": "cart.voucherRemainder",
-          "fr": "Le reste, {value} HT, vous sera rendu en bon une fois la commande réglée.",
-          "en": "The remaining {value} excl. VAT will be returned to you as a voucher once the order is paid.",
-          "it": "Il resto, {value} IVA esclusa, ti sarà restituito in buono una volta saldato l’ordine.",
+          "fr": "Le reste, {value}, vous sera rendu en bon une fois la commande réglée.",
+          "en": "The remaining {value} will be returned to you as a voucher once the order is paid.",
+          "it": "Il resto, {value}, ti sarà restituito in buono una volta saldato l’ordine.",
           "variables": ["value"]
         },
         {

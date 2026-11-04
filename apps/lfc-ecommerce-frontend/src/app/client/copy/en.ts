@@ -395,7 +395,7 @@ export const EN: ClientCopy = {
     voucherLine: 'Loyalty voucher',
     voucherHt: '{value} excl. VAT',
     voucherRemainder:
-      'The remaining {value} excl. VAT will be returned to you as a voucher once the order is paid.',
+      'The remaining {value} will be returned to you as a voucher once the order is paid.',
     voucherEffect: 'i.e. −{value} off your total',
     voucherHtLine: 'Loyalty voucher (excl. VAT)',
     clear: 'Empty the basket',
