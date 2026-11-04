@@ -4,15 +4,10 @@ import type { OrderQuoteLineView, OrderQuotePayload, OrderQuoteView } from "@lfd
 import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
 import type { OrderParties } from "../services/order-parties.js";
 import { ShelfCircuit } from "../services/shelf-circuit.service.js";
-import { OrderDrafting } from "../services/order-drafting.service.js";
+import { OrderQuoting } from "../services/order-quoting.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import type { ResolvedOrderLine } from "../services/order-line-pricing.service.js";
-import { lineTotalCents, type SaleUnit } from "@lfd/money";
-
-import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
-import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
-import { quantityOf } from "../../domain/value-objects/order-line.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /**
@@ -43,7 +38,7 @@ export class QuoteOrderQuery {
 @QueryHandler(QuoteOrderQuery)
 export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQuoteView> {
   constructor(
-    private readonly drafting: OrderDrafting,
+    private readonly quoting: OrderQuoting,
     private readonly guard: OrderGuardReader,
     private readonly cutoffNotice: OrderCutoffNotice,
     private readonly shelf: ShelfCircuit,
@@ -67,7 +62,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       // Derrière une route gardée, staff ou client : un compte reconnu (§ 13.7).
       buyerKind: REGISTERED_BUYER,
     };
-    const lines = await this.drafting.quote(
+    const quoted = await this.quoting.quote(
       parties,
       query.payload.lines.map((line) => ({
         sku: line.sku,
@@ -83,7 +78,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
 
     const { requestedDeliveryDate } = query.payload;
     return {
-      lines: lines.map(toQuoteLine),
+      lines: quoted.lines.map(toQuoteLine),
       // Un SIGNAL, pas un refus : le devis répond toujours, la passation seule
       // refuse — mais par la même décision, pour qu'un devis ne promette plus
       // ce que la caisse refusera (point 8, 2026-10-21).
@@ -98,50 +93,12 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
               (await this.shelf.decide(parties, requestedDeliveryDate, query.payload.supply))
                 .supply,
             ),
-      // Le sous-total est un MONTANT : il s'arrondit au centime, une fois par
-      // ligne, exactement comme la commande le fera. Sommer des millicentimes
-      // rendrait un devis mille fois trop cher — et un devis qui ne prédit pas
-      // la facture ne sert à rien.
-      subtotalCents: subtotalOf(
-        companyId,
-        lines.map(({ line }) => line),
-      ),
+      // Le sous-total de la composition même de la commande (`priceBasket`
+      // puis `draftedAmountsOf`, lot L3) : arrondi au centime une fois par
+      // ligne en `line_ht`, composé en TTC en `exact_ht`.
+      subtotalCents: quoted.subtotalCents,
     };
   }
-}
-
-/**
- * Le sous-total HT, par la méthode de la commande que ce devis annonce (plan
- * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 6) : pour une
- * société, la somme des HT de ligne arrondis ; pour un particulier
- * (`exact_ht`), la somme des HT que la composition TTC rend, sans remise ni
- * port — que ce devis ne connaît pas. ⚠️ Pour un particulier, ce HT peut
- * encore bouger d'un centime à la passation : la TVA du taux se répartit
- * aussi sur la remise et le port.
- */
-function subtotalOf(
-  companyId: string | null,
-  lines: readonly {
-    readonly unitPriceMillicents: number;
-    readonly quantity: number;
-    readonly saleUnit: SaleUnit;
-    readonly vatRate: number;
-  }[],
-): number {
-  if (placementVatMethodOf(companyId) === "exact_ht") {
-    const composed = composeExactOrder({
-      lines,
-      discountAdjustment: null,
-      deliveryFeeAdjustment: null,
-      deliveryVatMode: null,
-      voucherFaceCents: 0,
-    });
-    return composed.lines.reduce((sum, line) => sum + line.htCents, 0);
-  }
-  return lines.reduce(
-    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, quantityOf(line)),
-    0,
-  );
 }
 
 /**

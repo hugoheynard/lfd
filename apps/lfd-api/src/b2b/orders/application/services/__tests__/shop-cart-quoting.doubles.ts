@@ -245,7 +245,11 @@ export interface QuotingSetup {
   readonly lateFee?: LateFeeJudgement;
 }
 
-export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
+/**
+ * Le point « Labo », la zone et les promotions du devis — les lectures
+ * d'acheminement que partagent les devis A (boutique) et B (`OrderQuoting`).
+ */
+export function cartAdjustmentsOf(setup: QuotingSetup): CartAdjustments {
   const point: PickupAddressView = {
     id: "pickup_1",
     label: "Labo",
@@ -257,25 +261,28 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
     discounts: { b2b: setup.b2b ?? null, b2c: setup.b2c ?? null },
     opening: { publicOpening: null, proPickup: null },
   };
+  const classifications = new FixedLineClassifications(setup.classified ?? {});
+  return new CartAdjustments(
+    new OnePoint(point),
+    new OneZone(setup.zone ?? null),
+    new Open(),
+    new NoPreference(),
+    setup.basketPromotions === undefined
+      ? pointDiscountPromotions(new OnePoint(point), classifications)
+      : basketPromotions(setup.basketPromotions, classifications, new FixedClock(PRICED_AT)),
+  );
+}
+
+/** La clientèle tirée du statut de la société posé par le devis. */
+export function audiencesOf(setup: Pick<QuotingSetup, "companyStatus">): CustomerAudiences {
+  return new CustomerAudiences(new CompanyAt(setup.companyStatus ?? null));
+}
+
+export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
   return new ShopCartQuoting(
     pricingOf(setup.catalog, setup.decisions),
-    new CartAdjustments(
-      new OnePoint(point),
-      new OneZone(setup.zone ?? null),
-      new Open(),
-      new NoPreference(),
-      setup.basketPromotions === undefined
-        ? pointDiscountPromotions(
-            new OnePoint(point),
-            new FixedLineClassifications(setup.classified ?? {}),
-          )
-        : basketPromotions(
-            setup.basketPromotions,
-            new FixedLineClassifications(setup.classified ?? {}),
-            new FixedClock(PRICED_AT),
-          ),
-    ),
-    new CustomerAudiences(new CompanyAt(setup.companyStatus ?? null)),
+    cartAdjustmentsOf(setup),
+    audiencesOf(setup),
     new OrderOperations(noSaleOperations(PRICED_AT)),
     new VoucherOf(setup.voucherCents ?? null),
     new FixedClock(PRICED_AT),

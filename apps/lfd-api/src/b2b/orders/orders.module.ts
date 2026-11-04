@@ -125,6 +125,7 @@ import { AdminOrderEstimatesController } from "./http/admin-order-estimates.cont
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
 import { ShopCartQuoting } from "./application/services/shop-cart-quoting.service.js";
+import { OrderQuoting } from "./application/services/order-quoting.service.js";
 import { LateFeeJudgement } from "./application/services/late-fee-judgement.service.js";
 import { GuestSignInOffer } from "./application/services/guest-sign-in-offer.service.js";
 import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
@@ -598,6 +599,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ListCatalogHandler,
     ListCustomerSkusHandler,
     QuoteOrderHandler,
+    // Le devis B, sur le chemin de la passation (plan `plan-un-seul-assemblage.md`, L3).
+    OrderQuoting,
     EstimateOrderForCustomerHandler,
     ReadMyShopCatalogueHandler,
     ShopCartQuoting,
