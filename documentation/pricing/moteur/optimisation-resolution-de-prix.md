@@ -37,10 +37,11 @@ une par article.
 
 ## Deux leçons qui restent vraies
 
-- **L'écran multiplie, le serveur additionne.** Un écran qui redemande un
-  devis à chaque frappe coûte plus cher qu'un serveur mal optimisé : treize
-  devis pour saisir huit lignes, c'était dix fois le prix d'un seul. Réduire le
-  nombre d'appels d'un écran passe avant l'optimisation du serveur.
+- **Le serveur a un coût par appel borné, l'écran a un nombre d'appels qui
+  ne l'est pas.** La facture est le produit des deux. Le test de budget tient
+  le premier facteur. Rien ne tient le second, sauf la conception de l'écran :
+  la saisie au back-office n'appelle l'estimation qu'après 400 ms d'inactivité,
+  et pas deux fois pour la même saisie.
 - **Garder en mémoire n'est sûr que si la mémoire sait ce qui est rangé.** Une
   règle de prix rangée qui reviendrait en mémoire continuerait de fixer des
   prix. Le cache ne garde donc que ce qui n'est pas rangé, et une relecture à
