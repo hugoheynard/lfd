@@ -21,7 +21,7 @@ export interface QualityUploadSweepReport {
  * `container/worker.ts`, depuis `74672d5c6`).
  *
  * **Le même passage balaie le journal des journées du fournil**
- * (`plan-version-par-journee.md`, D2) : c'est le passage nocturne du schéma
+ * (`version-par-journee.md`, D2) : c'est le passage nocturne du schéma
  * `production`, et un second cron serait un réglage Cloudflare de plus pour
  * une suppression de quelques centaines de lignes. Deux commandes, deux
  * handlers — seule la porte est partagée. Le compte rendu reste celui des

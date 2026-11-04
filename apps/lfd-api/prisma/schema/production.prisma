@@ -512,7 +512,7 @@ model ProductionQualityUpload {
 }
 
 /// **Le journal des journées touchées** par une écriture du fournil — la
-/// version par journée (`documentation/caching-usage/plan-version-par-journee.md`,
+/// version par journée (`documentation/caching-usage/version-par-journee.md`,
 /// D2 et D3).
 ///
 /// 🔴 Aucun code ne l'écrit : des déclencheurs AU NIVEAU DE L'INSTRUCTION sur

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 /**
- * E2E de **la version par journée** — `documentation/caching-usage/plan-version-par-journee.md`,
+ * E2E de **la version par journée** — `documentation/caching-usage/version-par-journee.md`,
  * lots V1 et V2, sur le vrai Postgres jetable.
  *
  * Le cœur du lot V1 : chaque écrivain CONNU d'une journée fait avancer la

@@ -9,7 +9,7 @@
  * par aucun port est coupé dans les deux sens.
  *
  * Lue par la porte unique `GET admin/day-versions`, journal `delivery`, depuis
- * le 2026-11-03 (`plan-version-par-journee.md`, D8).
+ * le 2026-11-03 (`version-par-journee.md`, D8).
  */
 import { DAY_VERSIONS, dayVersionOf, dayVersionsOf } from "./day-versions-door.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";

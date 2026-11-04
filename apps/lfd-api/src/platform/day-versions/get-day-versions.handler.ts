@@ -6,7 +6,7 @@ import { GetDayVersionsQuery } from "./get-day-versions.query.js";
 
 /**
  * **Les journées ont-elles bougé ?** — la question qu'un onglet pose toutes
- * les 15 s, une fois pour tous ses écrans (`plan-version-par-journee.md`, D8).
+ * les 15 s, une fois pour tous ses écrans (`version-par-journee.md`, D8).
  *
  * Le droit se tranche PAR JOURNAL : un journal que l'appelant ne peut pas lire
  * est omis, sans refuser les autres — un poste de retrait seul suit le

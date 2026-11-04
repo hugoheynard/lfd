@@ -11,7 +11,7 @@ import { ProductionDayVersionSource } from "../production/application/services/p
 import { ProductionModule } from "../production/production.module.js";
 
 /**
- * **Le registre des versions de journée, relié** (`plan-version-par-journee.md`,
+ * **Le registre des versions de journée, relié** (`version-par-journee.md`,
  * D8, 2026-11-03). `platform/day-versions/` déclare le port
  * `DayVersionSource` et sert la porte unique `GET admin/day-versions` ; chaque
  * bloc qui tient un journal l'implémente chez lui. Ce module est le SEUL

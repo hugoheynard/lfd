@@ -9,7 +9,7 @@ import { isCalendarDay } from "../domain/value-objects/service-day.js";
 
 /**
  * **« Ma tournée » a-t-elle bougé ?** (`parcours-du-livreur.md`, PL4) — le
- * journal `my-round` de la porte unique (`plan-version-par-journee.md`, D8).
+ * journal `my-round` de la porte unique (`version-par-journee.md`, D8).
  * La page du livreur doit suivre le coliseur : un bac déclaré (journal de la
  * livraison) ou une commande prête (journal du COMMERCE, lu par son port).
  *

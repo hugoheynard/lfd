@@ -14,7 +14,7 @@ import { GetDayVersionsQuery } from "./get-day-versions.query.js";
 
 /**
  * **La porte unique des versions de journée**
- * (`documentation/caching-usage/plan-version-par-journee.md`, D8 — Hugo,
+ * (`documentation/caching-usage/version-par-journee.md`, D8 — Hugo,
  * 2026-11-03 : « c'est important pour ne pas dériver »).
  *
  * `GET admin/day-versions?date=AAAA-MM-JJ&journals=orders,production` →

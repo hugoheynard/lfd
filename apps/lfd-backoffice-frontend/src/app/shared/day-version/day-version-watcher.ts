@@ -42,7 +42,7 @@ function keyOf(journal: DayJournal, date: string): string {
 }
 
 /**
- * **Le veilleur de journée** (`plan-version-par-journee.md`, D4) : toutes les
+ * **Le veilleur de journée** (`version-par-journee.md`, D4) : toutes les
  * 15 s, onglet visible, il demande « la version a-t-elle changé ? » au lieu de
  * tout relire, et ne relit l'écran que si oui.
  *

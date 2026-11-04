@@ -9,7 +9,7 @@ export type { DayJournal } from '@lfd/contracts';
 
 /**
  * La **porte unique** des versions de journée — `GET admin/day-versions`
- * (`documentation/caching-usage/plan-version-par-journee.md`, D8, décision de
+ * (`documentation/caching-usage/version-par-journee.md`, D8, décision de
  * Hugo du 2026-11-03 : « c'est important pour ne pas dériver »).
  *
  * 🔴 **Le SEUL code du front qui l'appelle** (`lint:day-version-door` le

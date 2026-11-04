@@ -6,7 +6,7 @@ import { OrderDayVersionReader } from "../../domain/ports/order-day-version.read
 
 /**
  * **Le journal du commerce** pour la porte unique des versions de journée
- * (`plan-version-par-journee.md`, D8) : `public.day_change`, avancé par les
+ * (`version-par-journee.md`, D8) : `public.day_change`, avancé par les
  * déclencheurs de `orders` quel que soit l'écrivain — passation, règlement,
  * annulation, retrait (D1).
  *

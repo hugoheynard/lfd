@@ -287,7 +287,7 @@ export class RoundsPage {
       });
     });
     // Ne relire que si la journée de la livraison a bougé — un autre poste a
-    // composé, un livreur est parti (`plan-version-par-journee.md`, D4).
+    // composé, un livreur est parti (`version-par-journee.md`, D4).
     // L'écran s'ouvre sous `delivery_rounds:read`, la porte de la version aussi.
     inject(DayVersionWatcher).watch({
       journals: ['delivery'],

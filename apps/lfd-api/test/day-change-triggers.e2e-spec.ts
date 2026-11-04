@@ -1,6 +1,6 @@
 /**
  * E2E des **déclencheurs de la version par journée** —
- * `documentation/caching-usage/plan-version-par-journee.md`, D2, D3, D7.
+ * `documentation/caching-usage/version-par-journee.md`, D2, D3, D7.
  *
  * Trois choses que seule la base migrée peut dire :
  *

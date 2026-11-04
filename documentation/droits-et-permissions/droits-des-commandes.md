@@ -169,7 +169,7 @@ La vue du jour, de la passation au retrait
 
 ## Les versions de journée — une porte, un droit par journal
 
-Depuis le 2026-11-03 (`caching-usage/plan-version-par-journee.md`, D8), les
+Depuis le 2026-11-03 (`caching-usage/version-par-journee.md`, D8), les
 six routes de version par journal sont retirées au profit de
 `GET /admin/day-versions?date=&journals=` (`DayVersionsController`, surface
 réflexive : il suffit d'une fiche staff). Le droit se tranche **par

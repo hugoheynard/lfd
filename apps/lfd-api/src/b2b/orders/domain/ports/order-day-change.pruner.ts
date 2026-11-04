@@ -1,6 +1,6 @@
 /**
  * Combien de temps une trace du journal des journées reste utile : sept jours
- * (plan `plan-version-par-journee.md`, D2). Même durée que le journal du
+ * (plan `version-par-journee.md`, D2). Même durée que le journal du
  * fournil, recopiée et non importée : les deux blocs ne se lisent pas.
  */
 export const ORDER_DAY_CHANGE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;

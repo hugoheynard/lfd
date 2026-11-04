@@ -1,7 +1,7 @@
 /**
  * Combien de temps une trace du journal de la livraison reste utile : sept
  * jours, comme les journaux du fournil et du commerce. Seule la plus récente
- * d'une journée compte (`plan-version-par-journee.md`, D2).
+ * d'une journée compte (`version-par-journee.md`, D2).
  */
 export const DELIVERY_DAY_CHANGE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 

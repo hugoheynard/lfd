@@ -152,7 +152,7 @@ export class FicheAtelier {
     void this.shortcuts.load();
     // Les autres postes déclarent aussi : sans relecture, une ligne sortie du four
     // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
-    // Elle ne relit que si la journée du fournil a bougé (`plan-version-par-journee.md`).
+    // Elle ne relit que si la journée du fournil a bougé (`version-par-journee.md`).
     inject(DayVersionWatcher).watch({
       journals: ['production'],
       date: this.day.date,

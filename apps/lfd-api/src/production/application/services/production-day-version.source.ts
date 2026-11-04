@@ -8,7 +8,7 @@ import { ServiceDay } from "../../domain/value-objects/service-day.value-object.
 
 /**
  * **Le journal du fournil** pour la porte unique des versions de journée
- * (`plan-version-par-journee.md`, D8).
+ * (`version-par-journee.md`, D8).
  *
  * ## Deux journaux depuis la bascule du colisage (K2, 2026-10-04)
  *

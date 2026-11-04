@@ -6,7 +6,7 @@ import { inject } from '@angular/core';
 export const DAY_REFRESH_MS = 60_000;
 
 /**
- * **Les deux rythmes de la Supervision** (`plan-version-par-journee.md`) :
+ * **Les deux rythmes de la Supervision** (`version-par-journee.md`) :
  *
  * - les colonnes ne se relisent que si l'un des deux journaux du jour affiché a
  *   bougé (D4) — commerce (`orders`) et fournil (`production`), que

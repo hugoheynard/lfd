@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * Contrat de fil de la **version par journée**
- * (`documentation/caching-usage/plan-version-par-journee.md`).
+ * (`documentation/caching-usage/version-par-journee.md`).
  *
  * 🔴 **Une seule porte** depuis le 2026-11-03 (décision de Hugo, D8 du plan) :
  * `GET admin/day-versions?date=AAAA-MM-JJ&journals=orders,production`. Les six

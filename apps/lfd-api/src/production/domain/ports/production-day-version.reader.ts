@@ -2,7 +2,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
  * **Lire la version d'une journée** dans le journal du fournil
- * (`documentation/caching-usage/plan-version-par-journee.md`, D2).
+ * (`documentation/caching-usage/version-par-journee.md`, D2).
  *
  * Un port à part du balayage (ISP) : l'écran qui veille ne purge rien, et le
  * balayage ne lit aucune version.

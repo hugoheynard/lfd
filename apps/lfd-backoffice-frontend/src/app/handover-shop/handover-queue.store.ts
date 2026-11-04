@@ -288,7 +288,7 @@ export class HandoverQueueStore {
     }, TICK_MS);
     inject(DestroyRef).onDestroy(() => window.clearInterval(tick));
     // 🔴 La file se relit quand l'une des deux journées bouge (D6,
-    // `plan-version-par-journee.md`) : une commande passée au téléphone
+    // `version-par-journee.md`) : une commande passée au téléphone
     // (commerce) ou un sac fermé au fournil (production). Filet de 5 min inclus.
     inject(DayVersionWatcher).watch({
       journals: ['orders', 'production'],

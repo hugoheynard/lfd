@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // La version par journée, côté COMMERCE —
-// `documentation/caching-usage/plan-version-par-journee.md`, D2 et D3.
+// `documentation/caching-usage/version-par-journee.md`, D2 et D3.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// **Le journal des journées touchées** par une écriture sur `orders`.

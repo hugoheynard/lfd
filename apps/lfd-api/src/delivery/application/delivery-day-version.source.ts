@@ -8,7 +8,7 @@ import { isCalendarDay } from "../domain/value-objects/service-day.js";
 
 /**
  * **Le journal de la livraison** pour la porte unique des versions de journée
- * (`plan-version-par-journee.md`, D8 ; `plan-schema-delivery.md`, SD-D3).
+ * (`version-par-journee.md`, D8 ; `plan-schema-delivery.md`, SD-D3).
  *
  * Lisible sous `delivery_rounds:read` OU `delivery_loading:read`, les droits
  * de son ancienne porte (relevés le 2026-11-03 dans

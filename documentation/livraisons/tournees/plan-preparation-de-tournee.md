@@ -525,7 +525,7 @@ s'imprime seule. L'écran signale :
 
 > ⚠️ **Appris au lot 2 (2026-09-29)** : toute table du schéma `production` a un
 > déclencheur de journal de journée (`day_change`, D7 de
-> `documentation/caching-usage/plan-version-par-journee.md`), ou une raison
+> `documentation/caching-usage/version-par-journee.md`), ou une raison
 > écrite de ne pas en avoir (`test/day-change-triggers.e2e-spec.ts`). Véhicules
 > et départ y sont inscrits comme réglages sans journée. **La tournée, elle, porte
 > une journée : elle aura son déclencheur**, faute de quoi la version par

@@ -19,7 +19,7 @@ import {
  * (`SETTLEMENT_REMINDERS_CRON`, `container/worker.ts`).
  *
  * **La même passe balaie le journal des journées du commerce**
- * (`documentation/caching-usage/plan-version-par-journee.md`, D2) : c'est la
+ * (`documentation/caching-usage/version-par-journee.md`, D2) : c'est la
  * passe machine du contexte qui possède `orders`, et un cron de plus serait un
  * réglage Cloudflare pour une suppression de quelques centaines de lignes.
  * Deux commandes, deux handlers — seule la porte est partagée. Le compte

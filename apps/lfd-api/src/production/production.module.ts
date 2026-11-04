@@ -294,7 +294,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
       provide: QualityControlSettingsRepository,
       useClass: PrismaQualityControlSettingsRepository,
     },
-    // La version par journée (`plan-version-par-journee.md`, V1-V2) : lire et
+    // La version par journée (`version-par-journee.md`, V1-V2) : lire et
     // balayer le journal sont deux ports (ISP), sur le schéma `production`.
     ProductionDayVersionSource,
     PruneProductionDayChangesHandler,

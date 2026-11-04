@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **une seule porte pour savoir si une journée a changé**
- * (`documentation/caching-usage/plan-version-par-journee.md`, D8 — Hugo,
+ * (`documentation/caching-usage/version-par-journee.md`, D8 — Hugo,
  * 2026-11-03 : « c'est important pour ne pas dériver »).
  *
  * Six routes de version, une par journal et par droit, avaient poussé en un

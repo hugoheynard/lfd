@@ -17,7 +17,7 @@ export class DayVersionRegistryMisassembledError extends TechnicalError {
 
 /**
  * **Le registre des journaux de journée** — la SEULE déclaration de qui sert
- * quel journal (`plan-version-par-journee.md`, D8).
+ * quel journal (`version-par-journee.md`, D8).
  *
  * Il refuse de se construire si un journal du contrat n'a pas de source, ou en
  * a deux : l'API ne démarre pas plutôt que de servir une porte qui tairait un

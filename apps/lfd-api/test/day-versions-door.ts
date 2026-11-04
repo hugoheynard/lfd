@@ -5,7 +5,7 @@ import { jsonBody } from "./e2e-harness.js";
 
 /**
  * **La porte unique des versions de journée**, vue des e2e
- * (`documentation/caching-usage/plan-version-par-journee.md`, D8, 2026-11-03).
+ * (`documentation/caching-usage/version-par-journee.md`, D8, 2026-11-03).
  * Les six routes par journal sont retirées : chaque suite lit ici.
  */
 export const DAY_VERSIONS = "/admin/day-versions";

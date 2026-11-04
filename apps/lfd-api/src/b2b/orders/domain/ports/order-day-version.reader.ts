@@ -1,6 +1,6 @@
 /**
  * **Lire la version d'une journée** dans le journal du commerce
- * (`documentation/caching-usage/plan-version-par-journee.md`, D2 et D3).
+ * (`documentation/caching-usage/version-par-journee.md`, D2 et D3).
  *
  * Le journal (`public.day_change`) est alimenté par les déclencheurs de
  * `orders`, jamais par le code : ce port ne fait que le lire. Séparé du

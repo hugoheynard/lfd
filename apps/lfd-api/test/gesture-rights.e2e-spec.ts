@@ -90,7 +90,7 @@ async function statusOf(agent: request.Agent, route: RouteName): Promise<number>
 
 /**
  * Les journaux de journée que ce porteur reçoit de la porte unique
- * (`plan-version-par-journee.md`, D8) : elle répond 200 à toute fiche staff et
+ * (`version-par-journee.md`, D8) : elle répond 200 à toute fiche staff et
  * OMET un journal non permis — un droit se lit donc à la présence du journal,
  * plus à un 403.
  */

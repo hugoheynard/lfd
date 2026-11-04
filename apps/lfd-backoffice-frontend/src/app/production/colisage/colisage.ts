@@ -214,7 +214,7 @@ export class Colisage {
     void this.palette.refresh();
     // 🔴 Enregistrée par l'ÉCRAN, pas par le lecteur : c'est l'écran qui sait
     // quelle commande est ouverte, et qui compare avant et après.
-    // Seulement si la journée du fournil a bougé (`plan-version-par-journee.md`).
+    // Seulement si la journée du fournil a bougé (`version-par-journee.md`).
     // La journée de la LIVRAISON aussi (2026-10-02) : une tournée recomposée
     // range la pile autrement, et sans elle le filet de 5 min seul la voyait.
     // Seulement si le poste peut la lire — sa porte ne s'ouvre pas au colisage.

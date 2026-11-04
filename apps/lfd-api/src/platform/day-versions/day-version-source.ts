@@ -3,7 +3,7 @@ import type { DayJournal, StaffPermission } from "@lfd/contracts";
 /**
  * **Une source de version de journée** — ce que la porte unique
  * `GET admin/day-versions` demande à chaque bloc qui tient un journal
- * (`documentation/caching-usage/plan-version-par-journee.md`, D8, 2026-11-03).
+ * (`documentation/caching-usage/version-par-journee.md`, D8, 2026-11-03).
  *
  * `platform` DÉCLARE ce port et ne connaît aucun bloc : le commerce, le fournil
  * et la livraison l'IMPLÉMENTENT chacun dans leur propre code, et

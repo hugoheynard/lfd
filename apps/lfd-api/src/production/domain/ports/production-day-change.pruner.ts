@@ -1,7 +1,7 @@
 /**
  * Combien de temps une trace du journal des journées reste utile : sept jours.
  * Seule la plus récente d'une journée compte, et aucun écran ne veille en
- * direct une journée d'il y a un mois (plan `plan-version-par-journee.md`, D2).
+ * direct une journée d'il y a un mois (plan `version-par-journee.md`, D2).
  */
 export const DAY_CHANGE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
