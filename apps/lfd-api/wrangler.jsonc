@@ -23,6 +23,13 @@
   "name": "lfd-api",
   "main": "container/worker.ts",
   "compatibility_date": "2025-06-01",
+  // `ctx.exports` seul, et non une date avancée (lot C0b,
+  // `documentation/pricing/moteur/plan-cache-du-catalogue.md`) : le
+  // gestionnaire de sortie des containers l'exige, et ce drapeau n'active que
+  // lui. Avancer la date (défaut depuis 2025-11-17) aurait changé d'un coup
+  // tous les comportements datés de ce Worker — limite de débit, crons,
+  // `guardedFetch` compris.
+  "compatibility_flags": ["enable_ctx_exports"],
 
   // L'image NestJS tourne dans un container ; le Worker ne fait que router.
   "containers": [

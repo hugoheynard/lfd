@@ -13,6 +13,14 @@ import { Container } from "@cloudflare/containers";
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
 
+// Le point d'entrée par lequel un gestionnaire de sortie répond au container
+// (lot C0b, `documentation/pricing/moteur/plan-cache-du-catalogue.md`).
+// L'exporter ne branche RIEN : sans `outboundByHost` sur `Backend`, aucune
+// interception n'est posée et le démarrage du container est inchangé
+// (`usingInterception` reste faux dans `@cloudflare/containers` 0.3.7, vérifié
+// le 2026-11-04).
+export { ContainerProxy } from "@cloudflare/containers";
+
 /**
  * Variables runtime forwardées au container. `PORT`/`NODE_ENV` viennent de l'image.
  *
