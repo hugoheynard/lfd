@@ -108,6 +108,13 @@
       // lot C2) : joint par le seul conteneur, par un gestionnaire de sortie.
       { "name": "PRO_SHELVES", "class_name": "ProShelves" },
     ],
+    // 🔴 Le code des objets se met à jour AVEC l'image, pas jusqu'à 5 min
+    // après. Depuis wrangler 4.141, sans stratégie, la mise à jour est
+    // différée : le 2026-11-04, le conteneur a redémarré sur l'image neuve
+    // mais avec l'ANCIEN code de `Backend`, donc sans `SHOP_SHELF_CACHE_URL`
+    // (posée par `envVars`), et le cache des rayons pro est resté éteint
+    // jusqu'à un redéploiement. `immediate` rend le comportement d'avant 4.141.
+    "code_update_strategy": { "mode": "immediate" },
   },
   // Une migration ne se réécrit pas : chaque classe nouvelle prend un tag neuf.
   "migrations": [
