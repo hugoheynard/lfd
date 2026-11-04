@@ -25,7 +25,12 @@ import {
   basketTracesOf,
   type BasketDiscountTrace,
 } from "./order-basket-discounts.js";
-import { draftInputOf, type PricedDraftInput } from "./order-priced-draft.js";
+import {
+  draftInputOf,
+  NO_PRICING_NOTES,
+  type OrderPricingNotes,
+  type PricedDraftInput,
+} from "./order-priced-draft.js";
 import { orderAmountsReadingOf, type OrderAmountsReading } from "./order-amounts-reading.js";
 import { shelfClaimOf, type ShelfClaim } from "../services/shelf-circuit.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
@@ -90,6 +95,7 @@ export class Order {
   private offPlan = false;
   private customerCancellation: FixedCustomerCancellation = NOT_FIXED_CANCELLATION;
   private customerCancellableUntil: Date | null = null;
+  private pricingNotesValue: OrderPricingNotes = NO_PRICING_NOTES;
 
   private constructor(
     private readonly companyId: string | null,
@@ -137,9 +143,20 @@ export class Order {
     const vatMethod = placementVatMethodOf(request.companyId);
     // Le prix du panier d'abord, comme la composition le faisait avant
     // l'agrégat : l'ordre des refus ne bouge pas (lot L1a).
-    const input = draftInputOf(request, vatMethod);
+    const { input, notes } = draftInputOf(request, vatMethod);
     ensureSupplyFits(supply, input.fulfillment, input.requestedDeliveryDate);
-    return Order.compose(input, vatMethod, supplyMarkOf(supply));
+    const order = Order.compose(input, vatMethod, supplyMarkOf(supply));
+    order.pricingNotesValue = notes;
+    return order;
+  }
+
+  /**
+   * Ce que le chiffrage de cette composition a dit en plus des montants
+   * (promotions écartées au-delà de cinq). Jamais persisté : il ne vaut que
+   * pour l'appelant qui vient de composer.
+   */
+  pricingNotes(): OrderPricingNotes {
+    return this.pricingNotesValue;
   }
 
   /**
@@ -213,7 +230,7 @@ export class Order {
     request: DraftOrderInput | PricedDraftInput,
   ): OrderRevisionToSave {
     // Chiffrée dans la méthode RELUE sur la commande (plan du centime, § 5).
-    const input = draftInputOf(request, current.vatMethod);
+    const { input, notes } = draftInputOf(request, current.vatMethod);
     ensureRevisableSettlement(current);
     ensureNoShortfallDecision(current);
     // L9 avant les gardes de montant : une remise emportée hors de sa cible
@@ -236,7 +253,7 @@ export class Order {
       }),
     );
     revised.deferPayment();
-    return revisionOf(current, revised.toPersistence());
+    return { ...revisionOf(current, revised.toPersistence()), pricingNotes: notes };
   }
 
   /**

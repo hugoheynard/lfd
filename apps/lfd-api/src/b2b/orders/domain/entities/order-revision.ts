@@ -29,6 +29,7 @@ import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { OrderEntryShortcut, OrderSupply } from "../value-objects/order-supply.js";
 import type { RefundPosition } from "./order-refund.js";
+import type { OrderPricingNotes } from "./order-priced-draft.js";
 import type {
   OrderDiscountLabel,
   OrderFulfillmentInput,
@@ -166,6 +167,11 @@ export interface OrderRevisionToSave {
   readonly changes: readonly RevisionChange[];
   readonly totalBeforeCents: number;
   readonly totalAfterCents: number;
+  /**
+   * Ce que le chiffrage de la révision a dit en plus des montants — les
+   * remises rejouées refusées, les promotions écartées. Jamais persisté.
+   */
+  readonly pricingNotes?: OrderPricingNotes;
   /** Mode, date, point ou adresse ont changé : la livraison doit la reprendre. */
   readonly routeChanged: boolean;
   /** Au compte : la ligne d'encaissement suit le nouveau total. */

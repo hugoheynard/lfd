@@ -82,3 +82,39 @@ describe("Order.draft sur un panier chargé — l'agrégat appelle priceBasket",
     expect(priced.discountTtcCents).toBe(226);
   });
 });
+
+/**
+ * **Un seul chiffrage par commande** (L7, 2026-11-04) : la passation et la
+ * révision refaisaient `priceBasket` pour lire les promotions écartées et les
+ * remises refusées. Elles les lisent désormais sur le chiffrage de l'agrégat.
+ */
+describe("Order.draft — ce que son chiffrage dit en plus des montants", () => {
+  it("rend les notes de SON calcul, identiques à celles de priceBasket", () => {
+    const context = contextOf();
+    const verdicts = { lateFee: null };
+    const order = Order.draft({
+      ...identity("co_1", context),
+      pricing: { context, handoverAt: null, verdicts },
+    });
+    const direct = priceBasket(context, { vatMethod: "line_ht", handoverAt: null }, verdicts);
+
+    expect(order.pricingNotes()).toEqual({
+      refusals: direct.refusals,
+      beyondCap: direct.beyondCap,
+    });
+  });
+
+  it("une entrée aux montants déjà composés n'a rien à dire", () => {
+    const context = contextOf();
+    const terms = priceBasket(
+      context,
+      { vatMethod: "line_ht", handoverAt: null },
+      { lateFee: null },
+    ).terms;
+
+    expect(Order.draft({ ...identity("co_1", context), ...terms }).pricingNotes()).toEqual({
+      refusals: [],
+      beyondCap: undefined,
+    });
+  });
+});

@@ -3,7 +3,10 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
 import { Order } from "../../domain/entities/order.js";
-import { pricedBasketOf, type PricedDraftInput } from "../../domain/entities/order-priced-draft.js";
+import {
+  NO_PRICING_NOTES,
+  type PricedDraftInput,
+} from "../../domain/entities/order-priced-draft.js";
 import {
   type OrderRevisionToSave,
   type RevisableOrder,
@@ -270,14 +273,14 @@ export class OrderRevising {
         lateFee: order.lateFeeAdjustment,
       }),
     );
-    // Les remises rejouées que la révision ferait perdre, lues sur LE calcul
-    // que l'agrégat refait — mêmes entrées, même fonction.
-    const priced = pricedBasketOf(input.pricing, order.vatMethod);
-    warnBeyondCap(this.logger, priced);
     const revision = options.requireChange
       ? Order.revise(order, input)
       : Order.recompose(order, input);
-    return { revision, refusals: [...loaded.keptRefusals, ...priced.refusals] };
+    // Les remises rejouées que la révision ferait perdre, lues sur LE calcul
+    // de l'agrégat — il n'est plus refait ici (L7, 2026-11-04).
+    const notes = revision.pricingNotes ?? NO_PRICING_NOTES;
+    warnBeyondCap(this.logger, notes);
+    return { revision, refusals: [...loaded.keptRefusals, ...notes.refusals] };
   }
 
   /**

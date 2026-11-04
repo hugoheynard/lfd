@@ -10,7 +10,6 @@ import { CustomerAudiences } from "./customer-audiences.service.js";
 import { DeliveryDefaultsReader } from "../../domain/ports/delivery-defaults.reader.js";
 import { windowRequesterOf } from "../../domain/services/delivery-window.js";
 import { Order, type OrderSalesTerms, type OrderVoucher } from "../../domain/entities/order.js";
-import { pricedBasketOf } from "../../domain/entities/order-priced-draft.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
@@ -208,7 +207,6 @@ export class OrderDrafting {
     const composed = OrderComposition.draftOf(content, loaded.context, arranged, {
       lateFee: await this.lateFee.forWaiver(waiverUsed),
     });
-    warnBeyondCap(this.logger, pricedBasketOf(composed.pricing, vatMethod));
     const order = Order.draft(
       {
         ...composed,
@@ -229,6 +227,8 @@ export class OrderDrafting {
       },
       supply,
     );
+    // Sur LE chiffrage de l'agrégat : il n'est plus refait ici (L7, 2026-11-04).
+    warnBeyondCap(this.logger, order.pricingNotes());
     return { order, waiverUsed };
   }
 

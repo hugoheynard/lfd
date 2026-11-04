@@ -33,35 +33,40 @@ export type PricedDraftInput = Omit<DraftOrderInput, keyof BasketTerms> & {
 };
 
 /**
- * Le chiffrage que l'agrégat fait de cette commande — exposé pour que
- * l'appelant lise ce que l'agrégat ne rend pas (les remises rejouées refusées
- * d'une révision, les promotions écartées au-delà de cinq) sur LE MÊME calcul,
- * mêmes entrées, même fonction.
+ * **Ce que le chiffrage de l'agrégat dit en plus des montants** — les remises
+ * rejouées qu'une révision ferait perdre, les promotions écartées au-delà de
+ * cinq. Lu par l'appelant sur LE calcul de l'agrégat : jusqu'au 2026-11-04,
+ * l'appelant refaisait `priceBasket` pour les obtenir (L7).
  */
-export function pricedBasketOf(
-  request: OrderPricingRequest,
-  vatMethod: OrderVatMethod,
-): BasketAmounts {
-  return priceBasket(
-    request.context,
-    { vatMethod, handoverAt: request.handoverAt },
-    request.verdicts,
-  );
+export interface OrderPricingNotes {
+  readonly refusals: BasketAmounts["refusals"];
+  readonly beyondCap: BasketAmounts["beyondCap"];
 }
 
+/** Une entrée aux montants déjà composés n'a rien à dire. */
+export const NO_PRICING_NOTES: OrderPricingNotes = { refusals: [], beyondCap: undefined };
+
 /**
- * L'entrée complète de la composition. Une entrée chiffrée passe par
- * `priceBasket` ; une entrée aux montants déjà composés (les suites du
- * domaine qui éprouvent les gardes, les spécimens) passe telle quelle,
- * jusqu'au retrait de l'ancien code (lot L6).
+ * L'entrée complète de la composition, et ce que son chiffrage dit. Une entrée
+ * chiffrée passe par `priceBasket`, une seule fois ; une entrée aux montants
+ * déjà composés (les suites du domaine qui éprouvent les gardes, les
+ * spécimens) passe telle quelle, jusqu'à son retrait (L7, 2a).
  */
 export function draftInputOf(
   input: DraftOrderInput | PricedDraftInput,
   vatMethod: OrderVatMethod,
-): DraftOrderInput {
+): { readonly input: DraftOrderInput; readonly notes: OrderPricingNotes } {
   if (!("pricing" in input)) {
-    return input;
+    return { input, notes: NO_PRICING_NOTES };
   }
   const { pricing, ...identity } = input;
-  return { ...identity, ...pricedBasketOf(pricing, vatMethod).terms };
+  const priced = priceBasket(
+    pricing.context,
+    { vatMethod, handoverAt: pricing.handoverAt },
+    pricing.verdicts,
+  );
+  return {
+    input: { ...identity, ...priced.terms },
+    notes: { refusals: priced.refusals, beyondCap: priced.beyondCap },
+  };
 }
