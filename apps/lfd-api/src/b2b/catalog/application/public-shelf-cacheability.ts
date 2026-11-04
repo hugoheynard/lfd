@@ -1,14 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
 import { ShelfCacheSignals } from "../domain/ports/shelf-cache-signals.js";
-import { publicShelfVerdict } from "../domain/public-shelf-rules.js";
+import { publicShelfVerdict, type PublicShelfVerdict } from "../domain/public-shelf-rules.js";
 import { ResilientPublicShelf } from "./resilient-public-shelf.js";
 
 /** Un rayon public, et s'il peut s'offrir à Workers Cache. */
-export interface PublicShelfReply<T> {
-  readonly view: T;
-  readonly cacheable: boolean;
-}
+export type PublicShelfReply<T> = { readonly view: T } & PublicShelfVerdict;
 
 /**
  * **L'API décide de la cacheabilité, réponse par réponse** (C3,
@@ -36,7 +33,7 @@ export class PublicShelfCacheability {
     if (this.shelf.knownDisabled()) {
       const view = await compute();
       this.signals.emit({ name: "public_not_cacheable", reason: "disabled" });
-      return { view, cacheable: false };
+      return { view, cacheable: false, reason: "disabled" };
     }
     const before = await this.shelf.state();
     const view = await compute();
@@ -47,6 +44,6 @@ export class PublicShelfCacheability {
         ? { name: "public_cacheable" }
         : { name: "public_not_cacheable", reason: verdict.reason },
     );
-    return { view, cacheable: verdict.cacheable };
+    return { view, ...verdict };
   }
 }

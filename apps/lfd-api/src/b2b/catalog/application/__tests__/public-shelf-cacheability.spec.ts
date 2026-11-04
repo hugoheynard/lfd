@@ -27,7 +27,7 @@ describe("PublicShelfCacheability", () => {
 
     const reply = await cacheability.around(() => Promise.resolve(VIEW));
 
-    expect(reply).toEqual({ view: VIEW, cacheable: false });
+    expect(reply).toEqual({ view: VIEW, cacheable: false, reason: "disabled" });
     expect(shelf.reads).toBe(1);
     expect(signals.emitted).toEqual([{ name: "public_not_cacheable", reason: "disabled" }]);
   });
@@ -50,7 +50,7 @@ describe("PublicShelfCacheability", () => {
       return Promise.resolve(VIEW);
     });
 
-    expect(reply).toEqual({ view: VIEW, cacheable: false });
+    expect(reply).toEqual({ view: VIEW, cacheable: false, reason: "version_moved" });
     expect(signals.emitted).toEqual([{ name: "public_not_cacheable", reason: "version_moved" }]);
   });
 
@@ -74,7 +74,7 @@ describe("PublicShelfCacheability", () => {
 
       const reply = await cacheability.around(() => Promise.resolve(VIEW));
 
-      expect(reply).toEqual({ view: VIEW, cacheable: false });
+      expect(reply).toEqual({ view: VIEW, cacheable: false, reason: "unavailable" });
       expect(signals.emitted.at(-1)).toEqual({
         name: "public_not_cacheable",
         reason: "unavailable",
@@ -136,7 +136,7 @@ describe("PublicShelfCacheability — la mémoire du drapeau", () => {
     clock.advanceMs(PUBLIC_FLAG_MEMORY_MS - 1);
     const reply = await cacheability.around(compute);
 
-    expect(reply).toEqual({ view: VIEW, cacheable: false });
+    expect(reply).toEqual({ view: VIEW, cacheable: false, reason: "disabled" });
     expect(shelf.reads).toBe(1);
   });
 

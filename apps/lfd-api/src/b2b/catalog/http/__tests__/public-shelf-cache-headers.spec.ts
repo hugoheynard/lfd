@@ -27,6 +27,7 @@ describe("offerPublicShelf", () => {
     expect(PUBLIC_SHELF_CACHE_CONTROL).toBe("public, max-age=30");
     expect(PUBLIC_SHELF_CACHE_TAG).toBe("rayon-public");
     expect([...sink.headers]).toEqual([
+      ["X-Shelf-Cache", "cacheable"],
       ["Cache-Control", "public, max-age=30"],
       ["Cache-Tag", "rayon-public"],
     ]);
@@ -36,8 +37,12 @@ describe("offerPublicShelf", () => {
     const sink = new RecordingSink();
     sink.setHeader("Cache-Control", "private, no-cache");
 
-    offerPublicShelf(sink, { view: {}, cacheable: false });
+    offerPublicShelf(sink, { view: {}, cacheable: false, reason: "version_moved" });
 
-    expect([...sink.headers]).toEqual([["Cache-Control", "private, no-cache"]]);
+    // Seule la raison s'ajoute : elle dit pourquoi, sans rien rendre gardable.
+    expect([...sink.headers]).toEqual([
+      ["Cache-Control", "private, no-cache"],
+      ["X-Shelf-Cache", "version_moved"],
+    ]);
   });
 });

@@ -17,6 +17,9 @@ export const PUBLIC_SHELF_CACHE_CONTROL = `public, max-age=${PUBLIC_SHELF_MAX_AG
 
 export { PUBLIC_SHELF_CACHE_TAG };
 
+/** L'en-tête qui dit pourquoi un rayon public est gardé ou non. */
+export const SHELF_CACHE_DECISION_HEADER = "X-Shelf-Cache";
+
 /** La seule méthode de la réponse que la décision appelle. */
 export interface PublicShelfHeaderSink {
   setHeader(name: string, value: string): unknown;
@@ -36,6 +39,10 @@ export function offerPublicShelf(
   response: PublicShelfHeaderSink,
   reply: PublicShelfReply<unknown>,
 ): void {
+  // La décision, dite par la réponse : le refus s'écrit au niveau `log`, que
+  // la production ne garde pas, et `public-on` restait sans effet visible
+  // (2026-11-04). Un mot, ni personne ni donnée.
+  response.setHeader(SHELF_CACHE_DECISION_HEADER, reply.cacheable ? "cacheable" : reply.reason);
   if (!reply.cacheable) {
     return;
   }
