@@ -70,6 +70,14 @@ export function reservationHoldersOf(
 export interface ServedCompanyRow {
   readonly status: StandingCompanyStatus;
   readonly holders: ReservationHolders;
+  /**
+   * Le principal ACTUEL, quel que soit son statut — `holders` ne le garde que
+   * s'il est `active`. Lu par le cache des rayons pro : un principal qui
+   * redevient actif doit effacer le rayon de ses sites
+   * (`plan-cache-du-catalogue.md`, § 4). Aucune lecture de plus : la ligne
+   * était déjà lue.
+   */
+  readonly principalId: string | null;
 }
 
 /**
@@ -91,5 +99,9 @@ export async function readServedCompany(
   });
   return company === null
     ? null
-    : { status: company.status, holders: reservationHoldersOf(companyId, company.parentCompany) };
+    : {
+        status: company.status,
+        holders: reservationHoldersOf(companyId, company.parentCompany),
+        principalId: company.parentCompany?.id ?? null,
+      };
 }

@@ -87,6 +87,7 @@ export class AppConfig {
   private readonly recomputeTokenValue: string | null;
   private readonly adminBaseUrlValue: string | null;
   private readonly geocoderUrlValue: string | null;
+  private readonly shopShelfCacheUrlValue: string | null;
   private readonly routePlannerEndpointValue: RoutePlannerEndpoint | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
@@ -120,6 +121,7 @@ export class AppConfig {
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.geocoderUrlValue = optionalString("BAN_GEOCODER_URL");
+    this.shopShelfCacheUrlValue = optionalString("SHOP_SHELF_CACHE_URL");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.routePlannerEndpointValue = resolveRoutePlannerEndpoint({
@@ -256,6 +258,18 @@ export class AppConfig {
    */
   geocoderUrl(): string | null {
     return this.geocoderUrlValue;
+  }
+
+  /**
+   * L'adresse du **magasin des rayons pro** (`plan-cache-du-catalogue.md`, C2)
+   * — `http://rayons.interne`, posée par le Worker lui-même à côté du
+   * gestionnaire de sortie qui l'intercepte (`container/worker.ts`) —, ou
+   * `null` : aucun magasin, chaque rayon se calcule depuis la base (dev local
+   * hors wrangler, e2e). Délibérément sans défaut : hors du conteneur, ce nom
+   * ne mène nulle part.
+   */
+  shopShelfCacheUrl(): string | null {
+    return this.shopShelfCacheUrlValue;
   }
 
   /**

@@ -9,9 +9,22 @@
 // ⚠️ Hors de `src/` : pas typé par le tsconfig Nest ; wrangler/esbuild le bundle.
 // Types éditeur : container/tsconfig.json.
 import { Container } from "@cloudflare/containers";
+import type { OutboundHandlerContext } from "@cloudflare/containers";
 
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
+import { PRO_SHELVES_INSTANCE } from "./pro-shelves";
+import type { ProShelves } from "./pro-shelves";
+import {
+  isTrustedCaller,
+  SHELF_STORE_ENV,
+  SHELF_STORE_HOST,
+  SHELF_STORE_ORIGIN,
+} from "./shelf-store";
+
+// L'objet des rayons pro (lot C2) : exporté par le point d'entrée, comme toute
+// classe de Durable Object liée dans `wrangler.jsonc`.
+export { ProShelves } from "./pro-shelves";
 
 // Le point d'entrée par lequel un gestionnaire de sortie répond au container
 // (lot C0b, `documentation/pricing/moteur/plan-cache-du-catalogue.md`).
@@ -151,6 +164,7 @@ type RuntimeKey = (typeof RUNTIME_KEYS)[number];
 
 interface Env extends Partial<Record<RuntimeKey, string>> {
   BACKEND: DurableObjectNamespace<Backend>;
+  PRO_SHELVES: DurableObjectNamespace<ProShelves>;
   RATE_LIMITER: RateLimiter;
 }
 
@@ -179,7 +193,42 @@ export class Backend extends Container<Env> {
   // froid. Ce qui la garde chaude est le cron de rafraîchissement ci-dessous ;
   // cette ligne n'est que le filet quand le cron ne passe plus.
   sleepAfter = "1h";
-  envVars = pickEnv(this.env); // secrets du Worker → env du container.
+  // Secrets du Worker → env du container, plus l'adresse du magasin des rayons
+  // pro : posée ICI, à côté du gestionnaire qui l'intercepte, pour que l'hôte
+  // appelé et l'hôte intercepté ne puissent pas diverger (lot C2).
+  envVars = { ...pickEnv(this.env), [SHELF_STORE_ENV]: SHELF_STORE_ORIGIN };
+}
+
+/**
+ * **Le chemin conteneur → objet des rayons pro** (`plan-cache-du-catalogue.md`,
+ * § 4) : le conteneur appelle `http://rayons.interne/…`, le Worker intercepte et
+ * transmet à l'objet par sa liaison. Ni route publique, ni jeton.
+ *
+ * Il REFUSE tout appel dont le `containerId` n'est pas celui de `Backend` :
+ * `ContainerProxy` est un point d'entrée exporté, qu'un autre Worker du compte
+ * pourrait lier. Le refus (403) fait retomber l'API sur la base.
+ *
+ * ⚠️ Posé par AFFECTATION, après la classe, et non par `static outboundByHost =`
+ * dans son corps : un champ statique se DÉFINIT sur la classe et masquerait
+ * l'accesseur hérité de `Container`, qui seul inscrit le gestionnaire — le
+ * conteneur démarrerait alors sans interception, sans erreur.
+ */
+async function proShelvesGateway(
+  request: Request,
+  env: Env,
+  ctx: OutboundHandlerContext,
+): Promise<Response> {
+  const trusted = [env.BACKEND.idFromName(PRIMARY_INSTANCE).toString()];
+  if (!isTrustedCaller(ctx.containerId, trusted)) {
+    return new Response(null, { status: 403 });
+  }
+  return proShelves(env).fetch(request);
+}
+
+Backend.outboundByHost = { [SHELF_STORE_HOST]: proShelvesGateway };
+
+function proShelves(env: Env): DurableObjectStub<ProShelves> {
+  return env.PRO_SHELVES.get(env.PRO_SHELVES.idFromName(PRO_SHELVES_INSTANCE), PLACEMENT);
 }
 
 /**

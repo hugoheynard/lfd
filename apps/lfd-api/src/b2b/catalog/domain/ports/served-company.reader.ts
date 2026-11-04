@@ -6,6 +6,12 @@ export interface ServedCompany {
   /** Le statut de la société, relu à chaque requête — jamais pris d'un jeton. */
   readonly status: StandingCompanyStatus;
   readonly holders: ReservationHolders;
+  /**
+   * Le principal actuel, actif ou non — `holders` ne le nomme que s'il est
+   * `active`. Ne sert qu'à ranger le rayon pro avec son principal, pour
+   * qu'une purge du principal efface ses sites ; jamais à ouvrir un article.
+   */
+  readonly principalId: string | null;
 }
 
 /**

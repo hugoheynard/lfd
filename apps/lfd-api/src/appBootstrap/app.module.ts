@@ -72,6 +72,7 @@ import { MediaCarriersModule } from "./media-carriers.module.js";
 import { OperationImageLibraryModule } from "./operation-image-library.module.js";
 import { JournalModule } from "./journal.module.js";
 import { ShelfChangesModule } from "./shelf-changes.module.js";
+import { ShopShelfCacheModule } from "./shop-shelf-cache.module.js";
 import { DayVersionSourcesModule } from "./day-version-sources.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
@@ -195,6 +196,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     JournalModule,
     // Le signal « un rayon a changé », que tout écrivain du rayon émet (cache C1).
     ShelfChangesModule,
+    ShopShelfCacheModule,
     // Contextes métier.
     AccountModule,
     // Les notes du commercial : staff seulement, sur `StaffDirectory` d'AccountModule.

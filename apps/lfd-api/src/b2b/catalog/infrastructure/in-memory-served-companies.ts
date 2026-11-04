@@ -12,15 +12,19 @@ export class InMemoryServedCompanies extends ServedCompanyReader {
   constructor(
     private readonly statuses: ReadonlyMap<string, StandingCompanyStatus> = new Map(),
     private readonly activePrincipals: ReadonlyMap<string, string> = new Map(),
+    /** Les principaux NON actifs : nommés au rangement du rayon, jamais ouvrants. */
+    private readonly inactivePrincipals: ReadonlyMap<string, string> = new Map(),
   ) {
     super();
   }
 
   servedOf(companyId: string): Promise<ServedCompany | null> {
     this.asked.push(companyId);
+    const activePrincipalId = this.activePrincipals.get(companyId) ?? null;
     return Promise.resolve({
       status: this.statuses.get(companyId) ?? "active",
-      holders: { companyId, activePrincipalId: this.activePrincipals.get(companyId) ?? null },
+      holders: { companyId, activePrincipalId },
+      principalId: activePrincipalId ?? this.inactivePrincipals.get(companyId) ?? null,
     });
   }
 }

@@ -12,6 +12,12 @@ import {
 } from "./shop-catalogue-offers.js";
 
 export type { ShelfBuyerKind } from "./shop-catalogue-offers.js";
+
+/** Un rayon calculé, et le principal actuel de sa société (actif ou non). */
+export interface PricedShelf {
+  readonly view: ShopCatalogueView;
+  readonly principalId: string | null;
+}
 import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
 import { CatalogPricePerKgReader } from "../domain/ports/catalog-price-per-kg.reader.js";
@@ -141,13 +147,21 @@ export class ShopCataloguePricing {
     // Et c'est la fabrique qui décide si la société est servie en pro
     // (`plan-pros-en-cours-d-inscription.md`, P0) : servie au public, elle ne
     // passe PAS son identifiant au tarificateur — ni mercuriale, ni tarif de canal.
-    const viewer = await this.viewers.forCompany(companyId, "served_and_locked");
-    return this.pricedFor(
-      viewer,
-      { companyId: pricingCompanyOf(viewer), buyerKind },
-      language,
-      SHELF_SCOPE,
-    );
+    return (await this.shelf(companyId, buyerKind, language)).view;
+  }
+
+  /**
+   * {@link priced}, avec le principal actuel de la société lu dans la même
+   * lecture — ce que le cache des rayons pro range à côté du rayon (C2).
+   */
+  async shelf(
+    companyId: string | null,
+    buyerKind: ShelfBuyerKind,
+    language: ContentLocale,
+  ): Promise<PricedShelf> {
+    const { viewer, principalId } = await this.viewers.forShelf(companyId, "served_and_locked");
+    const buyer = { companyId: pricingCompanyOf(viewer), buyerKind };
+    return { view: await this.pricedFor(viewer, buyer, language, SHELF_SCOPE), principalId };
   }
 
   /** Le lecteur et l'acheteur de la route reconnue — la déduction de {@link priced}. */

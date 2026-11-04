@@ -43,10 +43,25 @@ export class CatalogViewers {
     companyId: string | null,
     show: ProCatalogShow = "served",
   ): Promise<CatalogViewer> {
+    return (await this.forShelf(companyId, show)).viewer;
+  }
+
+  /**
+   * {@link forCompany}, plus le principal actuel de la société (actif ou non)
+   * — dans la MÊME lecture. Le cache des rayons pro le range avec le rayon,
+   * pour qu'une purge du principal efface ses sites (`plan-cache-du-catalogue.md`, § 4).
+   */
+  async forShelf(
+    companyId: string | null,
+    show: ProCatalogShow,
+  ): Promise<{ readonly viewer: CatalogViewer; readonly principalId: string | null }> {
     const served = await this.servedOf(companyId);
-    return served === null || companyServiceOf(served.status) !== "pro"
-      ? PUBLIC_VIEWER
-      : proViewer(served.holders, show);
+    if (served === null) {
+      return { viewer: PUBLIC_VIEWER, principalId: null };
+    }
+    const viewer =
+      companyServiceOf(served.status) === "pro" ? proViewer(served.holders, show) : PUBLIC_VIEWER;
+    return { viewer, principalId: served.principalId };
   }
 
   /**

@@ -58,6 +58,7 @@ import { ReadShopFeaturedHandler } from "./application/queries/read-shop-feature
 import { SaleOperations } from "./application/sale-operations.service.js";
 import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
 import { PrismaSaleReferenceUsage } from "./infrastructure/prisma-sale-reference-usage.js";
+import { RecognisedShelf } from "./application/recognised-shelf.service.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
@@ -177,6 +178,9 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     ShopCataloguePricing,
     ShopCatalogueOffers,
     CatalogViewers,
+    // Le rayon reconnu passé par le magasin des rayons pro (C2) ; le magasin
+    // lui-même est relié par `appBootstrap/shop-shelf-cache.module.ts`.
+    RecognisedShelf,
     ReservedArticleGuard,
     { provide: ReservationHoldersReader, useClass: PrismaReservationHoldersReader },
     { provide: ServedCompanyReader, useClass: PrismaServedCompanyReader },
@@ -284,6 +288,7 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // descendue ici.
     ShopCataloguePricing,
     CatalogViewers,
+    RecognisedShelf,
     // Pour la grille de prix (`plan-export-grille-de-prix.md`) : le rayon d'un
     // public se compose comme la vitrine — opérations datées comprises — et
     // porte le prix au kilo saisi, lu À CÔTÉ de la résolution.

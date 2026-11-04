@@ -1,6 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
+import { ProShelfPurge } from "../b2b/catalog/application/pro-shelf-purge.js";
 import { DeferredShelfChanges } from "../b2b/shared/shelf-changes/application/deferred-shelf-changes.js";
+import { FanOutShelfPurge } from "../b2b/shared/shelf-changes/application/fan-out-shelf-purge.js";
 import { ShelfChangeWindow } from "../b2b/shared/shelf-changes/application/shelf-change-window.js";
 import { ShelfChanges } from "../b2b/shared/shelf-changes/domain/ports/shelf-changes.js";
 import { ShelfPurge } from "../b2b/shared/shelf-changes/domain/ports/shelf-purge.js";
@@ -18,15 +20,21 @@ import { NodeShelfWindowTimer } from "../b2b/shared/shelf-changes/infrastructure
  * UNE fenêtre pour tout le processus : `ShelfChangeWindow` est un singleton,
  * c'est ce qui regroupe une rafale venue de plusieurs écrivains.
  *
- * C2 et C3 remplacent `ShelfPurge` ici, et seulement ici : la journalisation
- * de C1 devient la vraie purge.
+ * La purge passe à chaque magasin, ici et seulement ici : la journalisation
+ * de C1, gardée, puis le magasin des rayons pro (C2,
+ * `shop-shelf-cache.module.ts`). C3 ajoutera Workers Cache à la liste.
  */
 @Global()
 @Module({
   providers: [
     ShelfChangeWindow,
     { provide: ShelfChanges, useClass: DeferredShelfChanges },
-    { provide: ShelfPurge, useClass: LoggingShelfPurge },
+    {
+      provide: ShelfPurge,
+      inject: [ProShelfPurge],
+      useFactory: (pro: ProShelfPurge): ShelfPurge =>
+        new FanOutShelfPurge([new LoggingShelfPurge(), pro]),
+    },
     { provide: ShelfWindowTimer, useClass: NodeShelfWindowTimer },
   ],
   exports: [ShelfChanges],

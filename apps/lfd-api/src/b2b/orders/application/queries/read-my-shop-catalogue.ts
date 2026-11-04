@@ -1,8 +1,7 @@
 import type { ShopCatalogueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { ShopCataloguePricing } from "../../../catalog/application/shop-catalogue-pricing.service.js";
-import { CATALOG_SOURCE_LANGUAGE } from "../../../catalog/domain/catalog-translations.js";
+import { RecognisedShelf } from "../../../catalog/application/recognised-shelf.service.js";
 
 /**
  * **La vitrine au prix du client** — le second chemin annoncé par
@@ -44,6 +43,10 @@ import { CATALOG_SOURCE_LANGUAGE } from "../../../catalog/domain/catalog-transla
  *
  * ## Le coût
  *
+ * Depuis C2 (`documentation/pricing/moteur/plan-cache-du-catalogue.md`), le
+ * rayon passe par le magasin des rayons pro : à chaud, les seules lectures
+ * sont celles des droits ; à froid, le calcul ci-dessous.
+ *
  * Une résolution pour tout le catalogue, à la quantité **1**, et les matériaux
  * chargés **en un lot** : le coût ne suit pas le nombre d'articles. C'est ce qui
  * rend la route tenable sur une vitrine de quatre-vingt-douze pièces.
@@ -68,12 +71,13 @@ export class ReadMyShopCatalogueHandler implements IQueryHandler<
   ReadMyShopCatalogueQuery,
   ShopCatalogueView
 > {
-  constructor(private readonly pricing: ShopCataloguePricing) {}
+  constructor(private readonly shelf: RecognisedShelf) {}
 
-  async execute(query: ReadMyShopCatalogueQuery): Promise<ShopCatalogueView> {
-    // En français : la route reconnue n'a pas encore de paramètre de langue
-    // (lot des langues, 2026-10-18 — seule la vue publique en a reçu un).
-    // La route reconnue : le `Principal` a été résolu en base (L10).
-    return this.pricing.priced(query.companyId, "registered", CATALOG_SOURCE_LANGUAGE);
+  execute(query: ReadMyShopCatalogueQuery): Promise<ShopCatalogueView> {
+    // La route reconnue : le `Principal` a été résolu en base (L10), et la
+    // société aussi — c'est la clé du magasin des rayons pro (C2). La langue
+    // reste le français (lot des langues, 2026-10-18 — seule la vue publique
+    // en a reçu une).
+    return this.shelf.read(query.companyId);
   }
 }

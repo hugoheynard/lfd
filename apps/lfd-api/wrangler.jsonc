@@ -88,9 +88,18 @@
   ],
 
   "durable_objects": {
-    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }],
+    "bindings": [
+      { "name": "BACKEND", "class_name": "Backend" },
+      // L'objet des rayons pro (`documentation/pricing/moteur/plan-cache-du-catalogue.md`,
+      // lot C2) : joint par le seul conteneur, par un gestionnaire de sortie.
+      { "name": "PRO_SHELVES", "class_name": "ProShelves" },
+    ],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }],
+  // Une migration ne se réécrit pas : chaque classe nouvelle prend un tag neuf.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Backend"] },
+    { "tag": "v2", "new_sqlite_classes": ["ProShelves"] },
+  ],
 
   // PLUS AUCUNE ADRESSE PUBLIQUE. Ce Worker n'est joignable que par le service
   // binding de la passerelle (`gateway/wrangler.toml`) : c'est ce qui fait d'elle

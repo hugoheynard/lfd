@@ -43,6 +43,18 @@ const NOT_FORWARDED: Readonly<Record<string, string>> = {
   JOURNAL_STRICT_FACTS: "tests uniquement — la production reste indulgente",
 };
 
+/**
+ * Les réglages que le Worker **pose lui-même** dans l'environnement du
+ * container, sans secret ni déploiement : ils ne transitent pas par
+ * `RUNTIME_KEYS`. Chacun doit vraiment être posé par `worker.ts` (test plus bas).
+ */
+const SET_BY_WORKER: Readonly<Record<string, string>> = {
+  // L'adresse du magasin des rayons pro (lot C2) : posée à côté du
+  // gestionnaire de sortie qui l'intercepte, pour que l'hôte appelé et l'hôte
+  // intercepté ne puissent pas diverger.
+  SHOP_SHELF_CACHE_URL: "posée par le Worker à côté de son gestionnaire de sortie",
+};
+
 /** Les noms que le Worker accepte de transmettre au container. */
 function forwardedKeys(): string[] {
   const source = readFileSync(join(CONTAINER, "worker.ts"), "utf8");
@@ -105,7 +117,7 @@ describe("les variables transmises au container", () => {
   it("couvre TOUT ce que la configuration lit", () => {
     const forwarded = new Set(forwardedKeys());
     const missing = configuredKeys().filter(
-      (name) => !forwarded.has(name) && !(name in NOT_FORWARDED),
+      (name) => !forwarded.has(name) && !(name in NOT_FORWARDED) && !(name in SET_BY_WORKER),
     );
 
     expect(missing).toEqual([]);
@@ -137,6 +149,18 @@ describe("les variables transmises au container", () => {
     const wasted = deployedKeys().filter((name) => !forwarded.has(name));
 
     expect(wasted).toEqual([]);
+  });
+
+  it("pose vraiment ce qu'il dit poser lui-même, et rien que la configuration ne lise", () => {
+    const worker = readFileSync(join(CONTAINER, "worker.ts"), "utf8");
+    const store = readFileSync(join(CONTAINER, "shelf-store.ts"), "utf8");
+    const configured = new Set(configuredKeys());
+
+    for (const name of Object.keys(SET_BY_WORKER)) {
+      expect(store).toContain(`SHELF_STORE_ENV = "${name}"`);
+      expect(configured.has(name)).toBe(true);
+    }
+    expect(worker).toContain("[SHELF_STORE_ENV]: SHELF_STORE_ORIGIN");
   });
 
   it("ne laisse aucun réglage de développement franchir le Worker", () => {
