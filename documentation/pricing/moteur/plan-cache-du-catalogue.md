@@ -428,6 +428,43 @@ sur un principal efface ses sites ; une règle de segment efface tout ; un objet
 qui ne répond pas donne un `no-store` ; `/mine` ne touche jamais Workers Cache ; une
 promotion qui se ferme n'est plus servie après la durée.
 
+### C1 en détail — la purge, sans cache encore
+
+C1 ne cache **rien** : il pose le signal, pour que C2 et C3 n'aient qu'à
+l'écouter. Il peut partir en production seul, sans effet visible.
+
+- **Le port** `ShelfChanges` dans `b2b/shared/shelf-changes/` (règle commune à
+  plusieurs contextes du commerce, comme `photo-cards`) :
+  `changed(scope)` avec `scope` = `{ kind: "all" }` ou
+  `{ kind: "company", companyId }`. Il appelle `AfterCommit.defer` lui-même :
+  l'appelant ne peut pas oublier « après la validation ».
+- **L'adaptateur de C1** regroupe en fin de fenêtre d'une seconde (un `all`
+  absorbe les sociétés ; sinon l'ensemble des sociétés), puis **journalise**
+  la purge qu'il aurait faite. C2 et C3 remplacent la journalisation par la
+  vraie purge.
+- **Les écrivains** appellent le port à l'endroit où ils écrivent, avec la
+  portée du tableau de la partie 1. Les modèles concernés, relevés le
+  2026-11-04 dans `prisma/schema/public/` : `CatalogItem`,
+  `CatalogItemOverride`, `CatalogCategory`, `CatalogPriceHistory`,
+  `CatalogItemReservation`, `CatalogOperation`, `CatalogOperationItem`,
+  `CatalogOperationOverride`, `OrderCutoff`, `OrderCutoffSettings`,
+  `Company`, `CompanyFollow`, `VolumeCommitment`, `CompanyMercuriale`,
+  `CompanyMercurialeAmendment`, `PriceRule`, `PriceFloor`, `VolumeLadder`,
+  `Promotion` et ses tables (`PromotionScopeRule`, `PromotionAudienceTarget`,
+  `PromotionPickupPoint`, `PromotionDeliveryZone`, `PromotionSetting`). Le
+  bâtisseur confronte cette liste aux lectures réelles de
+  `ShopCataloguePricing` et de ses lecteurs, et rend l'écart.
+- **La porte `lint:shelf-writes`** : tout fichier de `apps/lfd-api/src` qui
+  écrit l'un de ces modèles (`create`, `update`, `upsert`, `delete` et leurs
+  formes `Many`, ou du SQL brut qui nomme leur table) appelle `ShelfChanges`,
+  ou figure dans une liste admise **datée** avec sa raison. Chaque modèle de
+  la liste doit exister dans le schéma (vérifié à chaque passage, par
+  `dev-toolbox/gates/lib/prisma-schema.mjs`) : un modèle renommé ne la
+  désarme pas en silence.
+- **Tests** : le regroupement (rafale de 200 → une purge ; `all` absorbe ;
+  fin de fenêtre), `AfterCommit` (rien ne part si la transaction échoue), et
+  un test par famille d'écrivains qui vérifie la portée annoncée.
+
 ## 10. Ce que ce plan ne fait pas
 
 - la passation (50 à 80 opérations) et le devis : autre chantier ;
