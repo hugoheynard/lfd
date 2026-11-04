@@ -6,6 +6,9 @@ import { ShelfCacheSignals } from "../b2b/catalog/domain/ports/shelf-cache-signa
 import { ShelfCallDeadline } from "../b2b/catalog/domain/ports/shelf-call-deadline.js";
 import { ShopShelfCache } from "../b2b/catalog/domain/ports/shop-shelf-cache.js";
 import { ShopShelfEraser } from "../b2b/catalog/domain/ports/shop-shelf-eraser.js";
+import { ShopShelfSwitch } from "../b2b/catalog/domain/ports/shop-shelf-switch.js";
+import { DurableObjectShopShelfSwitch } from "../b2b/catalog/infrastructure/durable-object-shop-shelf-switch.js";
+import { NoShopShelfSwitch } from "../b2b/catalog/infrastructure/no-shop-shelf-switch.js";
 import { DurableObjectShopShelfCache } from "../b2b/catalog/infrastructure/durable-object-shop-shelf-cache.js";
 import { LoggingShelfCacheSignals } from "../b2b/catalog/infrastructure/logging-shelf-cache-signals.js";
 import { NoShopShelfCache } from "../b2b/catalog/infrastructure/no-shop-shelf-cache.js";
@@ -39,11 +42,21 @@ import { AppConfig } from "../platform/config/app-config.js";
       },
     },
     { provide: ShopShelfEraser, useExisting: ShopShelfCache },
+    {
+      // L'interrupteur suit le même choix ; sans état en mémoire, une instance
+      // à part ne dédouble rien : l'état vit dans l'objet.
+      provide: ShopShelfSwitch,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): ShopShelfSwitch => {
+        const url = config.shopShelfCacheUrl();
+        return url === null ? new NoShopShelfSwitch() : new DurableObjectShopShelfSwitch(url);
+      },
+    },
     { provide: ShelfCallDeadline, useClass: NodeShelfCallDeadline },
     { provide: ShelfCacheSignals, useClass: LoggingShelfCacheSignals },
     ResilientShopShelfCache,
     ProShelfPurge,
   ],
-  exports: [ResilientShopShelfCache, ProShelfPurge],
+  exports: [ResilientShopShelfCache, ProShelfPurge, ShopShelfSwitch, ShelfCacheSignals],
 })
 export class ShopShelfCacheModule {}

@@ -24,7 +24,11 @@ export type ShelfCacheSignal =
     }
   | { readonly name: "breaker_opened"; readonly failures: number }
   | { readonly name: "breaker_closed" }
-  | { readonly name: "erased"; readonly scope: "all" | "companies"; readonly companies: number };
+  | { readonly name: "erased"; readonly scope: "all" | "companies"; readonly companies: number }
+  /** L'interrupteur a été actionné (« L'interrupteur ») : l'état et la version qui en résultent. */
+  | { readonly name: "switched"; readonly enabled: boolean; readonly version: number }
+  /** Vidé à la main par l'interrupteur — distinct de `erased`, qui suit une écriture. */
+  | { readonly name: "purged_manually"; readonly version: number };
 
 /**
  * Port de **sortie des compteurs** du cache des rayons pro. Ne lève jamais :

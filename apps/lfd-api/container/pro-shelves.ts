@@ -8,12 +8,15 @@
 import { DurableObject } from "cloudflare:workers";
 
 import {
-  acceptsStore,
-  isFresh,
+  isEnabled,
   keysToErase,
   parseEraseOrder,
   parseShelfCall,
+  parseSwitchAction,
+  servesEntry,
   SHELF_VERSION_HEADER,
+  storeDecision,
+  switchPlan,
   type ShelfCall,
   type ShelfEntryMeta,
 } from "./shelf-store";
@@ -22,6 +25,11 @@ import {
 export const PRO_SHELVES_INSTANCE = "pro-shelves-weur";
 
 const VERSION_NAME = "version";
+/** 1 allumé, 0 éteint ; absent = allumé (l'objet déployé par C2, avant tout geste). */
+const ENABLED_NAME = "enabled";
+
+/** Rangement non gardé : l'objet est éteint (`not_kept` côté API). */
+const STATUS_NOT_KEPT = 202;
 
 /** L'objet ne lit aucune liaison ni aucun secret. */
 type ProShelvesEnv = Record<string, never>;
@@ -60,6 +68,8 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
         return this.store(call, await request.arrayBuffer());
       case "erase":
         return this.erase(await bodyJson(request));
+      case "switch":
+        return this.switch(await bodyJson(request));
     }
   }
 
@@ -71,7 +81,7 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
       )
       .toArray();
     const row = rows[0];
-    if (row !== undefined && isFresh(row.expires_at, nowMs)) {
+    if (row !== undefined && servesEntry(this.enabled(), row.expires_at, nowMs)) {
       return new Response(row.body, {
         status: 200,
         headers: { "content-type": "application/octet-stream" },
@@ -87,7 +97,11 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
   }
 
   private store(call: Extract<ShelfCall, { kind: "store" }>, body: ArrayBuffer): Response {
-    if (!acceptsStore(this.version(), call.version)) {
+    const decision = storeDecision(this.enabled(), this.version(), call.version);
+    if (decision === "not_kept") {
+      return new Response(null, { status: STATUS_NOT_KEPT });
+    }
+    if (decision === "stale") {
       return new Response(null, { status: 409 });
     }
     this.ctx.storage.sql.exec(
@@ -106,11 +120,7 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
     if (order === null) {
       return new Response(null, { status: 400 });
     }
-    this.ctx.storage.sql.exec(
-      "INSERT INTO meta (name, value) VALUES (?, 1) " +
-        "ON CONFLICT(name) DO UPDATE SET value = value + 1",
-      VERSION_NAME,
-    );
+    this.bumpVersion();
     if (order.kind === "all") {
       this.ctx.storage.sql.exec("DELETE FROM shelves");
       return new Response(null, { status: 204 });
@@ -123,6 +133,42 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
       this.ctx.storage.sql.exec("DELETE FROM shelves WHERE key = ?", key);
     }
     return new Response(null, { status: 204 });
+  }
+
+  /** Un geste de l'interrupteur ; rend l'état qui en résulte. */
+  private switch(body: unknown): Response {
+    const action = parseSwitchAction(body);
+    if (action === null) {
+      return new Response(null, { status: 400 });
+    }
+    const plan = switchPlan(action);
+    if (plan.enabled !== null) {
+      this.ctx.storage.sql.exec(
+        "INSERT OR REPLACE INTO meta (name, value) VALUES (?, ?)",
+        ENABLED_NAME,
+        plan.enabled ? 1 : 0,
+      );
+    }
+    if (plan.eraseAll) {
+      this.bumpVersion();
+      this.ctx.storage.sql.exec("DELETE FROM shelves");
+    }
+    return Response.json({ enabled: this.enabled(), version: this.version() });
+  }
+
+  private bumpVersion(): void {
+    this.ctx.storage.sql.exec(
+      "INSERT INTO meta (name, value) VALUES (?, 1) " +
+        "ON CONFLICT(name) DO UPDATE SET value = value + 1",
+      VERSION_NAME,
+    );
+  }
+
+  private enabled(): boolean {
+    const rows = this.ctx.storage.sql
+      .exec<{ value: number }>("SELECT value FROM meta WHERE name = ?", ENABLED_NAME)
+      .toArray();
+    return isEnabled(rows[0]?.value);
   }
 
   private version(): number {

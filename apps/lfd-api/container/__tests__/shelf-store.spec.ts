@@ -1,12 +1,17 @@
 import {
   acceptsStore,
   companyOfStorageKey,
+  isEnabled,
   isFresh,
   isTrustedCaller,
   keysToErase,
   parseEraseOrder,
   parseShelfCall,
+  parseSwitchAction,
+  servesEntry,
   storageKeyOf,
+  storeDecision,
+  switchPlan,
 } from "../shelf-store";
 
 /**
@@ -127,5 +132,53 @@ describe("les décisions", () => {
       { key: "personal", principalId: null },
     ];
     expect(keysToErase(entries, ["co_head"])).toEqual(["company:co_head", "company:co_site"]);
+  });
+});
+
+/**
+ * L'interrupteur (« L'interrupteur » du plan) : éteindre, rallumer, vider la
+ * production sans redéployer. Ces tests échouent si un objet éteint sert ou
+ * range encore, si l'extinction laisse une entrée qu'un rallumage servirait,
+ * ou si un rallumage range quoi que ce soit d'avance.
+ */
+describe("l'interrupteur", () => {
+  it("est allumé par défaut : l'objet de C2 n'a jamais écrit l'état", () => {
+    expect(isEnabled(undefined)).toBe(true);
+    expect(isEnabled(1)).toBe(true);
+    expect(isEnabled(0)).toBe(false);
+  });
+
+  it("se lit au chemin dédié, et ne comprend que trois gestes", () => {
+    expect(parseShelfCall("POST", new URL(`${URL_BASE}/switch`))).toEqual({ kind: "switch" });
+    expect(parseShelfCall("GET", new URL(`${URL_BASE}/switch`))).toBeNull();
+    expect(parseSwitchAction({ action: "on" })).toBe("on");
+    expect(parseSwitchAction({ action: "off" })).toBe("off");
+    expect(parseSwitchAction({ action: "purge" })).toBe("purge");
+    expect(parseSwitchAction({ action: "OFF" })).toBeNull();
+    expect(parseSwitchAction(null)).toBeNull();
+  });
+
+  it("éteint, une entrée fraîche est un raté", () => {
+    expect(servesEntry(true, 2000, 1000)).toBe(true);
+    expect(servesEntry(false, 2000, 1000)).toBe(false);
+    expect(servesEntry(true, 2000, 2000)).toBe(false);
+  });
+
+  it("éteint, un rangement n'est pas gardé, même sur la bonne version", () => {
+    expect(storeDecision(false, 4, 4)).toBe("not_kept");
+    expect(storeDecision(true, 4, 4)).toBe("stored");
+    expect(storeDecision(true, 5, 4)).toBe("stale");
+  });
+
+  it("l'extinction efface tout et monte la version", () => {
+    expect(switchPlan("off")).toEqual({ enabled: false, eraseAll: true });
+  });
+
+  it("le rallumage ne range ni n'efface rien", () => {
+    expect(switchPlan("on")).toEqual({ enabled: true, eraseAll: false });
+  });
+
+  it("vider efface tout sans toucher à l'état", () => {
+    expect(switchPlan("purge")).toEqual({ enabled: null, eraseAll: true });
   });
 });

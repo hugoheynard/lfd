@@ -21,6 +21,8 @@ const VERSION_HEADER = "x-shelf-version";
 
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;
+/** L'objet est éteint (« L'interrupteur ») : rien n'est rangé. */
+const HTTP_ACCEPTED = 202;
 const HTTP_NO_CONTENT = 204;
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
@@ -79,6 +81,9 @@ export class DurableObjectShopShelfCache extends ShopShelfCache implements ShopS
     }
     if (response.status === HTTP_CONFLICT) {
       return "stale";
+    }
+    if (response.status === HTTP_ACCEPTED) {
+      return "not_kept";
     }
     throw new UnreadableShelfReplyError(`rangement, statut ${response.status}`);
   }

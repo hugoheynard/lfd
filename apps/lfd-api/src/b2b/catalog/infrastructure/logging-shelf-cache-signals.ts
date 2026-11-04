@@ -11,8 +11,8 @@ export const SHELF_CACHE_METRIC_PREFIX = "shelf_cache.";
  * agrégera (`plan-cache-du-catalogue.md`, § 4 quater). Comment `ops` les lira
  * sans importer le catalogue reste à trancher en C5 ; le nom, lui, est fixé ici.
  *
- * Au niveau `warn` ce qui demande un regard (repli, disjoncteur ouvert), `log`
- * pour le reste.
+ * Au niveau `warn` ce qui demande un regard (repli, disjoncteur ouvert, cache
+ * éteint à la main), `log` pour le reste.
  */
 @Injectable()
 export class LoggingShelfCacheSignals extends ShelfCacheSignals {
@@ -25,10 +25,19 @@ export class LoggingShelfCacheSignals extends ShelfCacheSignals {
       metric: `${SHELF_CACHE_METRIC_PREFIX}${name}`,
       ...fields,
     };
-    if (name === "fallback" || name === "breaker_opened") {
+    if (needsAttention(signal)) {
       this.logger.warn(line);
       return;
     }
     this.logger.log(line);
   }
+}
+
+/** Un cache éteint reste éteint jusqu'à un geste : il doit se voir dans les journaux. */
+function needsAttention(signal: ShelfCacheSignal): boolean {
+  return (
+    signal.name === "fallback" ||
+    signal.name === "breaker_opened" ||
+    (signal.name === "switched" && !signal.enabled)
+  );
 }

@@ -1,0 +1,65 @@
+name: ops_shelf_cache
+
+# L'interrupteur du cache des rayons pro, en PRODUCTION, à la demande
+# (`documentation/pricing/moteur/plan-cache-du-catalogue.md`, « L'interrupteur »).
+#
+# Quand l'utiliser :
+#   - off   : le cache sert un rayon FAUX (un prix, un article qui ne devrait
+#             pas y être) — on l'éteint, chaque rayon est recalculé depuis la
+#             base comme avant le cache, et tout ce qui était rangé est effacé ;
+#   - on    : la cause est corrigée — on le rallume, il se remplit à la
+#             prochaine visite de chaque société (rien n'est rangé d'avance) ;
+#   - purge : un doute sur ce qui est rangé, sans vouloir éteindre — on vide
+#             tout, le cache reste dans son état.
+#
+# Ni redéploiement, ni redémarrage du conteneur : l'état vit dans l'objet des
+# rayons, et vaut pour toutes les instances de l'API.
+#
+# Pourquoi un workflow : la route est gardée par `RECOMPUTE_TOKEN`, un secret
+# GitHub en écriture seule (même raison que `ops_identity_probe.yml`).
+#
+# Ce qu'il ne touche PAS : le cache public des visiteurs (C3), qui n'existe
+# pas encore.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "off = éteindre et vider · on = rallumer · purge = vider sans éteindre"
+        required: true
+        type: choice
+        options:
+          - "off"
+          - "on"
+          - purge
+
+permissions:
+  contents: read
+
+jobs:
+  switch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Actionner l'interrupteur
+        env:
+          API_BASE_URL: ${{ vars.LFD_API_URL }}
+          RECOMPUTE_TOKEN: ${{ secrets.RECOMPUTE_TOKEN }}
+          ACTION: ${{ inputs.action }}
+        run: |
+          set -uo pipefail
+          state=$(curl --fail-with-body --silent --show-error --max-time 30 \
+                  -X POST "${API_BASE_URL}/admin/ops/shelf-cache" \
+                  -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}" \
+                  -H "content-type: application/json" \
+                  --data "{\"action\":\"${ACTION}\"}") || {
+            echo "::error::L'interrupteur a refusé : ${state:-aucune réponse}"
+            exit 1
+          }
+
+          STATE="${state}" python3 <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os
+          state = json.loads(os.environ["STATE"])
+          print(f"## Cache des rayons pro — geste `{os.environ['ACTION']}`\n")
+          print(f"- allumé : **{state['enabled']}**")
+          print(f"- version : **{state['version']}**")
+          PY

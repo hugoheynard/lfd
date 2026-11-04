@@ -22,6 +22,8 @@ import { PrismaCatalogReservations } from "./infrastructure/prisma-catalog-reser
 import { PrismaReservationCompanies } from "./infrastructure/prisma-reservation-companies.js";
 import { PrismaMadeToOrderAdminReader } from "./infrastructure/prisma-made-to-order-admin.reader.js";
 import { AdminMadeToOrderController } from "./http/admin-made-to-order.controller.js";
+import { AdminShelfCacheController } from "./http/admin-shelf-cache.controller.js";
+import { SwitchShelfCacheHandler } from "./application/commands/switch-shelf-cache.handler.js";
 import { ApproveReviewHandler } from "./application/commands/approve-review.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
@@ -153,11 +155,14 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     AdminCatalogController,
     // Le sur mesure et la réservation (`plan-articles-sur-mesure.md`, L1a).
     AdminMadeToOrderController,
+    // L'interrupteur du cache des rayons pro (`plan-cache-du-catalogue.md`).
+    AdminShelfCacheController,
     // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
     ShopCatalogueController,
     ShopFeaturedController,
   ],
   providers: [
+    SwitchShelfCacheHandler,
     // L'abonné qui projette les visuels d'une fiche sans attendre un push.
     // Il n'importe pas le référentiel : il reçoit un fait du bus.
     OnProductMediaChangedHandler,

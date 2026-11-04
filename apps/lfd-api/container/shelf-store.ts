@@ -41,7 +41,28 @@ export type ShelfCall =
       readonly expiresAtMs: number;
       readonly principalId: string | null;
     }
-  | { readonly kind: "erase" };
+  | { readonly kind: "erase" }
+  | { readonly kind: "switch" };
+
+/**
+ * Un geste de l'interrupteur (`plan-cache-du-catalogue.md`, « L'interrupteur ») :
+ * éteindre, rallumer, vider. La même liste que la route machine de l'API.
+ */
+export type ShelfSwitchAction = "on" | "off" | "purge";
+
+/** Ce qu'un geste de l'interrupteur fait au stockage. */
+export interface ShelfSwitchPlan {
+  /** L'état à écrire, ou `null` pour le laisser tel quel (une purge n'allume rien). */
+  readonly enabled: boolean | null;
+  /** Effacer toutes les entrées ET monter la version — comme l'effacement « tout ». */
+  readonly eraseAll: boolean;
+}
+
+/** Ce qu'un rangement devient, avant toute écriture. */
+export type ShelfStoreDecision = "stored" | "stale" | "not_kept";
+
+/** Le chemin de l'interrupteur, appelé par l'API seulement (même garde que le reste). */
+export const SHELF_SWITCH_PATH = "/switch";
 
 /** Ce qu'un effacement demande — la même forme que `ShelfPurgeOrder` côté API. */
 export type ShelfEraseOrder =
@@ -89,6 +110,9 @@ export function companyOfStorageKey(key: string): string | null {
 export function parseShelfCall(method: string, url: URL): ShelfCall | null {
   if (method === "POST" && url.pathname === "/erase") {
     return { kind: "erase" };
+  }
+  if (method === "POST" && url.pathname === SHELF_SWITCH_PATH) {
+    return { kind: "switch" };
   }
   const key = storageKeyOf(url.pathname);
   if (key === null) {
@@ -145,6 +169,58 @@ export function isFresh(expiresAtMs: number, nowMs: number): boolean {
  */
 export function acceptsStore(currentVersion: number, offeredVersion: number): boolean {
   return offeredVersion === currentVersion;
+}
+
+/** Lit le corps d'un geste de l'interrupteur ; `null` = illisible (400). */
+export function parseSwitchAction(body: unknown): ShelfSwitchAction | null {
+  if (typeof body !== "object" || body === null) {
+    return null;
+  }
+  const action: unknown = Reflect.get(body, "action");
+  return action === "on" || action === "off" || action === "purge" ? action : null;
+}
+
+/**
+ * **L'état lu dans `meta`** : allumé par défaut. Une ligne absente — l'objet
+ * tel que C2 l'a déployé, avant tout geste — vaut « allumé ».
+ */
+export function isEnabled(storedFlag: number | undefined): boolean {
+  return storedFlag !== 0;
+}
+
+/**
+ * **Ce que fait chaque geste.** Éteindre efface tout : un cache rallumé plus
+ * tard ne doit rien servir de ce qui était rangé avant l'extinction — c'est
+ * précisément ce qu'on éteint quand on le croit faux. La version monte avec
+ * l'effacement, donc un rayon calculé avant l'extinction et présenté après le
+ * rallumage est refusé. Rallumer ne range rien d'avance.
+ */
+export function switchPlan(action: ShelfSwitchAction): ShelfSwitchPlan {
+  switch (action) {
+    case "on":
+      return { enabled: true, eraseAll: false };
+    case "off":
+      return { enabled: false, eraseAll: true };
+    case "purge":
+      return { enabled: null, eraseAll: true };
+  }
+}
+
+/** Éteint, l'objet ne garde rien ; allumé, le refus de version décide. */
+export function storeDecision(
+  enabled: boolean,
+  currentVersion: number,
+  offeredVersion: number,
+): ShelfStoreDecision {
+  if (!enabled) {
+    return "not_kept";
+  }
+  return acceptsStore(currentVersion, offeredVersion) ? "stored" : "stale";
+}
+
+/** Éteint, toute lecture est un raté ; allumé, l'échéance décide. */
+export function servesEntry(enabled: boolean, expiresAtMs: number, nowMs: number): boolean {
+  return enabled && isFresh(expiresAtMs, nowMs);
 }
 
 /**

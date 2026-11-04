@@ -359,6 +359,28 @@ port déclaré par `ops` et implémenté côté `platform`, ou des journaux
 structurés que la carte agrège. Chaque lot (C2, C3) livre ses compteurs avec
 lui, pas après.
 
+## L'interrupteur (Hugo, 2026-11-04)
+
+Éteindre, rallumer ou vider le cache des **rayons pro** en production, sans
+redéployer ni redémarrer : GitHub → Actions → **`ops_shelf_cache`** → « Run
+workflow », puis le geste.
+
+- **Éteindre** : `off` — chaque rayon se calcule depuis la base, tout ce qui
+  était rangé est effacé.
+- **Rallumer** : `on` — rien n'est rangé d'avance, le cache se remplit aux
+  visites suivantes.
+- **Vider** : `purge` — tout est effacé, le cache reste allumé (ou éteint).
+
+Le résumé du job donne l'état après le geste (allumé, version). L'état vit
+dans l'objet des rayons (table `meta`), allumé par défaut, et vaut pour toutes
+les instances de l'API. Route : `POST /admin/ops/shelf-cache`
+(`{ action }`, jeton `RECOMPUTE_TOKEN`) ; journaux `shelf_cache.switched` et
+`shelf_cache.purged_manually`.
+
+**Ce qu'il ne fait pas** : le cache public des visiteurs (C3) n'existe pas
+encore, et ne sera pas couvert par cet interrupteur tant que C3 ne l'y branche
+pas.
+
 ## 5. La purge
 
 - **Montée après la validation**, par `AfterCommit.defer`, de toute écriture
@@ -535,7 +557,7 @@ l'écouter. Il peut partir en production seul, sans effet visible.
   `static` masquerait l'accesseur hérité de `Container`, et le conteneur
   démarrerait sans interception, sans erreur.
 - **L'objet ne lit jamais l'heure** : l'API lui passe l'instant et l'échéance.
-- **Pas d'interrupteur** : déployé, le Worker pose `SHOP_SHELF_CACHE_URL` et le
+- **Pas d'interrupteur** (bâti depuis : « L'interrupteur ») : déployé, le Worker pose `SHOP_SHELF_CACHE_URL` et le
   cache s'allume. Une panne retombe sur la base ; un cache **faux** ne
   s'éteint qu'en redéployant la version d'avant.
 - **Non éprouvé** : un `fetch` Node vers `rayons.interne` dans un vrai

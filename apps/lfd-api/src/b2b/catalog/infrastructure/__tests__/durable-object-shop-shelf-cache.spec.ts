@@ -77,6 +77,8 @@ describe("DurableObjectShopShelfCache", () => {
   it.each<[number, string]>([
     [201, "stored"],
     [409, "stale"],
+    // L'objet éteint (« L'interrupteur ») ne garde rien.
+    [202, "not_kept"],
   ])("un rangement répondu %i vaut %s", async (status, outcome) => {
     const { sent, fetchFn } = replying(() => new Response(null, { status }));
     const expiresAt = new Date(NOW.getTime() + 30_000);
