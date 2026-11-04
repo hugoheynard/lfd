@@ -174,12 +174,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_B2B_PLATFORM_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages project create lfc-ecommerce
+          pnpm exec wrangler pages project create lfc-ecommerce
           --production-branch=main || true
 
       # `cloudflare/wrangler-action` tente d'installer wrangler via `pnpm add` à
-      # la racine du workspace → ERR_PNPM_ADDING_TO_ROOT. On l'invoque plutôt en
-      # direct avec `pnpm dlx` (fetch éphémère, ne touche pas le workspace).
+      # la racine du workspace → ERR_PNPM_ADDING_TO_ROOT. On l'invoque en direct
+      # par `pnpm exec`, à la version du catalogue (`wrangler` est une
+      # dépendance de la racine depuis le 2026-11-04). C'était `pnpm dlx`,
+      # qui prenait la DERNIÈRE version publiée à chaque déploiement : un
+      # outil de mise en production qui changeait sans que personne le décide.
       # wrangler lit le token + l'account id depuis l'environnement.
       #
       # 🔴 DEPUIS le dossier de l'app (2026-09-29) : `wrangler pages deploy` ne
@@ -195,7 +198,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_B2B_PLATFORM_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages deploy
+          pnpm exec wrangler pages deploy
           dist/lfc-ecommerce-frontend/browser
           --project-name=lfc-ecommerce
           --branch=main

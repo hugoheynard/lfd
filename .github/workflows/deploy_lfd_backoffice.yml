@@ -164,7 +164,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_BACKOFFICE_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages project create lfd-backoffice
+          pnpm exec wrangler pages project create lfd-backoffice
           --production-branch=main || true
 
       - name: Deploy to Cloudflare Pages
@@ -172,7 +172,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_BACKOFFICE_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages deploy
+          pnpm exec wrangler pages deploy
           apps/lfd-backoffice-frontend/dist/lfd-backoffice-frontend/browser
           --project-name=lfd-backoffice
           --branch=main

@@ -124,7 +124,7 @@ catalog:
   # (`lfd-api`, `lfd-route-planner`) : deux versions feraient deux comportements de
   # réveil et de proxy pour la même plateforme.
   "@cloudflare/containers": 0.3.7
-  wrangler: 4.118.0
+  wrangler: 4.157.0
 
 # `@angular/build` déclare @angular/platform-server et @angular/ssr en pairs
 # OPTIONNELS. pnpm les installe quand même — et, faute de contrainte, les

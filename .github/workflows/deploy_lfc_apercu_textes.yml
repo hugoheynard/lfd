@@ -122,7 +122,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_APERCU_TEXTES_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages project create "$PAGES_PROJECT"
+          pnpm exec wrangler pages project create "$PAGES_PROJECT"
           --production-branch=main || true
 
       # Depuis la RACINE (cf. en-tête, point 3).
@@ -131,7 +131,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_APERCU_TEXTES_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages deploy
+          pnpm exec wrangler pages deploy
           apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-preview/browser
           --project-name="$PAGES_PROJECT"
           --branch=main
