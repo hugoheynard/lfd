@@ -53,6 +53,7 @@ export function view(overrides: Partial<OrderView> = {}): OrderView {
     lateFeeAdjustment: null,
     deliveryVatMode: null,
     lateFeeCents: 0,
+    pretaxCents: 1_440,
     vatCents: 71,
     vatShares: [{ rate: 5.5, amountCents: 71 }],
     customerLabel: "Hôtel des Trois Ponts",

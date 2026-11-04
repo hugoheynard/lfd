@@ -112,6 +112,7 @@ const EMPTY: ShopQuoteView = {
   deliveryFeeCents: 0,
   deliveryVatMode: 'standard',
   vat: [],
+  pretaxCents: 0,
   totalCents: 0,
 };
 
@@ -160,6 +161,7 @@ export class ShopQuote {
   private readonly refused = signal<string | null>(null);
   private readonly points = signal<number | null>(null);
   private readonly voucherEffect = signal(0);
+  private readonly voucherRest = signal<number | null>(null);
   private readonly removed = signal<readonly ShopQuoteRemovedLineView[]>([]);
   /** Le lecteur du dernier décompte demandé — cf. la remise à zéro des points. */
   private lastReader: string | null = null;
@@ -199,6 +201,12 @@ export class ShopQuote {
    * de la valeur HT du bon : ce serait une seconde règle d'arrondi.
    */
   readonly voucherTotalEffectCents = this.voucherEffect.asReadonly();
+
+  /**
+   * Ce qui restera du bon choisi après imputation, **tel que le serveur l'a
+   * compté** (plan L6). `null` sans bon, sans reste, ou sans décompte connecté.
+   */
+  readonly voucherRemainderCents = this.voucherRest.asReadonly();
 
   /**
    * Les lignes que le serveur a RETIRÉES parce que l'article ne se vend plus
@@ -303,6 +311,7 @@ export class ShopQuote {
             this.lastReader = reader;
             this.points.set(null);
             this.voucherEffect.set(0);
+            this.voucherRest.set(null);
           }
         }),
         debounceTime(QUOTE_DEBOUNCE_MS),
@@ -328,6 +337,7 @@ export class ShopQuote {
       this.refused.set(null);
       this.points.set(null);
       this.voucherEffect.set(0);
+      this.voucherRest.set(null);
       return of(null);
     }
     if (readerIn(key) === null) {
@@ -354,6 +364,7 @@ export class ShopQuote {
         this.voucherEffect.set(
           'voucherTotalEffectCents' in view ? view.voucherTotalEffectCents : 0,
         );
+        this.voucherRest.set('voucherRemainderCents' in view ? view.voucherRemainderCents : null);
         this.state.set('ready');
         this.refused.set(null);
       }),
@@ -366,6 +377,7 @@ export class ShopQuote {
           this.view.set(EMPTY);
           this.points.set(null);
           this.voucherEffect.set(0);
+          this.voucherRest.set(null);
           this.state.set('refused');
           this.refused.set(httpErrorMessage(error, fallback));
           return of(null);
@@ -387,6 +399,7 @@ export class ShopQuote {
           this.view.set(EMPTY);
           this.points.set(null);
           this.voucherEffect.set(0);
+          this.voucherRest.set(null);
           this.state.set('refused');
           this.refused.set(httpErrorMessage(error, OPERATION_REFUSAL_FALLBACK));
           return of(null);

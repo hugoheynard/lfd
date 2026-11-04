@@ -226,6 +226,12 @@ export interface ShopQuoteView {
   readonly deliveryVatMode: DeliveryVatMode;
   /** Une part par taux RÉELLEMENT présent, du plus bas au plus haut. */
   readonly vat: readonly ShopQuoteVatShare[];
+  /**
+   * **Le « Total HT »** que le bon imprimera, calculé au serveur par
+   * `orderPretaxCents` sur les montants HT du devis (plan L6) — le total que
+   * lit un pro au compte. Un écran le lit, il ne le recalcule pas.
+   */
+  readonly pretaxCents: number;
   /** Le total **TTC** — ce qui sera débité. */
   readonly totalCents: number;
   /**
@@ -311,4 +317,10 @@ export interface MyShopQuoteView extends ShopQuoteView {
    * au front, c'est une seconde règle d'arrondi (plan des points, E2.1).
    */
   readonly voucherTotalEffectCents: number;
+  /**
+   * **Ce qui restera du bon après imputation**, HT, en centimes : sa valeur
+   * moins la part imputée (plan L6). `null` sans bon, ou quand le bon est
+   * entièrement imputé. Calculé au serveur, qui connaît la valeur du bon.
+   */
+  readonly voucherRemainderCents: number | null;
 }

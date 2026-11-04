@@ -134,6 +134,8 @@ export function estimateTotalsSource(
     lateFeeCents: amounts.lateFeeCents,
     lateFeeAdjustment: null,
     vatCents: amounts.vatCents,
+    // Le HT du bon, calculé au serveur (plan L6) : recopié, jamais refait.
+    pretaxCents: amounts.pretaxCents,
     totalCents: amounts.totalCents,
   };
 }

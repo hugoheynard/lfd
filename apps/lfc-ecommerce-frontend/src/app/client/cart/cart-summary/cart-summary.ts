@@ -302,17 +302,15 @@ export class CartSummary implements OnInit {
   });
 
   /**
-   * Le reliquat d'un bon plus gros que le panier : sa valeur moins la part
-   * imputée. Le serveur le rend en bon une fois la commande réglée.
+   * Le reliquat d'un bon plus gros que le panier, **compté par le serveur**
+   * (`voucherRemainderCents`, plan L6). Il le rend en bon une fois la commande réglée.
    */
   protected readonly voucherRemainder = computed(() => {
-    const chosen = this.voucher.effective();
-    const imputed = this.totals().voucherDiscountCents;
-    if (chosen === null || this.voucherLine() === null || imputed <= 0) {
+    const rest = this.cart.voucherRemainderCents();
+    if (this.voucherLine() === null || rest === null) {
       return null;
     }
-    const rest = chosen.valueCents - imputed;
-    return rest > 0 ? fill(this.t().cart.voucherRemainder, { value: formatCents(rest) }) : null;
+    return fill(this.t().cart.voucherRemainder, { value: formatCents(rest) });
   });
 
   /** Le panier montré avec ses lignes est un panier ouvert : la suggestion s'y demande. */

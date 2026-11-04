@@ -35,6 +35,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     lateFeeAdjustment: null,
     deliveryVatMode: null,
     vatCents: 550,
+    pretaxCents: 10_000,
     totalCents: 10_550,
     currency: 'EUR',
     fromSubscriptionId: null,
@@ -164,11 +165,11 @@ describe('le récapitulatif d’un pro au compte (F5)', () => {
   });
 
   /**
-   * Régression : le pied lisait « total − TVA », une seconde formule que le bon
-   * PDF n'emploie pas (`orderPretaxCents`). Les totaux sont ici volontairement
-   * incohérents pour que les deux formules divergent (2026-11-04).
+   * Régression : le pied lisait « total − TVA », puis refaisait la règle du bon
+   * sur les gestes. Il lit désormais le HT que le serveur a calculé (plan L6) —
+   * gestes et totaux volontairement incohérents avec lui (2026-11-04).
    */
-  it('lit le HT sur les gestes figés, comme le bon PDF — pas total moins TVA', () => {
+  it('affiche le HT du serveur tel quel — ni total moins TVA, ni gestes recomposés', () => {
     const view = order({
       settlement: 'account',
       subtotalCents: 2_000,
@@ -177,10 +178,11 @@ describe('le récapitulatif d’un pro au compte (F5)', () => {
       deliveryFeeCents: 500,
       lateFeeCents: 300,
       vatCents: 0,
+      pretaxCents: 1_234,
       totalCents: 9_999,
     });
 
-    expect(row(view, 'total')?.value).toBe(`25,00${EUR}`);
+    expect(row(view, 'total')?.value).toBe(`12,34${EUR}`);
   });
 
   it('montre la livraison au prorata en HT, SANS taux', () => {

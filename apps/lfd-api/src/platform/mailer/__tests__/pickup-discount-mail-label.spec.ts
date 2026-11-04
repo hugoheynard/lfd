@@ -33,6 +33,7 @@ function sheetWith(
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       lateFeeCents: 0,
+      pretaxCents: 9_500,
       vatCents: 0,
       vatShares: null,
       totalCents: 9_500,

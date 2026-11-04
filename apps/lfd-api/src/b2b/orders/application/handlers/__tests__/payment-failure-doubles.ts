@@ -49,6 +49,7 @@ export function orderView(
     lateFeeAdjustment: null,
     deliveryVatMode: null,
     lateFeeCents: 0,
+    pretaxCents: 1_440,
     vatCents: 79,
     vatShares: [{ rate: 5.5, amountCents: 79 }],
     customerLabel: "Camille Durand",

@@ -39,6 +39,7 @@ const MONEY = {
   deliveryFeeCents: 0,
   lateFeeCents: 0,
   vatCents: 50,
+  pretaxCents: 900,
   totalCents: 950,
   currency: 'EUR',
   settlement: 'paid' as const,
@@ -245,15 +246,25 @@ describe('le bon d’un pro au compte (F5)', () => {
   });
 
   /**
-   * Régression : le bon texte lisait « total − TVA », une seconde formule que le
-   * bon PDF n'emploie pas. Totaux volontairement incohérents (2026-11-04).
+   * Régression : le bon texte lisait « total − TVA », puis refaisait la règle
+   * du bon. Il lit le HT posé par le serveur (plan L6) — montants
+   * volontairement incohérents avec lui (2026-11-04).
    */
-  it('au compte : le HT se lit sur les gestes figés, pas total moins TVA', () => {
+  it('au compte : le HT de la feuille, tel quel', () => {
     const text = renderOrderSheetText(
-      client({ money: { ...MONEY, settlement: 'account', vatCents: 0, totalCents: 4_321 } }),
+      client({
+        money: {
+          ...MONEY,
+          settlement: 'account',
+          vatCents: 0,
+          totalCents: 4_321,
+          pretaxCents: 1_234,
+        },
+      }),
     );
 
-    expect(text).toContain('9,00');
+    expect(text).toContain('12,34');
+    expect(text).not.toContain('9,00');
     expect(text).not.toContain('43,21');
   });
 

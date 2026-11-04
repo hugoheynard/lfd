@@ -8,7 +8,7 @@ import {
   instantToLocal,
   type SheetVariant,
 } from "@lfd/contracts";
-import { millicentsFromCents } from "@lfd/money";
+import { millicentsFromCents, orderPretaxCents } from "@lfd/money";
 
 import { Order, type DraftOrderInput, type OrderToPlace } from "../../domain/entities/order.js";
 import { frozenPickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
@@ -297,6 +297,7 @@ function sheetOf(
       lateFeeCents: state.lateFeeCents,
       vatCents: state.vatCents,
       vatShares: state.vatShares,
+      pretaxCents: orderPretaxCents(state),
       totalCents: state.totalCents,
       currency: "EUR",
       settlement,

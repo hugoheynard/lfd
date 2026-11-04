@@ -57,6 +57,8 @@ export interface AdminOrderEstimateAmountsView {
   readonly lateFeeVatRatePercent: number | null;
   readonly vatCents: number;
   readonly vatShares: readonly VatShareView[];
+  /** Le « Total HT » du bon à venir, par `orderPretaxCents` au serveur (plan L6). */
+  readonly pretaxCents: number;
   /** TTC à régler. */
   readonly totalCents: number;
 }

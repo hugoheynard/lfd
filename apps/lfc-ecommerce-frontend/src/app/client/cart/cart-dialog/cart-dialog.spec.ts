@@ -153,6 +153,7 @@ const DEVIS: ShopQuoteView = {
   deliveryFeeCents: 0,
   deliveryVatMode: 'standard',
   vat: [],
+  pretaxCents: 0,
   totalCents: 4230,
 };
 
@@ -166,6 +167,7 @@ function quoteDouble() {
     refusal: signal(null),
     loyaltyPointsToEarn: signal(null),
     voucherTotalEffectCents: signal(0),
+    voucherRemainderCents: signal<number | null>(null),
     refresh: (): void => undefined,
   };
 }

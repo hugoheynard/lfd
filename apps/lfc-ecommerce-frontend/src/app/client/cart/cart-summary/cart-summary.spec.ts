@@ -217,9 +217,11 @@ describe('CartSummary — les points à gagner', () => {
       deliveryFeeCents: 0,
       deliveryVatMode: 'standard',
       vat: [],
+      pretaxCents: 250,
       totalCents: 264,
       loyaltyPointsToEarn: points,
       voucherTotalEffectCents: 0,
+      voucherRemainderCents: null,
       ...overrides,
     };
     TestBed.inject(HttpTestingController)
@@ -324,9 +326,11 @@ describe('CartSummary — le bon de fidélité', () => {
     deliveryFeeCents: 0,
     deliveryVatMode: 'standard',
     vat: [],
+    pretaxCents: 1000,
     totalCents: 1055,
     loyaltyPointsToEarn: null,
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   };
 
   /** Laisse passer l'accalmie, puis rend la requête du décompte à flusher. */
@@ -436,11 +440,20 @@ describe('CartSummary — le bon de fidélité', () => {
 
   it('annonce le reliquat d’un bon plus gros que le panier', () => {
     boot();
-    pick(260, 274);
+    pick(260, 274, { voucherRemainderCents: 240 });
 
     expect(el().textContent).toContain(
       `Le reste, ${formatCents(240)} HT, vous sera rendu en bon une fois la commande réglée.`,
     );
+  });
+
+  /** Plan L6 : le reliquat est compté par le serveur ; l'écran ne soustrait plus rien. */
+  it('lit le reliquat du serveur tel quel, sans le recalculer', () => {
+    boot();
+    pick(260, 274, { voucherRemainderCents: 123 });
+
+    expect(el().textContent).toContain(`Le reste, ${formatCents(123)} HT`);
+    expect(el().textContent).not.toContain(formatCents(240));
   });
 
   it('n’annonce aucun reliquat quand le bon est entièrement imputé', () => {
@@ -495,9 +508,11 @@ describe('CartSummary — un pro au compte (F5)', () => {
     deliveryFeeCents: 1200,
     deliveryVatMode: 'follows_goods',
     vat: [{ rate: 5.5, amountCents: 14 }],
+    pretaxCents: 1450,
     totalCents: 1464,
     loyaltyPointsToEarn: null,
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   };
 
   function quotedIn(space: WorkspaceDouble): HTMLElement {
@@ -759,9 +774,11 @@ describe('CartSummary — une remise de retrait sur une partie du panier', () =>
     deliveryFeeCents: 0,
     deliveryVatMode: 'standard',
     vat: [],
+    pretaxCents: 385,
     totalCents: 406,
     loyaltyPointsToEarn: null,
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   };
 
   function quoted(view: MyShopQuoteView, space = workspaceDouble()): HTMLElement {

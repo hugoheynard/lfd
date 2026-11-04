@@ -20,6 +20,7 @@ import {
   type RecurringDeltas,
   recurringDeltasSchema,
 } from "@lfd/contracts";
+import { orderPretaxCents } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
@@ -552,6 +553,8 @@ export function toOrderView(row: OrderRow): OrderView {
     deliveryVatMode: parseDeliveryVatMode(row.deliveryVatMode),
     vatCents: row.vatCents,
     vatShares: parseVatShares(row.vatShares),
+    // Le « Total HT » du bon, par la règle qui l'imprime (plan L6).
+    pretaxCents: orderPretaxCents(row),
     totalCents: row.totalCents,
     currency: row.currency,
     customerLabel: customerLabelOf(row),

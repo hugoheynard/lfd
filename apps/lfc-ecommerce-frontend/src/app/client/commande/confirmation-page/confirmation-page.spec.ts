@@ -34,6 +34,7 @@ function placed(overrides: Partial<PlacedOrder> = {}): PlacedOrder {
       deliveryFeeCents: 0,
       deliveryVatMode: 'standard',
       vat: [{ rate: 5.5, amountCents: 55 }],
+      pretaxCents: 1000,
       totalCents: 1055,
     },
     settlement: 'not_required',

@@ -931,6 +931,12 @@ export interface OrderView {
    * L'ordre des termes n'est pas cosmétique : la surtaxe s'ajoute **après** la
    * remise. On ne fait pas de geste commercial sur une pénalité de retard.
    */
+  /**
+   * **Le « Total HT » du bon**, calculé au serveur par `orderPretaxCents`
+   * (`@lfd/money`) sur les colonnes figées — un écran le lit, il ne le
+   * recalcule pas (plan L6, `plan-l6-montants-lus.md`).
+   */
+  readonly pretaxCents: number;
   readonly totalCents: number;
   readonly currency: string;
   /**
@@ -1173,6 +1179,8 @@ export interface CustomerOrderView {
   readonly deliveryVatMode: DeliveryVatMode | null;
   readonly vatCents: number;
   readonly vatShares: readonly VatShareView[] | null;
+  /** Cf. {@link OrderView.pretaxCents}. */
+  readonly pretaxCents: number;
   readonly totalCents: number;
   readonly currency: string;
   readonly customerLabel: string;
@@ -1243,6 +1251,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     deliveryVatMode: view.deliveryVatMode,
     vatCents: view.vatCents,
     vatShares: view.vatShares,
+    pretaxCents: view.pretaxCents,
     totalCents: view.totalCents,
     currency: view.currency,
     customerLabel: view.customerLabel,

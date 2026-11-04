@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -1184,6 +1185,24 @@ describe("EstimateOrderForCustomerHandler", () => {
       vatCents: sink.placed?.vatCents,
       totalCents: sink.placed?.totalCents,
     });
+  });
+
+  /** Plan L6 : le HT de l'estimation est la règle du bon sur la commande qu'elle compose. */
+  it("porte le HT du bon, par la règle qui l'imprime", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    await handler(guard("orders"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+    const placed = sink.placed;
+    if (placed === null) {
+      throw new Error("la passation n'a rien composé");
+    }
+
+    const estimate = await estimator(guard("orders")).execute(
+      new EstimateOrderForCustomerQuery("staff_1", payload()),
+    );
+
+    expect(estimate.amounts?.pretaxCents).toBe(orderPretaxCents(placed));
   });
 
   // Elle ne reçoit ni dépôt, ni passerelle de paiement, ni publieur : écrire

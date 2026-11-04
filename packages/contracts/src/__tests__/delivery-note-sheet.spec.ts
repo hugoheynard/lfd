@@ -50,6 +50,7 @@ const MONEY = {
   lateFeeCents: 0,
   vatCents: 79,
   vatShares: null,
+  pretaxCents: 1_440,
   totalCents: 1_519,
   currency: "EUR",
   settlement: "account",

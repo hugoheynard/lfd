@@ -72,6 +72,7 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       lateFeeCents: 0,
+      pretaxCents: 1_296,
       vatCents: 71,
       vatShares: [{ rate: 5.5, amountCents: 71 }],
       totalCents: 1_367,

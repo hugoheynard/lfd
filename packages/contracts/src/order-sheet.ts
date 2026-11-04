@@ -183,6 +183,8 @@ export const sheetMoneySchema = z.object({
   lateFeeCents: z.number().int(),
   vatCents: z.number().int(),
   vatShares: vatSharesSchema.nullable(),
+  /** Cf. {@link SheetMoney.pretaxCents}. */
+  pretaxCents: z.number().int(),
   totalCents: z.number().int(),
   currency: z.string().min(1),
   settlement: settlementRegimeSchema,
@@ -250,6 +252,12 @@ export interface SheetMoney {
    * Une part nulle n'y figure pas : « TVA 10 % — 0,00 € » fait douter du calcul.
    */
   readonly vatShares: readonly VatShareView[] | null;
+  /**
+   * **Le « Total HT » du papier**, calculé au serveur par `orderPretaxCents`
+   * sur les montants qu'il porte : le HT commandé sur un bon de commande, le
+   * HT **livré** sur un bon de livraison (plan L6). Lu, jamais recalculé.
+   */
+  readonly pretaxCents: number;
   readonly totalCents: number;
   readonly currency: string;
   /** Le régime de règlement — figé à la passation, cf. `settlementRegimeSchema`. */

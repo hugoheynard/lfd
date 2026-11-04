@@ -1,6 +1,5 @@
 import { stepLabelIn, type CustomerOrderLineView, type CustomerOrderView } from '@lfd/contracts';
 
-import { orderPretaxCents } from '@lfd/money';
 import { formatAdjustment, formatCents, formatLateFeeTerms } from './order-format';
 
 /**
@@ -80,6 +79,7 @@ export type OrderTotalsSource = Pick<
   | 'lateFeeCents'
   | 'lateFeeAdjustment'
   | 'vatCents'
+  | 'pretaxCents'
   | 'totalCents'
 >;
 
@@ -227,7 +227,8 @@ const PRETAX_ONLY_NOTE = 'TVA et TTC sur la facture du mois';
  * **Le pied d'un pro au compte : le HT seul** (plan
  * `bons-et-facture-concordants`, F5). La TVA se calcule une fois sur la
  * facture du mois ; un TTC par bon la contredirait de quelques centimes, et un
- * écart ressemble à une erreur. Le HT suit la règle du bon PDF (`orderPretaxCents`) — et aucun chiffre de TVA ni de TTC n'est rendu.
+ * écart ressemble à une erreur. Le HT est celui que le serveur a calculé (`pretaxCents`, plan L6) — lu, jamais
+ * refait ici — et aucun chiffre de TVA ni de TTC n'est rendu.
  */
 function pretaxTail(order: OrderTotalsSource): readonly TotalRow[] {
   return [
@@ -235,7 +236,7 @@ function pretaxTail(order: OrderTotalsSource): readonly TotalRow[] {
       key: 'total',
       label: 'Total HT',
       hint: PRETAX_ONLY_NOTE,
-      value: formatCents(orderPretaxCents(order)),
+      value: formatCents(order.pretaxCents),
       strong: true,
     },
   ];

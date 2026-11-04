@@ -38,6 +38,7 @@ const NOTE: StaffNote = {
     lateFeeCents: 0,
     vatCents: 55,
     vatShares: null,
+    pretaxCents: 1_000,
     totalCents: 1_055,
     currency: 'EUR',
     settlement: 'account',

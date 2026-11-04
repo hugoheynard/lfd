@@ -27,6 +27,7 @@ const ANSWER: ShopQuoteView = {
   deliveryFeeCents: 0,
   deliveryVatMode: 'standard',
   vat: [{ rate: 5.5, amountCents: 66 }],
+  pretaxCents: 1200,
   totalCents: 1_266,
 };
 const AU_LABO: ServiceChoice = {

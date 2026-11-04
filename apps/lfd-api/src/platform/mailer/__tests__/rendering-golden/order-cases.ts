@@ -54,6 +54,7 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       lateFeeCents: 0,
+      pretaxCents: 1_296,
       vatCents: 71,
       vatShares: [{ rate: 5.5, amountCents: 71 }],
       totalCents: 1_367,
@@ -68,7 +69,13 @@ const PAID = sheet();
 
 const DELIVERY = sheet({
   fulfillment: { ...PAID.fulfillment, method: "delivery", pickupLabel: null },
-  money: { ...PAID.money, discountCents: 0, voucherDiscountCents: 250, settlement: "due" },
+  money: {
+    ...PAID.money,
+    discountCents: 0,
+    voucherDiscountCents: 250,
+    pretaxCents: 1_190,
+    settlement: "due",
+  },
 });
 const ACCOUNT = sheet({ money: { ...PAID.money, settlement: "account" } });
 const FREE = sheet({ requestedFor: null, money: { ...PAID.money, settlement: "free" } });

@@ -48,6 +48,7 @@ const STAFF_ORDER: OrderView = {
   deliveryVatMode: "follows_goods",
   vatCents: 118,
   vatShares: null,
+  pretaxCents: 2_160,
   totalCents: 2_278,
   currency: "EUR",
   customerLabel: "Hôtel des Cimes",

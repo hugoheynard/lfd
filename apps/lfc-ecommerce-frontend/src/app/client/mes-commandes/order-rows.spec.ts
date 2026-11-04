@@ -37,6 +37,7 @@ const ORDER = {
   deliveryFeeCents: 0,
   lateFeeCents: 0,
   vatCents: 640,
+  pretaxCents: 9_000,
   totalCents: 9_640,
   origin: 'self_service',
   placedAt: '2026-09-06T07:04:00.000Z',
@@ -101,13 +102,19 @@ describe('les lignes de l’écran des commandes', () => {
   });
 
   /**
-   * Régression : la liste lisait « total moins TVA », une seconde formule à côté
-   * de celle du bon PDF (`orderPretaxCents`). Totaux volontairement
-   * incohérents pour que les deux divergent (2026-11-04).
+   * Régression : la liste lisait « total moins TVA », puis refaisait la règle
+   * du bon. Elle lit le HT que le serveur a calculé (plan L6) — gestes et
+   * totaux volontairement incohérents avec lui (2026-11-04).
    */
-  it('au compte, le HT se lit sur les gestes figés, pas total moins TVA', () => {
-    const order = { ...ORDER, deliveryFeeCents: 500, vatCents: 0, totalCents: 1_234 };
-    expect(historyRowOf(order, '', COPY)).toMatchObject({ total: 95, pretax: true });
+  it('au compte, affiche le HT du serveur tel quel', () => {
+    const order = {
+      ...ORDER,
+      deliveryFeeCents: 500,
+      vatCents: 0,
+      pretaxCents: 4_321,
+      totalCents: 1_234,
+    };
+    expect(historyRowOf(order, '', COPY)).toMatchObject({ total: 43.21, pretax: true });
   });
 
   /** Lu sur `paymentStatus` et le cumul réussi, jamais sur le régime (lot R1). */

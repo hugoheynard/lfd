@@ -22,6 +22,7 @@ const A: ShopQuoteView = {
   deliveryFeeCents: 0,
   deliveryVatMode: 'standard',
   vat: [{ rate: 5.5, amountCents: 17 }],
+  pretaxCents: 300,
   totalCents: 317,
 };
 

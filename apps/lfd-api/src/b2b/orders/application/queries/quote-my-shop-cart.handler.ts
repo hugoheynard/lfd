@@ -36,7 +36,8 @@ export class QuoteMyShopCartHandler implements IQueryHandler<
   ) {}
 
   async execute(query: QuoteMyShopCartQuery): Promise<MyShopQuoteView> {
-    const { view, voucherTotalEffectCents } = await this.quoting.quote(query);
+    const { view, voucherTotalEffectCents, voucherRemainderCents } =
+      await this.quoting.quote(query);
     const loyaltyPointsToEarn =
       query.companyId === null
         ? await this.earning.pointsToEarn({
@@ -46,6 +47,6 @@ export class QuoteMyShopCartHandler implements IQueryHandler<
             voucherDiscountCents: view.voucherDiscountCents,
           })
         : null;
-    return { ...view, loyaltyPointsToEarn, voucherTotalEffectCents };
+    return { ...view, loyaltyPointsToEarn, voucherTotalEffectCents, voucherRemainderCents };
   }
 }

@@ -118,6 +118,8 @@ function moneyOf(order: OrderView): SheetMoney {
     lateFeeCents: order.lateFeeCents,
     vatCents: order.vatCents,
     vatShares: order.vatShares,
+    // Le HT commandé, calculé une fois par le lecteur (`orderPretaxCents`, L6).
+    pretaxCents: order.pretaxCents,
     totalCents: order.totalCents,
     currency: order.currency,
     // Calculé UNE fois par le lecteur (`settlementRegimeOf`), et relu ici :

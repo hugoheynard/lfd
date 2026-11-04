@@ -55,6 +55,7 @@ export const LIVE_PICKUP: CustomerOrderView = {
   // que les écrans soient éprouvés sur le cas COURANT — une commande d'après
   // le 2026-09-07 la porte ; `null` est le cas des anciennes.
   vatShares: [{ rate: 5.5, amountCents: 63 }],
+  pretaxCents: 1_137,
   totalCents: 1_200,
   currency: 'EUR',
   customerLabel: 'Hôtel des Trois Ponts',

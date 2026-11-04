@@ -1,5 +1,4 @@
 import type { ClientSheet, ContentLocale } from "@lfd/contracts";
-import { orderPretaxCents } from "@lfd/money";
 import {
   sanitiseSubject,
   type LayoutInput,
@@ -562,8 +561,8 @@ function ticketTotalRows(
 
 /**
  * **Le pied d'un pro au compte : le HT seul**, et où trouver le reste (F5,
- * plan `bons-et-facture-concordants`). Le HT suit la règle du bon PDF
- * (`orderPretaxCents`), sur les gestes HT figés. Aucun chiffre de TVA ni
+ * plan `bons-et-facture-concordants`). Le HT est celui que le serveur a
+ * calculé sur la feuille (`SheetMoney.pretaxCents`, plan L6) : lu, pas refait. Aucun chiffre de TVA ni
  * de TTC : la facture du mois les calcule une fois, sur tous les bons.
  */
 function pretaxTotalRows(sheet: ClientSheet, locale: ContentLocale): readonly LayoutRow[] {
@@ -571,7 +570,7 @@ function pretaxTotalRows(sheet: ClientSheet, locale: ContentLocale): readonly La
   return [
     {
       label: copy.totalPretax,
-      value: money(orderPretaxCents(sheet.money), locale),
+      value: money(sheet.money.pretaxCents, locale),
       strong: true,
     },
     { label: copy.recapTaxLater, value: copy.recapTaxLaterValue },

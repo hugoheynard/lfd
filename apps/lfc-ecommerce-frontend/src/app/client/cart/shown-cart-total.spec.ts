@@ -14,6 +14,7 @@ const QUOTE: ShopQuoteView = {
     { rate: 5.5, amountCents: 55 },
     { rate: 10, amountCents: 100 },
   ],
+  pretaxCents: 2_000,
   totalCents: 2_155,
 };
 
@@ -24,11 +25,11 @@ describe('shownCartTotalCents', () => {
   });
 
   /**
-   * Régression : le HT du panier était « total moins TVA », une seconde
-   * formule à côté de celle du bon PDF (`orderPretaxCents`). Devis
-   * volontairement incohérent pour que les deux divergent (2026-11-04).
+   * Régression : le HT du panier était « total moins TVA », puis la règle du
+   * bon refaite à l'écran. Il lit le HT que le serveur a calculé (plan L6) —
+   * devis volontairement incohérent avec lui (2026-11-04).
    */
-  it('au compte, le HT se lit sur les montants HT du devis, pas total moins TVA', () => {
+  it('au compte, affiche le HT du devis tel quel', () => {
     const quote: ShopQuoteView = {
       ...QUOTE,
       discountCents: 200,
@@ -36,9 +37,10 @@ describe('shownCartTotalCents', () => {
       deliveryFeeCents: 500,
       lateFeeCents: 300,
       vat: [],
+      pretaxCents: 1_234,
       totalCents: 9_999,
     };
 
-    expect(shownCartTotalCents(quote, true)).toBe(2_500);
+    expect(shownCartTotalCents(quote, true)).toBe(1_234);
   });
 });

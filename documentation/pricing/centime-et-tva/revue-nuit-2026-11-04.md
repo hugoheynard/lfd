@@ -91,6 +91,12 @@ un nettoyage.
   Ils lisent `orderPretaxCents` à leur tour. Le reliquat d'un bon plus gros que
   le panier reste une soustraction à l'écran (valeur − part imputée), non
   touchée.
+- **L6** ([plan](plan-l6-montants-lus.md)) : le serveur envoie `pretaxCents`
+  (commande, bons, devis, estimation) et `voucherRemainderCents` ; plus aucun
+  écran n'applique `orderPretaxCents`. Porte `lint:front-money-reads` : la
+  forme retirée est refusée, les dix écrans qui somment encore des montants
+  sont une dette comptée. Le reliquat du bon était faux à l'écran (valeur −
+  part HT : 0,26 € de « reste » sur un bon de 5 € entièrement utilisé).
 - **Le particulier lit le TTC**, figé ligne par ligne et geste par geste
   (`exact_ht`) ; seules les commandes d'avant ces colonnes gardent la
   répartition au prorata du PDF, qui retombe sur le total figé.

@@ -5,6 +5,7 @@ import type {
   AdminOrderEstimatePayload,
   OrderQuoteCutoffView,
 } from "@lfd/contracts";
+import { orderPretaxCents } from "@lfd/money";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
@@ -148,6 +149,7 @@ function amountsViewOf(reading: OrderAmountsReading): AdminOrderEstimateAmountsV
     lateFeeVatRatePercent: reading.lateFeeVatRatePercent,
     vatCents: reading.vatCents,
     vatShares: reading.vatShares,
+    pretaxCents: orderPretaxCents(reading),
     totalCents: reading.totalCents,
   };
 }

@@ -86,6 +86,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     lateFeeAdjustment: null,
     deliveryVatMode: null,
     lateFeeCents: 0,
+    pretaxCents: 115_614,
     vatCents: 6_360,
     vatShares: [{ rate: 5.5, amountCents: 6_360 }],
     totalCents: 121_974,
@@ -133,6 +134,11 @@ describe("la feuille du client", () => {
 
     expect(sheet.money.totalCents).toBe(121_974);
     expect(sheet.money.subtotalCents).toBe(128_460);
+  });
+
+  /** Plan L6 : le HT commandé est celui que le lecteur a calculé, recopié tel quel. */
+  it("recopie le HT commandé de la vue, sans le recalculer", () => {
+    expect(clientSheetOf(order({ pretaxCents: 4_242 })).money.pretaxCents).toBe(4_242);
   });
 
   it("recopie le régime que la vue porte, sans le recalculer (F5)", () => {

@@ -63,6 +63,7 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       lateFeeCents: 0,
+      pretaxCents: 1_296,
       vatCents: 71,
       vatShares: [{ rate: 5.5, amountCents: 71 }],
       totalCents: 1_367,
@@ -319,16 +320,21 @@ describe("le courriel d'un pro au compte (F5)", () => {
   });
 
   /**
-   * Régression : le courriel lisait « total − TVA », une seconde formule que le
-   * bon PDF n'emploie pas. Totaux volontairement incohérents (2026-11-04).
+   * Régression : le courriel lisait « total − TVA », puis refaisait la règle
+   * du bon sur les gestes. Il lit désormais le HT que le serveur a posé sur la
+   * feuille (plan L6) — totaux et gestes volontairement incohérents (2026-11-04).
    */
-  it("au compte : le HT se lit sur les gestes figés, pas total moins TVA", () => {
+  it("au compte : le HT est celui de la feuille, lu tel quel", () => {
     const base = withSettlement("account");
     const html = render({
-      sheet: { ...base, money: { ...base.money, vatCents: 0, totalCents: 4_321 } },
+      sheet: {
+        ...base,
+        money: { ...base.money, vatCents: 0, totalCents: 4_321, pretaxCents: 1_234 },
+      },
     }).html;
 
-    expect(html).toContain("12,96");
+    expect(html).toContain("12,34");
+    expect(html).not.toContain("12,96");
     expect(html).not.toContain("43,21");
   });
 

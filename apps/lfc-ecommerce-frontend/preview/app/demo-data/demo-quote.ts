@@ -109,6 +109,8 @@ export function demoQuote(request: QuoteRequest): ShopQuoteView {
     deliveryFeeCents,
     deliveryVatMode: 'follows_goods',
     vat: lines.length === 0 ? [] : [{ rate: DEMO_VAT_RATE_PERCENT, amountCents: vatCents }],
+    // La démo joue le serveur : le HT du bon, sans bon ni surtaxe.
+    pretaxCents: base,
     totalCents: base + vatCents,
   };
 }
@@ -122,6 +124,7 @@ export function demoMyQuote(request: QuoteRequest, loyaltyOpen: boolean): MyShop
       ? Math.floor((quote.totalCents / 100) * POINTS_PER_EURO)
       : null,
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   };
 }
 

@@ -1,7 +1,9 @@
 /**
  * Les devis de `PRO_BASKETS` pour une société active, RELEVÉS sur le code
  * d'avant la voie B (2026-10-27) — cf. `shop-cart-quoting-pro-frozen.spec.ts`.
- * Ne se régénèrent pas.
+ * Ne se régénèrent pas. `pretaxCents` et `voucherRemainderCents` (plan L6,
+ * 2026-11-04) y ont été AJOUTÉS, déduits des champs relevés ; aucun relevé
+ * d'origine n'a changé.
  */
 export const FROZEN_PRO_QUOTES = [
   {
@@ -25,9 +27,11 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [{ rate: 5.5, amountCents: 110 }],
+      pretaxCents: 1991,
       totalCents: 2101,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "trente à 0,50 TTC",
@@ -311,9 +315,11 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [{ rate: 20, amountCents: 252 }],
+      pretaxCents: 1260,
       totalCents: 1512,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "1,90 + 0,50",
@@ -345,9 +351,11 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [{ rate: 5.5, amountCents: 12 }],
+      pretaxCents: 227,
       totalCents: 239,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "douze croissants",
@@ -370,9 +378,11 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [{ rate: 5.5, amountCents: 56 }],
+      pretaxCents: 1024,
       totalCents: 1080,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "deux taux",
@@ -407,9 +417,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 18 },
         { rate: 20, amountCents: 67 },
       ],
+      pretaxCents: 666,
       totalCents: 751,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "remise 10 % deux taux",
@@ -447,9 +459,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 16 },
         { rate: 20, amountCents: 60 },
       ],
+      pretaxCents: 599,
       totalCents: 675,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "remise fixe 2 €",
@@ -487,9 +501,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 37 },
         { rate: 20, amountCents: 177 },
       ],
+      pretaxCents: 1550,
       totalCents: 1764,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "remise fixe qui solde",
@@ -515,9 +531,11 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [],
+      pretaxCents: 0,
       totalCents: 0,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "remise sur l'éligible seul",
@@ -560,9 +578,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 56 },
         { rate: 20, amountCents: 200 },
       ],
+      pretaxCents: 2020,
       totalCents: 2276,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "ligne offerte",
@@ -594,9 +614,11 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [{ rate: 5.5, amountCents: 68 }],
+      pretaxCents: 1240,
       totalCents: 1308,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "port standard",
@@ -622,9 +644,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 116 },
         { rate: 20, amountCents: 240 },
       ],
+      pretaxCents: 3300,
       totalCents: 3656,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "port qui suit, deux taux",
@@ -659,9 +683,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 160 },
         { rate: 20, amountCents: 494 },
       ],
+      pretaxCents: 5380,
       totalCents: 6034,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "port en pourcentage",
@@ -687,9 +713,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 252 },
         { rate: 20, amountCents: 69 },
       ],
+      pretaxCents: 4933,
       totalCents: 5254,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "port en pourcentage qui suit",
@@ -724,9 +752,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 261 },
         { rate: 10, amountCents: 115 },
       ],
+      pretaxCents: 5890,
       totalCents: 6266,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "surtaxe de retard",
@@ -749,9 +779,11 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [{ rate: 5.5, amountCents: 165 }],
+      pretaxCents: 3000,
       totalCents: 3165,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "surtaxe et port",
@@ -786,9 +818,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 5.5, amountCents: 128 },
         { rate: 20, amountCents: 400 },
       ],
+      pretaxCents: 4333,
       totalCents: 4861,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "taux 2,1 %",
@@ -823,9 +857,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 2.1, amountCents: 64 },
         { rate: 5.5, amountCents: 9 },
       ],
+      pretaxCents: 3223,
       totalCents: 3296,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "grosse commande",
@@ -870,9 +906,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 10, amountCents: 1185 },
         { rate: 20, amountCents: 11259 },
       ],
+      pretaxCents: 127407,
       totalCents: 143110,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "remise 5 % trois taux",
@@ -920,9 +958,11 @@ export const FROZEN_PRO_QUOTES = [
         { rate: 10, amountCents: 48 },
         { rate: 20, amountCents: 296 },
       ],
+      pretaxCents: 2305,
       totalCents: 2668,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
   {
     name: "millicentimes impairs",
@@ -963,8 +1003,10 @@ export const FROZEN_PRO_QUOTES = [
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
       vat: [{ rate: 10, amountCents: 1 }],
+      pretaxCents: 11,
       totalCents: 12,
     },
     voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
   },
 ] as const;

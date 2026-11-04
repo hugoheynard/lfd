@@ -28,6 +28,7 @@ const BEFORE: AdminOrderEstimateAmountsView = {
   lateFeeVatRatePercent: null,
   vatCents: 55,
   vatShares: [],
+  pretaxCents: 1000,
   totalCents: 1055,
 };
 

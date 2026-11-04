@@ -18,6 +18,7 @@ const BEFORE: ShopQuoteView = {
   deliveryFeeCents: 0,
   deliveryVatMode: 'standard',
   vat: [{ rate: 5.5, amountCents: 230 }],
+  pretaxCents: 4000,
   totalCents: 4230,
 };
 

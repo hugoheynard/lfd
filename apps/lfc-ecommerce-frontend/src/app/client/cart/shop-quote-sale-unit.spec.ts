@@ -31,6 +31,7 @@ const EMPTY_ANSWER: ShopQuoteView = {
   deliveryFeeCents: 0,
   deliveryVatMode: 'standard',
   vat: [],
+  pretaxCents: 0,
   totalCents: 0,
 };
 

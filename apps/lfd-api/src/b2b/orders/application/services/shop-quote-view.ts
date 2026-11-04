@@ -4,7 +4,7 @@ import type {
   ShopQuoteLineView,
   ShopQuoteView,
 } from "@lfd/contracts";
-import { ttcCentsOf } from "@lfd/money";
+import { orderPretaxCents, ttcCentsOf } from "@lfd/money";
 
 import type { OrderVoucher } from "../../domain/entities/order.js";
 import {
@@ -25,6 +25,8 @@ import type { OrderVatMethod } from "../../domain/value-objects/order-vat-method
 export interface ShopCartQuote {
   readonly view: ShopQuoteView;
   readonly voucherTotalEffectCents: number;
+  /** Cf. `MyShopQuoteView.voucherRemainderCents` — hors vue, pour la même raison. */
+  readonly voucherRemainderCents: number | null;
 }
 
 /** Ce que les montants lisent de la commande que le devis annonce. */
@@ -80,11 +82,19 @@ export function shopQuoteOf(priced: BasketAmounts, order: QuotedOrder): ShopCart
     ...(terms.lateFeeCents === 0 ? {} : { lateFeeCents: terms.lateFeeCents }),
     deliveryVatMode: terms.deliveryVatMode,
     vat: amounts.vatShares.map((share) => ({ rate: share.rate, amountCents: share.amountCents })),
+    pretaxCents: orderPretaxCents({
+      subtotalCents: amounts.subtotalCents,
+      discountCents: amounts.discountCents,
+      voucherDiscountCents: amounts.voucherDiscountCents,
+      deliveryFeeCents: amounts.deliveryFeeCents,
+      lateFeeCents: terms.lateFeeCents,
+    }),
     totalCents: amounts.totalCents,
   };
   return {
     view: withAwaiting(withEndedDiscounts(withDiscountLabel(view, terms), priced), priced),
     voucherTotalEffectCents: voucherEffectOf(input, order, amounts),
+    voucherRemainderCents: voucherRemainderOf(order.voucher, voucherFaceOf(amounts)),
   };
 }
 
@@ -121,6 +131,26 @@ function discountViewsOf(
       amountTtcCents: step?.amountTtcCents ?? null,
     };
   });
+}
+
+/**
+ * La part de la valeur faciale imputée — TTC sur une commande composée en TTC,
+ * HT sinon : la règle de `Order.voucherFaceCents`, que le reliquat émis lit.
+ */
+function voucherFaceOf(amounts: DraftedAmounts): number {
+  return amounts.ttcTerms?.voucherCents ?? amounts.voucherDiscountCents;
+}
+
+/**
+ * Ce qui reste du bon après imputation ; `null` sans bon, sans part imputée
+ * (rien ne s'est imputé : il n'y a pas de « reste ») ou sans reste.
+ */
+function voucherRemainderOf(voucher: OrderVoucher | null, imputedCents: number): number | null {
+  if (voucher === null || imputedCents <= 0) {
+    return null;
+  }
+  const rest = voucher.valueCents - imputedCents;
+  return rest > 0 ? rest : null;
 }
 
 /**

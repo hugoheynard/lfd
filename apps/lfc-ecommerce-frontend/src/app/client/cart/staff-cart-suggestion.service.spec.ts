@@ -229,5 +229,6 @@ const PRICED: ShopQuoteView = {
   deliveryFeeCents: 0,
   deliveryVatMode: 'standard',
   vat: [{ rate: 5.5, amountCents: 110 }],
+  pretaxCents: 2000,
   totalCents: 2_110,
 };

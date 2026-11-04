@@ -151,6 +151,7 @@ const ESTIMATE: AdminOrderEstimateView = {
       { rate: 5.5, amountCents: 77 },
       { rate: 20, amountCents: 50 },
     ],
+    pretaxCents: 1_650,
     totalCents: 1_777,
   },
   cutoff: null,

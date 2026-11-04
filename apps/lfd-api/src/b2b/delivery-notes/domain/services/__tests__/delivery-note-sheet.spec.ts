@@ -84,6 +84,42 @@ describe("clientNoteOf — le BL chiffré", () => {
     expect(note.issuedAt).toBe(PLANNED_AT.toISOString());
   });
 
+  /**
+   * Plan L6 : le « Total HT » du BL est celui du LIVRÉ — la règle du bon
+   * (`orderPretaxCents`) sur SES montants, jamais ceux de la commande.
+   */
+  it("porte le HT livré, calculé sur ses propres montants", () => {
+    const state = plannedNote().toState();
+    const delivered = state.terms && {
+      ...state.terms,
+      subtotalCents: 10_000,
+      discountCents: 1_000,
+      voucherDiscountCents: 500,
+      deliveryFeeCents: 300,
+      lateFeeCents: 200,
+    };
+
+    const note = clientNoteOf({ ...state, terms: delivered }, HEAD, PRO_BILLING);
+
+    expect(note.money.pretaxCents).toBe(9_000);
+  });
+
+  it("ne descend pas sous zéro quand les remises dépassent le livré", () => {
+    const state = plannedNote().toState();
+    const delivered = state.terms && {
+      ...state.terms,
+      subtotalCents: 1_000,
+      discountCents: 800,
+      voucherDiscountCents: 500,
+      deliveryFeeCents: 300,
+      lateFeeCents: 0,
+    };
+
+    expect(clientNoteOf({ ...state, terms: delivered }, HEAD, PRO_BILLING).money.pretaxCents).toBe(
+      300,
+    );
+  });
+
   it("marque la ligne hors remise de retrait, et elle seule", () => {
     const note = clientNoteOf(plannedNote().toState(), HEAD, PRO_BILLING);
 

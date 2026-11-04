@@ -11,6 +11,7 @@ import type {
   StaffNote,
   VatShareView,
 } from "@lfd/contracts";
+import { orderPretaxCents } from "@lfd/money";
 
 import { reprintNeededOf, type DeliveryNoteState } from "../entities/delivery-note.js";
 import { DeliveryNoteWithoutTermsError } from "../errors/delivery-note-errors.js";
@@ -189,6 +190,8 @@ function moneyFrom(
     lateFeeCents: terms.lateFeeCents,
     vatCents: terms.vatCents,
     vatShares: vatSharesOf(terms.vatShares),
+    // Le HT LIVRÉ : la règle du bon sur les montants du BL, jamais ceux de la commande (L6).
+    pretaxCents: orderPretaxCents(terms),
     totalCents: terms.totalCents,
     ...meta,
     ...(pickupDiscountBase === undefined ? {} : { pickupDiscountBase }),

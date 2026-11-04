@@ -201,6 +201,8 @@ export class ClientCart {
 
   /** La baisse de TTC du bon choisi, selon le serveur — cf. {@link ShopQuote.voucherTotalEffectCents}. */
   readonly voucherTotalEffectCents = this.quote.voucherTotalEffectCents;
+  /** Le reste du bon choisi, selon le serveur — cf. {@link ShopQuote.voucherRemainderCents}. */
+  readonly voucherRemainderCents = this.quote.voucherRemainderCents;
 
   quantityOf(productId: string): number {
     return this.proVisit.active() ? 0 : this.store.quantityOf(productId);
