@@ -520,7 +520,10 @@ l'écouter. Il peut partir en production seul, sans effet visible.
   ratio de volume d'un plancher dynamique : tous). Une commande passée devrait
   donc purger sa société, ou tout si un plancher dynamique s'applique — ou la
   durée de 30 s suffit. Rien n'est branché sur les commandes, `OrderLine`
-  n'est pas dans la porte. **À trancher avant C2.**
+  n'est pas dans la porte. **Tranché par Hugo le 2026-11-04 : la durée de 30 s suffit.** Un palier ouvert
+  par une commande apparaît au rayon au plus 30 s plus tard ; le panier, lui,
+  calcule toujours au vrai prix. Les commandes ne purgent pas, et `OrderLine`
+  reste hors de la porte.
 
 ## 10. Ce que ce plan ne fait pas
 
