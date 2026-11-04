@@ -24,8 +24,10 @@ le conteneur, et une lecture facturée en remplace une autre.
   `ng build --configuration cloudflare`, `angular.json` `ssr: false`) : aucun
   démarrage à froid côté front ;
 - l'API est un Cloudflare Container (`apps/lfd-api/wrangler.jsonc`,
-  `max_instances: 1`, `sleepAfter` d'une heure) : c'est lui qui se réveille, en
-  secondes ;
+  `max_instances: 1`, `sleepAfter = "1h"` dans `container/worker.ts`), **tenu
+  chaud** par le cron `*/5` (`keepWarm`, qui frappe `/health`) : il ne
+  s'endort pas en régime normal. Un démarrage à froid reste possible après un
+  déploiement ou un redémarrage — c'est ce que la mesure doit chiffrer ;
 - la passerelle est un **Worker sur `workers.dev`** (`gateway/wrangler.toml`) ;
 - la boutique ne se rafraîchit jamais seule : ni push, ni relecture au retour
   sur l'onglet ; seule `shop-clock.ts` avance chaque minute (compte à rebours).
