@@ -104,15 +104,38 @@ La saisie d'une commande au back-office ne redemande plus un devis à chaque
 ligne : elle lit l'estimation (`estimatesOf`), amortie et dédupliquée
 ([`../centime-et-tva/le-prix-d-un-panier.md`](../centime-et-tva/le-prix-d-un-panier.md)).
 
-## 5. Ce qui reste ouvert
+## 5. Deux leçons du chantier des matériaux (septembre 2026)
 
-- **Le catalogue n'a pas de cache** : une visite de la boutique lit encore le
-  catalogue à chaque fois, même à chaud. Plan et deux décisions en attente :
+Le plan qui a fait passer les lectures de « par article » à « par lot »
+(le plan des matériaux de prix, cinq lots livrés du 2026-09-05 au 2026-09-06,
+retiré le 2026-11-04 ; son journal est dans l'historique git) laisse deux
+règles qui tiennent toujours :
+
+- **L'index par portée n'est pas un gain de vitesse, c'est une assurance.**
+  Charger toutes les règles d'un coup aurait obligé à rebalayer l'ensemble pour
+  chaque article — échanger des lectures contre du calcul `articles × règles`.
+  `indexByScope` / `candidatesIn` (`b2b/pricing/domain/scope-index.ts`)
+  reconstruisent en mémoire, pour chaque article, le petit tableau que la
+  lecture SQL rendait : le calcul par article ne bouge pas, seules les
+  lectures tombent. Ce qui ressemble à de la vitesse est du maintien.
+- **On ne calcule jamais un prix dans un navigateur.** `resolvePrice` est pure
+  et se partagerait techniquement, mais ses entrées sont le secret (les règles
+  et leurs libellés, les planchers, c'est-à-dire la marge), il lui manque des
+  données du serveur (cumul commandé, volumes) et l'heure du serveur (une
+  promotion expirerait à l'heure du téléphone du client). Vers un navigateur,
+  seulement le **résolu**. La simulation du back-office est l'exception
+  connue, suivie en R2 ([`durcir-le-calcul-des-prix.md`](durcir-le-calcul-des-prix.md)).
+
+Ce que le plan disait « irréductiblement par article » ne l'est plus : les
+volumes d'un plancher dynamique et le cumul d'un engagement se lisent
+désormais **par lot** (`PricingMaterialsLoader`, `volumeRatios`,
+`orderedVolumes`).
+
+## 6. Ce qui reste ouvert
+
+- **Le cache du catalogue** est en cours de déploiement :
   [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md).
 - **La projection n'est pas comptée** : aucun budget ne couvre la courbe du
   banc d'essai.
 - Le pool de connexions est à `max: 15` par instance (`prisma.service.ts`,
   relevé le 2026-10-30) ; c'est une affaire de concurrence, pas de facture.
-
-Le plan qui a remplacé les lectures par article :
-[`plan-materiaux-de-prix.md`](plan-materiaux-de-prix.md).

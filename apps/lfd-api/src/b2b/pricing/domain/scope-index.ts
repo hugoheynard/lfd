@@ -121,7 +121,7 @@ export function indexByScope<T>(
  * chercher. Ce n'est donc pas une accélération : le travail par article reste
  * proportionnel aux règles qui visent CET article, exactement comme
  * maintenant. C'est ce qui empêche le hissage d'échanger des lectures contre du
- * produit `articles × règles` — cf. `plan-materiaux-de-prix.md` §2.
+ * produit `articles × règles` — cf. `documentation/pricing/moteur/optimisation-resolution-de-prix.md` § 5.
  */
 export function candidatesIn<T>(index: ScopeIndex<T>, context: PricingContext): T[] {
   return scopeKeysOf(context).flatMap((key) => [...(index.get(key) ?? [])]);
