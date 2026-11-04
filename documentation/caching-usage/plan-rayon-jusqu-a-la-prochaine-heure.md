@@ -46,6 +46,18 @@ Et aucune commande ne vide le rayon : la « réservation qui purge tout » est
 celle d'un article sur mesure, pas une réservation de stock. La limite qui
 pèse vraiment côté commandes est le **plancher dynamique** (§ 0).
 
+## La règle pour la suite : le stable dans le rayon, le dynamique à côté (Hugo, 2026-11-04)
+
+Les suggestions vont devenir dynamiques. Elles restent **hors du rayon
+gardé**, dans leurs propres appels (`shop/suggestions/*`, comme aujourd'hui) :
+le rayon porte ce qui coûte à calculer et change rarement (articles, prix,
+opérations) ; la couche dynamique (suggestions, ordre mis en avant, pastilles
+« pour vous ») a son rythme et, si elle est commune à tous, son propre cache
+court. **La boutique compose les deux à l'écran** — réordonner une liste
+venue du cache ne la recalcule pas. Faire calculer une suggestion À
+L'INTÉRIEUR du rayon le rendrait personnel et périssable, et tuerait le
+cache : c'est la seule chose à ne pas faire.
+
 # Partie 2 — Le code
 
 ## 0. Ce que `vitruve` a établi (2026-11-04)
