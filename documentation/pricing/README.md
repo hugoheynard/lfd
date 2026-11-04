@@ -174,10 +174,10 @@ point, écrit dans son bandeau.
 
 ### Ce qui n'est pas tranché
 
-| Document                                                                                                 | État | Ce qu'il porte                                                                                |
-| -------------------------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------- |
-| [`architecture-prix-vivant-prix-bloque.md`](moteur/architecture-prix-vivant-prix-bloque.md)              | 🔵   | « Qui porte le risque d'un prix qui bouge ? » **Zéro code.** Décision attendue (R13).         |
-| [`obsolete/architecture-conditionnements-pricing.md`](obsolete/architecture-conditionnements-pricing.md) | 🔴   | **Périmé** : son point de départ est faux depuis le 2026-08-31. À réécrire ou archiver (R14). |
+| Document                                                                                                 | État | Ce qu'il porte                                                                                          |
+| -------------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| [`architecture-prix-vivant-prix-bloque.md`](moteur/architecture-prix-vivant-prix-bloque.md)              | 🔵   | **À réfléchir** — « qui porte le risque d'un prix qui bouge ? » **Zéro code.** Décision attendue (R13). |
+| [`obsolete/architecture-conditionnements-pricing.md`](obsolete/architecture-conditionnements-pricing.md) | 🔴   | **Périmé** : son point de départ est faux depuis le 2026-08-31. À réécrire ou archiver (R14).           |
 
 ---
 
