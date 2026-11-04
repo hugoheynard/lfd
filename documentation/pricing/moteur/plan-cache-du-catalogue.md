@@ -324,6 +324,33 @@ arrière tout seul.
 ou qui rend une réponse illisible donne le même rayon que sans cache ; le
 disjoncteur s'ouvre et se referme.
 
+## 4 quater. Surveiller le cache (Hugo, 2026-11-04)
+
+Hugo a besoin de **voir** le cache vivre. Un cache qu'on ne voit pas finit en
+panne silencieuse : il ne sert plus, ou sert du vieux, et rien ne le dit.
+
+**Ce qu'il faut voir :**
+
+| Mesure                                                                          | Ce qu'elle dit                                                                                              |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| taux de succès, public et pro                                                   | le cache sert-il vraiment ? (public : `Cf-Cache-Status` de Workers Cache ; pro : succès / ratés de l'objet) |
+| opérations de base évitées                                                      | le gain en argent : le `SchemaOpsCounter` compte déjà par schéma, à lire avant / après                      |
+| purges : nombre, portée, échecs, refus de débit                                 | une purge qui échoue, ou les limites de purge de Cloudflare atteintes                                       |
+| `put` refusés pour version dépassée                                             | la course qui se produit vraiment, et combien                                                               |
+| replis sur la base : objet lent, absent, réponse illisible ; disjoncteur ouvert | le cache en panne, alors que les clients ne voient rien                                                     |
+| temps d'un aller-retour vers l'objet                                            | la condition d'arrêt du § 8, suivie dans la durée                                                           |
+| taille de l'objet, nombre d'entrées                                             | l'approche de sa limite de mémoire                                                                          |
+| âge du rayon servi                                                              | qu'aucun rayon ne vit plus que la durée prévue                                                              |
+
+**Où le voir** : la **carte de santé** du back-office (bloc `ops`, qui observe
+et ne possède rien : `src/ops/`, ses sondes, son trafic, ses vitals), avec une
+**alerte** quand le disjoncteur est ouvert, quand une purge échoue, ou quand
+le taux de succès s'effondre. Comment `ops` lit ces chiffres sans importer le
+catalogue (la matrice du `CLAUDE.md` le lui interdit) est **à trancher** : un
+port déclaré par `ops` et implémenté côté `platform`, ou des journaux
+structurés que la carte agrège. Chaque lot (C2, C3) livre ses compteurs avec
+lui, pas après.
+
 ## 5. La purge
 
 - **Montée après la validation**, par `AfterCommit.defer`, de toute écriture
@@ -420,6 +447,7 @@ déployé » : le seul déploiement est la production, depuis `main`.
 | C1  | le port de purge, `AfterCommit.defer`, les écritures, la porte des écritures, le regroupement                                                                                                                                                                    |
 | C2  | l'objet des rayons pro, sa version, le gestionnaire de sortie ; budget froid / chaud à l'égalité                                                                                                                                                                 |
 | C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                                                                                                                      |
+| C5  | la surveillance : les mesures du § 4 quater sur la carte de santé, et ses alertes ; chaque lot pose ses compteurs, C5 les montre                                                                                                                                 |
 | C4  | la boutique relit le rayon au retour sur l'onglet                                                                                                                                                                                                                |
 
 Tests : une écriture **pendant** un calcul ne laisse pas l'ancien rayon ; une
