@@ -453,7 +453,7 @@ déployé » : le seul déploiement est la production, depuis `main`.
 | C0  | sur dev déployé : clé de Workers Cache (paramètre d'URL, en-têtes de la passerelle, `Vary: Origin`) ; gestionnaire de sortie et version de `@cloudflare/containers` ; aller-retour conteneur → objet ; taille d'un rayon ; coût ; secondes d'une première visite |
 | C0b | ✅ `enable_ctx_exports` (pas de date avancée) et `ContainerProxy` exporté, sans gestionnaire (`8aaa1f638`) ; essai local de l'interception (2026-11-04) ; **la porte de CI du démarrage**, avant tout gestionnaire                                               |
 | C1  | ✅ **bâti le 2026-11-04** (`7a62edd7f`) : le port `ShelfChanges` (`b2b/shared/shelf-changes/`), la fenêtre d'une seconde qui journalise, 28 écrivains sur 26 modèles, la porte `lint:shelf-writes`                                                               |
-| C2  | l'objet des rayons pro, sa version, le gestionnaire de sortie ; budget froid / chaud à l'égalité                                                                                                                                                                 |
+| C2  | ✅ **bâti le 2026-11-04** (`a8c07257f`) : l'objet `ProShelves`, le port `ShopShelfCache`, le repli (100 ms, disjoncteur 5 échecs / 30 s), la purge société + sites ; e2e et budget verts. Non éprouvé sur Cloudflare                                             |
 | C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                                                                                                                      |
 | C5  | la surveillance : les mesures du § 4 quater sur la carte de santé, et ses alertes ; chaque lot pose ses compteurs, C5 les montre                                                                                                                                 |
 | C4  | la boutique relit le rayon au retour sur l'onglet                                                                                                                                                                                                                |
@@ -524,6 +524,25 @@ l'écouter. Il peut partir en production seul, sans effet visible.
   par une commande apparaît au rayon au plus 30 s plus tard ; le panier, lui,
   calcule toujours au vrai prix. Les commandes ne purgent pas, et `OrderLine`
   reste hors de la porte.
+
+### Ce que C2 a trouvé (2026-11-04)
+
+- **Le principal d'une société** : `ReservationHolders` ne le nomme que s'il
+  est actif. Une entrée qui rangeait celui-là n'aurait pas été effacée quand un
+  principal en attente devient actif. `ServedCompany` porte donc le principal
+  **actuel**, actif ou non, lu dans la même ligne (aucune lecture de plus).
+- **`outboundByHost` se pose par affectation** après la classe : un champ
+  `static` masquerait l'accesseur hérité de `Container`, et le conteneur
+  démarrerait sans interception, sans erreur.
+- **L'objet ne lit jamais l'heure** : l'API lui passe l'instant et l'échéance.
+- **Pas d'interrupteur** : déployé, le Worker pose `SHOP_SHELF_CACHE_URL` et le
+  cache s'allume. Une panne retombe sur la base ; un cache **faux** ne
+  s'éteint qu'en redéployant la version d'avant.
+- **Non éprouvé** : un `fetch` Node vers `rayons.interne` dans un vrai
+  conteneur Cloudflare (l'essai local passait par `wget` busybox), le délai de
+  100 ms et le disjoncteur (valeurs à fixer à la mesure), la taille de l'objet.
+- Fichiers déjà au-delà de 300 lignes, qui grossissent :
+  `shop-catalogue-pricing.service.ts`, `container/worker.ts`, `app-config.ts`.
 
 ## 10. Ce que ce plan ne fait pas
 
