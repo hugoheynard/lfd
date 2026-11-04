@@ -1,7 +1,9 @@
 # Première visite rapide et pas chère — le cache du catalogue
 
-> 📝 **Plan, rien n'est bâti.** Réécrit le 2026-11-04 (quatrième forme) après
-> trois contradictions de `vitruve` et la vérification de la doc Cloudflare.
+> 📝 **Plan, rien n'est bâti.** Réécrit le 2026-11-04 (cinquième forme) après
+> quatre contradictions de `vitruve` et la vérification de la doc Cloudflare.
+> La quatrième a fermé la route publique vers l'objet des pros : le conteneur
+> le joint par un **gestionnaire de sortie** interne, sans route ni jeton.
 > Le **public** est caché par **Workers Cache**, au plus près du visiteur ;
 > les **pros** dans **un Durable Object** qui range une table par société, la
 > seule copie, donc sans dérive le jour où l'API aura plusieurs instances.
@@ -75,7 +77,7 @@ sequenceDiagram
   E->>A: change un prix, un article, une réservation
   A->>B: enregistre
   B-->>A: enregistré
-  A->>W: purge, en fin de seconde
+  A->>W: purge par le chemin interne, en fin de seconde
   W->>O: monte la version, efface une société ou tout
   W->>C: purge l'étiquette du rayon public
 ```
@@ -84,7 +86,8 @@ sequenceDiagram
 
 | Changement                                                                               | Rayons effacés                                                                             |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| statut d'une société, sa mercuriale, ses règles, son engagement, son suivi               | **cette société** seulement                                                                |
+| la mercuriale, une règle, l'engagement, le suivi ou le statut d'une société              | **cette société et ses sites** (un site hérite de son principal)                           |
+| une règle de prix d'audience **segment**                                                 | **tous** : on ne sait pas énumérer les sociétés d'un segment                               |
 | une réservation posée ou levée                                                           | **tous**, public compris : l'article disparaît ou se verrouille pour tous sauf une société |
 | un article, une famille, un prix général, une promotion, une opération, une heure limite | **tous**                                                                                   |
 
@@ -98,8 +101,8 @@ Cloudflare garder un rayon public si la version a bougé pendant le calcul.
 ### Ce qui change sans que personne n'écrive
 
 Une promotion qui s'ouvre à midi, une opération datée, l'heure limite : aucune
-écriture, donc aucune purge. C'est la **durée de vie** qui les rattrape. Sa
-valeur est **à décider** (§ 6).
+écriture, donc aucune purge. C'est la **durée de vie** qui les rattrape :
+**30 secondes, fixes** (Hugo, 2026-11-04).
 
 ## Ce qui rend une erreur sans conséquence
 
@@ -130,12 +133,15 @@ Ce qui serait grave : servir le rayon d'une société à une autre. D'où la cl�
   l'appelant (`read-shop-catalogue.ts`, `read-shop-featured.handler.ts` et son
   `anonymousViewer`) ; seul `/shop/catalogue/mine` est personnel ; l'API ne lit
   aucun cookie d'identité ;
-- le **statut** d'une société ne change que son propre rayon
-  (`CatalogViewers.forCompany`) ; une **réservation** change celui de tous
+- le **statut** d'une société change son propre rayon
+  (`CatalogViewers.forCompany`) **et celui de ses sites** : un article réservé
+  au principal ne s'ouvre à un site que si le principal est `active`
+  (`reservationHoldersOf`, `b2b/shared/company-standing/infrastructure/read-reservation-holders.ts`) ;
+  un site suit aussi la mercuriale et les règles de son principal
+  (`pricing-act.ts`) ; une **réservation** change le rayon de tous
   (`catalog-viewer.ts` : public et pro sans connexion ne voient jamais un
   article réservé, une autre société le voit caché ou verrouillé) ;
-- le conteneur joint déjà une route de la zone par la passerelle : le calcul
-  routier (`container/worker.ts`, `https://lafoliecoffee.info/api/route-planner`) ;
+- `@cloudflare/containers` est en 0.3.7 (`pnpm-workspace.yaml`) ;
 - « après la validation » a un outil : `AfterCommit.defer`
   (`platform/database/after-commit.ts`), employé par l'outbox et le journal
   des envois ;
@@ -161,8 +167,15 @@ Ce qui serait grave : servir le rayon d'une société à une autre. D'où la cl�
 - l'ancien Cache API (`caches.default`) ne convient pas : local à chaque
   centre, purge locale
   ([Cache API](https://developers.cloudflare.com/workers/runtime-apis/cache/)) ;
-- Cloudflare KV ne convient pas : une écriture met jusqu'à une minute à se
-  propager.
+- **un conteneur joint les liaisons de son Worker** (Durable Objects compris)
+  par des **gestionnaires de sortie** : un appel HTTP simple vers un nom fictif,
+  intercepté et traité dans le Worker (`outboundByHost`, `ctx.containerId`)
+  ([Connect to Workers and Bindings](https://developers.cloudflare.com/containers/platform-details/workers-connections/),
+  [Handle outbound traffic](https://developers.cloudflare.com/containers/platform-details/outbound-traffic/)).
+  La doc ne dit ni la version de `@cloudflare/containers` qui le porte, ni que
+  le trafic ne touche jamais internet, ni si c'est en bêta ;
+- Cloudflare KV ne convient pas : une écriture n'est pas visible partout tout
+  de suite (non relu dans la doc ce jour).
 
 ## 2. La mesure
 
@@ -187,7 +200,16 @@ max-age=…` et `Cache-Tag: rayon-public`. Toute autre réponse garde le
   la langue passent dans le chemin.
 - **Version du Worker dans la clé** : un déploiement repart d'un cache vide.
 - **Le rayon douteux** : l'API relève la version de l'objet (§ 4) avant de
-  calculer, la relit à la fin ; si elle a bougé, elle répond `no-store`.
+  calculer, la relit à la fin ; si elle a bougé, **ou si l'objet n'a pas
+  répondu**, elle répond `no-store` : le rayon est servi, jamais gardé.
+- **Le CORS** : `main.ts` reflète l'origine appelante dans
+  `Access-Control-Allow-Origin` avec `Vary: Origin`. Si Workers Cache ignore
+  `Vary`, la première origine fige l'en-tête pour toutes : une panne au
+  navigateur, pas une fuite. **Testé en C0** ; sinon, l'en-tête se pose au
+  Worker, après le cache.
+- **Les en-têtes de la passerelle** (`x-lfc-request-time`, `traceparent`) ne
+  doivent pas entrer dans la clé : sinon chaque requête manque le cache. Testé
+  en C0.
 
 ## 4. Les pros — un objet, une table par société
 
@@ -203,10 +225,18 @@ max-age=…` et `Cache-Tag: rayon-public`. Toute autre réponse garde le
   l'objet refuse si sa version a avancé entre-temps.
 - **Une seule copie** : plusieurs instances de l'API lisent et écrivent le même
   objet. Pas de dérive possible entre instances, pas de purge en éventail.
-- **Le chemin conteneur → objet** : à établir. Le seul chemin connu passe par
-  la zone (comme le calcul routier) : un aller-retour par visite pro.
-  **Deuxième mesure de C0**, et une recherche dans la doc Cloudflare d'un
-  chemin plus court entre un conteneur et un objet du même Worker.
+- **Le chemin conteneur → objet** : un **gestionnaire de sortie** du Worker
+  (§ 1). Le conteneur appelle `http://rayons.interne/…` ; le Worker intercepte
+  et parle à l'objet par sa liaison. **Aucune route publique, aucun jeton** :
+  seul ce conteneur peut faire cet appel. C'est ce qui garde le mur entre
+  sociétés dans l'API. ⚠️ Sans ce chemin, la forme pro n'est **pas
+  bâtissable** : une route publique à secret partagé rendrait le rayon de
+  n'importe quelle société à qui a le secret. À établir en C0 : la version de
+  `@cloudflare/containers` qui le porte (nous sommes en 0.3.7), et le temps de
+  l'aller-retour.
+- **Purger « une société et ses sites »** : chaque entrée range aussi
+  l'identifiant du principal de la société ; une purge par société efface
+  l'entrée et celles dont le principal est cette société.
 - **Mémoire et débit** : 1 000 rayons de quelques centaines de Ko peuvent
   dépasser la mémoire d'un objet (limite non relue). Si c'est le cas : ranger
   dans le stockage SQLite plutôt qu'en mémoire, ou **découper** en quelques
@@ -219,12 +249,10 @@ max-age=…` et `Cache-Tag: rayon-public`. Toute autre réponse garde le
 
 - **Montée après la validation**, par `AfterCommit.defer`, de toute écriture
   qui change un rayon. Une montée dans la transaction rouvrirait la course.
-- **Une route de purge du Worker de l'API**, que le conteneur joint par la
-  zone. Elle est donc **publique** : jeton secret comparé en temps constant,
-  refus à la **passerelle** avant de router (comme `route-planner-guard.ts`),
-  secret ajouté à `RUNTIME_KEYS` et à `runtime-keys.spec.ts` (sinon il est
-  écarté sans bruit et rien ne se purge). Le Worker traite la route lui-même,
-  sans la transmettre au conteneur.
+- **Par le même chemin interne** que la lecture (§ 4) : un gestionnaire de
+  sortie, pas une route publique, pas de jeton. Le Worker traite l'appel
+  lui-même : c'est lui qui possède Workers Cache, et seul le propriétaire peut
+  le purger.
 - **Ce qu'elle fait** : demande à l'objet de monter sa version et d'effacer une
   société ou tout (tableau de la partie 1), puis `ctx.cache.purge({ tags:
 ["rayon-public"] })` si le changement touche le public.
@@ -243,31 +271,33 @@ max-age=…` et `Cache-Tag: rayon-public`. Toute autre réponse garde le
 Relevé par recherche des écritures Prisma sur les modèles que le rayon lit
 (2026-11-04) — **une recherche, pas une preuve** ; la porte du § 7 la tient :
 
-| Ce qui change           | Où ça s'écrit                                                                                                                                                                                                                                                                                                                                                          | Portée                                                |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| prix, promotions        | `PricingActWriter`                                                                                                                                                                                                                                                                                                                                                     | selon l'audience de la décision : une société ou tous |
-| articles du catalogue   | `b2b/catalog/infrastructure/` : `prisma-catalog-item.repository.ts`, `catalog-decision-writes.ts`, `catalog-review-states.ts`, `prisma-catalog-order-limits.ts`, `prisma-catalog-product-facts.projection.ts`, `prisma-catalog-visuals.projection.ts`, `prisma-catalog-category.projection.ts`, `prisma-catalog-price-retracer.ts`, `prisma-made-to-order-settings.ts` | tous                                                  |
-| réservations d'articles | `prisma-catalog-reservations.ts`, `prisma-made-to-order-admin.reader.ts` (qui écrit malgré son nom)                                                                                                                                                                                                                                                                    | tous                                                  |
-| opérations datées       | `b2b/operations/infrastructure/prisma-operation.repository.ts`                                                                                                                                                                                                                                                                                                         | tous                                                  |
-| heures limites          | `b2b/order-cutoffs/infrastructure/prisma-general-order-cutoff.repository.ts`                                                                                                                                                                                                                                                                                           | tous                                                  |
-| statut d'une société    | `b2b/account/infrastructure/prisma-company.repository.ts`                                                                                                                                                                                                                                                                                                              | cette société                                         |
-| suivi d'un pro          | `b2b/account/infrastructure/prisma-company-follows.repository.ts`                                                                                                                                                                                                                                                                                                      | cette société                                         |
-| engagement de volume    | `b2b/pricing/infrastructure/prisma-volume-commitment.repository.ts` (passe-t-il par `PricingActWriter` ? à vérifier)                                                                                                                                                                                                                                                   | cette société                                         |
+| Ce qui change                   | Où ça s'écrit                                                                                                                                                                                                                                                                                                                                                          | Portée                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| prix, promotions                | `PricingActWriter`                                                                                                                                                                                                                                                                                                                                                     | selon l'audience : une société et ses sites ; un segment ou tous : tous |
+| articles du catalogue           | `b2b/catalog/infrastructure/` : `prisma-catalog-item.repository.ts`, `catalog-decision-writes.ts`, `catalog-review-states.ts`, `prisma-catalog-order-limits.ts`, `prisma-catalog-product-facts.projection.ts`, `prisma-catalog-visuals.projection.ts`, `prisma-catalog-category.projection.ts`, `prisma-catalog-price-retracer.ts`, `prisma-made-to-order-settings.ts` | tous                                                                    |
+| réservations d'articles         | `prisma-catalog-reservations.ts`, `prisma-made-to-order-admin.reader.ts` (qui écrit malgré son nom)                                                                                                                                                                                                                                                                    | tous                                                                    |
+| opérations datées               | `b2b/operations/infrastructure/prisma-operation.repository.ts`                                                                                                                                                                                                                                                                                                         | tous                                                                    |
+| heures limites                  | `b2b/order-cutoffs/infrastructure/prisma-general-order-cutoff.repository.ts`                                                                                                                                                                                                                                                                                           | tous                                                                    |
+| statut, principal d'une société | `b2b/account/infrastructure/prisma-company.repository.ts`                                                                                                                                                                                                                                                                                                              | cette société et ses sites                                              |
+| suivi d'un pro                  | `b2b/account/infrastructure/prisma-company-follows.repository.ts`                                                                                                                                                                                                                                                                                                      | cette société et ses sites                                              |
+| engagement de volume            | `b2b/pricing/infrastructure/prisma-volume-commitment.repository.ts` (passe-t-il par `PricingActWriter` ? à vérifier)                                                                                                                                                                                                                                                   | cette société et ses sites                                              |
 
 À compléter avant de bâtir : prix au kilo, offres d'acheminement, traductions.
 
-## 6. La durée de vie — à décider
+## 6. La durée de vie — 30 secondes (Hugo, 2026-11-04)
 
-Ce qui change sans écriture n'est rattrapé que par elle. Deux formes :
+Ce qui change sans écriture (une promotion qui s'ouvre à midi, une opération,
+l'heure limite) n'est rattrapé que par elle : **30 secondes, fixes**.
 
-- **fixe**, 30 secondes : simple ; plafonne à ~2 recalculs par minute sous
-  trafic continu, mais ne sert presque à rien quand les visites sont espacées
-  de plus de 30 secondes ;
-- **jusqu'à la prochaine échéance connue** (ouverture ou fermeture d'une
-  promotion ou d'une opération, heure limite), **au plus 10 minutes** : une
-  promotion de midi apparaît à midi, et le cache sert aussi les heures creuses.
-  Le risque est d'oublier une source d'échéance ; la borne de 10 minutes le
-  limite, un test le tient.
+- **Plus simple à maintenir** qu'une échéance calculée : aucune source d'heure
+  à oublier, aujourd'hui ni le jour où une nouvelle décision datée apparaîtra.
+- **Son défaut ne coûte presque rien** : elle ne sert pas quand les visites
+  sont espacées de plus de 30 secondes, mais c'est alors peu de trafic, donc
+  peu de lectures. Sous trafic continu, elle plafonne à deux recalculs par
+  minute et par clé.
+- Une promotion de midi apparaît au plus à 12 h 00 min 30 s. Les gestes de
+  l'équipe, eux, passent par la purge.
+- Écartée : « jusqu'à la prochaine échéance connue, au plus 10 minutes ».
 
 La durée se calcule sur `Clock.now()` dans l'API (`lint:clock-port`) ; dans le
 Worker (l'objet), la lecture de l'heure s'isole dans une seule fonction, avec
@@ -281,7 +311,8 @@ une dérogation nommée.
   recopiée. Bâtie **avant** C2 et C3.
 - **`lint:cache-control`** ne parcourt que `apps/lfd-api/src` et
   `gateway/src`. Elle gagne `apps/lfd-api/container/`, et une liste admise
-  datée : les deux routes `public`, la route de purge, la classe de l'objet.
+  datée : les deux routes `public`, le gestionnaire de sortie, la classe de
+  l'objet.
   Elle tient aussi que ces deux routes ne lisent pas l'appelant.
 
 ## 8. Le coût
@@ -290,19 +321,25 @@ une dérogation nommée.
 plus que la requête Worker ; l'objet des pros coûte une requête par visite pro
 (plus l'aller-retour, § 4) contre ~10 opérations Prisma évitées.
 
+**Condition d'arrêt pour les pros** : une visite pro chaude paie toujours ses
+2 lectures de droits, plus l'aller-retour vers l'objet. Si C0 montre un
+aller-retour plus lent que les lectures qu'il évite, ou un coût plus élevé, le
+lot C2 ne se bâtit pas : les pros restent sans cache, et le plan le dit.
+
 ## 9. Les lots
 
-| Lot | Contenu                                                                                                                                                        |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C0  | mesures sur dev déployé : clé de Workers Cache et paramètre d'URL ; aller-retour conteneur → objet ; taille d'un rayon ; coût ; secondes d'une première visite |
-| C1  | le port de purge, `AfterCommit.defer`, les écritures, la porte des écritures, le regroupement                                                                  |
-| C2  | l'objet des rayons pro, sa version, la route de purge ; budget froid / chaud à l'égalité                                                                       |
-| C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                    |
-| C4  | la boutique relit le rayon au retour sur l'onglet                                                                                                              |
+| Lot | Contenu                                                                                                                                                                                                                                                          |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C0  | sur dev déployé : clé de Workers Cache (paramètre d'URL, en-têtes de la passerelle, `Vary: Origin`) ; gestionnaire de sortie et version de `@cloudflare/containers` ; aller-retour conteneur → objet ; taille d'un rayon ; coût ; secondes d'une première visite |
+| C1  | le port de purge, `AfterCommit.defer`, les écritures, la porte des écritures, le regroupement                                                                                                                                                                    |
+| C2  | l'objet des rayons pro, sa version, le gestionnaire de sortie ; budget froid / chaud à l'égalité                                                                                                                                                                 |
+| C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                                                                                                                      |
+| C4  | la boutique relit le rayon au retour sur l'onglet                                                                                                                                                                                                                |
 
 Tests : une écriture **pendant** un calcul ne laisse pas l'ancien rayon ; une
-réservation change le rayon des autres sociétés et du public ; un changement de
-statut n'efface que sa société ; `/mine` ne touche jamais Workers Cache ; une
+réservation change le rayon des autres sociétés et du public ; un changement
+sur un principal efface ses sites ; une règle de segment efface tout ; un objet
+qui ne répond pas donne un `no-store` ; `/mine` ne touche jamais Workers Cache ; une
 promotion qui se ferme n'est plus servie après la durée.
 
 ## 10. Ce que ce plan ne fait pas
@@ -315,7 +352,11 @@ promotion qui se ferme n'est plus servie après la durée.
 ## 11. Non vérifié
 
 - le paramètre d'URL dans la clé de Workers Cache ; son statut (bêta ou non) ;
-- un chemin conteneur → objet plus court que la zone ;
+- le gestionnaire de sortie dans notre version de `@cloudflare/containers`, et
+  que son trafic reste interne ;
+- que Workers Cache respecte `Vary: Origin` et ignore les en-têtes de la
+  passerelle ;
+- que l'engagement de volume passe par `PricingActWriter` ;
 - la mémoire et le débit d'un objet ;
 - si deux conteneurs cohabitent pendant un déploiement (sans effet sur la
   justesse : l'objet est la seule copie) ;
