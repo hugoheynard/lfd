@@ -294,6 +294,14 @@ Deux exigences pour que ce soit vrai : **le port s'écrit avant l'objet**, et
 les tests d'application tournent contre une **version en mémoire du port**,
 jamais contre l'objet.
 
+**Durable Object plutôt qu'Upstash, confirmé par Hugo le 2026-11-04.** Upstash
+(Redis hébergé, offre gratuite) aurait été plus simple techniquement : ni
+gestionnaire de sortie, ni `ctx.exports`, ni risque au démarrage. Écarté pour
+**tout garder au même endroit** : un seul fournisseur, une seule facture, aucun
+secret de plus, et pas de panne d'un second fournisseur qui s'ajoute à celles
+de Cloudflare. Le risque au démarrage est tenu par `lint:container-start` ; le
+port (§ 4 ter) laisse la porte ouverte.
+
 ## 4 bis. Le cache n'est jamais sur le chemin de la disponibilité (Hugo, 2026-11-04)
 
 « La prod ne peut jamais tomber en panne. » Le cache accélère ; il ne doit
