@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ShopItemView } from '@lfd/contracts';
 
-import { perKiloHintLabel } from '../shop-price-basis.service';
+import { perKiloHintLabel, struckPerKiloLabel } from '../shop-price-basis.service';
 import { TEST_ITEMS } from '../shop-catalogue.fixture';
 
 const PIECE: ShopItemView = {
@@ -41,5 +41,32 @@ describe('perKiloHintLabel — le prix au kilo sous une pièce', () => {
   it('se tait sur un article au poids : son prix EST déjà le prix au kilo', () => {
     expect(hint({ ...PIECE, saleUnit: 'weight' }, true)).toBeNull();
     expect(hint({ ...PIECE, saleUnit: 'weight' }, false)).toBeNull();
+  });
+});
+
+describe('struckPerKiloLabel — le kilo saisi barré sous une promotion', () => {
+  const PROMOTED: ShopItemView = {
+    ...PIECE,
+    publicPricePerKgTtcCents: 790,
+    catalogPricePerKgTtcCents: 990,
+    proPricePerKgMillicents: 720_000,
+    catalogPricePerKgMillicents: 900_000,
+  };
+
+  it('lit le kilo barré TTC du particulier, tel que servi', () => {
+    expect(struckPerKiloLabel(PROMOTED, true)).toMatch(/^9,90\s€$/);
+  });
+
+  it('lit le kilo barré HT exact du pro', () => {
+    expect(struckPerKiloLabel(PROMOTED, false)).toMatch(/^9,00\s€$/);
+  });
+
+  it('se tait quand le serveur ne barre rien (aucune promotion)', () => {
+    expect(struckPerKiloLabel(PIECE, true)).toBeNull();
+    expect(struckPerKiloLabel(PIECE, false)).toBeNull();
+  });
+
+  it('se tait sur un article au poids', () => {
+    expect(struckPerKiloLabel({ ...PROMOTED, saleUnit: 'weight' }, true)).toBeNull();
   });
 });

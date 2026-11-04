@@ -270,6 +270,7 @@ export const EN: ClientCopy = {
     priceTtc: '{price} incl. VAT',
     ttcSuffix: 'incl. VAT',
     priceStruck: 'Previous price: {was}, new price: {now}',
+    perKiloStruck: 'Previous price per kg: {was}, new price per kg: {now}',
     proVisitNote: 'Trade prices excluding VAT — your negotiated terms once signed in.',
     proVisitSignIn: 'Sign in',
     proVisitShowTtc: 'Show prices incl. VAT',

@@ -12,6 +12,7 @@ import {
   perKiloHintLabel,
   shelfPriceLabel,
   ShopPriceBasis,
+  struckPerKiloLabel,
 } from '../../shop/shop-price-basis.service';
 import { ProFeaturedCard } from '../../pro-landing/pro-featured-card/pro-featured-card';
 import { artOfFeatured, FEATURED_WIDTHS, type FeaturedCard } from '../../pro-landing/pro-landing';
@@ -21,6 +22,8 @@ interface HomeFeaturedCard {
   readonly card: FeaturedCard;
   readonly price: string;
   readonly perKilo: string | null;
+  /** Le kilo saisi barré, sous une promotion seulement — lu, jamais calculé. */
+  readonly perKiloWas: string | null;
 }
 
 /**
@@ -64,6 +67,7 @@ export class HomeFeatured {
         return {
           price,
           perKilo: perKiloHintLabel(item, ttc, basisSuffix, this.t().product.perKilogram),
+          perKiloWas: struckPerKiloLabel(item, ttc),
           card: {
             sku: item.sku,
             name: item.name,

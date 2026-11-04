@@ -2,6 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
+import type { ShopItemView } from '@lfd/contracts';
+
 import { FR } from '../../copy/fr';
 import { formatCents } from '../../format-money';
 import { PieceRequest } from '../../shop/piece-request.service';
@@ -17,7 +19,14 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
 
   async function mount(
     featured: boolean,
-    perKg: { readonly pro: number | null; readonly ttc: number | null } = { pro: null, ttc: null },
+    perKg: {
+      readonly pro: number | null;
+      readonly ttc: number | null;
+      readonly was?: Pick<
+        ShopItemView,
+        'catalogPricePerKgMillicents' | 'catalogPricePerKgTtcCents'
+      >;
+    } = { pro: null, ttc: null },
   ): Promise<HTMLElement> {
     asked = [];
     TestBed.configureTestingModule({
@@ -33,6 +42,7 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
         ...(featured ? item : { ...item, isFeatured: false }),
         proPricePerKgMillicents: perKg.pro,
         publicPricePerKgTtcCents: perKg.ttc,
+        ...perKg.was,
       })),
     });
     fixture = TestBed.createComponent(HomeFeatured);
@@ -77,6 +87,22 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
     expect(host.querySelector('[data-test="featured-per-kilo"]')?.textContent?.trim()).toBe(
       `${formatCents(1_500)} / kg ${FR.shop.htSuffix}`,
     );
+  });
+
+  it('sous une promotion, barre le kilo saisi à côté du kilo servi', async () => {
+    const host = await mount(true, {
+      pro: null,
+      ttc: 790,
+      was: { catalogPricePerKgTtcCents: 990 },
+    });
+    expect(host.querySelector('[data-test="featured-per-kilo-was"]')?.textContent?.trim()).toBe(
+      formatCents(990),
+    );
+  });
+
+  it('sans promotion, aucune rature sur le kilo', async () => {
+    const host = await mount(true, { pro: 1_500_000, ttc: 1_590 });
+    expect(host.querySelector('[data-test="featured-per-kilo-was"]')).toBeNull();
   });
 
   it('sans prix au kilo saisi, la carte ne dit rien de plus', async () => {

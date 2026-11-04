@@ -108,7 +108,15 @@
           <span class="discount">{{ discount }}</span>
         }
         @if (perKiloHint(); as hint) {
-          <span class="per-kilo">{{ hint }}</span>
+          <span class="per-kilo" data-per-kilo>
+            @if (perKiloWas(); as was) {
+              <span class="sr-only">{{ perKiloPhrase() }}</span>
+              <span aria-hidden="true">{{ hint }}</span>
+              <s class="per-kilo-was" aria-hidden="true" data-per-kilo-was>{{ was }}</s>
+            } @else {
+              {{ hint }}
+            }
+          </span>
         }
         @if (shelfLabel(); as shelfLeft) {
           <span class="shelf-left" data-shelf-left>{{ shelfLeft }}</span>

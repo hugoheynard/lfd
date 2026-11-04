@@ -268,6 +268,7 @@ export const FR: ClientCopy = {
     priceTtc: '{price} TTC',
     ttcSuffix: 'TTC',
     priceStruck: 'Ancien prix : {was}, nouveau prix : {now}',
+    perKiloStruck: 'Ancien prix au kilo : {was}, nouveau prix au kilo : {now}',
     proVisitNote: 'Tarifs professionnels hors taxe — vos conditions négociées après connexion.',
     proVisitSignIn: 'Je me connecte',
     proVisitShowTtc: 'Voir les prix TTC',

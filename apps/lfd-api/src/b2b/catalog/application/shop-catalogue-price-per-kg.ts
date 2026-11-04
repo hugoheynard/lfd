@@ -2,6 +2,7 @@ import type { ShopCatalogueView, ShopItemView } from "@lfd/contracts";
 
 import type { CatalogPricePerKg } from "../domain/ports/catalog-price-per-kg.reader.js";
 import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
+import { servedPricePerKg } from "./shop-catalogue-promoted-per-kg.js";
 import { shownByShopSku } from "./shop-catalogue-view.js";
 
 /** Ce qu'une vitrine sans prix au kilo porte : rien de saisi. */
@@ -23,8 +24,11 @@ const NOT_ENTERED: CatalogPricePerKg = {
  * montre jamais l'autre en repli : il lit l'assiette qu'il affiche
  * (`showsTtc()` — HT pour un pro, TTC pour un particulier).
  *
- * Posés APRÈS la composition et le prix : ils ne se rangent pas, ne se
- * vendent pas, ne se tarifent pas. La carte est lue par SKU de déclinaison ;
+ * Posés APRÈS la composition, le prix et le nom des promotions : ils ne se
+ * rangent pas, ne se vendent pas, ne se tarifent pas — mais sous une
+ * promotion, le kilo suit la pièce et le kilo saisi se barre
+ * (`servedPricePerKg`, `plan-prix-au-kilo-suit-le-prix.md`, § 7), ce qui
+ * demande le tarif, le prix servi ET `promotionNames`, tous posés avant. La carte est lue par SKU de déclinaison ;
  * la vue est indexée par SKU de vente, d'où le détour par l'article montré.
  */
 export function withPricesPerKg(
@@ -39,16 +43,9 @@ export function withPricesPerKg(
     items: view.items.map((item): ShopItemView => {
       const variantSku = shown.get(item.sku)?.sku;
       const entered = (variantSku === undefined ? undefined : perKg.get(variantSku)) ?? NOT_ENTERED;
-      return { ...item, ...servedTo(audience, entered) };
+      return { ...item, ...servedPricePerKg(item, entered, audience) };
     }),
   };
-}
-
-/** La part de l'audience servie ; celle de l'autre à `null`. */
-function servedTo(audience: ShopAudience, entered: CatalogPricePerKg): CatalogPricePerKg {
-  return audience === "pro"
-    ? { proPricePerKgMillicents: entered.proPricePerKgMillicents, publicPricePerKgTtcCents: null }
-    : { proPricePerKgMillicents: null, publicPricePerKgTtcCents: entered.publicPricePerKgTtcCents };
 }
 
 /** Les SKU de déclinaison dont la vitrine a besoin : ceux des articles montrés. */

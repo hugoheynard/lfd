@@ -273,6 +273,7 @@ export const IT: ClientCopy = {
     priceTtc: '{price} IVA incl.',
     ttcSuffix: 'IVA incl.',
     priceStruck: 'Prezzo precedente: {was}, nuovo prezzo: {now}',
+    perKiloStruck: 'Prezzo al kg precedente: {was}, nuovo prezzo al kg: {now}',
     proVisitNote:
       'Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso.',
     proVisitSignIn: 'Accedo',

@@ -158,6 +158,11 @@ const noCustomerVolumes: CustomerVolumeReader = {
   committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
 };
 
+/** Kilo saisi du croissant : 10,00 € HT pro, 12,00 € TTC public. */
+const PER_KG = new Map([
+  ["VIE-001-1", { proPricePerKgMillicents: 1_000_000, publicPricePerKgTtcCents: 1_200 }],
+]);
+
 function shelf(promotions: readonly LivePromotion[], rules: readonly PriceRule[] = []) {
   const statuses = new FixedCompanyStatuses(new Map([[PRO_COMPANY, "active"]]));
   const pricer = new Pricer(
@@ -183,7 +188,7 @@ function shelf(promotions: readonly LivePromotion[], rules: readonly PriceRule[]
     new InMemoryCatalogOperations(),
     new FixedClock(NOW),
     new NoCutoffs(),
-    new GivenPricesPerKg(),
+    new GivenPricesPerKg(PER_KG),
     new CatalogViewers(new InMemoryServedCompanies()),
     new ShopCatalogueOffers(
       shelfPromotionOffers([], NOW),
@@ -241,5 +246,36 @@ describe("le nom des promotions du prix affiché, au rayon", () => {
 
     expect(item).not.toHaveProperty("catalogPriceMillicents");
     expect(item).not.toHaveProperty("promotionNames");
+  });
+});
+
+/** Le kilo suit la pièce sous une promotion seulement (`plan-prix-au-kilo-suit-le-prix.md`, § 7). */
+describe("le kilo au rayon, sous une promotion", () => {
+  it("un pro : −20 % sur la pièce, 10,00 € barré puis 8,00 € HT le kilo", async () => {
+    const item = await itemFor(shelf([NAMED]), PRO_COMPANY);
+
+    expect(item?.unitPriceMillicents).toBe(160_000);
+    expect(item?.proPricePerKgMillicents).toBe(800_000);
+    expect(item?.catalogPricePerKgMillicents).toBe(1_000_000);
+    expect(item).not.toHaveProperty("catalogPricePerKgTtcCents");
+  });
+
+  it("un particulier : la proportion des deux TTC lus, le saisi barré", async () => {
+    const item = await itemFor(shelf([NAMED]), null);
+
+    expect(item?.catalogPricePerKgTtcCents).toBe(1_200);
+    expect(item?.publicPricePerKgTtcCents).toBe(
+      Math.round((1_200 * (item?.unitPriceTtcCents ?? 0)) / (item?.catalogPriceTtcCents ?? 1)),
+    );
+    expect(item?.publicPricePerKgTtcCents).toBeLessThan(1_200);
+    expect(item?.proPricePerKgMillicents).toBeNull();
+    expect(item).not.toHaveProperty("catalogPricePerKgMillicents");
+  });
+
+  it("🔴 une mercuriale seule : le kilo saisi, rien de barré", async () => {
+    const item = await itemFor(shelf([], [NEGOTIATED]), PRO_COMPANY);
+
+    expect(item?.proPricePerKgMillicents).toBe(1_000_000);
+    expect(item).not.toHaveProperty("catalogPricePerKgMillicents");
   });
 });

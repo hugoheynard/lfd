@@ -1,6 +1,6 @@
 # Plan — le prix au kilo suit le prix servi
 
-> 📝 **Plan du 2026-11-04, rien n'est bâti. Resserré par Hugo le même jour (§ 7) : seule une PROMOTION ajuste le kilo.** Demande de Hugo : « quand on a un
+> ✅ **K1 et K2 bâtis le 2026-11-04 (non commités à l'écriture de cette ligne) — voir « Ce que le bâti a trouvé ».** Plan du 2026-11-04. Resserré par Hugo le même jour (§ 7) : seule une PROMOTION ajuste le kilo.** Demande de Hugo : « quand on a un
 > prix barré et qu'on a aussi un prix indicatif au kilo, on peut avoir le prix
 > barré au kilo en plus ? ». En relisant le code, un défaut est apparu : le prix
 > au kilo affiché ne suit **jamais** le prix servi. Touche l'affichage d'un
@@ -134,10 +134,37 @@ plus seulement par l'écran.
 
 ## 5. Les lots
 
-| Lot | Contenu                                                                                                                                                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| K1  | serveur : la règle (fonction pure, tests aux bornes : égal, plus bas, plus haut, non saisi, vendu au poids, arrondi de la moitié), le contrat, l'ordre de composition ; un e2e du rayon public et pro avec une promotion |
-| K2  | écran : le kilo barré à côté du kilo servi, sur la fiche et la mise en avant ; le libellé dans les trois langues ; tests de composant                                                                                    |
+| Lot   | Contenu                                                                                                                                                                                                                  |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| K1 ✅ | serveur : la règle (fonction pure, tests aux bornes : égal, plus bas, plus haut, non saisi, vendu au poids, arrondi de la moitié), le contrat, l'ordre de composition ; un e2e du rayon public et pro avec une promotion |
+| K2 ✅ | écran : le kilo barré à côté du kilo servi, sur la fiche et la mise en avant ; le libellé dans les trois langues ; tests de composant                                                                                    |
+
+## 5 bis. Ce que le bâti a trouvé (2026-11-04)
+
+- **L'endroit de la règle n'est pas `struck`, c'est `withPricesPerKg`** — et
+  le § 4 tombe avec le § 2. Le § 4 plaçait le calcul dans `struck` pour garder
+  un dénominateur aux HAUSSES ; le § 7 a retiré les hausses. Or la règle
+  resserrée demande trois faits : le tarif et le prix servi (posés par
+  `struck`) ET la présence d'une promotion (posée par `withPromotionNames`,
+  APRÈS `struck`). `withPricesPerKg` passe en dernier dans `pricedFor` : il a
+  les trois sur l'article, sans rien recalculer. La règle pure vit dans
+  `apps/lfd-api/src/b2b/catalog/application/shop-catalogue-promoted-per-kg.ts`
+  (`servedPricePerKg`, `proportional` en `bigint`), appelée par
+  `withPricesPerKg`.
+- **Une promotion sans `labels`** (trace d'avant L8b) ne pose pas
+  `promotionNames` : son kilo reste le kilo saisi, rien de barré. Conforme au
+  § 7 (« barré sans `promotionNames` »), mais c'est une promotion quand même.
+- **Le flux de la vitrine** recopiait toute la vue de la boutique par
+  décomposition : les deux champs neufs y seraient partis. Ils sont retirés
+  de `VitrineItemView` (`packages/contracts/src/vitrine.ts`) et de
+  `vitrineItemOf`, comme les deux kilos avant eux.
+- **La mise en avant de l'accueil ne barrait pas le prix de la pièce**
+  (`ProFeaturedCard` n'a qu'un prix), contrairement à ce que laissait croire
+  « comme le prix barré de la pièce ». Le kilo barré y est posé seul ; barrer
+  aussi la pièce y est une décision à part.
+- **E2E non écrite** : le rayon public et pro sous une promotion est éprouvé
+  sur la vraie porte de prix, ports doublés
+  (`shop-catalogue-promotion-names.spec.ts`), pas sur Postgres.
 
 ## 7. Les décisions de Hugo (2026-11-04)
 

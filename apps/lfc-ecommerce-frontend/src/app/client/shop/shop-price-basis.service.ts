@@ -5,7 +5,7 @@ import type { ShopItemView } from '@lfd/contracts';
 import { ClientCompany } from '../client-company.service';
 import { formatCents, formatMillicents } from '../format-money';
 import { ProVisit } from './pro-visit.service';
-import { isSoldByWeight } from './sale-unit';
+import { isSoldByWeight, type SaleTerms } from './sale-unit';
 
 /**
  * **Dans quelle assiette le rayon affiche ses prix** — hors taxe ou taxe
@@ -66,9 +66,14 @@ export function shelfPriceLabel(
  * **Le prix au kilo d'un article vendu à la pièce**, en mention fine sous le
  * prix (« 12,40 € / kg TTC », dans l'ordre de l'étiquette au poids), ou `null` quand il n'y a rien à dire.
  *
+ * Le montant est celui que le serveur SERT : le kilo saisi au référentiel,
+ * ou, sous une promotion qui baisse la pièce, le kilo après promotion — que
+ * le serveur calcule dans la proportion de la pièce
+ * (`plan-prix-au-kilo-suit-le-prix.md`, § 7). Cet écran ne calcule rien.
+ *
  * Rien pour un article au poids : son prix servi EST déjà le prix au kilo, le
  * redire doublerait la ligne. Rien non plus quand l'assiette affichée n'a pas
- * de prix au kilo saisi — on ne montre jamais l'autre en repli (le contrat le
+ * de prix au kilo — on ne montre jamais l'autre en repli (le contrat le
  * dit à `proPricePerKgMillicents`). Informatif : rien ne le facture.
  */
 export function perKiloHintLabel(
@@ -109,4 +114,28 @@ export function struckPriceLabel(
   return item.catalogPriceMillicents === undefined
     ? null
     : formatMillicents(item.catalogPriceMillicents);
+}
+
+/**
+ * **Le kilo saisi, à barrer** à côté du kilo servi, dans l'assiette de qui
+ * regarde — ou `null`. Le serveur ne le pose que sous une PROMOTION qui baisse
+ * la pièce (`catalogPricePerKgTtcCents` / `catalogPricePerKgMillicents`) :
+ * une mercuriale, un palier, un prix plus haut n'en ont pas, et l'absence EST
+ * la réponse. Rien au poids, comme {@link perKiloHintLabel}.
+ */
+export function struckPerKiloLabel(
+  item: Pick<ShopItemView, 'catalogPricePerKgMillicents' | 'catalogPricePerKgTtcCents'> & SaleTerms,
+  showsTtc: boolean,
+): string | null {
+  if (isSoldByWeight(item)) {
+    return null;
+  }
+  if (showsTtc) {
+    return item.catalogPricePerKgTtcCents === undefined
+      ? null
+      : formatCents(item.catalogPricePerKgTtcCents);
+  }
+  return item.catalogPricePerKgMillicents === undefined
+    ? null
+    : formatMillicents(item.catalogPricePerKgMillicents);
 }

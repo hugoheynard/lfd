@@ -27,7 +27,12 @@ import { artOf, objectPositionOf } from '../shelf-display';
 import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
-import { perKiloHintLabel, ShopPriceBasis, struckPriceLabel } from '../shop-price-basis.service';
+import {
+  perKiloHintLabel,
+  ShopPriceBasis,
+  struckPerKiloLabel,
+  struckPriceLabel,
+} from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
 import { FulfillmentOfferLabels } from '../promotion-offers';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
@@ -323,6 +328,20 @@ export class ProductSheet {
           this.t().product.perKilogram,
         );
   });
+
+  /** Le kilo saisi barré, posé par le serveur sous une promotion seulement (K2). */
+  protected readonly perKiloWas = computed(() => {
+    const product = this.product();
+    return product === null ? null : struckPerKiloLabel(product, this.showsTtc());
+  });
+
+  /** Ce qu'entend un lecteur d'écran à la place des deux kilos (RGAA 3.1). */
+  protected readonly perKiloPhrase = computed(() =>
+    fill(this.t().shop.perKiloStruck, {
+      was: this.perKiloWas() ?? '',
+      now: this.perKiloHint() ?? '',
+    }),
+  );
 
   /** Le tarif boutique barré — même règle que la vignette : l'absence EST la réponse. */
   protected readonly striked = computed(() =>

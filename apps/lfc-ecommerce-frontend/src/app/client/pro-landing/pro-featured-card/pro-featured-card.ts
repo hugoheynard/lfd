@@ -28,6 +28,12 @@ export class ProFeaturedCard {
 
   /** Le prix au kilo d'une pièce, écrit finement sous le prix ; `null` = rien à dire. */
   readonly perKilo = input<string | null>(null);
+  /**
+   * Le kilo saisi, barré à côté de {@link perKilo} — posé par le serveur sous
+   * une promotion seulement (`plan-prix-au-kilo-suit-le-prix.md`, K2) ;
+   * `null` = rien à barrer.
+   */
+  readonly perKiloWas = input<string | null>(null);
   /** Clic ou clavier sur la carte : la page ouvre la connexion. */
   readonly activated = output();
 }

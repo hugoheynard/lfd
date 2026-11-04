@@ -178,6 +178,12 @@
   font-weight: var(--fold-weight-bold);
 }
 
+/* Le kilo saisi barré sous une promotion : la rature du prix, à la taille de la mention. */
+.per-kilo-was {
+  margin-inline-start: var(--fold-space-xs);
+  text-decoration-thickness: 1px;
+}
+
 .price-was {
   font-size: var(--lfc-text-block);
   color: var(--fold-color-text-muted);

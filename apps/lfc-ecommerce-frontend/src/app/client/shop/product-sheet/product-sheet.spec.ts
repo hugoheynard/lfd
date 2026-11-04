@@ -245,6 +245,31 @@ describe('ProductSheet', () => {
     expect(el().querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € / kg TTC');
   });
 
+  it('sous une promotion, barre le kilo saisi à côté du kilo servi, et le dit en une phrase', () => {
+    mount(
+      {
+        ...(TEST_ITEMS[0] as ShopItemView),
+        publicPricePerKgTtcCents: 790,
+        catalogPricePerKgTtcCents: 990,
+      },
+      0,
+      false,
+    );
+
+    expect(el().querySelector('[data-per-kilo-was]')?.textContent?.trim()).toBe('9,90 €');
+    expect(el().querySelector('[data-per-kilo-was]')?.getAttribute('aria-hidden')).toBe('true');
+    expect(el().querySelector('[data-per-kilo] .sr-only')?.textContent?.trim()).toBe(
+      'Ancien prix au kilo : 9,90 €, nouveau prix au kilo : 7,90 € / kg TTC',
+    );
+  });
+
+  it('sans kilo barré servi, aucune rature sur le kilo', () => {
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), publicPricePerKgTtcCents: 1_590 }, 0, false);
+
+    expect(el().querySelector('[data-per-kilo-was]')).toBeNull();
+    expect(el().querySelector('[data-per-kilo] .sr-only')).toBeNull();
+  });
+
   it('ne redit pas le prix au kilo d’un article au poids', () => {
     mount(
       {

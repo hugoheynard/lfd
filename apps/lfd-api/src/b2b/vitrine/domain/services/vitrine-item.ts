@@ -79,11 +79,14 @@ export function vitrineItemOf(
   // L'unité de vente non plus (P4 de `vente-au-poids.md`, 2026-10-28), ni la
   // quantité minimale (M2 de `plan-quantite-minimale.md`, 2026-10-29), ni
   // les promotions qu'un acheminement ouvrirait (L10 des promotions), ni le
-  // nom des promotions du prix affiché (2026-11-02).
+  // nom des promotions du prix affiché (2026-11-02), ni le kilo barré sous
+  // une promotion (`plan-prix-au-kilo-suit-le-prix.md`, K1, 2026-11-04).
   const {
     allergens,
     proPricePerKgMillicents,
     publicPricePerKgTtcCents,
+    catalogPricePerKgMillicents,
+    catalogPricePerKgTtcCents,
     saleUnit,
     weightStepGrams,
     weightMinGrams,
@@ -95,6 +98,8 @@ export function vitrineItemOf(
   void allergens;
   void proPricePerKgMillicents;
   void publicPricePerKgTtcCents;
+  void catalogPricePerKgMillicents;
+  void catalogPricePerKgTtcCents;
   void saleUnit;
   void weightStepGrams;
   void weightMinGrams;

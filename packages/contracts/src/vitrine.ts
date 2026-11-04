@@ -66,7 +66,8 @@ export const VITRINE_DELIVERY_HEADER = "vitrine-delivery";
  * plan `documentation/pim/plan-allergenes-en-boutique.md`, qui n'a pas décidé
  * de les servir à l'agence. Élargir ce flux public est une décision à part.
  * Les prix au kilo non plus (2026-10-28) : `plan-prix-au-kilo.md` laisse le
- * flux de la vitrine hors de son périmètre. L'unité de vente non plus
+ * flux de la vitrine hors de son périmètre, ni le kilo barré sous une
+ * promotion (2026-11-04, `plan-prix-au-kilo-suit-le-prix.md`). L'unité de vente non plus
  * (2026-10-28, P4 de `vente-au-poids.md`). La quantité minimale non plus
  * (2026-10-29, M2 de `plan-quantite-minimale.md`). Les promotions qu'un
  * acheminement ouvrirait non plus (2026-10-30, L10 du plan des promotions) :
@@ -80,6 +81,8 @@ export type VitrineItemView = Omit<
   | "allergens"
   | "proPricePerKgMillicents"
   | "publicPricePerKgTtcCents"
+  | "catalogPricePerKgMillicents"
+  | "catalogPricePerKgTtcCents"
   | "saleUnit"
   | "weightStepGrams"
   | "weightMinGrams"

@@ -1616,6 +1616,13 @@
           "variables": ["was", "now"]
         },
         {
+          "key": "shop.perKiloStruck",
+          "fr": "Ancien prix au kilo : {was}, nouveau prix au kilo : {now}",
+          "en": "Previous price per kg: {was}, new price per kg: {now}",
+          "it": "Prezzo al kg precedente: {was}, nuovo prezzo al kg: {now}",
+          "variables": ["was", "now"]
+        },
+        {
           "key": "shop.proVisitNote",
           "fr": "Tarifs professionnels hors taxe — vos conditions négociées après connexion.",
           "en": "Trade prices excluding VAT — your negotiated terms once signed in.",

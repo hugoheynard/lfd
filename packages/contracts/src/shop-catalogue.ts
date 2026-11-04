@@ -189,27 +189,43 @@ export interface ShopItemView {
    */
   readonly minQuantity?: number | null;
   /**
-   * **Le prix au kilo PRO, hors taxe, en millicentimes** — tel que saisi au
-   * référentiel (`documentation/pricing/saisie/plan-prix-au-kilo.md`).
+   * **Le prix au kilo PRO, hors taxe, en millicentimes** — servi au seul rayon
+   * pro, `null` ailleurs (« chaque audience son information », 2026-10-31).
    *
-   * 🔴 **Informatif** : saisi, jamais calculé depuis le prix et le poids, et
-   * jamais facturé — ni le panier, ni le devis, ni la facture ne le lisent.
-   * `null` = non saisi : rien ne s'affiche.
+   * 🔴 **Informatif** : saisi au référentiel
+   * (`documentation/pricing/saisie/plan-prix-au-kilo.md`), jamais calculé
+   * depuis le poids, jamais facturé. C'est le kilo **saisi**, sauf sous une
+   * **promotion** qui baisse la pièce (`promotionNames` posé) : il porte alors
+   * le kilo **après promotion** — saisi × prix servi ÷ tarif, HT, arrondi une
+   * fois — et le saisi passe à {@link catalogPricePerKgMillicents}
+   * (`plan-prix-au-kilo-suit-le-prix.md`, § 7). Une mercuriale, un palier, un
+   * engagement ne le touchent pas. `null` = non saisi, ou article vendu au
+   * poids (son prix servi est déjà au kilo).
    *
-   * Les deux prix au kilo sont servis à toutes les audiences, chacun nommé par
-   * son unité : comme pour la pièce, **c'est l'écran qui choisit** l'assiette
-   * (`showsTtc()`), et il ne montre jamais l'autre en repli.
-   *
-   * ⚠️ Facultatif dans le TYPE pour ne pas casser les fixtures des fronts
-   * avant leur lot (K5) ; le serveur l'émet toujours, à `null` au besoin.
+   * ⚠️ Facultatif dans le TYPE pour ne pas casser les fixtures des fronts ;
+   * le serveur l'émet toujours, à `null` au besoin.
    */
   readonly proPricePerKgMillicents?: number | null;
   /**
-   * **Le prix au kilo PUBLIC, taxe comprise, en centimes** — tel que saisi au
-   * référentiel. Même statut que {@link proPricePerKgMillicents} : informatif,
-   * `null` = non saisi, toujours émis par le serveur.
+   * **Le prix au kilo PUBLIC, taxe comprise, en centimes** — servi au seul
+   * rayon public. Même statut que {@link proPricePerKgMillicents} ; sous une
+   * promotion, la proportion est celle des deux prix TTC que le particulier
+   * lit (`unitPriceTtcCents` ÷ `catalogPriceTtcCents`), et le saisi passe à
+   * {@link catalogPricePerKgTtcCents}.
    */
   readonly publicPricePerKgTtcCents?: number | null;
+  /**
+   * **Le kilo PRO saisi, à barrer** — HT, millicentimes. Présent seulement au
+   * rayon pro, sous une promotion qui baisse la pièce, et quand un kilo est
+   * saisi ; **absent du fil** partout ailleurs, la règle de
+   * {@link catalogPriceMillicents}.
+   */
+  readonly catalogPricePerKgMillicents?: number;
+  /**
+   * **Le kilo PUBLIC saisi, à barrer** — TTC, centimes. Même règle que
+   * {@link catalogPricePerKgMillicents}, au seul rayon public.
+   */
+  readonly catalogPricePerKgTtcCents?: number;
   /**
    * **Le tarif à barrer** — l'étiquette publique sur la route publique, le
    * tarif du canal pro sur la route reconnue et sur `?audience=pro` —
