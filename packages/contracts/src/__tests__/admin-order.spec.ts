@@ -69,7 +69,8 @@ describe("adminPlaceOrderPayloadSchema", () => {
 
   /** Plan total vu, T3 : obligatoire à la passation, absent de l'estimation. */
   it("refuse une passation sans total vu, que l'estimation, elle, n'exige pas", () => {
-    const { expectedTotalCents: _seen, ...unseen } = base;
+    const unseen: Partial<typeof base> = { ...base };
+    delete unseen.expectedTotalCents;
     const window = { requestedWindow: { start: "07:00", end: "08:00" } };
     const refused = adminPlaceOrderPayloadSchema.safeParse({ ...unseen, ...window });
 
