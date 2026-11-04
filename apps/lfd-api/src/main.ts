@@ -8,6 +8,9 @@ import { requestContextMiddleware } from "./platform/context/request-context.mid
 import { AppErrorFilter } from "./platform/shared/http/app-error.filter.js";
 import { RecordingLogger } from "./platform/logging/recording-logger.js";
 
+/** Durée pendant laquelle le navigateur garde un contrôle CORS : le plafond de Chrome. */
+const CORS_PREFLIGHT_MAX_AGE_SECONDS = 7200;
+
 /** Plafond de taille du corps JSON : borne un vecteur de déni de service (payload géant). */
 const JSON_BODY_LIMIT = "512kb";
 /** Un lot de 50 gestes tient en quelques Ko. */
@@ -67,6 +70,12 @@ async function bootstrap(): Promise<void> {
     // décidé par le SERVEUR. Sans cette exposition, un front d'une autre origine
     // ne lit pas `Content-Disposition` et réinvente le nom de son côté.
     exposedHeaders: ["Content-Disposition"],
+    // Sans `Access-Control-Max-Age`, Chrome ne garde un contrôle CORS que 5 s
+    // et par URL : un changement d'espace payait un `OPTIONS` avant presque
+    // chaque appel, chacun traversant passerelle, Worker, objet et conteneur
+    // (mesuré le 2026-11-04, plan de latence). 2 h est le plafond de Chrome ;
+    // l'allowlist d'origines, elle, reste vérifiée à chaque contrôle.
+    maxAge: CORS_PREFLIGHT_MAX_AGE_SECONDS,
   });
 
   // Le port passe par AppConfig comme toute autre valeur d'environnement.
