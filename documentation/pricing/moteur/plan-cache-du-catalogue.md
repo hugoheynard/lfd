@@ -281,7 +281,7 @@ la lecture en base**, c'est-à-dire sur le chemin d'aujourd'hui.
 **démarre** pas. Déclarer un gestionnaire de sortie sans exporter
 `ContainerProxy` l'empêche de démarrer — **constaté en local le 2026-11-04**
 (`wrangler dev`, conteneur d'essai : 500 « ctx.exports.ContainerProxy is
-undefined »). Celle-là se tient par une **porte de CI**, avant tout
+undefined »). Celle-là se tient par une **porte de CI**, `lint:container-start` (bâtie le 2026-11-04), avant tout
 gestionnaire : si `Backend` déclare `outboundByHost`, le Worker exporte
 `ContainerProxy` et `wrangler.jsonc` porte `enable_ctx_exports`, sinon le push
 est refusé. Le déploiement, lui, détecte une image qui ne sert pas

@@ -97,7 +97,10 @@
 >   identifié) ou `private, no-cache` (visiteur) sur toute réponse de l'API,
 >   et la porte refuse qu'une route écrive autre chose que `private` ou
 >   `no-store` hors d'une liste admise, comme un cache dans la passerelle —
->   un cache partagé servirait un appelant à un autre. C'est la
+>   un cache partagé servirait un appelant à un autre. Et **54** depuis le
+>   2026-11-04 avec `lint:container-start` : un container qui intercepte ses
+>   sorties refuse de démarrer si son Worker n'exporte pas `ContainerProxy` ou
+>   n'a pas `ctx.exports` — l'API coupée, que rien d'autre ne voit. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1274,7 +1277,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 53 portes du dépôt, d’un coup
+pnpm lint:gates         # les 54 portes du dépôt, d’un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

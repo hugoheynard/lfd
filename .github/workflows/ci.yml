@@ -305,6 +305,13 @@ jobs:
       - name: "Gate : une seule porte pour les versions de journée"
         run: pnpm lint:day-version-door
 
+      # Un container qui intercepte ses sorties (`outboundByHost`…) REFUSE DE
+      # DÉMARRER si son Worker n'exporte pas `ContainerProxy` ou n'a pas
+      # `ctx.exports` — constaté en local le 2026-11-04. Ni test, ni typecheck,
+      # ni `wrangler deploy --dry-run` ne le voient : ce serait l'API coupée.
+      - name: "Gate : un container qui intercepte ses sorties démarre"
+        run: pnpm lint:container-start
+
       # ── Le prix ──
       # Ces portes ne tournaient qu'au pre-push, qu'un `--no-verify` saute :
       # constaté le 2026-11-02, 25 des 51 portes n'avaient aucune étape ici.
