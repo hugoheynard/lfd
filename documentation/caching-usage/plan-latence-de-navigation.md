@@ -82,9 +82,12 @@ impression.
 
 **Reste**
 
-- 🟦 Les suggestions du panier ne sont plus demandées qu'une fois par geste :
+- ✅ Les suggestions du panier ne sont plus demandées qu'une fois par geste :
   elles attendent le total du devis (`fe5afcfb3`). Elles partaient deux fois,
   et la seconde fixait la fin d'un changement d'espace (jusqu'à 3,5 s).
+- ✅ `subscriptions/mine` ne part plus (`73375dd31`) : son seul lecteur, une
+  entrée de menu « bientôt », n'affiche pas le compte. Les commandes et la
+  fidélité restent : la pastille du menu et le total du panier les lisent.
 - **Ne charger que ce que la page affiche** (décidé avec Hugo le 2026-11-04) :
   changer d'espace recharge toute la page, et chaque store relit tout, même
   ce qu'elle ne montre pas — `companies/:id/orders` (« Mes commandes »),
@@ -109,7 +112,11 @@ impression.
 **Reste**
 
 - (a) Une seule demande de suggestions du panier (cf. L1).
-- (b) **Le rayon pro gardé jusqu'au prochain changement d'heure connu** (une
+- 🟦 (b) phase 1 bâtie (`5cb7790fc`, sur `dev`) : le rayon reconnu gardé
+  5 minutes, ou jusqu'à la prochaine opération datée ; la révision dans la
+  clé. Plan [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md),
+  contredit par `vitruve`. Au-delà de 5 minutes : la phase 2 du même plan.
+- (b, origine) **Le rayon pro gardé jusqu'au prochain changement d'heure connu** (une
   promotion qui ouvre, un prix daté), au lieu de 30 s fixes, avec un plafond.
   Aujourd'hui, revenir dans un espace après 30 s recalcule le rayon (2,2 s
   mesurées). Touche l'argent : `vitruve`. **En attente de la décision de
@@ -138,17 +145,16 @@ impression.
 
 **Fait**
 
-- 🟦 Plan [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md),
+- ✅ Plan [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md),
   contredit deux fois par `vitruve`, migration relue.
-- 🟦 Bâti (`ad5c80190`, sur `dev`) : estampille posée par trois déclencheurs
+- ✅ En production le 2026-11-04 (`d1250d6c6`) — mesuré : principal 12–17 ms
+  servi de la mémoire (70–270 ms avant). Bâti en `ad5c80190` : estampille posée par trois déclencheurs
   `BEFORE … FOR EACH STATEMENT`, mémoire par `sub`, une lecture à la fois par
   personne ; les préférences de navigation quittent `users` pour
   `user_nav_prefs`.
 
 **Reste**
 
-- Promotion vers `main`, puis mesurer `principal` dans `Server-Timing`
-  (attendu : < 15 ms).
 - Vérifier en production que l'estampille monte sur une écriture de compte, et
   qu'aucune attente de verrou n'apparaît.
 - Les droits du staff (back-office) : même idée, autre résolveur, autre lot.
