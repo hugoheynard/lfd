@@ -14,6 +14,7 @@ import * as workersModule from "cloudflare:workers";
 
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
+import { withServerTiming } from "./server-timing";
 import { PRO_SHELVES_INSTANCE } from "./pro-shelves";
 import {
   isPublicPurgeCall,
@@ -759,7 +760,13 @@ export default {
     // `edge-guard.ts`, sous tests. Ici on ne fait que câbler le binding et la
     // destination — c'est délibéré : ce fichier n'est pas testable (il importe
     // le monde Workers), donc il ne doit contenir aucune décision.
-    return guardedFetch(request, env.RATE_LIMITER, (forwarded) => backend(env).fetch(forwarded));
+    // `worker` couvre le saut vers l'objet `Backend` et son conteneur : moins
+    // le `app` que Nest a posé, c'est le transport (plan de latence, L0).
+    const startedAt = performance.now();
+    const response = await guardedFetch(request, env.RATE_LIMITER, (forwarded) =>
+      backend(env).fetch(forwarded),
+    );
+    return withServerTiming(response, "worker", performance.now() - startedAt);
   },
 
   // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Dix

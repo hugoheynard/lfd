@@ -138,9 +138,10 @@ export class OpsHealthService {
         // La latence de la sonde était mesurée et jetée. C'est pourtant le seul
         // chiffre qu'un tiers nous donne sans rien demander à personne — et sur
         // les nœuds qui n'ont que ça, c'est la différence entre une carte qu'on
-        // lit et une carte qu'on regarde. Ajoutée en DERNIER : elle complète les
-        // relevés propres au nœud, elle ne les chasse pas.
-        readings: [...(known?.readings ?? []), ...latencyReading(outcome)],
+        // lit et une carte qu'on regarde. Posée EN PREMIER depuis le 2026-11-04 :
+        // la carte n'affiche que trois relevés, et ajoutée en dernier elle
+        // disparaissait sur la base, qui en a plus (plan de latence, L0).
+        readings: [...latencyReading(outcome), ...(known?.readings ?? [])],
         probe: {
           verdict: outcome.verdict,
           ...(outcome.detail === undefined ? {} : { detail: outcome.detail }),

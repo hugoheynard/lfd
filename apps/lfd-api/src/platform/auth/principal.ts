@@ -1,3 +1,4 @@
+import type { TimedRequest } from "../metrics/server-timing.js";
 import type { Request } from "express";
 import type { CustomerRole } from "../database/client/client.js";
 
@@ -93,4 +94,4 @@ export interface PrincipalMembership {
 }
 
 /** Requête HTTP enrichie par `AuthGuard` après vérification + résolution. */
-export type AuthenticatedRequest = Request & { principal?: Principal };
+export type AuthenticatedRequest = Request & { principal?: Principal } & TimedRequest;

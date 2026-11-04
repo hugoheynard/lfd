@@ -2,6 +2,7 @@ import { frontHeaders, PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
 import type { BackendKey, Target } from "./routes";
 import { guardTarget } from "./route-planner-guard";
 import type { RoutePlannerGuardEnv } from "./route-planner-guard";
+import { withServerTiming } from "./server-timing";
 import { formatTrafficPoint, trafficPoint } from "./traffic";
 import type { TrafficObservation } from "./traffic";
 
@@ -107,7 +108,14 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
       withClientIp(new Request(destination.url, admitted), request),
       request,
     );
-    const response = await destination.send(forward);
+    // `gateway` couvre tout ce qui suit la passerelle : moins le `worker` du
+    // backend, c'est le saut passerelle → Worker (plan de latence, L0).
+    const startedAt = performance.now();
+    const response = withServerTiming(
+      await destination.send(forward),
+      "gateway",
+      performance.now() - startedAt,
+    );
     return {
       response,
       observation: { node, status: response.status, forwardedPath, origin: "upstream" },

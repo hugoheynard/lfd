@@ -98,6 +98,7 @@ import { InboundMailSinkModule } from "./inbound-mail-sink.module.js";
 import { DatabaseModule } from "../platform/database/database.module.js";
 import { SecurityModule } from "../platform/security/security.module.js";
 import { APP_GUARD } from "@nestjs/core";
+import { serverTiming } from "../platform/metrics/server-timing.js";
 import { AuthGuard } from "../platform/auth/auth.guard.js";
 import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
 
@@ -291,6 +292,6 @@ export class AppModule implements NestModule {
    * (`documentation/caching-usage/plan-aucun-cache-sur-le-personnel.md`).
    */
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(cacheControlByDefault).forRoutes("{*splat}");
+    consumer.apply(serverTiming, cacheControlByDefault).forRoutes("{*splat}");
   }
 }

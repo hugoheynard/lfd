@@ -13,6 +13,7 @@ import { PrincipalResolver } from "./principal.resolver.js";
 import { DevImpersonation } from "./dev-impersonation.js";
 import type { AuthenticatedRequest, Principal, VerifiedToken } from "./principal.js";
 import { IS_PUBLIC_KEY } from "./public.decorator.js";
+import { recordServerTiming, type TimedRequest } from "../metrics/server-timing.js";
 
 /**
  * Guard global (APP_GUARD) : toute route exige un access token Auth0 valide,
@@ -62,7 +63,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Jeton Bearer manquant.");
     }
 
-    request.principal = await this.authenticate(token);
+    request.principal = await this.authenticate(token, request);
     // Renseigne l'acteur du RequestContext (le principal est résolu) → le journal
     // d'événements attribuera les écritures au bon `customer`.
     this.attachIdentity(request);
@@ -94,8 +95,9 @@ export class AuthGuard implements CanActivate {
   }
 
   /** Vérifie la signature puis résout le client local. */
-  private async authenticate(token: string): Promise<Principal> {
+  private async authenticate(token: string, request: TimedRequest): Promise<Principal> {
     let verified: VerifiedToken;
+    const verifyStartedAt = performance.now();
     try {
       verified = await this.verifier.verify(token);
     } catch {
@@ -104,7 +106,11 @@ export class AuthGuard implements CanActivate {
     }
     // Hors du `try` : les refus métier du resolver (compte inconnu / inactif)
     // portent leur propre message et ne doivent pas être masqués.
-    return this.resolver.resolve(verified);
+    recordServerTiming(request, "verify", verifyStartedAt);
+    const resolveStartedAt = performance.now();
+    const principal = await this.resolver.resolve(verified);
+    recordServerTiming(request, "principal", resolveStartedAt);
+    return principal;
   }
 
   private isPublic(context: ExecutionContext): boolean {
