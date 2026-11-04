@@ -3,11 +3,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { PERSONAL_WORKSPACE, type CompanyView, type SubscriptionView } from '@lfd/contracts';
+import { PERSONAL_WORKSPACE, type CompanyView } from '@lfd/contracts';
 
 import { OPEN_LOYALTY } from '../client-loyalty.fixture';
 import { ClientLoyalty } from '../client-loyalty.service';
-import { ClientSubscriptions } from '../client-subscriptions.service';
 
 import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -94,14 +93,22 @@ describe('Les destinations du menu', () => {
     expect(invoices?.warn).toBe(false);
   });
 
-  it('compte les gabarits récurrents SANS les marquer — ils n’appellent rien', () => {
-    TestBed.inject(ClientSubscriptions).receive([{}, {}] as SubscriptionView[]);
-
+  /**
+   * Régression (plan-latence-de-navigation, L1) : le compte des gabarits
+   * appelait `/subscriptions/mine` à chaque page, pour une destination dont
+   * aucune surface n'affiche le compte tant que son écran n'existe pas.
+   */
+  it('ne lit PAS les gabarits récurrents tant que leur écran n’existe pas', async () => {
     const baskets = TestBed.inject(ClientNav)
       .items()
       .find((i) => i.id === 'baskets');
-    expect(baskets?.countShort).toBe('2');
-    expect(baskets?.warn).toBe(false);
+    TestBed.tick();
+    // Le jeton se résout de façon asynchrone : on laisse partir ce qui partirait.
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(baskets?.ready).toBe(false);
+    expect(baskets?.countShort).toBe('');
+    TestBed.inject(HttpTestingController).expectNone((r) => r.url.endsWith('/subscriptions/mine'));
   });
 
   it('suit la NAVIGATION — l’onglet actif ne reste pas figé sur la première page', async () => {

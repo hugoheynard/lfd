@@ -165,7 +165,7 @@ export class ClientNav {
       route: d.route,
       ready: d.ready,
       label: this.t().nav.destinations[d.id],
-      ...this.counts(d.id),
+      ...(d.ready ? this.counts(d.id) : EMPTY),
     })),
   );
 
@@ -205,9 +205,12 @@ export class ClientNav {
     // facture. Le jour où la facturation existe, c'est ici que son compte se
     // branche — pas avant.
     if (id === 'baskets') {
-      // Le service n'est construit QUE si la destination paraît : il lit
-      // `/subscriptions/mine` dès sa construction, et un menu réduit ne lit pas
-      // ce qu'il ne montre pas (plan §9). `untracked` parce qu'il pose un effet,
+      // Le service n'est construit QUE si la destination paraît ET que son écran
+      // existe : il lit `/subscriptions/mine` dès sa construction, et aucune des
+      // trois surfaces n'affiche le compte d'une destination inerte (vérifié le
+      // 2026-11-04 : `client-nav-bar`, `client-menu`, `account-menu` n'en
+      // montrent que « bientôt ») — un menu ne lit pas ce qu'il ne montre pas
+      // (plan §9, plan-latence-de-navigation L1). `untracked` parce qu'il pose un effet,
       // ce qu'Angular refuse depuis un contexte réactif.
       const subscriptions = untracked(() => this.injector.get(ClientSubscriptions));
       const models = subscriptions.all().length;
