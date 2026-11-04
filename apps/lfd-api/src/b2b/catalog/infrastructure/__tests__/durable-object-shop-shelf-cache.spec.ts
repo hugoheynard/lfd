@@ -14,6 +14,7 @@ import { packedShelf, shelfPath } from "../shelf-wire.js";
  */
 const ORIGIN = "http://rayons.interne";
 const NOW = new Date(Date.UTC(2030, 0, 1));
+const REVISION = "abc123";
 const VIEW: ShopCatalogueView = { shelves: [], items: [], operations: [] };
 
 interface Sent {
@@ -40,10 +41,15 @@ describe("DurableObjectShopShelfCache", () => {
     const bytes = await packedShelf(VIEW);
     const { sent, fetchFn } = replying(() => new Response(bytes, { status: 200 }));
 
-    const lookup = await new DurableObjectShopShelfCache(ORIGIN, fetchFn).read("co_a", NOW);
+    const lookup = await new DurableObjectShopShelfCache(ORIGIN, REVISION, fetchFn).read(
+      "co_a",
+      NOW,
+    );
 
     expect(lookup).toEqual({ kind: "hit", view: VIEW });
-    expect(sent[0]?.url).toBe(`${ORIGIN}/shelves/company/co_a?now=${NOW.getTime()}`);
+    expect(sent[0]?.url).toBe(
+      `${ORIGIN}/shelves/company/co_a?now=${NOW.getTime()}&revision=${REVISION}`,
+    );
   });
 
   it("un raté porte la version courante", async () => {
@@ -51,12 +57,12 @@ describe("DurableObjectShopShelfCache", () => {
       () => new Response(null, { status: 404, headers: { "x-shelf-version": "12" } }),
     );
 
-    await expect(new DurableObjectShopShelfCache(ORIGIN, fetchFn).read(null, NOW)).resolves.toEqual(
-      {
-        kind: "miss",
-        version: 12,
-      },
-    );
+    await expect(
+      new DurableObjectShopShelfCache(ORIGIN, REVISION, fetchFn).read(null, NOW),
+    ).resolves.toEqual({
+      kind: "miss",
+      version: 12,
+    });
   });
 
   it.each<[string, () => Response]>([
@@ -70,7 +76,7 @@ describe("DurableObjectShopShelfCache", () => {
     const { fetchFn } = replying(response);
 
     await expect(
-      new DurableObjectShopShelfCache(ORIGIN, fetchFn).read("co_a", NOW),
+      new DurableObjectShopShelfCache(ORIGIN, REVISION, fetchFn).read("co_a", NOW),
     ).rejects.toBeInstanceOf(UnreadableShelfReplyError);
   });
 
@@ -83,7 +89,7 @@ describe("DurableObjectShopShelfCache", () => {
     const { sent, fetchFn } = replying(() => new Response(null, { status }));
     const expiresAt = new Date(NOW.getTime() + 30_000);
 
-    const stored = await new DurableObjectShopShelfCache(ORIGIN, fetchFn).store({
+    const stored = await new DurableObjectShopShelfCache(ORIGIN, REVISION, fetchFn).store({
       key: "co_site",
       view: VIEW,
       version: 3,
@@ -97,6 +103,7 @@ describe("DurableObjectShopShelfCache", () => {
     expect(Object.fromEntries(url.searchParams)).toEqual({
       version: "3",
       expires: String(expiresAt.getTime()),
+      revision: REVISION,
       principal: "co_head",
     });
     expect(sent[0]?.init.method).toBe("PUT");
@@ -105,7 +112,7 @@ describe("DurableObjectShopShelfCache", () => {
   it("un effacement envoie l'ordre regroupé, tel quel", async () => {
     const { sent, fetchFn } = replying(() => new Response(null, { status: 204 }));
 
-    await new DurableObjectShopShelfCache(ORIGIN, fetchFn).erase({
+    await new DurableObjectShopShelfCache(ORIGIN, REVISION, fetchFn).erase({
       kind: "companies",
       companyIds: ["co_a"],
     });
@@ -118,8 +125,21 @@ describe("DurableObjectShopShelfCache", () => {
     const fetchFn: ShelfFetch = () => Promise.reject(new TypeError("fetch failed"));
 
     await expect(
-      new DurableObjectShopShelfCache(ORIGIN, fetchFn).read("co_a", NOW),
+      new DurableObjectShopShelfCache(ORIGIN, REVISION, fetchFn).read("co_a", NOW),
     ).rejects.toBeInstanceOf(TypeError);
+  });
+
+  it("deux révisions lisent deux entrées, la même révision la même", async () => {
+    const { sent, fetchFn } = replying(
+      () => new Response(null, { status: 404, headers: { "x-shelf-version": "0" } }),
+    );
+
+    await new DurableObjectShopShelfCache(ORIGIN, "avant", fetchFn).read("co_a", NOW);
+    await new DurableObjectShopShelfCache(ORIGIN, "apres", fetchFn).read("co_a", NOW);
+    await new DurableObjectShopShelfCache(ORIGIN, "apres", fetchFn).read("co_a", NOW);
+
+    const revisions = sent.map(({ url }) => new URL(url).searchParams.get("revision"));
+    expect(revisions).toEqual(["avant", "apres", "apres"]);
   });
 
   it("l'espace perso et une société ne partagent jamais un chemin", () => {

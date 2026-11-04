@@ -11,7 +11,8 @@ import { ResilientShopShelfCache } from "./resilient-shop-shelf-cache.js";
  * magasin « tout » ou « ces sociétés et leurs sites », en montant sa version.
  *
  * Ne lève pas : le magasin est joint à travers {@link ResilientShopShelfCache},
- * qui compte la panne ; la durée de vie de 30 s rattrape (§ 5).
+ * qui compte la panne ; la durée de vie la rattrape (§ 5) — 5 minutes au plus
+ * depuis le 2026-11-04, 30 s avant (`plan-rayon-jusqu-a-la-prochaine-heure.md`).
  */
 @Injectable()
 export class ProShelfPurge extends ShelfPurge {

@@ -16,7 +16,8 @@ export const SHELF_PURGE_WINDOW_MS = 1000;
  * Fenêtre fixe plutôt que glissante : une ingestion continue repousserait
  * sans fin une fenêtre glissante, et aucun rayon ne serait jamais effacé.
  * Un redémarrage dans la seconde perd la purge en attente — la durée de vie
- * des rayons (30 s) rattrape.
+ * des rayons rattrape : 30 s au rayon public, 5 minutes au plus au rayon pro
+ * depuis le 2026-11-04 (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 0).
  */
 @Injectable()
 export class ShelfChangeWindow {

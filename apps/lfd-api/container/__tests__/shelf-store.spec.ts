@@ -60,6 +60,53 @@ describe("les clés", () => {
   });
 });
 
+describe("la révision de l'API dans la clé (plan-rayon-jusqu-a-la-prochaine-heure.md, § 1)", () => {
+  it("deux révisions donnent deux clés, la même révision la même clé", () => {
+    const first = storageKeyOf("/shelves/company/co_a", "abc123");
+    const second = storageKeyOf("/shelves/company/co_a", "def456");
+    expect(first).not.toBe(second);
+    expect(storageKeyOf("/shelves/company/co_a", "abc123")).toBe(first);
+    expect(storageKeyOf("/shelves/personal", "abc123")).not.toBe(
+      storageKeyOf("/shelves/personal", "def456"),
+    );
+  });
+
+  it("sans révision, la clé d'avant ce lot", () => {
+    expect(storageKeyOf("/shelves/company/co_a", null)).toBe("company:co_a");
+    expect(storageKeyOf("/shelves/company/co_a", "")).toBe("company:co_a");
+  });
+
+  it("la révision ne déborde pas sur la société, même avec une barre oblique", () => {
+    const key = storageKeyOf("/shelves/company/a%2Fb", "r/1:x") ?? "";
+    expect(companyOfStorageKey(key)).toBe("a/b");
+    expect(companyOfStorageKey(storageKeyOf("/shelves/personal", "r/1") ?? "")).toBeNull();
+  });
+
+  it("la lecture d'un appel porte la révision dans sa clé", () => {
+    const url = new URL(`${URL_BASE}/shelves/company/co_a?now=1000&revision=abc`);
+    expect(parseShelfCall("GET", url)).toEqual({
+      kind: "read",
+      key: storageKeyOf("/shelves/company/co_a", "abc"),
+      nowMs: 1000,
+    });
+  });
+
+  it("la purge d'une société efface TOUTES ses révisions, et celles de ses sites", () => {
+    const old = storageKeyOf("/shelves/company/co_a", "ancienne") ?? "";
+    const current = storageKeyOf("/shelves/company/co_a", "courante") ?? "";
+    const site = storageKeyOf("/shelves/company/co_site", "courante") ?? "";
+    const other = storageKeyOf("/shelves/company/co_b", "courante") ?? "";
+    const entries = [
+      { key: old, principalId: null },
+      { key: current, principalId: null },
+      { key: "company:co_a", principalId: null },
+      { key: site, principalId: "co_a" },
+      { key: other, principalId: null },
+    ];
+    expect(keysToErase(entries, ["co_a"])).toEqual([old, current, "company:co_a", site]);
+  });
+});
+
 describe("la lecture d'un appel", () => {
   it("une lecture porte l'instant de l'API", () => {
     expect(parseShelfCall("GET", new URL(`${URL_BASE}/shelves/company/co_a?now=1000`))).toEqual({

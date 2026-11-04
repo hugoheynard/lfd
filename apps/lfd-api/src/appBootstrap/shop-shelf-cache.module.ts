@@ -51,7 +51,9 @@ import { AppConfig } from "../platform/config/app-config.js";
       inject: [AppConfig],
       useFactory: (config: AppConfig): ShopShelfCache => {
         const url = config.shopShelfCacheUrl();
-        return url === null ? new NoShopShelfCache() : new DurableObjectShopShelfCache(url);
+        return url === null
+          ? new NoShopShelfCache()
+          : new DurableObjectShopShelfCache(url, config.revision());
       },
     },
     { provide: ShopShelfEraser, useExisting: ShopShelfCache },

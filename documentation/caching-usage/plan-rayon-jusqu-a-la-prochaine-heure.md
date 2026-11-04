@@ -85,7 +85,7 @@ ne dit la révision), et **le stock n'est pas dans la vue** — la limite notée
 par Hugo ne coûte rien ici ; la vraie limite côté commandes est le plancher
 dynamique.
 
-## 1. Phase 1 — à bâtir cette nuit (la recommandation de `vitruve`)
+## 1. Phase 1 — 🟦 bâtie le 2026-11-04 (la recommandation de `vitruve`), sur `dev`
 
 - **Plafond : 5 minutes** au lieu de 30 s (`RECOGNISED_SHELF_LIFETIME_MS`).
   Tout ce qui n'est pas connu au calcul — une ouverture de promotion, une
@@ -99,7 +99,16 @@ announceFrom`, `orderUntil`, fin de jour du retrait) sont déjà en main dans
   prix. Un article qui apparaît ou disparaît le fait à l'heure.
 - **La révision de l'API dans la clé du rayon** (`AppConfig.revision()`) : un
   déploiement change la clé, l'ancien rayon n'est plus jamais lu (il expire
-  seul). Ferme l'objection « un déploiement ne vide rien ».
+  seul). Ferme l'objection « un déploiement ne vide rien ». La purge d'une
+  société efface toutes ses révisions (`keysToErase`, testé).
+- Seules les opérations qui atteignent l'audience du rayon comptent ; une fin
+  de jour introuvable (`OperationDayEndMissingError`) est ignorée, le plafond
+  la borne — une échéance de cache ne casse jamais le rayon.
+- ⚠️ **À confirmer par Hugo** : le §7 de `plan-cache-du-catalogue.md` portait
+  sa décision « 30 s suffisent » pour un palier qu'ouvre une commande (les
+  commandes ne purgent pas). Ce délai passe à 5 minutes — y compris pour le
+  palier d'engagement de la société elle-même, pas seulement le plancher
+  dynamique.
 - Les commentaires qui justifient un mécanisme par « la durée de vie de 30 s
   rattrape » sont réécrits avec 5 minutes, datés.
 

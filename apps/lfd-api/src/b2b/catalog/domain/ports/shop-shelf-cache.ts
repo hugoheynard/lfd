@@ -26,7 +26,11 @@ export interface ShelfToStore {
    * principal efface aussi cette entrée (« une société et ses sites »).
    */
   readonly principalId: string | null;
-  /** L'échéance, posée par l'API sur son `Clock` (30 s, § 6). */
+  /**
+   * L'échéance, posée par l'API sur son `Clock` : 5 minutes au plus, ou plus
+   * tôt le prochain instant d'une opération datée
+   * (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1).
+   */
   readonly expiresAt: Date;
 }
 

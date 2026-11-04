@@ -50,7 +50,12 @@ export class ResilientShopShelfCache {
     }
   }
 
-  /** Efface des rayons ; une panne est comptée, la durée de vie de 30 s rattrape. */
+  /**
+   * Efface des rayons ; une panne est comptée, et rattrapée par la seule durée
+   * de vie — 5 minutes au plus depuis le 2026-11-04 (30 s avant ;
+   * `plan-rayon-jusqu-a-la-prochaine-heure.md`, § 0, objection 3, et § 2 (c)
+   * qui la ferme avant tout plafond plus long).
+   */
   async erase(order: ShelfPurgeOrder): Promise<void> {
     const done = await this.guard.call(
       "erase",

@@ -106,8 +106,33 @@ export function isTrustedCaller(
   return containerId !== undefined && containerId !== "" && trustedIds.includes(containerId);
 }
 
-/** La clé de stockage d'un chemin `/shelves/personal` ou `/shelves/company/<id>`. */
-export function storageKeyOf(pathname: string): string | null {
+/**
+ * Le préfixe de la révision de l'API dans une clé de stockage. `encodeURIComponent`
+ * n'écrit jamais `/` : la révision ne peut pas déborder sur la clé.
+ */
+const REVISION_PREFIX = "r:";
+const REVISION_SEPARATOR = "/";
+
+/**
+ * La clé de stockage d'un chemin `/shelves/personal` ou `/shelves/company/<id>`,
+ * préfixée de la révision de l'API quand l'appel la porte (`?revision=`).
+ *
+ * Un déploiement change la révision, donc la clé : le rayon rangé par l'image
+ * précédente n'est plus jamais lu, et il expire seul (plan
+ * `plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1, 2026-11-04). Sans révision,
+ * la clé d'avant — l'API d'avant ce lot continue de lire ce qu'elle rangeait.
+ */
+export function storageKeyOf(pathname: string, revision: string | null = null): string | null {
+  const bare = bareStorageKeyOf(pathname);
+  if (bare === null) {
+    return null;
+  }
+  return revision === null || revision === ""
+    ? bare
+    : `${REVISION_PREFIX}${encodeURIComponent(revision)}${REVISION_SEPARATOR}${bare}`;
+}
+
+function bareStorageKeyOf(pathname: string): string | null {
   if (pathname === "/shelves/personal") {
     return PERSONAL_KEY;
   }
@@ -119,9 +144,22 @@ export function storageKeyOf(pathname: string): string | null {
   return companyId === null || companyId === "" ? null : `${COMPANY_PREFIX}${companyId}`;
 }
 
-/** La société d'une clé de stockage ; `null` pour l'espace perso. */
+/**
+ * La société d'une clé de stockage, QUELLE QUE SOIT sa révision ; `null` pour
+ * l'espace perso. C'est ce qui fait qu'une purge par société efface aussi les
+ * rayons rangés par une image précédente.
+ */
 export function companyOfStorageKey(key: string): string | null {
-  return key.startsWith(COMPANY_PREFIX) ? key.slice(COMPANY_PREFIX.length) : null;
+  const bare = withoutRevision(key);
+  return bare.startsWith(COMPANY_PREFIX) ? bare.slice(COMPANY_PREFIX.length) : null;
+}
+
+function withoutRevision(key: string): string {
+  if (!key.startsWith(REVISION_PREFIX)) {
+    return key;
+  }
+  const separator = key.indexOf(REVISION_SEPARATOR);
+  return separator === -1 ? key : key.slice(separator + 1);
 }
 
 /** Lit un appel ; `null` = rien que l'objet comprenne (400). */
@@ -135,7 +173,7 @@ export function parseShelfCall(method: string, url: URL): ShelfCall | null {
   if (method === "GET" && url.pathname === PUBLIC_SHELF_STATE_PATH) {
     return { kind: "public_state" };
   }
-  const key = storageKeyOf(url.pathname);
+  const key = storageKeyOf(url.pathname, url.searchParams.get("revision"));
   if (key === null) {
     return null;
   }

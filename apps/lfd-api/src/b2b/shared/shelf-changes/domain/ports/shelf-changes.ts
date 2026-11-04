@@ -11,7 +11,8 @@ import type { ShelfChangeScope } from "../shelf-change-scope.js";
  * un rayon recalculé sur l'état d'avant, puis gardé.
  *
  * Synchrone et sans échec : un signal perdu est rattrapé par la durée de vie
- * des rayons (30 s), une écriture refusée pour une purge ne le serait par rien.
+ * des rayons (30 s au public, 5 minutes au plus au pro depuis le 2026-11-04),
+ * une écriture refusée pour une purge ne le serait par rien.
  */
 export abstract class ShelfChanges {
   abstract changed(scope: ShelfChangeScope): void;

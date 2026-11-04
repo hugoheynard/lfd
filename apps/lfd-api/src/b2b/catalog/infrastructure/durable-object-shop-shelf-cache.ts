@@ -36,6 +36,11 @@ export type ShelfFetch = (url: string, init: RequestInit) => Promise<Response>;
  * Worker intercepte (gestionnaire de sortie), et qu'il refuse à tout autre
  * appelant que ce conteneur. Ni route publique, ni jeton.
  *
+ * La **révision de l'API** (`AppConfig.revision()`) part avec chaque lecture
+ * et chaque rangement (`?revision=`), et l'objet la met dans sa clé : un
+ * déploiement ne relit jamais le rayon que l'image précédente a rangé — il
+ * expire seul (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1, 2026-11-04).
+ *
  * Toute réponse inattendue est {@link UnreadableShelfReplyError} ; une panne
  * réseau remonte telle quelle. Le repli (`ResilientShopShelfCache`) traduit
  * les deux en « calculer depuis la base ».
@@ -43,13 +48,15 @@ export type ShelfFetch = (url: string, init: RequestInit) => Promise<Response>;
 export class DurableObjectShopShelfCache extends ShopShelfCache implements ShopShelfEraser {
   constructor(
     private readonly origin: string,
+    private readonly revision: string,
     private readonly fetchFn: ShelfFetch = (url, init) => fetch(url, init),
   ) {
     super();
   }
 
   async read(key: ShelfKey, now: Date): Promise<ShelfLookup> {
-    const response = await this.call(`${shelfPath(key)}?now=${now.getTime()}`, { method: "GET" });
+    const query = new URLSearchParams({ now: String(now.getTime()), revision: this.revision });
+    const response = await this.call(`${shelfPath(key)}?${query.toString()}`, { method: "GET" });
     if (response.status === HTTP_NOT_FOUND) {
       return { kind: "miss", version: versionOf(response) };
     }
@@ -67,6 +74,7 @@ export class DurableObjectShopShelfCache extends ShopShelfCache implements ShopS
     const query = new URLSearchParams({
       version: String(entry.version),
       expires: String(entry.expiresAt.getTime()),
+      revision: this.revision,
     });
     if (entry.principalId !== null) {
       query.set("principal", entry.principalId);

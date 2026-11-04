@@ -8,12 +8,28 @@ import { ResilientShopShelfCache } from "./resilient-shop-shelf-cache.js";
 import { ShopCataloguePricing } from "./shop-catalogue-pricing.service.js";
 
 /**
- * La durée de vie d'un rayon pro rangé : **30 secondes, fixes** (Hugo,
- * 2026-11-04, `plan-cache-du-catalogue.md` § 6). C'est elle seule qui
- * rattrape ce qui change sans écriture — une promotion qui s'ouvre à midi,
- * une opération datée, l'heure limite, un palier ouvert par une commande.
+ * Le plafond de la durée de vie d'un rayon pro rangé : **5 minutes** (Hugo,
+ * 2026-11-04, `plan-rayon-jusqu-a-la-prochaine-heure.md` § 1 ; 30 s avant).
+ *
+ * Les opérations datées n'attendent pas le plafond : le rayon expire à leur
+ * prochain instant ({@link recognisedShelfExpiry}). Le plafond, lui, borne
+ * tout ce que le calcul NE CONNAÎT PAS (vérifié le 2026-11-04 par `vitruve`,
+ * § 0) : une promotion ou un prix daté qui OUVRE (seul ce qui est en vigueur
+ * est lu), une plage hebdomadaire d'offre, le plancher dynamique, et une purge
+ * perdue (fenêtre de regroupement en mémoire, effacement en panne). C'est un
+ * prix d'étiquette : la passation relit tout et refuse ce qui a changé.
+ * Au-delà de 5 minutes : la phase 2 du plan d'abord.
  */
-export const RECOGNISED_SHELF_LIFETIME_MS = 30_000;
+export const RECOGNISED_SHELF_LIFETIME_MS = 5 * 60_000;
+
+/**
+ * L'échéance d'un rayon calculé à `now` : le plafond, ou plus tôt le prochain
+ * instant d'opération qui le change (`nextChangeAt`, déjà futur).
+ */
+export function recognisedShelfExpiry(now: Date, nextChangeAt: Date | null): Date {
+  const ceiling = now.getTime() + RECOGNISED_SHELF_LIFETIME_MS;
+  return new Date(nextChangeAt === null ? ceiling : Math.min(ceiling, nextChangeAt.getTime()));
+}
 
 /**
  * **Le rayon d'un client reconnu, passé par le magasin des rayons pro** (C2).
@@ -49,7 +65,7 @@ export class RecognisedShelf {
     }
     // En français : la route reconnue n'a pas de paramètre de langue
     // (`my-shop-catalogue.controller.ts`) — la clé n'en a donc pas besoin.
-    const { view, principalId } = await this.pricing.shelf(
+    const { view, principalId, nextChangeAt } = await this.pricing.shelf(
       key,
       "registered",
       CATALOG_SOURCE_LANGUAGE,
@@ -60,7 +76,7 @@ export class RecognisedShelf {
         view,
         version: lookup.version,
         principalId,
-        expiresAt: new Date(now.getTime() + RECOGNISED_SHELF_LIFETIME_MS),
+        expiresAt: recognisedShelfExpiry(now, nextChangeAt),
       });
     }
     return view;

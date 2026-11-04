@@ -106,6 +106,8 @@ Une promotion qui s'ouvre à midi, une opération datée, l'heure limite : aucun
 écriture, donc aucune purge. C'est la **durée de vie** qui les rattrape :
 **30 secondes, fixes** (Hugo, 2026-11-04).
 
+> ⚠️ **Rayon pro : 5 minutes au plus depuis le 2026-11-04** (phase 1 de [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md)) : il expire plus tôt au prochain instant d'une opération datée. Le rayon public reste à 30 s.
+
 ## Ce qui rend une erreur sans conséquence
 
 Le rayon n'est qu'une **vitrine**. Le panier recalcule toujours au vrai prix,
@@ -314,7 +316,7 @@ la lecture en base**, c'est-à-dire sur le chemin d'aujourd'hui.
 | l'objet des pros ne répond pas, répond mal, ou tarde | l'API calcule depuis la base et sert ; elle ne range rien                                                                                                 |
 | l'objet répond trop lentement                        | **délai court** sur chaque appel au cache (de l'ordre de 100 ms, à fixer en C0) : passé ce délai, la base                                                 |
 | l'objet est en panne durable                         | **disjoncteur** : après quelques échecs, l'API cesse de l'appeler pendant un temps, pour ne pas payer le délai à chaque visite ; elle le réessaie ensuite |
-| une purge échoue                                     | journalisée ; la durée de 30 s rattrape                                                                                                                   |
+| une purge échoue                                     | journalisée ; la durée de vie rattrape (30 s au public, 5 min au plus au pro depuis le 2026-11-04)                                                        |
 | la version ne se lit pas                             | public : `no-store` ; pro : calcul depuis la base sans rangement                                                                                          |
 
 **La seule panne que ce repli ne couvre pas** : un conteneur qui ne
@@ -423,6 +425,8 @@ Relevé par recherche des écritures Prisma sur les modèles que le rayon lit
 À compléter avant de bâtir : prix au kilo, offres d'acheminement, traductions.
 
 ## 6. La durée de vie — 30 secondes (Hugo, 2026-11-04)
+
+> ⚠️ **Dépassé pour le rayon pro le 2026-11-04.** Depuis le 2026-11-04 (phase 1 de [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md)), le **rayon pro** vit **5 minutes au plus**, et expire plus tôt au prochain instant d'une opération datée ; le rayon public reste à 30 s. L'option « écartée » ci-dessous est donc revenue, bornée à 5 minutes et aux seules opérations datées ; le reste (ouverture d'une promotion, plancher dynamique, purge perdue) attend la phase 2 du plan avant tout plafond plus long.
 
 Ce qui change sans écriture (une promotion qui s'ouvre à midi, une opération,
 l'heure limite) n'est rattrapé que par elle : **30 secondes, fixes**.
@@ -547,7 +551,9 @@ l'écouter. Il peut partir en production seul, sans effet visible.
   n'est pas dans la porte. **Tranché par Hugo le 2026-11-04 : la durée de 30 s suffit.** Un palier ouvert
   par une commande apparaît au rayon au plus 30 s plus tard ; le panier, lui,
   calcule toujours au vrai prix. Les commandes ne purgent pas, et `OrderLine`
-  reste hors de la porte.
+  reste hors de la porte. ⚠️ **Au rayon pro, ce délai est passé à 5 minutes
+  au plus le 2026-11-04** ([`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md),
+  § 1 ; la décision écrite sur le plancher dynamique est son § 2 (d)).
 
 ### Ce que C2 a trouvé (2026-11-04)
 

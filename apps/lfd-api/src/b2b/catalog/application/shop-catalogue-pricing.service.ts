@@ -17,9 +17,22 @@ export type { ShelfBuyerKind } from "./shop-catalogue-offers.js";
 export interface PricedShelf {
   readonly view: ShopCatalogueView;
   readonly principalId: string | null;
+  /**
+   * Le prochain instant où une opération datée change ce rayon d'elle-même,
+   * ou `null` — l'échéance la plus tardive que le magasin peut lui donner
+   * (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1).
+   */
+  readonly nextChangeAt: Date | null;
+}
+
+/** Une vitrine calculée, et le prochain instant d'opération qui la change. */
+interface ComposedShelf {
+  readonly view: ShopCatalogueView;
+  readonly nextChangeAt: Date | null;
 }
 import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
+import { nextOperationChange } from "../domain/next-operation-change.js";
 import { CatalogPricePerKgReader } from "../domain/ports/catalog-price-per-kg.reader.js";
 import {
   CatalogReader,
@@ -161,7 +174,7 @@ export class ShopCataloguePricing {
   ): Promise<PricedShelf> {
     const { viewer, principalId } = await this.viewers.forShelf(companyId, "served_and_locked");
     const buyer = { companyId: pricingCompanyOf(viewer), buyerKind };
-    return { view: await this.pricedFor(viewer, buyer, language, SHELF_SCOPE), principalId };
+    return { ...(await this.composedFor(viewer, buyer, language, SHELF_SCOPE)), principalId };
   }
 
   /** Le lecteur et l'acheteur de la route reconnue — la déduction de {@link priced}. */
@@ -227,6 +240,15 @@ export class ShopCataloguePricing {
     language: ContentLocale,
     scope: ShelfScope,
   ): Promise<ShopCatalogueView> {
+    return (await this.composedFor(viewer, buyer, language, scope)).view;
+  }
+
+  private async composedFor(
+    viewer: CatalogViewer,
+    buyer: ShelfBuyer,
+    language: ContentLocale,
+    scope: ShelfScope,
+  ): Promise<ComposedShelf> {
     const audience = viewerAudience(viewer);
     // Les opérations datées se lisent avec le rayon (D5) : deux lectures de
     // plus sur la route anonyme, sans cache — le miroir des opérations tient
@@ -239,15 +261,14 @@ export class ShopCataloguePricing {
       this.operations.operationOnlySkus(),
       this.cutoffs.list(),
     ]);
-    const shown = shopCatalogueOf(sellable, {
-      operations,
-      operationOnlySkus,
-      audience,
-      now: this.clock.now(),
-    });
+    // Le même instant pour la vue et pour son échéance : l'instant qui
+    // l'ouvrira est celui que la vue n'a pas encore appliqué.
+    const now = this.clock.now();
+    const shown = shopCatalogueOf(sellable, { operations, operationOnlySkus, audience, now });
+    const nextChangeAt = nextOperationChange(operations, audience, now);
     const catalogue = scopedTo(withOrderLimits(shown, sellable, cutoffs), scope);
     if (catalogue.items.length === 0) {
-      return catalogue;
+      return { view: catalogue, nextChangeAt };
     }
     const [priced, perKg, offered] = await Promise.all([
       this.withPrices(catalogue, sellable, { ...buyer, audience }, scope.caller),
@@ -266,11 +287,14 @@ export class ShopCataloguePricing {
       language,
       priced.sealing,
     );
-    return inShopLanguage(
-      withPricesPerKg(mentioned, sellable, perKg, audience),
-      sellable,
-      language,
-    );
+    return {
+      view: inShopLanguage(
+        withPricesPerKg(mentioned, sellable, perKg, audience),
+        sellable,
+        language,
+      ),
+      nextChangeAt,
+    };
   }
 
   /** La vitrine au prix résolu, tarif barré quand une résolution le baisse. */

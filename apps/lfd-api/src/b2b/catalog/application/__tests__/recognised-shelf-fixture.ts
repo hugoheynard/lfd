@@ -28,6 +28,7 @@ import { ShopCatalogueOffers } from "../shop-catalogue-offers.js";
 import { ShopCataloguePricing } from "../shop-catalogue-pricing.service.js";
 import { GivenPricesPerKg } from "./price-per-kg-doubles.js";
 import { catalogItem, InMemoryCatalogOperations } from "./sale-operations-doubles.js";
+import type { SellableOperation } from "../../domain/ports/catalog-operations.reader.js";
 
 /**
  * Le VRAI calcul du rayon, doublé à ses ports — pour éprouver le cache contre
@@ -148,7 +149,8 @@ export interface ShelfComputation {
   readonly companies: InMemoryServedCompanies;
 }
 
-export function shelfComputation(): ShelfComputation {
+/** @param operations les opérations datées que le calcul lit (aucune par défaut). */
+export function shelfComputation(operations: readonly SellableOperation[] = []): ShelfComputation {
   const catalog = new CountingCatalog();
   const companies = new InMemoryServedCompanies(
     new Map([[PENDING_HEAD, "pending"]]),
@@ -158,7 +160,7 @@ export function shelfComputation(): ShelfComputation {
   const pricing = new ShopCataloguePricing(
     catalog,
     pricer(),
-    new InMemoryCatalogOperations(),
+    new InMemoryCatalogOperations(operations),
     new FixedClock(SHELF_NOW),
     new NoCutoffs(),
     new GivenPricesPerKg(new Map()),

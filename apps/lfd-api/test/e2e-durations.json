@@ -463,6 +463,7 @@
   "test/public-subscription-wall.e2e-spec.ts": 14000,
   "test/quote-order-parity.e2e-spec.ts": 5784,
   "test/ready-order-counts.e2e-spec.ts": 10500,
+  "test/recognised-shelf-cache.e2e-spec.ts": 9153,
   "test/recompute.e2e-spec.ts": 3486,
   "test/remainder-settlement.e2e-spec.ts": 9500,
   "test/reopened-fact-rearrest-race.e2e-spec.ts": 9400,

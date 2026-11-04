@@ -2,7 +2,12 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ShelfKey, ShelfLookup } from "../../domain/ports/shop-shelf-cache.js";
 import { InMemoryShopShelfCache } from "../../infrastructure/in-memory-shop-shelf-cache.js";
 import { NoShopShelfCache } from "../../infrastructure/no-shop-shelf-cache.js";
-import { RECOGNISED_SHELF_LIFETIME_MS, RecognisedShelf } from "../recognised-shelf.service.js";
+import type { SellableOperation } from "../../domain/ports/catalog-operations.reader.js";
+import {
+  RECOGNISED_SHELF_LIFETIME_MS,
+  RecognisedShelf,
+  recognisedShelfExpiry,
+} from "../recognised-shelf.service.js";
 import { BrokenShelfCache, resilientAround, type ShelfFailure } from "./shelf-cache-doubles.js";
 import {
   HEAD,
@@ -26,8 +31,11 @@ interface Rig {
   readonly clock: FixedClock;
 }
 
-function rig(cache: InMemoryShopShelfCache | NoShopShelfCache | BrokenShelfCache): Rig {
-  const computation = shelfComputation();
+function rig(
+  cache: InMemoryShopShelfCache | NoShopShelfCache | BrokenShelfCache,
+  operations: readonly SellableOperation[] = [],
+): Rig {
+  const computation = shelfComputation(operations);
   const clock = new FixedClock(SHELF_NOW);
   const { resilient } = resilientAround(cache);
   return { shelf: new RecognisedShelf(computation.pricing, resilient, clock), computation, clock };
@@ -155,7 +163,53 @@ describe("RecognisedShelf — le rayon pro passé par le magasin", () => {
     expect(cache.keys()).toEqual([]);
   });
 
-  it("un rayon rangé vit 30 secondes sur le `Clock`, pas une de plus", async () => {
+  it("un rayon rangé vit 5 minutes sur le `Clock`, pas une de plus", () => {
+    expect(RECOGNISED_SHELF_LIFETIME_MS).toBe(5 * 60 * 1000);
+  });
+
+  it("sans opération à venir, l'échéance est le plafond", () => {
+    expect(recognisedShelfExpiry(SHELF_NOW, null)).toEqual(
+      new Date(SHELF_NOW.getTime() + RECOGNISED_SHELF_LIFETIME_MS),
+    );
+  });
+
+  it("un instant d'opération plus proche que le plafond le remplace ; plus loin, non", () => {
+    const soon = new Date(SHELF_NOW.getTime() + 120_000);
+    const late = new Date(SHELF_NOW.getTime() + RECOGNISED_SHELF_LIFETIME_MS + 1);
+    expect(recognisedShelfExpiry(SHELF_NOW, soon)).toEqual(soon);
+    expect(recognisedShelfExpiry(SHELF_NOW, late)).toEqual(
+      new Date(SHELF_NOW.getTime() + RECOGNISED_SHELF_LIFETIME_MS),
+    );
+  });
+
+  it("une opération qui ouvre dans 2 minutes fait expirer le rayon à cette heure-là", async () => {
+    const opensIn = 120_000;
+    const galette: SellableOperation = {
+      key: "galette",
+      name: { fr: "Galette" },
+      lede: null,
+      image: null,
+      announceFrom: new Date(SHELF_NOW.getTime() + opensIn),
+      orderFrom: null,
+      orderUntil: new Date(SHELF_NOW.getTime() + 10 * opensIn),
+      pickupFrom: "2030-01-10",
+      pickupUntil: "2030-01-12",
+      audience: "pro",
+      skus: [],
+    };
+    const { shelf, computation, clock } = rig(new InMemoryShopShelfCache(), [galette]);
+    await shelf.read(HEAD);
+
+    clock.advanceMs(opensIn - 1);
+    await shelf.read(HEAD);
+    expect(computation.catalog.reads).toBe(1);
+
+    clock.advanceMs(1);
+    await shelf.read(HEAD);
+    expect(computation.catalog.reads).toBe(2);
+  });
+
+  it("un rayon rangé vit jusqu'au plafond sur le `Clock`, pas une milliseconde de plus", async () => {
     const { shelf, computation, clock } = rig(new InMemoryShopShelfCache());
     await shelf.read(HEAD);
 
