@@ -18,9 +18,8 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, filter, firstValueFrom, tap } from 'rxjs';
+import { firstValueFrom, tap } from 'rxjs';
 
-import { quoteKeyOf } from './quote-key';
 import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
 import {
   estimateKeyOf,
@@ -50,7 +49,6 @@ import { isoDayOf, shelfShortageOf, shelfStockBySku } from './immediate-pickup';
  * saisie à deux chiffres ne compte qu'une fois. Ce n'est pas un réglage : c'est
  * la durée d'une frappe, et elle ne dépend d'aucun environnement.
  */
-const QUOTE_DEBOUNCE_MS = 300;
 import {
   FoldBackLinkComponent,
   FoldButtonComponent,
@@ -95,7 +93,7 @@ import type { OrderEntryBuyer, OrderEntryCustomer } from './order-entry-customer
 import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
-import { CartStore, requestedLineOf, saleLineOf, type CartLine } from './cart.store';
+import { CartStore, saleLineOf } from './cart.store';
 import { draftPayloadOf, draftSnapshotOf, restoreLines } from './draft-payload';
 import { DraftStore } from './draft.store';
 import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
@@ -355,15 +353,6 @@ export class NouvelleCommandePage {
   protected readonly settlesOnAccount = computed(() => this.company()?.settlesOnAccount ?? false);
 
   /**
-   * Ce dont le prix dépend, et rien d'autre — cf. `quoteKeyOf`.
-   *
-   * Un `computed` plutôt qu'une lecture dans le pipeline : c'est lui qui rend la
-   * déduplication possible, et le garder à côté de ce qu'il compare le rend
-   * lisible d'un coup d'œil.
-   */
-  private readonly quoteKey = computed(() => quoteKeyOf(this.id(), this.cart.lines()));
-
-  /**
    * Le « Lien de règlement » est-il proposé ? Pas au comptoir (E4, Hugo,
    * 2026-11-03) : règlement au compte seulement, et le serveur le refuse.
    */
@@ -434,61 +423,9 @@ export class NouvelleCommandePage {
       }
     });
 
-    /**
-     * **Le prix que le serveur facturera**, redemandé quand le panier change —
-     * et seulement alors.
-     *
-     * Il dépend du client (sa mercuriale) et de la quantité (le palier atteint) :
-     * ni l'un ni l'autre ne se calcule ici. Sans cet appel, la colonne affichait
-     * le tarif du catalogue pendant que la validation facturait autre chose — et
-     * le commercial l'annonçait au téléphone.
-     *
-     * ## Deux garde-fous, et ils ne font pas la même chose
-     *
-     * Cette estimation a longtemps été redemandée à **chaque émission** de
-     * `cart.lines()`, qui rend un tableau neuf à chaque geste. Mesuré : **13
-     * appels pour une saisie de huit lignes**, dont plusieurs ne demandaient
-     * rien de nouveau. Chacun coûte `3 × lignes + 2` opérations facturées côté
-     * serveur.
-     *
-     * - `distinctUntilChanged` sur la **clé du panier** écarte ce qui ne change
-     *   rien : reposer la même quantité, un champ qui perd puis reprend le
-     *   focus. Cf. `quote-key.ts` pour ce qui entre dans cette clé ;
-     * - `debounceTime` écarte la **rafale** : une saisie est une salve de gestes,
-     *   et seul son état d'arrivée mérite un aller-retour.
-     *
-     * ## Oublier tout de suite, redemander plus tard
-     *
-     * Le `tap` vient **avant** l'amortissement, délibérément : le prix affiché
-     * est faux dès l'instant où le panier change, et le garder pendant qu'on
-     * attend l'accalmie ferait lire un montant qui ne correspond plus à rien. On
-     * oublie au premier geste, on redemande une fois seulement.
-     *
-     * 🔴 **Ce qu'on n'a pas fait, et pourquoi** : différer l'estimation au
-     * moment de valider. Le comptoir n'est pas la boutique — quelqu'un lit ce
-     * prix au téléphone pendant la saisie. L'amortir est une économie ; le
-     * différer serait un défaut. Cf.
-     * `documentation/pricing/moteur/plan-materiaux-de-prix.md` §3.
-     */
-    toObservable(this.quoteKey)
-      .pipe(
-        distinctUntilChanged(),
-        tap((key) => {
-          if (key !== '') {
-            this.cart.forgetQuote();
-          }
-        }),
-        filter((key) => key !== ''),
-        debounceTime(QUOTE_DEBOUNCE_MS),
-        takeUntilDestroyed(),
-      )
-      // La lecture se fait à l'ARRIVÉE, pas à l'émission : après l'amortissement,
-      // c'est l'état courant du panier qu'on chiffre, jamais celui qui a déclenché
-      // la salve.
-      .subscribe(() => {
-        void this.refreshQuote(this.id(), this.cart.lines());
-      });
-
+    // Le prix de ce client vient de l'estimation, et d'elle seule : le devis
+    // sans acheminement qui le donnait avant a quitté la saisie le 2026-11-04
+    // (É16). Il ne voyait ni le jour ni le mode, donc ni la promotion du jour.
     this.watchEstimate();
   }
 
@@ -505,28 +442,6 @@ export class NouvelleCommandePage {
       .subscribe((estimate) => {
         this.estimate.set(estimate);
       });
-  }
-
-  /**
-   * Une estimation qui échoue **ne casse rien** : la colonne retombe sur le
-   * tarif du catalogue, qui est ce qu'elle affichait avant. Interrompre la
-   * saisie pour une estimation serait disproportionné — c'est la validation qui
-   * fait foi, et elle, elle parle.
-   */
-  private async refreshQuote(companyId: string, lines: readonly CartLine[]): Promise<void> {
-    try {
-      const quote = await this.orders.quote({
-        companyId,
-        lines: lines.map(requestedLineOf),
-      });
-      // Le panier a pu changer pendant l'aller-retour : on ne pose un devis que
-      // s'il parle encore du panier courant.
-      if (sameSkus(this.cart.lines(), lines)) {
-        this.cart.applyQuote(quote);
-      }
-    } catch {
-      // Silencieux par choix : cf. le commentaire ci-dessus.
-    }
   }
 
   /** Le reste du jour au point, rapporté au catalogue de la saisie. */
@@ -988,14 +903,4 @@ export class NouvelleCommandePage {
       this.notify.info(`Lien de règlement à transmettre : ${url}`);
     }
   }
-}
-
-/** Deux paniers parlent-ils des mêmes lignes ? SKU et quantités, dans l'ordre. */
-function sameSkus(left: readonly CartLine[], right: readonly CartLine[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every(
-      (line, index) => line.sku === right[index]?.sku && line.quantity === right[index]?.quantity,
-    )
-  );
 }

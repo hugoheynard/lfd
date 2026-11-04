@@ -143,7 +143,7 @@ export class PanierCommande {
 
   /** Ce que l'écran ne calcule PAS, dit près du sous-total. */
   protected readonly TOTALS_LATER =
-    'Remise de retrait, frais de livraison, TVA et total TTC sont calculés à la validation.';
+    'Prix du catalogue en attendant ceux de ce client : ils s’affichent, avec les remises, la livraison et le total, dès que le retrait ou la livraison est choisi.';
 
   protected readonly amounts = computed(() => this.estimate()?.amounts ?? null);
 
@@ -162,7 +162,7 @@ export class PanierCommande {
 
   /** « 7 articles · Total HT … » au compte, « … Total TTC … » au lien. */
   protected readonly summary = computed(() =>
-    estimateSummary(this.cart().itemCount(), this.totalRows(), this.cart().subtotalCents()),
+    estimateSummary(this.cart().itemCount(), this.totalRows()),
   );
 
   /** La phrase « calculés à la validation » — sans objet dès que l'estimation est là. */

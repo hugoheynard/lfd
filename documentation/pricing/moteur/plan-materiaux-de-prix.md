@@ -174,8 +174,9 @@ global à porte de volume, la taille de l'union des portées d'un panier.
 `nouvelle-commande-page.ts` porte un `effect()` sur `cart.lines()` qui appelle
 `refreshQuote` sans debounce et sans déduplication. Mesuré :
 **13 appels pour une saisie de huit lignes** — 8 ajouts, 4 reprises de quantité,
-1 retrait — soit ~251 opérations là où le seul devis de validation en coûterait 26. Le test est
-`commandes/nouvelle-commande/__tests__/quote-call-count.spec.ts`.
+1 retrait — soit ~251 opérations là où le seul devis de validation en coûterait 26. Le test de
+comptage est parti le 2026-11-04 avec ce devis : la saisie ne
+lit plus que l'estimation.
 
 ### Deux gestes, dans cet ordre de valeur
 

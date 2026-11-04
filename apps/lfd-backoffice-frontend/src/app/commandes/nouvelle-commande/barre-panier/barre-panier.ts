@@ -1,11 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { FoldButtonComponent } from 'fold-ng';
 import type { AdminOrderEstimateView, PickupAddressView } from '@lfd/contracts';
-import { formatCents } from '@lfd/b2b-ui/order';
 
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
-import { estimateRowsOf } from '../order-estimate';
+import { estimateRowsOf, PRICES_PENDING } from '../order-estimate';
 
 /**
  * La barre du bas, en mobile : **ce que contient le panier, et comment l'ouvrir**.
@@ -41,10 +40,10 @@ export class BarrePanier {
   /** Le brouillon et les points : le règlement et le retrait que le total lit. */
   readonly draft = input.required<DraftStore>();
   readonly pickups = input.required<readonly PickupAddressView[]>();
-  /** L'estimation du serveur, ou `null` — le sous-total HT s'affiche alors. */
+  /** L'estimation du serveur, ou `null` — « Prix à confirmer » s'affiche alors. */
   readonly estimate = input<AdminOrderEstimateView | null>(null);
 
-  /** « Total HT 12,34 € » au compte, « Total TTC … » au lien, « Sous-total HT … » sans estimation. */
+  /** « Total HT 12,34 € » au compte, « Total TTC … » au lien, « Prix à confirmer » sans estimation. */
   protected readonly total = computed(() => {
     const fulfillment = this.draft().fulfillment();
     const rows = estimateRowsOf(this.estimate()?.amounts ?? null, {
@@ -54,8 +53,6 @@ export class BarrePanier {
       pickups: this.pickups(),
     });
     const row = rows?.find((candidate) => candidate.key === 'total');
-    return row === undefined
-      ? `Sous-total HT ${formatCents(this.cart().subtotalCents())}`
-      : `${row.label} ${row.value}`;
+    return row === undefined ? PRICES_PENDING : `${row.label} ${row.value}`;
   });
 }

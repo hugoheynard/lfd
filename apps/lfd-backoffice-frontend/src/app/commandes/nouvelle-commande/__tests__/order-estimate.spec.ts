@@ -282,15 +282,10 @@ describe('ce que le panier affiche de l’estimation', () => {
   it('l’en-tête dit le total de la règle, le sous-total HT sans estimation', () => {
     const linked = estimateRowsOf(AMOUNTS, context('link'));
     const account = estimateRowsOf(AMOUNTS, context('account'));
-    expect(estimateSummary(7, linked, 900).replace(/\s/gu, ' ')).toBe(
-      '7 articles · Total TTC 13,62 €',
-    );
-    expect(estimateSummary(7, account, 900).replace(/\s/gu, ' ')).toBe(
-      '7 articles · Total HT 12,50 €',
-    );
-    expect(estimateSummary(1, null, 900).replace(/\s/gu, ' ')).toBe(
-      '1 article · Sous-total HT 9,00 € HT',
-    );
+    expect(estimateSummary(7, linked).replace(/\s/gu, ' ')).toBe('7 articles · Total TTC 13,62 €');
+    expect(estimateSummary(7, account).replace(/\s/gu, ' ')).toBe('7 articles · Total HT 12,50 €');
+    // Sans estimation, aucun montant : le panier n'en calcule pas (2026-11-04).
+    expect(estimateSummary(1, null)).toBe('1 article · Prix à confirmer');
   });
 
   it('le prix barré vient de l’estimation quand il diffère', () => {

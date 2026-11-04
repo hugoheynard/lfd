@@ -55,46 +55,20 @@ describe('CartStore', () => {
     expect(cart.itemCount()).toBe(14);
   });
 
-  it('somme le sous-total HT', () => {
-    const cart = new CartStore();
-    cart.add(CROISSANT, 10); // 2 000 c
-    cart.add(BAGUETTE, 4); // 720 c
-
-    expect(cart.subtotalCents()).toBe(2_720);
-  });
-
   /**
-   * Régression : `subtotalCents` sommait `unitPriceMillicents × quantité` et
-   * l'écran l'affichait par `formatCents`, qui divise par cent. Dix croissants à
-   * 2,00 € HT se lisaient **20 000,00 €** au lieu de 20,00 € (fix 2026-09-06).
-   *
-   * Le nombre n'a jamais été facturé — le payload ne porte aucun prix, et le
-   * serveur re-résout tout. C'est le montant qu'un commercial lit au téléphone.
+   * « Une seule arithmétique » (2026-11-04) : le panier ne somme plus rien.
+   * Son sous-total était un second calcul à côté de l'estimation ; les prix de
+   * ce client n'y arrivent que par elle (`estimatedLines`).
    */
-  it('somme des CENTIMES, pas des millicentimes', () => {
+  it('ne porte aucun montant, et ses lignes gardent le prix du catalogue', () => {
     const cart = new CartStore();
     cart.add(CROISSANT, 10);
 
-    // 20,00 €, et surtout pas 20 000,00 €.
-    expect(cart.subtotalCents()).toBe(2_000);
-  });
-
-  /**
-   * Régression, sur la même ligne et plus discrète : la somme n'arrondissait pas
-   * **par ligne**. Le serveur, lui, arrondit une fois par ligne
-   * (`OrderLine.lineTotalCents`) — un écran qui arrondit ailleurs annonce un
-   * centime que la facture contredit.
-   */
-  it('arrondit une fois PAR LIGNE, comme la commande', () => {
-    const cart = new CartStore();
-    // 818 500 millicentimes, soit 8,185 € HT : un hors taxe déduit d'un prix
-    // d'étiquette tombe sur un demi-centime, et c'est le seul cas où les deux
-    // arrondis divergent.
-    cart.add({ sku: 'VIE-002', name: 'Chausson', unitPriceMillicents: 818_500 }, 1);
-    cart.add({ sku: 'VIE-003', name: 'Pain suisse', unitPriceMillicents: 818_500 }, 1);
-
-    // 819 + 819 — et non l'arrondi de la somme, qui vaudrait 1 637.
-    expect(cart.subtotalCents()).toBe(1_638);
+    expect('subtotalCents' in cart).toBe(false);
+    expect(cart.pricedLines()[0]).toMatchObject({
+      unitPriceMillicents: CROISSANT.unitPriceMillicents,
+      canonicalPriceMillicents: null,
+    });
   });
 
   it('n’envoie QUE des SKU et des quantités — jamais un prix', () => {
@@ -198,13 +172,6 @@ describe('CartStore', () => {
       step: 50,
       minimum: 300,
     };
-
-    it('se chiffre au kilo, en grammes', () => {
-      const cart = new CartStore();
-      cart.add(GRAVLAX, 1_250);
-
-      expect(cart.subtotalCents()).toBe(5_250);
-    });
 
     it('compte pour UN article, jamais pour ses grammes', () => {
       const cart = new CartStore();

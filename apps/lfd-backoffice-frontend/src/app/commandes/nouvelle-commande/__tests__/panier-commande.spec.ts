@@ -62,14 +62,18 @@ describe('PanierCommande — en-tête et ordre', () => {
     expect(host.querySelector('.pan-summary')).toBeNull();
   });
 
-  it('avec des lignes : articles et sous-total HT en haut à droite', () => {
+  /**
+   * Sans estimation, aucun montant : le panier ne calcule plus de sous-total à
+   * côté de celle-ci (« une seule arithmétique », 2026-11-04).
+   */
+  it('avec des lignes, sans estimation : articles et « Prix à confirmer »', () => {
     const cart = new CartStore();
     cart.add({ sku: 'VIE-001', name: 'Croissant', unitPriceMillicents: 200_000 }, 7);
     const host = mount(cart);
 
     const summary = host.querySelector('.pan-summary')?.textContent.replace(/\s+/g, ' ').trim();
-    expect(summary).toMatch(/^7 articles · Sous-total HT 14,00\s€ HT$/u);
-    expect(host.textContent).toContain('calculés à la validation');
+    expect(summary).toBe('7 articles · Prix à confirmer');
+    expect(host.textContent).toContain('dès que le retrait ou la livraison est choisi');
   });
 
   it('ouvre sur « Paramétrer la commande »', () => {

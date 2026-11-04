@@ -1,8 +1,7 @@
 import { computed, signal, type Signal } from '@angular/core';
 
-import type { OrderLineInput, OrderQuoteView, OrderSaleUnit } from '@lfd/contracts';
-import { lineSaleQuantity, settleSaleQuantity } from '@lfd/b2b-ui/catalog';
-import { lineTotalCents } from '@lfd/money';
+import type { OrderLineInput, OrderSaleUnit } from '@lfd/contracts';
+import { settleSaleQuantity } from '@lfd/b2b-ui/catalog';
 
 /** Une ligne du panier en cours de saisie. Le prix n'est là que pour l'écran. */
 export interface CartLine {
@@ -61,18 +60,10 @@ export function requestedLineOf(line: CartLine): OrderLineInput {
  * pas le partager. Un singleton `providedIn: 'root'` aurait fait exactement
  * l'inverse.
  *
- * **Le seul montant calculé ici est le sous-total HT.** Remise de retrait, frais
- * de zone, TVA par taux et total TTC restent au serveur : les recopier ici
- * donnerait deux implémentations d'une même règle d'arrondi, donc deux résultats
- * à un centime près, et un client qui compare son écran à sa facture.
- *
- * 🔴 **Et même celui-là passe par `lineTotalCents`, jamais par une
- * multiplication écrite ici.** Ce paragraphe promettait « une multiplication et
- * une somme, que rien ne peut interpréter de travers » : elle sommait des
- * **millicentimes** sous un nom en centimes, et l'écran en affichait mille fois
- * le prix (corrigé le 2026-09-06). Une arithmétique d'argent n'est jamais assez
- * simple pour être écrite en clair — c'est précisément quand elle en a l'air
- * qu'on cesse de la relire.
+ * **Aucun montant n'est calculé ici**, pas même le sous-total : tous viennent
+ * de l'estimation du serveur, le calcul même de la passation. Le sous-total
+ * qu'on sommait ici était un second calcul à côté du sien (retiré le
+ * 2026-11-04 — « une seule arithmétique »).
  */
 /** Une ligne du panier, au prix que le serveur facturera. */
 export interface PricedCartLine extends CartLine {
@@ -96,56 +87,18 @@ export function settledLineQuantity(
 export class CartStore {
   private readonly lines$ = signal<readonly CartLine[]>([]);
 
-  /**
-   * **Ce que le serveur a répondu**, par SKU — le prix qu'il facturera.
-   *
-   * Vide tant qu'aucune estimation n'est revenue : la ligne affiche alors le
-   * tarif du catalogue, qui est tout ce qu'on sait d'elle. Elle ne PRÉTEND pas
-   * pour autant que c'est le prix final — c'est l'estimation qui le dit, et
-   * l'écran attend qu'elle arrive plutôt que d'inventer.
-   */
-  private readonly quoted$ = signal<ReadonlyMap<string, number>>(new Map());
-
   /** Les lignes, dans l'ordre où elles ont été ajoutées. */
   readonly lines: Signal<readonly CartLine[]> = this.lines$.asReadonly();
 
   /**
-   * Les lignes **au prix facturé**, tarif d'entrée à côté quand il diffère.
-   *
-   * Le prix vient du serveur et de lui seul : il dépend du client (sa
-   * mercuriale) et de la quantité (le palier atteint), donc aucune des deux
-   * données n'est calculable ici. Le recalculer donnerait une seconde règle
-   * d'arrondi — et un écart d'un centime découvert devant le client.
+   * Les lignes **au prix du catalogue**, sans prix barré. Le prix de ce client
+   * (mercuriale, palier, promotion du jour) n'est connu que par l'estimation,
+   * qui le pose par-dessus (`estimatedLines`) ; il n'y a pas d'autre source
+   * (le devis sans acheminement a quitté la saisie le 2026-11-04, É16).
    */
-  readonly pricedLines = computed<readonly PricedCartLine[]>(() => {
-    const quoted = this.quoted$();
-    return this.lines$().map((line) => {
-      const billed = quoted.get(line.sku);
-      return billed === undefined || billed === line.unitPriceMillicents
-        ? { ...line, canonicalPriceMillicents: null }
-        : {
-            ...line,
-            unitPriceMillicents: billed,
-            canonicalPriceMillicents: line.unitPriceMillicents,
-          };
-    });
-  });
-
-  /**
-   * Le devis du serveur, tel qu'il revient.
-   *
-   * Les SKU absents du devis **retombent** sur le tarif du catalogue plutôt que
-   * de disparaître : une estimation partielle ne doit pas faire s'évanouir une
-   * ligne du panier.
-   */
-  applyQuote(quote: OrderQuoteView): void {
-    this.quoted$.set(new Map(quote.lines.map((line) => [line.sku, line.unitPriceMillicents])));
-  }
-
-  /** Le devis ne vaut plus rien : le panier ou le client a changé. */
-  forgetQuote(): void {
-    this.quoted$.set(new Map());
-  }
+  readonly pricedLines = computed<readonly PricedCartLine[]>(() =>
+    this.lines$().map((line) => ({ ...line, canonicalPriceMillicents: null })),
+  );
 
   readonly isEmpty = computed(() => this.lines$().length === 0);
 
@@ -156,24 +109,6 @@ export class CartStore {
   readonly itemCount = computed(() =>
     this.lines$().reduce(
       (total, line) => total + (line.saleUnit === 'weight' ? 1 : line.quantity),
-      0,
-    ),
-  );
-
-  /**
-   * Sous-total **HT** en centimes, **au prix facturé**. Cf. l'avertissement de
-   * la classe pour ce qu'il ne contient pas (remise de retrait, zone, TVA).
-   *
-   * L'arrondi a lieu **une fois par ligne**, par la fonction même dont le
-   * serveur se sert (`OrderLine.lineTotalCents`). Arrondir la somme à la place
-   * donnerait un centime d'écart sur certains paniers — c'est-à-dire l'écart
-   * qu'on ne découvre que devant le client.
-   */
-  readonly subtotalCents = computed(() =>
-    this.pricedLines().reduce(
-      (total, line) =>
-        total +
-        lineTotalCents(line.unitPriceMillicents, lineSaleQuantity(line.quantity, line.saleUnit)),
       0,
     ),
   );

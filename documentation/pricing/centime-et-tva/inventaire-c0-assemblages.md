@@ -337,7 +337,7 @@ terme ajouté d'un seul côté diverge en silence — c'est l'écart que
 `CartPricing`** — un seul assemblage de l'entrée de ventilation, par méthode
 (`AMOUNTS_BY_METHOD`), le devis lisant le même résultat que l'agrégat.
 
-**É16 — Sous-total de B en `exact_ht` (#22).** _L3 (2026-11-04) : B chiffre par `loadCart` → `priceBasket` → `draftedAmountsOf` ; l'écart reste ouvert, le contrat de B ne porte pas d'acheminement._ B rend un HT de
+**É16 — Sous-total de B en `exact_ht` (#22).** _L3 (2026-11-04) : B chiffre par `loadCart` → `priceBasket` → `draftedAmountsOf`. Tranché le 2026-11-04 (Hugo) : la saisie (commercial et comptoir) ne lit plus B, ses prix viennent de l'estimation, qui connaît le mode et le jour ; B ne sert plus qu'au simulateur de prix, où l'écart est assumé._ B rend un HT de
 `composeExactOrder` sans remise ni port, qui « peut encore bouger d'un
 centime » à la passation (`QOH:117-120`). _Recommandation_ : B devient un
 `CartPricing` sur un panier sans acheminement, marqué « incomplet » ; sa trace

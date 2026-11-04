@@ -80,6 +80,11 @@ un nettoyage.
   pied de montants, bon texte, e-mail. Les quatre « total − TVA » sont
   retirés. Mesuré sur la base locale : 83 commandes, aucun écart entre les
   deux formules.
+- **É16** : la saisie d'une commande (commercial et comptoir, même écran) ne
+  lit plus le devis B ; prix de ligne et totaux viennent de l'estimation. Avant
+  le choix du mode, les lignes montrent le prix du catalogue et « Prix à
+  confirmer ». Le sous-total calculé dans le panier est retiré. B ne sert plus
+  qu'au simulateur de prix.
 - **Le particulier lit le TTC**, figé ligne par ligne et geste par geste
   (`exact_ht`) ; seules les commandes d'avant ces colonnes gardent la
   répartition au prorata du PDF, qui retombe sur le total figé.

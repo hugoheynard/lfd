@@ -7,12 +7,7 @@ import type {
   PickupAddressView,
   StaffSettlement,
 } from '@lfd/contracts';
-import {
-  formatCents,
-  orderTotalRows,
-  type OrderTotalsSource,
-  type TotalRow,
-} from '@lfd/b2b-ui/order';
+import { orderTotalRows, type OrderTotalsSource, type TotalRow } from '@lfd/b2b-ui/order';
 import { catchError, distinctUntilChanged, type Observable, of, switchMap, timer } from 'rxjs';
 
 import type { PricedCartLine } from './cart.store';
@@ -43,7 +38,7 @@ export interface EstimateRequest {
 /**
  * **La clé d'estimation : TOUT le corps**, lignes triées.
  *
- * Contrairement à `quoteKeyOf`, rien n'est écarté : le mode, le jour, la
+ * Rien n'est écarté : le mode, le jour, la
  * tranche, le règlement et même la note entrent dans ce que le serveur juge
  * (le règlement décide du crédit). Seul l'ordre des lignes est neutralisé —
  * le prix d'un panier ne dépend pas de l'ordre où on l'a rempli.
@@ -172,7 +167,7 @@ export function estimateRowsOf(
 /**
  * Les lignes du panier **au prix de l'estimation** quand elle en porte une :
  * le prix facturé, et le prix barré (`basePriceMillicents`) seulement quand il
- * diffère. Une ligne absente de l'estimation garde ce que le devis disait.
+ * diffère. Une ligne absente de l'estimation garde le prix du catalogue.
  */
 export function estimatedLines(
   lines: readonly PricedCartLine[],
@@ -197,20 +192,19 @@ export function estimatedLines(
   });
 }
 
+/** Ce que dit le total tant que l'estimation n'est pas là. */
+export const PRICES_PENDING = 'Prix à confirmer';
+
 /**
  * « 7 articles · Total HT 123,45 € » au compte, « … · Total TTC … » au lien :
  * le total est la ligne `total` de `orderTotalRows`, jamais recalculé. Sans
- * estimation, le sous-total HT du devis.
+ * estimation, aucun montant : le panier n'en calcule pas (2026-11-04).
  */
-export function estimateSummary(
-  count: number,
-  rows: readonly TotalRow[] | null,
-  subtotalCents: number,
-): string {
+export function estimateSummary(count: number, rows: readonly TotalRow[] | null): string {
   const articles = `${String(count)} article${count > 1 ? 's' : ''}`;
   const total = rows?.find((row) => row.key === 'total');
   return total === undefined
-    ? `${articles} · Sous-total HT ${formatCents(subtotalCents)} HT`
+    ? `${articles} · ${PRICES_PENDING}`
     : `${articles} · ${total.label} ${total.value}`;
 }
 

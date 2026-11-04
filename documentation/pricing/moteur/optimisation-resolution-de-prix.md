@@ -117,10 +117,9 @@ aurait chiffrée en **26**.
 champ qui perd puis reprend le focus, une flèche haut puis bas — c'est le cas le
 plus coûteux pour rien, et le plus facile à produire.
 
-La mesure est un **test**, pas une estimation :
-`commandes/nouvelle-commande/__tests__/quote-call-count.spec.ts`. Il rougira le
-jour où quelqu'un posera un debounce, et c'est le moment où l'on voudra relire ce
-calcul.
+La mesure était un **test** de comptage, retiré le 2026-11-04
+avec le devis qu'il comptait : la saisie ne lit plus que l'estimation
+(`estimatesOf`, amortie et dédupliquée sur tout le corps).
 
 ### L'arithmétique
 
