@@ -106,6 +106,30 @@ impression.
 - Vérifier le placement du conteneur (`weur`) par rapport à la base et à la
   passerelle.
 
+## L5 bis — Chaque front appelle l'API sur son propre hôte (décidé, pas bâti)
+
+Mesuré le 2026-11-04 : la boutique (`lafoliecoffee.info`) appelait l'API sur
+`lfd-gateway.lafoliedouce.workers.dev`. Pour le navigateur, c'est un autre
+site : un contrôle CORS (`OPTIONS`) précédait chaque appel, gardé 5 s
+seulement, et chacun traversait toute la chaîne jusqu'au conteneur.
+
+- **Fait** : `Access-Control-Max-Age` à 2 h (`main.ts`). Reste un contrôle par
+  adresse exacte nouvelle (identifiants, paramètres).
+- **Décidé avec Hugo, à faire plus tard** : tout front web est servi par la
+  passerelle sous un nom de `lafoliecoffee.info` et appelle l'API en
+  `/api/lfd` **sur son propre hôte** — plus aucun contrôle CORS, et
+  `Server-Timing` lisible dans le navigateur. Un sous-domaine qui
+  appellerait la racine resterait cross-origin. La boutique d'abord
+  (variable `LFD_API_URL`), la back-office (`pages.dev`) ensuite. Une app
+  mobile reste cross-origin par nature : le `Max-Age` est sa seule parade.
+
+```mermaid
+flowchart LR
+  B["lafoliecoffee.info"] -->|"/api/lfd, même hôte"| G["Passerelle"]
+  BO["backoffice.lafoliecoffee.info"] -->|"/api/lfd, même hôte"| G
+  G --> API["API"]
+```
+
 ## L6 — Le reste, déjà nommé ailleurs
 
 - La version par journée en singleton
