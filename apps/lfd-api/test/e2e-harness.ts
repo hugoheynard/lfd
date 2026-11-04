@@ -45,6 +45,7 @@ import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { PublicShelfFlagMemory } from "../src/b2b/catalog/application/public-shelf-flag-memory.js";
 import { CachedPublishedMailCopyReader } from "../src/b2b/mail-copy/infrastructure/cached-published-mail-copy.reader.js";
 import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
@@ -301,6 +302,11 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         app.get(CachedPublishedShopCopyReader).forget();
         // Les textes d'e-mails publiés, pour la même raison.
         app.get(CachedPublishedMailCopyReader).forget();
+        // L'état du drapeau du rayon public, gardé 5 s par instance : une suite
+        // qui l'allume par son double, sans passer par l'interrupteur, lirait
+        // sinon l'état « éteint » mémorisé par le test d'avant (vu le
+        // 2026-11-04 sur shop-catalogue et shop-featured).
+        app.get(PublicShelfFlagMemory).forget();
         await resetStorage();
       }),
     // 🔴 On draine avant de FERMER, pour la même raison qu'avant de vider — et
