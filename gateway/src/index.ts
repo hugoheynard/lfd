@@ -115,6 +115,7 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
       await destination.send(forward),
       "gateway",
       performance.now() - startedAt,
+      request.cf?.colo,
     );
     return {
       response,

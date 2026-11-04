@@ -12,4 +12,9 @@ describe("withServerTiming", () => {
     expect(timed.headers.get("Server-Timing")).toBe("app;dur=4.0, worker;dur=12.3");
     expect(await timed.text()).toBe("corps");
   });
+
+  it("nomme le datacenter quand il est connu", () => {
+    const timed = withServerTiming(new Response(null), "worker", 1, "CDG");
+    expect(timed.headers.get("Server-Timing")).toBe('worker;dur=1.0;desc="CDG"');
+  });
 });

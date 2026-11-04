@@ -210,6 +210,18 @@ export class Backend extends Container<Env> {
   // pro : posée ICI, à côté du gestionnaire qui l'intercepte, pour que l'hôte
   // appelé et l'hôte intercepté ne puissent pas diverger (lot C2).
   envVars = { ...pickEnv(this.env), [SHELF_STORE_ENV]: SHELF_STORE_ORIGIN };
+
+  /**
+   * `container` : de l'entrée dans l'objet à la réponse du conteneur. Moins le
+   * `app` de Nest, c'est le saut objet → conteneur ; `worker` moins lui, le
+   * saut Worker → objet. Les ~55 ms fixes d'un appel (mesurés le 2026-11-04)
+   * se rangent ainsi dans l'un ou l'autre (plan de latence, L0).
+   */
+  override async fetch(request: Request): Promise<Response> {
+    const startedAt = performance.now();
+    const response = await super.fetch(request);
+    return withServerTiming(response, "container", performance.now() - startedAt);
+  }
 }
 
 /**
@@ -766,7 +778,9 @@ export default {
     const response = await guardedFetch(request, env.RATE_LIMITER, (forwarded) =>
       backend(env).fetch(forwarded),
     );
-    return withServerTiming(response, "worker", performance.now() - startedAt);
+    // Le datacenter du Worker, dans la description : le saut vers l'objet
+    // dépend de la distance entre lui et l'Europe de l'Ouest.
+    return withServerTiming(response, "worker", performance.now() - startedAt, request.cf?.colo);
   },
 
   // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Dix

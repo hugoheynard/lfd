@@ -5,8 +5,14 @@
  * La réponse d'un `fetch()` a des en-têtes immuables : on en refait une, même
  * corps (non relu, toujours en flux), mêmes statut et en-têtes.
  */
-export function withServerTiming(response: Response, name: string, durationMs: number): Response {
+export function withServerTiming(
+  response: Response,
+  name: string,
+  durationMs: number,
+  description?: unknown,
+): Response {
   const timed = new Response(response.body, response);
-  timed.headers.append("Server-Timing", `${name};dur=${durationMs.toFixed(1)}`);
+  const desc = typeof description === "string" ? `;desc="${description}"` : "";
+  timed.headers.append("Server-Timing", `${name};dur=${durationMs.toFixed(1)}${desc}`);
   return timed;
 }
