@@ -1,196 +1,142 @@
 # La porte du prix
 
-> **État réel au 2026-09-09.** Ce document décrit ce qui **tourne**. Ce qui reste
-> ouvert est au §6, nommé — pas suggéré.
->
-> Il a d'abord été un plan — même fichier, autre nom —, contredit par `vitruve`
-> sur ses quatre décisions puis bâti en quatre lots. Le raisonnement, les
-> versions démolies et ce que chaque lot a trouvé en chemin vivent au
-> [journal de remédiation](../journal-de-remediation.md), §R26. Ici, seulement
-> l'état.
+> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. Le
+> raisonnement, les versions démolies et ce que chaque lot a trouvé sont au
+> [journal de remédiation](../journal-de-remediation.md), § R26. Partie 1 :
+> comprendre. Partie 2 : le code.
 
----
+# Partie 1 — Comprendre
 
-## 1. Demander un prix
+## Une seule porte pour obtenir un prix
+
+Tout le code qui a besoin du prix d'un article — le rayon de la boutique, le
+panier, la commande, la projection, l'export de grille — passe par **la même
+porte**. Avant, chaque écran chargeait les règles à sa façon, et deux d'entre
+eux s'étaient trompés : l'écran de tarification annonçait 1,83924 € quand la
+caisse facturait 1,65532 €.
+
+```mermaid
+flowchart LR
+  A["Qui demande<br/>rayon, panier, projection, export"] --> P["La porte<br/>Pricer.load"]
+  P --> L["charge les règles<br/>une fois pour tout le lot"]
+  L --> C["calcule<br/>une seule fonction"]
+  C --> R["un lot de prix<br/>qui ne connaît que SES articles"]
+```
+
+## Ce qu'on donne à la porte
+
+- **Des articles du catalogue**, jamais un prix choisi par l'appelant : le
+  prix d'entrée vient toujours du catalogue.
+- **Qui achète** : une société (ou personne), et par quelle porte il entre
+  (invité, client connecté, équipe).
+- **Ce que la question a le droit de prouver** (la « lentille ») : une vraie
+  commande tient compte des engagements et des volumes du client ; une
+  projection ou un écran de tarification, non.
+- **Facultativement, une date** pour relire un prix passé. Pour « maintenant »,
+  on ne donne **pas** de date : la porte lit l'heure elle-même.
+
+## Ce que la porte ne fait pas
+
+Elle ne compose pas un panier (remises de panier, livraison, TVA, total), elle
+n'écrit rien, et elle ne cherche pas un article par son code : c'est le
+travail de qui a un code.
+
+# Partie 2 — Le code
+
+## 1. L'appel
 
 ```ts
 const lot = await this.pricer.load({
-  articles, // des CatalogArticle — scellés par le catalogue
-  companyId, // `null` = un visiteur
-  lens: "measured", // par défaut ; "unproven" pour qui ne prouve rien
-  at, // optionnel — l'instant de résolution
+  articles, // [{ article: CatalogArticle, quantity }], dans l'ordre rendu
+  buyer, // { kind: "real", companyId, buyerKind } | { kind: "typical", … }
+  lens, // "measured" par défaut ; "unproven" pour qui ne prouve rien
+  at, // facultatif : une relecture datée, et rien d'autre
+  caller, // l'étiquette de la sonde, jamais un critère de prix
 });
 
-lot.price("VIE-001", 12); // le prix, et toute sa trace
+lot.price("VIE-001", 12); // le prix et sa trace
 lot.all(lignes); // plusieurs, dans l'ordre demandé
 lot.tiers("VIE-001", 12); // la grille des paliers
 lot.projectAt("VIE-001", 10_000); // « si le cumul valait N »
 ```
 
-**C'est la seule façon d'obtenir un prix hors de `b2b/pricing/`**, et
-`lint:price-door` le tient.
+`LotRequest` est dans `b2b/pricing/application/pricer.ts`. `buyerKind` vaut
+`guest` sur une route publique, `registered` derrière un client reconnu,
+`unknown` pour l'équipe, `previewed` pour un aperçu d'audience. L'acheteur
+`typical` (un pro type) ne se fabrique que dans l'export de grille
+(`lint:typical-buyer`).
 
-### 🔴 « Maintenant » se dit par l'ABSENCE de `at` (2026-10-30)
+## 2. Les objets
 
-La porte décide de l'époque — `current` ou `replay` — en comparant `at` à **sa
-propre** lecture de l'horloge (`epochOf`, comparaison stricte). Un appelant qui
-lit l'horloge puis passe ce qu'il a lu crée donc **deux** instants. Dans une
-requête, ils coïncident (instant gelé à l'ingress) ; **hors requête** (job,
-consommateur, semis, handler appelé en direct), `SystemClock` rend le mur à
-chaque appel, la seconde lecture tombe une milliseconde plus tard, et la
-question du présent devient une relecture : l'article est rescellé au prix de
-`catalog_price_history`, qui ne porte que le tarif **pro**. C'est arrivé à
-`OrderLinePricing` : un invité passé hors requête payait le prix pro.
+| Objet                    | Où                                                | Visibilité | Rôle                                                                                                                |
+| ------------------------ | ------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `Pricer`                 | `pricing/application/pricer.ts`                   | publique   | prend des articles scellés, décide de l'époque (`epochOf`), charge une fois, rend un lot                            |
+| `PricedLot`              | `pricing/application/priced-lot.ts`               | publique   | répond par SKU ; refuse un SKU qu'il n'a pas chargé (`ArticleNotInLotError`)                                        |
+| `PricingMaterialsLoader` | `pricing/application/pricing-materials.loader.ts` | interne    | six lectures par lot, en parallèle ; mesure les preuves si la lentille le permet                                    |
+| `pricerOver`             | `pricing/application/pricer-over.ts`              | interne    | **la seule fabrique** du tarificateur ; la lentille décide à la fois des engagements chargés et des preuves admises |
+| `LoadedPricer`           | `pricing/domain/loaded-pricer.ts`                 | interne    | pur ; **seul appelant de `resolvePrice`**                                                                           |
 
-Règle : **un appelant qui veut « maintenant » ne passe pas `at`**. La porte est
-le seul lecteur de l'horloge sur ce chemin, et elle la lit une fois.
-`OrderLinePricing` n'injecte plus de `Clock` du tout — l'erreur n'y est plus
-exprimable. Régressions :
-`apps/lfd-api/src/b2b/orders/application/services/__tests__/order-line-pricing-instant.spec.ts`
-(horloge qui avance à chaque lecture) et
-`apps/lfd-api/test/shop-quote-placement.e2e-spec.ts` (handler appelé nu, total
-égal au devis).
+## 3. Qui l'emprunte (vérifié le 2026-11-04)
 
-⚠️ **Une relecture datée au PUBLIC est refusée**
-(`DatedPublicPriceUnsupportedError`, dans `OrderLinePricing`). L'historique
-canonique n'a qu'une colonne de prix, le tarif pro ; le prix public
-(`publicTtcCents`) n'y est pas tracé. Deux autres voies ont été écartées :
-tracer le prix public (migration + écrivain, pour une question qu'aucun appelant
-ne pose — vérifié le 2026-10-30 : `resolve`/`explain` ne reçoivent jamais
-d'instant), ou servir le prix public **du jour** à une relecture (le chiffre
-plausible et faux que `NoCanonicalPriceAtError` existe pour refuser). Le jour où
-une relecture publique sera voulue, c'est l'historique qu'il faudra étendre.
+| Appelant                                             | Lentille   | Quantité          | Ce qu'il demande                                        |
+| ---------------------------------------------------- | ---------- | ----------------- | ------------------------------------------------------- |
+| `OrderLinePricing` (`orders/`), via `PricingContext` | `measured` | celle du panier   | le prix facturé : devis, commande, estimation, révision |
+| `ShopCataloguePricing` (`catalog/`)                  | `measured` | 1                 | le rayon, public et reconnu, et les suggestions         |
+| `PriceProjectionQuery`                               | `unproven` | le niveau projeté | la courbe du banc d'essai                               |
+| `ExportPriceGridHandler`                             | —          | —                 | l'export de grille, avec l'acheteur type                |
 
-Hors de ce correctif, `ProjectPriceHandler` passe encore `this.clock.now()` à la
-projection (staff, tarif pro) : même figure, sans prix public en jeu — mais une
-relecture contourne le cache et peut lever `NoCanonicalPriceAtError` sur un
-article neuf, si elle tourne hors requête. Non corrigé ici.
+**Le tableau de tarification** (`board-item.ts`) charge ses matériaux lui-même
+(par `prisma-pricing-board.reader.ts`, à une date, sans l'étage promotion des
+règles), mais il construit son tarificateur par **la même fabrique**
+`pricerOver`, avec la lentille `unproven`. Les deux séquences de chargement ont
+désormais la même sémantique : c'est ce qui a clos R21 le 2026-09-09.
 
-## 2. Les quatre objets, et l'ordre qui compte
+## 4. « Maintenant » se dit par l'absence de `at`
 
-```mermaid
-flowchart TB
-  A["Pricer.load(articles, companyId, lens, at)<br/>LA porte — publique"] --> B["PricingMaterialsLoader<br/>la seule séquence de chargement — interne"]
-  B --> C["LoadedPricer<br/>le tarificateur pur — interne"]
-  A --> D["PricedLot<br/>connaît SES articles — public"]
-  D --> C
-  C --> E["resolvePrice<br/>l'unique entrée du pipeline"]
-```
+La porte décide `current` ou `replay` en comparant `at` à **sa propre**
+lecture de l'horloge. Un appelant qui lit l'horloge puis passe ce qu'il a lu
+crée deux instants : dans une requête ils coïncident (instant gelé à
+l'entrée) ; **hors requête** (tâche de fond, abonné, semis), la seconde lecture
+tombe une milliseconde plus tard, et la question du présent devient une
+relecture datée, rescellée à l'historique du tarif **pro**. C'est arrivé le
+2026-10-30 : un invité passé hors requête payait le prix pro.
 
-| Objet                    | Visibilité   | Ce qu'il fait                                                             |
-| ------------------------ | ------------ | ------------------------------------------------------------------------- |
-| `Pricer`                 | **publique** | prend des articles scellés, charge une fois, rend un lot                  |
-| `PricedLot`              | **publique** | répond par SKU ; refuse un SKU qu'il n'a pas chargé                       |
-| `PricingMaterialsLoader` | interne      | quatre lectures par lot, quelle qu'en soit la taille ; mesure les preuves |
-| `LoadedPricer`           | interne      | compose les étages ; **seul appelant de `resolvePrice`**                  |
+- `OrderLinePricing` n'injecte plus d'horloge : l'erreur n'y est plus
+  exprimable. Régressions : `order-line-pricing-instant.spec.ts`,
+  `test/shop-quote-placement.e2e-spec.ts`.
+- **Une relecture datée au public est refusée**
+  (`DatedPublicPriceUnsupportedError`, `orders/domain/errors/dated-public-price.error.ts`) :
+  l'historique du tarif ne porte que le prix pro.
+- ⚠️ **Encore ouvert** : `ProjectPriceHandler` passe `this.clock.now()` à la
+  projection, qui le transmet à `pricer.load` comme `at`. Même figure, sans
+  prix public en jeu ; hors requête, une projection pourrait devenir une
+  relecture et lever `NoCanonicalPriceAtError` sur un article neuf.
 
-## 3. Ce que chaque décision rend impossible
+## 5. À quel cran chaque garantie tient
 
-Chacune a **attrapé un défaut réel**, la plupart le jour même. C'est ce qui les
-distingue d'une préférence.
+L'ordre du dépôt : _inexprimable > refusé en base > refusé par l'agrégat >
+porte CI > relecture_.
 
-| Décision                                     | Ce qu'elle rend impossible                                       | Ce qu'elle a attrapé                                                              |
-| -------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| **La porte prend des ARTICLES, pas des SKU** | qu'un appelant contourne pour éviter une relecture de catalogue  | la vitrine contournait, avec une permission écrite dans le JSDoc de la façade     |
-| **L'article est SCELLÉ** (`CatalogArticle`)  | qu'un prix d'entrée vienne de l'appelant plutôt que du catalogue | six traductions dispersées ; et un sceau périmé sur la lecture datée du tableau   |
-| **Le lot connaît ses articles**              | qu'on tarife un article que le lot n'a pas chargé                | un prix plausible : matériaux corrects par accident du cache, **preuves fausses** |
-| **La lentille nomme les preuves recevables** | que « ce qu'on écarte » s'encode en trois endroits               | R15 — une porte de plancher ouverte sur une quantité inventée                     |
-| **Une seule entrée de `resolvePrice`**       | une sixième recette de fabrication d'un prix                     | 1,83924 € à l'écran contre 1,65532 € à la caisse                                  |
+| Garantie                                                 | Cran                    | Ce qui reste possible                                                                                |
+| -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| l'article est scellé par le catalogue (`CatalogArticle`) | inexprimable + porte CI | `{ … } as CatalogArticle` compile ; `lint:catalogue-authority` le voit                               |
+| le lot ne tarife que ses articles                        | refusé à l'exécution    | rien : `ArticleNotInLotError`                                                                        |
+| les rouages sont internes                                | porte CI                | `lint:price-door` (aucun code servi hors de `b2b/pricing/` n'atteint le chargeur ni le tarificateur) |
+| une seule entrée de `resolvePrice`                       | porte CI                | `lint:price-pipeline`                                                                                |
 
-### Les crans, et ce que chacun tient vraiment
+## 6. Ce qui l'éprouve
 
-Le dépôt ordonne ses garde-fous : _inexprimable > refusé en base > refusé par
-l'agrégat > porte CI > relecture_. Chaque garantie ci-dessus vit à un cran
-précis, et **prétendre qu'elle vit plus haut qu'elle ne vit est la faute que ce
-dossier traque** :
+`pricing/domain/__tests__` (la composition), `priced-lot.spec.ts`,
+`pricer.spec.ts`, `board-item.spec.ts`, `test/pricer.e2e-spec.ts` (contre un
+vrai Postgres), `test/pricing-budget.e2e-spec.ts` (les opérations ORM, à
+l'égalité stricte), et les e2e du prix servi (`admin-pricing`, `price-rules`,
+`shop-catalogue`).
 
-| Garantie                           | Cran                            | Ce qui reste possible                                                       |
-| ---------------------------------- | ------------------------------- | --------------------------------------------------------------------------- |
-| l'article scellé                   | **inexprimable** + **porte CI** | `{ … } as CatalogArticle` **compile** — vérifié. D'où `catalogue-authority` |
-| le lot connaît ses articles        | **refusé à l'exécution**        | rien : `ArticleNotInLotError` lève                                          |
-| les rouages sont internes          | **porte CI**                    | rien ne l'empêche au compilateur ; `price-door` le voit en relecture        |
-| une seule entrée de `resolvePrice` | **porte CI**                    | idem ; `price-pipeline` compte les entrées déclarées                        |
+## 7. Ce qui manque encore
 
-## 4. Qui l'emprunte
-
-| Appelant                       | Lentille   | Quantité          | Ce qu'il demande                                        |
-| ------------------------------ | ---------- | ----------------- | ------------------------------------------------------- |
-| `OrderLinePricing`             | `measured` | celle du panier   | le prix **facturé** — devis, commande, vitrine reconnue |
-| `ShopCataloguePricing`         | `measured` | **1**             | le rayon, public et reconnu                             |
-| `PriceProjectionQuery`         | `unproven` | le niveau projeté | la courbe du banc d'essai                               |
-| ~~le tableau de tarification~~ | —          | —                 | **n'y passe pas** — cf. §6                              |
-
-**Trois sur quatre.** Le quatrième est nommé plutôt que tu.
-
-## 5. Ce qui l'éprouve
-
-| Niveau                                           | Cas     | Ce qu'il couvre                                                            |
-| ------------------------------------------------ | ------- | -------------------------------------------------------------------------- |
-| `pricing/domain/__tests__`                       | **205** | la composition, la spécificité, le plancher, les paliers, l'arrondi unique |
-| `priced-lot.spec.ts`                             | 8       | le lot, et le refus d'un SKU hors lot                                      |
-| `pricer.spec.ts`                                 | 14      | la porte : chargement unique, ordre, doublon, lot vide, lentille           |
-| `board-item.spec.ts`                             | 8       | le tableau                                                                 |
-| `pricer.e2e-spec.ts`                             | 11      | la porte contre un vrai Postgres                                           |
-| `pricing-budget.e2e-spec.ts`                     | 9       | les **opérations ORM** — le coût, pas seulement le résultat                |
-| `admin-pricing`, `price-rules`, `shop-catalogue` | 150     | le prix servi, la parité rayon ↔ devis, la lecture datée                   |
-
-Et **cinq portes** la tiennent : `price-door`, `price-pipeline`,
-`catalogue-authority`, `import-cycles`, `context-boundaries`.
-
-## 6. Ce qui manque
-
-Nommé, avec ce que ça coûte — une façade qu'on annonce complète alors qu'un
-appelant passe à côté est pire qu'une façade assumée partielle.
-
-### 🔴 Le tableau de tarification n'emprunte pas la porte
-
-Il monte ses matériaux à la main (`board-item.ts`) et appelle `LoadedPricer.over`
-en direct : c'est la **seconde séquence de chargement** du dépôt (**R21**).
-
-**Et ce n'est pas un oubli.** Il lit ses matériaux **à une date**
-(`unarchivedAt(at)`), là où le chargeur lit `archivedAt: null` en absolu. Le
-faire passer par la porte demande que le chargeur sache lire une date — c'est
-**R17**, non tranché.
-
-Conséquence : `LoadedPricer.over` garde **deux** appelants.
-
-⚠️ Et `price-door` **ne le voit pas** — `board-item.ts` vit dans `b2b/pricing/`,
-donc dans le contexte que la porte autorise à connaître ses propres rouages. La
-porte tient la frontière **externe** ; elle ne dit rien de la seconde séquence
-interne, et c'est R21 qui la porte.
-
-### 🟠 `at` est accepté, mais ne remonte pas le temps
-
-`load({ at })` transmet l'instant, et les lecteurs de matériaux filtrent
-`archivedAt: null` **en absolu**. Une lecture datée rend donc les décisions
-d'**aujourd'hui**, présentées comme celles d'alors. C'est **R17**, et c'est le
-défaut le plus dangereux de cette liste : il rend une réponse **plausible**.
-
-### 🟡 Le gain de la lentille n'est pas mesuré
-
-`unproven` évite une lecture d'engagements. Un doublé prouve que le port n'est
-pas interrogé ; **aucun test ne compte les opérations ORM de la projection** —
-`pricing-budget` couvre le devis et le tableau, pas elle. Le gain est lu dans le
-code, pas mesuré, et le dire ainsi vaut mieux que de faire passer une lecture
-pour un chiffre.
-
-### 🟡 Ce que la porte n'a pas emporté
-
-Relevés par l'audit et **toujours vrais** : la quantité n'est lue par rien du
-chargement ; `mercurialeAlone` prend cinq paramètres dont un que son objet porte
-déjà ; `PricedArticle.floorMillicents` duplique `floorDecision.floorMillicents` ;
-`OrderLinePricing.resolve(…, at?)` a un paramètre qu'aucun appelant ne passe ; le
-domaine importe `@lfd/contracts` ; la lecture n'est pas sur le bus.
-
-Aucun ne produit un prix faux. Ils sont au registre, pas ici.
-
-## 7. Ce que la porte ne fait pas, et ne fera pas
-
-- **Elle ne compose pas un panier.** Acheminement, TVA, totaux appartiennent à
-  `OrderLinePricing` : une somme de prix d'articles n'est pas une commande.
-- **Elle n'écrit rien.** Le chemin qui facture ne doit pas pouvoir poser un
-  tarif.
-- **Elle ne résout pas de SKU.** Elle l'a fait, et c'est ce qui la rendait
-  contournable — trois conséquences qui se tenaient la main : une lecture en
-  trop, une permission de contourner écrite dans son propre JSDoc, et un cycle
-  de modules refusé par la CI. Résoudre un SKU est le travail de qui a un SKU.
+- La projection passe un instant (§ 4).
+- Le gain de la lentille `unproven` n'est pas **compté** : aucun budget
+  d'opérations ne couvre la projection.
+- Relevés à l'audit, sans prix faux : `mercurialeAlone` prend un paramètre que
+  son objet porte déjà ; `PricedArticle.floorMillicents` duplique
+  `floorDecision.floorMillicents` ; le domaine importe `@lfd/contracts`.
