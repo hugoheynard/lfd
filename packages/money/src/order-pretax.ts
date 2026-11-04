@@ -1,9 +1,10 @@
 /**
  * **Le « Total HT » d'un bon de commande de pro** (plan
- * `bons-et-facture-concordants`, F5) — une seule règle, lue par le bon
- * (`order-sheet-pdf-totals.ts`) et par la liste des bons du récapitulatif
- * (`plan-recapitulatif-des-commandes.md`, §10) : les deux impriment le même
- * HT, et un écart entre eux ne peut pas naître d'une seconde formule.
+ * `bons-et-facture-concordants`, F5) — une seule règle pour tout ce qui
+ * l'affiche : le bon PDF, le récapitulatif des commandes, la fiche et son
+ * pied de montants, le bon en texte et l'e-mail de confirmation. Jusqu'au
+ * 2026-11-04, ces quatre derniers lisaient « total − TVA », une seconde
+ * formule qui rendait le même chiffre sans le garantir.
  *
  * Articles moins remise et bon de fidélité, jamais sous zéro ; plus livraison
  * et surtaxe — la surtaxe s'ajoute APRÈS la remise.

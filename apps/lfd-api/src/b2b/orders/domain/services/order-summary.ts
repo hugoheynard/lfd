@@ -20,7 +20,7 @@ import {
   OrderSummaryOrdersNotFoundError,
   OrderSummaryTooManyOrdersError,
 } from "../errors/order-summary-errors.js";
-import { orderPretaxCents } from "./order-pretax.js";
+import { orderPretaxCents } from "@lfd/money";
 
 /** Une ligne figée à la passation — ce que le récapitulatif en lit. */
 export interface OrderSummaryLine {

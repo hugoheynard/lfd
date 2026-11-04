@@ -2,7 +2,7 @@ import type { ClientSheet, ClientSheetLine, SheetFulfillment, SheetMoney } from 
 
 import { sheetShowsTtc } from "./order-sheet.js";
 import { money } from "./order-sheet-pdf-format.js";
-import { orderPretaxCents } from "./order-pretax.js";
+import { orderPretaxCents } from "@lfd/money";
 import { eligibleBaseCentsOf, pickupDiscountLabel, pickupSiteOf } from "./pickup-discount-label.js";
 
 /**

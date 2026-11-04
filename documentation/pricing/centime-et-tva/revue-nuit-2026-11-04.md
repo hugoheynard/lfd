@@ -71,6 +71,19 @@ un nettoyage.
    l'alerte au-delà de cinq promotions et la révision). La doc d'état attend la
    fin de L5.
 
+### Tranché le 2026-11-04 au matin (Hugo)
+
+- **Pas de colonne HT.** Les gestes HT sont déjà figés sur chaque commande ;
+  la facture du mois les recompose (et facture ce qui est parti). Le « Total
+  HT » d'un pro au compte se lit partout par `orderPretaxCents`
+  (`packages/money/src/order-pretax.ts`) : bon PDF, récapitulatif, fiche,
+  pied de montants, bon texte, e-mail. Les quatre « total − TVA » sont
+  retirés. Mesuré sur la base locale : 83 commandes, aucun écart entre les
+  deux formules.
+- **Le particulier lit le TTC**, figé ligne par ligne et geste par geste
+  (`exact_ht`) ; seules les commandes d'avant ces colonnes gardent la
+  répartition au prorata du PDF, qui retombe sur le total figé.
+
 ## 5. Vu en passant
 
 - `made-to-order-wall.e2e-spec.ts` a rougi une fois dans la chaîne (500 sur

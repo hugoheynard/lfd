@@ -163,6 +163,26 @@ describe('le récapitulatif d’un pro au compte (F5)', () => {
     });
   });
 
+  /**
+   * Régression : le pied lisait « total − TVA », une seconde formule que le bon
+   * PDF n'emploie pas (`orderPretaxCents`). Les totaux sont ici volontairement
+   * incohérents pour que les deux formules divergent (2026-11-04).
+   */
+  it('lit le HT sur les gestes figés, comme le bon PDF — pas total moins TVA', () => {
+    const view = order({
+      settlement: 'account',
+      subtotalCents: 2_000,
+      discountCents: 200,
+      voucherDiscountCents: 100,
+      deliveryFeeCents: 500,
+      lateFeeCents: 300,
+      vatCents: 0,
+      totalCents: 9_999,
+    });
+
+    expect(row(view, 'total')?.value).toBe(`25,00${EUR}`);
+  });
+
   it('montre la livraison au prorata en HT, SANS taux', () => {
     const view = order({
       settlement: 'account',

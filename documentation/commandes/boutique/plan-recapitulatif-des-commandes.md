@@ -242,7 +242,7 @@ associés » ; « les bons sont toujours HT pour la question de l'arrondi
 final ».
 
 - **Le HT d'un bon est celui que le bon imprime**, par UNE règle sortie du
-  bon (`apps/lfd-api/src/b2b/orders/domain/services/order-pretax.ts`, lue par
+  bon (`packages/money/src/order-pretax.ts`, lue par
   `order-sheet-pdf-totals.ts` et par le récapitulatif) : articles moins remise
   et bon de fidélité, plancher à zéro, plus livraison et surtaxe — le « Total
   HT » d'un bon au compte (F5), le « Total avant TVA » d'un bon réglé à la

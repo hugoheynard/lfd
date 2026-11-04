@@ -318,6 +318,20 @@ describe("le courriel d'un pro au compte (F5)", () => {
     expect(html).not.toContain("dont TVA");
   });
 
+  /**
+   * Régression : le courriel lisait « total − TVA », une seconde formule que le
+   * bon PDF n'emploie pas. Totaux volontairement incohérents (2026-11-04).
+   */
+  it("au compte : le HT se lit sur les gestes figés, pas total moins TVA", () => {
+    const base = withSettlement("account");
+    const html = render({
+      sheet: { ...base, money: { ...base.money, vatCents: 0, totalCents: 4_321 } },
+    }).html;
+
+    expect(html).toContain("12,96");
+    expect(html).not.toContain("43,21");
+  });
+
   it.each([
     ["en", "on the monthly invoice"],
     ["it", "sulla fattura del mese"],

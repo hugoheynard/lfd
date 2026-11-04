@@ -235,13 +235,26 @@ describe('le bon d’un pro au compte (F5)', () => {
   it('au compte : le total HT et la mention, AUCUN chiffre de TVA ni de TTC', () => {
     const text = withSettlement('account');
 
-    // 9,50 € TTC − 0,50 € de TVA = 9,00 € HT.
+    // 10,00 € d'articles − 1,00 € de remise = 9,00 € HT.
     expect(text).toContain('Total HT');
     expect(text).toContain('9,00');
     expect(text).toContain('TVA et TTC sur la facture du mois.');
     expect(text).not.toContain('Total TTC');
     expect(text).not.toContain('9,50');
     expect(text).not.toContain('0,50');
+  });
+
+  /**
+   * Régression : le bon texte lisait « total − TVA », une seconde formule que le
+   * bon PDF n'emploie pas. Totaux volontairement incohérents (2026-11-04).
+   */
+  it('au compte : le HT se lit sur les gestes figés, pas total moins TVA', () => {
+    const text = renderOrderSheetText(
+      client({ money: { ...MONEY, settlement: 'account', vatCents: 0, totalCents: 4_321 } }),
+    );
+
+    expect(text).toContain('9,00');
+    expect(text).not.toContain('43,21');
   });
 
   it.each(['paid', 'due', 'free'] as const)('%s : TVA et total TTC inchangés', (settlement) => {

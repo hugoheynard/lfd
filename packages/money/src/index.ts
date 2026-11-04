@@ -78,3 +78,5 @@ export type {
   InvoiceVatInput,
   InvoiceVatPart,
 } from "./invoice-vat.js";
+export { netArticlesCents, orderPretaxCents } from "./order-pretax.js";
+export type { PretaxGestures } from "./order-pretax.js";

@@ -39,6 +39,7 @@ import {
   type OrderAudience,
   type TimelineStep,
 } from '../order-timeline';
+import { orderPretaxCents } from '@lfd/money';
 import { QrCode } from '../qr-code/qr-code';
 import { saleQuantityLabel } from '../../catalog/sale-terms';
 
@@ -237,13 +238,13 @@ export class OrderDetail {
 
   /**
    * Le total de l'en-tête et son assiette. Un pro au compte n'y lit que le HT
-   * — total moins TVA figés —, comme dans son récapitulatif (F5, plan
+   * — la règle du bon PDF (`orderPretaxCents`) —, comme dans son récapitulatif (F5, plan
    * `bons-et-facture-concordants`) : la TVA et le TTC sont sur la facture du mois.
    */
   protected readonly headerTotal = computed(() => {
     const order = this.order();
     return order.settlement === 'account'
-      ? { cents: order.totalCents - order.vatCents, basis: 'HT' }
+      ? { cents: orderPretaxCents(order), basis: 'HT' }
       : { cents: order.totalCents, basis: 'TTC' };
   });
 

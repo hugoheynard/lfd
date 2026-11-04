@@ -14,6 +14,7 @@ import {
   formatOrderInstant,
   fulfillmentLabel,
 } from './order-format';
+import { orderPretaxCents } from '@lfd/money';
 import { discountTextLines } from './order-sheet-discount-text';
 import { ticketSections } from './order-sheet-ticket-text';
 
@@ -136,12 +137,11 @@ function moneyLines(money: SheetMoney): readonly string[] {
 
 /**
  * Le pied d'un pro au compte : le HT seul, et où trouver le reste (F5, plan
- * `bons-et-facture-concordants`). Total moins TVA figés — rien n'est
- * recalculé, et aucun chiffre de TVA ni de TTC n'est écrit.
+ * `bons-et-facture-concordants`). La règle du bon PDF (`orderPretaxCents`), et aucun chiffre de TVA ni de TTC n'est écrit.
  */
 function pretaxLines(money: SheetMoney): readonly string[] {
   return [
-    `  Total HT      ${amount(formatCents(money.totalCents - money.vatCents), 26)}`,
+    `  Total HT      ${amount(formatCents(orderPretaxCents(money)), 26)}`,
     '  TVA et TTC sur la facture du mois.',
   ];
 }
