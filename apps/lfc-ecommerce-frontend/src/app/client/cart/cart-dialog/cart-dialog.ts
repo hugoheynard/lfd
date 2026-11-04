@@ -39,6 +39,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { EndedDiscountsCallout } from '../ended-discounts-callout/ended-discounts-callout';
 import { RemovedLinesCallout } from '../removed-lines-callout/removed-lines-callout';
 import { SignInOfferCallout } from '../sign-in-offer-callout/sign-in-offer-callout';
+import { TotalChangedCallout } from '../total-changed-callout/total-changed-callout';
 import { ReservedLinesCallout } from '../reserved-lines-callout/reserved-lines-callout';
 import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
@@ -101,6 +102,7 @@ const AFTER_SIGN_IN = '/boutique';
     SignInChoices,
     SignInOfferCallout,
     ServiceDayCallout,
+    TotalChangedCallout,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -301,6 +303,12 @@ export class CartDialog {
     if (this.termsShown() && this.salesTerms.blocking()) {
       return this.salesTerms.asked() ? c.payBlockedTerms : c.payBlockedTermsLoading;
     }
+    // Un devis en vol (Hugo, 2026-11-03, plan total vu T3) : le total qui
+    // partirait n'est pas encore celui qu'on montre. Le client qui change de
+    // mode ou d'adresse voit le nouveau total avant de pouvoir valider.
+    if (this.cart.pricing() === 'loading' && !this.cart.isEmpty() && this.choice() !== null) {
+      return c.payBlockedQuoting;
+    }
     return null;
   });
 
@@ -346,6 +354,13 @@ export class CartDialog {
     const message = this.orders.inFlight();
     return message === '' ? null : message;
   });
+
+  /**
+   * Un écart de total à confirmer (T3) : les encadrés des lignes retirées et
+   * des remises finies se taisent, `TotalChangedCallout` les nomme dans son
+   * message — un écart, un message.
+   */
+  protected readonly totalChangePending = computed(() => this.orders.totalChange() !== null);
 
   /** Le refus du serveur à la passation, dit DANS le panier (cf. `ClientOrders.refusal`). */
   protected readonly refusal = computed(() => {

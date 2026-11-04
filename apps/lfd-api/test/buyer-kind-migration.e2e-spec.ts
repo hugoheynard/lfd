@@ -18,7 +18,7 @@ import { join } from "node:path";
 
 import type { PlaceShopOrderPayload } from "@lfd/contracts";
 
-import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
+import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
@@ -84,7 +84,7 @@ beforeEach(async () => {
   pickupId = point.id;
 });
 
-function payload(): PlaceShopOrderPayload {
+function payload(): Unseen<PlaceShopOrderPayload> {
   return {
     idempotencyKey: randomUUID(),
     salesTerms: null,
@@ -102,9 +102,7 @@ function payload(): PlaceShopOrderPayload {
 
 /** Une commande d'invité, par le vrai handler ; rend son id et celui du porteur. */
 async function guestOrder(): Promise<{ readonly id: string; readonly userId: string }> {
-  const placed = await ctx.app
-    .get(PlaceShopOrderHandler)
-    .execute(new PlaceShopOrderCommand(payload()));
+  const placed = await placeShopOrderSeeingTotal(ctx.app.get(PlaceShopOrderHandler), payload());
   await ctx.drain();
   const row = await ctx.prisma.order.findUniqueOrThrow({
     where: { id: placed.id },

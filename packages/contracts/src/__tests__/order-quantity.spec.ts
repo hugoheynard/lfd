@@ -19,6 +19,7 @@ import { shopQuoteLineSchema } from "../shop-quote.js";
 const PANIER = {
   companyId: null,
   idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  expectedTotalCents: 4230,
   salesTerms: null,
   fulfillmentMethod: "pickup" as const,
   pickupAddressId: "pick_labo",

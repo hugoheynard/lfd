@@ -1,4 +1,4 @@
-import type { AdminPlaceOrderPayload } from "@lfd/contracts";
+import type { AdminOrderEstimatePayload } from "@lfd/contracts";
 
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 import type { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
@@ -45,7 +45,7 @@ export interface StaffOrderPreparationPorts {
 export async function prepareStaffOrder(
   ports: StaffOrderPreparationPorts,
   staffUserId: string,
-  payload: AdminPlaceOrderPayload,
+  payload: AdminOrderEstimatePayload,
   caller: PricingCaller,
 ): Promise<DraftedOrder> {
   const { companyId, buyerUserId } = payload;
@@ -94,7 +94,7 @@ export async function prepareStaffOrder(
  */
 async function ensureCounterLinkCause(
   guard: Pick<OrderGuardReader, "companyStatusOf">,
-  payload: AdminPlaceOrderPayload,
+  payload: AdminOrderEstimatePayload,
 ): Promise<void> {
   const atCounter = isCounterEntry(payload.entryOrigin, payload.entryShortcut);
   if (atCounter && payload.settlement === "link") {

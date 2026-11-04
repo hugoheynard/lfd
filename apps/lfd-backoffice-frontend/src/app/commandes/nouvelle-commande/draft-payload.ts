@@ -1,5 +1,5 @@
 import type {
-  AdminPlaceOrderPayload,
+  AdminOrderEstimatePayload,
   BillingAddressPayload,
   CatalogItemView,
   DeliveryAddressView,
@@ -264,7 +264,7 @@ export function placePayloadOf(
   draft: OrderDraft,
   lines: readonly OrderLineInput[],
   origin: OrderEntryOrigin,
-): AdminPlaceOrderPayload {
+): AdminOrderEstimatePayload {
   return {
     companyId,
     buyerUserId: draft.buyerUserId,

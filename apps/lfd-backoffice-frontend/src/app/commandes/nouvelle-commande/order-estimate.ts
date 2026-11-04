@@ -2,7 +2,7 @@ import type {
   AdminOrderEstimateAmountsView,
   AdminOrderEstimateNotice,
   AdminOrderEstimateView,
-  AdminPlaceOrderPayload,
+  AdminOrderEstimatePayload,
   FulfillmentMethod,
   PickupAddressView,
   StaffSettlement,
@@ -37,7 +37,7 @@ export const ESTIMATE_DEBOUNCE_MS = 400;
 /** Une estimation à demander : le corps, et la clé qui le résume. */
 export interface EstimateRequest {
   readonly key: string;
-  readonly payload: AdminPlaceOrderPayload;
+  readonly payload: AdminOrderEstimatePayload;
 }
 
 /**
@@ -48,7 +48,7 @@ export interface EstimateRequest {
  * (le règlement décide du crédit). Seul l'ordre des lignes est neutralisé —
  * le prix d'un panier ne dépend pas de l'ordre où on l'a rempli.
  */
-export function estimateKeyOf(payload: AdminPlaceOrderPayload): string {
+export function estimateKeyOf(payload: AdminOrderEstimatePayload): string {
   const lines = payload.lines
     .map((line) => JSON.stringify(line))
     .sort()
@@ -73,7 +73,9 @@ export function estimateKeyOf(payload: AdminPlaceOrderPayload): string {
  */
 export function estimatesOf(
   requests: Observable<EstimateRequest | null>,
-  estimate: (payload: AdminPlaceOrderPayload) => Observable<AdminOrderEstimateView>,
+  // La clé suit le corps : l'appelant sait ainsi À QUELLE saisie une réponse
+  // appartient (plan total vu, T3 — la validation attend l'estimation courante).
+  estimate: (payload: AdminOrderEstimatePayload, key: string) => Observable<AdminOrderEstimateView>,
   debounceMs: number = ESTIMATE_DEBOUNCE_MS,
 ): Observable<AdminOrderEstimateView | null> {
   return requests.pipe(
@@ -82,7 +84,7 @@ export function estimatesOf(
       request === null
         ? of(null)
         : timer(debounceMs).pipe(
-            switchMap(() => estimate(request.payload)),
+            switchMap(() => estimate(request.payload, request.key)),
             catchError(() => of(null)),
           ),
     ),

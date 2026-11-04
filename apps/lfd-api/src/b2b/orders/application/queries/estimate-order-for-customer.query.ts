@@ -1,4 +1,4 @@
-import type { AdminPlaceOrderPayload } from "@lfd/contracts";
+import type { AdminOrderEstimatePayload } from "@lfd/contracts";
 
 /**
  * **Ce que la saisie de l'équipe coûterait, si on la passait maintenant** (plan
@@ -11,6 +11,6 @@ import type { AdminPlaceOrderPayload } from "@lfd/contracts";
 export class EstimateOrderForCustomerQuery {
   constructor(
     readonly staffUserId: string,
-    readonly payload: AdminPlaceOrderPayload,
+    readonly payload: AdminOrderEstimatePayload,
   ) {}
 }

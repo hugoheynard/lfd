@@ -12,6 +12,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   payBlockedSignIn: 'Règlement retenu — connexion choisie',
   payBlockedTerms: 'Règlement retenu — CGV à cocher',
   payBlockedTermsLoading: 'Règlement retenu — CGV en lecture',
+  payBlockedQuoting: 'Règlement retenu — total en calcul',
   payCard: 'Règlement — carte',
   payCardNote: 'Règlement — carte, note',
   payDue: 'Règlement — à régler',

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { adminPlaceOrderPayloadSchema, hasWindowWhenPickedUp } from "../admin-order.js";
+import {
+  adminOrderEstimatePayloadSchema,
+  adminPlaceOrderPayloadSchema,
+  hasWindowWhenPickedUp,
+} from "../admin-order.js";
 
 /**
  * **Le créneau de retrait, exigé par le contrat** — la porte posée le
@@ -45,6 +49,7 @@ describe("hasWindowWhenPickedUp", () => {
 describe("adminPlaceOrderPayloadSchema", () => {
   const base = {
     companyId: "cmp_1",
+    expectedTotalCents: 4230,
     buyerUserId: "usr_1",
     settlement: "link" as const,
     requestedDeliveryDate: "2026-09-12",
@@ -60,6 +65,17 @@ describe("adminPlaceOrderPayloadSchema", () => {
         requestedWindow: { start: "07:00", end: "08:00" },
       }).success,
     ).toBe(true);
+  });
+
+  /** Plan total vu, T3 : obligatoire à la passation, absent de l'estimation. */
+  it("refuse une passation sans total vu, que l'estimation, elle, n'exige pas", () => {
+    const { expectedTotalCents: _seen, ...unseen } = base;
+    const window = { requestedWindow: { start: "07:00", end: "08:00" } };
+    const refused = adminPlaceOrderPayloadSchema.safeParse({ ...unseen, ...window });
+
+    expect(refused.success).toBe(false);
+    expect(refused.error?.issues[0]?.path).toEqual(["expectedTotalCents"]);
+    expect(adminOrderEstimatePayloadSchema.safeParse({ ...unseen, ...window }).success).toBe(true);
   });
 
   it("🔴 refuse un retrait sans tranche, et nomme le GESTE", () => {

@@ -120,24 +120,41 @@ export function pickupWindowIssue(): { message: string; path: PropertyKey[] } {
  *   règlement est une décision commerciale ; un défaut silencieux la prendrait
  *   à la place du commercial, et toujours dans le même sens.
  */
+const adminOrderEntryShape = {
+  companyId: z.string().trim().min(1, "société requise"),
+  buyerUserId: z.string().trim().min(1, "client requis"),
+  settlement: staffSettlementSchema,
+  supply: staffOrderSupplySchema.optional(),
+  // Le « Retrait immédiat » du comptoir (lot L6) : seulement avec `supply: "shelf"`.
+  entryShortcut: staffEntryShortcutSchema.optional(),
+  // D'où vient la saisie (E4 étendu) : `counter` refuse le lien de règlement.
+  entryOrigin: staffEntryOriginSchema.optional(),
+  ...orderContentShape,
+};
+
 export const adminPlaceOrderPayloadSchema = z
   .object({
-    companyId: z.string().trim().min(1, "société requise"),
-    buyerUserId: z.string().trim().min(1, "client requis"),
-    settlement: staffSettlementSchema,
-    supply: staffOrderSupplySchema.optional(),
-    // Le « Retrait immédiat » du comptoir (lot L6) : seulement avec `supply: "shelf"`.
-    entryShortcut: staffEntryShortcutSchema.optional(),
-    // D'où vient la saisie (E4 étendu) : `counter` refuse le lien de règlement.
-    entryOrigin: staffEntryOriginSchema.optional(),
-    // Le TTC que l'estimation a montré, ou absent (`expectedTotalCentsSchema`, lot T2).
-    expectedTotalCents: expectedTotalCentsSchema.optional(),
-    ...orderContentShape,
+    ...adminOrderEntryShape,
+    // Le TTC que l'estimation a montré (`expectedTotalCentsSchema`, obligatoire depuis T3).
+    expectedTotalCents: expectedTotalCentsSchema,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
   .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
   .refine(hasWindowWhenPickedUp, pickupWindowIssue());
 export type AdminPlaceOrderPayload = z.infer<typeof adminPlaceOrderPayloadSchema>;
+
+/**
+ * **Ce que l'estimation de la saisie reçoit** (`POST /admin/orders/estimate`)
+ * — la passation, sans le total vu : c'est elle qui le montre. Mêmes champs,
+ * mêmes refus de forme, pour que l'estimation compose la commande même que la
+ * passation écrirait (plan `plan-total-vu.md`, T3).
+ */
+export const adminOrderEstimatePayloadSchema = z
+  .object(adminOrderEntryShape)
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
+  .refine(hasWindowWhenPickedUp, pickupWindowIssue());
+export type AdminOrderEstimatePayload = z.infer<typeof adminOrderEstimatePayloadSchema>;
 
 /**
  * Ce que la passation staff rend.

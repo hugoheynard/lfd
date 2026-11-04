@@ -21,6 +21,7 @@ describe("le bon de fidélité au contrat de passation", () => {
     const parsed = placeOrderPayloadSchema.parse({
       ...CONTENT,
       idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+      expectedTotalCents: 4230,
       salesTerms: null,
     });
     expect(parsed.voucherId).toBe("v1");
@@ -30,6 +31,7 @@ describe("le bon de fidélité au contrat de passation", () => {
     const parsed = placeOrderPayloadSchema.parse({
       ...WITHOUT_VOUCHER,
       idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+      expectedTotalCents: 4230,
       salesTerms: null,
     });
     expect("voucherId" in parsed).toBe(false);
@@ -39,6 +41,7 @@ describe("le bon de fidélité au contrat de passation", () => {
     const parsed = placeShopOrderPayloadSchema.parse({
       ...CONTENT,
       idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+      expectedTotalCents: 4230,
       salesTerms: null,
       buyer: { firstName: "Camille", email: "camille@exemple.fr", phone: "0600000000" },
     });
@@ -49,6 +52,7 @@ describe("le bon de fidélité au contrat de passation", () => {
     const parsed = adminPlaceOrderPayloadSchema.parse({
       ...CONTENT,
       companyId: "c1",
+      expectedTotalCents: 4230,
       buyerUserId: "u1",
       settlement: "link",
       requestedWindow: { start: "08:00", end: "09:00" },

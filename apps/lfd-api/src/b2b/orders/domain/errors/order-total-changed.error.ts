@@ -21,6 +21,8 @@ const CENTS_PER_EURO = 100;
  */
 export class OrderTotalChangedError extends BusinessError {
   override readonly facts: PublicErrorFacts;
+  /** Le TTC composé — celui que le client confirme pour devenir son total vu (T3). */
+  readonly totalCents: number;
 
   constructor(expectedTotalCents: number, totalCents: number) {
     super(
@@ -28,6 +30,7 @@ export class OrderTotalChangedError extends BusinessError {
       `Le total de votre commande est passé de ${euros(expectedTotalCents)} à ${euros(totalCents)} depuis l'affichage de votre panier : vérifiez le nouveau montant, puis validez à nouveau.`,
     );
     this.facts = { expectedTotalCents, totalCents };
+    this.totalCents = totalCents;
   }
 }
 

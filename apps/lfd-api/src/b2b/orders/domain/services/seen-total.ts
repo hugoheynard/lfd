@@ -9,12 +9,13 @@ import { OrderTotalChangedError } from "../errors/order-total-changed.error.js";
  * le règlement : un refus ici ne laisse aucune intention Stripe orpheline —
  * rang 7 bis de l'ordre des refus (`plan-un-seul-assemblage.md`, § 2.4).
  *
- * Absent, rien n'est comparé : le champ est facultatif jusqu'au lot T3.
+ * Le champ est obligatoire au contrat depuis le lot T3 : il n'y a plus de
+ * passation qui échappe à la comparaison.
  *
  * @throws {OrderTotalChangedError} les deux totaux diffèrent, d'un centime ou plus.
  */
-export function ensureTotalSeen(totalCents: number, expectedTotalCents: number | undefined): void {
-  if (expectedTotalCents === undefined || expectedTotalCents === totalCents) {
+export function ensureTotalSeen(totalCents: number, expectedTotalCents: number): void {
+  if (expectedTotalCents === totalCents) {
     return;
   }
   throw new OrderTotalChangedError(expectedTotalCents, totalCents);

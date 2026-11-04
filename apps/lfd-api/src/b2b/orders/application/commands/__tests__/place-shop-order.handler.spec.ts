@@ -100,7 +100,7 @@ import { OrderOperations } from "../../services/order-operations.service.js";
 import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { PlaceShopOrderCommand } from "../place-shop-order.command.js";
-import { PlaceShopOrderHandler } from "../place-shop-order.handler.js";
+import { SeeingPlaceShopOrderHandler, UNSEEN_TOTAL_CENTS } from "./seeing-total-handlers.js";
 import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
@@ -446,11 +446,18 @@ class FakeWelcome extends WelcomeBonusPreview {
 
 const KEY = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
+/**
+ * Le TTC du panier par défaut. Donné EXPLICITEMENT là où une suite compte les
+ * lectures : un payload « pas vu » ferait deux passages (`seeing-total-handlers.ts`).
+ */
+const DEFAULT_TOTAL_CENTS = 400;
+
 /** Le créneau que la commande a choisi — obligatoire depuis le 2026-10-14. */
 const CHOSEN_WINDOW = { start: "07:00", end: "08:00" };
 
 function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPayload {
   return {
+    expectedTotalCents: UNSEEN_TOTAL_CENTS,
     idempotencyKey: KEY,
     salesTerms: null,
     buyer: { firstName: "Camille", email: "camille@exemple.fr", phone: "0600000000" },
@@ -489,7 +496,7 @@ function scene(
   const buyers = new FakeRegistrar();
   const published = new RecordingPublisher();
   const durable = new RecordingDurable();
-  const handler = new PlaceShopOrderHandler(
+  const handler = new SeeingPlaceShopOrderHandler(
     buyers,
     drafting(
       options.delivery,
@@ -530,7 +537,9 @@ describe("PlaceShopOrderHandler — le porteur", () => {
     // canal publié et trois événements de domaine (§3.1).
     const { handler, sink, buyers } = scene();
 
-    await handler.execute(new PlaceShopOrderCommand(payload()));
+    await handler.execute(
+      new PlaceShopOrderCommand(payload({ expectedTotalCents: DEFAULT_TOTAL_CENTS })),
+    );
 
     expect(buyers.registered).toEqual([
       { firstName: "Camille", email: "camille@exemple.fr", phone: "0600000000" },
@@ -802,7 +811,11 @@ describe("PlaceShopOrderHandler — ce qui échoue avant l'écriture", () => {
     });
 
     await expect(
-      handler.execute(new PlaceShopOrderCommand(payload({ requestedDeliveryDate: today }))),
+      handler.execute(
+        new PlaceShopOrderCommand(
+          payload({ requestedDeliveryDate: today, expectedTotalCents: DEFAULT_TOTAL_CENTS }),
+        ),
+      ),
     ).rejects.toBeInstanceOf(ShelfStockShortError);
     expect(paid.cancelled).toEqual(["pi_public"]);
     expect(keys.released).toEqual([KEY]);
@@ -940,7 +953,12 @@ describe("PlaceShopOrderHandler — les CGV en vigueur", () => {
     const { handler, sink } = scene({ salesTerms });
 
     await handler.execute(
-      new PlaceShopOrderCommand(payload({ salesTerms: { key: "salesTerms", revision: 3 } })),
+      new PlaceShopOrderCommand(
+        payload({
+          salesTerms: { key: "salesTerms", revision: 3 },
+          expectedTotalCents: DEFAULT_TOTAL_CENTS,
+        }),
+      ),
     );
 
     // Lues deux fois : à la porte (la case cochée), puis à la composition (ce

@@ -168,8 +168,16 @@
 
   @if (blockers().length === 0) {
     @if (!confirming()) {
-      <button foldButton [disabled]="submitting()" (click)="confirming.set(true)">
-        {{ immediate() ? 'Valider et remettre' : 'Valider la commande' }}
+      <button
+        foldButton
+        [disabled]="submitting() || !estimateReady()"
+        (click)="confirming.set(true)"
+      >
+        @if (!estimateReady()) {
+          Calcul du montant…
+        } @else {
+          {{ immediate() ? 'Valider et remettre' : 'Valider la commande' }}
+        }
       </button>
     } @else {
       <fold-callout variant="accent">

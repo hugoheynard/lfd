@@ -352,6 +352,8 @@ describe("client — active par B, A expirée : AUCUNE porte de A ne s'ouvre", (
             fulfillmentMethod: "pickup",
             note: "",
             lines: [{ sku: "SKU-QUELCONQUE", quantity: 1 }],
+            // Le mur refuse avant tout total (plan total vu, T3).
+            expectedTotalCents: 0,
           }),
           a,
         ),

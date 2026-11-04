@@ -163,6 +163,12 @@ export class ShopQuote {
   private readonly removed = signal<readonly ShopQuoteRemovedLineView[]>([]);
   /** Le lecteur du dernier décompte demandé — cf. la remise à zéro des points. */
   private lastReader: string | null = null;
+  /**
+   * Le tour du décompte : {@link refresh} l'avance pour redemander un panier
+   * inchangé — après un refus `orders.total_changed`, c'est le serveur qui a
+   * bougé, pas la clé (plan `plan-total-vu.md`, T3).
+   */
+  private readonly round = signal(0);
 
   readonly totals = this.view.asReadonly();
   readonly status = this.state.asReadonly();
@@ -242,8 +248,20 @@ export class ShopQuote {
     // l'espace personnel — cf. `VoucherChoice.effective`.
     const voucher = this.voucher.selected();
     const slot = this.slotOf();
-    return JSON.stringify({ lines, service, reader, voucher, slot });
+    const round = this.round();
+    return JSON.stringify({ lines, service, reader, voucher, slot, round });
   });
+
+  /**
+   * **Redemande le décompte d'un panier inchangé** — la passation vient de
+   * dire que le total a changé (409 `orders.total_changed`) : un prix, une
+   * remise, des frais ou la surtaxe ont bougé au serveur. Le nouveau décompte
+   * passe par le même chemin que les autres ({@link status} à `loading`, puis
+   * `ready`), et c'est lui que le panier compare au précédent.
+   */
+  refresh(): void {
+    this.round.update((round) => round + 1);
+  }
 
   constructor() {
     /**

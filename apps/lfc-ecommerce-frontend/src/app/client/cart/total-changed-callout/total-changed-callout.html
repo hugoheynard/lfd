@@ -1,0 +1,15 @@
+@if (change(); as shown) {
+  <fold-callout variant="warning" announce data-total-changed>
+    <div class="total-changed">
+      <p class="message">{{ shown.message }}</p>
+      <div class="actions">
+        <button foldButton size="sm" (click)="confirm.emit(shown.settlement)">
+          {{ shown.confirmLabel }}
+        </button>
+        <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="modify()">
+          {{ shown.modifyLabel }}
+        </button>
+      </div>
+    </div>
+  </fold-callout>
+}

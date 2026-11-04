@@ -2,6 +2,8 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { isBelowMinimumRefusal } from './below-minimum-refusal';
 import { isGraceRefusal } from './grace-refusal';
 import { isDeliveryClosedRefusal } from './delivery-closed-refusal';
+import { isTotalChangedRefusal } from './total-changed-refusal';
+import { estimateChangeMessage } from './estimate-changes';
 import { OrderCutoffWaiversService } from '../order-cutoff-waivers.service';
 import {
   ChangeDetectionStrategy,
@@ -16,11 +18,16 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, filter, tap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, firstValueFrom, tap } from 'rxjs';
 
 import { quoteKeyOf } from './quote-key';
 import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
-import { estimateKeyOf, estimatesOf, type EstimateRequest } from './order-estimate';
+import {
+  estimateKeyOf,
+  estimatesOf,
+  isBlockingRefusal,
+  type EstimateRequest,
+} from './order-estimate';
 import {
   backLinkOf,
   COUNTER_PLACED_ORDER_KEY,
@@ -56,6 +63,7 @@ import {
 import {
   audienceOf,
   DEFAULT_DELIVERY_AVAILABILITY,
+  type AdminOrderEstimateAmountsView,
   type AdminOrderEstimateView,
   type AdminOrderRow,
   type BillingAddressPayload,
@@ -389,6 +397,28 @@ export class NouvelleCommandePage {
 
   /** L'estimation du serveur (lot P2), gardée jusqu'à la suivante — cf. `estimatesOf`. */
   protected readonly estimate = signal<AdminOrderEstimateView | null>(null);
+  /** La clé de la saisie à laquelle {@link estimate} répond. */
+  private readonly estimatedKey = signal<string | null>(null);
+
+  /**
+   * **L'estimation répond-elle à la saisie COURANTE ?** (Hugo, 2026-11-03,
+   * plan total vu T3) — la validation est grisée tant qu'une estimation est
+   * en vol ou absente : c'est son total qui part comme total vu, et un autre
+   * que celui qu'on montre ne doit pas partir.
+   */
+  protected readonly estimateReady = computed(() => {
+    const request = this.estimateRequest();
+    return request !== null && this.estimate() !== null && this.estimatedKey() === request.key;
+  });
+
+  /**
+   * **Le total a changé à la passation** (409, T3) : le message, terme à
+   * terme, et la saisie à repasser au nouveau total. `null` sans écart.
+   */
+  protected readonly totalChange = signal<{
+    readonly draft: OrderDraft;
+    readonly message: string;
+  } | null>(null);
 
   constructor() {
     effect(() => {
@@ -468,7 +498,9 @@ export class NouvelleCommandePage {
    * seulement quand le corps entier change. Cf. `order-estimate.ts`.
    */
   private watchEstimate(): void {
-    estimatesOf(toObservable(this.estimateRequest), (payload) => this.orders.estimate(payload))
+    estimatesOf(toObservable(this.estimateRequest), (payload, key) =>
+      this.orders.estimate(payload).pipe(tap(() => this.estimatedKey.set(key))),
+    )
       .pipe(takeUntilDestroyed())
       .subscribe((estimate) => {
         this.estimate.set(estimate);
@@ -653,6 +685,7 @@ export class NouvelleCommandePage {
         counterPlaceId: this.counterPlaceId(),
         shelfIssue: this.shelfIssue,
         estimate: this.estimate.asReadonly(),
+        estimateReady: this.estimateReady,
         linkOffered: this.linkOffered,
       },
     });
@@ -719,7 +752,15 @@ export class NouvelleCommandePage {
       return;
     }
     this.granting.set(false);
-    await this.onPlace(draft);
+    // 🔴 Plus de passation d'enchaînement (plan total vu, T3) : la dérogation
+    // ouvre la surtaxe de retard, et l'estimation sous refus n'avait montré
+    // aucun total. Une commande ne naît jamais à un montant qu'on n'a pas vu :
+    // l'estimation se redemande, le panier montre le total, et le commercial
+    // valide.
+    this.lateDraft.set(null);
+    this.waiverReason.set('');
+    await this.freshEstimate();
+    this.notify.success('Dérogation accordée. Vérifiez le total, puis validez la commande.');
   }
 
   protected onWaiverReason(event: Event): void {
@@ -733,11 +774,30 @@ export class NouvelleCommandePage {
   }
 
   protected async onPlace(draft: OrderDraft): Promise<void> {
+    const estimate = this.estimate();
+    // La validation est grisée sans estimation courante (T3) ; la garde tient
+    // aussi si on l'appelle autrement.
+    if (!this.estimateReady() || estimate === null) {
+      return;
+    }
+    this.totalChange.set(null);
+    const amounts = estimate.amounts;
+    if (amounts === null) {
+      // L'heure limite est passée mais rattrapable : l'estimation l'a dit sans
+      // total. Le rattrapage se propose sans passer par le serveur — il n'y a
+      // aucun total vu à envoyer.
+      if (estimate.refusal !== null && !isBlockingRefusal(estimate.refusal)) {
+        this.lateDraft.set(draft);
+      }
+      return;
+    }
     this.submitting.set(true);
     try {
-      const placed = await this.orders.place(
-        placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin),
-      );
+      const placed = await this.orders.place({
+        ...placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin),
+        // Le TTC de l'estimation affichée : la passation refuse un autre total.
+        expectedTotalCents: amounts.totalCents,
+      });
       this.cart.clear();
       // La commande est partie : le brouillon mis de côté n'a plus d'objet, et
       // le laisser ferait rouvrir l'écran sur une commande déjà passée. Son
@@ -770,7 +830,12 @@ export class NouvelleCommandePage {
       // Le refus « encore rattrapable » n'est pas une panne : on garde la saisie
       // et on propose le geste, plutôt qu'un toast qui laisse le commercial
       // deviner ce qu'il peut faire.
-      if (isGraceRefusal(error)) {
+      if (isTotalChangedRefusal(error)) {
+        // Le total a bougé depuis l'estimation : pas une panne, un écart à
+        // montrer avant de confirmer (T3).
+        this.lateDraft.set(null);
+        await this.showTotalChange(draft, amounts);
+      } else if (isGraceRefusal(error)) {
         this.lateDraft.set(draft);
         this.notify.refused(error, "L'heure limite est passée pour cette date.");
       } else if (isDeliveryClosedRefusal(error)) {
@@ -794,6 +859,51 @@ export class NouvelleCommandePage {
       }
     } finally {
       this.submitting.set(false);
+    }
+  }
+
+  /**
+   * **L'écart de total, dit en un message** (T3) : une estimation neuve, comparée
+   * terme à terme à celle qu'on montrait. Un écart nul ne dit rien.
+   */
+  private async showTotalChange(
+    draft: OrderDraft,
+    before: AdminOrderEstimateAmountsView,
+  ): Promise<void> {
+    const after = await this.freshEstimate();
+    if (after === null) {
+      this.notify.error(null, "Le total a changé, et la nouvelle estimation n'a pas pu être lue.");
+      return;
+    }
+    const message = estimateChangeMessage(before, after);
+    this.totalChange.set(message === null ? null : { draft, message });
+  }
+
+  /** « Modifier la saisie » : l'écart n'est plus à confirmer. */
+  protected onDismissTotalChange(): void {
+    this.totalChange.set(null);
+  }
+
+  /**
+   * **Redemande l'estimation de la saisie courante, et l'attend** — le flux
+   * ordinaire ne redemande rien tant que le corps ne change pas, et c'est le
+   * serveur qui a bougé. Elle remplace l'estimation affichée si la saisie n'a
+   * pas changé entre-temps.
+   */
+  private async freshEstimate(): Promise<AdminOrderEstimateAmountsView | null> {
+    const request = this.estimateRequest();
+    if (request === null) {
+      return null;
+    }
+    try {
+      const view = await firstValueFrom(this.orders.estimate(request.payload));
+      if (this.estimateRequest()?.key === request.key) {
+        this.estimate.set(view);
+        this.estimatedKey.set(request.key);
+      }
+      return view.amounts;
+    } catch {
+      return null;
     }
   }
 

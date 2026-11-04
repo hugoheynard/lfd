@@ -107,13 +107,27 @@ espace pro, saisie de l'équipe), carte comme compte, et pour la révision.
   (le front rechiffre et compare à son dernier devis ?). Un bon déjà servi
   garde son propre refus (rang inférieur) : un écart, un message.
   E2e : `test/order-total-seen.e2e-spec.ts`.
-- **T3** — la boutique et la saisie l'envoient, et montrent l'écart en un
+- **T3** ✅ _(bâti le 2026-11-04, non commité à l'écriture)_ — la boutique et la saisie l'envoient, et montrent l'écart en un
   seul message avant de confirmer. **Le bouton de validation est désactivé
   tant qu'un devis est en vol** (Hugo, 2026-11-03, sur un changement
   d'acheminement ou de zone) : le client qui change de mode ou d'adresse voit
   le nouveau total avant de pouvoir valider, et le refus ne sert qu'aux
   changements faits ailleurs (frais d'une zone modifiés par l'équipe,
   promotion terminée, prix, surtaxe, bon).
+  Bâti : `expectedTotalCents` obligatoire aux trois passations ; l'estimation
+  de la saisie a son propre schéma sans lui (`adminOrderEstimatePayloadSchema`).
+  Le code du refus vit sans zod (`seen-total.values.ts`, exporté par
+  `shop-values`). Boutique : `ClientOrders` envoie le TTC du devis affiché ;
+  sur le 409, `ShopQuote.refresh()` redemande le devis et
+  `TotalChangedCallout` compare les deux (`quote-changes.ts`), un message,
+  « Commander à … » ou « Modifier mon panier » ; les encadrés des lignes
+  retirées et des remises finies se taisent pendant ce temps. Saisie :
+  `estimateReady` grise la validation, `estimate-changes.ts` compare, encadré
+  « Valider au nouveau total ». ⚠️ Le rattrapage d'heure limite n'enchaîne
+  plus la passation après la dérogation : l'estimation sous refus ne montrait
+  aucun total, la dérogation se fait seule et la saisie se revalide au total
+  estimé. E2e : le harnais confirme le total des passations qui ne le donnent
+  pas (`test/seen-total-agent.ts`, `test/seen-total-shop-command.ts`).
 
 ## 5. Décision de Hugo (2026-11-03)
 

@@ -43,6 +43,8 @@ function mountFull(
   set('deliveryAvailability', OPEN_TO_ALL);
   set('audience', 'b2b');
   set('settlesOnAccount', true);
+  // L'estimation répond à la saisie : le cas ordinaire (plan total vu, T3).
+  set('estimateReady', true);
   for (const [name, value] of Object.entries(extra)) {
     set(name, value);
   }
@@ -221,6 +223,28 @@ describe('PanierCommande — l’estimation (lot P2)', () => {
       'Reste en vitrine',
     );
     expect(validate(host)).toBeDefined();
+  });
+
+  /** Plan total vu, T3 (Hugo, 2026-11-03) : pas de validation sur une estimation en vol. */
+  it('grise la validation tant que l’estimation n’est pas celle de la saisie', () => {
+    const draft = readyDraft();
+    const { fixture, host } = mountFull(filledCart(), {
+      estimate: ESTIMATE,
+      draft,
+      estimateReady: false,
+    });
+    draft.fulfillment.set(readyDraft().fulfillment());
+    fixture.detectChanges();
+
+    const waiting = [...host.querySelectorAll<HTMLButtonElement>('.pan-foot button')].find(
+      (b) => b.textContent.trim() === 'Calcul du montant…',
+    );
+    expect(waiting?.disabled).toBe(true);
+    expect(validate(host)).toBeUndefined();
+
+    fixture.componentRef.setInput('estimateReady', true);
+    fixture.detectChanges();
+    expect(validate(host)?.disabled).toBe(false);
   });
 
   it('au comptoir, le lien de règlement n’est pas proposé (E4)', () => {

@@ -1340,6 +1340,7 @@ export {
   staffSettlementSchema,
   STAFF_SETTLEMENT_LABELS,
   adminPlaceOrderPayloadSchema,
+  adminOrderEstimatePayloadSchema,
   hasWindowWhenPickedUp,
   orderDraftPayloadSchema,
   pickupWindowIssue,
@@ -1354,6 +1355,7 @@ export type {
 export type {
   StaffSettlement,
   AdminPlaceOrderPayload,
+  AdminOrderEstimatePayload,
   AdminPlacedOrderResponse,
   CustomerSkuStat,
   OrderDraftPayload,

@@ -26,6 +26,8 @@ import { ServiceDayNotice } from '../../shop/service-day-notice';
 import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { GuestIdentityForm } from '../guest-identity-form/guest-identity-form';
 import { SalesTermsConsent } from '../sales-terms-consent.service';
+import { ShopQuote, type QuoteStatus } from '../shop-quote.service';
+import type { ShopQuoteView } from '@lfd/contracts';
 import { CartDialog } from './cart-dialog';
 
 const AU_LABO: ServiceChoice = {
@@ -135,6 +137,39 @@ const refus = signal<string | null>(null);
 /** La commande déjà en vol que `ClientOrders` garde pour le panier (lot A5). */
 const enVol = signal<string | null>(null);
 
+/**
+ * Où en est le devis — doublé : le vrai part au réseau et resterait `loading`
+ * pour toujours derrière `provideHttpClientTesting`, ce qui griserait le
+ * bouton dans chaque cas (plan total vu, T3). `ready` par défaut.
+ */
+const cotation = signal<QuoteStatus>('ready');
+
+const DEVIS: ShopQuoteView = {
+  lines: [],
+  subtotalHtCents: 0,
+  discountCents: 0,
+  discountAdjustment: null,
+  voucherDiscountCents: 0,
+  deliveryFeeCents: 0,
+  deliveryVatMode: 'standard',
+  vat: [],
+  totalCents: 4230,
+};
+
+function quoteDouble() {
+  return {
+    totals: signal(DEVIS),
+    status: cotation,
+    removedLines: signal([]),
+    endedDiscounts: signal([]),
+    signInOffer: signal(null),
+    refusal: signal(null),
+    loyaltyPointsToEarn: signal(null),
+    voucherTotalEffectCents: signal(0),
+    refresh: (): void => undefined,
+  };
+}
+
 /** Ce que l'écran a demandé aux portes, où il est allé, et s'il s'est fermé. */
 let ouvertes: string[] = [];
 let visitees: string[] = [];
@@ -163,6 +198,7 @@ function boot({
       provideRouter([]),
       provideWorkspace(workspaceDouble()),
       { provide: AuthFacade, useValue: auth },
+      { provide: ShopQuote, useValue: quoteDouble() },
       { provide: SalesTermsConsent, useValue: consentDouble(cgv, cgvOutdated) },
       {
         provide: OrderAdmissionStore,
@@ -196,6 +232,8 @@ function boot({
         useValue: {
           refusal: refus,
           inFlight: enVol,
+          totalChange: signal(null),
+          dismissTotalChange: (): void => undefined,
           place: (settlement: string | null = null): Promise<null> => {
             regle.push(settlement);
             // `null` : on observe CE QUI EST DEMANDÉ, pas la suite — une
@@ -258,6 +296,7 @@ function boot({
   adresses = [];
   refus.set(null);
   enVol.set(null);
+  cotation.set('ready');
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   TestBed.inject(OrderContextStore).choice.set(service);
   const cart = TestBed.inject(ClientCart);
@@ -904,5 +943,38 @@ describe('le panier fait accepter les CGV', () => {
     const fixture = boot({ auth: RECONNU, cgv: true, panier: false });
 
     expect(caseCgv(fixture)).toBeNull();
+  });
+});
+
+/**
+ * Plan total vu, T3 (Hugo, 2026-11-03) : le bouton de validation est grisé
+ * tant qu'un devis est en vol — le total qui partirait n'est pas encore celui
+ * qu'on montre.
+ */
+describe('le panier attend son devis avant de laisser valider', () => {
+  it('grise le bouton et le dit pendant qu’un devis est en vol', async () => {
+    const fixture = boot({ auth: RECONNU });
+    cotation.set('loading');
+    fixture.detectChanges();
+
+    expect(bouton(fixture)?.disabled).toBe(true);
+    expect(note(fixture)?.textContent?.trim()).toBe(FR.cart.payBlockedQuoting);
+
+    bouton(fixture)?.click();
+    await fixture.whenStable();
+    expect(regle).toEqual([]);
+  });
+
+  it('rend le bouton dès que le devis est là', async () => {
+    const fixture = boot({ auth: RECONNU });
+    cotation.set('loading');
+    fixture.detectChanges();
+    cotation.set('ready');
+    fixture.detectChanges();
+
+    expect(bouton(fixture)?.disabled).toBe(false);
+    bouton(fixture)?.click();
+    await fixture.whenStable();
+    expect(regle).toEqual([null]);
   });
 });

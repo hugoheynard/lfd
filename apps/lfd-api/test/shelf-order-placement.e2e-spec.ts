@@ -22,7 +22,7 @@ import type {
 } from "@lfd/contracts";
 import { instantToLocal, localToInstant } from "@lfd/contracts";
 
-import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
+import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { UnsettledShopOrderExpiry } from "../src/b2b/orders/application/services/unsettled-shop-order-expiry.service.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
@@ -183,7 +183,7 @@ async function seedCreditedPro(
   return { companyId: company.id, userId: user.id };
 }
 
-function shopPayload(lines: PlaceShopOrderPayload["lines"]): PlaceShopOrderPayload {
+function shopPayload(lines: PlaceShopOrderPayload["lines"]): Unseen<PlaceShopOrderPayload> {
   return {
     idempotencyKey: randomUUID(),
     salesTerms: null,
@@ -201,9 +201,10 @@ function shopPayload(lines: PlaceShopOrderPayload["lines"]): PlaceShopOrderPaylo
 
 /** La passation de l'invité, par le handler monté. */
 async function placeShop(lines: PlaceShopOrderPayload["lines"]): Promise<string> {
-  const placed = await ctx.app
-    .get(PlaceShopOrderHandler)
-    .execute(new PlaceShopOrderCommand(shopPayload(lines)));
+  const placed = await placeShopOrderSeeingTotal(
+    ctx.app.get(PlaceShopOrderHandler),
+    shopPayload(lines),
+  );
   await ctx.drain();
   return placed.id;
 }

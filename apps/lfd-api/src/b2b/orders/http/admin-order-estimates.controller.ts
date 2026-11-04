@@ -1,7 +1,7 @@
 import {
   type AdminOrderEstimateView,
-  type AdminPlaceOrderPayload,
-  adminPlaceOrderPayloadSchema,
+  type AdminOrderEstimatePayload,
+  adminOrderEstimatePayloadSchema,
 } from "@lfd/contracts";
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
@@ -35,7 +35,7 @@ export class AdminOrderEstimatesController {
   @HttpCode(HttpStatus.OK)
   async estimate(
     @StaffUserId() staffUserId: string,
-    @Body(new ZodBody(adminPlaceOrderPayloadSchema)) payload: AdminPlaceOrderPayload,
+    @Body(new ZodBody(adminOrderEstimatePayloadSchema)) payload: AdminOrderEstimatePayload,
   ): Promise<AdminOrderEstimateView> {
     return this.queries.execute<EstimateOrderForCustomerQuery, AdminOrderEstimateView>(
       new EstimateOrderForCustomerQuery(staffUserId, payload),

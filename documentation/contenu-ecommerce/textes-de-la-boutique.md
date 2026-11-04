@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1746 textes
+## Sommaire — 1760 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 84 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 98 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1746** |
+| **Total** | | **1760** |
 
 ## Le parcours de commande
 
@@ -730,7 +730,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 84 textes.
+Source : `fr.ts · en.ts · it.ts` · 98 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -818,6 +818,20 @@ Source : `fr.ts · en.ts · it.ts` · 84 textes.
 | `cart.payBlockedTerms` | Cochez les conditions générales de vente pour commander. | Tick the terms and conditions of sale to order. | Spunti le condizioni generali di vendita per ordinare. |  |
 | `cart.payBlockedTermsLoading` | Les conditions générales de vente se chargent… | The terms and conditions of sale are loading… | Le condizioni generali di vendita si stanno caricando… |  |
 | `cart.placeFailed` | La commande n’a pas pu être passée. | The order could not be placed. | Non è stato possibile effettuare l’ordine. |  |
+| `cart.payBlockedQuoting` | Le total se met à jour… | The total is updating… | Il totale si sta aggiornando… |  |
+| `cart.totalChanged` | Le total est passé de {before} à {after} : {changes}. | The total went from {before} to {after}: {changes}. | Il totale è passato da {before} a {after}: {changes}. | `{before}` `{after}` `{changes}` |
+| `cart.totalChangedConfirm` | Commander à {total} | Order at {total} | Ordina a {total} | `{total}` |
+| `cart.totalChangedModify` | Modifier mon panier | Edit my basket | Modifica il carrello |  |
+| `cart.changeLateFeeAppeared` | votre commande arrive après l’heure limite, un supplément de {amount} HT s’applique | your order comes after the cut-off time, a surcharge of {amount} excl. VAT applies | il vostro ordine arriva dopo l’orario limite, si applica un supplemento di {amount} IVA esclusa | `{amount}` |
+| `cart.changeLateFee` | le supplément de retard a changé | the late surcharge has changed | il supplemento per ritardo è cambiato |  |
+| `cart.changeDeliveryFee` | les frais de livraison ont changé | the delivery fee has changed | le spese di consegna sono cambiate |  |
+| `cart.changeDiscount` | la remise a changé | the discount has changed | lo sconto è cambiato |  |
+| `cart.changeVoucher` | la réduction de votre bon a changé | your voucher’s reduction has changed | la riduzione del vostro buono è cambiata |  |
+| `cart.changeDiscountEnded` | la remise « {label} » a pris fin | the “{label}” discount has ended | lo sconto «{label}» è terminato | `{label}` |
+| `cart.changeLineRemoved` | {name} a été retiré du panier | {name} was removed from the basket | {name} è stato tolto dal carrello | `{name}` |
+| `cart.changeLinePrice` | le prix de {name} a changé | the price of {name} has changed | il prezzo di {name} è cambiato | `{name}` |
+| `cart.changeVat` | la TVA a changé | the VAT has changed | l’IVA è cambiata |  |
+| `cart.changeOther` | les prix ont été mis à jour | prices have been updated | i prezzi sono stati aggiornati |  |
 
 <a id="espace-pay"></a>
 

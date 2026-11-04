@@ -181,6 +181,11 @@ export class ClientCart {
    */
   readonly pricing = this.quote.status;
 
+  /** Redemande le décompte d'un panier inchangé — cf. {@link ShopQuote.refresh}. */
+  requote(): void {
+    this.quote.refresh();
+  }
+
   /** Les lignes retirées au devis faute d'être encore vendues dans leur unité — cf. {@link ShopQuote.removedLines}. */
   readonly removedLines = this.quote.removedLines;
   /** Les remises à heures qui ont pris fin — cf. {@link ShopQuote.endedDiscounts}. */

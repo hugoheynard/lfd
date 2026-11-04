@@ -18,7 +18,7 @@ import type {
   PlacedOrderResponse,
 } from "@lfd/contracts";
 
-import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
+import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import {
@@ -237,11 +237,11 @@ describe("la boutique sans compte (place-shop-order)", () => {
     };
     const handler = ctx.app.get(PlaceShopOrderHandler);
 
-    const placed = await handler.execute(new PlaceShopOrderCommand(payload));
+    const placed = await placeShopOrderSeeingTotal(handler, payload);
     await ctx.drain();
     // Un nouveau PDF entre-temps : le rejeu ne doit pas le figer à la place.
     await depositPdf("salesTerms");
-    const replayed = await handler.execute(new PlaceShopOrderCommand(payload));
+    const replayed = await placeShopOrderSeeingTotal(handler, payload);
     await ctx.drain();
 
     expect(replayed.id).toBe(placed.id);

@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 
 import type { PlaceShopOrderPayload } from "@lfd/contracts";
 
-import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
 import { FulfillmentWindowRequiredError } from "../src/b2b/orders/domain/errors/order-errors.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
 import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { createUser } from "./factories.js";
 
 /**
@@ -104,7 +104,7 @@ async function seedPickup(): Promise<string> {
   return point.id;
 }
 
-function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPayload {
+function payload(over: Partial<Unseen<PlaceShopOrderPayload>> = {}): Unseen<PlaceShopOrderPayload> {
   return {
     idempotencyKey: randomUUID(),
     salesTerms: null,
@@ -123,10 +123,8 @@ function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPaylo
 }
 
 /** La passation, telle que la route l'appellerait le jour où elle sera ouverte. */
-async function place(over: Partial<PlaceShopOrderPayload> = {}) {
-  const result = await ctx.app
-    .get(PlaceShopOrderHandler)
-    .execute(new PlaceShopOrderCommand(payload(over)));
+async function place(over: Partial<Unseen<PlaceShopOrderPayload>> = {}) {
+  const result = await placeShopOrderSeeingTotal(ctx.app.get(PlaceShopOrderHandler), payload(over));
   // Le courriel de confirmation part hors requête : on l'attend avant de relire,
   // sinon il écrit après le `TRUNCATE` du test suivant.
   await ctx.drain();
@@ -148,7 +146,7 @@ describe("la commande sans compte — la porte", () => {
     // Par le handler et non par HTTP : la route est bridée en débit, et un
     // appel de plus fait répondre 429 aux cas suivants.
     await expect(
-      ctx.app.get(PlaceShopOrderHandler).execute(new PlaceShopOrderCommand(withoutWindow)),
+      placeShopOrderSeeingTotal(ctx.app.get(PlaceShopOrderHandler), withoutWindow),
     ).rejects.toThrow(FulfillmentWindowRequiredError);
     expect(await ctx.prisma.order.count()).toBe(0);
   });

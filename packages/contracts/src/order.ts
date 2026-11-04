@@ -414,8 +414,9 @@ export const idempotencyKeySchema = z.string().uuid("clé d'idempotence attendue
  * TTC diffère de celui-ci, elle refuse (409 `orders.total_changed`) sans rien
  * écrire, plutôt que d'engager le client sur un montant qu'il n'a pas vu.
  *
- * FACULTATIF jusqu'au lot T3, qui le rend obligatoire avec les fronts
- * (décision de Hugo du 2026-11-03) : absent, la commande passe comme avant.
+ * OBLIGATOIRE depuis le lot T3 (décision de Hugo du 2026-11-03, pré-release) :
+ * un corps sans lui est refusé (400) — un front resté en cache se fait
+ * refuser jusqu'à son rechargement.
  * Il n'entre PAS dans l'empreinte d'idempotence — un renvoi avec le nouveau
  * total sous la même clé est la même demande.
  */
@@ -424,13 +425,8 @@ export const expectedTotalCentsSchema = z
   .int("total attendu : un nombre entier de centimes")
   .nonnegative("total attendu : jamais négatif");
 
-/**
- * Le code du refus (409) quand le TTC recomposé n'est pas celui que le client
- * a vu (`expectedTotalCentsSchema`). La réponse porte `expectedTotalCents` et
- * `totalCents` ; le front rechiffre et montre l'écart avant de laisser
- * confirmer (lot T3).
- */
-export const ORDER_TOTAL_CHANGED = "orders.total_changed";
+// Le code du refus vit sans zod, pour la boutique (`seen-total.values.ts`).
+export { ORDER_TOTAL_CHANGED } from "./seen-total.values.js";
 
 /**
  * **Comment le client veut régler.**
@@ -508,8 +504,8 @@ export const placeOrderPayloadSchema = z
     locale: orderLocaleSchema.optional(),
     /** Les CGV cochées au panier. Cf. {@link acceptedSalesTermsSchema}. */
     salesTerms: acceptedSalesTermsSchema,
-    /** Le TTC vu au panier, ou absent. Cf. {@link expectedTotalCentsSchema}. */
-    expectedTotalCents: expectedTotalCentsSchema.optional(),
+    /** Le TTC vu au panier. Cf. {@link expectedTotalCentsSchema}. */
+    expectedTotalCents: expectedTotalCentsSchema,
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

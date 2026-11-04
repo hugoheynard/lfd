@@ -8,10 +8,6 @@ describe("ensureTotalSeen — le total vu est le total facturé (T2)", () => {
     expect(() => ensureTotalSeen(4230, 4230)).not.toThrow();
   });
 
-  it("un total absent passe comme aujourd'hui", () => {
-    expect(() => ensureTotalSeen(4230, undefined)).not.toThrow();
-  });
-
   it("un centime d'écart refuse, avec les deux totaux et le cas nommé", () => {
     let caught: unknown = null;
     try {
@@ -24,6 +20,7 @@ describe("ensureTotalSeen — le total vu est le total facturé (T2)", () => {
     expect(refusal.category).toBe("business");
     expect(refusal.code).toBe(ORDER_TOTAL_CHANGED);
     expect(refusal.facts).toEqual({ expectedTotalCents: 4730, totalCents: 4731 });
+    expect(refusal.totalCents).toBe(4731);
     expect(refusal.message).toContain("47,30");
     expect(refusal.message).toContain("47,31");
   });

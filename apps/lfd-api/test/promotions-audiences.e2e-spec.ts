@@ -23,7 +23,7 @@ import type {
   PromotionTermsPayload,
 } from "@lfd/contracts";
 
-import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
+import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { pdfText } from "../src/b2b/orders/domain/services/__tests__/pdf-text.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
@@ -174,21 +174,19 @@ async function placeAs(sub: string, site: string): Promise<string> {
 }
 
 async function placeAsGuest(site: string): Promise<string> {
-  const placed = await ctx.app.get(PlaceShopOrderHandler).execute(
-    new PlaceShopOrderCommand({
-      idempotencyKey: randomUUID(),
-      salesTerms: null,
-      buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
-      fulfillmentMethod: "pickup",
-      requestedWindow: { start: "07:00", end: "08:00" },
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddressId: site,
-      requestedDeliveryDate: SERVICE_DAY,
-      note: "",
-      lines: LINES,
-    }),
-  );
+  const placed = await placeShopOrderSeeingTotal(ctx.app.get(PlaceShopOrderHandler), {
+    idempotencyKey: randomUUID(),
+    salesTerms: null,
+    buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
+    fulfillmentMethod: "pickup",
+    requestedWindow: { start: "07:00", end: "08:00" },
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddressId: site,
+    requestedDeliveryDate: SERVICE_DAY,
+    note: "",
+    lines: LINES,
+  });
   await ctx.drain();
   return placed.id;
 }

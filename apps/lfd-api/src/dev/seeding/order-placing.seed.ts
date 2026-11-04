@@ -8,6 +8,7 @@ import type { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
 import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
+import { OrderTotalChangedError } from "../../b2b/orders/domain/errors/order-total-changed.error.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
@@ -314,7 +315,7 @@ export async function place(
     );
   }
   const delivery = order.method === "delivery" ? carnetAddressOf(target, order) : null;
-  const payload: PlaceOrderPayload = {
+  const payload: Omit<PlaceOrderPayload, "expectedTotalCents"> = {
     // Chaque commande du semis est une tentative DISTINCTE : une clé par
     // commande, sinon la seconde serait rendue comme un rejeu de la première et
     // le semis poserait une seule ligne au lieu de son historique. Une clé
@@ -348,12 +349,7 @@ export async function place(
     // Le contexte DATÉ : le `Clock` y lit `order.at`, donc l'heure limite se juge
     // comme elle se jugerait ce jour-là — pas comme aujourd'hui.
     { now: order.at, traceId: newTraceId(), actor: { type: "customer", id: target.buyerUserId } },
-    () =>
-      context.commands.execute<PlaceOrderCommand, { id: string }>(
-        // Le semis passe la société EXPLICITEMENT : il n'y a pas de requête HTTP
-        // derrière lui, donc pas de guard pour la résoudre.
-        new PlaceOrderCommand(target.buyerUserId, payload, target.companyId),
-      ),
+    () => placeAtSeenTotal(context, target, payload),
   );
   // L'antidatage APRÈS que les abonnés de la passation ont fini : l'évaluation
   // des alertes lit l'instant de passation, et partie en tâche de fond, elle
@@ -371,6 +367,40 @@ export async function place(
   });
   return { id: placed.id, reference: row.orderNumber };
 }
+
+/**
+ * Le semis n'a pas d'écran : il n'a vu aucun total. Il fait donc ce que fait
+ * le client sur un refus `orders.total_changed` (plan `plan-total-vu.md`,
+ * T3) — il confirme le total que la passation a composé, et renvoie sous la
+ * même clé. La première tentative n'écrit rien : le refus précède le règlement.
+ */
+async function placeAtSeenTotal(
+  context: SeedContext,
+  target: Target,
+  payload: Omit<PlaceOrderPayload, "expectedTotalCents">,
+): Promise<{ id: string }> {
+  // Le semis passe la société EXPLICITEMENT : il n'y a pas de requête HTTP
+  // derrière lui, donc pas de guard pour la résoudre.
+  const attempt = (expectedTotalCents: number): Promise<{ id: string }> =>
+    context.commands.execute<PlaceOrderCommand, { id: string }>(
+      new PlaceOrderCommand(
+        target.buyerUserId,
+        { ...payload, expectedTotalCents },
+        target.companyId,
+      ),
+    );
+  try {
+    return await attempt(UNSEEN_TOTAL_CENTS);
+  } catch (error) {
+    if (error instanceof OrderTotalChangedError) {
+      return attempt(error.totalCents);
+    }
+    throw error;
+  }
+}
+
+/** Un total qu'aucune commande n'atteint : la première tentative est un refus voulu. */
+const UNSEEN_TOTAL_CENTS = Number.MAX_SAFE_INTEGER;
 
 /** Un sac : le contenant d'un retrait, qui naît et vit au colisage. */
 export const ONE_BAG: readonly OpenPackingContainer[] = [{ nature: "bag" }];

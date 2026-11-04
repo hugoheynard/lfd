@@ -20,7 +20,7 @@ import type {
   ShopQuoteView,
 } from "@lfd/contracts";
 
-import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
+import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
@@ -230,21 +230,19 @@ async function guestPlaces(
  * ne porte que le prix PRO (200 000 figés là où le devis dit 250 237).
  */
 async function guestPlacesOutsideRequest(site: string, lines: Basket): Promise<string> {
-  const placed = await ctx.app.get(PlaceShopOrderHandler).execute(
-    new PlaceShopOrderCommand({
-      idempotencyKey: randomUUID(),
-      salesTerms: null,
-      buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
-      fulfillmentMethod: "pickup",
-      requestedWindow: { start: "07:00", end: "08:00" },
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddressId: site,
-      requestedDeliveryDate: SERVICE_DAY,
-      note: "",
-      lines,
-    }),
-  );
+  const placed = await placeShopOrderSeeingTotal(ctx.app.get(PlaceShopOrderHandler), {
+    idempotencyKey: randomUUID(),
+    salesTerms: null,
+    buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
+    fulfillmentMethod: "pickup",
+    requestedWindow: { start: "07:00", end: "08:00" },
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddressId: site,
+    requestedDeliveryDate: SERVICE_DAY,
+    note: "",
+    lines,
+  });
   await ctx.drain();
   return placed.id;
 }

@@ -21,7 +21,7 @@ import type {
   PublicOrderOpeningView,
 } from "@lfd/contracts";
 
-import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
+import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { OrdersClosedForAudienceError } from "../src/b2b/orders/domain/errors/orders-closed-for-audience.error.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
@@ -125,22 +125,20 @@ function clientOrder(day = SERVICE_DAY): Record<string, unknown> {
 }
 
 async function placeAsGuest(email = "camille@visiteur.fr", day = SERVICE_DAY): Promise<unknown> {
-  const result = await ctx.app.get(PlaceShopOrderHandler).execute(
-    new PlaceShopOrderCommand({
-      idempotencyKey: randomUUID(),
-      salesTerms: null,
-      buyer: { firstName: "Camille", email, phone: "0600000000" },
-      fulfillmentMethod: "pickup",
-      // Pas de commande sans créneau (2026-10-14).
-      requestedWindow: { start: "07:00", end: "08:00" },
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddressId: pickupId,
-      requestedDeliveryDate: day,
-      note: "",
-      lines: LINES,
-    }),
-  );
+  const result = await placeShopOrderSeeingTotal(ctx.app.get(PlaceShopOrderHandler), {
+    idempotencyKey: randomUUID(),
+    salesTerms: null,
+    buyer: { firstName: "Camille", email, phone: "0600000000" },
+    fulfillmentMethod: "pickup",
+    // Pas de commande sans créneau (2026-10-14).
+    requestedWindow: { start: "07:00", end: "08:00" },
+    deliveryAddress: null,
+    deliveryAddressId: null,
+    pickupAddressId: pickupId,
+    requestedDeliveryDate: day,
+    note: "",
+    lines: LINES,
+  });
   await ctx.drain();
   return result;
 }

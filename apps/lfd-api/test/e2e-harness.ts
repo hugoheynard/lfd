@@ -38,6 +38,7 @@ import { AppModule } from "../src/appBootstrap/app.module.js";
 import { requestContextMiddleware } from "../src/platform/context/request-context.middleware.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
+import { seeingTotals } from "./seen-total-agent.js";
 import { AccessTokenVerifier } from "../src/platform/auth/access-token.verifier.js";
 import { BackgroundWork } from "../src/platform/events/background-work.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
@@ -238,12 +239,14 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   stopwatch.ready();
 
   const server = (): request.Agent => request.agent(baseUrl);
+  const as = (sub: string) => (): request.Agent => server().set("Authorization", `Bearer ${sub}`);
 
   return {
     app,
     prisma,
-    http: server,
-    asSub: (sub) => server().set("Authorization", `Bearer ${sub}`),
+    // Les passations sans total vu le confirment (lot T3, `seen-total-agent.ts`).
+    http: () => seeingTotals(server(), server),
+    asSub: (sub) => seeingTotals(as(sub)(), as(sub)),
     // On **draine avant de vider**. Une évaluation lancée sur `order.placed`
     // tourne hors de la requête HTTP : sans cette attente, elle peut écrire
     // APRÈS le `TRUNCATE`, et son alerte réapparaît alors dans le test suivant —

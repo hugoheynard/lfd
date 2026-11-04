@@ -8,6 +8,7 @@ import type {
   OrderSalesTermsResponse,
   AdminOrdersPage,
   AdminOrdersQuery,
+  AdminOrderEstimatePayload,
   AdminPlaceOrderPayload,
   AdminPlacedOrderResponse,
   LineRuleReconstructionView,
@@ -299,7 +300,7 @@ export class AdminOrdersService {
    * saisie **annule** la requête en vol quand elle change, et seul un
    * désabonnement interrompt l'appel HTTP.
    */
-  estimate(payload: AdminPlaceOrderPayload): Observable<AdminOrderEstimateView> {
+  estimate(payload: AdminOrderEstimatePayload): Observable<AdminOrderEstimateView> {
     return this.http.post<AdminOrderEstimateView>(`${B2B_API_BASE}/admin/orders/estimate`, payload);
   }
 

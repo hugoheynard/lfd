@@ -161,6 +161,7 @@ import { PlaceOrderCommand } from "../place-order.command.js";
 import { FixedVoucherQuotes, RecordingRedemption, VoucherTakenError } from "./voucher-doubles.js";
 import { VoucherNotForCompanyOrderError } from "../../../domain/errors/order-voucher-errors.js";
 import { PlaceOrderHandler } from "../place-order.handler.js";
+import { SeeingPlaceOrderHandler, UNSEEN_TOTAL_CENTS } from "./seeing-total-handlers.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
 import type { CatalogPricing, FulfillmentWindow } from "@lfd/contracts";
@@ -588,8 +589,15 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
 /** Le créneau que la commande a choisi — obligatoire depuis le 2026-10-14. */
 const CHOSEN_WINDOW = { start: "07:00", end: "08:00" };
 
+/**
+ * Le TTC du panier par défaut. Donné EXPLICITEMENT là où une suite compte les
+ * lectures : un payload « pas vu » ferait deux passages (`seeing-total-handlers.ts`).
+ */
+const DEFAULT_TOTAL_CENTS = 400;
+
 function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
   return {
+    expectedTotalCents: UNSEEN_TOTAL_CENTS,
     idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
     salesTerms: null,
     fulfillmentMethod: "pickup",
@@ -619,7 +627,7 @@ describe("PlaceOrderHandler", () => {
     "fige la langue envoyée (%s → %s), sans en inventer une (lot A3)",
     async (sent, kept) => {
       const sink = { placed: null as OrderToPlace | null };
-      const handler = new PlaceOrderHandler(
+      const handler = new SeeingPlaceOrderHandler(
         guard(null, null),
         drafting(pickups(LABO_POINT), zones()),
         capturingRepo(sink),
@@ -652,7 +660,7 @@ describe("PlaceOrderHandler", () => {
    */
   it("ne fige plus aucune version de catalogue sur une commande neuve", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -681,7 +689,7 @@ describe("PlaceOrderHandler", () => {
   it("écrit le fait durable « commande passée » pour la livraison", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const durable = new RecordingDurable();
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -707,7 +715,7 @@ describe("PlaceOrderHandler", () => {
   it("publie OrderPlacedEvent après persistance (signal lead chaud)", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const published = events();
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -752,7 +760,7 @@ describe("PlaceOrderHandler", () => {
    */
   it("refuse un non-membre quand la société n'est PAS venue des rattachements", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard(null, "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -779,7 +787,7 @@ describe("PlaceOrderHandler", () => {
   it("SANS entreprise, ne vérifie aucun membership et exige une carte (per_order)", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -808,7 +816,7 @@ describe("PlaceOrderHandler", () => {
 
   it("résout les prix au SERVEUR — le prix du client est ignoré", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -882,7 +890,7 @@ describe("PlaceOrderHandler", () => {
 
   it("fusionne les lignes en double par SKU", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -923,7 +931,7 @@ describe("PlaceOrderHandler", () => {
 
   it("refuse un SKU inconnu du catalogue (400), sans rien écrire", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -951,7 +959,7 @@ describe("PlaceOrderHandler", () => {
 
   it("en RETRAIT, fige l'adresse du point et son site, et n'attache ni zone ni adresse de livraison", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -980,7 +988,7 @@ describe("PlaceOrderHandler", () => {
 
   it("refuse le RETRAIT quand aucun point de retrait n'est configuré (409)", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(null), zones()),
       capturingRepo(sink),
@@ -1010,7 +1018,7 @@ describe("PlaceOrderHandler", () => {
       ...LABO_POINT,
       discounts: { b2b: TWENTY_PERCENT, b2c: TWENTY_PERCENT },
     };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(point), zones()),
       capturingRepo(sink),
@@ -1070,7 +1078,7 @@ describe("PlaceOrderHandler", () => {
         madeToOrder: false,
       },
     });
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(point), zones(), { classifications }),
       capturingRepo(sink),
@@ -1093,7 +1101,9 @@ describe("PlaceOrderHandler", () => {
     ];
 
     // 400 éligibles + 220 exclus ; remise 20 % de 400 = 80 ; total = 540.
-    await handler.execute(new PlaceOrderCommand("u1", payload({ lines }), "c1"));
+    await handler.execute(
+      new PlaceOrderCommand("u1", payload({ lines, expectedTotalCents: 540 }), "c1"),
+    );
 
     expect(sink.placed?.subtotalCents).toBe(620);
     expect(sink.placed?.discountCents).toBe(80);
@@ -1114,7 +1124,7 @@ describe("PlaceOrderHandler", () => {
       ...LABO_POINT,
       discounts: { b2b: TWENTY_PERCENT, b2c: null },
     };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "pending", "none"),
       drafting(pickups(point), zones(), { status: "pending" }),
       capturingRepo(sink),
@@ -1141,7 +1151,7 @@ describe("PlaceOrderHandler", () => {
 
   it("en COURSIER, refuse la livraison fermée aux particuliers pour une commande perso, sans rien écrire", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard(null, null, "none"),
       drafting(pickups(), zones(TARENTAISE), {
         delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false },
@@ -1175,7 +1185,7 @@ describe("PlaceOrderHandler", () => {
 
   it("en COURSIER, fige l'adresse livrée et déduit le frais de SON code postal", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
@@ -1231,7 +1241,7 @@ describe("PlaceOrderHandler", () => {
   it("en COURSIER, lit le mode de TVA du port, le fige et taxe le port au taux des marchandises", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const deliveryVat = new FixedDeliveryVat("follows_goods");
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(), zones(TARENTAISE), { deliveryVat }),
       capturingRepo(sink),
@@ -1258,6 +1268,8 @@ describe("PlaceOrderHandler", () => {
           // Une adresse du carnet : seule elle inscrit la fenêtre demandée (2026-10-12).
           deliveryAddressId: "addr_c1",
           requestedWindow: BEFORE_TEN,
+          // Explicite : la suite compte les lectures du mode de TVA (une seule).
+          expectedTotalCents: 2400,
         }),
         "c1",
       ),
@@ -1272,7 +1284,7 @@ describe("PlaceOrderHandler", () => {
   describe("le lien vers le carnet d'adresses", () => {
     async function placeDeliveryFor(companyId: string): Promise<OrderToPlace | null> {
       const sink = { placed: null as OrderToPlace | null };
-      const handler = new PlaceOrderHandler(
+      const handler = new SeeingPlaceOrderHandler(
         guard("orders", "active"),
         drafting(pickups(), zones(TARENTAISE), {
           book: new WalledAddressBook("addr_c1", "c1"),
@@ -1329,7 +1341,7 @@ describe("PlaceOrderHandler", () => {
     // Un secteur non couvert n'est pas un secteur gratuit : c'est un secteur où
     // la tournée n'a pas de coût connu. On refuse plutôt que de livrer à 0 €.
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
@@ -1365,7 +1377,7 @@ describe("PlaceOrderHandler", () => {
   it("en PER_ORDER, crée une intention Stripe du total, marque pending et renvoie le clientSecret", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active", "none"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -1399,7 +1411,7 @@ describe("PlaceOrderHandler", () => {
   it("en terme différé (mensuel) sur entreprise active, ne crée AUCUNE intention et marque not_required", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -1430,7 +1442,7 @@ describe("PlaceOrderHandler", () => {
   it("entreprise NON active (pending) : carte requise malgré un terme différé", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "pending"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -1487,7 +1499,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       items: [catalogItem("VIE", { sku: "VIE-001" })],
       onlySkus: ["VIE-001"],
     });
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones(), { sale }),
       capturingRepo(sink),
@@ -1547,7 +1559,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       items: [catalogItem("VIE-001")],
       onlySkus: [],
     });
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones(), { sale }),
       capturingRepo(sink),
@@ -1584,7 +1596,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
     sink: { placed: OrderToPlace | null },
     intentSink: { intent: CreateIntentParams | null },
   ): PlaceOrderHandler {
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       guard("orders", "active", standing),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -1680,7 +1692,7 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
   }): PlaceOrderHandler {
     const cancelled = over.cancelled ?? [];
     const gateway = payments();
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       guard(over.role ?? null, over.status ?? null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(over.sink),
@@ -1794,7 +1806,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
     options: { readonly global?: "slot" | "deadline"; readonly book?: DeliveryDefaultsReader } = {},
   ): Promise<OrderToPlace | null> {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(), zones(TARENTAISE), {
         delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, windowMode: options.global ?? "slot" },
@@ -1917,7 +1929,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
         return Promise.resolve(companyId === "alpes" ? "granted" : "none");
       },
     };
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       payerGuard,
       drafting(pickups(LABO_POINT), zones(), { payers }),
       capturingRepo(sink),
@@ -1962,7 +1974,11 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
     const payers = following("active");
 
     await siteHandler(payers, sink, asked).execute(
-      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "chalet"),
+      new PlaceOrderCommand(
+        "u1",
+        payload({ settlement: "account", expectedTotalCents: DEFAULT_TOTAL_CENTS }),
+        "chalet",
+      ),
     );
 
     expect(sink.placed?.companyId).toBe("chalet");
@@ -2038,7 +2054,7 @@ describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
     opening: Partial<PublicOrderOpeningView>,
     sink: { placed: OrderToPlace | null },
   ): PlaceOrderHandler {
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -2147,7 +2163,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
   }): PlaceOrderHandler {
     const gateway = payments(over.intents);
     const cancelled = over.cancelled ?? [];
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones(), {
         plans: over.plans,
@@ -2348,7 +2364,7 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
     salesTerms: FixedSalesTerms,
   ): Promise<OrderToPlace | null> {
     const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", status),
       drafting(pickups(LABO_POINT), zones(), { status, salesTerms }),
       capturingRepo(sink),
@@ -2365,7 +2381,10 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
-    await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
+    // Explicite : la suite compte les lectures des CGV.
+    await handler.execute(
+      new PlaceOrderCommand("u1", payload({ expectedTotalCents: DEFAULT_TOTAL_CENTS }), "c1"),
+    );
     return sink.placed;
   }
 
@@ -2420,7 +2439,7 @@ describe("PlaceOrderHandler — les CGV cochées au panier", () => {
       },
       resolve: () => Promise.resolve(),
     };
-    const handler = new PlaceOrderHandler(
+    const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones(), { status: "active", salesTerms }),
       capturingRepo(sink),
@@ -2536,7 +2555,7 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
   ]);
 
   function lateHandler(cutoffs: OrderCutoffReader, sink: { placed: OrderToPlace | null }) {
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones(), { cutoffs, limits: lateLimits }),
       capturingRepo(sink),
@@ -2585,7 +2604,7 @@ describe("PlaceOrderHandler — le délai d'annulation figé", () => {
     settings: FixedCancellationSettings,
     companyGuard: OrderGuardReader = guard(null, null),
   ): PlaceOrderHandler {
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       companyGuard,
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -2668,7 +2687,7 @@ describe("PlaceOrderHandler — le total vu", () => {
     paid: { intent: CreateIntentParams | null },
     keys: OrderIdempotencyStore = freeKeys,
   ): PlaceOrderHandler {
-    return new PlaceOrderHandler(
+    return new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
@@ -2693,7 +2712,7 @@ describe("PlaceOrderHandler — le total vu", () => {
     return sink.placed?.totalCents ?? Number.NaN;
   }
 
-  it("absent, la commande naît comme aujourd'hui", async () => {
+  it("confirmé après un refus, la commande naît au total composé", async () => {
     expect(await composedTotal()).toBeGreaterThan(0);
   });
 

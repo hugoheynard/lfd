@@ -36,6 +36,8 @@ export interface PanierPanelData {
   readonly shelfIssue: Signal<string | null>;
   /** L'estimation du serveur (lot P2), qui vit pendant que le tiroir est ouvert. */
   readonly estimate: Signal<AdminOrderEstimateView | null>;
+  /** L'estimation répond-elle à la saisie courante ? (plan total vu, T3). */
+  readonly estimateReady: Signal<boolean>;
   /** Le « Lien de règlement » est-il proposé ? Faux au comptoir (E4). */
   readonly linkOffered: boolean;
 }

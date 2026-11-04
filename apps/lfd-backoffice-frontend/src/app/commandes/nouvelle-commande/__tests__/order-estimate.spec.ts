@@ -1,7 +1,7 @@
 import type {
   AdminOrderEstimateAmountsView,
   AdminOrderEstimateView,
-  AdminPlaceOrderPayload,
+  AdminOrderEstimatePayload,
 } from '@lfd/contracts';
 import { Observable, Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -39,7 +39,7 @@ const LINES = [
   { sku: 'VIE-002', quantity: 5 },
 ];
 
-function payload(overrides: Partial<OrderDraft> = {}, lines = LINES): AdminPlaceOrderPayload {
+function payload(overrides: Partial<OrderDraft> = {}, lines = LINES): AdminOrderEstimatePayload {
   return placePayloadOf('c_1', { ...DRAFT, ...overrides }, lines, 'commercial');
 }
 
@@ -149,16 +149,16 @@ describe('le flux des estimations', () => {
 
   function harness(): {
     requests: Subject<EstimateRequest | null>;
-    calls: AdminPlaceOrderPayload[];
+    calls: AdminOrderEstimatePayload[];
     responses: Subject<AdminOrderEstimateView>[];
     seen: (AdminOrderEstimateView | null)[];
     cancelled: () => number;
   } {
     const requests = new Subject<EstimateRequest | null>();
-    const calls: AdminPlaceOrderPayload[] = [];
+    const calls: AdminOrderEstimatePayload[] = [];
     const responses: Subject<AdminOrderEstimateView>[] = [];
     let cancelled = 0;
-    const tracked = (body: AdminPlaceOrderPayload): Observable<AdminOrderEstimateView> => {
+    const tracked = (body: AdminOrderEstimatePayload): Observable<AdminOrderEstimateView> => {
       calls.push(body);
       const response = new Subject<AdminOrderEstimateView>();
       responses.push(response);
@@ -187,7 +187,7 @@ describe('le flux des estimations', () => {
     return { requests, calls, responses, seen, cancelled: () => cancelled };
   }
 
-  const request = (body: AdminPlaceOrderPayload): EstimateRequest => ({
+  const request = (body: AdminOrderEstimatePayload): EstimateRequest => ({
     key: estimateKeyOf(body),
     payload: body,
   });

@@ -49,6 +49,26 @@
       </fold-callout>
     }
 
+    @if (totalChange(); as change) {
+      <!-- Le total a changé depuis l'estimation (plan total vu, T3) : un
+           message, terme à terme ; le commercial confirme ou modifie. -->
+      <fold-callout variant="warning" announce data-total-changed>
+        <p>{{ change.message }}</p>
+        <div class="nc-waiver-actions">
+          <button
+            foldButton
+            [disabled]="submitting() || !estimateReady()"
+            (click)="onPlace(change.draft)"
+          >
+            Valider au nouveau total
+          </button>
+          <button foldButton emphasis="soft" (click)="onDismissTotalChange()">
+            Modifier la saisie
+          </button>
+        </div>
+      </fold-callout>
+    }
+
     @if (lateDraft(); as late) {
       <!-- Le refus arrive au moment le plus coûteux : le client est en ligne. On
            garde la saisie et on propose le geste ici, plutôt qu'un toast qui
@@ -71,8 +91,10 @@
             (valueChange)="waiverReason.set($event)"
           />
           <div class="nc-waiver-actions">
+            <!-- La dérogation ouvre la surtaxe : le total se montre avant de
+                 valider (plan total vu, T3). -->
             <button foldButton [disabled]="!waiverReady()" (click)="onWaiveAndPlace()">
-              Accorder et passer la commande
+              Accorder la dérogation
             </button>
             <button foldButton emphasis="soft" (click)="onDismissLate()">
               Choisir une autre date
@@ -149,6 +171,7 @@
           [estimate]="estimate()"
           [linkOffered]="linkOffered"
           [submitting]="submitting()"
+          [estimateReady]="estimateReady()"
           (place)="onPlace($event)"
         />
       }

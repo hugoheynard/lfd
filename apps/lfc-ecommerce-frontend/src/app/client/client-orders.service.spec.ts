@@ -845,3 +845,79 @@ describe('passer commande — les CGV cochées', () => {
     http.expectOne((r) => r.url.endsWith(LEGAL('salesTerms')));
   });
 });
+
+/**
+ * Plan total vu, T3 : la passation envoie le TTC du devis AFFICHÉ, et un 409
+ * `orders.total_changed` n'est pas un refus — c'est un écart à montrer.
+ */
+describe('passer commande — le total vu', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('envoie le total du devis affiché au clic', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    const cart = TestBed.inject(ClientCart);
+    cart.add('VIE-001');
+    const shown = cart.totals().totalCents;
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect(body.expectedTotalCents).toBe(shown);
+  });
+
+  it('au 409 « total changé » : garde le devis du clic, redemande le devis, ne dit aucun refus', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    const cart = TestBed.inject(ClientCart);
+    cart.add('VIE-001');
+    const requote = vi.spyOn(cart, 'requote');
+    const before = cart.totals();
+    const orders = TestBed.inject(ClientOrders);
+
+    const placing = orders.place('account');
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders'))
+      .flush(
+        { code: 'orders.total_changed', message: 'Le total a changé.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(await placing).toBeNull();
+    expect(orders.refusal()).toBeNull();
+    expect(orders.totalChange()).toEqual({ before, settlement: 'account' });
+    expect(requote).toHaveBeenCalledTimes(1);
+    expect(cart.isEmpty()).toBe(false);
+
+    orders.dismissTotalChange();
+    expect(orders.totalChange()).toBeNull();
+  });
+
+  it('l’invité envoie aussi le total affiché', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    const cart = TestBed.inject(ClientCart);
+    cart.add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).placeAsGuest({
+      firstName: 'Camille',
+      email: 'camille@exemple.fr',
+      phone: '0600000000',
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = http.expectOne((r) => r.url.endsWith('/shop/orders'));
+    const body = request.request.body as PlaceShopOrderPayload;
+    request.flush({ id: 'ord_1', orderNumber: 'CMD-0007' });
+    await placing;
+
+    expect(body.expectedTotalCents).toBe(cart.totals().totalCents);
+  });
+});

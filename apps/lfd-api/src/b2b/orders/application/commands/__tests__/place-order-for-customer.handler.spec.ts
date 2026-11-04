@@ -93,6 +93,7 @@ function noDeliveryDefaults(): DeliveryDefaultsReader {
 }
 import { PlaceOrderForCustomerCommand } from "../place-order-for-customer.command.js";
 import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handler.js";
+import { SeeingPlaceOrderForCustomerHandler, UNSEEN_TOTAL_CENTS } from "./seeing-total-handlers.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
 import type { CatalogPricing } from "@lfd/contracts";
@@ -321,8 +322,15 @@ class FakeConfig extends AppConfig {
 /** Le créneau que la commande a choisi — obligatoire depuis le 2026-10-14. */
 const CHOSEN_WINDOW = { start: "07:00", end: "08:00" };
 
+/**
+ * Le TTC du panier par défaut. Donné EXPLICITEMENT là où une suite compte les
+ * lectures : un payload « pas vu » ferait deux passages (`seeing-total-handlers.ts`).
+ */
+const DEFAULT_TOTAL_CENTS = 400;
+
 function payload(over: Partial<AdminPlaceOrderPayload> = {}): AdminPlaceOrderPayload {
   return {
+    expectedTotalCents: UNSEEN_TOTAL_CENTS,
     companyId: "c1",
     buyerUserId: "buyer_1",
     settlement: "account",
@@ -418,7 +426,7 @@ function handler(
   // nominal en croyant vérifier l'absence de racine.
   const clientBaseUrl =
     "clientBaseUrl" in options ? (options.clientBaseUrl ?? null) : "https://boutique.lfc.fr";
-  return new PlaceOrderForCustomerHandler(
+  return new SeeingPlaceOrderForCustomerHandler(
     guardDouble,
     draftingFor(guardDouble, options),
     repo(sink),
@@ -932,7 +940,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         orderTimeLimit: null,
       },
     ]);
-    const free = new PlaceOrderForCustomerHandler(
+    const free = new SeeingPlaceOrderForCustomerHandler(
       guard("orders"),
       new OrderDrafting(
         new OrderLinePricing(
@@ -1056,7 +1064,10 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
     const salesTerms = new FixedSalesTerms({ salesTermsPro: { revision: 2, fileId: "ldf_pro_9" } });
 
     await handler(guard("orders", "active", "granted"), sink, { salesTerms }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      new PlaceOrderForCustomerCommand(
+        "staff_1",
+        payload({ expectedTotalCents: DEFAULT_TOTAL_CENTS }),
+      ),
     );
 
     expect(sink.placed?.salesTerms).toEqual({
@@ -1075,7 +1086,10 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
 
     // Par lien de paiement : une société en attente n'a pas de compte.
     await handler(guard("orders", "pending", "granted"), sink, { salesTerms }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+      new PlaceOrderForCustomerCommand(
+        "staff_1",
+        payload({ settlement: "link", expectedTotalCents: DEFAULT_TOTAL_CENTS }),
+      ),
     );
 
     expect(salesTerms.asked).toEqual(["salesTerms"]);

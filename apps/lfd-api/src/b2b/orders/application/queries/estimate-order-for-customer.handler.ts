@@ -2,7 +2,7 @@ import type {
   AdminOrderEstimateAmountsView,
   AdminOrderEstimateNotice,
   AdminOrderEstimateView,
-  AdminPlaceOrderPayload,
+  AdminOrderEstimatePayload,
   OrderQuoteCutoffView,
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
@@ -87,7 +87,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
   /** Ce que la passation jugera sous verrou, jugé ici sans verrou. */
   private async warningsOf(
     order: Order,
-    payload: AdminPlaceOrderPayload,
+    payload: AdminOrderEstimatePayload,
   ): Promise<readonly AdminOrderEstimateNotice[]> {
     const short = await this.shelf.stockShortfallOf(order);
     const credit = await staffSettlementRefusal(
@@ -103,7 +103,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
   }
 
   /** L'heure limite du jour visé, séparée sur la marque comme le devis (lot L4). */
-  private async cutoffOf(payload: AdminPlaceOrderPayload): Promise<OrderQuoteCutoffView | null> {
+  private async cutoffOf(payload: AdminOrderEstimatePayload): Promise<OrderQuoteCutoffView | null> {
     if (payload.requestedDeliveryDate === null) {
       return null;
     }

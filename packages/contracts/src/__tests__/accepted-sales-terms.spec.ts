@@ -10,6 +10,7 @@ import { placeShopOrderPayloadSchema } from "../shop-order.js";
  */
 const CONTENT = {
   idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  expectedTotalCents: 4230,
   fulfillmentMethod: "pickup",
   pickupAddressId: "pickup_1",
   requestedDeliveryDate: "2026-12-24",
@@ -60,6 +61,7 @@ describe("les CGV acceptées au contrat de passation", () => {
     const parsed = adminPlaceOrderPayloadSchema.parse({
       ...CONTENT,
       companyId: "c1",
+      expectedTotalCents: 4230,
       buyerUserId: "u1",
       settlement: "account",
       requestedWindow: { start: "07:00", end: "08:00" },

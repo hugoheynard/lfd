@@ -91,8 +91,10 @@
       <fold-callout variant="alert" data-no-service>{{ t().shop.noService }}</fold-callout>
     }
 
-    <app-removed-lines-callout />
-    <app-ended-discounts-callout />
+    @if (!totalChangePending()) {
+      <app-removed-lines-callout />
+      <app-ended-discounts-callout />
+    }
     <app-reserved-lines-callout />
     <app-sign-in-offer-callout />
 
@@ -149,6 +151,9 @@
     }
     <!-- La commande déjà en vol : une information, pas une panne — dite ici
        pour la même raison que le refus (lot A5). -->
+    <!-- Le total a changé depuis le devis du clic (plan total vu, T3) : un
+       message, terme à terme, et le geste de confirmer ou de modifier. -->
+    <app-total-changed-callout (confirm)="void proceed($event)" />
     @if (inFlight(); as message) {
       <fold-callout variant="info" announce data-place-in-flight>{{ message }}</fold-callout>
     }

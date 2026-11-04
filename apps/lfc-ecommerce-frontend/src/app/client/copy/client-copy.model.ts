@@ -919,6 +919,28 @@ export interface ClientCopy {
     readonly payBlockedTermsLoading: string;
     /** Le refus du serveur à la passation, quand il n'a pas de message sûr à dire. */
     readonly placeFailed: string;
+    /** Le bouton ne mène nulle part tant que le total se met à jour (plan total vu, T3). */
+    readonly payBlockedQuoting: string;
+    /**
+     * Le total a changé entre le devis et la passation (409, T3) : `{before}`
+     * et `{after}` les deux totaux TTC, `{changes}` la liste de ce qui a bougé.
+     */
+    readonly totalChanged: string;
+    /** Confirmer le nouveau total ; `{total}` le nouveau TTC. */
+    readonly totalChangedConfirm: string;
+    readonly totalChangedModify: string;
+    /** Les termes de `{changes}` — `{amount}` la surtaxe HT, `{label}`, `{name}`. */
+    readonly changeLateFeeAppeared: string;
+    readonly changeLateFee: string;
+    readonly changeDeliveryFee: string;
+    readonly changeDiscount: string;
+    readonly changeVoucher: string;
+    readonly changeDiscountEnded: string;
+    readonly changeLineRemoved: string;
+    readonly changeLinePrice: string;
+    readonly changeVat: string;
+    /** Aucun terme ne diffère, mais le total oui. */
+    readonly changeOther: string;
   };
   /** L'écran du **QR de retrait** — celui que le client présente au comptoir. */
   readonly qr: {

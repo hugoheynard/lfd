@@ -13,6 +13,7 @@ import {
 } from '@lfd/contracts';
 // Par le sous-chemin sans zod : ce service est chargé au démarrage.
 import {
+  ORDER_TOTAL_CHANGED,
   SALES_TERMS_OUTDATED,
   SERVICE_DAY_BEFORE_FIRST_ORDERABLE_DAY,
 } from '@lfd/contracts/shop-values';
@@ -34,6 +35,18 @@ import { ShelfStockToday } from './shop/shelf-stock-today.store';
 import { ServicePoints } from './shop/pickup-points.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
 import { isSoldByWeight, lineTermsOf, requestedLine, type SaleTerms } from './shop/sale-unit';
+
+/**
+ * **Le total a changé entre le devis et la passation** (409
+ * `orders.total_changed`, plan `plan-total-vu.md`, T3) : le devis que le
+ * client avait sous les yeux, et le règlement qu'il avait choisi — pour que
+ * « Commander à ce total » rejoue le même geste.
+ */
+export interface SeenTotalChange {
+  /** Le dernier devis AFFICHÉ au clic — celui dont le total est parti. */
+  readonly before: ShopQuoteView;
+  readonly settlement: OrderSettlement | null;
+}
 
 /** Une ligne figée : le nom et le prix du jour, pas une référence au catalogue. */
 export interface PlacedLine {
@@ -319,6 +332,14 @@ export class ClientOrders {
   private readonly lastInFlight = signal<string | null>(null);
   readonly inFlight = this.lastInFlight.asReadonly();
 
+  /**
+   * **Le total qui a changé à la passation** (T3) — `null` sans refus de ce
+   * genre. Le panier redemande son devis et compare, terme à terme, celui-ci
+   * au nouveau (`TotalChangedCallout`). Remis à `null` à chaque tentative.
+   */
+  private readonly lastTotalChange = signal<SeenTotalChange | null>(null);
+  readonly totalChange = this.lastTotalChange.asReadonly();
+
   /** Les commandes gardées pour l'espace COURANT — vide tant qu'il n'est pas connu. */
   private readonly placed = signal<readonly PlacedOrder[]>([]);
 
@@ -388,6 +409,7 @@ export class ClientOrders {
   async place(settlement: OrderSettlement | null = null): Promise<PlacedOrder | null> {
     this.lastRefusal.set(null);
     this.lastInFlight.set(null);
+    this.lastTotalChange.set(null);
     const service = this.order.choice();
     const lines = this.cart.lines();
     // L'espace est CAPTURÉ ici : c'est celui dans lequel le client a composé et
@@ -400,7 +422,12 @@ export class ClientOrders {
     if (service === null || lines.length === 0 || workspace === null) {
       return null;
     }
-    const placed = await this.send(service, lines, settlement, workspace, voucherId);
+    // Le devis AFFICHÉ au clic (le « devis A » du plan) : son TTC part comme
+    // total vu, et c'est à lui que le panier comparera un devis neuf si le
+    // serveur répond que le total a changé (T3). Le panier ne laisse pas
+    // cliquer pendant qu'un devis est en vol (`cart-dialog`, `blockReason`).
+    const seen = this.cart.totals();
+    const placed = await this.send(service, lines, settlement, workspace, voucherId, seen);
     if (placed === null) {
       return null;
     }
@@ -479,17 +506,21 @@ export class ClientOrders {
   async placeAsGuest(buyer: GuestBuyerPayload): Promise<PlacedOrder | null> {
     this.lastRefusal.set(null);
     this.lastInFlight.set(null);
+    this.lastTotalChange.set(null);
     const service = this.order.choice();
     const lines = this.cart.lines();
     if (service === null || lines.length === 0) {
       return null;
     }
+    // Le devis affiché au clic — cf. `place`.
+    const seen = this.cart.totals();
     const payload: PlaceShopOrderPayload = {
       ...guestContentOf(service, lines, this.attemptKey(GUEST_WORKSPACE), this.locale.current()),
       salesTerms: this.salesTerms.accepted(),
+      expectedTotalCents: seen.totalCents,
       buyer,
     };
-    const placed = await this.sendAsGuest(payload);
+    const placed = await this.sendAsGuest(payload, seen);
     if (placed === null) {
       return null;
     }
@@ -504,7 +535,10 @@ export class ClientOrders {
    * trompeurs : un en-tête d'espace sur une commande qui n'appartient à aucune
    * société ferait croire à une appartenance que rien n'établit.
    */
-  private async sendAsGuest(payload: PlaceShopOrderPayload): Promise<PlacedOrderResponse | null> {
+  private async sendAsGuest(
+    payload: PlaceShopOrderPayload,
+    seen: ShopQuoteView,
+  ): Promise<PlacedOrderResponse | null> {
     try {
       return await firstValueFrom(
         this.http.post<PlacedOrderResponse>(`${AUTH_CONFIG.apiBaseUrl}/shop/orders`, payload),
@@ -516,7 +550,7 @@ export class ClientOrders {
         this.lastInFlight.set(httpErrorMessage(error, ''));
         return null;
       }
-      if (this.salesTermsOutdated(error)) {
+      if (this.salesTermsOutdated(error) || this.totalChanged(error, seen, null)) {
         return null;
       }
       this.refuse(error);
@@ -701,6 +735,7 @@ export class ClientOrders {
     settlement: OrderSettlement | null,
     workspace: string,
     voucherId: string | null,
+    seen: ShopQuoteView,
   ): Promise<PlacedOrderResponse | null> {
     if (!this.auth.isAuthenticated()) {
       // Pas un échec : une étape. L'écran envoie se connecter, et le panier
@@ -719,6 +754,8 @@ export class ClientOrders {
       salesTerms: this.salesTerms.accepted(),
       // Omis sans bon, jamais `null` : le contrat le déclare facultatif.
       ...(voucherId === null ? {} : { voucherId }),
+      // Le TTC du devis affiché : la passation refuse un autre total (T3).
+      expectedTotalCents: seen.totalCents,
     };
     try {
       return await firstValueFrom(
@@ -742,7 +779,7 @@ export class ClientOrders {
         this.lastInFlight.set(httpErrorMessage(error, ''));
         return null;
       }
-      if (this.salesTermsOutdated(error)) {
+      if (this.salesTermsOutdated(error) || this.totalChanged(error, seen, settlement)) {
         return null;
       }
       // `NotifyService.error` filtre déjà l'enveloppe : le message du serveur
@@ -787,6 +824,30 @@ export class ClientOrders {
     }
   }
 
+  /**
+   * **Le total a changé depuis le devis affiché** (409, T3) : pas une panne,
+   * un écart à montrer. Le devis se redemande, et le panier dira, terme à
+   * terme, ce qui a bougé — le message du serveur ne nomme que les deux
+   * montants. Rien n'est écrit au serveur : la même clé repartira.
+   */
+  private totalChanged(
+    error: unknown,
+    seen: ShopQuoteView,
+    settlement: OrderSettlement | null,
+  ): boolean {
+    if (httpErrorCode(error) !== ORDER_TOTAL_CHANGED) {
+      return false;
+    }
+    this.lastTotalChange.set({ before: seen, settlement });
+    this.cart.requote();
+    return true;
+  }
+
+  /** « Modifier mon panier » : l'écart n'est plus à confirmer. */
+  dismissTotalChange(): void {
+    this.lastTotalChange.set(null);
+  }
+
   private salesTermsOutdated(error: unknown): boolean {
     if (httpErrorCode(error) !== SALES_TERMS_OUTDATED) {
       return false;
@@ -825,7 +886,7 @@ function payloadOf(
   idempotencyKey: string,
   settlement: OrderSettlement | null,
   locale: LocaleCode,
-): Omit<PlaceOrderPayload, 'salesTerms'> {
+): Omit<PlaceOrderPayload, 'salesTerms' | 'expectedTotalCents'> {
   return {
     // 🔴 **Plus de `companyId` ici, et ce n'est plus au navigateur d'en parler.**
     //
@@ -912,7 +973,7 @@ function guestContentOf(
   }[],
   idempotencyKey: string,
   locale: LocaleCode,
-): Omit<PlaceOrderPayload, 'settlement' | 'salesTerms'> {
+): Omit<PlaceOrderPayload, 'settlement' | 'salesTerms' | 'expectedTotalCents'> {
   const { settlement, ...content } = payloadOf(service, lines, idempotencyKey, null, locale);
   // Un visiteur n'a pas de carnet : aucun identifiant d'adresse ne part d'ici,
   // quoi que porte le choix stocké.

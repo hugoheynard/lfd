@@ -4154,6 +4154,104 @@
           "en": "The order could not be placed.",
           "it": "Non è stato possibile effettuare l’ordine.",
           "variables": []
+        },
+        {
+          "key": "cart.payBlockedQuoting",
+          "fr": "Le total se met à jour…",
+          "en": "The total is updating…",
+          "it": "Il totale si sta aggiornando…",
+          "variables": []
+        },
+        {
+          "key": "cart.totalChanged",
+          "fr": "Le total est passé de {before} à {after} : {changes}.",
+          "en": "The total went from {before} to {after}: {changes}.",
+          "it": "Il totale è passato da {before} a {after}: {changes}.",
+          "variables": ["before", "after", "changes"]
+        },
+        {
+          "key": "cart.totalChangedConfirm",
+          "fr": "Commander à {total}",
+          "en": "Order at {total}",
+          "it": "Ordina a {total}",
+          "variables": ["total"]
+        },
+        {
+          "key": "cart.totalChangedModify",
+          "fr": "Modifier mon panier",
+          "en": "Edit my basket",
+          "it": "Modifica il carrello",
+          "variables": []
+        },
+        {
+          "key": "cart.changeLateFeeAppeared",
+          "fr": "votre commande arrive après l’heure limite, un supplément de {amount} HT s’applique",
+          "en": "your order comes after the cut-off time, a surcharge of {amount} excl. VAT applies",
+          "it": "il vostro ordine arriva dopo l’orario limite, si applica un supplemento di {amount} IVA esclusa",
+          "variables": ["amount"]
+        },
+        {
+          "key": "cart.changeLateFee",
+          "fr": "le supplément de retard a changé",
+          "en": "the late surcharge has changed",
+          "it": "il supplemento per ritardo è cambiato",
+          "variables": []
+        },
+        {
+          "key": "cart.changeDeliveryFee",
+          "fr": "les frais de livraison ont changé",
+          "en": "the delivery fee has changed",
+          "it": "le spese di consegna sono cambiate",
+          "variables": []
+        },
+        {
+          "key": "cart.changeDiscount",
+          "fr": "la remise a changé",
+          "en": "the discount has changed",
+          "it": "lo sconto è cambiato",
+          "variables": []
+        },
+        {
+          "key": "cart.changeVoucher",
+          "fr": "la réduction de votre bon a changé",
+          "en": "your voucher’s reduction has changed",
+          "it": "la riduzione del vostro buono è cambiata",
+          "variables": []
+        },
+        {
+          "key": "cart.changeDiscountEnded",
+          "fr": "la remise « {label} » a pris fin",
+          "en": "the “{label}” discount has ended",
+          "it": "lo sconto «{label}» è terminato",
+          "variables": ["label"]
+        },
+        {
+          "key": "cart.changeLineRemoved",
+          "fr": "{name} a été retiré du panier",
+          "en": "{name} was removed from the basket",
+          "it": "{name} è stato tolto dal carrello",
+          "variables": ["name"]
+        },
+        {
+          "key": "cart.changeLinePrice",
+          "fr": "le prix de {name} a changé",
+          "en": "the price of {name} has changed",
+          "it": "il prezzo di {name} è cambiato",
+          "variables": ["name"]
+        },
+        {
+          "key": "cart.changeVat",
+          "fr": "la TVA a changé",
+          "en": "the VAT has changed",
+          "it": "l’IVA è cambiata",
+          "variables": []
+        },
+        {
+          "key": "cart.changeOther",
+          "fr": "les prix ont été mis à jour",
+          "en": "prices have been updated",
+          "it": "i prezzi sono stati aggiornati",
+          "variables": []
         }
       ],
       "unrecorded": []

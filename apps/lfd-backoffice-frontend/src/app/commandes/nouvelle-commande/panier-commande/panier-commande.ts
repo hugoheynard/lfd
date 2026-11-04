@@ -130,6 +130,12 @@ export class PanierCommande {
    */
   readonly estimate = input<AdminOrderEstimateView | null>(null);
   /**
+   * L'estimation répond-elle à la saisie courante ? (plan total vu, T3) —
+   * faux pendant qu'elle est en vol ou absente : la validation attend, parce
+   * que c'est son total qui part comme total vu.
+   */
+  readonly estimateReady = input(false);
+  /**
    * Le « Lien de règlement » est-il proposé ? Faux au comptoir (E4, Hugo,
    * 2026-11-03) : règlement au compte seulement.
    */
@@ -245,7 +251,9 @@ export class PanierCommande {
     }),
   );
 
-  protected readonly canPlace = computed(() => this.blockers().length === 0 && !this.submitting());
+  protected readonly canPlace = computed(
+    () => this.blockers().length === 0 && !this.submitting() && this.estimateReady(),
+  );
 
   /**
    * Les deux vues du panier (Hugo, 2026-11-03). Pas de bascule automatique au

@@ -45,6 +45,7 @@ import { runWithRequestContext } from "../src/platform/context/request-context.s
 import { newTraceId } from "../src/platform/context/trace-context.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";
 import { E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { seeingTotal } from "./seen-total-shop-command.js";
 
 /** Une ligne de panier : le client n'envoie qu'un SKU et une quantité, le serveur tarife. */
 export interface OrderLineSeed {
@@ -137,10 +138,22 @@ function contentOf(seed: OrderContentSeed) {
   };
 }
 
+/** `seeingTotal`, sous une clé d'idempotence tirée une fois pour les deux tentatives. */
+function seeingTotalWithKey<R>(
+  idempotencyKey: string,
+  attempt: (idempotencyKey: string, expectedTotalCents: number) => Promise<R>,
+): Promise<R> {
+  return seeingTotal(undefined, (expectedTotalCents) =>
+    attempt(idempotencyKey, expectedTotalCents),
+  );
+}
+
 /** Le corps qu'enverrait la boutique, relu par le schéma du contrat — comme le contrôleur le fait. */
-function payloadOf(seed: OrderSeed): PlaceOrderPayload {
+function payloadOf(seed: OrderSeed, expectedTotalCents: number): PlaceOrderPayload {
   return placeOrderPayloadSchema.parse({
     ...contentOf(seed),
+    // Le total vu, confirmé par `seeingTotal` (plan total vu, T3).
+    expectedTotalCents,
     settlement: seed.settlement ?? null,
     ...(seed.locale === undefined ? {} : { locale: seed.locale }),
     ...(seed.voucherId === undefined ? {} : { voucherId: seed.voucherId }),
@@ -186,11 +199,19 @@ async function placeAt(
  */
 export function placeOrder(ctx: E2eContext, seed: OrderSeed): Promise<PlacedTestOrder> {
   return placeAt(ctx, seed.placedAt, { type: "customer", id: seed.buyerUserId }, () =>
-    ctx.app
-      .get(CommandBus)
-      .execute<PlaceOrderCommand, PlaceOrderResult>(
-        new PlaceOrderCommand(seed.buyerUserId, payloadOf(seed), seed.companyId ?? null),
-      ),
+    // Le corps est parsé UNE fois par tentative, mais sa clé est tirée une
+    // seule fois : le renvoi au total confirmé est la même demande.
+    seeingTotalWithKey(randomUUID(), (idempotencyKey, expectedTotalCents) =>
+      ctx.app
+        .get(CommandBus)
+        .execute<PlaceOrderCommand, PlaceOrderResult>(
+          new PlaceOrderCommand(
+            seed.buyerUserId,
+            { ...payloadOf(seed, expectedTotalCents), idempotencyKey },
+            seed.companyId ?? null,
+          ),
+        ),
+    ),
   );
 }
 
@@ -215,18 +236,22 @@ export function placeOrderForCustomer(
   ctx: E2eContext,
   seed: StaffOrderSeed,
 ): Promise<PlacedTestOrder> {
-  const payload = adminPlaceOrderPayloadSchema.parse({
-    ...contentOf(seed),
-    companyId: seed.companyId,
-    buyerUserId: seed.buyerUserId,
-    settlement: seed.settlement,
-  });
+  const payload = (expectedTotalCents: number) =>
+    adminPlaceOrderPayloadSchema.parse({
+      ...contentOf(seed),
+      companyId: seed.companyId,
+      buyerUserId: seed.buyerUserId,
+      settlement: seed.settlement,
+      expectedTotalCents,
+    });
   return placeAt(ctx, seed.placedAt, { type: "staff", id: seed.staffUserId }, () =>
-    ctx.app
-      .get(CommandBus)
-      .execute<PlaceOrderForCustomerCommand, PlaceOrderForCustomerResult>(
-        new PlaceOrderForCustomerCommand(seed.staffUserId, payload),
-      ),
+    seeingTotal(undefined, (expectedTotalCents) =>
+      ctx.app
+        .get(CommandBus)
+        .execute<PlaceOrderForCustomerCommand, PlaceOrderForCustomerResult>(
+          new PlaceOrderForCustomerCommand(seed.staffUserId, payload(expectedTotalCents)),
+        ),
+    ),
   );
 }
 
