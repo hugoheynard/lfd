@@ -82,9 +82,18 @@ impression.
 
 **Reste**
 
-- **Les suggestions du panier sont demandées deux fois**, au changement
-  d'espace comme à chaque ajout ; la seconde fixe la fin (jusqu'à 3,5 s). Une
-  seule demande — le prochain lot bâti.
+- 🟦 Les suggestions du panier ne sont plus demandées qu'une fois par geste :
+  elles attendent le total du devis (`fe5afcfb3`). Elles partaient deux fois,
+  et la seconde fixait la fin d'un changement d'espace (jusqu'à 3,5 s).
+- **Ne charger que ce que la page affiche** (décidé avec Hugo le 2026-11-04) :
+  changer d'espace recharge toute la page, et chaque store relit tout, même
+  ce qu'elle ne montre pas — `companies/:id/orders` (« Mes commandes »),
+  `subscriptions/mine`, `me/loyalty`. Chacun se charge à l'ouverture de son
+  écran.
+- **Regrouper les petites lectures de l'espace** (`me/contact-settings`,
+  `order-admission/mine`, `pickup-addresses/mine`) en une lecture « contexte
+  de l'espace », chaque morceau servi selon l'audience de l'appelant —
+  `vitruve` d'abord (audience).
 - Le délai avant le devis (300 ms) ramené à ~150 ms.
 - `companies/_` lu deux fois par changement (vu le matin) : à revérifier, une
   seule lecture vue le soir.
