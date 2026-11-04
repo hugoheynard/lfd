@@ -611,6 +611,12 @@ prix public bouge le prix pro ».
 
 ## Avant de déployer « le prix pro est toujours saisi » (lot R3)
 
+> ✅ **Clos.** Cette migration est en production depuis le déploiement du
+> 2026-10-27. La table `pim.accounting_rules` est ensuite **supprimée** par
+> `20261104110000_le_rapport_pro_quitte_la_base` (ordre de Hugo,
+> 2026-11-04) : la requête ci-dessous ne s'exécute plus, et il n'y a plus
+> rien à constater. La section reste pour l'histoire d'un déploiement.
+
 Migration `20261027110000_le_prix_pro_est_toujours_saisi`
 ([`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)).
 Elle **lève une exception** si `pim.accounting_rules` porte une méthode autre

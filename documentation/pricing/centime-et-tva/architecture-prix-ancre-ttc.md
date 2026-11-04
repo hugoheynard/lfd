@@ -101,11 +101,12 @@ Ce qui diffère est la **composition de la commande**
 - **pro** (`line_ht`) : la commande se compose en HT, la TVA s'ajoute par taux
   (`ventilateVat`).
 
-## 5. Ce qui reste en base sans être lu
+## 5. Ce qui a quitté la base
 
-- `pim.accounting_rules.pro_price_ratio_bp` et `pro_price_method` : l'ancien
-  rapport pro et sa méthode, plus lus depuis le 2026-10-27 (une colonne morte
-  reste en base, CLAUDE.md § 0).
-- ⚠️ Les commentaires du schéma Prisma de `product.prisma` décrivent encore
-  `price_cents` comme un prix « HT » et le prix pro comme dépendant de la
-  méthode `ratio_ttc` : ils sont périmés (relevé le 2026-11-04, à corriger).
+- `pim.accounting_rules` (l'ancien rapport pro et sa méthode, plus lus depuis
+  le 2026-10-27) est **supprimée** par
+  `20261104110000_le_rapport_pro_quitte_la_base` (ordre de Hugo,
+  2026-11-04). Restent, comme histoire : les faits `accounting_rules.*` du
+  journal et l'en-tête des révisions du catalogue.
+- Les commentaires de `product.prisma` sur `price_cents` (prix public TTC) et
+  `pro_price_millicents` (toujours saisi) sont corrigés le même jour.

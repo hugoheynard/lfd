@@ -173,9 +173,9 @@ sérieux de `vitruve` sont tranchés ainsi :
   du domaine.
 - **Migration** `20261027110000_le_prix_pro_est_toujours_saisi` : garde
   `RAISE EXCEPTION` entre deux marqueurs, puis défaut `entered` et contrainte
-  `accounting_rules_method_known` resserrée. Éprouvée par
-  `test/pro-price-entered-migration.e2e-spec.ts` (bloc relu dans le fichier,
-  transaction annulée). Phrase de runbook : « Avant de déployer « le prix pro
+  `accounting_rules_method_known` resserrée. Éprouvée par une suite e2e
+  (bloc relu dans le fichier, transaction annulée), retirée le 2026-11-04
+  avec la table elle-même (`20261104110000_le_rapport_pro_quitte_la_base`). Phrase de runbook : « Avant de déployer « le prix pro
   est toujours saisi » ».
 - **Domaine** : le contexte `src/pim/accounting-rules/` est retiré entier
   (agrégat, VO, ports, handlers, contrôleur, routes) — il n'avait plus ni

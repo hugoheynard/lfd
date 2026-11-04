@@ -181,18 +181,14 @@ model ProductVariant {
   position       Int     @default(0)
   attributes     Json    @default("{}")
 
-  /// Prix **canonique** de l'unité réellement vendue (R4) — tarif de référence,
-  /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
-  /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
-  /// ici (cf. documentation/pricing/obsolete/architecture-conditionnements-pricing.md).
+  /// **Le prix PUBLIC, saisi TAXE COMPRISE**, en centimes — l'étiquette
+  /// (`documentation/pricing/centime-et-tva/architecture-prix-ancre-ttc.md`).
+  /// Le hors taxe de chaque contexte de vente s'en déduit à l'émission
+  /// (`htMillicentsOf`). `NULL` = pas de prix public : la déclinaison ne se
+  /// vend pas au public. Remises et dégressifs vivent dans la plateforme,
+  /// jamais ici. (Ce commentaire disait « HT » jusqu'au 2026-11-04 : faux
+  /// depuis l'ancrage au TTC du 2026-08-31.)
   priceCents  Int? @map("price_cents")
-  /// **Ce que `price_cents` veut dire.** `ht` par défaut : la colonne portait un
-  /// prix hors taxe depuis toujours, et un défaut qui change le sens des lignes
-  /// existantes serait une reprise de données déguisée en migration.
-  ///
-  /// Non-nullable, donc pas de troisième état : une déclinaison sans assiette
-  /// n'existe pas, alors qu'une déclinaison sans PRIX, si (`price_cents` reste
-  /// nullable — « pas encore tarifé »).
   /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
   weightGrams Int? @map("weight_grams")
 
@@ -249,9 +245,9 @@ model ProductVariant {
   /// **Le prix professionnel HORS TAXE saisi**, en millicentimes (10⁻⁵ €) —
   /// lot P de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`.
   ///
-  /// Lu seulement sous la méthode `entered` des règles comptables ; sous
-  /// `ratio_ttc`, le prix pro reste dérivé du prix public et cette colonne dort.
-  /// `NULL` = pas saisi. Une déclinaison qui suit le tarif du défaut
+  /// Le prix pro est **toujours** saisi (le rapport qui le dérivait du prix
+  /// public est retiré depuis le 2026-10-27, sa table le 2026-11-04).
+  /// `NULL` = pas saisi : la déclinaison ne se vend pas aux pros. Une déclinaison qui suit le tarif du défaut
   /// (`pricingFollowsDefault`) suit aussi son prix pro. `CHECK (>= 0)`.
   proPriceMillicents Int? @map("pro_price_millicents")
 
