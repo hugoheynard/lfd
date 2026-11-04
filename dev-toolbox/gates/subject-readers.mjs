@@ -61,6 +61,11 @@ const ADMITTED = new Map([
       "local (provisionnement, invité sans compte qui se connecte, accès en attente)",
   ],
   [
+    "apps/lfd-api/src/b2b/account/infrastructure/cached-principal.resolver.ts",
+    "le principal gardé en mémoire (L4, 2026-11-04) : le `sub` du jeton est la clé de " +
+      "la mémoire, et repris dans le principal rendu ; ni écrit ni journalisé",
+  ],
+  [
     "apps/lfd-api/src/b2b/account/infrastructure/unknown-subject-admission.ts",
     "un `sub` inconnu sous une adresse connue : refus d'un second compte, ou première " +
       "entrée d'un invité rattachée à ce `sub` (2026-10-09) ; le `sub` n'est ni rendu ni journalisé",

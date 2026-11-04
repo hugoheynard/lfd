@@ -1,8 +1,9 @@
 # Plan — le principal gardé en mémoire de l'API (L4)
 
 > 📝 **Plan, écrit le 2026-11-04**, lot L4 de
-> [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md). Rien n'est
-> bâti. Il déplace une **frontière de sécurité** (la résolution d'accès) : il
+> [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md). 🟨 **Bâti
+> le 2026-11-04, non commité** (migration `20261104120000`,
+> `CachedPrincipalResolver`) ; `Server-Timing` `principal-cache` non posé. Il déplace une **frontière de sécurité** (la résolution d'accès) : il
 > passe par `vitruve` avant Hugo. Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
@@ -132,6 +133,38 @@ value = value + 1`. ⚠️ À trancher avec `vitruve` : un compteur sur une lign
   l'estampille EN TÊTE (un `UPDATE` par l'unité de travail), ou retenir des
   déclencheurs `BEFORE … FOR EACH STATEMENT`. À trancher au bâti, sur
   l'inventaire.
+
+  **Tranché au bâti (2026-11-04) : `BEFORE … FOR EACH STATEMENT`**, parce
+  qu'il fait prendre l'estampille AVANT les verrous de lignes à TOUTE écriture
+  des trois tables, sans toucher aux transactions ni sérialiser celles qui ne
+  les écrivent pas — ce que l'unité de travail ferait pour toute l'API.
+  `AFTER` interbloquait même une transaction à une seule table : une recopie
+  de preuve (`users`, puis l'estampille) contre `acceptAndActivate` du même
+  compte (estampille, puis `users`).
+
+  Inventaire des transactions qui écrivent au moins deux des trois tables
+  (lu le 2026-11-04, `apps/lfd-api/src`) :
+
+  - `b2b/account/infrastructure/customer-principal.resolver.ts:224`
+    (`acceptAndActivate`) — `memberships` puis `users` ;
+  - `b2b/account/infrastructure/unknown-subject-admission.ts:207`
+    (`claimOrUndo`) — `users` puis `memberships` ;
+  - `b2b/account/infrastructure/prisma-company.repository.ts:84`
+    (`declareOwnedBy`) — `companies` puis `memberships`.
+
+  `GrantAccountAccess` (`createInvited` puis `attach`) écrit `users` et
+  `memberships` hors de toute unité de travail ; `create-sub-account`,
+  `attach-account-holder`, les gestes du carnet de contacts (`alignRole`)
+  n'en écrivent qu'une par transaction.
+
+  ⚠️ **Ce que `BEFORE` ne range pas** : un verrou pris SANS déclencheur avant
+  une écriture des trois tables. `SitePrincipalLock` et le carnet d'adresses
+  posent `SELECT … FOR UPDATE` sur `companies` ; vérifié le 2026-11-04, ils
+  le font toujours APRÈS l'écriture des trois tables dans la même transaction
+  (gestes de site), ou dans une transaction qui ne les écrit pas (carnet).
+  Un geste futur qui verrouillerait une société avant d'écrire `companies`
+  rouvrirait l'interblocage.
+
 - **Le harnais e2e** tronque toutes les tables (`truncateAll`) : il remet la
   ligne de l'estampille après chaque `reset()` et vide la mémoire du
   résolveur — sans quoi le déclencheur ne trouve plus de ligne et des tests
@@ -143,6 +176,56 @@ value = value + 1`. ⚠️ À trancher avec `vitruve` : un compteur sur une lign
 - **Borne** : LRU, 1 000 personnes, filet de 10 minutes.
 - `DevImpersonation` passe par le même résolveur : couvert, sans risque hors
   production.
+
+## 3 ter. Les préférences de navigation quittent `users` (décidé par Hugo le 2026-11-04, option 1)
+
+**Pourquoi** : `PATCH /me/nav-prefs` écrit `users.nav_prefs` à chaque
+changement d'espace (`prisma-nav-preferences.repository.ts`, un `UPDATE` brut,
+lu le 2026-11-04). Avec le déclencheur sur `users`, chaque changement d'espace
+viderait la mémoire de TOUS les principaux, et sérialiserait une écriture de
+plus sur la ligne de l'estampille. Les sortir de `users` rend le problème
+inexprimable, là où exclure la colonne du déclencheur demanderait une liste
+tenue par une porte.
+
+**Forme** :
+
+- Table `public.user_nav_prefs` : `user_id` (clé primaire, clé étrangère vers
+  `users`, `ON DELETE CASCADE`), `prefs jsonb NOT NULL DEFAULT '{}'`,
+  `updated_at`. **Aucun déclencheur d'estampille** : le principal ne lit pas
+  les préférences.
+- Même migration que l'estampille, **avant** les déclencheurs : création, puis
+  `INSERT INTO user_nav_prefs (user_id, prefs, updated_at) SELECT id,
+nav_prefs, now() FROM users WHERE jsonb_typeof(nav_prefs) = 'object'`. La
+  copie précède le déclencheur : elle ne fait rien monter. Les valeurs
+  non-objet (`'null'`, tableau) ne sont pas copiées : elles ne se lisaient
+  déjà pas comme des préférences (trou hérité, fermé ici).
+- Le code écrit et lit la nouvelle table. `merge` devient :
+  `INSERT INTO user_nav_prefs (user_id, prefs, updated_at) VALUES ($user,
+$patch::jsonb, now()) ON CONFLICT (user_id) DO UPDATE SET prefs =
+user_nav_prefs.prefs || excluded.prefs, updated_at = excluded.updated_at`
+  (`@updatedAt` ne s'applique pas à `$executeRaw` : le SQL pose la date). Le
+  lecteur du compte (`prisma-account.reader.ts`) la joint par `user_id` ; un
+  compte sans ligne se lit `null`, comme aujourd'hui.
+- **`users.nav_prefs` reste en base, sans lecteur ni écrivain** (une colonne
+  morte reste, CLAUDE.md §0). Un commentaire de schéma le dit, daté.
+- **Un seul déploiement** (pré-release, Hugo 2026-10-04) : entre la migration
+  et la bascule du code, l'ancien code peut encore écrire l'ancienne colonne
+  pendant quelques secondes ; une préférence perdue (le dernier espace choisi)
+  est le pire cas, sans droit ni argent en jeu.
+- Les préférences du staff (`staff_users`) ne sont pas concernées.
+
+- **Retour arrière, dans les deux sens** : un ancien binaire qui écrit après
+  la copie écrit une colonne morte ; un retour au binaire précédent APRÈS des
+  écritures dans la nouvelle table relit `users.nav_prefs` figée à l'instant
+  de la copie. Pire cas, les deux fois : un dernier espace choisi perdu.
+  `user_nav_prefs` ne se supprime pas tant qu'un binaire la lit. L'en-tête de
+  la migration le dit (elle n'est plus « strictement additive » : elle copie).
+
+**Tests (tranché)** : la copie est testée en e2e en exécutant **le bloc de
+copie lu dans le fichier de migration** (délimité par deux commentaires
+marqueurs) sur des `users` semés avec un objet, `'null'`, un tableau et
+`NULL` — seul l'objet passe ; `PATCH /me/nav-prefs` ne fait plus monter l'estampille
+(e2e) ; les préférences relues après écriture (e2e existants).
 
 ## 4. Ce qui reste hors du lot
 

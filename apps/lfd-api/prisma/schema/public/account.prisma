@@ -421,10 +421,12 @@ model User {
   // Rafraîchi à la connexion et quand on émet un lien de mot de passe.
   emailVerified Boolean @default(false) @map("email_verified")
 
-  // Préférences de navigation/affichage de la personne (bag JSON, extensible).
-  // Aujourd'hui : `catalogueView` (grille/rayons/liste). Absent = pas de choix
-  // explicite → le front applique son défaut. Sac plutôt qu'une colonne par
-  // préf : ces réglages purement UI n'ont pas d'invariant et grossiront.
+  // 🔴 COLONNE MORTE depuis le 2026-11-04 : ni lue ni écrite par le code. Les
+  // préférences de navigation vivent dans `user_nav_prefs` (`UserNavPrefs`,
+  // plan `caching-usage/plan-principal-en-memoire.md` §3 ter) — écrites ici,
+  // elles feraient monter l'estampille du principal. Elle reste en base (une
+  // colonne morte reste, CLAUDE.md §0) ; copiée à l'instant de la migration
+  // `20261104120000_l_estampille_du_principal`.
   navPrefs Json? @map("nav_prefs")
 
   // Traçabilité : id de la fiche STAFF qui a provisionné ce client (un `sub`
@@ -463,6 +465,7 @@ model User {
   loyaltyEntries        LoyaltyLedgerEntry[]   @relation("LoyaltyEntryHolder")
   loyaltyActs           LoyaltyLedgerEntry[]   @relation("LoyaltyEntryActor")
   loyaltyVouchers       LoyaltyVoucher[]       @relation("LoyaltyVoucherHolder")
+  navPreferences        UserNavPrefs?
 
   @@map("users")
   @@schema("public")

@@ -1078,3 +1078,65 @@ describe("CustomerPrincipalResolver", () => {
     });
   });
 });
+
+/**
+ * Ce que le résolveur gardé en mémoire peut ranger
+ * (`documentation/caching-usage/plan-principal-en-memoire.md`, §2) : seul le
+ * chemin qui n'écrit rien et ne dépend pas de l'heure.
+ */
+describe("CustomerPrincipalResolver — ce qui peut être gardé", () => {
+  it("garde le compte actif dont les rattachements sont tous acceptés", async () => {
+    const outcome = await (await resolverWith(prismaDouble([activeUser]))).resolveTracked(token);
+    expect(outcome.storable).toBe(true);
+  });
+
+  it("ne garde pas la création d'un compte (premier passage)", async () => {
+    const double = prismaDouble([null, { ...activeUser, memberships: [] }]);
+    expect((await (await resolverWith(double)).resolveTracked(token)).storable).toBe(false);
+  });
+
+  it("ne garde pas l'entrée d'un invité", async () => {
+    const double = prismaDouble([invitedUser]);
+    expect((await (await resolverWith(double)).resolveTracked(token)).storable).toBe(false);
+  });
+
+  it("ne garde pas la requête qui recopie la preuve de l'adresse", async () => {
+    const double = prismaDouble([activeUser]);
+    const outcome = await (
+      await resolverWith(double)
+    ).resolveTracked({ ...token, email: "jean@client.fr", emailVerified: true });
+    expect(outcome.storable).toBe(false);
+  });
+
+  it("ne garde pas un compte actif dont une invitation vivante attend (elle s'accepte)", async () => {
+    const pending = {
+      ...activeUser,
+      memberships: [
+        ...activeUser.memberships,
+        { companyId: "company_2", role: CustomerRole.orders, ...LIVE },
+      ],
+    };
+    const outcome = await (await resolverWith(prismaDouble([pending]))).resolveTracked(token);
+    expect(outcome.storable).toBe(false);
+  });
+
+  /**
+   * Une invitation expirée ne s'ouvre plus jamais avec le temps : le principal
+   * ne dépend plus de l'heure, il peut être gardé. Un `acceptedAt IS NULL`
+   * l'aurait exclu à tort — c'est la règle de vie qui compte.
+   */
+  it("garde un compte actif dont une invitation non acceptée a expiré", async () => {
+    const expired = {
+      ...activeUser,
+      memberships: [
+        ...activeUser.memberships,
+        { companyId: "company_2", role: CustomerRole.orders, ...EXPIRED },
+      ],
+    };
+    const outcome = await (await resolverWith(prismaDouble([expired]))).resolveTracked(token);
+    expect(outcome.storable).toBe(true);
+    expect(outcome.principal.memberships).toEqual([
+      { companyId: "company_1", role: CustomerRole.orders },
+    ]);
+  });
+});

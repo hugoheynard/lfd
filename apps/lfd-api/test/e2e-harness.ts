@@ -66,6 +66,7 @@ import { MarketDirectory } from "../src/b2b/growth/domain/ports/market-directory
 import { BootStopwatch } from "./e2e-boot-log.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
+import { CachedPrincipalResolver } from "../src/b2b/account/infrastructure/cached-principal.resolver.js";
 import { resetRolesToSeed } from "../src/dev/seeding/roles.seed.js";
 
 /**
@@ -276,6 +277,12 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // `TRUNCATE` l'emporte : remise ici, pour que son absence ne soit
         // jamais un état que le calcul rencontre.
         await ensurePromotionsSource(prisma);
+        // L'estampille du principal est posée par migration, et le `TRUNCATE`
+        // l'emporte : remise ici (plan-principal-en-memoire.md, §3 bis). Le
+        // déclencheur la recréerait à la première écriture, mais à 1 — un
+        // numéro qu'un principal gardé par la suite d'avant peut porter : la
+        // mémoire du résolveur est vidée plus bas, pour cette raison.
+        await ensurePrincipalStamp(prisma);
         // Le référentiel d'allergènes est posé par migration, comme les contextes
         // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
         // donc qu'à effacer ce qu'un TEST y aurait ajouté.
@@ -287,6 +294,9 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // La résolution d'accès garde un cache court par `sub` : sans cet oubli,
         // le test suivant travaillerait avec l'id d'une fiche qu'on vient d'effacer.
         app.get(StaffAccessResolver).forgetAll();
+        // Le principal client, gardé sous l'estampille que le `TRUNCATE` fait
+        // revenir en arrière : sans cet oubli, deux suites partageraient un principal.
+        app.get(CachedPrincipalResolver).forget();
         // 🔴 Et les matériaux de prix, pour la MÊME raison — mais avec un piège en
         // plus. En production, le cache est vidé par `PricingActWriter`, passage
         // obligé de toute écriture tarifaire. Les suites, elles, sèment leurs
@@ -567,6 +577,13 @@ async function ensurePromotionsSource(prisma: PrismaService): Promise<void> {
     create: { key: "promotions_source", value: "promotions" },
     update: { value: "promotions" },
   });
+}
+
+/** La ligne unique de `principal_stamp`, à l'identique de `20261104120000`. */
+async function ensurePrincipalStamp(prisma: PrismaService): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO "public"."principal_stamp" ("id", "value") VALUES (1, 0)
+    ON CONFLICT ("id") DO NOTHING`;
 }
 
 async function ensureSalesContexts(prisma: PrismaService): Promise<void> {

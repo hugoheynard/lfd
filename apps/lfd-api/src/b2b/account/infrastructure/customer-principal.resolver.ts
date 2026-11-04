@@ -4,7 +4,10 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { UserStatus } from "../../../platform/database/client/client.js";
 import type { CustomerRole } from "../../../platform/database/client/client.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
-import { PrincipalResolver } from "../../../platform/auth/principal.resolver.js";
+import {
+  TrackedPrincipalResolver,
+  type PrincipalResolution,
+} from "./tracked-principal.resolver.js";
 import type { Principal, VerifiedToken } from "../../../platform/auth/principal.js";
 import { UnknownSubjectAdmission } from "./unknown-subject-admission.js";
 import { tokenProvesAddress } from "./token-address-proof.js";
@@ -72,7 +75,7 @@ interface ResolvedMembership extends MembershipInvitation {
  * invitation vivante) — y compris pour une personne active ailleurs.
  */
 @Injectable()
-export class CustomerPrincipalResolver extends PrincipalResolver {
+export class CustomerPrincipalResolver extends TrackedPrincipalResolver {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: DomainEventPublisher,
@@ -91,6 +94,17 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
    * @throws {InvitationExpiredError} une personne invitée dont aucune invitation ne vit.
    */
   async resolve(token: VerifiedToken): Promise<Principal> {
+    return (await this.resolveTracked(token)).principal;
+  }
+
+  /**
+   * La même résolution, qui dit en plus si elle peut être GARDÉE
+   * (`documentation/caching-usage/plan-principal-en-memoire.md`, §2) : rien
+   * écrit — ni compte créé, ni invitation acceptée, ni preuve recopiée, ni
+   * première entrée —, et aucun rattachement qui attend encore son
+   * acceptation, seule part du principal qui dépend de l'heure.
+   */
+  async resolveTracked(token: VerifiedToken): Promise<PrincipalResolution> {
     const now = this.clock.now();
     const found = await this.findBySub(token.subject);
     // Première entrée : un `sub` encore inconnu (self-signup, invité qui entre
@@ -112,7 +126,20 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
       await this.stampFirstLogin(recorded, now);
     }
 
-    // `subject` vient du token ; `userId`/`email`/`memberships` de la BASE (autorité).
+    // `enter` et `record` rendent la MÊME personne quand ils n'écrivent rien.
+    const storable =
+      !firstEntry &&
+      recorded === found &&
+      !recorded.memberships.some((membership) => awaitsAcceptance(membership, now));
+    return { principal: await this.principalOf(recorded, token, now), storable };
+  }
+
+  /** `subject` vient du token ; `userId`/`email`/`memberships` de la BASE (autorité). */
+  private async principalOf(
+    recorded: ResolvedUser,
+    token: VerifiedToken,
+    now: Date,
+  ): Promise<Principal> {
     return {
       subject: token.subject,
       userId: recorded.id,
@@ -124,7 +151,8 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
         .filter((membership) => opensCompany(membership, now))
         .map(({ companyId, role }) => ({ companyId, role })),
       // Les sites atteints par héritage (S6) : la requête partagée, relue à
-      // chaque requête — détacher ou suspendre coupe à la suivante (R6).
+      // chaque résolution — détacher ou suspendre coupe à la suivante (R6) :
+      // l'écriture fait monter l'estampille, et le principal gardé est relu.
       reachableCompanyIds: (await readReachableSites(this.prisma, now, recorded.id)).map(
         (site) => site.companyId,
       ),

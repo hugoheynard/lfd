@@ -40,7 +40,8 @@ export class PrismaAccountReader extends AccountReader {
         lastName: true,
         email: true,
         phone: true,
-        navPrefs: true,
+        // Les préférences vivent hors de `users` depuis le 2026-11-04 (§3 ter).
+        navPreferences: { select: { prefs: true } },
         memberships: {
           // Seules les sociétés que le rattachement OUVRE : une invitation
           // expirée ne liste pas sa société (§8.1 bis, 2026-10-10).
@@ -68,7 +69,7 @@ export class PrismaAccountReader extends AccountReader {
         phone: row.phone,
       },
       companies,
-      navPrefs: parseNavPreferences(row.navPrefs),
+      navPrefs: parseNavPreferences(row.navPreferences?.prefs ?? null),
     };
   }
 

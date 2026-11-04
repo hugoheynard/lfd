@@ -197,6 +197,10 @@ import { ImpersonationSubjects } from "../../platform/auth/impersonation-subject
 import { PrismaImpersonationSubjects } from "./infrastructure/prisma-impersonation-subjects.js";
 import { PrincipalResolver } from "../../platform/auth/principal.resolver.js";
 import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.resolver.js";
+import { CachedPrincipalResolver } from "./infrastructure/cached-principal.resolver.js";
+import { TrackedPrincipalResolver } from "./infrastructure/tracked-principal.resolver.js";
+import { PrincipalStampReader } from "./domain/ports/principal-stamp.reader.js";
+import { PrismaPrincipalStampReader } from "./infrastructure/prisma-principal-stamp.reader.js";
 import { UnknownSubjectAdmission } from "./infrastructure/unknown-subject-admission.js";
 import { GuestAccountClaim } from "./infrastructure/guest-account-claim.js";
 import { MembershipAcceptance } from "./infrastructure/membership-acceptance.js";
@@ -449,7 +453,15 @@ import {
     // sait ce qu'est un client chez nous : la couche technique ne fait que
     // prouver le `sub`, et le guard global — déclaré à la racine de composition
     // — les met bout à bout.
-    { provide: PrincipalResolver, useClass: CustomerPrincipalResolver },
+    //
+    // Depuis le 2026-11-04 (L4, `plan-principal-en-memoire.md`), le guard lit
+    // le résolveur GARDÉ en mémoire, qui enveloppe celui de la base et ne
+    // relit qu'au mouvement de l'estampille.
+    CustomerPrincipalResolver,
+    { provide: TrackedPrincipalResolver, useExisting: CustomerPrincipalResolver },
+    { provide: PrincipalStampReader, useClass: PrismaPrincipalStampReader },
+    CachedPrincipalResolver,
+    { provide: PrincipalResolver, useExisting: CachedPrincipalResolver },
     // Ce qu'on fait d'un `sub` inconnu sous une adresse connue (2026-10-09).
     UnknownSubjectAdmission,
     // L'invité qui devient le compte à sa première entrée (R1, 2026-10-11).

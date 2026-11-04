@@ -1,0 +1,25 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Les préférences de navigation des clients —
+// `documentation/caching-usage/plan-principal-en-memoire.md`, §3 ter.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Le sac JSON des préférences d'affichage d'un client** (`catalogueView`,
+/// `workspace`…), sorti de `users.nav_prefs` le 2026-11-04.
+///
+/// 🔴 Hors de `users` parce que `users` porte le déclencheur de l'estampille du
+/// principal : chaque changement d'espace aurait vidé la mémoire de TOUS les
+/// principaux. Aucun déclencheur ici — le principal ne lit pas les préférences.
+///
+/// Écrit en fusion `jsonb ||` par `PrismaNavPreferencesRepository` ; une
+/// personne sans ligne n'a fait aucun choix. Le staff garde les siennes dans
+/// `staff_users`.
+model UserNavPrefs {
+  userId    String   @id @map("user_id")
+  prefs     Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_nav_prefs")
+  @@schema("public")
+}
