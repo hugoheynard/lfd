@@ -262,6 +262,36 @@ max-age=…` et `Cache-Tag: rayon-public`. Toute autre réponse garde le
 - `/mine` ignore la langue (`my-shop-catalogue.controller.ts`) : déjà le cas
   aujourd'hui, la clé n'en a donc pas besoin.
 
+## 4 bis. Le cache n'est jamais sur le chemin de la disponibilité (Hugo, 2026-11-04)
+
+« La prod ne peut jamais tomber en panne. » Le cache accélère ; il ne doit
+jamais pouvoir empêcher de servir un rayon. **Toute panne du cache retombe sur
+la lecture en base**, c'est-à-dire sur le chemin d'aujourd'hui.
+
+| Panne                                                | Ce qui se passe                                                                                                                                           |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workers Cache vide, désactivé ou en panne            | la requête atteint l'API, qui calcule depuis la base : le comportement d'aujourd'hui, sans rien à coder                                                   |
+| l'objet des pros ne répond pas, répond mal, ou tarde | l'API calcule depuis la base et sert ; elle ne range rien                                                                                                 |
+| l'objet répond trop lentement                        | **délai court** sur chaque appel au cache (de l'ordre de 100 ms, à fixer en C0) : passé ce délai, la base                                                 |
+| l'objet est en panne durable                         | **disjoncteur** : après quelques échecs, l'API cesse de l'appeler pendant un temps, pour ne pas payer le délai à chaque visite ; elle le réessaie ensuite |
+| une purge échoue                                     | journalisée ; la durée de 30 s rattrape                                                                                                                   |
+| la version ne se lit pas                             | public : `no-store` ; pro : calcul depuis la base sans rangement                                                                                          |
+
+**La seule panne que ce repli ne couvre pas** : un conteneur qui ne
+**démarre** pas. Déclarer un gestionnaire de sortie sans exporter
+`ContainerProxy` l'empêche de démarrer — **constaté en local le 2026-11-04**
+(`wrangler dev`, conteneur d'essai : 500 « ctx.exports.ContainerProxy is
+undefined »). Celle-là se tient par une **porte de CI**, avant tout
+gestionnaire : si `Backend` déclare `outboundByHost`, le Worker exporte
+`ContainerProxy` et `wrangler.jsonc` porte `enable_ctx_exports`, sinon le push
+est refusé. Le déploiement, lui, détecte une image qui ne sert pas
+(`deploy_lfd_api.yml`, révision attendue sur `/health`) mais ne revient pas en
+arrière tout seul.
+
+**Ce que les tests tiennent** : un objet qui lève, qui tarde au-delà du délai,
+ou qui rend une réponse illisible donne le même rayon que sans cache ; le
+disjoncteur s'ouvre et se referme.
+
 ## 5. La purge
 
 - **Montée après la validation**, par `AfterCommit.defer`, de toute écriture
