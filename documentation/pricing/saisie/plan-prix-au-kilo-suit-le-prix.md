@@ -93,20 +93,44 @@ Pour l'audience servie, dans son unité :
 `ShopItemView` (`packages/contracts/src/shop-catalogue.ts`) :
 
 - `publicPricePerKgTtcCents` / `proPricePerKgMillicents` deviennent le kilo
-  **servi** — même nom, sens corrigé, JSDoc réécrit. Aucun lecteur n'a besoin
-  de l'ancien sens : c'est un affichage, et l'ancien était faux ;
+  **servi** — même nom, sens corrigé, JSDoc réécrit. ⚠️ Un lecteur relit le
+  kilo **saisi** de son côté : l'export de grille de prix
+  (`catalog-price-grid-shelf.reader.ts`, `enteredPerKg`). Sans décision, le
+  rayon et la grille du même acheteur type montreraient deux kilos à la même
+  date (question 2, § 7). La vitrine (`b2b/vitrine`) n'a pas été relue ;
 - deux champs neufs, absents du fil dans le cas ordinaire comme le barré :
   `catalogPricePerKgTtcCents` (public) et `catalogPricePerKgMillicents` (pro),
   posés exactement quand `catalogPriceTtcCents` / `catalogPriceMillicents` le
   sont et qu'un kilo est saisi ; l'autre audience à absent ;
-- `lint:front-money-reads` : l'écran lit ces champs, il ne les calcule pas.
+- `lint:front-money-reads` : l'écran lit ces champs, il ne les calcule pas ;
+  `lint:money-units` : les champs neufs portent leur unité dans leur nom ;
+- le JSDoc « tel que saisi au référentiel » se réécrit dans le contrat **et**
+  dans `shop-price-basis.service.ts`.
 
-## 4. L'ordre de composition
+## 4. L'ordre de composition — tranché après contradiction (2026-11-04)
 
-`withPricesPerKg` est appelé après `struck` ? **À vérifier** dans
-`ShopCataloguePricing.withPrices` : le kilo servi a besoin du prix servi ET du
-tarif. Si l'ordre est inverse, la proportion se pose dans `struck` ou juste
-après.
+L'ordre réel est `struck` → `withPricesPerKg`
+(`shop-catalogue-pricing.service.ts`, `withPrices`). `struck` remplace le prix
+de l'article par le prix servi et ne garde le tarif (`catalogPrice*`) que si le
+prix **baisse**. Après lui, une hausse n'a plus de tarif : la proportion
+n'aurait pas de dénominateur, et le kilo retomberait en silence sur le kilo
+saisi — le défaut qu'on corrige.
+
+**Le kilo se calcule donc dans `struck`**, au seul endroit où le tarif et le
+prix servi sont tous les deux en main : `withPricesPerKg` pose d'abord le kilo
+**saisi** (avant `struck`), et `struck` l'ajuste avec le prix et pose le kilo
+barré dans le même geste que le prix barré.
+
+**La base publique est le TTC, et c'est un choix** : le tarif TTC
+(`catalogPriceTtcCents` = le TTC dérivé du HT par `toItem`,
+`ttcCentsFromHtMillicents`) et le TTC servi sont deux centimes arrondis.
+TTC ÷ TTC et HT ÷ HT ne donnent pas le même kilo sur un petit prix, au centime
+près. Le TTC l'emporte : le kilo affiché doit garder, au client, la proportion
+des deux prix **qu'il lit**. Exemple à fixer dans les tests : pièce 0,99 €
+barrée à 0,79 €, kilo saisi 9,90 € → 7,90 € / kg.
+
+**Vendu au poids** : exclu **côté serveur** (aucun kilo servi ni barré), et non
+plus seulement par l'écran.
 
 ## 5. Les lots
 
@@ -115,12 +139,25 @@ après.
 | K1  | serveur : la règle (fonction pure, tests aux bornes : égal, plus bas, plus haut, non saisi, vendu au poids, arrondi de la moitié), le contrat, l'ordre de composition ; un e2e du rayon public et pro avec une promotion |
 | K2  | écran : le kilo barré à côté du kilo servi, sur la fiche et la mise en avant ; le libellé dans les trois langues ; tests de composant                                                                                    |
 
+## 7. Trois décisions de Hugo, avant K1
+
+1. **Un prix servi plus HAUT que le tarif** (mercuriale ou plancher qui
+   relève) : le kilo monte-t-il dans la même proportion ? La cohérence dit oui ;
+   la réglementation (prix à l'unité de mesure = prix pratiqué) aussi,
+   probablement — non relue.
+2. **L'export de grille de prix** suit-il le kilo servi, comme le rayon, ou
+   garde-t-il le kilo saisi (c'est une grille de tarifs, pas un rayon) ?
+3. **Le libellé du kilo barré** quand le barré n'est pas une promotion
+   (mercuriale, palier, engagement : `promotionNames` absent) : même rendu
+   qu'une promotion, ou un rendu sans mention ?
+
 ## 6. Ce qui n'est pas vérifié
 
 - que la réglementation française exige que le prix à l'unité de mesure suive
   le prix de vente pratiqué pendant une promotion : probable, non relu ;
-- que la proportion ne produise pas, sur un petit prix, un kilo dont l'arrondi
-  surprend (une pièce à 0,99 € barrée à 0,79 €) : à éprouver en K1 ;
+- la vitrine (`b2b/vitrine/…/vitrine-item.ts`, `vitrine-xml-shapes.ts`) : lit-elle `ShopItemView` ou le kilo saisi ? ;
+- le cache des rayons en cours de bâtisse (C2 du cache du catalogue) : le kilo
+  servi y est rangé avec le rayon, sans effet attendu ;
 - le devis, le panier, la commande et les documents ne montrent pas le kilo :
   vérifié par lecture des lecteurs de `perKiloHintLabel`, pas par les gabarits
   PDF.
