@@ -1579,7 +1579,7 @@ bâtira dessus — le rétrécissement le protège au lieu de le gêner.
 
 ## R25 · 2026-09-09 — lots 1 et 2 : ce que le moteur a écarté
 
-**Plan** : [`plan-la-trace-qui-explique.md`](moteur/plan-la-trace-qui-explique.md), §11
+**Doc d'état** : [`la-trace-qui-explique.md`](moteur/la-trace-qui-explique.md) (le plan, ses trois formes, est dans l'historique git)
 (la forme v3, après deux contradictions). **Arbitrage de Hugo** : une colonne
 additive, plutôt qu'une trace qui assume de ne pas répondre.
 
