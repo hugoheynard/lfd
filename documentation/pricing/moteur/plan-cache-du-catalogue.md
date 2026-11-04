@@ -240,6 +240,36 @@ d'un pro), `b2b/pricing/infrastructure/prisma-volume-commitment.repository.ts`
 `prisma-made-to-order-admin.reader.ts`, qui écrit des réservations malgré son
 nom.
 
+### Ce que la troisième contradiction a précisé (2026-11-04, aucun BLOQUANT)
+
+- **La route de purge est publique.** Le Worker de l'API n'a pas d'adresse
+  publique : le conteneur la joint par la zone,
+  `lafoliecoffee.info/api/lfd/…` → passerelle → `LFD_BACKEND` — le chemin du
+  calcul routier (`container/worker.ts`, `BAN_GEOCODER_URL` et voisins). Le
+  jeton est donc la seule défense, et il ne protège que d'un vidage à volonté
+  (des lectures en base, aucune fuite). D'où : comparaison en temps constant ;
+  refus à la **passerelle** avant de router, comme `route-planner-guard.ts` ;
+  le secret ajouté à `RUNTIME_KEYS` et à `runtime-keys.spec.ts`, sans quoi il
+  est jeté en silence et le cache ne se purge jamais.
+- **« Après la validation » a un mécanisme** : `AfterCommit.defer`
+  (`platform/database/after-commit.ts`), déjà employé par l'outbox et le
+  journal des envois. La porte des écritures exige ce geste, pas seulement le
+  port : une montée dans la transaction rouvrirait la course.
+- **L'objet ne garde jamais un remplissage d'une autre instance** que celle de
+  sa dernière purge. Et sa **dernière version connue vit dans son stockage
+  SQLite**, pas seulement en mémoire : sinon le refus « plus vieux » s'oublie
+  avec le sommeil.
+- **Le cache pro et deux conteneurs** : si un déploiement en fait cohabiter
+  deux (non observé), une écriture sur l'un ne vide pas l'autre ; seule la
+  durée rattrape. Dit, pas résolu.
+- **Le regroupement tire en fin de fenêtre** : la dernière version de la
+  seconde gagne. Un redémarrage dans la seconde perd la purge en attente ; la
+  durée rattrape.
+- `/shop/featured` ne lit pas l'appelant (`read-shop-featured.handler.ts`,
+  `anonymousViewer`) : il peut être servi avec un jeton, comme le catalogue.
+- La limite de débit compte par IP cliente : les purges du conteneur partagent
+  le compteur de son IP de sortie. Négligeable à une par seconde.
+
 ## 6. La durée
 
 Ce qui change sans écriture n'est rattrapé que par la durée : **30 secondes**
