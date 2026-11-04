@@ -62,8 +62,7 @@ passages faux, à corriger (décision de Hugo) :
 
 ## 4. À jour
 
-`boutique-et-panier/chemin-du-prix-public.md`, `mercuriales/comprendre-une-mercuriale.md`
-(une coquille : la contrainte s'appelle `company_mercuriales_no_overlap`),
+`boutique-et-panier/chemin-du-prix-public.md`, `mercuriales/comprendre-une-mercuriale.md` (réécrit le 2026-11-04),
 `moteur/architecture-prix-vivant-prix-bloque.md` (note de conception, aucun
 code — à ne pas confondre avec `VolumeCommitment`), `saisie/ecrans-de-tarification.md`,
 `saisie/plan-carte-tarif.md`, `saisie/plan-prix-manquant-non-bloquant.md`,
