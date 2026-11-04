@@ -83,6 +83,35 @@ describe('ProductTile', () => {
     expect(el.querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € / kg TTC');
   });
 
+  /**
+   * Régression : le kilo barré n'existait que sur la fiche ; la vignette
+   * montrait le kilo promu sans le kilo saisi (vu par Hugo le 2026-11-04).
+   */
+  it('sous une promotion, barre le kilo saisi sur la vignette aussi, et le dit en une phrase', () => {
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      publicPricePerKgTtcCents: 790,
+      catalogPricePerKgTtcCents: 990,
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-per-kilo-was]')?.textContent?.trim()).toBe('9,90 €');
+    expect(el.querySelector('[data-per-kilo-was]')?.getAttribute('aria-hidden')).toBe('true');
+    expect(el.querySelector('[data-per-kilo] .sr-only')?.textContent?.trim()).toBe(
+      'Ancien prix au kilo : 9,90 €, nouveau prix au kilo : 7,90 € / kg TTC',
+    );
+  });
+
+  it('sans kilo barré servi, aucune rature sur le kilo de la vignette', () => {
+    fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], publicPricePerKgTtcCents: 1_590 });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-per-kilo-was]')).toBeNull();
+    expect(el.querySelector('[data-per-kilo] .sr-only')).toBeNull();
+  });
+
   // Plan quantité minimale, Q4 : le minimum se dit sous le prix de la vignette.
   it('écrit finement le minimum de pièces sous le prix', () => {
     fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], minQuantity: 6 });

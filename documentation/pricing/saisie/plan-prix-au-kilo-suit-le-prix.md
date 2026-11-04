@@ -68,8 +68,8 @@ de calculer un prix (`lint:front-money-reads`).
 - L'écran : `perKiloHintLabel` et `struckPriceLabel`
   (`apps/lfc-ecommerce-frontend/src/app/client/shop/shop-price-basis.service.ts`),
   lus par la fiche (`product-sheet.ts`) et la mise en avant de l'accueil
-  (`home-featured.ts`). La vignette du rayon (`product-tile.ts`) ne montre pas
-  le kilo.
+  (`home-featured.ts`), et la vignette du rayon (`product-tile.ts`) — qui
+  montrait le kilo sans le kilo barré jusqu'au 2026-11-04.
 
 ## 2. La règle
 

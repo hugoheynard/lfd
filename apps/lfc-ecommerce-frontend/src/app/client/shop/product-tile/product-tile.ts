@@ -27,6 +27,7 @@ import {
   perKiloHintLabel,
   shelfPriceLabel,
   ShopPriceBasis,
+  struckPerKiloLabel,
   struckPriceLabel,
 } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
@@ -257,6 +258,19 @@ export class ProductTile {
       this.t().product.perKilogram,
     );
   });
+
+  /** Le kilo saisi barré, posé par le serveur sous une promotion seulement — comme la fiche. */
+  protected readonly perKiloWas = computed(() =>
+    struckPerKiloLabel(this.product(), this.showsTtc()),
+  );
+
+  /** Ce qu'entend un lecteur d'écran à la place des deux kilos (RGAA 3.1). */
+  protected readonly perKiloPhrase = computed(() =>
+    fill(this.t().shop.perKiloStruck, {
+      was: this.perKiloWas() ?? '',
+      now: this.perKiloHint() ?? '',
+    }),
+  );
 
   /**
    * **Le tarif catalogue barré**, ou `null` quand il n'y a rien à barrer.
