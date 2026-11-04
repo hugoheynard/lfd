@@ -1,9 +1,9 @@
 # Plan — la latence de navigation et du changement d'espace
 
-> 📝 **Plan, écrit le 2026-11-04**, à partir des mesures de production du même
-> jour (tableaux « surfaces » et « temps du prix » de la carte de santé, après
-> dix changements d'espace). Rien n'est bâti. Partie 1 : comprendre. Partie 2 :
-> les lots.
+> 🟨 **Plan en cours, écrit et mis à jour le 2026-11-04**, à partir des mesures
+> de production du même jour. Chaque lot porte ce qui est **fait** (avec le
+> commit, et 🟦 sur `dev` / ✅ en production) et ce qui **reste**. Partie 1 :
+> comprendre. Partie 2 : les lots.
 
 # Partie 1 — Comprendre
 
@@ -45,103 +45,149 @@ Chaque lot commence par **mesurer** et se termine par la même mesure sur la
 production (la seule déployée), pour que le gain soit un chiffre et pas une
 impression.
 
-## L0 — Savoir où partent les 140 ms (d'abord)
+## Où on en est (mesuré le 2026-11-04, au soir)
 
-- Un en-tête `Server-Timing` posé par chaque saut : passerelle, Worker de
-  l'API, entrée du Durable Object, Nest (garde, résolution du principal,
-  handler), base. Lisible dans l'onglet Réseau du navigateur, sans outil.
-- **Hypothèses à départager** : la résolution du principal relue en base à
-  chaque appel (identité, société, droits), le saut Worker → Durable Object →
-  conteneur, la passerelle. Le lot suivant dépend de la réponse : si c'est
-  le principal, L4 ; si c'est le trajet, L5.
-- Sur la carte de santé, la lecture « latence » de la base est la dernière des
-  lectures, et `formatReadings` n'en montre que trois : elle est cachée. La
-  mettre en premier.
+| Mesure                               | Matin                | Soir                                         |
+| ------------------------------------ | -------------------- | -------------------------------------------- |
+| Un changement d'espace               | 2,0–2,6 s            | 1,4–2,0 s (cache pro manqué : jusqu'à 3,5 s) |
+| Trajet passerelle → Nest, appel seul | ~55 ms d'inexpliqués | ~20–30 ms                                    |
+| Principal, par appel                 | non mesuré           | 60–270 ms (L4 pas encore en production)      |
+| Ajout au panier, total affiché       | non mesuré           | ~0,7 s (dont 300 ms d'attente voulue)        |
+
+## L0 — Savoir où partent les 140 ms
+
+**Fait**
+
+- ✅ `Server-Timing` par saut : `verify`, `principal`, `app` (Nest),
+  `container` (objet → conteneur), `worker`, `gateway`, avec le datacenter
+  (`cac4bd1f7`, `bd73c3bdc`).
+- ✅ Traces Cloudflare sur la passerelle et l'API (`b3725ff8e`).
+- ✅ La latence de la base en tête des relevés de la carte de santé.
+- ✅ Verdict : le trajet coûte ~20–30 ms ; le principal (60–270 ms) et le
+  calcul des prix (rayon, devis, suggestions) sont les vrais postes.
+
+**Reste**
+
+- Rien. Le `Server-Timing` reste en place pour mesurer chaque lot.
 
 ## L1 — Aplatir la cascade du changement d'espace (front)
 
-- Dresser la liste exacte des appels d'un changement d'espace et de ce que
-  chacun attend (onglet Réseau, cascade).
-- Lancer en parallèle tout ce qui ne dépend que de la société choisie : rayon,
-  panier, adresses de retrait, jours de commande.
-- **Ne lire `companies/_` qu'une fois** par changement : la seconde lecture
-  vient d'un deuxième lecteur du même état ; un seul magasin la garde.
-- **`nav-prefs` ne bloque plus** : l'écriture part en arrière-plan, l'écran
-  bascule sans l'attendre. Un échec se rejoue, il n'empêche pas de naviguer.
-- Cible : 2 vagues au lieu de 4.
+**Fait**
 
-## L2 — Un seul appel d'entrée dans un espace
+- ✅ Mesuré : la cascade n'a pas 4 vagues — un premier groupe part ensemble et
+  finit en < 900 ms ; le chemin critique est fait de **trois calculs de prix
+  simultanés** (rayon, devis, suggestions du panier).
+- ✅ `nav-prefs` ne bloque déjà pas : l'écriture part en arrière-plan (lu dans
+  `account.service.ts`, `setWorkspace`).
 
-- Une lecture nommée « entrer dans l'espace » rend en une fois ce que l'écran
-  demande au départ (société, adresses, jours ouverts, préférences), chaque
-  morceau servi selon les droits de l'appelant, côté serveur.
-- Elle compose des requêtes existantes ; elle ne les remplace pas. Rien de
-  réservé à une clientèle n'y entre pour une autre (le serveur décide de
-  l'audience).
-- Cible : un aller-retour au lieu de cinq ou six.
+**Reste**
+
+- **Les suggestions du panier sont demandées deux fois**, au changement
+  d'espace comme à chaque ajout ; la seconde fixe la fin (jusqu'à 3,5 s). Une
+  seule demande — le prochain lot bâti.
+- Le délai avant le devis (300 ms) ramené à ~150 ms.
+- `companies/_` lu deux fois par changement (vu le matin) : à revérifier, une
+  seule lecture vue le soir.
+
+## L2 — Recentré : moins de calculs de prix, pas un appel unique
+
+**Fait**
+
+- ✅ Mesuré : regrouper les petits appels en un seul « entrer dans l'espace »
+  ne gagnerait que sur un groupe déjà fini en < 900 ms. **L'appel unique est
+  abandonné** au profit des trois points ci-dessous.
+
+**Reste**
+
+- (a) Une seule demande de suggestions du panier (cf. L1).
+- (b) **Le rayon pro gardé jusqu'au prochain changement d'heure connu** (une
+  promotion qui ouvre, un prix daté), au lieu de 30 s fixes, avec un plafond.
+  Aujourd'hui, revenir dans un espace après 30 s recalcule le rayon (2,2 s
+  mesurées). Touche l'argent : `vitruve`. **En attente de la décision de
+  Hugo.**
+- (c) Le devis et les suggestions réutilisent les prix du rayon : c'est L3.
 
 ## L3 — Le catalogue en un chargement
 
-- C'est le plan [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md),
-  déjà écrit : un seul appel pour le rayon, prix au kilo et opérations datées
-  compris.
-- Allumer `public-on` (le rayon public dans Workers Cache) une fois vérifié en
-  production que la purge marche.
-- `vitrine/catalogue` (1,1 s, sans cache) : mesurer ce qui coûte, puis le servir
-  par le même chemin que le rayon public s'il ne lit pas l'appelant.
+**Fait**
 
-## L4 — Si L0 désigne le principal : le relire moins cher
+- ✅ Le rayon public dans Workers Cache, allumé (`public-on` par Hugo) et
+  constaté en production : `HIT`, servi en 11 ms par la passerelle.
+- ✅ La réponse publique dit pourquoi elle est gardée ou non (`X-Shelf-Cache`,
+  `854ce1d96`).
 
-- Le principal reste résolu en base à chaque requête (c'est ce qui bloque tout
-  de suite un compte désactivé) : **on ne le cache pas** sans passer par
-  `vitruve`, c'est une frontière de sécurité.
-- Ce qu'on peut faire sans y toucher : une seule requête au lieu de plusieurs
-  pour l'identité, la société et les droits.
+**Reste**
 
-## L5 — Si L0 désigne le trajet : le raccourcir
+- Le plan [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md) :
+  un seul chargement des matériaux par requête, partagé par le rayon, le devis
+  et les suggestions. M0 (mesurer) puis `vitruve`.
+- `vitrine/catalogue` (1,1 s, sans cache) : mesurer ce qui coûte.
+- Surveiller `X-Shelf-Cache: unavailable` : vu une fois juste après un
+  déploiement ; s'il revient, revoir la limite de 100 ms vers l'objet.
 
-- Servir depuis le Worker, sans réveiller le conteneur, les lectures publiques
-  qui ne changent presque jamais (pied de page, zones, ouverture des
-  commandes), par Workers Cache comme les textes de la boutique.
-- Vérifier le placement du conteneur (`weur`) par rapport à la base et à la
-  passerelle.
+## L4 — Le principal gardé en mémoire de l'API
 
-## L5 bis — Chaque front appelle l'API sur son propre hôte (décidé, pas bâti)
+**Fait**
 
-Mesuré le 2026-11-04 : la boutique (`lafoliecoffee.info`) appelait l'API sur
-`lfd-gateway.lafoliedouce.workers.dev`. Pour le navigateur, c'est un autre
-site : un contrôle CORS (`OPTIONS`) précédait chaque appel, gardé 5 s
-seulement, et chacun traversait toute la chaîne jusqu'au conteneur.
+- 🟦 Plan [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md),
+  contredit deux fois par `vitruve`, migration relue.
+- 🟦 Bâti (`ad5c80190`, sur `dev`) : estampille posée par trois déclencheurs
+  `BEFORE … FOR EACH STATEMENT`, mémoire par `sub`, une lecture à la fois par
+  personne ; les préférences de navigation quittent `users` pour
+  `user_nav_prefs`.
 
-- **Fait** : `Access-Control-Max-Age` à 2 h (`main.ts`). Reste un contrôle par
-  adresse exacte nouvelle (identifiants, paramètres).
-- **Décidé avec Hugo, à faire plus tard** : tout front web est servi par la
-  passerelle sous un nom de `lafoliecoffee.info` et appelle l'API en
-  `/api/lfd` **sur son propre hôte** — plus aucun contrôle CORS, et
-  `Server-Timing` lisible dans le navigateur. Un sous-domaine qui
-  appellerait la racine resterait cross-origin. **La boutique est passée** le
-  2026-11-04 (`LFD_API_URL` = `https://lafoliecoffee.info/api/lfd`) ; la
-  back-office (`pages.dev`) reste à faire. Une app
-  mobile reste cross-origin par nature : le `Max-Age` est sa seule parade.
+**Reste**
+
+- Promotion vers `main`, puis mesurer `principal` dans `Server-Timing`
+  (attendu : < 15 ms).
+- Vérifier en production que l'estampille monte sur une écriture de compte, et
+  qu'aucune attente de verrou n'apparaît.
+- Les droits du staff (back-office) : même idée, autre résolveur, autre lot.
+
+## L5 — Raccourcir le trajet
+
+**Fait**
+
+- ✅ `Access-Control-Max-Age` à 2 h (`b3943f5f6`) : le contrôle CORS précédait
+  presque chaque appel et traversait toute la chaîne.
+- ✅ La boutique appelle l'API sur son propre hôte (`LFD_API_URL` =
+  `https://lafoliecoffee.info/api/lfd`, Hugo, 2026-11-04) : plus aucun
+  contrôle CORS.
+
+**Reste**
+
+- La back-office (`pages.dev`) sur un nom de `lafoliecoffee.info`, avec
+  `/api/lfd` sur son propre hôte — décidé, à faire plus tard. Un sous-domaine
+  qui appellerait la racine resterait cross-origin ; une app mobile l'est par
+  nature (le `Max-Age` est sa seule parade).
+- Les lectures publiques qui ne changent presque jamais (pied de page, zones,
+  ouverture des commandes) servies par Workers Cache.
+- Le trajet passerelle → Nest monte à 70–100 ms quand les appels partent
+  ensemble : une file devant le conteneur (un demi-vCPU). À revoir après L4 ;
+  sinon, grossir le conteneur (décision de Hugo, coût mensuel).
 
 ```mermaid
 flowchart LR
   B["lafoliecoffee.info"] -->|"/api/lfd, même hôte"| G["Passerelle"]
-  BO["backoffice.lafoliecoffee.info"] -->|"/api/lfd, même hôte"| G
+  BO["backoffice.lafoliecoffee.info"] -->|"/api/lfd, même hôte, à faire"| G
   G --> API["API"]
 ```
 
 ## L6 — Le reste, déjà nommé ailleurs
 
+**Reste**
+
 - La version par journée en singleton
   ([`version-par-journee.md`](version-par-journee.md), partie 4) : les écrans
   d'atelier, pas le changement d'espace.
-- C5, la surveillance du cache sur la carte de santé.
+- C5, la surveillance du cache sur la carte de santé (`X-Shelf-Cache` en est
+  la première brique).
 - Le back-office tourne en boucle sur 401 puis 403 Auth0 quand la session
   expire (64 requêtes vues le 2026-11-04) : il doit renvoyer à la connexion
   au premier refus.
 
-## Ordre et contradiction
+## Ordre
 
-L0 → L1 → L2 → L3, puis L4 ou L5 selon L0. L1 et L3 se bâtissent sans
-`vitruve`. L2 et L4 touchent l'audience et l'identité : `vitruve` d'abord.
+L4 en production → L1 (une seule demande de suggestions) → L2 (b) si Hugo le
+valide → L3 (matériaux du catalogue). `vitruve` d'abord sur L2 (b) et L3, qui
+touchent l'argent.
