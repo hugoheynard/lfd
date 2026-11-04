@@ -74,6 +74,27 @@ Ce que la forme doit trancher, et que rien n'a encore vérifié :
 - **le coût** d'un Durable Object (requêtes, durée) contre l'opération Prisma
   qu'il évite : à chiffrer sur la grille tarifaire en vigueur, pas de mémoire.
 
+**Le découpage des objets (Hugo, 2026-11-04)** — un Durable Object traite une
+requête à la fois, en un seul lieu :
+
+- **un objet par société** pour les pros : chacun ne reçoit que les visites de
+  ses propres personnes, quelques lectures par minute même en pointe, et
+  Cloudflare répartit les objets seuls. 200 ou 1 000 sociétés font autant de
+  petits objets indépendants ;
+- **le public est la seule clé chaude** : tous les visiteurs anonymes demandent
+  le même rayon. Deux parades à trancher : le **dupliquer** sur quelques objets
+  identiques (un tiré au hasard par visite, une purge les vide tous), ou servir
+  le public par le **cache de Cloudflare** et réserver les objets aux pros ;
+- **la mémoire d'un objet peut disparaître** quand il s'endort : il recalcule ou
+  relit son stockage SQLite. La justesse n'en dépend pas, la base reste
+  l'autorité ; seul le premier appel coûte.
+
+Écartés le même jour : un **Redis hébergé** (un fournisseur et un secret de
+plus, une opération facturée qui en remplace une autre, un saut hors de
+Cloudflare) et un **Redis dans un conteneur** (à tenir chaud et payé en continu,
+vidé à chaque redémarrage, joint en HTTP alors qu'il parle TCP, et deux sauts de
+plus depuis le conteneur de l'API — ces deux derniers points non vérifiés).
+
 **Les étapes du chantier** :
 
 1. mesurer sur **dev déployé** où partent les secondes d'une première visite
