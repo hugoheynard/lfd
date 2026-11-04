@@ -1,4 +1,4 @@
-// Les décisions du rayon PUBLIC côté Worker (`documentation/pricing/moteur/plan-cache-du-catalogue.md`,
+// Les décisions du rayon PUBLIC côté Worker (`documentation/caching-usage/plan-cache-du-catalogue.md`,
 // lot C3) : quelle requête est une purge de Workers Cache, et laquelle n'en
 // est jamais une.
 //

@@ -1,4 +1,4 @@
-// Les décisions de l'objet des rayons pro (`documentation/pricing/moteur/plan-cache-du-catalogue.md`,
+// Les décisions de l'objet des rayons pro (`documentation/caching-usage/plan-cache-du-catalogue.md`,
 // lot C2) : qui peut l'appeler, ce qu'une lecture rend, quand un rangement
 // est refusé, ce qu'un effacement emporte.
 //

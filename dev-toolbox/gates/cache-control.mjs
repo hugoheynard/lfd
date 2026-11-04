@@ -17,7 +17,7 @@
  *   sur ce qu'elle ne comprend pas ne garantit rien ;
  * - `caches.default` et `caches.open` sont refusés dans `gateway/src` : la
  *   passerelle est le seul endroit où un cache partagé de l'API peut naître ;
- * - depuis le 2026-11-04 (lot C3, `documentation/pricing/moteur/plan-cache-du-catalogue.md`
+ * - depuis le 2026-11-04 (lot C3, `documentation/caching-usage/plan-cache-du-catalogue.md`
  *   § 7), Workers Cache garde toute réponse `public` du Worker de l'API. D'où :
  *   un fichier admis peut nommer ses LECTEURS, et tout autre fichier qui
  *   l'importe est refusé — `public` ne s'étend pas à une route de plus par un

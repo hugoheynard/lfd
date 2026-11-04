@@ -39,7 +39,7 @@ import {
 export { ProShelves } from "./pro-shelves";
 
 // Le point d'entrée par lequel un gestionnaire de sortie répond au container
-// (lot C0b, `documentation/pricing/moteur/plan-cache-du-catalogue.md`).
+// (lot C0b, `documentation/caching-usage/plan-cache-du-catalogue.md`).
 // L'exporter ne branche RIEN : sans `outboundByHost` sur `Backend`, aucune
 // interception n'est posée et le démarrage du container est inchangé
 // (`usingInterception` reste faux dans `@cloudflare/containers` 0.3.7, vérifié

@@ -1,5 +1,5 @@
 /**
- * **Ce qu'un changement efface des rayons** (`documentation/pricing/moteur/plan-cache-du-catalogue.md`,
+ * **Ce qu'un changement efface des rayons** (`documentation/caching-usage/plan-cache-du-catalogue.md`,
  * partie 1, « Ce qu'une purge efface »).
  *
  * Deux portées seulement, et c'est voulu : on ne sait pas énumérer les

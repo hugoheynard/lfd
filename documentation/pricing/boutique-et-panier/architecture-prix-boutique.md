@@ -132,7 +132,7 @@ reste.
 Mesuré le 2026-11-04 (opérations ORM, base facturée à l'opération) : 6 par
 visite anonyme, 12 pour un pro connecté, **même cache rempli** — seul le prix
 est en mémoire, pas le rayon. Le plan pour le servir depuis la mémoire :
-[`../moteur/plan-cache-du-catalogue.md`](../moteur/plan-cache-du-catalogue.md).
+[`../../caching-usage/plan-cache-du-catalogue.md`](../../caching-usage/plan-cache-du-catalogue.md).
 
 ## 6. Limites connues
 

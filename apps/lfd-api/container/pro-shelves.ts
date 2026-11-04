@@ -1,4 +1,4 @@
-// L'objet des rayons pro (`documentation/pricing/moteur/plan-cache-du-catalogue.md`,
+// L'objet des rayons pro (`documentation/caching-usage/plan-cache-du-catalogue.md`,
 // lot C2) : une table « société → rayon compressé » et la version courante,
 // dans le stockage SQLite de l'objet — la mémoire se perd quand il s'endort,
 // la version ne doit pas se perdre.

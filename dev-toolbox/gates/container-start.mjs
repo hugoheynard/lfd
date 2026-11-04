@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **un container qui intercepte ses sorties démarre quand même**
- * (`documentation/pricing/moteur/plan-cache-du-catalogue.md`, § 4 bis — Hugo,
+ * (`documentation/caching-usage/plan-cache-du-catalogue.md`, § 4 bis — Hugo,
  * 2026-11-04 : « la prod ne peut jamais tomber en panne »).
  *
  * Avec `@cloudflare/containers`, déclarer un gestionnaire de sortie

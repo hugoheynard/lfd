@@ -43,7 +43,7 @@ import { RecognisedShelf } from "../../../catalog/application/recognised-shelf.s
  *
  * ## Le coût
  *
- * Depuis C2 (`documentation/pricing/moteur/plan-cache-du-catalogue.md`), le
+ * Depuis C2 (`documentation/caching-usage/plan-cache-du-catalogue.md`), le
  * rayon passe par le magasin des rayons pro : à chaud, les seules lectures
  * sont celles des droits ; à froid, le calcul ci-dessous.
  *

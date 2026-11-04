@@ -24,14 +24,14 @@
   "main": "container/worker.ts",
   "compatibility_date": "2025-06-01",
   // `ctx.exports` seul, et non une date avancée (lot C0b,
-  // `documentation/pricing/moteur/plan-cache-du-catalogue.md`) : le
+  // `documentation/caching-usage/plan-cache-du-catalogue.md`) : le
   // gestionnaire de sortie des containers l'exige, et ce drapeau n'active que
   // lui. Avancer la date (défaut depuis 2025-11-17) aurait changé d'un coup
   // tous les comportements datés de ce Worker — limite de débit, crons,
   // `guardedFetch` compris.
   "compatibility_flags": ["enable_ctx_exports"],
 
-  // Workers Cache (lot C3, `documentation/pricing/moteur/plan-cache-du-catalogue.md`
+  // Workers Cache (lot C3, `documentation/caching-usage/plan-cache-du-catalogue.md`
   // § 3) : Cloudflare garde une réponse de CE Worker et la ressert sans
   // l'exécuter. Ni date ni drapeau de compatibilité exigés par wrangler 4.157.0
   // (schéma `CacheOptions` relu le 2026-11-04).
@@ -104,7 +104,7 @@
   "durable_objects": {
     "bindings": [
       { "name": "BACKEND", "class_name": "Backend" },
-      // L'objet des rayons pro (`documentation/pricing/moteur/plan-cache-du-catalogue.md`,
+      // L'objet des rayons pro (`documentation/caching-usage/plan-cache-du-catalogue.md`,
       // lot C2) : joint par le seul conteneur, par un gestionnaire de sortie.
       { "name": "PRO_SHELVES", "class_name": "ProShelves" },
     ],

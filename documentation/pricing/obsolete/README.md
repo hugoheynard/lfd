@@ -57,7 +57,7 @@ code — à ne pas confondre avec `VolumeCommitment`), `saisie/ecrans-de-tarific
 `saisie/plan-carte-tarif.md`, `saisie/plan-prix-manquant-non-bloquant.md`,
 `vente-au-poids.md`, `journal-de-remediation.md` (un journal qui ne se
 réécrit pas, historique assumé), et les deux docs du 2026-11-04
-(`centime-et-tva/le-prix-d-un-panier.md`, `moteur/plan-cache-du-catalogue.md`).
+(`centime-et-tva/le-prix-d-un-panier.md`, `../../caching-usage/plan-cache-du-catalogue.md`).
 
 ## 5. Ce que la relecture n'a pas vérifié
 

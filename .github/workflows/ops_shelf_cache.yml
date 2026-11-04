@@ -1,7 +1,7 @@
 name: ops_shelf_cache
 
 # L'interrupteur du cache des rayons, en PRODUCTION, à la demande
-# (`documentation/pricing/moteur/plan-cache-du-catalogue.md`, « L'interrupteur »).
+# (`documentation/caching-usage/plan-cache-du-catalogue.md`, « L'interrupteur »).
 #
 # Quand l'utiliser :
 #   - off        : le cache sert un rayon FAUX (un prix, un article qui ne

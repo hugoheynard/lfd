@@ -134,7 +134,7 @@ désormais **par lot** (`PricingMaterialsLoader`, `volumeRatios`,
 ## 6. Ce qui reste ouvert
 
 - **Le cache du catalogue** est en cours de déploiement :
-  [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md).
+  [`caching-usage/plan-cache-du-catalogue.md`](../../caching-usage/plan-cache-du-catalogue.md).
 - **La projection n'est pas comptée** : aucun budget ne couvre la courbe du
   banc d'essai.
 - Le pool de connexions est à `max: 15` par instance (`prisma.service.ts`,
