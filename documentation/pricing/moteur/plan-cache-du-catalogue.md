@@ -375,15 +375,16 @@ lot C2 ne se bâtit pas : les pros restent sans cache, et le plan le dit.
 
 ## 9. Les lots
 
-⚠️ **Le gestionnaire de sortie demande d'avancer la date de compatibilité** du
-Worker de l'API. Ça change le comportement de **tout** ce Worker (limite de
-débit, crons, `guardedFetch`) : c'est un lot à part, **C0b**, avec sa propre
-vérification sur dev, avant C2.
+⚠️ **Le gestionnaire de sortie demande `ctx.exports`** : obtenu par le seul drapeau
+`enable_ctx_exports`, sans avancer la date de compatibilité du Worker de l'API
+(une date avancée aurait changé tout ce Worker : limite de débit, crons,
+`guardedFetch`). C'est le lot **C0b**, avant C2. Il n'existe pas de « dev
+déployé » : le seul déploiement est la production, depuis `main`.
 
 | Lot | Contenu                                                                                                                                                                                                                                                          |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | C0  | sur dev déployé : clé de Workers Cache (paramètre d'URL, en-têtes de la passerelle, `Vary: Origin`) ; gestionnaire de sortie et version de `@cloudflare/containers` ; aller-retour conteneur → objet ; taille d'un rayon ; coût ; secondes d'une première visite |
-| C0b | la date de compatibilité du Worker de l'API avancée, `ContainerProxy` exporté, vérifié seul sur dev                                                                                                                                                              |
+| C0b | ✅ `enable_ctx_exports` (pas de date avancée) et `ContainerProxy` exporté, sans gestionnaire (`8aaa1f638`) ; essai local de l'interception (2026-11-04) ; **la porte de CI du démarrage**, avant tout gestionnaire                                               |
 | C1  | le port de purge, `AfterCommit.defer`, les écritures, la porte des écritures, le regroupement                                                                                                                                                                    |
 | C2  | l'objet des rayons pro, sa version, le gestionnaire de sortie ; budget froid / chaud à l'égalité                                                                                                                                                                 |
 | C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                                                                                                                      |
