@@ -5,6 +5,60 @@
 > une station de ski côté particuliers plus 200 pros qui commandent aux mêmes
 > heures. Touche les prix affichés : contredit par `vitruve` avant Hugo.
 
+## 0. Le chantier élargi — « première visite rapide et pas chère » (Hugo, 2026-11-04)
+
+> 📝 **Décidé, pas bâti.** Hugo, ce jour : le catalogue **public** sera caché
+> **chez Cloudflare**, avec une purge **limitée à ce qui peut changer**. Et le
+> chantier englobe le démarrage à froid. Ce paragraphe note le cadre ; le plan
+> se réécrit sur cette base, puis `vitruve` avant de bâtir (prix affichés,
+> frontière de cache entre appelants).
+
+**Pourquoi le CDN et non Redis** : le cache Cloudflare arrête la requête avant
+la passerelle ; une page en cache ne réveille pas l'API et ne lit pas la base.
+Redis est derrière l'API : la requête traverse encore la passerelle, réveille
+le conteneur, et une lecture facturée en remplace une autre.
+
+**Ce qui est vérifié dans le dépôt (2026-11-04)** :
+
+- la boutique est **statique** sur Cloudflare Pages (`deploy_lfc_boutique.yml`,
+  `ng build --configuration cloudflare`, `angular.json` `ssr: false`) : aucun
+  démarrage à froid côté front ;
+- l'API est un Cloudflare Container (`apps/lfd-api/wrangler.jsonc`,
+  `max_instances: 1`, `sleepAfter` d'une heure) : c'est lui qui se réveille, en
+  secondes ;
+- la passerelle est un **Worker sur `workers.dev`** (`gateway/wrangler.toml`) ;
+- la boutique ne se rafraîchit jamais seule : ni push, ni relecture au retour
+  sur l'onglet ; seule `shop-clock.ts` avance chaque minute (compte à rebours).
+  Un rayon affiché peut donc être périmé ; le devis recompose et la passation
+  refuse un total non vu (`orders.total_changed`).
+
+**À vérifier avant d'écrire la forme** :
+
+- le cache Cloudflare devant un Worker ne fonctionne pas comme devant un site :
+  savoir si le Cache API / Workers Cache est effectif sur `workers.dev`, ou s'il
+  faut passer la passerelle sur la zone `lafoliecoffee.info`
+  ([Workers Cache](https://developers.cloudflare.com/workers/cache/),
+  [Cache API](https://developers.cloudflare.com/workers/runtime-apis/cache/)) ;
+- la purge par étiquette est ouverte à toutes les offres depuis le 2025-04-01
+  ([changelog](https://developers.cloudflare.com/changelog/post/2025-04-01-purge-for-all/)) ;
+  elle ne vaut que pour une réponse stockée avec un en-tête `Cache-Tag`.
+
+**Ce que la purge ne couvre pas, et pourquoi une durée reste nécessaire** :
+une promotion qui s'ouvre à midi, une opération datée, une heure limite
+changent la réponse **sans aucune écriture** (§2). La purge rend visible tout
+de suite ce que l'équipe change ; la durée courte rattrape ce que l'horloge
+change.
+
+**Les étapes du chantier** :
+
+1. mesurer sur **dev déployé** où partent les secondes d'une première visite
+   (page statique, réveil du conteneur, appels à l'API) ;
+2. le catalogue public au CDN : en-têtes `Cache-Tag`, purge à l'écriture,
+   durée courte, deuxième exception à `lint:cache-control` (routes publiques
+   anonymes seulement) ; la boutique relit le rayon au retour sur l'onglet ;
+3. le réveil du conteneur pour ce qui ne se cache pas (panier, devis,
+   commande, connectés).
+
 ## 1. La mesure (sonde e2e jetable, 2026-11-04)
 
 Opérations ORM par appel, cache des matériaux de prix vide puis rempli :
