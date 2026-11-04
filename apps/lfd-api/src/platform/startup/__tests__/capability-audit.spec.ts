@@ -26,6 +26,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasGeocoderUrl: true,
   hasRoadRouting: true,
   hasContainerMetrics: true,
+  hasShelfCache: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {

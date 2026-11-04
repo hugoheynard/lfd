@@ -122,6 +122,7 @@ export class StartupReport implements OnApplicationBootstrap {
       hasGeocoderUrl: this.config.geocoderUrl() !== null,
       hasRoadRouting: this.config.routePlannerEndpoint() !== null,
       hasContainerMetrics: this.config.containerMetricsConfig() !== null,
+      hasShelfCache: this.config.shopShelfCacheUrl() !== null,
     };
   }
 }

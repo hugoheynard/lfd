@@ -49,6 +49,11 @@ export interface CapabilitySnapshot {
   readonly hasRoadRouting: boolean;
   /** Compte, jeton ET application Containers : la lecture du CPU de l'API. */
   readonly hasContainerMetrics: boolean;
+  /**
+   * Le magasin des rayons (lots C2, C3 du cache du catalogue) : posé par le
+   * Worker lui-même en production, absent en local et dans les e2e.
+   */
+  readonly hasShelfCache: boolean;
 }
 
 /**
@@ -264,6 +269,14 @@ const CHECKS: readonly Check[] = [
       "la case API de la page Santé dit « CPU non mesuré » : seule la pression de latence reste lisible, et elle n'est pas un CPU",
     severity: "degraded",
     present: (s) => s.hasContainerMetrics,
+  },
+  {
+    capability: "Cache des rayons de la boutique",
+    setting: "SHOP_SHELF_CACHE_URL (posée par le Worker de l'API)",
+    consequence:
+      "chaque rayon se calcule depuis la base à chaque visite : la boutique fonctionne, mais chaque visite coûte ses lectures, et l'interrupteur `ops_shelf_cache` répond que le cache n'est pas configuré",
+    severity: "degraded",
+    present: (s) => s.hasShelfCache,
   },
 ];
 
