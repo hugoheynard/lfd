@@ -546,8 +546,13 @@ describe('PricingForm — les prix au kilo saisis', () => {
     const block = blockTitled(host, 'Prix au kilo');
     const labels = [...block.querySelectorAll('.field-label')].map((l) => l.textContent?.trim());
 
-    expect(labels).toEqual(['Prix au kilo public TTC', 'Prix au kilo pro HT']);
-    expect(inputUnder(host, 'Prix au kilo pro HT').getAttribute('inputmode')).toBe('decimal');
+    expect(labels).toEqual([
+      'Prix au kilo public TTC (informatif)',
+      'Prix au kilo pro HT (informatif)',
+    ]);
+    expect(inputUnder(host, 'Prix au kilo pro HT (informatif)').getAttribute('inputmode')).toBe(
+      'decimal',
+    );
   });
 
   it('la saisie remonte au store, sans rien calculer', () => {
@@ -556,10 +561,10 @@ describe('PricingForm — les prix au kilo saisis', () => {
     store.priceEur.set(12);
     const host = render();
 
-    const pub = inputUnder(host, 'Prix au kilo public TTC');
+    const pub = inputUnder(host, 'Prix au kilo public TTC (informatif)');
     pub.value = '24.8';
     pub.dispatchEvent(new Event('input'));
-    const pro = inputUnder(host, 'Prix au kilo pro HT');
+    const pro = inputUnder(host, 'Prix au kilo pro HT (informatif)');
     pro.value = '20,12345';
     pro.dispatchEvent(new Event('input'));
 
@@ -575,8 +580,8 @@ describe('PricingForm — les prix au kilo saisis', () => {
     store.publicPricePerKgEur.set(14.9);
     const host = render();
 
-    expect(inputUnder(host, 'Prix au kilo public TTC').value).toBe('14.9');
-    expect(inputUnder(host, 'Prix au kilo pro HT').value).toBe('');
+    expect(inputUnder(host, 'Prix au kilo public TTC (informatif)').value).toBe('14.9');
+    expect(inputUnder(host, 'Prix au kilo pro HT (informatif)').value).toBe('');
   });
 
   it('se grisent avec les prix quand le tarif est aligné', () => {
@@ -586,8 +591,8 @@ describe('PricingForm — les prix au kilo saisis', () => {
     const host = render();
 
     const stack = host.querySelector('.stack.is-inherited');
-    expect(stack?.contains(inputUnder(host, 'Prix au kilo public TTC'))).toBe(true);
-    expect(stack?.contains(inputUnder(host, 'Prix au kilo pro HT'))).toBe(true);
+    expect(stack?.contains(inputUnder(host, 'Prix au kilo public TTC (informatif)'))).toBe(true);
+    expect(stack?.contains(inputUnder(host, 'Prix au kilo pro HT (informatif)'))).toBe(true);
   });
 });
 
@@ -631,7 +636,7 @@ describe('PricingForm — vendre à la pièce ou au poids', () => {
 
     expect(blockTitles(host)[0]).toBe('Unité de vente');
     expect(labels(host)).toContain('Prix public TTC');
-    expect(labels(host)).toContain('Prix au kilo public TTC');
+    expect(labels(host)).toContain('Prix au kilo public TTC (informatif)');
     expect(labels(host)).not.toContain('Palier de poids');
   });
 
@@ -649,8 +654,8 @@ describe('PricingForm — vendre à la pièce ou au poids', () => {
     expect(seen).toContain('Prix pro HT au kg');
     expect(seen).toContain('Palier de poids');
     expect(seen).toContain('Minimum');
-    expect(seen).not.toContain('Prix au kilo public TTC');
-    expect(seen).not.toContain('Prix au kilo pro HT');
+    expect(seen).not.toContain('Prix au kilo public TTC (informatif)');
+    expect(seen).not.toContain('Prix au kilo pro HT (informatif)');
     expect(host.textContent).toContain('Requis pour activer');
     expect(host.textContent).toContain('pas de minimum');
   });
