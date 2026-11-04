@@ -1,242 +1,144 @@
 # Le prix, tel que la boutique le montre
 
-> ## 🟡 Relu le 2026-09-06 — la boutique est bâtie, et pas par la route décrite ici
->
-> **Le corps du document est conservé tel qu'il a été écrit.** C'est le
-> raisonnement qui vaut, et deux de ses décisions ont été _renversées_ par la
-> suite, pas oubliées. Les lire sans ce bandeau ferait construire contre
-> l'existant — c'est ce qui a motivé cette relecture.
->
-> **Ce qui a été renversé, et où c'est décidé.**
->
-> | Ce document tranche                                       | Ce qui est en service                               | Où la décision a été prise                                                                          |
-> | --------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-> | `GET /catalog`, **muré**, société prise du principal (§2) | `GET /shop/catalogue`, **`@Public()`**, sans client | [`../obsolete/plan-boutique-sur-api.md`](../obsolete/plan-boutique-sur-api.md), livré le 2026-09-05 |
-> | `canonicalMillicents`, pour le barré (§4)                 | **absent** de `ShopItemView`                        | conséquence de la précédente : sans client, il n'y a aucun écart à barrer                           |
->
-> La boutique est **publique par décision** — on visite d'abord, on s'identifie
-> pour régler. Ce document supposait l'inverse, et tout son §2 en découle. Le
-> jour où la boutique servira le prix d'un client reconnu, ce sera un **second
-> chemin**, et le mur qu'il décrit redeviendra la bonne réponse pour celui-là.
->
-> **Ce qui tient toujours, et qu'il faut continuer de lire :**
->
-> - **§3, la quantité de résolution** — la RAISON n'a pas bougé (`minQuantity`
->   existe à tous les étages, pas seulement au volume), mais 🔴 **la vitrine
->   publique ne résout pas du tout** : `read-shop-catalogue.ts` sert le
->   canonique du miroir, et seule la route reconnue passe par la résolution. Il
->   n'y a donc pas de « résolution à 1 » à défendre pour un visiteur — une
->   promotion publique est invisible au rayon et n'apparaît qu'au panier
->   (constaté le 2026-09-09, suivi en **R22**) ;
-> - **§4, « ce qui ne franchit PAS la frontière »** — appliqué à la lettre, et
->   deux fois : `ShopItemView` et `ShopQuoteView` sont toutes deux étroites, et
->   un test e2e énumère les clés de la seconde pour que ça le reste ;
-> - **§6, « le front ne multiplie jamais »** — 🔴 c'était l'écart le plus
->   coûteux du document, et il est **refermé depuis le 2026-09-06** : le panier
->   demande `POST /shop/quote`, qui résout chaque ligne à sa quantité réelle.
->   La route n'est pas celle qu'annonce le §6 (`POST /orders/quote` est murée et
->   sert le client reconnu), la règle est la même ;
-> - **§7, les paliers de volume reportés** — toujours reportés, et ce qu'il
->   faudra rouvrir alors est écrit là.
->
-> **Ce que ce bandeau ne prétend pas.** Aucune affirmation du corps n'a été
-> reprise ligne à ligne : seules celles des §2, §4 et §6 ont été rouvertes dans
-> le dépôt. Le §5 et le §8 se lisent à la date de leur écriture.
+> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
+> version d'origine (un plan du 2026-09-03, dont deux décisions ont ensuite été
+> renversées : un rayon muré, un prix barré absent) reste dans l'historique
+> git. Partie 1 : comprendre. Partie 2 : le code.
 
-**Doc-first, ouvert le 2026-09-03.** Rien de ce document n'est encore écrit en
-code. Il tranche ce qui doit l'être **avant** — parce que ce chantier touche le
-nombre auquel un client consent.
+# Partie 1 — Comprendre
 
-> Le contexte et l'ordre des lots : [`../obsolete/plan-boutique-sur-api.md`](../obsolete/plan-boutique-sur-api.md).
-> Le moteur lui-même : [`architecture-resolution-de-prix.md`](../moteur/architecture-resolution-de-prix.md).
+## Deux moments, deux prix
 
-🔴 **Périmètre : la commande de base et la mercuriale à prix fixe.** Les
-**paliers de volume sont reportés** — ils ne sortent pas de la vue par oubli
-mais par décision, et la section 6 dit ce qu'il faudra rouvrir le jour venu.
+La boutique montre un prix à **deux moments**, et ce ne sont pas les mêmes
+calculs :
 
-Ce n'est pas un découpage de confort. La mercuriale **scelle** : un prix négocié
-posé à cet étage rend les suivants transparents (sauf `stacksOverMercuriale`).
-Le cas « commande de base + mercuriale » est donc le plus court chemin complet à
-travers le moteur — un canonique, ou un prix négocié, et rien à composer.
+1. **Au rayon** : le prix d'**une pièce** de chaque article. C'est une
+   vitrine, qui n'engage à rien.
+2. **Au panier** : le prix **réel**, calculé par le serveur à la quantité
+   demandée, avec les remises, la livraison et la TVA. C'est ce prix-là qui
+   sera facturé.
 
----
+```mermaid
+flowchart LR
+  R["Rayon<br/>prix d'une pièce"] -->|le client ajoute| P["Panier<br/>le serveur recalcule tout"]
+  P -->|le client valide| C["Commande<br/>même calcul que le panier"]
+```
 
-## 1. Ce qu'on répare
+Le navigateur **ne calcule jamais** un prix : il ne multiplie pas, n'additionne
+pas, ne retire pas la TVA. Il affiche ce que le serveur lui envoie.
 
-La boutique affiche des prix venus d'un **seed local en euros flottants**
-(client/mock-shop.ts, supprimé depuis) pendant que le serveur facture depuis le miroir, en
-centimes entiers, à travers le moteur de résolution. Un client au tarif négocié
-voit le prix public et paie le sien.
+## Trois rayons, selon qui regarde
 
-Ce document décrit **la lecture** qui remplace le seed. Il ne touche pas au
-moteur : il lui donne un second lecteur.
+| Qui regarde                                     | Ce qu'il voit                                                                       |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Un visiteur**, sans compte                    | le prix public, taxe comprise, avec les promotions ouvertes à tous                  |
+| **Un pro sans compte** (venu de la page `/pro`) | le tarif pro de base, hors taxe — rien de négocié                                   |
+| **Un client connecté**                          | **son** prix : sa mercuriale, ses engagements, les promotions auxquelles il a droit |
 
-## 2. La route
+## Le prix barré
 
-`GET /catalog` — surface **client**, à côté de `orders`, `subscriptions`, `me`.
+Un prix est barré **seulement s'il baisse** par rapport au tarif. Un prix qui
+monte (une règle, un plancher) n'est jamais barré : barrer le plus bas des deux
+serait mensonger. Et un client sous mercuriale ne voit jamais un prix
+promotionnel barré : sa mercuriale lui retire de toute façon la promotion.
 
-### Son mur
+## Ce que le rayon ne dit pas
 
-Le même que le devis, et pour la même raison. `POST /orders/quote` le dit déjà :
-sans mur, « n'importe qui sonderait la mercuriale d'un concurrent en devinant son
-identifiant ». La société se prend donc **du principal**, résolue en base, jamais
-d'un paramètre.
+- **Les paliers de volume** : le rayon résout à une pièce. Un prix « à partir
+  de 50 » ne s'y voit pas ; le panier, lui, l'applique.
+- **Les promotions liées au retrait ou à la livraison** : le rayon ne sait pas
+  encore comment le client sera servi. Il les **mentionne**, sans les appliquer.
+- **La fabrique du prix** : ni les règles, ni le chemin du calcul, ni le
+  plancher (c'est-à-dire la marge). Rien de cela ne sort du serveur.
 
-### Sans entreprise
+# Partie 2 — Le code
 
-Le moteur porte déjà ce cas : `PricingContext.companyId` est `string | null`,
-« `null` pour une commande sans entreprise (parcours zéro friction) ». Un client
-sans société reçoit donc le **canonique**, sans règle appliquée — et, par
-construction, **aucun prix barré** : il n'y a pas d'écart à montrer.
+## 1. Les routes
 
-C'est la réponse à « le canonique si la personne n'a pas de mercuriale » : ce
-n'est pas une branche à écrire, c'est ce que le moteur fait quand on ne lui
-donne pas de société.
+| Route                               | Pour qui                                           | Handler                                                                                   |
+| ----------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `GET /shop/catalogue` (`@Public()`) | visiteur ; `?audience=pro` pour le pro sans compte | `ReadShopCatalogueHandler` (`b2b/catalog/application/queries/read-shop-catalogue.ts`)     |
+| `GET /shop/catalogue/mine`          | client reconnu, société prise du `Principal`       | `ReadMyShopCatalogueHandler` (`b2b/orders/application/queries/read-my-shop-catalogue.ts`) |
 
-## 3. 🔴 À quelle quantité le prix se résout-il ?
+Les deux passent par `ShopCataloguePricing` (`b2b/catalog/application/shop-catalogue-pricing.service.ts`) :
 
-**La question que la liste pose et que la commande ne pose pas** — et elle
-survit au report des paliers, contrairement à ce qu'on croirait.
+- visiteur : `priced(null, "guest", langue)` ;
+- pro sans compte : `pricedWithoutCompany("pro", langue)` — aucune société
+  remise au tarificateur, donc rien de négocié ne peut sortir ; seules les
+  promotions « tout le monde » jouent ;
+- client reconnu : `priced(companyId, "registered", langue source)`. Le
+  lecteur de société (`CatalogViewers.forCompany`, `served_and_locked`) décide
+  si la société est servie en pro ou au public, et porte les articles réservés
+  (montrés verrouillés).
 
-`PricingContext` exige une `quantity`, et une liste n'en a pas. On pourrait
-penser que sans l'étage volume la quantité cesse de compter : c'est faux. **Toute
-règle porte un `minQuantity`**, à n'importe quel étage, et le domaine l'écrit :
-« les autres étages continuent de lire `quantity` — le seuil d'une promotion
-parle bien de CETTE commande ». Une promotion « −10 % à partir de 6 » reste donc
-conditionnée à la quantité, paliers ou pas.
+## 2. Le calcul d'un rayon (`pricedFor`)
 
-**La liste résout à la quantité 1.** Les règles à seuil ne s'appliquent alors
-pas, et le prix affiché est celui d'**une pièce** — ce qu'on paie en prenant la
-plus petite commande possible.
+```mermaid
+flowchart TB
+  A["lectures en parallèle<br/>articles vendables, opérations datées, heures limites"] --> B["shopCatalogueOf<br/>le rayon de cette audience"]
+  B --> C["withPrices<br/>pricer.load, quantité 1, un lot pour tout le rayon"]
+  B --> D["pricesPerKg.bySkus<br/>informatif"]
+  B --> E["offers.offeredFor<br/>promotions par acheminement, mentionnées"]
+  C --> F["struck<br/>prix résolu, TTC, barré si plus bas"]
+  F --> G["ShopCatalogueView"]
+  D --> G
+  E --> G
+```
 
-L'alternative — résoudre à une quantité « habituelle » ou au meilleur seuil —
-afficherait un prix qu'on n'obtient qu'en commandant assez. Ce serait la faute
-que le back-office a déjà refusée sur les altérations : montrer un résultat sans
-sa provenance.
+- **Quantité 1**, écrite en dur dans `withPrices` et commentée comme une limite
+  assumée : `minQuantity` existe à tous les étages, un palier ne se voit pas au
+  rayon.
+- **Un seul lot** : `pricer.load` prend l'instant une fois pour tout le rayon,
+  pour que deux articles ne tombent pas de part et d'autre d'une bascule de
+  promotion. La résolution passe par la porte unique du prix (`Pricer`,
+  `LoadedPricer`, cf. [`../moteur/architecture-la-porte-du-prix.md`](../moteur/architecture-la-porte-du-prix.md)).
+- **Le barré** (`shop-catalogue-struck.ts`, `struck`) : `catalogPriceMillicents`
+  n'est posé que si le prix résolu est **plus bas** ; le TTC suit toujours le
+  prix résolu (`ttcCentsFromHtMillicentsFor`), et pour un particulier c'est la
+  valeur saisie.
+- Les suggestions (`pricedItems`) suivent le même chemin, sur un lot réduit.
 
-⚠️ **`cumulativeQuantity` reste à `null` dans la liste.** C'est le volume déjà
-engagé sur la période ; le prendre en compte donnerait un prix juste mais
-**instable**, qui bougerait au fil des commandes sans que rien à l'écran ne
-l'explique. La commande, elle, le prend — c'est le devis qui rend le prix réel.
+## 3. Ce qui sort (`ShopItemView`, `packages/contracts/src/shop-catalogue.ts`)
 
-**La conséquence, assumée et dans le bon sens** : la liste peut sous-estimer une
-remise, jamais l'inverse. Un client est agréablement surpris au panier, jamais
-déçu.
+| Champ                                                                  | Ce qu'il dit                                                           |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `unitPriceMillicents`, `unitPriceTtcCents`                             | le prix d'une pièce, HT et TTC — l'écran choisit selon qui regarde     |
+| `catalogPriceMillicents`, `catalogPriceTtcCents`                       | le tarif barré, absent sans baisse                                     |
+| `promotionNames`, `fulfillmentOffers`                                  | les promotions appliquées, et celles qu'un acheminement ouvrirait      |
+| `proPricePerKgMillicents`, `publicPricePerKgTtcCents`                  | le prix au kilo, saisi, informatif                                     |
+| `saleUnit`, `weightStepGrams`, `weightMinGrams`, `minQuantity`         | comment on commande l'article                                          |
+| `vatRatePercent`, `audience`, `orderable`, `lockedReason`, `operation` | le taux, l'audience servie, un article verrouillé, une opération datée |
 
-## 4. La vue, champ par champ
+**Ce qui ne sort jamais** : les règles et leurs identifiants, les étapes du
+calcul, les planchers, ce que la mercuriale a scellé — tout ce que porte la vue
+du back-office (`PricingItemView`). La vue de la boutique est **étroite**, et
+le test `test/shop-quote.e2e-spec.ts` énumère les clés du devis pour qu'elle le
+reste.
 
-**La règle de tri** : un champ passe s'il répond à _« combien ça me coûte, et à
-partir de quelle quantité ça baisse »_.
+## 4. Le panier ne calcule pas
 
-| champ                         | pourquoi                                                      |
-| ----------------------------- | ------------------------------------------------------------- |
-| `sku`, `name`                 | la ligne                                                      |
-| `categoryId` (ou son code)    | le rayon                                                      |
-| `unitPriceMillicents`         | **ce qu'il paie** — le prix résolu à quantité 1               |
-| `canonicalMillicents`         | le prix d'entrée, pour le barré. **Absent quand il est égal** |
-| ~~`volumeTiers`~~             | **reporté** — cf. le périmètre, en tête                       |
-| `vatRatePercent`              | le décompte du panier                                         |
-| `weightGrams`                 | l'unité affichée                                              |
-| `allergens`, `allergenLabels` | réglementaire, déjà au miroir                                 |
+- Le panier demande `POST /shop/quote` (visiteur) ou `POST /shop/quote/mine`
+  (client reconnu), qui chiffre chaque ligne à sa quantité réelle par le même
+  calcul que la commande (`PricingContext` → `priceBasket`, cf.
+  [`../centime-et-tva/le-prix-d-un-panier.md`](../centime-et-tva/le-prix-d-un-panier.md)).
+- Le front n'a plus de total : `cart-total.ts` ne porte que le type `CartLine`.
+  Le « Total HT » d'un pro au compte arrive tout fait (`pretaxCents`).
+- La porte `lint:front-money-reads` refuse qu'un écran recalcule un montant.
+- La commande refuse un total que le client n'a pas vu (409
+  `orders.total_changed`).
 
-### 🔴 Ce qui ne franchit PAS la frontière
+## 5. Ce qu'un rayon coûte en lectures
 
-`PricingItemView` — la vue du back-office — porte tout ce qu'il faut **et** ce
-qu'un client ne doit jamais voir :
+Mesuré le 2026-11-04 (opérations ORM, base facturée à l'opération) : 6 par
+visite anonyme, 12 pour un pro connecté, **même cache rempli** — seul le prix
+est en mémoire, pas le rayon. Le plan pour le servir depuis la mémoire :
+[`../moteur/plan-cache-du-catalogue.md`](../moteur/plan-cache-du-catalogue.md).
 
-| champ                             | ce qu'il révélerait                                |
-| --------------------------------- | -------------------------------------------------- |
-| `rules`, `supersededRuleIds`      | les noms et l'existence de nos règles commerciales |
-| `steps`                           | le **chemin du prix**, étage par étage             |
-| `ownFloor`, `effectiveFloor`      | le plancher, c'est-à-dire **la marge**             |
-| `sealedByRuleId`, `sealedRuleIds` | ce que la mercuriale a scellé, et contre quoi      |
+## 6. Limites connues
 
-La vue client est donc **neuve et étroite**, pas `PricingItemView` réexporté.
-Deux murs, deux dangers : celui du devis protège la mercuriale d'un concurrent,
-celui-ci protège la machinerie qui fabrique nos prix.
-
-## 5. L'affichage — le back l'a déjà tranché
-
-`final-price` (écran de tarification) rend la règle, et la boutique la reprend :
-
-- **le canonique BARRÉ**, puis le prix qui s'applique. « Sans lui, l'écart n'a
-  pas de point de départ » ;
-- **le barré n'apparaît que s'il y a un écart.** Un prix barré sur lui-même
-  serait une fausse promotion — d'où `canonicalMillicents` **absent** quand il
-  est égal, plutôt que présent et identique : l'absence ne se rate pas ;
-  (La règle des paliers — « chaque ligne est une résolution complète » — vaut
-  toujours, mais elle ne concerne pas ce lot.)
-
-`CatalogProduct` (`@lfd/b2b-ui/catalog`, consommé par les **deux** apps) gagne le
-prix barré, optionnel. Un seul endroit décide à quoi ressemble un prix.
-
-## 6. 🔴 Ce qui doit être vrai MAINTENANT pour que les paliers ne coûtent rien
-
-Les paliers arrivent bientôt. Ce lot est donc contraint par eux **avant** qu'ils
-existent : un report n'est un report que s'il ne fabrique pas ce qu'il faudra
-défaire.
-
-### La seule chose qui peut vraiment casser : un panier qui multiplie
-
-`cart-total.ts` fait aujourd'hui `prix × quantité`. C'est exact tant qu'un prix
-unitaire ne dépend pas de la quantité — et **faux le jour même** où un palier
-existe. Pire : faux **en silence**, parce que la multiplication continue de
-rendre un nombre plausible.
-
-**Donc la règle de ce lot, et c'est la seule qui compte :** le front **ne
-multiplie jamais**. Il demande `POST /orders/quote`, qui résout chaque ligne à sa
-quantité réelle. Fait ainsi, le jour des paliers, le panier est déjà juste sans
-qu'on y touche — le serveur commence simplement à rendre d'autres nombres.
-
-Fait autrement — un total calculé côté client « en attendant » — les paliers
-demandent de le défaire, et entre-temps chaque commande facture autre chose que
-ce que le client a vu. C'est le défaut qu'on est précisément en train de réparer.
-
-### Ce qui est additif, et ne demande donc rien aujourd'hui
-
-| pièce                                 | pourquoi ça n'engage pas                                                                                       |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `volumeTiers` dans la vue             | champ **optionnel** ajouté plus tard ; absent ≠ vide                                                           |
-| Le barré de `CatalogProduct`          | déjà optionnel, et un palier ne change pas sa règle                                                            |
-| La quantité de résolution de la liste | reste **1** quand les paliers arrivent — la liste montre le prix d'une pièce, les paliers disent où il descend |
-
-### Ce qu'il ne faut PAS faire « en préparation »
-
-Ni champ vide en attendant, ni `volumeTiers: []` qui voudrait dire deux choses
-(« pas de palier ici » et « pas encore implémenté »). Une absence se distingue
-d'une liste vide ; deux sens pour une valeur, c'est la faute que ce dépôt refuse
-partout ailleurs sur `null` contre `[]`.
-
-## 7. Ce que ce document ne tranche pas
-
-- **Le coût de la résolution.** Une liste de 92 articles fait 92 résolutions,
-  par client, non cachables entre clients. Mesurable seulement une fois écrit ;
-  à mesurer avant d'optimiser, et à ne pas optimiser d'avance.
-- **Les paliers de volume.** Reportés, et ce qu'il faudra rouvrir alors est
-  écrit ici pour ne pas le redécouvrir : la vue gagne `volumeTiers`
-  (`minQuantity`, `unitPriceMillicents`, `discountBp` — **déjà résolus**), et
-  l'affichage doit reprendre la règle du back : « chaque ligne est une
-  résolution complète à cette quantité, pas un `canonique × (1 − remise)`, qui
-  mentirait dès qu'une promotion compose avec le palier ». La quantité de
-  résolution de la LISTE, elle, ne change pas : elle reste 1.
-- **L'éditorial** — descriptions et visuels. Lot séparé, et il a sa propre
-  contrainte : `diffDelivery` doit apprendre à les voir, sinon une description
-  changerait en vente sans relecture.
-- **La pagination.** 92 articles tiennent en une réponse ; mille non.
-
-## 8. Ce qui a été vérifié
-
-| Affirmation                                                      | Où                                            |
-| ---------------------------------------------------------------- | --------------------------------------------- |
-| `resolvePrice` est pure et réutilisable                          | `pricing/domain/resolve-price.ts:43`          |
-| `companyId` peut être `null`                                     | `pricing/domain/price-rule.ts:191`            |
-| Le contexte exige `quantity`                                     | idem, `:186`                                  |
-| Toute règle porte un `minQuantity`, tous étages                  | `price-rule.ts:142` + `:201`                  |
-| La mercuriale **scelle** les étages suivants                     | `resolve-price.ts`, en-tête                   |
-| Un palier porte `minQuantity`/`unitPriceMillicents`/`discountBp` | `contracts/src/pricing.ts:770`                |
-| Le devis client existe et est muré                               | `orders.controller.ts:72`                     |
-| `final-price` barre le canonique s'il y a un écart               | `tarification/final-price/final-price.html`   |
-| `CatalogProduct` n'a qu'un `price` formaté                       | `b2b-ui/src/catalog/catalog-product.model.ts` |
-
-⚠️ Non soumis à un contradicteur, comme le plan. Chaque affirmation de
-l'existant a été ouverte dans le dépôt — la table dit laquelle et où.
+- **Les paliers ne se voient pas au rayon** (quantité 1). Le jour où ils
+  devront s'y voir : un champ facultatif de paliers **déjà résolus**, chaque
+  palier étant une résolution complète à sa quantité, jamais
+  `tarif × (1 − remise)`.
+- **Le rayon reconnu est en français** : `/shop/catalogue/mine` n'a pas encore
+  de paramètre de langue ; seule la vue publique en a un.
