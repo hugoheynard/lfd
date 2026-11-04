@@ -695,8 +695,16 @@ describe("l'estimation de la saisie", () => {
  * même panier) — les règles d'heure limite, les limites des articles en un
  * lot, la dérogation ouverte. Le jour choisi n'est pas aujourd'hui : l'arrêt
  * du plan n'est pas relu.
+ *
+ * 🔴 **De 20 à 21 le 2026-11-04** (lot L4, `ad5c80190`,
+ * `documentation/caching-usage/plan-principal-en-memoire.md`) : chaque
+ * requête identifiée lit l'estampille du principal AVANT de le servir de la
+ * mémoire ou de le relire. À froid, le principal est relu ET l'estampille
+ * lue : une lecture de plus, constante, que la mémoire rembourse aux appels
+ * suivants (le principal n'y est plus relu). Le devis anonyme et l'estimation
+ * du staff ne passent pas par ce résolveur et ne bougent pas.
  */
-const COLD_COMPANY_QUOTE_OPS = 20;
+const COLD_COMPANY_QUOTE_OPS = 21;
 
 describe("le devis d'une société, un jour choisi", () => {
   async function seedBuyer(): Promise<string> {
