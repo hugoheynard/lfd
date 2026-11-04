@@ -1,6 +1,6 @@
 # Plan — le prix au kilo suit le prix servi
 
-> 📝 **Plan du 2026-11-04, rien n'est bâti.** Demande de Hugo : « quand on a un
+> 📝 **Plan du 2026-11-04, rien n'est bâti. Resserré par Hugo le même jour (§ 7) : seule une PROMOTION ajuste le kilo.** Demande de Hugo : « quand on a un
 > prix barré et qu'on a aussi un prix indicatif au kilo, on peut avoir le prix
 > barré au kilo en plus ? ». En relisant le code, un défaut est apparu : le prix
 > au kilo affiché ne suit **jamais** le prix servi. Touche l'affichage d'un
@@ -139,17 +139,23 @@ plus seulement par l'écran.
 | K1  | serveur : la règle (fonction pure, tests aux bornes : égal, plus bas, plus haut, non saisi, vendu au poids, arrondi de la moitié), le contrat, l'ordre de composition ; un e2e du rayon public et pro avec une promotion |
 | K2  | écran : le kilo barré à côté du kilo servi, sur la fiche et la mise en avant ; le libellé dans les trois langues ; tests de composant                                                                                    |
 
-## 7. Trois décisions de Hugo, avant K1
+## 7. Les décisions de Hugo (2026-11-04)
 
-1. **Un prix servi plus HAUT que le tarif** (mercuriale ou plancher qui
-   relève) : le kilo monte-t-il dans la même proportion ? La cohérence dit oui ;
-   la réglementation (prix à l'unité de mesure = prix pratiqué) aussi,
-   probablement — non relue.
-2. **L'export de grille de prix** suit-il le kilo servi, comme le rayon, ou
-   garde-t-il le kilo saisi (c'est une grille de tarifs, pas un rayon) ?
-3. **Le libellé du kilo barré** quand le barré n'est pas une promotion
-   (mercuriale, palier, engagement : `promotionNames` absent) : même rendu
-   qu'une promotion, ou un rendu sans mention ?
+« Je dirais saisi, peu d'articles ont un prix au kilo indicatif, ne cherche pas
+à inventer de la donnée », puis : « le prix saisi barré et le prix altéré par la
+promo ». La règle du § 2 se **resserre** :
+
+| Situation                                                         | Ce qui s'affiche                                                                                               |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| une **promotion** baisse la pièce (barré **et** `promotionNames`) | le kilo saisi **barré**, puis le kilo **après promotion**, dans la proportion de la pièce (TTC pour le public) |
+| aucune promotion, mercuriale, palier, engagement, prix plus haut  | le kilo **saisi**, comme aujourd'hui, sans calcul                                                              |
+| l'export de grille de prix                                        | le kilo **saisi**, inchangé                                                                                    |
+
+Conséquences : `publicPricePerKgTtcCents` / `proPricePerKgMillicents` gardent
+leur sens (le kilo saisi) **sauf** sous une promotion, où ils portent le kilo
+après promotion ; les champs barrés neufs ne sont posés que sous une
+promotion. Le § 2 (« le kilo monte dans la même proportion ») et le cas de la
+mercuriale **tombent**. L'export de grille n'est pas touché.
 
 ## 6. Ce qui n'est pas vérifié
 
