@@ -119,8 +119,9 @@ seulement, et chacun traversait toute la chaîne jusqu'au conteneur.
   passerelle sous un nom de `lafoliecoffee.info` et appelle l'API en
   `/api/lfd` **sur son propre hôte** — plus aucun contrôle CORS, et
   `Server-Timing` lisible dans le navigateur. Un sous-domaine qui
-  appellerait la racine resterait cross-origin. La boutique d'abord
-  (variable `LFD_API_URL`), la back-office (`pages.dev`) ensuite. Une app
+  appellerait la racine resterait cross-origin. `LFD_API_URL` **ne change
+  pas** (Hugo, 2026-11-04) : la boutique reste sur l'adresse de la
+  passerelle tant que ce lot n'est pas repris en entier. Une app
   mobile reste cross-origin par nature : le `Max-Age` est sa seule parade.
 
 ```mermaid
