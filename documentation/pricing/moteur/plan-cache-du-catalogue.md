@@ -51,6 +51,29 @@ changent la réponse **sans aucune écriture** (§2). La purge rend visible tout
 de suite ce que l'équipe change ; la durée courte rattrape ce que l'horloge
 change.
 
+**🔴 Décision de Hugo, 2026-11-04 : un Durable Object.** Le cache du catalogue
+vit dans un Durable Object, et non chez le CDN ni dans un Redis hébergé.
+Constaté dans le dépôt le même jour : le Worker de l'API
+(`apps/lfd-api/container/worker.ts`) déclare **déjà** un Durable Object — le
+conteneur lui-même, `Backend extends Container`, lié par `BACKEND` et migré en
+`new_sqlite_classes` (`wrangler.jsonc`). Un second, à côté, est la forme
+naturelle : il reçoit la requête **avant** le conteneur.
+
+Ce que la forme doit trancher, et que rien n'a encore vérifié :
+
+- **le public** : le Worker de l'API répond depuis l'objet sans réveiller le
+  conteneur — même gain que le CDN, avec une purge immédiate et cohérente
+  (l'API notifie l'objet à chaque écriture qui change le rayon) ;
+- **les pros** : l'objet ne doit répondre **qu'après** la résolution des droits,
+  qui se fait dans le conteneur, en base (`company_id` n'est jamais tiré du
+  jeton). Soit le conteneur lit l'objet après avoir résolu la société — à
+  vérifier : un chemin sortant du conteneur vers un Durable Object —, soit le
+  pro reste en mémoire du conteneur (lot C2) et l'objet ne sert que le public ;
+- **la durée** reste nécessaire en plus de la purge (§2 : ce qui change sans
+  écriture) ;
+- **le coût** d'un Durable Object (requêtes, durée) contre l'opération Prisma
+  qu'il évite : à chiffrer sur la grille tarifaire en vigueur, pas de mémoire.
+
 **Les étapes du chantier** :
 
 1. mesurer sur **dev déployé** où partent les secondes d'une première visite
