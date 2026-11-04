@@ -10,7 +10,7 @@ const CENTS_PER_EURO = 100;
 
 /**
  * Le TTC recomposé à la passation n'est pas celui que le client a vu (**409**) —
- * plan `documentation/pricing/centime-et-tva/plan-total-vu.md`, lot T2.
+ * plan `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, lot T2.
  *
  * Entre le devis et le clic, un prix, une promotion, un supplément de retard,
  * les frais d'une zone ou un bon ont changé. Rien n'est écrit, aucune

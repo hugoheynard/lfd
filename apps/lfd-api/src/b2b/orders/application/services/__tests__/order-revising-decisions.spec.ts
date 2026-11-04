@@ -15,7 +15,7 @@ import type { OrderContent } from "../order-content.js";
 
 /**
  * Les refus de la révision décidés par Hugo le 2026-11-03 (lot L1b de
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 6) :
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 6) :
  * É12 (la règle E1 de la passation) et É13 (la clientèle de la commande).
  */
 const STAFF = { kind: "staff", staffId: "stf_1" } as const;

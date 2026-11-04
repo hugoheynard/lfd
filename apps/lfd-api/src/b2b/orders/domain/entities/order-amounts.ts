@@ -23,7 +23,7 @@ import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
  * Ce que le calcul des montants lit d'une commande : ses termes chiffrés
  * (`priceBasket`), la société et le bon. Plus étroit que `DraftOrderInput`
  * pour que le devis appelle la MÊME fonction sans fabriquer une identité de
- * commande qu'il n'a pas (plan `plan-un-seul-assemblage.md`, L2, É15).
+ * commande qu'il n'a pas (plan `le-prix-d-un-panier.md`, L2, É15).
  */
 export type DraftAmountsInput = Pick<DraftOrderInput, "companyId" | "voucher" | keyof BasketTerms>;
 
@@ -179,7 +179,7 @@ function lineHtBasketOf(
 /**
  * Une composition par méthode de TVA (plan du centime, § 4) : on ajoute une
  * méthode en ajoutant une entrée, pas une branche dans `compose`. Sortie
- * d'`order.ts` le 2026-11-03 (lot L1a de `plan-un-seul-assemblage.md`) : le
+ * d'`order.ts` le 2026-11-03 (lot L1a de `le-prix-d-un-panier.md`) : le
  * chiffrage d'un panier la réemploie, il ne la réécrit pas.
  */
 const AMOUNTS_BY_METHOD: Readonly<

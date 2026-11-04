@@ -116,7 +116,7 @@ export function ensureWithinOrderCutoff(input: {
  * **La dérogation que la passation dépenserait**, sans refuser — ou `null`.
  *
  * Le devis d'une société chiffre la surtaxe prévue (plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T1) par la MÊME
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, T1) par la MÊME
  * décision qu'{@link ensureWithinOrderCutoff} : seule la sortie diffère. Là où
  * la passation refuse, le devis ne chiffre rien — le refus viendra au
  * paiement, nommé par la passation.

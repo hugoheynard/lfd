@@ -86,7 +86,7 @@ export async function prepareStaffOrder(
 
 /**
  * **Le lien refusé au comptoir dit la cause réelle** (rang 0 du §2.4,
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`) : si la
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`) : si la
  * société est suspendue ou inactive, « Choisissez Au compte » enverrait le
  * vendeur vers un second refus — on lève directement celui-là. Le statut
  * n'est lu que sur ce chemin de refus ; le payeur n'étant pas connu à ce

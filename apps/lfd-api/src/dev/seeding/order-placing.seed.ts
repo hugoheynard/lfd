@@ -370,7 +370,7 @@ export async function place(
 
 /**
  * Le semis n'a pas d'écran : il n'a vu aucun total. Il fait donc ce que fait
- * le client sur un refus `orders.total_changed` (plan `plan-total-vu.md`,
+ * le client sur un refus `orders.total_changed` (plan `le-prix-d-un-panier.md`,
  * T3) — il confirme le total que la passation a composé, et renvoie sous la
  * même clé. La première tentative n'écrit rien : le refus précède le règlement.
  */

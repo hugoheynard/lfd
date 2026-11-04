@@ -12,7 +12,7 @@ import { quoteChangesOf, type QuoteChange } from '../quote-changes';
 
 /**
  * **« Le total est passé de X à Y : … »** — plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T3.
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, T3.
  *
  * La passation a refusé le total vu (409 `orders.total_changed`) ; le panier
  * a redemandé son devis. Une fois le neuf arrivé, ce bloc compare le devis du

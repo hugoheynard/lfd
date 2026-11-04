@@ -87,7 +87,7 @@ export interface PricingRequest {
 
 /**
  * **Charger une fois ce que le chiffrage d'un panier consomme** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.1,
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.1,
  * lot L1a) : les prix de ligne, le classement des articles, la clientèle,
  * le point ou la zone, les promotions et les faits de l'acheteur, le mode de
  * TVA du port. Rien ici ne calcule un montant : c'est `priceBasket`.

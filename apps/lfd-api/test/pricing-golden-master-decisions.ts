@@ -1,6 +1,6 @@
 /**
  * **Les refus décidés par Hugo le 2026-11-03, rejoués au golden master** (lot
- * L1b de `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`,
+ * L1b de `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`,
  * § 6). Le corpus tiré ne les touchait pas : une révision de l'équipe y reste
  * sur l'échéance du pro, et aucune société n'y change de statut.
  *

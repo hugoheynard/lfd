@@ -1,5 +1,5 @@
 /**
- * **Les propriétés G3 du golden master** (plan `plan-un-seul-assemblage.md`,
+ * **Les propriétés G3 du golden master** (plan `le-prix-d-un-panier.md`,
  * §3) : l'arithmétique de chaque sortie, et la concordance des conseils avec
  * la commande qu'ils annoncent — là où ils concordent AUJOURD'HUI.
  *
@@ -77,7 +77,7 @@ export interface KnownGap {
  * disparaissent un par un aux lots L2-L3 : une ligne retirée ici est la
  * preuve qu'un écart a été tranché.
  */
-// É11 retiré le 2026-11-03 (plan `plan-total-vu.md`, T1) : le devis d'une
+// É11 retiré le 2026-11-03 (plan `le-prix-d-un-panier.md`, T1) : le devis d'une
 // société chiffre la surtaxe prévue, et le cas `late-fee` prouve l'égalité.
 export const KNOWN_GAPS: readonly KnownGap[] = [
   {

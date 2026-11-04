@@ -408,7 +408,7 @@ export const idempotencyKeySchema = z.string().uuid("clé d'idempotence attendue
 
 /**
  * **Le total que le client a vu** (TTC, en centimes) au moment de valider —
- * plan `documentation/pricing/centime-et-tva/plan-total-vu.md`, lot T2.
+ * plan `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, lot T2.
  *
  * La passation recompose le panier aux prix et règles de l'instant ; si son
  * TTC diffère de celui-ci, elle refuse (409 `orders.total_changed`) sans rien
@@ -934,7 +934,7 @@ export interface OrderView {
   /**
    * **Le « Total HT » du bon**, calculé au serveur par `orderPretaxCents`
    * (`@lfd/money`) sur les colonnes figées — un écran le lit, il ne le
-   * recalcule pas (plan L6, `plan-l6-montants-lus.md`).
+   * recalcule pas (plan L6, `le-prix-d-un-panier.md`).
    */
   readonly pretaxCents: number;
   readonly totalCents: number;

@@ -1,6 +1,6 @@
 /**
  * **Le total vu est le total facturé** — lot T2 du plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`.
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`.
  *
  * Chaque cas suit le même geste : le client chiffre (devis), quelque chose
  * change AILLEURS (l'équipe, le calendrier, une autre commande), puis il

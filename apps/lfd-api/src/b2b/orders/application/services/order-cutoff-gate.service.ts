@@ -59,7 +59,7 @@ export class OrderCutoffGate {
    * **La dérogation que la passation dépenserait**, lue sans être consommée et
    * sans refuser — `null` hors de la grâce ou sans dérogation ouverte. Le devis
    * d'une société s'en sert pour chiffrer la surtaxe prévue (plan
-   * `plan-total-vu.md`, T1) ; `consume` reste à la seule passation.
+   * `le-prix-d-un-panier.md`, T1) ; `consume` reste à la seule passation.
    */
   async foresee(
     skus: readonly string[],
@@ -118,7 +118,7 @@ export class OrderCutoffGate {
  * Un SKU absent du catalogue n'a pas de limite propre : il retombe sur la
  * règle du commerce. Il est refusé pour ce qu'il est — inconnu — par le
  * chargement, que la passation juge AVANT l'heure limite (rangs 4 et 5 du
- * §2.4, `plan-un-seul-assemblage.md`), et jamais ici pour une heure.
+ * §2.4, `le-prix-d-un-panier.md`), et jamais ici pour une heure.
  */
 function limitsOf(
   skus: readonly string[],

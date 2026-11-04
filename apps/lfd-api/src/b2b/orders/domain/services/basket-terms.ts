@@ -33,7 +33,7 @@ export interface BasketTermsInput {
  * `exact_ht`, par la composition TTC que l'agrégat rejoue.
  *
  * Déménagé d'`OrderComposition.draftOf` le 2026-11-03 (lot L1a de
- * `plan-un-seul-assemblage.md`) sans changer une opération : la passation et
+ * `le-prix-d-un-panier.md`) sans changer une opération : la passation et
  * la révision y passent par `priceBasket`. La surtaxe n'y est pas : elle
  * dépend d'un verdict (§ 2.3).
  */

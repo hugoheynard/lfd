@@ -192,7 +192,7 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * jour-là : 10, constant, pour une ligne comme pour dix ; le détail requête
  * par requête n'a pas été relevé.
  *
- * 🔴 **De 10 à 11 le 2026-11-03** (lot L2 de `plan-un-seul-assemblage.md`,
+ * 🔴 **De 10 à 11 le 2026-11-03** (lot L2 de `le-prix-d-un-panier.md`,
  * d43dbfe76) : le devis CLASSE toujours ses articles (`PricingContext.loadCart`
  * → `classify`, une lecture de `catalog_items` en lot) — décision É2 de
  * l'inventaire C0 : avant, il ne classait que si une promotion admise à toute
@@ -201,7 +201,7 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * produit ni chemin de famille. Mesuré par trace des modèles, avant/après.
  *
  * 🔴 **De 11 à 10 le 2026-11-04** (chantier « optimisation des lectures »,
- * `plan-un-seul-assemblage.md`, § « Les lectures du chiffrage, mesurées ») :
+ * `le-prix-d-un-panier.md`, § « Les lectures du chiffrage, mesurées ») :
  * l'estampille du cache des matériaux se lit UNE fois par requête au lieu
  * d'une fois par question au cache (`PricingMaterialsCache.stamp`) — le devis
  * anonyme en payait deux (le chargeur des prix, l'offre de connexion). Mesuré
@@ -686,7 +686,7 @@ describe("l'estimation de la saisie", () => {
 
 /**
  * **Le devis d'un client rattaché à une société, avec un jour** (plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T1) : il juge la
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, T1) : il juge la
  * surtaxe de retard comme la passation — l'heure limite, la dérogation lue
  * sans être consommée. Ces lectures sont constantes : elles ne dépendent pas
  * du nombre de lignes, et la surtaxe ne se lit que si une dérogation sert.

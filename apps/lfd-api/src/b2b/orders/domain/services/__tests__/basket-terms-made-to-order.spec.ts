@@ -9,7 +9,7 @@ import { basketTermsOf } from "../basket-terms.js";
  *
  * Déménagée d'`order-composition-made-to-order.spec.ts` avec la règle
  * (`OrderComposition.draftOf` → `basketTermsOf`, lot L1a de
- * `plan-un-seul-assemblage.md`) : mêmes cas.
+ * `le-prix-d-un-panier.md`) : mêmes cas.
  */
 const LINE: OrderLineInput = {
   sku: "GAT-001",

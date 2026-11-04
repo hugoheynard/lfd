@@ -1,6 +1,6 @@
 /**
  * **Les paires « sans verrou / sous verrou », sur les vrais adaptateurs** —
- * lot L4 du plan `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`
+ * lot L4 du plan `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`
  * (§2.4 : « un test de concordance prouve qu'elles disent la même chose hors
  * concurrence »).
  *

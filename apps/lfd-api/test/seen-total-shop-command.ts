@@ -19,7 +19,7 @@ const UNSEEN_TOTAL_CENTS = Number.MAX_SAFE_INTEGER;
 /**
  * La passation de la boutique **hors requête**, au total qu'elle compose —
  * le pendant de `seen-total-agent.ts` pour les suites qui appellent le
- * handler sans HTTP (lot T3, `plan-total-vu.md`).
+ * handler sans HTTP (lot T3, `le-prix-d-un-panier.md`).
  *
  * Un payload qui porte déjà son total part tel quel ; sinon, une tentative à
  * un total inatteignable est refusée `orders.total_changed` sans rien écrire

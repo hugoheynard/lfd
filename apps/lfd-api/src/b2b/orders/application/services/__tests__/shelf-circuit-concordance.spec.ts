@@ -5,7 +5,7 @@ import { CROISSANTS, SHELF_TODAY, shelfOrder, SITE, TODAY } from "./shelf-circui
 
 /**
  * **La vitrine, sans verrou et sous verrou, dit la même chose** — lot L4 du
- * plan `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`
+ * plan `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`
  * (§2.4 : les règles à deux implémentations, et leur concordance hors
  * concurrence). L'estimation de la saisie lit `stockShortfallOf`, la
  * passation `hold` : sur le même reste, le même refus — ou aucun.

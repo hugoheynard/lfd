@@ -40,7 +40,7 @@ export interface QuotedOrder {
 
 /**
  * **L'adaptateur `BasketAmounts` → `ShopQuoteView`** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.5,
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.5,
  * lot L2). Les totaux sortent de `draftedAmountsOf` — la composition par
  * méthode (`AMOUNTS_BY_METHOD`) que l'agrégat appelle à la passation —, pas
  * d'une entrée de `ventilateVat` assemblée ici : c'était l'écart É15, deux

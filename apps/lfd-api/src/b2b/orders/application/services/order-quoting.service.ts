@@ -23,7 +23,7 @@ export interface QuotedOrderLines {
 /**
  * **Ce que la commande coûterait, sans la passer** — devis B de
  * `/orders/quote` et `/admin/orders/quote` (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, lot L3).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, lot L3).
  *
  * Il chiffre par le chemin de la passation : `PricingContext.loadCart`, puis
  * `priceBasket`, puis `draftedAmountsOf` — la composition par méthode que

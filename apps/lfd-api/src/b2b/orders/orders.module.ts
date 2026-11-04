@@ -599,12 +599,12 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ListCatalogHandler,
     ListCustomerSkusHandler,
     QuoteOrderHandler,
-    // Le devis B, sur le chemin de la passation (plan `plan-un-seul-assemblage.md`, L3).
+    // Le devis B, sur le chemin de la passation (plan `le-prix-d-un-panier.md`, L3).
     OrderQuoting,
     EstimateOrderForCustomerHandler,
     ReadMyShopCatalogueHandler,
     ShopCartQuoting,
-    // La surtaxe prévue au devis d'une société (plan `plan-total-vu.md`, T1).
+    // La surtaxe prévue au devis d'une société (plan `le-prix-d-un-panier.md`, T1).
     LateFeeJudgement,
     GuestSignInOffer,
     QuoteShopCartHandler,

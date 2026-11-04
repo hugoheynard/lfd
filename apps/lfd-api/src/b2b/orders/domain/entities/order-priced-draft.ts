@@ -12,7 +12,7 @@ import type { DraftOrderInput } from "./order-shapes.js";
 
 /**
  * **Ce que l'agrégat reçoit pour chiffrer lui-même** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.2,
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.2,
  * lot L1a) : le panier chargé, le créneau qu'une promotion juge, et les
  * verdicts qui ont un prix. La méthode de TVA n'y est pas — c'est l'agrégat
  * qui la décide (`draft`) ou la relit (`recompose`).

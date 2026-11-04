@@ -1414,7 +1414,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
   });
 });
 
-/** Plan `plan-total-vu.md`, T2 : la saisie compare le TTC composé au total que l'estimation a montré. */
+/** Plan `le-prix-d-un-panier.md`, T2 : la saisie compare le TTC composé au total que l'estimation a montré. */
 describe("PlaceOrderForCustomerHandler — le total vu", () => {
   async function composedTotal(): Promise<number> {
     const sink = { placed: null as OrderToPlace | null };
@@ -1460,7 +1460,7 @@ describe("PlaceOrderForCustomerHandler — le total vu", () => {
     expect(sink.placed).toBeNull();
   });
 
-  /** L'ordre des refus (`plan-un-seul-assemblage.md`, § 2.4) : 7 bis passe avant 8. */
+  /** L'ordre des refus (`le-prix-d-un-panier.md`, § 2.4) : 7 bis passe avant 8. */
   it("le total changé se dit AVANT le compte sans crédit", async () => {
     const total = await composedTotal();
     const sink = { placed: null as OrderToPlace | null };

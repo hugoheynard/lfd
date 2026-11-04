@@ -7,9 +7,9 @@ import { ShelfCircuit } from "./shelf-circuit.service.js";
 
 /**
  * **Le verdict de retard qui a un prix** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.3) —
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.3) —
  * une seule source, lue par la passation (`OrderDrafting`) et par le devis
- * d'une société (`ShopCartQuoting`, plan `plan-total-vu.md`, T1).
+ * d'une société (`ShopCartQuoting`, plan `le-prix-d-un-panier.md`, T1).
  *
  * En exécution, la dérogation vient du jugement qui la dépense ; en conseil,
  * du même jugement sans dépense ({@link OrderCutoffGate.foresee}). Le montant,

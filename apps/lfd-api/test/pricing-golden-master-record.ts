@@ -1,7 +1,7 @@
 /**
  * **Ce que le golden master enregistre** de chaque chemin : une seule forme de
  * montants, et le refus par son CODE, jamais par son texte (plan
- * `plan-un-seul-assemblage.md`, §3 G2). Un champ que le chemin ne rend pas
+ * `le-prix-d-un-panier.md`, §3 G2). Un champ que le chemin ne rend pas
  * vaut `null` : le devis du simulateur s'arrête au sous-total.
  */
 import type request from "supertest";

@@ -66,7 +66,7 @@ export class ShopCartQuoting {
     classifications: OrderLineClassificationReader,
     private readonly lateFee: LateFeeJudgement,
   ) {
-    // Le chargement même de la passation (plan `plan-un-seul-assemblage.md`,
+    // Le chargement même de la passation (plan `le-prix-d-un-panier.md`,
     // § 2.1, lot L2) : mêmes lectures, même ordre, panier partiel admis.
     this.context = new PricingContext(
       pricing,
@@ -168,7 +168,7 @@ export class ShopCartQuoting {
         ),
       },
       // La surtaxe prévue, par le jugement de la passation sans dépenser la
-      // dérogation (É11, plan `plan-total-vu.md`, T1) : rien sans société,
+      // dérogation (É11, plan `le-prix-d-un-panier.md`, T1) : rien sans société,
       // sans jour, sans dérogation ouverte ou sans réglage.
       {
         lateFee: await this.lateFee.foreseen(

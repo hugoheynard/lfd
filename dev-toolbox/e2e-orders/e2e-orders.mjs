@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Les e2e du chiffrage et de la commande, en UNE chaîne (Hugo, 2026-11-03 ;
- * plan `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md` §4).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md` §3).
  *
  * La liste n'est pas écrite à la main : elle se DÉDUIT du contenu des suites,
  * pour qu'une suite neuve qui touche la commande y entre sans qu'on y pense.

@@ -2665,7 +2665,7 @@ describe("PlaceOrderHandler — le délai d'annulation figé", () => {
   });
 });
 
-/** Plan `plan-total-vu.md`, T2 : la passation compare le TTC composé au total vu. */
+/** Plan `le-prix-d-un-panier.md`, T2 : la passation compare le TTC composé au total vu. */
 describe("PlaceOrderHandler — le total vu", () => {
   /** Les clés rendues : un refus avant l'écriture doit rendre la sienne. */
   class ReleasingKeys extends OrderIdempotencyStore {

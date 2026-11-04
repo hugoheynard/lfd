@@ -1,5 +1,5 @@
 /**
- * **Le corpus du golden master du chiffrage** (plan `plan-un-seul-assemblage.md`,
+ * **Le corpus du golden master du chiffrage** (plan `le-prix-d-un-panier.md`,
  * §3 G1) : des paniers tirés à graine FIXE, chacun avec ses promotions, son
  * acheminement, son mode de TVA du port, son bon et ses deux révisions.
  *

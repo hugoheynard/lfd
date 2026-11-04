@@ -1,6 +1,6 @@
 /**
  * **La scène du golden master du chiffrage** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, §3 G1,
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, §3 G1,
  * lot L0) : l'horloge figée, le point de retrait, les zones, les clientèles.
  *
  * 🔴 **L'horloge est figée sur un MERCREDI à 10 h de Paris** — le plus récent

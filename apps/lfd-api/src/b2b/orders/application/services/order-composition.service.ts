@@ -44,7 +44,7 @@ export interface ArrangedContent {
  * La part de l'entrée de l'agrégat que la composition décide — tout sauf
  * l'identité de la commande (qui, pour qui, au nom de quelles CGV). Pas un
  * montant : l'argent sort de `priceBasket`, que l'agrégat appelle sur
- * `pricing` (plan `plan-un-seul-assemblage.md`, § 2.2).
+ * `pricing` (plan `le-prix-d-un-panier.md`, § 2.2).
  */
 export type ComposedDraft = Pick<
   PricedDraftInput,
@@ -65,7 +65,7 @@ export type ComposedDraft = Pick<
  * La seule différence entre les deux usages est `frozen` : en révision, une
  * ligne déjà présente garde son prix figé (R3) et n'est pas re-tarifée.
  *
- * Depuis le lot L1a de `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`
+ * Depuis le lot L1a de `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`
  * (2026-11-03), il ne calcule plus aucun montant : il CHARGE
  * (`PricingContext`), arrange l'acheminement, et rend la demande de
  * chiffrage que l'agrégat passe à `priceBasket`.
@@ -95,7 +95,7 @@ export class OrderComposition {
   }
 
   /**
-   * **Charge le panier** (`PricingContext`, plan `plan-un-seul-assemblage.md`,
+   * **Charge le panier** (`PricingContext`, plan `le-prix-d-un-panier.md`,
    * § 2.1) et lève le premier refus de lecture — à ce rang-ci de l'appelant
    * (§ 2.4, étape 4). `revised` : la commande qu'on révise — ses lignes
    * figées et ses remises de panier, REJOUÉES au lieu d'être rejugées (plan

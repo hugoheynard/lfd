@@ -4,7 +4,7 @@ import { catalogItem, quotingOf } from "./shop-cart-quoting.doubles.js";
 
 /**
  * **Le devis porte ses montants lus** — plan
- * `documentation/pricing/centime-et-tva/plan-l6-montants-lus.md` (§ 3) : le
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md` (§ 8.2) : le
  * « Total HT » et le reliquat du bon sont calculés ici, jamais à l'écran.
  */
 const CATALOG = [catalogItem("BAN-001", "Banana bread", 1_990_521, 5.5)];

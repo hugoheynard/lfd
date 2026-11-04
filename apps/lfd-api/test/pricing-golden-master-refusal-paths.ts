@@ -1,6 +1,6 @@
 /**
  * **L'ordre des refus, sur chaque porte** — lot L4 du plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md` (§2.4, G3).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md` (§2.4, G3).
  *
  * `pricing-golden-master-refusals.ts` mesure l'ordre sur la seule saisie de
  * l'équipe. Ici, les MÊMES paires se rejouent sur les trois passations (le

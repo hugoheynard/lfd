@@ -4,7 +4,7 @@ import { formatCents } from '@lfd/b2b-ui/order';
 /**
  * **« Le total TTC est passé de X à Y : … »** — ce qui a bougé entre deux
  * estimations de la saisie (plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`, § 6, T3).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 7.2, T3).
  *
  * La passation a refusé le total que l'estimation montrait (409
  * `orders.total_changed`) ; la page en a redemandé une. Ce module COMPARE les

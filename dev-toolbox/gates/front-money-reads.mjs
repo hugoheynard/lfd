@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **un écran lit ses montants, il ne les calcule pas** (plan
- * `documentation/pricing/centime-et-tva/plan-l6-montants-lus.md`, § 2 et § 5).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 8.1 et § 5).
  *
  * Le « Total HT » d'un pro au compte a eu, jusqu'au 2026-11-04, deux formules
  * à l'écran — « total − TVA », puis la règle du bon refaite sur les gestes —
@@ -196,7 +196,7 @@ function main() {
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
       `\n  ${failures.length} écart(s). Un écran lit ses montants : le serveur les calcule ` +
-        `(plan-l6-montants-lus.md).\n`,
+        `(le-prix-d-un-panier.md).\n`,
     );
     process.exit(1);
   }

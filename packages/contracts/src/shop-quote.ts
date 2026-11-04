@@ -211,7 +211,7 @@ export interface ShopQuoteView {
   readonly deliveryFeeCents: number;
   /**
    * **La surtaxe de retard prévue**, HT, positive (plan
-   * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T1) — celle que
+   * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, T1) — celle que
    * la passation facturerait maintenant à une société dont la dérogation à
    * l'heure limite est ouverte ; sa TVA est dans `vat`, et elle est comptée
    * dans `totalCents`. **Absente** à zéro : sans dérogation, sans réglage ou
@@ -261,7 +261,7 @@ export interface ShopQuoteView {
   readonly endedDiscounts?: readonly ShopQuoteEndedDiscountView[];
   /**
    * **Ce que ce décompte attend encore pour être le prix de la commande**
-   * (plan `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`,
+   * (plan `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`,
    * § 2.5, lot L2) : `fulfillment` — aucun acheminement, donc ni remise ni
    * frais ; `window` — une promotion « au créneau » n'a pas pu être
    * jugée faute de créneau. Le total reste servi, et il est exact pour ce que

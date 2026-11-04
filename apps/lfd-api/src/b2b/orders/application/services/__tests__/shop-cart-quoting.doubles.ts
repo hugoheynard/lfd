@@ -175,7 +175,7 @@ export interface QuotingDecisions {
  * La tarification des lignes sur ce catalogue et ces décisions. `clock` et
  * `history` : la pendule et l'historique canonique de la porte du prix — par
  * défaut figée et vide ; une suite qui éprouve « jamais d'instant passé »
- * (`plan-un-seul-assemblage.md`, § 2.1) y met le mur qui avance.
+ * (`le-prix-d-un-panier.md`, § 2.1) y met le mur qui avance.
  */
 export function pricingOf(
   catalog: readonly UnsealedCatalogItem[],
@@ -241,7 +241,7 @@ export interface QuotingSetup {
    * remises `b2c` / `b2b` du point, lues en promotions.
    */
   readonly basketPromotions?: readonly LivePromotion[];
-  /** La surtaxe prévue (plan `plan-total-vu.md`, T1) ; par défaut, aucune règle d'heure. */
+  /** La surtaxe prévue (plan `le-prix-d-un-panier.md`, T1) ; par défaut, aucune règle d'heure. */
   readonly lateFee?: LateFeeJudgement;
 }
 

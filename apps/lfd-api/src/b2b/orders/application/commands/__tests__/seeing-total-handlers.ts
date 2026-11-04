@@ -13,7 +13,7 @@ import { PlaceShopOrderHandler } from "../place-shop-order.handler.js";
  * Le total « pas vu » des payloads par défaut de ces suites : aucune commande
  * ne l'atteint, donc la première tentative est refusée `orders.total_changed`.
  *
- * Depuis le lot T3 (`plan-total-vu.md`), le total vu est OBLIGATOIRE au
+ * Depuis le lot T3 (`le-prix-d-un-panier.md`), le total vu est OBLIGATOIRE au
  * contrat. Les suites des trois passations éprouvent autre chose que lui
  * (mur, règlement, langue…) sur des paniers dont le total varie : elles
  * font donc ce que fait l'écran sur ce refus — confirmer le total composé et

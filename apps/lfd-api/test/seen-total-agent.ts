@@ -3,7 +3,7 @@ import type request from "supertest";
 
 /**
  * **Le total vu, confirmé pour les suites qui éprouvent autre chose** — plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`, lot T3.
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, lot T3.
  *
  * Depuis T3, `expectedTotalCents` est OBLIGATOIRE aux trois passations
  * (`POST /orders`, `/shop/orders`, `/admin/orders`). Près de trois cents appels

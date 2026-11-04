@@ -5,7 +5,7 @@ import type { PromotionWeeklyHours } from "../../../../promotions/domain/promoti
 import { catalogItem, PRICED_AT, quotingOf } from "./shop-cart-quoting.doubles.js";
 
 /**
- * **Le panier partiel dit ce qu'il attend** (plan `plan-un-seul-assemblage.md`,
+ * **Le panier partiel dit ce qu'il attend** (plan `le-prix-d-un-panier.md`,
  * § 2.5, lot L2, É3 et É6) : un devis sans acheminement ou sans créneau reste
  * servi, mais `awaiting` dit qu'il n'est pas encore le prix de la commande.
  * Le jour n'est comparé qu'aux heures de la promotion, jamais à l'horloge.

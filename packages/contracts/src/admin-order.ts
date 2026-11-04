@@ -147,7 +147,7 @@ export type AdminPlaceOrderPayload = z.infer<typeof adminPlaceOrderPayloadSchema
  * **Ce que l'estimation de la saisie reçoit** (`POST /admin/orders/estimate`)
  * — la passation, sans le total vu : c'est elle qui le montre. Mêmes champs,
  * mêmes refus de forme, pour que l'estimation compose la commande même que la
- * passation écrirait (plan `plan-total-vu.md`, T3).
+ * passation écrirait (plan `le-prix-d-un-panier.md`, T3).
  */
 export const adminOrderEstimatePayloadSchema = z
   .object(adminOrderEntryShape)

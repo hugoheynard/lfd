@@ -18,7 +18,7 @@ import { endedBasketPromotions, type EndedBasketPromotion } from "./ended-basket
 /**
  * **Ce que la caisse a LU pour choisir une promotion panier** — l'instant de
  * la question, les promotions vivantes et les faits de l'acheteur (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.1).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.1).
  *
  * Séparé du choix pour que le choix soit un calcul : rien ici n'attend un
  * montant, et le même chargement sert à tous les paniers qu'on chiffrerait
@@ -65,7 +65,7 @@ export interface BasketPromotionNotices {
  * Le choix de {@link chooseLoadedBasketPromotion}, et ce que `BasketPromotions.resolve`
  * en dit au devis — les remises finies (`endedBasketPromotions`, la même
  * fonction) — calculés sur le même chargement : le devis et la commande
- * lisent un seul chiffrage (plan `plan-un-seul-assemblage.md`, L2).
+ * lisent un seul chiffrage (plan `le-prix-d-un-panier.md`, L2).
  */
 export function basketHourNotices(
   loaded: LoadedBasketPromotions,

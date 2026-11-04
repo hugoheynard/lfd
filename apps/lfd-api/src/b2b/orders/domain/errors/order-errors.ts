@@ -257,7 +257,7 @@ export class AccountSettlementNotGrantedError extends BusinessError {
 
 /**
  * **Une société suspendue ne règle pas au compte** (É18, Hugo, 2026-11-03 —
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md` §6) : la
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md` §6) : la
  * saisie de l'équipe s'aligne sur ce que le client a dans son espace (lot P0,
  * `test/served-company-status.e2e-spec.ts`) — son tarif à elle depuis le
  * 2026-11-03 (`documentation/comptes-client/plan-suspendue-au-prix-pro.md`),

@@ -6,7 +6,7 @@ import type { CartAdjustments, PickupBuyer } from "./cart-adjustments.service.js
 
 /*
  * Les lectures d'acheminement du chargement (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.1) —
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.1) —
  * sorties de `PricingContext` le 2026-11-03 (lot L2) pour que le panier de la
  * commande et le panier partiel du devis lisent le point et la zone par les
  * mêmes appels, dans le même ordre.

@@ -147,7 +147,7 @@ export class CartAdjustments {
 
   /**
    * **Le point retenu, sans sa remise** — la lecture que le chargement du
-   * chiffrage fait seule (`plan-un-seul-assemblage.md`, § 2.1), et que
+   * chiffrage fait seule (`le-prix-d-un-panier.md`, § 2.1), et que
    * {@link forPickup} réemploie : les deux opposent les mêmes refus.
    *
    * @throws {PickupNotConfiguredError} le point n'existe pas.

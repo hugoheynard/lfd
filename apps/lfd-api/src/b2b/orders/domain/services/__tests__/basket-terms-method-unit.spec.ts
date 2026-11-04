@@ -11,7 +11,7 @@ import { basketTermsOf, type BasketDeliveryFee, type BasketDiscount } from "../b
  *
  * Déménagée d'`order-composition-draft-of.spec.ts` avec la règle qu'elle
  * tient (`OrderComposition.draftOf` → `basketTermsOf`, lot L1a de
- * `plan-un-seul-assemblage.md`) : mêmes cas, mêmes montants.
+ * `le-prix-d-un-panier.md`) : mêmes cas, mêmes montants.
  */
 const LINE = {
   sku: "BAN-001",

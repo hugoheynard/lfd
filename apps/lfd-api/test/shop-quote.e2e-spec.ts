@@ -341,7 +341,7 @@ describe("le devis de la vitrine", () => {
     );
 
     expect(Object.keys(view).sort()).toEqual([
-      // Ajouté le 2026-11-03 (plan `plan-un-seul-assemblage.md`, L2) et admis
+      // Ajouté le 2026-11-03 (plan `le-prix-d-un-panier.md`, L2) et admis
       // DÉLIBÉRÉMENT : ce que le panier n'a pas encore dit (ici l'acheminement)
       // — rien de la façon dont un prix est fabriqué. Absent d'un panier complet.
       "awaiting",
@@ -353,7 +353,7 @@ describe("le devis de la vitrine", () => {
       "discountAdjustment",
       "discountCents",
       "lines",
-      // Ajouté le 2026-11-04 (plan `plan-l6-montants-lus.md`, L6) et admis
+      // Ajouté le 2026-11-04 (plan `le-prix-d-un-panier.md`, L6) et admis
       // DÉLIBÉRÉMENT : le « Total HT » que l'écran d'un pro au compte lit au
       // lieu de le calculer — un montant, comme `totalCents`, rien de la façon
       // dont le prix a été fabriqué.

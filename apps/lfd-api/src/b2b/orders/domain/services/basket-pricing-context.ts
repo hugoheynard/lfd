@@ -19,7 +19,7 @@ import type { LoadedBasketPromotions } from "./loaded-basket-promotions.js";
 
 /*
  * Les formes du chiffrage d'un panier — plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.1 à
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.1 à
  * § 2.3 : ce que le chargement rend (`BasketPricingContext`), ce que le calcul
  * reçoit en plus (`BasketCart`, `BasketVerdicts`) et ce qu'il rend
  * (`BasketAmounts`). Des données, sans comportement.

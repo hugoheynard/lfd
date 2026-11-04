@@ -15,7 +15,7 @@ import { CountedPoints, LABO, pricingContextOf, ZONE } from "./pricing-context.d
 import { PRICED_AT } from "./shop-cart-quoting.doubles.js";
 
 /**
- * `PricingContext` — plan `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`,
+ * `PricingContext` — plan `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`,
  * § 2.1 : charger une fois, et rendre les refus de lecture en DONNÉES que
  * l'appelant lève à son rang.
  */

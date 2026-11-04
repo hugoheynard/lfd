@@ -1,6 +1,6 @@
 /**
  * 🔴 **Le golden master du chiffrage** — lot L0 du plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md` (§3, §4).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md` (§3, §4).
  *
  * Il FIGE le comportement d'aujourd'hui, sans rien juger : pour chaque panier
  * d'un corpus tiré à graine fixe, la sortie de CHAQUE chemin de chiffrage

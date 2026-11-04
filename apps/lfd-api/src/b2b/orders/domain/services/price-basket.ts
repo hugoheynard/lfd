@@ -25,7 +25,7 @@ import { basketHourNotices } from "./loaded-basket-promotions.js";
 
 /**
  * **Le prix d'un panier** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.2) —
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.2) —
  * synchrone, déterministe, sans port ni horloge : tout ce qu'il consomme a
  * été chargé (`BasketPricingContext`), et ce qui dépend d'un jugement arrive
  * en verdict (§ 2.3).

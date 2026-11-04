@@ -1,6 +1,6 @@
 # Inventaire C0 : ce que chaque assemblage chiffre et juge
 
-> 📝 Lot C0 du plan [`plan-un-seul-assemblage.md`](plan-un-seul-assemblage.md),
+> 📝 Lot C0 du plan [`le-prix-d-un-panier.md`](le-prix-d-un-panier.md),
 > écrit le 2026-11-03. **Aucun code modifié.** Toutes les références
 > `fichier:ligne` ont été ouvertes ce jour-là sur `dev` (`4afc94947`). Les
 > chemins sont relatifs à `apps/lfd-api/src/b2b/orders/` sauf mention.
@@ -285,7 +285,7 @@ B est de l'habillage à généraliser à A quand le jour est connu.
 
 **É11 — Supplément de retard (#20).** ✅ _Tranché pour A (devis d'un client
 rattaché à une société) le 2026-11-03, lot T1 de
-[`plan-total-vu.md`](plan-total-vu.md) : le devis juge la surtaxe comme la
+[`le-prix-d-un-panier.md`](le-prix-d-un-panier.md) : le devis juge la surtaxe comme la
 passation, dérogation lue sans être consommée, et rend `lateFeeCents` (absent
 à zéro). Reste vrai pour B (le devis client et celui de l'équipe s'arrêtent au
 sous-total HT, ils ne chiffrent aucun terme du bas de facture) ; l'estimation

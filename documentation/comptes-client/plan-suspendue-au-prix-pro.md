@@ -45,7 +45,7 @@
   suspendue (`shop-copy`, à chercher) : réécrits, puis `pnpm copy:digest`.
 - **La limite d'É13** (une ligne ajoutée en révision se tarife au statut du
   jour) disparaît pour la suspension : le prix ne dépend plus d'elle.
-- **Le golden master** (`plan-un-seul-assemblage.md` §3) : seules les entrées
+- **Le golden master** (`le-prix-d-un-panier.md` §3) : seules les entrées
   d'une société suspendue changent (prix pro au lieu de public), chacune
   justifiée par cette décision.
 - **`test/served-company-status.e2e-spec.ts`** (lot P0) : le cas « société

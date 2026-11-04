@@ -1,6 +1,6 @@
 import { expectedTotalCentsSchema } from "../order.js";
 
-/** Plan `plan-total-vu.md`, T2 : le total vu, en centimes entiers, facultatif aux contrats. */
+/** Plan `le-prix-d-un-panier.md`, T2 : le total vu, en centimes entiers, facultatif aux contrats. */
 describe("expectedTotalCentsSchema", () => {
   it("accepte des centimes entiers, zéro compris", () => {
     expect(expectedTotalCentsSchema.parse(4230)).toBe(4230);

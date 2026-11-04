@@ -168,7 +168,7 @@ export class ShopQuote {
   /**
    * Le tour du décompte : {@link refresh} l'avance pour redemander un panier
    * inchangé — après un refus `orders.total_changed`, c'est le serveur qui a
-   * bougé, pas la clé (plan `plan-total-vu.md`, T3).
+   * bougé, pas la clé (plan `le-prix-d-un-panier.md`, T3).
    */
   private readonly round = signal(0);
 

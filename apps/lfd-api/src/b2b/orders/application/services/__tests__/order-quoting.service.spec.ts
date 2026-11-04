@@ -20,7 +20,7 @@ import {
 
 /**
  * **Le devis B chiffre par le chemin de la passation** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, L3) :
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, L3) :
  * `loadCart` → `priceBasket` → `draftedAmountsOf`, la trace d'`explain` en
  * habillage. Le devis A sur le même panier sans acheminement est le témoin :
  * deux devis, une seule arithmétique.

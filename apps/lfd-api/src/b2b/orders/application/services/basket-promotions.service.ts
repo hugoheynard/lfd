@@ -78,7 +78,7 @@ export class BasketPromotions {
   }
 
   /**
-   * **Ce que le choix lit, sans choisir** (plan `plan-un-seul-assemblage.md`,
+   * **Ce que le choix lit, sans choisir** (plan `le-prix-d-un-panier.md`,
    * § 2.1) : l'instant, les promotions vivantes, les faits de l'acheteur —
    * dans l'ordre de {@link resolve}, qui le réemploie. Le choix lui-même est
    * `chooseLoadedBasketPromotion`, un calcul.

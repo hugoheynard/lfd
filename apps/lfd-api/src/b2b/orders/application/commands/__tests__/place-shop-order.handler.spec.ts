@@ -1057,7 +1057,7 @@ describe("PlaceShopOrderHandler — le délai d'annulation figé", () => {
   });
 });
 
-/** Plan `plan-total-vu.md`, T2 : la boutique compare le TTC composé au total vu. */
+/** Plan `le-prix-d-un-panier.md`, T2 : la boutique compare le TTC composé au total vu. */
 describe("PlaceShopOrderHandler — le total vu", () => {
   async function composedTotal(): Promise<number> {
     const { handler, sink } = scene();

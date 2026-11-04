@@ -1,6 +1,6 @@
 /**
  * **Les cas fixes du golden master** : l'ordre des refus mesurable
- * aujourd'hui (plan `plan-un-seul-assemblage.md`, §2.4) et la dérogation à
+ * aujourd'hui (plan `le-prix-d-un-panier.md`, §2.4) et la dérogation à
  * l'heure limite, qui seule fait naître un supplément de retard.
  *
  * L'ordre se mesure par PAIRES : un panier qui viole deux règles doit rendre
@@ -158,7 +158,7 @@ export async function refusalOrderCases(
 /**
  * La dérogation : J+2 en grâce, une dérogation ouverte pour le pro. Le devis
  * de la société, l'estimation et la passation de l'équipe chiffrent le même
- * supplément (É11 tranché, `plan-total-vu.md`, T1) ; le devis ne dépense pas
+ * supplément (É11 tranché, `le-prix-d-un-panier.md`, T1) ; le devis ne dépense pas
  * la dérogation. Le client repasse ensuite sur la dérogation dépensée.
  */
 export async function lateFeeCase(

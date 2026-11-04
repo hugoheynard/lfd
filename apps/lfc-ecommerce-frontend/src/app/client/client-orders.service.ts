@@ -38,7 +38,7 @@ import { isSoldByWeight, lineTermsOf, requestedLine, type SaleTerms } from './sh
 
 /**
  * **Le total a changé entre le devis et la passation** (409
- * `orders.total_changed`, plan `plan-total-vu.md`, T3) : le devis que le
+ * `orders.total_changed`, plan `le-prix-d-un-panier.md`, T3) : le devis que le
  * client avait sous les yeux, et le règlement qu'il avait choisi — pour que
  * « Commander à ce total » rejoue le même geste.
  */

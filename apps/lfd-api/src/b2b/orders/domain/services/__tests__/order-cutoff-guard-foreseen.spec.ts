@@ -3,7 +3,7 @@ import type { OrderCutoffView } from "@lfd/contracts";
 import { ensureWithinOrderCutoff, foreseenWaiver } from "../order-cutoff-guard.js";
 
 /**
- * **La dérogation prévue = la dérogation dépensée** (plan `plan-total-vu.md`,
+ * **La dérogation prévue = la dérogation dépensée** (plan `le-prix-d-un-panier.md`,
  * T1). Dates absolues, exception écrite : `now` est un paramètre, comparé aux
  * seules dates de la fixture. Le 12 août 2026, heure d'été : « la veille à
  * 18 h » tombe le 11 à `16:00Z`, la grâce d'une heure finit à `17:00Z`.
@@ -58,7 +58,7 @@ describe("foreseenWaiver — la décision de la passation, sans refus", () => {
 
 /**
  * **La concordance, minute par minute** (lot L4, plan
- * `plan-un-seul-assemblage.md`, §2.4) : de 15:00Z à 18:00Z (avant l'heure,
+ * `le-prix-d-un-panier.md`, §2.4) : de 15:00Z à 18:00Z (avant l'heure,
  * la grâce, après), avec et sans dérogation, ce que le devis prévoit est ce
  * que la passation dépense — et là où la passation refuse, le devis ne
  * prévoit rien.

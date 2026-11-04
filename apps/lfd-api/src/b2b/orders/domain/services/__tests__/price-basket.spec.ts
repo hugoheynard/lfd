@@ -5,7 +5,7 @@ import { priceBasket } from "../price-basket.js";
 import { contextOf, DELIVERY, TEN_PERCENT_AT_SITE } from "./price-basket.fixture.js";
 
 /**
- * `priceBasket` — plan `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`,
+ * `priceBasket` — plan `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`,
  * § 2.2 et § 2.3 : pur, synchrone, par entrées construites. Ce qu'il calcule
  * est ce que la composition calculait (lot L1a) ; le golden master
  * (`test/pricing-golden-master.e2e-spec.ts`) le tient au centime sur les vrais

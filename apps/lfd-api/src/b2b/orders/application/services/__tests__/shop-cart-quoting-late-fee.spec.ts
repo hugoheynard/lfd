@@ -6,7 +6,7 @@ import { catalogItem, PRICED_AT, quotingOf } from "./shop-cart-quoting.doubles.j
 
 /**
  * **Le devis d'une société chiffre la surtaxe prévue** (É11, plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`, T1) : le jugement
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, T1) : le jugement
  * de la passation, la dérogation lue sans être consommée.
  *
  * Le mur du devis est `PRICED_AT` (une horloge figée, jamais le mur) : la

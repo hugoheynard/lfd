@@ -7,7 +7,7 @@ import { draftInputOf, type PricedDraftInput } from "../order-priced-draft.js";
 
 /**
  * **L'agrégat chiffre lui-même** (plan
- * `documentation/pricing/centime-et-tva/plan-un-seul-assemblage.md`, § 2.2,
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 2.2,
  * lot L1a) : une commande composée sur un panier chargé est EXACTEMENT celle
  * qu'on composerait avec les termes de `priceBasket` — l'identité devis =
  * commande est structurelle, pas vérifiée après coup.

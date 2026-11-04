@@ -2,7 +2,7 @@ import type { DiscountLabelView, ShopQuoteView } from '@lfd/contracts';
 
 /**
  * **Ce qui a bougé entre deux devis**, terme par terme — plan
- * `documentation/pricing/centime-et-tva/plan-total-vu.md`, § 6 (T3).
+ * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, § 7.2 (T3).
  *
  * La passation a refusé le total que le client avait vu (409
  * `orders.total_changed`) : le serveur ne reçoit qu'un nombre, il ne sait pas

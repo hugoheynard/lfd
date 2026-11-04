@@ -28,7 +28,7 @@ import { catalogItem, pricingOf, PRICED_AT } from "./shop-cart-quoting.doubles.j
 
 /**
  * `PricingContext` monté sur ses vrais collaborateurs, ports doublés à la
- * main (plan `plan-un-seul-assemblage.md`, § 2.1) — chaque double compte ses
+ * main (plan `le-prix-d-un-panier.md`, § 2.1) — chaque double compte ses
  * lectures : le chargement s'arrête au premier refus, et ne lit pas la suite.
  */
 

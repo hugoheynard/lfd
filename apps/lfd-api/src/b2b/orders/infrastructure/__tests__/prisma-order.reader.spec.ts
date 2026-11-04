@@ -1,7 +1,7 @@
 import { toOrderView, type OrderRow } from "../prisma-order.reader.js";
 
 /**
- * Plan L6 (`plan-l6-montants-lus.md`, § 3) : le « Total HT » d'une commande
+ * Plan L6 (`le-prix-d-un-panier.md`, § 8.2) : le « Total HT » d'une commande
  * se calcule ICI, par la règle du bon, sur les colonnes figées — l'écran le lit.
  */
 function row(overrides: Partial<OrderRow> = {}): OrderRow {
