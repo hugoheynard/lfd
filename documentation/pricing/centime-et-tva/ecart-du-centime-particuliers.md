@@ -86,7 +86,7 @@ Relue par `vitruve` le 2026-10-09 — objections bloquantes :
    commerciale qui change de montant, pas une conversion.
 
 Et sérieuses : une douzaine d'appelants (`cart-adjustments.service.ts`,
-`cycle-statement.ts`, `voucher-total-effect.ts`, contrats `shop-quote.ts`,
+`cycle-statement.ts`, voucher-total-effect.ts, contrats `shop-quote.ts`,
 `cart-adjustment.ts`, `order.ts`, `shop-catalogue.ts`, deux écrans du
 back-office) ; la livraison « suit la marchandise » proratisée sur le HT ; un
 discriminant de clientèle à faire circuler jusqu'à `place-order` (et le pro

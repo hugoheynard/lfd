@@ -1,5 +1,4 @@
 import {
-  type OrderLineInput as OrderLineRequest,
   type SalesTermsDocument,
   type StaffEntryShortcut,
   type StaffOrderSupply,
@@ -35,7 +34,7 @@ import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
 import { LateFeeJudgement } from "./late-fee-judgement.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
-import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
+import { OrderLinePricing } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
 import type { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
@@ -88,7 +87,7 @@ export class OrderDrafting {
   private readonly lateFee: LateFeeJudgement;
 
   constructor(
-    private readonly linePricing: OrderLinePricing,
+    linePricing: OrderLinePricing,
     adjustments: CartAdjustments,
     deliveryDefaults: DeliveryDefaultsReader,
     cutoffs: OrderCutoffReader,
@@ -97,7 +96,7 @@ export class OrderDrafting {
     waivers: OrderCutoffWaiverGate,
     lateFees: OrderLateFeeReader,
     audiences: CustomerAudiences,
-    private readonly operations: OrderOperations,
+    operations: OrderOperations,
     private readonly payers: OrderPayerReader,
     deliveryVat: OrderDeliveryVatReader,
     private readonly plans: OrderPlanGate,
@@ -293,30 +292,6 @@ export class OrderDrafting {
     if (requestedDeliveryDate !== null && (await this.plans.hold(requestedDeliveryDate))) {
       order.receiveOffPlan(requestedDeliveryDate);
     }
-  }
-
-  /**
-   * **Ce que la commande coûterait, sans la passer.**
-   *
-   * Le panier du staff affichait le tarif du CATALOGUE pendant que cette
-   * méthode-ci facturait le prix RÉSOLU : un commercial annonçait au téléphone
-   * un prix que la commande contredisait ensuite.
-   *
-   * Elle réutilise la résolution qui facture, et n'ajoute rien : une seconde
-   * arithmétique d'estimation aurait fini par diverger de la première. Elle
-   * s'arrête au sous-total HT, parce que remise de retrait, frais de zone et
-   * TVA dépendent d'un acheminement qu'une estimation ne connaît pas.
-   */
-  async quote(
-    parties: OrderParties,
-    lines: readonly OrderLineRequest[],
-  ): Promise<ResolvedOrderLine[]> {
-    const explained = await this.linePricing.explain(lines, parties, "cart");
-    // Sans jour : le devis ne juge pas la date, mais il dit déjà qu'une bûche
-    // n'est pas encore ouverte, close ou introuvable — le refus n'attend pas
-    // le paiement (D6).
-    await this.operations.ensure(lines, parties.companyId);
-    return explained;
   }
 
   /**
