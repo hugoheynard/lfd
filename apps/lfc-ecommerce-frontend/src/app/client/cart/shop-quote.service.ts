@@ -48,7 +48,7 @@ import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './voucher-choice.service'
  * durée d'une frappe, pas un réglage d'environnement. Diverger de trois cents
  * millisecondes entre deux paniers n'aurait eu aucune justification.
  */
-const QUOTE_DEBOUNCE_MS = 300;
+export const QUOTE_DEBOUNCE_MS = 300;
 
 /** Le lecteur d'un visiteur non reconnu — la route publique. */
 const VISITOR = 'visiteur';

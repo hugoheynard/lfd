@@ -12,6 +12,7 @@ import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ClientCart } from './client-cart.service';
+import { QUOTE_DEBOUNCE_MS } from './shop-quote.service';
 import { CART_SUGGESTION_DEBOUNCE_MS, StaffCartSuggestion } from './staff-cart-suggestion.service';
 
 const BAGUETTE = TEST_ITEMS.find((item) => item.sku === 'PAI-001');
@@ -85,6 +86,14 @@ async function answer(
   return asked.request.body;
 }
 
+/** Le devis répond : le panier est chiffré, la demande de suggestions part. */
+async function priced(http: HttpTestingController): Promise<void> {
+  const quote = await vi.waitFor(() => http.expectOne(QUOTE));
+  quote.flush(PRICED);
+  await vi.advanceTimersByTimeAsync(0);
+  await settle();
+}
+
 describe('StaffCartSuggestion', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -109,10 +118,15 @@ describe('StaffCartSuggestion', () => {
     cart.add('VIE-001');
     cart.add('VIE-002');
     await settle();
+    await priced(http);
 
     const body = await answer(http, [STAFF_PICK]);
 
-    expect(body).toEqual({ skus: ['VIE-001', 'VIE-002'], target: null });
+    expect(body).toEqual({
+      skus: ['VIE-001', 'VIE-002'],
+      target: null,
+      cartTotalCents: PRICED.totalCents,
+    });
     expect(pick.shown()).toEqual([STAFF_PICK]);
     TestBed.tick();
     expect(audience.events).toEqual([
@@ -163,6 +177,7 @@ describe('StaffCartSuggestion', () => {
     cart.add('PAI-001');
     expect(pick.shown()).toEqual([]);
     await settle();
+    await priced(http);
     await answer(http, []);
     expect(pick.shown()).toEqual([]);
   });
@@ -201,7 +216,6 @@ describe('StaffCartSuggestion', () => {
     pick.open();
     cart.add('VIE-001');
     await settle();
-    expect(await answer(http, [])).toEqual({ skus: ['VIE-001'], target: null });
 
     const quote = await vi.waitFor(() => http.expectOne(QUOTE));
     quote.flush(PRICED);
@@ -213,6 +227,30 @@ describe('StaffCartSuggestion', () => {
       target: null,
       cartTotalCents: PRICED.totalCents,
     });
+  });
+
+  /**
+   * Régression : la demande partait sans total pendant le chiffrage, puis
+   * repartait avec — deux demandes par geste, la seconde fixant la fin d'un
+   * changement d'espace (jusqu'à 3,5 s mesurées en production, 2026-11-04).
+   */
+  it('ne demande qu’une fois par geste : rien pendant que le panier se chiffre', async () => {
+    const { pick, cart, http } = boot();
+    pick.open();
+    cart.add('VIE-001');
+    await settle();
+    http.expectNone(ROUTE);
+
+    const quote = await vi.waitFor(() => http.expectOne(QUOTE));
+    quote.flush(PRICED);
+    await vi.advanceTimersByTimeAsync(0);
+    await settle();
+    await answer(http, []);
+    http.expectNone(ROUTE);
+  });
+
+  it('le devis attend moins que la demande : il l’annule avant qu’elle parte', () => {
+    expect(QUOTE_DEBOUNCE_MS).toBeLessThan(CART_SUGGESTION_DEBOUNCE_MS);
   });
 });
 

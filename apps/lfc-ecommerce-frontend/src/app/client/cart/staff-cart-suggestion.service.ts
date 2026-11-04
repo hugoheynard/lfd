@@ -82,6 +82,14 @@ export class StaffCartSuggestion {
     if (authenticated && space === null) {
       return null;
     }
+    // Le panier se chiffre : attendre son total plutôt que demander deux fois,
+    // sans total puis avec — la seconde demande fixait la fin d'un changement
+    // d'espace (mesuré le 2026-11-04, plan de latence, L1). Le devis attend
+    // QUOTE_DEBOUNCE_MS, moins que CART_SUGGESTION_DEBOUNCE_MS : il passe en
+    // `loading` avant que la demande ne parte, et l'annule.
+    if (this.cart.pricing() === 'loading') {
+      return null;
+    }
     const payload = this.payload();
     return { key: JSON.stringify({ space, payload }), payload, authenticated };
   });
