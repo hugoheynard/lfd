@@ -262,6 +262,29 @@ max-age=…` et `Cache-Tag: rayon-public`. Toute autre réponse garde le
 - `/mine` ignore la langue (`my-shop-catalogue.controller.ts`) : déjà le cas
   aujourd'hui, la clé n'en a donc pas besoin.
 
+## 4 ter. Un port, pour pouvoir changer de magasin (Hugo, 2026-11-04)
+
+Le service du rayon ne connaît pas l'objet : il parle à un **port**
+(`ShopShelfCache`, nom provisoire) déclaré côté application du catalogue,
+implémenté dans `infrastructure/`, relié dans `appBootstrap`.
+
+| Opération                                 | Objet (aujourd'hui)        | Redis (si un jour)                              |
+| ----------------------------------------- | -------------------------- | ----------------------------------------------- |
+| lire le rayon d'une société               | appel interne vers l'objet | `GET rayon:{société}`                           |
+| ranger si la version n'a pas bougé        | l'objet compare et refuse  | un script Lua, comparer puis écrire en une fois |
+| effacer une société et ses sites, ou tout | l'objet vide sa table      | `DEL` des clés, ou une version montée           |
+| lire la version                           | l'objet                    | `GET version`                                   |
+
+Passer à Redis = **un adaptateur de plus** et une liaison ; le service, la
+purge après validation, la porte des écritures, le repli sur la base et les
+tests d'application ne bougent pas. Le conteneur joindrait Redis directement,
+sans gestionnaire de sortie. Le public (Workers Cache) n'est pas concerné : il
+est devant l'API, un Redis serait derrière.
+
+Deux exigences pour que ce soit vrai : **le port s'écrit avant l'objet**, et
+les tests d'application tournent contre une **version en mémoire du port**,
+jamais contre l'objet.
+
 ## 4 bis. Le cache n'est jamais sur le chemin de la disponibilité (Hugo, 2026-11-04)
 
 « La prod ne peut jamais tomber en panne. » Le cache accélère ; il ne doit
