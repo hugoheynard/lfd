@@ -98,6 +98,14 @@ describe('OrderDetail', () => {
     expect(el().textContent).toContain(FR.orders.detailOrigin);
   });
 
+  /** Régression : le détail affichait la valeur brute « phone » (2026-11-04). */
+  it('dit l’origine par son libellé, jamais par sa valeur brute', () => {
+    fixture.componentRef.setInput('order', { ...ROWS[1], origin: 'phone' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain(FR.orders.originPhone);
+    expect(el().textContent).not.toMatch(/\bphone\b/u);
+  });
+
   it('dit « À régler » et offre « Régler » vers la page de règlement de la MÊME commande', () => {
     const settle = (): HTMLAnchorElement | null => el().querySelector('a[foldButton]');
     expect(settle()).toBeNull();

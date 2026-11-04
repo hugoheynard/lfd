@@ -18,10 +18,10 @@
       <dt>{{ t().orders.detailMode }}</dt>
       <dd>{{ order().mode }}</dd>
     </div>
-    @if (order().origin !== '') {
+    @if (originLabel(); as origin) {
       <div class="fact">
         <dt>{{ t().orders.detailOrigin }}</dt>
-        <dd>{{ order().origin }}</dd>
+        <dd>{{ origin }}</dd>
       </div>
     }
     <div class="fact">

@@ -168,6 +168,20 @@ export function isFulfilled(row: { readonly status: OrderRowStatus }): boolean {
 export type OrderOrigin = '' | 'recurring' | 'phone';
 
 /**
+ * **Ce que dit l'origine d'une commande**, pour la pastille de l'historique
+ * et la ligne « Origine » du détail. Elle vit dans le dictionnaire et non dans
+ * la donnée : une commande porte un état, pas un mot — et le détail affichait
+ * la valeur brute `phone` jusqu'au 2026-11-04. `phone` couvre toute commande
+ * prise par l'équipe, au téléphone comme au comptoir.
+ */
+export function originLabelOf(
+  origin: Exclude<OrderOrigin, ''>,
+  copy: { readonly originPhone: string; readonly originRecurring: string },
+): string {
+  return origin === 'phone' ? copy.originPhone : copy.originRecurring;
+}
+
+/**
  * Comment la commande est réglée, lu sur le VRAI règlement.
  *
  * - `account` — portée au compte (ou gratuite) : la facture du mois la porte ;

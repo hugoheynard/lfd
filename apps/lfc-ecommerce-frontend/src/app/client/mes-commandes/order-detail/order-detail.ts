@@ -8,7 +8,7 @@ import { discountLabel } from '../../shop/pickup-discount';
 import { OrderCancelSection } from '../../order-cancellation/order-cancel-section/order-cancel-section';
 import { OrderReviseSection } from '../../order-revision/order-revise-section/order-revise-section';
 import { formatCents } from '../../format-money';
-import { isFulfilled, type HistoryOrder, type OrderPayment } from '../order-rows';
+import { isFulfilled, originLabelOf, type HistoryOrder, type OrderPayment } from '../order-rows';
 import { discountLabelIn, ticketRowsOf } from '../order-ticket-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
@@ -60,6 +60,12 @@ export class OrderDetail {
   readonly deliveryNoteRequested = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
+
+  /** L'origine dite par le dictionnaire, jamais la valeur brute ; `null` sans origine. */
+  protected readonly originLabel = computed(() => {
+    const origin = this.order().origin;
+    return origin === '' ? null : originLabelOf(origin, this.t().orders);
+  });
   private readonly locale = inject(ClientLocale);
   protected readonly stars = STARS;
 

@@ -18,7 +18,13 @@ import {
 
 import { formatEuro } from '../../format-money';
 import { ClientCopyService } from '../../copy/client-copy.service';
-import type { HistoryOrder, OrderOrigin, OrderPayment, OrderRowStatus } from '../order-rows';
+import {
+  originLabelOf,
+  type HistoryOrder,
+  type OrderOrigin,
+  type OrderPayment,
+  type OrderRowStatus,
+} from '../order-rows';
 import { OrderDetail } from '../order-detail/order-detail';
 
 /**
@@ -169,16 +175,9 @@ export class HistoryTable {
     return this.rated()[reference] ?? 0;
   }
 
-  /**
-   * Ce que dit la pastille d'origine.
-   *
-   * Elle vit dans le dictionnaire et non dans la donnée : une commande porte un
-   * état, pas un mot français — et « prise par La Folie Coffee » doit se
-   * traduire sans que la commande change.
-   */
-  protected originLabel(origin: OrderOrigin): string {
-    const copy = this.t().orders;
-    return origin === 'phone' ? copy.originPhone : copy.originRecurring;
+  /** Ce que dit la pastille d'origine — le même libellé que le détail. */
+  protected originLabel(origin: Exclude<OrderOrigin, ''>): string {
+    return originLabelOf(origin, this.t().orders);
   }
 
   protected statusLabel(status: OrderRowStatus): string {
