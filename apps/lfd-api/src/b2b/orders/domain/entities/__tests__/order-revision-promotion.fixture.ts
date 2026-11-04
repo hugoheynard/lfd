@@ -170,6 +170,7 @@ export function placed(
     serviceDay: DAY,
     supply: state.supply,
     entryShortcut: state.entryShortcut,
+    entryOrigin: state.entryOrigin,
     fulfillment: delivered ?? {
       method: state.fulfillmentMethod,
       deliveryZoneId: null,

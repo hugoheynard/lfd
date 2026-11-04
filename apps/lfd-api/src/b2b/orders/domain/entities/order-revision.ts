@@ -27,7 +27,11 @@ import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
-import type { OrderEntryShortcut, OrderSupply } from "../value-objects/order-supply.js";
+import type {
+  OrderEntryOrigin,
+  OrderEntryShortcut,
+  OrderSupply,
+} from "../value-objects/order-supply.js";
 import type { RefundPosition } from "./order-refund.js";
 import type { OrderPricingNotes } from "./order-priced-draft.js";
 import type {
@@ -77,6 +81,8 @@ export interface RevisableOrder {
   readonly supply: OrderSupply;
   /** Le raccourci de saisie, relu pour être reporté tel quel. */
   readonly entryShortcut: OrderEntryShortcut | null;
+  /** D'où vient la saisie de l'équipe, relue pour être reportée telle quelle. */
+  readonly entryOrigin: OrderEntryOrigin | null;
   readonly fulfillment: OrderFulfillmentInput;
   readonly agreed: AgreedFulfillment;
   readonly note: string;

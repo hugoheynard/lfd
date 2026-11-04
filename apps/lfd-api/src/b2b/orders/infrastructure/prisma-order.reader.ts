@@ -47,7 +47,7 @@ import {
 } from "../domain/ports/order.reader.js";
 import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/contracts";
 
-import { orderOriginOf } from "../domain/services/order-origin.js";
+import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
 import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import { ORDER_TTC_TERMS_SELECT, orderTtcTermsFieldOf } from "./order-ttc-terms.columns.js";
@@ -228,6 +228,8 @@ export class PrismaOrderReader extends OrderReader {
         placedByUserId: true,
         stripePaymentIntentId: true,
         clientele: true,
+        entryOrigin: true,
+        entryShortcut: true,
         loyaltyVoucherId: true,
         revision: true,
         revisedAt: true,
@@ -248,6 +250,7 @@ export class PrismaOrderReader extends OrderReader {
       placedByUserId: row.placedByUserId,
       stripePaymentIntentId: row.stripePaymentIntentId,
       clientele: row.clientele,
+      entryOrigin: orderEntryOriginOf(row),
       loyaltyVoucherId: row.loyaltyVoucherId,
       billedCustomer: billedCustomerOf(row),
       buyerPhone: row.placedBy.phone.trim() === "" ? null : row.placedBy.phone,

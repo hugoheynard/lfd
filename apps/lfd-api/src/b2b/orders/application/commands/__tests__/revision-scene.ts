@@ -371,6 +371,7 @@ function seed(): RevisableOrder {
     serviceDay: DAY,
     supply: "planned",
     entryShortcut: null,
+    entryOrigin: null,
     fulfillment: {
       method: "pickup",
       deliveryZoneId: null,

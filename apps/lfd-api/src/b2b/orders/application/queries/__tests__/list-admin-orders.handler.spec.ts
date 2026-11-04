@@ -37,6 +37,7 @@ function rowOf(id: string, placedAt: string): AdminOrderRow {
     companyId: null,
     companyDisplayName: null,
     origin: "self_service",
+    entryOrigin: null,
   };
 }
 

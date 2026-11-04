@@ -33,6 +33,7 @@ const GUEST_ORDER: OwnedOrder = {
   placedByUserId: "user_guest",
   stripePaymentIntentId: null,
   clientele: "public",
+  entryOrigin: null,
   loyaltyVoucherId: null,
   billedCustomer: null,
   buyerPhone: null,

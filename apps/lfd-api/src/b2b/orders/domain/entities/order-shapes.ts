@@ -23,7 +23,11 @@ import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-l
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
-import type { OrderEntryShortcut, OrderSupply } from "../value-objects/order-supply.js";
+import type {
+  OrderEntryOrigin,
+  OrderEntryShortcut,
+  OrderSupply,
+} from "../value-objects/order-supply.js";
 
 // Les formes d'entrée et de sortie de l'agrégat `Order` — sorties de `order.ts`
 // pour le garder lisible, réexportées par lui : on les importe d'où l'on veut.
@@ -225,6 +229,8 @@ export interface OrderToPlace {
   readonly supply: OrderSupply;
   /** Le raccourci de saisie qui l'a posée, `null` sinon (cf. `OrderEntryShortcut`). */
   readonly entryShortcut: OrderEntryShortcut | null;
+  /** D'où vient la saisie de l'équipe, `null` sinon (cf. `OrderEntryOrigin`). */
+  readonly entryOrigin: OrderEntryOrigin | null;
   /** Le délai d'annulation figé à la passation, reporté par une révision (2026-10-26). */
   readonly customerCancellation: FixedCustomerCancellation;
   /**

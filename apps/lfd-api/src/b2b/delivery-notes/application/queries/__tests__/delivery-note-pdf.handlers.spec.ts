@@ -74,6 +74,7 @@ function owned(over: Parameters<typeof view>[0] = {}): OwnedOrder {
     placedByUserId: BUYER,
     stripePaymentIntentId: null,
     clientele: "pro",
+    entryOrigin: null,
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,

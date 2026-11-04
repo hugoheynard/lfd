@@ -24,6 +24,7 @@ import { OrderSalesTermsReader } from "../../domain/ports/order-sales-terms.read
 import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { orderPrincipalOf } from "../../domain/services/order-principal.js";
+import type { OrderEntryOrigin } from "../../domain/value-objects/order-supply.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { warnBeyondCap } from "./basket-promotions.service.js";
@@ -147,6 +148,8 @@ export class OrderDrafting {
     requestedSupply?: StaffOrderSupply,
     // Le « Retrait immédiat » que l'écran de l'équipe déclare (lot L6).
     requestedShortcut?: StaffEntryShortcut,
+    // D'où vient la saisie de l'équipe (Hugo, 2026-11-04) ; `null` pour le client.
+    entryOrigin: OrderEntryOrigin | null = null,
   ): Promise<DraftedOrder> {
     // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
     // trois portes de passation partagent (client, saisie staff, boutique), et
@@ -226,6 +229,7 @@ export class OrderDrafting {
         locale,
       },
       supply,
+      entryOrigin,
     );
     // Sur LE chiffrage de l'agrégat : il n'est plus refait ici (L7, 2026-11-04).
     warnBeyondCap(this.logger, order.pricingNotes());

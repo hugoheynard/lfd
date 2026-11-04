@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import type { AdminOrderView } from '@lfd/contracts';
 import { FoldIconComponent, FoldLinkComponent } from 'fold-ng';
 
+import { entryOriginLabelOf } from '../order-entry-origin';
+
 /** Le bloc « Passée par », déjà mis en mots. */
 export interface PlacedByLines {
   /** « Prénom Nom » du client, ou son e-mail s'il n'a pas de nom. */
@@ -13,6 +15,8 @@ export interface PlacedByLines {
   /**
    * « saisie par X », ou `null` si le client l'a passée lui-même. Le « pour le
    * compte de » ne se répète plus : la même ligne nomme déjà le client.
+   * Précédé de l'origine quand on la connaît (« Prise au comptoir — saisie
+   * par X », Hugo, 2026-11-04) ; une saisie d'avant la colonne reste telle.
    */
   readonly enteredBy: string | null;
 }
@@ -22,7 +26,7 @@ export interface PlacedByLines {
  * nomme plus reste « l'équipe » : on ne fabrique pas un nom.
  */
 export function placedByLines(
-  order: Pick<AdminOrderView, 'placedBy' | 'placedByStaffId'>,
+  order: Pick<AdminOrderView, 'placedBy' | 'placedByStaffId' | 'entryOrigin'>,
 ): PlacedByLines {
   const { customer, company, staffName } = order.placedBy;
   const name = `${customer.firstName} ${customer.lastName}`.trim();
@@ -38,8 +42,14 @@ export function placedByLines(
     email: customer.email,
     phone: customer.phone,
     company: companyLabel,
-    enteredBy: order.placedByStaffId === null ? null : `saisie par ${staffName ?? 'l’équipe'}`,
+    enteredBy: order.placedByStaffId === null ? null : enteredByOf(order.entryOrigin, staffName),
   };
+}
+
+function enteredByOf(origin: AdminOrderView['entryOrigin'], staffName: string | null): string {
+  const author = `saisie par ${staffName ?? 'l’équipe'}`;
+  const label = entryOriginLabelOf(origin);
+  return label === null ? author : `${label} — ${author}`;
 }
 
 /**

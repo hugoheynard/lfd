@@ -138,6 +138,7 @@ export class PrismaOrderRepository extends OrderRepository {
           // D'où vient la marchandise, figé par l'agrégat (plan du jour J, §11.1).
           supply: state.supply,
           entryShortcut: state.entryShortcut,
+          entryOrigin: state.entryOrigin,
           customerCancellableUntil: state.customerCancellableUntil,
           ...customerCancellationColumnsOf(state.customerCancellation),
           requestedDeliveryDate: state.requestedDeliveryDate,

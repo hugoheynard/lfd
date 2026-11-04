@@ -5,6 +5,7 @@ import {
 import { ensureSlotKeepsPromotionHours } from "../services/slot-promotion-hours.js";
 import { ensureShelfKeepsRoute, ensureSupplyFits } from "../services/order-supply-rules.js";
 import { ProductionPlanClosedError } from "../errors/production-plan-closed.error.js";
+import { EntryOriginWithoutStaffError } from "../errors/entry-origin-errors.js";
 import type {
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
   // Deux « fulfillment » dans le même fichier finiraient par se confondre.
@@ -65,6 +66,7 @@ import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/orde
 import {
   PLANNED_SUPPLY,
   supplyMarkOf,
+  type OrderEntryOrigin,
   type OrderSupplyDecision,
   type OrderSupplyMark,
 } from "../value-objects/order-supply.js";
@@ -129,18 +131,27 @@ export class Order {
    *
    * `supply` dit d'où vient la marchandise (plan du jour J, §11.1) ; décidée
    * par l'appelant, jamais par le client, et figée ici. Sans elle : `planned`,
-   * le comportement d'avant la marque.
+   * le comportement d'avant la marque. `entryOrigin` dit d'où vient la saisie
+   * de l'équipe (Hugo, 2026-11-04) ; `null` pour le client lui-même.
    *
+   * @throws {EntryOriginWithoutStaffError} une origine de saisie sans équipe.
    * @throws {ShelfOrderNotPickupError} une commande sur stock qui n'est pas un retrait.
    * @throws {ShelfOrderNotTodayError} une commande sur stock qui ne vise pas aujourd'hui.
    */
-  static draft(request: PricedDraftInput, supply: OrderSupplyDecision = PLANNED_SUPPLY): Order {
+  static draft(
+    request: PricedDraftInput,
+    supply: OrderSupplyDecision = PLANNED_SUPPLY,
+    entryOrigin: OrderEntryOrigin | null = null,
+  ): Order {
+    if (entryOrigin !== null && request.placedByStaffId === null) {
+      throw new EntryOriginWithoutStaffError();
+    }
     const vatMethod = placementVatMethodOf(request.companyId);
     // Le prix du panier d'abord, comme la composition le faisait avant
     // l'agrégat : l'ordre des refus ne bouge pas (lot L1a).
     const { input, notes } = draftInputOf(request, vatMethod);
     ensureSupplyFits(supply, input.fulfillment, input.requestedDeliveryDate);
-    return Order.compose(input, vatMethod, supplyMarkOf(supply), notes);
+    return Order.compose(input, vatMethod, supplyMarkOf(supply, entryOrigin), notes);
   }
 
   /**
@@ -234,7 +245,11 @@ export class Order {
     const revised = Order.compose(
       input,
       current.vatMethod,
-      { supply: current.supply, entryShortcut: current.entryShortcut },
+      {
+        supply: current.supply,
+        entryShortcut: current.entryShortcut,
+        entryOrigin: current.entryOrigin,
+      },
       notes,
     );
     revised.carryCustomerCancellation(
@@ -419,6 +434,7 @@ export class Order {
       placedOffPlan: this.offPlan,
       supply: this.supplyMark.supply,
       entryShortcut: this.supplyMark.entryShortcut,
+      entryOrigin: this.supplyMark.entryOrigin,
       customerCancellation: this.customerCancellation,
       customerCancellableUntil: this.customerCancellableUntil,
       fulfillmentMethod: this.fulfillment.method,

@@ -8,6 +8,7 @@ import type {
 } from "@lfd/contracts";
 
 import type { OrderRevisionStamp } from "../services/order-sheet.js";
+import type { OrderEntryOrigin } from "../value-objects/order-supply.js";
 
 /**
  * Une commande **avec de quoi la murer** : la vue, plus les deux colonnes qui
@@ -34,6 +35,11 @@ export interface OwnedOrder {
    * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, Q8).
    */
   readonly clientele: "pro" | "public" | null;
+  /**
+   * D'où vient la saisie de l'équipe (cf. `orderEntryOriginOf`), ou `null`.
+   * Hors `OrderView` : seul le back-office la lit (Hugo, 2026-11-04).
+   */
+  readonly entryOrigin: OrderEntryOrigin | null;
   /**
    * Le bon de fidélité engagé, ou `null`. Hors `OrderView` : l'annulation en a
    * besoin pour le rendre (plan des points, C4), le client n'a pas à le relire.

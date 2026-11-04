@@ -34,6 +34,7 @@ function order(
     pickupLabel: null,
     fulfillmentWindow: null,
     origin: 'self_service',
+    entryOrigin: null,
     ...overrides,
   };
 }

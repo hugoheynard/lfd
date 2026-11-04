@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { AdminOrderEntryOrigin } from "./admin-order-detail.js";
+
 import {
   fulfillmentMethodSchema,
   orderStatusSchema,
@@ -116,6 +118,8 @@ export interface AdminOrderRow {
    * et c'est précisément ce qui vient d'arriver avec la saisie par l'équipe.
    */
   readonly origin: OrderOrigin;
+  /** D'où vient la saisie de l'équipe — cf. `AdminOrderView.entryOrigin`. */
+  readonly entryOrigin: AdminOrderEntryOrigin | null;
 }
 
 /**

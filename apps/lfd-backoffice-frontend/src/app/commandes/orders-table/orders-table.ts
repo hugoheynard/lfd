@@ -19,6 +19,7 @@ import {
 import { fulfillmentModeOf } from '../../shared/logistics-colors/fulfillment-mode';
 import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
 import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
+import { entryOriginLabelOf } from '../order-entry-origin';
 import { clienteleLabel } from '../order-list-filters';
 
 /** « 14:32 », à l'heure de Paris. */
@@ -170,8 +171,14 @@ export class OrdersTable {
     return paymentStatusVariant(row.paymentStatus);
   }
 
-  /** La provenance, sauf quand c'est le cas normal — cf. `OrderRow`. */
+  /**
+   * La provenance, sauf quand c'est le cas normal — cf. `OrderRow`. Une saisie
+   * de l'équipe dit d'où elle vient quand on le sait (2026-11-04).
+   */
   protected origin(row: AdminOrderRow): string | null {
-    return row.origin === 'self_service' ? null : ORDER_ORIGIN_LABELS[row.origin];
+    if (row.origin === 'self_service') {
+      return null;
+    }
+    return entryOriginLabelOf(row.entryOrigin) ?? ORDER_ORIGIN_LABELS[row.origin];
   }
 }

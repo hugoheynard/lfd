@@ -85,6 +85,16 @@ enum OrderEntryShortcut {
   @@schema("public")
 }
 
+/// **D'où vient la saisie de l'équipe** (Hugo, 2026-11-04) : `counter` au
+/// comptoir, `commercial` par le commercial. `NULL` sur une commande du client
+/// et sur une saisie d'avant la colonne (CHECK `orders_entry_origin_by_staff`).
+enum OrderEntryOrigin {
+  commercial
+  counter
+
+  @@schema("public")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Order — une commande, tenant-scoped
 // ─────────────────────────────────────────────────────────────────────────────
@@ -373,6 +383,9 @@ model Order {
 
   // Le raccourci de saisie qui l'a posée (« Retrait immédiat »), `null` sinon.
   entryShortcut OrderEntryShortcut? @map("entry_shortcut")
+
+  // D'où vient la saisie de l'équipe, `null` sinon ou si on ne le sait pas.
+  entryOrigin OrderEntryOrigin? @map("entry_origin")
 
   // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
   // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en

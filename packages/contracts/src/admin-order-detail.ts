@@ -5,6 +5,14 @@ import type { OrderClientele } from "./order-handover.js";
 import type { AdminOrderRevisability } from "./order-revision.values.js";
 
 /**
+ * **D'où vient une saisie de l'équipe** (Hugo, 2026-11-04) : « Prise au
+ * comptoir » ou « Prise par le commercial ». Réservé au back-office : la
+ * boutique continue de dire « Prise par La Folie Coffee », et ce champ
+ * n'entre dans aucune vue client.
+ */
+export type AdminOrderEntryOrigin = "counter" | "commercial";
+
+/**
  * **Le détail staff d'une commande** — `GET /admin/orders/:id`.
  *
  * Une vue à part, qui ÉTEND `OrderView` au lieu d'y ajouter des champs : ce
@@ -22,6 +30,13 @@ export interface AdminOrderView extends OrderView {
   readonly clientele: OrderClientele | null;
   /** La personne qui l'a passée, et pour qui — cf. {@link AdminOrderPlacedByView}. */
   readonly placedBy: AdminOrderPlacedByView;
+  /**
+   * D'où vient la saisie de l'équipe, ou `null` : commande du client, ou
+   * saisie d'avant le 2026-11-04 dont on ne sait pas d'où elle vient. Un
+   * « Retrait immédiat » sans origine se lit `counter` — il n'existe qu'au
+   * comptoir.
+   */
+  readonly entryOrigin: AdminOrderEntryOrigin | null;
   /**
    * **Peut-on l'annuler, et sinon pourquoi** (doc
    * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8). Calculée par

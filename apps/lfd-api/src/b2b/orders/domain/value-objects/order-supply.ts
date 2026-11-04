@@ -27,11 +27,13 @@ export type OrderEntryShortcut = (typeof ORDER_ENTRY_SHORTCUTS)[number];
 
 /**
  * **D'où vient la saisie de l'équipe** (Hugo, 2026-11-03, E4 étendu) :
- * `counter` est le comptoir, qu'il prenne sur la vitrine ou programme. Absent,
- * la saisie du commercial. Le serveur ne la garde pas : elle ne décide que du
- * règlement admis.
+ * `counter` est le comptoir, qu'il prenne sur la vitrine ou programme ;
+ * `commercial`, la saisie du commercial. Elle décide du règlement admis et,
+ * depuis le 2026-11-04 (Hugo), la commande la garde : le back-office dit
+ * « Prise au comptoir » ou « Prise par le commercial ». Figée à la passation
+ * par l'agrégat, `null` pour une commande du client lui-même.
  */
-export const ORDER_ENTRY_ORIGINS = ["counter"] as const;
+export const ORDER_ENTRY_ORIGINS = ["commercial", "counter"] as const;
 
 export type OrderEntryOrigin = (typeof ORDER_ENTRY_ORIGINS)[number];
 
@@ -53,18 +55,26 @@ export type OrderSupplyDecision =
       readonly entryShortcut: OrderEntryShortcut | null;
     };
 
-/** La marque telle que la commande la porte et la rend — sans « aujourd'hui ». */
+/**
+ * La marque telle que la commande la porte et la rend — sans « aujourd'hui ».
+ * Elle porte aussi d'où vient la saisie : comme le raccourci, une trace de
+ * l'entrée, figée à la passation et reportée par une révision.
+ */
 export interface OrderSupplyMark {
   readonly supply: OrderSupply;
   readonly entryShortcut: OrderEntryShortcut | null;
+  readonly entryOrigin: OrderEntryOrigin | null;
 }
 
 /** Le comportement d'avant la marque : fabriquée pour elle. */
 export const PLANNED_SUPPLY: OrderSupplyDecision = { supply: "planned" };
 
 /** La marque d'une décision, sans le jour qui n'a servi qu'à la juger. */
-export function supplyMarkOf(decision: OrderSupplyDecision): OrderSupplyMark {
+export function supplyMarkOf(
+  decision: OrderSupplyDecision,
+  entryOrigin: OrderEntryOrigin | null,
+): OrderSupplyMark {
   return decision.supply === "shelf"
-    ? { supply: "shelf", entryShortcut: decision.entryShortcut }
-    : { supply: "planned", entryShortcut: null };
+    ? { supply: "shelf", entryShortcut: decision.entryShortcut, entryOrigin }
+    : { supply: "planned", entryShortcut: null, entryOrigin };
 }

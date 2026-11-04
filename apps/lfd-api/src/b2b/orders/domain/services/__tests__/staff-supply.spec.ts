@@ -2,7 +2,12 @@ import {
   CounterLinkSettlementRefusedError,
   EntryShortcutOffShelfError,
 } from "../../errors/shelf-order-errors.js";
-import { ensureCounterSettlement, isCounterEntry, staffSupplyOf } from "../order-supply-rules.js";
+import {
+  ensureCounterSettlement,
+  isCounterEntry,
+  staffEntryOriginOf,
+  staffSupplyOf,
+} from "../order-supply-rules.js";
 
 /**
  * **La marque d'une saisie de l'équipe, et son raccourci** (plan du jour J,
@@ -53,5 +58,13 @@ describe("ensureCounterSettlement — le comptoir ne règle qu'au compte (E4 ét
     expect(() => ensureCounterSettlement("link", true)).toThrow(CounterLinkSettlementRefusedError);
     expect(() => ensureCounterSettlement("account", true)).not.toThrow();
     expect(() => ensureCounterSettlement("link", false)).not.toThrow();
+  });
+});
+
+describe("staffEntryOriginOf — l'origine que garde la saisie (Hugo, 2026-11-04)", () => {
+  it("le comptoir sur l'origine ou le « Retrait immédiat », le commercial sinon", () => {
+    expect(staffEntryOriginOf("counter", undefined)).toBe("counter");
+    expect(staffEntryOriginOf(undefined, "immediate_pickup")).toBe("counter");
+    expect(staffEntryOriginOf(undefined, undefined)).toBe("commercial");
   });
 });

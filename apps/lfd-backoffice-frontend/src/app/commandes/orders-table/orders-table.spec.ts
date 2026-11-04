@@ -33,6 +33,7 @@ function row(over: Partial<AdminOrderRow> = {}): AdminOrderRow {
     companyId: null,
     companyDisplayName: null,
     origin: 'self_service',
+    entryOrigin: null,
     ...over,
   };
 }
@@ -185,6 +186,18 @@ describe('OrdersTable', () => {
 
     expect(badges).toHaveLength(1);
     expect(badges[0]?.textContent).toContain('Sur stock');
+  });
+
+  /** Hugo, 2026-11-04 : la pastille d'une saisie de l'équipe dit d'où elle vient. */
+  it.each([
+    ['counter', 'Prise au comptoir'],
+    ['commercial', 'Prise par le commercial'],
+    [null, "Saisie par l'équipe"],
+  ] as const)('une saisie de l’équipe d’origine %s se dit « %s »', (entryOrigin, label) => {
+    const el = render([row({ origin: 'back_office', entryOrigin })], true)
+      .nativeElement as HTMLElement;
+
+    expect(el.querySelector('.ot-ref fold-badge')?.textContent ?? '').toContain(label);
   });
 
   /** Lot E6a : le colisage a signalé un manque, la commande attend une décision. */

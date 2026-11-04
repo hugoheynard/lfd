@@ -1,5 +1,7 @@
 import type { OrderOrigin } from "@lfd/contracts";
 
+import type { OrderEntryOrigin, OrderEntryShortcut } from "../value-objects/order-supply.js";
+
 /** Les deux colonnes qui suffisent à dire d'où vient une commande. */
 export interface OrderProvenance {
   /** Le membre de l'équipe qui l'a saisie, ou `null`. */
@@ -30,4 +32,24 @@ export function orderOriginOf(provenance: OrderProvenance): OrderOrigin {
     return "recurring";
   }
   return "self_service";
+}
+
+/** Les deux marques d'entrée qui suffisent à dire d'où vient une saisie. */
+export interface OrderEntryMarks {
+  readonly entryOrigin: OrderEntryOrigin | null;
+  readonly entryShortcut: OrderEntryShortcut | null;
+}
+
+/**
+ * **D'où vient une saisie de l'équipe**, telle que le back-office la lit
+ * (Hugo, 2026-11-04). L'origine gardée d'abord ; à défaut, un « Retrait
+ * immédiat » se lit `counter` — le raccourci n'existe qu'au comptoir, et les
+ * commandes d'avant la colonne ne sont pas réécrites. Sinon `null` : on ne
+ * sait pas, et l'écran garde ce qu'il disait.
+ */
+export function orderEntryOriginOf(marks: OrderEntryMarks): OrderEntryOrigin | null {
+  if (marks.entryOrigin !== null) {
+    return marks.entryOrigin;
+  }
+  return marks.entryShortcut === "immediate_pickup" ? "counter" : null;
 }

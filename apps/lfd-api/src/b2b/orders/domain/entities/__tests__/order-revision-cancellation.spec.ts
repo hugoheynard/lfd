@@ -100,6 +100,7 @@ function placed(
     serviceDay: DAY,
     supply: state.supply,
     entryShortcut: state.entryShortcut,
+    entryOrigin: state.entryOrigin,
     fulfillment: {
       method: state.fulfillmentMethod,
       deliveryZoneId: null,

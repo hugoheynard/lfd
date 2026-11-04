@@ -9,7 +9,7 @@ import {
   type AdminOrderListCriteria,
   type AdminOrderListSlice,
 } from "../domain/ports/admin-order-list.reader.js";
-import { orderOriginOf } from "../domain/services/order-origin.js";
+import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
 import { customerLabelOf } from "./handover-order.query.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { pickupLabelOf, siteIdOf } from "./pickup-site.parse.js";
@@ -38,6 +38,8 @@ const ADMIN_ROW_SELECT = {
   companyId: true,
   fromSubscriptionId: true,
   placedByStaffId: true,
+  entryOrigin: true,
+  entryShortcut: true,
   createdAt: true,
   company: { select: { raisonSociale: true, enseigne: true } },
   placedBy: { select: { email: true, firstName: true, lastName: true } },
@@ -194,5 +196,6 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     companyId: row.companyId,
     companyDisplayName: row.company === null ? null : companyDisplayName(row.company),
     origin: orderOriginOf(row),
+    entryOrigin: orderEntryOriginOf(row),
   };
 }

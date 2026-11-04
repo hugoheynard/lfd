@@ -48,6 +48,7 @@ function owned(): OwnedOrder {
     placedByUserId: "user_buyer",
     stripePaymentIntentId: null,
     clientele: "pro",
+    entryOrigin: null,
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,

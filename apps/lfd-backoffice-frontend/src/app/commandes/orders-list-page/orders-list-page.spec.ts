@@ -44,6 +44,7 @@ function row(id: string): AdminOrderRow {
     companyId: 'co_1',
     companyDisplayName: 'Café du Port',
     origin: 'self_service',
+    entryOrigin: null,
   };
 }
 

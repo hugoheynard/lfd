@@ -37,6 +37,7 @@ function order(shape: OrderShape): AdminOrderRow {
     pickupLabel: null,
     fulfillmentWindow: null,
     origin: shape.origin ?? 'self_service',
+    entryOrigin: null,
   };
 }
 

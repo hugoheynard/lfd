@@ -38,6 +38,7 @@ function subscribers(email: string | null = "camille@example.test") {
     placedByUserId: "user_7",
     stripePaymentIntentId: "pi_1",
     clientele: "public",
+    entryOrigin: null,
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,

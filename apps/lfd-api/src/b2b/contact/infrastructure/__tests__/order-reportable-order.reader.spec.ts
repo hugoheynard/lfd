@@ -35,6 +35,7 @@ function personal(status: OrderStatus): OwnedOrder {
     placedByUserId: BUYER,
     stripePaymentIntentId: null,
     clientele: "pro",
+    entryOrigin: null,
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,

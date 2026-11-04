@@ -94,6 +94,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     return {
       ...owned.view,
       clientele: owned.clientele,
+      entryOrigin: owned.entryOrigin,
       placedBy: {
         customer: author.customer,
         company: author.company,

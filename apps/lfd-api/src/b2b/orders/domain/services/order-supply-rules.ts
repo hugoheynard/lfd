@@ -80,6 +80,18 @@ export function isCounterEntry(
 }
 
 /**
+ * **L'origine que garde une saisie de l'équipe** (Hugo, 2026-11-04) : le
+ * comptoir si {@link isCounterEntry}, le commercial sinon — l'écran du
+ * commercial n'envoie aucune origine.
+ */
+export function staffEntryOriginOf(
+  origin: OrderEntryOrigin | undefined,
+  shortcut: OrderEntryShortcut | undefined,
+): OrderEntryOrigin {
+  return isCounterEntry(origin, shortcut) ? "counter" : "commercial";
+}
+
+/**
  * **Le comptoir ne règle qu'au compte** (Hugo, 2026-11-03, E4 du plan
  * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`) — sur la vitrine
  * comme sur une commande programmée, dès que la saisie vient du comptoir

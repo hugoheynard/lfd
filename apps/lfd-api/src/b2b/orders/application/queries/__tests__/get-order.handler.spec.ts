@@ -80,6 +80,7 @@ function personal(placedByUserId: string): OwnedOrder {
   return {
     stripePaymentIntentId: null,
     clientele: "public",
+    entryOrigin: null,
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,
@@ -94,6 +95,7 @@ function ofCompany(companyId: string): OwnedOrder {
   return {
     stripePaymentIntentId: null,
     clientele: "pro",
+    entryOrigin: null,
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,
@@ -300,6 +302,7 @@ describe("GetAdminOrderHandler", () => {
     await expect(handler.execute(new GetAdminOrderQuery("ord_1"))).resolves.toEqual({
       ...VIEW,
       clientele: "pro",
+      entryOrigin: null,
       placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },
       cancellability: { cancellable: true, voucher: null, refund: null },
       refund: null,

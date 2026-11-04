@@ -307,6 +307,7 @@
   "test/order-discounts-control.e2e-spec.ts": 15000,
   "test/order-discounts-read.e2e-spec.ts": 12769,
   "test/order-discounts-terms-backfill.e2e-spec.ts": 9158,
+  "test/order-entry-origin.e2e-spec.ts": 16000,
   "test/order-exact-ht.e2e-spec.ts": 10900,
   "test/order-guest-cancel.e2e-spec.ts": 10911,
   "test/order-handover-proof.e2e-spec.ts": 6126,

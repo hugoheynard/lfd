@@ -142,6 +142,7 @@ function build(scenario: Scenario = {}) {
     placedByUserId: scenario.author ?? "u1",
     stripePaymentIntentId: scenario.intent === undefined ? "pi_1" : scenario.intent,
     clientele: scenario.clientele === undefined ? "public" : scenario.clientele,
+    entryOrigin: null,
     loyaltyVoucherId: scenario.voucher ?? null,
     billedCustomer: null,
     buyerPhone: null,

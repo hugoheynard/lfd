@@ -172,6 +172,7 @@ export function readerOf(order: OrderView | null): OrderReader {
           placedByUserId: "user_7",
           stripePaymentIntentId: null,
           clientele: "public",
+          entryOrigin: null,
           loyaltyVoucherId: null,
           billedCustomer: null,
           buyerPhone: null,

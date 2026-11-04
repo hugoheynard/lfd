@@ -7,7 +7,8 @@ import {
   ShelfOrderRouteChangeError,
 } from "../../errors/shelf-order-errors.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
-import type { OrderSupplyDecision } from "../../value-objects/order-supply.js";
+import { EntryOriginWithoutStaffError } from "../../errors/entry-origin-errors.js";
+import type { OrderEntryOrigin, OrderSupplyDecision } from "../../value-objects/order-supply.js";
 import { Order, type DraftOrderInput } from "../order.js";
 import type { PricedDraftInput } from "../order-priced-draft.js";
 import { draftFrom, type DraftSpec } from "./priced-input.fixture.js";
@@ -83,8 +84,11 @@ function input(over: Partial<DraftSpec> = {}): PricedDraftInput {
 }
 
 /** La commande telle qu'on la relit pour la modifier, d'après sa passation. */
-function placed(supply: OrderSupplyDecision): RevisableOrder {
-  const order = Order.draft(input(), supply);
+function placed(
+  supply: OrderSupplyDecision,
+  entryOrigin: OrderEntryOrigin | null = null,
+): RevisableOrder {
+  const order = Order.draft(input(), supply, entryOrigin);
   order.deferPayment();
   const state = order.toPersistence();
   return {
@@ -114,6 +118,7 @@ function placed(supply: OrderSupplyDecision): RevisableOrder {
     serviceDay: TODAY,
     supply: state.supply,
     entryShortcut: state.entryShortcut,
+    entryOrigin: state.entryOrigin,
     fulfillment: atShop("site_village"),
     agreed: state.agreed,
     note: "",
@@ -231,5 +236,46 @@ describe("Order.recompose — une commande sur stock garde son acheminement", ()
 
     expect(revision.changes).toContain("date");
     expect(revision.state.supply).toBe("planned");
+  });
+});
+
+describe("Order.draft — d'où vient la saisie de l'équipe (Hugo, 2026-11-04)", () => {
+  it("sans origine, la commande n'en porte aucune", () => {
+    expect(persisted()).toMatchObject({ entryOrigin: null });
+  });
+
+  it("fige l'origine du comptoir et celle du commercial", () => {
+    for (const origin of ["counter", "commercial"] as const) {
+      const order = Order.draft(input(), { supply: "planned" }, origin);
+      order.deferPayment();
+      expect(order.toPersistence()).toMatchObject({ entryOrigin: origin });
+    }
+  });
+
+  it("refuse une origine sur une commande que le client a passée lui-même", () => {
+    const own = input({ placedByStaffId: null });
+
+    expect(() => Order.draft(own, { supply: "planned" }, "counter")).toThrow(
+      EntryOriginWithoutStaffError,
+    );
+    expect(() => Order.draft(own, { supply: "planned" }, "counter")).toThrow("saisie de l'équipe");
+  });
+
+  it("une révision garde l'origine telle quelle", () => {
+    const revision = Order.revise(
+      placed({ supply: "planned" }, "commercial"),
+      input({ lines: [line("VIE-001", 5)] }),
+    );
+
+    expect(revision.state).toMatchObject({ entryOrigin: "commercial" });
+  });
+
+  it("une révision d'une commande sans origine n'en invente pas", () => {
+    const revision = Order.revise(
+      placed({ supply: "planned" }),
+      input({ lines: [line("VIE-001", 5)] }),
+    );
+
+    expect(revision.state).toMatchObject({ entryOrigin: null });
   });
 });

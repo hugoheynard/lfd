@@ -27,6 +27,7 @@ function row(companyId: string | null, companyDisplayName: string | null): Admin
     pickupLabel: null,
     fulfillmentWindow: null,
     origin: 'self_service',
+    entryOrigin: null,
   };
 }
 

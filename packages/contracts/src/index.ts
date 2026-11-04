@@ -781,6 +781,7 @@ export type {
   AdminOrderCompanyView,
   AdminOrderCustomerView,
   AdminOrderPlacedByView,
+  AdminOrderEntryOrigin,
   AdminOrderShortfall,
   AdminOrderShortfallDecision,
   AdminOrderShortfallLine,

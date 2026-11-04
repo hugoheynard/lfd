@@ -479,6 +479,31 @@ describe("PlaceOrderForCustomerHandler — la langue", () => {
   });
 });
 
+describe("PlaceOrderForCustomerHandler — d'où vient la saisie (Hugo, 2026-11-04)", () => {
+  it("sans origine déclarée, la commande est prise par le commercial", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders", "active", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    expect(sink.placed?.entryOrigin).toBe("commercial");
+  });
+
+  it("l'origine `counter` déclarée par l'écran est gardée", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders", "active", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand(
+        "staff_1",
+        payload({ settlement: "account", entryOrigin: "counter" }),
+      ),
+    );
+
+    expect(sink.placed?.entryOrigin).toBe("counter");
+  });
+});
+
 describe("PlaceOrderForCustomerHandler — le mur", () => {
   it("vérifie l'appartenance de L'ACHETEUR, pas celle du commercial", async () => {
     // Le piège de cette surface : un commercial n'est membre d'aucune société
@@ -737,7 +762,12 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
       ),
     );
 
-    expect(sink.placed).toMatchObject({ supply: "shelf", entryShortcut: "immediate_pickup" });
+    // Le raccourci n'existe qu'au comptoir : l'origine gardée le dit (2026-11-04).
+    expect(sink.placed).toMatchObject({
+      supply: "shelf",
+      entryShortcut: "immediate_pickup",
+      entryOrigin: "counter",
+    });
   });
 
   it("un pro sans crédit, réglage « refuser » : le lien de paiement est refusé, sans intention", async () => {

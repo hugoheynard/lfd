@@ -6,6 +6,7 @@ import { ensureOrderMember } from "../../domain/services/order-access.js";
 import {
   ensureCounterSettlement,
   isCounterEntry,
+  staffEntryOriginOf,
 } from "../../domain/services/order-supply-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
@@ -81,6 +82,8 @@ export async function prepareStaffOrder(
     payload.supply,
     // Le « Retrait immédiat » du comptoir (lot L6) : une trace sur une `shelf`.
     payload.entryShortcut,
+    // D'où vient la saisie, gardée sur la commande (Hugo, 2026-11-04).
+    staffEntryOriginOf(payload.entryOrigin, payload.entryShortcut),
   );
 }
 

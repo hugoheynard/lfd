@@ -18,7 +18,7 @@ const PRO: AdminOrderPlacedByView = {
 
 describe('placedByLines', () => {
   it('nomme la personne, la joint, et dit la société sous ses deux noms', () => {
-    expect(placedByLines({ placedBy: PRO, placedByStaffId: null })).toEqual({
+    expect(placedByLines({ placedBy: PRO, placedByStaffId: null, entryOrigin: null })).toEqual({
       person: 'Paul Durand',
       email: 'chef@halles.fr',
       phone: '0611223344',
@@ -32,11 +32,15 @@ describe('placedByLines', () => {
       ...PRO,
       company: { id: 'cmp_1', raisonSociale: 'Café des Halles SAS', enseigne: null },
     };
-    expect(placedByLines({ placedBy: noSign, placedByStaffId: null }).company).toBe(
-      'Café des Halles SAS',
-    );
     expect(
-      placedByLines({ placedBy: { ...PRO, company: null }, placedByStaffId: null }).company,
+      placedByLines({ placedBy: noSign, placedByStaffId: null, entryOrigin: null }).company,
+    ).toBe('Café des Halles SAS');
+    expect(
+      placedByLines({
+        placedBy: { ...PRO, company: null },
+        placedByStaffId: null,
+        entryOrigin: null,
+      }).company,
     ).toBeNull();
   });
 
@@ -44,6 +48,7 @@ describe('placedByLines', () => {
     const lines = placedByLines({
       placedBy: { ...PRO, staffName: 'Hugo H' },
       placedByStaffId: 'stf_1',
+      entryOrigin: null,
     });
     expect(lines.enteredBy).toBe('saisie par Hugo H');
   });
@@ -52,24 +57,57 @@ describe('placedByLines', () => {
     const lines = placedByLines({
       placedBy: { ...PRO, company: null },
       placedByStaffId: 'stf_parti',
+      entryOrigin: null,
     });
     expect(lines.enteredBy).toBe('saisie par l’équipe');
   });
 
+  it('une saisie au comptoir dit « Prise au comptoir » avant son auteur (2026-11-04)', () => {
+    const lines = placedByLines({
+      placedBy: { ...PRO, staffName: 'Hugo H' },
+      placedByStaffId: 'stf_1',
+      entryOrigin: 'counter',
+    });
+    expect(lines.enteredBy).toBe('Prise au comptoir — saisie par Hugo H');
+  });
+
+  it('une saisie du commercial dit « Prise par le commercial »', () => {
+    const lines = placedByLines({
+      placedBy: { ...PRO, staffName: 'Hugo H' },
+      placedByStaffId: 'stf_1',
+      entryOrigin: 'commercial',
+    });
+    expect(lines.enteredBy).toBe('Prise par le commercial — saisie par Hugo H');
+  });
+
+  it("une saisie d'avant la colonne, sans origine, garde ce qu'elle disait", () => {
+    const lines = placedByLines({
+      placedBy: { ...PRO, staffName: 'Hugo H' },
+      placedByStaffId: 'stf_1',
+      entryOrigin: null,
+    });
+    expect(lines.enteredBy).toBe('saisie par Hugo H');
+  });
+
   it('sans nom, la personne se dit par son e-mail', () => {
     const anonymous = { ...PRO, customer: { ...PRO.customer, firstName: '', lastName: ' ' } };
-    expect(placedByLines({ placedBy: anonymous, placedByStaffId: null }).person).toBe(
-      'chef@halles.fr',
-    );
+    expect(
+      placedByLines({ placedBy: anonymous, placedByStaffId: null, entryOrigin: null }).person,
+    ).toBe('chef@halles.fr');
   });
 });
 
 describe('OrderPlacedByComponent', () => {
-  function render(placedBy: AdminOrderPlacedByView, placedByStaffId: string | null): HTMLElement {
+  function render(
+    placedBy: AdminOrderPlacedByView,
+    placedByStaffId: string | null,
+    entryOrigin: AdminOrderView['entryOrigin'] = null,
+  ): HTMLElement {
     const fixture = TestBed.createComponent(OrderPlacedByComponent);
-    const order: Pick<AdminOrderView, 'placedBy' | 'placedByStaffId'> = {
+    const order: Pick<AdminOrderView, 'placedBy' | 'placedByStaffId' | 'entryOrigin'> = {
       placedBy,
       placedByStaffId,
+      entryOrigin,
     };
     fixture.componentRef.setInput('order', order);
     fixture.detectChanges();
@@ -97,6 +135,13 @@ describe('OrderPlacedByComponent', () => {
   it("dit la saisie par l'équipe quand elle a eu lieu", () => {
     const el = render({ ...PRO, staffName: 'Hugo H' }, 'stf_1');
     expect(el.querySelector('[data-placed-by-staff]')?.textContent).toContain('saisie par Hugo H');
+  });
+
+  it('affiche « Prise au comptoir » pour un Retrait immédiat, que le serveur lit au comptoir', () => {
+    const el = render({ ...PRO, staffName: 'Hugo H' }, 'stf_1', 'counter');
+    expect(el.querySelector('[data-placed-by-staff]')?.textContent).toContain(
+      'Prise au comptoir — saisie par Hugo H',
+    );
   });
 
   it('ne dit rien du téléphone quand il manque', () => {
