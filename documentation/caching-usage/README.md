@@ -66,6 +66,7 @@ flowchart LR
 | [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)             | 📝 plan                           | un seul chargement du catalogue par requête, par construction                                               |
 | [`plan-aucun-cache-sur-le-personnel.md`](plan-aucun-cache-sur-le-personnel.md) | ✅ bâti                           | aucune réponse personnelle dans un cache partagé : le middleware et la porte                                |
 | [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md)               | 📝 plan                           | le changement d'espace lent : mesurer le plancher par appel, aplatir la cascade, un appel d'entrée          |
+| [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md)                 | 📝 plan                           | le principal gardé en mémoire de l'API, relu sur une estampille posée par la base                           |
 | [`version-par-journee.md`](version-par-journee.md)                             | ✅ bâti                           | ne relire que ce qui a bougé, une porte par journée                                                         |
 | [`cache-compte-client.md`](cache-compte-client.md)                             | 📝 doc-first                      | le cache des comptes clients du back-office                                                                 |
 
