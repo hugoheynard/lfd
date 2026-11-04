@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import {
   CorruptedRecordError,
   isUniqueViolation,
@@ -20,7 +22,10 @@ import { ITEMS_IN_ORDER, itemRows, operationColumns, toRecord } from "./operatio
  */
 @Injectable()
 export class PrismaOperationRepository extends OperationRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -58,6 +63,7 @@ export class PrismaOperationRepository extends OperationRepository {
       throw error;
     }
     await this.writeItems(operation);
+    this.shelves.changed(ALL_SHELVES);
   }
 
   async loadShowingImage(url: string): Promise<readonly Operation[]> {
@@ -81,6 +87,7 @@ export class PrismaOperationRepository extends OperationRepository {
     });
     await this.prisma.catalogOperationItem.deleteMany({ where: { operationKey: snapshot.key } });
     await this.writeItems(operation);
+    this.shelves.changed(ALL_SHELVES);
   }
 
   private async writeItems(operation: Operation): Promise<void> {

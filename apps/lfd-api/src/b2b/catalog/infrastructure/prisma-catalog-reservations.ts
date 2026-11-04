@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import {
   CatalogReservations,
   type CatalogReservation,
@@ -9,7 +11,10 @@ import {
 /** Les réservations d'articles, une ligne par couple article × société. */
 @Injectable()
 export class PrismaCatalogReservations extends CatalogReservations {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -20,6 +25,10 @@ export class PrismaCatalogReservations extends CatalogReservations {
       data: [{ ...reservation }],
       skipDuplicates: true,
     });
+    // Une réservation retire l'article à tous sauf une société, public compris.
+    if (count > 0) {
+      this.shelves.changed(ALL_SHELVES);
+    }
     return count > 0;
   }
 
@@ -27,6 +36,9 @@ export class PrismaCatalogReservations extends CatalogReservations {
     const { count } = await this.prisma.catalogItemReservation.deleteMany({
       where: { sku, companyId },
     });
+    if (count > 0) {
+      this.shelves.changed(ALL_SHELVES);
+    }
     return count > 0;
   }
 }

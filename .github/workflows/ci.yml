@@ -312,6 +312,13 @@ jobs:
       - name: "Gate : un container qui intercepte ses sorties démarre"
         run: pnpm lint:container-start
 
+      # Le cache des rayons ne sait qu'un rayon est périmé que si celui qui
+      # écrit le lui dit. Tout fichier qui écrit un modèle que le rayon lit
+      # émet `ShelfChanges`, ou figure dans la liste admise datée — sinon un
+      # rayon faux reste en cache sans qu'aucun test ne rougisse.
+      - name: "Gate : qui écrit ce que le rayon lit émet le signal de purge"
+        run: pnpm lint:shelf-writes
+
       # ── Le prix ──
       # Ces portes ne tournaient qu'au pre-push, qu'un `--no-verify` saute :
       # constaté le 2026-11-02, 25 des 51 portes n'avaient aucune étape ici.

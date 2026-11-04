@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { targetedShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Journal } from "../../../platform/journal/journal.js";
@@ -8,6 +10,7 @@ import { PricingMaterialsCache } from "../../pricing/infrastructure/pricing-mate
 import { PromotionRepository } from "../domain/ports/promotion.repository.js";
 import { PROMOTION_SUBJECT, type PromotionAct } from "../domain/promotion-act.js";
 import type { Promotion } from "../domain/promotion.js";
+import { audienceCompanyIdOf } from "../domain/promotion-audience.js";
 import { audienceTargetRowsOf } from "./promotion-audience-rows.js";
 import { FULFILLMENT_LINKS, fulfillmentLinkRowsOf } from "./promotion-fulfillment-rows.js";
 import { scopeRuleRowsOf, toDomain, toPersistence } from "./promotion-rows.js";
@@ -27,6 +30,7 @@ export class PrismaPromotionRepository extends PromotionRepository {
     private readonly ids: IdGenerator,
     private readonly journal: Journal,
     private readonly cache: PricingMaterialsCache,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -45,7 +49,7 @@ export class PrismaPromotionRepository extends PromotionRepository {
 
   async save(promotion: Promotion, act: PromotionAct): Promise<void> {
     const data = toPersistence(promotion);
-    await this.uow.run(async () => {
+    const previous = await this.uow.run(async () => {
       await this.prisma.promotion.upsert({
         where: { id: promotion.id },
         create: data,
@@ -58,6 +62,12 @@ export class PrismaPromotionRepository extends PromotionRepository {
       if (rules.length > 0) {
         await this.prisma.promotionScopeRule.createMany({ data: rules });
       }
+      // Les cibles d'avant, lues avant d'être remplacées : une promotion qui
+      // quitte une société change aussi le rayon de celle-ci.
+      const replaced = await this.prisma.promotionAudienceTarget.findMany({
+        where: { promotionId: promotion.id },
+        select: { companyId: true },
+      });
       // Les cibles aussi (L8b) : la table fait foi, la projection
       // `audience_kind` est écrite plus haut dans la même transaction.
       await this.prisma.promotionAudienceTarget.deleteMany({
@@ -68,11 +78,16 @@ export class PrismaPromotionRepository extends PromotionRepository {
       });
       await this.replaceFulfillmentLinks(promotion);
       await this.inscribe(act);
+      return replaced;
     });
     // Après le commit, comme `PricingActWriter` : le calcul lit les
     // promotions sous le cache des matériaux, et la caisse de CETTE instance
     // n'a pas à attendre l'estampille pour servir la promotion posée (L8).
     this.cache.invalidate();
+    const targets = promotion.terms.audiences.targets.map(audienceCompanyIdOf);
+    for (const scope of targetedShelves([...targets, ...previous.map((row) => row.companyId)])) {
+      this.shelves.changed(scope);
+    }
   }
 
   /**

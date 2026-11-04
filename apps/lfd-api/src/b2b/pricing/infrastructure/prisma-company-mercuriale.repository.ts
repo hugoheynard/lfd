@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { companyShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeRepository } from "../domain/ports/company-mercuriale.repository.js";
 import type { PricingAct } from "../domain/pricing-act.js";
@@ -20,6 +22,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
   constructor(
     private readonly prisma: PrismaService,
     private readonly acts: PricingActWriter,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -70,6 +73,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
           },
         }),
       );
+      this.shelves.changed(companyShelves(state.companyId));
     } catch (error) {
       if (isExclusionViolation(error, OVERLAP_CONSTRAINT)) {
         throw new RunningMercurialeError(state.label, state.validFrom, state.validTo);
@@ -80,7 +84,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
 
   /** Une transition — clore, suspendre, reprendre. Le cycle de vie, et la fin que la clôture pose. */
   async update(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void> {
-    const { id, lifecycle, validTo } = mercuriale.toPersistence();
+    const { id, lifecycle, validTo, companyId } = mercuriale.toPersistence();
     await this.acts.around(act, async () => {
       await this.archiveAmendmentsOf(mercuriale);
       await this.prisma.companyMercuriale.update({
@@ -99,6 +103,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
         },
       });
     });
+    this.shelves.changed(companyShelves(companyId));
   }
 
   /**
@@ -185,6 +190,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
         },
       }),
     );
+    this.shelves.changed(companyShelves(mercuriale.toPersistence().companyId));
   }
 
   /**
@@ -196,10 +202,11 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
    * repose.
    */
   async rename(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void> {
-    const { id, label } = mercuriale.toPersistence();
+    const { id, label, companyId } = mercuriale.toPersistence();
     await this.acts.around(act, () =>
       this.prisma.companyMercuriale.update({ where: { id }, data: { label } }),
     );
+    this.shelves.changed(companyShelves(companyId));
   }
 
   async load(id: string): Promise<CompanyMercuriale | null> {

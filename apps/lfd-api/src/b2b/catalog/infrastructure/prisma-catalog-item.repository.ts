@@ -3,6 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { Clock } from "../../../platform/time/clock.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import type { CatalogItem, CatalogItemState } from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
 import { STILL_SOLD } from "./sellable-filter.js";
@@ -27,6 +29,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -52,6 +55,8 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
 
   async saveReviewStates(items: readonly CatalogItem[]): Promise<void> {
     await writeReviewStates(this.prisma, items);
+    // Une attente de validation cache ou montre l'article : tous les rayons.
+    this.shelves.changed(ALL_SHELVES);
   }
 
   async loadAll(): Promise<CatalogItem[]> {
@@ -156,6 +161,9 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
         await tx.catalogPriceHistory.createMany({ data: changes });
       }
     });
+    // Après la transaction, jamais dedans : `$transaction` direct n'ouvre pas
+    // d'unité ambiante, un signal émis dans le rappel partirait avant le commit.
+    this.shelves.changed(ALL_SHELVES);
   }
 }
 

@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { GeneralOrderCutoffRule } from "../domain/general-order-cutoff.js";
 import { GeneralOrderCutoffRepository } from "../domain/general-order-cutoff.repository.js";
@@ -13,7 +15,10 @@ const UNIQUE_VIOLATION = "P2002";
 /** L'écriture de la règle générale dans `public.order_cutoffs`. */
 @Injectable()
 export class PrismaGeneralOrderCutoffRepository extends GeneralOrderCutoffRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -39,6 +44,7 @@ export class PrismaGeneralOrderCutoffRepository extends GeneralOrderCutoffReposi
     } catch (error: unknown) {
       throw toDomainError(error);
     }
+    this.shelves.changed(ALL_SHELVES);
   }
 }
 

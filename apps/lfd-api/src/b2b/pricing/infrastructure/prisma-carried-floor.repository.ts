@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import type { PricingFloor } from "../domain/entities/pricing-floor.js";
 import type { PriceFloor } from "../domain/price-rule.js";
 import type { PricingAct } from "../domain/pricing-act.js";
@@ -23,6 +25,7 @@ export class PrismaCarriedFloorRepository extends CarriedFloorRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly acts: PricingActWriter,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -56,6 +59,8 @@ export class PrismaCarriedFloorRepository extends CarriedFloorRepository {
         },
       }),
     );
+    // Un plancher n'a pas d'audience : il borne le prix de tous.
+    this.shelves.changed(ALL_SHELVES);
   }
 }
 

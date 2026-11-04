@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { CompanyStatus, CustomerRole } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { companyShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { referenceFrom } from "../../../platform/id/reference.js";
 import { Company, type CompanySoftState } from "../domain/entities/company.js";
@@ -54,6 +56,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -78,7 +81,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
    * supprimer par le client.
    */
   async declareOwnedBy(company: Company, ownerUserId: string): Promise<string> {
-    return this.prisma.$transaction(async (tx) => {
+    const id = await this.prisma.$transaction(async (tx) => {
       const reference = await pickFreeCompanyReference(
         this.drawReference.bind(this),
         async (candidate) => {
@@ -119,6 +122,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
 
       return created.id;
     });
+    // Après la transaction : `$transaction` direct n'ouvre pas d'unité ambiante.
+    this.shelves.changed(companyShelves(id));
+    return id;
   }
 
   /**
@@ -165,6 +171,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         },
         select: { id: true },
       });
+      this.shelves.changed(companyShelves(created.id));
       return created.id;
     } catch (error) {
       throw translateSiretClash(error, company.siretDigits);
@@ -273,6 +280,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
         ...(state.hierarchyChange ?? {}),
       },
     });
+    // Statut, rattachement, conditions : le rayon de la société et de ses sites.
+    this.shelves.changed(companyShelves(id));
   }
 
   async kbisLocation(companyId: string): Promise<KbisLocation | null> {

@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import type { DeliveryAvailability } from "../domain/delivery-availability.js";
 import { DeliveryAvailabilityRepository } from "../domain/ports/delivery-availability.repository.js";
 import { DELIVERY_AVAILABILITY_KEY } from "./delivery-availability.key.js";
@@ -8,7 +10,10 @@ import { DELIVERY_AVAILABILITY_KEY } from "./delivery-availability.key.js";
 /** Adaptateur Prisma de l'écriture du réglage : un `upsert` sur la clé naturelle. */
 @Injectable()
 export class PrismaDeliveryAvailabilityRepository extends DeliveryAvailabilityRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -29,5 +34,6 @@ export class PrismaDeliveryAvailabilityRepository extends DeliveryAvailabilityRe
       create: { key: DELIVERY_AVAILABILITY_KEY, ...row },
       update: row,
     });
+    this.shelves.changed(ALL_SHELVES);
   }
 }

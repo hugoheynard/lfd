@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import type { PimImage } from "../domain/entities/catalog-item.js";
 import { CatalogVisualsProjection } from "../domain/ports/catalog-visuals.projection.js";
 
@@ -11,7 +13,10 @@ import { CatalogVisualsProjection } from "../domain/ports/catalog-visuals.projec
  */
 @Injectable()
 export class PrismaCatalogVisualsProjection extends CatalogVisualsProjection {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -21,7 +26,7 @@ export class PrismaCatalogVisualsProjection extends CatalogVisualsProjection {
     image: PimImage | null,
     thumbnail: PimImage | null,
   ): Promise<void> {
-    await this.prisma.catalogItem.updateMany({
+    const { count } = await this.prisma.catalogItem.updateMany({
       where: {
         productId,
         OR: [{ visualsGestureId: null }, { visualsGestureId: { lt: gestureId } }],
@@ -42,5 +47,8 @@ export class PrismaCatalogVisualsProjection extends CatalogVisualsProjection {
         visualsGestureId: gestureId,
       },
     });
+    if (count > 0) {
+      this.shelves.changed(ALL_SHELVES);
+    }
   }
 }

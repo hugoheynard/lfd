@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { PricingFloorRepository } from "../domain/ports/pricing-floor.repository.js";
 import type { FloorClientele, PricingFloor } from "../domain/entities/pricing-floor.js";
 import { pricingFloorFromRow } from "./pricing-floor-rows.js";
@@ -13,6 +15,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly acts: PricingActWriter,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -85,6 +88,8 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
         await tx.priceFloor.create({ data: { id: state.id, ...shared } });
       }),
     );
+    // Un plancher n'a pas d'audience : il borne le prix de tous.
+    this.shelves.changed(ALL_SHELVES);
   }
 
   /**
@@ -122,7 +127,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
     // `aroundChange` et non `around` : sans lui, un archivage qui ne trouve rien
     // écrirait quand même son acte, et le journal raconterait un geste qui n'a
     // rien fait.
-    return this.acts.aroundChange(act, async () => {
+    const changed = await this.acts.aroundChange(act, async () => {
       const { count } = await this.prisma.priceFloor.updateMany({
         where: { id, archivedAt: null },
         // Ranger BORNE aussi, comme pour les quatre autres familles : sans ça,
@@ -138,6 +143,10 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
       });
       return count > 0;
     });
+    if (changed) {
+      this.shelves.changed(ALL_SHELVES);
+    }
+    return changed;
   }
 }
 

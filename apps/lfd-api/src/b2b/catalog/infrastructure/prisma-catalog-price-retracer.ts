@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { CatalogPriceRetracer } from "../domain/ports/catalog-price-retracer.js";
 import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
 import { STILL_SOLD } from "./sellable-filter.js";
@@ -19,6 +21,7 @@ export class PrismaCatalogPriceRetracer extends CatalogPriceRetracer {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -46,6 +49,7 @@ export class PrismaCatalogPriceRetracer extends CatalogPriceRetracer {
     );
     if (changes.length > 0) {
       await this.prisma.catalogPriceHistory.createMany({ data: changes });
+      this.shelves.changed(ALL_SHELVES);
     }
     return changes.map((change) => change.sku);
   }

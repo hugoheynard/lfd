@@ -7,6 +7,8 @@ import {
 import { z } from "zod";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { OrderLimitChange, OrderLimitTarget } from "../domain/order-limit-descent.js";
 import { CatalogOrderLimits } from "../domain/ports/catalog-order-limits.js";
@@ -27,7 +29,10 @@ const storedRules = z.array(syncOrderTimeLimitRuleSchema);
  */
 @Injectable()
 export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -86,7 +91,8 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
    * nombre de limites distinctes est celui des règles, pas celui du lot.
    */
   async write(changes: readonly OrderLimitChange[]): Promise<void> {
-    for (const group of orderLimitGroups(changes)) {
+    const groups = orderLimitGroups(changes);
+    for (const group of groups) {
       await this.prisma.catalogItem.updateMany({
         where: { sku: { in: group.skus } },
         data: {
@@ -95,6 +101,9 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
           orderLimitGraceMinutes: group.limit?.graceMinutes ?? null,
         },
       });
+    }
+    if (groups.length > 0) {
+      this.shelves.changed(ALL_SHELVES);
     }
   }
 }

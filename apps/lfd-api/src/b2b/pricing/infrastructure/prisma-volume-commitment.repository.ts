@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { companyShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { VolumeCommitmentAggregate } from "../domain/entities/volume-commitment.js";
 import { VolumeCommitmentRepository } from "../domain/ports/volume-commitment.repository.js";
 import { OverlappingVolumeCommitmentError } from "../domain/pricing-errors.js";
@@ -16,7 +18,10 @@ const OVERLAP_CONSTRAINT = "volume_commitments_no_overlap";
 
 @Injectable()
 export class PrismaVolumeCommitmentRepository extends VolumeCommitmentRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -64,6 +69,7 @@ export class PrismaVolumeCommitmentRepository extends VolumeCommitmentRepository
           ...originColumn(commitment.origin),
         },
       });
+      this.shelves.changed(companyShelves(state.companyId));
     } catch (error) {
       if (error instanceof Error && error.message.includes(OVERLAP_CONSTRAINT)) {
         throw new OverlappingVolumeCommitmentError();
@@ -92,5 +98,6 @@ export class PrismaVolumeCommitmentRepository extends VolumeCommitmentRepository
         archiveReason: state.archiveReason,
       },
     });
+    this.shelves.changed(companyShelves(state.companyId));
   }
 }

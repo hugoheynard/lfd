@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import {
@@ -41,6 +43,7 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -76,7 +79,7 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
   async ensureFamily(family: ReceivedCatalogFamily): Promise<void> {
     // `skipDuplicates` = `ON CONFLICT DO NOTHING` : une famille connue n'est
     // jamais réécrite d'ici, son fait à elle s'en charge sous son numéro.
-    await this.prisma.catalogCategory.createMany({
+    const { count } = await this.prisma.catalogCategory.createMany({
       data: [
         {
           id: family.id,
@@ -93,6 +96,9 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
       ],
       skipDuplicates: true,
     });
+    if (count > 0) {
+      this.shelves.changed(ALL_SHELVES);
+    }
   }
 
   async putOnSale(items: readonly ReceivedCatalogItem[], audience: CatalogAudience): Promise<void> {
@@ -132,6 +138,7 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
       ],
     );
     await this.tracePrices(items);
+    this.shelves.changed(ALL_SHELVES);
   }
 
   async withdrawOthers(productId: string, keptSkus: readonly string[], at: Date): Promise<void> {
@@ -139,10 +146,13 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     // seule règle de `CatalogItem.withdraw` — ne pas repousser une date déjà
     // posée — est ici dans le `where` (`STILL_SOLD`), et la ligne de la fiche
     // est déjà verrouillée par l'entrée écrite plus haut.
-    await this.prisma.catalogItem.updateMany({
+    const { count } = await this.prisma.catalogItem.updateMany({
       where: { productId, sku: { notIn: [...keptSkus] }, ...STILL_SOLD },
       data: { withdrawnAt: at },
     });
+    if (count > 0) {
+      this.shelves.changed(ALL_SHELVES);
+    }
   }
 
   /** La trace du tarif, par la règle partagée — le prix du référentiel seul (lot D). */

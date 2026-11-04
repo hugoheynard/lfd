@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { toAdjustmentColumns } from "../../pricing/cart-adjustment.mapper.js";
 import { PickupDiscount } from "../../pickup-addresses/domain/pickup-discount.js";
 import { Site, type SiteColors } from "../domain/site.js";
@@ -128,7 +130,10 @@ function rulesOf(site: Site): Prisma.PickupDiscountRuleCreateManyInput[] {
  */
 @Injectable()
 export class PrismaSiteRepository extends SiteRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -150,5 +155,7 @@ export class PrismaSiteRepository extends SiteRepository {
     if (rules.length > 0) {
       await this.prisma.pickupDiscountRule.createMany({ data: rules });
     }
+    // Un point de retrait ouvert, fermé ou renommé change les offres de tous les rayons.
+    this.shelves.changed(ALL_SHELVES);
   }
 }

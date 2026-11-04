@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { audienceShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { VolumeLadderAggregate } from "../domain/entities/volume-ladder.js";
 import { VolumeLadderRepository } from "../domain/ports/volume-ladder.repository.js";
 import { OverlappingVolumeLadderError } from "../domain/pricing-errors.js";
@@ -22,6 +24,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly acts: PricingActWriter,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -84,6 +87,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
           },
         }),
       );
+      this.shelves.changed(audienceShelves(state.audience));
     } catch (error) {
       if (isExclusionViolation(error, OVERLAP_CONSTRAINT)) {
         throw new OverlappingVolumeLadderError(error);
@@ -99,7 +103,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
 
   /** Une transition — suspendre, reprendre, archiver. Le cycle de vie, et la fin que la clôture pose. */
   async update(ladder: VolumeLadderAggregate, act: PricingAct): Promise<void> {
-    const { id, lifecycle, validTo } = ladder.toPersistence();
+    const { id, lifecycle, validTo, audience } = ladder.toPersistence();
     await this.acts.around(act, () =>
       this.prisma.volumeLadder.update({
         where: { id },
@@ -117,6 +121,7 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
         },
       }),
     );
+    this.shelves.changed(audienceShelves(audience));
   }
 }
 

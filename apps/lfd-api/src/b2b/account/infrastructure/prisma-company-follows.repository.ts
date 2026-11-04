@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { companyShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { SubAccountFollows } from "../domain/entities/sub-account-follows.js";
 import { CompanyFollowsRepository } from "../domain/ports/company-follows.repository.js";
 import { FOLLOW_SELECT, periodOf } from "./company-follows.mapper.js";
@@ -12,7 +14,10 @@ import { FOLLOW_SELECT, periodOf } from "./company-follows.mapper.js";
  */
 @Injectable()
 export class PrismaCompanyFollowsRepository extends CompanyFollowsRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -48,5 +53,7 @@ export class PrismaCompanyFollowsRepository extends CompanyFollowsRepository {
         update: { validTo: period.validTo },
       });
     }
+    // Le suivi décide du compte de tarif : seul le rayon du suiveur change.
+    this.shelves.changed(companyShelves(follows.companyId));
   }
 }

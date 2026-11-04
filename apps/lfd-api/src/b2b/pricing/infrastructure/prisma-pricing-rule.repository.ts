@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { audienceShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { PricingRule } from "../domain/entities/pricing-rule.js";
 import { PricingRuleRepository } from "../domain/ports/pricing-rule.repository.js";
 import { OverlappingPriceRuleError } from "../domain/pricing-errors.js";
@@ -31,6 +33,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly acts: PricingActWriter,
+    private readonly shelves: ShelfChanges,
   ) {
     super();
   }
@@ -92,6 +95,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
           },
         }),
       );
+      this.shelves.changed(audienceShelves(rule.toPersistence().audience));
     } catch (error) {
       if (isExclusionViolation(error, OVERLAP_CONSTRAINT)) {
         throw new OverlappingPriceRuleError(rule.toPersistence().stage, error);
@@ -102,7 +106,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
 
   /** Une transition — pause, reprise, archivage. Le cycle de vie, et la fin que la clôture pose. */
   async update(rule: PricingRule, act: PricingAct): Promise<void> {
-    const { id, lifecycle, validTo } = rule.toPersistence();
+    const { id, lifecycle, validTo, audience } = rule.toPersistence();
     await this.acts.around(act, () =>
       this.prisma.priceRule.update({
         where: { id },
@@ -120,6 +124,7 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
         },
       }),
     );
+    this.shelves.changed(audienceShelves(audience));
   }
 
   /**
@@ -130,10 +135,12 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
    * n'écrit pas est ce qu'elle garantit.
    */
   async rename(rule: PricingRule, act: PricingAct): Promise<void> {
-    const { id, label } = rule.toPersistence();
+    const { id, label, audience } = rule.toPersistence();
     await this.acts.around(act, () =>
       this.prisma.priceRule.update({ where: { id }, data: { label } }),
     );
+    // Le libellé d'une règle peut se lire au rayon (nom de la remise).
+    this.shelves.changed(audienceShelves(audience));
   }
 
   /**

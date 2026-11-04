@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import type { OrderCutoffSettings } from "../domain/order-cutoff-settings.js";
 import { OrderCutoffSettingsRepository } from "../domain/order-cutoff-settings.repository.js";
 import { ORDER_CUTOFF_SETTINGS_KEY } from "./order-cutoff-settings.key.js";
@@ -8,7 +10,10 @@ import { ORDER_CUTOFF_SETTINGS_KEY } from "./order-cutoff-settings.key.js";
 /** Adaptateur Prisma de l'écriture du jour même : un `upsert` sur la clé naturelle `orders`. */
 @Injectable()
 export class PrismaOrderCutoffSettingsRepository extends OrderCutoffSettingsRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -35,5 +40,6 @@ export class PrismaOrderCutoffSettingsRepository extends OrderCutoffSettingsRepo
       create: { key: ORDER_CUTOFF_SETTINGS_KEY, ...row },
       update: row,
     });
+    this.shelves.changed(ALL_SHELVES);
   }
 }

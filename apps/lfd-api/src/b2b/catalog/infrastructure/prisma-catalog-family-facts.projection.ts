@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import {
   CatalogFamilyFactsProjection,
   type ReceivedCatalogFamily,
@@ -14,7 +16,10 @@ import {
  */
 @Injectable()
 export class PrismaCatalogFamilyFactsProjection extends CatalogFamilyFactsProjection {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -50,6 +55,9 @@ export class PrismaCatalogFamilyFactsProjection extends CatalogFamilyFactsProjec
         END
       WHERE public.catalog_categories.applied_seq IS NULL
          OR public.catalog_categories.applied_seq < EXCLUDED.applied_seq`;
+    if (written > 0) {
+      this.shelves.changed(ALL_SHELVES);
+    }
     return written > 0;
   }
 }

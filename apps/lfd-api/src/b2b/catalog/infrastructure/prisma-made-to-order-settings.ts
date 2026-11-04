@@ -3,6 +3,8 @@ import type { ReservedVisibility } from "@lfd/contracts";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { MadeToOrderSettings } from "../domain/ports/made-to-order-settings.js";
 
 /**
@@ -30,7 +32,10 @@ type Column = keyof typeof COLUMNS;
  */
 @Injectable()
 export class PrismaMadeToOrderSettings extends MadeToOrderSettings {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -49,8 +54,13 @@ export class PrismaMadeToOrderSettings extends MadeToOrderSettings {
     const updated = await this.prisma.$executeRaw(Prisma.sql`
       UPDATE public.catalog_item_overrides SET ${sql} = ${value}
       WHERE "sku" = ${sku} AND ${sql} IS DISTINCT FROM ${value}`);
-    if (updated > 0 || value === byDefault) {
-      return updated > 0;
+    if (updated > 0) {
+      // Masquer ou montrer un article réservé change le rayon de tous.
+      this.shelves.changed(ALL_SHELVES);
+      return true;
+    }
+    if (value === byDefault) {
+      return false;
     }
     // `decided_at` est NOT NULL sans défaut en base : l'instant du geste, lu
     // sur l'horloge de l'appelant. `decided_by` reste vide — personne n'a
@@ -59,6 +69,9 @@ export class PrismaMadeToOrderSettings extends MadeToOrderSettings {
       INSERT INTO public.catalog_item_overrides ("sku", ${sql}, "decided_at")
       VALUES (${sku}, ${value}, ${at})
       ON CONFLICT ("sku") DO NOTHING`);
+    if (inserted > 0) {
+      this.shelves.changed(ALL_SHELVES);
+    }
     return inserted > 0;
   }
 }

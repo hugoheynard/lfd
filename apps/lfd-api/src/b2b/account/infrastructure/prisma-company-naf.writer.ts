@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { companyShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import type { Company } from "../domain/entities/company.js";
 import { CompanyNafWriter } from "../domain/ports/company-naf.writer.js";
 
@@ -18,7 +20,10 @@ export class NafWriteOnUnsavedCompanyError extends TechnicalError {
 /** N'écrit QUE `naf_code` : toute autre colonne appartient à un autre geste. */
 @Injectable()
 export class PrismaCompanyNafWriter extends CompanyNafWriter {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -28,5 +33,6 @@ export class PrismaCompanyNafWriter extends CompanyNafWriter {
       throw new NafWriteOnUnsavedCompanyError();
     }
     await this.prisma.company.update({ where: { id }, data: { nafCode: company.nafCode } });
+    this.shelves.changed(companyShelves(id));
   }
 }

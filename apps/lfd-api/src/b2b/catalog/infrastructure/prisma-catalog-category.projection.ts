@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import {
   CatalogCategoryProjection,
   type CatalogCategoryFacts,
@@ -13,7 +15,10 @@ import {
  */
 @Injectable()
 export class PrismaCatalogCategoryProjection extends CatalogCategoryProjection {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly shelves: ShelfChanges,
+  ) {
     super();
   }
 
@@ -35,5 +40,7 @@ export class PrismaCatalogCategoryProjection extends CatalogCategoryProjection {
         });
       }
     });
+    // Après la transaction : `$transaction` direct n'ouvre pas d'unité ambiante.
+    this.shelves.changed(ALL_SHELVES);
   }
 }
