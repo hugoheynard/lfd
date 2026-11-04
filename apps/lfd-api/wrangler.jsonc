@@ -254,5 +254,16 @@
   // éteints, à voix haute, dans le vide. Un contrôle inaudible ne contrôle rien.
   "observability": {
     "enabled": true,
+    // Les traces (bêta Cloudflare, 2026-11-04) : chaque requête suivie du
+    // Worker à l'objet `Backend` et aux autres objets, durée par saut — le
+    // découpage que `Server-Timing` donne pour UN appel, ici pour tous, sans
+    // code. Elles s'arrêtent à l'entrée du conteneur : Nest n'est pas vu.
+    // Toutes les requêtes tant que le trafic est celui d'une pré-release ;
+    // facturées à partir du 2026-12-01 — baisser `head_sampling_rate` alors.
+    // Plan `documentation/caching-usage/plan-latence-de-navigation.md`, L0.
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+    },
   },
 }

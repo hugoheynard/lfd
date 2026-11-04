@@ -187,3 +187,11 @@ simple = { limit = 1200, period = 60 }
 [[analytics_engine_datasets]]
 binding = "TRAFFIC"
 dataset = "lfc_gateway_traffic"
+
+# Les traces (bêta Cloudflare, 2026-11-04) : le saut passerelle → Worker de
+# l'API, mesuré pour toutes les requêtes, sans code. Facturées à partir du
+# 2026-12-01 — baisser `head_sampling_rate` alors. Plan
+# `documentation/caching-usage/plan-latence-de-navigation.md`, L0.
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
