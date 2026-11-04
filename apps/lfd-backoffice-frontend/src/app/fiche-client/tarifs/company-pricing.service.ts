@@ -64,7 +64,7 @@ export class CompanyPricingService {
 
   /**
    * **Amender une mercuriale** : un avenant daté qui ajoute un prix ou arrête
-   * une ligne, sans réécrire la grille (`plan-tarif-date-sur-une-reference.md`).
+   * une ligne, sans réécrire la grille (`documentation/pricing/mercuriales/l-avenant-date.md`).
    */
   async amend(
     companyId: string,

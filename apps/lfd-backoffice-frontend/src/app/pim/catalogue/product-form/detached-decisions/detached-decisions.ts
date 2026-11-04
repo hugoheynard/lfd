@@ -35,7 +35,7 @@ type LoadState = 'idle' | 'ready' | 'error';
  * l’ancienne référence ne valent que pour elle, et le détachement ne les
  * déplace pas (D2 de `plan-gestes-de-declinaison.md`). L’écran les liste, et
  * chacune se reporte sur la nouvelle référence : une mercuriale par un avenant
- * daté (`plan-tarif-date-sur-une-reference.md`, § 6), les autres familles par
+ * daté (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6), les autres familles par
  * une décision neuve, le gabarit en remplaçant sa ligne
  * (`plan-report-apres-detachement.md`, § 5). « Tout reporter » ne reporte que
  * ce que le rôle de la personne permet de poser (Hugo, 2026-10-30).

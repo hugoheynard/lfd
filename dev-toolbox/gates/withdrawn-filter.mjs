@@ -93,7 +93,7 @@ const ALLOWED = new Set([
   // 2026-10-29) : elle PORTE le filtre (`...STILL_SOLD`).
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-default-sale-reference.reader.ts",
   // La filiation d'un article né d'un détachement, que le report d'un prix
-  // négocié vérifie (`plan-tarif-date-sur-une-reference.md`, § 6, 2026-10-30) :
+  // négocié vérifie (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6, 2026-10-30) :
   // elle PORTE le filtre (`...STILL_SOLD`) — on ne reporte pas sur un retiré.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-detachment-origin.reader.ts",
   // La lignée de détachement sous laquelle les rapports par article

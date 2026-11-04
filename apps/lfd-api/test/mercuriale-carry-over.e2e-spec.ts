@@ -1,6 +1,6 @@
 /**
  * E2E du **report d'une mercuriale sur la référence née d'un détachement**
- * (`documentation/pricing/mercuriales/plan-tarif-date-sur-une-reference.md`, § 6, T5).
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6, T5).
  *
  * Ce que seul ce niveau prouve : la filiation lue au vrai catalogue du
  * commerce (descendue par le fait de la fiche), puis le prix négocié sur la

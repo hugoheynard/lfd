@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { endAmendment, priceAmendment, runningOptions, runningSkus } from './amendment-draft';
 
 /**
- * **Ce que la saisie d'un avenant envoie** (`plan-tarif-date-sur-une-reference.md`,
+ * **Ce que la saisie d'un avenant envoie** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * T6) : un début vide vaut « dès maintenant » (jamais rétroactif), changer
  * le prix d'un article en cours l'arrête dans le même avenant, le motif est
  * exigé avant tout envoi.

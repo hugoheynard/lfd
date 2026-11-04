@@ -8,7 +8,7 @@ import {
 
 /**
  * **Le report d'un prix négocié** sur la référence née d'un détachement
- * (`plan-tarif-date-sur-une-reference.md`, § 6, T5).
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6, T5).
  *
  * Les dates ne sont comparées qu'entre elles et à `NOW`, un instant de la
  * fixture passé en paramètre : aucune n'est confrontée à l'horloge.

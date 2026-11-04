@@ -1,5 +1,5 @@
 /**
- * **Les refus d'un AVENANT de mercuriale** (`plan-tarif-date-sur-une-reference.md`).
+ * **Les refus d'un AVENANT de mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`).
  *
  * Un avenant ajoute un prix daté à la mercuriale d'un client, ou met fin à une
  * ligne à une date, sans réécrire la grille. Chacun de ces refus nomme le cas

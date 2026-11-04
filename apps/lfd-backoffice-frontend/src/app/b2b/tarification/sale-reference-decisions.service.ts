@@ -30,7 +30,7 @@ const CARRY_OVER_ROUTES: Readonly<
 /**
  * **Les décisions tarifaires debout sur une référence de vente**
  * (`plan-pro-voit-les-declinaisons.md`, L7), et le report d'une mercuriale
- * sur la référence née d'un détachement (`plan-tarif-date-sur-une-reference.md`, § 6).
+ * sur la référence née d'un détachement (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6).
  */
 @Injectable({ providedIn: 'root' })
 export class SaleReferenceDecisionsService {

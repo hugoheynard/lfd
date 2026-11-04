@@ -14,7 +14,7 @@ import {
 import { resolvePrice } from "../../resolve-price.js";
 
 /**
- * **L'avenant daté d'une mercuriale** (`plan-tarif-date-sur-une-reference.md`,
+ * **L'avenant daté d'une mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * T1, avec les décisions de Hugo du 2026-10-29 : Q1 un avenant peut arrêter
  * une ligne, Q2 jamais rétroactif, Q3 suspendu avec sa mercuriale).
  *

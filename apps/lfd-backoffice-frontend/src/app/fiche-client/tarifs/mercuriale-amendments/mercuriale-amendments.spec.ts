@@ -14,7 +14,7 @@ import { CompanyPricingService } from '../company-pricing.service';
 import { MercurialeAmendments } from './mercuriale-amendments';
 
 /**
- * **Les avenants sous la grille d'une mercuriale** (`plan-tarif-date-sur-une-reference.md`,
+ * **Les avenants sous la grille d'une mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * T6) : la liste, les deux gestes, et rien d'envoyé sans motif.
  */
 

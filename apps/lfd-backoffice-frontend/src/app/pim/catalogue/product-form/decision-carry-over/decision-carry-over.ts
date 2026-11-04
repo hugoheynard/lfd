@@ -22,7 +22,7 @@ import { SaleReferenceDecisionsService } from '../../../../b2b/tarification/sale
 /** La borne du motif — celle du contrat (`carryOverDecisionPayloadSchema`). */
 export const CARRY_OVER_REASON_MAX_LENGTH = 500;
 
-/** Le motif proposé : modifiable, jamais vide (`plan-tarif-date-sur-une-reference.md`, § 6). */
+/** Le motif proposé : modifiable, jamais vide (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6). */
 export function defaultCarryOverReason(fromSku: string): string {
   return `Report de la déclinaison détachée ${fromSku}`;
 }
@@ -55,7 +55,7 @@ const CONSEQUENCES: Readonly<
 
 /**
  * **Reporter une décision sur la référence née d'un détachement**
- * (`plan-tarif-date-sur-une-reference.md`, § 6 ; `plan-report-apres-detachement.md`,
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6 ; `plan-report-apres-detachement.md`,
  * § 5) — mercuriale, règle, plancher, barème, engagement, ou la ligne d'un
  * gabarit à remplacer.
  *

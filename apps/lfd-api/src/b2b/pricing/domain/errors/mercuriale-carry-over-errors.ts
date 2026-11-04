@@ -1,6 +1,6 @@
 /**
  * **Les refus du REPORT d'un prix négocié** sur la référence née d'un
- * détachement (`plan-tarif-date-sur-une-reference.md`, § 6 — le geste L7c).
+ * détachement (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6 — le geste L7c).
  *
  * Lus par le staff sur la fiche produit, pas par quelqu'un qui a le code sous
  * les yeux : chacun nomme le cas et le geste de sortie.

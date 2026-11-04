@@ -1,5 +1,5 @@
 /**
- * **Le dossier staff montre les avenants** (`plan-tarif-date-sur-une-reference.md`,
+ * **Le dossier staff montre les avenants** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * T4) : une ligne d'avenant porte sa fenêtre, son état et son motif ; une
  * ligne de grille arrêtée porte sa fin ; une ligne inchangée garde la forme
  * d'avant les avenants. Dates comparées à `AT` de la fixture seulement.

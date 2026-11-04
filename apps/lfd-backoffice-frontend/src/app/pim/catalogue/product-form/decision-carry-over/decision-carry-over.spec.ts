@@ -13,7 +13,7 @@ import { DecisionCarryOver } from './decision-carry-over';
 
 /**
  * **Reporter une décision sur la référence détachée**
- * (`plan-tarif-date-sur-une-reference.md`, § 6, T5 ; `plan-report-apres-detachement.md`,
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6, T5 ; `plan-report-apres-detachement.md`,
  * § 5) : le motif prérempli, modifiable, jamais vide ; l'appel nomme la
  * famille, l'ancienne et la nouvelle référence ; le droit est celui de poser
  * la famille ; un refus du serveur reste à l'écran.

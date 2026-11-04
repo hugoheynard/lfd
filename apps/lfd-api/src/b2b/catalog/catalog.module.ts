@@ -233,7 +233,7 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // dans leur refus (L5 de `plan-pro-voit-les-declinaisons.md`).
     { provide: WithdrawnShopSkusReader, useClass: PrismaWithdrawnShopSkusReader },
     // La filiation d'un article né d'un détachement, que le report d'un prix
-    // négocié vérifie (`plan-tarif-date-sur-une-reference.md`, § 6).
+    // négocié vérifie (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6).
     { provide: DetachmentOriginReader, useClass: PrismaDetachmentOriginReader },
     // La lignée de détachement, sous laquelle les rapports par article
     // regroupent (`plan-pro-voit-les-declinaisons.md`, L7d-bis).

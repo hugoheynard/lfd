@@ -1,7 +1,7 @@
 /**
  * Reporter sur `toSku` — née d'un détachement de `fromSku` — le prix que
  * `fromSku` porte dans la mercuriale `mercurialeId`
- * (`plan-tarif-date-sur-une-reference.md`, § 6 — le geste L7c).
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6 — le geste L7c).
  */
 export class CarryOverMercurialeLineCommand {
   constructor(

@@ -1,6 +1,6 @@
 /**
  * **Reporter une mercuriale sur la référence détachée**
- * (`plan-tarif-date-sur-une-reference.md`, § 6, T5) : la garde de filiation
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6, T5) : la garde de filiation
  * et la vente aux pros AVANT toute écriture, verrou et relecture dans
  * l'unité de travail, avenant marqué de son origine, acte `amended`.
  *

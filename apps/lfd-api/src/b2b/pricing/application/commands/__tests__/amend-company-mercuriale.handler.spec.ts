@@ -1,5 +1,5 @@
 /**
- * **Amender une mercuriale** (`plan-tarif-date-sur-une-reference.md`, T2) :
+ * **Amender une mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`, T2) :
  * l'orchestration — verrou et relecture DANS l'unité de travail, refus avant
  * toute écriture, acte `amended` au journal avec son motif.
  *

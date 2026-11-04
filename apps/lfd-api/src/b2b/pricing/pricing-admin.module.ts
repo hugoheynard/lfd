@@ -241,7 +241,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     { provide: SaleReferenceReader, useClass: CatalogSaleReferenceReader },
     { provide: ReservedElsewhereReader, useClass: CatalogReservedElsewhereReader },
     // « De quelle ancienne référence est-elle née ? » — le report d'une
-    // mercuriale sur la référence détachée (`plan-tarif-date-sur-une-reference.md`, § 6).
+    // mercuriale sur la référence détachée (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6).
     { provide: SaleReferenceLineageReader, useClass: CatalogSaleReferenceLineageReader },
     { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },
     // Les décisions debout sur une référence — la fiche née d'un détachement

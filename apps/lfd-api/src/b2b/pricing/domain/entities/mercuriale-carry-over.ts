@@ -10,7 +10,7 @@ export interface CarryOver {
 }
 
 /**
- * **L'avenant du report** (`plan-tarif-date-sur-une-reference.md`, § 6 — le
+ * **L'avenant du report** (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6 — le
  * geste L7c) : les paliers de la ligne en cours de l'ancienne référence (ou
  * de la prochaine, si elle n'a pas encore commencé), posés sur la nouvelle à
  * partir de maintenant — jamais avant le début de cette ligne, sans quoi un

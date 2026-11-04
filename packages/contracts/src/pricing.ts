@@ -2048,7 +2048,7 @@ export type RenameCompanyMercurialePayload = z.infer<typeof renameCompanyMercuri
 
 /**
  * **Amender une mercuriale posée** : un avenant daté
- * (`documentation/pricing/mercuriales/plan-tarif-date-sur-une-reference.md`).
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`).
  *
  * Il ouvre des lignes (`lines`) et/ou arrête, à sa date d'effet, des lignes
  * qui couraient (`endedSkus`) — de la grille ou d'un avenant antérieur. Changer
@@ -2085,7 +2085,7 @@ export interface AmendedMercurialeResponse {
  * **Reporter** sur la référence née d'un détachement le prix négocié que
  * l'ancienne porte dans une mercuriale — `POST admin/pricing/sale-references/
  * :sku/decisions/mercuriales/:mercurialeId/carry-over`, où `:sku` est
- * l'ANCIENNE référence (`plan-tarif-date-sur-une-reference.md`, § 6).
+ * l'ANCIENNE référence (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6).
  *
  * Un avenant comme un autre, dont l'origine est dite : mêmes paliers, dès
  * maintenant, jusqu'à la fin de la mercuriale. Le motif est obligatoire ;

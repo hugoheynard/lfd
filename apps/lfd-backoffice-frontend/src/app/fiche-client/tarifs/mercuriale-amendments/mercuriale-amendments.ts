@@ -45,7 +45,7 @@ import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-poli
 type Gesture = 'price' | 'end' | 'policy' | null;
 
 /**
- * **Les avenants d'une mercuriale** (`plan-tarif-date-sur-une-reference.md`,
+ * **Les avenants d'une mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * T6) — sous sa grille, sur la fiche tarifaire du client : la liste des
  * avenants écrits, et les trois gestes qui en écrivent un — ajouter ou changer
  * un prix, arrêter une ligne, changer les promotions acceptées. La grille n'est jamais réécrite.

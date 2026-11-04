@@ -17,7 +17,7 @@ import { ListSaleReferenceDecisionsQuery } from "../application/queries/list-sal
  * **Les décisions tarifaires debout sur une référence de vente**
  * (`plan-pro-voit-les-declinaisons.md`, L7) — la liste que la fiche née d'un
  * détachement montre pour son ancienne référence, et le geste qui reporte
- * une mercuriale sur la nouvelle (`plan-tarif-date-sur-une-reference.md`, § 6).
+ * une mercuriale sur la nouvelle (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6).
  */
 @Controller("admin/pricing/sale-references")
 @AdminSurface("b2b_pricing")

@@ -1,6 +1,6 @@
 /**
  * **De quelle ancienne référence cet article est-il né ?**
- * (`plan-tarif-date-sur-une-reference.md`, § 6 — le report du L7c).
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6 — le report du L7c).
  *
  * Un port à lui (ISP) : seul le report d'un prix négocié pose cette question,
  * pour refuser de « reporter » sur une référence qui n'est pas née de

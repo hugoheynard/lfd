@@ -17,7 +17,7 @@ import {
 export const AMENDMENT_REASON_MAX_LENGTH = 500;
 
 /**
- * **Ce qu'on saisit pour un avenant** (`plan-tarif-date-sur-une-reference.md`,
+ * **Ce qu'on saisit pour un avenant** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * T6). Les jours en `AAAA-MM-JJ`, vides quand on n'en veut pas : un début vide
  * vaut « dès maintenant » (un avenant n'est jamais rétroactif, et minuit
  * d'aujourd'hui serait déjà passé), une fin vide « jusqu'à la fin de la

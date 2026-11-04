@@ -121,6 +121,8 @@ Les erreurs sont dans `b2b/pricing/domain/errors/mercuriale-errors.ts` et
 
 ## 4. L'avenant
 
+Le détail (composition, concurrence, report, décisions) : [`l-avenant-date.md`](l-avenant-date.md).
+
 Un bloc **immuable** rattaché à sa mercuriale, avec une fenêtre, un **motif
 obligatoire**, des **lignes ouvertes** (un article et ses paliers) et des
 **lignes arrêtées** (un prix en cours qui cesse à la date d'effet). Changer un

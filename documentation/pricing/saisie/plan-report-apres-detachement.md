@@ -4,7 +4,7 @@
 > ce que chaque lot a livré et où le code s'écarte de la lettre du plan).
 > Le texte ci-dessous était doc-first : il décrit l'intention. Suite du
 > geste L7c bâti pour la mercuriale
-> ([`plan-tarif-date-sur-une-reference.md`](../mercuriales/plan-tarif-date-sur-une-reference.md) § 6, § 13 T5 ;
+> ([`../mercuriales/l-avenant-date.md`](../mercuriales/l-avenant-date.md) § 6, § 13 T5 ;
 > [`../../catalogue/plan-pro-voit-les-declinaisons.md`](../../catalogue/plan-pro-voit-les-declinaisons.md), L7c).
 > Touche l'argent : **`vitruve` obligatoire avant Hugo** (CLAUDE.md § 9 bis).
 > **Révisé le 2026-10-30 après contradiction de `vitruve`** (§ 9) : garde par

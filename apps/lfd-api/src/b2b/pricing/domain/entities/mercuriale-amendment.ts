@@ -2,7 +2,7 @@ import type { PromotionAdmission } from "./mercuriale-promotion-policy.js";
 import type { PricingGridLine } from "../pricing-grid.js";
 
 /**
- * **L'avenant daté d'une mercuriale** (`plan-tarif-date-sur-une-reference.md`).
+ * **L'avenant daté d'une mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`).
  *
  * Un bloc immuable, rattaché à SON document : il ouvre des lignes de prix sur
  * une fenêtre datée, et peut arrêter, à sa date d'effet, des lignes qui

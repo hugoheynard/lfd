@@ -203,7 +203,7 @@ export class CompanyMercuriale {
   }
 
   /**
-   * **Amender** : ajouter un avenant daté (`plan-tarif-date-sur-une-reference.md`).
+   * **Amender** : ajouter un avenant daté (`documentation/pricing/mercuriales/l-avenant-date.md`).
    *
    * Jamais rétroactif (Q2) : `now` est l'horloge du handler, et un avenant qui
    * part avant ne changerait pas ce qui a été payé mais ce qu'une relecture en
