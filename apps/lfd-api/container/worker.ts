@@ -10,10 +10,20 @@
 // Types éditeur : container/tsconfig.json.
 import { Container } from "@cloudflare/containers";
 import type { OutboundHandlerContext } from "@cloudflare/containers";
+import * as workersModule from "cloudflare:workers";
 
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
 import { PRO_SHELVES_INSTANCE } from "./pro-shelves";
+import {
+  isPublicPurgeCall,
+  isPublicPurgeRelay,
+  PUBLIC_PURGE_PROPS,
+  PUBLIC_SHELF_PURGE_PATH,
+  PUBLIC_SHELF_TAG,
+  purgeStatusOf,
+  type PublicPurgeOutcome,
+} from "./public-shelf";
 import type { ProShelves } from "./pro-shelves";
 import {
   isTrustedCaller,
@@ -222,7 +232,62 @@ async function proShelvesGateway(
   if (!isTrustedCaller(ctx.containerId, trusted)) {
     return new Response(null, { status: 403 });
   }
+  if (isPublicPurgeRelay(request.method, new URL(request.url).pathname)) {
+    return relayPublicPurge();
+  }
   return proShelves(env).fetch(request);
+}
+
+/** La boucle locale vers le point d'entrée par défaut (`ctx.exports`), telle que le runtime la donne. */
+type DefaultLoopback = (options: { readonly props: typeof PUBLIC_PURGE_PROPS }) => Fetcher;
+
+function isDefaultLoopback(value: unknown): value is DefaultLoopback {
+  return typeof value === "function";
+}
+
+/**
+ * **La purge du rayon public, relayée au point d'entrée par défaut** (C3) :
+ * c'est lui qui garde les réponses publiques, et « des points d'entrée
+ * différents ont des caches séparés » (doc Cloudflare, relue le 2026-11-04).
+ *
+ * `exports` est lu par l'espace de noms, jamais par un import nommé : un nom
+ * absent du module ferait échouer le CHARGEMENT du Worker, donc le
+ * démarrage — ici, il ne fait qu'échouer la purge (503), que l'API compte et
+ * que la durée de 30 s rattrape. ⚠️ Non prouvé en production (2026-11-04).
+ */
+async function relayPublicPurge(): Promise<Response> {
+  const loopbacks: unknown = Reflect.get(workersModule, "exports");
+  const loopback: unknown =
+    typeof loopbacks === "object" && loopbacks !== null ? Reflect.get(loopbacks, "default") : null;
+  if (!isDefaultLoopback(loopback)) {
+    return new Response(null, { status: purgeStatusOf({ kind: "cache_unavailable" }) });
+  }
+  return loopback({ props: PUBLIC_PURGE_PROPS }).fetch(
+    new Request(`http://loopback${PUBLIC_SHELF_PURGE_PATH}`, { method: "POST" }),
+  );
+}
+
+/** Purge l'étiquette du rayon public dans le cache de CE point d'entrée. */
+async function purgePublicShelf(ctx: ExecutionContext): Promise<Response> {
+  const outcome = await publicPurgeOutcome(ctx);
+  return new Response(
+    outcome.kind === "refused" ? JSON.stringify({ errors: outcome.errors }) : null,
+    { status: purgeStatusOf(outcome) },
+  );
+}
+
+async function publicPurgeOutcome(ctx: ExecutionContext): Promise<PublicPurgeOutcome> {
+  if (ctx.cache === undefined) {
+    return { kind: "cache_unavailable" };
+  }
+  try {
+    const result = await ctx.cache.purge({ tags: [PUBLIC_SHELF_TAG] });
+    return result.success
+      ? { kind: "purged" }
+      : { kind: "refused", errors: result.errors.map((error) => `${error.code} ${error.message}`) };
+  } catch (error) {
+    return { kind: "refused", errors: [error instanceof Error ? error.message : String(error)] };
+  }
 }
 
 Backend.outboundByHost = { [SHELF_STORE_HOST]: proShelvesGateway };
@@ -666,7 +731,13 @@ function dispatchCron(cron: string, env: Env): Promise<void> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // La purge du rayon public (C3) n'arrive que par la boucle locale, marquée
+    // de ses `props` : une requête du dehors n'en porte pas, et suit le chemin
+    // ordinaire (`public-shelf.ts`, `isPublicPurgeCall`).
+    if (isPublicPurgeCall(ctx.props, request.method, new URL(request.url).pathname)) {
+      return purgePublicShelf(ctx);
+    }
     // Toute la politique d'edge (limite + réécriture de l'IP cliente) vit dans
     // `edge-guard.ts`, sous tests. Ici on ne fait que câbler le binding et la
     // destination — c'est délibéré : ce fichier n'est pas testable (il importe

@@ -9,6 +9,7 @@ import { DurableObject } from "cloudflare:workers";
 
 import {
   isEnabled,
+  isPublicEnabled,
   keysToErase,
   parseEraseOrder,
   parseShelfCall,
@@ -27,6 +28,8 @@ export const PRO_SHELVES_INSTANCE = "pro-shelves-weur";
 const VERSION_NAME = "version";
 /** 1 allumé, 0 éteint ; absent = allumé (l'objet déployé par C2, avant tout geste). */
 const ENABLED_NAME = "enabled";
+/** Le drapeau du rayon public (C3) : 1 allumé ; absent ou 0 = ÉTEINT (`isPublicEnabled`). */
+const PUBLIC_ENABLED_NAME = "public_enabled";
 
 /** Rangement non gardé : l'objet est éteint (`not_kept` côté API). */
 const STATUS_NOT_KEPT = 202;
@@ -70,6 +73,8 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
         return this.erase(await bodyJson(request));
       case "switch":
         return this.switch(await bodyJson(request));
+      case "public_state":
+        return this.publicState();
     }
   }
 
@@ -143,17 +148,33 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
     }
     const plan = switchPlan(action);
     if (plan.enabled !== null) {
-      this.ctx.storage.sql.exec(
-        "INSERT OR REPLACE INTO meta (name, value) VALUES (?, ?)",
-        ENABLED_NAME,
-        plan.enabled ? 1 : 0,
-      );
+      this.writeFlag(ENABLED_NAME, plan.enabled);
+    }
+    if (plan.publicEnabled !== null) {
+      this.writeFlag(PUBLIC_ENABLED_NAME, plan.publicEnabled);
     }
     if (plan.eraseAll) {
       this.bumpVersion();
       this.ctx.storage.sql.exec("DELETE FROM shelves");
     }
-    return Response.json({ enabled: this.enabled(), version: this.version() });
+    return Response.json({
+      enabled: this.enabled(),
+      publicEnabled: this.publicEnabled(),
+      version: this.version(),
+    });
+  }
+
+  /** Le drapeau public et la version, relevés par l'API autour d'un rayon public (C3). */
+  private publicState(): Response {
+    return Response.json({ publicEnabled: this.publicEnabled(), version: this.version() });
+  }
+
+  private writeFlag(name: string, value: boolean): void {
+    this.ctx.storage.sql.exec(
+      "INSERT OR REPLACE INTO meta (name, value) VALUES (?, ?)",
+      name,
+      value ? 1 : 0,
+    );
   }
 
   private bumpVersion(): void {
@@ -165,10 +186,18 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
   }
 
   private enabled(): boolean {
+    return isEnabled(this.flag(ENABLED_NAME));
+  }
+
+  private publicEnabled(): boolean {
+    return isPublicEnabled(this.flag(PUBLIC_ENABLED_NAME));
+  }
+
+  private flag(name: string): number | undefined {
     const rows = this.ctx.storage.sql
-      .exec<{ value: number }>("SELECT value FROM meta WHERE name = ?", ENABLED_NAME)
+      .exec<{ value: number }>("SELECT value FROM meta WHERE name = ?", name)
       .toArray();
-    return isEnabled(rows[0]?.value);
+    return rows[0]?.value;
   }
 
   private version(): number {

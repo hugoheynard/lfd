@@ -30,22 +30,44 @@ export class ReadShopFeaturedHandler implements IQueryHandler<ReadShopFeaturedQu
    * montre aucun — d'où la projection explicite plutôt qu'un `Omit`, qui
    * laisserait passer tout champ de prix ajouté plus tard à `ShopItemView`.
    */
-  async execute(query: ReadShopFeaturedQuery): Promise<ShopFeaturedView> {
-    const [sellable, operations, operationOnlySkus] = await Promise.all([
-      // Route `@Public()`, sans société : le pro y est anonyme (§ 6).
-      this.catalog.listSellable(anonymousViewer(query.audience)),
-      this.operations.sellableOperations(),
-      this.operations.operationOnlySkus(),
-    ]);
-    const catalogue = shopCatalogueOf(sellable, {
-      operations,
-      operationOnlySkus,
-      audience: query.audience,
-      now: this.clock.now(),
-    });
-    const featured = { ...catalogue, items: catalogue.items.filter((item) => item.isFeatured) };
-    return inShopLanguage(featured, sellable, query.language).items.map(toFeatured);
+  execute(query: ReadShopFeaturedQuery): Promise<ShopFeaturedView> {
+    const { catalog, operations, clock } = this;
+    return shopFeaturedFor({ catalog, operations, clock }, query);
   }
+}
+
+/** Ce que la lecture des incontournables lit — rien qui désigne l'appelant. */
+export interface ShopFeaturedSources {
+  readonly catalog: CatalogReader;
+  readonly operations: CatalogOperationsReader;
+  readonly clock: Clock;
+}
+
+/**
+ * Le corps de {@link ReadShopFeaturedHandler}, partagé avec la route HTTP qui
+ * décide en plus si la réponse se garde (`ReadPublicShopFeaturedHandler`, C3).
+ *
+ * 🔴 Ne lit JAMAIS l'appelant (`anonymousViewer`) : c'est ce qui rend `public`
+ * juste sur `GET /shop/featured` (`lint:cache-control` le tient).
+ */
+export async function shopFeaturedFor(
+  sources: ShopFeaturedSources,
+  query: ReadShopFeaturedQuery,
+): Promise<ShopFeaturedView> {
+  const [sellable, operations, operationOnlySkus] = await Promise.all([
+    // Route `@Public()`, sans société : le pro y est anonyme (§ 6).
+    sources.catalog.listSellable(anonymousViewer(query.audience)),
+    sources.operations.sellableOperations(),
+    sources.operations.operationOnlySkus(),
+  ]);
+  const catalogue = shopCatalogueOf(sellable, {
+    operations,
+    operationOnlySkus,
+    audience: query.audience,
+    now: sources.clock.now(),
+  });
+  const featured = { ...catalogue, items: catalogue.items.filter((item) => item.isFeatured) };
+  return inShopLanguage(featured, sellable, query.language).items.map(toFeatured);
 }
 
 function toFeatured(item: ShopItemView): ShopFeaturedItemView {

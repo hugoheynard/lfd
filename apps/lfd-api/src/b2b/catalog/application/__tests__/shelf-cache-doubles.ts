@@ -17,6 +17,7 @@ import {
 } from "../../domain/ports/shop-shelf-cache.js";
 import type { ShopShelfEraser } from "../../domain/ports/shop-shelf-eraser.js";
 import { ResilientShopShelfCache } from "../resilient-shop-shelf-cache.js";
+import { ShelfCallGuard } from "../shelf-call-guard.js";
 
 /** Les signaux émis, dans l'ordre. */
 export class RecordingShelfSignals extends ShelfCacheSignals {
@@ -87,6 +88,8 @@ export class BrokenShelfCache extends ShopShelfCache implements ShopShelfEraser 
 /** Le repli autour d'un magasin, et ses instruments. */
 export interface ResilientRig {
   readonly resilient: ResilientShopShelfCache;
+  /** Le délai et le disjoncteur, partagés avec le rayon public (C3). */
+  readonly guard: ShelfCallGuard;
   readonly signals: RecordingShelfSignals;
   readonly deadline: ScriptedDeadline;
   readonly wall: FixedWallClock;
@@ -101,14 +104,7 @@ export function resilientAround(cache: ShopShelfCache & ShopShelfEraser): Resili
   const deadline = new ScriptedDeadline();
   const wall = new FixedWallClock(WALL_START);
   const timings = new RecordingTimings();
-  const resilient = new ResilientShopShelfCache(
-    cache,
-    cache,
-    deadline,
-    wall,
-    new FixedStopwatch(7),
-    timings,
-    signals,
-  );
-  return { resilient, signals, deadline, wall, timings };
+  const guard = new ShelfCallGuard(deadline, wall, new FixedStopwatch(7), timings, signals);
+  const resilient = new ResilientShopShelfCache(cache, cache, guard, signals);
+  return { resilient, guard, signals, deadline, wall, timings };
 }

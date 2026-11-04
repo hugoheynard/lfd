@@ -2,6 +2,7 @@ import {
   acceptsStore,
   companyOfStorageKey,
   isEnabled,
+  isPublicEnabled,
   isFresh,
   isTrustedCaller,
   keysToErase,
@@ -148,12 +149,15 @@ describe("l'interrupteur", () => {
     expect(isEnabled(0)).toBe(false);
   });
 
-  it("se lit au chemin dédié, et ne comprend que trois gestes", () => {
+  it("se lit au chemin dédié, et ne comprend que ses cinq gestes", () => {
     expect(parseShelfCall("POST", new URL(`${URL_BASE}/switch`))).toEqual({ kind: "switch" });
     expect(parseShelfCall("GET", new URL(`${URL_BASE}/switch`))).toBeNull();
     expect(parseSwitchAction({ action: "on" })).toBe("on");
     expect(parseSwitchAction({ action: "off" })).toBe("off");
     expect(parseSwitchAction({ action: "purge" })).toBe("purge");
+    expect(parseSwitchAction({ action: "public-on" })).toBe("public-on");
+    expect(parseSwitchAction({ action: "public-off" })).toBe("public-off");
+    expect(parseSwitchAction({ action: "public" })).toBeNull();
     expect(parseSwitchAction({ action: "OFF" })).toBeNull();
     expect(parseSwitchAction(null)).toBeNull();
   });
@@ -171,14 +175,52 @@ describe("l'interrupteur", () => {
   });
 
   it("l'extinction efface tout et monte la version", () => {
-    expect(switchPlan("off")).toEqual({ enabled: false, eraseAll: true });
+    expect(switchPlan("off")).toEqual({ enabled: false, publicEnabled: false, eraseAll: true });
   });
 
   it("le rallumage ne range ni n'efface rien", () => {
-    expect(switchPlan("on")).toEqual({ enabled: true, eraseAll: false });
+    expect(switchPlan("on")).toEqual({ enabled: true, publicEnabled: null, eraseAll: false });
   });
 
   it("vider efface tout sans toucher à l'état", () => {
-    expect(switchPlan("purge")).toEqual({ enabled: null, eraseAll: true });
+    expect(switchPlan("purge")).toEqual({ enabled: null, publicEnabled: null, eraseAll: true });
+  });
+});
+
+/**
+ * Le drapeau du rayon public (C3) : ÉTEINT par défaut, à l'inverse du pro.
+ * Ces tests échouent si un objet qui n'a jamais reçu de geste laisse garder
+ * une réponse publique, si « off » oublie le public, ou si un geste public
+ * touche aux rayons pro.
+ */
+describe("le drapeau du rayon public", () => {
+  it("est éteint par défaut : ni ligne, ni 0 ne l'allument", () => {
+    expect(isPublicEnabled(undefined)).toBe(false);
+    expect(isPublicEnabled(0)).toBe(false);
+    expect(isPublicEnabled(1)).toBe(true);
+  });
+
+  it("s'allume et s'éteint seul, sans rien effacer chez les pros", () => {
+    expect(switchPlan("public-on")).toEqual({
+      enabled: null,
+      publicEnabled: true,
+      eraseAll: false,
+    });
+    expect(switchPlan("public-off")).toEqual({
+      enabled: null,
+      publicEnabled: false,
+      eraseAll: false,
+    });
+  });
+
+  it("son état se lit au chemin dédié, en GET seulement", () => {
+    expect(parseShelfCall("GET", new URL(`${URL_BASE}/public/state`))).toEqual({
+      kind: "public_state",
+    });
+    expect(parseShelfCall("POST", new URL(`${URL_BASE}/public/state`))).toBeNull();
+  });
+
+  it("la purge publique n'est pas un appel de l'objet : elle se fait au Worker", () => {
+    expect(parseShelfCall("POST", new URL(`${URL_BASE}/public/purge`))).toBeNull();
   });
 });

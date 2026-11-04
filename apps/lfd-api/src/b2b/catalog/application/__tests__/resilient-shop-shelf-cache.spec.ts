@@ -2,7 +2,7 @@ import type { ShopCatalogueView } from "@lfd/contracts";
 
 import { InMemoryShopShelfCache } from "../../infrastructure/in-memory-shop-shelf-cache.js";
 import type { ShelfLookup } from "../../domain/ports/shop-shelf-cache.js";
-import { SHELF_CALL_LIMIT_MS, SHELF_ROUND_TRIP_TIMING } from "../resilient-shop-shelf-cache.js";
+import { SHELF_CALL_LIMIT_MS, SHELF_ROUND_TRIP_TIMING } from "../shelf-call-guard.js";
 import { SHELF_BREAKER_FAILURES, SHELF_BREAKER_PAUSE_MS } from "../shelf-cache-breaker.js";
 import { BrokenShelfCache, resilientAround, type ShelfFailure } from "./shelf-cache-doubles.js";
 

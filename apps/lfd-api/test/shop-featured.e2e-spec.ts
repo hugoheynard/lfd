@@ -9,6 +9,8 @@
  */
 import type { ShopFeaturedView } from "@lfd/contracts";
 
+import { InMemoryPublicShelf } from "../src/b2b/catalog/application/__tests__/public-shelf-doubles.js";
+import { PublicShelfStateReader } from "../src/b2b/catalog/domain/ports/public-shelf-state.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { anActiveFiche, relayAll, SILENT_TRIGGER, type Fiche } from "./catalog-facts-scene.js";
@@ -23,11 +25,19 @@ const PRODUCTS = "/pim/catalogue/products";
 
 let ctx: E2eContext;
 
+/**
+ * L'état du rayon public (C3), tenu à la main : éteint par défaut comme
+ * l'objet, allumé par un test. Le seul double ajouté — la décision, le
+ * contrôleur, le middleware et l'en-tête sont les vrais.
+ */
+const publicShelf = new InMemoryPublicShelf();
+
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: OutboxRelayTrigger, value: SILENT_TRIGGER },
+      { token: PublicShelfStateReader, value: publicShelf },
     ],
   });
 });
@@ -38,6 +48,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  publicShelf.enabled = false;
 });
 
 const staff = (): ReturnType<E2eContext["http"]> => ctx.asSub(E2E_STAFF_SUB);
@@ -109,5 +120,39 @@ describe("GET /shop/featured?audience=pro", () => {
     await ctx.http().get("/shop/featured?audience=public").expect(400);
     await ctx.http().get("/shop/featured").expect(400);
     await ctx.http().get("/shop/featured?audience=pro&lang=de").expect(400);
+  });
+});
+
+/**
+ * Workers Cache (C3, `plan-cache-du-catalogue.md` § 3) : l'en-tête que la
+ * route pose, à travers le vrai middleware. Échoue si la route s'offre à un
+ * cache partagé drapeau éteint, ou si l'en-tête exact change.
+ */
+describe("GET /shop/featured — Workers Cache", () => {
+  it("drapeau éteint (le défaut) : l'en-tête privé du middleware, sans étiquette", async () => {
+    const response = await ctx.http().get("/shop/featured?audience=pro").expect(200);
+
+    expect(response.headers["cache-control"]).toBe("private, no-cache");
+    expect(response.headers["cache-tag"]).toBeUndefined();
+  });
+
+  it("drapeau allumé : public 30 s, étiqueté rayon-public — avec ou sans jeton", async () => {
+    publicShelf.enabled = true;
+
+    const anonymous = await ctx.http().get("/shop/featured?audience=pro").expect(200);
+    const withToken = await staff().get("/shop/featured?audience=pro").expect(200);
+
+    for (const response of [anonymous, withToken]) {
+      expect(response.headers["cache-control"]).toBe("public, max-age=30");
+      expect(response.headers["cache-tag"]).toBe("rayon-public");
+    }
+  });
+
+  it("drapeau allumé, un refus 400 reste privé", async () => {
+    publicShelf.enabled = true;
+
+    const response = await ctx.http().get("/shop/featured?audience=public").expect(400);
+
+    expect(response.headers["cache-control"]).not.toContain("public");
   });
 });

@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
 import { ProShelfPurge } from "../b2b/catalog/application/pro-shelf-purge.js";
+import { PublicShelfPurge } from "../b2b/catalog/application/public-shelf-purge.js";
 import { DeferredShelfChanges } from "../b2b/shared/shelf-changes/application/deferred-shelf-changes.js";
 import { FanOutShelfPurge } from "../b2b/shared/shelf-changes/application/fan-out-shelf-purge.js";
 import { ShelfChangeWindow } from "../b2b/shared/shelf-changes/application/shelf-change-window.js";
@@ -22,7 +23,8 @@ import { NodeShelfWindowTimer } from "../b2b/shared/shelf-changes/infrastructure
  *
  * La purge passe à chaque magasin, ici et seulement ici : la journalisation
  * de C1, gardée, puis le magasin des rayons pro (C2,
- * `shop-shelf-cache.module.ts`). C3 ajoutera Workers Cache à la liste.
+ * `shop-shelf-cache.module.ts`), puis Workers Cache pour le rayon public
+ * (C3, `PublicShelfPurge` : « tout » seulement).
  */
 @Global()
 @Module({
@@ -31,9 +33,9 @@ import { NodeShelfWindowTimer } from "../b2b/shared/shelf-changes/infrastructure
     { provide: ShelfChanges, useClass: DeferredShelfChanges },
     {
       provide: ShelfPurge,
-      inject: [ProShelfPurge],
-      useFactory: (pro: ProShelfPurge): ShelfPurge =>
-        new FanOutShelfPurge([new LoggingShelfPurge(), pro]),
+      inject: [ProShelfPurge, PublicShelfPurge],
+      useFactory: (pro: ProShelfPurge, publicShelf: PublicShelfPurge): ShelfPurge =>
+        new FanOutShelfPurge([new LoggingShelfPurge(), pro, publicShelf]),
     },
     { provide: ShelfWindowTimer, useClass: NodeShelfWindowTimer },
   ],

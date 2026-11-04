@@ -57,6 +57,8 @@ import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
 import { ShopFeaturedController } from "./http/shop-featured.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
 import { ReadShopFeaturedHandler } from "./application/queries/read-shop-featured.handler.js";
+import { ReadPublicShopCatalogueHandler } from "./application/queries/read-public-shop-catalogue.handler.js";
+import { ReadPublicShopFeaturedHandler } from "./application/queries/read-public-shop-featured.handler.js";
 import { SaleOperations } from "./application/sale-operations.service.js";
 import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
 import { PrismaSaleReferenceUsage } from "./infrastructure/prisma-sale-reference-usage.js";
@@ -177,6 +179,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     ExportCatalogCsvHandler,
     ReadShopCatalogueHandler,
     ReadShopFeaturedHandler,
+    ReadPublicShopCatalogueHandler,
+    ReadPublicShopFeaturedHandler,
     // 🔴 LA logique de prix de la vitrine, pour les DEUX routes. Exportée plus
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
     // `null`, et c'est la seule différence entre elles.

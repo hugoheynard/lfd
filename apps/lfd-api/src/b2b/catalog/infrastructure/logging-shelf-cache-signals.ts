@@ -12,7 +12,8 @@ export const SHELF_CACHE_METRIC_PREFIX = "shelf_cache.";
  * sans importer le catalogue reste à trancher en C5 ; le nom, lui, est fixé ici.
  *
  * Au niveau `warn` ce qui demande un regard (repli, disjoncteur ouvert, cache
- * éteint à la main), `log` pour le reste.
+ * éteint à la main, purge publique perdue), `log` pour le reste — dont
+ * `public_cacheable` / `public_not_cacheable` (C3), un par réponse publique.
  */
 @Injectable()
 export class LoggingShelfCacheSignals extends ShelfCacheSignals {
@@ -21,7 +22,7 @@ export class LoggingShelfCacheSignals extends ShelfCacheSignals {
   emit(signal: ShelfCacheSignal): void {
     const { name, ...fields } = signal;
     const line = {
-      message: `Cache des rayons pro : ${name}`,
+      message: `Cache des rayons : ${name}`,
       metric: `${SHELF_CACHE_METRIC_PREFIX}${name}`,
       ...fields,
     };
@@ -38,6 +39,7 @@ function needsAttention(signal: ShelfCacheSignal): boolean {
   return (
     signal.name === "fallback" ||
     signal.name === "breaker_opened" ||
-    (signal.name === "switched" && !signal.enabled)
+    signal.name === "public_purge_failed" ||
+    ((signal.name === "switched" || signal.name === "public_switched") && !signal.enabled)
   );
 }

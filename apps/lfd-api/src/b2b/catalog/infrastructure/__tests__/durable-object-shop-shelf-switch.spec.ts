@@ -24,11 +24,13 @@ function replying(response: () => Response): {
 
 describe("DurableObjectShopShelfSwitch", () => {
   it("envoie le geste au chemin de l'interrupteur et rend l'état relu", async () => {
-    const { sent, fetchFn } = replying(() => Response.json({ enabled: false, version: 7 }));
+    const { sent, fetchFn } = replying(() =>
+      Response.json({ enabled: false, publicEnabled: false, version: 7 }),
+    );
 
     const state = await new DurableObjectShopShelfSwitch(ORIGIN, fetchFn).apply("off");
 
-    expect(state).toEqual({ enabled: false, version: 7 });
+    expect(state).toEqual({ enabled: false, publicEnabled: false, version: 7 });
     expect(sent).toEqual([{ url: "http://rayons.interne/switch", body: '{"action":"off"}' }]);
   });
 
@@ -45,6 +47,25 @@ describe("DurableObjectShopShelfSwitch", () => {
 
     await expect(
       new DurableObjectShopShelfSwitch(ORIGIN, fetchFn).apply("on"),
+    ).rejects.toBeInstanceOf(UnreadableShelfReplyError);
+  });
+
+  it("allume le rayon public seul, par le même chemin (C3)", async () => {
+    const { sent, fetchFn } = replying(() =>
+      Response.json({ enabled: true, publicEnabled: true, version: 2 }),
+    );
+
+    const state = await new DurableObjectShopShelfSwitch(ORIGIN, fetchFn).apply("public-on");
+
+    expect(state).toEqual({ enabled: true, publicEnabled: true, version: 2 });
+    expect(sent[0]?.body).toBe('{"action":"public-on"}');
+  });
+
+  it("un état sans drapeau public est illisible : l'objet d'avant C3 ne passe pas pour éteint", async () => {
+    const { fetchFn } = replying(() => Response.json({ enabled: true, version: 1 }));
+
+    await expect(
+      new DurableObjectShopShelfSwitch(ORIGIN, fetchFn).apply("public-off"),
     ).rejects.toBeInstanceOf(UnreadableShelfReplyError);
   });
 });

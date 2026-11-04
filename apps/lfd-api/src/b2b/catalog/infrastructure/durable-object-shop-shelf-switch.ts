@@ -51,10 +51,12 @@ function stateOf(body: unknown): ShelfCacheState | null {
     return null;
   }
   const enabled: unknown = Reflect.get(body, "enabled");
+  const publicEnabled: unknown = Reflect.get(body, "publicEnabled");
   const version: unknown = Reflect.get(body, "version");
   return typeof enabled === "boolean" &&
+    typeof publicEnabled === "boolean" &&
     Number.isSafeInteger(version) &&
     typeof version === "number"
-    ? { enabled, version }
+    ? { enabled, publicEnabled, version }
     : null;
 }

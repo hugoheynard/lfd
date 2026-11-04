@@ -1,11 +1,13 @@
+import type { PublicShelfRefusal } from "../public-shelf-rules.js";
+
 /** Pourquoi un appel au magasin des rayons n'a pas servi : le rayon vient alors de la base. */
 export type ShelfFallbackReason = "timeout" | "error" | "unreadable" | "breaker_open";
 
-/** L'appel au magasin qui a retombé. */
-export type ShelfCacheOperation = "read" | "store" | "erase";
+/** L'appel au magasin qui a retombé ; `public_*` depuis C3. */
+export type ShelfCacheOperation = "read" | "store" | "erase" | "public_state" | "public_purge";
 
 /**
- * **Ce que le cache des rayons pro donne à voir** (`plan-cache-du-catalogue.md`,
+ * **Ce que le cache des rayons donne à voir** — pro, et public depuis C3 (`plan-cache-du-catalogue.md`,
  * § 4 quater) : chaque nom est STABLE, c'est lui que la carte de santé (C5)
  * comptera. En renommer un, c'est éteindre une courbe sans que rien ne rougisse.
  *
@@ -28,7 +30,19 @@ export type ShelfCacheSignal =
   /** L'interrupteur a été actionné (« L'interrupteur ») : l'état et la version qui en résultent. */
   | { readonly name: "switched"; readonly enabled: boolean; readonly version: number }
   /** Vidé à la main par l'interrupteur — distinct de `erased`, qui suit une écriture. */
-  | { readonly name: "purged_manually"; readonly version: number };
+  | { readonly name: "purged_manually"; readonly version: number }
+  /** Rayon public (C3) : la réponse s'offre à Workers Cache. */
+  | { readonly name: "public_cacheable" }
+  /** Rayon public : la réponse garde l'en-tête du middleware, et pourquoi. */
+  | { readonly name: "public_not_cacheable"; readonly reason: PublicShelfRefusal }
+  /** Workers Cache purgé de l'étiquette `rayon-public`. */
+  | { readonly name: "public_purged" }
+  /** La purge publique n'a pas abouti : la durée de 30 s rattrape. */
+  | { readonly name: "public_purge_failed" }
+  /** Purge publique sautée : le drapeau public est éteint, rien n'a pu se garder. */
+  | { readonly name: "public_purge_skipped" }
+  /** Le drapeau public a basculé (`public-on`, `public-off`). */
+  | { readonly name: "public_switched"; readonly enabled: boolean; readonly version: number };
 
 /**
  * Port de **sortie des compteurs** du cache des rayons pro. Ne lève jamais :

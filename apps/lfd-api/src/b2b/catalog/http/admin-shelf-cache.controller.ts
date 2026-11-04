@@ -5,16 +5,20 @@ import { z } from "zod";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { SwitchShelfCacheCommand } from "../application/commands/switch-shelf-cache.command.js";
-import type { ShelfCacheState } from "../domain/ports/shop-shelf-switch.js";
+import {
+  SwitchShelfCacheCommand,
+  type ShelfSwitchOutcome,
+} from "../application/commands/switch-shelf-cache.command.js";
+import { SHELF_SWITCH_ACTIONS } from "../domain/ports/shop-shelf-switch.js";
 
-const switchPayloadSchema = z.object({ action: z.enum(["on", "off", "purge"]) });
+const switchPayloadSchema = z.object({ action: z.enum(SHELF_SWITCH_ACTIONS) });
 
 type SwitchPayload = z.infer<typeof switchPayloadSchema>;
 
 /**
- * **L'interrupteur du cache des rayons pro** (`plan-cache-du-catalogue.md`,
- * « L'interrupteur ») : éteindre, rallumer, vider en production sans
+ * **L'interrupteur du cache des rayons** (`plan-cache-du-catalogue.md`,
+ * « L'interrupteur ») : éteindre, rallumer, vider — et, depuis C3, allumer ou
+ * éteindre le rayon public seul (`public-on`, `public-off`) — en production sans
  * redéployer ni redémarrer le conteneur. Actionné par le workflow
  * `ops_shelf_cache.yml`, gardé comme `admin/ops/mail-check` — le jeton
  * machine `RECOMPUTE_TOKEN`, détenu par la CI seule.
@@ -34,8 +38,10 @@ export class AdminShelfCacheController {
 
   @Post()
   @HttpCode(200)
-  switch(@Body(new ZodBody(switchPayloadSchema)) payload: SwitchPayload): Promise<ShelfCacheState> {
-    return this.commands.execute<SwitchShelfCacheCommand, ShelfCacheState>(
+  switch(
+    @Body(new ZodBody(switchPayloadSchema)) payload: SwitchPayload,
+  ): Promise<ShelfSwitchOutcome> {
+    return this.commands.execute<SwitchShelfCacheCommand, ShelfSwitchOutcome>(
       new SwitchShelfCacheCommand(payload.action),
     );
   }

@@ -4,6 +4,9 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { catalogItem, InMemoryCatalogOperations } from "../../__tests__/sale-operations-doubles.js";
 import { ReadShopFeaturedHandler } from "../read-shop-featured.handler.js";
 import { ReadShopFeaturedQuery } from "../read-shop-featured.query.js";
+import { ReadPublicShopFeaturedHandler } from "../read-public-shop-featured.handler.js";
+import { ReadPublicShopFeaturedQuery } from "../read-public-shop-featured.query.js";
+import { InMemoryPublicShelf, publicRig } from "../../__tests__/public-shelf-doubles.js";
 import { viewerAudience, type CatalogViewer } from "../../../domain/catalog-viewer.js";
 
 /**
@@ -107,5 +110,46 @@ describe("ReadShopFeaturedHandler", () => {
       "sku",
       "thumbnail",
     ]);
+  });
+});
+
+/**
+ * La route HTTP (C3) : la même vue que la lecture nue, et la décision de
+ * cacheabilité autour. Échoue si la route publique diverge de la lecture, ou
+ * si elle se garde drapeau éteint.
+ */
+describe("ReadPublicShopFeaturedHandler", () => {
+  function publicHandlerOver(catalog: SellableCatalog, enabled: boolean) {
+    const shelf = new InMemoryPublicShelf();
+    shelf.enabled = enabled;
+    const { cacheability } = publicRig(shelf);
+    return new ReadPublicShopFeaturedHandler(
+      catalog,
+      new InMemoryCatalogOperations(),
+      new FixedClock(new Date(0)),
+      cacheability,
+    );
+  }
+
+  it("rend la vue de la lecture nue, et cacheable drapeau allumé", async () => {
+    const catalog = new SellableCatalog({ pro: [BAGUETTE, ECLAIR, CROISSANT], public: [] });
+    const bare = await handlerOver(catalog).execute(new ReadShopFeaturedQuery("pro", "fr"));
+
+    const reply = await publicHandlerOver(catalog, true).execute(
+      new ReadPublicShopFeaturedQuery("pro", "fr"),
+    );
+
+    expect(reply).toEqual({ view: bare, cacheable: true });
+  });
+
+  it("drapeau éteint (le défaut) : la même vue, jamais gardée", async () => {
+    const catalog = new SellableCatalog({ pro: [BAGUETTE], public: [] });
+
+    const reply = await publicHandlerOver(catalog, false).execute(
+      new ReadPublicShopFeaturedQuery("pro", "fr"),
+    );
+
+    expect(reply.cacheable).toBe(false);
+    expect(reply.view.map((item) => item.sku)).toEqual(["PAI-001-1"]);
   });
 });

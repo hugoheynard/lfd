@@ -1,13 +1,19 @@
+/** Les gestes de l'interrupteur, dans l'ordre où le workflow les propose. */
+export const SHELF_SWITCH_ACTIONS = ["off", "on", "purge", "public-on", "public-off"] as const;
+
 /**
- * Un geste de l'interrupteur du cache des rayons pro (`plan-cache-du-catalogue.md`,
- * « L'interrupteur ») : éteindre, rallumer, vider. La même liste que
+ * Un geste de l'interrupteur du cache des rayons (`plan-cache-du-catalogue.md`,
+ * « L'interrupteur ») : éteindre, rallumer, vider — et, depuis C3, allumer
+ * ou éteindre le rayon PUBLIC seul. La même liste que
  * `container/shelf-store.ts` (`ShelfSwitchAction`).
  */
-export type ShelfSwitchAction = "on" | "off" | "purge";
+export type ShelfSwitchAction = (typeof SHELF_SWITCH_ACTIONS)[number];
 
 /** L'état du magasin APRÈS le geste, tel que le magasin le relit. */
 export interface ShelfCacheState {
   readonly enabled: boolean;
+  /** Le drapeau du rayon public (C3), éteint par défaut. */
+  readonly publicEnabled: boolean;
   /** La version courante : une extinction ou une purge la fait monter. */
   readonly version: number;
 }

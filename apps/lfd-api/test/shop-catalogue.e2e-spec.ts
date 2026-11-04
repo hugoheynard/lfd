@@ -16,6 +16,8 @@ import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { InMemoryPublicShelf } from "../src/b2b/catalog/application/__tests__/public-shelf-doubles.js";
+import { PublicShelfStateReader } from "../src/b2b/catalog/domain/ports/public-shelf-state.reader.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 
@@ -26,10 +28,16 @@ const stubAdminVerifier = {
 
 let ctx: E2eContext;
 
+/** L'état du rayon public (C3), éteint par défaut comme l'objet ; un test l'allume. */
+const publicShelf = new InMemoryPublicShelf();
+
 beforeAll(async () => {
   // Le staff pose les promotions par leur écran (L12) : son jeton est doublé.
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PublicShelfStateReader, value: publicShelf },
+    ],
   });
 });
 
@@ -39,6 +47,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  publicShelf.enabled = false;
   // Cette suite décrit ce qu'une vitrine montre : elle part d'un catalogue vide
   // pour que le semis du harnais ne se mêle pas à ce qu'elle sème elle-même.
   await ctx.prisma.catalogPriceHistory.deleteMany();
@@ -609,5 +618,41 @@ describe("la photo arrive sans push", () => {
       where: { productId: "prd_VIE-001" },
     });
     expect(after.visualsGestureId).toBe(gesture);
+  });
+});
+
+/**
+ * Workers Cache (C3, `plan-cache-du-catalogue.md` § 3) : l'en-tête exact, à
+ * travers le vrai middleware. Échoue si la vitrine s'offre à un cache partagé
+ * drapeau éteint, ou si une purge passée pendant le calcul la laisse garder.
+ */
+describe("GET /shop/catalogue — Workers Cache", () => {
+  it("drapeau éteint (le défaut) : l'en-tête privé du middleware, sans étiquette", async () => {
+    const response = await shop().expect(200);
+
+    expect(response.headers["cache-control"]).toBe("private, no-cache");
+    expect(response.headers["cache-tag"]).toBeUndefined();
+  });
+
+  it("drapeau allumé : public 30 s, étiqueté rayon-public, vitrine publique et pro", async () => {
+    publicShelf.enabled = true;
+
+    for (const path of ["/shop/catalogue", "/shop/catalogue?audience=pro&lang=en"]) {
+      const response = await request(ctx.app.getHttpServer()).get(path).expect(200);
+      expect(response.headers["cache-control"]).toBe("public, max-age=30");
+      expect(response.headers["cache-tag"]).toBe("rayon-public");
+    }
+  });
+
+  it("objet en panne : la vitrine est servie, jamais gardée", async () => {
+    publicShelf.enabled = true;
+    publicShelf.failure = "throws";
+
+    try {
+      const response = await shop().expect(200);
+      expect(response.headers["cache-control"]).not.toContain("public");
+    } finally {
+      publicShelf.failure = null;
+    }
   });
 });

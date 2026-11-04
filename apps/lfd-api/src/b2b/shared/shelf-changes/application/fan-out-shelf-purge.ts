@@ -4,7 +4,7 @@ import { ShelfPurge, type ShelfPurgeRequest } from "../domain/ports/shelf-purge.
 
 /**
  * **Une purge regroupée, passée à chaque magasin** — la journalisation de C1,
- * le magasin des rayons pro (C2), demain Workers Cache (C3) : un magasin de
+ * le magasin des rayons pro (C2), Workers Cache du rayon public (C3) : un magasin de
  * plus est une entrée de plus dans la liste, pas une branche (OCP).
  *
  * Chacune est tentée même si une autre échoue ; un échec est journalisé,

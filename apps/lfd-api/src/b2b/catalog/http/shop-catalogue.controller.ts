@@ -1,14 +1,17 @@
 import { contentLocales, type ContentLocale, type ShopCatalogueView } from "@lfd/contracts";
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Query, Res } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import type { Response } from "express";
 import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { ReadShopCatalogueQuery } from "../application/queries/read-shop-catalogue.js";
+import type { PublicShelfReply } from "../application/public-shelf-cacheability.js";
+import { ReadPublicShopCatalogueQuery } from "../application/queries/read-public-shop-catalogue.query.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import type { ShopAudience } from "../domain/ports/catalog.reader.js";
+import { offerPublicShelf } from "./public-shelf-cache-headers.js";
 
 /** `pro` seul : sans le paramètre, la vitrine publique d'avant, à l'identique. */
 const SHOP_CATALOGUE_AUDIENCES = ["pro"] as const satisfies readonly ShopAudience[];
@@ -74,6 +77,13 @@ const languageQuerySchema = z
  * engagements restent derrière la connexion — la porte de prix est appelée
  * sans société, elle ne peut pas les lire. Même forme de vue, même porte ;
  * `isFeatured` y est la mise en avant PRO.
+ *
+ * **Workers Cache** (C3, `plan-cache-du-catalogue.md` § 3) : la réponse dit
+ * `public, max-age=30` quand le drapeau public est allumé et que rien n'a
+ * bougé pendant le calcul, sinon elle garde le `private` du middleware.
+ * `public` est juste même avec un jeton : cette route ne lit JAMAIS
+ * l'appelant (vérifié le 2026-11-04, `shopCatalogueFor` passe `companyId:
+ * null` ; `lint:cache-control` le tient).
  */
 @Controller("shop/catalogue")
 @Public()
@@ -82,12 +92,16 @@ export class ShopCatalogueController {
   constructor(private readonly queries: QueryBus) {}
 
   @Get()
-  read(
+  async read(
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
     @Query("audience", new ZodQuery(audienceQuerySchema)) audience: ShopAudience | undefined,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<ShopCatalogueView> {
-    return this.queries.execute<ReadShopCatalogueQuery, ShopCatalogueView>(
-      new ReadShopCatalogueQuery(language, audience ?? "public"),
-    );
+    const reply = await this.queries.execute<
+      ReadPublicShopCatalogueQuery,
+      PublicShelfReply<ShopCatalogueView>
+    >(new ReadPublicShopCatalogueQuery(language, audience ?? "public"));
+    offerPublicShelf(response, reply);
+    return reply.view;
   }
 }

@@ -4,15 +4,18 @@ import {
   type ShopFeaturedAudience,
   type ShopFeaturedView,
 } from "@lfd/contracts";
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Query, Res } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import type { Response } from "express";
 import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { ReadShopFeaturedQuery } from "../application/queries/read-shop-featured.query.js";
+import type { PublicShelfReply } from "../application/public-shelf-cacheability.js";
+import { ReadPublicShopFeaturedQuery } from "../application/queries/read-public-shop-featured.query.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
+import { offerPublicShelf } from "./public-shelf-cache-headers.js";
 
 const FEATURED_AUDIENCES = ["pro"] as const satisfies readonly ShopFeaturedAudience[];
 
@@ -36,6 +39,11 @@ const languageQuerySchema = z
  * on n'en montre aucun. Il le verra une fois reconnu, sur `/shop/catalogue/mine`.
  *
  * Même throttle que `/shop/catalogue` (60/min/IP) : surface anonyme.
+ *
+ * **Workers Cache** (C3) : même décision que `/shop/catalogue` — `public,
+ * max-age=30` seulement si le drapeau public est allumé et que rien n'a bougé
+ * pendant le calcul. Juste avec un jeton : cette route ne lit JAMAIS
+ * l'appelant (vérifié le 2026-11-04, `anonymousViewer` ; `lint:cache-control`).
  */
 @Controller("shop/featured")
 @Public()
@@ -44,12 +52,16 @@ export class ShopFeaturedController {
   constructor(private readonly queries: QueryBus) {}
 
   @Get()
-  read(
+  async read(
     @Query("audience", new ZodQuery(audienceQuerySchema)) audience: ShopFeaturedAudience,
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<ShopFeaturedView> {
-    return this.queries.execute<ReadShopFeaturedQuery, ShopFeaturedView>(
-      new ReadShopFeaturedQuery(audience, language),
-    );
+    const reply = await this.queries.execute<
+      ReadPublicShopFeaturedQuery,
+      PublicShelfReply<ShopFeaturedView>
+    >(new ReadPublicShopFeaturedQuery(audience, language));
+    offerPublicShelf(response, reply);
+    return reply.view;
   }
 }

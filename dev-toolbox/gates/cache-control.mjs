@@ -16,7 +16,16 @@
  * - une écriture que la porte ne sait pas lire échoue : une porte qui se tait
  *   sur ce qu'elle ne comprend pas ne garantit rien ;
  * - `caches.default` et `caches.open` sont refusés dans `gateway/src` : la
- *   passerelle est le seul endroit où un cache partagé de l'API peut naître.
+ *   passerelle est le seul endroit où un cache partagé de l'API peut naître ;
+ * - depuis le 2026-11-04 (lot C3, `documentation/pricing/moteur/plan-cache-du-catalogue.md`
+ *   § 7), Workers Cache garde toute réponse `public` du Worker de l'API. D'où :
+ *   un fichier admis peut nommer ses LECTEURS, et tout autre fichier qui
+ *   l'importe est refusé — `public` ne s'étend pas à une route de plus par un
+ *   import ; les routes publiques du rayon ne lisent jamais l'appelant (aucun
+ *   décorateur ni type d'identité dans leurs fichiers) ; et
+ *   `apps/lfd-api/container/` est lu aussi — ni `Cache-Control` ouvert, ni
+ *   `caches.*`, et la purge de Workers Cache, le gestionnaire de sortie et
+ *   une classe de Durable Object n'y vivent que dans les fichiers admis.
  *
  * Les tests ne sont pas lus. Usage : `pnpm lint:cache-control` (branché dans
  * `lint:gates`).
@@ -26,16 +35,80 @@ import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
 const API_ROOT = "apps/lfd-api/src";
+const CONTAINER_ROOT = "apps/lfd-api/container";
 const GATEWAY_ROOT = "gateway/src";
 const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo", "__tests__"]);
 
-/** Les fichiers dont une valeur peut s'offrir à un cache partagé, chacun pour sa raison. */
+/**
+ * Les fichiers dont une valeur peut s'offrir à un cache partagé, chacun pour
+ * sa raison et depuis sa date. `readers` : les SEULS fichiers qui peuvent
+ * l'importer (absent = sans restriction, l'état d'avant le 2026-11-04).
+ */
 const ADMITTED = new Map([
   [
     "apps/lfd-api/src/b2b/shop-copy/http/shop-copy-cache-headers.ts",
-    "les textes publiés de la boutique, identiques pour tous, étiquetés par version et langue",
+    {
+      since: "2026-11-02",
+      reason:
+        "les textes publiés de la boutique, identiques pour tous, étiquetés par version et langue",
+    },
+  ],
+  [
+    "apps/lfd-api/src/b2b/catalog/http/public-shelf-cache-headers.ts",
+    {
+      since: "2026-11-04",
+      reason:
+        "le rayon public (C3) : `public, max-age=30` sur deux routes qui ne lisent jamais l'appelant, " +
+        "seulement si le drapeau public est allumé et que la version n'a pas bougé",
+      readers: [
+        "apps/lfd-api/src/b2b/catalog/http/shop-catalogue.controller.ts",
+        "apps/lfd-api/src/b2b/catalog/http/shop-featured.controller.ts",
+      ],
+    },
   ],
 ]);
+
+/**
+ * Les fichiers des routes publiques du rayon et de ce qu'elles calculent :
+ * `public` n'y est juste que tant qu'ils ne lisent pas l'appelant.
+ */
+const CALLER_BLIND = [
+  "apps/lfd-api/src/b2b/catalog/http/shop-catalogue.controller.ts",
+  "apps/lfd-api/src/b2b/catalog/http/shop-featured.controller.ts",
+  "apps/lfd-api/src/b2b/catalog/application/queries/read-public-shop-catalogue.handler.ts",
+  "apps/lfd-api/src/b2b/catalog/application/queries/read-public-shop-featured.handler.ts",
+  "apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts",
+  "apps/lfd-api/src/b2b/catalog/application/queries/read-shop-featured.handler.ts",
+];
+
+/** Ce qui lit l'appelant : un décorateur d'identité, la requête brute, un type d'identité. */
+const CALLER_READS =
+  /\b(?:CurrentUser|ActingCompany|StaffUserId|StaffPermissions|Principal|RequestContext)\b|@(?:Req|Request|Headers)\s*\(|\bauthorization\b/giu;
+
+/**
+ * Dans `apps/lfd-api/container/` : ce qui ne vit que dans un fichier admis,
+ * daté (2026-11-04, C3). La purge de Workers Cache — seul le point d'entrée
+ * qui garde les réponses peut la faire ; le gestionnaire de sortie — le seul
+ * chemin du conteneur vers l'objet ; une classe de Durable Object — un
+ * magasin de rayons de plus se décide.
+ */
+const CONTAINER_ADMITTED = [
+  {
+    pattern: /\.cache\s*\??\.\s*purge\s*\(/gu,
+    what: "une purge de Workers Cache",
+    files: ["apps/lfd-api/container/worker.ts"],
+  },
+  {
+    pattern: /\boutboundByHost\b/gu,
+    what: "un gestionnaire de sortie",
+    files: ["apps/lfd-api/container/worker.ts"],
+  },
+  {
+    pattern: /\bextends\s+DurableObject\b/gu,
+    what: "une classe de Durable Object",
+    files: ["apps/lfd-api/container/pro-shelves.ts"],
+  },
+];
 
 /** Une valeur qui ferme le cache partagé. */
 const CLOSED = /\b(?:private|no-store)\b/u;
@@ -150,6 +223,22 @@ export function verdictOf(rel, value, constants) {
   return null;
 }
 
+/** Les lectures de l'appelant dans un source (commentaires retirés). */
+export function callerReadsOf(source) {
+  return flatten(source).match(CALLER_READS) ?? [];
+}
+
+/** Le fichier admis qu'un source importe, par son nom (`./x-cache-headers.js`). */
+export function importsOf(source, rel) {
+  const base = rel.split("/").at(-1).replace(/\.ts$/u, "");
+  return new RegExp(`from\\s*["'][^"']*/${base}(?:\\.js)?["']`, "u").test(flatten(source));
+}
+
+/** Les occurrences d'un motif réservé à des fichiers admis. */
+export function reservedUsesOf(source, pattern) {
+  return (flatten(source).match(pattern) ?? []).length;
+}
+
 /** Les caches de la passerelle : refusés tant qu'aucun n'est décidé. */
 export function gatewayCachesOf(source) {
   return (flatten(source).match(/\bcaches\s*\.\s*(?:default|open)\b/gu) ?? []).length;
@@ -202,7 +291,32 @@ function selfCheck() {
     'import { x } from "./cache-control-by-default.js"; headers["Cache-Control"] = v;',
   ).unreadable;
   const gateway = gatewayCachesOf("const c = await caches.open('x'); caches.default.match(r);");
-  if (broken.length > 0 || unreadable !== 1 || gateway !== 2) {
+  const SHELF_HEADERS = "apps/lfd-api/src/b2b/catalog/http/public-shelf-cache-headers.ts";
+  const imported = [
+    importsOf('import { offerPublicShelf } from "./public-shelf-cache-headers.js";', SHELF_HEADERS),
+    importsOf(
+      'import {\n  offerPublicShelf,\n} from "../http/public-shelf-cache-headers.js";',
+      SHELF_HEADERS,
+    ),
+    importsOf('// from "./public-shelf-cache-headers.js"', SHELF_HEADERS),
+    importsOf('import { x } from "./other-public-shelf-cache-headers.js";', SHELF_HEADERS),
+  ];
+  const caller = [
+    callerReadsOf("read(@CurrentUser() user: Principal)").length,
+    callerReadsOf("read(@ActingCompany() companyId: string)").length,
+    callerReadsOf("read(@Req() req: Request)").length,
+    callerReadsOf('read(@Headers("authorization") token: string)').length,
+    callerReadsOf("/** Ne lit jamais le Principal. */ read(@Query() q: string)").length,
+  ];
+  const purges = reservedUsesOf(
+    "await ctx.cache.purge({ tags }); await ctx.cache?.purge({ tags });\n// ctx.cache.purge(",
+    CONTAINER_ADMITTED[0].pattern,
+  );
+  const detectorOk =
+    imported.join(",") === "true,true,false,false" &&
+    caller.every((count, index) => (index === caller.length - 1 ? count === 0 : count > 0)) &&
+    purges === 2;
+  if (broken.length > 0 || unreadable !== 1 || gateway !== 2 || !detectorOk) {
     console.error("✗ cache-control : le détecteur se trompe sur ses cas témoins :");
     for (const [source] of broken) {
       console.error(`    ${source}`);
@@ -213,19 +327,31 @@ function selfCheck() {
     if (gateway !== 2) {
       console.error(`    caches de passerelle comptés ${String(gateway)} fois au lieu de 2`);
     }
+    if (!detectorOk) {
+      console.error(
+        `    lecteurs, appelant ou purge mal détectés : imports ${imported.join(",")}, ` +
+          `appelant ${caller.join(",")}, purges ${String(purges)}`,
+      );
+    }
     process.exit(1);
   }
 }
 
 selfCheck();
 
-for (const required of [API_ROOT, GATEWAY_ROOT]) {
+for (const required of [API_ROOT, CONTAINER_ROOT, GATEWAY_ROOT]) {
   if (!statSync(join(ROOT, required), { throwIfNoEntry: false })?.isDirectory()) {
     console.error(`✗ cache-control : ${required} introuvable.`);
     process.exit(1);
   }
 }
-for (const admitted of ADMITTED.keys()) {
+const declared = [
+  ...ADMITTED.keys(),
+  ...[...ADMITTED.values()].flatMap((entry) => entry.readers ?? []),
+  ...CALLER_BLIND,
+  ...CONTAINER_ADMITTED.flatMap((entry) => entry.files),
+];
+for (const admitted of declared) {
   if (!statSync(join(ROOT, admitted), { throwIfNoEntry: false })?.isFile()) {
     console.error(
       `✗ cache-control : le fichier admis ${admitted} a disparu — retirez-le de la liste.`,
@@ -234,13 +360,12 @@ for (const admitted of ADMITTED.keys()) {
   }
 }
 
-const apiFiles = sourceFiles(join(ROOT, API_ROOT)).map((file) => ({
-  rel: unix(relative(ROOT, file)),
-  source: readFileSync(file, "utf8"),
-}));
+const read = (file) => ({ rel: unix(relative(ROOT, file)), source: readFileSync(file, "utf8") });
+const apiFiles = sourceFiles(join(ROOT, API_ROOT)).map(read);
+const containerFiles = sourceFiles(join(ROOT, CONTAINER_ROOT)).map(read);
 
 const constants = new Map();
-for (const { rel, source } of apiFiles) {
+for (const { rel, source } of [...apiFiles, ...containerFiles]) {
   for (const [name, value] of constantsOf(source)) {
     constants.set(name, { value, rel });
   }
@@ -248,7 +373,7 @@ for (const { rel, source } of apiFiles) {
 
 const offenders = [];
 let writeCount = 0;
-for (const { rel, source } of apiFiles) {
+for (const { rel, source } of [...apiFiles, ...containerFiles]) {
   const { writes, unreadable } = writesOf(source);
   writeCount += writes.length;
   for (const value of writes) {
@@ -261,6 +386,46 @@ for (const { rel, source } of apiFiles) {
     offenders.push(
       `${rel}\n    ${String(unreadable)} mention(s) de Cache-Control que la porte ne sait pas lire`,
     );
+  }
+}
+
+for (const { rel, source } of apiFiles) {
+  for (const [admitted, entry] of ADMITTED) {
+    if (
+      entry.readers !== undefined &&
+      rel !== admitted &&
+      !entry.readers.includes(rel) &&
+      importsOf(source, admitted)
+    ) {
+      offenders.push(
+        `${rel}\n    importe ${admitted}, réservé à ${entry.readers.join(", ")} — ` +
+          "`public` ne s'étend pas à une route de plus par un import",
+      );
+    }
+  }
+}
+
+const sources = new Map(apiFiles.map(({ rel, source }) => [rel, source]));
+for (const rel of CALLER_BLIND) {
+  const reads = callerReadsOf(sources.get(rel) ?? "");
+  if (reads.length > 0) {
+    offenders.push(
+      `${rel}\n    lit l'appelant (${[...new Set(reads)].join(", ")}) — sa réponse est \`public\` : ` +
+        "Workers Cache servirait un rayon personnel à tous",
+    );
+  }
+}
+
+for (const { rel, source } of containerFiles) {
+  if (gatewayCachesOf(source) > 0) {
+    offenders.push(
+      `${rel}\n    ouvre le Cache API local (caches.*) — le rayon public passe par Workers Cache`,
+    );
+  }
+  for (const { pattern, what, files } of CONTAINER_ADMITTED) {
+    if (!files.includes(rel) && reservedUsesOf(source, pattern) > 0) {
+      offenders.push(`${rel}\n    porte ${what}, réservé à ${files.join(", ")} (C3, 2026-11-04)`);
+    }
   }
 }
 
@@ -287,5 +452,6 @@ if (offenders.length > 0) {
 
 console.log(
   `✓ cache-control : ${String(writeCount)} écriture(s) de Cache-Control, toutes fermées au cache partagé ` +
-    `sauf ${String(ADMITTED.size)} fichier(s) admis ; aucun cache dans la passerelle.`,
+    `sauf ${String(ADMITTED.size)} fichier(s) admis et leurs lecteurs ; ${String(CALLER_BLIND.length)} fichier(s) ` +
+    "des routes publiques sans lecture de l'appelant ; container lu ; aucun cache dans la passerelle.",
 );

@@ -31,6 +31,20 @@
   // `guardedFetch` compris.
   "compatibility_flags": ["enable_ctx_exports"],
 
+  // Workers Cache (lot C3, `documentation/pricing/moteur/plan-cache-du-catalogue.md`
+  // § 3) : Cloudflare garde une réponse de CE Worker et la ressert sans
+  // l'exécuter. Ni date ni drapeau de compatibilité exigés par wrangler 4.157.0
+  // (schéma `CacheOptions` relu le 2026-11-04).
+  //
+  // Ce bloc ne garde rien tout seul : seule une réponse `public` se garde, et
+  // l'API n'en écrit que sur deux routes (`/shop/catalogue`, `/shop/featured`)
+  // ET quand le drapeau public de l'objet des rayons est allumé — éteint par
+  // défaut (`ops_shelf_cache`, `public-on`).
+  // ⚠️ Une exception, antérieure : `/shop/copy` répond déjà `public,
+  // max-age=60, stale-while-revalidate=600` (`shop-copy-cache-headers.ts`) —
+  // elle sera gardée ici aussi dès ce déploiement, sans drapeau ni purge.
+  "cache": { "enabled": true },
+
   // L'image NestJS tourne dans un container ; le Worker ne fait que router.
   "containers": [
     {

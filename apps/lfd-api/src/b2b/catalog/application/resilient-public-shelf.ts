@@ -1,0 +1,44 @@
+import { Injectable } from "@nestjs/common";
+
+import { PublicShelfEraser } from "../domain/ports/public-shelf-eraser.js";
+import {
+  PublicShelfStateReader,
+  type PublicShelfState,
+} from "../domain/ports/public-shelf-state.reader.js";
+import { ShelfCacheSignals } from "../domain/ports/shelf-cache-signals.js";
+import { ShelfCallGuard } from "./shelf-call-guard.js";
+
+/**
+ * **Le rayon public derrière le même repli que le rayon pro** (C3,
+ * `plan-cache-du-catalogue.md` § 4 bis) : même délai, même disjoncteur
+ * ({@link ShelfCallGuard}). Rien de ce qui sort d'ici ne lève.
+ */
+@Injectable()
+export class ResilientPublicShelf {
+  constructor(
+    private readonly reader: PublicShelfStateReader,
+    private readonly eraser: PublicShelfEraser,
+    private readonly guard: ShelfCallGuard,
+    private readonly signals: ShelfCacheSignals,
+  ) {}
+
+  /** Le drapeau et la version, ou `null` : magasin injoignable, lent, ou disjoncteur ouvert. */
+  state(): Promise<PublicShelfState | null> {
+    return this.guard.call("public_state", () => this.reader.read(), true);
+  }
+
+  /**
+   * Purge Workers Cache ; `false` si la purge n'a pas abouti. Hors
+   * disjoncteur, comme l'effacement des rayons pro : c'est elle qui rattrape
+   * un rayon public devenu faux.
+   */
+  async purge(): Promise<boolean> {
+    const done = await this.guard.call(
+      "public_purge",
+      () => this.eraser.purge().then(() => true),
+      false,
+    );
+    this.signals.emit({ name: done === null ? "public_purge_failed" : "public_purged" });
+    return done !== null;
+  }
+}

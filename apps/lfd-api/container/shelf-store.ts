@@ -42,18 +42,30 @@ export type ShelfCall =
       readonly principalId: string | null;
     }
   | { readonly kind: "erase" }
-  | { readonly kind: "switch" };
+  | { readonly kind: "switch" }
+  | { readonly kind: "public_state" };
 
 /**
  * Un geste de l'interrupteur (`plan-cache-du-catalogue.md`, « L'interrupteur ») :
- * éteindre, rallumer, vider. La même liste que la route machine de l'API.
+ * éteindre, rallumer, vider — et, depuis C3, allumer ou éteindre le rayon
+ * PUBLIC seul. La même liste que la route machine de l'API.
  */
-export type ShelfSwitchAction = "on" | "off" | "purge";
+export type ShelfSwitchAction = "on" | "off" | "purge" | "public-on" | "public-off";
+
+const SWITCH_ACTIONS: readonly ShelfSwitchAction[] = [
+  "on",
+  "off",
+  "purge",
+  "public-on",
+  "public-off",
+];
 
 /** Ce qu'un geste de l'interrupteur fait au stockage. */
 export interface ShelfSwitchPlan {
   /** L'état à écrire, ou `null` pour le laisser tel quel (une purge n'allume rien). */
   readonly enabled: boolean | null;
+  /** Le drapeau du rayon public (C3), ou `null` pour le laisser tel quel. */
+  readonly publicEnabled: boolean | null;
   /** Effacer toutes les entrées ET monter la version — comme l'effacement « tout ». */
   readonly eraseAll: boolean;
 }
@@ -63,6 +75,12 @@ export type ShelfStoreDecision = "stored" | "stale" | "not_kept";
 
 /** Le chemin de l'interrupteur, appelé par l'API seulement (même garde que le reste). */
 export const SHELF_SWITCH_PATH = "/switch";
+
+/**
+ * L'état du rayon public (C3) : son drapeau et la version courante, que l'API
+ * relève avant ET après le calcul d'un rayon public.
+ */
+export const PUBLIC_SHELF_STATE_PATH = "/public/state";
 
 /** Ce qu'un effacement demande — la même forme que `ShelfPurgeOrder` côté API. */
 export type ShelfEraseOrder =
@@ -113,6 +131,9 @@ export function parseShelfCall(method: string, url: URL): ShelfCall | null {
   }
   if (method === "POST" && url.pathname === SHELF_SWITCH_PATH) {
     return { kind: "switch" };
+  }
+  if (method === "GET" && url.pathname === PUBLIC_SHELF_STATE_PATH) {
+    return { kind: "public_state" };
   }
   const key = storageKeyOf(url.pathname);
   if (key === null) {
@@ -177,7 +198,7 @@ export function parseSwitchAction(body: unknown): ShelfSwitchAction | null {
     return null;
   }
   const action: unknown = Reflect.get(body, "action");
-  return action === "on" || action === "off" || action === "purge" ? action : null;
+  return SWITCH_ACTIONS.find((known) => known === action) ?? null;
 }
 
 /**
@@ -186,6 +207,16 @@ export function parseSwitchAction(body: unknown): ShelfSwitchAction | null {
  */
 export function isEnabled(storedFlag: number | undefined): boolean {
   return storedFlag !== 0;
+}
+
+/**
+ * **Le drapeau du rayon public, ÉTEINT par défaut** (C3) — l'inverse du pro,
+ * et c'est voulu : tant que la clé de Workers Cache, le `Vary: Origin` du CORS
+ * et la purge depuis le gestionnaire de sortie n'ont pas été vus en
+ * production, aucune réponse publique ne se garde sans un geste.
+ */
+export function isPublicEnabled(storedFlag: number | undefined): boolean {
+  return storedFlag === 1;
 }
 
 /**
@@ -198,11 +229,16 @@ export function isEnabled(storedFlag: number | undefined): boolean {
 export function switchPlan(action: ShelfSwitchAction): ShelfSwitchPlan {
   switch (action) {
     case "on":
-      return { enabled: true, eraseAll: false };
+      return { enabled: true, publicEnabled: null, eraseAll: false };
     case "off":
-      return { enabled: false, eraseAll: true };
+      // Éteindre éteint TOUT, public compris : c'est le geste du doute.
+      return { enabled: false, publicEnabled: false, eraseAll: true };
     case "purge":
-      return { enabled: null, eraseAll: true };
+      return { enabled: null, publicEnabled: null, eraseAll: true };
+    case "public-on":
+      return { enabled: null, publicEnabled: true, eraseAll: false };
+    case "public-off":
+      return { enabled: null, publicEnabled: false, eraseAll: false };
   }
 }
 

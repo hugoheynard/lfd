@@ -377,9 +377,11 @@ les instances de l'API. Route : `POST /admin/ops/shelf-cache`
 (`{ action }`, jeton `RECOMPUTE_TOKEN`) ; journaux `shelf_cache.switched` et
 `shelf_cache.purged_manually`.
 
-**Ce qu'il ne fait pas** : le cache public des visiteurs (C3) n'existe pas
-encore, et ne sera pas couvert par cet interrupteur tant que C3 ne l'y branche
-pas.
+**Le rayon public** (C3, bâti le 2026-11-04) : `public-on` / `public-off`
+allument ou éteignent le seul drapeau public, **éteint par défaut** ; `off`
+éteint aussi le public, et `off`, `public-off` et `purge` purgent Workers
+Cache. Le résumé dit l'état des deux drapeaux et si la purge publique a
+abouti (`publicPurge`).
 
 ## 5. La purge
 
@@ -476,7 +478,7 @@ déployé » : le seul déploiement est la production, depuis `main`.
 | C0b | ✅ `enable_ctx_exports` (pas de date avancée) et `ContainerProxy` exporté, sans gestionnaire (`8aaa1f638`) ; essai local de l'interception (2026-11-04) ; **la porte de CI du démarrage**, avant tout gestionnaire                                               |
 | C1  | ✅ **bâti le 2026-11-04** (`7a62edd7f`) : le port `ShelfChanges` (`b2b/shared/shelf-changes/`), la fenêtre d'une seconde qui journalise, 28 écrivains sur 26 modèles, la porte `lint:shelf-writes`                                                               |
 | C2  | ✅ **bâti le 2026-11-04** (`a8c07257f`) : l'objet `ProShelves`, le port `ShopShelfCache`, le repli (100 ms, disjoncteur 5 échecs / 30 s), la purge société + sites ; e2e et budget verts. Non éprouvé sur Cloudflare                                             |
-| C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                                                                                                                      |
+| C3  | ✅ **bâti le 2026-11-04** (non commité à l'écriture) : Workers Cache sur les deux routes publiques derrière un drapeau public éteint par défaut, l'en-tête du middleware sur un rayon douteux ; `lint:cache-control` étendue. Non éprouvé sur Cloudflare         |
 | C5  | la surveillance : les mesures du § 4 quater sur la carte de santé, et ses alertes ; chaque lot pose ses compteurs, C5 les montre                                                                                                                                 |
 | C4  | la boutique relit le rayon au retour sur l'onglet                                                                                                                                                                                                                |
 
@@ -565,6 +567,31 @@ l'écouter. Il peut partir en production seul, sans effet visible.
   100 ms et le disjoncteur (valeurs à fixer à la mesure), la taille de l'objet.
 - Fichiers déjà au-delà de 300 lignes, qui grossissent :
   `shop-catalogue-pricing.service.ts`, `container/worker.ts`, `app-config.ts`.
+
+### Ce que C3 a trouvé (2026-11-04)
+
+- **Désactivé par défaut** : le drapeau public vit dans l'objet des rayons
+  (`meta.public_enabled`, absent = éteint) ; on l'allume par `ops_shelf_cache`
+  (`public-on`) une fois la clé de Workers Cache, le `Vary: Origin` et la purge
+  vus en production.
+- **Un rayon douteux garde l'en-tête du middleware** (`private`), pas
+  `no-store` : drapeau éteint à l'un des deux relevés, version bougée, objet
+  injoignable, lent ou disjoncteur ouvert. Le délai et le disjoncteur sont
+  ceux de C2, désormais partagés (`ShelfCallGuard`).
+- **Une portée « une société » ne purge pas le public** : il se calcule sans
+  société (`PUBLIC_VIEWER` ou pro anonyme, `pricingCompanyOf` → `null`). Seul
+  « tout » purge Workers Cache, et pas quand le drapeau public est éteint.
+- **La purge passe par une boucle locale** : le gestionnaire de sortie relaie
+  `POST /public/purge` au point d'entrée par défaut (`exports.default`, avec des
+  `props` qui la distinguent d'une requête du dehors), qui appelle
+  `ctx.cache.purge`. **Non prouvé** : que `exports` existe avec notre date de
+  compatibilité et `enable_ctx_exports`, et que la boucle atteigne le cache du
+  point d'entrée par défaut. Un échec ne fait qu'échouer la purge (503).
+- ⚠️ **`/shop/copy` sera gardé aussi** dès que le bloc `cache` est déployé : il
+  répond déjà `public, max-age=60, stale-while-revalidate=600`, sans drapeau
+  ni purge à la publication.
+- Le relevé d'état coûte un appel à l'objet par réponse publique non servie
+  du cache, deux quand le drapeau est allumé.
 
 ## 10. Ce que ce plan ne fait pas
 

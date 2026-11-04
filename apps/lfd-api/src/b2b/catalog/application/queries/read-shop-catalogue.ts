@@ -41,17 +41,33 @@ export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogue
    * l'identique. Deux implémentations auraient divergé — c'est exactement
    * comment ce trou s'est ouvert.
    */
-  async execute(query: ReadShopCatalogueQuery): Promise<ShopCatalogueView> {
-    // 🔴 **Le rayon pro sans jeton** (Hugo, 2026-10-19) : le visiteur venu de
-    // la landing `/pro` voit le tarif pro de BASE, hors taxe — celui d'un pro
-    // sans mercuriale, sans règle visant une société, sans engagement. La
-    // porte ne reçoit aucune société (`companyId: null`) : rien de négocié ne
-    // peut s'y lire, par construction et non par filtre. Les conditions
-    // négociées restent derrière la connexion (`/shop/catalogue/mine`).
-    if (query.audience === "pro") {
-      return this.pricing.pricedWithoutCompany("pro", query.language);
-    }
-    // La route publique : un invité (L10) — un public « inscrits » n'y baisse rien.
-    return this.pricing.priced(null, "guest", query.language);
+  execute(query: ReadShopCatalogueQuery): Promise<ShopCatalogueView> {
+    return shopCatalogueFor(this.pricing, query);
   }
+}
+
+/**
+ * La vitrine sans société d'une langue et d'une audience — le corps de
+ * {@link ReadShopCatalogueHandler}, partagé avec la route HTTP qui décide en
+ * plus si la réponse se garde (`ReadPublicShopCatalogueHandler`, C3). Une
+ * seule déduction : deux copies divergeraient.
+ *
+ * 🔴 Ne lit JAMAIS l'appelant : c'est ce qui rend `public` juste sur
+ * `GET /shop/catalogue` (`lint:cache-control` le tient).
+ */
+export function shopCatalogueFor(
+  pricing: ShopCataloguePricing,
+  query: ReadShopCatalogueQuery,
+): Promise<ShopCatalogueView> {
+  // 🔴 **Le rayon pro sans jeton** (Hugo, 2026-10-19) : le visiteur venu de
+  // la landing `/pro` voit le tarif pro de BASE, hors taxe — celui d'un pro
+  // sans mercuriale, sans règle visant une société, sans engagement. La
+  // porte ne reçoit aucune société (`companyId: null`) : rien de négocié ne
+  // peut s'y lire, par construction et non par filtre. Les conditions
+  // négociées restent derrière la connexion (`/shop/catalogue/mine`).
+  if (query.audience === "pro") {
+    return pricing.pricedWithoutCompany("pro", query.language);
+  }
+  // La route publique : un invité (L10) — un public « inscrits » n'y baisse rien.
+  return pricing.priced(null, "guest", query.language);
 }
