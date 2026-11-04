@@ -1,4 +1,4 @@
-# Qui porte le risque ? — prix vivant et prix bloqué
+# À réfléchir — Qui porte le risque ? Prix vivant et prix bloqué
 
 > 🔵 **Note de conception, rien n'est bâti** (2026-08-17), relue le 2026-11-04
 > contre le code : ni le prix bloqué, ni le prix par zone, ni la coopérative
