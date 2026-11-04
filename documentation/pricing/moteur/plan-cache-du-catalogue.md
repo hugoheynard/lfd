@@ -452,7 +452,7 @@ déployé » : le seul déploiement est la production, depuis `main`.
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | C0  | sur dev déployé : clé de Workers Cache (paramètre d'URL, en-têtes de la passerelle, `Vary: Origin`) ; gestionnaire de sortie et version de `@cloudflare/containers` ; aller-retour conteneur → objet ; taille d'un rayon ; coût ; secondes d'une première visite |
 | C0b | ✅ `enable_ctx_exports` (pas de date avancée) et `ContainerProxy` exporté, sans gestionnaire (`8aaa1f638`) ; essai local de l'interception (2026-11-04) ; **la porte de CI du démarrage**, avant tout gestionnaire                                               |
-| C1  | le port de purge, `AfterCommit.defer`, les écritures, la porte des écritures, le regroupement                                                                                                                                                                    |
+| C1  | ✅ **bâti le 2026-11-04** (`7a62edd7f`) : le port `ShelfChanges` (`b2b/shared/shelf-changes/`), la fenêtre d'une seconde qui journalise, 28 écrivains sur 26 modèles, la porte `lint:shelf-writes`                                                               |
 | C2  | l'objet des rayons pro, sa version, le gestionnaire de sortie ; budget froid / chaud à l'égalité                                                                                                                                                                 |
 | C3  | Workers Cache sur les deux routes publiques, `no-store` sur un rayon douteux ; `lint:cache-control` étendue                                                                                                                                                      |
 | C5  | la surveillance : les mesures du § 4 quater sur la carte de santé, et ses alertes ; chaque lot pose ses compteurs, C5 les montre                                                                                                                                 |
@@ -500,6 +500,27 @@ l'écouter. Il peut partir en production seul, sans effet visible.
 - **Tests** : le regroupement (rafale de 200 → une purge ; `all` absorbe ;
   fin de fenêtre), `AfterCommit` (rien ne part si la transaction échoue), et
   un test par famille d'écrivains qui vérifie la portée annoncée.
+
+### Ce que C1 a trouvé (2026-11-04)
+
+- **Écart avec la liste** : `Site` (points de retrait) et `DeliveryAvailability`
+  manquaient, ajoutés ; `CatalogOperationOverride` et `PromotionSetting` ne
+  sont lus par aucun rayon, gardés dans la porte. Traductions et prix au kilo
+  sont des colonnes de `catalog_items`, déjà couvertes.
+  `prisma-made-to-order-admin.reader.ts` n'écrit aucun modèle de la liste.
+- **Admis par la porte, datés** : trois fonctions qui écrivent dans la
+  transaction de leur appelant (`catalog-item-upsert.ts`,
+  `catalog-decision-writes.ts`, `catalog-review-states.ts`) — leurs appelants
+  émettent ; la porte ne verrait pas un appelant neuf qui oublie — et le semis
+  local `src/dev/seeding/reset.seed.ts`.
+- **Une promotion qui quitte une société** purge aussi l'ancienne : une lecture
+  de ses cibles avant leur remplacement.
+- ❓ **Ouvert : une commande change le rayon.** La lentille `measured` du rayon
+  lit les lignes de commande (cumul d'un engagement : le palier de la société ;
+  ratio de volume d'un plancher dynamique : tous). Une commande passée devrait
+  donc purger sa société, ou tout si un plancher dynamique s'applique — ou la
+  durée de 30 s suffit. Rien n'est branché sur les commandes, `OrderLine`
+  n'est pas dans la porte. **À trancher avant C2.**
 
 ## 10. Ce que ce plan ne fait pas
 
