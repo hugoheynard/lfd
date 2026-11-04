@@ -66,7 +66,11 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
   });
 
   it("le prix au kilo d'une vignette est celui de SA déclinaison", () => {
-    const sellable = florentins(true);
+    // La boîte se vend ici À LA PIÈCE : vendue au poids, elle n'aurait aucun
+    // kilo indicatif, exclu côté serveur depuis K1
+    // (`plan-prix-au-kilo-suit-le-prix.md`, § 7).
+    const [byDefault, box] = florentins(true);
+    const sellable = [byDefault!, { ...box!, saleUnit: "piece" as const }];
     const view = shopCatalogueOf(sellable, SALE);
     const perKg = new Map([
       ["CHO-001-1", { proPricePerKgMillicents: 1, publicPricePerKgTtcCents: 1 }],

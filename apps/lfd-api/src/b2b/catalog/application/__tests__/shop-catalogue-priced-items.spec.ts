@@ -188,13 +188,15 @@ describe("pricedItems — les articles suggérés valent ceux du rayon", () => {
     const some = await shelf(timings).pricedItems(ASKED, { companyId: COMPANY }, "fr");
 
     expect(some).toEqual(full.items.filter((item) => ASKED.includes(item.sku)));
-    // Le témoin : la mercuriale, la promotion et le prix au kilo ont bien joué.
+    // Le témoin : la mercuriale, la promotion et la règle du kilo ont bien joué.
     expect(some.map((item) => item.sku)).toEqual([NEGOTIATED.sku, RESERVED.sku, WEIGHED.sku]);
     expect(some).toMatchObject([
       // mercuriale 1,50 € puis −20 % de la promotion de ligne
       { unitPriceMillicents: 120_000, catalogPriceMillicents: 200_000 },
       { unitPriceMillicents: 160_000, orderable: false, lockedReason: "reserved_to_other_account" },
-      { unitPriceMillicents: 160_000, proPricePerKgMillicents: 2_500_000 },
+      // Vendu au poids : aucun kilo indicatif, exclu côté serveur depuis K1
+      // (`plan-prix-au-kilo-suit-le-prix.md`, § 7) — le prix servi EST au kilo.
+      { unitPriceMillicents: 160_000, proPricePerKgMillicents: null },
     ]);
     expect(some.every((item) => item.fulfillmentOffers !== undefined)).toBe(true);
   });
