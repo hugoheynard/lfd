@@ -1,199 +1,144 @@
 # Comment un prix se fabrique
 
-**Écrit le 2026-09-09.** ✅ Décrit l'état réel du code.
+> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. Le
+> prix **d'un article**. Le prix d'un **panier** (remises de panier,
+> livraison, TVA, total) est décrit dans
+> [`centime-et-tva/le-prix-d-un-panier.md`](centime-et-tva/le-prix-d-un-panier.md).
+> Partie 1 : comprendre. Partie 2 : le code.
 
-> La référence courte. Elle répond à trois questions : **qui** fabrique un prix,
-> **quoi** entre dedans, et **que se passe-t-il** dans chaque cas de figure.
->
-> Pour la conception de la façade → [`architecture-pricer.md`](moteur/architecture-pricer.md).
-> Pour ce qu'est une mercuriale → [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md).
+# Partie 1 — Comprendre
 
----
+## Le prix d'un article, en quatre étages
 
-## 1. Un seul fabricant
-
-```mermaid
-flowchart LR
-  subgraph consommateurs["Ce qui demande un prix"]
-    C1["la caisse"]
-    C2["l'ecran de tarification"]
-    C3["la projection"]
-    C4["le comparatif"]
-    C5["n'importe qui, un SKU en main"]
-  end
-
-  C5 --> P["Pricer<br/>for · forAll"]
-  P --> L["PricingMaterialsLoader<br/>4 lectures par lot"]
-  C1 --> L
-  C2 --> L
-  C3 --> L
-  L --> T["LoadedPricer<br/>LE tarificateur"]
-  C4 --> T
-  T --> R["resolvePrice<br/>la seule porte"]
-```
-
-**Un seul fichier appelle `resolvePrice`** — `pricing/domain/loaded-pricer.ts` —
-et `lint:price-pipeline` le tient. Il y en avait cinq jusqu'au 2026-09-09, et
-deux s'étaient trompées.
-
-| Objet                    | Nature                       | Rôle                                                                                    |
-| ------------------------ | ---------------------------- | --------------------------------------------------------------------------------------- |
-| `Pricer`                 | Nest, `pricing/application/` | La porte pour qui n'a **qu'un SKU**. Résout le catalogue, demande le reste.             |
-| `PricingMaterialsLoader` | Nest, `pricing/application/` | La **seule** séquence de lecture. Quatre requêtes par lot, quelle qu'en soit la taille. |
-| `LoadedPricer`           | **pur**, `pricing/domain/`   | Matériaux en main. Porte les six gestes qu'un prix demande. Ne lit rien.                |
-
-## 2. Ce qui entre dans un prix
-
-```mermaid
-flowchart TB
-  K["prix canonique<br/>(le tarif de liste du catalogue)"] --> M
-
-  subgraph chaine["Les 4 etages — ils COMPOSENT, ils n'additionnent pas"]
-    direction LR
-    M["1 · mercuriale<br/>POSE un prix ferme"] --> V["2 · volume<br/>barème / palier"]
-    V --> PR["3 · promotion"]
-    PR --> G["4 · geste commercial"]
-  end
-
-  G --> S{"une mercuriale<br/>a-t-elle agi ?"}
-  S -->|oui| SC["SCELLEMENT<br/>les etages 2-4 deviennent transparents<br/>sauf stacksOverMercuriale"]
-  S -->|non| F
-  SC --> F{"un plancher<br/>vise-t-il l'article ?"}
-  F -->|oui| FD["decideFloor : mur dur,<br/>ou etage dynamique si la porte s'ouvre"]
-  F -->|non| Z
-  FD --> Z{"le prix est-il<br/>passe sous zero ?"}
-  Z -->|oui| C0["ramene a 0<br/>clampedToZero: true"]
-  Z -->|non| OUT["prix final + trace"]
-  C0 --> OUT
-```
-
-Trois règles portent toute la chaîne :
-
-- **composition, pas addition** — −20 % puis −10 % font **−28 %**, pas −30 % ;
-- **un seul arrondi**, en fin de chaîne, la chaîne travaillant en rationnel ;
-- **dans un étage, le plus spécifique REMPLACE** — une règle d'article évince
-  celle de sa famille, elle ne s'y ajoute pas. Deux règles **également**
-  spécifiques lèvent `AmbiguousPriceRulesError` : le résultat dépendrait de
-  l'ordre de tri, donc du hasard.
-
-## 3. Les cinq questions
-
-Une question, une méthode. Ce sont des **variantes de la même question**, et
-chacune écarte quelque chose **délibérément**.
-
-```mermaid
-flowchart TB
-  Q{"que veux-tu savoir ?"}
-  Q -->|"combien coute cet article ?"| A["price(item, quantity)"]
-  Q -->|"et pour ces dix-la ?"| B["priceAll(items)"]
-  Q -->|"a combien je lui fais les 100 ?"| C["tiers(item, quantity)"]
-  Q -->|"si le cumul valait N ?"| D["priceAtCumulative(item, n)"]
-  Q -->|"ce que le marche paie"| E["mercurialeAlone(...)"]
-  Q -->|"je n'ai qu'un SKU"| F["Pricer.for / forAll"]
-  F --> A
-```
-
-| Méthode             | Ce qu'elle lit en plus                           | Ce qu'elle écarte, et pourquoi                                                                                                                                                                                                                      |
-| ------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `price`             | l'engagement du client, les mesures d'historique | —                                                                                                                                                                                                                                                   |
-| `priceAll`          | idem, **un seul chargement** pour N articles     | —                                                                                                                                                                                                                                                   |
-| `tiers`             | rejoue la résolution **à chaque seuil**          | —                                                                                                                                                                                                                                                   |
-| `priceAtCumulative` | rien                                             | **les preuves et les engagements** : une projection ne prouve ni un volume observé, ni une commande — `N` est un cumul de saison, pas un panier. Ouvrir la porte d'un plancher dessus accorderait une remise que rien n'a établie (R15, 2026-09-09) |
-| `mercurialeAlone`   | rien (statique, sans matériaux)                  | **barème et plancher** : on mesure ce qu'une mercuriale accorde SEULE, pour la comparer à celle d'un autre client qui n'a pas les mêmes                                                                                                             |
-
-## 4. Tous les cas de figure
-
-Sur un croissant à **2,00 €** canonique, client `cmp_1`, sauf mention contraire.
-
-| #   | Le cas                                                      | Ce qui se passe                                                            | Prix               |
-| --- | ----------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------ |
-| 1   | Rien ne vise l'article                                      | `steps: []`                                                                | **2,00 €**         |
-| 2   | Promotion −10 %                                             | un étage, une étape dans la trace                                          | **1,80 €**         |
-| 3   | Promotion −20 % **puis** geste −10 %                        | composition                                                                | **1,44 €**         |
-| 4   | Deux promotions, famille et article                         | la plus spécifique gagne, l'autre part dans `supersededRuleIds`            | celle de l'article |
-| 5   | Deux promotions **également** spécifiques                   | `AmbiguousPriceRulesError` (400)                                           | _refus_            |
-| 6   | Barème « −20 % dès 10 » — commande de 1                     | le palier ne s'ouvre pas                                                   | **2,00 €**         |
-| 7   | Le même — commande de 12                                    | le palier s'ouvre                                                          | **1,60 €**         |
-| 8   | Mercuriale à 1,50 € **+** promotion −10 %                   | la mercuriale **scelle** : `sealedByRuleId`, la promo dans `sealedRuleIds` | **1,50 €**         |
-| 9   | Mercuriale **+** règle `stacksOverMercuriale`               | l'exception composée par-dessus le prix ferme                              | < 1,50 €           |
-| 10  | Mercuriale d'un **autre** client                            | la clause SQL ne la rend pas                                               | **2,00 €**         |
-| 11  | Visiteur sans société                                       | **aucune** mercuriale n'est lue, ni engagement                             | tarif public       |
-| 12  | Engagement 10 000 promis, commande de 10, palier « 5 000+ » | la **promesse** ouvre le palier dès la 1ʳᵉ commande                        | prix du palier     |
-| 13  | Promotion −50 % + mur dur à 90 %                            | le plancher **relève** : `floored: true`                                   | **1,80 €**         |
-| 14  | Idem + plancher dynamique, mesure absente                   | porte **fermée** — le défaut penche du côté de la maison                   | **1,80 €**         |
-| 15  | Idem + mesure relevée au-dessus du seuil                    | porte **ouverte**, décision figée avec le prix                             | **1,00 €**         |
-| 16  | Remise « −5 € » sur un article à 2 €                        | ramené à zéro, `clampedToZero: true`                                       | **0,00 €**         |
-| 17  | SKU inconnu du catalogue                                    | `UnknownSkuError` — jamais un `null`                                       | _refus_            |
-| 18  | Le même SKU demandé deux fois à `forAll`                    | `DuplicateArticleError` : 5+5 font-ils 10, ou deux demandes ?              | _refus_            |
-| 19  | Lecture datée `at` sur une mercuriale expirée               | on relit le prix **de ce jour-là**                                         | prix négocié       |
-
-### Le scellement, en une image
+On part du **tarif** de l'article (son prix au catalogue), et on le fait
+passer par quatre étages, toujours dans cet ordre :
 
 ```mermaid
 flowchart LR
-  K["2,00 EUR"] --> M["mercuriale<br/>POSE 1,50 EUR"]
-  M --> V["volume<br/>-20%"]
-  M --> P["promotion<br/>-10%"]
-  M --> G["geste<br/>-5%"]
-  V -.->|transparent| OUT
-  P -.->|transparent| OUT
-  G -.->|transparent| OUT
-  M ==> OUT["1,50 EUR<br/>sealedByRuleId = merc_1<br/>sealedRuleIds = les evincees"]
+  T["Tarif<br/>du catalogue"] --> M["1. Mercuriale<br/>le prix négocié du client"]
+  M --> V["2. Volume<br/>le palier atteint"]
+  V --> P["3. Promotion"]
+  P --> G["4. Geste commercial"]
+  G --> F["Plancher<br/>la marge minimale"]
+  F --> R["Prix de l'article"]
 ```
 
-**Pourquoi.** Sans scellement, un compte au tarif négocié empochait AUSSI la
-promotion publique — un cumul que personne n'avait décidé, qui ne se lisait nulle
-part, et qui ne se découvrait qu'en comparant deux factures.
+Quatre règles simples :
 
-### Le plancher, en une image
+1. **Les remises se composent, elles ne s'additionnent pas.** −20 % puis
+   −10 % font −28 %, pas −30 %.
+2. **La plus précise gagne.** Une règle sur un article précis remplace celle
+   de sa famille. Si deux règles sont aussi précises l'une que l'autre, le
+   calcul refuse : le résultat dépendrait du hasard.
+3. **La mercuriale fige le prix.** Un client qui a un prix négocié ne reçoit
+   pas en plus les promotions et les paliers, sauf ce que sa mercuriale
+   accepte explicitement.
+4. **Le plancher protège la marge.** Si les remises font passer le prix sous
+   le plancher, le prix est remonté au plancher. Un prix ne descend jamais sous
+   zéro.
+
+Le calcul est **exact** jusqu'au bout et n'arrondit qu'**une fois**, à la fin.
+
+## Une seule fabrique
+
+Tout ce qui a besoin d'un prix d'article — le rayon de la boutique, le panier,
+la commande, l'écran de tarification, l'export de grille — passe par **la
+même porte** et donc par le même calcul. C'est ce qui garantit que le prix
+affiché est le prix facturé.
+
+# Partie 2 — Le code
+
+## 1. La porte
 
 ```mermaid
-flowchart TB
-  A["prix sorti de la chaine"] --> B{"un plancher<br/>vise l'article ?"}
-  B -->|non| Z["inchange"]
-  B -->|oui| C{"le plancher a-t-il<br/>un etage dynamique ?"}
-  C -->|non| D["mur DUR"]
-  C -->|oui| E{"la porte s'ouvre-t-elle ?<br/>quantite ET volume observe"}
-  E -->|non| D
-  E -->|oui| F["plancher ABAISSE"]
-  D --> G{"prix sous le plancher ?"}
-  F --> G
-  G -->|oui| H["releve · floored: true"]
-  G -->|non| Z
+flowchart LR
+  A["appelant<br/>rayon, panier, tableau, export"] --> P["Pricer.load<br/>des articles du catalogue"]
+  P --> L["PricingMaterialsLoader<br/>6 lectures par lot, en parallèle"]
+  L --> C["PricingMaterialsCache<br/>estampille lue une fois par requête"]
+  L --> T["LoadedPricer<br/>pur, matériaux en main"]
+  T --> R["resolvePrice<br/>la composition"]
+  P --> O["PricedLot<br/>price, all, tiers, projectAt"]
 ```
 
-⚠️ **La mesure de volume n'est lue que si un plancher la réclame.** Aucune
-lecture d'historique sur un panier ordinaire — c'est la seule façon d'admettre
-un plancher dynamique sur le chemin qui facture sans le ralentir pour tout le
-monde.
+| Objet                    | Où                                                  | Rôle                                                                                                                                                                                                                                                                                                                            |
+| ------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Pricer`                 | `pricing/application/pricer.ts`                     | **La porte** : `load(LotRequest)` — des articles **du catalogue** (`CatalogArticle`, jamais un SKU nu ni un prix envoyé par l'appelant), l'acheteur (`LotBuyer` : un client réel ou l'acheteur type de l'export), l'appelant (`caller`, pour la sonde), et facultativement une date (`at`, lecture datée). Rend un `PricedLot`. |
+| `PricingMaterialsLoader` | `pricing/application/pricing-materials.loader.ts`   | La **seule** séquence de lecture : règles, planchers, barèmes, engagements, mercuriale, promotions du point ligne. Les mesures de volume ne se lisent que si un engagement ou un plancher les réclame.                                                                                                                          |
+| `PricingMaterialsCache`  | `pricing/infrastructure/pricing-materials.cache.ts` | Garde les matériaux en mémoire tant que l'estampille `pricing_events` n'a pas bougé ; l'estampille se lit une fois par requête.                                                                                                                                                                                                 |
+| `LoadedPricer`           | `pricing/domain/loaded-pricer.ts`                   | **Pur** : matériaux en main, ne lit rien. **Seul appelant de `resolvePrice`** (tenu par `lint:price-pipeline` et `lint:price-door`).                                                                                                                                                                                            |
+| `resolvePrice`           | `pricing/domain/resolve-price.ts`                   | La composition des étages, le scellement, le plancher, l'arrondi unique, la trace.                                                                                                                                                                                                                                              |
 
-## 5. Ce qui n'est PAS un prix d'article
+`Pricer.for` / `forAll` (par SKU) ont été retirés le 2026-09-09 : ils
+résolvaient le catalogue eux-mêmes, d'où une lecture en trop et un cycle de
+modules.
 
-| La question                                                   | Qui répond                                                                                                         |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| « combien coûte ce **panier** ? » (acheminement, TVA, totaux) | `OrderLinePricing`                                                                                                 |
-| « **pose** ce prix »                                          | les commandes de `PricingAdminModule` — le tarificateur est en **lecture seule**, et le graphe de modules le porte |
+## 2. Les étages et d'où viennent leurs règles
+
+| Étage        | Source                                                                                                                                                                                                                                                                        | Écrit par                                       |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `mercuriale` | la mercuriale du client (`CompanyMercuriale`)                                                                                                                                                                                                                                 | `pricing/domain/entities/company-mercuriale.ts` |
+| `volume`     | le **barème** (`volume-ladder.ts`), présenté à la chaîne comme une règle ; une règle `volume` ne s'écrit plus à la main (`AuthoredPriceStage`)                                                                                                                                | barèmes                                         |
+| `promotion`  | les **promotions** du module `promotions/`, au point « ligne », admises pour ce client (`LinePromotionSupply`), présentées comme des règles (`promotion-as-rule.ts`). Les anciennes règles d'étage `promotion` ne sont plus lues (`withoutPromotionStage`, depuis le lot L12) | `promotions/`                                   |
+| `geste`      | les règles de prix (`price_rules`)                                                                                                                                                                                                                                            | écran de tarification                           |
+
+- **Spécificité** : `pricing/domain/specificity.ts` (qui gagne un étage) ;
+  ex æquo → `AmbiguousPriceRulesError` (`domain/errors/rule-errors.ts`).
+- **Scellement** : `pricing/domain/mercuriale-seal.ts`, `passesSeal`. Passe
+  la mercuriale : une règle ordinaire qui porte `stacksOverMercuriale`, ou une
+  promotion que la **politique de promotions** datée de la mercuriale accepte
+  (« Toutes », ou « Au choix »).
+- **Plancher** : `resolve-floor.ts`, `floor-policy.ts` — mur dur, ou étage
+  dynamique dont la porte s'ouvre sur la quantité et le volume observé ; un
+  prix relevé porte `floored: true`.
+- **Zéro** : un prix négatif est ramené à zéro, `clampedToZero: true`.
+
+## 3. Ce qu'on peut demander à un lot
+
+| Méthode (`PricedLot`, `pricing/application/priced-lot.ts`) | La question                                   | Ce qu'elle écarte                                                      |
+| ---------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
+| `price(sku, quantité)`                                     | combien coûte cet article ?                   | —                                                                      |
+| `all(lignes)`                                              | et pour ces lignes-là ? (le rayon, le panier) | —                                                                      |
+| `tiers(sku, quantité)`                                     | le prix à chaque palier                       | —                                                                      |
+| `projectAt(sku, cumul)`                                    | si le cumul de saison valait N ?              | les preuves et les engagements : une projection ne prouve aucun volume |
+| `LoadedPricer.mercurialeAlone(…)` (statique)               | ce qu'une mercuriale accorde seule            | barème et plancher, pour comparer deux clients                         |
+
+## 4. Les cas de figure
+
+Sur un croissant à **2,00 €** de tarif, client `cmp_1`, sauf mention contraire.
+
+| #   | Le cas                                                                           | Ce qui se passe                                                            | Prix               |
+| --- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------ |
+| 1   | Rien ne vise l'article                                                           | aucune étape                                                               | **2,00 €**         |
+| 2   | Promotion −10 %                                                                  | une étape                                                                  | **1,80 €**         |
+| 3   | Promotion −20 % puis geste −10 %                                                 | composition                                                                | **1,44 €**         |
+| 4   | Deux règles, famille et article                                                  | la plus précise gagne, l'autre dans `supersededRuleIds`                    | celle de l'article |
+| 5   | Deux règles aussi précises                                                       | `AmbiguousPriceRulesError`                                                 | _refus_            |
+| 6   | Barème « −20 % dès 10 », commande de 1                                           | le palier ne s'ouvre pas                                                   | **2,00 €**         |
+| 7   | Le même, commande de 12                                                          | le palier s'ouvre                                                          | **1,60 €**         |
+| 8   | Mercuriale à 1,50 € + promotion −10 %                                            | la mercuriale scelle (`sealedByRuleId`, la promotion dans `sealedRuleIds`) | **1,50 €**         |
+| 9   | Mercuriale + promotion que sa politique accepte, ou règle `stacksOverMercuriale` | composée par-dessus le prix négocié                                        | < 1,50 €           |
+| 10  | Mercuriale d'un autre client                                                     | non lue                                                                    | **2,00 €**         |
+| 11  | Visiteur sans société                                                            | ni mercuriale, ni engagement                                               | tarif public       |
+| 12  | Engagement de 10 000 promis, commande de 10, palier « 5 000+ »                   | la promesse ouvre le palier dès la première commande                       | prix du palier     |
+| 13  | Promotion −50 % + mur dur à 90 %                                                 | le plancher relève, `floored: true`                                        | **1,80 €**         |
+| 14  | Idem + plancher dynamique, mesure absente                                        | porte fermée                                                               | **1,80 €**         |
+| 15  | Idem + mesure au-dessus du seuil                                                 | porte ouverte                                                              | **1,00 €**         |
+| 16  | Remise « −5 € » sur un article à 2 €                                             | ramené à zéro, `clampedToZero: true`                                       | **0,00 €**         |
+| 17  | SKU inconnu du catalogue                                                         | `UnknownSkuError` (`catalog/domain/errors/unknown-sku.error.ts`)           | _refus_            |
+| 18  | Le même article deux fois dans un lot                                            | `DuplicateArticleError`                                                    | _refus_            |
+| 19  | Lecture datée sur une mercuriale expirée                                         | le prix de ce jour-là (`PriceEpoch`, `price-epoch.ts`)                     | prix négocié       |
+
+## 5. Ce qui n'est pas un prix d'article
+
+| La question                   | Qui répond                                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| combien coûte ce **panier** ? | `PricingContext` puis `priceBasket` (`orders/`) — le prix des lignes y est demandé à la porte par `OrderLinePricing` |
+| **pose** ce prix              | les commandes de `PricingAdminModule` ; la porte est en lecture seule                                                |
 
 ## 6. Le budget
 
-**Quatre lectures par lot**, quelle que soit sa taille — règles, planchers,
-barèmes, engagements, plus la mercuriale. Un panier de vingt lignes en faisait
-soixante avant `materialsOf`.
-
-`pricing-budget.e2e-spec.ts` et `pricer.e2e-spec.ts` comptent les **opérations
-ORM**, pas les millisecondes : un chronomètre en CI mesure la machine autant que
-le code, et une suite qui rougit sans raison finit désactivée.
-
-## 7. Où ça vit
-
-| Fichier                                               | Ce qu'il porte                                             |
-| ----------------------------------------------------- | ---------------------------------------------------------- |
-| `pricing/domain/loaded-pricer.ts`                     | le tarificateur — **la seule porte**                       |
-| `pricing/domain/resolve-price.ts`                     | la composition des étages, le scellement, l'arrondi unique |
-| `pricing/domain/resolve-floor.ts` · `floor-policy.ts` | quel plancher vise, et s'il s'ouvre                        |
-| `pricing/domain/specificity.ts`                       | qui gagne un étage                                         |
-| `pricing/domain/volume-tier-prices.ts`                | la grille des paliers                                      |
-| `pricing/domain/volume-commitment.ts`                 | la quantité **retenue** sous engagement                    |
-| `pricing/domain/entities/company-mercuriale.ts`       | la mercuriale, et sa règle dérivée par article             |
-| `pricing/application/pricing-materials.loader.ts`     | la seule séquence de lecture                               |
-| `pricing/application/pricer.ts`                       | la façade `for` / `forAll`                                 |
+Six lectures par lot, en parallèle, quelle que soit sa taille. Les suites
+`test/pricing-budget.e2e-spec.ts` et `test/pricer.e2e-spec.ts` comptent les
+**opérations ORM** (la base de production est facturée à l'opération) à
+l'égalité stricte : un devis anonyme coûte 10 opérations à froid et 5 à chaud,
+et ce nombre ne grandit pas avec le nombre de lignes.
