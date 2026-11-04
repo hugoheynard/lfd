@@ -153,8 +153,9 @@ export interface AllergenContext {
  * est exactement ce qu'on ne veut pas facturer.
  *
  * ⚠️ **Le contexte `b2b` y figure comme les autres**, et son hors taxe n'est PAS
- * `priceMillicents` : celui-ci porte le prix PRO (l'étiquette diminuée du
- * rapport), celui-là l'étiquette elle-même au taux b2b. Les deux sont des hors
+ * `priceMillicents` : celui-ci porte le prix PRO, saisi hors taxe (le rapport
+ * qui le dérivait de l'étiquette est retiré depuis le 2026-10-27), celui-là
+ * l'étiquette elle-même au taux b2b. Les deux sont des hors
  * taxe et c'est tout ce qu'ils partagent.
  */
 function publicPricesOf(
