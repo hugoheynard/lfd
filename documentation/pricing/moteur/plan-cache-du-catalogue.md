@@ -191,6 +191,15 @@ Sonde e2e jetable du 2026-11-04, opérations ORM par appel (froid / chaud) :
 `GET /shop/featured?audience=pro` 3 / 3 ; `GET /shop/catalogue/mine` pro
 13 / 12, perso 8 / 8.
 
+**Taille d'un rayon, mesurée en production le 2026-11-04** (deux lectures
+publiques) : `GET /shop/catalogue` = **121 458 octets** bruts, **11 126**
+compressés en gzip, 161 articles ; `?audience=pro` = 113 134 octets, 149
+articles. Réponse : `cache-control: private, no-cache` et **`vary: Origin`**
+(le CORS de C0 est donc réel). Conséquence pour l'objet des pros (§ 4) :
+1 000 sociétés × ~120 Ko = **~120 Mo** en clair, de l'ordre de la mémoire d'un
+objet (limite non relue) ; **~11 Mo** compressés. L'objet range donc le rayon
+**compressé**, ou dans son stockage SQLite.
+
 ## 3. Le public — Workers Cache
 
 - **Où** : le Worker de l'API gagne le bloc `cache`. Les réponses de
