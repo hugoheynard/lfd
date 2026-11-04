@@ -157,8 +157,12 @@ le nombre de visites publiques d'une journée réelle.
   langue). La liste des paramètres admis est écrite : un paramètre inconnu fait
   passer la requête au conteneur.
 - **La clé chaude** : tous les visiteurs tombent sur la même clé. On la
-  **duplique** sur N objets identiques (N à mesurer, 8 pour commencer), un tiré
-  au hasard par visite ; la purge les vise tous.
+  pourrait la **dupliquer** sur N objets identiques, un tiré au hasard par
+  visite, la purge les visant tous. **On commence à N = 1** (Hugo,
+  2026-11-04) : servir un rayon déjà prêt ne coûte presque rien à l'objet, et
+  la pointe attendue est de quelques requêtes par seconde. N est un réglage, et
+  ne monte que si la mesure montre un goulot : chaque objet de plus est un
+  remplissage de plus après chaque changement.
 - **Le remplissage** : l'objet appelle le conteneur **sans** `If-None-Match`
   ni en-tête d'identité ; il ne garde qu'une réponse **200**, avec son corps et
   son `Content-Type`, la version du rayon relevée par le conteneur **avant**
@@ -304,7 +308,7 @@ la durée d'un objet par visite publique, contre les 6 opérations Prisma
 | C0  | la mesure sur dev déployé, et le coût                                                                  |
 | C1  | la version du rayon : le port, les écritures, la porte des écritures, le regroupement des rafales      |
 | C2  | le cache pro en mémoire du conteneur, version relevée avant de lire ; budget froid / chaud à l'égalité |
-| C3  | l'objet public, dupliqué ; la route de purge ; `lint:cache-control` étendue                            |
+| C3  | l'objet public (N = 1, réglable) ; la route de purge ; `lint:cache-control` étendue                    |
 | C4  | la boutique relit le rayon au retour sur l'onglet                                                      |
 
 Chaque lot a ses tests : une promotion qui se ferme n'est plus servie après la
@@ -320,7 +324,7 @@ du conteneur n'est jamais gardé.
 
 ## 11. Non vérifié
 
-- qu'un objet tiré au hasard parmi N suffit à la pointe : à mesurer ;
+- qu'un seul objet suffit à la pointe : à mesurer (le débit d'un objet n'a pas été relu dans la doc Cloudflare) ;
 - la liste complète des écritures (§5) ;
 - que le rayon public filtre bien les articles réservés : inféré de
   `catalog-viewers.service.ts`, pas tracé jusqu'au filtre ;
