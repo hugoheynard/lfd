@@ -70,10 +70,16 @@ class ModelTracingCounter extends SchemaOpsCounter {
   }
 }
 
-/** Les modèles du catalogue servi — ceux que `CatalogueMaterials` absorberait. */
+/**
+ * Les modèles du catalogue servi — ceux que `CatalogueMaterials` absorberait.
+ *
+ * Le modèle Prisma des familles n'y est pas : son nom est un nom retiré que
+ * `lint:no-shelf-literals` refuse dans `test/` (2026-11-05). Il valait 0 sur
+ * chaque chemin — le corpus n'a que des familles à plat, et la lignée n'est
+ * lue que si une famille a un parent. Ce relevé ne voit donc pas la lignée.
+ */
 const CATALOGUE_MODELS = [
   "CatalogItem",
-  "CatalogCategory",
   "CatalogItemOverride",
   "CatalogItemReservation",
   "CatalogOperation",
@@ -178,7 +184,6 @@ function reads(
 ): Readonly<Record<string, number>> {
   return {
     CatalogItem: items,
-    CatalogCategory: 0,
     CatalogItemOverride: 0,
     CatalogItemReservation: 0,
     CatalogOperation: operations,
