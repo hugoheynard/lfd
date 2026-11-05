@@ -153,6 +153,57 @@ qu'après, pour les cas ciblés (une société, Noël).
 | 1   | **Franco** : seuil HT par audience (global, remplacé par zone) ; une ligne « Livraison offerte » à part (colonnes neuves, checklist « ajouter un terme ») ; rejugé en révision ; « Plus que … » servi par le serveur |
 | 2   | **Promotions sur les frais** : point d'application `delivery_fee` et condition `min_basket` réservée aux frais ; plafond à part des cinq remises au panier                                                           |
 
+## Lots 0 et 1 contredits par `vitruve` (2026-11-05, second passage)
+
+**Corrections** :
+
+- **Le remplacement par zone est NULLABLE** : `null` = la zone reprend le
+  réglage global, une valeur = elle le remplace (geste « revenir au
+  global »). Une colonne NOT NULL recopiée aurait fait remplacer le global
+  par toutes les zones dès le premier jour. Un frais résolu (zone, sinon
+  global) absent pour une audience ouverte = commande refusée par une erreur
+  nommée, jamais gratuite.
+- **Le réglage global vit dans une table neuve à clé naturelle** (sur le
+  modèle d'`OrderOpening`), pas dans `delivery_settings` (dont la ligne peut
+  manquer et que chaque geste réécrit en entier). Son écrivain purge
+  `reglages-publics`.
+- **Le frais est calculé à DEUX endroits** (`price-basket.ts` et
+  `cart-adjustments.service.ts:276`) : le second disparaît (« une seule
+  arithmétique ») ; la résolution zone → global → ancien frais entre dans
+  `deliveryRoute`, qui reçoit déjà l'audience.
+- **La commande doit FIGER le franco** (« offerte, aurait coûté X », et le
+  seuil appliqué) : la recomposition des remises et le bon partiel
+  refabriquent aujourd'hui le frais depuis l'ajustement figé de la zone — une
+  commande au franco se recomposerait au frais plein.
+- **`GET /delivery-zones?audience=`** refuse en 400 une valeur inconnue ;
+  la boutique ET la saisie du staff (quatrième lecteur de `zone.fee`)
+  basculent dans le même déploiement ; le front déduit l'audience du même
+  `audienceOf` que le serveur. Dépend de la bascule « pending = pro ».
+
+**Proposition de `vitruve` sur la décision (e)**, plus légère et dans
+l'esprit de « la ligne de réduction » : le franco est un **tarif** ; le
+frais facturé vaut 0 et la commande fige « livraison offerte, aurait coûté
+15 € » ; la ligne « Livraison offerte » s'**affiche** depuis ce figé (devis,
+bon, facture, e-mail), sans terme comptable négatif. Facture, Factur-X et
+TVA restent inchangés. Une vraie ligne négative comptable toucherait ~65
+fichiers, la TVA par taux et Factur-X. **À trancher par Hugo.**
+
+**Encore à trancher** : la base du seuil (avant ou après les remises, avant
+ou après le bon de fidélité) ; en révision, le seuil **figé** à la passation
+(recommandé) ou le réglage du jour ; l'écart au seuil montré à un
+particulier (TTC « environ », servi par le serveur).
+
+**Sous-lots** :
+
+| Lot | Contenu                                                                                  | Seul ?                |
+| --- | ---------------------------------------------------------------------------------------- | --------------------- |
+| 0a  | table du réglage global + colonnes de zone nullables ; rien ne change encore             | oui                   |
+| 0b  | résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge      | oui                   |
+| 0c  | `GET /delivery-zones?audience=`, boutique et saisie staff                                | après « pending pro » |
+| 1a  | le franco figé sur la commande ; recomposition et bon partiel le lisent ; golden master  | avant 1b              |
+| 1b  | le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé | après 1a              |
+| 1c  | affichage et « Plus que… » servi par le serveur                                          | après 1b              |
+
 # Partie 2 — Le code
 
 ## 0. Lot 0 — le frais de base par audience (Hugo, 2026-11-05)
