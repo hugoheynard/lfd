@@ -139,7 +139,19 @@ qu'après, pour les cas ciblés (une société, Noël).
   pro. ⚠️ Diverge des prix des articles, où une société en attente reçoit le
   tarif particulier (`standingOf`, `customer-audiences.service.ts`) — règle
   propre à la livraison, à écrire comme telle.
-- **(a)** non tranché explicitement : le franco d'abord, par défaut.
+- **(a) Le franco d'abord, la promotion dans la foulée** (Hugo).
+- **(f) La première** : une adresse par audience, toutes deux en cache
+  Cloudflare ; le tarif de livraison pro est public, comme la vitrine pro.
+- **(g) Un pending est un pro partout**, prix des articles compris — décision
+  portée par [`../comptes-client/plan-pros-en-cours-d-inscription.md`](../comptes-client/plan-pros-en-cours-d-inscription.md) § 0.
+
+## Les lots (après les décisions du 2026-11-05)
+
+| Lot | Contenu                                                                                                                                                                                                              |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | **Réglage global de livraison par audience** (frais de base) + remplacement par zone ; colonnes NOT NULL recopiées ; écran limité aux audiences ouvertes ; `GET /delivery-zones?audience=…` en cache Cloudflare      |
+| 1   | **Franco** : seuil HT par audience (global, remplacé par zone) ; une ligne « Livraison offerte » à part (colonnes neuves, checklist « ajouter un terme ») ; rejugé en révision ; « Plus que … » servi par le serveur |
+| 2   | **Promotions sur les frais** : point d'application `delivery_fee` et condition `min_basket` réservée aux frais ; plafond à part des cinq remises au panier                                                           |
 
 # Partie 2 — Le code
 

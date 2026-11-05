@@ -7,6 +7,27 @@
 > (qui est « pro ») : **`vitruve` avant Hugo** (CLAUDE.md § 9 bis).
 > Chaque affirmation sur l'existant cite un fichier ouvert le 2026-10-30.
 
+## 0. Décision de Hugo du 2026-11-05 — un pending est un pro, partout
+
+> 🔴 L'emporte sur le § 1 là où ils divergent. Posée en concevant la
+> livraison offerte ([`../promotions/plan-livraison-offerte.md`](../promotions/plan-livraison-offerte.md),
+> décision g) : « une société en attente reçoit le tarif des pros —
+> partout — et elle peut commander ».
+
+- **Plus de case « traiter en pro »** : une société `pending` est pro, sans
+  réglage. `audienceOf` (`packages/contracts/src/customer-audience.ts`)
+  rend `b2b` pour `pending` comme pour `active` et `suspended` (Q3,
+  2026-11-03) ; la remise de retrait, la livraison (frais pro), les CGV pro,
+  le contact et l'affichage de la boutique suivent. Le prix des articles,
+  lui, est déjà pro pour un pending (§ 2).
+- **Elle commande**, par carte : « au compte » reste réservé à `active`
+  (§ 3.5) — inchangé.
+- **Ce qui reste à vérifier** (vitruve) : les promotions qui visent « pros
+  en cours d'inscription » (elles restent distinctes de « pros actifs ») ;
+  la mercuriale et les réservations d'un pending ; `terminated`, qui doit
+  rester refusé ; les lecteurs de `audienceOf` recomptés (§ 10, § 11) ;
+  les commandes déjà passées (snapshot, inchangées).
+
 ## 1. La décision (révisée le 2026-10-30 après vitruve)
 
 Trois cas, trois règles, **une seule fabrique qui décide** (§ 3) :
