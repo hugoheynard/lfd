@@ -85,7 +85,7 @@ ne dit la révision), et **le stock n'est pas dans la vue** — la limite notée
 par Hugo ne coûte rien ici ; la vraie limite côté commandes est le plancher
 dynamique.
 
-## 1. Phase 1 — 🟦 bâtie le 2026-11-04 (la recommandation de `vitruve`), sur `dev`
+## 1. Phase 1 — ✅ en production le 2026-11-05 (`398363b`), mesurée : rayon resservi en 62 ms côté API au lieu de 349 ms
 
 - **Plafond : 5 minutes** au lieu de 30 s (`RECOGNISED_SHELF_LIFETIME_MS`).
   Tout ce qui n'est pas connu au calcul — une ouverture de promotion, une
