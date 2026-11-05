@@ -1,5 +1,5 @@
 import { HttpContext } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { DestroyRef, inject, Injectable } from '@angular/core';
 // Par le sous-chemin sans zod : les lecteurs sont chargés au démarrage.
 import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import type { Observable, Subscription } from 'rxjs';
@@ -76,6 +76,11 @@ export class ContextKeyedMemory {
 
   register(keyed: Forgettable): void {
     this.held.add(keyed);
+  }
+
+  /** Un lecteur détruit (fourni par un composant) n'a plus rien à oublier. */
+  unregister(keyed: Forgettable): void {
+    this.held.delete(keyed);
   }
 
   clear(): void {
@@ -303,7 +308,14 @@ export function contextKeyed<T>(load: (key: ContextKey) => Observable<T>): Conte
   context.whenAbandoned((workspace) => {
     keyed.forget(workspace);
   });
-  inject(ContextKeyedMemory).register(keyed);
+  const memory = inject(ContextKeyedMemory);
+  memory.register(keyed);
+  // Un lecteur fourni par un composant meurt avec lui : la mémoire racine ne
+  // le retient pas, et ses lectures en vol sont coupées.
+  inject(DestroyRef).onDestroy(() => {
+    memory.unregister(keyed);
+    keyed.clear();
+  });
   return keyed;
 }
 

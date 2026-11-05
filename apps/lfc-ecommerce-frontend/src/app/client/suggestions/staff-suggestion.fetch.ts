@@ -11,9 +11,11 @@ import type {
   UsualSuggestionView,
 } from '@lfd/contracts';
 import { firstValueFrom, type Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
+import { VISITOR } from '../client-context.service';
+import { type ContextKey, workspaceRequestOf } from '../context-keyed/context-keyed';
 import { isLocked } from '../shop/locked-item';
 
 /**
@@ -70,7 +72,7 @@ export function fetchStaffSuggestions(
  * (`documentation/catalogue/plan-articles-sur-mesure.md`, L3). Le serveur ne
  * sert pas d'article verrouillé aux suggestions du panier (S7). Les habituels
  * font exception (Hugo, 2026-10-30) : le client l'a déjà commandé, et doit
- * comprendre pourquoi il ne peut plus — {@link fetchUsualSuggestions} garde
+ * comprendre pourquoi il ne peut plus — {@link usualSuggestionsFor} garde
  * l'article, que la carte montre grisé avec sa raison, sans « + ».
  */
 function orderableOnly<V extends { readonly item: ShopItemView }>(views: readonly V[]): V[] {
@@ -83,19 +85,67 @@ function orderableOnly<V extends { readonly item: ShopItemView }>(views: readonl
  * courant. Même morceau que les autres suggestions : rien à charger de plus.
  * Un article verrouillé y RESTE, grisé par la carte (pas d'`orderableOnly`).
  */
-export function fetchUsualSuggestions(
+export function usualSuggestionsFor(
   http: HttpClient,
   payload: UsualSuggestionsPayload,
   token: Observable<string>,
-): Promise<readonly UsualSuggestionView[]> {
+  key: ContextKey,
+): Observable<readonly UsualSuggestionView[]> {
   const route = `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/usuals/mine`;
-  return firstValueFrom(
-    token.pipe(
-      switchMap((bearer) =>
-        http.post<UsualSuggestionView[]>(route, payload, {
-          headers: { Authorization: `Bearer ${bearer}` },
-        }),
+  return token.pipe(
+    switchMap((bearer) =>
+      http.post<UsualSuggestionView[]>(
+        route,
+        payload,
+        workspaceRequestOf(key, { Authorization: `Bearer ${bearer}` }),
       ),
     ),
   );
+}
+
+/**
+ * La requête d'une lecture de la brique (`contextKeyed`) : la route murée si
+ * la clé est un espace, la publique pour un visiteur — et l'en-tête d'espace
+ * tiré de la CLÉ (`workspaceRequestOf`), jamais de l'espace courant à l'envoi.
+ */
+function postFor<V extends { readonly item: ShopItemView }>(
+  http: HttpClient,
+  route: string,
+  payload: HomeSuggestionsPayload | ProductSuggestionsPayload,
+  token: Observable<string>,
+  key: ContextKey,
+): Observable<readonly V[]> {
+  const request =
+    key.workspace === VISITOR
+      ? http.post<V[]>(route, payload, workspaceRequestOf(key))
+      : token.pipe(
+          switchMap((bearer) =>
+            http.post<V[]>(
+              `${route}/mine`,
+              payload,
+              workspaceRequestOf(key, { Authorization: `Bearer ${bearer}` }),
+            ),
+          ),
+        );
+  return request.pipe(map(orderableOnly));
+}
+
+/** Les suggestions de l'accueil pour une clé de la brique (cf. {@link fetchStaffSuggestions}). */
+export function homeSuggestionsFor(
+  http: HttpClient,
+  payload: HomeSuggestionsPayload,
+  token: Observable<string>,
+  key: ContextKey,
+): Observable<readonly HomeSuggestionView[]> {
+  return postFor(http, `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/home`, payload, token, key);
+}
+
+/** La suggestion d'une fiche pour une clé de la brique (cf. {@link fetchStaffSuggestions}). */
+export function productSuggestionsFor(
+  http: HttpClient,
+  payload: ProductSuggestionsPayload,
+  token: Observable<string>,
+  key: ContextKey,
+): Observable<readonly ProductSuggestionView[]> {
+  return postFor(http, `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/product`, payload, token, key);
 }
