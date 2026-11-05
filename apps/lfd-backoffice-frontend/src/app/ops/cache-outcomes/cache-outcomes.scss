@@ -32,7 +32,10 @@
 
 .outcomes {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-sm);
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.hint {
+  display: block;
 }

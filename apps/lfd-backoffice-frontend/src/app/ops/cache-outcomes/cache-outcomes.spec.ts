@@ -69,4 +69,27 @@ describe('CacheOutcomes', () => {
       expect(text(fixture)).toContain('Aucune lecture de cache sur les 30 dernières minutes');
     }
   });
+
+  /**
+   * Hugo, 2026-11-05 : « c'est pas clair la lecture des datas ». La carte dit
+   * d'abord la part servie sans aller en base, puis ce que veut dire chaque issue.
+   */
+  it('dit en tête la part servie sans aller en base, et explique chaque issue', () => {
+    const fixture = render([
+      {
+        cache: 'principal',
+        total: 26,
+        windowMinutes: 30,
+        outcomes: [
+          { outcome: 'memory', count: 24, share: 0.923 },
+          { outcome: 'joined', count: 1, share: 0.038 },
+          { outcome: 'resolved-absent', count: 1, share: 0.038 },
+        ],
+      },
+    ]);
+    const content = text(fixture);
+    expect(content).toContain('92 % servis sans aller en base');
+    expect(content).toContain('trouvé en mémoire, sans aller en base');
+    expect(content).toContain('premier appel après un redémarrage');
+  });
 });

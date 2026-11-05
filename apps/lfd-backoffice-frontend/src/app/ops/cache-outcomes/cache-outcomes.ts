@@ -33,6 +33,31 @@ const OUTCOME_LABEL: Readonly<Record<string, string>> = {
   stored: 'rangé',
   stale_refused: 'refusé : périmé',
   not_kept: 'non gardé',
+  fallback_timeout: 'délai dépassé',
+};
+
+/**
+ * Ce que veut dire chaque issue, en une phrase pour l'équipe (Hugo,
+ * 2026-11-05 : « c'est pas clair la lecture des datas »). Une issue inconnue
+ * n'a pas d'explication.
+ */
+const OUTCOME_HINT: Readonly<Record<string, string>> = {
+  memory: 'trouvé en mémoire, sans aller en base (~10 ms)',
+  joined: 'deux appels du même client au même instant : une seule lecture en base pour les deux',
+  'resolved-absent':
+    'rien en mémoire pour ce client (souvent : premier appel après un redémarrage) — relu en base',
+  'resolved-stamp': 'un compte, une société ou un rattachement a changé : relu en base',
+  'resolved-expired': 'gardé plus de 10 minutes : relu en base par prudence',
+  recorded: 'le jeton apportait une preuve neuve (adresse vérifiée) : enregistrée, puis relu',
+  'no-stamp': "l'estampille manquait en base : rien n'est gardé, relu à chaque appel",
+  hit: 'servi depuis le cache',
+  miss: 'absent du cache : recalculé',
+  stamp_moved: 'un prix a changé depuis : recalculé',
+  cacheable: 'la réponse a pu être gardée par Cloudflare',
+  stored: 'rangé, prêt pour les visites suivantes',
+  stale_refused: 'une version plus récente était déjà rangée : rien écrasé',
+  not_kept: 'non gardé (rien à ranger)',
+  fallback_timeout: "le cache n'a pas répondu à temps : recalculé sans lui",
 };
 
 /** Les issues où le cache a rendu service sans retourner en base. */
@@ -41,6 +66,7 @@ const GOOD_OUTCOMES: ReadonlySet<string> = new Set(['memory', 'hit', 'cacheable'
 /** Une issue prête à afficher ; `featured` marque la première issue « bonne » du cache. */
 export interface OutcomeLine {
   readonly label: string;
+  readonly hint: string | null;
   readonly count: number;
   readonly share: number;
   readonly featured: boolean;
@@ -52,6 +78,8 @@ export interface CacheLine {
   readonly label: string;
   readonly total: number;
   readonly windowMinutes: number;
+  /** La part servie sans retourner en base — la somme des parts « bonnes » servies par le serveur. */
+  readonly servedShare: number;
   readonly outcomes: readonly OutcomeLine[];
 }
 
@@ -59,6 +87,7 @@ function toLines(outcomes: readonly CacheOutcomeView[]): OutcomeLine[] {
   const featuredIndex = outcomes.findIndex((o) => GOOD_OUTCOMES.has(o.outcome));
   return outcomes.map((o, index) => ({
     label: OUTCOME_LABEL[o.outcome] ?? o.outcome,
+    hint: OUTCOME_HINT[o.outcome] ?? null,
     count: o.count,
     share: o.share,
     featured: index === featuredIndex,
@@ -94,6 +123,9 @@ export class CacheOutcomes {
       label: CACHE_LABEL[report.cache] ?? report.cache,
       total: report.total,
       windowMinutes: report.windowMinutes,
+      servedShare: report.outcomes
+        .filter((o) => GOOD_OUTCOMES.has(o.outcome))
+        .reduce((sum, o) => sum + o.share, 0),
       outcomes: toLines(report.outcomes),
     })),
   );
