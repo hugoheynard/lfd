@@ -5,12 +5,15 @@ import type {
   MyLoyaltyConversionResponse,
   MyLoyaltyView,
 } from '@lfd/contracts';
-import { firstValueFrom } from 'rxjs';
+// Par le sous-chemin sans zod : la fidélité est lue par le menu, au démarrage.
+import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
+import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
-import { ClientWorkspace } from './client-workspace.service';
+import { ClientContext, VISITOR } from './client-context.service';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-keyed/context-keyed';
 
 /** Où en est la lecture de `GET me/loyalty`. */
 export type LoyaltyStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -35,6 +38,9 @@ const HTTP_CONFLICT = 409;
 
 const CLOSED: MyLoyaltyView = { open: false };
 
+/** La seule clé qui ait une fidélité : l'espace personnel. */
+const PERSONAL_KEY: ContextKey = { workspace: PERSONAL_WORKSPACE, own: '' };
+
 /**
  * **La fidélité d'une personne connectée** — `GET me/loyalty` et
  * `POST me/loyalty/conversions` (plan des points, §12, E1.1).
@@ -54,69 +60,89 @@ const CLOSED: MyLoyaltyView = { open: false };
 export class ClientLoyalty {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
   private readonly state = signal<LoyaltyStatus>('idle');
-  private readonly current = signal<MyLoyaltyView | null>(null);
+  /** Avance à chaque réponse : la brique n'est pas un signal. */
+  private readonly answered = signal(0);
+
+  /**
+   * La fidélité, rangée par clé de contexte (lot d de
+   * `caching-usage/plan-espace-retenu.md`) : seul l'espace personnel en a
+   * une, et rien n'est rendu pour un autre espace que celui qui s'affiche.
+   */
+  private readonly keyed = contextKeyed((key) => this.read(key));
+
+  /** L'espace qui s'affiche ({@link VISITOR} sans session), ou `null` tant qu'il n'est pas connu. */
+  private readonly shownSpace = computed<string | null>(() =>
+    this.auth.isAuthenticated() ? this.context.prefix() : VISITOR,
+  );
 
   readonly status = this.state.asReadonly();
-  /** `null` tant que rien n'a été lu. */
-  readonly view = this.current.asReadonly();
+
+  /** `null` tant que rien n'a été lu ; fermée, sans rien demander, hors de l'espace personnel. */
+  readonly view = computed<MyLoyaltyView | null>(() => {
+    const space = this.shownSpace();
+    if (space === null) {
+      return null;
+    }
+    if (space !== PERSONAL_WORKSPACE) {
+      return CLOSED;
+    }
+    this.answered();
+    return this.keyed.shown(PERSONAL_KEY) ?? null;
+  });
 
   /** Le programme est-il ouvert à la personne, ici et maintenant ? Faux tant qu'on ne sait pas. */
-  readonly isOpen = computed(() => this.current()?.open === true);
-
-  /** L'espace pour lequel la vue a été lue ou demandée — la garde contre le double appel. */
-  private readFor: string | null = null;
+  readonly isOpen = computed(() => this.view()?.open === true);
 
   constructor() {
+    // Une lecture par ARRIVÉE dans l'espace personnel, comme avant la brique :
+    // y revenir relit le solde.
     effect(() => {
-      const signedIn = this.auth.isAuthenticated();
-      const space = this.workspace.current();
-      const personal = this.workspace.isPersonal();
+      const space = this.shownSpace();
       untracked(() => {
-        if (!signedIn || (space !== null && !personal)) {
-          this.readFor = null;
-          this.current.set(CLOSED);
+        if (space === PERSONAL_WORKSPACE) {
+          void this.load();
+        } else if (space !== null) {
           this.state.set('ready');
-          return;
         }
-        // Reconnu, espace pas encore connu : on attend, comme le décompte.
-        if (space === null || this.readFor === space) {
-          return;
-        }
-        void this.load();
       });
     });
   }
 
   /**
    * Lit la fidélité. Un échec est un ÉTAT : la dernière vue lue reste en
-   * place, l'écran dit qu'il n'a pas pu relire.
+   * place, l'écran dit qu'il n'a pas pu relire. Hors de l'espace personnel,
+   * rien à lire : la vue est déjà fermée.
    */
   async load(): Promise<void> {
-    if (!this.auth.isAuthenticated()) {
-      this.current.set(CLOSED);
+    if (untracked(() => this.shownSpace()) !== PERSONAL_WORKSPACE) {
       this.state.set('ready');
       return;
     }
-    this.readFor = this.workspace.current();
     this.state.set('loading');
     try {
-      const view = await firstValueFrom(
-        this.auth.accessToken$().pipe(
-          switchMap((token) =>
-            this.http.get<MyLoyaltyView>(`${AUTH_CONFIG.apiBaseUrl}/me/loyalty`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ),
-        ),
-      );
-      this.current.set(view);
+      await this.keyed.read(PERSONAL_KEY);
+      this.answered.update((count) => count + 1);
       this.state.set('ready');
     } catch {
       this.state.set('failed');
     }
+  }
+
+  /** L'appel — l'en-tête d'espace vient de la clé, pas de l'envoi. */
+  private read(key: ContextKey): Observable<MyLoyaltyView> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<MyLoyaltyView>(
+            `${AUTH_CONFIG.apiBaseUrl}/me/loyalty`,
+            workspaceRequestOf(key, { Authorization: `Bearer ${token}` }),
+          ),
+        ),
+      );
   }
 
   /**

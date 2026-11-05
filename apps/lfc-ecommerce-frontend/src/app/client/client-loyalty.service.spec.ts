@@ -140,6 +140,31 @@ describe('ClientLoyalty', () => {
     expect(loyalty.isOpen()).toBe(true);
   });
 
+  /**
+   * Lot d (brique par clé de contexte) : pendant la bascule, l'écran garde
+   * l'espace d'où l'on part ; une fois la société acceptée, rien de la
+   * fidélité personnelle n'est rendu, et aucun appel n'est fait pour elle.
+   */
+  it('rien de l’ancien espace n’est rendu après une bascule', async () => {
+    TestBed.tick();
+    await settle();
+    http.expectOne((r) => isRead(r.url)).flush(OPEN_LOYALTY);
+    await settle();
+    expect(loyalty.isOpen()).toBe(true);
+
+    space.switching.set({ from: space.current(), to: 'co_1' });
+    space.current.set('co_1');
+    TestBed.tick();
+    expect(loyalty.view()).toEqual(OPEN_LOYALTY);
+
+    space.switching.set(null);
+    TestBed.tick();
+    await settle();
+    expect(loyalty.view()).toEqual({ open: false });
+    expect(loyalty.isOpen()).toBe(false);
+    http.verify();
+  });
+
   it('se ferme sans appel dans un espace société', async () => {
     space.current.set('co_1');
     TestBed.tick();
