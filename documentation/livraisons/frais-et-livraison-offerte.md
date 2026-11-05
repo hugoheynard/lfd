@@ -4,7 +4,7 @@
 > qui l'ont façonné, pour qu'on s'en souvienne. Le chantier vit dans le plan
 > [`plan-livraison-offerte.md`](../promotions/plan-livraison-offerte.md) (lots
 > 0b, 1a, 1b bâtis ; 1c bâti côté serveur sur `dev`, son affichage en
-> boutique à faire ; 0c bâti côté serveur, ses fronts à faire ; 2 à faire). Chaque choix porte sa date et qui
+> boutique bâti ; 0c bâti, fronts compris ; 2 à faire). Chaque choix porte sa date et qui
 > l'a pris.
 
 # Partie 1 — L'explication simple
@@ -94,9 +94,6 @@ paramètre que personne ne comprendra dans six mois.
   réglage global en a une : vide veut dire « reprendre le global ». Le seul
   contournement est un seuil très haut. Ouvrir ce cas demande une valeur de
   plus dans le contrat.
-- **Le client ne voit encore rien** : le devis sert depuis le 2026-11-05
-  (lot 1c, serveur) « offert » ou le manque, mais la boutique ne l'affiche
-  pas encore. Le devis et la commande appliquent déjà la livraison offerte.
 - **Pas de promotion sur les frais** (« offerte le samedi », « −50 % du port
   en décembre ») : lot 2, avec son propre type de promotion et son propre
   formulaire, sans champ produit.
@@ -140,8 +137,13 @@ que par la vue admin.
   écriture du réglage global purgent l'étiquette après validation.
 - ⚠️ Avant le 0c, `fee` y était l'ancien frais unique de la zone : la
   boutique affichait « 0 € » quand le devis facturait le frais global
-  (constaté en production par Hugo le 2026-11-05). La boutique et la saisie
-  staff ne passent pas encore `?audience=`.
+  (constaté en production par Hugo le 2026-11-05). Depuis le 2026-11-05, la
+  boutique lit `?audience=` de l'espace **montré** (`ServicePoints`, un seul
+  lecteur, relu quand cette audience change) et la saisie de commande du
+  staff celle du client pour qui l'on commande (`DeliveryZonesService.listFor`,
+  dans `nouvelle-commande` et `modifier-commande`). Les autres écrans du
+  back-office (véhicules, grille de prix, promotions, adresses non couvertes)
+  ne lisent que préfixes et libellés et gardent `list()` sans audience.
 
 L'audience d'un acheteur — `pending` compris côté pro — est tenue par
 [`customer-audience.ts`](../../packages/contracts/src/customer-audience.ts).
@@ -229,11 +231,11 @@ d'erreur : `errors` de `fold-number-input` attend des erreurs de signal forms.
 Le devis de la boutique (`POST /shop/quote`, `/shop/quote/mine`) porte
 `freeDelivery` (`ShopQuoteFreeDeliveryView`, `packages/contracts/src/shop-quote.ts`) :
 
-| Cas                                                      | `freeDelivery`                                           |
-| -------------------------------------------------------- | -------------------------------------------------------- |
-| livraison, base ≥ seuil                                  | `{ status: "offered" }` — `deliveryFeeCents` vaut 0      |
-| livraison, base < seuil                                  | `{ status: "short", remainingCents }` — le manque **HT** |
-| retrait, sans acheminement, sans seuil, zone à frais nul | absente                                                  |
+| Cas                                                      | `freeDelivery`                                                                                                          |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| livraison, base ≥ seuil                                  | `{ status: "offered" }` — `deliveryFeeCents` vaut 0                                                                     |
+| livraison, base < seuil                                  | `{ status: "short", remainingCents, remainingTtcCents? }` — le manque **HT**, et en TTC « environ » pour un particulier |
+| retrait, sans acheminement, sans seuil, zone à frais nul | absente                                                                                                                 |
 
 - **« Coursier offert », sans montant** (Hugo, 2026-11-05) : le devis ne sert
   ni le montant offert ni le seuil — aucun écran ne les lit.
@@ -241,7 +243,36 @@ Le devis de la boutique (`POST /shop/quote`, `/shop/quote/mine`) porte
   (`orders/domain/services/free-delivery-judgement.ts`), appelé par
   `basketTermsOf` à côté du jugement, porté par `BasketAmounts.freeDeliveryProgress`
   et recopié par `shop-quote-view.ts`. L'écran ne recalcule rien.
-- ⚠️ **Le manque est HT**, comme le seuil, y compris pour un particulier qui
-  lit du TTC. La réserve de Hugo (b) — montrer au particulier un écart dans la
-  base qu'il lit — n'est **pas tranchée** : aucun équivalent TTC n'est servi.
+- **Le manque est HT**, comme le seuil. **Un particulier voit en plus le
+  manque en TTC « environ »** (Hugo, 2026-11-05) : `remainingTtcCents =
+ceil(remainingCents × goodsNetTtcCents / goodsNetHtCents)`, le rapport TTC/HT
+  des marchandises déjà au panier sur la même base (après remises, avant le
+  bon), arrondi au centime **supérieur** — on n'annonce jamais un manque trop
+  petit. Arithmétique entière (`remainingTtcCentsOf`, à côté de
+  `freeDeliveryProgressOf`). Servi seulement pour une commande `exact_ht`
+  (le TTC net des marchandises vient de la même `composeExactOrder` que la
+  base HT) ; absent pour un pro (`line_ht`) et quand la base HT vaut 0 (pas de
+  taux inventé). Le seuil, lui, reste jugé en HT.
 - Le devis staff (saisie de commande) ne porte rien de neuf.
+
+### Ce que la boutique affiche (2026-11-05)
+
+Dans le décompte du panier (`client/cart/cart-summary/`, popover et panier
+entier) :
+
+| `freeDelivery` | Pro (espace montré `b2b`)                                  | Particulier                                                                                       |
+| -------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `offered`      | ligne « Coursier offert », icône `truck`, sans montant     | idem                                                                                              |
+| `short`        | « Plus que {remainingCents} HT pour la livraison offerte » | « Plus qu'environ {remainingTtcCents} pour la livraison offerte » ; rien sans `remainingTtcCents` |
+| absente        | rien                                                       | rien                                                                                              |
+
+- **Rien à qui la livraison n'est pas proposée** (Hugo, 2026-11-05) : les deux
+  mentions se taisent quand `GET /delivery-availability` ferme le coursier à
+  la clientèle de l'écran (`openToB2b` / `openToB2c`) ; non lu, le réglage
+  vaut ouvert, comme partout dans la boutique.
+- Aucun calcul : les montants sont ceux du devis, mis en forme par
+  `formatCents`. Textes au dictionnaire (`cart.courierOffered`,
+  `cart.freeDeliveryShort`, `cart.freeDeliveryShortTtc`).
+- Le frais d'une zone s'écrit par une seule fonction, `zoneFeeLabel`
+  (`client/shop/pickup-points.store.ts`), que le dialogue d'adresse et le
+  carnet du compte partagent.

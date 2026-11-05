@@ -135,6 +135,8 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   fonctionPlaceholder: 'Fonction — exemple',
   form: 'Formulaire',
   free: 'Adresse libre',
+  freeDeliveryShort: 'Livraison offerte — ce qu’il manque (pros)',
+  freeDeliveryShortTtc: 'Livraison offerte — ce qu’il manque, environ (particuliers)',
   fri: 'Vendredi',
   fromAccount: 'Depuis le compte',
   full: 'Complet',

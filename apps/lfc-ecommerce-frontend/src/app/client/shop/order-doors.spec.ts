@@ -75,7 +75,10 @@ describe('OrderDoors — à qui la livraison est ouverte', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: FoldPanelHostService, useValue: {} },
-        { provide: ClientAudience, useValue: { shown: signal(audience) } },
+        {
+          provide: ClientAudience,
+          useValue: { shown: signal(audience), current: signal(audience) },
+        },
       ],
     });
     // `null` = réglage pas encore lu : le dépôt garde son défaut, ouvert aux deux.
@@ -157,7 +160,7 @@ describe('OrderDoors.choose — rien de choisi', () => {
             },
           },
         },
-        { provide: ClientAudience, useValue: { shown: signal('b2b') } },
+        { provide: ClientAudience, useValue: { shown: signal('b2b'), current: signal('b2b') } },
         VISITOR_AUTH,
       ],
     });
@@ -271,7 +274,7 @@ describe('OrderDoors — à qui le retrait est ouvert', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: FoldPanelHostService, useValue: {} },
-        { provide: ClientAudience, useValue: { shown: signal('b2c') } },
+        { provide: ClientAudience, useValue: { shown: signal('b2c'), current: signal('b2c') } },
         VISITOR_AUTH,
       ],
     });
@@ -334,7 +337,7 @@ describe('OrderDoors — le brouillon du parcours', () => {
             },
           },
         },
-        { provide: ClientAudience, useValue: { shown: signal('b2c') } },
+        { provide: ClientAudience, useValue: { shown: signal('b2c'), current: signal('b2c') } },
         VISITOR_AUTH,
       ],
     });
@@ -630,7 +633,7 @@ describe('OrderDoors — la matrice des parcours', () => {
         },
         // Les créneaux de la maison vers laquelle on bascule.
         { provide: PublicSlots, useValue: { forDay: () => Promise.resolve(elsewhere) } },
-        { provide: ClientAudience, useValue: { shown: signal('b2b') } },
+        { provide: ClientAudience, useValue: { shown: signal('b2b'), current: signal('b2b') } },
         VISITOR_AUTH,
       ],
     });
@@ -891,7 +894,7 @@ describe('OrderDoors.designate — le lien direct', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: FoldPanelHostService, useValue: {} },
-        { provide: ClientAudience, useValue: { shown: signal('b2c') } },
+        { provide: ClientAudience, useValue: { shown: signal('b2c'), current: signal('b2c') } },
         VISITOR_AUTH,
       ],
     });

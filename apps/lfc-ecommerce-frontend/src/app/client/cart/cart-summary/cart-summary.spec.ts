@@ -259,6 +259,8 @@ describe('CartSummary — les points à gagner', () => {
           postalPrefixes: ['73150'],
           label: 'Val d’Isère',
           fee: { mode: 'amount', cents: 1200 },
+          audience: 'b2c',
+          freeDeliveryThresholdCents: null,
         },
       ],
     );
@@ -915,5 +917,139 @@ describe('CartSummary — pendant la relecture du catalogue', () => {
     expect(
       host.querySelectorAll('.lines > li').length > 0 || host.querySelector('.empty') !== null,
     ).toBe(true);
+  });
+});
+
+/**
+ * Plan `plan-livraison-offerte.md`, 1c : la livraison offerte telle que le
+ * devis la juge — « Coursier offert » sans montant, « Plus que… » aux pros.
+ */
+describe('CartSummary — la livraison offerte (1c)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const VIEW: MyShopQuoteView = {
+    lines: [],
+    subtotalHtCents: 4000,
+    discountCents: 0,
+    discountAdjustment: null,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 0,
+    deliveryVatMode: 'standard',
+    vat: [],
+    pretaxCents: 4000,
+    totalCents: 4220,
+    loyaltyPointsToEarn: null,
+    voucherTotalEffectCents: 0,
+    voucherRemainderCents: null,
+  };
+
+  function quotedIn(
+    space: WorkspaceDouble,
+    view: MyShopQuoteView,
+    availability: { openToB2b?: boolean; openToB2c?: boolean } | null = null,
+  ): HTMLElement {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(space),
+        provideRecognised(),
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    if (availability !== null) {
+      TestBed.inject(ServicePoints).receive([], [], [], availability);
+    }
+    TestBed.inject(ClientCart).add('VIE-001');
+    const fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    TestBed.tick();
+    vi.advanceTimersByTime(400);
+    TestBed.tick();
+    TestBed.inject(HttpTestingController)
+      .match((r) => r.url.includes('/shop/quote'))
+      .forEach((request) => request.flush(view));
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const PRO = (): WorkspaceDouble => workspaceDouble(TOMMEUSES.id, [TOMMEUSES]);
+
+  it('dit « Coursier offert », avec l’icône du coursier et sans montant', () => {
+    const el = quotedIn(PRO(), { ...VIEW, freeDelivery: { status: 'offered' } });
+
+    const row = el.querySelector('.courier-offered')?.closest('.row');
+    expect(row?.textContent?.trim()).toBe(FR.cart.courierOffered);
+    expect(row?.querySelector('fold-icon')).not.toBeNull();
+    expect(row?.querySelector('dd')).toBeNull();
+  });
+
+  it('dit au pro ce qu’il manque, tel que le serveur le sert', () => {
+    const el = quotedIn(PRO(), {
+      ...VIEW,
+      freeDelivery: { status: 'short', remainingCents: 1200 },
+    });
+
+    expect(el.textContent).toContain(`Plus que ${formatCents(1200)} HT pour la livraison offerte`);
+    expect(el.querySelector('.courier-offered')).toBeNull();
+  });
+
+  it('dit au particulier ce qu’il manque en TTC, « environ », tel que servi', () => {
+    const el = quotedIn(workspaceDouble(), {
+      ...VIEW,
+      freeDelivery: { status: 'short', remainingCents: 1200, remainingTtcCents: 1266 },
+    });
+
+    expect(el.textContent).toContain(
+      `Plus qu’environ ${formatCents(1266)} pour la livraison offerte`,
+    );
+    expect(el.textContent).not.toContain(`${formatCents(1200)} HT`);
+  });
+
+  it('ne dit rien au particulier quand le TTC n’est pas servi', () => {
+    const el = quotedIn(workspaceDouble(), {
+      ...VIEW,
+      freeDelivery: { status: 'short', remainingCents: 1200 },
+    });
+
+    expect(el.textContent).not.toContain('Plus qu');
+  });
+
+  /** Hugo, 2026-11-05 : rien de la livraison offerte à qui le coursier est fermé. */
+  it('ni « Coursier offert » ni « Plus que » au pro quand la livraison lui est fermée', () => {
+    for (const freeDelivery of [
+      { status: 'offered' } as const,
+      { status: 'short', remainingCents: 1200 } as const,
+    ]) {
+      const el = quotedIn(PRO(), { ...VIEW, freeDelivery }, { openToB2b: false });
+      expect(el.querySelector('.courier-offered')).toBeNull();
+      expect(el.textContent).not.toContain('Plus que');
+    }
+  });
+
+  it('ni « Plus qu’environ » au particulier quand la livraison lui est fermée', () => {
+    const el = quotedIn(
+      workspaceDouble(),
+      { ...VIEW, freeDelivery: { status: 'short', remainingCents: 1200, remainingTtcCents: 1266 } },
+      { openToB2c: false },
+    );
+    expect(el.textContent).not.toContain('Plus qu');
+  });
+
+  it('ne dit rien sans jugement de livraison offerte', () => {
+    const el = quotedIn(PRO(), VIEW);
+
+    expect(el.querySelector('.courier-offered')).toBeNull();
+    expect(el.textContent).not.toContain('Plus que');
+    expect(el.textContent).not.toContain(FR.cart.courierOffered);
   });
 });

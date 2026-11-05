@@ -1,7 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import type {
-  DeliveryZoneView,
+  AudienceDeliveryZoneView,
+  CartAdjustment,
+  CustomerAudience,
   FulfillmentDayView,
   AudiencePickupAddressView,
 } from '@lfd/contracts';
@@ -14,6 +16,8 @@ import { firstValueFrom, switchMap } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { ClientAudience } from '../client-audience.service';
+import { formatCents, formatRate } from '../format-money';
 import { PickupListGateway } from './pickup-list.gateway';
 
 /**
@@ -55,6 +59,16 @@ export class ServicePoints {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly list = inject(PickupListGateway);
+  private readonly audience = inject(ClientAudience);
+
+  /**
+   * La clientèle pour qui {@link zoneList} a été demandée, ou `null`. Depuis
+   * le 2026-11-05 (plan `plan-livraison-offerte.md`, 0c), `fee` est le frais
+   * RÉSOLU de la clientèle : la liste d'un particulier ne vaut pas pour un
+   * pro. C'est l'audience de l'espace MONTRÉ (`ClientAudience.current`), pas
+   * celle de l'espace demandé : le frais suit l'écran qu'on voit.
+   */
+  private zonesAudience: CustomerAudience | null = null;
 
   /**
    * Pour QUI la liste des points a été lue — {@link VISITOR} ou l'espace
@@ -65,7 +79,7 @@ export class ServicePoints {
   private pickupsReader: string | null = null;
 
   private readonly pickupList = signal<readonly AudiencePickupAddressView[]>([]);
-  private readonly zoneList = signal<readonly DeliveryZoneView[]>([]);
+  private readonly zoneList = signal<readonly AudienceDeliveryZoneView[]>([]);
   private readonly dayList = signal<readonly FulfillmentDayView[]>([]);
   private readonly settingsHeld = signal<PublicDeliveryAvailabilityView | null>(null);
   /** Le lecteur pour qui {@link pickupList} a été RÉELLEMENT servie, ou `null`. */
@@ -183,6 +197,16 @@ export class ServicePoints {
         });
       }
     });
+    // L'audience MONTRÉE change — reconnaissance, bascule perso ↔ société
+    // acceptée : les zones se relisent pour elle, si quelqu'un les a lues.
+    effect(() => {
+      const audience = this.audience.current();
+      if (audience !== null && this.asked && audience !== this.zonesAudience) {
+        untracked(() => {
+          void this.refreshZones(audience);
+        });
+      }
+    });
   }
 
   /**
@@ -235,7 +259,7 @@ export class ServicePoints {
    */
   receive(
     pickups: readonly ServedPickup[],
-    zones: readonly DeliveryZoneView[],
+    zones: readonly AudienceDeliveryZoneView[],
     days: readonly ServedDay[] = [],
     settings: ServedDeliveryAvailability | null = null,
   ): void {
@@ -248,6 +272,7 @@ export class ServicePoints {
     // remplacerait par un appel que la suite n'attend pas.
     this.pickupsReader = this.readerKey();
     this.servedFor.set(this.pickupsReader);
+    this.zonesAudience = this.audience.current();
   }
 
   /**
@@ -280,16 +305,22 @@ export class ServicePoints {
     } else {
       this.pickupsReader = reader;
     }
+    // Audience pas encore connue (reconnu, `/me` en route) : les zones
+    // attendent, l'effet les lira pour elle.
+    const audience = this.audience.current();
+    this.zonesAudience = audience;
     try {
       const [, zones, days, settings] = await Promise.all([
         reader === null ? Promise.resolve() : this.servePickups(reader),
-        firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
+        audience === null ? Promise.resolve(null) : this.zonesOf(audience),
         this.daysFor(this.daysQuery()),
         firstValueFrom(
           this.http.get<PublicDeliveryAvailabilityView>(`${base}/delivery-availability`),
         ).catch(() => null),
       ]);
-      this.zoneList.set(zones);
+      if (zones !== null && this.zonesAudience === audience) {
+        this.zoneList.set(zones);
+      }
       this.dayList.set(days);
       this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     } catch {
@@ -316,6 +347,33 @@ export class ServicePoints {
         // Vide : la liste connue, s'il y en a une, était celle d'un autre lecteur.
         this.pickupsFailed.set(true);
       }
+    }
+  }
+
+  /** Les zones servies à CETTE clientèle, son frais résolu (0c). */
+  private zonesOf(audience: CustomerAudience): Promise<readonly AudienceDeliveryZoneView[]> {
+    return firstValueFrom(
+      this.http.get<readonly AudienceDeliveryZoneView[]>(
+        `${AUTH_CONFIG.apiBaseUrl}/delivery-zones?audience=${audience}`,
+      ),
+    );
+  }
+
+  /**
+   * Relit les zones pour une autre clientèle. La liste se vide d'abord : le
+   * frais d'une clientèle ne se montre pas à l'autre. Un échec la laisse
+   * vide — l'écran ne promet alors aucun frais, et le devis dit le vrai.
+   */
+  private async refreshZones(audience: CustomerAudience): Promise<void> {
+    this.zonesAudience = audience;
+    this.zoneList.set([]);
+    try {
+      const zones = await this.zonesOf(audience);
+      if (this.zonesAudience === audience) {
+        this.zoneList.set(zones);
+      }
+    } catch {
+      // Vide : voir plus haut.
     }
   }
 
@@ -426,7 +484,7 @@ export class ServicePoints {
   }
 
   /** La zone qui dessert ce code postal, par le MÊME préfixe que le serveur. */
-  zoneFor(codePostal: string): DeliveryZoneView | null {
+  zoneFor(codePostal: string): AudienceDeliveryZoneView | null {
     const trimmed = codePostal.trim();
     return (
       this.zoneList().find((zone) =>
@@ -434,6 +492,15 @@ export class ServicePoints {
       ) ?? null
     );
   }
+}
+
+/**
+ * **Le frais d'une zone tel qu'il se lit** — « 8,00 € » ou « 3 % » : le seul
+ * gabarit, que le dialogue d'adresse et le carnet du compte partagent. Aucun
+ * calcul : le montant est celui que le serveur a résolu pour la clientèle.
+ */
+export function zoneFeeLabel(fee: CartAdjustment): string {
+  return fee.mode === 'amount' ? formatCents(fee.cents) : formatRate(fee.bp / 100);
 }
 
 /**

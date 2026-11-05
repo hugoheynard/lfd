@@ -329,12 +329,16 @@ export class ModifierCommandePage {
     try {
       const order = await this.orders.byId(id);
       const companyId = order.companyId;
+      // Les zones attendent le client : leur frais est celui de SA clientèle
+      // (0c) — un particulier, sans société, est servi en b2c.
+      const reading =
+        companyId === null ? Promise.resolve(undefined) : this.customers.customer(companyId);
       const [customer, catalogue, habits, pickups, zones, availability] = await Promise.all([
-        companyId === null ? Promise.resolve(undefined) : this.customers.customer(companyId),
+        reading,
         this.catalogService.list(),
         companyId === null ? Promise.resolve([]) : this.catalogService.habitsOf(companyId),
         companyId === null ? this.pickupsService.list() : this.pickupsService.listFor(companyId),
-        this.zonesService.list(),
+        reading.then((found) => this.zonesService.listFor(audienceOf(found?.status ?? null))),
         this.customers.deliveryAvailability().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
       ]);
       this.order.set(order);

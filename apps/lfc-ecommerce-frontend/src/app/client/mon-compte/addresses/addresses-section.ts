@@ -1,6 +1,5 @@
 import type {
   BillingAddressView,
-  CartAdjustment,
   CompanyMemberRole,
   CompanyView,
   DeliveryAddressView,
@@ -10,8 +9,7 @@ import type {
 import { fill } from '../../copy/client-copy.service';
 import type { AccountCopy } from '../../copy/screens/account.copy';
 import type { DeliveryProcedureCopy } from '../../copy/screens/delivery-procedure.copy';
-import { formatCents, formatRate } from '../../format-money';
-import type { ServicePoints } from '../../shop/pickup-points.store';
+import { type ServicePoints, zoneFeeLabel } from '../../shop/pickup-points.store';
 
 /** La partie du carnet qu'un panneau Adresses montre : la facturation, ou les livraisons. */
 export type AddressesView = 'billing' | 'delivery';
@@ -84,7 +82,7 @@ export function deliveryRows(
       primary: address.isDefault,
       line: postalLine(address),
       zone: zone?.label ?? noZone,
-      fee: zone === null ? '—' : feeOf(zone.fee),
+      fee: zone === null ? '—' : zoneFeeLabel(zone.fee),
       procedureStepCount: address.procedureStepCount,
     };
   });
@@ -110,9 +108,4 @@ function procedureCountOf(count: number, canManage: boolean, copy: DeliveryProce
     return canManage ? copy.toWrite : copy.stepsNone;
   }
   return count === 1 ? copy.stepsOne : fill(copy.steps, { n: String(count) });
-}
-
-/** Un frais de zone tel qu'il se lit : « 8,00 € » ou « 3 % ». */
-function feeOf(fee: CartAdjustment): string {
-  return fee.mode === 'amount' ? formatCents(fee.cents) : formatRate(fee.bp / 100);
 }

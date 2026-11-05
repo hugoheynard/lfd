@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1756 textes
+## Sommaire — 1759 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 98 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 101 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1756** |
+| **Total** | | **1759** |
 
 ## Le parcours de commande
 
@@ -731,7 +731,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 98 textes.
+Source : `fr.ts · en.ts · it.ts` · 101 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -764,6 +764,9 @@ Source : `fr.ts · en.ts · it.ts` · 98 textes.
 | `cart.total` | Total TTC | Total incl. VAT | Totale IVA incl. |  |
 | `cart.totalPretax` | Total HT | Total excl. VAT | Totale IVA escl. |  |
 | `cart.pretaxNote` | TVA et TTC sur la facture du mois | VAT and total incl. VAT on the monthly invoice | IVA e totale IVA inclusa sulla fattura del mese |  |
+| `cart.courierOffered` | Coursier offert | Courier on us | Corriere offerto |  |
+| `cart.freeDeliveryShort` | Plus que {amount} HT pour la livraison offerte | Only {amount} excl. VAT more for free delivery | Ancora {amount} IVA esclusa per la consegna gratuita | `{amount}` |
+| `cart.freeDeliveryShortTtc` | Plus qu’environ {amount} pour la livraison offerte | About {amount} more for free delivery | Ancora circa {amount} per la consegna gratuita | `{amount}` |
 | `cart.pointsToEarn` | Vous gagnerez {n} points | You will earn {n} points | Guadagnerai {n} punti | `{n}` |
 | `cart.voucherPick` | Utiliser un bon de fidélité | Use a loyalty voucher | Usa un buono fedeltà |  |
 | `cart.voucherNone` | Aucun bon | No voucher | Nessun buono |  |

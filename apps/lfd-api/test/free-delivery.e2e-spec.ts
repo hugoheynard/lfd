@@ -207,7 +207,12 @@ describe("le franco au devis", () => {
     const short = await guestQuote();
     expect(short.deliveryFeeCents).toBe(2_000);
     // 1c : le manque, HT comme le seuil, servi par le serveur.
-    expect(short.freeDelivery).toEqual({ status: "short", remainingCents: 1 });
+    expect(short.freeDelivery).toMatchObject({ status: "short", remainingCents: 1 });
+    // Le particulier lit aussi le manque en TTC « environ », arrondi au-dessus
+    // (Hugo, 2026-11-05) : jamais moins que le manque HT.
+    const remainingTtc =
+      short.freeDelivery?.status === "short" ? short.freeDelivery.remainingTtcCents : undefined;
+    expect(remainingTtc).toBeGreaterThanOrEqual(1);
   });
 
   it("pro (/mine) : le manque HT avant le seuil, puis offert", async () => {
@@ -216,6 +221,7 @@ describe("le franco au devis", () => {
     expect(base).not.toHaveProperty("freeDelivery");
 
     await setGlobal({ b2b: { freeDeliveryThresholdCents: base.subtotalHtCents + 1_200 } });
+    // `toEqual` : pas de `remainingTtcCents` pour un pro (line_ht).
     expect((await proQuote()).freeDelivery).toEqual({ status: "short", remainingCents: 1_200 });
 
     await setGlobal({ b2b: { freeDeliveryThresholdCents: base.subtotalHtCents } });

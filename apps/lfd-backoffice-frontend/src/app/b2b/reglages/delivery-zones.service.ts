@@ -4,9 +4,11 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   AdminDeliveryZoneView,
+  AudienceDeliveryZoneView,
   CreatedDeliveryZoneResponse,
   DeliveryPricingPatch,
   DeliveryPricingView,
+  CustomerAudience,
   DeliveryZonePayload,
   DeliveryZoneView,
   UncoveredPostalCodeView,
@@ -23,10 +25,27 @@ import { B2B_API_BASE } from '../../api/api-config';
 export class DeliveryZonesService {
   private readonly http = inject(HttpClient);
 
-  /** Liste les zones (par code postal). Route publique. */
+  /**
+   * Liste les zones (par code postal). Route publique. Pour les écrans qui
+   * ne lisent que les préfixes et les libellés : le frais servi sans
+   * audience est celui des particuliers.
+   */
   list(): Promise<readonly DeliveryZoneView[]> {
     return firstValueFrom(
       this.http.get<readonly DeliveryZoneView[]>(`${B2B_API_BASE}/delivery-zones`),
+    );
+  }
+
+  /**
+   * Les zones avec le frais RÉSOLU pour `audience` (plan
+   * `plan-livraison-offerte.md`, 0c) — celui que le devis facture. La saisie
+   * de commande passe la clientèle du client pour qui l'on commande.
+   */
+  listFor(audience: CustomerAudience): Promise<readonly AudienceDeliveryZoneView[]> {
+    return firstValueFrom(
+      this.http.get<readonly AudienceDeliveryZoneView[]>(
+        `${B2B_API_BASE}/delivery-zones?audience=${audience}`,
+      ),
     );
   }
 

@@ -3778,6 +3778,27 @@
           "variables": []
         },
         {
+          "key": "cart.courierOffered",
+          "fr": "Coursier offert",
+          "en": "Courier on us",
+          "it": "Corriere offerto",
+          "variables": []
+        },
+        {
+          "key": "cart.freeDeliveryShort",
+          "fr": "Plus que {amount} HT pour la livraison offerte",
+          "en": "Only {amount} excl. VAT more for free delivery",
+          "it": "Ancora {amount} IVA esclusa per la consegna gratuita",
+          "variables": ["amount"]
+        },
+        {
+          "key": "cart.freeDeliveryShortTtc",
+          "fr": "Plus qu’environ {amount} pour la livraison offerte",
+          "en": "About {amount} more for free delivery",
+          "it": "Ancora circa {amount} per la consegna gratuita",
+          "variables": ["amount"]
+        },
+        {
           "key": "cart.pointsToEarn",
           "fr": "Vous gagnerez {n} points",
           "en": "You will earn {n} points",

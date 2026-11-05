@@ -100,6 +100,13 @@
   font-weight: var(--fold-weight-semibold);
 }
 
+/* « Coursier offert » : l'icône du coursier devant le mot, sans montant. */
+.courier-offered {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
 .vat {
   dt,
   dd {

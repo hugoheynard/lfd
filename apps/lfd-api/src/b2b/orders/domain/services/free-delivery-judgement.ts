@@ -13,6 +13,12 @@ export interface FreeDeliveryJudgementInput {
    * moyen de paiement, il ne fait pas perdre le franco.
    */
   readonly goodsNetHtCents: number;
+  /**
+   * La même base en TTC — commande `exact_ht` seulement (lignes composées
+   * moins les remises composées), `null` sinon. Ne sert qu'au manque « environ
+   * » du particulier (Hugo, 2026-11-05) ; le seuil reste jugé en HT.
+   */
+  readonly goodsNetTtcCents: number | null;
   /** Le frais que le barème produit, HT. */
   readonly feeHtCents: number;
   /** Le même TTC — commande `exact_ht` seulement, `null` sinon. */
@@ -59,6 +65,12 @@ export type FreeDeliveryProgress =
       readonly status: "short";
       /** Ce qu'il manque à la base pour atteindre le seuil, HT, strictement positif. */
       readonly remainingCents: number;
+      /**
+       * Le même manque, TTC « environ » — commande `exact_ht` seulement
+       * (particulier, Hugo, 2026-11-05) ; absent en `line_ht` ou sans base.
+       * Cf. {@link remainingTtcCentsOf}.
+       */
+      readonly remainingTtcCents?: number;
     };
 
 /**
@@ -77,8 +89,36 @@ export function freeDeliveryProgressOf(
   if (thresholdCents === null || (input.feeHtCents === 0 && (input.feeTtcCents ?? 0) === 0)) {
     return null;
   }
+  const remainingCents = thresholdCents - input.goodsNetHtCents;
+  const remainingTtcCents =
+    input.goodsNetTtcCents === null
+      ? null
+      : remainingTtcCentsOf(remainingCents, input.goodsNetHtCents, input.goodsNetTtcCents);
   return {
     status: "short",
-    remainingCents: thresholdCents - input.goodsNetHtCents,
+    remainingCents,
+    ...(remainingTtcCents === null ? {} : { remainingTtcCents }),
   };
+}
+
+/**
+ * **Le manque en TTC, « environ »** (Hugo, 2026-11-05) : le manque HT au
+ * rapport TTC/HT des marchandises DÉJÀ au panier, sur la même base (après
+ * remises, avant le bon) — `ceil(manque × TTC / HT)`, arrondi au centime
+ * SUPÉRIEUR pour ne jamais annoncer un manque trop petit. Ce que le client
+ * ajoutera n'aura pas forcément ce taux : d'où « environ ».
+ *
+ * Arithmétique entière (argent en centimes). `null` sans base positive : on
+ * n'invente pas de taux.
+ */
+export function remainingTtcCentsOf(
+  remainingHtCents: number,
+  goodsNetHtCents: number,
+  goodsNetTtcCents: number,
+): number | null {
+  if (goodsNetHtCents <= 0 || goodsNetTtcCents < 0) {
+    return null;
+  }
+  const scaled = remainingHtCents * goodsNetTtcCents;
+  return Math.floor((scaled + goodsNetHtCents - 1) / goodsNetHtCents);
 }

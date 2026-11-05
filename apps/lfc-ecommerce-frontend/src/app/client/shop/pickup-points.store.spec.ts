@@ -2,7 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { type AudiencePickupAddressView, DEFAULT_DELIVERY_AVAILABILITY } from '@lfd/contracts';
+import {
+  type AudienceDeliveryZoneView,
+  type AudiencePickupAddressView,
+  DEFAULT_DELIVERY_AVAILABILITY,
+} from '@lfd/contracts';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -13,6 +17,7 @@ import {
   workspaceDouble,
   type WorkspaceDouble,
 } from '../client-workspace.fixture';
+import { TOMMEUSES } from '../mon-compte/account.fixture';
 import { CartFulfillmentDays } from './cart-fulfillment-days.service';
 import { ServicePoints } from './pickup-points.store';
 import { hydrateWith, operationCatalogue } from './shop-catalogue.fixture';
@@ -34,6 +39,16 @@ const OLD_POINT: Omit<AudiencePickupAddressView, 'discount' | 'gps'> = {
 const VISITOR_AUTH = {
   provide: AuthFacade,
   useValue: { isAuthenticated: signal(false), accessToken$: () => of('jeton') },
+};
+
+/** Une zone telle que la route publique la sert aux particuliers (0c). */
+const ZONE_B2C: AudienceDeliveryZoneView = {
+  id: 'zone_vi',
+  postalPrefixes: ['73150'],
+  label: 'Val d’Isère',
+  fee: { mode: 'amount', cents: 800 },
+  audience: 'b2c',
+  freeDeliveryThresholdCents: null,
 };
 
 const url = (path: string) => (request: { url: string }) => request.url.endsWith(path);
@@ -99,7 +114,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   it('lit le réglage avec les points, et tient pour ouverte une clientèle absente', async () => {
     const hydrating = points.hydrate();
     http.expectOne(url('/pickup-addresses')).flush([OLD_POINT]);
-    http.expectOne(url('/delivery-zones')).flush([]);
+    http.expectOne(url('/delivery-zones?audience=b2c')).flush([]);
     http.expectOne(url('/fulfillment-days')).flush([]);
     http.expectOne(url('/delivery-availability')).flush({ openToB2c: false });
     await hydrating;
@@ -117,7 +132,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   it('un réglage illisible laisse la livraison ouverte et les points servis', async () => {
     const hydrating = points.hydrate();
     http.expectOne(url('/pickup-addresses')).flush([OLD_POINT]);
-    http.expectOne(url('/delivery-zones')).flush([]);
+    http.expectOne(url('/delivery-zones?audience=b2c')).flush([]);
     http.expectOne(url('/fulfillment-days')).flush([]);
     http
       .expectOne(url('/delivery-availability'))
@@ -157,7 +172,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     http.expectOne(url('/order-opening')).flush({ ordersOpenToB2b: true, ordersOpenToB2c: true });
     const hydrating = points.hydrate();
     http.expectOne(url('/pickup-addresses')).flush([OLD_POINT]);
-    http.expectOne(url('/delivery-zones')).flush([]);
+    http.expectOne(url('/delivery-zones?audience=b2c')).flush([]);
     http.expectOne(url('/fulfillment-days')).flush([]);
     http.expectOne(url('/delivery-availability')).flush({});
     await hydrating;
@@ -249,7 +264,7 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
   }
 
   function answerTheRest(http: HttpTestingController, days = '/fulfillment-days'): void {
-    http.expectOne(url('/delivery-zones')).flush([]);
+    http.expectOne(url('/delivery-zones?audience=b2c')).flush([]);
     http.expectOne(url(days)).flush([]);
     http.expectOne(url('/delivery-availability')).flush({});
   }
@@ -357,6 +372,35 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
 
     expect(points.pickups().map((p) => p.id)).toEqual(['pros']);
     expect(points.pickupsKnown()).toBe(true);
+    http.verify();
+  });
+
+  /**
+   * Défaut de production (2026-11-05, plan `plan-livraison-offerte.md`, 0c) :
+   * le dialogue d'adresse montrait « 0 € », l'ancien frais de zone. Les zones
+   * se lisent pour la clientèle de l'espace MONTRÉ, et se relisent quand elle
+   * change — vidées d'abord : le frais d'une clientèle n'est pas l'autre.
+   */
+  it('lit les zones pour la clientèle montrée, et les relit quand elle change', async () => {
+    const workspace = workspaceDouble(undefined, [TOMMEUSES]);
+    const { points, http } = boot(true, workspace);
+    const hydrating = points.hydrate();
+    http.expectOne(url('/pickup-addresses/mine')).flush([OLD_POINT]);
+    http.expectOne(url('/delivery-zones?audience=b2c')).flush([ZONE_B2C]);
+    http.expectOne(url('/fulfillment-days/mine')).flush([]);
+    http.expectOne(url('/delivery-availability')).flush({});
+    await hydrating;
+    expect(points.zoneFor('73150')?.fee).toEqual(ZONE_B2C.fee);
+
+    workspace.choose(TOMMEUSES.id);
+    TestBed.tick();
+    http.match(url('/pickup-addresses/mine')).forEach((r) => r.flush([OLD_POINT]));
+    const pro = http.expectOne(url('/delivery-zones?audience=b2b'));
+    expect(points.zoneFor('73150')).toBeNull();
+    pro.flush([{ ...ZONE_B2C, audience: 'b2b', fee: { mode: 'amount', cents: 1500 } }]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(points.zoneFor('73150')?.fee).toEqual({ mode: 'amount', cents: 1500 });
     http.verify();
   });
 

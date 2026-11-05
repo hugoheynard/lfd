@@ -34,7 +34,6 @@ import { ClientLocale } from '../../client-locale.service';
 import { serviceDayLabel } from '../../format-day';
 import { CHANGE_DAY } from '../slot-picker-dialog/slot-picker-dialog';
 import { formatWindow } from '../../format-hour';
-import { formatCents, formatRate } from '../../format-money';
 import type { ServiceChoice } from '../../order-context.store';
 import { dialogSide } from '../../panel-side';
 import { ORDER_DIALOG } from '../order-dialog';
@@ -45,7 +44,7 @@ import {
   slotKey,
   weekdayOfIsoDate,
 } from '../delivery-window';
-import { ServicePoints } from '../pickup-points.store';
+import { ServicePoints, zoneFeeLabel } from '../pickup-points.store';
 import { RovingRadioGroup } from '../../a11y/roving-radio-group';
 
 /** Ce qu'il faut pour ouvrir la porte : l'adresse déjà retenue, s'il y en a une. */
@@ -205,7 +204,7 @@ export class DeliveryAddressDialog {
   /** Le tarif de la zone tapée, pour l'action. */
   protected readonly typedFee = computed(() => {
     const zone = this.typedZone();
-    return zone === null ? '' : feeOf(zone.fee);
+    return zone === null ? '' : zoneFeeLabel(zone.fee);
   });
 
   /**
@@ -246,7 +245,7 @@ export class DeliveryAddressDialog {
         address,
         name: address.label || address.ligne1,
         place: `${address.ligne1} · ${address.codePostal}`,
-        fee: zone === null ? '' : fill(copy.fee, { fee: feeOf(zone.fee) }),
+        fee: zone === null ? '' : fill(copy.fee, { fee: zoneFeeLabel(zone.fee) }),
         outOfZone: zone === null,
         window: windowOf(address, copy.window, copy.when.before),
         isDefault: address.isDefault,
@@ -413,7 +412,7 @@ export class DeliveryAddressDialog {
       return this.c().ctaIdle;
     }
     const zone = this.points.zoneFor(entry.address.codePostal);
-    return zone === null ? this.c().ctaIdle : fill(this.c().cta, { fee: feeOf(zone.fee) });
+    return zone === null ? this.c().ctaIdle : fill(this.c().cta, { fee: zoneFeeLabel(zone.fee) });
   });
 
   /** Une adresse hors zone se touche, mais ne se retient pas : le refus précède l'effort. */
@@ -531,15 +530,6 @@ const PAYS = 'France';
 
 /** Un code postal français en compte cinq — ce qui rend « complet » vérifiable. */
 const POSTAL_CODE_LENGTH = 5;
-
-/** Le tarif d'une zone, dans sa forme — un montant, ou un pourcentage du panier. */
-function feeOf(fee: {
-  readonly mode: string;
-  readonly cents?: number;
-  readonly bp?: number;
-}): string {
-  return fee.mode === 'amount' ? formatCents(fee.cents ?? 0) : formatRate((fee.bp ?? 0) / 100);
-}
 
 /**
  * La fenêtre que le CARNET déclare pour cette adresse, ou `''`.

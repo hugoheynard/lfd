@@ -296,6 +296,13 @@ export type ShopQuoteFreeDeliveryView =
       readonly status: "short";
       /** Ce qu'il manque pour atteindre le seuil, HT, en centimes, strictement positif. */
       readonly remainingCents: number;
+      /**
+       * Le même manque en TTC « environ » (Hugo, 2026-11-05) — particulier
+       * (commande `exact_ht`) seulement, absent pour un pro ou sans
+       * marchandise au panier : `ceil(manque × TTC/HT des marchandises déjà
+       * au panier)`, arrondi au centime supérieur.
+       */
+      readonly remainingTtcCents?: number;
     };
 
 /** Ce qu'un décompte partiel attend : l'acheminement, le créneau. */

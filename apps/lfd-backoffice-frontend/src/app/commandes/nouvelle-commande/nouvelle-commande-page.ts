@@ -470,15 +470,17 @@ export class NouvelleCommandePage {
     this.loadError.set(null);
     try {
       // Sept lectures indépendantes : les enchaîner aurait multiplié l'attente
-      // par sept devant un commercial qui a le client en ligne.
+      // par sept devant un commercial qui a le client en ligne. Seules les
+      // zones attendent le client : leur frais est celui de SA clientèle (0c).
+      const customer = this.customerSource.customer(companyId);
       const [company, history, catalogue, habits, pickups, zones, saved, deliveryAvailability] =
         await Promise.all([
-          this.customerSource.customer(companyId),
+          customer,
           this.orders.list({ companyId, limit: HISTORY_SIZE }).then((page) => page.rows),
           this.catalogService.list(),
           this.catalogService.habitsOf(companyId),
           this.pickupsService.listFor(companyId),
-          this.zonesService.list(),
+          customer.then((found) => this.zonesService.listFor(audienceOf(found?.status ?? null))),
           this.draftsService.find(companyId),
           // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
           // serveur refuse de toute façon une livraison fermée, et ce refus-là

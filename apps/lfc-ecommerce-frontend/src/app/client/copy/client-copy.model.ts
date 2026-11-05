@@ -786,6 +786,22 @@ export interface ClientCopy {
     /** Sous ce total : où sont la TVA et le TTC. */
     readonly pretaxNote: string;
     /**
+     * La ligne du coursier quand le devis dit la livraison offerte
+     * (`freeDelivery.status === 'offered'`) : SANS montant (Hugo, 2026-11-05).
+     */
+    readonly courierOffered: string;
+    /**
+     * `{amount}` = ce qu'il manque, HT, tel que le devis le sert
+     * (`freeDelivery.remainingCents`). Montrée aux PROS.
+     */
+    readonly freeDeliveryShort: string;
+    /**
+     * `{amount}` = ce qu'il manque, TTC, ENVIRON (`freeDelivery.remainingTtcCents`) :
+     * la version des PARTICULIERS (Hugo, 2026-11-05). Le seuil est HT ; le TTC
+     * dépend des taux du panier, d'où « environ ».
+     */
+    readonly freeDeliveryShortTtc: string;
+    /**
      * `{n}` = les points que la commande rapporterait (plan des points, E1.2).
      * La ligne n'existe que si le serveur en annonce plus de zéro.
      */

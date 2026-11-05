@@ -64,9 +64,19 @@ describe("ShopCartQuoting — la livraison offerte (1c)", () => {
     expect((await quoteOf(5)).freeDelivery).toEqual({ status: "offered" });
   });
 
-  it("un particulier (composé en TTC) : le manque reste HT, comme le seuil", async () => {
+  it("un particulier (composé en TTC) : le manque HT, et son TTC « environ » arrondi au-dessus", async () => {
     const view = await quoteOf(2, { companyId: null });
-    expect(view.freeDelivery).toEqual({ status: "short", remainingCents: 500 });
+    // Deux pains : 10,00 € HT, 10,55 € TTC → 500 × 1 055 / 1 000 = 527,5 → 528.
+    expect(view.freeDelivery).toEqual({
+      status: "short",
+      remainingCents: 500,
+      remainingTtcCents: 528,
+    });
+  });
+
+  it("un pro (line_ht) : le manque HT seul, sans TTC", async () => {
+    const view = await quoteOf(2);
+    expect(view.freeDelivery).not.toHaveProperty("remainingTtcCents");
   });
 
   it("sans seuil réglé : la clé est absente", async () => {

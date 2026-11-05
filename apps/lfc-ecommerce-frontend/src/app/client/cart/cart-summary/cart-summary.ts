@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import {
   FoldCalloutComponent,
+  FoldIconComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
   type FoldSelectItem,
@@ -22,6 +23,7 @@ import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/sta
 import { ClientCart } from '../client-cart.service';
 import { shownCartTotalCents } from '../shown-cart-total';
 import { ServicePoints } from '../../shop/pickup-points.store';
+import { ClientAudience } from '../../client-audience.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientCompany } from '../../client-company.service';
@@ -53,6 +55,7 @@ import { ShopPriceBasis } from '../../shop/shop-price-basis.service';
   imports: [
     CartProductLine,
     FoldCalloutComponent,
+    FoldIconComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
     StaffSuggestionCard,
@@ -76,6 +79,7 @@ export class CartSummary implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly order = inject(OrderContextStore);
   private readonly points = inject(ServicePoints);
+  private readonly audience = inject(ClientAudience);
   private readonly locale = inject(ClientLocale);
   private readonly workspace = inject(ClientWorkspace);
   protected readonly voucher = inject(VoucherChoice);
@@ -235,6 +239,46 @@ export class CartSummary implements OnInit {
     const zone = choice?.mode === 'delivery' ? this.points.zoneFor(choice.codePostal) : null;
     const word = this.t().cart.fee;
     return zone === null ? word : `${word} (${zone.label})`;
+  });
+
+  /**
+   * La livraison est-elle PROPOSÉE à la clientèle de l'écran ? (Hugo,
+   * 2026-11-05) : ni « Coursier offert » ni « Plus que… » à qui le coursier
+   * est fermé. Le réglage non lu vaut ouvert — l'existant, et le serveur
+   * refuse de toute façon une livraison fermée.
+   */
+  private readonly deliveryOffered = computed(() => {
+    const availability = this.points.deliveryAvailability();
+    return this.audience.shown() === 'b2b' ? availability.openToB2b : availability.openToB2c;
+  });
+
+  /**
+   * La livraison offerte, telle que le devis la juge (plan
+   * `plan-livraison-offerte.md`, 1c) : « Coursier offert », SANS montant
+   * (Hugo, 2026-11-05). Le frais vaut alors zéro, et {@link feeLabel} se tait.
+   */
+  protected readonly courierOffered = computed(
+    () => this.deliveryOffered() && this.totals().freeDelivery?.status === 'offered',
+  );
+
+  /**
+   * Ce qu'il manque pour la livraison offerte, tel que le serveur le sert —
+   * aucun calcul ici. Au pro, le HT (`remainingCents`) ; au particulier, le
+   * TTC « environ » (`remainingTtcCents`, Hugo, 2026-11-05), et rien s'il
+   * n'est pas servi.
+   */
+  protected readonly freeDeliveryShort = computed(() => {
+    const free = this.totals().freeDelivery;
+    if (free?.status !== 'short' || !this.deliveryOffered()) {
+      return null;
+    }
+    const cart = this.t().cart;
+    if (this.audience.shown() === 'b2b') {
+      return fill(cart.freeDeliveryShort, { amount: formatCents(free.remainingCents) });
+    }
+    return free.remainingTtcCents === undefined
+      ? null
+      : fill(cart.freeDeliveryShortTtc, { amount: formatCents(free.remainingTtcCents) });
   });
 
   /** Le total montré : HT au compte (total moins TVA du devis), TTC sinon. */

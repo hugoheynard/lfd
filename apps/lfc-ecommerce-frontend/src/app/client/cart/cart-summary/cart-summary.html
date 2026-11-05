@@ -83,6 +83,16 @@
       </div>
     }
 
+    <!-- La livraison offerte (1c) : le mot seul, sans montant (Hugo, 2026-11-05). -->
+    @if (courierOffered()) {
+      <div class="row saved">
+        <dt class="courier-offered">
+          <fold-icon name="truck" size="sm" />
+          {{ t().cart.courierOffered }}
+        </dt>
+      </div>
+    }
+
     <!-- Une ligne par taux RÉELLEMENT au panier. Pas de salé, pas de ligne à
          10 % : une ligne à zéro fait douter du calcul. La TVA s'AJOUTE au
          sous-total hors taxe — elle ne s'en extrait plus. -->
@@ -111,6 +121,12 @@
   <!-- Le renvoi de la marque `*`, une fois, et seulement si une ligne montrée la porte. -->
   @if (excludedNoteShown()) {
     <p class="excluded-note">{{ t().cart.excludedNote }}</p>
+  }
+
+  <!-- Ce qu'il manque pour la livraison offerte, servi par le devis : HT au pro,
+       TTC « environ » au particulier. -->
+  @if (freeDeliveryShort(); as label) {
+    <p class="points">{{ label }}</p>
   }
 
   <!-- Discrète, SOUS le total : ce n'est pas un montant, c'est une promesse. -->

@@ -42,6 +42,7 @@ interface MethodAmounts {
   readonly discountCents: number;
   readonly deliveryFeeCents: number;
   readonly goodsNetHtCents: number;
+  readonly goodsNetTtcCents: number | null;
   readonly feeHtCents: number;
   readonly feeTtcCents: number | null;
 }
@@ -81,6 +82,7 @@ export function basketTermsOf(input: BasketTermsInput): Omit<
   const judgement: FreeDeliveryJudgementInput = {
     thresholdCents: input.freeDeliveryThresholdCents,
     goodsNetHtCents: amounts.goodsNetHtCents,
+    goodsNetTtcCents: amounts.goodsNetTtcCents,
     feeHtCents: amounts.feeHtCents,
     feeTtcCents: amounts.feeTtcCents,
   };
@@ -112,6 +114,7 @@ function lineHtTermsOf(
     discountCents: discount.discountCents,
     deliveryFeeCents: deliveryFee.cents,
     goodsNetHtCents: subtotalCents - discount.discountCents,
+    goodsNetTtcCents: null,
     feeHtCents: deliveryFee.cents,
     feeTtcCents: null,
   };
@@ -142,10 +145,12 @@ function exactTermsOf(
   const discounted = discount.discountAdjustment !== null || cumulated !== undefined;
   const charged = deliveryFee.adjustment !== null;
   const linesHtCents = composed.lines.reduce((sum, line) => sum + line.htCents, 0);
+  const linesTtcCents = composed.lines.reduce((sum, line) => sum + line.ttcCents, 0);
   return {
     discountCents: discounted ? composed.pickupDiscount.ttcCents : 0,
     deliveryFeeCents: charged ? composed.deliveryFee.ttcCents : 0,
     goodsNetHtCents: linesHtCents - composed.pickupDiscount.htCents,
+    goodsNetTtcCents: linesTtcCents - composed.pickupDiscount.ttcCents,
     feeHtCents: charged ? composed.deliveryFee.htCents : 0,
     feeTtcCents: charged ? composed.deliveryFee.ttcCents : 0,
   };

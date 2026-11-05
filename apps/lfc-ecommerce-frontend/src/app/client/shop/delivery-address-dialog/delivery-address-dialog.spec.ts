@@ -1,13 +1,18 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { instantToLocal } from '@lfd/contracts';
-import type { DeliveryAddressView, DeliverySpecs, DeliveryZoneView, Weekday } from '@lfd/contracts';
+import type {
+  AudienceDeliveryZoneView,
+  DeliveryAddressView,
+  DeliverySpecs,
+  Weekday,
+} from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { ClientAddresses } from '../../client-addresses.service';
 import type { ServiceChoice } from '../../order-context.store';
-import { ServicePoints } from '../pickup-points.store';
+import { ServicePoints, zoneFeeLabel } from '../pickup-points.store';
 import { CHANGE_DAY } from '../slot-picker-dialog/slot-picker-dialog';
 import { weekdayOfIsoDate } from '../delivery-window';
 import { DeliveryAddressDialog } from './delivery-address-dialog';
@@ -17,11 +22,13 @@ import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 const DAY = instantToLocal(new Date()).day;
 
 /** Une zone à 6,90 € — un MONTANT, la forme la plus simple à assurer. */
-const ZONE: DeliveryZoneView = {
+const ZONE: AudienceDeliveryZoneView = {
   id: 'z1',
   label: 'Val d’Isère',
   postalPrefixes: ['73150'],
   fee: { mode: 'amount', cents: 690 },
+  audience: 'b2c',
+  freeDeliveryThresholdCents: null,
 };
 
 function address(over: Partial<DeliveryAddressView> & { id: string }): DeliveryAddressView {
@@ -78,7 +85,8 @@ function boot(
         useValue: {
           hydrate: (): Promise<void> => Promise.resolve(),
           // Une seule zone servie : tout ce qui n'est pas en 73150 est dehors.
-          zoneFor: (code: string): DeliveryZoneView | null => (code === '73150' ? ZONE : null),
+          zoneFor: (code: string): AudienceDeliveryZoneView | null =>
+            code === '73150' ? ZONE : null,
           nextDayFor: (): string | null => '2026-09-21',
           lastDay: signal<string | null>(null),
           deliveryAvailability: signal({ openToB2b: true, openToB2c: true, windowMode }),
@@ -115,6 +123,18 @@ describe('DeliveryAddressDialog', () => {
    * L'action PORTE le montant : on sait ce qu'on paie avant d'avoir composé le
    * panier. Les frais viennent de la ZONE, jamais du contenu.
    */
+  /**
+   * Défaut de production (2026-11-05, plan `plan-livraison-offerte.md`, 0c) :
+   * la rangée disait « 0 € », l'ancien frais de zone. Elle dit le frais que
+   * `ServicePoints` a lu pour la clientèle montrée — celui que le devis facture.
+   */
+  it('la rangée dit le frais servi pour la clientèle, par le gabarit partagé', () => {
+    const { fixture } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
+
+    expect(rows(fixture)[0]?.textContent).toContain(zoneFeeLabel(ZONE.fee));
+    expect(rows(fixture)[0]?.textContent).toContain('6,90');
+  });
+
   /** L'action dit le geste, sans montant (Hugo, 2026-10-27). */
   it('l’action dit « Composer mon panier », sans le tarif', () => {
     const { fixture } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);

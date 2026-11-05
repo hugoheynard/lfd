@@ -113,6 +113,7 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   courier: 'Livraison',
   courierCall: 'Contacter le coursier',
   courierNotOffered: 'Livraison indisponible',
+  courierOffered: 'Coursier offert — livraison offerte atteinte',
   courierOnWay: 'Coursier en route',
   courierPending: 'Coursier à venir',
   courierTrack: 'Suivre le coursier',

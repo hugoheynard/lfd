@@ -63,6 +63,9 @@ const QUOTE: OrderRevisionQuoteView = {
   discountRefusals: [],
 };
 
+/** Le strict nécessaire d'un client pro actif : ce que la page lit au chargement. */
+const PRO_CUSTOMER = { status: 'active', addresses: [] } as const;
+
 interface Harness {
   readonly fixture: ComponentFixture<ModifierCommandePage>;
   readonly page: ModifierCommandePage;
@@ -71,10 +74,14 @@ interface Harness {
   readonly navigate: ReturnType<typeof vi.spyOn>;
 }
 
+/** La lecture des zones, épiée : l'audience qu'elle porte est le sujet du 0c. */
+let zonesList = vi.fn(async (_audience?: string) => []);
+
 async function mount(
   revise: () => Promise<unknown> = async () => ({ totalCents: 1583 }),
   order: object = ORDER,
 ): Promise<Harness> {
+  zonesList = vi.fn(async (_audience?: string) => []);
   const quoteRevision = vi.fn(async () => QUOTE);
   const reviseFn = vi.fn(revise);
   TestBed.configureTestingModule({
@@ -90,10 +97,16 @@ async function mount(
       },
       {
         provide: CommercialOrderEntrySource,
-        useValue: { deliveryAvailability: async () => DEFAULT_DELIVERY_AVAILABILITY },
+        useValue: {
+          deliveryAvailability: async () => DEFAULT_DELIVERY_AVAILABILITY,
+          customer: async () => ({ ...PRO_CUSTOMER }),
+        },
       },
-      { provide: PickupAddressesService, useValue: { list: async () => [POINT] } },
-      { provide: DeliveryZonesService, useValue: { list: async () => [] } },
+      {
+        provide: PickupAddressesService,
+        useValue: { list: async () => [POINT], listFor: async () => [POINT] },
+      },
+      { provide: DeliveryZonesService, useValue: { listFor: zonesList } },
       { provide: NotifyService, useValue: { success: vi.fn() } },
     ],
   });
@@ -112,6 +125,20 @@ async function mount(
 describe('modifier une commande depuis le back-office', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+  });
+
+  /**
+   * Plan `plan-livraison-offerte.md`, 0c (2026-11-05) : le frais d'une zone
+   * est celui de la clientèle du client pour qui l'on commande.
+   */
+  it('lit les zones pour un particulier en b2c', async () => {
+    await mount();
+    expect(zonesList).toHaveBeenCalledWith('b2c');
+  });
+
+  it('lit les zones pour une société active en b2b', async () => {
+    await mount(undefined, { ...ORDER, companyId: 'co_1' });
+    expect(zonesList).toHaveBeenCalledWith('b2b');
   });
 
   it('ouvre la saisie préremplie avec la commande', async () => {
