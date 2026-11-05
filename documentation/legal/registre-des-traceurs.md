@@ -45,7 +45,7 @@ Une clé ajoutée s'inscrit dans ce registre **et** dans l'une des deux listes.
   la sortie pour le message qui suit, effacés une fois montrés) ;
   `lfc-dev-signed-out`. Les clés d'Auth0 relèvent de `auth0.logout`.
 - ⚠️ **Une session expirée n'efface rien** : elle ne passe pas par la
-  déconnexion. Non traité (plan `caching-usage/plan-espace-retenu.md`, § 00 bis).
+  déconnexion. Non traité (plan `caching-usage/dans-quel-espace-est-le-client.md`, § 00 bis).
 
 ## Ce qui n'est pas déposé
 

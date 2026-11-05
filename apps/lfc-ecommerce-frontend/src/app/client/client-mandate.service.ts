@@ -34,7 +34,7 @@ export type MandateReadStatus = 'loading' | 'failed' | 'ready';
  * `customerMandate` et les règles sont tenus par l'API ; l'écran ne fait que ne
  * pas proposer la carte à qui l'API refuserait.
  *
- * Rangé par clé de contexte (lot d de `caching-usage/plan-espace-retenu.md`) :
+ * Rangé par clé de contexte (lot d de `caching-usage/dans-quel-espace-est-le-client.md`) :
  * l'espace d'une société EST son identifiant, et rien n'est rendu pour un
  * autre espace que celui que `ClientContext` affiche — après une bascule, le
  * mandat de la société quittée ne reste pas sous le nom de la suivante.

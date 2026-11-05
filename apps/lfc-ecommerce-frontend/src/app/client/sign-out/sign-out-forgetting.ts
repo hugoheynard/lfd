@@ -8,7 +8,7 @@ import { OrderContextStore } from '../order-context.store';
 import { ERASED_ON_SIGN_OUT, KEPT_ON_SIGN_OUT, matches } from './stored-keys';
 
 /**
- * **L'oubli à la déconnexion** (plan `caching-usage/plan-espace-retenu.md`,
+ * **L'oubli à la déconnexion** (plan `caching-usage/dans-quel-espace-est-le-client.md`,
  * lot a) : ce que la boutique a rangé dans ce navigateur pour la personne ne
  * survit pas à sa sortie — décision de Hugo du 2026-11-05, « supprimons le
  * maximum du local à la déconnexion ». La liste est {@link ERASED_ON_SIGN_OUT} ;

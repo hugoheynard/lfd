@@ -34,7 +34,7 @@ import { cartSkus, suggestionTarget } from './suggestion-target';
  * demande par affichage de l'accueil et par société ; rien en SSR ; la
  * requête vit dans le morceau des suggestions.
  *
- * Rangé par la brique (lot d de `caching-usage/plan-espace-retenu.md`) : les
+ * Rangé par la brique (lot d de `caching-usage/dans-quel-espace-est-le-client.md`) : les
  * habituels d'une société ne se montrent jamais sous une autre, même le temps
  * d'une requête.
  *

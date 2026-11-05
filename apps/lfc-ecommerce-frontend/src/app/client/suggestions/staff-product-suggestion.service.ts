@@ -41,7 +41,7 @@ interface Served {
  * moment où elle part, pas suivis ; rien en SSR ; la requête vit dans un
  * morceau chargé à la demande. Sans règle applicable, rien.
  *
- * Rangée par la brique (lot d de `caching-usage/plan-espace-retenu.md`) sous
+ * Rangée par la brique (lot d de `caching-usage/dans-quel-espace-est-le-client.md`) sous
  * l'espace affiché et l'article — une entrée par article, réécrite à chaque
  * ouverture : la suggestion lue pour un autre espace ne se montre jamais.
  *

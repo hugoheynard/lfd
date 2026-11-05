@@ -39,7 +39,7 @@ import { listedOf, type ListedOrder, type RowSource } from './order-rows';
  * L'historique suit l'**espace** (plan D7) : en perso les commandes perso,
  * dans une société les siennes. Il les mêlait tant que l'espace n'existait
  * pas ; il **attend** désormais l'espace connu. Depuis le lot d de
- * `caching-usage/plan-espace-retenu.md`, il lit l'espace que `ClientContext`
+ * `caching-usage/dans-quel-espace-est-le-client.md`, il lit l'espace que `ClientContext`
  * AFFICHE, par la brique : rien de l'espace quitté n'est rendu après une
  * bascule, et la liste de l'espace demandé part d'avance.
  *
@@ -89,7 +89,7 @@ export class ClientOrderHistory {
 
   /**
    * Les listes, rangées par clé de contexte (lot d de
-   * `caching-usage/plan-espace-retenu.md`) : l'espace qui s'affiche, et pour
+   * `caching-usage/dans-quel-espace-est-le-client.md`) : l'espace qui s'affiche, et pour
    * une société le filtre (site, jours). Rien n'est rendu pour un autre
    * espace que celui que `ClientContext` affiche.
    */

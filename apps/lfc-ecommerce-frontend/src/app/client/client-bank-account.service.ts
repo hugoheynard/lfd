@@ -44,7 +44,7 @@ export class ClientBankAccount {
 
   /**
    * Le RIB, rangé par clé de contexte (lot d de
-   * `caching-usage/plan-espace-retenu.md`) : l'espace d'une société EST son
+   * `caching-usage/dans-quel-espace-est-le-client.md`) : l'espace d'une société EST son
    * identifiant, et rien n'est rendu pour un autre espace que celui qui
    * s'affiche — après une bascule, les quatre derniers chiffres de la
    * société quittée ne restent pas sous le nom de la suivante.

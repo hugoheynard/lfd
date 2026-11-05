@@ -68,7 +68,7 @@ export class ClientLoyalty {
 
   /**
    * La fidélité, rangée par clé de contexte (lot d de
-   * `caching-usage/plan-espace-retenu.md`) : seul l'espace personnel en a
+   * `caching-usage/dans-quel-espace-est-le-client.md`) : seul l'espace personnel en a
    * une, et rien n'est rendu pour un autre espace que celui qui s'affiche.
    */
   private readonly keyed = contextKeyed((key) => this.read(key));

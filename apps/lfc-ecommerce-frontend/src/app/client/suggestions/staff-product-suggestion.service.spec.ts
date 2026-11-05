@@ -177,7 +177,7 @@ describe('StaffProductSuggestion', () => {
   });
 });
 
-/** Lot d de `caching-usage/plan-espace-retenu.md` : la brique range la suggestion par espace. */
+/** Lot d de `caching-usage/dans-quel-espace-est-le-client.md` : la brique range la suggestion par espace. */
 describe('StaffProductSuggestion — rangée par espace', () => {
   const MINE = (request: { url: string }): boolean =>
     request.url.endsWith('/shop/suggestions/product/mine');

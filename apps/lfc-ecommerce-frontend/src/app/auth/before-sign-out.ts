@@ -8,7 +8,7 @@ import { InjectionToken } from '@angular/core';
  * Un jeton plutôt qu'un appel direct : la façade ne connaît pas le client.
  * L'oubli du stockage (`client/sign-out/`) dépend du panier, qui dépend de
  * l'espace, qui dépend de la façade — l'importer d'ici fermerait le cycle
- * (plan `caching-usage/plan-espace-retenu.md`, § 00 bis). La façade résout le
+ * (plan `caching-usage/dans-quel-espace-est-le-client.md`, § 00 bis). La façade résout le
  * jeton au moment de la déconnexion, pas à sa construction, pour la même
  * raison : les abonnés injectent ce qui injecte la façade.
  *

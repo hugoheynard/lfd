@@ -222,7 +222,7 @@ export class AccountService {
    * le même cas — sans quoi une réponse tardive rebasculerait l'écran.
    *
    * 🔴 **C'est ici que vit « accepté par le serveur »** (lot c du plan
-   * `documentation/caching-usage/plan-espace-retenu.md`) : l'écriture est la
+   * `documentation/caching-usage/dans-quel-espace-est-le-client.md`) : l'écriture est la
    * seule à savoir quand le `PATCH` a répondu. {@link workspaceWrite} le dit
    * tant qu'il n'a pas répondu, et le contexte de lecture (`ClientContext`)
    * en fait son état « bascule en cours ». L'optimisme de `navPrefs` reste —

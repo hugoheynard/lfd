@@ -57,7 +57,7 @@ async function settle(): Promise<void> {
   TestBed.tick();
 }
 
-/** Lot d de `caching-usage/plan-espace-retenu.md` : la brique tient les habituels. */
+/** Lot d de `caching-usage/dans-quel-espace-est-le-client.md` : la brique tient les habituels. */
 describe('UsualPicks — rangés par société', () => {
   it('rien de l’ancienne société n’est rendu après une bascule, même si sa réponse arrive tard', async () => {
     const { usuals, http, workspace } = boot();

@@ -49,7 +49,7 @@ const mineKeyOf = (workspace: string): ContextKey => ({ workspace, own: '' });
  * demande au serveur si CETTE personne passerait quand même :
  *
  * - connectée : `GET /order-admission/mine`, une fois par espace, rangé par
- *   clé de contexte (lot d de `caching-usage/plan-espace-retenu.md`) — rien
+ *   clé de contexte (lot d de `caching-usage/dans-quel-espace-est-le-client.md`) — rien
  *   n'est demandé tant que l'espace n'est pas connu, et la réponse d'un autre
  *   espace que celui que `ClientContext` affiche n'est jamais rendue ;
  * - sans compte : `POST /order-admission/guest`, pour l'adresse saisie, une

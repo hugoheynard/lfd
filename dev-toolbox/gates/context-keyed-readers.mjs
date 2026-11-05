@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **un lecteur de la boutique lit l'espace par la brique** (décidée par
- * Hugo le 2026-11-05 ; plan `documentation/caching-usage/plan-espace-retenu.md`,
+ * Hugo le 2026-11-05 ; plan `documentation/caching-usage/dans-quel-espace-est-le-client.md`,
  * § 00 bis et § 00 ter, lot d).
  *
  * Chaque store lisait l'espace à sa façon : son `effect` sur
@@ -204,7 +204,7 @@ function main() {
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
       `\n  ${failures.length} écart(s). Un lecteur lit l'espace par la brique ` +
-        `(client/context-keyed/ — plan-espace-retenu.md, lot d).\n`,
+        `(client/context-keyed/ — dans-quel-espace-est-le-client.md, lot d).\n`,
     );
     process.exit(1);
   }

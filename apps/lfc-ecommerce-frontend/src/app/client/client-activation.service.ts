@@ -46,7 +46,7 @@ export class ClientActivation {
 
   /**
    * Le verdict, rangé par clé de contexte (lot d de
-   * `caching-usage/plan-espace-retenu.md`) : l'espace d'une société EST son
+   * `caching-usage/dans-quel-espace-est-le-client.md`) : l'espace d'une société EST son
    * identifiant, et rien n'est rendu pour un autre espace que celui qui
    * s'affiche — après une bascule, le verdict de la société quittée ne reste
    * pas à l'écran le temps de lire le suivant.

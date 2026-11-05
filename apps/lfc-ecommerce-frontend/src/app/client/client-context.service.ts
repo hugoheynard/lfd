@@ -60,7 +60,7 @@ const VISITING: ClientContextState = { kind: 'visitor' };
 
 /**
  * **Le contexte de lecture, en un seul endroit** (lot b du plan
- * `documentation/caching-usage/plan-espace-retenu.md`, §00 bis).
+ * `documentation/caching-usage/dans-quel-espace-est-le-client.md`, §00 bis).
  *
  * Chaque lecteur par audience recopiait la même règle — « visiteur sans
  * session, sinon l'espace, sinon on attend » — et chaque copie était un

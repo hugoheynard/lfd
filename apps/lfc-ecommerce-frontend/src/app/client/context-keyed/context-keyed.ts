@@ -68,7 +68,7 @@ interface Forgettable {
  * **La mémoire de toutes les briques**, que l'oubli à la déconnexion vide
  * (`sign-out/sign-out-forgetting.ts`) : sans quoi les points ou le tarif d'un
  * espace resteraient lisibles en mémoire après la sortie (plan
- * `caching-usage/plan-espace-retenu.md`, § 00 ter, contredit par `vitruve`).
+ * `caching-usage/dans-quel-espace-est-le-client.md`, § 00 ter, contredit par `vitruve`).
  */
 @Injectable({ providedIn: 'root' })
 export class ContextKeyedMemory {
@@ -112,7 +112,7 @@ interface InFlight {
 
 /**
  * **La brique de lecture rangée par clé de contexte** (lot c bis du plan
- * `documentation/caching-usage/plan-espace-retenu.md`, version réduite après
+ * `documentation/caching-usage/dans-quel-espace-est-le-client.md`, version réduite après
  * `vitruve`). Écrite à la main : `resource()` jette sa valeur à chaque
  * changement de paramètres, et `httpResource` ne sait pas attendre le jeton.
  *

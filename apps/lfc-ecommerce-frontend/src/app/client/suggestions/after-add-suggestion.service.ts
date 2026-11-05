@@ -38,7 +38,7 @@ interface Offer {
  * la source de la suggestion (`suggestionOrigin`). La première du panier :
  * celle du staff, sinon la calculée (R2), comme la carte du panier les range.
  *
- * Lu par la brique (lot d de `caching-usage/plan-espace-retenu.md`) : la
+ * Lu par la brique (lot d de `caching-usage/dans-quel-espace-est-le-client.md`) : la
  * demande part avec l'en-tête de l'espace que `ClientContext` affiche, et une
  * proposition lue pour un autre espace n'est pas montrée — même le temps d'une
  * bascule.

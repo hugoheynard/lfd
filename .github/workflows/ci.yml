@@ -323,7 +323,7 @@ jobs:
       # peut rendre, le temps d'une requête, ce qu'il a lu pour l'espace d'où
       # l'on vient. La brique `context-keyed/` tient la règle une fois ; les
       # lecteurs pas encore migrés sont une dette comptée, qui ne fait que
-      # décroître (plan-espace-retenu.md, lot d, 2026-11-05).
+      # décroître (dans-quel-espace-est-le-client.md, lot d, 2026-11-05).
       - name: "Gate : un lecteur de la boutique lit l'espace par la brique"
         run: pnpm lint:context-keyed-readers
 

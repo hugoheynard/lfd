@@ -36,7 +36,7 @@ const PRO_SHOWCASE = 'pro';
  * pro, `GET /contact-settings?audience=pro` ; un client connecté lit
  * `GET /me/contact-settings`, la carte de son audience établie au serveur.
  *
- * Rangée par clé de contexte (lot d de `caching-usage/plan-espace-retenu.md`) :
+ * Rangée par clé de contexte (lot d de `caching-usage/dans-quel-espace-est-le-client.md`) :
  * l'espace que `ClientContext` AFFICHE et, pour un visiteur, la vitrine. La
  * carte d'une autre clé ne se montre jamais, même le temps d'une requête ;
  * pendant une bascule, celle de l'espace demandé se lit d'avance et ne

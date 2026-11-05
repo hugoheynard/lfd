@@ -1,6 +1,6 @@
 /**
  * **Les lectures faites d'avance pendant une bascule d'espace** (lot c du plan
- * `documentation/caching-usage/plan-espace-retenu.md`).
+ * `documentation/caching-usage/dans-quel-espace-est-le-client.md`).
  *
  * Une lecture est rangée sous sa clé complète et rendue UNE fois, à qui la
  * redemande — le lecteur, à l'acceptation. Elle n'est jamais affichée d'ici :

@@ -29,7 +29,7 @@ import { cartSkus, suggestionTarget } from './suggestion-target';
  * l'accueil et par espace, le panier et le jour visé lus au départ ; rien en
  * SSR ; la requête vit dans un morceau chargé à la demande. Sans règle, rien.
  *
- * Rangé par la brique (lot d de `caching-usage/plan-espace-retenu.md`) : la
+ * Rangé par la brique (lot d de `caching-usage/dans-quel-espace-est-le-client.md`) : la
  * clé est l'espace que `ClientContext` affiche, et rien de ce qui a été lu
  * pour un autre espace n'est montré — même le temps d'une requête.
  *

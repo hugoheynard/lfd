@@ -44,7 +44,7 @@ import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-key
  * perso : une adresse appartient à une société, et en proposer une à qui
  * commande pour lui-même serait livrer chez son employeur. Le carnet
  * **attend** l'espace connu, et ne montre jamais, pendant une bascule, celui
- * de la maison quittée (lot d de `caching-usage/plan-espace-retenu.md`).
+ * de la maison quittée (lot d de `caching-usage/dans-quel-espace-est-le-client.md`).
  */
 @Injectable({ providedIn: 'root' })
 export class ClientAddresses {

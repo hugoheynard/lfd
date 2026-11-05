@@ -54,7 +54,7 @@ async function settle(): Promise<void> {
   TestBed.tick();
 }
 
-/** Lot d de `caching-usage/plan-espace-retenu.md` : la brique tient les suggestions de l'accueil. */
+/** Lot d de `caching-usage/dans-quel-espace-est-le-client.md` : la brique tient les suggestions de l'accueil. */
 describe('StaffHomePicks — rangées par espace', () => {
   it('lit la route murée, l’en-tête d’espace tiré de la clé', async () => {
     const { picks, http } = boot();
