@@ -166,7 +166,7 @@ périmé` (le dernier total atténué du devis, la photo `STALE_PHOTO_MS` du
 | b     | 🟦 bâti le 2026-11-05, sur `dev` — `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait                                                                                 | —           |
 | c     | 🟦 bâti le 2026-11-05, sur `dev` (`8b1d720fe`) — la bascule : `switchTo`, état en cours, retour arrière, lecture d'avance                                                                                                    | b           |
 | c bis | 🟦 bâti le 2026-11-05, non poussé — **la brique réduite** (`client/context-keyed/`), éprouvée sur les points de retrait seuls ; l'oubli à la déconnexion la vide, l'abandon d'un espace COUPE sa lecture d'avance — § 00 ter | b, c        |
-| d     | la migration des autres stores **vers la brique**, une par commit, porte en dette décroissante                                                                                                                               | b, c, c bis |
+| d     | 🟦 en cours — 3 stores migrés le 2026-11-05 : carte de contact, admission (connecté), fidélité ; la brique gagne `ensure` et le marqueur `NO_WORKSPACE` ; la porte en dette décroissante n'est pas encore armée              | b, c, c bis |
 | e     | 🟦 bâti le 2026-11-05, non commité — l'espace retenu (état `trying`, indice `lfc.workspace-hint`) sur les trois lecteurs du lot b ; le stock du jour n'essaie pas (audience inconnue avant `/me`)                            | a, b        |
 
 Le gain (e) ne demande pas la migration complète (d).
