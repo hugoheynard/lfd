@@ -64,7 +64,10 @@ export default function (data) {
     quantity: between(1, 4),
   }));
   const unique = [...new Map(lines.map((l) => [l.sku, l])).values()];
-  const body = { lines: unique, fulfillment: { method: "pickup", pickupAddressId: null } };
+  // Sans acheminement : le retrait sans point choisi est refusé en 409
+  // (« choisissez celui où retirer ») dès que plusieurs points sont ouverts
+  // (constaté en production le 2026-11-05). Le catalogue est lu pareil.
+  const body = { lines: unique, fulfillment: null };
   const res = http.post(`${BASE}/shop/quote`, JSON.stringify(body), {
     headers: { "content-type": "application/json" },
   });

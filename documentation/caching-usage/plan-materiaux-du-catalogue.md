@@ -425,7 +425,7 @@ prix au kilo (E), la filiation (F), les opérations et l'heure limite générale
 
 **Le script.** [`dev-toolbox/charge/reference-devis.js`](../../dev-toolbox/charge/reference-devis.js)
 (k6) : un seul visiteur, `LFD_N` devis anonymes (30) à `LFD_PAUSE` secondes
-d'intervalle (3), paniers tirés du catalogue public, retrait en boutique.
+d'intervalle (3), paniers tirés du catalogue public, sans acheminement (un retrait sans point est refusé quand plusieurs points sont ouverts).
 Rien n'écrit. Les réponses servies du cache Cloudflare sont écartées. Il
 rend médiane et p95 de `http_req_duration`, `app`, `catalogue` et
 `catalogue-reads`.
@@ -444,9 +444,15 @@ médiane. Même chose pour le rayon d'un pro (`GET /shop/catalogue/mine`).
 
 **Référence** (à remplir après déploiement de la marque) :
 
-| Date | Chemin                                      | `http_req_duration` méd. / p95 | `app` méd. / p95 | `catalogue` méd. / p95 | lectures |
-| ---- | ------------------------------------------- | ------------------------------ | ---------------- | ---------------------- | -------- |
-|      | devis anonyme (`POST /shop/quote`)          |                                |                  |                        |          |
-|      | devis pro (`POST /shop/quote/mine`)         |                                |                  |                        |          |
-|      | estimation (`POST /admin/orders/estimate`)  |                                |                  |                        |          |
-|      | rayon d'un pro (`GET /shop/catalogue/mine`) |                                |                  |                        |          |
+**Relevé le 2026-11-05 en production : la lecture du catalogue pèse 82 % du
+temps d'un devis anonyme dans l'API** (127 ms sur 155, médianes), en **7**
+lectures — contre 3 dans le relevé M0 local : le catalogue de production a des
+familles à plusieurs niveaux, et la lignée, absente du corpus de test (à plat),
+coûte des lectures. Le plan est justifié par la mesure.
+
+| Date       | Chemin                                                   | `http_req_duration` méd. / p95 | `app` méd. / p95 | `catalogue` méd. / p95 | lectures |
+| ---------- | -------------------------------------------------------- | ------------------------------ | ---------------- | ---------------------- | -------- |
+| 2026-11-05 | devis anonyme (`POST /shop/quote`), `bbb779a`, 30 appels | 337 / 446 ms                   | 155 / 180 ms     | **127 / 148 ms**       | **7**    |
+|            | devis pro (`POST /shop/quote/mine`)                      |                                |                  |                        |          |
+|            | estimation (`POST /admin/orders/estimate`)               |                                |                  |                        |          |
+|            | rayon d'un pro (`GET /shop/catalogue/mine`)              |                                |                  |                        |          |
