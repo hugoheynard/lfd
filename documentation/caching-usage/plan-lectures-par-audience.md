@@ -145,7 +145,7 @@ Ce qui suit l'emporte sur la Partie 2.
 ## 3. L'accès aux fonctions
 
 - ⚠️ Retirée le 2026-11-05 — les niveaux sont dans `GET /me` ; ce qui suit
-  est l'analyse d'avant. `GET /feature-access/mine` (ex-`my-feature-access.controller.ts`)
+  est l'analyse d'avant. `GET /feature-access/mine` (contrôleur retiré, `840e5dd46`)
   dépend de la personne et de réglages rares (Hugo, 2026-11-05 : « ça change
   peu »). → gardé en mémoire **par personne**, purgé à chaque écriture d'un
   réglage d'accès, et sous l'estampille du principal si la réponse dépend
