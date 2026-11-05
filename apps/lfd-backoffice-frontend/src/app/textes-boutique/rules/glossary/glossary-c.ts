@@ -74,6 +74,7 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   colTotal: 'Colonne total',
   collapse: 'Replier la commande',
   company_name_missing: 'Manque — raison sociale',
+  companyPending: 'Société en cours de validation',
   completion: 'Dossier à compléter',
   confirm: 'Confirmer',
   confirmMessage: 'Confirmation — question',
