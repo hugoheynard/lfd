@@ -467,8 +467,10 @@ describe('ClientContext — l’espace retenu (lot e)', () => {
     expect(context.state()).toEqual({ kind: 'confirmed', workspace: 'cmp_a' });
     expect(catalogue.items()).toEqual([]);
 
-    // Les réponses de l'essai reviennent après /me : elles sont jetées.
-    for (const read of ahead) {
+    // Les points migrés sur la brique (lot c bis) COUPENT leur lecture de
+    // l'essai ; les autres répondent après /me, et sont jetés.
+    expect(ahead.filter((read) => read.cancelled).map(pathOf)).toEqual(['/pickup-addresses/mine']);
+    for (const read of ahead.filter((r) => !r.cancelled)) {
       read.flush(pathOf(read).endsWith('/pains/mine') ? PAGE_OF('b') : CATALOGUE_OF('b'));
     }
     await settle();

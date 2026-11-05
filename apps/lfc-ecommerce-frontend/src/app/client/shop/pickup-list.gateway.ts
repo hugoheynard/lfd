@@ -1,14 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { effect, inject, Injectable, untracked } from '@angular/core';
 import type { AudiencePickupAddressView } from '@lfd/contracts';
-import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
-import { firstValueFrom } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
-import { AheadReads } from '../ahead-reads';
 import { ClientContext, VISITOR } from '../client-context.service';
+import { contextKeyed, type ContextKey, workspaceHeadersOf } from '../context-keyed/context-keyed';
 
 /** Le lecteur anonyme : la route publique, qui ne sert que les points des particuliers. */
 export { VISITOR };
@@ -37,20 +36,22 @@ export class PickupListGateway {
   /** Quelqu'un a-t-il lu les points ? Sans lecteur, une bascule ne lit rien d'avance. */
   private asked = false;
 
-  /** Les points de l'espace demandé, lus pendant la bascule (lot c). */
-  private readonly aheadReads = new AheadReads<readonly AudiencePickupAddressView[]>();
+  /**
+   * Les points, rangés par clé de contexte (lot c bis) : la brique tient la
+   * lecture d'avance de la bascule et de l'essai, la jette et la coupe quand
+   * l'espace est abandonné, et se vide à la déconnexion. Les points ne
+   * dépendent que de l'espace : la part propre de la clé est vide.
+   */
+  private readonly keyed = contextKeyed((key) => this.read(key));
 
   constructor() {
     effect(() => {
       const ahead = this.context.ahead();
       if (ahead !== null && this.asked) {
         untracked(() => {
-          this.aheadReads.ask(ahead, ahead, () => this.read(ahead));
+          this.keyed.ahead(keyOf(ahead));
         });
       }
-    });
-    this.context.whenAbandoned((workspace) => {
-      this.aheadReads.forget(workspace);
     });
   }
 
@@ -64,31 +65,32 @@ export class PickupListGateway {
     this.asked = true;
     const ahead = untracked(() => this.context.ahead());
     if (ahead !== null) {
-      this.aheadReads.ask(ahead, ahead, () => this.read(ahead));
+      this.keyed.ahead(keyOf(ahead));
     }
   }
 
   /** Les points de CE lecteur — repris de la lecture faite d'avance s'il y en a une. */
   pickupsOf(reader: string): Promise<readonly AudiencePickupAddressView[]> {
     this.asked = true;
-    return this.aheadReads.take(reader) ?? this.read(reader);
+    return this.keyed.read(keyOf(reader));
   }
 
-  private read(reader: string): Promise<readonly AudiencePickupAddressView[]> {
+  /** L'appel d'une clé — son en-tête d'espace vient de la clé, pas de l'envoi. */
+  private read(key: ContextKey): Observable<readonly AudiencePickupAddressView[]> {
     const base = AUTH_CONFIG.apiBaseUrl;
-    if (reader === VISITOR) {
-      return firstValueFrom(
-        this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses`),
-      );
+    if (key.workspace === VISITOR) {
+      return this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses`);
     }
-    return firstValueFrom(
-      this.auth.accessToken$().pipe(
-        switchMap((token) =>
-          this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses/mine`, {
-            headers: { Authorization: `Bearer ${token}`, [WORKSPACE_HEADER]: reader },
-          }),
-        ),
+    return this.auth.accessToken$().pipe(
+      switchMap((token) =>
+        this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses/mine`, {
+          headers: { Authorization: `Bearer ${token}`, ...workspaceHeadersOf(key) },
+        }),
       ),
     );
   }
+}
+
+function keyOf(reader: string): ContextKey {
+  return { workspace: reader, own: '' };
 }

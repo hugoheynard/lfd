@@ -2,6 +2,7 @@ import { inject, Injectable, type Provider } from '@angular/core';
 
 import { BEFORE_SIGN_OUT } from '../../auth/before-sign-out';
 import { CartStore } from '../cart/cart.store';
+import { ContextKeyedMemory } from '../context-keyed/context-keyed';
 import { ShopCartSync } from '../cart/shop-cart-sync.service';
 import { OrderContextStore } from '../order-context.store';
 import { ERASED_ON_SIGN_OUT, KEPT_ON_SIGN_OUT, matches } from './stored-keys';
@@ -17,7 +18,8 @@ import { ERASED_ON_SIGN_OUT, KEPT_ON_SIGN_OUT, matches } from './stored-keys';
  *
  * 1. **couper l'envoi différé du panier** — une écriture en attente ou en vol
  *    ne doit plus rien reposer ;
- * 2. **vider la mémoire** (panier, mode de service) — un écran encore monté
+ * 2. **vider la mémoire** (panier, mode de service, lectures rangées par clé
+ *    de contexte — `context-keyed/`) — un écran encore monté
  *    réécrirait sinon ce qu'il tient ;
  * 3. **effacer le stockage**, local et de session.
  *
@@ -33,11 +35,13 @@ export class SignOutForgetting {
   private readonly sync = inject(ShopCartSync);
   private readonly cart = inject(CartStore);
   private readonly order = inject(OrderContextStore);
+  private readonly keyed = inject(ContextKeyedMemory);
 
   forget(): void {
     this.sync.halt();
     this.cart.forget();
     this.order.forget();
+    this.keyed.clear();
     for (const store of browserStores()) {
       eraseFrom(store);
     }
