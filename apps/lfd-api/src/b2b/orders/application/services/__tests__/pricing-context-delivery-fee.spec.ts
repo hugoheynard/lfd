@@ -233,7 +233,16 @@ describe("PricingContext — le franco de la route (1b)", () => {
         },
       ),
     ).resolves.toBe(6_000);
-    // Une commande passée sans franco n'en gagne pas en révision.
+  });
+
+  /**
+   * Tranché le 2026-11-05 : une commande passée sans franco n'a figé aucun
+   * seuil ; en révision dans la même zone, elle prend celui du jour (elle ne
+   * le gagnait jamais avant ce jour-là).
+   */
+  it("révision dans la même zone d'une commande SANS seuil figé : le seuil du jour", async () => {
+    const today = await thresholdOf({ deliveryPricing: FRANCO }, REVISED);
+    expect(today).not.toBeNull();
     await expect(
       thresholdOf(
         { deliveryPricing: FRANCO },
@@ -246,7 +255,7 @@ describe("PricingContext — le franco de la route (1b)", () => {
           },
         },
       ),
-    ).resolves.toBeNull();
+    ).resolves.toBe(today);
   });
 
   it("révision livrée dans une AUTRE zone : barème ET seuil du jour de cette zone (Hugo, 2026-11-05)", async () => {

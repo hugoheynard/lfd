@@ -306,12 +306,16 @@ export class PricingContext {
     // Même zone : le tarif de la passation, barème et franco. Autre zone :
     // ceux du jour de la nouvelle zone (Hugo, 2026-11-05).
     const tariff = frozenFee !== null && frozenFee.zoneId === zoneId ? frozenFee : zone.value;
+    // Une commande passée SANS franco n'a figé aucun seuil : elle prend celui
+    // du jour, et ne peut qu'y gagner (tranché le 2026-11-05, Hugo n'en fait
+    // pas un réglage). Un seuil figé, lui, reste celui de la passation.
+    const threshold = tariff.freeDeliveryThresholdCents ?? zone.value.freeDeliveryThresholdCents;
     const route: BasketRoute = {
       method: "delivery",
       zoneId,
       address,
       fee: tariff.fee,
-      freeDeliveryThresholdCents: tariff.freeDeliveryThresholdCents,
+      freeDeliveryThresholdCents: threshold,
       globalWindowMode,
     };
     return { value: { route, promotions } };
