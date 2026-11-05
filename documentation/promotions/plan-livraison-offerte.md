@@ -188,7 +188,19 @@ bon, facture, e-mail), sans terme comptable négatif. Facture, Factur-X et
 TVA restent inchangés. Une vraie ligne négative comptable toucherait ~65
 fichiers, la TVA par taux et Factur-X. **À trancher par Hugo.**
 
-**Encore à trancher** : la base du seuil (avant ou après les remises, avant
+**Tranché par Hugo le 2026-11-05 (« ok pour tout avec tes
+recommandations »)** :
+
+- **(e) La ligne est AFFICHÉE, pas comptable** : frais facturé 0, la commande
+  fige « livraison offerte, aurait coûté X » ; la ligne s'affiche sur le
+  devis, le bon, la facture et l'e-mail. Facture, Factur-X et TVA inchangés.
+- **La base du seuil** : HT, **après** les remises, **avant** le bon de
+  fidélité (le bon est un moyen de paiement, il ne fait pas perdre le
+  franco).
+- **En révision** : le seuil **figé à la passation**, jamais le réglage du
+  jour.
+
+~~**Encore à trancher**~~ (tranché ci-dessus) : la base du seuil (avant ou après les remises, avant
 ou après le bon de fidélité) ; en révision, le seuil **figé** à la passation
 (recommandé) ou le réglage du jour ; l'écart au seuil montré à un
 particulier (TTC « environ », servi par le serveur).
