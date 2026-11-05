@@ -13,8 +13,13 @@ import {
   type PrincipalResolution,
 } from "./tracked-principal.resolver.js";
 
-/** Au plus mille personnes en mémoire (`qui-est-le-client.md`, « La mémoire »). */
-export const PRINCIPAL_MEMORY_CAPACITY = 1_000;
+/**
+ * Au plus vingt mille personnes en mémoire (`qui-est-le-client.md`, « La
+ * mémoire »). Relevée de 1 000 le 2026-11-05 (Hugo) pour le B2C : la limite ne
+ * gêne que si plus de personnes différentes appellent dans la même fenêtre de
+ * dix minutes, et un principal pèse moins d'un kilo-octet (~20 Mo au plus).
+ */
+export const PRINCIPAL_MEMORY_CAPACITY = 20_000;
 
 /** Le filet : dix minutes. Il ne sert pas à la justesse, l'estampille si (`qui-est-le-client.md`, « La mémoire »). */
 export const PRINCIPAL_MEMORY_LIFETIME_MS = 10 * 60 * 1000;

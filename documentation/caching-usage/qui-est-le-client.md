@@ -72,25 +72,25 @@ Chemins relatifs à `apps/lfd-api/` ; lignes lues le 2026-11-05.
 ## La mémoire
 
 `src/b2b/account/infrastructure/cached-principal.resolver.ts` —
-`CachedPrincipalResolver` (l. 52) enveloppe le résolveur ordinaire, sur le même
+`CachedPrincipalResolver` (l. 57) enveloppe le résolveur ordinaire, sur le même
 port `PrincipalResolver`.
 
-- **Capacité 1 000 personnes** (`PRINCIPAL_MEMORY_CAPACITY`, l. 17), la plus
+- **Capacité 20 000 personnes** (1 000 jusqu'au 2026-11-05, relevée pour le B2C : moins d'un kilo-octet par principal) (`PRINCIPAL_MEMORY_CAPACITY`, l. 22), la plus
   ancienne sort ; **durée de 10 minutes** (`PRINCIPAL_MEMORY_LIFETIME_MS`,
-  l. 20) — un filet, pas la justesse.
-- **L'ordre est la justesse** : l'estampille est lue D'ABORD (l. 72), le
-  principal ensuite, et rangé sous l'estampille lue avant (`lead`, l. 98–107).
+  l. 25) — un filet, pas la justesse.
+- **L'ordre est la justesse** : l'estampille est lue D'ABORD (l. 77), le
+  principal ensuite, et rangé sous l'estampille lue avant (`lead`, l. 103–112).
   Lu dans l'autre ordre, un principal périmé pourrait se ranger sous une
   estampille neuve.
 - **Une lecture à la fois par personne** : les appels simultanés d'une même
   personne sous la même estampille attendent la lecture en vol (`inFlight`,
-  l. 84) au lieu d'en lancer une chacun.
+  l. 89) au lieu d'en lancer une chacun.
 - **Clé : le `sub` du jeton.** Le `subject` et les `scopes` ne sont jamais
   gardés : ils sont repris du jeton à chaque appel, et le principal rendu est
-  figé (`withToken`, `Object.freeze`, l. 151) parce qu'il est partagé.
+  figé (`withToken`, `Object.freeze`, l. 156) parce qu'il est partagé.
 - Si le jeton prouve une adresse que la base ne tient pas encore pour prouvée
   (`wouldRecord`), l'appel repasse par le résolveur ordinaire, qui l'écrit.
-- Sans ligne d'estampille (`no-stamp`, l. 73), la mémoire n'est pas utilisée.
+- Sans ligne d'estampille (`no-stamp`, l. 78), la mémoire n'est pas utilisée.
 
 `src/b2b/account/infrastructure/principal-memory.ts` — `PrincipalMemory`
 (l. 24), pure (l'heure lui est donnée) : `take` (l. 33) ne rend que sous la
