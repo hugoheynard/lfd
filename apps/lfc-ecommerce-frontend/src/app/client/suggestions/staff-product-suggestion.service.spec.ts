@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import type { ProductSuggestionView } from '@lfd/contracts';
 import type { ProductAudienceEvent } from '@lfd/contracts/shop-values';
+import { signal } from '@angular/core';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { of } from 'rxjs';
 
 import { AuthFacade } from '../../auth/auth.facade';
@@ -172,5 +174,51 @@ describe('StaffProductSuggestion', () => {
     await answer(http, [{ ...STAFF_PICK, sku: LOCKED_ITEM.sku, item: LOCKED_ITEM }]);
 
     expect(pick.current()).toBeNull();
+  });
+});
+
+/** Lot d de `caching-usage/plan-espace-retenu.md` : la brique range la suggestion par espace. */
+describe('StaffProductSuggestion — rangée par espace', () => {
+  const MINE = (request: { url: string }): boolean =>
+    request.url.endsWith('/shop/suggestions/product/mine');
+
+  it('rien de l’ancien espace n’est rendu après une bascule, même si sa réponse arrive tard', async () => {
+    TestBed.resetTestingModule();
+    const workspace = workspaceDouble();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspace),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: signal(true), accessToken$: () => of('jeton') },
+        },
+        { provide: ProductAudience, useValue: new RecordingAudience() },
+      ],
+    });
+    const pick = TestBed.inject(StaffProductSuggestion);
+    const http = TestBed.inject(HttpTestingController);
+
+    pick.open('VIE-001');
+    TestBed.tick();
+    const personal = await vi.waitFor(() => http.expectOne(MINE));
+    expect(personal.request.headers.get(WORKSPACE_HEADER)).toBe('personal');
+
+    workspace.choose('cmp_pro');
+    TestBed.tick();
+    personal.flush([STAFF_PICK]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    TestBed.tick();
+    expect(pick.current()).toBeNull();
+
+    const pro = await vi.waitFor(() => http.expectOne(MINE));
+    expect(pro.request.headers.get(WORKSPACE_HEADER)).toBe('cmp_pro');
+    pro.flush([STAFF_PICK]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    TestBed.tick();
+
+    expect(pick.current()).toEqual(STAFF_PICK);
+    http.verify();
   });
 });

@@ -10,11 +10,14 @@ import {
   untracked,
 } from '@angular/core';
 import type { ProductSuggestionView } from '@lfd/contracts';
+import { defer, type Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { ProductAudience } from '../audience/product-audience.service';
 import { CartStore } from '../cart/cart.store';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext } from '../client-context.service';
+import { contextKeyed, type ContextKey } from '../context-keyed/context-keyed';
 import { OrderContextStore } from '../order-context.store';
 import { cartSkus, suggestionTarget } from './suggestion-target';
 
@@ -24,6 +27,12 @@ interface Opening {
   readonly sku: string;
 }
 
+/** Une ouverture dont la réponse est arrivée, et la clé sous laquelle elle est rangée. */
+interface Served {
+  readonly opening: number;
+  readonly key: ContextKey;
+}
+
 /**
  * **La suggestion du staff sur la fiche d'un article** (RS2, fiche, de
  * `documentation/recommandation-produit/suggestions-du-staff.md`).
@@ -31,6 +40,10 @@ interface Opening {
  * Une requête par ouverture de fiche — le panier et le jour visé sont lus au
  * moment où elle part, pas suivis ; rien en SSR ; la requête vit dans un
  * morceau chargé à la demande. Sans règle applicable, rien.
+ *
+ * Rangée par la brique (lot d de `caching-usage/plan-espace-retenu.md`) sous
+ * l'espace affiché et l'article — une entrée par article, réécrite à chaque
+ * ouverture : la suggestion lue pour un autre espace ne se montre jamais.
  *
  * Elle compte ce qu'elle montre : `suggestion_shown` une fois par ouverture,
  * `suggestion_clicked` quand la carte ouvre la fiche, `suggestion_added`
@@ -42,50 +55,59 @@ export class StaffProductSuggestion {
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
   private readonly order = inject(OrderContextStore);
   private readonly store = inject(CartStore);
   private readonly audience = inject(ProductAudience);
 
   private readonly opening = signal<Opening | null>(null);
-  private readonly served = signal<{
-    readonly opening: number;
-    readonly view: ProductSuggestionView;
-  } | null>(null);
+  /** La dernière ouverture servie : la brique n'est pas un signal. */
+  private readonly served = signal<Served | null>(null);
   /** Le rang survit à la fermeture : une réouverture est une ouverture neuve. */
   private openings = 0;
-  private asked: number | null = null;
+  private asked: string | null = null;
   private shown: number | null = null;
+
+  private readonly keyed = contextKeyed((key) => this.load(key));
+
+  /** La clé de la fiche ouverte — `null` en SSR, fermée, ou tant que l'espace n'est pas connu. */
+  private readonly key = computed<ContextKey | null>(
+    () => {
+      const opening = this.opening();
+      const workspace = this.browser ? this.context.prefix() : null;
+      return opening === null || workspace === null ? null : { workspace, own: opening.sku };
+    },
+    { equal: (a, b) => a?.workspace === b?.workspace && a?.own === b?.own },
+  );
 
   /** Ce que la fiche ouverte montre — jamais un article déjà au panier. */
   readonly current = computed(() => {
     const opening = this.opening();
+    const key = this.key();
     const served = this.served();
-    if (opening === null || served === null || served.opening !== opening.id) {
+    if (opening === null || key === null || served?.opening !== opening.id) {
       return null;
     }
-    return (this.store.quantities()[served.view.sku] ?? 0) === 0 ? served.view : null;
-  });
-
-  /** L'espace d'un lecteur reconnu, attendu avant de demander. */
-  private readonly ready = computed<{
-    readonly opening: Opening;
-    readonly authenticated: boolean;
-  } | null>(() => {
-    const opening = this.opening();
-    if (!this.browser || opening === null) {
+    if (served.key.workspace !== key.workspace) {
       return null;
     }
-    const authenticated = this.auth.isAuthenticated();
-    return authenticated && this.workspace.current() === null ? null : { opening, authenticated };
+    const view = this.keyed.shown(key)?.[0];
+    return view !== undefined && (this.store.quantities()[view.sku] ?? 0) === 0 ? view : null;
   });
 
   constructor() {
     effect(() => {
-      const ready = this.ready();
-      if (ready !== null && this.asked !== ready.opening.id) {
-        this.asked = ready.opening.id;
-        untracked(() => void this.fetch(ready.opening, ready.authenticated));
+      const opening = this.opening();
+      const key = this.key();
+      if (opening === null || key === null) {
+        return;
+      }
+      // Une demande par ouverture ET par espace : une bascule pendant que la
+      // fiche est ouverte relit pour le nouvel espace.
+      const ask = `${opening.id}\u0000${key.workspace}`;
+      if (this.asked !== ask) {
+        this.asked = ask;
+        untracked(() => void this.fetch(opening, key));
       }
     });
     effect(() => {
@@ -125,22 +147,30 @@ export class StaffProductSuggestion {
     this.audience.record(view.sku, event, { source: 'staff', placement: view.reason.ruleId });
   }
 
-  private async fetch(opening: Opening, authenticated: boolean): Promise<void> {
+  private async fetch(opening: Opening, key: ContextKey): Promise<void> {
+    try {
+      await this.keyed.read(key);
+    } catch {
+      // Une suggestion qui échoue ne montre rien : jamais une fiche bloquée.
+      return;
+    }
+    // Une réponse d'une ouverture déjà remplacée ne sert plus.
+    if (untracked(() => this.opening())?.id === opening.id) {
+      this.served.set({ opening: opening.id, key });
+    }
+  }
+
+  /** L'appel d'une clé, le panier et le jour visé lus à son départ. */
+  private load(key: ContextKey): Observable<readonly ProductSuggestionView[]> {
     const payload = {
-      sku: opening.sku,
+      sku: key.own,
       skus: cartSkus(this.store.quantities()),
       target: suggestionTarget(this.order.choice()),
     };
-    const token = authenticated ? this.auth.accessToken$() : null;
-    try {
-      const { fetchStaffSuggestions } = await import('./staff-suggestion.fetch');
-      const views = await fetchStaffSuggestions(this.http, 'product', payload, token);
-      const view = views[0];
-      if (view !== undefined) {
-        this.served.set({ opening: opening.id, view });
-      }
-    } catch {
-      // Une suggestion qui échoue ne montre rien : jamais une fiche bloquée.
-    }
+    return defer(() => import('./staff-suggestion.fetch')).pipe(
+      switchMap(({ productSuggestionsFor }) =>
+        productSuggestionsFor(this.http, payload, this.auth.accessToken$(), key),
+      ),
+    );
   }
 }

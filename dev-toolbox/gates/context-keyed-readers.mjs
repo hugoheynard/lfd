@@ -91,7 +91,6 @@ export const DEBT = [
   `${APP}/client/order-context.store.ts`,
   `${APP}/client/shop/shop-catalogue.store.ts`,
   `${APP}/client/suggestions/after-add-suggestion.service.ts`,
-  `${APP}/client/suggestions/staff-product-suggestion.service.ts`,
 ];
 
 /** Les commentaires citent l'ancienne mécanique pour l'expliquer : on les blanchit. */
