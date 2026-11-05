@@ -20,7 +20,7 @@ describe('ShelfAddress — le rayon dans l’adresse', () => {
   let router: Router;
   let store: ShopStore;
 
-  async function open(url: string): Promise<void> {
+  async function open(url: string, hydrated = true): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -31,7 +31,9 @@ describe('ShelfAddress — le rayon dans l’adresse', () => {
         ShelfAddress,
       ],
     });
-    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    if (hydrated) {
+      hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    }
     router = TestBed.inject(Router);
     await router.navigateByUrl(url);
     store = TestBed.inject(ShopStore);
@@ -84,5 +86,29 @@ describe('ShelfAddress — le rayon dans l’adresse', () => {
     await router.navigateByUrl(`/boutique?rayon=${NOEL_SHELF}`);
     await settle();
     expect(store.shelf()).toBe(NOEL_SHELF);
+  });
+
+  /**
+   * Régression de latence : avant le catalogue, le rayon restait sur « tout »
+   * — sa vitrine partait pour rien, et celle du rayon demandé ~270 ms plus
+   * tard, après le catalogue (mesuré le 2026-11-05).
+   */
+  it('pose le rayon de l’adresse AVANT le catalogue, et le garde s’il existe', async () => {
+    await open(`/boutique?rayon=${NOEL_SHELF}`, false);
+    expect(store.shelf()).toBe(NOEL_SHELF);
+
+    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    await settle();
+    expect(store.shelf()).toBe(NOEL_SHELF);
+    expect(router.url).toBe(`/boutique?rayon=${NOEL_SHELF}`);
+  });
+
+  it('un rayon posé à l’essai mais inconnu du catalogue revient à « tout »', async () => {
+    await open('/boutique?rayon=op:paques-2020', false);
+    expect(store.shelf()).toBe('op:paques-2020');
+
+    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    await settle();
+    expect(store.shelf()).toBe(ALL_SHELVES);
   });
 });

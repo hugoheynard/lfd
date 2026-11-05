@@ -57,14 +57,27 @@ export class ShelfAddress {
     effect(() => {
       const param = this.param();
       const shelf = this.store.shelf();
-      // Avant le catalogue, on ne sait pas si le rayon existe : on attend.
+      // Avant le catalogue, on ne sait pas si le rayon existe : on le pose
+      // QUAND MÊME, à l'essai. Attendre laissait le rayon sur « tout » —
+      // sa vitrine partait pour rien, et celle du rayon demandé seulement
+      // après le catalogue (~270 ms plus tard, mesuré le 2026-11-05). Le
+      // catalogue arrivé tranche : un rayon inconnu revient à « tout ».
       if (this.catalogue.status() !== 'ready') {
+        if (this.lastParam === UNREAD && param !== null && param !== shelf) {
+          untracked(() => this.shop.browse(param));
+        }
         return;
       }
       untracked(() => {
         if (param !== this.lastParam) {
           this.lastParam = param;
-          if (param !== null && param !== shelf && this.known().has(param)) {
+          if (param !== null && !this.known().has(param)) {
+            if (shelf === param) {
+              this.shop.browse(ALL_SHELVES);
+            }
+            return;
+          }
+          if (param !== null && param !== shelf) {
             this.shop.browse(param);
           }
           return;
