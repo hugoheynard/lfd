@@ -28,11 +28,15 @@ function bootWith(companies: readonly { id: string }[]): HttpTestingController {
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
-      { provide: AuthFacade, useValue: { accessToken$: () => of('jeton') } },
+      {
+        provide: AuthFacade,
+        useValue: { isAuthenticated: () => true, accessToken$: () => of('jeton') },
+      },
       {
         provide: AccountService,
         useValue: {
           companies: () => companies,
+          workspaceWrite: () => null,
           // Le compte relu : une société seule est l'espace, et c'est son carnet qui se lit.
           account: () => ({
             companies,

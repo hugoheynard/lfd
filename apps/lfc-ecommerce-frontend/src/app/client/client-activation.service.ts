@@ -1,10 +1,13 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import type { ActivationGate, CompanyView } from '@lfd/contracts';
-import { firstValueFrom } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { ClientContext } from './client-context.service';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-keyed/context-keyed';
 
 /**
  * **Le verdict d'activation de la société**, tel que le serveur le rend au
@@ -36,15 +39,29 @@ import { AuthFacade } from '../auth/auth.facade';
 export class ClientActivation {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  private readonly context = inject(ClientContext);
 
-  private readonly _gate = signal<ActivationGate | null>(null);
+  /** Avance à chaque réponse ou échec : la brique n'est pas un signal. */
+  private readonly answered = signal(0);
+
+  /**
+   * Le verdict, rangé par clé de contexte (lot d de
+   * `caching-usage/plan-espace-retenu.md`) : l'espace d'une société EST son
+   * identifiant, et rien n'est rendu pour un autre espace que celui qui
+   * s'affiche — après une bascule, le verdict de la société quittée ne reste
+   * pas à l'écran le temps de lire le suivant.
+   */
+  private readonly keyed = contextKeyed((key) => this.read(key));
 
   /** Le verdict lu, ou `null` — pas encore lu, en échec, ou sans société. */
-  readonly gate = this._gate.asReadonly();
+  readonly gate = computed<ActivationGate | null>(() => {
+    this.answered();
+    const shown = this.context.prefix();
+    return shown === null ? null : (this.keyed.shown(keyOf(shown)) ?? null);
+  });
 
   /** La vue de société déjà lue : une autre instance (relue par `/me`) relance la lecture. */
   private seen: CompanyView | null = null;
-  private readFor: string | null = null;
 
   /**
    * Suit la société que `/me` porte : la lit la première fois, et la relit à
@@ -58,26 +75,39 @@ export class ClientActivation {
     void this.reload(company.id);
   }
 
-  /** Relit **seulement si cette société a déjà été lue** — sans écran montré, rien à rafraîchir. */
+  /** Relit **seulement si cette société est suivie** — sans écran montré, rien à rafraîchir. */
   async refresh(companyId: string): Promise<void> {
-    if (this.readFor === companyId) {
+    if (this.seen?.id === companyId) {
       await this.reload(companyId);
     }
   }
 
   private async reload(companyId: string): Promise<void> {
-    this.readFor = companyId;
     try {
-      const token = await firstValueFrom(this.auth.accessToken$());
-      const gate = await firstValueFrom(
-        this.http.get<ActivationGate>(
-          `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/activation`,
-          { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
+      await this.keyed.read(keyOf(companyId));
+    } catch {
+      // Un échec ne garde pas l'ancien verdict : « rien ne manque » serait faux.
+      this.keyed.forget(companyId);
+    }
+    this.answered.update((count) => count + 1);
+  }
+
+  /** L'appel — l'en-tête d'espace vient de la clé, pas de l'envoi. */
+  private read(key: ContextKey): Observable<ActivationGate> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<ActivationGate>(
+            `${AUTH_CONFIG.apiBaseUrl}/companies/${key.workspace}/activation`,
+            workspaceRequestOf(key, { Authorization: `Bearer ${token}` }),
+          ),
         ),
       );
-      this._gate.set(gate);
-    } catch {
-      this._gate.set(null);
-    }
   }
+}
+
+/** La clé d'une société : son espace, sans part propre. */
+function keyOf(companyId: string): ContextKey {
+  return { workspace: companyId, own: '' };
 }

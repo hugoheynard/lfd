@@ -83,7 +83,6 @@ export const ADMITTED = {
 export const DEBT = [
   `${APP}/client/accueil-public/accueil-public.ts`,
   `${APP}/client/cart/voucher-choice.service.ts`,
-  `${APP}/client/client-activation.service.ts`,
   `${APP}/client/client-addresses.service.ts`,
   `${APP}/client/client-audience.service.ts`,
   `${APP}/client/client-bank-account.service.ts`,
