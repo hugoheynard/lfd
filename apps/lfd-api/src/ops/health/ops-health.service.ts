@@ -8,6 +8,7 @@ import type {
   TrafficWindow,
 } from "@lfd/ops-contract";
 
+import { CacheOutcomeReader } from "../../platform/metrics/cache-outcome.reader.js";
 import { Clock } from "../../platform/time/clock.js";
 import { Cached } from "../cached.js";
 import { ContainerUsageService } from "../container/container-usage.service.js";
@@ -17,6 +18,7 @@ import { Auth0ReadingsReader } from "./auth0-readings.reader.js";
 import { DatabaseReadingsReader } from "./database-readings.reader.js";
 import { MailReadingsReader } from "./mail-readings.reader.js";
 import { vitalsReadings } from "./vitals-readings.js";
+import { cacheReports } from "./cache-readings.js";
 import { deriveHealth, type NodeEvidence } from "./derive-health.js";
 import { ProbeRunner } from "../probes/probe-runner.service.js";
 import type { ProbeOutcome } from "../probes/probe.port.js";
@@ -75,6 +77,7 @@ export class OpsHealthService {
     private readonly journal: StatusJournal,
     private readonly vitals: VitalsStore,
     private readonly container: ContainerUsageService,
+    private readonly caches: CacheOutcomeReader,
     private readonly clock: Clock,
   ) {}
 
@@ -171,6 +174,8 @@ export class OpsHealthService {
       nodes,
       containerUsage: container.usage,
       containerUsageGap: container.gap,
+      // Mémoire de CETTE instance, lue sans aller-retour : pas de cache ici.
+      caches: cacheReports(this.caches.read(), this.caches.windowMinutes),
     };
   }
 

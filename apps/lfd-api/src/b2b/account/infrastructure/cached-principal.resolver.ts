@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrincipalResolver } from "../../../platform/auth/principal.resolver.js";
 import type { Principal, VerifiedToken } from "../../../platform/auth/principal.js";
+import { CacheOutcomeRecorder } from "../../../platform/metrics/cache-outcome-recorder.js";
 import { noteServerTiming, timeServerTiming } from "../../../platform/metrics/server-timing.js";
 import { WallClock } from "../../../platform/time/wall-clock.js";
 import { PrincipalStampReader } from "../domain/ports/principal-stamp.reader.js";
@@ -17,6 +18,9 @@ export const PRINCIPAL_MEMORY_CAPACITY = 1_000;
 
 /** Le filet : dix minutes. Il ne sert pas à la justesse, l'estampille si (§3 bis). */
 export const PRINCIPAL_MEMORY_LIFETIME_MS = 10 * 60 * 1000;
+
+/** Le nom sous lequel la carte de santé compte ses issues (C5). */
+export const PRINCIPAL_CACHE_NAME = "principal";
 
 /** Une lecture en vol, et l'estampille lue avant elle. */
 interface InFlightRead {
@@ -56,6 +60,7 @@ export class CachedPrincipalResolver extends PrincipalResolver {
     private readonly source: TrackedPrincipalResolver,
     private readonly stamps: PrincipalStampReader,
     private readonly wallClock: WallClock,
+    private readonly outcomes: CacheOutcomeRecorder,
   ) {
     super();
   }
@@ -66,24 +71,21 @@ export class CachedPrincipalResolver extends PrincipalResolver {
     // d'une mémoire perdue.
     const stamp = await timeServerTiming("stamp", () => this.stamps.read());
     if (stamp === null) {
-      noteServerTiming("principal-source", "no-stamp");
+      this.note("no-stamp");
       return this.source.resolve(token);
     }
     const miss = this.memory.missReason(token.subject, stamp, this.nowMs());
     const kept = this.memory.take(token.subject, stamp, this.nowMs());
     if (kept !== null && !wouldRecord(kept, token)) {
-      noteServerTiming("principal-source", "memory");
+      this.note("memory");
       return withToken(kept, token);
     }
     const shared = this.inFlight.get(token.subject);
     if (shared !== undefined && shared.stamp === stamp) {
-      noteServerTiming("principal-source", "joined");
+      this.note("joined");
       return this.join(shared, token);
     }
-    noteServerTiming(
-      "principal-source",
-      kept === null ? `resolved-${miss ?? "absent"}` : "recorded",
-    );
+    this.note(kept === null ? `resolved-${miss ?? "absent"}` : "recorded");
     return this.lead(token, stamp);
   }
 
@@ -123,6 +125,15 @@ export class CachedPrincipalResolver extends PrincipalResolver {
     }
     const stored = storedPart(outcome.principal);
     return wouldRecord(stored, token) ? this.source.resolve(token) : withToken(stored, token);
+  }
+
+  /**
+   * D'où vient le principal : la marque `Server-Timing` de la requête, et le
+   * même mot compté pour la carte de santé (C5) — une seule issue, deux lecteurs.
+   */
+  private note(outcome: string): void {
+    noteServerTiming("principal-source", outcome);
+    this.outcomes.record(PRINCIPAL_CACHE_NAME, outcome);
   }
 
   private nowMs(): number {

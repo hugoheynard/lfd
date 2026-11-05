@@ -254,7 +254,19 @@ Règle : **le stable dans le rayon, le dynamique à côté**
 - **Le rayon pro** : pas d'en-tête dédié vu le 2026-11-05 ; les signaux
   `ShelfCacheSignals` sont journalisés (`logging-shelf-cache-signals.ts`). La
   surveillance sur la carte de santé est le lot C5 de
-  [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md), à faire.
+  [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md) (voir la ligne
+  suivante).
+- **Constater de l'intérieur** (C5, bâti le 2026-11-05) : trois caches
+  comptent leurs issues dans `CacheOutcomeRecorder`
+  (`apps/lfd-api/src/platform/metrics/`), compteurs par minute en mémoire,
+  fenêtre de 30 min, **par instance** — le principal (`principal` : la même
+  issue que la marque `principal-source`), le rayon pro (`shelf.read` :
+  `hit`/`miss`/`fallback_*` ; `shelf.store` : `stored`/`stale_refused`/
+  `not_kept`/`fallback_*` ; `shelf.public` : `cacheable`/`not_cacheable_*`)
+  et les matériaux de prix (`pricing.materials` : `hit`/`miss`/`stamp_moved`,
+  une issue par table demandée). La carte de santé
+  (`GET /admin/ops/health`, champ `caches`) rend par cache le total et la part
+  de chaque issue. ⚠️ L'écran du back-office ne l'affiche pas encore.
 
 ## Ce qui n'est pas vérifié
 

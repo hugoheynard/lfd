@@ -1,3 +1,4 @@
+import { CacheOutcomeRecorder } from "../cache-outcome-recorder.js";
 import { Stopwatch } from "../stopwatch.js";
 import { TimingRecorder, type TimingLabels } from "../timing-recorder.js";
 
@@ -26,5 +27,14 @@ export class FixedStopwatch extends Stopwatch {
 
   start(): () => number {
     return () => this.elapsedMs;
+  }
+}
+
+/** `CacheOutcomeRecorder` qui retient chaque issue, `cache:outcome`, pour l'assertion. */
+export class RecordingCacheOutcomes extends CacheOutcomeRecorder {
+  readonly recorded: string[] = [];
+
+  record(cache: string, outcome: string): void {
+    this.recorded.push(`${cache}:${outcome}`);
   }
 }

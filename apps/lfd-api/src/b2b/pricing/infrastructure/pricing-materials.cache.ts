@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { CacheOutcomeRecorder } from "../../../platform/metrics/cache-outcome-recorder.js";
 
 /**
  * **Les matériaux de prix, gardés en mémoire entre deux écritures.**
@@ -121,7 +122,10 @@ export class PricingMaterialsCache {
    */
   private readonly perRequest = new WeakMap<object, Promise<string>>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outcomes: CacheOutcomeRecorder,
+  ) {}
 
   /**
    * La table demandée, chargée au plus une fois entre deux écritures.
@@ -138,8 +142,16 @@ export class PricingMaterialsCache {
     // estampille périmée a peut-être été réécrite par une AUTRE instance, et
     // c'est le seul cas que ce cache ne savait pas voir.
     if (held !== undefined && held.stamp === stamp) {
+      this.outcomes.record(PRICING_CACHE_NAME, PRICING_CACHE_OUTCOMES.hit);
       return (await held.loading) as readonly T[];
     }
+    // Compté par table demandée (C5) : `stamp` quand une écriture — d'ici ou
+    // d'une autre instance — a fait bouger l'estampille, `miss` quand rien
+    // n'était gardé (démarrage, `invalidate()`, lecture échouée).
+    this.outcomes.record(
+      PRICING_CACHE_NAME,
+      held === undefined ? PRICING_CACHE_OUTCOMES.miss : PRICING_CACHE_OUTCOMES.stamp,
+    );
     const loading = load();
     this.held.set(key, { stamp, loading });
     try {
@@ -228,6 +240,12 @@ export class PricingMaterialsCache {
  * au-dessus. La borne sert le parcours de l'index de la clé primaire.
  */
 const ULID_CEILING = "8";
+
+/** Le nom sous lequel la carte de santé compte ses issues (C5). */
+export const PRICING_CACHE_NAME = "pricing.materials";
+
+/** Les issues d'une question au cache : gardée, absente, ou gardée sous une estampille dépassée. */
+export const PRICING_CACHE_OUTCOMES = { hit: "hit", miss: "miss", stamp: "stamp_moved" } as const;
 
 /** Les clés, nommées une fois — une faute de frappe ferait deux caches. */
 export const PRICING_CACHE_KEYS = {

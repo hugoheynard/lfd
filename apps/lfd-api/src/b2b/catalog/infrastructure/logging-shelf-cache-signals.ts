@@ -8,8 +8,9 @@ export const SHELF_CACHE_METRIC_PREFIX = "shelf_cache.";
 /**
  * **Les compteurs du cache des rayons pro, en journaux structurés** — une
  * ligne par signal, avec un champ `metric` STABLE que la carte de santé (C5)
- * agrégera (`plan-cache-du-catalogue.md`, § 4 quater). Comment `ops` les lira
- * sans importer le catalogue reste à trancher en C5 ; le nom, lui, est fixé ici.
+ * agrégera (`plan-cache-du-catalogue.md`, § 4 quater). Depuis C5 (2026-11-05),
+ * `CountingShelfCacheSignals` l'enveloppe et verse les issues dans le compteur
+ * de `platform/metrics/`, que `ops` lit sans importer le catalogue.
  *
  * Au niveau `warn` ce qui demande un regard (repli, disjoncteur ouvert, cache
  * éteint à la main, purge publique perdue), `log` pour le reste — dont

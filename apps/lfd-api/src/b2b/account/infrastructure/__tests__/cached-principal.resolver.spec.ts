@@ -1,6 +1,7 @@
 import { UnauthorizedException } from "@nestjs/common";
 
 import type { Principal, VerifiedToken } from "../../../../platform/auth/principal.js";
+import { RecordingCacheOutcomes } from "../../../../platform/metrics/__tests__/metrics-doubles.js";
 import { FixedWallClock } from "../../../../platform/time/fixed-wall-clock.js";
 import { PrincipalStampReader } from "../../domain/ports/principal-stamp.reader.js";
 import {
@@ -79,20 +80,53 @@ function setup(): {
   stamp: ManualStamp;
   source: ScriptedSource;
   clock: FixedWallClock;
+  outcomes: RecordingCacheOutcomes;
   cached: CachedPrincipalResolver;
 } {
   const journal: string[] = [];
   const stamp = new ManualStamp(journal);
   const source = new ScriptedSource(journal);
   const clock = new FixedWallClock(new Date(0));
+  const outcomes = new RecordingCacheOutcomes();
   return {
     journal,
     stamp,
     source,
     clock,
-    cached: new CachedPrincipalResolver(source, stamp, clock),
+    outcomes,
+    cached: new CachedPrincipalResolver(source, stamp, clock, outcomes),
   };
 }
+
+describe("CachedPrincipalResolver — les issues comptées pour la carte de santé (C5)", () => {
+  it("compte une issue par résolution : absent, puis mémoire, puis estampille changée", async () => {
+    const { stamp, outcomes, cached } = setup();
+    await cached.resolve(token);
+    await cached.resolve(token);
+    stamp.value = 2n;
+    await cached.resolve(token);
+    expect(outcomes.recorded).toEqual([
+      "principal:resolved-absent",
+      "principal:memory",
+      "principal:resolved-stamp",
+    ]);
+  });
+
+  it("compte « no-stamp » quand l'estampille manque", async () => {
+    const { stamp, outcomes, cached } = setup();
+    stamp.value = null;
+    await cached.resolve(token);
+    expect(outcomes.recorded).toEqual(["principal:no-stamp"]);
+  });
+
+  it("compte « resolved-expired » au-delà du filet", async () => {
+    const { clock, outcomes, cached } = setup();
+    await cached.resolve(token);
+    clock.advanceMs(PRINCIPAL_MEMORY_LIFETIME_MS);
+    await cached.resolve(token);
+    expect(outcomes.recorded).toEqual(["principal:resolved-absent", "principal:resolved-expired"]);
+  });
+});
 
 describe("CachedPrincipalResolver", () => {
   it("garde le principal tant que l'estampille ne bouge pas", async () => {

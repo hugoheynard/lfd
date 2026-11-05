@@ -19,6 +19,7 @@ import { NoShopShelfSwitch } from "../b2b/catalog/infrastructure/no-shop-shelf-s
 import { DurableObjectShopShelfCache } from "../b2b/catalog/infrastructure/durable-object-shop-shelf-cache.js";
 import { InternalPublicShelf } from "../b2b/catalog/infrastructure/internal-public-shelf.js";
 import { NoPublicShelf } from "../b2b/catalog/infrastructure/no-public-shelf.js";
+import { CountingShelfCacheSignals } from "../b2b/catalog/infrastructure/counting-shelf-cache-signals.js";
 import { LoggingShelfCacheSignals } from "../b2b/catalog/infrastructure/logging-shelf-cache-signals.js";
 import { NoShopShelfCache } from "../b2b/catalog/infrastructure/no-shop-shelf-cache.js";
 import { NodeShelfCallDeadline } from "../b2b/catalog/infrastructure/node-shelf-call-deadline.js";
@@ -77,7 +78,10 @@ import { AppConfig } from "../platform/config/app-config.js";
     },
     { provide: PublicShelfEraser, useExisting: PublicShelfStateReader },
     { provide: ShelfCallDeadline, useClass: NodeShelfCallDeadline },
-    { provide: ShelfCacheSignals, useClass: LoggingShelfCacheSignals },
+    // Journalisés ET comptés pour la carte de santé (C5) : le compteur
+    // enveloppe le journal, qui reste tel quel.
+    LoggingShelfCacheSignals,
+    { provide: ShelfCacheSignals, useClass: CountingShelfCacheSignals },
     ShelfCallGuard,
     ResilientShopShelfCache,
     PublicShelfFlagMemory,

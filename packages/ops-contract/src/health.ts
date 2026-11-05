@@ -1,3 +1,4 @@
+import type { CacheReport } from "./cache.js";
 import type { ContainerUsage, ContainerUsageGap } from "./container.js";
 import type { HeartbeatMetrics } from "./heartbeat.js";
 import type { HealthStatus, NodeKind } from "./node.js";
@@ -110,4 +111,10 @@ export interface EcosystemHealth {
    */
   readonly containerUsage: ContainerUsage | null;
   readonly containerUsageGap: ContainerUsageGap | null;
+  /**
+   * Les taux de service des caches de l'API (C5), un par cache qui a servi
+   * sur la fenêtre. Facultatif : une API d'avant C5 ne le rend pas, et
+   * l'écran le lit comme « rien de compté ».
+   */
+  readonly caches?: readonly CacheReport[];
 }
