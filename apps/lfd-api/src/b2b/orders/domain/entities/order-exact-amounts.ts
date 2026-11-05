@@ -8,7 +8,12 @@ import {
 } from "../errors/order-vat-method-errors.js";
 import { composeExactOrder } from "../services/exact-order-composition.js";
 import { OrderLine, type OrderLineInput } from "../value-objects/order-line.js";
-import { ensurePickupDiscountOnlyOnPickup, ensureVoucherUsable } from "./order-amount-guards.js";
+import { billedDeliveryFeeOf } from "../value-objects/free-delivery.js";
+import {
+  ensureFreeDeliveryHolds,
+  ensurePickupDiscountOnlyOnPickup,
+  ensureVoucherUsable,
+} from "./order-amount-guards.js";
 import type { AmountsFulfillment, DraftAmountsInput, DraftedAmounts } from "./order-amounts.js";
 import { exactBasketStepsOf } from "./order-basket-discounts.js";
 import { ensureCumulatedShape, exactCumulatedStepsOf } from "./order-cumulated-discounts.js";
@@ -52,11 +57,13 @@ export function exactAmountsOf(
       input.lines.map((line) => ({ eligible: line.pickupDiscountEligible ?? true })),
     );
   }
+  // Au franco (1b), le barème est offert : la composition ne facture aucun port.
+  const billedFee = billedDeliveryFeeOf(input.deliveryFeeAdjustment, input.freeDelivery);
   const composition = composeExactOrder({
     lines: input.lines,
     discountAdjustment: input.discountAdjustment,
     ...(cumulated === undefined ? {} : { basketDiscounts: cumulated }),
-    deliveryFeeAdjustment: input.deliveryFeeAdjustment,
+    deliveryFeeAdjustment: billedFee,
     deliveryVatMode: input.deliveryVatMode,
     voucherFaceCents: input.voucher?.valueCents ?? 0,
   });
@@ -69,11 +76,16 @@ export function exactAmountsOf(
     );
   }
   ensureTtcMatches(
-    input.deliveryFeeAdjustment,
+    billedFee,
     input.deliveryFeeCents,
     composition.deliveryFee.ttcCents,
     "Les frais de livraison, taxe comprise, ne correspondent pas à leur zone.",
   );
+  // La base du franco, lue sur la composition : lignes HT moins remises HT.
+  const goodsNetHtCents =
+    composition.lines.reduce((sum, line) => sum + line.htCents, 0) -
+    composition.pickupDiscount.htCents;
+  ensureFreeDeliveryHolds(input, goodsNetHtCents, "exact_ht");
   ensurePickupDiscountOnlyOnPickup(input, fulfillment);
   const lines = input.lines.map((line, i) =>
     OrderLine.ofTtc(line, composedLine(line, composition.lines[i])),

@@ -25,3 +25,24 @@ export function resolvedDeliveryFee(
 ): CartAdjustment {
   return zone.audienceTerms[audience].fee ?? global[audience].fee ?? zone.fee;
 }
+
+/**
+ * **Le franco d'une audience dans une zone** (plan
+ * `plan-livraison-offerte.md`, sous-lot 1b) : le seuil HT, en centimes, au-delà
+ * duquel la livraison est offerte — le remplacement de la zone pour cette
+ * audience, sinon le réglage global de l'audience.
+ *
+ * `null` = pas de franco. Contrairement au frais, il n'y a pas de troisième
+ * repli : l'ancien frais unique de la zone n'a jamais eu de seuil, et sans
+ * réglage aucune commande ne change de prix.
+ */
+export function resolvedFreeDeliveryThreshold(
+  audience: CustomerAudience,
+  zone: Pick<AdminDeliveryZoneView, "audienceTerms">,
+  global: DeliveryPricingTerms,
+): number | null {
+  return (
+    zone.audienceTerms[audience].freeDeliveryThresholdCents ??
+    global[audience].freeDeliveryThresholdCents
+  );
+}

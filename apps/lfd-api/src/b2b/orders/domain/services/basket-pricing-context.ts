@@ -38,6 +38,13 @@ export interface DeliveryBasketRoute {
   readonly address: BillingAddressPayload;
   /** Le barème de la zone, figé avec le montant qu'il produit : `zone.fee` est mutable. */
   readonly fee: CartAdjustment;
+  /**
+   * Le franco (plan `plan-livraison-offerte.md`, 1b) : le seuil HT, en
+   * centimes, que les marchandises remisées doivent atteindre pour que la
+   * livraison soit offerte ; `null` = pas de franco. Celui du jour à la
+   * passation, le FIGÉ en révision dans la même zone.
+   */
+  readonly freeDeliveryThresholdCents: number | null;
   /** Le mode créneau / échéance global (CA-D2) — l'acheminement convenu le lit. */
   readonly globalWindowMode: WindowMode;
 }
@@ -51,7 +58,8 @@ export type BasketRoute = PickupBasketRoute | DeliveryBasketRoute;
  * commande, pas du prix.
  */
 export type PricedRoute =
-  Pick<PickupBasketRoute, "method"> | Pick<DeliveryBasketRoute, "method" | "zoneId" | "fee">;
+  | Pick<PickupBasketRoute, "method">
+  | Pick<DeliveryBasketRoute, "method" | "zoneId" | "fee" | "freeDeliveryThresholdCents">;
 
 /** La commande qu'on révise : ses lignes figées et ses remises, REJOUÉES (§ 10.2 des remises acquises). */
 export interface ReplayedFrom {
@@ -129,6 +137,7 @@ export type BasketTerms = Pick<
   | "basketDiscounts"
   | "deliveryFeeCents"
   | "deliveryFeeAdjustment"
+  | "freeDelivery"
   | "deliveryVatMode"
   | "lateFeeCents"
   | "lateFeeAdjustment"

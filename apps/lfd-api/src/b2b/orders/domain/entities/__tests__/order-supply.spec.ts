@@ -125,6 +125,7 @@ function placed(
     lines: state.lines,
     deliveryVatMode: state.deliveryVatMode,
     deliveryFeeAdjustment: state.deliveryFeeAdjustment,
+    freeDeliveryThresholdCents: state.freeDelivery?.thresholdCents ?? null,
     lateFeeAdjustment: null,
     voucher: null,
     salesTerms: state.salesTerms,

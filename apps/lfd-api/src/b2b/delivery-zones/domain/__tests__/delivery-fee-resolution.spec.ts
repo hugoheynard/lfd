@@ -1,6 +1,6 @@
 import type { AdminDeliveryZoneView, DeliveryPricingTerms } from "@lfd/contracts";
 
-import { resolvedDeliveryFee } from "../delivery-fee-resolution.js";
+import { resolvedDeliveryFee, resolvedFreeDeliveryThreshold } from "../delivery-fee-resolution.js";
 import { zoneOfPostalCode } from "../zone-of-postal-code.js";
 
 /**
@@ -71,6 +71,34 @@ describe("resolvedDeliveryFee", () => {
     };
 
     expect(resolvedDeliveryFee("b2b", ZONE, free)).toEqual({ mode: "amount", cents: 0 });
+  });
+});
+
+describe("resolvedFreeDeliveryThreshold (1b)", () => {
+  const FRANCO: DeliveryPricingTerms = {
+    b2b: { fee: null, freeDeliveryThresholdCents: 5_000 },
+    b2c: { fee: null, freeDeliveryThresholdCents: 8_000 },
+  };
+
+  /** Régression : sans réglage, aucun franco — l'ancien frais n'a jamais eu de seuil. */
+  it("sans réglage ni remplacement : pas de franco", () => {
+    expect(resolvedFreeDeliveryThreshold("b2b", ZONE, NOTHING)).toBeNull();
+    expect(resolvedFreeDeliveryThreshold("b2c", ZONE, NOTHING)).toBeNull();
+  });
+
+  it("le réglage global : chaque audience son seuil", () => {
+    expect(resolvedFreeDeliveryThreshold("b2b", ZONE, FRANCO)).toBe(5_000);
+    expect(resolvedFreeDeliveryThreshold("b2c", ZONE, FRANCO)).toBe(8_000);
+  });
+
+  it("la zone remplace le seuil global, pour SON audience seule", () => {
+    const farther: AdminDeliveryZoneView = {
+      ...ZONE,
+      audienceTerms: { ...NOTHING, b2c: { fee: null, freeDeliveryThresholdCents: 12_000 } },
+    };
+
+    expect(resolvedFreeDeliveryThreshold("b2c", farther, FRANCO)).toBe(12_000);
+    expect(resolvedFreeDeliveryThreshold("b2b", farther, FRANCO)).toBe(5_000);
   });
 });
 

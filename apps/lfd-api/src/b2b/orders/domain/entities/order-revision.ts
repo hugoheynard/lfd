@@ -101,6 +101,12 @@ export interface RevisableOrder {
    */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   /**
+   * Le seuil du franco figé à la passation (`free_delivery_threshold_cents`,
+   * 1b) : la révision rejuge le franco contre lui, jamais contre le réglage du
+   * jour (Hugo, 2026-11-05). `null` : la commande n'a pas eu de franco.
+   */
+  readonly freeDeliveryThresholdCents: number | null;
+  /**
    * La promotion panier figée (L9) ; `null` = aucune, OU une commande d'avant
    * L9 (« inconnu ») — la révision se rabat alors sur `discountAdjustment`.
    */

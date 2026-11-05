@@ -444,12 +444,15 @@ function frozenAudienceOf(order: RevisableOrder): CustomerAudience | null {
 /**
  * Le tarif de livraison figé à la passation, et sa zone (plan
  * `plan-livraison-offerte.md`, 1a, Hugo, 2026-11-05) ; `null` en retrait ou
- * sur une commande d'avant le barème figé.
+ * sur une commande d'avant le barème figé. Le seuil du franco figé l'accompagne
+ * (1b) : la révision rejuge le franco contre lui.
  */
 function frozenDeliveryFeeOf(order: RevisableOrder): FrozenDeliveryFee | null {
   const zoneId = order.fulfillment.deliveryZoneId;
   const fee = order.deliveryFeeAdjustment;
-  return zoneId === null || fee === null ? null : { zoneId, fee };
+  return zoneId === null || fee === null
+    ? null
+    : { zoneId, fee, freeDeliveryThresholdCents: order.freeDeliveryThresholdCents };
 }
 
 /** L'état que la règle de l'annulation lit, tiré de la commande. */

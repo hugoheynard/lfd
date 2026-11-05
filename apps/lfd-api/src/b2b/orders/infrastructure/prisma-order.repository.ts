@@ -22,6 +22,7 @@ import {
 import { formatOrderNumber } from "../domain/services/order-number.js";
 import type { FirstHandoverStatus } from "../domain/services/shipment-settlement.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
+import { freeDeliveryColumnsOf } from "./free-delivery.columns.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { identifiedLinesOf, orderDiscountsWriteOf, writeCoverage } from "./order-discounts.data.js";
 import { ttcTermsColumnsOf } from "./order-money-columns.js";
@@ -181,6 +182,8 @@ export class PrismaOrderRepository extends OrderRepository {
           loyaltyVoucherId: state.loyaltyVoucherId,
           deliveryFeeAdjustment: state.deliveryFeeAdjustment ?? Prisma.DbNull,
           deliveryFeeCents: state.deliveryFeeCents,
+          // Le franco figé (1b) : seuil et montant offert, ou trois `NULL`.
+          ...freeDeliveryColumnsOf(state.freeDelivery),
           lateFeeCents: state.lateFeeCents,
           // L'ajustement ET son taux, figés ensemble : un montant sans son taux ne
           // se justifie pas devant un comptable, et il ne se recalcule pas — le

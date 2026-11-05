@@ -21,6 +21,19 @@ export interface FreeDeliveryRow {
 }
 
 /**
+ * Le franco figé → ses trois colonnes (1b), écrites par la passation et par
+ * la révision de la même façon. Sans franco, les trois à `NULL` : une
+ * révision qui perd le franco efface ce que la commande portait.
+ */
+export function freeDeliveryColumnsOf(freeDelivery: FreeDelivery | null): FreeDeliveryRow {
+  return {
+    freeDeliveryThresholdCents: freeDelivery?.thresholdCents ?? null,
+    freeDeliveryWaivedCents: freeDelivery?.waivedCents ?? null,
+    freeDeliveryWaivedTtcCents: freeDelivery?.waivedTtcCents ?? null,
+  };
+}
+
+/**
  * Le franco relu, ou `null` sans franco. Le CHECK
  * `orders_free_delivery_together` tient le seuil et le montant ensemble ; l'un
  * sans l'autre est une ligne écrite hors de l'application.

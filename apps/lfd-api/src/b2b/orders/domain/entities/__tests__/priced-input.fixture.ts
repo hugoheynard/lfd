@@ -52,13 +52,19 @@ export interface BasketSpec {
   readonly sealing?: ReadonlyMap<string, LineSealing> | undefined;
   readonly replayed?: ReplayedFrom | null | undefined;
   readonly handoverAt?: LocalMoment | null | undefined;
+  /** Le seuil du franco de la zone (1b) ; absent = aucun. */
+  readonly freeDeliveryThresholdCents?: number | null | undefined;
 }
 
 /** Le barème « aucun frais » d'une zone : la course est offerte. */
 export const FREE_ZONE: CartAdjustment = { mode: "amount", cents: 0 };
 
 /** L'acheminement du panier, lu sur celui de la commande. */
-export function routeOf(fulfillment: OrderFulfillmentInput, fee: CartAdjustment): BasketRoute {
+export function routeOf(
+  fulfillment: OrderFulfillmentInput,
+  fee: CartAdjustment,
+  freeDeliveryThresholdCents: number | null = null,
+): BasketRoute {
   if (fulfillment.method === "pickup") {
     const point = fulfillment.pickupAddress ?? {
       label: "",
@@ -82,13 +88,18 @@ export function routeOf(fulfillment: OrderFulfillmentInput, fee: CartAdjustment)
       pays: "",
     },
     fee,
+    freeDeliveryThresholdCents,
     globalWindowMode: "slot",
   };
 }
 
 /** Le panier chargé de cette commande. */
 export function basketOf(identity: OrderIdentity, basket: BasketSpec): BasketPricingContext {
-  const route = routeOf(identity.fulfillment, basket.deliveryFee ?? FREE_ZONE);
+  const route = routeOf(
+    identity.fulfillment,
+    basket.deliveryFee ?? FREE_ZONE,
+    basket.freeDeliveryThresholdCents ?? null,
+  );
   return {
     lines: basket.lines,
     sealing: basket.sealing ?? new Map(),
@@ -210,6 +221,7 @@ export function draftFrom(base: DraftSpec, over: Partial<DraftSpec> = {}): Price
     sealing,
     replayed,
     handoverAt,
+    freeDeliveryThresholdCents,
     ...identity
   } = { ...base, ...over };
   return pricedInput(identity, {
@@ -222,5 +234,6 @@ export function draftFrom(base: DraftSpec, over: Partial<DraftSpec> = {}): Price
     sealing,
     replayed,
     handoverAt,
+    freeDeliveryThresholdCents,
   });
 }

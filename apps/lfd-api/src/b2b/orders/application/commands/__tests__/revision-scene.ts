@@ -310,6 +310,7 @@ export async function placedOrder(over: Partial<RevisableOrder> = {}): Promise<R
     discountCents: state.discountCents,
     discountTtcCents: state.discountTtcCents,
     deliveryFeeAdjustment: state.deliveryFeeAdjustment,
+    freeDeliveryThresholdCents: state.freeDelivery?.thresholdCents ?? null,
     fulfillment: {
       method: state.fulfillmentMethod,
       deliveryZoneId: state.deliveryZoneId,
@@ -392,6 +393,7 @@ function seed(): RevisableOrder {
     lines: [OrderLine.create({ ...SEED_LINE, pickupDiscountEligible: true }, "pro").toSnapshot()],
     deliveryVatMode: "standard",
     deliveryFeeAdjustment: null,
+    freeDeliveryThresholdCents: null,
     // Une commande de société : composée HT (plan du centime, § 7).
     vatMethod: "line_ht",
     lateFeeAdjustment: null,

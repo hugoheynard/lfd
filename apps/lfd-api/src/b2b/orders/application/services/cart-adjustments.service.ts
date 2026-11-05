@@ -205,6 +205,8 @@ export class CartAdjustments {
   ): Promise<{
     readonly zone: DeliveryZoneView;
     readonly fee: CartAdjustment;
+    /** Le franco de la clientèle (1b), résolu comme le barème ; `null` = aucun. */
+    readonly freeDeliveryThresholdCents: number | null;
     readonly globalWindowMode: WindowMode;
   }> {
     const settings = await this.delivery.current();
@@ -215,7 +217,12 @@ export class CartAdjustments {
     if (priced === null) {
       throw new NoDeliveryZoneForPostalCodeError(codePostal);
     }
-    return { zone: priced.zone, fee: priced.fee, globalWindowMode: settings.windowMode };
+    return {
+      zone: priced.zone,
+      fee: priced.fee,
+      freeDeliveryThresholdCents: priced.freeDeliveryThresholdCents,
+      globalWindowMode: settings.windowMode,
+    };
   }
 
   /**

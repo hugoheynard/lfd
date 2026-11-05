@@ -208,6 +208,7 @@
   "test/feature-access.e2e-spec.ts": 6862,
   "test/featured-by-audience-migration.e2e-spec.ts": 8063,
   "test/first-mandate-ledger.e2e-spec.ts": 4004,
+  "test/free-delivery.e2e-spec.ts": 6000,
   "test/fulfillment-days.e2e-spec.ts": 3668,
   "test/gesture-rights-switchover.e2e-spec.ts": 4537,
   "test/gesture-rights.e2e-spec.ts": 5171,

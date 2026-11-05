@@ -5,6 +5,11 @@ export interface PricedDeliveryZone {
   readonly zone: DeliveryZoneView;
   /** Résolu : remplacement de la zone, sinon réglage global, sinon ancien frais de la zone. */
   readonly fee: CartAdjustment;
+  /**
+   * Le franco de CETTE audience (1b) : seuil HT en centimes, remplacement de
+   * la zone sinon réglage global ; `null` = pas de franco.
+   */
+  readonly freeDeliveryThresholdCents: number | null;
 }
 
 /**

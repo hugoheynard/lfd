@@ -102,11 +102,18 @@ export interface PricingRequest {
  * et la zone où il l'a été. Une commande garde ce tarif quand on la révise —
  * un frais global relevé après la passation ne la renchérit pas. Il ne vaut
  * que pour SA zone : une révision qui livre ailleurs n'a pas de tarif figé
- * pour la nouvelle zone, et prend celui du jour.
+ * pour la nouvelle zone, et prend celui du jour — barème ET franco (Hugo,
+ * 2026-11-05).
  */
 export interface FrozenDeliveryFee {
   readonly zoneId: string;
   readonly fee: CartAdjustment;
+  /**
+   * Le seuil du franco figé (1b) ; `null` = la commande n'a pas eu de franco,
+   * et une révision dans la même zone n'en gagne pas : le seuil du jour
+   * n'entre jamais dans une révision.
+   */
+  readonly freeDeliveryThresholdCents: number | null;
 }
 
 /**
@@ -242,8 +249,13 @@ export class PricingContext {
     if ("refusal" in zone) {
       return zone;
     }
-    const { zoneId, fee, promotions } = zone.value;
-    return { value: { route: { method: "delivery", zoneId, fee }, promotions } };
+    const { zoneId, fee, freeDeliveryThresholdCents, promotions } = zone.value;
+    return {
+      value: {
+        route: { method: "delivery", zoneId, fee, freeDeliveryThresholdCents },
+        promotions,
+      },
+    };
   }
 
   /**
@@ -291,8 +303,17 @@ export class PricingContext {
       return zone;
     }
     const { zoneId, globalWindowMode, promotions } = zone.value;
-    const fee = frozenFee !== null && frozenFee.zoneId === zoneId ? frozenFee.fee : zone.value.fee;
-    const route: BasketRoute = { method: "delivery", zoneId, address, fee, globalWindowMode };
+    // Même zone : le tarif de la passation, barème et franco. Autre zone :
+    // ceux du jour de la nouvelle zone (Hugo, 2026-11-05).
+    const tariff = frozenFee !== null && frozenFee.zoneId === zoneId ? frozenFee : zone.value;
+    const route: BasketRoute = {
+      method: "delivery",
+      zoneId,
+      address,
+      fee: tariff.fee,
+      freeDeliveryThresholdCents: tariff.freeDeliveryThresholdCents,
+      globalWindowMode,
+    };
     return { value: { route, promotions } };
   }
 

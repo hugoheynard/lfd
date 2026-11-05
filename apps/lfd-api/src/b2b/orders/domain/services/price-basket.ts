@@ -69,6 +69,8 @@ export function priceBasket(
     deliveryFee: deliveryFeeOf(context.route, subtotalCents),
     deliveryVatMode: context.deliveryVatMode,
     vatMethod: cart.vatMethod,
+    subtotalCents,
+    freeDeliveryThresholdCents: freeDeliveryThresholdOf(context.route),
   });
   return {
     terms: { ...terms, ...lateFeeOf(verdicts.lateFee, subtotalCents) },
@@ -137,6 +139,11 @@ function deliveryFeeOf(route: PricedRoute | null, subtotalCents: number): Basket
     return { cents: 0, adjustment: null };
   }
   return { cents: cartAdjustmentCents(route.fee, subtotalCents), adjustment: route.fee };
+}
+
+/** Le seuil du franco de la zone (1b) ; aucun en retrait ni sans acheminement. */
+function freeDeliveryThresholdOf(route: PricedRoute | null): number | null {
+  return route === null || route.method === "pickup" ? null : route.freeDeliveryThresholdCents;
 }
 
 /**

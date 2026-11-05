@@ -141,7 +141,7 @@ describe("PricingContext — le frais de livraison par audience (0b)", () => {
         { deliveryPricing: GLOBAL },
         {
           revised: { lines: [], discounts: [] },
-          frozenDeliveryFee: { zoneId: ZONE.id, fee: frozen },
+          frozenDeliveryFee: { zoneId: ZONE.id, fee: frozen, freeDeliveryThresholdCents: null },
         },
       ),
     ).resolves.toEqual(frozen);
@@ -153,7 +153,11 @@ describe("PricingContext — le frais de livraison par audience (0b)", () => {
         { deliveryPricing: GLOBAL },
         {
           revised: { lines: [], discounts: [] },
-          frozenDeliveryFee: { zoneId: "zone_ailleurs", fee: { mode: "amount", cents: 300 } },
+          frozenDeliveryFee: {
+            zoneId: "zone_ailleurs",
+            fee: { mode: "amount", cents: 300 },
+            freeDeliveryThresholdCents: null,
+          },
         },
       ),
     ).resolves.toEqual(INDIVIDUALS_FEE);
@@ -172,5 +176,97 @@ describe("PricingContext — le frais de livraison par audience (0b)", () => {
         },
       ),
     ).resolves.toEqual(INDIVIDUALS_FEE);
+  });
+});
+
+describe("PricingContext — le franco de la route (1b)", () => {
+  const FRANCO: DeliveryPricingTerms = {
+    b2b: { fee: PROS_FEE, freeDeliveryThresholdCents: 5_000 },
+    b2c: { fee: INDIVIDUALS_FEE, freeDeliveryThresholdCents: 8_000 },
+  };
+  const REVISED = { revised: { lines: [], discounts: [] } } as const;
+
+  async function thresholdOf(
+    setup: Parameters<typeof pricingContextOf>[0],
+    over: Partial<PricingRequest> = {},
+  ) {
+    const { loader } = pricingContextOf(setup);
+    const { context } = loadedOrRefused(await loader.load(request(over)));
+    if (context.route.method !== "delivery") {
+      throw new TypeError("une livraison était attendue");
+    }
+    return context.route.freeDeliveryThresholdCents;
+  }
+
+  it("sans réglage : aucun seuil", async () => {
+    await expect(thresholdOf({})).resolves.toBeNull();
+  });
+
+  it("à la passation : le seuil du jour de la clientèle, staff compris", async () => {
+    await expect(thresholdOf({ deliveryPricing: FRANCO })).resolves.toBe(8_000);
+    await expect(
+      thresholdOf(
+        { deliveryPricing: FRANCO, companyStatus: "active" },
+        {
+          parties: {
+            companyId: "co_1",
+            placedByUserId: "user_client",
+            placedByStaffId: "staff_1",
+            buyerKind: "registered",
+          },
+        },
+      ),
+    ).resolves.toBe(5_000);
+  });
+
+  it("révision dans la même zone : le seuil FIGÉ, jamais celui du jour", async () => {
+    await expect(
+      thresholdOf(
+        { deliveryPricing: FRANCO },
+        {
+          ...REVISED,
+          frozenDeliveryFee: {
+            zoneId: ZONE.id,
+            fee: INDIVIDUALS_FEE,
+            freeDeliveryThresholdCents: 6_000,
+          },
+        },
+      ),
+    ).resolves.toBe(6_000);
+    // Une commande passée sans franco n'en gagne pas en révision.
+    await expect(
+      thresholdOf(
+        { deliveryPricing: FRANCO },
+        {
+          ...REVISED,
+          frozenDeliveryFee: {
+            zoneId: ZONE.id,
+            fee: INDIVIDUALS_FEE,
+            freeDeliveryThresholdCents: null,
+          },
+        },
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it("révision livrée dans une AUTRE zone : barème ET seuil du jour de cette zone (Hugo, 2026-11-05)", async () => {
+    const { loader } = pricingContextOf({ deliveryPricing: FRANCO });
+    const { context } = loadedOrRefused(
+      await loader.load(
+        request({
+          ...REVISED,
+          frozenDeliveryFee: {
+            zoneId: "zone_ailleurs",
+            fee: { mode: "amount", cents: 300 },
+            freeDeliveryThresholdCents: 1_000,
+          },
+        }),
+      ),
+    );
+
+    expect(context.route).toMatchObject({
+      fee: INDIVIDUALS_FEE,
+      freeDeliveryThresholdCents: 8_000,
+    });
   });
 });

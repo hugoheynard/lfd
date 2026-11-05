@@ -67,7 +67,15 @@ export function specimenDeliveryRoute(
   address: BillingAddressPayload,
   fee: CartAdjustment,
 ): BasketRoute {
-  return { method: "delivery", zoneId, address, fee, globalWindowMode: "slot" };
+  // Sans franco : la planche montre le frais facturé.
+  return {
+    method: "delivery",
+    zoneId,
+    address,
+    fee,
+    freeDeliveryThresholdCents: null,
+    globalWindowMode: "slot",
+  };
 }
 
 /** Ce que l'agrégat chiffre : ces lignes, cet acheminement, ces promotions, à `now`. */

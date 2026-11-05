@@ -66,6 +66,8 @@ export async function loadPickupPoint(
 export interface LoadedDeliveryZone {
   readonly zoneId: string;
   readonly fee: CartAdjustment;
+  /** Le franco de la clientèle (1b) ; `null` = aucun. */
+  readonly freeDeliveryThresholdCents: number | null;
   readonly globalWindowMode: WindowMode;
   readonly promotions: LoadedBasketPromotions;
 }
@@ -87,12 +89,14 @@ export async function loadDeliveryZone(
   if ("refusal" in delivery) {
     return delivery;
   }
-  const { zone, fee, globalWindowMode } = delivery.value;
+  const { zone, fee, freeDeliveryThresholdCents, globalWindowMode } = delivery.value;
   const promotions = await adjustments.promotionsFor({
     ...factsOf(buyer),
     fulfillment: { method: "delivery", zoneId: zone.id },
   });
-  return { value: { zoneId: zone.id, fee, globalWindowMode, promotions } };
+  return {
+    value: { zoneId: zone.id, fee, freeDeliveryThresholdCents, globalWindowMode, promotions },
+  };
 }
 
 /** Les faits que les promotions panier lisent de l'acheteur, l'acheminement à part. */

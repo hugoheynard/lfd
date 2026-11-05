@@ -1,6 +1,6 @@
 import { Order } from "../order.js";
-import { PRO_BASKETS, proDraftInput } from "./pro-baskets.fixture.js";
-import { FROZEN_PRO_DRAFTS } from "./pro-baskets.frozen.js";
+import { FRANCO_PRO_BASKETS, PRO_BASKETS, proDraftInput } from "./pro-baskets.fixture.js";
+import { FROZEN_FRANCO_PRO_DRAFTS, FROZEN_PRO_DRAFTS } from "./pro-baskets.frozen.js";
 
 /**
  * **Le pro ne change pas d'un centime** — plan
@@ -48,5 +48,39 @@ describe("Order.draft — vingt paniers pro figés (voie B, lot C2)", () => {
   it("couvre bien vingt paniers", () => {
     expect(PRO_BASKETS).toHaveLength(20);
     expect(FROZEN).toHaveLength(20);
+  });
+});
+
+/**
+ * **Le franco** (plan `plan-livraison-offerte.md`, 1b) : le même relevé, sur
+ * deux paniers de plus — au seuil pile, la course disparaît avec sa TVA ; un
+ * centime sous le seuil, le panier est celui des vingt, au centime.
+ */
+describe("Order.draft — le franco des paniers pro figés (1b)", () => {
+  it.each(
+    FRANCO_PRO_BASKETS.map(
+      (basket, i) => [basket.name, basket, FROZEN_FRANCO_PRO_DRAFTS[i]] as const,
+    ),
+  )("%s", (_name, basket, frozen) => {
+    const order = Order.draft(proDraftInput(basket));
+    order.deferPayment();
+    const state = order.toPersistence();
+
+    expect({
+      name: basket.name,
+      subtotalCents: state.subtotalCents,
+      discountCents: state.discountCents,
+      deliveryFeeCents: state.deliveryFeeCents,
+      lateFeeCents: state.lateFeeCents,
+      vatCents: state.vatCents,
+      vatShares: state.vatShares,
+      totalCents: state.totalCents,
+      lines: state.lines.map((line) => [
+        line.lineTotalCents,
+        line.unitPriceTtcCents,
+        line.lineTotalTtcCents,
+      ]),
+      freeDelivery: state.freeDelivery,
+    }).toEqual(frozen);
   });
 });

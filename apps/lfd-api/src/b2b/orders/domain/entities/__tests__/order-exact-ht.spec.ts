@@ -79,6 +79,7 @@ function composedInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     discountAdjustment: null,
     deliveryFeeCents: 0,
     deliveryFeeAdjustment: null,
+    freeDelivery: null,
     lateFeeCents: 0,
     lateFeeAdjustment: null,
     deliveryVatMode: "standard",

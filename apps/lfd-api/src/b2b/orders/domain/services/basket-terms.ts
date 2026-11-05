@@ -7,6 +7,7 @@ import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { ReplayedBasket } from "./basket-discount-replay.js";
 import type { BasketTerms } from "./basket-pricing-context.js";
 import { composeExactOrder } from "./exact-order-composition.js";
+import { judgedFreeDelivery } from "./free-delivery-judgement.js";
 
 /** La remise retenue — choisie à la caisse, ou rejouée en révision : la forme du rejeu. */
 export type BasketDiscount = Omit<ReplayedBasket, "refusals">;
@@ -25,6 +26,19 @@ export interface BasketTermsInput {
   readonly deliveryFee: BasketDeliveryFee;
   readonly deliveryVatMode: DeliveryVatMode;
   readonly vatMethod: OrderVatMethod;
+  /** Le sous-total HT arrondi par ligne (`priceBasket`) — la base `line_ht` du franco. */
+  readonly subtotalCents: number;
+  /** Le seuil du franco de la route ; `null` = aucun (retrait, ou rien de réglé). */
+  readonly freeDeliveryThresholdCents: number | null;
+}
+
+/** Les montants d'une méthode, et ce que le franco en lit. */
+interface MethodAmounts {
+  readonly discountCents: number;
+  readonly deliveryFeeCents: number;
+  readonly goodsNetHtCents: number;
+  readonly feeHtCents: number;
+  readonly feeTtcCents: number | null;
 }
 
 /**
@@ -36,6 +50,14 @@ export interface BasketTermsInput {
  * `le-prix-d-un-panier.md`) sans changer une opération : la passation et
  * la révision y passent par `priceBasket`. La surtaxe n'y est pas : elle
  * dépend d'un verdict (§ 2.3).
+ *
+ * 🔴 **Le franco se juge ICI** (plan `plan-livraison-offerte.md`, 1b) : c'est
+ * le seul endroit où la base du seuil — les marchandises HT après les remises
+ * — est connue dans les deux méthodes sans composer deux fois. En `line_ht`,
+ * le sous-total moins la remise HT (la base même où le bon s'impute) ; en
+ * `exact_ht`, Σ HT des lignes composées moins la remise HT composée, lus sur
+ * LA composition qui chiffre déjà la remise et le port. Au franco, le frais
+ * facturé vaut 0 et le barème offert reste figé.
  */
 export function basketTermsOf(
   input: BasketTermsInput,
@@ -46,7 +68,16 @@ export function basketTermsOf(
   const amounts =
     input.vatMethod === "exact_ht"
       ? exactTermsOf(lines, discount, cumulated, deliveryFee, input.deliveryVatMode)
-      : { discountCents: discount.discountCents, deliveryFeeCents: deliveryFee.cents };
+      : lineHtTermsOf(input.subtotalCents, discount, deliveryFee);
+  const freeDelivery =
+    deliveryFee.adjustment === null
+      ? null
+      : judgedFreeDelivery({
+          thresholdCents: input.freeDeliveryThresholdCents,
+          goodsNetHtCents: amounts.goodsNetHtCents,
+          feeHtCents: amounts.feeHtCents,
+          feeTtcCents: amounts.feeTtcCents,
+        });
   return {
     lines,
     discountCents: amounts.discountCents,
@@ -56,15 +87,33 @@ export function basketTermsOf(
     discountTerms: discount.discountTerms,
     ...(cumulated === undefined ? {} : { basketDiscounts: cumulated }),
     deliveryFeeAdjustment: deliveryFee.adjustment,
-    deliveryFeeCents: amounts.deliveryFeeCents,
+    deliveryFeeCents: freeDelivery === null ? amounts.deliveryFeeCents : 0,
+    freeDelivery,
     deliveryVatMode: input.deliveryVatMode,
+  };
+}
+
+/** `line_ht` : les montants tels que la caisse les rend, en HT. */
+function lineHtTermsOf(
+  subtotalCents: number,
+  discount: BasketDiscount,
+  deliveryFee: BasketDeliveryFee,
+): MethodAmounts {
+  return {
+    discountCents: discount.discountCents,
+    deliveryFeeCents: deliveryFee.cents,
+    goodsNetHtCents: subtotalCents - discount.discountCents,
+    feeHtCents: deliveryFee.cents,
+    feeTtcCents: null,
   };
 }
 
 /**
  * La remise retrait et le port d'une commande `exact_ht`, en TTC — par la
  * composition même que l'agrégat rejoue pour les vérifier. Le bon n'y entre
- * pas : il s'impute après la remise et ne change ni l'une ni l'autre.
+ * pas : il s'impute après la remise et ne change ni l'une ni l'autre. La
+ * même composition rend la base HT du franco : les lignes et les remises n'y
+ * dépendent pas du port.
  */
 function exactTermsOf(
   lines: readonly OrderLineInput[],
@@ -72,7 +121,7 @@ function exactTermsOf(
   cumulated: readonly DraftBasketDiscount[] | undefined,
   deliveryFee: BasketDeliveryFee,
   deliveryVatMode: DeliveryVatMode,
-): { readonly discountCents: number; readonly deliveryFeeCents: number } {
+): MethodAmounts {
   const composed = composeExactOrder({
     lines,
     discountAdjustment: discount.discountAdjustment,
@@ -82,9 +131,14 @@ function exactTermsOf(
     voucherFaceCents: 0,
   });
   const discounted = discount.discountAdjustment !== null || cumulated !== undefined;
+  const charged = deliveryFee.adjustment !== null;
+  const linesHtCents = composed.lines.reduce((sum, line) => sum + line.htCents, 0);
   return {
     discountCents: discounted ? composed.pickupDiscount.ttcCents : 0,
-    deliveryFeeCents: deliveryFee.adjustment === null ? 0 : composed.deliveryFee.ttcCents,
+    deliveryFeeCents: charged ? composed.deliveryFee.ttcCents : 0,
+    goodsNetHtCents: linesHtCents - composed.pickupDiscount.htCents,
+    feeHtCents: charged ? composed.deliveryFee.htCents : 0,
+    feeTtcCents: charged ? composed.deliveryFee.ttcCents : 0,
   };
 }
 

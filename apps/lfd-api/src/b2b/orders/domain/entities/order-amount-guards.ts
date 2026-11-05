@@ -14,7 +14,9 @@ import {
   InvalidOrderVoucherError,
   VoucherNotForCompanyOrderError,
 } from "../errors/order-voucher-errors.js";
+import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import { ensureBuyerKindFits } from "../value-objects/order-buyer-kind.js";
+import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import { voucherImputationCents } from "../services/voucher-imputation.js";
 import type { DraftOrderInput, OrderFulfillmentInput, OrderVoucher } from "./order.js";
 
@@ -96,9 +98,17 @@ export function ensureLateFeeMatches(
  * L'absence d'ajustement n'est refusée que si des frais existent : une commande
  * en RETRAIT n'en a aucun, et lui en exiger un serait exiger la trace d'un
  * geste qui n'a pas eu lieu.
+ *
+ * **Au franco** (plan `plan-livraison-offerte.md`, 1b), le barème est celui
+ * qu'on OFFRE : le frais facturé vaut 0, et c'est le montant offert que le
+ * barème doit reproduire. Le seuil, lui, se juge par
+ * {@link ensureFreeDeliveryHolds}. Le bon partiel n'en passe pas : il reçoit
+ * déjà le barème facturé (`billedDeliveryFeeOf`).
  */
 export function ensureDeliveryFeeMatches(
-  input: Pick<DraftOrderInput, "deliveryFeeAdjustment" | "deliveryFeeCents">,
+  input: Pick<DraftOrderInput, "deliveryFeeAdjustment" | "deliveryFeeCents"> & {
+    readonly freeDelivery?: FreeDelivery | null | undefined;
+  },
   subtotalCents: number,
 ): void {
   const frozen = input.deliveryFeeAdjustment;
@@ -108,8 +118,53 @@ export function ensureDeliveryFeeMatches(
     }
     return;
   }
+  const free = input.freeDelivery ?? null;
+  if (free !== null) {
+    if (
+      input.deliveryFeeCents !== 0 ||
+      cartAdjustmentCents(frozen, subtotalCents) !== free.waivedCents
+    ) {
+      throw new InvalidOrderPaymentError(
+        "La livraison offerte ne correspond pas au barème de sa zone.",
+      );
+    }
+    return;
+  }
   if (cartAdjustmentCents(frozen, subtotalCents) !== input.deliveryFeeCents) {
     throw new InvalidOrderPaymentError("Les frais de livraison ne correspondent pas à leur zone.");
+  }
+}
+
+/**
+ * **Le franco tient-il ?** (plan `plan-livraison-offerte.md`, 1b) — la
+ * barrière de l'agrégat, qui ne fait confiance à aucun appelant : une
+ * livraison offerte suppose un barème à offrir, rien de facturé, le TTC offert
+ * dans la seule méthode qui en a un, et une base qui atteint le seuil.
+ *
+ * `goodsNetHtCents` est la base de la décision du 2026-11-05 : marchandises HT
+ * après les remises, avant le bon.
+ *
+ * @throws {InvalidOrderPaymentError} un franco qu'aucun panier ne justifie.
+ */
+export function ensureFreeDeliveryHolds(
+  input: Pick<DraftOrderInput, "deliveryFeeAdjustment" | "deliveryFeeCents" | "freeDelivery">,
+  goodsNetHtCents: number,
+  vatMethod: OrderVatMethod,
+): void {
+  const free = input.freeDelivery;
+  if (free === null) {
+    return;
+  }
+  const ttcExpected = vatMethod === "exact_ht";
+  if (
+    input.deliveryFeeAdjustment === null ||
+    input.deliveryFeeCents !== 0 ||
+    (free.waivedTtcCents !== null) !== ttcExpected ||
+    goodsNetHtCents < free.thresholdCents
+  ) {
+    throw new InvalidOrderPaymentError(
+      "La livraison offerte n'est pas justifiée : le panier remisé n'atteint pas le seuil, ou la commande n'a pas de livraison à offrir.",
+    );
   }
 }
 

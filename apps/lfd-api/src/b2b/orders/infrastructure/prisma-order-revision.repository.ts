@@ -10,6 +10,7 @@ import type {
 } from "../domain/entities/order-revision.js";
 import { OrderRevisionRepository } from "../domain/ports/order-revision.repository.js";
 import { customerCancellationColumnsOf } from "./customer-cancellation.columns.js";
+import { freeDeliveryColumnsOf } from "./free-delivery.columns.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { identifiedLinesOf, orderDiscountsWriteOf, writeCoverage } from "./order-discounts.data.js";
 import { ttcTermsColumnsOf } from "./order-money-columns.js";
@@ -159,6 +160,8 @@ function revisedColumnsOf(revision: OrderRevisionToSave, at: Date) {
           },
     deliveryFeeCents: state.deliveryFeeCents,
     deliveryFeeAdjustment: state.deliveryFeeAdjustment ?? Prisma.DbNull,
+    // Le franco rejugé (1b) : perdu, ses colonnes repassent à `NULL`.
+    ...freeDeliveryColumnsOf(state.freeDelivery),
     lateFeeCents: state.lateFeeCents,
     lateFeeAdjustment: state.lateFeeAdjustment ?? Prisma.DbNull,
     deliveryVatMode: state.deliveryVatMode,

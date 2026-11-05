@@ -5,7 +5,10 @@ import {
   DeliveryZoneFeeReader,
   type PricedDeliveryZone,
 } from "../../orders/domain/ports/delivery-zone-fee.reader.js";
-import { resolvedDeliveryFee } from "../domain/delivery-fee-resolution.js";
+import {
+  resolvedDeliveryFee,
+  resolvedFreeDeliveryThreshold,
+} from "../domain/delivery-fee-resolution.js";
 import { DeliveryPricingReader } from "../domain/ports/delivery-pricing.reader.js";
 import { DeliveryZoneTermsReader } from "../domain/ports/delivery-zone-terms.reader.js";
 import { zoneOfPostalCode } from "../domain/zone-of-postal-code.js";
@@ -39,6 +42,10 @@ export class DeliveryZoneFeeResolver extends DeliveryZoneFeeReader {
       label: found.label,
       fee: found.fee,
     };
-    return { zone, fee: resolvedDeliveryFee(audience, found, global) };
+    return {
+      zone,
+      fee: resolvedDeliveryFee(audience, found, global),
+      freeDeliveryThresholdCents: resolvedFreeDeliveryThreshold(audience, found, global),
+    };
   }
 }

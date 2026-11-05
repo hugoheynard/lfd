@@ -60,6 +60,7 @@ export const DELIVERY: BasketRoute = {
     pays: "France",
   },
   fee: { mode: "amount", cents: 1_000 },
+  freeDeliveryThresholdCents: null,
   globalWindowMode: "slot",
 };
 

@@ -9,6 +9,7 @@ import {
   ensureDeliveryFeeMatches,
   ensureDiscountMatches,
   ensureDraftable,
+  ensureFreeDeliveryHolds,
   ensurePickupDiscountOnlyOnPickup,
 } from "../order-amount-guards.js";
 import type { DraftOrderInput } from "../order-shapes.js";
@@ -62,6 +63,7 @@ function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     discountAdjustment: null,
     deliveryFeeCents: 0,
     deliveryFeeAdjustment: null,
+    freeDelivery: null,
     lateFeeCents: 0,
     lateFeeAdjustment: null,
     deliveryVatMode: "standard",
@@ -130,6 +132,67 @@ describe("ensureDeliveryFeeMatches — le barème reproduit les frais", () => {
     expect(() =>
       ensureDeliveryFeeMatches({ deliveryFeeAdjustment: null, deliveryFeeCents: 2_000 }, 400),
     ).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("au franco (1b) : accepte un frais nul, quand le barème reproduit le montant offert", () => {
+    const offered = { thresholdCents: 300, waivedCents: 1_500, waivedTtcCents: null };
+    const fee = { mode: "amount", cents: 1_500 } as const;
+
+    expect(() =>
+      ensureDeliveryFeeMatches(
+        { deliveryFeeAdjustment: fee, deliveryFeeCents: 0, freeDelivery: offered },
+        400,
+      ),
+    ).not.toThrow();
+    expect(() =>
+      ensureDeliveryFeeMatches(
+        { deliveryFeeAdjustment: fee, deliveryFeeCents: 1_500, freeDelivery: offered },
+        400,
+      ),
+    ).toThrow(InvalidOrderPaymentError);
+    expect(() =>
+      ensureDeliveryFeeMatches(
+        {
+          deliveryFeeAdjustment: fee,
+          deliveryFeeCents: 0,
+          freeDelivery: { ...offered, waivedCents: 900 },
+        },
+        400,
+      ),
+    ).toThrow(InvalidOrderPaymentError);
+  });
+});
+
+describe("ensureFreeDeliveryHolds — un franco que le panier justifie (1b)", () => {
+  const FEE = { mode: "amount", cents: 1_500 } as const;
+  const FREE = { thresholdCents: 400, waivedCents: 1_500, waivedTtcCents: null };
+  const ok = input({ deliveryFeeAdjustment: FEE, freeDelivery: FREE });
+
+  it("accepte une base qui atteint le seuil", () => {
+    expect(() => ensureFreeDeliveryHolds(ok, 400, "line_ht")).not.toThrow();
+  });
+
+  it("refuse une base sous le seuil", () => {
+    expect(() => ensureFreeDeliveryHolds(ok, 399, "line_ht")).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("refuse un franco sans barème à offrir, ou avec un frais facturé", () => {
+    expect(() => ensureFreeDeliveryHolds(input({ freeDelivery: FREE }), 400, "line_ht")).toThrow(
+      InvalidOrderPaymentError,
+    );
+    expect(() =>
+      ensureFreeDeliveryHolds({ ...ok, deliveryFeeCents: 1_500 }, 400, "line_ht"),
+    ).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("le TTC offert existe en exact_ht, et seulement là", () => {
+    expect(() => ensureFreeDeliveryHolds(ok, 400, "exact_ht")).toThrow(InvalidOrderPaymentError);
+    const exact = input({
+      deliveryFeeAdjustment: FEE,
+      freeDelivery: { ...FREE, waivedTtcCents: 1_800 },
+    });
+    expect(() => ensureFreeDeliveryHolds(exact, 400, "exact_ht")).not.toThrow();
+    expect(() => ensureFreeDeliveryHolds(exact, 400, "line_ht")).toThrow(InvalidOrderPaymentError);
   });
 });
 

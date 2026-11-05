@@ -20,6 +20,8 @@ export interface ProBasket {
   readonly fee?: CartAdjustment;
   readonly vatMode?: DeliveryVatMode;
   readonly lateFee?: { readonly adjustment: CartAdjustment; readonly rate: number };
+  /** Le seuil HT du franco de la zone (plan `plan-livraison-offerte.md`, 1b). */
+  readonly freeDeliveryThreshold?: number;
 }
 
 export const PRO_BASKETS: readonly ProBasket[] = [
@@ -156,6 +158,35 @@ export const PRO_BASKETS: readonly ProBasket[] = [
 ];
 
 /**
+ * **Le franco** (plan `plan-livraison-offerte.md`, 1b) : le panier « port qui
+ * suit, deux taux » (38,80 € HT), au seuil pile puis manqué d'un centime.
+ * À part des vingt : ceux-là tiennent le code d'avant la voie B, ceux-ci le
+ * premier calcul du franco (2026-11-05).
+ */
+export const FRANCO_PRO_BASKETS: readonly ProBasket[] = [
+  {
+    name: "franco atteint",
+    lines: [
+      [420_000, 5, 5.5],
+      [890_000, 2, 20],
+    ],
+    fee: { mode: "amount", cents: 1_500 },
+    vatMode: "follows_goods",
+    freeDeliveryThreshold: 3_880,
+  },
+  {
+    name: "franco manqué de peu",
+    lines: [
+      [420_000, 5, 5.5],
+      [890_000, 2, 20],
+    ],
+    fee: { mode: "amount", cents: 1_500 },
+    vatMode: "follows_goods",
+    freeDeliveryThreshold: 3_881,
+  },
+];
+
+/**
  * Le panier en entrée d'`Order.draft`, pour la société `co_pro` — chiffré par
  * l'agrégat depuis L7 (2a) : la remise vient d'une promotion au retrait qui
  * exclut les lignes non éligibles, le port du barème de la zone, la surtaxe
@@ -229,6 +260,7 @@ export function proDraftInput(basket: ProBasket): PricedDraftInput {
       basket.discount === undefined ? [] : [pickupPromotion(basket.discount, { excludedSkus })],
     deliveryFee: basket.fee,
     deliveryVatMode: basket.vatMode,
+    freeDeliveryThresholdCents: basket.freeDeliveryThreshold ?? null,
     lateFee:
       basket.lateFee === undefined
         ? null

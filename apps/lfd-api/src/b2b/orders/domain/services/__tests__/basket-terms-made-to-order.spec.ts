@@ -48,6 +48,8 @@ function draftLine(
     deliveryFee: { cents: 0, adjustment: null },
     deliveryVatMode: "standard",
     vatMethod: "line_ht",
+    subtotalCents: 0,
+    freeDeliveryThresholdCents: null,
   }).lines[0];
 }
 

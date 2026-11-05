@@ -50,6 +50,8 @@ function termsOf(
     deliveryFee: over.deliveryFee ?? NO_FEE,
     deliveryVatMode: over.deliveryVatMode ?? "standard",
     vatMethod,
+    subtotalCents: 0,
+    freeDeliveryThresholdCents: null,
   });
 }
 

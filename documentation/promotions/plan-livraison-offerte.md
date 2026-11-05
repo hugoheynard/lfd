@@ -211,6 +211,9 @@ recommandations »)** :
   du jour, si bien qu'un frais global relevé après la commande la renchérissait).
   Une commande garde le tarif de livraison du jour où elle a été passée ;
   la révision lit le barème figé. Bâti avec le lot 1a.
+- **Une révision qui change de zone prend le barème ET le seuil du jour de
+  la nouvelle zone** (Hugo, 2026-11-05, « garde le défaut ») : aucun tarif
+  n'a été figé pour elle. Dans la même zone, barème et seuil figés.
 
 ~~**Encore à trancher**~~ (tranché ci-dessus) : la base du seuil (avant ou après les remises, avant
 ou après le bon de fidélité) ; en révision, le seuil **figé** à la passation
@@ -225,7 +228,7 @@ particulier (TTC « environ », servi par le serveur).
 | 0b  | 🟦 résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge                    | oui                   |
 | 0c  | `GET /delivery-zones?audience=`, boutique et saisie staff                                                 | après « pending pro » |
 | 1a  | 🟦 le franco figé sur la commande ; recomposition et bon partiel le lisent ; barème figé relu en révision | avant 1b              |
-| 1b  | le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé                  | après 1a              |
+| 1b  | 🟦 le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé               | après 1a              |
 | 1c  | affichage et « Plus que… » servi par le serveur                                                           | après 1b              |
 
 **Ce que 1a a bâti (2026-11-05)** :
@@ -235,7 +238,8 @@ particulier (TTC « environ », servi par le serveur).
   (`PricingRequest.frozenDeliveryFee`, `order-revising.service.ts`) au lieu de
   re-résoudre celui du jour. ⚠️ **Il ne vaut que dans SA zone** : une révision
   qui livre dans une autre zone prend le barème du jour de la nouvelle zone
-  (aucun tarif n'a été figé pour elle) — défaut du bâtisseur, à confirmer.
+  (aucun tarif n'a été figé pour elle) — confirmé par Hugo le 2026-11-05,
+  seuil compris (cf. décisions).
 - **Le franco figé** : trois colonnes nullables sur `orders`
   (`free_delivery_threshold_cents`, `free_delivery_waived_cents`,
   `free_delivery_waived_ttc_cents`, migration `20261105160000`, trois CHECK) ;
@@ -249,6 +253,37 @@ particulier (TTC « environ », servi par le serveur).
 - **Pas encore** : le cas « franco figé » du golden master des paniers pro
   (`pro-baskets.frozen.ts`) — l'agrégat ne chiffre que par `priceBasket`
   (L7), qui ne sait pas encore produire un franco : le cas arrive avec 1b.
+
+**Ce que 1b a bâti (2026-11-05)** :
+
+- **Le seuil se résout comme le frais** : `resolvedFreeDeliveryThreshold`
+  (`delivery-zones/domain/delivery-fee-resolution.ts`) — remplacement de la
+  zone pour l'audience, sinon global ; `null` = pas de franco, sans repli sur
+  l'ancien frais de zone (il n'a jamais eu de seuil). `deliveryRoute` et la
+  route du chiffrage (`PricedRoute`) portent le barème ET le seuil.
+- **La base du seuil, dans `basketTermsOf`** (`basket-terms.ts`), le seul
+  endroit où elle existe dans les deux méthodes sans composer deux fois :
+  `line_ht` = sous-total HT arrondi par ligne − remise HT (la base où le bon
+  s'impute) ; `exact_ht` = Σ HT des lignes composées − remise HT composée,
+  lus sur LA composition qui chiffre déjà la remise et le port (lignes et
+  remises n'y dépendent pas du port). Le bon n'entre pas dans `priceBasket` :
+  il ne peut pas faire perdre le franco. `subtotalCents` (HT avant remises)
+  n'est jamais la base. Jugement pur : `judgedFreeDelivery` (« dès » le
+  seuil ; un frais nul n'est pas offert).
+- **L'agrégat** : `DraftOrderInput.freeDelivery` / `OrderToPlace.freeDelivery`,
+  écrits par la passation et la révision (`freeDeliveryColumnsOf`). En
+  `exact_ht`, la composition reçoit le barème FACTURÉ (`billedDeliveryFeeOf`).
+  `ensureDeliveryFeeMatches` accepte un frais nul au franco quand le barème
+  reproduit le montant offert ; `ensureFreeDeliveryHolds` revérifie la base
+  contre le seuil et la forme (TTC offert en `exact_ht` seulement).
+- **Révision** : le seuil figé (`free_delivery_threshold_cents`) accompagne le
+  barème figé (`FrozenDeliveryFee`) dans la même zone. ⚠️ Une commande passée
+  SANS franco n'a pas de seuil figé (la colonne n'existe qu'au franco, CHECK
+  `orders_free_delivery_waives_fee`) : une révision dans la même zone ne gagne
+  donc pas le franco, même au-dessus du seuil du jour — lecture stricte de
+  « jamais le réglage du jour », à confirmer par Hugo.
+- **Pas encore** (1c) : aucun champ du devis ni ligne « Livraison offerte »,
+  aucun « Plus que… ».
 
 # Partie 2 — Le code
 

@@ -7,6 +7,7 @@ import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import {
   ensureDeliveryFeeMatches,
   ensureDiscountMatches,
+  ensureFreeDeliveryHolds,
   ensureLateFeeMatches,
   ensurePickupDiscountOnlyOnPickup,
   voucherDiscountOf,
@@ -108,6 +109,8 @@ export function lineHtAmountsOf(
   const basket = lineHtBasketOf(input, stepLines, eligibleSubtotalCents);
   ensureLateFeeMatches(input, subtotalCents);
   ensureDeliveryFeeMatches(input, subtotalCents);
+  // La base du franco : marchandises HT après les remises, avant le bon (1b).
+  ensureFreeDeliveryHolds(input, subtotalCents - input.discountCents, "line_ht");
   ensurePickupDiscountOnlyOnPickup(input, fulfillment);
   const voucherDiscountCents = voucherDiscountOf(
     input.voucher,

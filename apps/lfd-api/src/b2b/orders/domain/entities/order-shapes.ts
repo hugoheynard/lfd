@@ -18,6 +18,7 @@ import type { VatShare } from "@lfd/money";
 
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
 import type { FrozenDiscountTerms } from "../services/frozen-discount-terms.js";
+import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
@@ -172,8 +173,17 @@ export interface DraftOrderInput {
   readonly basketDiscounts?: readonly DraftBasketDiscount[] | undefined;
   /** Frais de livraison (zone) déjà résolus, dans l'unité de la méthode (cf. `discountCents`). */
   readonly deliveryFeeCents: number;
-  /** Le barème de zone qui l'a produit, ou `null` en retrait. */
+  /**
+   * Le barème de zone qui l'a produit, ou `null` en retrait. Au franco, le
+   * barème OFFERT : `deliveryFeeCents` vaut alors 0.
+   */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
+  /**
+   * **Le franco atteint** (plan `plan-livraison-offerte.md`, 1b) : le seuil
+   * appliqué et ce que la livraison aurait coûté, ou `null` — pas de franco,
+   * ou seuil manqué. Décidé par `priceBasket`, jamais par un appelant.
+   */
+  readonly freeDelivery: FreeDelivery | null;
   /**
    * **La surtaxe de commande tardive**, quand une dérogation a laissé passer.
    *
@@ -272,6 +282,8 @@ export interface OrderToPlace {
   readonly deliveryFeeCents: number;
   readonly deliveryFeeTtcCents: number | null;
   readonly deliveryFeeAdjustment: CartAdjustment | null;
+  /** Le franco figé (cf. {@link DraftOrderInput.freeDelivery}) ; `null` = aucun. */
+  readonly freeDelivery: FreeDelivery | null;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /** Le mode de TVA du port, figé (cf. {@link DraftOrderInput.deliveryVatMode}). */

@@ -338,3 +338,48 @@ export const FROZEN_PRO_DRAFTS = [
     ],
   },
 ] as const;
+
+/**
+ * Les montants de `Order.draft` sur `FRANCO_PRO_BASKETS` (1b, 2026-11-05) —
+ * calculés à la main : au franco, ni port ni TVA de port (21,00 € à 5,5 % =
+ * 1,155 € → 1,16 € ; 17,80 € à 20 % = 3,56 €) ; manqué d'un centime, le panier
+ * « port qui suit, deux taux » au centime près, tel qu'il est figé plus haut.
+ */
+export const FROZEN_FRANCO_PRO_DRAFTS = [
+  {
+    name: "franco atteint",
+    subtotalCents: 3880,
+    discountCents: 0,
+    deliveryFeeCents: 0,
+    lateFeeCents: 0,
+    vatCents: 472,
+    vatShares: [
+      { rate: 5.5, amountCents: 116 },
+      { rate: 20, amountCents: 356 },
+    ],
+    totalCents: 4352,
+    lines: [
+      [2100, null, null],
+      [1780, null, null],
+    ],
+    freeDelivery: { thresholdCents: 3880, waivedCents: 1500, waivedTtcCents: null },
+  },
+  {
+    name: "franco manqué de peu",
+    subtotalCents: 3880,
+    discountCents: 0,
+    deliveryFeeCents: 1500,
+    lateFeeCents: 0,
+    vatCents: 654,
+    vatShares: [
+      { rate: 5.5, amountCents: 160 },
+      { rate: 20, amountCents: 494 },
+    ],
+    totalCents: 6034,
+    lines: [
+      [2100, null, null],
+      [1780, null, null],
+    ],
+    freeDelivery: null,
+  },
+] as const;

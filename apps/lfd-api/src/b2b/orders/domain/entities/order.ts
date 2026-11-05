@@ -60,6 +60,7 @@ import {
   type FixedCustomerCancellation,
 } from "../services/customer-cancellation-window.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
+import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
@@ -114,6 +115,7 @@ export class Order {
     private readonly discountPromotionId: string | null,
     private readonly basketTraces: readonly BasketDiscountTrace[],
     private readonly deliveryFeeAdjustment: CartAdjustment | null,
+    private readonly freeDelivery: FreeDelivery | null,
     private readonly lateFeeCents: number,
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
     private readonly deliveryVatMode: DeliveryVatMode,
@@ -195,6 +197,7 @@ export class Order {
       input.discountPromotionId ?? null,
       basketTracesOf(input),
       input.deliveryFeeAdjustment,
+      input.freeDelivery,
       input.lateFeeCents,
       input.lateFeeAdjustment,
       input.deliveryVatMode,
@@ -457,6 +460,7 @@ export class Order {
       deliveryFeeCents: this.drafted.deliveryFeeCents,
       deliveryFeeTtcCents: this.drafted.ttcTerms?.deliveryFeeCents ?? null,
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,
+      freeDelivery: this.freeDelivery,
       lateFeeCents: this.lateFeeCents,
       lateFeeAdjustment: this.lateFeeAdjustment,
       deliveryVatMode: this.deliveryVatMode,
