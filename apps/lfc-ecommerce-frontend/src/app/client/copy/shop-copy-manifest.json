@@ -4745,41 +4745,6 @@
           "it": "Accedi di nuovo",
           "variables": []
         },
-        {
-          "key": "chrome.installIosSafari",
-          "fr": "Pour installer l'app : touchez Partager, puis « Sur l'écran d'accueil ».",
-          "en": "To install the app: tap Share, then “Add to Home Screen”.",
-          "it": "Per installare l'app: tocca Condividi, poi «Aggiungi alla schermata Home».",
-          "variables": []
-        },
-        {
-          "key": "chrome.installIosOther",
-          "fr": "Ouvrez cette page dans Safari pour installer l'app.",
-          "en": "Open this page in Safari to install the app.",
-          "it": "Apri questa pagina in Safari per installare l'app.",
-          "variables": []
-        },
-        {
-          "key": "chrome.installPrompt",
-          "fr": "Installer l'app",
-          "en": "Install the app",
-          "it": "Installa l'app",
-          "variables": []
-        },
-        {
-          "key": "chrome.installAction",
-          "fr": "Installer",
-          "en": "Install",
-          "it": "Installa",
-          "variables": []
-        },
-        {
-          "key": "chrome.installLater",
-          "fr": "Plus tard",
-          "en": "Later",
-          "it": "Più tardi",
-          "variables": []
-        },
         { "key": "chrome.back", "fr": "Retour", "en": "Back", "it": "Indietro", "variables": [] },
         { "key": "chrome.menu", "fr": "Menu", "en": "Menu", "it": "Menu", "variables": [] },
         {

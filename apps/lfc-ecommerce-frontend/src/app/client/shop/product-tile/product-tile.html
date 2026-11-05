@@ -99,8 +99,8 @@
           <span class="per-kilo" data-per-kilo>
             @if (perKiloWas(); as was) {
               <span class="sr-only">{{ perKiloPhrase() }}</span>
-              <span aria-hidden="true">{{ hint }}</span>
               <s class="per-kilo-was" aria-hidden="true" data-per-kilo-was>{{ was }}</s>
+              <span aria-hidden="true">{{ hint }}</span>
             } @else {
               {{ hint }}
             }

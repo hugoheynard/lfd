@@ -32,10 +32,10 @@
     }
     @if (perKilo(); as hint) {
       <p class="per-kilo" data-test="featured-per-kilo">
-        {{ hint }}
         @if (perKiloWas(); as was) {
           <s class="per-kilo-was" data-test="featured-per-kilo-was">{{ was }}</s>
         }
+        {{ hint }}
       </p>
     }
   </div>

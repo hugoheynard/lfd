@@ -198,7 +198,7 @@
 
 /* Le prix au kilo d'une pièce, le minimum de pièces : des mentions, pas un second prix. */
 .per-kilo-was {
-  margin-inline-start: var(--fold-space-xs);
+  margin-inline-end: var(--fold-space-xs);
   text-decoration-thickness: 1px;
 }
 

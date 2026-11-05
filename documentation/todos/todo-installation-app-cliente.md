@@ -1,15 +1,10 @@
 # TODO — bandeau d'installation de l'app cliente
 
-> ✅ **Bâti le 2026-10-10** (non commité à l'écriture de ce bandeau). Fichiers :
-> `apps/lfc-ecommerce-frontend/src/app/client/install-prompt.service.ts` (la
-> détection en fonctions pures, la capture de `beforeinstallprompt` au démarrage
-> par `app.config.ts`, le refus mémorisé quatre semaines sous
-> `lfc.install-dismissed-at`) et `src/app/client/install-banner/` (le bandeau
-> `fold-callout`, monté par `client/shell/client-shell.html`), libellés dans
-> `client/copy/{fr,en,it}.ts`. **Reste à vérifier sur un vrai téléphone** :
-> iPhone Safari, iPhone Chrome, Android Chrome (le bouton rejoue l'invite), et
-> l'app une fois installée (rien ne doit paraître) — ainsi que la place du
-> bandeau au-dessus de la zone de geste iOS.
+> ⛔ **Retiré le 2026-11-05 (Hugo : « on va enlever le bandeau installer
+> l'app »).** Le bandeau, son service de détection et le traceur
+> `lfc.install-dismissed-at` sont sortis du front ; ses cinq textes sont
+> déclarés retirés dans `shop-copy-renames.json`. Ce qui suit décrit ce qui
+> avait été bâti le 2026-10-10, pour qui voudrait le reprendre.
 
 > **État au 2026-08-29** : l'app est **installable** (manifeste + icônes livrés,
 > vérifiés en production sur `lafoliecoffee.info/pro`). Ce qui manque est

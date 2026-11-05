@@ -49,12 +49,6 @@ export interface ClientCopy {
      */
     readonly sessionExpired: string;
     readonly sessionExpiredRenew: string;
-    /** Le bandeau d'installation : un message par contexte, puis ses deux gestes. */
-    readonly installIosSafari: string;
-    readonly installIosOther: string;
-    readonly installPrompt: string;
-    readonly installAction: string;
-    readonly installLater: string;
     readonly back: string;
     readonly menu: string;
     readonly notifications: string;

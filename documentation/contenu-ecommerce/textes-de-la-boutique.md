@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1761 textes
+## Sommaire — 1756 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -36,7 +36,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 61 |
+| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 56 |
 | [La navigation](#espace-nav) | `nav` | 16 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 257 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1761** |
+| **Total** | | **1756** |
 
 ## Le parcours de commande
 
@@ -928,7 +928,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Le cadre — bandeaux, installation, erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 61 textes.
+Source : `fr.ts · en.ts · it.ts` · 56 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -936,11 +936,6 @@ Source : `fr.ts · en.ts · it.ts` · 61 textes.
 | `chrome.identityConflictDismiss` | Compris | Got it | Ho capito |  |
 | `chrome.sessionExpired` | Votre session a expiré. Reconnectez-vous pour retrouver votre compte. | Your session has expired. Sign in again to get back to your account. | La sessione è scaduta. Accedi di nuovo per ritrovare il tuo account. |  |
 | `chrome.sessionExpiredRenew` | Se reconnecter | Sign in again | Accedi di nuovo |  |
-| `chrome.installIosSafari` | Pour installer l'app : touchez Partager, puis « Sur l'écran d'accueil ». | To install the app: tap Share, then “Add to Home Screen”. | Per installare l'app: tocca Condividi, poi «Aggiungi alla schermata Home». |  |
-| `chrome.installIosOther` | Ouvrez cette page dans Safari pour installer l'app. | Open this page in Safari to install the app. | Apri questa pagina in Safari per installare l'app. |  |
-| `chrome.installPrompt` | Installer l'app | Install the app | Installa l'app |  |
-| `chrome.installAction` | Installer | Install | Installa |  |
-| `chrome.installLater` | Plus tard | Later | Più tardi |  |
 | `chrome.back` | Retour | Back | Indietro |  |
 | `chrome.menu` | Menu | Menu | Menu |  |
 | `chrome.notifications` | Notifications | Notifications | Notifiche |  |

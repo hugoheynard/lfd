@@ -105,6 +105,6 @@
 
 /* Le kilo saisi barré sous une promotion, comme le prix barré d'une pièce. */
 .per-kilo-was {
-  margin-inline-start: var(--fold-space-xs);
+  margin-inline-end: var(--fold-space-xs);
   text-decoration-thickness: 1px;
 }

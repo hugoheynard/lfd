@@ -12,7 +12,6 @@ import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
 import { SHOP_COPY_STARTUP_BUDGET_MS, ShopCopyLoader } from './client/copy/shop-copy-loader';
-import { InstallPrompt } from './client/install-prompt.service';
 import { ShelfRefreshOnReturn } from './client/shop/shelf-refresh-on-return.service';
 import { workspaceInterceptor } from './client/client-workspace.interceptor';
 import { sessionExpiredInterceptor } from './auth/session-expired';
@@ -81,11 +80,6 @@ export const appConfig: ApplicationConfig = {
     // premier chargement se verrait (plan `plan-textes-de-la-boutique.md`,
     // §10). Au-delà, la boutique démarre avec le texte du code.
     provideAppInitializer(() => inject(ShopCopyLoader).start(SHOP_COPY_STARTUP_BUDGET_MS)),
-    // `beforeinstallprompt` ne passe qu'une fois, tôt : l'écouter AVANT que le
-    // bandeau d'installation ne soit monté, sans quoi il n'a rien à rejouer.
-    provideAppInitializer(() => {
-      inject(InstallPrompt).listen();
-    }),
     // Le rayon relu au retour sur l'onglet, panier vide seulement (lot C4 du
     // cache du catalogue) : une photo d'une heure ne se montre plus à qui revient.
     provideAppInitializer(() => {
