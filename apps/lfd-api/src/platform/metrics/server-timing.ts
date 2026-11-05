@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import type { NextFunction } from "express";
 
 /**
@@ -7,6 +9,34 @@ import type { NextFunction } from "express";
 export interface ServerTimingMark {
   readonly name: string;
   readonly durationMs: number;
+  /** Un mot neutre (`memory`, `resolved`…) — jamais une donnée de la personne. */
+  readonly description?: string | undefined;
+}
+
+/**
+ * Les étapes de la requête en cours, pour qui n'a pas la requête sous la main
+ * — un adaptateur appelé par le guard, par exemple le résolveur du principal
+ * (2026-11-05, plan de latence : distinguer la mémoire d'une résolution
+ * complète). Distinct du `RequestContext` métier : ce n'est que de la mesure.
+ */
+const currentMarks = new AsyncLocalStorage<ServerTimingMark[]>();
+
+/**
+ * Chronomètre `work` et ajoute l'étape aux marques de la requête en cours,
+ * s'il y en a une. Hors requête (tests, tâches de fond), ne note rien.
+ */
+export async function timeServerTiming<T>(name: string, work: () => Promise<T>): Promise<T> {
+  const startedAt = performance.now();
+  try {
+    return await work();
+  } finally {
+    currentMarks.getStore()?.push({ name, durationMs: performance.now() - startedAt });
+  }
+}
+
+/** Ajoute une étape sans durée, qui ne porte qu'une description (`principal-source;desc=memory`). */
+export function noteServerTiming(name: string, description: string): void {
+  currentMarks.getStore()?.push({ name, durationMs: 0, description });
 }
 
 /** La requête qui porte ses étapes : le guard y ajoute les siennes. */
@@ -27,7 +57,13 @@ export function recordServerTiming(request: TimedRequest, name: string, startedA
 
 /** `auth;dur=12.3, app;dur=40.1` — une durée lisible, sans description. */
 export function formatServerTiming(marks: readonly ServerTimingMark[]): string {
-  return marks.map((mark) => `${mark.name};dur=${mark.durationMs.toFixed(1)}`).join(", ");
+  return marks
+    .map(
+      (mark) =>
+        `${mark.name};dur=${mark.durationMs.toFixed(1)}` +
+        (mark.description === undefined ? "" : `;desc="${mark.description}"`),
+    )
+    .join(", ");
 }
 
 /**
@@ -53,5 +89,5 @@ export function serverTiming(
     response.setHeader("Server-Timing", formatServerTiming(all));
     return writeHead(...args);
   };
-  next();
+  currentMarks.run(marks, () => next());
 }

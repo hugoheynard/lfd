@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrincipalResolver } from "../../../platform/auth/principal.resolver.js";
 import type { Principal, VerifiedToken } from "../../../platform/auth/principal.js";
+import { noteServerTiming, timeServerTiming } from "../../../platform/metrics/server-timing.js";
 import { WallClock } from "../../../platform/time/wall-clock.js";
 import { PrincipalStampReader } from "../domain/ports/principal-stamp.reader.js";
 import { PrincipalMemory, storedPart, type StoredPrincipal } from "./principal-memory.js";
@@ -60,18 +61,29 @@ export class CachedPrincipalResolver extends PrincipalResolver {
   }
 
   async resolve(token: VerifiedToken): Promise<Principal> {
-    const stamp = await this.stamps.read();
+    // Deux marques de `Server-Timing` (2026-11-05) : le coût de l'estampille,
+    // et d'où vient le principal — c'est ce qui distingue une connexion froide
+    // d'une mémoire perdue.
+    const stamp = await timeServerTiming("stamp", () => this.stamps.read());
     if (stamp === null) {
+      noteServerTiming("principal-source", "no-stamp");
       return this.source.resolve(token);
     }
+    const miss = this.memory.missReason(token.subject, stamp, this.nowMs());
     const kept = this.memory.take(token.subject, stamp, this.nowMs());
     if (kept !== null && !wouldRecord(kept, token)) {
+      noteServerTiming("principal-source", "memory");
       return withToken(kept, token);
     }
     const shared = this.inFlight.get(token.subject);
     if (shared !== undefined && shared.stamp === stamp) {
+      noteServerTiming("principal-source", "joined");
       return this.join(shared, token);
     }
+    noteServerTiming(
+      "principal-source",
+      kept === null ? `resolved-${miss ?? "absent"}` : "recorded",
+    );
     return this.lead(token, stamp);
   }
 

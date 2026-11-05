@@ -55,3 +55,16 @@ describe("PrincipalMemory", () => {
     expect("subject" in stored).toBe(false);
   });
 });
+
+describe("PrincipalMemory.missReason (2026-11-05)", () => {
+  it("dit pourquoi rien ne serait rendu, sans rien changer", () => {
+    const memory = new PrincipalMemory(10, 1_000);
+    expect(memory.missReason("sub", 1n, 0)).toBe("absent");
+    const stored = kept("u1");
+    memory.keep("sub", 1n, 0, stored);
+    expect(memory.missReason("sub", 2n, 0)).toBe("stamp");
+    expect(memory.missReason("sub", 1n, 1_000)).toBe("expired");
+    expect(memory.missReason("sub", 1n, 10)).toBeNull();
+    expect(memory.take("sub", 1n, 10)).toBe(stored);
+  });
+});

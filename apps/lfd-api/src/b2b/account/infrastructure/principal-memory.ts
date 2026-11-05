@@ -45,6 +45,22 @@ export class PrincipalMemory {
   }
 
   /**
+   * Pourquoi {@link take} ne rendrait rien — sans rien changer. Sert la marque
+   * `principal-source` de `Server-Timing` (2026-11-05) : une estampille qui
+   * bouge et une mémoire perdue ne se soignent pas pareil.
+   */
+  missReason(subject: string, stamp: bigint, nowMs: number): "absent" | "stamp" | "expired" | null {
+    const kept = this.entries.get(subject);
+    if (kept === undefined) {
+      return "absent";
+    }
+    if (kept.stamp !== stamp) {
+      return "stamp";
+    }
+    return nowMs - kept.storedAtMs >= this.lifetimeMs ? "expired" : null;
+  }
+
+  /**
    * Range `principal` sous l'estampille lue AVANT de le lire. Une lecture
    * plus ancienne qui finit après une plus récente ne l'écrase pas.
    */
