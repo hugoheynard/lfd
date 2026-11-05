@@ -164,7 +164,7 @@ périmé` (le dernier total atténué du devis, la photo `STALE_PHOTO_MS` du
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | a     | le crochet de déconnexion et la liste d'oubli, alignée sur le registre — un manque RGPD réel, autonome                                       | —           |
 | b     | 🟦 bâti le 2026-11-05, sur `dev` — `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait | —           |
-| c     | la bascule : `switchTo`, état en cours, retour arrière                                                                                       | b           |
+| c     | 🟦 bâti le 2026-11-05, sur `dev` (`8b1d720fe`) — la bascule : `switchTo`, état en cours, retour arrière, lecture d'avance                    | b           |
 | c bis | **la brique réduite** (`contextKeyed`), éprouvée sur les points de retrait seuls — § 00 ter, après `vitruve`                                 | b, c        |
 | d     | la migration des autres stores **vers la brique**, une par commit, porte en dette décroissante                                               | b, c, c bis |
 | e     | l'espace retenu (état `essai`) sur les trois lecteurs du lot b                                                                               | a, b        |
