@@ -47,9 +47,10 @@ export class PrismaService extends PrismaClient {
  * Le pool d'UNE instance.
  *
  * - `max: 15` — relevé de 5 le 2026-10-30 (Hugo : offre Prisma **Pro**,
- *   250 connexions mutualisées). Deux instances coexistent une à deux minutes
+ *   500 connexions mutualisées selon la doc Prisma relue le 2026-11-05 ; 250
+ *   était écrit ici). Deux instances coexistent une à deux minutes
  *   à chaque déploiement (l'ancienne répond encore, cf. `deploy_lfd_api.yml`) :
- *   trente connexions au pire, 12 % de l'offre. Avec une seule instance et un
+ *   trente connexions au pire, 6 % de l'offre. Avec une seule instance et un
  *   seul fil Node, c'est le nombre de requêtes qui peuvent lire la base EN MÊME
  *   TEMPS ; à 5, un pic de devis faisait attendre la sixième. Le relever encore
  *   ne se justifie que si un test de charge montre des requêtes qui ATTENDENT
@@ -57,10 +58,18 @@ export class PrismaService extends PrismaClient {
  * - `connectionTimeoutMillis` — une requête qui n'obtient pas de connexion
  *   ÉCHOUE, en « base indisponible », au lieu de pendre. Le défaut est
  *   l'attente infinie, et un pooler muet bloquerait jusqu'au boot.
- * - `idleTimeoutMillis` — explicite plutôt qu'hérité, pour qu'il se lise ici.
+ * - `min: 10` — gardées ouvertes malgré `idleTimeoutMillis` (2026-11-05,
+ *   Hugo). Mesuré en production : après 30 s sans trafic, chaque appel de
+ *   l'ouverture de la boutique (une dizaine en parallèle) rouvrait sa
+ *   connexion vers le pooler, 300 ms à 1,3 s chacune ; rechargée aussitôt,
+ *   la même page lisait l'estampille en 15 ms. `pg-pool` ne les crée pas
+ *   d'avance : il ne ferme simplement pas les dix premières. Le pooler coupe
+ *   une connexion inactive au bout de 60 min, et `pg-pool` la retire alors.
+ * - `idleTimeoutMillis` — au-delà de `min` seulement : les connexions d'un pic.
  */
 const POOL = {
   max: 15,
+  min: 10,
   connectionTimeoutMillis: 5_000,
   idleTimeoutMillis: 30_000,
 } as const;
