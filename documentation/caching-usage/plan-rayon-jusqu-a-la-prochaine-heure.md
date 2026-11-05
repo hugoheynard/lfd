@@ -124,6 +124,45 @@ announceFrom`, `orderUntil`, fin de jour du retrait) sont déjà en main dans
 - (d) Une décision écrite sur le plancher dynamique (`OrderLine` absent de
   `SHELF_MODELS`).
 
+## 2 bis. Phase 3 — le rayon précalculé (Hugo, 2026-11-05)
+
+> 📝 Décidé dans son principe le 2026-11-05, **rien n'est conçu au-delà de
+> ce qui suit**. Touche l'argent : `vitruve` avant le bâti. Dépend de la
+> phase 2 (a) et (c).
+
+**L'idée, simplement.** Aujourd'hui, le premier client qui ouvre un rayon
+après une purge ou une expiration paie le calcul (2,2 s mesurées le
+2026-11-04). Les grands grossistes en ligne font l'inverse : le rayon de
+chaque client est **recalculé en tâche de fond** dès qu'un prix change, et
+afficher le rayon n'est plus qu'une lecture. Le client ne paie jamais le
+calcul.
+
+```mermaid
+flowchart LR
+  E["Écriture qui touche un prix<br/>(ShelfChanges)"] --> Q["File de recalcul<br/>par société"]
+  B["Borne à venir atteinte<br/>(UpcomingShelfBoundaries)"] --> Q
+  Q --> R["Recalcul du rayon<br/>en tâche de fond"]
+  R --> S["ProShelves<br/>(rayon prêt)"]
+  C["Client ouvre son espace"] -->|"lecture seule"| S
+```
+
+- **Déclencheurs** : une écriture qui purge aujourd'hui (`ShelfChanges`) ne
+  vide plus le rayon, elle le **remplace** ; une borne à venir (ouverture ou
+  fin de promotion, de prix daté, d'opération, plage d'offre) programme un
+  recalcul à son heure (alarme de l'objet `ProShelves`).
+- **Ordre de grandeur** : ~200 sociétés × un recalcul par changement de prix,
+  en arrière-plan sur le demi-vCPU — à mesurer, et à étaler (une file, une
+  société à la fois) pour ne jamais concurrencer les requêtes des clients.
+- **Filet inchangé** : si le rayon prêt manque ou date d'une autre révision,
+  le calcul à la demande d'aujourd'hui sert, et la passation relit toujours
+  le vrai prix.
+- **Questions ouvertes pour `vitruve`** : quelles sociétés précalculer (toutes,
+  ou celles actives depuis N jours) ; ce qui garantit qu'aucun recalcul n'est
+  perdu (la phase 2 (c)) ; le plancher dynamique (phase 2 (d)), qu'aucun
+  événement ne signale ; le coût en lectures de base facturées à l'opération.
+- Le stock et la couche dynamique (suggestions) restent **hors** du rayon
+  précalculé, comme dans la règle ci-dessus.
+
 ## 3. Tests (phase 1)
 
 - Unitaire : `expiresAt` vaut le plafond sans opération ; l'instant d'une
