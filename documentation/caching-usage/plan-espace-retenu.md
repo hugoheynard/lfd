@@ -124,7 +124,7 @@ Le §00 tel qu'écrit ne tient pas ; ce qui suit l'emporte sur lui.
 - **La clé de contexte est un PRÉFIXE, pas la clé.** Le catalogue distingue
   la visite pro (`PRO_VISITOR`, `shop-catalogue.store.ts:23`) du visiteur —
   deux tarifs —, la vitrine range sous `keyOf(reader, shelfKey)`
-  (`shop-storefront.store.ts:124`). Chaque store compose son lecteur :
+  (`shop-storefront.store.ts:119`). Chaque store compose son lecteur :
   contexte + ce qui lui est propre (visite pro, rayon, jour, mode).
   `readerKey` de `pickup-list.gateway.ts:30`, déjà partagé, est le modèle.
 - **« Confirmé » veut dire aujourd'hui « choisi localement »** :
