@@ -1,5 +1,11 @@
 # Plan — les matériaux du catalogue, chargés une fois
 
+> 📏 **M0 mesuré le 2026-11-05** (`apps/lfd-api/test/catalogue-reads.e2e-spec.ts`,
+> relevé au § 1). Depuis l'écriture du plan, le rayon est gardé par l'objet
+> `ProShelves` (le recalcul n'a lieu qu'en cas d'absence) alors que le devis
+> relit le catalogue à chaque changement de panier : **ordre proposé M2
+> (devis) avant M1 (rayon), à confirmer par `vitruve` et Hugo.**
+
 > 📝 **Plan du 2026-11-04, rien n'est bâti.** Demande de Hugo : « arriver par
 > construction à un seul appel pour tout ce qui concerne le catalogue, que la
 > taille de cet appel grandisse, mais le prix au kilo et les opérations datées
@@ -67,10 +73,80 @@ Le rayon (`ShopCataloguePricing.pricedFor`,
 Mesuré à chaud sur le rayon public : 6 opérations, dont `CatalogItem` **trois
 fois**, `CatalogOperation`, `OrderCutoff`, `PricingEvent`.
 
-Le devis (`PricingContext.load` / `loadCart`), l'estimation de la saisie et la
-passation lisent aussi le catalogue (prix de ligne, articles d'opération,
-classement, mode de TVA du port) : **le lot M0 en dresse la liste exacte**, par
-la sonde de comptage, avant d'écrire la forme.
+### Le relevé M0 (mesuré le 2026-11-05)
+
+Mesuré par `apps/lfd-api/test/catalogue-reads.e2e-spec.ts` : la sonde de
+comptage (`SchemaOpsCounter`) y est remplacée par une sous-classe qui retient
+aussi le **modèle** de chaque appel ORM (même point d'appel, même unité). Scène
+du golden master, panier de deux lignes ; le rayon calculé par l'API, sans
+`ProShelves` (absent en e2e). L'origine de chaque appel a été identifiée par
+la forme de ses arguments (relevé ponctuel, non commité).
+
+Les formes de lecture de `catalog_items` rencontrées :
+
+| Code | Lecture                                                                                         | Adaptateur                                         |
+| ---- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| A    | `listSellable` — tout le catalogue en vente, avec famille, dérogation, réservations (`include`) | `PrismaCatalogReader.listSellable`                 |
+| B    | `listByShopSkus` — les lignes du panier, même `include`                                         | `PrismaCatalogReader.listByShopSkus`               |
+| C    | le classement des lignes (produit, famille parente, sur mesure)                                 | `prisma-order-line-classification.reader.ts`       |
+| D    | les SKU réservés aux opérations (`operationOnly`)                                               | `operationOnlySkusOf` (`prisma-catalog.reader.ts`) |
+| E    | les colonnes du kilo, pour **tous** les SKU du rayon (un `IN` du catalogue entier)              | `prisma-catalog-price-per-kg.reader.ts`            |
+| F    | la filiation (`detachedFromSku`)                                                                | `PrismaSaleReferenceLineageReader.parentsOf`       |
+
+Et hors de `catalog_items` : `catalogOperation.findMany` (avec ses articles en
+`include`) et `orderCutoff.findFirst` (l'heure limite générale,
+`prisma-stored-order-cutoff.reader.ts`).
+
+| Chemin                                       | `CatalogItem`     | `CatalogOperation` | `OrderCutoff` | Catalogue / total des opérations, froid → chaud |
+| -------------------------------------------- | ----------------- | ------------------ | ------------- | ----------------------------------------------- |
+| rayon public (`GET /shop/catalogue`)         | 3 (A, D, E)       | 1                  | 1             | 5 / 11 → 5 / 6                                  |
+| rayon pro de base (`?audience=pro`)          | 3 (A, D, E)       | 1                  | 1             | 5 / 11 → 5 / 6                                  |
+| rayon d'un pro (`GET /shop/catalogue/mine`)  | 3 (A, D, E)       | 1                  | 1             | 5 / 19 → 5 / 13                                 |
+| devis anonyme (`POST /shop/quote`)           | 3 (B, D, C)       | 0                  | 0             | 3 / 11 → 3 / 6                                  |
+| devis pro (`POST /shop/quote/mine`)          | 4 (B ×2, D, C)    | 0                  | 1             | 5 / 20 → 5 / 15                                 |
+| estimation (`POST /admin/orders/estimate`)   | 5 (B ×3, D, C)    | 0                  | 2             | 7 / 31 → 7 / 25                                 |
+| passation pro (`POST /orders`), pour mémoire | 5 (B ×2, D, C, F) | 0                  | 1             | 6 / 75 → 6 / 67                                 |
+
+**Froid = chaud** pour le catalogue : rien ne le garde en mémoire, seuls les
+matériaux des prix (règles, planchers, barèmes, promotions) passent à zéro à
+chaud. Les familles, dérogations, réservations et articles d'opération ne
+coûtent **aucun** appel : ils voyagent en `include` de leur parent.
+`CatalogCategory` vaut 0 ici parce que le corpus n'a que des familles à plat :
+la lignée (`PrismaCatalogReader.lineage`) n'est lue que si une famille a un
+parent — +1 par lecture A ou B dans ce cas, **non relevé**.
+
+**Les doublons** (même table relue dans le même appel HTTP) :
+
+- le rayon lit `catalog_items` trois fois — A, puis D (une colonne de A), puis
+  E (deux colonnes de A, pour les SKU que A vient de rendre) ;
+- le devis pro relit les lignes du panier (B ×2) ; l'estimation trois fois
+  (B ×3), et l'heure limite générale deux fois ;
+- la passation relit B deux fois ;
+- partout, D (`operationOnly`) est une colonne que A ou B a déjà en main, et C
+  (classement) relit les mêmes lignes que B sous une autre projection.
+
+**Ce que `CatalogueMaterials` doit donc contenir** : les articles en vente avec
+famille, dérogation et réservations (A — B en devient un filtre), les colonnes
+du classement (C : produit, famille parente, sur mesure), le drapeau
+`operationOnly` (D), les colonnes du kilo (E), la filiation (F, si la
+passation entre un jour dans la porte — elle n'y entre pas d'après le § 2), la
+lignée des familles, les opérations avec leurs articles, et l'heure limite
+générale. Soit, d'après ce relevé, trois appels à froid (articles, opérations,
+heure limite) au lieu de 3 à 7 selon le chemin, et zéro à chaud une fois M3
+bâti.
+
+**Ce qui est prouvé, et ce qui ne l'est pas** :
+
+- **prouvé** (2026-11-05, base e2e locale, client compté) : un `findMany` avec
+  `include` compte pour **un** appel dans la sonde (`$allOperations` ne voit
+  que l'appel du client), et Prisma 7 sans `relationJoins` l'exécute en
+  **plusieurs** instructions SQL — deux appels (`catalogItem` avec famille,
+  dérogation, réservations ; `catalogOperation` avec ses articles) ont donné
+  **6** instructions ;
+- **affirmé, non prouvé ici** : que Prisma Postgres facture par appel du
+  client et non par instruction SQL. C'est ce que disent le JSDoc de
+  `SchemaOpsCounter` et la tarification publiée de Prisma ; seule la facture
+  de production peut le confirmer.
 
 ## 2. La forme
 
@@ -128,9 +204,11 @@ instance (`max_instances: 1`).
 
 ## 6. Ce qui n'est pas vérifié
 
-- la liste des lectures du devis, de l'estimation et de la passation (M0) ;
-- qu'une lecture avec `include` compte bien pour **une** opération dans
-  `SchemaOpsCounter` (c'est ce que dit son JSDoc ; à confirmer par la sonde) ;
+- ~~la liste des lectures du devis, de l'estimation et de la passation~~ —
+  mesurée le 2026-11-05 (§ 1) ;
+- ~~qu'une lecture avec `include` compte pour une opération dans
+  `SchemaOpsCounter`~~ — prouvé le 2026-11-05 (§ 1) ; reste **affirmé** que
+  Prisma Postgres facture de même ;
 - la taille du catalogue entier en mémoire (estimée, pas mesurée) ;
 - que les heures limites (bloc `order-cutoffs`) puissent entrer dans le même
   chargement sans qu'un bloc lise les tables d'un autre (`lint:prisma-model-ownership`).
