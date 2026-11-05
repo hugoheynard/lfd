@@ -1,4 +1,4 @@
-import type { CacheReport } from "./cache.js";
+import type { CacheCallReport, CacheReport } from "./cache.js";
 import type { ContainerUsage, ContainerUsageGap } from "./container.js";
 import type { HeartbeatMetrics } from "./heartbeat.js";
 import type { HealthStatus, NodeKind } from "./node.js";
@@ -117,4 +117,10 @@ export interface EcosystemHealth {
    * l'écran le lit comme « rien de compté ».
    */
   readonly caches?: readonly CacheReport[];
+  /**
+   * La durée des appels aux magasins de cache, par opération (C5,
+   * 2026-11-05). Facultatif, pour la même raison que `caches` : une API
+   * d'avant ne le rend pas. Vide quand rien n'a été appelé sur la fenêtre.
+   */
+  readonly cacheCalls?: readonly CacheCallReport[];
 }

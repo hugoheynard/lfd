@@ -41,6 +41,12 @@ export function recognisedShelfExpiry(now: Date, nextChangeAt: Date | null): Dat
  * 3. ranger avec la version relevée — le magasin refuse si une purge est
  *    passée entre-temps, et le rayon peut-être ancien n'est pas gardé.
  *
+ * Le rangement part **après** la réponse (2026-11-05) : la vue est rendue sans
+ * l'attendre. La version reste celle relevée en 1, quel que soit le moment où
+ * le rangement arrive — un rangement tardif ne fait qu'élargir la fenêtre où
+ * une purge le fait refuser (`stale_refused`), jamais garder un rayon ancien.
+ * Rien dans la requête ne relit le rayon rangé.
+ *
  * La clé est la société que `@ActingCompany` a résolue EN BASE, jamais une
  * valeur du client : servir le rayon d'une société à une autre est la seule
  * erreur grave de ce cache (partie 1, « Ce qui rend une erreur sans
@@ -71,7 +77,7 @@ export class RecognisedShelf {
       CATALOG_SOURCE_LANGUAGE,
     );
     if (lookup !== null) {
-      await this.cache.store({
+      this.cache.storeAfterReply({
         key,
         view,
         version: lookup.version,

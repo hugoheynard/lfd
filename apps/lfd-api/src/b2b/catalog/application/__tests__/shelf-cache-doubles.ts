@@ -12,9 +12,12 @@ import {
 } from "../../domain/ports/shelf-cache-signals.js";
 import {
   ShopShelfCache,
+  type ShelfKey,
   type ShelfLookup,
+  type ShelfToStore,
   type StoreOutcome,
 } from "../../domain/ports/shop-shelf-cache.js";
+import { InMemoryShopShelfCache } from "../../infrastructure/in-memory-shop-shelf-cache.js";
 import type { ShopShelfEraser } from "../../domain/ports/shop-shelf-eraser.js";
 import { ResilientShopShelfCache } from "../resilient-shop-shelf-cache.js";
 import { ShelfCallGuard } from "../shelf-call-guard.js";
@@ -82,6 +85,43 @@ export class BrokenShelfCache extends ShopShelfCache implements ShopShelfEraser 
       case "hangs":
         return new Promise<T>(() => undefined);
     }
+  }
+}
+
+/**
+ * Un magasin en mémoire LENT : lectures et rangements attendent `release()`.
+ * C'est l'objet des rayons au-delà de son délai, vu de l'application.
+ */
+export class SlowShelfCache extends InMemoryShopShelfCache {
+  private readonly held: (() => void)[] = [];
+  storesStarted = 0;
+
+  /** @param slowReads `false` : seuls les rangements attendent. */
+  constructor(private readonly slowReads = true) {
+    super();
+  }
+
+  override read(key: ShelfKey, now: Date): Promise<ShelfLookup> {
+    if (!this.slowReads) {
+      return super.read(key, now);
+    }
+    return this.hold().then(() => super.read(key, now));
+  }
+
+  override store(entry: ShelfToStore): Promise<StoreOutcome> {
+    this.storesStarted += 1;
+    return this.hold().then(() => super.store(entry));
+  }
+
+  /** Laisse aboutir tout ce qui attend. */
+  release(): void {
+    for (const resume of this.held.splice(0)) {
+      resume();
+    }
+  }
+
+  private hold(): Promise<void> {
+    return new Promise<void>((resolve) => this.held.push(resolve));
   }
 }
 

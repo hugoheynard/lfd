@@ -9,7 +9,7 @@ import {
   type ShelfToStore,
 } from "../domain/ports/shop-shelf-cache.js";
 import { ShopShelfEraser } from "../domain/ports/shop-shelf-eraser.js";
-import { ShelfCallGuard } from "./shelf-call-guard.js";
+import { SHELF_STORE_LIMIT_MS, ShelfCallGuard } from "./shelf-call-guard.js";
 
 /**
  * **Le cache n'est jamais sur le chemin de la disponibilité** (Hugo,
@@ -42,12 +42,34 @@ export class ResilientShopShelfCache {
     return lookup;
   }
 
-  /** Présente un rayon au rangement ; un refus ou une panne ne fait que se compter. */
+  /**
+   * Présente un rayon au rangement ; un refus ou une panne ne fait que se
+   * compter. Le délai est celui d'un rangement ({@link SHELF_STORE_LIMIT_MS}) :
+   * personne ne l'attend depuis le 2026-11-05 ({@link storeAfterReply}).
+   */
   async store(entry: ShelfToStore): Promise<void> {
-    const outcome = await this.guard.call("store", () => this.cache.store(entry), true);
+    const outcome = await this.guard.call(
+      "store",
+      () => this.cache.store(entry),
+      true,
+      SHELF_STORE_LIMIT_MS,
+    );
     if (outcome !== null) {
       this.signals.emit({ name: outcome === "stale" ? "stale_refused" : outcome });
     }
+  }
+
+  /**
+   * **Range sans faire attendre la réponse** (C5, 2026-11-05 : en production,
+   * un rayon de ~145 Ko dépassait les 100 ms du repli, et le rangement attendu
+   * retardait la vue). Non attendu, et c'est le but : `void` sur le précédent
+   * du journal des transitions (`ops/health/ops-health.service.ts`, vérifié le
+   * 2026-11-05). Rien n'est avalé : {@link store} ne lève jamais — garde,
+   * signaux et minuteurs ne lèvent pas par contrat — et toute panne y est
+   * comptée `fallback` (`operation: store`), que les signaux journalisent.
+   */
+  storeAfterReply(entry: ShelfToStore): void {
+    void this.store(entry);
   }
 
   /**

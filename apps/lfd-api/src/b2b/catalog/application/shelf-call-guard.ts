@@ -19,8 +19,32 @@ import { ShelfCacheBreaker } from "./shelf-cache-breaker.js";
  */
 export const SHELF_CALL_LIMIT_MS = 100;
 
-/** Le nom de la mesure de durée d'un aller-retour, lu par la carte de santé (C5). */
+/**
+ * Le délai d'un **rangement**, qui part après la réponse (2026-11-05) : aucun
+ * client ne l'attend plus, et l'abandonner à 100 ms compterait `timeout` — et
+ * nourrirait le disjoncteur — un rangement qui aurait abouti. Il prend donc le
+ * filet du socket de l'adaptateur (`SHELF_SOCKET_TIMEOUT_MS`,
+ * `durable-object-shop-shelf-cache.ts`, 2000 ms, vérifié le 2026-11-05) : au
+ * delà, l'appel est coupé de toute façon.
+ */
+export const SHELF_STORE_LIMIT_MS = 2000;
+
+/**
+ * Le nom de la mesure de durée d'un aller-retour, lu par la carte de santé (C5).
+ * Étiquettes : `operation`, et `outcome` — `in_time`, `late` (durée jusqu'à
+ * l'abandon) ou `error`.
+ */
 export const SHELF_ROUND_TRIP_TIMING = "shelf_cache.round_trip";
+
+/**
+ * La durée FINALE d'un appel abandonné au délai, quand il finit par aboutir
+ * (`outcome: settled`) ou par échouer (`failed`) — ce que l'objet a vraiment
+ * mis, que la mesure arrêtée à l'abandon ne dit pas (C5, 2026-11-05).
+ */
+export const SHELF_LATE_FINISH_TIMING = "shelf_cache.late_finish";
+
+/** L'issue d'un aller-retour, telle que la mesure l'étiquette. */
+type RoundTripOutcome = "in_time" | "late" | "error";
 
 /**
  * **Le délai et le disjoncteur de TOUT appel au chemin `rayons.interne`** —
@@ -49,10 +73,12 @@ export class ShelfCallGuard {
     private readonly signals: ShelfCacheSignals,
   ) {}
 
+  /** @param limitMs le délai de l'appel — {@link SHELF_CALL_LIMIT_MS}, sauf pour un rangement. */
   async call<T>(
     operation: ShelfCacheOperation,
     work: () => Promise<T>,
     gated: boolean,
+    limitMs: number = SHELF_CALL_LIMIT_MS,
   ): Promise<T | null> {
     if (gated && !this.breaker.allows(this.wallMs())) {
       this.signals.emit({ name: "fallback", operation, reason: "breaker_open" });
@@ -60,18 +86,42 @@ export class ShelfCallGuard {
     }
     const elapsed = this.stopwatch.start();
     try {
-      const outcome = await this.deadline.within(work(), SHELF_CALL_LIMIT_MS);
-      this.timings.record(SHELF_ROUND_TRIP_TIMING, { operation }, elapsed(), 1);
+      const pending = work();
+      const outcome = await this.deadline.within(pending, limitMs);
       if (outcome.kind === "late") {
+        this.roundTrip(operation, "late", elapsed());
+        this.followLate(operation, pending, elapsed);
         return this.fallen(operation, "timeout", gated);
       }
+      this.roundTrip(operation, "in_time", elapsed());
       this.recovered(gated);
       return outcome.value;
     } catch (error) {
-      this.timings.record(SHELF_ROUND_TRIP_TIMING, { operation }, elapsed(), 1);
+      this.roundTrip(operation, "error", elapsed());
       const reason = error instanceof UnreadableShelfReplyError ? "unreadable" : "error";
       return this.fallen(operation, reason, gated);
     }
+  }
+
+  private roundTrip(operation: ShelfCacheOperation, outcome: RoundTripOutcome, ms: number): void {
+    this.timings.record(SHELF_ROUND_TRIP_TIMING, { operation, outcome }, ms, 1);
+  }
+
+  /**
+   * Mesure jusqu'au bout un appel abandonné : son résultat reste ignoré, sa
+   * durée seule est retenue. Non attendu, et c'est le but — `void` comme le
+   * journal des transitions de `ops/health/ops-health.service.ts` (vérifié le
+   * 2026-11-05) ; les deux issues sont tenues, rien ne peut rejeter.
+   */
+  private followLate<T>(
+    operation: ShelfCacheOperation,
+    pending: Promise<T>,
+    elapsed: () => number,
+  ): void {
+    const finish = (outcome: "settled" | "failed") => (): void => {
+      this.timings.record(SHELF_LATE_FINISH_TIMING, { operation, outcome }, elapsed(), 1);
+    };
+    void pending.then(finish("settled"), finish("failed"));
   }
 
   private fallen(

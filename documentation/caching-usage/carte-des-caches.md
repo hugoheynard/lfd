@@ -146,6 +146,14 @@ table `shelves (key, body, version, principal, expires_at)` et table `meta`
 - **Corps** : la vue compressée (`shelf-wire.ts`).
 - **Justesse** : la version est relevée **avant** le calcul ; le rangement est
   refusé (409) si un effacement l'a montée entre-temps (`store`, `pro-shelves.ts:104`).
+- **Rangement après la réponse** (2026-11-05) : `RecognisedShelf.read` rend
+  la vue sans attendre le rangement (`ResilientShopShelfCache.storeAfterReply`,
+  un `void` sur une promesse qui ne lève jamais). Un échec est compté
+  `fallback` / `operation: store` par les signaux, qui le journalisent. Le
+  rangement a son propre délai, 2 s (`SHELF_STORE_LIMIT_MS`, le filet du
+  socket) : à 100 ms, on comptait `timeout` des rangements qui auraient
+  abouti. La version reste celle relevée avant le calcul : un rangement
+  tardif peut seulement être refusé plus souvent (`stale_refused`).
 - **Purge** : `ShelfChanges` (port `apps/lfd-api/src/b2b/shared/shelf-changes/domain/ports/shelf-changes.ts`)
   → `ShelfChangeWindow` (une purge par seconde au plus, `shelf-change-window.ts`,
   `SHELF_PURGE_WINDOW_MS = 1000`) → `ProShelfPurge` (`pro-shelf-purge.ts:18`) :
@@ -154,8 +162,8 @@ table `shelves (key, body, version, principal, expires_at)` et table `meta`
 - **Interrupteur** : `on`, `off`, `purge`, `public-on`, `public-off`
   (`shelf-store.ts:53`), conservé dans `meta` ; l'interrupteur `ops_shelf_cache`
   côté écran OPS. Éteint, rien n'est servi ni rangé.
-- **Si l'objet tombe** : chaque appel est borné à 100 ms (`SHELF_CALL_LIMIT_MS`,
-  `shelf-call-guard.ts:20`) ; après 5 échecs, le disjoncteur coupe 30 s
+- **Si l'objet tombe** : chaque lecture est bornée à 100 ms (`SHELF_CALL_LIMIT_MS`,
+  `shelf-call-guard.ts:20`), le rangement à 2 s ; après 5 échecs, le disjoncteur coupe 30 s
   (`shelf-cache-breaker.ts:2-5`) ; dans tous les cas l'API calcule depuis la base.
 - **Plusieurs instances d'API** : sans effet, l'objet est unique et la version
   est la sienne.
@@ -267,6 +275,15 @@ Règle : **le stable dans le rayon, le dynamique à côté**
   une issue par table demandée). La carte de santé
   (`GET /admin/ops/health`, champ `caches`) rend par cache le total et la part
   de chaque issue. ⚠️ L'écran du back-office ne l'affiche pas encore.
+- **La durée de l'appel à l'objet** (2026-11-05) : `ShelfCallGuard` range
+  chaque appel dans les minuteurs (`TimingRecorder`, 30 min, par instance) —
+  `shelf_cache.round_trip` (étiquettes `operation`, `outcome` : `in_time`,
+  `late` = durée jusqu'à l'abandon, `error`) et, pour un appel abandonné qui
+  finit quand même, `shelf_cache.late_finish` (`settled` / `failed`, durée
+  totale). La carte de santé les rend dans `cacheCalls` : par opération, le
+  nombre d'appels, d'abandons, p50, p95 et le p95 de la fin des abandonnés
+  (`apps/lfd-api/src/ops/health/cache-call-readings.ts`). C'est cette mesure qui décidera de
+  `SHELF_CALL_LIMIT_MS`. ⚠️ L'écran du back-office ne l'affiche pas encore.
 
 ## Ce qui n'est pas vérifié
 

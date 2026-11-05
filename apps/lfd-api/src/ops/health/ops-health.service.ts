@@ -19,6 +19,12 @@ import { DatabaseReadingsReader } from "./database-readings.reader.js";
 import { MailReadingsReader } from "./mail-readings.reader.js";
 import { vitalsReadings } from "./vitals-readings.js";
 import { cacheReports } from "./cache-readings.js";
+import {
+  cacheCallReports,
+  SHELF_LATE_FINISH_TIMING,
+  SHELF_ROUND_TRIP_TIMING,
+} from "./cache-call-readings.js";
+import { TimingWindowReader } from "../../platform/metrics/timing-window.reader.js";
 import { deriveHealth, type NodeEvidence } from "./derive-health.js";
 import { ProbeRunner } from "../probes/probe-runner.service.js";
 import type { ProbeOutcome } from "../probes/probe.port.js";
@@ -78,6 +84,7 @@ export class OpsHealthService {
     private readonly vitals: VitalsStore,
     private readonly container: ContainerUsageService,
     private readonly caches: CacheOutcomeReader,
+    private readonly timings: TimingWindowReader,
     private readonly clock: Clock,
   ) {}
 
@@ -176,6 +183,12 @@ export class OpsHealthService {
       containerUsageGap: container.gap,
       // Mémoire de CETTE instance, lue sans aller-retour : pas de cache ici.
       caches: cacheReports(this.caches.read(), this.caches.windowMinutes),
+      // Même mémoire d'instance : la durée des appels à l'objet des rayons.
+      cacheCalls: cacheCallReports(
+        this.timings.read(SHELF_ROUND_TRIP_TIMING),
+        this.timings.read(SHELF_LATE_FINISH_TIMING),
+        this.timings.windowMinutes,
+      ),
     };
   }
 

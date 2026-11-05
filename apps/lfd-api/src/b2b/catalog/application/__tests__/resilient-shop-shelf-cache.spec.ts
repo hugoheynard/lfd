@@ -2,9 +2,19 @@ import type { ShopCatalogueView } from "@lfd/contracts";
 
 import { InMemoryShopShelfCache } from "../../infrastructure/in-memory-shop-shelf-cache.js";
 import type { ShelfLookup } from "../../domain/ports/shop-shelf-cache.js";
-import { SHELF_CALL_LIMIT_MS, SHELF_ROUND_TRIP_TIMING } from "../shelf-call-guard.js";
+import {
+  SHELF_CALL_LIMIT_MS,
+  SHELF_LATE_FINISH_TIMING,
+  SHELF_ROUND_TRIP_TIMING,
+  SHELF_STORE_LIMIT_MS,
+} from "../shelf-call-guard.js";
 import { SHELF_BREAKER_FAILURES, SHELF_BREAKER_PAUSE_MS } from "../shelf-cache-breaker.js";
-import { BrokenShelfCache, resilientAround, type ShelfFailure } from "./shelf-cache-doubles.js";
+import {
+  BrokenShelfCache,
+  resilientAround,
+  SlowShelfCache,
+  type ShelfFailure,
+} from "./shelf-cache-doubles.js";
 
 /**
  * **Le cache n'est jamais sur le chemin de la disponibilité** (§ 4 bis) :
@@ -42,15 +52,45 @@ describe("ResilientShopShelfCache — le repli", () => {
     expect(miss).toEqual({ kind: "miss", version: 0 });
     expect(hit).toEqual({ kind: "hit", view: VIEW });
     expect(signals.names()).toEqual(["miss", "stored", "hit"]);
+    // Le rangement part après la réponse (2026-11-05) : il a le délai du socket, pas celui du repli.
     expect(deadline.limits).toEqual([
       SHELF_CALL_LIMIT_MS,
-      SHELF_CALL_LIMIT_MS,
+      SHELF_STORE_LIMIT_MS,
       SHELF_CALL_LIMIT_MS,
     ]);
-    expect(timings.recorded.map((t) => [t.name, t.labels["operation"], t.ms])).toEqual([
-      [SHELF_ROUND_TRIP_TIMING, "read", 7],
-      [SHELF_ROUND_TRIP_TIMING, "store", 7],
-      [SHELF_ROUND_TRIP_TIMING, "read", 7],
+    expect(timings.recorded.map((t) => [t.name, t.labels, t.ms])).toEqual([
+      [SHELF_ROUND_TRIP_TIMING, { operation: "read", outcome: "in_time" }, 7],
+      [SHELF_ROUND_TRIP_TIMING, { operation: "store", outcome: "in_time" }, 7],
+      [SHELF_ROUND_TRIP_TIMING, { operation: "read", outcome: "in_time" }, 7],
+    ]);
+  });
+
+  it("mesure un appel en échec, et un appel abandonné jusqu'à l'abandon PUIS jusqu'à sa fin", async () => {
+    const slow = new SlowShelfCache();
+    const { resilient, timings, deadline } = resilientAround(slow);
+    deadline.late = true;
+
+    await expect(resilient.read("co_a", NOW)).resolves.toBeNull();
+    expect(timings.recorded.map((t) => [t.name, t.labels])).toEqual([
+      [SHELF_ROUND_TRIP_TIMING, { operation: "read", outcome: "late" }],
+    ]);
+
+    slow.release();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(timings.recorded.map((t) => [t.name, t.labels])).toEqual([
+      [SHELF_ROUND_TRIP_TIMING, { operation: "read", outcome: "late" }],
+      [SHELF_LATE_FINISH_TIMING, { operation: "read", outcome: "settled" }],
+    ]);
+  });
+
+  it("un appel en échec est mesuré sous `error`", async () => {
+    const { resilient, timings } = resilientAround(new BrokenShelfCache("throws"));
+
+    await resilient.read("co_a", NOW);
+
+    expect(timings.recorded.map((t) => t.labels)).toEqual([
+      { operation: "read", outcome: "error" },
     ]);
   });
 

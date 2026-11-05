@@ -1,5 +1,5 @@
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import type { ShelfKey, ShelfLookup } from "../../domain/ports/shop-shelf-cache.js";
+import type { ShelfKey, ShelfLookup, StoreOutcome } from "../../domain/ports/shop-shelf-cache.js";
 import { InMemoryShopShelfCache } from "../../infrastructure/in-memory-shop-shelf-cache.js";
 import { NoShopShelfCache } from "../../infrastructure/no-shop-shelf-cache.js";
 import type { SellableOperation } from "../../domain/ports/catalog-operations.reader.js";
@@ -8,7 +8,12 @@ import {
   RecognisedShelf,
   recognisedShelfExpiry,
 } from "../recognised-shelf.service.js";
-import { BrokenShelfCache, resilientAround, type ShelfFailure } from "./shelf-cache-doubles.js";
+import {
+  BrokenShelfCache,
+  resilientAround,
+  SlowShelfCache,
+  type ShelfFailure,
+} from "./shelf-cache-doubles.js";
 import {
   HEAD,
   OTHER,
@@ -62,6 +67,13 @@ class PurgedDuringCompute extends InMemoryShopShelfCache {
   }
 }
 
+/** Un magasin qui répond « raté » à la lecture, puis tombe au rangement. */
+class MissThenBrokenStore extends InMemoryShopShelfCache {
+  override store(): Promise<StoreOutcome> {
+    return Promise.reject(new RangeError("objet des rayons injoignable au rangement"));
+  }
+}
+
 describe("RecognisedShelf — le rayon pro passé par le magasin", () => {
   it("à chaud, ne relit ni le catalogue ni la société : le budget baisse", async () => {
     const { shelf, computation } = rig(new InMemoryShopShelfCache());
@@ -107,6 +119,38 @@ describe("RecognisedShelf — le rayon pro passé par le magasin", () => {
       expect(cache.calls).toBe(1);
     },
   );
+
+  it("rend la vue sans attendre le rangement : un objet lent ne retarde pas la réponse", async () => {
+    const computation = shelfComputation();
+    const cache = new SlowShelfCache(false);
+    const { resilient, signals } = resilientAround(cache);
+    const shelf = new RecognisedShelf(computation.pricing, resilient, new FixedClock(SHELF_NOW));
+
+    // Le rangement est suspendu jusqu'à `release()` : si `read` l'attendait, ceci ne rendrait jamais.
+    expect(await shelf.read(HEAD)).toEqual(await uncached(HEAD));
+    expect(cache.storesStarted).toBe(1);
+    expect(signals.names()).toEqual(["miss"]);
+
+    cache.release();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(signals.names()).toEqual(["miss", "stored"]);
+    expect(cache.keys()).toEqual([HEAD]);
+  });
+
+  it("un rangement en échec ne remonte pas au client, et il est compté", async () => {
+    const computation = shelfComputation();
+    const { resilient, signals } = resilientAround(new MissThenBrokenStore());
+    const shelf = new RecognisedShelf(computation.pricing, resilient, new FixedClock(SHELF_NOW));
+
+    expect(await shelf.read(HEAD)).toEqual(await uncached(HEAD));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(signals.emitted).toEqual([
+      { name: "miss" },
+      { name: "fallback", operation: "store", reason: "error" },
+    ]);
+  });
 
   it("relève la version AVANT de calculer, et un rayon calculé pendant une purge n'est pas gardé", async () => {
     let computation = shelfComputation();
