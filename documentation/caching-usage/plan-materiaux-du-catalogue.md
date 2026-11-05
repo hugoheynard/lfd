@@ -1,20 +1,30 @@
 # Plan — le catalogue en un instantané, versionné par la base
 
-> 🎯 **Le seul plan ouvert du dossier.** Réécrit le 2026-11-05 (Hugo : « je
-> veux voir un plan optimisé aligné sur les meilleures pratiques »), après la
-> mesure M0 (§ 1). **Rien n'est bâti** au-delà de la mesure. Touche le devis
-> et l'estimation, c'est-à-dire l'argent : **`vitruve` avant Hugo**. Objectif
-> n° 2 de [`carte-des-caches.md`](carte-des-caches.md).
+> 🎯 **Le seul plan ouvert du dossier — état au 2026-11-05 (soir).** Rien
+> n'est bâti au-delà de la mesure. Objectif n° 2 de
+> [`carte-des-caches.md`](carte-des-caches.md).
 >
-> ⚔️ **Contredit par `vitruve` le 2026-11-05 (2 bloquants, 7 sérieux),
-> corrigé le même jour** — option (a) de Hugo : le mur entre sociétés reste
-> dans la requête (§ 2.1, § 8). À recontredire avant le bâti.
+> 📏 **Justifié par la mesure en production** (§ 10) : la lecture du catalogue
+> pèse **127 ms sur 155** dans un devis anonyme (82 %), en **7** lectures ; et
+> chaque ajout au panier d'un client connecté la paie **deux fois** — le devis
+> (~130 ms, 7 lectures) et les suggestions du panier (~155 ms, 10 lectures),
+> soit ~285 ms par clic. Cible à chaud : une estampille et les réservations de
+> l'appelant, ~10–20 ms.
 >
-> Ce qui change par rapport à la version du 2026-11-04 : l'invalidation par
-> une **estampille tenue par la base** (déclencheurs, comme le principal) et
-> non par le signal applicatif `ShelfChanges` ; l'ordre des lots
-> retourné — **le devis d'abord**, le rayon (déjà gardé par l'objet
-> `ProShelves`) ensuite.
+> ⚔️ **Contredit deux fois par `vitruve` le 2026-11-05** : 4 bloquants et 13
+> sérieux au total, tous corrigés ou portés au bâti (§ 8, § 9). Décision de
+> Hugo, **option (a)** : le mur entre sociétés reste dans la requête — le
+> compteur de réservations dans l'instantané, la liste filtrée par société en
+> SQL à chaque requête.
+>
+> 🧭 **Prochain pas** : M1a (l'estampille seule, sans lecteur ; retour arrière
+> gratuit), puis M1b. Restent à mesurer avant M1b : le devis d'un espace pro et
+> l'estimation de la saisie (§ 10.3).
+>
+> Ce qui a changé depuis la version du 2026-11-04 : l'invalidation par une
+> **estampille tenue par la base** (déclencheurs, comme le principal) et non
+> par le signal applicatif `ShelfChanges` ; **le devis et les suggestions
+> d'abord**, le rayon (déjà gardé par l'objet `ProShelves`) ensuite.
 
 # Partie 1 — Comprendre
 
@@ -316,15 +326,16 @@ par requête. Aucune purge en éventail.
 
 ## 5. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                    | Gain mesurable                                      |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| **M1** | l'instantané, l'estampille (migration additive + déclencheurs resserrés), la mémoire, la porte des déclencheurs ; le **devis** et l'**estimation** y passent ; le budget et les e2e du § 3 | devis pro 5 → 2 à chaud, estimation 7 → 2           |
-| **M2** | le **rayon** passe par la même porte ; `lint:catalogue-door`                                                                                                                               | rayon recalculé 5 → 2 (+ textes des images) à chaud |
+Après les deux passages de `vitruve` (§ 8, § 9) et la mesure (§ 10) :
 
-**L'instantané et sa mémoire partent ensemble** (objection `vitruve`) : un
-instantané sans mémoire chargerait tout le catalogue à chaque devis au lieu de
-deux articles — plus lourd qu'aujourd'hui. M1 porte la migration :
-`lecteur-de-migrations` avant `main`.
+| Lot     | Contenu                                                                                                                                                                                                                                                                                                            | Gain mesurable                                                |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| **M1a** | l'estampille seule : la table `catalog_stamp`, sa fonction, les déclencheurs resserrés aux colonnes du `select` du chargeur ; la porte par colonne ; `ensureCatalogStamp` et le `forget()` dans le harnais e2e. **Rien ne la lit** : retour arrière gratuit. `lecteur-de-migrations` avant `main`                  | aucun (prépare M1b)                                           |
+| **M1b** | l'instantané (chargeur en `select` explicite), sa mémoire, ses vues ; le **devis**, l'**estimation** et les **suggestions** (`catalog-suggestion-catalogue.ts`, qui lit aujourd'hui `listSellable` deux fois) y passent ; les réservations de l'appelant lues **avant** l'estampille ; le budget et les e2e du § 3 | devis ~130 → ~10–20 ms, suggestions ~155 → ~10–20 ms, à chaud |
+| **M2**  | le **rayon** recalculé passe par la même porte ; `lint:catalogue-door`                                                                                                                                                                                                                                             | rayon recalculé 5 → 2 lectures à chaud                        |
+
+On mesure **après chaque lot** avec les mêmes outils (§ 10) et on reporte les
+chiffres dans le tableau de référence.
 
 ## 6. Ce que `vitruve` doit encore trancher
 
@@ -463,3 +474,28 @@ entrent dans le périmètre de l'instantané (à ajouter à M1b). Restent à rel
 |            | devis pro (`POST /shop/quote/mine`)                      |                                |                  |                        |          |
 |            | estimation (`POST /admin/orders/estimate`)               |                                |                  |                        |          |
 |            | rayon d'un pro (`GET /shop/catalogue/mine`)              |                                |                  |                        |          |
+
+### 10.2 Ce que la mesure a appris (2026-11-05)
+
+- **Le relevé local sous-estimait** : 3 lectures pour le devis anonyme en e2e,
+  **7** en production. Le corpus de test n'a que des familles à plat ; le
+  catalogue réel a des sous-familles, et la lignée coûte des lectures. Un
+  budget e2e ne suffit pas : le tableau de référence en production fait foi.
+- **Les suggestions** n'étaient pas dans M0 et coûtent plus que le devis :
+  `CatalogSuggestionCatalogue` lit le catalogue entier pour les pros **puis**
+  pour le public (`listSellable` ×2, `catalog-suggestion-catalogue.ts:25-26`).
+- **Le rayon d'un pro servi par l'objet** n'a fait **aucune** lecture du
+  catalogue (pas de marque `catalogue`) ; son `app` valait **362 ms** — le
+  temps d'appel à l'objet `ProShelves`, à surveiller à part (cf.
+  [`le-rayon-en-cache.md`](le-rayon-en-cache.md)).
+- **Le script** demandait d'abord un retrait sans point : le serveur le refuse
+  en 409 (« choisissez votre point ») dès que plusieurs points sont ouverts ;
+  il chiffre désormais sans acheminement.
+
+### 10.3 Ce qui reste à relever, et comment
+
+| Chemin                                                 | Comment                                                                                                                                                              | Précaution                                          |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| devis d'un espace **pro** (`/shop/quote/mine`)         | dans la boutique connectée, basculer sur l'espace société, ajouter 2–3 articles, lire `Server-Timing` (onglet Réseau, ou `performance.getEntriesByType('resource')`) | rebasculer sur l'espace d'origine ; vider le panier |
+| **estimation** de la saisie (`/admin/orders/estimate`) | back-office, « Nouvelle commande », choisir un client, ajouter des lignes                                                                                            | ne pas enregistrer la commande                      |
+| après **M1b**                                          | le script `reference-devis.js` et les mêmes gestes dans la boutique                                                                                                  | comparer médianes et p95 au tableau                 |
