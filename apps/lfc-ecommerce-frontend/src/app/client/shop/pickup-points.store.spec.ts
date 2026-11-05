@@ -310,6 +310,56 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
     http.verify();
   });
 
+  /**
+   * Régression (2026-11-05) : `/delivery-availability`, `/delivery-zones` et
+   * les jours partaient DEUX fois. La lecture des points était attendue dans
+   * le même `Promise.all` que les trois autres : qu'elle échoue — panne, ou
+   * coupure par la brique (`ContextReadAbandoned`, à la déconnexion) — et
+   * tout tombait, `asked` repassait à faux, et le prochain `hydrate()`
+   * relisait ce qui avait réussi.
+   */
+  it('un échec de la lecture des points ne fait relire ni zones, ni jours, ni réglage', async () => {
+    const { points, http } = boot(true, workspaceDouble());
+    const hydrating = points.hydrate();
+    http
+      .expectOne(url('/pickup-addresses/mine'))
+      .flush('panne', { status: 500, statusText: 'Server Error' });
+    answerTheRest(http, '/fulfillment-days/mine');
+    await hydrating;
+    expect(points.pickupsSettled()).toBe(true);
+
+    const again = points.hydrate();
+    http.expectOne(url('/pickup-addresses/mine')).flush([OLD_POINT]);
+    await again;
+
+    expect(points.pickups().map((p) => p.id)).toEqual(['pick_labo']);
+    http.verify();
+  });
+
+  /**
+   * Régression (2026-11-05) : la première lecture rangeait ses points sans
+   * regarder si le lecteur avait changé entre-temps — les points de l'ancien
+   * espace s'affichaient, et la relecture du nouveau était jetée.
+   */
+  it('rien de l’ancien espace n’est rendu quand la première lecture répond après une bascule', async () => {
+    const workspace = workspaceDouble();
+    const { points, http } = boot(true, workspace);
+    const hydrating = points.hydrate();
+    const first = http.expectOne(url('/pickup-addresses/mine'));
+    answerTheRest(http, '/fulfillment-days/mine');
+    workspace.choose('cmp_pro');
+    TestBed.tick();
+    const requests = http.match(url('/pickup-addresses/mine'));
+    requests.forEach((r) => r.flush([{ ...OLD_POINT, id: 'pros' }]));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    first.flush([OLD_POINT]);
+    await hydrating;
+
+    expect(points.pickups().map((p) => p.id)).toEqual(['pros']);
+    expect(points.pickupsKnown()).toBe(true);
+    http.verify();
+  });
+
   /** 2026-11-02 : la clientèle d'un client reconnu vient de sa société, au serveur. */
   it('un client reconnu lit ses jours sur /mine, jeton porté, sans audience', async () => {
     const { points, http } = boot(true, workspaceDouble());

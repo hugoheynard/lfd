@@ -261,7 +261,13 @@ export class ServicePoints {
    * route, et la boutique doit rester celle d'hier.
    */
   async hydrate(): Promise<void> {
+    // Les points ont leur propre sort (2026-11-05) : leur échec ne relit
+    // QU'EUX, au prochain appel — les trois autres listes restent acquises.
     if (this.asked) {
+      const reader = this.readerKey();
+      if (this.pickupsFailed() && reader !== null) {
+        await this.refreshPickups(reader);
+      }
       return;
     }
     this.asked = true;
@@ -271,28 +277,45 @@ export class ServicePoints {
     const reader = this.readerKey();
     if (reader === null) {
       this.list.expect();
+    } else {
+      this.pickupsReader = reader;
     }
     try {
-      const [pickups, zones, days, settings] = await Promise.all([
-        reader === null ? Promise.resolve(null) : this.pickupsOf(reader),
+      const [, zones, days, settings] = await Promise.all([
+        reader === null ? Promise.resolve() : this.servePickups(reader),
         firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
         this.daysFor(this.daysQuery()),
         firstValueFrom(
           this.http.get<PublicDeliveryAvailabilityView>(`${base}/delivery-availability`),
         ).catch(() => null),
       ]);
-      if (pickups !== null) {
-        this.pickupList.set(pickups.map(servedPickup));
-        this.pickupsReader = reader;
-        this.servedFor.set(reader);
-        this.pickupsFailed.set(false);
-      }
       this.zoneList.set(zones);
       this.dayList.set(days);
       this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     } catch {
       this.asked = false;
-      this.pickupsFailed.set(true);
+    }
+  }
+
+  /**
+   * Lit les points de `reader` et les range s'il est ENCORE le lecteur : une
+   * bascule pendant la lecture a lancé la sienne, qui seule compte. Ne rejette
+   * jamais — un échec (panne, ou lecture coupée par la brique) se dit par
+   * {@link pickupsSettled}, sans faire tomber les autres listes.
+   */
+  private async servePickups(reader: string): Promise<void> {
+    try {
+      const pickups = await this.pickupsOf(reader);
+      if (this.pickupsReader === reader) {
+        this.pickupList.set(pickups.map(servedPickup));
+        this.servedFor.set(reader);
+        this.pickupsFailed.set(false);
+      }
+    } catch {
+      if (this.pickupsReader === reader) {
+        // Vide : la liste connue, s'il y en a une, était celle d'un autre lecteur.
+        this.pickupsFailed.set(true);
+      }
     }
   }
 
@@ -316,17 +339,7 @@ export class ServicePoints {
     // temps d'une requête, ni après un échec.
     this.pickupList.set([]);
     this.servedFor.set(null);
-    try {
-      const pickups = await this.pickupsOf(reader);
-      if (this.pickupsReader === reader) {
-        this.pickupList.set(pickups.map(servedPickup));
-        this.servedFor.set(reader);
-        this.pickupsFailed.set(false);
-      }
-    } catch {
-      // Vide : la liste connue était celle d'un autre lecteur.
-      this.pickupsFailed.set(true);
-    }
+    await this.servePickups(reader);
   }
 
   /** Les jours pour cette requête, retenus comme sa réponse. */
