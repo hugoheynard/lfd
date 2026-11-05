@@ -227,6 +227,55 @@ marqueurs) sur des `users` semés avec un objet, `'null'`, un tableau et
 `NULL` — seul l'objet passe ; `PATCH /me/nav-prefs` ne fait plus monter l'estampille
 (e2e) ; les préférences relues après écriture (e2e existants).
 
+## 3 quater. Une estampille par personne (décidé dans son principe par Hugo le 2026-11-05)
+
+> 📝 **Plan, rien n'est bâti.** Migration et frontière de sécurité (la
+> révocation d'un accès) : `vitruve` avant le bâti.
+
+**Le problème, simplement.** L'estampille de L4 est un compteur **global** :
+une écriture sur `users`, `memberships` ou `companies` pour UN client fait
+relire son principal à TOUS les clients connectés (60 à 270 ms chacun, une
+fois). Seul, Hugo ne le voit pas ; à 200 pros ou 1000 particuliers, chaque
+inscription, rattachement ou modification de société viderait le cache de
+tout le monde. Et comme chaque écriture de ces tables prend d'abord le verrou
+de l'unique ligne (`BEFORE … FOR EACH STATEMENT`, choisi contre les
+interblocages, §3 bis), toutes les écritures de comptes passent à la file.
+
+**La réponse.** Un compteur **par personne** : seuls les clients dont le
+principal dépend de la ligne écrite relisent le leur.
+
+| Écriture sur  | Personnes à faire monter                                                                           |
+| ------------- | -------------------------------------------------------------------------------------------------- |
+| `users`       | la personne (ancienne ET nouvelle valeur du `sub` si elle change)                                  |
+| `memberships` | la personne rattachée (ancienne ET nouvelle si la ligne change de personne)                        |
+| `companies`   | ses membres, et les détenteurs ou administrateurs de ses sites atteignables (`readReachableSites`) |
+
+**Ce que la lecture devient.** `stamps.read(userId)` au lieu d'un compteur
+global — mais la requête ne connaît que le `sub` avant de résoudre : la ligne
+d'estampille se range sous le `sub` (ou une jointure `sub` → `user_id` dans la
+même lecture). La lecture partagée des requêtes simultanées (« option 3 »)
+devient par personne.
+
+**À trancher par `vitruve` :**
+
+1. **Les interblocages reviennent.** Des déclencheurs `FOR EACH ROW` qui
+   écrivent dans des lignes d'estampille différentes, dans l'ordre des
+   lignes touchées, peuvent s'interbloquer (le cas `acceptAndActivate`,
+   memberships puis users, du §3 bis). Options : verrous pris dans un ordre
+   fixe (`ORDER BY user_id … FOR UPDATE`), estampille écrite APRÈS par la
+   transaction de l'application et non par un déclencheur, ou une file.
+2. **La complétude** : une écriture qui change ce que le principal lit sans
+   toucher ces trois tables (les sites atteignables passent-ils par une autre
+   table ?) — relire `principalOf` et `readReachableSites`, et lister ce qu'ils
+   lisent, table par table.
+3. **La migration** sans fenêtre où une révocation passerait inaperçue :
+   l'ancien binaire lit le compteur global, le nouveau les compteurs par
+   personne ; pendant le déploiement, les deux doivent monter ensemble (les
+   déclencheurs écrivent les deux), puis le global se retire.
+4. **Le coût** : une ligne d'estampille par personne, une lecture par
+   requête comme aujourd'hui ; les écritures de société font monter N
+   personnes.
+
 ## 4. Ce qui reste hors du lot
 
 - La **vérification du jeton** (`verify`) : à mesurer dans `Server-Timing`
