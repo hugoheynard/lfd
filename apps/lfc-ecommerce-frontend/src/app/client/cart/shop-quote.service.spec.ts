@@ -106,6 +106,10 @@ describe('ShopQuote', () => {
    */
   it('une SALVE de gestes ne fait qu’un seul appel', () => {
     const { cart, http } = boot();
+    // Le panier vide est émis avant le premier clic, comme au démarrage de
+    // l'app : sans quoi le premier clic passerait pour un NOUVEAU lecteur,
+    // qui part sans attendre (2026-11-05).
+    quiet(0);
 
     for (let click = 1; click <= 6; click += 1) {
       cart.setQuantity(SKU, click);
@@ -120,6 +124,48 @@ describe('ShopQuote', () => {
       6,
     );
     asked[0]?.flush(ANSWER);
+    http.verify();
+  });
+
+  /**
+   * Régression de latence : le devis attendait 300 ms même après une bascule
+   * d'espace, où aucune salve n'est à absorber — d'autant de retard sur le
+   * total et sur les suggestions qui l'attendent (mesuré le 2026-11-05).
+   */
+  it('part sans attendre quand le lecteur change', () => {
+    const space = workspaceDouble();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideWorkspace(space),
+        provideLoyalty(loyaltyDouble()),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // Reconnu : c'est l'espace qui fait le lecteur, et sa bascule le change.
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: () => true, accessToken$: () => of('jeton-de-test') },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ShopQuote);
+    const cart = TestBed.inject(CartStore);
+    const http = TestBed.inject(HttpTestingController);
+    // Un panier gardé d'une suite voisine part au démarrage, sans attendre —
+    // c'est le cas même qu'on éprouve ; on le solde avant de commencer.
+    quiet(0);
+    for (const asked of http.match(QUOTE)) {
+      asked.flush(ANSWER);
+    }
+
+    cart.setQuantity(SKU, 2);
+    quiet();
+    http.expectOne(QUOTE).flush(ANSWER);
+
+    space.current.set('01-societe-test');
+    quiet(0);
+    http.expectOne(QUOTE).flush(ANSWER);
     http.verify();
   });
 

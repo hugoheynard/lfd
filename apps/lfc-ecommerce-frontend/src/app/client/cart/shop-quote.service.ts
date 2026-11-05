@@ -17,9 +17,10 @@ import {
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
   catchError,
-  debounceTime,
+  debounce,
   distinctUntilChanged,
   of,
+  timer,
   switchMap,
   tap,
   type Observable,
@@ -165,6 +166,8 @@ export class ShopQuote {
   private readonly removed = signal<readonly ShopQuoteRemovedLineView[]>([]);
   /** Le lecteur du dernier décompte demandé — cf. la remise à zéro des points. */
   private lastReader: string | null = null;
+  /** Le dernier changement de clé venait-il d'un autre lecteur ? Lu par l'attente. */
+  private readerChanged = false;
   /**
    * Le tour du décompte : {@link refresh} l'avance pour redemander un panier
    * inchangé — après un refus `orders.total_changed`, c'est le serveur qui a
@@ -307,6 +310,7 @@ export class ShopQuote {
           // plus sous le décompte d'une société (Hugo, 2026-09-27 : « pas de
           // fidélité en pro »). Les montants, eux, restent — cf. plus haut.
           const reader = readerIn(key);
+          this.readerChanged = reader !== this.lastReader;
           if (reader !== this.lastReader) {
             this.lastReader = reader;
             this.points.set(null);
@@ -314,7 +318,11 @@ export class ShopQuote {
             this.voucherRest.set(null);
           }
         }),
-        debounceTime(QUOTE_DEBOUNCE_MS),
+        // Une salve de clics attend QUOTE_DEBOUNCE_MS ; un NOUVEAU lecteur
+        // (chargement, bascule d'espace) n'a pas de salve à absorber, et
+        // l'attente retardait d'autant le total et les suggestions qui
+        // l'attendent (300 ms mesurées le 2026-11-05, plan de latence, L1).
+        debounce(() => timer(this.readerChanged ? 0 : QUOTE_DEBOUNCE_MS)),
         switchMap((key) => this.ask(key)),
         takeUntilDestroyed(),
       )

@@ -15,8 +15,16 @@ import { CartStore } from './cart.store';
 import { ClientCart } from './client-cart.service';
 import { shownCartTotalCents } from './shown-cart-total';
 
-/** Le panier se compose au clic : on attend qu'il se pose avant de demander. */
-export const CART_SUGGESTION_DEBOUNCE_MS = 400;
+/**
+ * Le panier se compose au clic : on attend qu'il se pose avant de demander.
+ *
+ * Court depuis le 2026-11-05 (400 ms avant) : la demande n'attend que le
+ * total chiffré, et le devis passe en `loading` dès que le panier bouge, AVANT
+ * sa propre attente (`tap` de `ShopQuote`) — c'est ce passage qui annule une
+ * demande prévue, pas l'écart entre les deux délais. Ce délai ne couvre plus
+ * que les changements d'un même instant (le panier et le jour visé ensemble).
+ */
+export const CART_SUGGESTION_DEBOUNCE_MS = 100;
 
 /** Une demande : sa clé (lecteur + panier + jour visé), son corps, et la route. */
 interface SuggestionRequest {
@@ -84,9 +92,9 @@ export class StaffCartSuggestion {
     }
     // Le panier se chiffre : attendre son total plutôt que demander deux fois,
     // sans total puis avec — la seconde demande fixait la fin d'un changement
-    // d'espace (mesuré le 2026-11-04, plan de latence, L1). Le devis attend
-    // QUOTE_DEBOUNCE_MS, moins que CART_SUGGESTION_DEBOUNCE_MS : il passe en
-    // `loading` avant que la demande ne parte, et l'annule.
+    // d'espace (mesuré le 2026-11-04, plan de latence, L1). Le devis passe en
+    // `loading` dès que le panier bouge, avant sa propre attente : la demande
+    // prévue est annulée bien avant CART_SUGGESTION_DEBOUNCE_MS.
     if (this.cart.pricing() === 'loading') {
       return null;
     }

@@ -249,8 +249,22 @@ describe('StaffCartSuggestion', () => {
     http.expectNone(ROUTE);
   });
 
-  it('le devis attend moins que la demande : il l’annule avant qu’elle parte', () => {
-    expect(QUOTE_DEBOUNCE_MS).toBeLessThan(CART_SUGGESTION_DEBOUNCE_MS);
+  /**
+   * Le délai des suggestions est passé de 400 à 100 ms, sous celui du devis
+   * (2026-11-05) : l'annulation vient du passage du devis en `loading`, posé
+   * avant son attente. Une salve de clics ne doit toujours rien demander.
+   */
+  it('une salve de clics plus longue que son délai ne demande rien avant le total', async () => {
+    const { pick, cart, http } = boot();
+    pick.open();
+    cart.add('VIE-001');
+    await vi.advanceTimersByTimeAsync(CART_SUGGESTION_DEBOUNCE_MS * 2);
+    cart.add('VIE-001');
+    await vi.advanceTimersByTimeAsync(CART_SUGGESTION_DEBOUNCE_MS * 2);
+    http.expectNone(ROUTE);
+    await vi.advanceTimersByTimeAsync(QUOTE_DEBOUNCE_MS);
+    await settle();
+    http.expectNone(ROUTE);
   });
 });
 
