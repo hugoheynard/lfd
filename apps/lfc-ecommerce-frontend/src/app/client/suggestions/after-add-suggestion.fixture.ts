@@ -38,20 +38,27 @@ export class RecordingAudience {
   }
 }
 
-/** Un panier hydraté, un visiteur, des compteurs enregistrés — rien d'autre de doublé. */
-export function bootAfterAdd(imports: readonly unknown[] = []) {
+/**
+ * Un panier hydraté, un visiteur (ou un reconnu dans l'espace perso), des
+ * compteurs enregistrés — rien d'autre de doublé.
+ */
+export function bootAfterAdd(imports: readonly unknown[] = [], authenticated = false) {
   localStorage.clear();
   TestBed.resetTestingModule();
   const audience = new RecordingAudience();
+  const workspace = workspaceDouble();
   TestBed.configureTestingModule({
     imports: [...imports],
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
-      provideWorkspace(workspaceDouble()),
+      provideWorkspace(workspace),
       {
         provide: AuthFacade,
-        useValue: { isAuthenticated: () => false, accessToken$: () => of('') },
+        useValue: {
+          isAuthenticated: () => authenticated,
+          accessToken$: () => of(authenticated ? 'jeton' : ''),
+        },
       },
       { provide: ProductAudience, useValue: audience },
     ],
@@ -62,6 +69,7 @@ export function bootAfterAdd(imports: readonly unknown[] = []) {
     entries: TestBed.inject(CartEntries),
     http: TestBed.inject(HttpTestingController),
     audience,
+    workspace,
   };
 }
 

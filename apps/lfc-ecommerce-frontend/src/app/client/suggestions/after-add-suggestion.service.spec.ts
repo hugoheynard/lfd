@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 
 import { StaffCartSuggestion } from '../cart/staff-cart-suggestion.service';
 import { AfterAddSuggestion } from './after-add-suggestion.service';
@@ -69,4 +70,29 @@ describe('AfterAddSuggestion', () => {
       'suggestion_clicked',
     ]);
   });
+
+  /**
+   * Lot d (brique par clé de contexte) : la proposition lue pour l'espace
+   * quitté restait à l'écran après une bascule, et la demande portait
+   * l'espace courant à l'envoi plutôt que celui qu'elle servait.
+   */
+  it('rien de l’ancien espace n’est rendu après une bascule', async () => {
+    const { entries, http, workspace } = bootAfterAdd([], true);
+    const offer = TestBed.inject(AfterAddSuggestion);
+    entries.entered('VIE-001');
+    TestBed.tick();
+    const asked = await vi.waitFor(() => http.expectOne(MINE));
+    expect(asked.request.headers.get(WORKSPACE_HEADER)).toBe('personal');
+    asked.flush([cartPick('PAI-001')]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    TestBed.tick();
+    expect(offer.current()).toEqual(cartPick('PAI-001'));
+
+    workspace.current.set('cmp_pro');
+    TestBed.tick();
+    expect(offer.current()).toBeNull();
+  });
 });
+
+const MINE = (request: { url: string }): boolean =>
+  request.url.endsWith('/shop/suggestions/cart/mine');

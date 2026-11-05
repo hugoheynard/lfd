@@ -2,10 +2,17 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { CustomerMandateView } from '@lfd/contracts';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { of } from 'rxjs';
 
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientMandate } from './client-mandate.service';
+import {
+  provideWorkspace,
+  workspaceDouble,
+  type WorkspaceDouble,
+} from './client-workspace.fixture';
+import { TOMMEUSES } from './mon-compte/account.fixture';
 
 const DRAFT: CustomerMandateView = {
   id: 'mdt_1',
@@ -25,14 +32,23 @@ const tick = (): Promise<void> => new Promise((resolve) => setTimeout(resolve));
 describe('ClientMandate', () => {
   let mandates: ClientMandate;
   let http: HttpTestingController;
+  let workspace: WorkspaceDouble;
 
   beforeEach(() => {
+    workspace = workspaceDouble('cmp_1', [
+      { ...TOMMEUSES, id: 'cmp_1' },
+      { ...TOMMEUSES, id: 'cmp_b' },
+    ]);
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthFacade, useValue: { accessToken$: () => of('jeton-de-test') } },
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: () => true, accessToken$: () => of('jeton-de-test') },
+        },
+        provideWorkspace(workspace),
       ],
     });
     mandates = TestBed.inject(ClientMandate);
@@ -237,5 +253,42 @@ describe('ClientMandate', () => {
     expect(plain.request.params.has('inline')).toBe(false);
     plain.flush(new Blob(['%PDF']));
     await downloading;
+  });
+
+  /**
+   * Lot d (brique par clé de contexte) : le mandat de la société quittée
+   * restait à l'écran jusqu'à la réponse de la suivante — le mandat d'une
+   * maison sous le nom d'une autre.
+   */
+  it('rien de l’ancien espace n’est rendu après une bascule', async () => {
+    mandates.ensure('cmp_1');
+    await tick();
+    http.expectOne((r) => MANDATE_URL.test(r.url)).flush(DRAFT);
+    http
+      .expectOne((r) => r.url.endsWith('/companies/cmp_1/mandate-options'))
+      .flush({ options: null, issuerScheme: 'B2B', mintBlockers: ['siren_missing'] });
+    await tick();
+    expect(mandates.mandate()).toEqual(DRAFT);
+    expect(mandates.issuerScheme()).toBe('B2B');
+
+    workspace.current.set('cmp_b');
+    TestBed.tick();
+    expect(mandates.mandate()).toBeNull();
+    expect(mandates.status()).toBe('loading');
+    expect(mandates.issuerScheme()).toBeNull();
+    expect(mandates.mintBlockers()).toEqual([]);
+
+    mandates.ensure('cmp_b');
+    await tick();
+    const next = http.expectOne((r) => r.url.endsWith('/companies/cmp_b/mandate'));
+    expect(next.request.headers.get(WORKSPACE_HEADER)).toBe('cmp_b');
+    next.flush(null);
+    http
+      .expectOne((r) => r.url.endsWith('/companies/cmp_b/mandate-options'))
+      .flush({ options: null, issuerScheme: 'CORE', mintBlockers: [] });
+    await tick();
+    expect(mandates.status()).toBe('ready');
+    expect(mandates.mandate()).toBeNull();
+    expect(mandates.issuerScheme()).toBe('CORE');
   });
 });

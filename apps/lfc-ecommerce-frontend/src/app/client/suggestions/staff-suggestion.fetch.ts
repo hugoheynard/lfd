@@ -112,6 +112,25 @@ function postFor<V extends { readonly item: ShopItemView }>(
   return request.pipe(map(orderableOnly));
 }
 
+/**
+ * Les suggestions du panier pour une clé de la brique — l'après-ajout, qui
+ * les lit par elle ; la carte du panier, exclue du lot d, garde
+ * {@link fetchStaffSuggestions}.
+ */
+export function cartSuggestionsFor(
+  http: HttpClient,
+  payload: CartSuggestionsPayload,
+  token: Observable<string>,
+  key: ContextKey,
+): Observable<readonly CartSuggestionView[]> {
+  return postFor(
+    `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/cart`,
+    (url, request) => http.post<CartSuggestionView[]>(url, payload, request),
+    token,
+    key,
+  );
+}
+
 /** Les suggestions de l'accueil pour une clé de la brique (cf. {@link fetchStaffSuggestions}). */
 export function homeSuggestionsFor(
   http: HttpClient,

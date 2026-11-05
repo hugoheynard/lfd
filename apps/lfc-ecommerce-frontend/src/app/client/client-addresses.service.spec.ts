@@ -2,11 +2,17 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { CompanyAddressesView, DeliveryAddressPayload } from '@lfd/contracts';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { of } from 'rxjs';
 
 import { AccountService } from '../account/account.service';
 import { AuthFacade } from '../auth/auth.facade';
 import { addressAt, ClientAddresses } from './client-addresses.service';
+import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
+import { TOMMEUSES } from './mon-compte/account.fixture';
+
+const TOMMEUSES_1 = { ...TOMMEUSES, id: 'cmp_1' };
+const TOMMEUSES_B = { ...TOMMEUSES, id: 'cmp_b' };
 
 const CARNET: CompanyAddressesView = {
   billing: {
@@ -244,5 +250,54 @@ describe('le complément d’une adresse', () => {
 
   it('reste neutre quand il n’y a pas de libellé', () => {
     expect(addressAt('  ')).toBe('à cette adresse');
+  });
+});
+
+/**
+ * Lot d (brique par clé de contexte) : le carnet suivait l'espace avec sa clé
+ * maison `loadedFor` ; une bascule doit ne rien montrer de la maison quittée.
+ */
+describe('le carnet à la bascule d’espace', () => {
+  const CARNET_B: CompanyAddressesView = {
+    ...CARNET,
+    billing: { ...CARNET.billing!, id: 'adr_b', ligne1: '3 rue du Lac' },
+  };
+  const settle = async (): Promise<void> => {
+    for (let i = 0; i < 3; i += 1) {
+      await Promise.resolve();
+    }
+  };
+
+  it('ne rend rien de l’ancien espace, et lit le nouveau sous son en-tête', async () => {
+    const workspace = workspaceDouble('cmp_1', [TOMMEUSES_1, TOMMEUSES_B]);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: () => true, accessToken$: () => of('jeton') },
+        },
+        provideWorkspace(workspace),
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const addresses = TestBed.inject(ClientAddresses);
+    TestBed.tick();
+    await settle();
+    http.expectOne((r) => r.url.endsWith('/companies/cmp_1/addresses')).flush(CARNET);
+    await settle();
+    expect(addresses.billing()?.ligne1).toBe('12 chemin des Barmettes');
+
+    workspace.current.set('cmp_b');
+    TestBed.tick();
+    expect(addresses.billing()).toBeNull();
+    await settle();
+    const next = http.expectOne((r) => r.url.endsWith('/companies/cmp_b/addresses'));
+    expect(next.request.headers.get(WORKSPACE_HEADER)).toBe('cmp_b');
+    next.flush(CARNET_B);
+    await settle();
+    expect(addresses.billing()?.ligne1).toBe('3 rue du Lac');
   });
 });

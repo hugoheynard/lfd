@@ -77,20 +77,19 @@ export const ADMITTED = {
   [`${APP}/client/commande/reglement-page/reglement-page.ts`]:
     "le règlement écrit une commande — exclu du lot d",
   [`${APP}/client/cart/cart-summary/cart-summary.ts`]: "résumé du panier — exclu avec le panier",
+  [`${APP}/client/client-orders.service.ts`]:
+    "la passation écrit une commande (POST idempotent, espace capturé au clic) — exclue comme le règlement (2026-11-05)",
+  [`${APP}/client/order-context.store.ts`]:
+    "efface le choix de service au DÉPART d'une bascule (D7) : une écriture qui suit l'espace en direct, pas une lecture (2026-11-05)",
 };
 
 /** Les lecteurs pas encore migrés vers la brique (relevés le 2026-11-05). En retirer un = l'avoir migré. */
 export const DEBT = [
   `${APP}/client/accueil-public/accueil-public.ts`,
   `${APP}/client/cart/voucher-choice.service.ts`,
-  `${APP}/client/client-addresses.service.ts`,
   `${APP}/client/client-audience.service.ts`,
   `${APP}/client/client-company.service.ts`,
-  `${APP}/client/client-mandate.service.ts`,
-  `${APP}/client/client-orders.service.ts`,
-  `${APP}/client/order-context.store.ts`,
   `${APP}/client/shop/shop-catalogue.store.ts`,
-  `${APP}/client/suggestions/after-add-suggestion.service.ts`,
 ];
 
 /** Les commentaires citent l'ancienne mécanique pour l'expliquer : on les blanchit. */

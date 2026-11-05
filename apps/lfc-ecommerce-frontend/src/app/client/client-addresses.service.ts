@@ -9,12 +9,15 @@ import type {
   MemberDeliveryAddressPayload,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
+import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 import { firstValueFrom, type Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientActivation } from './client-activation.service';
-import { ClientWorkspace } from './client-workspace.service';
+import { ClientContext, VISITOR } from './client-context.service';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-keyed/context-keyed';
 
 /**
  * **Le carnet d'adresses du client**, tel que notre base le porte.
@@ -37,19 +40,45 @@ import { ClientWorkspace } from './client-workspace.service';
  *
  * ## Quelle entreprise
  *
- * Celle de l'**espace de travail** (`ClientWorkspace`), et rien en perso : une
- * adresse appartient à une société, et en proposer une à qui commande pour
- * lui-même serait livrer chez son employeur. Le carnet **attend** l'espace
- * connu, et se vide à une bascule avant de relire.
+ * Celle de l'**espace qui s'affiche** (`ClientContext.prefix()`), et rien en
+ * perso : une adresse appartient à une société, et en proposer une à qui
+ * commande pour lui-même serait livrer chez son employeur. Le carnet
+ * **attend** l'espace connu, et ne montre jamais, pendant une bascule, celui
+ * de la maison quittée (lot d de `caching-usage/plan-espace-retenu.md`).
  */
 @Injectable({ providedIn: 'root' })
 export class ClientAddresses {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
   private readonly activation = inject(ClientActivation);
 
-  private readonly known = signal<CompanyAddressesView | null>(null);
+  /** Avance à chaque réponse : la brique n'est pas un signal. */
+  private readonly answered = signal(0);
+
+  /** Le carnet posé à la main par une suite, `undefined` sinon. */
+  private readonly received = signal<CompanyAddressesView | null | undefined>(undefined);
+
+  /**
+   * Le carnet, rangé par clé de contexte : l'espace d'une société EST son
+   * identifiant, et rien n'est rendu pour un autre espace que celui qui
+   * s'affiche — une réponse arrivée après une bascule reste rangée sous sa
+   * maison, elle ne s'affiche pas sous la suivante.
+   */
+  private readonly keyed = contextKeyed((key) => this.read(key));
+
+  /** La société de l'espace qui s'affiche, `null` en perso, en visite ou avant `/me`. */
+  private readonly shownCompany = computed<string | null>(() => companyOf(this.context.prefix()));
+
+  private readonly known = computed<CompanyAddressesView | null>(() => {
+    const received = this.received();
+    if (received !== undefined) {
+      return received;
+    }
+    this.answered();
+    const company = this.shownCompany();
+    return company === null ? null : (this.keyed.shown(keyOf(company)) ?? null);
+  });
 
   /** Ce que l'entreprise a déclaré, la défaut en tête (le serveur la trie). */
   readonly deliveries = computed<readonly DeliveryAddressView[]>(
@@ -59,25 +88,13 @@ export class ClientAddresses {
   /** L'adresse de facturation, ou `null` — l'entreprise n'en a pas encore posé. */
   readonly billing = computed<BillingAddressView | null>(() => this.known()?.billing ?? null);
 
-  /**
-   * L'espace déjà lu (ou en lecture) : sans ce garde, l'effet rechargerait à
-   * chaque signal. C'est aussi lui qui écarte une réponse arrivée après une
-   * bascule — elle serait le carnet d'une autre maison.
-   */
-  private loadedFor: string | null = null;
-
   constructor() {
+    // Une lecture par société affichée : `ensure` ne relance pas une clé déjà
+    // lue ou en vol.
     effect(() => {
-      const current = this.workspace.current();
-      if (current === null || current === this.loadedFor) {
-        return;
-      }
-      this.loadedFor = current;
-      // Le carnet de l'espace quitté ne reste pas affiché pendant la relecture.
-      this.known.set(null);
-      const company = this.workspace.company();
-      if (company !== null) {
-        void this.load(company.id);
+      const company = this.shownCompany();
+      if (company !== null && this.received() === undefined) {
+        void this.settle(this.keyed.ensure(keyOf(company)));
       }
     });
   }
@@ -90,8 +107,7 @@ export class ClientAddresses {
    * dérivation du complément.
    */
   receive(addresses: CompanyAddressesView | null): void {
-    this.known.set(addresses);
-    this.loadedFor = 'posé-par-la-suite';
+    this.received.set(addresses);
   }
 
   /**
@@ -195,33 +211,47 @@ export class ClientAddresses {
     return `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}`;
   }
 
+  /** Relit le carnet d'une société ; un échec le laisse tel quel, et relisible. */
   private async load(companyId: string): Promise<void> {
-    try {
-      const token = await firstValueFrom(this.auth.accessToken$());
-      const addresses = await firstValueFrom(
-        this.http.get<CompanyAddressesView>(`${this.url(companyId)}/addresses`, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      );
-      if (this.stillFor(companyId)) {
-        this.known.set(addresses);
-      }
-    } catch {
-      // Vide, et relisible : l'écran retombe sur la saisie libre, qui marche.
-      if (this.stillFor(companyId)) {
-        this.loadedFor = null;
-      }
+    if (this.received() !== undefined) {
+      this.received.set(undefined);
     }
+    await this.settle(this.keyed.read(keyOf(companyId)));
   }
 
-  /**
-   * La lecture vaut-elle encore ? Oui si l'espace n'a pas changé pendant le vol
-   * — ou si aucun espace ne pilote le carnet (suites qui le posent à la main).
-   */
-  private stillFor(companyId: string): boolean {
-    const current = this.workspace.current();
-    return current === null || current === companyId || this.loadedFor === 'posé-par-la-suite';
+  /** Attend une lecture : un échec laisse vide, l'écran retombe sur la saisie libre. */
+  private async settle(reading: Promise<CompanyAddressesView>): Promise<void> {
+    try {
+      await reading;
+    } catch {
+      // Vide, et relisible : l'écran retombe sur la saisie libre, qui marche.
+    }
+    this.answered.update((count) => count + 1);
   }
+
+  /** L'appel — l'en-tête d'espace vient de la clé, pas de l'envoi. */
+  private read(key: ContextKey): Observable<CompanyAddressesView> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<CompanyAddressesView>(
+            `${this.url(key.workspace)}/addresses`,
+            workspaceRequestOf(key, { Authorization: `Bearer ${token}` }),
+          ),
+        ),
+      );
+  }
+}
+
+/** La société d'un préfixe d'espace, `null` pour le perso, le visiteur ou l'inconnu. */
+function companyOf(prefix: string | null): string | null {
+  return prefix === null || prefix === VISITOR || prefix === PERSONAL_WORKSPACE ? null : prefix;
+}
+
+/** La clé d'une société : son espace, sans part propre. */
+function keyOf(companyId: string): ContextKey {
+  return { workspace: companyId, own: '' };
 }
 
 /**

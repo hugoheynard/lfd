@@ -1,20 +1,24 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import type { CartSuggestionView } from '@lfd/contracts';
+import { defer, type Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { ProductAudience } from '../audience/product-audience.service';
 import { CartEntries, type CartEntry } from '../cart/cart-entries';
 import { CartStore } from '../cart/cart.store';
 import { StaffCartSuggestion } from '../cart/staff-cart-suggestion.service';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext } from '../client-context.service';
+import { contextKeyed, type ContextKey } from '../context-keyed/context-keyed';
 import { OrderContextStore } from '../order-context.store';
 import { suggestionOrigin } from './suggestion-origin';
 import { cartSkus, suggestionTarget } from './suggestion-target';
 
-/** Ce que l'après-ajout propose, et à quelle entrée il répond. */
+/** Ce que l'après-ajout propose, à quelle entrée il répond, et pour quel espace. */
 interface Offer {
   readonly entry: number;
+  readonly workspace: string;
   readonly view: CartSuggestionView;
 }
 
@@ -33,12 +37,17 @@ interface Offer {
  * quand son « + » ajoute (Hugo, 2026-10-18 : deux gestes, deux compteurs) — à
  * la source de la suggestion (`suggestionOrigin`). La première du panier :
  * celle du staff, sinon la calculée (R2), comme la carte du panier les range.
+ *
+ * Lu par la brique (lot d de `caching-usage/plan-espace-retenu.md`) : la
+ * demande part avec l'en-tête de l'espace que `ClientContext` affiche, et une
+ * proposition lue pour un autre espace n'est pas montrée — même le temps d'une
+ * bascule.
  */
 @Injectable({ providedIn: 'root' })
 export class AfterAddSuggestion {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
   private readonly order = inject(OrderContextStore);
   private readonly store = inject(CartStore);
   private readonly entries = inject(CartEntries);
@@ -50,10 +59,13 @@ export class AfterAddSuggestion {
   private answered = 0;
   private shown = 0;
 
+  /** Une lecture par entrée : la clé n'a pas de part propre, chaque entrée relit. */
+  private readonly keyed = contextKeyed((key) => this.load(key));
+
   /** La proposition en cours — jamais un article déjà au panier, jamais panier ouvert. */
   readonly current = computed(() => {
     const offer = this.offer();
-    if (offer === null || this.cartPick.isOpen()) {
+    if (offer === null || this.cartPick.isOpen() || offer.workspace !== this.context.prefix()) {
       return null;
     }
     return (this.store.quantities()[offer.view.sku] ?? 0) === 0 ? offer.view : null;
@@ -98,29 +110,37 @@ export class AfterAddSuggestion {
     if (this.cartPick.isOpen()) {
       return;
     }
-    const authenticated = this.auth.isAuthenticated();
-    if (authenticated && this.workspace.current() === null) {
+    // Reconnu, son espace attendu avant de demander ; visiteur, la route publique.
+    const workspace = this.context.prefix();
+    if (workspace === null) {
       return;
     }
-    void this.fetch(entry, authenticated);
+    void this.fetch(entry, { workspace, own: '' });
   }
 
-  private async fetch(entry: CartEntry, authenticated: boolean): Promise<void> {
-    const payload = {
-      skus: cartSkus(this.store.quantities()),
-      target: suggestionTarget(this.order.choice()),
-    };
+  private async fetch(entry: CartEntry, key: ContextKey): Promise<void> {
     try {
-      const token = authenticated ? this.auth.accessToken$() : null;
-      const { fetchStaffSuggestions } = await import('./staff-suggestion.fetch');
-      const views = await fetchStaffSuggestions(this.http, 'cart', payload, token);
+      const views = await this.keyed.read(key);
       const view = views[0];
       if (view !== undefined && entry.id === this.answered) {
-        this.offer.set({ entry: entry.id, view });
+        this.offer.set({ entry: entry.id, workspace: key.workspace, view });
       }
     } catch {
       // Une suggestion qui échoue ne montre rien : l'ajout, lui, est fait.
     }
+  }
+
+  /** L'appel d'une clé, le panier et le jour visé lus à son départ. */
+  private load(key: ContextKey): Observable<readonly CartSuggestionView[]> {
+    const payload = {
+      skus: cartSkus(this.store.quantities()),
+      target: suggestionTarget(this.order.choice()),
+    };
+    return defer(() => import('./staff-suggestion.fetch')).pipe(
+      switchMap(({ cartSuggestionsFor }) =>
+        cartSuggestionsFor(this.http, payload, this.auth.accessToken$(), key),
+      ),
+    );
   }
 
   private count(

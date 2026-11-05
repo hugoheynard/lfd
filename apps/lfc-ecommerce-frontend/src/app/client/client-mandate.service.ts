@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
   CustomerMandateOptionsSectionView,
   CustomerMandateOptionsView,
@@ -9,10 +9,13 @@ import type {
   SetMandateOptionsPayload,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { ClientContext } from './client-context.service';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-keyed/context-keyed';
 
 /** Où en est la lecture du mandat. */
 export type MandateReadStatus = 'loading' | 'failed' | 'ready';
@@ -30,37 +33,100 @@ export type MandateReadStatus = 'loading' | 'failed' | 'ready';
  * commercial qui a relu la pièce. Le mur (détenteur ou facturation), le drapeau
  * `customerMandate` et les règles sont tenus par l'API ; l'écran ne fait que ne
  * pas proposer la carte à qui l'API refuserait.
+ *
+ * Rangé par clé de contexte (lot d de `caching-usage/plan-espace-retenu.md`) :
+ * l'espace d'une société EST son identifiant, et rien n'est rendu pour un
+ * autre espace que celui que `ClientContext` affiche — après une bascule, le
+ * mandat de la société quittée ne reste pas sous le nom de la suivante.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientMandate {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  private readonly context = inject(ClientContext);
 
-  private readonly _status = signal<MandateReadStatus>('loading');
-  private readonly _mandate = signal<CustomerMandateView | null>(null);
-  private readFor: string | null = null;
+  /** Avance à chaque réponse ou échec : la brique n'est pas un signal. */
+  private readonly answered = signal(0);
+  /** L'espace dont la dernière lecture du mandat a échoué, `null` sinon. */
+  private readonly failedSpace = signal<string | null>(null);
+  /** L'espace dont la dernière lecture des options a échoué, `null` sinon. */
+  private readonly optionsFailedSpace = signal<string | null>(null);
+  /** L'espace dont les options se relisent : le panneau dit « chargement » à chaque ouverture. */
+  private readonly optionsLoadingSpace = signal<string | null>(null);
+  /**
+   * La vue rendue par le `POST` de génération, tenue jusqu'à la lecture
+   * suivante de son espace : la génération ne coûte pas une relecture.
+   */
+  private readonly generated = signal<{
+    readonly space: string;
+    readonly mandate: CustomerMandateView;
+  } | null>(null);
+  /** Les sociétés dont le mandat a été demandé — ce que `refresh` relit. */
+  private readonly asked = new Set<string>();
 
-  readonly status = this._status.asReadonly();
-  readonly mandate = this._mandate.asReadonly();
+  private readonly keyed = contextKeyed((key) =>
+    this.get<CustomerMandateView | null>(this.url(key.workspace), key),
+  );
+  private readonly optionsKeyed = contextKeyed((key) =>
+    this.get<CustomerMandateOptionsSectionView>(this.optionsUrl(key.workspace), key),
+  );
 
-  private readonly _optionsStatus = signal<MandateReadStatus>('loading');
-  private readonly _options = signal<CustomerMandateOptionsView | null>(null);
+  /** Le mandat lu pour l'espace qui s'affiche — `undefined` s'il ne l'est pas encore. */
+  private readonly shownMandate = computed<CustomerMandateView | null | undefined>(() => {
+    this.answered();
+    const space = this.context.prefix();
+    if (space === null) {
+      return undefined;
+    }
+    const generated = this.generated();
+    return generated?.space === space ? generated.mandate : this.keyed.shown(keyOf(space));
+  });
+
+  /** L'enveloppe des options lue pour l'espace qui s'affiche, ou `undefined`. */
+  private readonly shownOptions = computed<CustomerMandateOptionsSectionView | undefined>(() => {
+    this.answered();
+    const space = this.context.prefix();
+    return space === null ? undefined : this.optionsKeyed.shown(keyOf(space));
+  });
+
+  readonly status = computed<MandateReadStatus>(() => {
+    const space = this.context.prefix();
+    if (space !== null && this.failedSpace() === space) {
+      return 'failed';
+    }
+    return this.shownMandate() === undefined ? 'loading' : 'ready';
+  });
+
+  readonly mandate = computed<CustomerMandateView | null>(() => this.shownMandate() ?? null);
 
   /** Où en est la lecture des zones 14 et 19 — lue à l'ouverture de leur panneau seulement. */
-  readonly optionsStatus = this._optionsStatus.asReadonly();
-  /** Les zones facultatives, ou `null` tant qu'aucun RIB n'est déposé : elles vivent sur sa ligne. */
-  readonly options = this._options.asReadonly();
+  readonly optionsStatus = computed<MandateReadStatus>(() => {
+    const space = this.context.prefix();
+    if (space === null) {
+      return 'loading';
+    }
+    if (this.optionsLoadingSpace() === space) {
+      return 'loading';
+    }
+    if (this.optionsFailedSpace() === space) {
+      return 'failed';
+    }
+    return this.shownOptions() === undefined ? 'loading' : 'ready';
+  });
 
-  private readonly _issuerScheme = signal<SepaScheme | null>(null);
+  /** Les zones facultatives, ou `null` tant qu'aucun RIB n'est déposé : elles vivent sur sa ligne. */
+  readonly options = computed<CustomerMandateOptionsView | null>(
+    () => this.shownOptions()?.options ?? null,
+  );
 
   /**
    * Le schéma des mandats que l'émetteur frappe — `null` tant qu'il n'est pas
    * lu, ou sans émetteur. Rendu par l'enveloppe des options : c'est là que le
    * serveur le sert (mandat-deux-schemas).
    */
-  readonly issuerScheme = this._issuerScheme.asReadonly();
-
-  private readonly _mintBlockers = signal<readonly MintBlocker[]>([]);
+  readonly issuerScheme = computed<SepaScheme | null>(
+    () => this.shownOptions()?.issuerScheme ?? null,
+  );
 
   /**
    * Ce qui empêche aujourd'hui de générer le mandat — vide quand la génération
@@ -68,7 +134,9 @@ export class ClientMandate {
    * serveur avec la fonction même qui refuse la génération : l'écran traduit,
    * il ne recompte pas.
    */
-  readonly mintBlockers = this._mintBlockers.asReadonly();
+  readonly mintBlockers = computed<readonly MintBlocker[]>(
+    () => this.shownOptions()?.mintBlockers ?? [],
+  );
 
   /**
    * Lit le mandat si ce n'est pas déjà fait. Paresseux, comme le RIB : seules
@@ -82,29 +150,56 @@ export class ClientMandate {
    * `/mon-compte`, pas par élément.
    */
   ensure(companyId: string): void {
-    if (this.readFor !== companyId) {
-      void this.reload(companyId);
-      void this.loadOptions(companyId);
-    }
+    this.asked.add(companyId);
+    void this.settle(companyId, this.keyed.ensure(keyOf(companyId)));
+    void this.settleOptions(companyId, this.optionsKeyed.ensure(keyOf(companyId)));
   }
 
   /** Relit : après un échec (« Réessayer »), ou après un dépôt. */
   async reload(companyId: string): Promise<void> {
-    this.readFor = companyId;
-    if (this._status() === 'failed') {
-      this._status.set('loading');
+    this.asked.add(companyId);
+    if (this.failedSpace() === companyId) {
+      this.failedSpace.set(null);
     }
+    await this.settle(companyId, this.keyed.read(keyOf(companyId)));
+  }
+
+  /** Un échec est un ÉTAT : la dernière vue lue reste, l'écran dit qu'il n'a pas pu relire. */
+  private async settle(
+    companyId: string,
+    reading: Promise<CustomerMandateView | null>,
+  ): Promise<void> {
     try {
-      const mandate = await firstValueFrom(
-        this.http.get<CustomerMandateView | null>(this.url(companyId), {
-          headers: await this.headers(),
-        }),
-      );
-      this._mandate.set(mandate);
-      this._status.set('ready');
+      await reading;
+      // La lecture est plus récente que la vue de la génération.
+      if (this.generated()?.space === companyId) {
+        this.generated.set(null);
+      }
+      if (this.failedSpace() === companyId) {
+        this.failedSpace.set(null);
+      }
     } catch {
-      this._status.set('failed');
+      this.failedSpace.set(companyId);
     }
+    this.answered.update((count) => count + 1);
+  }
+
+  private async settleOptions(
+    companyId: string,
+    reading: Promise<CustomerMandateOptionsSectionView>,
+  ): Promise<void> {
+    try {
+      await reading;
+      if (this.optionsFailedSpace() === companyId) {
+        this.optionsFailedSpace.set(null);
+      }
+    } catch {
+      this.optionsFailedSpace.set(companyId);
+    }
+    if (this.optionsLoadingSpace() === companyId) {
+      this.optionsLoadingSpace.set(null);
+    }
+    this.answered.update((count) => count + 1);
   }
 
   /**
@@ -116,7 +211,7 @@ export class ClientMandate {
    * refusée.
    */
   async refresh(companyId: string): Promise<void> {
-    if (this.readFor === companyId) {
+    if (this.asked.has(companyId)) {
       // Les options AUSSI depuis le 2026-09-15 : leur enveloppe porte les
       // mentions manquantes, et un RIB ou une identité enregistrés les changent.
       await Promise.all([this.reload(companyId), this.loadOptions(companyId)]);
@@ -137,9 +232,11 @@ export class ClientMandate {
           headers: await this.headers(),
         }),
       );
-      this.readFor = companyId;
-      this._mandate.set(mandate);
-      this._status.set('ready');
+      this.asked.add(companyId);
+      this.generated.set({ space: companyId, mandate });
+      if (this.failedSpace() === companyId) {
+        this.failedSpace.set(null);
+      }
       return null;
     } catch (error) {
       return httpErrorMessage(error);
@@ -180,20 +277,11 @@ export class ClientMandate {
 
   /** `GET …/mandate-options` — relue à chaque ouverture du panneau : c'est un réglage rare. */
   async loadOptions(companyId: string): Promise<void> {
-    this._optionsStatus.set('loading');
-    try {
-      const { options, issuerScheme, mintBlockers } = await firstValueFrom(
-        this.http.get<CustomerMandateOptionsSectionView>(this.optionsUrl(companyId), {
-          headers: await this.headers(),
-        }),
-      );
-      this._options.set(options);
-      this._issuerScheme.set(issuerScheme);
-      this._mintBlockers.set(mintBlockers);
-      this._optionsStatus.set('ready');
-    } catch {
-      this._optionsStatus.set('failed');
+    this.optionsLoadingSpace.set(companyId);
+    if (this.optionsFailedSpace() === companyId) {
+      this.optionsFailedSpace.set(null);
     }
+    await this.settleOptions(companyId, this.optionsKeyed.read(keyOf(companyId)));
   }
 
   /**
@@ -225,8 +313,24 @@ export class ClientMandate {
     return `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/mandate`;
   }
 
+  /** Une lecture — l'en-tête d'espace vient de la clé, pas de l'envoi. */
+  private get<V>(url: string, key: ContextKey): Observable<V> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<V>(url, workspaceRequestOf(key, { Authorization: `Bearer ${token}` })),
+        ),
+      );
+  }
+
   private async headers(): Promise<HttpHeaders> {
     const token = await firstValueFrom(this.auth.accessToken$());
     return new HttpHeaders({ Authorization: `Bearer ${token}` });
   }
+}
+
+/** La clé d'une société : son espace, sans part propre. */
+function keyOf(companyId: string): ContextKey {
+  return { workspace: companyId, own: '' };
 }
