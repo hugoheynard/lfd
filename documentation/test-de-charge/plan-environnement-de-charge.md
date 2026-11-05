@@ -5,9 +5,10 @@
 > mode de charge qui n'ouvre pas `/admin`, abonnés de la passation inventoriés.
 > Les choix ouverts sont dans « Décisions pour Hugo », à la fin.
 >
-> 📝 **Plan du 2026-11-05, rien n'est bâti, rien n'est exécuté.** Le script k6
-> n'existe pas (Hugo : « pas de script pour l'instant ») : ce qui suit le
-> **spécifie**. Il touche une
+> 📝 **Plan du 2026-11-05, rien n'est bâti, rien n'est exécuté.** Le script du
+> **visiteur anonyme** existe depuis le 2026-11-05
+> ([`visiteur.md`](visiteur.md)) ; le script **connecté** (pro, passation),
+> objet de ce plan, n'existe pas : ce qui suit le **spécifie**. Il touche une
 > copie de données de production et une frontière de sécurité (un mode
 > d'authentification de charge) : il passe par `vitruve` avant Hugo. Tout geste
 > qui lit la production est **à valider par Hugo, jamais exécuté sans lui**, et

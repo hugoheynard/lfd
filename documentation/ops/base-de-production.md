@@ -63,11 +63,18 @@ sur un Postgres direct ; `/health` ne publie donc plus de champ `database`.
 Réglé dans `prisma.service.ts` (constante `POOL`), pas laissé aux défauts de
 `pg-pool` (dix connexions, attente infinie) :
 
-| Réglage                   | Valeur | Raison                                                                                                          |
-| ------------------------- | ------ | --------------------------------------------------------------------------------------------------------------- |
-| `max`                     | 5      | deux instances coexistent une à deux minutes à chaque déploiement : 10 au pire, sur 250 mutualisées (offre Pro) |
-| `connectionTimeoutMillis` | 5 000  | une requête sans connexion libre ÉCHOUE en « base indisponible » au lieu de pendre                              |
-| `idleTimeoutMillis`       | 30 000 | explicite plutôt qu'hérité                                                                                      |
+| Réglage                   | Valeur | Raison                                                                                                                                                                                                                            |
+| ------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `max`                     | 15     | relevé de 5 le 2026-10-30 ; deux instances coexistent une à deux minutes à chaque déploiement : 30 au pire, sur 500 mutualisées (offre Pro, doc Prisma relue le 2026-11-05) — 6 %                                                 |
+| `min`                     | 10     | depuis le 2026-11-05 : les dix premières connexions ne sont **jamais** fermées. Mesuré en production : rouvertes après 30 s de calme, elles coûtaient 300 ms à 1,3 s à chaque appel de l'ouverture de la boutique. Ne pas retirer |
+| `connectionTimeoutMillis` | 5 000  | une requête sans connexion libre ÉCHOUE en « base indisponible » au lieu de pendre                                                                                                                                                |
+| `idleTimeoutMillis`       | 30 000 | ne joue qu'**au-delà** de `min` : les connexions d'un pic se referment après 30 s                                                                                                                                                 |
+
+Le pooler de Prisma ferme de son côté une connexion inactive au bout de
+**60 min** (doc Prisma, relue le 2026-11-05) ; `pg-pool` retire alors la
+connexion morte. Les balayages du cron `*/5` (`container/worker.ts`,
+`refreshSweeps`) lisent la base toutes les 5 minutes et gardent une partie
+du pool vivante la nuit.
 
 S'y ajoutent :
 

@@ -2,9 +2,9 @@
 
 > 📍 **État au 2026-11-05.** Ce document dit ce qui **existe** et les choix
 > qui l'ont façonné, pour qu'on s'en souvienne. Le chantier vit dans le plan
-> [`plan-livraison-offerte.md`](../promotions/plan-livraison-offerte.md) (lots
-> 0b, 1a, 1b bâtis ; 1c bâti côté serveur sur `dev`, son affichage en
-> boutique bâti ; 0c bâti, fronts compris ; 2 à faire). Chaque choix porte sa date et qui
+> [`plan-livraison-offerte.md`](../promotions/plan-livraison-offerte.md) (✅ en
+> production, `8710ec3` : 0b, 1a, 1b, la saisie du seuil ; 🟦 sur `dev`, pas
+> en production : 0c et 1c, serveur et écrans ; à faire : 2). Chaque choix porte sa date et qui
 > l'a pris.
 
 # Partie 1 — L'explication simple

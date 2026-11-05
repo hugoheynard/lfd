@@ -61,7 +61,8 @@ export class ResilientShopShelfCache {
 
   /**
    * **Range sans faire attendre la réponse** (C5, 2026-11-05 : en production,
-   * un rayon de ~145 Ko dépassait les 100 ms du repli, et le rangement attendu
+   * un rayon de ~145 Ko dépassait les 100 ms du repli — 400 ms depuis
+   * `f631e0f` —, et le rangement attendu
    * retardait la vue). Non attendu, et c'est le but : `void` sur le précédent
    * du journal des transitions (`ops/health/ops-health.service.ts`, vérifié le
    * 2026-11-05). Rien n'est avalé : {@link store} ne lève jamais — garde,

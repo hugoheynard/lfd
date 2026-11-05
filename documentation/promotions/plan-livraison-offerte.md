@@ -1,18 +1,19 @@
 # Plan — la livraison offerte : un étage de promotions sur les frais
 
-> 📍 **État au 2026-11-05 (soir).** ✅ **En production** (`962dda5`) : 0a,
+> 📍 **État au 2026-11-05 (soir).** ✅ **En production** (`8710ec3`) : 0a,
 > 0b (frais résolu zone → global → ancien, écran des zones, journal), 1a
-> (tarif figé à la commande, colonnes du franco) et 1b (le calcul du franco).
-> 🟦 **Sur `dev`** : la saisie du seuil à l'écran, la clientèle fermée
-> grisée, les pastilles « Global », la révision sans seuil figé qui prend
-> celui du jour, et **1c côté serveur** (le devis sert `freeDelivery` : offert,
-> ou le manque HT), et **0c côté serveur** (`GET /delivery-zones?audience=b2b|b2c`
-> sert le frais et le seuil résolus, en cache Cloudflare par audience).
-> 🟦 **Fronts du 0c et du 1c** (2026-11-05, non commités à l'écriture) : la
-> boutique lit les zones pour l'audience montrée et affiche « Coursier
-> offert » / « Plus que… » ; la saisie staff passe l'audience du client.
-> **À faire** : 2 (promotions sur les frais). Ce qui est
-> bâti, et les choix qui l'ont façonné, sont tenus à jour dans
+> (tarif figé à la commande, colonnes du franco), 1b (le calcul du franco),
+> la saisie du seuil au back-office, la clientèle fermée grisée, les pastilles
+> « Global », la révision sans seuil figé qui prend celui du jour.
+> 🟦 **Sur `dev`, pas en production** : **0c** (`0d0ff6b4c`, `292509178` —
+> `GET /delivery-zones?audience=b2b|b2c` sert le frais et le seuil résolus,
+> la boutique et la saisie staff les lisent par clientèle) et **1c**
+> (`0d0ff6b4c`, `292509178` — le devis sert `freeDelivery` ; le panier dit
+> « Coursier offert » ou « Plus que… », en TTC « environ » pour un
+> particulier). **À faire** : 2 (promotions sur les frais), la ligne
+> « Livraison offerte » sur le bon, la facture et l'e-mail, et le devis de
+> la saisie staff. Ce qui est bâti, et les choix qui l'ont façonné, sont
+> tenus à jour dans
 > [`frais-et-livraison-offerte.md`](../livraisons/frais-et-livraison-offerte.md).
 
 > 📝 **Plan, écrit le 2026-11-05**, demande de Hugo (« on me dit la livraison
