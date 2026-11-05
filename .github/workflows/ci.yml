@@ -319,6 +319,14 @@ jobs:
       - name: "Gate : qui écrit ce que le rayon lit émet le signal de purge"
         run: pnpm lint:shelf-writes
 
+      # Un lecteur de la boutique qui suit `ClientWorkspace` avec sa clé maison
+      # peut rendre, le temps d'une requête, ce qu'il a lu pour l'espace d'où
+      # l'on vient. La brique `context-keyed/` tient la règle une fois ; les
+      # lecteurs pas encore migrés sont une dette comptée, qui ne fait que
+      # décroître (plan-espace-retenu.md, lot d, 2026-11-05).
+      - name: "Gate : un lecteur de la boutique lit l'espace par la brique"
+        run: pnpm lint:context-keyed-readers
+
       # ── Le prix ──
       # Ces portes ne tournaient qu'au pre-push, qu'un `--no-verify` saute :
       # constaté le 2026-11-02, 25 des 51 portes n'avaient aucune étape ici.

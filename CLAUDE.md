@@ -104,7 +104,13 @@
 >   le même jour avec `lint:shelf-writes` : tout fichier qui écrit un modèle
 >   que le rayon lit émet `ShelfChanges` (le signal de purge du cache des
 >   rayons), ou figure dans une liste admise datée — un écrivain qui l'oublie
->   laisse un rayon faux en cache sans qu'aucun test ne rougisse. C'est la
+>   laisse un rayon faux en cache sans qu'aucun test ne rougisse. Et **56**
+>   depuis le 2026-11-05 avec `lint:context-keyed-readers` : un lecteur de la
+>   boutique lit l'espace par la brique `client/context-keyed/`, jamais en
+>   suivant `ClientWorkspace` avec une clé maison (`readFor`…) qui laissait
+>   voir, le temps d'une requête, l'espace d'où l'on venait ; liste admise
+>   (intercepteur, garde, bascule, menus, écritures du panier) et lecteurs
+>   pas encore migrés comptés en dette décroissante. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1281,7 +1287,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 55 portes du dépôt, d’un coup
+pnpm lint:gates         # les 56 portes du dépôt, d’un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
