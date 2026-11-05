@@ -23,9 +23,18 @@
  *
  * Deux conséquences à connaître. Le paquet racine `//` compte comme « tout » : il représente les fichiers du
  * dépôt lui-même — la CI, les gates, le lockfile, le catalogue. Y toucher peut
- * changer n'importe quel résultat. Et tout ce qui n'appartient à AUCUN paquet —
- * `documentation/`, un README de racine — y est rattaché : un commit de
- * documentation relance donc tout. C'est du gâchis assumé, du bon côté.
+ * changer n'importe quel résultat. Et tout ce qui n'appartient à AUCUN paquet
+ * y est rattaché par turbo.
+ *
+ * 🔴 **Sauf `documentation/`, depuis le 2026-11-05** (Hugo). Presque chaque
+ * commit porte une ligne de plan ou de registre : la racine valait « tout » à
+ * chaque push, et un lot du seul front lançait les vingt éclats e2e du
+ * backend (16 min au lieu de ~5). Aucun code ni test ne lit `documentation/`
+ * (vérifié le 2026-11-05 : aucun import, aucune lecture de fichier sous
+ * `apps/`, `packages/`, `gateway/`) ; ce qui l'y relie — références, orphelins,
+ * Mermaid, recueils générés (`rgaa-digest`, `shop-copy-digest`) — est tenu
+ * par les portes du job global, qui tourne à chaque push. Un fichier de la
+ * racine HORS de `documentation/` relance toujours tout.
  */
 import { execFileSync } from "node:child_process";
 
@@ -62,6 +71,21 @@ const PATH_AREAS = {
 const ALL = Object.fromEntries(
   [...Object.keys(AREAS), ...Object.keys(PATH_AREAS)].map((key) => [key, true]),
 );
+
+/** Les dossiers des paquets du workspace (`pnpm-workspace.yaml`). */
+const PACKAGE_ROOTS = [/^apps\/[^/]+\//u, /^packages\/[^/]+\//u, /^gateway\//u];
+
+/**
+ * Ce fichier rattache-t-il le diff à la racine pour une AUTRE raison que la
+ * documentation ? Un fichier hors de tout paquet et hors de `documentation/`
+ * (la CI, une porte, le lockfile, un fichier de config racine) : oui.
+ */
+function touchesRootBeyondDocs(file) {
+  if (PACKAGE_ROOTS.some((root) => root.test(file))) {
+    return false;
+  }
+  return !file.startsWith("documentation/");
+}
 
 /** Les fichiers modifiés depuis la base. Lève si git ne sait pas comparer. */
 function changedFiles(base) {
@@ -103,9 +127,10 @@ function decide(base) {
   } catch {
     return { areas: ALL, why: `git n'a pas su comparer à « ${base} »` };
   }
-  if (packages.includes("//")) {
+  if (packages.includes("//") && files.some(touchesRootBeyondDocs)) {
     return { areas: ALL, why: "la racine du dépôt est touchée (CI, gates, lockfile…)" };
   }
+  packages = packages.filter((name) => name !== "//");
   const areas = Object.fromEntries([
     ...Object.entries(AREAS).map(([key, matches]) => [key, packages.some(matches)]),
     ...Object.entries(PATH_AREAS).map(([key, matches]) => [key, files.some(matches)]),
