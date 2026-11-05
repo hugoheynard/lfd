@@ -56,6 +56,67 @@ société.
 
 # Partie 2 — Le code
 
+## 00. Lot préalable — le store de contexte (Hugo, 2026-11-05)
+
+> 📝 Ajouté après le premier passage de `vitruve` : faute d'un point unique,
+> la règle « rien d'affiché avant que `/me` confirme » devait être réécrite
+> dans chaque store, et le panier y échappait. `vitruve` à nouveau avant le
+> bâti.
+
+**Le constat (vérifié le 2026-11-05).** L'identité et l'espace ont une source
+unique — `AuthFacade` (le `sub`, le jeton), `AccountService` (`/me`),
+`ClientWorkspace` (`current()`, `company()`, `isPersonal()`) — mais les
+**appels** liés au contexte, non : une vingtaine de services de `client/`
+lisent `ClientWorkspace`, chacun avec son effet, sa clé (`readerKey`,
+`readFor`, `loadedFor`, `photoFor`, `mine.workspace`…) et sa propre règle
+d'attente (l'admission part avec `current() === null`,
+`order-admission.store.ts:135` ; la fidélité lit `isPersonal()`). Rien
+n'efface le stockage du navigateur à la déconnexion (`auth.facade.ts`
+`logout()`).
+
+**Le lot.** Un `ClientContext` unique, au-dessus de `ClientWorkspace`, qui
+porte :
+
+```mermaid
+stateDiagram-v2
+  [*] --> inconnu
+  inconnu --> visiteur: pas de session
+  inconnu --> essai: session et indice retenu
+  inconnu --> confirme: /me lu
+  essai --> confirme: /me lu
+  confirme --> confirme: bascule d'espace
+  confirme --> [*]: déconnexion
+```
+
+1. **Un état et une clé** : `inconnu`, `visiteur`, `essai(indice)`,
+   `confirmé(espace)`. La clé de contexte (`visiteur`, ou l'espace) est la
+   SEULE que les stores utilisent pour ranger une réponse — leurs clés
+   maison (`readFor`, `loadedFor`…) disparaissent.
+2. **Une seule règle d'affichage** : `shown(key)` est vrai seulement si
+   `key` vaut la clé confirmée. Un store range ce qu'il reçoit sous sa clé ;
+   l'écran ne lit que ce que `shown` admet. La règle s'écrit une fois.
+3. **Deux familles de stores, déclarées** : les **lecteurs** (lecture seule,
+   peuvent partir à l'essai si la liste fermée les nomme) et les
+   **écrivains** (panier, préférences) qui n'agissent qu'en `confirmé`. Une
+   porte (ou un test d'architecture) refuse un store qui lit `ClientWorkspace`
+   en direct.
+4. **La bascule d'espace** passe par `ClientContext.switchTo()` : l'ordre
+   des relectures est écrit une fois (aujourd'hui dispersé entre
+   `ClientWorkspace.set`, `enterProAfterLogin` et les effets de chacun).
+5. **La déconnexion** : `ClientContext.forget()` avant la redirection Auth0 —
+   indice, panier par espace et préférences locales, selon une liste tenue
+   à côté du registre des traceurs. Une session expirée oublie l'indice au
+   prochain `/me` qui contredit.
+
+**Ce que le lot ne fait pas** : il ne change aucun appel ni aucune route ; il
+ne lance aucun essai. L'espace retenu (les sections suivantes) se bâtit
+ensuite, sur lui, en ajoutant l'état `essai`.
+
+**Migration** : un store à la fois, en commençant par ceux qui n'écrivent
+pas ; chaque bascule garde ses tests et en ajoute un sur `shown`. Le
+périmètre est d'une vingtaine de fichiers (liste à établir au bâti, par
+`graphify explain "ClientWorkspace"` puis ouverture de chacun).
+
 ## 0. Ce que `vitruve` a établi (2026-11-05) — le plan est resserré
 
 Deux bloquants, tous deux vérifiés dans le code :
