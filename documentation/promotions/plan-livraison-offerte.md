@@ -279,9 +279,10 @@ particulier (TTC « environ », servi par le serveur).
 - **Révision** : le seuil figé (`free_delivery_threshold_cents`) accompagne le
   barème figé (`FrozenDeliveryFee`) dans la même zone. ⚠️ Une commande passée
   SANS franco n'a pas de seuil figé (la colonne n'existe qu'au franco, CHECK
-  `orders_free_delivery_waives_fee`) : une révision dans la même zone ne gagne
-  donc pas le franco, même au-dessus du seuil du jour — lecture stricte de
-  « jamais le réglage du jour », à confirmer par Hugo.
+  `orders_free_delivery_waives_fee`) : une révision dans la même zone prend
+  alors le **seuil du jour**, et ne peut qu'y gagner (tranché le 2026-11-05,
+  `16838b1e3` ; Hugo n'en fait pas un réglage). Un seuil figé reste celui de
+  la passation.
 - **Pas encore** (1c) : aucun champ du devis ni ligne « Livraison offerte »,
   aucun « Plus que… ».
 
