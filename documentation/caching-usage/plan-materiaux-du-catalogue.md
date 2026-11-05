@@ -450,6 +450,13 @@ lectures — contre 3 dans le relevé M0 local : le catalogue de production a de
 familles à plusieurs niveaux, et la lignée, absente du corpus de test (à plat),
 coûte des lectures. Le plan est justifié par la mesure.
 
+**Et chaque ajout au panier paie DEUX fois** (relevé le 2026-11-05 dans la
+boutique, client connecté) : le devis (7 lectures, ~130 ms) **et** les
+suggestions du panier (10 lectures, ~155 ms), soit ~285 ms de lecture du
+catalogue par clic. Les suggestions ne figuraient pas au relevé M0 : elles
+entrent dans le périmètre de l'instantané (à ajouter à M1b). Restent à relever
+: le devis d'un espace **pro** et l'estimation de la saisie (back-office).
+
 | Date       | Chemin                                                   | `http_req_duration` méd. / p95 | `app` méd. / p95 | `catalogue` méd. / p95 | lectures |
 | ---------- | -------------------------------------------------------- | ------------------------------ | ---------------- | ---------------------- | -------- |
 | 2026-11-05 | devis anonyme (`POST /shop/quote`), `bbb779a`, 30 appels | 337 / 446 ms                   | 155 / 180 ms     | **127 / 148 ms**       | **7**    |
