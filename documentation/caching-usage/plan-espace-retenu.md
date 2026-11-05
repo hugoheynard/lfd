@@ -56,6 +56,49 @@ société.
 
 # Partie 2 — Le code
 
+## 0. Ce que `vitruve` a établi (2026-11-05) — le plan est resserré
+
+Deux bloquants, tous deux vérifiés dans le code :
+
+1. **Le panier ÉCRIT à sa lecture de démarrage** (`shop-cart-sync.service.ts`
+   `enter()` / `reconcile()` → `switchTo`, `replaceAll`, `pushNow`) : sur un
+   essai faux, le panier visiteur partirait dans l'espace deviné et serait
+   perdu pour le bon, ou des lignes s'écriraient dans le panier serveur d'un
+   autre espace (le serveur se rabat sur la société résolue). **Le panier
+   sort de l'essai** : il attend `/me`, comme aujourd'hui.
+2. **Rien n'efface le stockage à la déconnexion** (`auth.facade.ts`
+   `logout()` n'appelle qu'Auth0) : « effacé à la déconnexion, comme le
+   panier » était faux. Un geste neuf, avant la redirection Auth0, est
+   nécessaire ; une session expirée n'efface rien.
+
+Et des sérieux qui changent la forme :
+
+- **L'intercepteur ne change pas** : un `current() ?? tentative()` global
+  ferait porter l'indice à TOUT appel d'avant `/me` (l'admission part déjà
+  avec `current() === null`, `order-admission.store.ts:135`). L'essai pose
+  son en-tête **explicitement**, lecteur par lecteur, comme l'écriture du
+  panier le fait déjà.
+- **Liste fermée de lecteurs essayés**, en lecture seule et rangés par clé
+  d'espace : le rayon reconnu, la vitrine du rayon, les points de retrait.
+  Pas la fidélité ni l'audience (elles raisonnent sur `isPersonal()` /
+  `company()`, qu'un identifiant seul ne donne pas), pas le panier, pas
+  l'admission.
+- **Seulement sur la boutique sans garde** : `mon-compte`, `mes-factures`,
+  `/ma-fidelite` et l'atterrissage de connexion attendent `/me` par leur
+  garde — l'essai n'y gagne rien.
+- **Pas d'essai au retour d'une connexion** (`LoginMoment.fresh()`) :
+  `enterProAfterLogin` rebascule le perso vers le pro juste après `/me`.
+- ProShelves n'est pas empoisonné : la clé vient de la société RÉSOLUE
+  (`read-my-shop-catalogue.ts`, `container/shelf-store.ts`).
+- Le traceur au registre : « pas une donnée personnelle » se tranche dans le
+  registre (une entreprise individuelle porte le nom d'une personne).
+
+**Le gain s'en trouve réduit** : le rayon (le plus lent de la vague, ~240 ms)
+part en même temps que `/me` ; le panier, lui, attend toujours. L'affichage
+de la boutique ne dépend que du rayon : le gain sur l'affichage reste de
+l'ordre de 250 ms, à mesurer. Les sections suivantes décrivent le plan
+d'origine ; ce §0 l'emporte là où ils divergent.
+
 ## 1. Ce qui existe (vérifié le 2026-11-05)
 
 - `ClientWorkspace.current` (`apps/lfc-ecommerce-frontend/src/app/client/client-workspace.service.ts:65`)
