@@ -1,5 +1,12 @@
 # Plan — la livraison offerte : un étage de promotions sur les frais
 
+> 📍 **État au 2026-11-05.** ✅ **En production** : 0a (réglage global par
+> audience et remplacements par zone, sans effet). 🟦 **Sur `dev`** : 0b
+> (frais résolu zone → global → ancien, écran des zones, journal) et 1a
+> (tarif figé à la commande, colonnes du franco). **En cours** : 1b (le
+> calcul du franco). **À faire** : 1c (affichage, « Plus que 12 € »), 0c
+> (route publique par audience), 2 (promotions sur les frais).
+
 > 📝 **Plan, écrit le 2026-11-05**, demande de Hugo (« on me dit la livraison
 > est gratuite au-delà d'une certaine somme… un système hyper souple à
 > régler »). Rien n'est bâti. Il touche **l'argent** (un frais facturé, sa

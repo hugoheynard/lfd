@@ -1,5 +1,12 @@
 # Plan — les pros en cours d'inscription (doc-first, 2026-10-30)
 
+> 📍 **État au 2026-11-05.** ✅ **Terminé, en production** (§ 0) : une
+> société en attente est pro partout sauf le paiement au compte ; promotions
+> « pros actifs » lues sur le statut ; l'accueil dit « en cours de
+> validation, vous pouvez déjà commander par carte ». Lots P1 à P4 abandonnés.
+> **Reste (petit)** : l'écran de révision du back-office propose le coursier
+> pro pour une commande passée avant le changement, que le serveur refuse.
+
 > 📐 **Doc-first : aucune ligne de code.** Décision de Hugo du 2026-10-30,
 > consignée au § 10 de
 > [`../promotions/promotions.md`](../promotions/promotions.md) (§ 2.16).

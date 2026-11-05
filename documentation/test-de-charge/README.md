@@ -1,5 +1,10 @@
 # Procédure de calcul de charge
 
+> 📍 **État au 2026-11-05.** Plan corrigé après `vitruve`, aucun script
+> (« pas de script pour l'instant »). **Attend Hugo** : copier les sites,
+> local puis staging, le mode d'authentification de charge, un rôle Postgres
+> en lecture seule sur la production.
+
 > 📐 **Préparé le 2026-11-05, jamais lancé.** Le script k6 décrit ici
 > **n'est pas encore écrit** (Hugo, 2026-11-05 : « pas de script pour
 > l'instant ») ; ce qui suit le spécifie. Aucun test de charge n'a tourné,

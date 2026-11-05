@@ -1,5 +1,15 @@
 # Plan — le rayon pro gardé jusqu'à la prochaine heure qui le change
 
+> 📍 **État au 2026-11-05.** ✅ **Terminé, en production** : phase 1 (gardé
+> 5 min ou jusqu'à la prochaine opération datée, révision dans la clé),
+> rangement après la réponse, mesure de l'appel à l'objet. **Problème
+> restant, mesuré** : la lecture dépasse sa limite de 100 ms, le rayon est
+> recalculé (300 ms à 2 s). **En cours** : délai de lecture 400 ms, rayon
+> rangé compressé, durée de l'objet affichée au back-office. **Si ça ne
+> suffit pas** : la phase 3 (rayon précalculé en tâche de fond) plutôt qu'un
+> réglage de plus. Vaut aussi pour les particuliers connectés (un rayon
+> partagé, `/shelves/personal`).
+
 > 📝 **Plan, écrit le 2026-11-04, réécrit le même soir après `vitruve`**, point (b) du lot L2 de
 > [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md), validé
 > dans son principe par Hugo le même jour. Rien n'est bâti. Il touche

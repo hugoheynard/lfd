@@ -1,5 +1,17 @@
 # Plan — la latence de navigation et du changement d'espace
 
+> 📍 **État au 2026-11-05.** ✅ **Terminé, en production** : principal en
+> mémoire (60–270 ms → ~10 ms par appel), espace retenu (le rayon part avec
+> `/me`), bascule d'espace nommée, devis sans attente au changement de
+> lecteur, suggestions demandées une fois, réglages publics servis par
+> Cloudflare (2 ms). Mesure : boutique affichée **~640 ms à chaud** (~900 ms
+> le matin même), changement d'espace 1,2–1,5 s (2,0–2,6 s la veille ; non
+> remesuré depuis la bascule et l'espace retenu). **Reste** : les connexions
+> froides à la base (~200 ms après une pause de plus de 30 s), et le rayon
+> d'une société dont la lecture dépasse son délai (voir
+> [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md)).
+> **Cible proposée à Hugo** : < 600 ms à chaud, < 1 s après une pause.
+
 > 🟨 **Plan en cours, écrit et mis à jour le 2026-11-04**, à partir des mesures
 > de production du même jour. Chaque lot porte ce qui est **fait** (avec le
 > commit, et 🟦 sur `dev` / ✅ en production) et ce qui **reste**. Partie 1 :

@@ -1,5 +1,11 @@
 # La carte des caches — ce qui est gardé, où, et qui le vide
 
+> 📍 **État au 2026-11-05 (C5, page Santé du back-office).** Principal : 92 %
+> servis en mémoire. Matériaux de prix : 86–96 %. Rayon public : 100 %.
+> **Rayon d'une société : 0 % en lecture** — la lecture de l'objet dépasse
+> son délai de 100 ms ; le rangement, lui, réussit depuis qu'il se fait après
+> la réponse. En cours : délai de lecture 400 ms et rayon rangé compressé.
+
 > ✅ **Inventaire relu dans le code le 2026-11-05** (`dev`, après `474dd915d`).
 > Il recense chaque endroit où le système garde une réponse pour ne pas la
 > relire. Les plans qui ont conçu ces caches restent la référence de leur

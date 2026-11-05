@@ -1,5 +1,12 @@
 # Plan — le principal gardé en mémoire de l'API (L4)
 
+> 📍 **État au 2026-11-05.** ✅ **Terminé, en production** : le principal en
+> mémoire, l'estampille globale filtrée par colonnes (§ 3 quinquies : une
+> première connexion ou une correction d'identité de société ne vide plus le
+> cache de tout le monde), la société qui ne réécrit plus son statut à chaque
+> sauvegarde. Mesuré (C5) : **92 % des appels servis en mémoire**. Écarté
+> après `vitruve` : une estampille par personne. **Reste** : rien.
+
 > 📝 **Plan, écrit le 2026-11-04**, lot L4 de
 > [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md). 🟨 **Bâti
 > le 2026-11-04, non commité** (migration `20261104120000`,

@@ -1,5 +1,15 @@
 # Plan — l'espace retenu : ne plus attendre `/me` pour ouvrir la boutique
 
+> 📍 **État au 2026-11-05.** ✅ **Terminé, en production** : lots a (oubli à
+> la déconnexion), b (contexte), c (bascule nommée et lecture d'avance),
+> c bis (brique `contextKeyed`), e (espace retenu), la porte
+> `lint:context-keyed-readers`, et 6 lecteurs du lot d. 🟦 **Sur `dev`** :
+> 3 lecteurs de plus (habituels, suggestions de l'accueil et de la fiche) et
+> la correction d'un double appel des points de retrait. **Reste** : 10
+> fichiers en dette (catalogue, panier, devis, adresses, mandat, choix de
+> commande) ; les doublons intermittents de l'ouverture des commandes et du
+> pied de page, non expliqués (sans coût).
+
 > 📝 **Plan, écrit le 2026-11-05.** Rien n'est bâti. Il touche **l'audience**
 > (quel tarif sert-on à qui) : `vitruve` avant le bâti. Point « ne plus
 > attendre `/me` » de [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md).

@@ -1,5 +1,14 @@
 # Plan — les lectures communes à une audience, gardées une fois
 
+> 📍 **État au 2026-11-05.** ✅ **Terminé, en production** : pied de page,
+> ouverture des commandes, zones et disponibilité de la livraison en cache
+> Cloudflare (30 s, purgés à chaque écriture). 🟦 **Sur `dev`** : la liste
+> publique des points de retrait (30 s, sans `stale-while-revalidate`),
+> purgée par les points, les rôles de site et les cinq gestes de promotion.
+> **Renoncé** : le cache des jours de service et de l'accès aux fonctions.
+> **Reste** : vérifier une fois déployé que Cloudflare sépare
+> `?audience=pro` de la liste sans paramètre.
+
 > 📝 **Plan, écrit le 2026-11-05**, idée de Hugo (« on définit les points de
 > retrait par audience, ça pourrait être en cache »). Rien n'est bâti. Il
 > touche **l'audience** — ce que chaque clientèle a le droit de voir — :
