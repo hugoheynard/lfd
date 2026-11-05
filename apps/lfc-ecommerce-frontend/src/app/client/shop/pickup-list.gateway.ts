@@ -54,6 +54,20 @@ export class PickupListGateway {
     });
   }
 
+  /**
+   * Quelqu'un attend les points, mais le lecteur n'est pas encore connu :
+   * pendant l'essai du démarrage (lot e), ceux de l'espace retenu partent
+   * tout de suite, rangés sous lui et repris par {@link pickupsOf} si `/me`
+   * le confirme.
+   */
+  expect(): void {
+    this.asked = true;
+    const ahead = untracked(() => this.context.ahead());
+    if (ahead !== null) {
+      this.aheadReads.ask(ahead, ahead, () => this.read(ahead));
+    }
+  }
+
   /** Les points de CE lecteur — repris de la lecture faite d'avance s'il y en a une. */
   pickupsOf(reader: string): Promise<readonly AudiencePickupAddressView[]> {
     this.asked = true;

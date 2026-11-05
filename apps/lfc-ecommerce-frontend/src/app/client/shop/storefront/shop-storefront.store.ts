@@ -104,11 +104,17 @@ export class ShopStorefront {
    */
   async load(shelfKey: string): Promise<void> {
     const reader = this.reader();
+    const ahead = this.context.ahead();
     if (reader === null) {
+      // L'espace retenu (lot e) : la page part pour lui en même temps que
+      // `/me`, et {@link stateOf} reste « en chargement » jusqu'à lui.
+      if (ahead !== null) {
+        this.shelves.add(shelfKey);
+        await this.loadFor(ahead, shelfKey);
+      }
       return;
     }
     this.shelves.add(shelfKey);
-    const ahead = this.context.ahead();
     await Promise.all([
       this.loadFor(reader, shelfKey),
       ahead === null ? Promise.resolve() : this.loadFor(ahead, shelfKey),

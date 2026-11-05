@@ -266,8 +266,12 @@ export class ServicePoints {
     }
     this.asked = true;
     const base = AUTH_CONFIG.apiBaseUrl;
-    // Reconnu, espace pas encore connu : la liste attend, l'effet la lira.
+    // Reconnu, espace pas encore connu : la liste attend, l'effet la lira —
+    // celle de l'espace retenu part déjà (lot e).
     const reader = this.readerKey();
+    if (reader === null) {
+      this.list.expect();
+    }
     try {
       const [pickups, zones, days, settings] = await Promise.all([
         reader === null ? Promise.resolve(null) : this.pickupsOf(reader),

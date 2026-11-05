@@ -1,8 +1,26 @@
-import { computed, effect, inject, Injectable, untracked } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  PLATFORM_ID,
+  signal,
+  untracked,
+} from '@angular/core';
 
 import type { WorkspaceWriteOutcome } from '../account/account.service';
 import { AuthFacade } from '../auth/auth.facade';
+import { LoginMoment } from '../auth/login-moment';
 import { ClientWorkspace } from './client-workspace.service';
+import { readLocal, readString, writeLocal } from './local-store';
+
+/**
+ * La clé de l'espace retenu (lot e) — `lfc.workspace-hint` dans le stockage.
+ * Effacée à la déconnexion (`sign-out/stored-keys.ts`), inscrite au registre
+ * des traceurs.
+ */
+export const WORKSPACE_HINT_KEY = 'workspace-hint';
 
 /**
  * Le préfixe d'un lecteur anonyme : les routes publiques, les tarifs des particuliers.
@@ -22,10 +40,14 @@ export const VISITOR = 'visiteur';
  *   encore accepté — on MONTRE encore `from`, on lit déjà `to` (cf.
  *   {@link ClientContext.ahead}) ; `from` vaut `null` à l'arrivée pro d'une
  *   connexion (rien à quitter) ;
+ * - `trying` : au DÉMARRAGE seulement, la personne est reconnue, `/me` n'a pas
+ *   répondu, et le navigateur retient l'espace de la dernière visite (`hint`) —
+ *   rien ne s'affiche, mais les lecteurs y lisent d'avance (lot e) ;
  * - `confirmed` : l'espace accepté de la personne reconnue.
  */
 export type ClientContextState =
   | { readonly kind: 'unknown' }
+  | { readonly kind: 'trying'; readonly hint: string }
   | { readonly kind: 'visitor' }
   | { readonly kind: 'switching'; readonly from: string | null; readonly to: string }
   | { readonly kind: 'confirmed'; readonly workspace: string };
@@ -59,13 +81,29 @@ const VISITING: ClientContextState = { kind: 'visitor' };
  * à `from`, et {@link whenAbandoned} fait jeter ce qui a été lu pour `to`,
  * sans l'avoir montré.
  *
- * Rien du navigateur : il ne dérive que de signaux, donc le rendu serveur et
- * l'hydratation voient le même état.
+ * **L'espace retenu est une lecture d'avance de plus** (lot e) : au
+ * démarrage, entre la session reconnue et la réponse de `/me`, l'état vaut
+ * `trying`, {@link prefix} reste `null` (rien ne s'affiche) et {@link ahead}
+ * vaut l'espace de la dernière visite. `/me` tient le rôle du `PATCH` : même
+ * espace, ce qui a été lu sert tel quel ; autre espace, {@link whenAbandoned}
+ * le fait jeter. Jamais au retour d'une connexion (`LoginMoment.fresh()` —
+ * l'arrivée pro rebascule juste après `/me`), jamais sans session ni indice,
+ * jamais au rendu serveur (l'indice ne s'y lit pas, l'état reste `unknown`).
+ * L'indice s'écrit à chaque état `confirmed` : après `/me`, et après une
+ * bascule acceptée.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientContext {
   private readonly auth = inject(AuthFacade);
   private readonly workspace = inject(ClientWorkspace);
+  private readonly loginMoment = inject(LoginMoment);
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  /**
+   * L'espace de la dernière visite, lu une fois au démarrage ; `null` dès le
+   * premier espace confirmé — l'essai ne vaut qu'au démarrage.
+   */
+  private readonly hint = signal<string | null>(this.browser ? readHint() : null);
 
   readonly state = computed<ClientContextState>(
     () => {
@@ -74,7 +112,8 @@ export class ClientContext {
       }
       const workspace = this.workspace.current();
       if (workspace === null) {
-        return UNKNOWN;
+        const hint = this.hint();
+        return hint === null || this.loginMoment.fresh() ? UNKNOWN : { kind: 'trying', hint };
       }
       const switching = this.workspace.switching();
       return switching === null
@@ -91,14 +130,44 @@ export class ClientContext {
    */
   readonly prefix = computed<string | null>(() => prefixOf(this.state()));
 
-  /** L'espace demandé et pas encore accepté — à lire d'avance, jamais à montrer. */
+  /**
+   * L'espace demandé et pas encore accepté — à lire d'avance, jamais à
+   * montrer : la cible d'une bascule, ou l'espace retenu pendant l'essai.
+   */
   readonly ahead = computed<string | null>(() => {
     const state = this.state();
-    return state.kind === 'switching' ? state.to : null;
+    switch (state.kind) {
+      case 'switching':
+        return state.to;
+      case 'trying':
+        return state.hint;
+      default:
+        return null;
+    }
   });
 
-  /** Une bascule attend-elle le serveur ? De quoi dire « on change d'espace » sans rien en montrer. */
-  readonly switching = computed<boolean>(() => this.ahead() !== null);
+  /**
+   * Une bascule attend-elle le serveur ? De quoi dire « on change d'espace »
+   * sans rien en montrer. Faux pendant l'essai : personne n'a rien demandé.
+   */
+  readonly switching = computed<boolean>(() => this.state().kind === 'switching');
+
+  constructor() {
+    // Retenir l'espace confirmé — par `/me` ou par le serveur à la bascule —
+    // pour la prochaine visite, et clore l'essai du démarrage.
+    effect(() => {
+      const state = this.state();
+      if (state.kind !== 'confirmed') {
+        return;
+      }
+      untracked(() => {
+        this.hint.set(null);
+        if (this.browser) {
+          writeLocal(WORKSPACE_HINT_KEY, state.workspace);
+        }
+      });
+    });
+  }
 
   /**
    * **Le point d'entrée unique de la bascule.** L'espace demandé passe en
@@ -138,7 +207,7 @@ export class ClientContext {
 
 /** Ce qui distingue deux états pour un lecteur : la sorte, le préfixe, la cible d'une bascule. */
 function identityOf(state: ClientContextState): string {
-  const to = state.kind === 'switching' ? state.to : '';
+  const to = state.kind === 'switching' ? state.to : state.kind === 'trying' ? state.hint : '';
   return `${state.kind}\u0000${prefixOf(state) ?? ''}\u0000${to}`;
 }
 
@@ -151,6 +220,15 @@ function prefixOf(state: ClientContextState): string | null {
     case 'switching':
       return state.from;
     case 'unknown':
+    case 'trying':
       return null;
   }
+}
+
+/** L'espace retenu, s'il a la forme d'un espace. */
+function readHint(): string | null {
+  return readLocal(WORKSPACE_HINT_KEY, (raw) => {
+    const hint = readString(raw);
+    return hint === null || hint.trim() === '' ? null : hint;
+  });
 }

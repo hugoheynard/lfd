@@ -14,11 +14,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Account } from '../account/account.model';
 import { AccountService } from '../account/account.service';
 import { AuthFacade } from '../auth/auth.facade';
+import { LoginMoment } from '../auth/login-moment';
 import { NotifyService } from '../notify.service';
 import { ClientContext, VISITOR } from './client-context.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { PROFILE, TOMMEUSES } from './mon-compte/account.fixture';
 import { PickupListGateway } from './shop/pickup-list.gateway';
+import { ERASED_ON_SIGN_OUT, matches } from './sign-out/stored-keys';
 import { ShopCatalogue } from './shop/shop-catalogue.store';
 import { ShopStorefront } from './shop/storefront/shop-storefront.store';
 import {
@@ -44,6 +46,7 @@ describe('ClientContext — le contexte de lecture', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear();
     authenticated.set(false);
     workspace = workspaceDouble(null);
   });
@@ -144,6 +147,7 @@ describe('ClientContext — la bascule (lot c)', () => {
     request.request.headers.get(WORKSPACE_HEADER);
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -311,5 +315,254 @@ describe('ClientContext — la bascule (lot c)', () => {
     toPersonal?.flush({ message: 'refusé' }, { status: 403, statusText: 'Forbidden' });
     expect(await second).toBe('refused');
     expect(context.state()).toEqual({ kind: 'confirmed', workspace: 'cmp_a' });
+  });
+});
+
+/**
+ * L'espace retenu (lot e) : au démarrage, les lecteurs lisent pour l'espace de
+ * la dernière visite EN MÊME TEMPS que `/me`, et rien ne s'affiche avant lui.
+ */
+describe('ClientContext — l’espace retenu (lot e)', () => {
+  const MAISON_A: CompanyView = { ...TOMMEUSES, id: 'cmp_a', enseigne: 'Maison A' };
+  const MAISON_B: CompanyView = { ...TOMMEUSES, id: 'cmp_b', enseigne: 'Maison B' };
+  const HINT = 'lfc.workspace-hint';
+  const CATALOGUE_OF = (sku: string) => ({ shelves: [], items: [{ sku }], operations: [] });
+  const PAGE_OF = (sku: string) => ({ shelfKey: 'pains', items: [{ sku }] });
+
+  const authenticated = signal(true);
+  let http: HttpTestingController;
+  /** L'ordre des appels partis, par chemin — c'est le gain qu'on éprouve. */
+  let sent: string[];
+
+  function me(workspace: string): Account {
+    return {
+      profile: PROFILE,
+      companies: [MAISON_A, MAISON_B],
+      reachableSites: [],
+      navPrefs: { catalogueView: null, workspace },
+    };
+  }
+
+  function boot(platform: 'browser' | 'server' = 'browser'): ClientContext {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: PLATFORM_ID, useValue: platform },
+        {
+          provide: AuthFacade,
+          useValue: {
+            isAuthenticated: authenticated,
+            authEmail: signal(null),
+            accessToken$: () => of('jeton'),
+          },
+        },
+        { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+    return TestBed.inject(ClientContext);
+  }
+
+  /** `/me` part — le compte le lance de lui-même dès la session reconnue. */
+  function startMe(): TestRequest {
+    TestBed.inject(AccountService);
+    TestBed.tick();
+    return http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET');
+  }
+
+  /** Les trois lecteurs du lot b, demandés comme l'écran de la boutique les demande. */
+  function openShop(): {
+    catalogue: ShopCatalogue;
+    storefront: ShopStorefront;
+    pickups: PickupListGateway;
+  } {
+    const catalogue = TestBed.inject(ShopCatalogue);
+    const storefront = TestBed.inject(ShopStorefront);
+    const pickups = TestBed.inject(PickupListGateway);
+    void catalogue.hydrate();
+    void storefront.load('pains');
+    pickups.expect();
+    TestBed.tick();
+    return { catalogue, storefront, pickups };
+  }
+
+  const pathOf = (request: TestRequest): string => request.request.url.replace(/^.*\/\/[^/]+/u, '');
+
+  const readsFor = (workspace: string): TestRequest[] =>
+    http.match((r) => r.headers.get(WORKSPACE_HEADER) === workspace);
+
+  async function settle(): Promise<void> {
+    TestBed.tick();
+    for (let i = 0; i < 5; i += 1) {
+      await Promise.resolve();
+    }
+    TestBed.tick();
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    authenticated.set(true);
+    sent = [];
+  });
+
+  it('indice juste : le rayon part AVANT la réponse de /me, rien ne s’affiche avant lui, puis tout sert sans nouvel appel', async () => {
+    localStorage.setItem(HINT, JSON.stringify('cmp_a'));
+    const context = boot();
+    const meRead = startMe();
+    sent.push('/me');
+    expect(context.state()).toEqual({ kind: 'trying', hint: 'cmp_a' });
+    expect(context.prefix()).toBeNull();
+    expect(context.switching()).toBe(false);
+
+    const { catalogue, storefront, pickups } = openShop();
+    const ahead = readsFor('cmp_a');
+    sent.push(...ahead.map(pathOf));
+    // /me n'a pas répondu, et les trois lectures sont déjà en vol, à côté.
+    expect(meRead.cancelled).toBe(false);
+    expect(sent).toEqual([
+      '/me',
+      '/shop/catalogue/mine',
+      '/shop/storefront/pains/mine',
+      '/pickup-addresses/mine',
+    ]);
+    for (const read of ahead) {
+      const path = pathOf(read);
+      read.flush(
+        path === '/shop/catalogue/mine'
+          ? CATALOGUE_OF('a')
+          : path.endsWith('/pains/mine')
+            ? PAGE_OF('a')
+            : [],
+      );
+    }
+    await settle();
+    // Lu, mais pas montré : /me n'a rien confirmé.
+    expect(catalogue.items()).toEqual([]);
+    expect(catalogue.status()).toBe('loading');
+    expect(storefront.stateOf('pains')).toEqual({ status: 'loading' });
+
+    meRead.flush(me('cmp_a'));
+    await settle();
+    expect(context.state()).toEqual({ kind: 'confirmed', workspace: 'cmp_a' });
+    expect(catalogue.items()).toEqual([{ sku: 'a' }]);
+    expect(storefront.stateOf('pains')).toEqual({ status: 'ready', page: PAGE_OF('a') });
+    await storefront.load('pains');
+    expect(await pickups.pickupsOf('cmp_a')).toEqual([]);
+    http.expectNone(() => true);
+  });
+
+  it('indice faux : rien de l’essai ne s’affiche, les lecteurs relisent pour le bon espace', async () => {
+    localStorage.setItem(HINT, JSON.stringify('cmp_b'));
+    const context = boot();
+    const meRead = startMe();
+    const { catalogue, storefront, pickups } = openShop();
+    const ahead = readsFor('cmp_b');
+    expect(ahead).toHaveLength(3);
+
+    meRead.flush(me('cmp_a'));
+    await settle();
+    expect(context.state()).toEqual({ kind: 'confirmed', workspace: 'cmp_a' });
+    expect(catalogue.items()).toEqual([]);
+
+    // Les réponses de l'essai reviennent après /me : elles sont jetées.
+    for (const read of ahead) {
+      read.flush(pathOf(read).endsWith('/pains/mine') ? PAGE_OF('b') : CATALOGUE_OF('b'));
+    }
+    await settle();
+    expect(catalogue.items()).toEqual([]);
+
+    // L'écran relit pour le bon espace ; seul ce qui en vient s'affiche.
+    void storefront.load('pains');
+    const pointsRead = pickups.pickupsOf('cmp_a');
+    TestBed.tick();
+    const right = readsFor('cmp_a');
+    expect(right.map(pathOf).sort()).toEqual([
+      '/pickup-addresses/mine',
+      '/shop/catalogue/mine',
+      '/shop/storefront/pains/mine',
+    ]);
+    for (const read of right) {
+      const path = pathOf(read);
+      read.flush(
+        path === '/shop/catalogue/mine'
+          ? CATALOGUE_OF('a')
+          : path.endsWith('/pains/mine')
+            ? PAGE_OF('a')
+            : [],
+      );
+    }
+    await settle();
+    await pointsRead;
+    expect(catalogue.items()).toEqual([{ sku: 'a' }]);
+    expect(storefront.stateOf('pains')).toEqual({ status: 'ready', page: PAGE_OF('a') });
+    // L'indice suit l'espace confirmé.
+    expect(localStorage.getItem(HINT)).toBe(JSON.stringify('cmp_a'));
+  });
+
+  it('sans indice : rien ne part avant /me, comme aujourd’hui', () => {
+    const context = boot();
+    const meRead = startMe();
+    openShop();
+    expect(context.state()).toEqual({ kind: 'unknown' });
+    expect(context.ahead()).toBeNull();
+    http.expectNone((r) => !r.url.endsWith('/me'));
+    meRead.flush(me('cmp_a'));
+  });
+
+  it('au retour d’une connexion : pas d’essai, l’arrivée pro rebascule juste après /me', () => {
+    localStorage.setItem(HINT, JSON.stringify('cmp_a'));
+    const context = boot();
+    TestBed.inject(LoginMoment).fresh.set(true);
+    const meRead = startMe();
+    openShop();
+    expect(context.state()).toEqual({ kind: 'unknown' });
+    http.expectNone((r) => !r.url.endsWith('/me'));
+    meRead.flush(me('cmp_a'));
+  });
+
+  it('sans session : visiteur, l’indice ne sert pas', () => {
+    localStorage.setItem(HINT, JSON.stringify('cmp_a'));
+    authenticated.set(false);
+    const context = boot();
+    expect(context.state()).toEqual({ kind: 'visitor' });
+    expect(context.ahead()).toBeNull();
+  });
+
+  it('au rendu serveur : l’indice ne se lit pas, l’état reste inconnu', () => {
+    localStorage.setItem(HINT, JSON.stringify('cmp_a'));
+    const context = boot('server');
+    expect(context.state()).toEqual({ kind: 'unknown' });
+  });
+
+  it('l’indice s’écrit après /me et après une bascule acceptée, et pas après un refus', async () => {
+    const context = boot();
+    startMe().flush(me('cmp_a'));
+    TestBed.tick();
+    expect(localStorage.getItem(HINT)).toBe(JSON.stringify('cmp_a'));
+
+    const accepted = context.switchTo('cmp_b');
+    TestBed.tick();
+    // Demandée, pas encore acceptée : l'indice reste l'espace confirmé.
+    expect(localStorage.getItem(HINT)).toBe(JSON.stringify('cmp_a'));
+    http.expectOne((r) => r.url.endsWith('/me/nav-prefs')).flush(me('cmp_b'));
+    expect(await accepted).toBe('accepted');
+    TestBed.tick();
+    expect(localStorage.getItem(HINT)).toBe(JSON.stringify('cmp_b'));
+
+    const refused = context.switchTo(PERSONAL_WORKSPACE);
+    TestBed.tick();
+    http
+      .expectOne((r) => r.url.endsWith('/me/nav-prefs'))
+      .flush({ message: 'refusé' }, { status: 403, statusText: 'Forbidden' });
+    expect(await refused).toBe('refused');
+    TestBed.tick();
+    expect(localStorage.getItem(HINT)).toBe(JSON.stringify('cmp_b'));
+  });
+
+  it('l’indice est effacé à la déconnexion', () => {
+    expect(matches(ERASED_ON_SIGN_OUT, HINT)).toBe(true);
   });
 });

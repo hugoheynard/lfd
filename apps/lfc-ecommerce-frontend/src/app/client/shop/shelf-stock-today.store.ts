@@ -116,7 +116,9 @@ export class ShelfStockToday {
    * d'avance est simplement perdue.
    */
   private readonly aheadTarget = computed<ShelfTarget | null>(
-    () => this.targetFor(this.context.ahead()),
+    // Pas pendant l'essai du démarrage (lot e) : l'audience, part de la clé,
+    // n'y est pas encore connue.
+    () => this.targetFor(this.context.switching() ? this.context.ahead() : null),
     { equal: sameTarget },
   );
 

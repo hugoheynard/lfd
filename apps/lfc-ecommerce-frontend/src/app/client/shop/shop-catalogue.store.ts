@@ -256,6 +256,12 @@ export class ShopCatalogue {
       if (this.state() === 'idle') {
         this.state.set('loading');
       }
+      // L'espace retenu (lot e) : sa photo part en même temps que `/me`,
+      // rangée sous l'indice, reprise ci-dessous si `/me` le confirme.
+      const ahead = this.context.ahead();
+      if (ahead !== null) {
+        this.aheadReads.ask(ahead, ahead, () => this.shelfFor(ahead));
+      }
       return;
     }
     // Idempotent tant que le LECTEUR n'a pas changé. Une photo prise pour un

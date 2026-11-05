@@ -33,6 +33,8 @@ export const ERASED_ON_SIGN_OUT: readonly KeyRule[] = [
   exact('lfc.order.houseDraft'),
   // Les coordonnées d'une commande sans compte (`guest-identity-form.ts`).
   exact('lfc.guest.identity'),
+  // L'espace retenu de la dernière visite (`client/client-context.service.ts`, lot e).
+  exact('lfc.workspace-hint'),
   // Le mode de connexion du dernier départ (`auth/auth-redirect.ts`).
   exact('lfc-last-connection'),
   // L'espace actif de l'ancienne surface (`legacy/commerce/commerce-context.service.ts`).

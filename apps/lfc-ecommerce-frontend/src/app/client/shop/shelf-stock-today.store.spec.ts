@@ -56,7 +56,11 @@ describe('ShelfStockToday — le reste d’aujourd’hui au point choisi (L7)', 
         // Hors bascule : la lecture d'avance est éprouvée par `client-context.service.spec.ts`.
         {
           provide: ClientContext,
-          useValue: { ahead: signal(null), whenAbandoned: (): void => undefined },
+          useValue: {
+            ahead: signal(null),
+            switching: signal(false),
+            whenAbandoned: (): void => undefined,
+          },
         },
         { provide: ClientAudience, useValue: { shown: signal('b2c') } },
         { provide: ShopClock, useValue: { now: signal(NOW) } },
