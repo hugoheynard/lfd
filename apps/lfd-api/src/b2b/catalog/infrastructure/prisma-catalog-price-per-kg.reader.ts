@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import {
   CatalogPricePerKgReader,
   type CatalogPricePerKg,
@@ -21,10 +22,12 @@ export class PrismaCatalogPricePerKgReader extends CatalogPricePerKgReader {
     if (skus.length === 0) {
       return new Map();
     }
-    const rows = await this.prisma.catalogItem.findMany({
-      where: { sku: { in: [...skus] }, ...STILL_SOLD },
-      select: { sku: true, proPricePerKgMillicents: true, publicPricePerKgTtcCents: true },
-    });
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findMany({
+        where: { sku: { in: [...skus] }, ...STILL_SOLD },
+        select: { sku: true, proPricePerKgMillicents: true, publicPricePerKgTtcCents: true },
+      }),
+    );
     return new Map(
       rows.map((row) => [
         row.sku,

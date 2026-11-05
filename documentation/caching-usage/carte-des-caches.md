@@ -353,7 +353,10 @@ Règle : **le stable dans le rayon, le dynamique à côté**
 - **`Server-Timing`** : le Worker ajoute `worker;dur=…;desc="<colo>"`
   (`worker.ts:783`) et `container;dur=…` (`:223`) ; Nest ajoute ses étapes
   (`verify`, `principal`, `apps/lfd-api/src/platform/metrics/server-timing.ts:53`,
-  `auth.guard.ts:109-112`). Une réponse servie par le bord n'a **pas** d'étape
+  `auth.guard.ts:109-112`), et, depuis le 2026-11-05, `catalogue` (temps
+  mural des lectures du catalogue) et `catalogue-reads` (leur nombre, en
+  `desc`) — cf. [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)
+  § 10. Une réponse servie par le bord n'a **pas** d'étape
   `container` (le container n'a pas été appelé) — ⚠️ déduction, non éprouvée
   sur la production.
 - **`cf-cache-status`** : posé par Cloudflare lui-même (`HIT`, `MISS`…) ;

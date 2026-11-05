@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { OrderLineAllergens } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import {
   CatalogReader,
   type ResolvedCatalogItem,
@@ -117,10 +118,12 @@ export class PrismaCatalogReader extends CatalogReader {
 
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
   async findByShopSku(shopSku: string, viewer: CatalogViewer): Promise<ResolvedCatalogItem | null> {
-    const row = await this.prisma.catalogItem.findFirst({
-      where: { ...soldUnderShopSkus([shopSku]), ...STILL_SOLD },
-      include: itemInclude(viewer),
-    });
+    const row = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findFirst({
+        where: { ...soldUnderShopSkus([shopSku]), ...STILL_SOLD },
+        include: itemInclude(viewer),
+      }),
+    );
     if (row === null) {
       return null;
     }
@@ -135,10 +138,12 @@ export class PrismaCatalogReader extends CatalogReader {
     if (shopSkus.length === 0) {
       return new Map();
     }
-    const rows = await this.prisma.catalogItem.findMany({
-      where: { ...soldUnderShopSkus(shopSkus), ...STILL_SOLD },
-      include: itemInclude(viewer),
-    });
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findMany({
+        where: { ...soldUnderShopSkus(shopSkus), ...STILL_SOLD },
+        include: itemInclude(viewer),
+      }),
+    );
     const resolved = new Map<string, ResolvedCatalogItem>();
     const lineage = await this.lineage(rows);
     for (const row of rows) {
@@ -151,35 +156,37 @@ export class PrismaCatalogReader extends CatalogReader {
   }
 
   async listSellable(viewer: CatalogViewer): Promise<ResolvedCatalogItem[]> {
-    const rows = await this.prisma.catalogItem.findMany({
-      where: {
-        ...STILL_SOLD,
-        // Deux conditions indépendantes, donc un `AND` explicite : deux clés
-        // `OR` dans le même objet se seraient écrasées en silence.
-        AND: [
-          // Le masquage et l'audience se jugent APRÈS la lecture, par `servedTo`
-          // — la règle unique que les autres lectures appellent aussi. Les
-          // écrire ici en SQL en ferait une seconde copie.
-          // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste
-          // au catalogue et se voit dans le paramétrage ; il ne se vend pas.
-          //
-          // 🔴 Le taux de l'ARTICLE, et lui seul. Cette clause acceptait aussi
-          // celui de la famille — cf. `billableRate`.
-          { vatRatePercent: { not: null } },
-        ],
-      },
-      include: itemInclude(viewer),
-      // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
-      // envoie `position: 0` sur **tous** les articles (vérifié le 2026-09-10 —
-      // dix-neuf viennoiseries, dix-neuf zéros). Les deux premiers critères sont
-      // donc à égalité sur tout un rayon, et Postgres rend alors l'ordre qu'il
-      // veut : celui du tas, qui change dès qu'une ligne est réécrite. Poser un
-      // prix faisait SAUTER l'article qu'on venait d'éditer.
-      //
-      // Le départage tient que `position` finisse garni ou non : un tri à
-      // égalités n'est pas un tri.
-      orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
-    });
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findMany({
+        where: {
+          ...STILL_SOLD,
+          // Deux conditions indépendantes, donc un `AND` explicite : deux clés
+          // `OR` dans le même objet se seraient écrasées en silence.
+          AND: [
+            // Le masquage et l'audience se jugent APRÈS la lecture, par `servedTo`
+            // — la règle unique que les autres lectures appellent aussi. Les
+            // écrire ici en SQL en ferait une seconde copie.
+            // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste
+            // au catalogue et se voit dans le paramétrage ; il ne se vend pas.
+            //
+            // 🔴 Le taux de l'ARTICLE, et lui seul. Cette clause acceptait aussi
+            // celui de la famille — cf. `billableRate`.
+            { vatRatePercent: { not: null } },
+          ],
+        },
+        include: itemInclude(viewer),
+        // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
+        // envoie `position: 0` sur **tous** les articles (vérifié le 2026-09-10 —
+        // dix-neuf viennoiseries, dix-neuf zéros). Les deux premiers critères sont
+        // donc à égalité sur tout un rayon, et Postgres rend alors l'ordre qu'il
+        // veut : celui du tas, qui change dès qu'une ligne est réécrite. Poser un
+        // prix faisait SAUTER l'article qu'on venait d'éditer.
+        //
+        // Le départage tient que `position` finisse garni ou non : un tri à
+        // égalités n'est pas un tri.
+        orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
+      }),
+    );
     const lineage = await this.lineage(rows);
     return rows.flatMap((row) => {
       const item = servedItem(row, viewer, lineage);
@@ -205,9 +212,11 @@ export class PrismaCatalogReader extends CatalogReader {
     if (rows.every((row) => row.category.parentId === null)) {
       return FLAT_LINEAGE;
     }
-    const families = await this.prisma.catalogCategory.findMany({
-      select: { id: true, parentId: true, name: true, position: true, nameTranslations: true },
-    });
+    const families = await timeCatalogueRead(() =>
+      this.prisma.catalogCategory.findMany({
+        select: { id: true, parentId: true, name: true, position: true, nameTranslations: true },
+      }),
+    );
     return lineageFrom(families);
   }
 }
@@ -528,10 +537,12 @@ function frozenAllergens(row: ItemRow): OrderLineAllergens | null {
  * vente — qu'il soit exclusif ou non ne dit plus rien.
  */
 export async function operationOnlySkusOf(prisma: PrismaService): Promise<ReadonlySet<string>> {
-  const rows = await prisma.catalogItem.findMany({
-    where: { ...STILL_SOLD, operationOnly: true },
-    select: { sku: true },
-  });
+  const rows = await timeCatalogueRead(() =>
+    prisma.catalogItem.findMany({
+      where: { ...STILL_SOLD, operationOnly: true },
+      select: { sku: true },
+    }),
+  );
   return new Set(rows.map((row) => row.sku));
 }
 

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import { SaleReferenceLineageReader } from "../domain/ports/sale-reference-lineage.reader.js";
 import {
   ancestorsOfEach,
@@ -36,10 +37,12 @@ export class PrismaSaleReferenceLineageReader extends SaleReferenceLineageReader
   private async parentsOf(skus: readonly string[]): Promise<readonly string[]> {
     // withdrawn-filter: exempt — une filiation, pas une mise en vente : l'article
     // d'un historique peut être retiré.
-    const rows = await this.prisma.catalogItem.findMany({
-      where: { sku: { in: [...skus] }, detachedFromSku: { not: null } },
-      select: { detachedFromSku: true },
-    });
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findMany({
+        where: { sku: { in: [...skus] }, detachedFromSku: { not: null } },
+        select: { detachedFromSku: true },
+      }),
+    );
     return [...new Set(rows.flatMap((row) => row.detachedFromSku ?? []))];
   }
 
@@ -48,10 +51,12 @@ export class PrismaSaleReferenceLineageReader extends SaleReferenceLineageReader
       return [];
     }
     // withdrawn-filter: exempt — une filiation, pas une mise en vente.
-    const rows = await this.prisma.catalogItem.findMany({
-      where: { detachedFromSku: { in: [...parents] } },
-      select: { sku: true, detachedFromSku: true, isDefault: true, detachedFromVariantSku: true },
-    });
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findMany({
+        where: { detachedFromSku: { in: [...parents] } },
+        select: { sku: true, detachedFromSku: true, isDefault: true, detachedFromVariantSku: true },
+      }),
+    );
     return rows.flatMap((row) =>
       row.detachedFromSku === null
         ? []

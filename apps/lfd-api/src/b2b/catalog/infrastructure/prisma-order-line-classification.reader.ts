@@ -2,6 +2,7 @@ import { categoryPathOf } from "@lfd/catalog-sync";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import {
   type OrderLineClassification,
   OrderLineClassificationReader,
@@ -34,19 +35,21 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
     if (skus.length === 0) {
       return new Map();
     }
-    const rows = await this.prisma.catalogItem.findMany({
-      where: { ...soldUnderShopSkus(skus), ...STILL_SOLD },
-      select: {
-        sku: true,
-        productSku: true,
-        productId: true,
-        categoryId: true,
-        isDefault: true,
-        category: { select: { parentId: true } },
-        customRecipe: true,
-      },
-      orderBy: [{ sku: "asc" }],
-    });
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findMany({
+        where: { ...soldUnderShopSkus(skus), ...STILL_SOLD },
+        select: {
+          sku: true,
+          productSku: true,
+          productId: true,
+          categoryId: true,
+          isDefault: true,
+          category: { select: { parentId: true } },
+          customRecipe: true,
+        },
+        orderBy: [{ sku: "asc" }],
+      }),
+    );
     const lineage = await this.lineage(rows.some((row) => row.category.parentId !== null));
     const found = new Map<string, OrderLineClassification>();
     for (const row of rows) {
@@ -67,9 +70,11 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
     if (!nested) {
       return (familyId) => [familyId];
     }
-    const nodes = await this.prisma.catalogCategory.findMany({
-      select: { id: true, parentId: true },
-    });
+    const nodes = await timeCatalogueRead(() =>
+      this.prisma.catalogCategory.findMany({
+        select: { id: true, parentId: true },
+      }),
+    );
     return (familyId) => categoryPathOf(nodes, familyId);
   }
 }

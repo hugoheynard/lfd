@@ -4,6 +4,7 @@ import {
   recordServerTiming,
   serverTiming,
   timeServerTiming,
+  timeServerTimingSpan,
   type TimedRequest,
 } from "../server-timing.js";
 
@@ -77,5 +78,38 @@ describe("marques posées hors du guard (2026-11-05)", () => {
     expect(formatServerTiming([{ name: "p", durationMs: 0, description: "resolved-stamp" }])).toBe(
       'p;dur=0.0;desc="resolved-stamp"',
     );
+  });
+
+  it("une famille de lectures parallèles rend sa durée murale et son nombre", async () => {
+    const wait = (ms: number) => new Promise<number>((done) => setTimeout(() => done(ms), ms));
+    const header = await timed(async () => {
+      await Promise.all([
+        timeServerTimingSpan("catalogue", () => wait(20)),
+        timeServerTimingSpan("catalogue", () => wait(20)),
+      ]);
+      await timeServerTimingSpan("catalogue", () => wait(1));
+    });
+    expect(header).toMatch(
+      /^catalogue;dur=(\d+\.\d), catalogue-reads;dur=0\.0;desc="3", app;dur=\d+\.\d$/,
+    );
+    // L'union elle-même est éprouvée sans horloge (`overlapping-span.spec.ts`).
+  });
+
+  it("une lecture qui échoue est comptée et l'erreur remonte", async () => {
+    const header = await timed(async () => {
+      await expect(
+        timeServerTimingSpan("catalogue", () => Promise.reject(new RangeError("refus"))),
+      ).rejects.toThrow("refus");
+    });
+    expect(header).toContain('catalogue-reads;dur=0.0;desc="1"');
+  });
+
+  it("une requête sans lecture du catalogue ne porte pas la marque", async () => {
+    const header = await timed(() => Promise.resolve());
+    expect(header).toMatch(/^app;dur=\d+\.\d$/);
+  });
+
+  it("hors requête, une lecture chronométrée ne note rien et rend son résultat", async () => {
+    await expect(timeServerTimingSpan("catalogue", () => Promise.resolve(9))).resolves.toBe(9);
   });
 });

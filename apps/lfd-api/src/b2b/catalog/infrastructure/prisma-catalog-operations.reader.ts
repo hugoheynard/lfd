@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import { OperationImageLibrary } from "../../operations/channels/media/operation-image-library.js";
 import { operationAsHeld } from "../domain/effective-operation.js";
 import {
@@ -28,11 +29,13 @@ export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
   }
 
   async sellableOperations(): Promise<readonly SellableOperation[]> {
-    const rows = await this.prisma.catalogOperation.findMany({
-      where: { withdrawnAt: null },
-      include: ITEMS_IN_ORDER,
-      orderBy: [{ announceFrom: "desc" }, { key: "asc" }],
-    });
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogOperation.findMany({
+        where: { withdrawnAt: null },
+        include: ITEMS_IN_ORDER,
+        orderBy: [{ announceFrom: "desc" }, { key: "asc" }],
+      }),
+    );
     const sellable: SellableOperation[] = [];
     for (const row of rows) {
       const { facts } = toOperationState(row);

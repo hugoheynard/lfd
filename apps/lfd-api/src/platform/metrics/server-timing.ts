@@ -2,6 +2,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import type { NextFunction } from "express";
 
+import { OverlappingSpan } from "./overlapping-span.js";
+
 /**
  * Une étape chronométrée de la requête, rendue au navigateur dans
  * `Server-Timing` — `documentation/caching-usage/carte-des-caches.md`, § 6 (posé par le lot L0 de la latence de navigation, 2026-11-04).
@@ -19,7 +21,12 @@ export interface ServerTimingMark {
  * (2026-11-05, plan de latence : distinguer la mémoire d'une résolution
  * complète). Distinct du `RequestContext` métier : ce n'est que de la mesure.
  */
-const currentMarks = new AsyncLocalStorage<ServerTimingMark[]>();
+interface RequestTimings {
+  readonly marks: ServerTimingMark[];
+  readonly spans: Map<string, OverlappingSpan>;
+}
+
+const current = new AsyncLocalStorage<RequestTimings>();
 
 /**
  * Chronomètre `work` et ajoute l'étape aux marques de la requête en cours,
@@ -30,13 +37,35 @@ export async function timeServerTiming<T>(name: string, work: () => Promise<T>):
   try {
     return await work();
   } finally {
-    currentMarks.getStore()?.push({ name, durationMs: performance.now() - startedAt });
+    current.getStore()?.marks.push({ name, durationMs: performance.now() - startedAt });
+  }
+}
+
+/**
+ * Chronomètre `work` comme une lecture de la famille `name` : la requête
+ * rendra `<name>` (temps mural où au moins une lecture était ouverte — des
+ * lectures parallèles ne comptent qu'une fois) et `<name>-reads` (leur nombre,
+ * en description). Une famille sans lecture n'apparaît pas. Hors requête
+ * (tâche de fond, test unitaire), ne note rien.
+ */
+export async function timeServerTimingSpan<T>(name: string, work: () => Promise<T>): Promise<T> {
+  const store = current.getStore();
+  if (store === undefined) {
+    return work();
+  }
+  const span = store.spans.get(name) ?? new OverlappingSpan(name);
+  store.spans.set(name, span);
+  span.enter(performance.now());
+  try {
+    return await work();
+  } finally {
+    span.leave(performance.now());
   }
 }
 
 /** Ajoute une étape sans durée, qui ne porte qu'une description (`principal-source;desc=memory`). */
 export function noteServerTiming(name: string, description: string): void {
-  currentMarks.getStore()?.push({ name, durationMs: 0, description });
+  current.getStore()?.marks.push({ name, durationMs: 0, description });
 }
 
 /** La requête qui porte ses étapes : le guard y ajoute les siennes. */
@@ -82,12 +111,15 @@ export function serverTiming(
 ): void {
   const startedAt = performance.now();
   const marks: ServerTimingMark[] = [];
+  const spans = new Map<string, OverlappingSpan>();
   request.serverTiming = marks;
   const writeHead = response.writeHead.bind(response) as (...args: unknown[]) => unknown;
   response.writeHead = (...args: unknown[]) => {
-    const all = [...marks, { name: "app", durationMs: performance.now() - startedAt }];
+    const now = performance.now();
+    const spanMarks = [...spans.values()].flatMap((span) => span.marksAt(now));
+    const all = [...marks, ...spanMarks, { name: "app", durationMs: now - startedAt }];
     response.setHeader("Server-Timing", formatServerTiming(all));
     return writeHead(...args);
   };
-  currentMarks.run(marks, () => next());
+  current.run({ marks, spans }, () => next());
 }

@@ -2,6 +2,7 @@ import type { OrderCutoffView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { timeCatalogueRead } from "../../catalog/infrastructure/catalogue-read-timing.js";
 import { StoredOrderCutoffReader } from "../domain/stored-order-cutoff.reader.js";
 import { GENERAL_ORDER_CUTOFF_WHERE } from "./general-order-cutoff.row.js";
 
@@ -13,7 +14,9 @@ export class PrismaStoredOrderCutoffReader extends StoredOrderCutoffReader {
   }
 
   async general(): Promise<OrderCutoffView | null> {
-    const row = await this.prisma.orderCutoff.findFirst({ where: GENERAL_ORDER_CUTOFF_WHERE });
+    const row = await timeCatalogueRead(() =>
+      this.prisma.orderCutoff.findFirst({ where: GENERAL_ORDER_CUTOFF_WHERE }),
+    );
     return row === null
       ? null
       : {

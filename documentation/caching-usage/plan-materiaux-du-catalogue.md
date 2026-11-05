@@ -392,3 +392,61 @@ pas ; prévoir une autre coupure. L'ordre des verrous avec `principal_stamp`.
 du catalogue dans un devis (marque `Server-Timing` `catalogue`, référence en
 production). Si elle pèse peu, seule la suppression des doublons, sans mémoire
 ni migration.
+
+## 10. Mesurer avant de bâtir (outillage posé le 2026-11-05, référence à relever)
+
+**En simple** : avant de construire la mémoire du catalogue, on regarde
+combien de millisecondes la lecture du catalogue coûte vraiment dans un
+devis. Si c'est peu, on se contente de supprimer les lectures en double
+(§ 9, dernier paragraphe).
+
+**La marque.** Chaque réponse de l'API porte, dans `Server-Timing`, deux
+marques de plus dès qu'elle a lu le catalogue :
+
+- `catalogue;dur=…` — le temps **mural** pendant lequel au moins une lecture
+  du catalogue était en cours. Des lectures parallèles ne comptent qu'une
+  fois (union des intervalles, `apps/lfd-api/src/platform/metrics/overlapping-span.ts`) ;
+- `catalogue-reads;dur=0.0;desc="N"` — le nombre de lectures, dans la même
+  unité que le relevé M0 (un appel du client Prisma).
+
+Le mécanisme est `timeServerTimingSpan` (`platform/metrics/server-timing.ts`),
+un accumulateur par requête sur le stockage de la requête ; hors requête
+(tâche de fond), il ne note rien. Les lecteurs l'appellent par
+`timeCatalogueRead` (`apps/lfd-api/src/b2b/catalog/infrastructure/catalogue-read-timing.ts`)
+autour de chaque appel : `PrismaCatalogReader` (A, B, `findByShopSku`, la
+lignée), `operationOnlySkusOf` (D), la classification (C, et sa lignée), le
+prix au kilo (E), la filiation (F), les opérations et l'heure limite générale.
+`catalogue` est une part de `app`, pas un temps de plus. L'e2e
+`test/catalogue-reads.e2e-spec.ts` vérifie que le nombre égale le relevé M0
+(devis anonyme 3, rayon public 5, estimation 7).
+
+⚠️ La marque est publique comme les autres : inscrite à la dette
+[`todo-server-timing-public.md`](../todos/todo-server-timing-public.md).
+
+**Le script.** [`dev-toolbox/charge/reference-devis.js`](../../dev-toolbox/charge/reference-devis.js)
+(k6) : un seul visiteur, `LFD_N` devis anonymes (30) à `LFD_PAUSE` secondes
+d'intervalle (3), paniers tirés du catalogue public, retrait en boutique.
+Rien n'écrit. Les réponses servies du cache Cloudflare sont écartées. Il
+rend médiane et p95 de `http_req_duration`, `app`, `catalogue` et
+`catalogue-reads`.
+
+```bash
+LFD_BASE_URL=https://lafoliecoffee.info/api/lfd LFD_PROD=oui k6 run dev-toolbox/charge/reference-devis.js
+```
+
+**Le devis pro et l'estimation ne passent pas par le script** (pas de jeton
+en production). À la main : se connecter (boutique en pro, ou back-office
+pour l'estimation), ouvrir l'onglet Réseau, refaire dix fois le geste
+(modifier le panier ; « Estimer » dans la saisie), lire pour chaque appel
+`POST /shop/quote/mine` ou `POST /admin/orders/estimate` l'onglet « Timing »
+(section Server Timing) : `app`, `catalogue`, `catalogue-reads`. Noter la
+médiane. Même chose pour le rayon d'un pro (`GET /shop/catalogue/mine`).
+
+**Référence** (à remplir après déploiement de la marque) :
+
+| Date | Chemin                                      | `http_req_duration` méd. / p95 | `app` méd. / p95 | `catalogue` méd. / p95 | lectures |
+| ---- | ------------------------------------------- | ------------------------------ | ---------------- | ---------------------- | -------- |
+|      | devis anonyme (`POST /shop/quote`)          |                                |                  |                        |          |
+|      | devis pro (`POST /shop/quote/mine`)         |                                |                  |                        |          |
+|      | estimation (`POST /admin/orders/estimate`)  |                                |                  |                        |          |
+|      | rayon d'un pro (`GET /shop/catalogue/mine`) |                                |                  |                        |          |

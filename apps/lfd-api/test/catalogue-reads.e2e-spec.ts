@@ -282,3 +282,50 @@ describe("le relevé des lectures du catalogue (2026-11-05)", () => {
     );
   });
 });
+
+/**
+ * La marque `Server-Timing` `catalogue` (« Mesurer avant de bâtir », plan des
+ * matériaux) : le temps mural des lectures du catalogue, et leur nombre en
+ * description de `catalogue-reads`. Le nombre DOIT égaler le relevé ci-dessus
+ * — c'est ce qui prouve que chaque appel compté est chronométré, et rien
+ * d'autre.
+ */
+describe("la marque Server-Timing du catalogue", () => {
+  function catalogueMarksOf(response: request.Response): {
+    readonly durationMs: number;
+    readonly reads: string;
+  } {
+    const header = String(response.headers["server-timing"]);
+    const duration = /(?:^|, )catalogue;dur=(\d+\.\d)/.exec(header);
+    const reads = /(?:^|, )catalogue-reads;dur=0\.0;desc="(\d+)"/.exec(header);
+    expect(duration).not.toBeNull();
+    expect(reads).not.toBeNull();
+    return { durationMs: Number(duration?.[1]), reads: reads?.[1] ?? "" };
+  }
+
+  it("le devis anonyme porte catalogue et catalogue-reads = 3", async () => {
+    const response = await agents()
+      .anonymous()
+      .post("/shop/quote")
+      .send(shopQuoteBody(scene, BASKET));
+    expect(response.status).toBeLessThan(300);
+    const marks = catalogueMarksOf(response);
+    expect(marks.reads).toBe("3");
+    expect(marks.durationMs).toBeGreaterThan(0);
+  });
+
+  it("le rayon public : catalogue-reads = 5", async () => {
+    const response = await agents().anonymous().get("/shop/catalogue");
+    expect(response.status).toBe(200);
+    expect(catalogueMarksOf(response).reads).toBe("5");
+  });
+
+  it("l'estimation de la saisie : catalogue-reads = 7", async () => {
+    const response = await agents()
+      .as(E2E_STAFF_SUB)
+      .post("/admin/orders/estimate")
+      .send(staffBody(scene, BASKET, "account"));
+    expect(response.status).toBeLessThan(300);
+    expect(catalogueMarksOf(response).reads).toBe("7");
+  });
+});

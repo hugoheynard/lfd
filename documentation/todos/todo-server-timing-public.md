@@ -8,7 +8,8 @@
 Chaque réponse de l'API dit au navigateur, à **n'importe quel visiteur**, comment
 elle a été fabriquée : vérification du jeton, résolution du principal (et,
 depuis le 2026-11-05, s'il vient de la mémoire ou d'une résolution complète,
-`principal-source`, et le coût de l'estampille, `stamp`), passage par le
+`principal-source`, et le coût de l'estampille, `stamp` ; et le temps et le
+nombre des lectures du catalogue, `catalogue` et `catalogue-reads`), passage par le
 container, le Worker, la passerelle et le point de présence Cloudflare. Le rayon
 public dit en plus pourquoi il est ou n'est pas gardé (`X-Shelf-Cache`).
 
