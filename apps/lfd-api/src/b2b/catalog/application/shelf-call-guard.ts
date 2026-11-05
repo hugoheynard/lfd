@@ -13,15 +13,25 @@ import {
 import { ShelfCacheBreaker } from "./shelf-cache-breaker.js";
 
 /**
- * Le délai d'un appel au magasin des rayons. ~100 ms (`plan-cache-du-catalogue.md`,
- * § 4 bis) : au-delà, recalculer depuis la base coûte moins que d'attendre.
- * À ajuster sur l'aller-retour mesuré (`shelf_cache.round_trip`).
+ * Le délai d'une **lecture** au magasin des rayons (et d'un effacement) :
+ * 400 ms depuis le 2026-11-05, 100 ms avant (`plan-cache-du-catalogue.md`,
+ * § 4 bis).
+ *
+ * Mesuré en production le 2026-11-05 (carte de santé, `cacheCalls`) : à
+ * 100 ms, deux lectures du rayon reconnu sur trois étaient abandonnées, et
+ * l'API recalculait alors le rayon depuis la base — 300 ms à 2 s. Attendre
+ * 400 ms coûte donc moins que recalculer. Une lecture qui dépasse reste un
+ * repli compté (`timeout`) et nourrit le disjoncteur comme avant.
+ *
+ * L'effacement garde le même délai : il n'est pas gardé par le disjoncteur
+ * (`gated: false`), et à 100 ms on comptait `timeout` des purges qui
+ * aboutissaient.
  */
-export const SHELF_CALL_LIMIT_MS = 100;
+export const SHELF_CALL_LIMIT_MS = 400;
 
 /**
  * Le délai d'un **rangement**, qui part après la réponse (2026-11-05) : aucun
- * client ne l'attend plus, et l'abandonner à 100 ms compterait `timeout` — et
+ * client ne l'attend plus, et l'abandonner au délai d'une lecture compterait `timeout` — et
  * nourrirait le disjoncteur — un rangement qui aurait abouti. Il prend donc le
  * filet du socket de l'adaptateur (`SHELF_SOCKET_TIMEOUT_MS`,
  * `durable-object-shop-shelf-cache.ts`, 2000 ms, vérifié le 2026-11-05) : au

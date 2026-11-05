@@ -151,7 +151,12 @@ table `shelves (key, body, version, principal, expires_at)` et table `meta`
   (`recognisedShelfExpiry`, `apps/lfd-api/src/b2b/catalog/application/recognised-shelf.service.ts:23-33`).
   Le plafond borne ce que le calcul ne connaît pas (une promotion qui s'ouvre,
   le plancher dynamique, une purge perdue).
-- **Corps** : la vue compressée (`shelf-wire.ts`).
+- **Corps** : la vue compressée en gzip par l'API (`shelf-wire.ts`, `node:zlib`), en
+  `application/octet-stream` ; l'objet la range telle quelle (colonne `body BLOB`
+  du stockage SQLite, `pro-shelves.ts:50`) et la rend telle quelle, sans jamais
+  l'ouvrir. Compressée depuis C2 (`a8c07257f`) : ~120 à 145 Ko de JSON, ~11 Ko
+  compressé (mesuré en production le 2026-11-04) — loin de la limite de 2 Mo
+  d'une ligne du stockage SQLite d'un Durable Object.
 - **Justesse** : la version est relevée **avant** le calcul ; le rangement est
   refusé (409) si un effacement l'a montée entre-temps (`store`, `pro-shelves.ts:104`).
 - **Rangement après la réponse** (2026-11-05) : `RecognisedShelf.read` rend
@@ -159,7 +164,7 @@ table `shelves (key, body, version, principal, expires_at)` et table `meta`
   un `void` sur une promesse qui ne lève jamais). Un échec est compté
   `fallback` / `operation: store` par les signaux, qui le journalisent. Le
   rangement a son propre délai, 2 s (`SHELF_STORE_LIMIT_MS`, le filet du
-  socket) : à 100 ms, on comptait `timeout` des rangements qui auraient
+  socket) : au délai d'une lecture, on comptait `timeout` des rangements qui auraient
   abouti. La version reste celle relevée avant le calcul : un rangement
   tardif peut seulement être refusé plus souvent (`stale_refused`).
 - **Purge** : `ShelfChanges` (port `apps/lfd-api/src/b2b/shared/shelf-changes/domain/ports/shelf-changes.ts`)
@@ -170,8 +175,11 @@ table `shelves (key, body, version, principal, expires_at)` et table `meta`
 - **Interrupteur** : `on`, `off`, `purge`, `public-on`, `public-off`
   (`shelf-store.ts:53`), conservé dans `meta` ; l'interrupteur `ops_shelf_cache`
   côté écran OPS. Éteint, rien n'est servi ni rangé.
-- **Si l'objet tombe** : chaque lecture est bornée à 100 ms (`SHELF_CALL_LIMIT_MS`,
-  `shelf-call-guard.ts:20`), le rangement à 2 s ; après 5 échecs, le disjoncteur coupe 30 s
+- **Si l'objet tombe** : chaque lecture (et chaque effacement) est bornée à 400 ms
+  (`SHELF_CALL_LIMIT_MS`, `shelf-call-guard.ts`), le rangement à 2 s. 100 ms
+  jusqu'au 2026-11-05 : en production, deux lectures sur trois dépassaient, et
+  l'API recalculait le rayon (300 ms à 2 s) — attendre 400 ms coûte moins. Une
+  lecture au-delà reste un repli compté `timeout` ; après 5 échecs, le disjoncteur coupe 30 s
   (`shelf-cache-breaker.ts:2-5`) ; dans tous les cas l'API calcule depuis la base.
 - **Plusieurs instances d'API** : sans effet, l'objet est unique et la version
   est la sienne.
@@ -290,8 +298,8 @@ Règle : **le stable dans le rayon, le dynamique à côté**
   finit quand même, `shelf_cache.late_finish` (`settled` / `failed`, durée
   totale). La carte de santé les rend dans `cacheCalls` : par opération, le
   nombre d'appels, d'abandons, p50, p95 et le p95 de la fin des abandonnés
-  (`apps/lfd-api/src/ops/health/cache-call-readings.ts`). C'est cette mesure qui décidera de
-  `SHELF_CALL_LIMIT_MS`. ⚠️ L'écran du back-office ne l'affiche pas encore.
+  (`apps/lfd-api/src/ops/health/cache-call-readings.ts`). C'est cette mesure qui a porté
+  `SHELF_CALL_LIMIT_MS` à 400 ms le 2026-11-05. ⚠️ L'écran du back-office ne l'affiche pas encore.
 
 ## Ce qui n'est pas vérifié
 
