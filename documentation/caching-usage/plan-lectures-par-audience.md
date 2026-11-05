@@ -23,7 +23,7 @@
 À chaque ouverture de la boutique, un client reconnu lit, entre autres, les
 **points de retrait** (`/pickup-addresses/mine`), les **jours de service**
 (`/fulfillment-days/mine`, deux fois) et l'**accès aux fonctions**
-(`/feature-access/mine`). Chacune de ces lectures est recalculée en base pour
+(`/feature-access/mine` — retirée le 2026-11-05, voir plus bas). Chacune de ces lectures est recalculée en base pour
 chaque client, alors que l'essentiel de la réponse est **le même pour toute
 une audience** — tous les particuliers, ou tous les pros actifs.
 
@@ -97,6 +97,10 @@ Ce qui suit l'emporte sur la Partie 2.
   (`documentation/b2b/architecture-feature-flags.md` : « Aucun cache … un
   cache laissait passer des commandes après la fermeture »). À la place : une
   seule lecture des trois réglages au lieu de trois.
+  **Fait le 2026-11-05, autrement et plus loin** : la route est RETIRÉE, les
+  niveaux de la personne voyagent dans `GET /me` (`AccountView.featureLevels`,
+  lus en parallèle du compte), et les trois `findUnique` sont devenus un
+  `findMany` (`FeatureLevelResolver.levelsFor`). Toujours sans cache.
 
 # Partie 2 — Le code (à vérifier par `vitruve`)
 
@@ -129,7 +133,8 @@ Ce qui suit l'emporte sur la Partie 2.
 
 ## 3. L'accès aux fonctions
 
-- `GET /feature-access/mine` (`b2b/feature-access/http/my-feature-access.controller.ts`)
+- ⚠️ Retirée le 2026-11-05 — les niveaux sont dans `GET /me` ; ce qui suit
+  est l'analyse d'avant. `GET /feature-access/mine` (ex-`my-feature-access.controller.ts`)
   dépend de la personne et de réglages rares (Hugo, 2026-11-05 : « ça change
   peu »). → gardé en mémoire **par personne**, purgé à chaque écriture d'un
   réglage d'accès, et sous l'estampille du principal si la réponse dépend

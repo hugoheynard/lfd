@@ -57,6 +57,7 @@ import { DeliveryNotePlanningModule } from "./delivery-note-planning.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
+import { AccountFeatureLevelsModule } from "./account-feature-levels.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { ShelfDrawsFeedModule } from "./shelf-draws-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
@@ -221,6 +222,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     CommerceCounterHandoverModule,
     // Le colisage, en ombre (plan `colisage/colisage.md`, K1).
     PackingModule,
+    AccountFeatureLevelsModule,
     PackingFeedModule,
     ShelfDrawsFeedModule,
     PackingDeliveryFeedModule,

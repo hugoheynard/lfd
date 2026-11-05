@@ -1,12 +1,24 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, Injector, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 // Types seulement : aucune valeur du baril du contrat n'entre ici, qui
 // embarquerait zod dans le bundle initial (1,44 Mo pour un budget de 1,30 Mo,
 // mesuré le 2026-09-14).
 import type { FeatureLevelsView, GateLevel, VisibilityLevel } from '@lfd/contracts';
 // Les VALEURS passent par le sous-chemin sans zod, jamais par le baril.
 import { isAtLeast } from '@lfd/contracts/feature-access-levels';
-import { firstValueFrom, switchMap, take, timeout, type Observable } from 'rxjs';
+import {
+  filter,
+  firstValueFrom,
+  of,
+  switchMap,
+  take,
+  throwError,
+  timeout,
+  type Observable,
+} from 'rxjs';
+
+import { AccountService } from '../../account/account.service';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
@@ -52,6 +64,11 @@ const UNKNOWN_FACEBOOK_LEVEL: VisibilityLevel = 'hidden';
 export class ClientFeatureAccess {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  /**
+   * Le compte n'est résolu que pour une personne reconnue : un visiteur n'a
+   * pas de `/me`, et n'a pas à instancier ce qui le lirait.
+   */
+  private readonly injector = inject(Injector);
 
   private readonly levels = signal<FeatureLevelsView | null>(null);
   private readonly status = signal<FeatureAccessState>('loading');
@@ -136,30 +153,41 @@ export class ClientFeatureAccess {
   /**
    * **Le point d'entrée de la lecture**, et le seul.
    *
-   * Personne reconnue → `GET /feature-access/mine`, avec son jeton : ses
-   * niveaux à elle, exemption comprise. Sinon → `GET /feature-access`, les
-   * niveaux globaux, sans jeton. Branché le 2026-09-14, une fois la route
-   * servie (lot 3).
+   * Personne reconnue → ses niveaux à elle, exemption comprise, tels que
+   * `GET /me` les porte (`featureLevels`, depuis le 2026-11-05) : le compte
+   * se lit de toute façon à l'ouverture, et `GET /feature-access/mine` coûtait
+   * une requête entière de plus. Un `/me` en échec est un échec de lecture.
+   * Sinon → `GET /feature-access`, les niveaux globaux, sans jeton.
    *
    * On attend `authGate$()` et non `isAuthenticated` : ce signal vaut `false`
    * tant qu'Auth0 résout la session, et un client connecté lirait alors les
    * niveaux globaux au lieu des siens.
    */
   private read(): Observable<FeatureLevelsView> {
-    const base = AUTH_CONFIG.apiBaseUrl;
     return this.auth.authGate$().pipe(
       take(1),
       switchMap((recognised) =>
         recognised
-          ? this.auth.accessToken$().pipe(
-              take(1),
-              switchMap((token) =>
-                this.http.get<FeatureLevelsView>(`${base}/feature-access/mine`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                }),
-              ),
-            )
-          : this.http.get<FeatureLevelsView>(`${base}/feature-access`),
+          ? this.levelsFromAccount()
+          : this.http.get<FeatureLevelsView>(`${AUTH_CONFIG.apiBaseUrl}/feature-access`),
+      ),
+    );
+  }
+
+  /** Les niveaux du premier compte chargé ; l'échec de `/me` en est un ici aussi. */
+  private levelsFromAccount(): Observable<FeatureLevelsView> {
+    const accounts = this.injector.get(AccountService);
+    const accountRead$ = toObservable(
+      computed(() => ({ account: accounts.account(), status: accounts.status() })),
+      { injector: this.injector },
+    );
+    return accountRead$.pipe(
+      filter(({ account, status }) => account !== null || status === 'error'),
+      take(1),
+      switchMap(({ account }) =>
+        account === null
+          ? throwError(() => new Error('GET /me a échoué : niveaux inconnus'))
+          : of(account.featureLevels),
       ),
     );
   }

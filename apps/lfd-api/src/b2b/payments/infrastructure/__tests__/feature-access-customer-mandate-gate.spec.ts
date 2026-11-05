@@ -12,6 +12,10 @@ class StubLookup extends FeatureLevelLookup {
     return Promise.resolve(this.override);
   }
 
+  storedOverrides(): Promise<ReadonlyMap<string, string>> {
+    return Promise.resolve(new Map());
+  }
+
   isExempt(): Promise<boolean> {
     return Promise.resolve(true);
   }

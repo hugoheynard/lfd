@@ -12,6 +12,7 @@ import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
 import { TOMMEUSES, PROFILE } from './mon-compte/account.fixture';
 import { ClientWorkspace, companyName } from './client-workspace.service';
+import { DEFAULT_LEVELS } from './feature-access/feature-access.fixture';
 
 const MAISON_A: CompanyView = { ...TOMMEUSES, id: 'cmp_a', enseigne: 'Maison A' };
 const MAISON_B: CompanyView = { ...TOMMEUSES, id: 'cmp_b', enseigne: '', raisonSociale: 'SAS B' };
@@ -22,6 +23,7 @@ function account(companies: readonly CompanyView[], workspace: string | null = n
     companies,
     reachableSites: [],
     navPrefs: { catalogueView: null, workspace },
+    featureLevels: DEFAULT_LEVELS,
   };
 }
 

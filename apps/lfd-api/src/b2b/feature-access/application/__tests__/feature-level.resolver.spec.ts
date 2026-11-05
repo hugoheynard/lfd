@@ -17,6 +17,15 @@ class StubLookup extends FeatureLevelLookup {
     return Promise.resolve(this.overrides[key] ?? null);
   }
 
+  storedOverrides(keys: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    this.asked.push(`overrides:${keys.join(",")}`);
+    return Promise.resolve(
+      new Map(
+        keys.flatMap((key) => (key in this.overrides ? [[key, this.overrides[key] ?? ""]] : [])),
+      ),
+    );
+  }
+
   isExempt(key: string, normalizedEmail: string): Promise<boolean> {
     this.asked.push(`exempt:${key}:${normalizedEmail}`);
     return Promise.resolve(this.exempt.includes(normalizedEmail));
@@ -90,5 +99,40 @@ describe("FeatureLevelResolver — une clé qu'aucune exemption n'ouvre", () => 
     await expect(
       new FeatureLevelResolver(lookup).unexemptibleLevelOf("customerMandate"),
     ).resolves.toBe("open");
+  });
+});
+
+describe("FeatureLevelResolver.levelsFor — tous les niveaux d'un coup", () => {
+  it("rend les défauts du code quand la base est vide", async () => {
+    await expect(new FeatureLevelResolver(new StubLookup({}, [])).levelsFor(null)).resolves.toEqual(
+      {
+        customerMandate: "closed",
+        facebookLogin: "hidden",
+        proSignupCallback: "hidden",
+      },
+    );
+  });
+
+  /** Trois `findUnique` à chaque `/me` et `/feature-access` : une lecture suffit. */
+  it("lit les dérogations en UNE fois, et aucune exemption tant qu'aucune clé n'est exemptible", async () => {
+    const lookup = new StubLookup({ facebookLogin: "visible", customerMandate: "open" }, [
+      "testeur@exemple.fr",
+    ]);
+
+    const levels = await new FeatureLevelResolver(lookup).levelsFor({
+      email: "testeur@exemple.fr",
+      emailProven: true,
+    });
+
+    expect(levels).toMatchObject({ customerMandate: "open", facebookLogin: "visible" });
+    expect(lookup.asked).toEqual(["overrides:customerMandate,facebookLogin,proSignupCallback"]);
+  });
+
+  it("rend le défaut d'une clé quand sa dérogation n'est pas un niveau de la clé", async () => {
+    const lookup = new StubLookup({ customerMandate: "visible" }, []);
+
+    await expect(new FeatureLevelResolver(lookup).levelsFor(null)).resolves.toMatchObject({
+      customerMandate: "closed",
+    });
   });
 });

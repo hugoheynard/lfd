@@ -10,6 +10,13 @@ export abstract class FeatureLevelLookup {
   /** La valeur brute de la dérogation d'une clé, ou `null` = défaut du code. */
   abstract storedOverride(key: string): Promise<string | null>;
 
+  /**
+   * Les dérogations posées parmi ces clés, en UNE lecture — clé → valeur
+   * brute ; une clé absente de la carte = défaut du code. Sert la lecture de
+   * tous les niveaux d'un coup (`FeatureLevelResolver.levelsFor`).
+   */
+  abstract storedOverrides(keys: readonly string[]): Promise<ReadonlyMap<string, string>>;
+
   /** Vrai si cette adresse, déjà normalisée, est exemptée pour cette clé. */
   abstract isExempt(key: string, normalizedEmail: string): Promise<boolean>;
 }

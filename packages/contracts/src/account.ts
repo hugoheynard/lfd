@@ -10,6 +10,7 @@
  * sous ses noms. Ce qui change, c'est qu'il n'en possède plus la forme.
  */
 import type { CompanyMemberRole } from "./company-member.js";
+import type { FeatureLevelsView } from "./feature-access.js";
 import type { CompanyStatus } from "./customer-sheet.js";
 import type { DeferredTerm } from "./company.js";
 import type { FulfillmentPreferenceView } from "./fulfillment-preference.js";
@@ -177,4 +178,11 @@ export interface AccountView {
   readonly reachableSites: readonly ReachableSiteView[];
   /** Préférences d'affichage persistées (vue catalogue…), toujours présentes. */
   readonly navPrefs: NavPreferences;
+  /**
+   * Les niveaux des fonctionnalités pour CETTE personne, exemption comprise —
+   * même forme que `GET /feature-access` (le visiteur), et la même résolution
+   * que les gardes. Servis ici depuis le 2026-11-05 : `GET /feature-access/mine`
+   * coûtait une requête entière de plus à chaque ouverture de la boutique.
+   */
+  readonly featureLevels: FeatureLevelsView;
 }

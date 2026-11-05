@@ -90,7 +90,9 @@ simultanés = sessions par heure × durée de session (h)
 ```
 
 Les appels par session ont été comptés sur les contrôleurs (vérifiés le
-2026-11-05) : vague 1 `GET /me`, `/feature-access/mine`, `/shop/copy?locale=fr` ;
+2026-11-05) : vague 1 `GET /me` (qui porte aussi les niveaux des
+fonctionnalités depuis le 2026-11-05 : `/feature-access/mine` est retirée),
+`/shop/copy?locale=fr` ;
 vague 2 `GET /content/footer`, `/order-opening`, `/delivery-zones`,
 `/delivery-availability`, `/fulfillment-days/mine` ; vague 3
 `GET /shop/catalogue/mine`, `/shop/cart`, `/me/loyalty`,

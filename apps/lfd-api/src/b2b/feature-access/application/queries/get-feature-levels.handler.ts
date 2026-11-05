@@ -9,8 +9,9 @@ import { GetFeatureLevelsQuery } from "./get-feature-levels.query.js";
  * de `Principal`, donc pas d'exemption — et la réponse ne peut rien dire d'une
  * adresse.
  *
- * Une clé ajoutée au catalogue fait échouer la compilation ici : `FeatureLevelsView`
- * est indexé par le catalogue, et c'est ce qui empêche une clé d'être oubliée.
+ * Les niveaux d'une personne connectée, eux, voyagent dans `GET /me`
+ * (`AccountFeatureLevelsReader`, 2026-11-05) : `GET /feature-access/mine` a
+ * été retirée ce jour-là.
  */
 @QueryHandler(GetFeatureLevelsQuery)
 export class GetFeatureLevelsHandler implements IQueryHandler<
@@ -19,14 +20,7 @@ export class GetFeatureLevelsHandler implements IQueryHandler<
 > {
   constructor(private readonly resolver: FeatureLevelResolver) {}
 
-  async execute(): Promise<FeatureLevelsView> {
-    // `facebookLogin` n'est pas exemptible : le sujet n'y change rien, mais la
-    // même résolution sert les deux routes.
-    const [customerMandate, facebookLogin, proSignupCallback] = await Promise.all([
-      this.resolver.levelFor("customerMandate", null),
-      this.resolver.levelFor("facebookLogin", null),
-      this.resolver.levelFor("proSignupCallback", null),
-    ]);
-    return { customerMandate, facebookLogin, proSignupCallback };
+  execute(): Promise<FeatureLevelsView> {
+    return this.resolver.levelsFor(null);
   }
 }

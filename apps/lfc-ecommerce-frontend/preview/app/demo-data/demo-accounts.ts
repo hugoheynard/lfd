@@ -1,10 +1,17 @@
-import type { AccountView, CompanyView, MyLoyaltyView } from '@lfd/contracts';
+import type { AccountView, CompanyView, FeatureLevelsView, MyLoyaltyView } from '@lfd/contracts';
 import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 
 /**
  * **Les personnes de l'aperçu** — telles que `GET /me` les rend. Des noms
  * fictifs, une adresse qui ne reçoit rien (`.invalid` ne se résout jamais).
  */
+
+/** Les niveaux par défaut du code, que `GET /me` porte depuis le 2026-11-05. */
+const FEATURE_LEVELS: FeatureLevelsView = {
+  customerMandate: 'closed',
+  facebookLogin: 'hidden',
+  proSignupCallback: 'hidden',
+};
 
 const PROFILE = {
   userId: 'demo-user',
@@ -20,6 +27,7 @@ export const DEMO_PERSON: AccountView = {
   companies: [],
   reachableSites: [],
   navPrefs: { catalogueView: null, workspace: PERSONAL_WORKSPACE },
+  featureLevels: FEATURE_LEVELS,
 };
 
 export const DEMO_COMPANY_ID = 'demo-company';
@@ -65,6 +73,7 @@ export const DEMO_PRO: AccountView = {
   companies: [DEMO_COMPANY],
   reachableSites: [],
   navPrefs: { catalogueView: null, workspace: DEMO_COMPANY_ID },
+  featureLevels: FEATURE_LEVELS,
 };
 
 /** Le programme de fidélité ouvert, un solde modeste, rien à convertir. */

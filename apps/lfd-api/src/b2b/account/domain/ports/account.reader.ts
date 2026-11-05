@@ -1,4 +1,4 @@
-import type { AccountView } from "@lfd/contracts";
+import type { AccountView as ContractAccountView } from "@lfd/contracts";
 
 /**
  * Les crédits **accordés** (miroir de l'enum Prisma `DeferredTerm`). C'est un
@@ -21,10 +21,16 @@ export type { DeferredTerm } from "@lfd/contracts";
 export type { ProfileView, ContactView, KbisView, CompanyView, AccountView } from "@lfd/contracts";
 
 /**
+ * Ce que le compte lit dans SES tables : la vue de `GET /me` sans les niveaux
+ * de fonctionnalités, qu'un autre contexte sert (`AccountFeatureLevelsReader`).
+ */
+export type StoredAccountView = Omit<ContractAccountView, "featureLevels">;
+
+/**
  * Port de **lecture** du compte. Côté requête, on assume de renvoyer une vue
  * dénormalisée : aucun agrégat n'est reconstruit, aucune règle n'est rejouée —
  * une lecture ne mute rien et n'a donc rien à protéger.
  */
 export abstract class AccountReader {
-  abstract read(userId: string): Promise<AccountView | null>;
+  abstract read(userId: string): Promise<StoredAccountView | null>;
 }

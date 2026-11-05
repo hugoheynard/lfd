@@ -26,6 +26,7 @@ import { UpdateNavPreferencesCommand } from "../application/commands/update-nav-
 import { GetMyAccountQuery } from "../application/queries/get-my-account.query.js";
 import type { AccountView } from "../domain/ports/account.reader.js";
 import type { NavPreferencesPatch } from "../domain/value-objects/nav-preferences.js";
+import { featureSubjectOf } from "../../feature-access/http/feature-subject.js";
 import { PasswordLinkThrottleGuard } from "./password-link-throttle.guard.js";
 import {
   declareEstablishmentPayload,
@@ -63,7 +64,7 @@ export class MeController {
 
   @Get()
   me(@CurrentUser() user: Principal): Promise<AccountView> {
-    return this.queries.execute<GetMyAccountQuery, AccountView>(new GetMyAccountQuery(user.userId));
+    return this.queries.execute<GetMyAccountQuery, AccountView>(myAccountQuery(user));
   }
 
   /**
@@ -87,7 +88,7 @@ export class MeController {
         payload.phone,
       ),
     );
-    return this.queries.execute<GetMyAccountQuery, AccountView>(new GetMyAccountQuery(user.userId));
+    return this.queries.execute<GetMyAccountQuery, AccountView>(myAccountQuery(user));
   }
 
   /**
@@ -136,7 +137,7 @@ export class MeController {
         toNavPreferencesPatch(payload),
       ),
     );
-    return this.queries.execute<GetMyAccountQuery, AccountView>(new GetMyAccountQuery(user.userId));
+    return this.queries.execute<GetMyAccountQuery, AccountView>(myAccountQuery(user));
   }
 
   /**
@@ -247,4 +248,13 @@ function toNavPreferencesPatch(payload: UpdateNavPrefsPayload): NavPreferencesPa
     ...(payload.catalogueView === undefined ? {} : { catalogueView: payload.catalogueView }),
     ...(payload.workspace === undefined ? {} : { workspace: payload.workspace }),
   };
+}
+
+/**
+ * La lecture de `GET /me` pour cet appelant. Le sujet des niveaux passe par
+ * `featureSubjectOf`, l'unique conversion `Principal` → sujet : la garde et
+ * `/me` ne peuvent pas répondre deux choses à la même personne.
+ */
+function myAccountQuery(user: Principal): GetMyAccountQuery {
+  return new GetMyAccountQuery(user.userId, featureSubjectOf(user));
 }

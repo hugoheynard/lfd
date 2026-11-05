@@ -270,6 +270,13 @@ describe("GET /me — le cycle se joue en base", () => {
       navPrefs: { catalogueView: null, workspace: null },
       // Les sites où il entre par son principal (S6) : aucun ici.
       reachableSites: [],
+      // Les niveaux des fonctionnalités, servis ici depuis le 2026-11-05 :
+      // les défauts du code, aucune dérogation en base.
+      featureLevels: {
+        customerMandate: "closed",
+        facebookLogin: "hidden",
+        proSignupCallback: "hidden",
+      },
     });
   });
 
@@ -319,6 +326,29 @@ describe("GET /me — mes entreprises", () => {
     expect(jsonBody<AccountView>(response).companies).toEqual([
       expect.objectContaining({ id: premiere.id, role: "owner" }),
       expect.objectContaining({ id: seconde.id, role: "orders" }),
+    ]);
+  });
+
+  /**
+   * Les rattachements se lisent à part de la personne depuis le 2026-11-05
+   * (lectures parallèles) : l'ordre reste celui de l'ancienneté du
+   * rattachement, jamais celui de la raison sociale.
+   */
+  it("ordonne les entreprises par ancienneté du rattachement, pas par nom", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: SUB });
+    const zeta = await createCompany(ctx.prisma, { raisonSociale: "Zeta SAS" });
+    const alpha = await createCompany(ctx.prisma, {
+      raisonSociale: "Alpha SARL",
+      siret: "98765432100023",
+    });
+    await attachTo(ctx.prisma, user.id, zeta.id, CustomerRole.owner);
+    await attachTo(ctx.prisma, user.id, alpha.id, CustomerRole.orders);
+
+    const response = await ctx.asSub(SUB).get("/me").expect(200);
+
+    expect(jsonBody<AccountView>(response).companies.map((company) => company.id)).toEqual([
+      zeta.id,
+      alpha.id,
     ]);
   });
 

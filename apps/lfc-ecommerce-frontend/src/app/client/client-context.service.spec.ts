@@ -28,6 +28,7 @@ import {
   workspaceDouble,
   type WorkspaceDouble,
 } from './client-workspace.fixture';
+import { DEFAULT_LEVELS } from './feature-access/feature-access.fixture';
 
 describe('ClientContext — le contexte de lecture', () => {
   const authenticated = signal(false);
@@ -132,6 +133,7 @@ describe('ClientContext — la bascule (lot c)', () => {
       companies: [MAISON_A, MAISON_B],
       reachableSites: [],
       navPrefs: { catalogueView: null, workspace },
+      featureLevels: DEFAULT_LEVELS,
     };
   }
 
@@ -340,6 +342,7 @@ describe('ClientContext — l’espace retenu (lot e)', () => {
       companies: [MAISON_A, MAISON_B],
       reachableSites: [],
       navPrefs: { catalogueView: null, workspace },
+      featureLevels: DEFAULT_LEVELS,
     };
   }
 

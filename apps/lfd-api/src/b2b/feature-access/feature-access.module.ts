@@ -8,14 +8,12 @@ import { SetFeatureOverrideHandler } from "./application/commands/set-feature-ov
 import { FeatureLevelResolver } from "./application/feature-level.resolver.js";
 import { GetFeatureAccessBoardHandler } from "./application/queries/get-feature-access-board.handler.js";
 import { GetFeatureLevelsHandler } from "./application/queries/get-feature-levels.handler.js";
-import { GetMyFeatureLevelsHandler } from "./application/queries/get-my-feature-levels.handler.js";
 import { FeatureAccessBoardReader } from "./domain/ports/feature-access-board.reader.js";
 import { FeatureExemptionRepository } from "./domain/ports/feature-exemption.repository.js";
 import { FeatureLevelLookup } from "./domain/ports/feature-level.lookup.js";
 import { FeatureOverrideRepository } from "./domain/ports/feature-override.repository.js";
 import { AdminFeatureAccessController } from "./http/admin-feature-access.controller.js";
 import { FeatureAccessController } from "./http/feature-access.controller.js";
-import { MyFeatureAccessController } from "./http/my-feature-access.controller.js";
 import { PrismaFeatureAccessBoardReader } from "./infrastructure/prisma-feature-access-board.reader.js";
 import { PrismaFeatureExemptionRepository } from "./infrastructure/prisma-feature-exemption.repository.js";
 import { PrismaFeatureLevelLookup } from "./infrastructure/prisma-feature-level.lookup.js";
@@ -34,7 +32,7 @@ import { PrismaFeatureOverrideRepository } from "./infrastructure/prisma-feature
  */
 @Module({
   imports: [AccountModule],
-  controllers: [FeatureAccessController, MyFeatureAccessController, AdminFeatureAccessController],
+  controllers: [FeatureAccessController, AdminFeatureAccessController],
   providers: [
     { provide: FeatureOverrideRepository, useClass: PrismaFeatureOverrideRepository },
     { provide: FeatureExemptionRepository, useClass: PrismaFeatureExemptionRepository },
@@ -47,7 +45,6 @@ import { PrismaFeatureOverrideRepository } from "./infrastructure/prisma-feature
     RemoveFeatureExemptionHandler,
     GetFeatureAccessBoardHandler,
     GetFeatureLevelsHandler,
-    GetMyFeatureLevelsHandler,
   ],
   exports: [FeatureLevelResolver],
 })

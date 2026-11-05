@@ -6,7 +6,7 @@ import type { FeatureSubject } from "../domain/feature-level-resolution.js";
  *
  * Unique parce que la condition qui compte — l'adresse n'ouvre une exemption
  * que PROUVÉE — tient à ce que `emailProven` soit recopié et jamais deviné.
- * Deux conversions finiraient par différer, et la garde et `GET /feature-access/mine`
+ * Deux conversions finiraient par différer, et la garde et `GET /me`
  * répondraient deux choses à la même personne.
  *
  * Pas de `Principal` (route `@Public()`, surface admin) = personne : pas

@@ -109,7 +109,7 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
   },
   {
     method: 'GET',
-    pattern: /^\/feature-access(\/mine)?$/u,
+    pattern: /^\/feature-access$/u,
     serves: 'les niveaux par défaut du code',
     answer: () => ok(FEATURE_LEVELS),
   },

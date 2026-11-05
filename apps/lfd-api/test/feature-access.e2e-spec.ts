@@ -11,7 +11,7 @@
  *
  * Une frontière doublée : la signature du jeton staff. Le reste est réel.
  */
-import type { AdminFeatureAccessView, FeatureLevelsView } from "@lfd/contracts";
+import type { AccountView, AdminFeatureAccessView, FeatureLevelsView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -255,18 +255,24 @@ describe("GET /feature-access — public", () => {
   });
 });
 
-/** Repris de la suite des gardes de la boutique, retirée avec la clé `shop` le 2026-10-09. */
-describe("GET /feature-access/mine", () => {
+/**
+ * Les niveaux d'une personne connectée voyagent dans `GET /me` depuis le
+ * 2026-11-05 : `GET /feature-access/mine` coûtait une requête entière de plus
+ * à chaque ouverture de la boutique, et a été retirée.
+ */
+describe("GET /me — les niveaux de la personne", () => {
   it("rend les niveaux de la personne, de la même forme que la route publique", async () => {
     await createUser(ctx.prisma, { auth0Sub: CLIENT, emailVerified: true });
 
-    const response = await ctx.asSub(CLIENT).get("/feature-access/mine").expect(200);
+    const response = await ctx.asSub(CLIENT).get("/me").expect(200);
 
-    expect(jsonBody<FeatureLevelsView>(response)).toEqual(DEFAULTS);
+    expect(jsonBody<AccountView>(response).featureLevels).toEqual(DEFAULTS);
   });
 
-  it("exige une personne connectée", async () => {
-    await ctx.http().get("/feature-access/mine").expect(401);
+  it("la route retirée ne répond plus", async () => {
+    await createUser(ctx.prisma, { auth0Sub: CLIENT, emailVerified: true });
+
+    await ctx.asSub(CLIENT).get("/feature-access/mine").expect(404);
   });
 
   /** 2026-10-09 : le bouton Facebook se montre par l'admin, pour tous à la fois. */
@@ -276,7 +282,7 @@ describe("GET /feature-access/mine", () => {
 
     const expected = { ...DEFAULTS, facebookLogin: "visible" };
     await expect(publicLevels()).resolves.toEqual(expected);
-    const mine = await ctx.asSub(CLIENT).get("/feature-access/mine").expect(200);
-    expect(jsonBody<FeatureLevelsView>(mine)).toEqual(expected);
+    const me = await ctx.asSub(CLIENT).get("/me").expect(200);
+    expect(jsonBody<AccountView>(me).featureLevels).toEqual(expected);
   });
 });

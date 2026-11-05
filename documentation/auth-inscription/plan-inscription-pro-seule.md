@@ -255,15 +255,15 @@ Quatre précisions sur ce tableau :
 
 ### 2.4 Les routes du module
 
-| Route                                              | Qui                        | Effet                                                                                                                 |
-| -------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `GET /admin/feature-access`                        | `b2b_feature_access:read`  | Catalogue, valeur effective, provenance, exemptions ; pour chacune, **l'adresse est-elle prouvée sur un compte** (Q7) |
-| `PUT /admin/feature-access/:key`                   | `b2b_feature_access:write` | Pose une dérogation, dont la valeur est validée par le catalogue                                                      |
-| `DELETE /admin/feature-access/:key`                | `b2b_feature_access:write` | Supprime la dérogation : retour au défaut                                                                             |
-| `POST /admin/feature-access/:key/exemptions`       | `b2b_feature_access:write` | Ajoute une adresse ; idempotent sur `(key, email)`                                                                    |
-| `DELETE /admin/feature-access/:key/exemptions/:id` | `b2b_feature_access:write` | Retire une adresse                                                                                                    |
-| `GET /feature-access`                              | `@Public()`                | Les niveaux globaux, sans exemption                                                                                   |
-| `GET /feature-access/mine`                         | client connecté            | Les niveaux de cette personne ; ne dit **jamais** « vous êtes exempté »                                               |
+| Route                                              | Qui                        | Effet                                                                                                                   |
+| -------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `GET /admin/feature-access`                        | `b2b_feature_access:read`  | Catalogue, valeur effective, provenance, exemptions ; pour chacune, **l'adresse est-elle prouvée sur un compte** (Q7)   |
+| `PUT /admin/feature-access/:key`                   | `b2b_feature_access:write` | Pose une dérogation, dont la valeur est validée par le catalogue                                                        |
+| `DELETE /admin/feature-access/:key`                | `b2b_feature_access:write` | Supprime la dérogation : retour au défaut                                                                               |
+| `POST /admin/feature-access/:key/exemptions`       | `b2b_feature_access:write` | Ajoute une adresse ; idempotent sur `(key, email)`                                                                      |
+| `DELETE /admin/feature-access/:key/exemptions/:id` | `b2b_feature_access:write` | Retire une adresse                                                                                                      |
+| `GET /feature-access`                              | `@Public()`                | Les niveaux globaux, sans exemption                                                                                     |
+| `GET /feature-access/mine`                         | client connecté            | Retirée le 2026-11-05 : les niveaux de la personne sont dans `GET /me` (`featureLevels`), même résolution, même silence |
 
 **Une ressource staff dédiée, `b2b_feature_access`**, et non `b2b_settings` :
 ouvrir la vente en ligne pèse plus que corriger une zone de livraison.
@@ -391,7 +391,9 @@ dans un formulaire public, et le lot 7 ouvre une todo pour le fermer.
 ## 4. L'app cliente suit le niveau
 
 **`ClientFeatureAccess`** lit `GET /feature-access` au démarrage, puis
-`GET /feature-access/mine` une fois la personne connectée.
+`GET /feature-access/mine` une fois la personne connectée. (Depuis le
+2026-11-05 : une personne reconnue les lit dans `GET /me`, champ
+`featureLevels` ; la route `/mine` est retirée.)
 
 - **Si la lecture échoue**, l'app navigue comme en `closed` et affiche un
   `fold-callout` qui le dit. Elle ne reste jamais en attente : le serveur fait

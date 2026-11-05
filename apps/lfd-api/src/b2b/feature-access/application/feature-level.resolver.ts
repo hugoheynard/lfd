@@ -1,7 +1,9 @@
 import {
+  FEATURE_KEYS,
   isExemptible,
   type FeatureKey,
   type FeatureLevel,
+  type FeatureLevelsView,
   type UnexemptibleFeatureKey,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
@@ -36,6 +38,46 @@ export class FeatureLevelResolver {
     // Exempté, la dérogation ne changerait rien : on ne la lit pas.
     const storedOverride = exempt ? null : await this.lookup.storedOverride(key);
     return resolveFeatureLevel(key, { exempt, storedOverride });
+  }
+
+  /**
+   * **Tous** les niveaux pour ce sujet, en une lecture des dérogations au lieu
+   * d'une par clé — ce que lisent `GET /feature-access` et `GET /me`.
+   *
+   * Même résolution que {@link levelFor}, clé par clé : seules les clés
+   * exemptibles cherchent l'adresse (aucune depuis le 2026-10-09, donc aucune
+   * lecture d'exemption aujourd'hui). La dérogation d'une clé exemptée est lue
+   * quand même, dans le même `IN` : elle n'y change rien.
+   */
+  async levelsFor(subject: FeatureSubject): Promise<FeatureLevelsView> {
+    const email = exemptionLookupEmail(subject);
+    const [overrides, exemptKeys] = await Promise.all([
+      this.lookup.storedOverrides(FEATURE_KEYS),
+      this.exemptKeys(email),
+    ]);
+    const facts = (key: FeatureKey) => ({
+      exempt: exemptKeys.has(key),
+      storedOverride: overrides.get(key) ?? null,
+    });
+    // Écrit clé par clé : une clé ajoutée au catalogue fait échouer la
+    // compilation ici, `FeatureLevelsView` étant indexé par lui.
+    return {
+      customerMandate: resolveFeatureLevel("customerMandate", facts("customerMandate")),
+      facebookLogin: resolveFeatureLevel("facebookLogin", facts("facebookLogin")),
+      proSignupCallback: resolveFeatureLevel("proSignupCallback", facts("proSignupCallback")),
+    };
+  }
+
+  /** Les clés exemptibles où cette adresse prouvée est exemptée. */
+  private async exemptKeys(email: string | null): Promise<ReadonlySet<FeatureKey>> {
+    if (email === null) {
+      return new Set();
+    }
+    const exemptible = FEATURE_KEYS.filter((key) => isExemptible(key));
+    const answers = await Promise.all(
+      exemptible.map(async (key) => ((await this.lookup.isExempt(key, email)) ? [key] : [])),
+    );
+    return new Set(answers.flat());
   }
 
   /**

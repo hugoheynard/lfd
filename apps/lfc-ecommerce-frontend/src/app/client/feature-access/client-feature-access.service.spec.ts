@@ -1,8 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
+import type { Account } from '../../account/account.model';
+import { AccountService, type AccountStatus } from '../../account/account.service';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientFeatureAccess } from './client-feature-access.service';
 
@@ -14,17 +17,47 @@ function authAs(recognised: boolean): Pick<AuthFacade, 'authGate$' | 'accessToke
   };
 }
 
+/** Le compte de `GET /me` : seuls `account` et `status` sont lus par le service. */
+const accountState = {
+  account: signal<Account | null>(null),
+  status: signal<AccountStatus>('idle'),
+};
+const accountsDouble: Pick<AccountService, 'account' | 'status'> = {
+  account: accountState.account.asReadonly(),
+  status: accountState.status.asReadonly(),
+};
+
+/** Un compte sans société ; le service n'en lit que les niveaux. */
+function accountWith(levels: Account['featureLevels']): Account {
+  return {
+    profile: {
+      userId: 'usr_1',
+      firstName: 'Léa',
+      lastName: 'Martin',
+      email: 'lea@exemple.fr',
+      phone: '',
+    },
+    companies: [],
+    reachableSites: [],
+    navPrefs: { catalogueView: null, workspace: null },
+    featureLevels: levels,
+  };
+}
+
 describe('ClientFeatureAccess', () => {
   let access: ClientFeatureAccess;
   let http: HttpTestingController;
 
   function setUp(recognised: boolean): void {
     TestBed.resetTestingModule();
+    accountState.account.set(null);
+    accountState.status.set('idle');
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthFacade, useValue: authAs(recognised) },
+        { provide: AccountService, useValue: accountsDouble },
       ],
     });
     access = TestBed.inject(ClientFeatureAccess);
@@ -32,7 +65,7 @@ describe('ClientFeatureAccess', () => {
   }
 
   const globalRead = (r: { url: string }): boolean => r.url.endsWith('/feature-access');
-  const mineRead = (r: { url: string }): boolean => r.url.endsWith('/feature-access/mine');
+  const mineRead = (r: { url: string }): boolean => r.url.includes('/feature-access/mine');
 
   afterEach(() => {
     http.verify();
@@ -142,22 +175,34 @@ describe('ClientFeatureAccess', () => {
   describe('personne reconnue', () => {
     beforeEach(() => setUp(true));
 
-    it('lit SES niveaux par `/feature-access/mine`, avec son jeton', async () => {
-      const loading = access.load();
-      const request = http.expectOne(mineRead);
-      expect(request.request.headers.get('Authorization')).toBe('Bearer jeton-de-test');
-      http.expectNone(globalRead);
+    const LEVELS = {
+      customerMandate: 'open',
+      facebookLogin: 'visible',
+      proSignupCallback: 'hidden',
+    } as const;
 
-      request.flush({ customerMandate: 'open' });
+    /** 2026-11-05 : les niveaux voyagent dans `GET /me` ; plus de requête à part. */
+    it('lit SES niveaux dans le compte de `/me`, sans aucune requête de plus', async () => {
+      const loading = access.load();
+      TestBed.tick();
+      expect(access.state()).toBe('loading');
+
+      accountState.status.set('ready');
+      accountState.account.set(accountWith(LEVELS));
+      TestBed.tick();
       await loading;
 
+      http.expectNone(mineRead);
+      http.expectNone(globalRead);
       expect(access.state()).toBe('ready');
       expect(access.customerMandate()).toBe('open');
+      expect(access.facebookLoginShown()).toBe(true);
     });
 
-    it('un échec de `/mine` vaut `closed`, comme la lecture globale', async () => {
+    it('un échec de `/me` vaut `closed`, comme la lecture globale', async () => {
       const loading = access.load();
-      http.expectOne(mineRead).flush('panne', { status: 500, statusText: 'Server Error' });
+      accountState.status.set('error');
+      TestBed.tick();
       await loading;
 
       expect(access.state()).toBe('failed');
