@@ -7,7 +7,7 @@ import { firstValueFrom, map, type Observable, switchMap } from 'rxjs';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientContext } from '../client-context.service';
-import { contextKeyed, type ContextKey, workspaceHeadersOf } from '../context-keyed/context-keyed';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from '../context-keyed/context-keyed';
 import { SHOP_TIME_ZONE } from '../shop-time-zone';
 import { OrderOpeningStore } from './order-opening.store';
 import { ShopClock } from './shop-clock';
@@ -202,9 +202,10 @@ export class OrderAdmissionStore {
   private loadMine(key: ContextKey): Observable<AdmissionAnswer> {
     return this.auth.accessToken$().pipe(
       switchMap((token) =>
-        this.http.get<MyOrderAdmissionView>(`${AUTH_CONFIG.apiBaseUrl}/order-admission/mine`, {
-          headers: { Authorization: `Bearer ${token}`, ...workspaceHeadersOf(key) },
-        }),
+        this.http.get<MyOrderAdmissionView>(
+          `${AUTH_CONFIG.apiBaseUrl}/order-admission/mine`,
+          workspaceRequestOf(key, { Authorization: `Bearer ${token}` }),
+        ),
       ),
       map((view) => ({ canOrder: view.canOrder, firstServiceDay: view.firstServiceDay ?? null })),
     );

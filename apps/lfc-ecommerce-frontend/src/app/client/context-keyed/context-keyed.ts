@@ -1,9 +1,11 @@
+import { HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 // Par le sous-chemin sans zod : les lecteurs sont chargés au démarrage.
 import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import type { Observable, Subscription } from 'rxjs';
 
 import { ClientContext, VISITOR } from '../client-context.service';
+import { NO_WORKSPACE } from '../no-workspace';
 
 /**
  * La clé complète d'une lecture : l'espace du {@link ClientContext} (ou
@@ -31,6 +33,30 @@ export class ContextReadAbandoned extends Error {
  */
 export function workspaceHeadersOf(key: ContextKey): Record<string, string> {
   return key.workspace === VISITOR ? {} : { [WORKSPACE_HEADER]: key.workspace };
+}
+
+/** Les options d'une requête de lecture : son en-tête d'espace et son contexte HTTP. */
+export interface WorkspaceRequest {
+  readonly headers: Record<string, string>;
+  readonly context: HttpContext;
+}
+
+/**
+ * **Ce que porte toute lecture d'une clé**, et la seule façon de l'écrire :
+ * l'en-tête de {@link workspaceHeadersOf}, plus, pour une clé visiteur, le
+ * marqueur {@link NO_WORKSPACE} qui empêche l'intercepteur de compléter avec
+ * l'espace courant (2026-11-05). La règle « l'en-tête vient de la clé » est
+ * ainsi tenue par construction, et plus par le hasard que `current()` vaille
+ * `null` sans session. `extra` ajoute les autres en-têtes (le jeton).
+ */
+export function workspaceRequestOf(
+  key: ContextKey,
+  extra: Record<string, string> = {},
+): WorkspaceRequest {
+  return {
+    headers: { ...extra, ...workspaceHeadersOf(key) },
+    context: new HttpContext().set(NO_WORKSPACE, key.workspace === VISITOR),
+  };
 }
 
 /** Ce que la déconnexion vide. */

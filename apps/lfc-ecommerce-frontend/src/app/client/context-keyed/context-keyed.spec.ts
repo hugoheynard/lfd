@@ -4,12 +4,14 @@ import { Observable, Subject } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import { VISITOR } from '../client-context.service';
+import { NO_WORKSPACE } from '../no-workspace';
 import {
   type ContextKey,
   ContextKeyed,
   ContextKeyedMemory,
   ContextReadAbandoned,
   workspaceHeadersOf,
+  workspaceRequestOf,
 } from './context-keyed';
 
 /** Un appel par clé, réglé à la main. */
@@ -144,6 +146,19 @@ describe('ContextKeyed — la lecture rangée par clé de contexte', () => {
     await expect(pending).rejects.toBeInstanceOf(ContextReadAbandoned);
     expect(calls[1]?.cancelled).toBe(true);
     expect(keyed.held(A)).toBeUndefined();
+  });
+
+  /**
+   * 2026-11-05 : une clé visiteur lue pendant qu'un espace est connu part
+   * marquée « sans espace » — l'intercepteur ne la complète pas.
+   */
+  it('une clé visiteur part sans en-tête et marquée « sans espace »', () => {
+    const visitor = workspaceRequestOf({ workspace: VISITOR, own: '' }, { Authorization: 'x' });
+    expect(visitor.headers).toEqual({ Authorization: 'x' });
+    expect(visitor.context.get(NO_WORKSPACE)).toBe(true);
+    const own = workspaceRequestOf(A);
+    expect(own.headers).toEqual({ [WORKSPACE_HEADER]: 'cmp_a' });
+    expect(own.context.get(NO_WORKSPACE)).toBe(false);
   });
 
   it('pose l’en-tête d’espace depuis la clé, aucun pour un visiteur', () => {

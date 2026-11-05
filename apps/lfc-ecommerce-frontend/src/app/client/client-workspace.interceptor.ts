@@ -6,6 +6,7 @@ import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { ClientWorkspace } from './client-workspace.service';
+import { NO_WORKSPACE } from './no-workspace';
 
 /**
  * **Déclare l'espace de travail** sur chaque requête vers NOTRE API.
@@ -20,7 +21,10 @@ import { ClientWorkspace } from './client-workspace.service';
  *   deviné. Les lecteurs par espace attendent de toute façon (plan D6) ;
  * - **jamais par-dessus un en-tête déjà posé** — l'écriture du panier pose
  *   l'espace CAPTURÉ au geste. Le remplacer par l'espace lu à l'envoi écrirait,
- *   après une bascule pendant l'accalmie, les lignes d'un espace dans l'autre.
+ *   après une bascule pendant l'accalmie, les lignes d'un espace dans l'autre ;
+ * - **jamais sur une requête marquée {@link NO_WORKSPACE}** (2026-11-05) — la
+ *   brique de lecture l'a lue pour une clé visiteur : l'espace courant n'a
+ *   rien à y dire.
  *
  * Rendu serveur : aucune lecture de `window` ici, et `ClientWorkspace` rend
  * `null` tant qu'aucun compte n'est lu — l'en-tête n'y part donc pas.
@@ -40,7 +44,11 @@ export const workspaceInterceptor: HttpInterceptorFn = (request, next) =>
  */
 export function workspaceInterceptorFor(apiBaseUrl: string): HttpInterceptorFn {
   return (request, next) => {
-    if (!targetsApi(request.url, apiBaseUrl) || request.headers.has(WORKSPACE_HEADER)) {
+    if (
+      !targetsApi(request.url, apiBaseUrl) ||
+      request.headers.has(WORKSPACE_HEADER) ||
+      request.context.get(NO_WORKSPACE)
+    ) {
       return next(request);
     }
     const workspace = inject(ClientWorkspace).current();

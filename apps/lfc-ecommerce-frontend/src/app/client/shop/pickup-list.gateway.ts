@@ -7,7 +7,7 @@ import { switchMap } from 'rxjs/operators';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientContext, VISITOR } from '../client-context.service';
-import { contextKeyed, type ContextKey, workspaceHeadersOf } from '../context-keyed/context-keyed';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from '../context-keyed/context-keyed';
 
 /** Le lecteur anonyme : la route publique, qui ne sert que les points des particuliers. */
 export { VISITOR };
@@ -79,15 +79,21 @@ export class PickupListGateway {
   private read(key: ContextKey): Observable<readonly AudiencePickupAddressView[]> {
     const base = AUTH_CONFIG.apiBaseUrl;
     if (key.workspace === VISITOR) {
-      return this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses`);
+      return this.http.get<readonly AudiencePickupAddressView[]>(
+        `${base}/pickup-addresses`,
+        workspaceRequestOf(key),
+      );
     }
-    return this.auth.accessToken$().pipe(
-      switchMap((token) =>
-        this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses/mine`, {
-          headers: { Authorization: `Bearer ${token}`, ...workspaceHeadersOf(key) },
-        }),
-      ),
-    );
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<readonly AudiencePickupAddressView[]>(
+            `${base}/pickup-addresses/mine`,
+            workspaceRequestOf(key, { Authorization: `Bearer ${token}` }),
+          ),
+        ),
+      );
   }
 }
 

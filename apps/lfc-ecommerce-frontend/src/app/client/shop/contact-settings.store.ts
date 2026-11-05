@@ -13,7 +13,7 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientContext, VISITOR } from '../client-context.service';
 import type { LocaleCode } from '../client-locale.service';
-import { contextKeyed, type ContextKey, workspaceHeadersOf } from '../context-keyed/context-keyed';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from '../context-keyed/context-keyed';
 
 /** Le défaut : aucun numéro, la carte vide du contrat (la boutique garde son dictionnaire). */
 export const NO_CONTACT_SETTINGS: AudienceContactSettingsView = {
@@ -130,15 +130,21 @@ export class ContactSettingsStore {
     const base = AUTH_CONFIG.apiBaseUrl;
     if (key.workspace === VISITOR) {
       const query = key.own === PRO_SHOWCASE ? '?audience=pro' : '';
-      return this.http.get<AudienceContactSettingsView>(`${base}/contact-settings${query}`);
+      return this.http.get<AudienceContactSettingsView>(
+        `${base}/contact-settings${query}`,
+        workspaceRequestOf(key),
+      );
     }
-    return this.auth.accessToken$().pipe(
-      switchMap((token) =>
-        this.http.get<AudienceContactSettingsView>(`${base}/me/contact-settings`, {
-          headers: { Authorization: `Bearer ${token}`, ...workspaceHeadersOf(key) },
-        }),
-      ),
-    );
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<AudienceContactSettingsView>(
+            `${base}/me/contact-settings`,
+            workspaceRequestOf(key, { Authorization: `Bearer ${token}` }),
+          ),
+        ),
+      );
   }
 }
 

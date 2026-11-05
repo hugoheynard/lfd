@@ -1,4 +1,4 @@
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, HttpContext, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from '@lfd/contracts';
@@ -10,6 +10,7 @@ import {
   type WorkspaceDouble,
 } from './client-workspace.fixture';
 import { targetsApi, workspaceInterceptorFor } from './client-workspace.interceptor';
+import { NO_WORKSPACE } from './no-workspace';
 
 /**
  * Régression (2026-09-15) : la suite lisait `AUTH_CONFIG.apiBaseUrl`, qui vient
@@ -40,6 +41,34 @@ function boot(current: string | null): {
 }
 
 describe('workspaceInterceptor', () => {
+  /**
+   * 2026-11-05 : une clé visiteur de la brique part sans espace, même quand
+   * un espace est connu — l'en-tête vient de la clé, jamais de l'envoi.
+   */
+  it('ne pose rien sur une requête marquée « sans espace », même l’espace connu', () => {
+    const { http, backend } = boot('cmp_a');
+
+    http
+      .get(`${API}/pickup-addresses`, { context: new HttpContext().set(NO_WORKSPACE, true) })
+      .subscribe();
+
+    expect(backend.expectOne(`${API}/pickup-addresses`).request.headers.has(WORKSPACE_HEADER)).toBe(
+      false,
+    );
+  });
+
+  it('sans le marqueur, pose l’espace courant comme avant', () => {
+    const { http, backend } = boot('cmp_a');
+
+    http
+      .get(`${API}/pickup-addresses`, { context: new HttpContext().set(NO_WORKSPACE, false) })
+      .subscribe();
+
+    expect(backend.expectOne(`${API}/pickup-addresses`).request.headers.get(WORKSPACE_HEADER)).toBe(
+      'cmp_a',
+    );
+  });
+
   it('pose l’espace connu sur une requête vers l’API', () => {
     const { http, backend } = boot('cmp_a');
 
