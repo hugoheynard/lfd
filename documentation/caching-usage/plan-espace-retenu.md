@@ -160,13 +160,13 @@ périmé` (le dernier total atténué du devis, la photo `STALE_PHOTO_MS` du
 
 **Découpe retenue** (proposée par `vitruve`) :
 
-| Lot | Contenu                                                                                                   | Dépend de |
-| --- | --------------------------------------------------------------------------------------------------------- | --------- |
-| a   | le crochet de déconnexion et la liste d'oubli, alignée sur le registre — un manque RGPD réel, autonome    | —         |
-| b   | `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait | —         |
-| c   | la bascule : `switchTo`, état en cours, retour arrière                                                    | b         |
-| d   | la migration des autres stores, une par commit, porte en dette décroissante                               | b, c      |
-| e   | l'espace retenu (état `essai`) sur les trois lecteurs du lot b                                            | a, b      |
+| Lot | Contenu                                                                                                                                      | Dépend de |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| a   | le crochet de déconnexion et la liste d'oubli, alignée sur le registre — un manque RGPD réel, autonome                                       | —         |
+| b   | 🟦 bâti le 2026-11-05, sur `dev` — `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait | —         |
+| c   | la bascule : `switchTo`, état en cours, retour arrière                                                                                       | b         |
+| d   | la migration des autres stores, une par commit, porte en dette décroissante                                                                  | b, c      |
+| e   | l'espace retenu (état `essai`) sur les trois lecteurs du lot b                                                                               | a, b      |
 
 Le gain (e) ne demande pas la migration complète (d).
 

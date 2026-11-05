@@ -6,10 +6,10 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext, VISITOR } from '../client-context.service';
 
 /** Le lecteur anonyme : la route publique, qui ne sert que les points des particuliers. */
-export const VISITOR = 'visiteur';
+export { VISITOR };
 
 /**
  * **La liste des points de retrait, pour qui regarde** (Hugo, 2026-10-15 :
@@ -24,11 +24,11 @@ export const VISITOR = 'visiteur';
 export class PickupListGateway {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
-  /** {@link VISITOR}, l'espace de la personne reconnue, ou `null` tant qu'il n'est pas connu. */
+  /** Le préfixe de {@link ClientContext} : les points ne dépendent de rien d'autre. */
   readerKey(): string | null {
-    return this.auth.isAuthenticated() ? this.workspace.current() : VISITOR;
+    return this.context.prefix();
   }
 
   /** Les points de CE lecteur. */

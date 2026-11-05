@@ -5,11 +5,8 @@ import { firstValueFrom, type Observable, switchMap, timeout } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../../auth/auth.config';
 import { AuthFacade } from '../../../auth/auth.facade';
-import { ClientWorkspace } from '../../client-workspace.service';
+import { ClientContext, VISITOR } from '../../client-context.service';
 import { ShopAllergenDisplay } from './allergen-display.service';
-
-/** Le lecteur d'un visiteur non reconnu — la vitrine publique. */
-const VISITOR = 'visiteur';
 
 /**
  * Où en est la page d'un rayon. `failed` n'est PAS un écran : la grille rend
@@ -53,7 +50,7 @@ const PAGE_TIMEOUT_MS = 4000;
 export class ShopStorefront {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
   private readonly allergenDisplay = inject(ShopAllergenDisplay);
   private readonly pages = signal<ReadonlyMap<string, StorefrontPageState>>(new Map());
 
@@ -62,9 +59,7 @@ export class ShopStorefront {
    * reconnue, ou `null` tant que cet espace n'est pas connu. Un écran qui
    * charge la page le suit, pour relire quand il change.
    */
-  readonly reader = computed<string | null>(() =>
-    this.auth.isAuthenticated() ? this.workspace.current() : VISITOR,
-  );
+  readonly reader = computed<string | null>(() => this.context.prefix());
 
   /** L'état de la page d'un rayon pour le lecteur du moment ; `null` tant que personne ne l'a demandée. */
   stateOf(shelfKey: string): StorefrontPageState | null {

@@ -11,13 +11,10 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext, VISITOR } from '../client-context.service';
 import { ProShelfSource } from './pro-shelf.source';
 import { ProVisit } from './pro-visit.service';
 import { ShopClock } from './shop-clock';
-
-/** La clé de la photo d'un visiteur non reconnu — la vitrine publique. */
-const VISITOR = 'visiteur';
 
 /** La clé de la photo d'un visiteur venu de `/pro` — la vitrine pro publique. */
 const PRO_VISITOR = 'visiteur-pro';
@@ -93,7 +90,7 @@ export class ShopCatalogue {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
   private readonly proVisit = inject(ProVisit);
   private readonly proShelf = inject(ProShelfSource);
   private readonly clock = inject(ShopClock);
@@ -168,11 +165,10 @@ export class ShopCatalogue {
    * ou `null` tant que cet espace n'est pas connu.
    */
   private readerKey(): string | null {
-    if (this.auth.isAuthenticated()) {
-      return this.workspace.current();
-    }
-    // La visite pro est une autre photo : un autre tarif, la même forme.
-    return this.proVisit.active() ? PRO_VISITOR : VISITOR;
+    const prefix = this.context.prefix();
+    // La visite pro est une autre photo : un autre tarif, la même forme. Elle
+    // n'est qu'une part de clé du catalogue, pas un contexte.
+    return prefix === VISITOR && this.proVisit.active() ? PRO_VISITOR : prefix;
   }
 
   /**
