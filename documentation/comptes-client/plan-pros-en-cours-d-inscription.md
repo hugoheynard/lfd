@@ -36,6 +36,13 @@ doit pas s'obtenir en tapant un SIRET ») est **levée sciemment** : la
 validation commerciale fait le tri, et le prix des articles est déjà pro
 pour un pending.
 
+**La règle, en une phrase (Hugo, 2026-11-05)** : « le seul truc qu'on ne
+peut pas faire sur un pending, c'est au compte ». Tout le reste est pro. Le
+paiement au compte est déjà réservé à `active` (`order-settlement.ts`) —
+inchangé. Côté promotions : une promotion qui vise « les pros » inclut les
+pending ; la cible « pros actifs » reste un choix volontaire de qui crée la
+promotion, lu sur le statut.
+
 **Ce que `vitruve` impose avant de toucher `audienceOf`** :
 
 1. **Les promotions « pros actifs » et « tous sauf pros actifs » changeraient
