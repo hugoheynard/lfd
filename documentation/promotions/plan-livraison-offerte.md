@@ -62,6 +62,51 @@ offerte ».
    (il existe et rien ne le casse), la réduction s'applique sur le frais
    calculé.
 
+## Contredit par `vitruve` le 2026-11-05 — à ne pas bâtir en l'état
+
+Quatre bloquants, vérifiés dans le code :
+
+1. **La commande ne sait enregistrer qu'UN frais** (`deliveryFeeCents`,
+   `deliveryFeeTtcCents`, `deliveryFeeAdjustment`, `orders.prisma` ; le BL et
+   le soldé aussi, avec un CHECK). Une ligne « Livraison offerte −15 € » qui
+   se relit demande des colonnes neuves et la checklist
+   [`ajouter-un-terme-au-panier.md`](../pricing/boutique-et-panier/ajouter-un-terme-au-panier.md)
+   entière (devis, bon, facture, découpage par taux, cohérence, soldé,
+   golden master).
+2. **Le seuil se compterait sur une base que le calcul ne produit pas** :
+   `subtotalCents` est un HT avant remises ; le TTC remisé n'est connu
+   qu'après la composition (`basket-terms.ts`) ; le bon de fidélité est
+   imputé hors du calcul. Le « Plus que 12 € » doit venir du serveur.
+3. **`min_basket` sur une remise au panier crée une boucle** (une remise
+   conditionnée à un total qui dépend d'elle) : à réserver aux frais.
+4. **Le frais par audience heurte la route publique `GET /delivery-zones`**,
+   qui sert le frais à tout le monde (en cache Cloudflare) : servir les deux
+   frais donne le tarif pro à un anonyme ; la rendre propre à l'appelant
+   la sort du cache partagé. Trois écrans de la boutique lisent `zone.fee`.
+
+Et des sérieux : la TVA d'une réduction de frais en mode `follows_goods`
+(ventilée au prorata, jamais par le mécanisme des remises d'articles) et sa
+forme dans Factur-X ; la révision (livraison offerte acquise ou rejugée) ;
+un nouveau point d'application touche une dizaine de sites et le plafond
+des cinq remises ; un pro en cours d'inscription paie le frais particulier.
+
+**Sa recommandation** : d'abord le lot 0 (frais par audience, colonnes NOT
+NULL recopiées, sort de la route publique décidé), puis un **franco sur la
+zone** — un seuil par audience, livraison offerte au-delà — comme terme du
+calcul, avec ses colonnes ; l'étage de promotions sur les frais ne vient
+qu'après, pour les cas ciblés (une société, Noël).
+
+**Décisions pour Hugo** :
+
+- (a) franco sur la zone d'abord, ou l'étage de promotions directement ;
+- (b) la base du seuil (HT ou TTC selon quel critère, avant ou après le bon) ;
+- (c) `min_basket` réservé aux frais dans ce lot ;
+- (d) en révision, livraison offerte acquise ou rejugée ;
+- (e) ce qu'on enregistre : frais net, ou réduction à part (et Factur-X) ;
+- (f) la route publique : frais selon l'audience (cache privé), ou frais
+  retirés de la route ;
+- (g) le pro en cours d'inscription au frais particulier.
+
 # Partie 2 — Le code
 
 ## 0. Lot 0 — le frais de base par audience (Hugo, 2026-11-05)
