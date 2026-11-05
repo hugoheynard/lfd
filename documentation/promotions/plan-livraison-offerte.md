@@ -123,7 +123,23 @@ qu'après, pour les cas ciblés (une société, Noël).
   dès 80 € » comparé à un panier de 82 € TTC (~77,7 € HT) lui dirait « plus
   que 2,30 € », ce qui n'a pas de sens visuel pour lui. Piste : afficher le
   seuil au particulier dans la base qu'il lit, en gardant le calcul en HT.
-- (c) à (g) : en attente.
+- **(c) Oui** : `min_basket` est réservé aux frais dans ce lot (pas de
+  boucle avec les remises au panier).
+- **(d) Rejugée** : en révision, la livraison offerte se recalcule ; si le
+  panier repasse sous le franco, le frais revient (et le total monte).
+- **(e) Une ligne de réduction** à part, sur le devis, le bon, la facture et
+  l'e-mail — d'où les colonnes neuves et la checklist « ajouter un terme ».
+- **(f) Le cache le plus rapide, même avec les audiences.** Le cache public
+  ne connaît pas l'appelant : il faut une adresse par audience
+  (`?audience=pro` / particulier), ce qui rend le tarif pro lisible par
+  tout visiteur — comme les points de retrait de la vitrine pro (« publique
+  par choix », 2026-10-19). **À confirmer par Hugo** ; sinon, le tarif pro ne
+  passerait que par une route `/mine`, hors du cache partagé.
+- **(g) Non : un pro en cours d'inscription est un pro** et paie le frais
+  pro. ⚠️ Diverge des prix des articles, où une société en attente reçoit le
+  tarif particulier (`standingOf`, `customer-audiences.service.ts`) — règle
+  propre à la livraison, à écrire comme telle.
+- **(a)** non tranché explicitement : le franco d'abord, par défaut.
 
 # Partie 2 — Le code
 
