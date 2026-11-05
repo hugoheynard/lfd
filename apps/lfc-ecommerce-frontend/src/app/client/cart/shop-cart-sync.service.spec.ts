@@ -419,3 +419,29 @@ describe('ShopCartSync — le visiteur qui se reconnaît', () => {
     expect(cart.quantities()).toEqual({});
   });
 });
+
+describe('ShopCartSync — à la déconnexion', () => {
+  /** L'oubli efface le stockage juste après : rien ne doit repartir ensuite. */
+  it('`halt` abandonne l’écriture en attente', () => {
+    const { cart, http } = boot();
+    wake();
+    serverHolds(http, MAISON_A, null);
+
+    cart.setQuantity('VIE-001', 2);
+    TestBed.inject(ShopCartSync).halt();
+    quiet();
+
+    expect(writes(http)).toEqual([]);
+  });
+
+  it('`halt` abandonne la lecture en vol', () => {
+    const { cart, http } = boot();
+    wake();
+    const pending = reading(http, MAISON_A);
+
+    TestBed.inject(ShopCartSync).halt();
+
+    expect(pending.cancelled).toBe(true);
+    expect(cart.quantities()).toEqual({});
+  });
+});

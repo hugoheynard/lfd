@@ -177,6 +177,23 @@ export class ShopCartSync {
   }
 
   /**
+   * **Coupe tout envoi** — appelé par l'oubli à la déconnexion, avant que le
+   * stockage ne soit effacé (`client/sign-out/`).
+   *
+   * Sans espace synchronisé, l'accalmie en attente ne passe plus son filtre ;
+   * la lecture en vol est abandonnée, et son `reconcile` ne réécrirait plus
+   * rien. L'écriture déjà partie ne touche que le serveur, pas le navigateur.
+   * La prochaine reconnaissance rouvre l'envoi par {@link enter}.
+   */
+  halt(): void {
+    this.synced = null;
+    this.resumed = false;
+    this.lastSaved = null;
+    this.reading?.unsubscribe();
+    this.reading = null;
+  }
+
+  /**
    * Entre dans un espace : échange le magasin local, puis relit le serveur.
    *
    * L'ordre est tout le correctif. Relire d'abord laissait à l'écran — et dans

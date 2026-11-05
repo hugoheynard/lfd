@@ -294,6 +294,17 @@ export class CartStore {
     this.persist();
   }
 
+  /**
+   * Vide la mémoire SANS écrire — l'oubli à la déconnexion (`client/sign-out/`)
+   * efface le stockage juste après. Le magasin revient au visiteur vide.
+   */
+  forget(): void {
+    this.scope$.set(null);
+    this.quantities$.set({});
+    this.savedAt$.set(null);
+    this.units$.set({});
+  }
+
   /** Écrit la copie de l'espace courant, sous SES clés. */
   private persist(): void {
     const keys = keysOf(this.scope$());

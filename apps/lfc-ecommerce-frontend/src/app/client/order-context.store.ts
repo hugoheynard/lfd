@@ -290,8 +290,15 @@ export class OrderContextStore {
   private seen: string | null = null;
 
   constructor() {
+    // Un choix vide EFFACE la clé plutôt que d'y écrire `null` : l'oubli à la
+    // déconnexion remet le choix à vide, et cet effet passe après lui.
     effect(() => {
-      writeLocal(KEY, this.choice());
+      const choice = this.choice();
+      if (choice === null) {
+        clearLocal(KEY);
+      } else {
+        writeLocal(KEY, choice);
+      }
     });
 
     effect(() => {
@@ -447,5 +454,17 @@ export class OrderContextStore {
   pinHouse(draft: OrderDraft & { readonly pickupAddressId: string }): void {
     this.pinnedHouse = draft.pickupAddressId;
     this.draft.set(draft);
+  }
+
+  /**
+   * Vide le choix et le parcours — l'oubli à la déconnexion
+   * (`client/sign-out/`). Les effets ci-dessus effacent alors leurs clés au
+   * lieu d'y réécrire ce qu'un écran encore monté tenait.
+   */
+  forget(): void {
+    this.pinnedHouse = null;
+    this.choice.set(null);
+    this.draft.set(null);
+    this.movedToFirstDay.set(null);
   }
 }

@@ -4,6 +4,7 @@ import { AuthService } from '@auth0/auth0-angular';
 import { of, Subject } from 'rxjs';
 
 import { AuthFacade, type ProRegistration } from './auth.facade';
+import { BEFORE_SIGN_OUT } from './before-sign-out';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
 const REGISTRATION: ProRegistration = {
@@ -129,5 +130,46 @@ describe('AuthFacade — la porte pro', () => {
     expect(redirects).toEqual([]);
     expect(navigated).toEqual(['/accueil']);
     expect(facade.isAuthenticated()).toBe(true);
+  });
+});
+
+/**
+ * Le crochet « avant déconnexion » (plan espace retenu, lot a). Seule la
+ * branche dev est atteignable ici (cf. plus haut) ; l'appel des crochets
+ * précède la séparation des deux branches dans `logout()`.
+ */
+describe('AuthFacade — avant la déconnexion', () => {
+  it('appelle les crochets AVANT de quitter, même si l’un d’eux lève', () => {
+    const events: string[] = [];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: BEFORE_SIGN_OUT,
+          multi: true,
+          useValue: (): void => {
+            events.push('oubli');
+            throw new Error('panne simulée');
+          },
+        },
+        { provide: BEFORE_SIGN_OUT, multi: true, useValue: (): void => void events.push('second') },
+      ],
+    });
+    TestBed.inject(Router).navigateByUrl = (url): Promise<boolean> => {
+      events.push(`sortie ${String(url)}`);
+      return Promise.resolve(true);
+    };
+    const original = console.error;
+    console.error = (): void => undefined;
+    try {
+      TestBed.inject(AuthFacade).logout();
+    } finally {
+      console.error = original;
+      localStorage.removeItem('lfc-dev-signed-out');
+    }
+
+    expect(DEV_BYPASS_AUTH).toBe(true);
+    expect(events).toEqual(['oubli', 'second', 'sortie /bienvenue']);
   });
 });

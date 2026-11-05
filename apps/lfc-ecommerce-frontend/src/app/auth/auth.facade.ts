@@ -1,4 +1,4 @@
-import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { Injectable, Injector, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 
 import { isPlatformBrowser } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -9,6 +9,7 @@ import type { Observable } from 'rxjs';
 import { filter, map, switchMap, take } from 'rxjs/operators';
 
 import { appBaseUrl } from './app-base-url';
+import { BEFORE_SIGN_OUT } from './before-sign-out';
 import {
   CUSTOMER_CONNECTION,
   EMAIL_CODE_CONNECTION,
@@ -46,6 +47,8 @@ import { expiringOnFailure } from './token-failure';
 export class AuthFacade {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
+  /** Pour résoudre {@link BEFORE_SIGN_OUT} à la déconnexion seulement — cf. son JSDoc. */
+  private readonly injector = inject(Injector);
   /** `null` côté serveur : Auth0 n'est fourni qu'au navigateur. */
   private readonly auth0 = inject(AuthService, { optional: true });
 
@@ -372,11 +375,16 @@ export class AuthFacade {
    *
    * En bypass dev, aucun aller-retour Auth0 : on pose la déconnexion et on
    * revient sur la porte d'entrée, où l'on reste jusqu'à la prochaine entrée.
+   *
+   * Les deux branches passent d'abord par {@link BEFORE_SIGN_OUT} (l'oubli du
+   * stockage, plan espace retenu, lot a) : avant la redirection, sans quoi la
+   * page est déjà partie.
    */
   logout(): void {
     if (!this.isBrowser) {
       return;
     }
+    this.runBeforeSignOut();
     if (DEV_BYPASS_AUTH) {
       writeDevSignedOut(true);
       this.devSignedOut.set(true);
@@ -384,6 +392,17 @@ export class AuthFacade {
       return;
     }
     void this.auth0?.logout({ logoutParams: { returnTo: appBaseUrl() } }).subscribe();
+  }
+
+  /** Chaque crochet à son tour ; un crochet qui lève ne retient pas la sortie. */
+  private runBeforeSignOut(): void {
+    for (const hook of this.injector.get(BEFORE_SIGN_OUT, [], { optional: true }) ?? []) {
+      try {
+        hook();
+      } catch (error: unknown) {
+        console.error('Oubli avant déconnexion interrompu', error);
+      }
+    }
   }
 
   /**

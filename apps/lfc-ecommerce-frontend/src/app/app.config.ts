@@ -22,6 +22,7 @@ import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 import { AddressesService } from './legacy/entreprises/addresses.service';
 import { NotifyService } from './notify.service';
 import { provideAuth } from './auth/auth.providers';
+import { provideSignOutForgetting } from './client/sign-out/sign-out-forgetting';
 import { ClientTitleStrategy } from './client/client-title.strategy';
 import {
   provideNewVersionWatch,
@@ -69,6 +70,8 @@ export const appConfig: ApplicationConfig = {
       ]),
     ),
     provideAuth(),
+    // L'oubli à la déconnexion : branché ici, la façade d'auth ne connaît pas le client.
+    provideSignOutForgetting(),
     // Les niveaux de l'accès aux fonctionnalités (le seul mandat client depuis
     // le 2026-10-09), lus au DÉMARRAGE et sans attendre la réponse : le premier
     // écran se dessine tout de suite.
