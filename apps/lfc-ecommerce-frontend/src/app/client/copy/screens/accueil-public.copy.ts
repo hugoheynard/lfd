@@ -112,13 +112,19 @@ export interface AccueilPublicCopy {
     readonly pickup: DoorCopy;
     readonly courier: DoorCopy;
     /**
-     * Le pied de la porte du coursier quand ce n'est PAS un dossier qui
-     * l'attend : le réglage « Livraison » ferme la clientèle, la clé publique
-     * est fermée, ou la société n'est pas en attente de validation. Ni
+     * Le pied de la porte du coursier quand elle est fermée : le réglage
+     * « Livraison » ferme la clientèle, ou la clé publique est fermée. Ni
      * commercial, ni délai — c'est un choix de la maison, et rien ne dit quand
-     * elle le défera (audit B5, 2026-10-07).
+     * elle le défera (audit B5, 2026-10-07). Depuis le 2026-11-05, une société
+     * en attente est pro : aucun dossier ne ferme plus cette porte.
      */
     readonly courierNotOffered: { readonly tag: string; readonly hint: string };
+    /**
+     * L'information — pas un refus — d'une société EN ATTENTE (2026-11-05) :
+     * elle commande comme un pro et paie par carte ; seul le paiement sur
+     * compte attend que le commercial valide le dossier.
+     */
+    readonly companyPending: string;
     /**
      * `{value}` — la MEILLEURE remise de retrait réellement déclarée, calculée
      * par la même fonction que le rail des maisons et le panier.
@@ -313,15 +319,13 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
       intro: 'À l’adresse et au créneau sélectionnés.',
       cta: 'Je commande',
       note: 'Avant 18 h',
-      pending: {
-        tag: 'Bientôt',
-        hint: 'Votre dossier est en cours de validation — votre commercial ouvre la livraison dès qu’il est complet.',
-      },
     },
     courierNotOffered: {
       tag: 'Indisponible',
       hint: 'La livraison n’est pas proposée pour le moment.',
     },
+    companyPending:
+      'Votre société est en cours de validation par notre équipe. Vous pouvez déjà commander et payer par carte ; le paiement sur compte sera ouvert après validation.',
     pickupUpTo: 'Jusqu’à {value}',
     pickupSingle: {
       tag: 'Retrait en boutique',
@@ -410,15 +414,13 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
       intro: 'At the address and slot I selected.',
       cta: 'Order',
       note: 'Before 6 pm',
-      pending: {
-        tag: 'Soon',
-        hint: 'Your file is being reviewed — your account manager opens delivery as soon as it is complete.',
-      },
     },
     courierNotOffered: {
       tag: 'Unavailable',
       hint: 'Delivery is not offered at the moment.',
     },
+    companyPending:
+      'Your company is being reviewed by our team. You can already order and pay by card; payment on account will open once it is approved.',
     pickupUpTo: 'Up to {value}',
     pickupSingle: {
       tag: 'In-store pickup',
@@ -507,15 +509,13 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
       intro: 'All’indirizzo e nella fascia selezionati.',
       cta: 'Ordino',
       note: 'Entro le 18',
-      pending: {
-        tag: 'Presto',
-        hint: 'Il suo fascicolo è in corso di validazione — il suo commerciale apre la consegna appena è completo.',
-      },
     },
     courierNotOffered: {
       tag: 'Non disponibile',
       hint: 'La consegna non è proposta al momento.',
     },
+    companyPending:
+      'La sua azienda è in corso di validazione da parte del nostro team. Può già ordinare e pagare con carta; il pagamento sul conto sarà aperto dopo la validazione.',
     pickupUpTo: 'Fino a {value}',
     pickupSingle: {
       tag: 'Ritiro in negozio',

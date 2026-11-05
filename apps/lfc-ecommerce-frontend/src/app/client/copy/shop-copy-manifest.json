@@ -136,20 +136,6 @@
           "variables": []
         },
         {
-          "key": "accueilPublic.doors.courier.pending.tag",
-          "fr": "Bientôt",
-          "en": "Soon",
-          "it": "Presto",
-          "variables": []
-        },
-        {
-          "key": "accueilPublic.doors.courier.pending.hint",
-          "fr": "Votre dossier est en cours de validation — votre commercial ouvre la livraison dès qu’il est complet.",
-          "en": "Your file is being reviewed — your account manager opens delivery as soon as it is complete.",
-          "it": "Il suo fascicolo è in corso di validazione — il suo commerciale apre la consegna appena è completo.",
-          "variables": []
-        },
-        {
           "key": "accueilPublic.doors.courierNotOffered.tag",
           "fr": "Indisponible",
           "en": "Unavailable",
@@ -161,6 +147,13 @@
           "fr": "La livraison n’est pas proposée pour le moment.",
           "en": "Delivery is not offered at the moment.",
           "it": "La consegna non è proposta al momento.",
+          "variables": []
+        },
+        {
+          "key": "accueilPublic.doors.companyPending",
+          "fr": "Votre société est en cours de validation par notre équipe. Vous pouvez déjà commander et payer par carte ; le paiement sur compte sera ouvert après validation.",
+          "en": "Your company is being reviewed by our team. You can already order and pay by card; payment on account will open once it is approved.",
+          "it": "La sua azienda è in corso di validazione da parte del nostro team. Può già ordinare e pagare con carta; il pagamento sul conto sarà aperto dopo la validazione.",
           "variables": []
         },
         {

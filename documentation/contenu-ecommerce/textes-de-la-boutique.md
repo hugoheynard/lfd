@@ -4,14 +4,14 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1756 textes
+## Sommaire — 1755 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
 | Espace | Clé | Textes |
 | --- | --- | --- |
 | **Parcours de commande** | | |
-| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 64 |
+| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 63 |
 | [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1756** |
+| **Total** | | **1755** |
 
 ## Le parcours de commande
 
@@ -57,7 +57,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 
 ### Accueil public — le visiteur sans compte — `accueilPublic`
 
-Source : `screens/accueil-public.copy.ts` · 64 textes.
+Source : `screens/accueil-public.copy.ts` · 63 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -80,10 +80,9 @@ Source : `screens/accueil-public.copy.ts` · 64 textes.
 | `accueilPublic.doors.courier.intro` | À l’adresse et au créneau sélectionnés. | At the address and slot I selected. | All’indirizzo e nella fascia selezionati. |  |
 | `accueilPublic.doors.courier.cta` | Je commande | Order | Ordino |  |
 | `accueilPublic.doors.courier.note` | Avant 18 h | Before 6 pm | Entro le 18 |  |
-| `accueilPublic.doors.courier.pending.tag` | Bientôt | Soon | Presto |  |
-| `accueilPublic.doors.courier.pending.hint` | Votre dossier est en cours de validation — votre commercial ouvre la livraison dès qu’il est complet. | Your file is being reviewed — your account manager opens delivery as soon as it is complete. | Il suo fascicolo è in corso di validazione — il suo commerciale apre la consegna appena è completo. |  |
 | `accueilPublic.doors.courierNotOffered.tag` | Indisponible | Unavailable | Non disponibile |  |
 | `accueilPublic.doors.courierNotOffered.hint` | La livraison n’est pas proposée pour le moment. | Delivery is not offered at the moment. | La consegna non è proposta al momento. |  |
+| `accueilPublic.doors.companyPending` | Votre société est en cours de validation par notre équipe. Vous pouvez déjà commander et payer par carte ; le paiement sur compte sera ouvert après validation. | Your company is being reviewed by our team. You can already order and pay by card; payment on account will open once it is approved. | La sua azienda è in corso di validazione da parte del nostro team. Può già ordinare e pagare con carta; il pagamento sul conto sarà aperto dopo la validazione. |  |
 | `accueilPublic.doors.pickupUpTo` | Jusqu’à {value} | Up to {value} | Fino a {value} | `{value}` |
 | `accueilPublic.doors.pickupSingle.tag` | Retrait en boutique | In-store pickup | Ritiro in negozio |  |
 | `accueilPublic.doors.pickupSingle.title` | Je retire<br>ma commande | I collect<br>my order | Ritiro<br>il mio ordine |  |

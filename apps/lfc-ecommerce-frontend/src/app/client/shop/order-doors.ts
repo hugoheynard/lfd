@@ -81,18 +81,6 @@ export class OrderDoors {
   );
 
   /**
-   * **La livraison est-elle proposée aux PROS ?** — le réglage seul, quelle que
-   * soit la clientèle de qui regarde.
-   *
-   * Lu sans la clientèle : une société en attente est `b2b` depuis le
-   * 2026-11-05 (`audienceOf`), et l'accueil ne lui promet « votre commercial
-   * ouvre la livraison » que si le réglage des pros la propose.
-   */
-  readonly deliveryOfferedToPros = computed(() =>
-    deliveryOpenTo(this.points.deliveryAvailability(), 'b2b'),
-  );
-
-  /**
    * **La porte du retrait est-elle ouverte à qui regarde ?** (Hugo,
    * 2026-10-16 : plus de site par défaut, rien ne garantit qu'un site reste
    * ouvert au retrait d'une clientèle — on le laisse fermer, et on le montre.)

@@ -604,14 +604,13 @@ describe('AccueilPublic — les trois états', () => {
 });
 
 /**
- * 🔴 LE PIED DE LA PORTE DU COURSIER NOMME LA VRAIE CAUSE (audit B5,
- * 2026-10-07). « Votre commercial ouvre la livraison » ne vaut que pour une
- * société en attente que la validation servirait ; partout ailleurs, personne
- * ne valide rien — c'est un choix de la maison, et la porte le dit sans
- * promettre qui l'ouvre. La carte, elle, reste grisée dans tous les cas.
+ * 🔴 LE PIED DE LA PORTE DU COURSIER (audit B5, 2026-10-07) : grisée, elle dit
+ * que la maison ne la propose pas, sans promettre qui l'ouvre. Depuis le
+ * 2026-11-05, une société en attente est pro : aucun dossier ne la ferme
+ * plus, et l'attente de validation se dit par une information non bloquante.
  */
 describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', () => {
-  const DOSSIER = ACCUEIL_PUBLIC_FR.doors.courier.pending?.hint;
+  const EN_ATTENTE = ACCUEIL_PUBLIC_FR.doors.companyPending;
   const PAS_PROPOSEE = ACCUEIL_PUBLIC_FR.doors.courierNotOffered.hint;
   const MAISONS = [point({ id: 'a' }), point({ id: 'b', label: 'Le Village' })];
 
@@ -670,7 +669,22 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
     const porte = courier(await seenBy('pending', { openToB2c: false }));
 
     expect(porte?.disabled).toBe(false);
-    expect(porte?.querySelector('.door-wait')?.textContent?.trim()).not.toBe(DOSSIER);
+  });
+
+  it('🔴 dit à une société EN ATTENTE que le paiement sur compte attend la validation, sans fermer la porte', async () => {
+    const fixture = await seenBy('pending');
+    const host: HTMLElement = fixture.nativeElement;
+
+    expect(courier(fixture)?.disabled).toBe(false);
+    expect(host.querySelector('fold-callout[variant="info"]')?.textContent?.trim()).toBe(
+      EN_ATTENTE,
+    );
+  });
+
+  it('ne dit rien de la validation à une société ACTIVE', async () => {
+    const host: HTMLElement = (await seenBy('active')).nativeElement;
+
+    expect(host.textContent).not.toContain(EN_ATTENTE);
   });
 
   /** Régression (audit B5, 2026-10-07) : un pro validé lisait « dossier en cours de validation ». */
@@ -684,8 +698,8 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
     );
   });
 
-  /** Valider le dossier ne l'ouvrirait pas : le réglage la fermerait encore. */
-  it('ne promet pas le commercial à une société en attente quand le réglage ferme les pros', async () => {
+  /** Le réglage qui ferme les pros ferme aussi la société en attente — sans parler de dossier. */
+  it('dit « pas proposée » à une société en attente quand le réglage ferme les pros', async () => {
     const porte = courier(await seenBy('pending', { openToB2b: false, openToB2c: false }));
 
     expect(porte?.querySelector('.door-wait')?.textContent?.trim()).toBe(PAS_PROPOSEE);

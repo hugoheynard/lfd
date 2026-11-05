@@ -244,27 +244,30 @@ export class AccueilPublic {
   );
 
   /**
-   * LA PORTE DU COURSIER, ET LA CAUSE QUE NOMME SON PIED QUAND ELLE ATTEND.
+   * LA PORTE DU COURSIER : grisée, son pied dit que la maison ne la propose
+   * pas (audit B5, 2026-10-07) — sans promettre qui l'ouvre.
    *
-   * 🔴 Une seule cause a un nom : le dossier d'une société EN ATTENTE, et
-   * seulement si le valider ouvrirait la livraison — le réglage « Livraison »
-   * doit la proposer aux pros. Partout ailleurs, personne ne valide rien : le
-   * réglage ferme la clientèle, la société est active ou suspendue. C'est un choix de la maison, et la porte le dit
-   * sans promettre qui l'ouvre. Régression (audit B5, 2026-10-07) : « votre
-   * commercial ouvre la livraison » se lisait aussi quand l'admin l'avait
-   * fermée.
+   * Le pied « dossier en cours de validation » est retiré le 2026-11-05 : une
+   * société en attente est pro (`audienceOf`), la livraison des pros lui est
+   * ouverte, et ce n'est plus une validation qui ferme cette porte. Ce qui
+   * attend la validation — le paiement sur compte — se dit dans
+   * `companyPending`, une information au-dessus des portes.
    *
-   * ⚠️ La carte reste grisée dans les deux cas (règle du 2026-09-20 : un pro a
-   * toujours ses deux portes) : seul son pied change.
+   * ⚠️ La carte reste grisée quand elle est fermée (règle du 2026-09-20 : un
+   * pro a toujours ses deux portes).
    */
   protected readonly courierDoor = computed<DoorCopy>(() => {
     const doors = this.c().doors;
-    const awaitingValidation =
-      this.workspace.company()?.status === 'pending' && this.doors.deliveryOfferedToPros();
-    return awaitingValidation
-      ? doors.courier
-      : { ...doors.courier, pending: doors.courierNotOffered };
+    return { ...doors.courier, pending: doors.courierNotOffered };
   });
+
+  /**
+   * La société agissante attend la validation du commercial (2026-11-05) :
+   * une information, pas un refus — seul le paiement sur compte attend.
+   */
+  protected readonly companyPending = computed(
+    () => this.workspace.company()?.status === 'pending',
+  );
 
   /** Le salut nomme, ou ne nomme pas — jamais le prénom de quelqu'un d'autre. */
   protected readonly heroTitle = computed(() => {
