@@ -199,6 +199,11 @@ recommandations »)** :
   franco).
 - **En révision** : le seuil **figé à la passation**, jamais le réglage du
   jour.
+- **Le frais de base aussi est figé à la passation** (Hugo, 2026-11-05, en
+  réponse au constat du 0b : la révision re-résolvait le barème au réglage
+  du jour, si bien qu'un frais global relevé après la commande la renchérissait).
+  Une commande garde le tarif de livraison du jour où elle a été passée ;
+  la révision lit le barème figé. Bâti avec le lot 1a.
 
 ~~**Encore à trancher**~~ (tranché ci-dessus) : la base du seuil (avant ou après les remises, avant
 ou après le bon de fidélité) ; en révision, le seuil **figé** à la passation
