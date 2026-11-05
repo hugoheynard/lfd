@@ -29,6 +29,10 @@ const OUTCOME_LABEL: Readonly<Record<string, string>> = {
   hit: 'servi',
   miss: 'manqué',
   stamp_moved: 'estampille changée',
+  cacheable: 'gardé par Cloudflare',
+  stored: 'rangé',
+  stale_refused: 'refusé : périmé',
+  not_kept: 'non gardé',
 };
 
 /** Les issues où le cache a rendu service sans retourner en base. */
