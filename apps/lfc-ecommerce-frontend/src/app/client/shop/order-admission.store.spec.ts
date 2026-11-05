@@ -2,11 +2,16 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { of } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
-import { ClientWorkspace } from '../client-workspace.service';
+import {
+  provideWorkspace,
+  workspaceDouble,
+  type WorkspaceDouble,
+} from '../client-workspace.fixture';
 import { OrderAdmissionStore } from './order-admission.store';
 import { OrderOpeningStore } from './order-opening.store';
 import { ShopClock } from './shop-clock';
@@ -17,7 +22,10 @@ interface Monde {
   readonly firstDay?: string | null;
 }
 
-function setUp({ authenticated, open, firstDay = null }: Monde): {
+function setUp(
+  { authenticated, open, firstDay = null }: Monde,
+  workspace: WorkspaceDouble = workspaceDouble('c1'),
+): {
   store: OrderAdmissionStore;
   http: HttpTestingController;
 } {
@@ -34,7 +42,7 @@ function setUp({ authenticated, open, firstDay = null }: Monde): {
         },
       },
       { provide: ShopClock, useValue: { now: signal(new Date('2026-10-27T08:00:00.000Z')) } },
-      { provide: ClientWorkspace, useValue: { current: signal('c1') } },
+      provideWorkspace(workspace),
       {
         provide: OrderOpeningStore,
         useValue: {
@@ -64,6 +72,38 @@ describe('OrderAdmissionStore', () => {
     TestBed.tick();
 
     http.expectNone((r) => r.url.includes('/order-admission'));
+    expect(store.admitted()).toBe(false);
+  });
+
+  /**
+   * Lot d (brique par clé de contexte) : l'admission de l'espace demandé part
+   * d'avance avec SON en-tête, ne compte qu'acceptée, et celle de l'ancien
+   * espace ne se montre plus après la bascule.
+   */
+  it('rien de l’ancien espace n’est rendu après une bascule', async () => {
+    const workspace = workspaceDouble('c1');
+    const { store, http } = setUp({ authenticated: true, open: false }, workspace);
+    TestBed.tick();
+    await settle();
+    http
+      .expectOne((r) => r.url.endsWith('/order-admission/mine'))
+      .flush({ ordersOpen: false, canOrder: true });
+    await settle();
+    expect(store.admitted()).toBe(true);
+
+    workspace.switching.set({ from: 'c1', to: 'c2' });
+    workspace.current.set('c2');
+    TestBed.tick();
+    await settle();
+    const ahead = http.expectOne((r) => r.url.endsWith('/order-admission/mine'));
+    expect(ahead.request.headers.get(WORKSPACE_HEADER)).toBe('c2');
+    ahead.flush({ ordersOpen: false, canOrder: false });
+    await settle();
+    expect(store.admitted()).toBe(true);
+
+    workspace.switching.set(null);
+    TestBed.tick();
+    await settle();
     expect(store.admitted()).toBe(false);
   });
 
