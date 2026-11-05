@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
+import { deliveryPricingTermsSchema } from "./delivery-pricing.js";
 
 /**
  * Contrat de fil des **zones de livraison** — un **secteur** de codes postaux
@@ -26,6 +27,16 @@ export const deliveryZonePayloadSchema = z.object({
     .min(1, "au moins un code postal"),
   label: z.string().trim().max(120).default(""),
   fee: cartAdjustmentSchema,
+  /**
+   * Les REMPLACEMENTS du réglage global, par audience (plan
+   * `plan-livraison-offerte.md`, sous-lot 0a). Facultatif : absent, une
+   * création les laisse vides et une modification n'y touche pas ; présent,
+   * il les remplace tous, `null` = la zone reprend le global. Pas encore lus
+   * par le calcul (0b), ni rendus par la vue — la route publique est inchangée.
+   * Le fait `delivery_zone.*` ne les porte pas encore : son schéma au journal
+   * est strict, et il s'étendra avec l'écran qui les pose (0b).
+   */
+  audienceTerms: deliveryPricingTermsSchema.optional(),
 });
 export type DeliveryZonePayload = z.infer<typeof deliveryZonePayloadSchema>;
 

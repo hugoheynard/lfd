@@ -12,6 +12,11 @@ import {
 } from "../../pricing/cart-adjustment.mapper.js";
 import { DeliveryZoneRepository } from "../domain/delivery-zone.repository.js";
 import {
+  UNSET_DELIVERY_PRICING_COLUMNS,
+  termsToColumns,
+  type DeliveryPricingColumns,
+} from "./delivery-pricing.columns.js";
+import {
   DeliveryZoneNotFoundError,
   DuplicatePostalCodeError,
 } from "../domain/delivery-zone-errors.js";
@@ -53,6 +58,18 @@ function writable(payload: DeliveryZonePayload): {
     feeMode: fee.mode ?? "amount",
     feeValue: fee.value ?? 0,
   };
+}
+
+/**
+ * Les remplacements par audience (sous-lot 0a). Absents du payload : une
+ * création les laisse vides (`fallback`), une modification n'y touche pas
+ * (`{}`) — l'écran d'aujourd'hui ne les envoie pas, et ne doit pas les effacer.
+ */
+function audienceColumns(
+  payload: DeliveryZonePayload,
+  fallback: DeliveryPricingColumns | Record<string, never>,
+): DeliveryPricingColumns | Record<string, never> {
+  return payload.audienceTerms === undefined ? fallback : termsToColumns(payload.audienceTerms);
 }
 
 const SELECT = {
@@ -106,7 +123,7 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
     const prefixes = normalizePrefixes(payload.postalPrefixes);
     await this.assertPrefixesFree(prefixes, null);
     const created = await this.prisma.deliveryZone.create({
-      data: writable(payload),
+      data: { ...writable(payload), ...audienceColumns(payload, UNSET_DELIVERY_PRICING_COLUMNS) },
       select: { id: true },
     });
     return created.id;
@@ -121,7 +138,10 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
       throw new DeliveryZoneNotFoundError(id);
     }
     await this.assertPrefixesFree(normalizePrefixes(payload.postalPrefixes), id);
-    await this.prisma.deliveryZone.update({ where: { id }, data: writable(payload) });
+    await this.prisma.deliveryZone.update({
+      where: { id },
+      data: { ...writable(payload), ...audienceColumns(payload, {}) },
+    });
   }
 
   async remove(id: string): Promise<void> {

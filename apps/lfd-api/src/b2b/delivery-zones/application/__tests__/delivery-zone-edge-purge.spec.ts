@@ -5,6 +5,7 @@ import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-af
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { DuplicatePostalCodeError } from "../../domain/delivery-zone-errors.js";
+import { InvalidDeliveryFeeError } from "../../domain/delivery-audience-terms.js";
 import { DeliveryZoneRepository } from "../../domain/delivery-zone.repository.js";
 import { CreateDeliveryZoneCommand } from "../create-delivery-zone.command.js";
 import { CreateDeliveryZoneHandler } from "../create-delivery-zone.handler.js";
@@ -20,6 +21,7 @@ const ZONE: DeliveryZonePayload = {
 /** Des zones en mémoire ; `conflict` joue le préfixe déjà pris qu'oppose la base. */
 class Zones extends DeliveryZoneRepository {
   conflict = false;
+  writes = 0;
 
   list(): Promise<readonly DeliveryZoneView[]> {
     return Promise.resolve([]);
@@ -31,11 +33,13 @@ class Zones extends DeliveryZoneRepository {
     return Promise.resolve(null);
   }
   create(): Promise<string> {
+    this.writes += 1;
     return this.conflict
       ? Promise.reject(new DuplicatePostalCodeError("73"))
       : Promise.resolve("zone_1");
   }
   update(): Promise<void> {
+    this.writes += 1;
     return this.conflict ? Promise.reject(new DuplicatePostalCodeError("73")) : Promise.resolve();
   }
   remove(): Promise<void> {
@@ -93,6 +97,28 @@ describe("zones de livraison — la purge des réglages publics", () => {
     ).rejects.toBeInstanceOf(DuplicatePostalCodeError);
     await afterCommit.commit();
 
+    expect(edge.purges).toBe(0);
+  });
+
+  it("un remplacement par audience invalide : refusé avant toute écriture, rien de purgé", async () => {
+    const { zones, create, update, edge, afterCommit } = scene();
+    const invalid: DeliveryZonePayload = {
+      ...ZONE,
+      audienceTerms: {
+        b2b: { fee: { mode: "percent", bp: 10_001 }, freeDeliveryThresholdCents: null },
+        b2c: { fee: null, freeDeliveryThresholdCents: null },
+      },
+    };
+
+    await expect(create.execute(new CreateDeliveryZoneCommand(invalid))).rejects.toBeInstanceOf(
+      InvalidDeliveryFeeError,
+    );
+    await expect(
+      update.execute(new UpdateDeliveryZoneCommand("zone_1", invalid)),
+    ).rejects.toBeInstanceOf(InvalidDeliveryFeeError);
+    await afterCommit.commit();
+
+    expect(zones.writes).toBe(0);
     expect(edge.purges).toBe(0);
   });
 });

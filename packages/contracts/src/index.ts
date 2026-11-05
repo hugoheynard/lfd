@@ -1089,6 +1089,19 @@ export type {
   DossierStaffCandidateView,
 } from "./production-dossier-recipients.js";
 export {
+  DEFAULT_DELIVERY_PRICING,
+  UNSET_DELIVERY_AUDIENCE_TERMS,
+  deliveryAudienceTermsSchema,
+  deliveryPricingPatchSchema,
+  deliveryPricingTermsSchema,
+} from "./delivery-pricing.js";
+export type {
+  DeliveryAudienceTerms,
+  DeliveryPricingPatch,
+  DeliveryPricingTerms,
+  DeliveryPricingView,
+} from "./delivery-pricing.js";
+export {
   deliveryZonePayloadSchema,
   longestMatchingPrefix,
   UNCOVERED_POSTAL_CODE_COMPANIES_SHOWN,

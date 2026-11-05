@@ -209,7 +209,7 @@ particulier (TTC « environ », servi par le serveur).
 
 | Lot | Contenu                                                                                  | Seul ?                |
 | --- | ---------------------------------------------------------------------------------------- | --------------------- |
-| 0a  | table du réglage global + colonnes de zone nullables ; rien ne change encore             | oui                   |
+| 0a  | 🟦 table du réglage global + colonnes de zone nullables ; rien ne change encore          | oui                   |
 | 0b  | résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge      | oui                   |
 | 0c  | `GET /delivery-zones?audience=`, boutique et saisie staff                                | après « pending pro » |
 | 1a  | le franco figé sur la commande ; recomposition et bon partiel le lisent ; golden master  | avant 1b              |

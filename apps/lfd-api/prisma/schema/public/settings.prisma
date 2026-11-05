@@ -197,8 +197,22 @@ model DeliveryZone {
   postalPrefixes String[] @map("postal_prefixes")
   label          String   @default("")
 
+  /// Le frais d'avant le réglage par audience : relu en repli tant que ni la
+  /// zone ni le réglage global ne disent rien pour l'audience (plan
+  /// `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0b).
   feeMode  CartAdjustmentMode @map("fee_mode")
   feeValue Int                @map("fee_value")
+
+  /// **Remplacements du réglage global**, par audience (sous-lot 0a). `NULL` =
+  /// la zone reprend le réglage global (`DeliveryPricing`) ; une valeur le
+  /// remplace pour cette zone. Mode et valeur vont par deux (CHECK). Le franco
+  /// est un seuil HT en centimes. Posées le 2026-11-05, pas encore lues.
+  b2bFeeMode                    CartAdjustmentMode? @map("b2b_fee_mode")
+  b2bFeeValue                   Int?                @map("b2b_fee_value")
+  b2bFreeDeliveryThresholdCents Int?                @map("b2b_free_delivery_threshold_cents")
+  b2cFeeMode                    CartAdjustmentMode? @map("b2c_fee_mode")
+  b2cFeeValue                   Int?                @map("b2c_fee_value")
+  b2cFreeDeliveryThresholdCents Int?                @map("b2c_free_delivery_threshold_cents")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -207,6 +221,39 @@ model DeliveryZone {
   promotionTargets PromotionDeliveryZone[]
 
   @@map("delivery_zones")
+  @@schema("public")
+}
+
+/// **Le réglage global de livraison, par audience** (plan
+/// `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0a, Hugo
+/// 2026-11-05) : le frais de base et le franco (seuil HT en centimes au-delà
+/// duquel la livraison est offerte), pour les pros (`b2b`) et les particuliers
+/// (`b2c`). Chaque zone en hérite et peut le remplacer (`delivery_zones.b2b_*`).
+///
+/// Une ligne au plus, clé NATURELLE `delivery` ; **ligne absente = aucun
+/// réglage global**, et chaque colonne nullable dit « rien de réglé » pour son
+/// audience. Sa propre table et non `delivery_settings`, dont chaque geste
+/// réécrit la ligne entière. Auteur figé comme `OrderOpening`. Propriétaire :
+/// `src/b2b/delivery-zones/`. Posé en 0a, lu par le calcul au 0b.
+model DeliveryPricing {
+  /// Toujours `delivery` : il n'y a qu'un réglage.
+  key String @id
+
+  b2bFeeMode                    CartAdjustmentMode? @map("b2b_fee_mode")
+  b2bFeeValue                   Int?                @map("b2b_fee_value")
+  b2bFreeDeliveryThresholdCents Int?                @map("b2b_free_delivery_threshold_cents")
+  b2cFeeMode                    CartAdjustmentMode? @map("b2c_fee_mode")
+  b2cFeeValue                   Int?                @map("b2c_fee_value")
+  b2cFreeDeliveryThresholdCents Int?                @map("b2c_free_delivery_threshold_cents")
+
+  /// Instant du geste, lu du `Clock`.
+  updatedAt        DateTime @map("updated_at")
+  /// Qui l'a posé, figé au geste : l'id de fiche staff, un nom et un rôle instantanés.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("delivery_pricing_settings")
   @@schema("public")
 }
 

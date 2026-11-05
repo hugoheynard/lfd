@@ -165,6 +165,7 @@
   "test/delivery-packing-rounds.e2e-spec.ts": 3447,
   "test/delivery-placement-suggestion.e2e-spec.ts": 10376,
   "test/delivery-plan-hold-race.e2e-spec.ts": 5500,
+  "test/delivery-pricing.e2e-spec.ts": 6000,
   "test/delivery-procedure-refusals.e2e-spec.ts": 11158,
   "test/delivery-procedure.e2e-spec.ts": 6925,
   "test/delivery-purchase-assistant.e2e-spec.ts": 4469,

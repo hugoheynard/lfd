@@ -5,6 +5,7 @@ import { PublicSettingsEdgeCache } from "../../../b2b/shared/public-settings-cac
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DeliveryZoneCreatedEvent } from "../domain/delivery-zone.events.js";
+import { deliveryPricingTermsOf } from "../domain/delivery-audience-terms.js";
 import { DeliveryZoneRepository } from "../domain/delivery-zone.repository.js";
 import { CreateDeliveryZoneCommand } from "./create-delivery-zone.command.js";
 
@@ -29,6 +30,10 @@ export class CreateDeliveryZoneHandler implements ICommandHandler<
   ) {}
 
   async execute(command: CreateDeliveryZoneCommand): Promise<string> {
+    // Les remplacements par audience (0a) : refusés AVANT toute écriture.
+    if (command.payload.audienceTerms !== undefined) {
+      deliveryPricingTermsOf(command.payload.audienceTerms);
+    }
     return await this.uow.run(async () => {
       const zoneId = await this.zones.create(command.payload);
       await this.events.publishTraced(new DeliveryZoneCreatedEvent(zoneId, command.payload));
