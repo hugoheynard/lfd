@@ -95,7 +95,15 @@ export class StaffCartSuggestion {
     // d'espace (mesuré le 2026-11-04, plan de latence, L1). Le devis passe en
     // `loading` dès que le panier bouge, avant sa propre attente : la demande
     // prévue est annulée bien avant CART_SUGGESTION_DEBOUNCE_MS.
-    if (this.cart.pricing() === 'loading') {
+    // Un panier non vide attend son total, quel que soit l'état d'avant :
+    // au démarrage le devis n'est pas encore `loading` mais `idle`, et la
+    // demande partait sans total puis repartait avec (mesuré en production
+    // le 2026-11-05, une fois le délai ramené à 100 ms).
+    const pricing = this.cart.pricing();
+    if (
+      pricing === 'loading' ||
+      (pricing === 'idle' && cartSkus(this.store.quantities()).length > 0)
+    ) {
       return null;
     }
     const payload = this.payload();

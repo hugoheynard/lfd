@@ -44,7 +44,7 @@ class RecordingAudience {
   }
 }
 
-function boot() {
+function boot(hydrated = true) {
   TestBed.resetTestingModule();
   const audience = new RecordingAudience();
   TestBed.configureTestingModule({
@@ -59,7 +59,9 @@ function boot() {
       { provide: ProductAudience, useValue: audience },
     ],
   });
-  hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+  if (hydrated) {
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+  }
   return {
     pick: TestBed.inject(StaffCartSuggestion),
     cart: TestBed.inject(ClientCart),
@@ -245,6 +247,27 @@ describe('StaffCartSuggestion', () => {
     quote.flush(PRICED);
     await vi.advanceTimersByTimeAsync(0);
     await settle();
+    await answer(http, []);
+    http.expectNone(ROUTE);
+  });
+
+  /**
+   * Régression : au démarrage, le panier arrive avant le catalogue ; le devis
+   * n'a encore aucune ligne à chiffrer et reste `idle` (pas `loading`). Avec
+   * le délai à 100 ms, la demande partait sans total puis repartait avec —
+   * deux demandes, vues en production le 2026-11-05.
+   */
+  it('un panier arrivé avant le catalogue n’envoie rien avant son premier total', async () => {
+    localStorage.setItem('lfc.cart', JSON.stringify({ 'VIE-001': 1 }));
+    const { pick, http } = boot(false);
+    pick.open();
+    await settle();
+    http.expectNone(ROUTE);
+
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    await settle();
+
+    await priced(http);
     await answer(http, []);
     http.expectNone(ROUTE);
   });
