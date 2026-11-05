@@ -1,11 +1,14 @@
 # Plan — la livraison offerte : un étage de promotions sur les frais
 
-> 📍 **État au 2026-11-05.** ✅ **En production** : 0a (réglage global par
-> audience et remplacements par zone, sans effet). 🟦 **Sur `dev`** : 0b
-> (frais résolu zone → global → ancien, écran des zones, journal) et 1a
-> (tarif figé à la commande, colonnes du franco). **En cours** : 1b (le
-> calcul du franco). **À faire** : 1c (affichage, « Plus que 12 € »), 0c
-> (route publique par audience), 2 (promotions sur les frais).
+> 📍 **État au 2026-11-05 (soir).** ✅ **En production** (`962dda5`) : 0a,
+> 0b (frais résolu zone → global → ancien, écran des zones, journal), 1a
+> (tarif figé à la commande, colonnes du franco) et 1b (le calcul du franco).
+> 🟦 **Sur `dev`** : la saisie du seuil à l'écran, la clientèle fermée
+> grisée, les pastilles « Global », la révision sans seuil figé qui prend
+> celui du jour. **À faire** : 1c (affichage, « Plus que 12 € »), 0c
+> (route publique par audience), 2 (promotions sur les frais). Ce qui est
+> bâti, et les choix qui l'ont façonné, sont tenus à jour dans
+> [`frais-et-livraison-offerte.md`](../livraisons/frais-et-livraison-offerte.md).
 
 > 📝 **Plan, écrit le 2026-11-05**, demande de Hugo (« on me dit la livraison
 > est gratuite au-delà d'une certaine somme… un système hyper souple à

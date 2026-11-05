@@ -109,9 +109,10 @@ Comment le bloc est isolé des autres (frontières, canaux, schéma Postgres `de
 
 ### À la racine
 
-| Doc                                          | État               | De quoi ça parle                                                                                                                                                                                          |
-| -------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`audit-2026-10-07.md`](audit-2026-10-07.md) | 📜 clos 2026-10-07 | **L'audit du dossier contre le code, clos** : la table des bugs B1–B9 et des écarts F1–F4 que le code et une migration citent. Toutes les questions sont tranchées et vivent dans les docs de leur thème. |
+| Doc                                                              | État               | De quoi ça parle                                                                                                                                                                                                                              |
+| ---------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`frais-et-livraison-offerte.md`](frais-et-livraison-offerte.md) | ✅ état 2026-11-05 | **Le prix de la livraison et la livraison offerte** : la résolution zone → global → ancien frais, le seuil HT, le tarif figé à la commande et les règles de révision, la clientèle fermée grisée — chaque choix avec sa date et qui l'a pris. |
+| [`audit-2026-10-07.md`](audit-2026-10-07.md)                     | 📜 clos 2026-10-07 | **L'audit du dossier contre le code, clos** : la table des bugs B1–B9 et des écarts F1–F4 que le code et une migration citent. Toutes les questions sont tranchées et vivent dans les docs de leur thème.                                     |
 
 ## Ailleurs, et laissé où il est
 
