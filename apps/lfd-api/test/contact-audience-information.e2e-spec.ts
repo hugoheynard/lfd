@@ -152,10 +152,10 @@ describe("GET /me/contact-settings — l'audience établie", () => {
     expectPros(await served("/me/contact-settings", ACTIVE));
   });
 
-  it("une société en attente reçoit la carte des particuliers, comme son message", async () => {
+  it("une société en attente reçoit la carte des pros, comme son message (2026-11-05)", async () => {
     await seedCards();
     await personIn(PENDING, CompanyStatus.pending);
-    expectIndividuals(await served("/me/contact-settings", PENDING));
+    expectPros(await served("/me/contact-settings", PENDING));
   });
 
   it("un particulier inscrit reçoit la carte des particuliers", async () => {

@@ -85,7 +85,8 @@ export class PrismaActorNamer extends ActorNamer {
    * Pro dès qu'il agit pour une société qui existe, QUEL QUE SOIT son statut
    * (Hugo, 2026-10-30) : le gérant d'une société en attente de validation est
    * un client pro, pas un particulier. `audienceOf` ne convient pas ici : il
-   * dit quel CATALOGUE servir (société active seulement), pas qui a agi.
+   * dit quelle clientèle SERVIR (une société close y est `b2c`), pas qui a agi
+   * (rendu `b2b` aussi au pending le 2026-11-05).
    */
   private async actingAudience(companyId: string | null): Promise<CustomerAudience> {
     if (companyId === null) {

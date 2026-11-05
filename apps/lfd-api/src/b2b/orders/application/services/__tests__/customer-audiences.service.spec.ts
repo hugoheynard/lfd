@@ -19,8 +19,8 @@ class StatusReader extends CompanyStatusReader {
 }
 
 /**
- * La clientèle d'une requête — B2B pour une société ACTIVE seulement (Hugo,
- * 2026-09-15, Q3 du plan `remise-et-livraison-par-clientele`).
+ * La clientèle d'une requête — B2B pour une société active, suspendue ou en attente (Hugo,
+ * 2026-09-15, Q3 du plan `remise-et-livraison-par-clientele` ; 2026-11-03 ; 2026-11-05).
  */
 describe("CustomerAudiences", () => {
   it("un visiteur ou l'espace perso est B2C, sans lire la base", async () => {
@@ -35,16 +35,14 @@ describe("CustomerAudiences", () => {
     expect(await new CustomerAudiences(new StatusReader(status)).of("co_1")).toBe("b2b");
   });
 
-  /**
-   * Déclarer une société ne demande aucune vérification : une remise « pros
-   * seulement » ne doit pas s'obtenir en tapant un SIRET.
-   */
-  it.each<OrderCompanyStatus>(["pending", "terminated"])(
-    "une société %s suit les règles B2C",
-    async (status) => {
-      expect(await new CustomerAudiences(new StatusReader(status)).of("co_1")).toBe("b2c");
-    },
-  );
+  /** Une société en attente est pro (Hugo, 2026-11-05) : seul le crédit attend sa validation. */
+  it("une société en attente suit les règles B2B", async () => {
+    expect(await new CustomerAudiences(new StatusReader("pending")).of("co_1")).toBe("b2b");
+  });
+
+  it("une société close suit les règles B2C", async () => {
+    expect(await new CustomerAudiences(new StatusReader("terminated")).of("co_1")).toBe("b2c");
+  });
 
   it("une société introuvable suit les règles B2C", async () => {
     expect(await new CustomerAudiences(new StatusReader(null)).of("co_absente")).toBe("b2c");

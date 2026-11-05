@@ -619,7 +619,7 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
    * L'accueil d'un client dont la société a ce statut (`null` : un visiteur,
    * sans société), devant ce réglage « Livraison ». Sa
    * clientèle suit `audienceOf`, comme le vrai `ClientAudience` : `b2b` pour
-   * une société ACTIVE seulement.
+   * une société active, suspendue ou en attente (2026-11-05).
    */
   async function seenBy(
     status: CompanyStatus | null,
@@ -661,11 +661,16 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
     return fixture.nativeElement.querySelector('.door-courier');
   }
 
-  it('🔴 dit le dossier à une société EN ATTENTE quand la valider ouvrirait la livraison', async () => {
+  /**
+   * 2026-11-05 : une société en attente est pro (`audienceOf`) — la livraison
+   * des pros lui est ouverte, fermée ou non aux particuliers. Elle lisait
+   * « dossier en cours de validation » quand le réglage fermait les particuliers.
+   */
+  it('🔴 ouvre la livraison des pros à une société EN ATTENTE, le réglage fermé aux particuliers', async () => {
     const porte = courier(await seenBy('pending', { openToB2c: false }));
 
-    expect(porte?.disabled).toBe(true);
-    expect(porte?.querySelector('.door-wait')?.textContent?.trim()).toBe(DOSSIER);
+    expect(porte?.disabled).toBe(false);
+    expect(porte?.querySelector('.door-wait')?.textContent?.trim()).not.toBe(DOSSIER);
   });
 
   /** Régression (audit B5, 2026-10-07) : un pro validé lisait « dossier en cours de validation ». */

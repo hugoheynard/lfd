@@ -17,8 +17,8 @@ export interface ActorIdentity {
 
 /**
  * La qualité d'un client, en clair, comme la fonction d'un membre du staff :
- * **pro** quand il agit pour une société active, **particulier** sinon — la
- * seule définition de « qui est pro » du dépôt (`audienceOf`, `@lfd/contracts`).
+ * **pro** quand il agit pour une société, quel que soit son statut,
+ * **particulier** sinon (`PrismaActorNamer.actingAudience`, Hugo, 2026-10-30).
  */
 export const CUSTOMER_QUALITY = {
   b2b: "client pro",

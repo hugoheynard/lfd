@@ -369,7 +369,8 @@ describe("le lieu de retrait et la qualité de l'auteur", () => {
   /**
    * Hugo, 2026-10-30 : « client pro dès qu'il agit pour une société » — le
    * gérant d'une société en attente de validation n'est pas un particulier.
-   * La première version suivait `audienceOf` (société ACTIVE seulement).
+   * La première version suivait `audienceOf`, qui disait alors `b2c` pour une
+   * société en attente (vrai jusqu'au 2026-11-05).
    */
   it("dit « client pro » pour une société en attente de validation", async () => {
     await ctx.prisma.company.update({ where: { id: companyId }, data: { status: "pending" } });

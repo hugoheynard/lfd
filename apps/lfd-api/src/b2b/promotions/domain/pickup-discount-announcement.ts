@@ -31,13 +31,13 @@ import { TYPICAL_BUYER, type PromotionAudienceFacts } from "./promotion-targetin
  * - `b2bPending` : une société EN ATTENTE, sans identité, porte inconnue ;
  * - `b2c` : aucune société, porte d'entrée inconnue.
  *
- * `b2bPending` ferme une sur-annonce (2026-10-31, Hugo, option a) : la
- * clientèle d'une société en attente est `b2c` (`audienceOf`), mais la
- * caisse la sert en pro (`companyServiceOf('pending') = 'pro'`) et juge ses
- * publics avec `companyStatus: 'pending'`. Elle lisait l'annonce `b2c` — une
- * promotion `individuals` lui était promise, la caisse retirait 0 ; et une
- * promotion `pros` lui était retirée sans être annoncée. La boutique choisit
- * l'annonce par `pickupAnnouncementOf(statut)`.
+ * `b2bPending` existe parce que la caisse juge les publics d'une société en
+ * attente avec `companyStatus: 'pending'`. Il a d'abord fermé une
+ * sur-annonce `b2c` (2026-10-31, Hugo, option a). Depuis le 2026-11-05, sa
+ * clientèle est `b2b` (`audienceOf`), mais « pros actifs » ne l'admet
+ * toujours pas (lu sur le statut) : l'annonce `b2b`, calculée pour une
+ * active, lui promettrait une remise que la caisse ne retire pas. La
+ * boutique choisit l'annonce par `pickupAnnouncementOf(statut)`.
  *
  * Les faits de ces acheteurs types sont `TYPICAL_BUYER` (`promotion-targeting.ts`),
  * la définition que la grille de prix lit aussi pour son « pro type »

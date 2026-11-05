@@ -4,8 +4,9 @@ import { PromotionMissingTargetIdError } from "./errors/promotion-errors.js";
  * **Le public d'une promotion** — un seul menu (`documentation/promotions/promotions.md`, § 2.16) :
  * tout le monde · particuliers (tous, invités, inscrits) · pros (tous,
  * actifs, en cours d'inscription, une société ± ses sites), plus
- * `everyone_but_active_pros`, le public de reprise qui reproduit exactement
- * `audienceOf` pour la remise de retrait des particuliers (§ 13.2).
+ * `everyone_but_active_pros`, le public de reprise de la remise de retrait
+ * des particuliers (§ 13.2) — tout sauf une société active ou suspendue, lu
+ * sur le statut (il reproduisait `audienceOf` jusqu'au 2026-11-05).
  *
  * Un type somme FERMÉ : un public neuf (le segment, prévu et non bâti) est
  * une variante de plus et son évaluateur, sans toucher aux autres. Une

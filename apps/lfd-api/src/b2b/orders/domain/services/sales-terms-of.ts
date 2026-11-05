@@ -6,8 +6,8 @@ import type { CustomerAudience, SalesTermsDocument } from "@lfd/contracts";
  * celles des particuliers sinon.
  *
  * 🔴 L'audience est celle qui TARIFE la commande (`audienceOf` : une société
- * ACTIVE seulement). Une société en attente de validation paie les prix des
- * particuliers ; elle est liée par leurs CGV, pas par celles des pros.
+ * active, suspendue ou en attente depuis le 2026-11-05). Une société en
+ * attente paie les prix des pros ; elle est liée par leurs CGV.
  */
 export function salesTermsOf(audience: CustomerAudience): SalesTermsDocument {
   return audience === "b2b" ? "salesTermsPro" : "salesTerms";

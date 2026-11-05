@@ -64,13 +64,13 @@ export interface PickupDiscounts {
  * (`PickupAddressView.discounts`), là où {@link PickupDiscounts} reste la
  * forme saisie sur un site.
  *
- * `b2bPending` existe parce que la clientèle ment pour une société EN
- * ATTENTE : `audienceOf('pending')` dit `b2c` (une remise « pros
- * seulement » ne s'obtient pas en tapant un SIRET), mais la caisse la sert
- * en pro et juge les publics avec son statut — `pros` l'admet,
- * `individuals` non. Lui annoncer la remise `b2c` promettait une promotion
- * « particuliers » que la caisse ne retirait pas (corrigé le 2026-10-31,
- * Hugo, option a) : elle lit désormais la sienne.
+ * `b2bPending` existe parce qu'une société EN ATTENTE n'est pas jugée
+ * comme une active par la caisse : depuis le 2026-11-05, sa clientèle est
+ * `b2b` (`audienceOf`), mais une promotion « pros actifs » (`pros_active`)
+ * ne l'admet pas — le ciblage lit le statut. Lui annoncer l'annonce `b2b`
+ * (calculée pour une société active) lui promettrait une remise que la
+ * caisse ne retire pas. (À l'origine, 2026-10-31, Hugo, option a, il
+ * corrigeait l'inverse : l'annonce `b2c` qu'elle lisait.)
  *
  * Toujours rendu par l'annonce des promotions ; facultatif dans le TYPE,
  * comme `pickupAudiences`, pour la vue d'un site (forme saisie, sans
@@ -92,19 +92,19 @@ export const NO_PICKUP_DISCOUNTS: AnnouncedPickupDiscounts = {
 };
 
 /**
- * **Quelle annonce lire, selon le statut de la société agissante** : la
- * clientèle `b2b` d'`audienceOf` (active ou suspendue, 2026-11-03) → `b2b`,
- * en attente → `b2bPending`, sinon `b2c`. Distincte d'`audienceOf`,
- * qui règle aussi les CGV et le contact : seule l'annonce d'une remise doit
- * suivre ce que la caisse appliquera à une société en attente.
+ * **Quelle annonce lire, selon le statut de la société agissante** : en
+ * attente → `b2bPending` ; sinon la clientèle d'`audienceOf` — `b2b` pour une
+ * société active ou suspendue, `b2c` sinon. Le cas `pending` passe AVANT
+ * `audienceOf`, qui le dit `b2b` depuis le 2026-11-05 : seule l'annonce d'une
+ * remise doit suivre ce que la caisse appliquera, `pros_active` compris.
  */
 export function pickupAnnouncementOf(
   actingCompanyStatus: CompanyStatus | null,
 ): PickupAnnouncementKey {
-  if (audienceOf(actingCompanyStatus) === "b2b") {
-    return "b2b";
+  if (actingCompanyStatus === "pending") {
+    return "b2bPending";
   }
-  return actingCompanyStatus === "pending" ? "b2bPending" : "b2c";
+  return audienceOf(actingCompanyStatus);
 }
 
 /** La remise annoncée du point pour cet acheteur type, ou `null`. */

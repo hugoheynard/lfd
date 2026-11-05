@@ -2405,15 +2405,15 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
   });
 
   /**
-   * C2″ : une société en attente paie les prix des particuliers — elle est
-   * liée par leurs CGV, pas par celles des pros.
+   * C2″ : une société en attente paie les prix des pros — elle est liée par
+   * leurs CGV (Hugo, 2026-11-05 : un pending est un pro, sauf le crédit).
    */
-  it("une société EN ATTENTE porte les CGV particuliers", async () => {
-    const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 9, fileId: null } });
+  it("une société EN ATTENTE porte les CGV pro", async () => {
+    const salesTerms = new FixedSalesTerms({ salesTermsPro: { revision: 4, fileId: null } });
 
     const placed = await placeAs("pending", salesTerms);
 
-    expect(placed?.salesTerms).toEqual({ document: "salesTerms", revision: 9, fileId: null });
+    expect(placed?.salesTerms).toEqual({ document: "salesTermsPro", revision: 4, fileId: null });
   });
 
   it("des CGV pro jamais rédigées : le texte est figé, révision et PDF nuls", async () => {

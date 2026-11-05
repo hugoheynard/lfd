@@ -30,11 +30,13 @@ describe("OrderIntake.ensureOpenFor", () => {
     await expect(intake.ensureOpenFor(null, BUYER)).resolves.toBeUndefined();
   });
 
-  /** `audienceOf` : une société en attente de validation commande en particulier. */
-  it("traite une société non validée en particulier", async () => {
+  /** `audienceOf` : une société en attente de validation est pro (2026-11-05). */
+  it("traite une société non validée en pro", async () => {
     const intake = intakeAt({ ordersOpenToB2b: false, ordersOpenToB2c: true }, "pending");
 
-    await expect(intake.ensureOpenFor("c1", BUYER)).resolves.toBeUndefined();
+    await expect(intake.ensureOpenFor("c1", BUYER)).rejects.toThrow(
+      "La boutique ne prend pas de commandes des pros pour le moment",
+    );
   });
 
   it("refuse un particulier quand la boutique leur est fermée", async () => {

@@ -333,8 +333,8 @@ export class NouvelleCommandePage {
   protected readonly addresses = computed(() => this.company()?.addresses ?? []);
 
   /**
-   * La clientèle de la société : pro si elle est **active**, particulier sinon
-   * (Q3 du plan). La même fonction que le serveur — deux définitions de « qui
+   * La clientèle de la société : pro si elle est active, suspendue ou en
+   * attente (2026-11-05), particulier si elle est close (Q3 du plan). La même fonction que le serveur — deux définitions de « qui
    * est pro » finiraient par proposer un coursier que la commande refuse.
    */
   protected readonly audience = computed(() => audienceOf(this.company()?.status ?? null));

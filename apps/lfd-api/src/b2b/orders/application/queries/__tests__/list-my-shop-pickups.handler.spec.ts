@@ -72,11 +72,15 @@ describe("ListMyShopPickupsHandler — l'audience établie, et elle seule", () =
     expect(served.json).not.toMatch(PER_CLIENTELE_KEY);
   });
 
-  it("une société en attente : la remise des pros en cours d'inscription", async () => {
+  /**
+   * 2026-11-05 : une société en attente est pro — les points des pros lui
+   * sont ouverts — mais lit toujours SA remise (« pros actifs » ne l'admet pas).
+   */
+  it("une société en attente : les points des pros, la remise des pros en cours d'inscription", async () => {
     const served = await listFor("c1", "pending");
 
-    expect(served.labels).toEqual(["Labo"]);
-    expect(served.discounts).toEqual([PENDING]);
+    expect(served.labels).toEqual(["Labo", "Pros"]);
+    expect(served.discounts).toEqual([PENDING, PENDING]);
     expect(served.json).not.toMatch(PER_CLIENTELE_KEY);
   });
 

@@ -5,8 +5,8 @@
  * Ce que seul le vrai chemin prouve : que la règle tient sur les TROIS
  * passations — `POST /orders` (client reconnu), `POST /shop/orders` (sans
  * compte) et `POST /admin/orders` (l'équipe, sans exception) — et au devis,
- * avec la clientèle DÉDUITE en base (société active ⇒ pro, en attente ⇒
- * particulier) ; et qu'un site d'avant les cases reste ouvert aux deux.
+ * avec la clientèle DÉDUITE en base (société active ou en attente ⇒ pro,
+ * depuis le 2026-11-05 pour l'attente) ; et qu'un site d'avant les cases reste ouvert aux deux.
  *
  * Réglages posés par les routes staff, comme le back-office.
  */
@@ -232,14 +232,16 @@ describe("un site réservé aux particuliers", () => {
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 
-  it("sert un visiteur, un perso et une société en attente", async () => {
+  /** 2026-11-05 : une société en attente est pro — un site des particuliers la refuse. */
+  it("sert un visiteur et un perso, refuse une société en attente", async () => {
     await seedPeople();
     const site = await seedSite();
     await reserve(site, { b2b: false, b2c: true }).expect(204);
 
     await ctx.http().post("/shop/quote").send(quote(site)).expect(200);
     await ctx.asSub(PERSO).post("/orders").send(order(site)).expect(201);
-    await ctx.asSub(PENDING).post("/orders").send(order(site)).expect(201);
+    const pending = await ctx.asSub(PENDING).post("/orders").send(order(site)).expect(409);
+    expect(refusal(pending.body).code).toBe(PICKUP_CLOSED_FOR_AUDIENCE);
   });
 });
 
@@ -257,22 +259,21 @@ describe("un site réservé aux pros", () => {
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 
-  /** Q3 du plan de la clientèle : une société en attente suit les règles des particuliers. */
-  it("traite une société EN ATTENTE en particulier — elle, et l'équipe pour elle", async () => {
+  /**
+   * Une société en attente est pro (Hugo, 2026-11-05 ; elle suivait les
+   * règles des particuliers depuis Q3) — elle, et l'équipe pour elle.
+   */
+  it("traite une société EN ATTENTE en pro — elle, et l'équipe pour elle", async () => {
     const people = await seedPeople();
     const site = await seedSite();
     await reserve(site, { b2b: true, b2c: false }).expect(204);
 
     const perso = await ctx.asSub(PERSO).post("/orders").send(order(site)).expect(409);
     expect(refusal(perso.body).code).toBe(PICKUP_CLOSED_FOR_AUDIENCE);
-    const pending = await ctx.asSub(PENDING).post("/orders").send(order(site)).expect(409);
-    expect(refusal(pending.body).code).toBe(PICKUP_CLOSED_FOR_AUDIENCE);
-    const byStaff = await staffOrder(site, people.pendingCompanyId, people.pendingBuyerId).expect(
-      409,
-    );
-    expect(refusal(byStaff.body).code).toBe(PICKUP_CLOSED_FOR_AUDIENCE);
     expect(await ctx.prisma.order.count()).toBe(0);
 
+    await ctx.asSub(PENDING).post("/orders").send(order(site)).expect(201);
+    await staffOrder(site, people.pendingCompanyId, people.pendingBuyerId).expect(201);
     await ctx.asSub(ACTIVE).post("/orders").send(order(site)).expect(201);
     await staffOrder(site, people.activeCompanyId, people.activeBuyerId).expect(201);
   });

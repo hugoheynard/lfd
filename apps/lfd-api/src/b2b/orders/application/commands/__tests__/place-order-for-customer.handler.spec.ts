@@ -1111,7 +1111,8 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
     expect(sink.placed?.buyerKind).toBe("registered");
   });
 
-  it("une société en attente porte les CGV particuliers (C2″)", async () => {
+  /** C2″ : une société en attente est pro (Hugo, 2026-11-05) et en porte les CGV. */
+  it("une société en attente porte les CGV pro (C2″)", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const salesTerms = new FixedSalesTerms();
 
@@ -1123,9 +1124,9 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
       ),
     );
 
-    expect(salesTerms.asked).toEqual(["salesTerms"]);
+    expect(salesTerms.asked).toEqual(["salesTermsPro"]);
     expect(sink.placed?.salesTerms).toEqual({
-      document: "salesTerms",
+      document: "salesTermsPro",
       revision: null,
       fileId: null,
     });

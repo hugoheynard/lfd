@@ -142,7 +142,7 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/pickup-addresses\/mine$/u,
     serves: 'les maisons de démonstration ouvertes à la clientèle de la scène',
     // Depuis ba8ed5302, un client reconnu lit ses points ici : filtrés par sa
-    // clientèle, comme le serveur (une société active = pro).
+    // clientèle, comme le serveur (une société non close = pro, 2026-11-05).
     answer: (_request, _match, world) => {
       const status = world.account?.companies[0]?.status ?? null;
       const audience = audienceOf(status);

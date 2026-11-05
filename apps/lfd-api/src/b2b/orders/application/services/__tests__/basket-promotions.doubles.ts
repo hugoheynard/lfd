@@ -76,8 +76,8 @@ export function pointDiscountPromotions(
 }
 
 /**
- * Qui commande, pour une clientèle : un pro est une société ACTIVE (c'est ce
- * que `audienceOf` dit d'un `b2b`), un particulier n'en a pas.
+ * Qui commande, pour une clientèle : un pro est ici une société ACTIVE (l'un
+ * des statuts dont `audienceOf` dit `b2b`), un particulier n'en a pas.
  */
 export function pickupBuyer(audience: CustomerAudience, companyId: string | null): PickupBuyer {
   return {

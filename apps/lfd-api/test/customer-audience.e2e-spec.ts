@@ -2,8 +2,10 @@
  * E2E de la **clientèle** d'une requête, au devis comme à la commande (plan
  * `remise-et-livraison-par-clientele`, D1, D3, D5 ; Q1 et Q3).
  *
- * B2B = une société ACTIVE agit ; B2C = un visiteur, l'espace perso, ou une
- * société qui n'est pas active. Ce que seul le vrai chemin prouve : que la
+ * B2B = une société active, suspendue ou EN ATTENTE agit (2026-11-05) ; B2C =
+ * un visiteur, l'espace perso, ou une société close. La remise « pros » d'un
+ * point est posée en « pros actifs », que le ciblage lit sur le statut : une
+ * société en attente, pourtant `b2b`, ne la reçoit pas. Ce que seul le vrai chemin prouve : que la
  * clientèle est DÉDUITE au serveur, du statut lu en base, par les trois portes
  * — le devis anonyme, le devis reconnu, et `POST /orders` — et que la commande
  * saisie par l'équipe suit la même règle.
@@ -213,6 +215,10 @@ async function orderDiscount(sub: string, body: Record<string, unknown>): Promis
 }
 
 describe("une remise réservée aux pros", () => {
+  /**
+   * Régression (2026-11-05) : une société en attente devient `b2b` ; la remise
+   * « pros actifs » ne doit pas la suivre.
+   */
   it("au DEVIS : absente pour un visiteur, en perso et pour une société en attente ; appliquée pour une société active", async () => {
     await seedPeople();
     const point = await seedProsOnlyPoint();
@@ -224,7 +230,7 @@ describe("une remise réservée aux pros", () => {
     expect(visitor.discountAdjustment).toBeNull();
 
     expect((await quoteMine(PERSO, pickupQuote(point))).discountCents).toBe(0);
-    // Q3 : déclarer une société ne suffit pas à être pro.
+    // « Pros actifs », lu sur le statut : une société en attente n'en est pas.
     expect((await quoteMine(PENDING, pickupQuote(point))).discountCents).toBe(0);
 
     const pro = await quoteMine(ACTIVE, pickupQuote(point));
@@ -253,7 +259,7 @@ describe("la livraison fermée à une clientèle", () => {
     expect(view.deliveryFeeCents).toBe(2_000);
   });
 
-  it("fermée aux particuliers : 409 au devis ET à la commande, ouverte à une société active", async () => {
+  it("fermée aux particuliers : 409 au devis ET à la commande, ouverte à une société active ou en attente", async () => {
     const { activeCompanyId } = await seedPeople();
     await seedZone();
     await staff().patch("/admin/delivery-availability").send({ openToB2c: false }).expect(204);
@@ -263,9 +269,10 @@ describe("la livraison fermée à une clientèle", () => {
 
     const perso = await ctx.asSub(PERSO).post("/orders").send(deliveryOrder()).expect(409);
     expect((perso.body as { code?: string }).code).toBe(CLOSED_FOR_AUDIENCE);
-    const pending = await ctx.asSub(PENDING).post("/orders").send(deliveryOrder()).expect(409);
-    expect((pending.body as { code?: string }).code).toBe(CLOSED_FOR_AUDIENCE);
     expect(await ctx.prisma.order.count()).toBe(0);
+
+    // 2026-11-05 : une société en attente est pro, la livraison des pros lui est ouverte.
+    expect((await quoteMine(PENDING, DELIVERY_QUOTE)).deliveryFeeCents).toBe(2_000);
 
     expect((await quoteMine(ACTIVE, DELIVERY_QUOTE)).deliveryFeeCents).toBe(2_000);
     // Un pro ne livre qu'à une heure INSCRITE sur son adresse (2026-10-12).

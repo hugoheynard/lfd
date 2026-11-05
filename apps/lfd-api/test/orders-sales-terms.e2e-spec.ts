@@ -5,7 +5,7 @@
  * étrangère vers le PDF, et la relecture du détail de commande.
  *
  * Le texte qui s'applique suit l'audience qui TARIFE (`audienceOf`) : une
- * société ACTIVE porte les CGV pro, une société en attente et un visiteur
+ * société active ou en attente (2026-11-05) porte les CGV pro, un visiteur
  * celles des particuliers (C2″).
  */
 import { randomUUID } from "node:crypto";
@@ -166,8 +166,8 @@ describe("le client pour lui-même (place-order)", () => {
     });
   });
 
-  /** C2″ : une société en attente paie les prix des particuliers, et en porte les CGV. */
-  it("une société EN ATTENTE porte les CGV particuliers", async () => {
+  /** C2″ : une société en attente paie les prix des pros, et en porte les CGV (Hugo, 2026-11-05). */
+  it("une société EN ATTENTE porte les CGV pro", async () => {
     const { companyId } = await seedCompany(CompanyStatus.pending);
 
     const placed = jsonBody<PlacedOrderResponse>(
@@ -175,7 +175,7 @@ describe("le client pour lui-même (place-order)", () => {
     );
 
     expect((await salesTermsOf(placed.id)).salesTerms).toMatchObject({
-      document: "salesTerms",
+      document: "salesTermsPro",
       revision: null,
       file: null,
     });

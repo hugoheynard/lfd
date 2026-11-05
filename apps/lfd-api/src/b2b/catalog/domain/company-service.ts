@@ -17,8 +17,9 @@ export type CompanyService = "pro" | "public" | "closed";
  * La règle, pure.
  *
  * - `active` → pro.
- * - `pending` → pro, **inchangé au lot P0** : la case « traiter en pro les
- *   sociétés en cours d'inscription » vient au lot P1/P3, cochée par défaut.
+ * - `pending` → pro, sans réglage : la case « traiter en pro » des lots
+ *   P1/P3 est abandonnée (Hugo, 2026-11-05, `plan-pros-en-cours-d-inscription.md`
+ *   § 0 — seul « au compte » attend la validation).
  * - `suspended` → pro, son tarif à elle : une suspension ne touche plus qu'au
  *   crédit (Hugo, 2026-11-03, `plan-suspendue-au-prix-pro.md` § 5 — révise
  *   Q9 du P0, qui disait public ; P1 abandonné pour la suspension).

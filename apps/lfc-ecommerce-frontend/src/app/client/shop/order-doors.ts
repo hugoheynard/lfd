@@ -84,10 +84,9 @@ export class OrderDoors {
    * **La livraison est-elle proposée aux PROS ?** — le réglage seul, quelle que
    * soit la clientèle de qui regarde.
    *
-   * C'est ce que la validation d'un dossier ouvrirait : une société en attente
-   * reste `b2c` jusqu'à sa validation (`audienceOf`). L'accueil ne lui promet
-   * « votre commercial ouvre la livraison » que si c'est vrai une fois validée
-   * — sinon, le réglage la lui fermerait encore.
+   * Lu sans la clientèle : une société en attente est `b2b` depuis le
+   * 2026-11-05 (`audienceOf`), et l'accueil ne lui promet « votre commercial
+   * ouvre la livraison » que si le réglage des pros la propose.
    */
   readonly deliveryOfferedToPros = computed(() =>
     deliveryOpenTo(this.points.deliveryAvailability(), 'b2b'),

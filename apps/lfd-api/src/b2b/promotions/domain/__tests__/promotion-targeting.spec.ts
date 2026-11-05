@@ -52,8 +52,8 @@ describe("audienceAdmits — les publics de clientèle contre le statut relu en 
     ["individuals_registered", null, "registered", true],
     ["individuals_registered", null, "guest", false],
     ["individuals_registered", null, "unknown", false],
-    // `audienceOf` : la remise de retrait des particuliers allait à TOUT ce qui
-    // n'est pas une société active — en attente et suspendue comprises.
+    // Lu sur le statut : tout ce qui n'est pas une société active ou suspendue
+    // — en attente et close comprises.
     ["everyone_but_active_pros", null, "guest", true],
     ["everyone_but_active_pros", "pending", "registered", true],
     ["everyone_but_active_pros", "suspended", "registered", false],
@@ -66,6 +66,18 @@ describe("audienceAdmits — les publics de clientèle contre le statut relu en 
       buyerKind,
     });
     expect(audienceAdmits(audience, subject)).toBe(expected);
+  });
+
+  /**
+   * Régression : `pros_active` et `everyone_but_active_pros` se lisaient sur
+   * `audienceOf`, qui rend `b2b` pour une société en attente depuis le
+   * 2026-11-05 — chaque promotion « pros actifs » aurait admis les pending.
+   */
+  it("une promotion « pros actifs » n'admet pas une société en attente, qui reste admise par « tous sauf pros actifs »", () => {
+    const pending = facts({ companyId: "co_1", companyStatus: "pending", buyerKind: "registered" });
+    expect(audienceAdmits({ kind: "pros_active" }, pending)).toBe(false);
+    expect(audienceAdmits({ kind: "everyone_but_active_pros" }, pending)).toBe(true);
+    expect(audienceAdmits({ kind: "pros" }, pending)).toBe(true);
   });
 
   it("ne vise personne sur un statut qu'on n'a pas lu", () => {

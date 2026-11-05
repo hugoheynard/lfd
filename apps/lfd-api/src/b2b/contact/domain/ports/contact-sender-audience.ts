@@ -2,7 +2,7 @@ import type { CustomerAudience } from "@lfd/contracts";
 
 /**
  * **Le public de qui écrit**, déduit au serveur — jamais pris au corps.
- * `b2b` pour une société ACTIVE ou SUSPENDUE (`audienceOf`, la même règle que la caisse),
+ * `b2b` pour une société active, suspendue ou en attente (`audienceOf`, la même règle que la caisse),
  * `b2c` sinon.
  */
 export abstract class ContactSenderAudience {

@@ -37,9 +37,13 @@ describe('ClientAudience — la clientèle de l’écran', () => {
     expect(audience.current()).toBe('b2c');
   });
 
-  /** Déclarer une société ne demande aucune vérification (vitruve, B1). */
-  it('une société en attente de validation est B2C', () => {
-    expect(resolve(true, 'cmp_1', [company('pending')]).current()).toBe('b2c');
+  /** Une société en attente est pro, sauf le crédit (Hugo, 2026-11-05). */
+  it('une société en attente de validation est B2B', () => {
+    expect(resolve(true, 'cmp_1', [company('pending')]).current()).toBe('b2b');
+  });
+
+  it('une société close est B2C', () => {
+    expect(resolve(true, 'cmp_1', [company('terminated')]).current()).toBe('b2c');
   });
 
   // Une suspendue est servie comme une active, sauf le crédit (Hugo, 2026-11-03).
@@ -83,10 +87,10 @@ describe('ClientAudience — servi en pro par la caisse', () => {
    * Régression : une société en attente lisait l’étiquette des particuliers,
    * alors que la caisse la sert en pro (2026-10-31).
    */
-  it('une société en attente l’est, tout en restant de la clientèle B2C', () => {
+  it('une société en attente l’est, et de la clientèle B2B depuis le 2026-11-05', () => {
     const audience = resolve(true, 'cmp_1', [company('pending')]);
     expect(audience.servedAsPro()).toBe(true);
-    expect(audience.current()).toBe('b2c');
+    expect(audience.current()).toBe('b2b');
   });
 
   it('une société suspendue l’est aussi (2026-11-03)', () => {

@@ -23,8 +23,8 @@ export function parseSalesTermsSide(raw: string | null): SalesTermsSide | null {
 }
 
 /**
- * Le côté ouvert faute d'adresse : pro pour une clientèle pro (`audienceOf`,
- * société ACTIVE seulement), particulier sinon — visiteur et clientèle encore
+ * Le côté ouvert faute d'adresse : pro pour une clientèle pro (`audienceOf` :
+ * société active, suspendue ou en attente), particulier sinon — visiteur et clientèle encore
  * inconnue compris.
  */
 export function defaultSalesTermsSide(audience: CustomerAudience | null): SalesTermsSide {
