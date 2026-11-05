@@ -278,7 +278,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // jamais un état que le calcul rencontre.
         await ensurePromotionsSource(prisma);
         // L'estampille du principal est posée par migration, et le `TRUNCATE`
-        // l'emporte : remise ici (plan-principal-en-memoire.md, §3 bis). Le
+        // l'emporte : remise ici (qui-est-le-client.md, « Le harnais e2e »). Le
         // déclencheur la recréerait à la première écriture, mais à 1 — un
         // numéro qu'un principal gardé par la suite d'avant peut porter : la
         // mémoire du résolveur est vidée plus bas, pour cette raison.

@@ -1,6 +1,6 @@
 /**
  * E2E du **principal gardé en mémoire** —
- * `documentation/caching-usage/plan-principal-en-memoire.md`, §5.
+ * `documentation/caching-usage/qui-est-le-client.md`, « L'estampille et ses déclencheurs ».
  *
  * Ce que seule la base migrée peut dire : les trois déclencheurs existent et
  * font monter l'estampille, y compris sous une écriture SQL à la main ; et un
@@ -81,7 +81,7 @@ describe("l'estampille du principal — les déclencheurs", () => {
 });
 
 /**
- * Le filtre par colonnes (§3 quinquies, migration
+ * Le filtre par colonnes (« La liste des colonnes, tenue par un test », migration
  * `20261105120000_l_estampille_filtree_par_colonnes`) : une première connexion
  * ou une écriture d'identité de société vidait le cache de tout le monde.
  */

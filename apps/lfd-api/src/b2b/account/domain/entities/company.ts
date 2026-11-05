@@ -188,7 +188,7 @@ export interface CompanySoftState {
    *
    * Pas un détail : le déclencheur de l'estampille du principal monte dès que
    * `status` figure dans le `SET`, même à valeur égale
-   * (`plan-principal-en-memoire.md`, §3 quinquies). Réécrit à chaque
+   * (`qui-est-le-client.md`, « La société ne réécrit plus son statut »). Réécrit à chaque
    * sauvegarde, il vidait le principal gardé de tout le monde à chaque
    * correction d'identité.
    */

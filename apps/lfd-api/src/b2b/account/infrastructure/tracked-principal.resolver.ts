@@ -7,7 +7,7 @@ export interface PrincipalResolution {
   /**
    * `true` seulement sur le chemin qui n'a RIEN écrit et dont le résultat ne
    * dépend que de la base — donc de l'estampille
-   * (`documentation/caching-usage/plan-principal-en-memoire.md`, §2).
+   * (`documentation/caching-usage/qui-est-le-client.md`, « Quand le principal n'est pas gardé »).
    */
   readonly storable: boolean;
 }

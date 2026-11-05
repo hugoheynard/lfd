@@ -13,10 +13,10 @@ import {
   type PrincipalResolution,
 } from "./tracked-principal.resolver.js";
 
-/** Au plus mille personnes en mémoire (§3 bis). */
+/** Au plus mille personnes en mémoire (`qui-est-le-client.md`, « La mémoire »). */
 export const PRINCIPAL_MEMORY_CAPACITY = 1_000;
 
-/** Le filet : dix minutes. Il ne sert pas à la justesse, l'estampille si (§3 bis). */
+/** Le filet : dix minutes. Il ne sert pas à la justesse, l'estampille si (`qui-est-le-client.md`, « La mémoire »). */
 export const PRINCIPAL_MEMORY_LIFETIME_MS = 10 * 60 * 1000;
 
 /** Le nom sous lequel la carte de santé compte ses issues (C5). */
@@ -30,14 +30,14 @@ interface InFlightRead {
 
 /**
  * **Le principal gardé en mémoire de l'API**
- * (`documentation/caching-usage/plan-principal-en-memoire.md`, lot L4).
+ * (`documentation/caching-usage/qui-est-le-client.md`, lot L4).
  *
  * Chaque requête lit l'estampille — une ligne que trois déclencheurs font
  * monter à toute écriture sur `users`, `memberships`, `companies` — et ne
  * relit le principal que si elle a bougé. Un compte désactivé reste donc
  * coupé à la requête suivante : l'estampille n'est jamais gardée.
  *
- * 🔴 **L'ordre est la justesse** (§3 bis) : l'estampille D'ABORD, le principal
+ * 🔴 **L'ordre est la justesse** (`qui-est-le-client.md`, « La mémoire ») : l'estampille D'ABORD, le principal
  * ensuite, rangé sous l'estampille lue avant. Lu dans l'autre ordre, un
  * principal d'avant une désactivation pourrait se ranger sous le numéro
  * d'après, et le compte garderait son accès.

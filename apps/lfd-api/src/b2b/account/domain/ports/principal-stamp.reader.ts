@@ -1,7 +1,7 @@
 /**
  * **L'estampille du principal** — un numéro que la base fait monter à chaque
  * écriture sur `users`, `memberships` ou `companies`
- * (`documentation/caching-usage/plan-principal-en-memoire.md`, §3).
+ * (`documentation/caching-usage/qui-est-le-client.md`, « L'estampille et ses déclencheurs »).
  *
  * Ce n'est pas le code qui la fait monter mais trois déclencheurs : personne
  * ne peut l'oublier, et une écriture faite en SQL à la main la fait monter

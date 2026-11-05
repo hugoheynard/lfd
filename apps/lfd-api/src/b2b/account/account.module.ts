@@ -454,7 +454,7 @@ import {
     // prouver le `sub`, et le guard global — déclaré à la racine de composition
     // — les met bout à bout.
     //
-    // Depuis le 2026-11-04 (L4, `plan-principal-en-memoire.md`), le guard lit
+    // Depuis le 2026-11-04 (L4, `qui-est-le-client.md`), le guard lit
     // le résolveur GARDÉ en mémoire, qui enveloppe celui de la base et ne
     // relit qu'au mouvement de l'estampille.
     CustomerPrincipalResolver,

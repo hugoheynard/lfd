@@ -17,7 +17,7 @@ interface KeptPrincipal {
  * **La mémoire des principaux**, par `sub` : bornée (la moins récemment lue
  * sort la première), et un filet de durée qui ne sert pas à la justesse — la
  * justesse, c'est l'estampille
- * (`documentation/caching-usage/plan-principal-en-memoire.md`, §2, §3 bis).
+ * (`documentation/caching-usage/qui-est-le-client.md`, « La mémoire »).
  *
  * Pure : l'heure lui est donnée, elle ne la lit pas.
  */

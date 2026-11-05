@@ -1,7 +1,7 @@
 /**
  * La liste des colonnes qui font monter l'estampille du principal ne devient
- * jamais trop ÉTROITE — `documentation/caching-usage/plan-principal-en-memoire.md`,
- * §3 quinquies.
+ * jamais trop ÉTROITE — `documentation/caching-usage/qui-est-le-client.md`,
+ * « La liste des colonnes, tenue par un test ».
  *
  * Les déclencheurs `UPDATE OF …` ne montent que sur les colonnes listées dans la
  * migration. Le jour où la résolution lit une colonne de plus de `users`,

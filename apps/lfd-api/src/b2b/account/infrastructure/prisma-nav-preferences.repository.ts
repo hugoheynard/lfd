@@ -7,7 +7,7 @@ import type { NavPreferencesPatch } from "../domain/value-objects/nav-preference
 /**
  * Adaptateur Prisma des préférences de navigation d'un client : la table
  * `user_nav_prefs`, une ligne par personne (plan
- * `caching-usage/plan-principal-en-memoire.md`, §3 ter).
+ * `caching-usage/qui-est-le-client.md`, « Les préférences de navigation hors de `users` »).
  *
  * **Une fusion `jsonb ||`, en SQL.** Prisma n'écrit une colonne `Json` qu'en la
  * remplaçant entière : poser la vue du catalogue effacerait l'espace de

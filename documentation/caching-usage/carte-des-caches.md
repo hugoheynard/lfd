@@ -212,7 +212,7 @@ locales à un appel.
 (`apps/lfd-api/src/delivery/infrastructure/prisma-geocode-cache.reader.ts`), purgé par
 `purge-stale-geocodes` — cf. [`../legal/rgpd-purge-du-geocodage.md`](../legal/rgpd-purge-du-geocodage.md).
 
-Conception : [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md),
+Conception : [`qui-est-le-client.md`](qui-est-le-client.md),
 [`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md).
 
 ## 4. Le navigateur (boutique)

@@ -1081,7 +1081,7 @@ describe("CustomerPrincipalResolver", () => {
 
 /**
  * Ce que le résolveur gardé en mémoire peut ranger
- * (`documentation/caching-usage/plan-principal-en-memoire.md`, §2) : seul le
+ * (`documentation/caching-usage/qui-est-le-client.md`, « Quand le principal n'est pas gardé ») : seul le
  * chemin qui n'écrit rien et ne dépend pas de l'heure.
  */
 describe("CustomerPrincipalResolver — ce qui peut être gardé", () => {

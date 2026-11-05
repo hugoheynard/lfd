@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // L'estampille du principal —
-// `documentation/caching-usage/plan-principal-en-memoire.md`, §3 et §3 bis.
+// `documentation/caching-usage/qui-est-le-client.md`, « L'estampille et ses déclencheurs ».
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// **Un numéro qui monte à chaque écriture sur `users`, `memberships`,
@@ -10,7 +10,7 @@
 /// 🔴 Aucun code ne l'écrit : trois déclencheurs `BEFORE … FOR EACH STATEMENT`
 /// (migration `20261104120000_l_estampille_du_principal`). Un compteur et non
 /// un journal : son verrou aligne l'ordre des validations sur l'ordre des
-/// numéros (§3, après `vitruve`).
+/// numéros (« Ce qui a été décidé, et pourquoi »).
 ///
 /// Une seule ligne, `id = 1` (contrainte `CHECK`).
 model PrincipalStamp {

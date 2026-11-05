@@ -171,7 +171,7 @@ impression.
 
 **Fait**
 
-- ✅ Plan [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md),
+- ✅ Doc d'état [`qui-est-le-client.md`](qui-est-le-client.md),
   contredit deux fois par `vitruve`, migration relue.
 - ✅ En production le 2026-11-04 (`d1250d6c6`) — mesuré : principal 12–17 ms
   servi de la mémoire (70–270 ms avant). Bâti en `ad5c80190` : estampille posée par trois déclencheurs

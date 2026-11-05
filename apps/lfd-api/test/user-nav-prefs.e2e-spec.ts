@@ -1,6 +1,6 @@
 /**
  * E2E des **préférences de navigation hors de `users`** —
- * `documentation/caching-usage/plan-principal-en-memoire.md`, §3 ter.
+ * `documentation/caching-usage/qui-est-le-client.md`, « Les préférences de navigation hors de `users` ».
  *
  * La migration est appliquée par le harnais ; on rejoue ici son seul bloc de
  * copie, lu entre ses deux marqueurs, sur des `users` dont la colonne morte

@@ -99,7 +99,7 @@ export class CustomerPrincipalResolver extends TrackedPrincipalResolver {
 
   /**
    * La même résolution, qui dit en plus si elle peut être GARDÉE
-   * (`documentation/caching-usage/plan-principal-en-memoire.md`, §2) : rien
+   * (`documentation/caching-usage/qui-est-le-client.md`, « Quand le principal n'est pas gardé ») : rien
    * écrit — ni compte créé, ni invitation acceptée, ni preuve recopiée, ni
    * première entrée —, et aucun rattachement qui attend encore son
    * acceptation, seule part du principal qui dépend de l'heure.

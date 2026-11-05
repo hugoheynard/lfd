@@ -1,6 +1,6 @@
 /**
  * `statusChange` : le statut n'est écrit que s'il a bougé depuis le chargement
- * (`documentation/caching-usage/plan-principal-en-memoire.md`, §3 quinquies).
+ * (`documentation/caching-usage/qui-est-le-client.md`, « La société ne réécrit plus son statut »).
  *
  * Régression : `save()` réécrivait `status` à chaque sauvegarde, et le
  * déclencheur `UPDATE OF status` de l'estampille vidait alors le principal

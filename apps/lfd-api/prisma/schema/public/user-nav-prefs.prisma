@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Les préférences de navigation des clients —
-// `documentation/caching-usage/plan-principal-en-memoire.md`, §3 ter.
+// `documentation/caching-usage/qui-est-le-client.md`, « Les préférences de navigation hors de `users` ».
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// **Le sac JSON des préférences d'affichage d'un client** (`catalogueView`,

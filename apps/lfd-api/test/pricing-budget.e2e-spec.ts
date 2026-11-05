@@ -697,7 +697,7 @@ describe("l'estimation de la saisie", () => {
  * du plan n'est pas relu.
  *
  * 🔴 **De 20 à 21 le 2026-11-04** (lot L4, `ad5c80190`,
- * `documentation/caching-usage/plan-principal-en-memoire.md`) : chaque
+ * `documentation/caching-usage/qui-est-le-client.md`) : chaque
  * requête identifiée lit l'estampille du principal AVANT de le servir de la
  * mémoire ou de le relire. À froid, le principal est relu ET l'estampille
  * lue : une lecture de plus, constante, que la mémoire rembourse aux appels

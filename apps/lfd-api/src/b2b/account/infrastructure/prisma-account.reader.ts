@@ -40,7 +40,7 @@ export class PrismaAccountReader extends AccountReader {
         lastName: true,
         email: true,
         phone: true,
-        // Les préférences vivent hors de `users` depuis le 2026-11-04 (§3 ter).
+        // Les préférences vivent hors de `users` depuis le 2026-11-04 (`qui-est-le-client.md`, « Les préférences de navigation hors de `users` »).
         navPreferences: { select: { prefs: true } },
         memberships: {
           // Seules les sociétés que le rattachement OUVRE : une invitation
