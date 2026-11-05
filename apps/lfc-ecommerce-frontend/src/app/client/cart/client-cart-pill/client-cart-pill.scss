@@ -120,10 +120,6 @@
   @include pop.head-title;
 }
 
-.head-note {
-  @include pop.head-note;
-}
-
 /* Le décompte peut être long : c'est lui qui défile, jamais la bande de tête ni
    le bouton qui règle. */
 .scroller {

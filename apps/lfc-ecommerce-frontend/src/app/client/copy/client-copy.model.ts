@@ -719,7 +719,6 @@ export interface ClientCopy {
   readonly cart: {
     readonly kicker: string;
     readonly title: string;
-    readonly intro: string;
     readonly pickupGroup: string;
     readonly deliveryGroup: string;
     /** `{day}` = la journée de service du serveur : « demain », « jeudi 17 septembre ». */

@@ -1694,9 +1694,9 @@
         },
         {
           "key": "shop.cartEmpty",
-          "fr": "Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi.",
-          "en": "Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.",
-          "it": "Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.",
+          "fr": "Votre panier est vide.",
+          "en": "Your basket is empty.",
+          "it": "Il tuo carrello è vuoto.",
           "variables": []
         },
         {
@@ -3592,13 +3592,6 @@
           "fr": "Votre commande",
           "en": "Your order",
           "it": "Il suo ordine",
-          "variables": []
-        },
-        {
-          "key": "cart.intro",
-          "fr": "Relisez, ajustez, réglez. La fournée se cale sur votre créneau.",
-          "en": "Read it over, adjust, pay. The batch follows your slot.",
-          "it": "Rilegga, corregga, paghi. L’infornata segue la sua fascia oraria.",
           "variables": []
         },
         {

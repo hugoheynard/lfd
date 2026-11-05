@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1759 textes
+## Sommaire — 1758 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 101 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 100 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1759** |
+| **Total** | | **1758** |
 
 ## Le parcours de commande
 
@@ -359,7 +359,7 @@ Source : `fr.ts · en.ts · it.ts` · 85 textes.
 | `shop.cartStatusRemoved` | {name} retiré du panier | {name} removed from your basket | {name} tolto dal carrello | `{name}` |
 | `shop.storefrontTitle` | La vitrine | Shop window | La vetrina |  |
 | `shop.cartTitle` | Votre panier | Your basket | Il suo carrello |  |
-| `shop.cartEmpty` | Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi. | Empty basket. The morning batch goes fast — the praline ski never sees the afternoon. | Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio. |  |
+| `shop.cartEmpty` | Votre panier est vide. | Your basket is empty. | Il tuo carrello è vuoto. |  |
 | `shop.cartLoading` | Votre panier arrive… | Your basket is on its way… | Il carrello sta arrivando… |  |
 | `shop.staffAdvice` | Notre conseil | Our advice | Il nostro consiglio |  |
 | `shop.alsoLike` | Vous aimerez aussi | You may also like | Potrebbe piacerti anche |  |
@@ -731,13 +731,12 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 101 textes.
+Source : `fr.ts · en.ts · it.ts` · 100 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
 | `cart.kicker` | Le panier | The basket | Il carrello |  |
 | `cart.title` | Votre commande | Your order | Il suo ordine |  |
-| `cart.intro` | Relisez, ajustez, réglez. La fournée se cale sur votre créneau. | Read it over, adjust, pay. The batch follows your slot. | Rilegga, corregga, paghi. L’infornata segue la sua fascia oraria. |  |
 | `cart.pickupGroup` | À retirer | To collect | Da ritirare |  |
 | `cart.deliveryGroup` | À livrer | To deliver | Da consegnare |  |
 | `cart.slotNote` | {day} · créneau choisi | {day} · chosen slot | {day} · fascia scelta | `{day}` |

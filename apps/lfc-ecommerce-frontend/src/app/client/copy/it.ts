@@ -281,8 +281,7 @@ export const IT: ClientCopy = {
     cartStatusRemoved: '{name} tolto dal carrello',
     storefrontTitle: 'La vetrina',
     cartTitle: 'Il suo carrello',
-    cartEmpty:
-      'Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.',
+    cartEmpty: 'Il tuo carrello è vuoto.',
     cartLoading: 'Il carrello sta arrivando…',
     staffAdvice: 'Il nostro consiglio',
     alsoLike: 'Potrebbe piacerti anche',
@@ -363,7 +362,6 @@ export const IT: ClientCopy = {
   cart: {
     kicker: 'Il carrello',
     title: 'Il suo ordine',
-    intro: 'Rilegga, corregga, paghi. L’infornata segue la sua fascia oraria.',
     pickupGroup: 'Da ritirare',
     deliveryGroup: 'Da consegnare',
     slotNote: '{day} · fascia scelta',

@@ -275,8 +275,7 @@ export const FR: ClientCopy = {
     cartStatusRemoved: '{name} retiré du panier',
     storefrontTitle: 'La vitrine',
     cartTitle: 'Votre panier',
-    cartEmpty:
-      'Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi.',
+    cartEmpty: 'Votre panier est vide.',
     cartLoading: 'Votre panier arrive…',
     staffAdvice: 'Notre conseil',
     alsoLike: 'Vous aimerez aussi',
@@ -358,7 +357,6 @@ export const FR: ClientCopy = {
   cart: {
     kicker: 'Le panier',
     title: 'Votre commande',
-    intro: 'Relisez, ajustez, réglez. La fournée se cale sur votre créneau.',
     pickupGroup: 'À retirer',
     deliveryGroup: 'À livrer',
     slotNote: '{day} · créneau choisi',

@@ -277,8 +277,7 @@ export const EN: ClientCopy = {
     cartStatusRemoved: '{name} removed from your basket',
     storefrontTitle: 'Shop window',
     cartTitle: 'Your basket',
-    cartEmpty:
-      'Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.',
+    cartEmpty: 'Your basket is empty.',
     cartLoading: 'Your basket is on its way…',
     staffAdvice: 'Our advice',
     alsoLike: 'You may also like',
@@ -358,7 +357,6 @@ export const EN: ClientCopy = {
   cart: {
     kicker: 'The basket',
     title: 'Your order',
-    intro: 'Read it over, adjust, pay. The batch follows your slot.',
     pickupGroup: 'To collect',
     deliveryGroup: 'To deliver',
     slotNote: '{day} · chosen slot',
