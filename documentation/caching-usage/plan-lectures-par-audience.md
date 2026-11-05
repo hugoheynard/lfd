@@ -45,6 +45,39 @@ base « pro » ne se sert qu'à un appelant que le serveur a reconnu pro.
 | Bord Cloudflare (public) | ce qui est **public par choix** : `GET /pickup-addresses` (et `?audience=pro`) | le container et la base          |
 | Mémoire de l'API         | la base de ce qui passe par `/mine`                                            | les lectures en base (facturées) |
 
+## Contredit par `vitruve` le 2026-11-05 — le plan est RÉDUIT
+
+Ce qui suit l'emporte sur la Partie 2.
+
+- **`GET /pickup-addresses` (public) → en cache Cloudflare, mais réduit.**
+  La remise affichée sur un point ne vient pas du site, elle vient des
+  **promotions**, jugées à l'heure (`announced-pickup-address.repository.ts`,
+  `promotion-pickup-discount.announcer.ts`). La purge doit donc partir des
+  écritures de points (créer, modifier, retirer), de `set-site-roles` (qui
+  ouvre un point à une audience) ET des cinq commandes de promotion. Une
+  promotion à heures s'ouvre et se ferme sans aucune écriture : avec
+  `max-age=30, stale-while-revalidate=60`, la vitrine pourrait annoncer
+  jusqu'à ~90 s une remise que la caisse ne fait plus. **À décider par Hugo** :
+  accepter cet écart, ou renoncer au `stale-while-revalidate` sur cette route.
+  L'en-tête se pose sur `list()` seulement — `:id/creneaux` dépend de l'heure.
+  La purge de `reglages-publics` reste « non prouvée » de bout en bout.
+- **`GET /pickup-addresses/mine` → renoncé.** Une base en mémoire ne ferait
+  gagner que 1 à 2 lectures, pour un cache à estampiller (une deuxième
+  instance le rendrait faux sans bruit, comme le prix avant le 2026-09-09).
+- **`GET /fulfillment-days/mine` → renoncé au cache.** Il ne dépend d'aucune
+  dérogation (le plan se trompait) : seulement de la PRÉSENCE d'une société.
+  Mais il dépend du **stock du jour** (qui baisse à chaque commande) et des
+  **plans clos** (écrits par le fournil) — un cache proposerait un jour
+  impossible. À la place, trois économies sans cache : lire les points sans
+  annonce (retire une estampille et un calcul de promotion inutiles), lire le
+  stock par lot plutôt qu'en boucle par site, réutiliser la liste des sites.
+- **`GET /feature-access/mine` → réduit.** La réponse ne dépend de personne
+  aujourd'hui (les trois clés sont non exemptibles) : elle vaut la route
+  publique `GET /feature-access`. Et une décision écrite interdit le cache
+  (`documentation/b2b/architecture-feature-flags.md` : « Aucun cache … un
+  cache laissait passer des commandes après la fermeture »). À la place : une
+  seule lecture des trois réglages au lieu de trois.
+
 # Partie 2 — Le code (à vérifier par `vitruve`)
 
 ## 1. Les points de retrait
