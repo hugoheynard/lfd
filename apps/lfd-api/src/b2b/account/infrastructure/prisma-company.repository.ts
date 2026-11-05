@@ -262,7 +262,6 @@ export class PrismaCompanyRepository extends CompanyRepository {
         ...contactColumns(state.contact),
         grantedTerms: [...state.grantedTerms],
         requestedTerm: state.requestedTerm,
-        status: state.status,
         activatedAt: state.activatedAt,
         activatedByStaffId: state.activatedBy?.staffUserId ?? null,
         activatedByName: state.activatedBy?.name ?? null,
@@ -278,6 +277,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
         // La hiérarchie seulement si elle a bougé (cf. `hierarchyChange`) : une
         // écriture d'identité ne réécrit pas un rattachement fait entre-temps.
         ...(state.hierarchyChange ?? {}),
+        // Le statut seulement s'il a bougé (cf. `statusChange`) : dans le
+        // `SET`, il fait monter l'estampille du principal même à valeur égale.
+        ...(state.statusChange ?? {}),
       },
     });
     // Statut, rattachement, conditions : le rayon de la société et de ses sites.

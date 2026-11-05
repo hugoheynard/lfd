@@ -116,6 +116,9 @@ value = value + 1`. ⚠️ À trancher avec `vitruve` : un compteur sur une lign
   écritures fréquentes et sans rapport (un compteur, une date de dernière
   activité) s'y trouvent, elles videraient la mémoire sans raison — à
   inventorier avant de bâtir.
+  ⚠️ **Plus vrai depuis le 2026-11-05** : les déclencheurs ne montent plus
+  que sur les colonnes que la résolution lit (§3 quinquies, migration
+  `20261105120000_l_estampille_filtree_par_colonnes`).
 - Une **migration** ajoute la table et les déclencheurs : additive, sans
   donnée à déplacer.
 
@@ -317,6 +320,26 @@ résolution (`findBySub`, `readReachableSites`) à la liste de la migration.
 Reste : une instruction à zéro ligne sur une colonne listée fait toujours
 monter (assumé). La version par personne ne se rouvre qu'avec un taux de
 vidage MESURÉ qui resterait élevé après ce filtre.
+
+🟦 **Bâti le 2026-11-05** — migration
+`20261105120000_l_estampille_filtree_par_colonnes` (`DROP` / `CREATE TRIGGER`,
+un passage). Écart à la table ci-dessus : `id` ajouté à `users` et
+`companies` (clé lue par la résolution, jamais réécrite — ne coûte rien).
+Lues mais exemptées, raison écrite dans le test : `users.first_login_at`
+(première entrée, jamais gardée), `users.became_account_at` (INSERT
+seulement), `companies.enseigne` / `raison_sociale` (noms jetés par le
+principal ; ils n'influent que sur l'ORDRE de `reachableCompanyIds`).
+Le test `apps/lfd-api/src/b2b/account/infrastructure/__tests__/principal-stamp-columns.spec.ts`
+confronte la migration aux sources de la résolution ;
+`apps/lfd-api/test/principal-stamp.e2e-spec.ts` éprouve les colonnes sur la base migrée.
+Corrigé le même jour : `PrismaCompanyRepository.save` réécrivait `status` à
+chaque sauvegarde de l'agrégat, et `UPDATE OF` monte même à valeur égale ;
+toute correction d'identité par l'agrégat faisait donc monter. `Company`
+expose désormais `statusChange` (le statut seulement s'il a bougé depuis le
+chargement, toujours pour une société neuve), sur le modèle de
+`hierarchyChange`, et `save` n'écrit `status` que par lui. Aucun autre
+écrivain de `companies` ne réécrit `status` ni `parent_company_id` (vérifié le
+2026-11-05 : `prisma-company-naf.writer.ts`, `dev/seeding/reset.seed.ts`).
 
 ## 4. Ce qui reste hors du lot
 

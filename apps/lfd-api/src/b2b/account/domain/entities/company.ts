@@ -181,6 +181,18 @@ export interface CompanySoftState {
     readonly parentCompanyId: string | null;
     readonly groupWithoutDelivery: boolean;
   } | null;
+  /**
+   * Le statut **s'il a changé** depuis le chargement, sinon `null` — et
+   * l'adaptateur n'écrit alors pas la colonne. `status` ci-dessus reste la
+   * valeur courante, en lecture.
+   *
+   * Pas un détail : le déclencheur de l'estampille du principal monte dès que
+   * `status` figure dans le `SET`, même à valeur égale
+   * (`plan-principal-en-memoire.md`, §3 quinquies). Réécrit à chaque
+   * sauvegarde, il vidait le principal gardé de tout le monde à chaque
+   * correction d'identité.
+   */
+  readonly statusChange: { readonly status: CompanyStatus } | null;
 }
 
 /**
@@ -232,7 +244,11 @@ export class Company {
     private readonly declaredViaValue: CompanyDeclarationChannel | null,
   ) {
     this.loadedHierarchy = hierarchyValue;
+    this.loadedStatus = statusValue;
   }
+
+  /** Le statut tel que chargé : `toPersistence` ne l'écrit que s'il a bougé. */
+  private readonly loadedStatus: CompanyStatus;
 
   /** La place telle que chargée : `toPersistence` n'écrit la hiérarchie que si elle a bougé. */
   private readonly loadedHierarchy: HierarchyPlace;
@@ -841,6 +857,10 @@ export class Company {
             groupWithoutDelivery: this.hierarchyValue.groupWithoutDelivery,
           }
         : null,
+      statusChange:
+        this.identityId === null || this.statusValue !== this.loadedStatus
+          ? { status: this.statusValue }
+          : null,
     };
   }
 }

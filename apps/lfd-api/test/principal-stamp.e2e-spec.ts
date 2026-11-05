@@ -10,6 +10,10 @@
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { CompanyStatus, CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
+import { CommandBus } from "@nestjs/cqrs";
+import { UpdateIdentityByStaffCommand } from "../src/b2b/account/application/commands/update-identity-by-staff.command.js";
+import { CompanyRepository } from "../src/b2b/account/domain/ports/company.repository.js";
+import { Clock } from "../src/platform/time/clock.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
 import type { Principal } from "../src/platform/auth/principal.js";
 
@@ -73,6 +77,107 @@ describe("l'estampille du principal — les déclencheurs", () => {
     await ctx.prisma.$executeRaw`
       UPDATE "public"."memberships" SET "role" = 'orders' WHERE "user_id" = ${userId}`;
     expect(await stamp()).toBe(before + 1n);
+  });
+});
+
+/**
+ * Le filtre par colonnes (§3 quinquies, migration
+ * `20261105120000_l_estampille_filtree_par_colonnes`) : une première connexion
+ * ou une écriture d'identité de société vidait le cache de tout le monde.
+ */
+describe("l'estampille du principal — les colonnes qui la font monter", () => {
+  it("la première connexion (`first_login_at`) ne la fait plus monter", async () => {
+    const { userId } = await enteredMember();
+    const before = await stamp();
+    await ctx.prisma.$executeRaw`
+      UPDATE "public"."users" SET "first_login_at" = now() WHERE "id" = ${userId}`;
+    expect(await stamp()).toBe(before);
+  });
+
+  it("une écriture d'identité de société (raison sociale) ne la fait plus monter", async () => {
+    const { companyId } = await enteredMember();
+    const before = await stamp();
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { raisonSociale: "Autre raison sociale" },
+    });
+    expect(await stamp()).toBe(before);
+  });
+
+  /**
+   * Régression : `PrismaCompanyRepository.save` réécrivait `status` à chaque
+   * sauvegarde ; une correction d'identité par l'agrégat faisait donc monter
+   * l'estampille malgré le filtre (2026-11-05).
+   */
+  it("une correction d'identité par l'agrégat (handler staff) ne la fait plus monter", async () => {
+    const { companyId } = await enteredMember();
+    const before = await stamp();
+    await ctx.app.get(CommandBus).execute(
+      new UpdateIdentityByStaffCommand(companyId, {
+        enseigne: "Nouvelle enseigne",
+        vatNumber: "",
+        raisonSociale: "",
+        formeJuridique: "",
+        siret: "",
+        siren: "",
+      }),
+    );
+    const row = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(row.enseigne).toBe("Nouvelle enseigne");
+    expect(await stamp()).toBe(before);
+  });
+
+  it("une activation par l'agrégat la fait monter", async () => {
+    const company = await createCompany(ctx.prisma, { status: CompanyStatus.pending });
+    const repository = ctx.app.get(CompanyRepository);
+    const loaded = await repository.load(company.id);
+    expect(loaded).not.toBeNull();
+    if (loaded === null) {
+      return;
+    }
+    const before = await stamp();
+    loaded.activate(ctx.app.get(Clock).now(), true, {
+      staffUserId: "staff_e2e",
+      name: "E2E",
+      role: "commercial",
+    });
+    await repository.save(loaded);
+    expect(await stamp()).toBe(before + 1n);
+  });
+
+  it.each([
+    [
+      "users.status",
+      `UPDATE "public"."users" SET "status" = 'disabled' WHERE "auth0_sub" = '${SUB}'`,
+    ],
+    [
+      "users.email_verified",
+      `UPDATE "public"."users" SET "email_verified" = NOT "email_verified" WHERE "auth0_sub" = '${SUB}'`,
+    ],
+    ["memberships.accepted_at", `UPDATE "public"."memberships" SET "accepted_at" = NULL`],
+    ["companies.parent_company_id", `UPDATE "public"."companies" SET "parent_company_id" = NULL`],
+  ])("une écriture sur %s la fait monter", async (_column, sql) => {
+    await enteredMember();
+    const before = await stamp();
+    await ctx.prisma.$executeRawUnsafe(sql);
+    expect(await stamp()).toBe(before + 1n);
+  });
+
+  it("INSERT et DELETE la font monter, sur les trois tables", async () => {
+    const before = await stamp();
+    const company = await createCompany(ctx.prisma);
+    const user = await createUser(ctx.prisma, { auth0Sub: SUB });
+    await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
+    const inserted = await stamp();
+    expect(inserted).toBeGreaterThanOrEqual(before + 3n);
+    await ctx.prisma.$executeRaw`DELETE FROM "public"."memberships" WHERE "user_id" = ${user.id}`;
+    expect(await stamp()).toBe(inserted + 1n);
+    // La cascade vers `memberships` est une instruction de plus : au moins un.
+    await ctx.prisma.$executeRaw`DELETE FROM "public"."users" WHERE "id" = ${user.id}`;
+    const userDeleted = await stamp();
+    expect(userDeleted).toBeGreaterThan(inserted + 1n);
+    await ctx.prisma.$executeRaw`DELETE FROM "public"."companies" WHERE "id" = ${company.id}`;
+    expect(await stamp()).toBeGreaterThan(userDeleted);
   });
 });
 
