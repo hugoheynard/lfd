@@ -47,8 +47,11 @@ flowchart LR
   garde (`cache-control-by-default.middleware.ts`). Seules trois routes
   publiques, qui ne lisent jamais l'appelant, ont le droit de dire `public` ;
   `lint:cache-control` le tient.
-- **L'identité et les droits** sont relus en base à chaque requête : c'est ce
-  qui bloque tout de suite un compte désactivé.
+- **L'identité et les droits** ne sont plus relus en base à chaque requête
+  depuis le 2026-11-04 (L4, `ad5c80190`) : le principal d'un client est gardé
+  en mémoire, mais servi seulement si l'estampille `principal_stamp` n'a pas
+  bougé — un compte désactivé reste donc bloqué tout de suite. Le staff a son
+  propre cache court. Détail : [`carte-des-caches.md`](carte-des-caches.md).
 - **La passation d'une commande** relit tout : c'est elle qui fait foi.
 
 ## Ce qui est prévu
@@ -60,16 +63,18 @@ flowchart LR
 
 # Partie 2 — Les documents
 
-| Document                                                                               | État                              | Sujet                                                                                                       |
-| -------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md)                             | C1 à C4 bâtis sur dev, C5 à faire | le rayon pro dans un Durable Object, le rayon public dans Workers Cache, la purge, l'interrupteur, le repli |
-| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                     | 📝 plan                           | un seul chargement du catalogue par requête, par construction                                               |
-| [`plan-aucun-cache-sur-le-personnel.md`](plan-aucun-cache-sur-le-personnel.md)         | ✅ bâti                           | aucune réponse personnelle dans un cache partagé : le middleware et la porte                                |
-| [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md)                       | 📝 plan                           | le changement d'espace lent : mesurer le plancher par appel, aplatir la cascade, un appel d'entrée          |
-| [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md)                         | 📝 plan                           | le principal gardé en mémoire de l'API, relu sur une estampille posée par la base                           |
-| [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md) | 📝 plan                           | le rayon pro gardé jusqu'à la prochaine heure qui change un prix ; le stock, limite du système              |
-| [`version-par-journee.md`](version-par-journee.md)                                     | ✅ bâti                           | ne relire que ce qui a bougé, une porte par journée                                                         |
-| [`cache-compte-client.md`](cache-compte-client.md)                                     | 📝 doc-first                      | le cache des comptes clients du back-office                                                                 |
+| Document                                                                               | État                              | Sujet                                                                                                                                             |
+| -------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`carte-des-caches.md`](carte-des-caches.md)                                           | ✅ relu le 2026-11-05             | l'inventaire exhaustif, couche par couche : clé, durée, purge, ce qui arrive si elle se perd, et comment savoir en production si un cache a servi |
+| [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md)                             | C1 à C4 bâtis sur dev, C5 à faire | le rayon pro dans un Durable Object, le rayon public dans Workers Cache, la purge, l'interrupteur, le repli                                       |
+| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                     | 📝 plan                           | un seul chargement du catalogue par requête, par construction                                                                                     |
+| [`plan-aucun-cache-sur-le-personnel.md`](plan-aucun-cache-sur-le-personnel.md)         | ✅ bâti                           | aucune réponse personnelle dans un cache partagé : le middleware et la porte                                                                      |
+| [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md)                       | 📝 plan                           | le changement d'espace lent : mesurer le plancher par appel, aplatir la cascade, un appel d'entrée                                                |
+| [`plan-principal-en-memoire.md`](plan-principal-en-memoire.md)                         | 📝 plan                           | le principal gardé en mémoire de l'API, relu sur une estampille posée par la base                                                                 |
+| [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md) | 📝 plan                           | le rayon pro gardé jusqu'à la prochaine heure qui change un prix ; le stock, limite du système                                                    |
+| [`plan-espace-retenu.md`](plan-espace-retenu.md)                                       | 📝 plan                           | l'espace de la dernière visite retenu au navigateur, pour ne plus attendre `/me` avant d'ouvrir la boutique                                       |
+| [`version-par-journee.md`](version-par-journee.md)                                     | ✅ bâti                           | ne relire que ce qui a bougé, une porte par journée                                                                                               |
+| [`cache-compte-client.md`](cache-compte-client.md)                                     | 📝 doc-first                      | le cache des comptes clients du back-office                                                                                                       |
 
 Ailleurs, mais à lire avec : [`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md),
 ce que coûte un prix et le cache des règles de prix.
