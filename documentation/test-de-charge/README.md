@@ -69,14 +69,14 @@ seconde il absorbe avant que la file d'attente monte.
 Passerelle (Worker Cloudflare) → Worker de l'API
 ([`apps/lfd-api/container/worker.ts`](../../apps/lfd-api/container/worker.ts)) →
 Durable Object `Backend`, un Cloudflare Container `standard-1` (demi-vCPU),
-`max_instances: 1` ([`apps/lfd-api/wrangler.jsonc`](../../apps/lfd-api/wrangler.jsonc))
+`max_instances: 1` (vérifié le 2026-11-05 dans [`apps/lfd-api/wrangler.jsonc`](../../apps/lfd-api/wrangler.jsonc))
 → Nest → Prisma Postgres, facturé à l'opération et loin de l'API.
 
 Chaque réponse porte un en-tête `Server-Timing`
 ([`server-timing.ts`](../../apps/lfd-api/src/platform/metrics/server-timing.ts)) :
 `verify`, `principal`, `app` côté Nest, puis `container`, `worker`, `gateway`
-ajoutés en remontant. Le script en fait une métrique k6 par marque
-(`st_verify`, `st_app`, …) et en dérive **`st_queue = container − app`** : le
+ajoutés en remontant. Le script en fera une métrique k6 par marque
+(`st_verify`, `st_app`, …) et en dérivera **`st_queue = container − app`** : le
 temps passé dans le container hors de Nest, c'est-à-dire l'attente du
 demi-vCPU.
 
@@ -99,7 +99,7 @@ vague 2 `GET /content/footer`, `/order-opening`, `/delivery-zones`,
 (`{ skus, target }`), deux lectures qui ne mutent rien. L'en-tête d'espace est
 `x-lfc-company` (`WORKSPACE_HEADER`, valeur `personal` ou un id de société).
 **Aucune passation par défaut** : le scénario `buyer` (`POST /orders`) ne
-s'active qu'avec `LFD_ORDERS=1`, et refuse toute cible qui n'est pas un
+s'activera qu'avec `LFD_ORDERS=1`, et refusera toute cible qui n'est pas un
 environnement de charge. Son environnement, ses clients de test et son calcul
 sont dans [`plan-environnement-de-charge.md`](plan-environnement-de-charge.md).
 
@@ -116,12 +116,12 @@ Défaut : `http://localhost:3200` (l'API de dev). Une autre cible se donne par
 `LFD_BASE_URL` — la publique est `https://lafoliecoffee.info/api/lfd`, **jamais
 par défaut**. Les jetons (`LFD_TOKENS`) sont ceux de **comptes de test**, jamais
 écrits dans le dépôt ; en local seulement, le harnais e2e admet que le jeton
-porteur est le `sub`. Les autres variables sont décrites en tête du script.
+porteur est le `sub`. Les autres variables seront décrites en tête du script.
 
-Trois scénarios : `visitor` (routes publiques), `pro` (les trois vagues puis
+Trois scénarios prévus : `visitor` (routes publiques), `pro` (les trois vagues puis
 cinq tours rayon → devis + suggestions, avec 8 à 30 s de lecture entre deux),
 `switcher` (un dixième des pros, qui rouvre la boutique dans deux espaces de
-`LFD_WORKSPACES`). Chacun monte en quatre paliers de `LFD_STEP` jusqu'à sa
+`LFD_WORKSPACES`). Chacun montera en quatre paliers de `LFD_STEP` jusqu'à sa
 cible (`ramping-vus`).
 
 ## Quoi lire
@@ -147,10 +147,18 @@ cible (`ramping-vus`).
   annoncé.
 - D'abord en local, puis sur dev ; la production en dernier.
 - **Paliers courts** (`LFD_STEP=1m`), cible qui double à chaque essai, pas plus.
-- Arrêt automatique (`abortOnFail`) : plus de 1 % d'échecs, 5 réponses 5xx, ou
+- Arrêt automatique (`abortOnFail`), à écrire dans le script : plus de 1 % d'échecs, 5 réponses 5xx, ou
   une file p95 au-delà de 500 ms. Ctrl-C arrête aussi tout.
 - La passation (`LFD_ORDERS=1`) **jamais** contre la production : le script
-  la refuse, et un 5xx sur `/orders` arrête le palier.
+  devra la refuser **avant le premier appel**, sur le nom d'hôte **et** sur la
+  preuve servie par l'environnement de charge (`x-lfd-environment: load` sur
+  `GET /health`, à bâtir) ; un 5xx sur `/orders` arrêtera le palier.
+- Les **409** de la passation sont des réponses métier : le script les
+  déclarera attendus (`http.expectedStatuses({ min: 200, max: 399 }, 409)`),
+  hors de `http_req_failed`, comptés à part avec leur propre seuil. Un tour qui
+  ne peut pas commander est un échec compté, et un palier sans assez de
+  passations réussies n'est pas concluant. Détail : §3 du
+  [plan](plan-environnement-de-charge.md).
 - Le container étant unique, une saturation y ralentit **les vrais clients**.
 
 ## Ce qui n'est pas vérifié
@@ -160,7 +168,6 @@ cible (`ramping-vus`).
   il n'a pas été recompté dans l'onglet Réseau sur chaque écran.
 - Que `container`, `worker` et `gateway` soient présents sur toutes les routes
   (les Trends ne reçoivent que les marques effectivement présentes).
-- La forme exacte des réponses de catalogue : le script y cherche les champs
-  `sku` sans connaître le schéma ; un panier vide s'ensuit si aucun n'est trouvé.
-- Le script n'a été validé qu'avec `k6 inspect` au mieux (k6 absent du poste
-  le 2026-11-05).
+- La forme exacte des réponses de catalogue : à lire avant d'écrire le script,
+  qui y cherchera les `sku` ; un tour sans article sera un échec compté.
+- k6 est absent du poste (2026-11-05).
