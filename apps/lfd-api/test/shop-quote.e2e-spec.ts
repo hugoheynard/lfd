@@ -340,6 +340,9 @@ describe("le devis de la vitrine", () => {
       await quote({ lines: PANIER, fulfillment: null }).expect(200),
     );
 
+    // `freeDelivery` (1c, 2026-11-05) n'apparaît pas ici, sans acheminement :
+    // admis DÉLIBÉRÉMENT en livraison — offert oui/non et le manque HT, rien
+    // de la façon dont le prix est fabriqué (`free-delivery.e2e-spec.ts`).
     expect(Object.keys(view).sort()).toEqual([
       // Ajouté le 2026-11-03 (plan `le-prix-d-un-panier.md`, L2) et admis
       // DÉLIBÉRÉMENT : ce que le panier n'a pas encore dit (ici l'acheminement)

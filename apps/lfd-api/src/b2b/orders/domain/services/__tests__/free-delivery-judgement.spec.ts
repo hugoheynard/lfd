@@ -1,4 +1,4 @@
-import { judgedFreeDelivery } from "../free-delivery-judgement.js";
+import { freeDeliveryProgressOf, judgedFreeDelivery } from "../free-delivery-judgement.js";
 
 /**
  * Le jugement du franco (plan `plan-livraison-offerte.md`, 1b) : « dès le
@@ -47,5 +47,43 @@ describe("judgedFreeDelivery", () => {
         feeTtcCents: 1_200,
       }),
     ).toEqual({ thresholdCents: 0, waivedCents: 1_000, waivedTtcCents: 1_200 });
+  });
+});
+
+describe("freeDeliveryProgressOf", () => {
+  const input = { thresholdCents: 8_000, ...FEE };
+
+  it("sous le seuil : ce qu'il manque, HT", () => {
+    expect(freeDeliveryProgressOf({ ...input, goodsNetHtCents: 6_800 }, null)).toEqual({
+      status: "short",
+      remainingCents: 1_200,
+    });
+  });
+
+  it("un centime sous le seuil : il manque un centime", () => {
+    expect(freeDeliveryProgressOf({ ...input, goodsNetHtCents: 7_999 }, null)).toEqual({
+      status: "short",
+      remainingCents: 1,
+    });
+  });
+
+  it("jugé offert : offert, sans montant", () => {
+    const at = { ...input, goodsNetHtCents: 8_000 };
+    expect(freeDeliveryProgressOf(at, judgedFreeDelivery(at))).toEqual({ status: "offered" });
+  });
+
+  it("sans seuil : rien", () => {
+    expect(
+      freeDeliveryProgressOf({ ...input, thresholdCents: null, goodsNetHtCents: 10 }, null),
+    ).toBeNull();
+  });
+
+  it("une livraison qui ne coûte rien : rien à promettre", () => {
+    expect(
+      freeDeliveryProgressOf(
+        { thresholdCents: 8_000, goodsNetHtCents: 10, feeHtCents: 0, feeTtcCents: 0 },
+        null,
+      ),
+    ).toBeNull();
   });
 });

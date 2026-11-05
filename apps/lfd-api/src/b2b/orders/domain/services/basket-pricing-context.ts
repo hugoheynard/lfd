@@ -15,6 +15,7 @@ import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { BasketDiscountRefusal, RevisableDiscount } from "./basket-discount-replay.js";
 import type { LineSealing } from "./basket-promotion-choice.js";
 import type { EndedBasketPromotion } from "./ended-basket-promotions.js";
+import type { FreeDeliveryProgress } from "./free-delivery-judgement.js";
 import type { LoadedBasketPromotions } from "./loaded-basket-promotions.js";
 
 /*
@@ -160,4 +161,10 @@ export interface BasketAmounts {
   readonly ended: readonly EndedBasketPromotion[];
   /** Vide : ce chiffrage est le prix de la commande. Sinon, ce qui manque (§ 2.5). */
   readonly awaiting: readonly BasketAwaiting[];
+  /**
+   * Où en est le panier du franco (plan `plan-livraison-offerte.md`, 1c) :
+   * offert, ou ce qu'il manque. `null` en retrait, sans seuil, à frais nul.
+   * Le devis le sert ; la commande n'en fige que le franco atteint.
+   */
+  readonly freeDeliveryProgress: FreeDeliveryProgress | null;
 }

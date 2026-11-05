@@ -885,6 +885,7 @@ export type {
   ShopQuoteRemovedLineView,
   ShopQuoteEndedDiscountView,
   ShopQuoteAwaiting,
+  ShopQuoteFreeDeliveryView,
 } from "./shop-quote.js";
 export type {
   CreatedOrderCutoffWaiverResponse,
@@ -1108,6 +1109,7 @@ export {
 } from "./delivery-zone.js";
 export type {
   AdminDeliveryZoneView,
+  AudienceDeliveryZoneView,
   DeliveryZonePayload,
   DeliveryZoneView,
   CreatedDeliveryZoneResponse,

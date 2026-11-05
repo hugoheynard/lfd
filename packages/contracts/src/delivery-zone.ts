@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
+import type { CustomerAudience } from "./customer-audience.js";
 import { deliveryPricingTermsSchema, type DeliveryPricingTerms } from "./delivery-pricing.js";
 
 /**
@@ -54,6 +55,22 @@ export interface DeliveryZoneView {
  */
 export interface AdminDeliveryZoneView extends DeliveryZoneView {
   readonly audienceTerms: DeliveryPricingTerms;
+}
+
+/**
+ * Une zone telle que la route publique la sert à UNE clientèle
+ * (`GET /delivery-zones?audience=b2b|b2c`, plan `plan-livraison-offerte.md`,
+ * 0c) : `fee` y est le frais RÉSOLU pour cette clientèle (remplacement de la
+ * zone, sinon réglage global, sinon ancien frais unique) — celui que le devis
+ * facture —, et non plus l'ancien frais unique de la zone.
+ *
+ * `freeDeliveryThresholdCents` : le seuil HT résolu de la livraison offerte,
+ * `null` = pas de livraison offerte. Aucun champ par clientèle : chaque
+ * audience n'a que son information.
+ */
+export interface AudienceDeliveryZoneView extends DeliveryZoneView {
+  readonly audience: CustomerAudience;
+  readonly freeDeliveryThresholdCents: number | null;
 }
 
 /** Réponse de création d'une zone de livraison. */

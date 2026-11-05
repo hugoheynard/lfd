@@ -13,9 +13,9 @@ import { randomUUID } from "node:crypto";
 import {
   DEFAULT_DELIVERY_PRICING,
   type AdminDeliveryZoneView,
+  type AudienceDeliveryZoneView,
   type CreatedDeliveryZoneResponse,
   type DeliveryPricingView,
-  type DeliveryZoneView,
   type PlacedOrderResponse,
   type ShopQuoteView,
 } from "@lfd/contracts";
@@ -166,9 +166,18 @@ describe("les remplacements par zone", () => {
     const id = await createZone();
 
     expect(await zoneOverrides(id)).toEqual([null, null, null, null, null, null]);
-    const zones = jsonBody<DeliveryZoneView[]>(await ctx.http().get("/delivery-zones").expect(200));
+    const zones = jsonBody<AudienceDeliveryZoneView[]>(
+      await ctx.http().get("/delivery-zones").expect(200),
+    );
     expect(zones).toEqual([
-      { id, label: ZONE.label, postalPrefixes: ZONE.postalPrefixes, fee: ZONE.fee },
+      {
+        id,
+        label: ZONE.label,
+        postalPrefixes: ZONE.postalPrefixes,
+        audience: "b2c",
+        fee: ZONE.fee,
+        freeDeliveryThresholdCents: null,
+      },
     ]);
   });
 
@@ -383,7 +392,7 @@ describe("le frais facturé, résolu par audience (0b)", () => {
     expect(await quotedDeliveryFee()).toBe(1_500);
   });
 
-  it("la vue admin des zones porte les remplacements ; la route publique ne change pas", async () => {
+  it("la vue admin des zones porte les remplacements ; la route publique ne les sert pas", async () => {
     const id = await createZone({ ...ZONE, audienceTerms: AMOUNTS });
 
     const admin = jsonBody<AdminDeliveryZoneView[]>(
@@ -398,7 +407,9 @@ describe("le frais facturé, résolu par audience (0b)", () => {
         audienceTerms: AMOUNTS,
       },
     ]);
-    const zones = jsonBody<DeliveryZoneView[]>(await ctx.http().get("/delivery-zones").expect(200));
+    const zones = jsonBody<AudienceDeliveryZoneView[]>(
+      await ctx.http().get("/delivery-zones").expect(200),
+    );
     expect(zones[0]).not.toHaveProperty("audienceTerms");
     await ctx.http().get("/admin/delivery-zones").expect(401);
   });

@@ -5,8 +5,11 @@
 > (tarif figé à la commande, colonnes du franco) et 1b (le calcul du franco).
 > 🟦 **Sur `dev`** : la saisie du seuil à l'écran, la clientèle fermée
 > grisée, les pastilles « Global », la révision sans seuil figé qui prend
-> celui du jour. **À faire** : 1c (affichage, « Plus que 12 € »), 0c
-> (route publique par audience), 2 (promotions sur les frais). Ce qui est
+> celui du jour, et **1c côté serveur** (le devis sert `freeDelivery` : offert,
+> ou le manque HT), et **0c côté serveur** (`GET /delivery-zones?audience=b2b|b2c`
+> sert le frais et le seuil résolus, en cache Cloudflare par audience).
+> **À faire** : l'affichage de 1c en boutique, 0c côté fronts (boutique et
+> saisie staff), 2 (promotions sur les frais). Ce qui est
 > bâti, et les choix qui l'ont façonné, sont tenus à jour dans
 > [`frais-et-livraison-offerte.md`](../livraisons/frais-et-livraison-offerte.md).
 
@@ -229,10 +232,10 @@ particulier (TTC « environ », servi par le serveur).
 | --- | --------------------------------------------------------------------------------------------------------- | --------------------- |
 | 0a  | 🟦 table du réglage global + colonnes de zone nullables ; rien ne change encore                           | oui                   |
 | 0b  | 🟦 résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge                    | oui                   |
-| 0c  | `GET /delivery-zones?audience=`, boutique et saisie staff                                                 | après « pending pro » |
+| 0c  | 🟦 serveur (`GET /delivery-zones?audience=`) ; boutique et saisie staff à faire                           | après « pending pro » |
 | 1a  | 🟦 le franco figé sur la commande ; recomposition et bon partiel le lisent ; barème figé relu en révision | avant 1b              |
 | 1b  | 🟦 le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé               | après 1a              |
-| 1c  | affichage et « Plus que… » servi par le serveur                                                           | après 1b              |
+| 1c  | 🟦 serveur (devis `freeDelivery`) ; affichage boutique à faire — « Plus que… » servi par le serveur       | après 1b              |
 
 **Ce que 1a a bâti (2026-11-05)** :
 
@@ -286,8 +289,10 @@ particulier (TTC « environ », servi par le serveur).
   alors le **seuil du jour**, et ne peut qu'y gagner (tranché le 2026-11-05,
   `16838b1e3` ; Hugo n'en fait pas un réglage). Un seuil figé reste celui de
   la passation.
-- **Pas encore** (1c) : aucun champ du devis ni ligne « Livraison offerte »,
-  aucun « Plus que… ».
+- **1c, serveur (2026-11-05)** : le devis sert `freeDelivery` — `offered`
+  (sans montant : « Coursier offert », Hugo) ou `short` avec le manque HT ;
+  absent en retrait, sans seuil, à frais nul. Le front ne l'affiche pas
+  encore. Détail dans la doc d'état.
 
 # Partie 2 — Le code
 

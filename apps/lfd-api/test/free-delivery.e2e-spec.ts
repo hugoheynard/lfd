@@ -186,7 +186,9 @@ describe("le franco au devis", () => {
   it("sans seuil : la course est facturée, comme avant", async () => {
     await staff().post("/admin/delivery-zones").send(ZONE).expect(201);
 
-    expect((await guestQuote()).deliveryFeeCents).toBe(2_000);
+    const view = await guestQuote();
+    expect(view.deliveryFeeCents).toBe(2_000);
+    expect(view).not.toHaveProperty("freeDelivery");
   });
 
   it("particulier : offerte au seuil HT pile, facturée un centime en dessous", async () => {
@@ -196,11 +198,30 @@ describe("le franco au devis", () => {
     await setGlobal({ b2c: { freeDeliveryThresholdCents: base.subtotalHtCents } });
     const reached = await guestQuote();
     expect(reached.deliveryFeeCents).toBe(0);
+    // 1c : « Coursier offert », sans montant (Hugo, 2026-11-05).
+    expect(reached.freeDelivery).toEqual({ status: "offered" });
     // La course disparaît avec sa TVA : 20,00 € HT à 20 % (port standard).
     expect(reached.totalCents).toBe(base.totalCents - 2_400);
 
     await setGlobal({ b2c: { freeDeliveryThresholdCents: base.subtotalHtCents + 1 } });
-    expect((await guestQuote()).deliveryFeeCents).toBe(2_000);
+    const short = await guestQuote();
+    expect(short.deliveryFeeCents).toBe(2_000);
+    // 1c : le manque, HT comme le seuil, servi par le serveur.
+    expect(short.freeDelivery).toEqual({ status: "short", remainingCents: 1 });
+  });
+
+  it("pro (/mine) : le manque HT avant le seuil, puis offert", async () => {
+    await seedPro();
+    const base = await proQuote();
+    expect(base).not.toHaveProperty("freeDelivery");
+
+    await setGlobal({ b2b: { freeDeliveryThresholdCents: base.subtotalHtCents + 1_200 } });
+    expect((await proQuote()).freeDelivery).toEqual({ status: "short", remainingCents: 1_200 });
+
+    await setGlobal({ b2b: { freeDeliveryThresholdCents: base.subtotalHtCents } });
+    const reached = await proQuote();
+    expect(reached.freeDelivery).toEqual({ status: "offered" });
+    expect(reached.deliveryFeeCents).toBe(0);
   });
 
   it("le seuil d'une zone remplace le global, pour son audience", async () => {

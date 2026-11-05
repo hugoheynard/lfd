@@ -1,5 +1,6 @@
 import type {
   AdminDeliveryZoneView,
+  AudienceDeliveryZoneView,
   CartAdjustment,
   CustomerAudience,
   DeliveryPricingTerms,
@@ -45,4 +46,25 @@ export function resolvedFreeDeliveryThreshold(
     zone.audienceTerms[audience].freeDeliveryThresholdCents ??
     global[audience].freeDeliveryThresholdCents
   );
+}
+
+/**
+ * **Une zone telle qu'une clientèle la lit** (route publique, sous-lot 0c) : le
+ * frais et le seuil résolus par les deux fonctions ci-dessus — les mêmes que
+ * le devis facture —, sans les remplacements eux-mêmes. Une seule
+ * arithmétique : la boutique annonce ce que la caisse appliquera.
+ */
+export function audienceDeliveryZone(
+  audience: CustomerAudience,
+  zone: AdminDeliveryZoneView,
+  global: DeliveryPricingTerms,
+): AudienceDeliveryZoneView {
+  return {
+    id: zone.id,
+    postalPrefixes: zone.postalPrefixes,
+    label: zone.label,
+    audience,
+    fee: resolvedDeliveryFee(audience, zone, global),
+    freeDeliveryThresholdCents: resolvedFreeDeliveryThreshold(audience, zone, global),
+  };
 }

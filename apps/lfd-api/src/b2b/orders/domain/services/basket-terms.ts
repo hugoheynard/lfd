@@ -7,7 +7,12 @@ import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { ReplayedBasket } from "./basket-discount-replay.js";
 import type { BasketTerms } from "./basket-pricing-context.js";
 import { composeExactOrder } from "./exact-order-composition.js";
-import { judgedFreeDelivery } from "./free-delivery-judgement.js";
+import {
+  freeDeliveryProgressOf,
+  judgedFreeDelivery,
+  type FreeDeliveryJudgementInput,
+  type FreeDeliveryProgress,
+} from "./free-delivery-judgement.js";
 
 /** La remise retenue — choisie à la caisse, ou rejouée en révision : la forme du rejeu. */
 export type BasketDiscount = Omit<ReplayedBasket, "refusals">;
@@ -59,9 +64,13 @@ interface MethodAmounts {
  * LA composition qui chiffre déjà la remise et le port. Au franco, le frais
  * facturé vaut 0 et le barème offert reste figé.
  */
-export function basketTermsOf(
-  input: BasketTermsInput,
-): Omit<BasketTerms, "lateFeeCents" | "lateFeeAdjustment"> {
+export function basketTermsOf(input: BasketTermsInput): Omit<
+  BasketTerms,
+  "lateFeeCents" | "lateFeeAdjustment"
+> & {
+  /** Où en est le panier du franco (1c) — pour le devis, hors des termes figés. */
+  readonly freeDeliveryProgress: FreeDeliveryProgress | null;
+} {
   const { discount, deliveryFee } = input;
   const lines = input.lines.map((line) => classified(line, input.known, discount.ineligibleSkus));
   const cumulated = discount.basketDiscounts;
@@ -69,15 +78,14 @@ export function basketTermsOf(
     input.vatMethod === "exact_ht"
       ? exactTermsOf(lines, discount, cumulated, deliveryFee, input.deliveryVatMode)
       : lineHtTermsOf(input.subtotalCents, discount, deliveryFee);
-  const freeDelivery =
-    deliveryFee.adjustment === null
-      ? null
-      : judgedFreeDelivery({
-          thresholdCents: input.freeDeliveryThresholdCents,
-          goodsNetHtCents: amounts.goodsNetHtCents,
-          feeHtCents: amounts.feeHtCents,
-          feeTtcCents: amounts.feeTtcCents,
-        });
+  const judgement: FreeDeliveryJudgementInput = {
+    thresholdCents: input.freeDeliveryThresholdCents,
+    goodsNetHtCents: amounts.goodsNetHtCents,
+    feeHtCents: amounts.feeHtCents,
+    feeTtcCents: amounts.feeTtcCents,
+  };
+  const charged = deliveryFee.adjustment !== null;
+  const freeDelivery = charged ? judgedFreeDelivery(judgement) : null;
   return {
     lines,
     discountCents: amounts.discountCents,
@@ -90,6 +98,7 @@ export function basketTermsOf(
     deliveryFeeCents: freeDelivery === null ? amounts.deliveryFeeCents : 0,
     freeDelivery,
     deliveryVatMode: input.deliveryVatMode,
+    freeDeliveryProgress: charged ? freeDeliveryProgressOf(judgement, freeDelivery) : null,
   };
 }
 

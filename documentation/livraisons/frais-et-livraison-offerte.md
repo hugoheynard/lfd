@@ -3,7 +3,8 @@
 > 📍 **État au 2026-11-05.** Ce document dit ce qui **existe** et les choix
 > qui l'ont façonné, pour qu'on s'en souvienne. Le chantier vit dans le plan
 > [`plan-livraison-offerte.md`](../promotions/plan-livraison-offerte.md) (lots
-> 0b, 1a, 1b bâtis ; 1c, 0c et 2 à faire). Chaque choix porte sa date et qui
+> 0b, 1a, 1b bâtis ; 1c bâti côté serveur sur `dev`, son affichage en
+> boutique à faire ; 0c bâti côté serveur, ses fronts à faire ; 2 à faire). Chaque choix porte sa date et qui
 > l'a pris.
 
 # Partie 1 — L'explication simple
@@ -93,9 +94,9 @@ paramètre que personne ne comprendra dans six mois.
   réglage global en a une : vide veut dire « reprendre le global ». Le seul
   contournement est un seuil très haut. Ouvrir ce cas demande une valeur de
   plus dans le contrat.
-- **Le client ne voit encore rien** : pas de ligne « Livraison offerte » au
-  panier, pas de « Plus que 12 € pour la livraison offerte ». C'est le lot 1c.
-  Le devis et la commande, eux, appliquent déjà la livraison offerte.
+- **Le client ne voit encore rien** : le devis sert depuis le 2026-11-05
+  (lot 1c, serveur) « offert » ou le manque, mais la boutique ne l'affiche
+  pas encore. Le devis et la commande appliquent déjà la livraison offerte.
 - **Pas de promotion sur les frais** (« offerte le samedi », « −50 % du port
   en décembre ») : lot 2, avec son propre type de promotion et son propre
   formulaire, sans champ produit.
@@ -118,6 +119,29 @@ Le réglage global vit dans `delivery_pricing_settings`
 ([`settings.prisma`](../../apps/lfd-api/prisma/schema/public/settings.prisma),
 `b2b_free_delivery_threshold_cents`, `b2c_free_delivery_threshold_cents`) ;
 les remplacements d'une zone sont des colonnes nullables de `delivery_zones`.
+
+## La route publique des zones (lot 0c, serveur — 2026-11-05)
+
+`GET /delivery-zones?audience=b2b|b2c`
+([`delivery-zones.controller.ts`](../../apps/lfd-api/src/b2b/delivery-zones/http/delivery-zones.controller.ts))
+sert pour chaque zone un `AudienceDeliveryZoneView` : `fee` est le frais
+**résolu** pour la clientèle déclarée, `freeDeliveryThresholdCents` le seuil
+résolu (`null` = pas de livraison offerte), tous deux par
+`audienceDeliveryZone` — les fonctions du devis. Les remplacements ne sortent
+que par la vue admin.
+
+- **L'audience se déclare**, elle ne se lit pas sur l'appelant : le tarif pro
+  est public par choix (Hugo, décision f), et la saisie du staff déclare celle
+  de son client. Sans paramètre : `b2c` (le visiteur), comme
+  `GET /pickup-addresses`. Une autre valeur : 400.
+- **Cache** : `public, max-age=30, stale-while-revalidate=60`, étiquette
+  `reglages-publics` ; Workers Cache prend l'URL entière pour clé, donc une
+  adresse par audience. Création, modification, suppression d'une zone et
+  écriture du réglage global purgent l'étiquette après validation.
+- ⚠️ Avant le 0c, `fee` y était l'ancien frais unique de la zone : la
+  boutique affichait « 0 € » quand le devis facturait le frais global
+  (constaté en production par Hugo le 2026-11-05). La boutique et la saisie
+  staff ne passent pas encore `?audience=`.
 
 L'audience d'un acheteur — `pending` compris côté pro — est tenue par
 [`customer-audience.ts`](../../packages/contracts/src/customer-audience.ts).
@@ -199,3 +223,25 @@ du back-office :
 Le message d'un montant mal formé passe par le `hint` du champ, sans le style
 d'erreur : `errors` de `fold-number-input` attend des erreurs de signal forms.
 À remonter à fold si un rendu d'erreur est voulu.
+
+## Le devis dit où en est le panier (lot 1c, serveur — 2026-11-05)
+
+Le devis de la boutique (`POST /shop/quote`, `/shop/quote/mine`) porte
+`freeDelivery` (`ShopQuoteFreeDeliveryView`, `packages/contracts/src/shop-quote.ts`) :
+
+| Cas                                                      | `freeDelivery`                                           |
+| -------------------------------------------------------- | -------------------------------------------------------- |
+| livraison, base ≥ seuil                                  | `{ status: "offered" }` — `deliveryFeeCents` vaut 0      |
+| livraison, base < seuil                                  | `{ status: "short", remainingCents }` — le manque **HT** |
+| retrait, sans acheminement, sans seuil, zone à frais nul | absente                                                  |
+
+- **« Coursier offert », sans montant** (Hugo, 2026-11-05) : le devis ne sert
+  ni le montant offert ni le seuil — aucun écran ne les lit.
+- **Le manque se calcule là où la base existe** : `freeDeliveryProgressOf`
+  (`orders/domain/services/free-delivery-judgement.ts`), appelé par
+  `basketTermsOf` à côté du jugement, porté par `BasketAmounts.freeDeliveryProgress`
+  et recopié par `shop-quote-view.ts`. L'écran ne recalcule rien.
+- ⚠️ **Le manque est HT**, comme le seuil, y compris pour un particulier qui
+  lit du TTC. La réserve de Hugo (b) — montrer au particulier un écart dans la
+  base qu'il lit — n'est **pas tranchée** : aucun équivalent TTC n'est servi.
+- Le devis staff (saisie de commande) ne porte rien de neuf.

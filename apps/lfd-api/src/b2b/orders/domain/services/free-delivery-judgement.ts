@@ -42,3 +42,43 @@ export function judgedFreeDelivery(input: FreeDeliveryJudgementInput): FreeDeliv
     waivedTtcCents: input.feeTtcCents,
   });
 }
+
+/**
+ * **Où en est le panier du franco** (plan `plan-livraison-offerte.md`, 1c) —
+ * ce que le devis dit au client : la livraison offerte, ou ce qu'il manque
+ * pour l'obtenir (« Plus que 12 € pour la livraison offerte »).
+ *
+ * Servi par le serveur, jamais recalculé à l'écran : la base du seuil n'existe
+ * qu'ici (« une seule arithmétique »). Tout est HT, comme le seuil (Hugo,
+ * 2026-11-05). Offert se dit sans montant (« Coursier offert », Hugo,
+ * 2026-11-05).
+ */
+export type FreeDeliveryProgress =
+  | { readonly status: "offered" }
+  | {
+      readonly status: "short";
+      /** Ce qu'il manque à la base pour atteindre le seuil, HT, strictement positif. */
+      readonly remainingCents: number;
+    };
+
+/**
+ * L'avancement vers le franco, à partir du jugement déjà rendu. `null` sans
+ * seuil, et quand la livraison ne coûte rien : promettre d'offrir zéro
+ * n'aurait pas de sens.
+ */
+export function freeDeliveryProgressOf(
+  input: FreeDeliveryJudgementInput,
+  judged: FreeDelivery | null,
+): FreeDeliveryProgress | null {
+  if (judged !== null) {
+    return { status: "offered" };
+  }
+  const { thresholdCents } = input;
+  if (thresholdCents === null || (input.feeHtCents === 0 && (input.feeTtcCents ?? 0) === 0)) {
+    return null;
+  }
+  return {
+    status: "short",
+    remainingCents: thresholdCents - input.goodsNetHtCents,
+  };
+}

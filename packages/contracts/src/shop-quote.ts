@@ -270,7 +270,33 @@ export interface ShopQuoteView {
    * lit pas affiche ce qu'elle affichait.
    */
   readonly awaiting?: readonly ShopQuoteAwaiting[];
+  /**
+   * **La livraison offerte** (plan `documentation/promotions/plan-livraison-offerte.md`,
+   * 1c) — le seuil du franco de la zone, et où en est le panier :
+   * `offered`, la livraison est offerte (`deliveryFeeCents` vaut alors 0 ;
+   * l'écran dit « Coursier offert », sans montant — Hugo, 2026-11-05) ;
+   * `short`, « Plus que X € pour la livraison offerte ».
+   *
+   * 🔴 **Servi par le serveur, jamais recalculé à l'écran** : la base du
+   * seuil (marchandises HT après remises, avant le bon) n'existe qu'au calcul
+   * du panier. Le manque est **HT**, comme le seuil (Hugo,
+   * 2026-11-05). **Absente** en retrait, sans acheminement, sans seuil réglé,
+   * et quand la livraison ne coûte déjà rien.
+   */
+  readonly freeDelivery?: ShopQuoteFreeDeliveryView;
 }
+
+/**
+ * Le franco vu du panier : offert (« Coursier offert », sans montant — Hugo,
+ * 2026-11-05), ou ce qu'il manque pour l'atteindre.
+ */
+export type ShopQuoteFreeDeliveryView =
+  | { readonly status: "offered" }
+  | {
+      readonly status: "short";
+      /** Ce qu'il manque pour atteindre le seuil, HT, en centimes, strictement positif. */
+      readonly remainingCents: number;
+    };
 
 /** Ce qu'un décompte partiel attend : l'acheminement, le créneau. */
 export type ShopQuoteAwaiting = "fulfillment" | "window";

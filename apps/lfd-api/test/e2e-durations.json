@@ -191,6 +191,7 @@
   "test/delivery-vehicle-optional-plate.e2e-spec.ts": 4900,
   "test/delivery-vehicle-wheel-arches.e2e-spec.ts": 4787,
   "test/delivery-vehicle-zones.e2e-spec.ts": 5794,
+  "test/delivery-zones-public.e2e-spec.ts": 8026,
   "test/delivery-zones-uncovered.e2e-spec.ts": 7298,
   "test/dev-scenario-purge-coverage.e2e-spec.ts": 6601,
   "test/dev-scenario-stability.e2e-spec.ts": 84909,

@@ -1,6 +1,10 @@
 import type { AdminDeliveryZoneView, DeliveryPricingTerms } from "@lfd/contracts";
 
-import { resolvedDeliveryFee, resolvedFreeDeliveryThreshold } from "../delivery-fee-resolution.js";
+import {
+  audienceDeliveryZone,
+  resolvedDeliveryFee,
+  resolvedFreeDeliveryThreshold,
+} from "../delivery-fee-resolution.js";
 import { zoneOfPostalCode } from "../zone-of-postal-code.js";
 
 /**
@@ -109,5 +113,45 @@ describe("zoneOfPostalCode", () => {
     expect(zoneOfPostalCode([ZONE, precise], "73150")?.id).toBe("zone_2");
     expect(zoneOfPostalCode([ZONE, precise], "73100")?.id).toBe("zone_1");
     expect(zoneOfPostalCode([ZONE, precise], "75002")).toBeNull();
+  });
+});
+
+describe("audienceDeliveryZone (route publique, 0c)", () => {
+  it("rend le frais et le seuil résolus de la clientèle, sans ses remplacements", () => {
+    const zone: AdminDeliveryZoneView = {
+      ...ZONE,
+      audienceTerms: {
+        b2b: { fee: { mode: "amount", cents: 1_200 }, freeDeliveryThresholdCents: 6_000 },
+        b2c: { fee: null, freeDeliveryThresholdCents: null },
+      },
+    };
+    const global: DeliveryPricingTerms = {
+      ...GLOBAL,
+      b2c: { fee: GLOBAL.b2c.fee, freeDeliveryThresholdCents: 8_000 },
+    };
+
+    expect(audienceDeliveryZone("b2b", zone, global)).toEqual({
+      id: "zone_1",
+      label: "Tarentaise",
+      postalPrefixes: ["731"],
+      audience: "b2b",
+      fee: { mode: "amount", cents: 1_200 },
+      freeDeliveryThresholdCents: 6_000,
+    });
+    expect(audienceDeliveryZone("b2c", zone, global)).toEqual({
+      id: "zone_1",
+      label: "Tarentaise",
+      postalPrefixes: ["731"],
+      audience: "b2c",
+      fee: { mode: "amount", cents: 1_500 },
+      freeDeliveryThresholdCents: 8_000,
+    });
+  });
+
+  it("rien de réglé : l'ancien frais, sans livraison offerte", () => {
+    expect(audienceDeliveryZone("b2b", ZONE, NOTHING)).toMatchObject({
+      fee: LEGACY,
+      freeDeliveryThresholdCents: null,
+    });
   });
 });

@@ -92,7 +92,10 @@ export function shopQuoteOf(priced: BasketAmounts, order: QuotedOrder): ShopCart
     totalCents: amounts.totalCents,
   };
   return {
-    view: withAwaiting(withEndedDiscounts(withDiscountLabel(view, terms), priced), priced),
+    view: withFreeDelivery(
+      withAwaiting(withEndedDiscounts(withDiscountLabel(view, terms), priced), priced),
+      priced,
+    ),
     voucherTotalEffectCents: voucherEffectOf(input, order, amounts),
     voucherRemainderCents: voucherRemainderOf(order.voucher, voucherFaceOf(amounts)),
   };
@@ -205,4 +208,17 @@ function withEndedDiscounts(view: ShopQuoteView, priced: BasketAmounts): ShopQuo
 /** Ce que le décompte attend encore (§ 2.5) ; absent quand c'est le prix de la commande. */
 function withAwaiting(view: ShopQuoteView, priced: BasketAmounts): ShopQuoteView {
   return priced.awaiting.length === 0 ? view : { ...view, awaiting: priced.awaiting };
+}
+
+/**
+ * La livraison offerte, ou ce qu'il manque pour l'obtenir (plan
+ * `plan-livraison-offerte.md`, 1c) — telle que `priceBasket` l'a jugée ;
+ * absente sans franco à dire.
+ */
+function withFreeDelivery(view: ShopQuoteView, priced: BasketAmounts): ShopQuoteView {
+  const progress = priced.freeDeliveryProgress;
+  if (progress === null) {
+    return view;
+  }
+  return { ...view, freeDelivery: { ...progress } };
 }

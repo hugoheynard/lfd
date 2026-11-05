@@ -62,7 +62,7 @@ export function priceBasket(
       ? null
       : replayBasketDiscounts(context.replayed.discounts, context.replayed.lines, priced);
   const discount: BasketDiscount = replay ?? discountOf(priced, chosen);
-  const terms = basketTermsOf({
+  const { freeDeliveryProgress, ...terms } = basketTermsOf({
     lines: context.lines,
     known: context.known,
     discount,
@@ -79,6 +79,7 @@ export function priceBasket(
     beyondCap: chosen.beyondCap,
     ended: notices?.ended ?? [],
     awaiting: awaitingOf(context, notices?.windowUnjudged ?? false),
+    freeDeliveryProgress,
   };
 }
 
