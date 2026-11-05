@@ -1,21 +1,20 @@
-# Plan — les matériaux du catalogue, chargés une fois
+# Plan — le catalogue en un instantané, versionné par la base
 
-> 🎯 **Le seul plan ouvert du dossier (2026-11-05).** Reste : M1, M2, M3 —
-> rien n'est bâti au-delà de M0. Objectif n° 2 de
-> [`carte-des-caches.md`](carte-des-caches.md).
-
-> 📏 **M0 mesuré le 2026-11-05** (`apps/lfd-api/test/catalogue-reads.e2e-spec.ts`,
-> relevé au § 1). Depuis l'écriture du plan, le rayon est gardé par l'objet
-> `ProShelves` (le recalcul n'a lieu qu'en cas d'absence) alors que le devis
-> relit le catalogue à chaque changement de panier : **ordre proposé M2
-> (devis) avant M1 (rayon), à confirmer par `vitruve` et Hugo.**
-
-> 📝 **Plan du 2026-11-04, rien n'est bâti.** Demande de Hugo : « arriver par
-> construction à un seul appel pour tout ce qui concerne le catalogue, que la
-> taille de cet appel grandisse, mais le prix au kilo et les opérations datées
-> en font partie d'office ». Touche le devis et la commande (l'argent) :
-> contredit par `vitruve` avant Hugo. Partie 1 : comprendre. Partie 2 : le
-> plan.
+> 🎯 **Le seul plan ouvert du dossier.** Réécrit le 2026-11-05 (Hugo : « je
+> veux voir un plan optimisé aligné sur les meilleures pratiques »), après la
+> mesure M0 (§ 1). **Rien n'est bâti** au-delà de la mesure. Touche le devis
+> et l'estimation, c'est-à-dire l'argent : **`vitruve` avant Hugo**. Objectif
+> n° 2 de [`carte-des-caches.md`](carte-des-caches.md).
+>
+> ⚔️ **Contredit par `vitruve` le 2026-11-05 (2 bloquants, 7 sérieux),
+> corrigé le même jour** — option (a) de Hugo : le mur entre sociétés reste
+> dans la requête (§ 2.1, § 8). À recontredire avant le bâti.
+>
+> Ce qui change par rapport à la version du 2026-11-04 : l'invalidation par
+> une **estampille tenue par la base** (déclencheurs, comme le principal) et
+> non par le signal applicatif `ShelfChanges` ; l'ordre des lots
+> retourné — **le devis d'abord**, le rayon (déjà gardé par l'objet
+> `ProShelves`) ensuite.
 
 # Partie 1 — Comprendre
 
@@ -33,29 +32,47 @@ lecteur de plus est un endroit qui peut diverger des autres.
 
 ## Ce qu'on veut
 
-**Un seul chargement du catalogue par requête**, par construction : une porte
-unique qui rend tout ce dont le rayon, le devis et l'estimation ont besoin —
-articles avec leur prix au kilo, familles, opérations datées et leurs articles,
-heures limites, réservations. Le chargement peut grossir ; il ne se répète pas.
+Le catalogue est **petit** (161 articles, 121 Ko bruts, mesuré en production le
+2026-11-04 ; 226 lignes et 496 Ko d'index compris en base le 2026-11-05) et il
+**change rarement** (une fiche modifiée, une opération posée). C'est le cas
+d'école d'un **instantané** : on le charge entier, une fois, on le garde, et on
+ne le relit que lorsque la base dit qu'il a changé.
 
 ```mermaid
 flowchart LR
-  R["Rayon, devis,<br/>estimation"] --> P["La porte du catalogue"]
-  P --> Q{"déjà chargé<br/>pour cette requête ?"}
-  Q -->|"oui"| U["même chargement"]
-  Q -->|"non"| M{"en mémoire de l'API<br/>et à jour ?"}
-  M -->|"oui"| U
-  M -->|"non"| B[("Base<br/>une lecture par table,<br/>en parallèle")]
+  D["Devis, estimation,<br/>rayon"] --> P["La porte du catalogue"]
+  P --> E[("Estampille du catalogue<br/>une ligne, lue une fois<br/>par requête")]
+  E --> Q{"l'instantané en mémoire<br/>porte-t-il ce numéro ?"}
+  Q -->|"oui"| U["on s'en sert<br/>aucune autre lecture"]
+  Q -->|"non"| B[("Base<br/>deux lectures<br/>en parallèle")]
   B --> U
 ```
 
-Par-dessus, une **mémoire de l'API** garde ce chargement entre deux requêtes,
-et l'oublie au signal `ShelfChanges` (le même que le cache des rayons) : tant
-que rien n'a changé, le catalogue ne se relit pas du tout.
+Trois règles, qui sont celles des caches de lecture bien faits, et que ce dépôt
+applique déjà au principal et aux règles de prix :
 
-**La taille** : 161 articles font 121 Ko bruts, 11 Ko compressés (mesuré en
-production le 2026-11-04). À 500 articles, ~375 Ko en mémoire : léger. Découper
-par famille ne se justifierait qu'à plusieurs milliers d'articles.
+1. **Une seule vérité de version, tenue par la base.** Toute écriture d'une
+   table du catalogue fait monter un numéro, par un déclencheur — aucune
+   écriture ne peut l'oublier, d'où qu'elle vienne (le code, une migration, un
+   semis, une autre instance de l'API).
+2. **Jamais servi périmé pour un montant.** L'instantané n'est utilisé que s'il
+   porte **le** numéro lu au début de la requête ; sinon on recharge et la
+   requête attend. Pas de « servir l'ancien en rechargeant derrière » : c'est
+   acceptable pour un affichage, pas pour un prix.
+3. **Un seul chargement à la fois.** Si dix requêtes trouvent l'instantané
+   périmé en même temps, une seule va en base ; les neuf autres attendent sa
+   réponse.
+
+Ce que ça donne, d'après le relevé M0 :
+
+| Chemin                  | Lectures du catalogue aujourd'hui | Avec l'instantané, à froid | À chaud          |
+| ----------------------- | --------------------------------- | -------------------------- | ---------------- |
+| devis pro               | 4 (+ 1 heure limite)              | 1 estampille + 2           | **1 estampille** |
+| estimation de la saisie | 5 (+ 2 heures limites)            | 1 + 2                      | **1**            |
+| rayon recalculé         | 5                                 | 1 + 2                      | **1**            |
+
+Et pour le rayon public, déjà servi par l'objet `ProShelves` : rien ne change
+quand l'objet répond ; quand il recalcule, il lit l'instantané.
 
 # Partie 2 — Le plan
 
@@ -154,65 +171,224 @@ bâti.
 
 ## 2. La forme
 
-- **Un port, `CatalogueMaterials`**, côté application du catalogue : `load()`
-  rend un objet immuable — articles (avec prix au kilo, dérogations,
-  réservations), familles (lignée), opérations datées et leurs articles, SKU
-  réservés aux opérations, heures limites. Les lecteurs d'aujourd'hui deviennent
-  des **vues** sur ces matériaux, sans base (fonctions pures sur l'objet).
-- **Une lecture par table, en parallèle** : Prisma facture par appel du client,
-  pas par requête SQL ; une lecture avec ses tables liées (`include`) compte
-  pour une opération. Cible : articles + lignée + kilo en **un** appel, les
-  opérations avec leurs articles en **un**, les heures limites en **un**.
-- **Une fois par requête** : la porte garde le chargement pour la requête en
-  cours (le contexte de requête, comme l'estampille des prix) — deux lecteurs du
-  même rayon ou du même devis partagent le même.
-- **En mémoire de l'API entre deux requêtes**, sur le modèle de
-  `PricingMaterialsCache` : une seule lecture en cours par clé, oubli au signal
-  `ShelfChanges` (après la validation), durée de vie courte en filet. Les
-  tables sont celles que `lint:shelf-writes` tient déjà : aucune écriture ne
-  peut oublier le signal.
-- **Ce qui ne passe PAS par là** : la société et les droits (propres à
-  l'appelant, relus en base à chaque requête — règle du dépôt), et la passation
-  d'une commande, qui relit la base pour ce qu'elle **écrit** (elle fait foi).
-- **Le mur entre audiences** : les matériaux sont le catalogue **entier** ; ce
-  que chaque lecteur a le droit de voir (réservations, audience) reste décidé
-  par les vues existantes (`CatalogViewer`), jamais par le chargement.
+### 2.1 L'instantané — ce qui est COMMUN à tous, et seulement ça
+
+`CatalogueSnapshot`, un objet **immuable** (`readonly`, gelé) que le contexte
+`catalog` construit :
+
+- **les articles ENCORE VENDUS**, filtrés par le prédicat partagé
+  `STILL_SOLD` (`src/b2b/catalog/infrastructure/sellable-filter.ts`) —
+  **importé, jamais recopié** : un article retiré est absent de l'instantané
+  comme il est absent de la lecture B aujourd'hui (`prisma-catalog.reader.ts:139`),
+  donc aucune vue ne peut le chiffrer. Avec en `include` la famille et les
+  dérogations ; les colonnes du classement (C), du kilo (E), le drapeau
+  `operationOnly` (D), la filiation (F) ;
+- **« l'article est-il réservé ? »** — le compteur `_count.reservations`
+  (`reservationInclude`, `catalog-item-access.ts`) : un nombre, identique pour
+  tous les lecteurs, sans aucun identifiant de société ;
+- **la lignée des familles** (`catalog_categories`) ;
+- **les opérations** non retirées, avec leurs articles et leur surcharge
+  locale (`catalog_operation_overrides`), jugées à l'instant de la requête par
+  les mêmes fonctions qu'aujourd'hui ;
+- **les heures limites** : `b2b/order-cutoffs` est dans le même bloc que
+  `b2b/catalog`, et `lint:prisma-model-ownership` raisonne par bloc
+  (`top = inSrc.split("/")[0]`) — l'objection « autre bloc » de la version
+  précédente était fausse ; le critère retenu est celui de la porte.
+
+**Ce qui n'y entre PAS, par décision (Hugo, 2026-11-05, option a)** :
+
+- **« à qui, parmi TES sociétés ? »** — la liste filtrée des réservations
+  (`reservations where companyId in viewerHolderIds(viewer)`) reste une
+  **lecture SQL par requête**, filtrée par la société de l'appelant. Le mur
+  entre sociétés reste **dans la requête** (CLAUDE.md § 3, sans exception).
+  Prix assumé : une lecture de plus à chaud. L'option (b) — toutes les
+  réservations en mémoire, filtrées en code — est écartée : une erreur de
+  filtre y serait une fuite entre sociétés.
+- **Les textes alternatifs des images d'opération** (`withLibraryAlts`,
+  médiathèque, `prisma-catalog-operations.reader.ts:58`) : un autre bloc, que
+  l'estampille ne voit pas. Ils restent lus à part, sur le chemin du rayon
+  seulement, et **comptés** dans le budget.
+
+Les vues **réutilisent** les fonctions d'aujourd'hui (`servedItem`, le mur
+`CatalogViewer`, `effective-operation.ts`) en leur passant les lignes de
+l'instantané et la liste de réservations de la requête : le filtrage ne change
+pas de code, seulement de source.
+
+Indexé au chargement (par SKU, par famille) : les vues lisent des `Map`.
+
+### 2.2 L'estampille
+
+Une table d'une ligne, `catalog_stamp`, sur le modèle de `principal_stamp` **dans
+sa forme en service** : un compteur, des déclencheurs `BEFORE … FOR EACH
+STATEMENT`, **resserrés aux colonnes lues** (`UPDATE OF …`, comme la migration
+`20261105120000_l_estampille_filtree_par_colonnes` l'a fait pour le principal,
+parce que les déclencheurs larges vidaient le cache pour rien). `catalog_items`
+est réécrit par des écritures qui ne changent rien à ce que l'instantané porte
+— la projection des visuels (`prisma-catalog-visuals.projection.ts`), les
+états de revue, les limites de commande — : seules les colonnes que le
+chargeur lit font monter le numéro ; `INSERT` et `DELETE` toujours.
+
+Tables sous déclencheur (noms vérifiés dans `prisma/schema/public/` le
+2026-11-05) : `catalog_items`, `catalog_categories`, `catalog_item_overrides`,
+`catalog_item_reservations` (le compteur en dépend), `catalog_operations`,
+`catalog_operation_items`, `catalog_operation_overrides`, et la table des
+heures limites.
+
+**Retour arrière** : `DROP TRIGGER`, `DROP FUNCTION`, `DROP TABLE`. Une ligne
+d'estampille **absente** veut dire « ne rien garder » : le binaire relit la
+base à chaque requête, comme aujourd'hui.
+
+**Pourquoi pas `catalog_versions`** : c'est une **archive** des arrivées du
+référentiel, où « la surcharge locale n'y entre pas » (`catalog.prisma`) ; une
+dérogation ou une réservation changent le catalogue servi sans créer de
+version.
+
+**Ce que la promesse couvre, et ce qu'elle ne couvre pas** : « aucune écriture
+ne peut l'oublier » vaut pour l'**instantané** (devis, estimation, rayon
+recalculé). Le **cache des rayons** (l'objet `ProShelves`, le bord Cloudflare)
+reste purgé par le signal applicatif `ShelfChanges` : une correction SQL à la
+main laisse le rayon faux jusqu'à son expiration. Inchangé par ce plan.
+
+### 2.3 La porte
+
+Un port `CatalogueSnapshotSource` (application du catalogue), un adaptateur
+Prisma et une mémoire :
+
+- `current()` lit l'estampille **une fois par requête** (sur le contexte de la
+  requête, comme celle des prix), puis rend l'instantané rangé sous ce numéro,
+  ou le charge : **trois appels en parallèle** — les articles (avec leurs
+  `include`), les opérations (avec articles et surcharges), les heures
+  limites ; un quatrième pour la lignée si une famille a un parent ;
+- **une seule lecture en vol** par numéro ;
+- **rangé sous le numéro lu AVANT le chargement** (la règle d'ordre de
+  `CachedPrincipalResolver`) ;
+- **hors requête** (cron, semis), rien n'est gardé ;
+- **une borne** : le dernier instantané, plus celui en cours de chargement.
+
+### 2.4 Les vues
+
+Les lecteurs gardent leur port ; leur adaptateur lit l'instantané au lieu de la
+base :
+
+| Lecteur d'aujourd'hui                                               | Devient                                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `CatalogReader.listSellable` (A)                                    | les articles de l'instantané + les réservations de la requête, par `servedItem` |
+| `CatalogReader.listByShopSkus` (B)                                  | les mêmes, par SKU dans l'index                                                 |
+| classement des lignes (C)                                           | les colonnes du classement, dans l'index                                        |
+| `operationOnlySkusOf` (D)                                           | un filtre sur le drapeau                                                        |
+| `CatalogPricePerKgReader.bySkus` (E)                                | les colonnes du kilo, dans l'index                                              |
+| `CatalogOperationsReader.sellableOperations`                        | les opérations de l'instantané, puis `withLibraryAlts` comme aujourd'hui        |
+| `PrismaWithdrawnShopSkusReader`, `storefront-catalog-operations.ts` | à classer au bâti : vue de l'instantané ou liste admise datée                   |
+
+### 2.5 Ce qui ne passe PAS par là
+
+- **La passation** (`POST /orders`, `POST /shop/orders`) relit la base pour ce
+  qu'elle **écrit**, et fait foi. Un devis calculé sur un instantané périmé
+  d'une écriture est refusé à la passation en 409 `orders.total_changed`, sans
+  écriture (garde existante). **À vérifier par `vitruve`** : un chemin où ils
+  divergent sans que le total change (§ 6).
+- **La société, les droits, l'audience** : le principal, relu à chaque requête.
+- **Les écrans d'administration** du catalogue.
 
 ## 3. Par construction
 
-- **Une porte de CI** (`lint:catalogue-door`, sur le modèle de
-  `lint:price-door`) : sur le chemin du rayon, du devis et de l'estimation,
-  aucun code ne lit `catalogItem`, `catalogCategory`, `catalogOperation`,
-  `catalogOperationItem` ni les heures limites en direct ; seul l'adaptateur
-  de `CatalogueMaterials` le fait. Les écrans d'administration du catalogue
-  gardent leurs lecteurs (ils lisent pour écrire).
-- **Le budget** (`test/pricing-budget.e2e-spec.ts`) gagne le rayon, à froid et
-  à chaud : `CatalogItem` lu **une** fois à froid, **zéro** à chaud.
+- **`lint:catalogue-door`** (modèle : `lint:price-door`) : sur les chemins du
+  devis, de l'estimation et du rayon, aucun fichier ne lit les tables de
+  l'instantané en direct ; liste admise datée pour l'administration et la
+  passation.
+- **La porte des déclencheurs, avec un critère** : elle compare **les modèles
+  que l'adaptateur de l'instantané lit** (relevés dans son code, ou par la
+  sonde dans une e2e) aux **tables sous déclencheur** de la migration. Une
+  table lue sans déclencheur échoue ; les archives (`catalog_versions`,
+  `catalog_price_history`…) ne sont pas lues, donc pas exigées.
+- **Le budget** : `test/catalogue-reads.e2e-spec.ts` devient un budget — à
+  chaud, **1 estampille + 1 réservations** sur le devis et l'estimation, plus
+  les textes des images sur le rayon.
+- **Les e2e d'invalidation et du mur** : une fiche modifiée entre deux devis
+  change le second ; une écriture SQL brute aussi (le déclencheur) ; un
+  **article retiré** dans le panier est refusé pareil avant et après ; un pro
+  **ne voit pas** la réservation d'une autre société.
 
 ## 4. Plusieurs instances
 
-La mémoire est par instance. Comme pour les prix, il faut qu'une écriture sur
-une instance invalide les autres : soit une **estampille** relue une fois par
-requête (le modèle de `pricing_events`, une opération par requête), soit la
-purge en éventail par le Worker. **À trancher** ; aujourd'hui une seule
-instance (`max_instances: 1`).
+Réglé par construction : le numéro vient de la base, chaque instance le relit
+par requête. Aucune purge en éventail.
 
 ## 5. Les lots
 
-| Lot | Contenu                                                                                                                                                                                        |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0  | la mesure : la liste exacte des lectures du catalogue sur le rayon, le devis anonyme et pro, l'estimation, par la sonde de comptage des modèles ; elle fixe le contenu de `CatalogueMaterials` |
-| M1  | le port, l'adaptateur (une lecture par table, en parallèle), la mémoire par requête ; les lecteurs du rayon deviennent des vues ; le budget du rayon                                           |
-| M2  | le devis et l'estimation passent par la même porte ; la porte de CI                                                                                                                            |
-| M3  | la mémoire entre requêtes, vidée par `ShelfChanges`, et la réponse à « plusieurs instances »                                                                                                   |
+| Lot    | Contenu                                                                                                                                                                                    | Gain mesurable                                      |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| **M1** | l'instantané, l'estampille (migration additive + déclencheurs resserrés), la mémoire, la porte des déclencheurs ; le **devis** et l'**estimation** y passent ; le budget et les e2e du § 3 | devis pro 5 → 2 à chaud, estimation 7 → 2           |
+| **M2** | le **rayon** passe par la même porte ; `lint:catalogue-door`                                                                                                                               | rayon recalculé 5 → 2 (+ textes des images) à chaud |
 
-## 6. Ce qui n'est pas vérifié
+**L'instantané et sa mémoire partent ensemble** (objection `vitruve`) : un
+instantané sans mémoire chargerait tout le catalogue à chaque devis au lieu de
+deux articles — plus lourd qu'aujourd'hui. M1 porte la migration :
+`lecteur-de-migrations` avant `main`.
 
-- ~~la liste des lectures du devis, de l'estimation et de la passation~~ —
-  mesurée le 2026-11-05 (§ 1) ;
-- ~~qu'une lecture avec `include` compte pour une opération dans
-  `SchemaOpsCounter`~~ — prouvé le 2026-11-05 (§ 1) ; reste **affirmé** que
-  Prisma Postgres facture de même ;
-- la taille du catalogue entier en mémoire (estimée, pas mesurée) ;
-- que les heures limites (bloc `order-cutoffs`) puissent entrer dans le même
-  chargement sans qu'un bloc lise les tables d'un autre (`lint:prisma-model-ownership`).
+## 6. Ce que `vitruve` doit encore trancher
+
+- un chemin où le devis (instantané) et la passation (base) divergent **sans**
+  que le total change — un article retiré entre les deux, une réservation
+  posée ;
+- l'ordre des verrous des déclencheurs avec une transaction qui écrirait aussi
+  une table sous `principal_stamp` (aucune trouvée, recherche non exhaustive) ;
+- la liste exacte des colonnes de l'`UPDATE OF` ;
+- l'écriture d'une opération puis de ses articles **sans transaction**
+  (`prisma-operation.repository.ts:84-96`) : un chargement entre les deux
+  rangerait une opération vide jusqu'à la prochaine écriture — défaut
+  existant, que l'instantané rend plus durable ; le corriger dans M1 ?
+
+## 7. Ce qui n'est pas vérifié
+
+- la lignée des familles à plusieurs niveaux (corpus de test à plat) ;
+- que Prisma Postgres facture par appel du client (affirmé par sa tarification) ;
+- la taille de l'instantané indexé en mémoire ;
+- les écritures en masse : l'ingestion des articles fait **un** `INSERT`
+  (`catalog-item-upsert.ts:161`), la projection des familles un `upsert` par
+  famille (`prisma-catalog-category.projection.ts:36`) — l'estampille monte N
+  fois, sans danger.
+
+## 8. Contredit par `vitruve` le 2026-11-05 — ce qui a changé
+
+| Objection                                                       | Gravité  | Ce que le plan fait maintenant                                                                  |
+| --------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| la lecture B n'expose pas les retirés : elle les écarte en SQL  | BLOQUANT | l'instantané ne porte que `STILL_SOLD`, importé (§ 2.1)                                         |
+| les réservations filtrées par société sortiraient de la requête | BLOQUANT | option (a) de Hugo : le compteur dans l'instantané, la liste filtrée en SQL par requête (§ 2.1) |
+| critère « autre bloc » faux pour les heures limites             | SÉRIEUX  | critère de la porte (par bloc) : elles entrent (§ 2.1)                                          |
+| textes des images hors estampille ; « deux appels » faux        | SÉRIEUX  | lus à part, comptés (§ 2.1, § 3)                                                                |
+| M1 seul plus cher qu'aujourd'hui                                | SÉRIEUX  | instantané et mémoire dans le même lot (§ 5)                                                    |
+| porte des déclencheurs sans critère                             | SÉRIEUX  | modèles lus par l'adaptateur = tables sous déclencheur (§ 3)                                    |
+| déclencheurs larges, alors que le principal a été resserré      | SÉRIEUX  | `UPDATE OF` sur les colonnes lues (§ 2.2)                                                       |
+| promesse trop large (le rayon reste au signal)                  | SÉRIEUX  | restreinte et dite (§ 2.2)                                                                      |
+| retour arrière non dit                                          | SÉRIEUX  | ligne absente = ne rien garder (§ 2.2)                                                          |
+| six/sept tables ; lecteurs oubliés ; opération sans transaction | MINEUR   | corrigés ou portés au § 2.4 / § 6                                                               |
+
+## 9. Second passage de `vitruve` (2026-11-05) — à intégrer au bâti
+
+Aucune objection ne remet en cause l'option (a). Ce qui change :
+
+| Objection                                                                                                                                                                                                                                                             | Gravité  | Correction                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UPDATE OF` fondé sur une prémisse fausse : l'état « en revue » (`publicReviewPending`, `proReviewPending`, `catalog-item-access.ts:47-48`) est lu par le mur ; le chargeur lit toutes les colonnes (`itemInclude` sans `select`, `prisma-catalog.reader.ts:225-231`) | BLOQUANT | chargeur en `select` explicite ; la liste des colonnes écrite au bâti ; une porte **par colonne** sur le modèle de `principal-stamp-columns.spec.ts` |
+| le harnais e2e tronque sans remettre l'estampille ni vider la mémoire (`test/e2e-harness.ts:258-320`)                                                                                                                                                                 | BLOQUANT | `ensureCatalogStamp` + `forget()` dans `ctx.reset()`, avec leur test                                                                                 |
+| `STILL_SOLD` ne couvre pas le filtre du taux (`vatRatePercent: { not: null }`, l. 165) ni le tri à trois clés (l. 177) de la lecture A                                                                                                                                | SÉRIEUX  | la vue A les réapplique ; e2e « article sans taux : absent du rayon public » ; `findByShopSku` ajouté au § 2.4                                       |
+| compteur figé au numéro N, liste lue maintenant : une réservation posée entre les deux sert un article une requête                                                                                                                                                    | SÉRIEUX  | lire la liste des réservations **avant** l'estampille ; 0 lecture pour un lecteur sans société                                                       |
+| `catalog_operation_overrides` n'est lu par personne aujourd'hui                                                                                                                                                                                                       | SÉRIEUX  | retirée de l'instantané et des déclencheurs ; l'appliquer serait une fonctionnalité à décider                                                        |
+| M1 trop gros, partie irréversible non isolée                                                                                                                                                                                                                          | SÉRIEUX  | **M1a** l'estampille et ses déclencheurs seuls (rien ne la lit) ; **M1b** instantané, mémoire, devis, estimation                                     |
+| les heures limites : `order_cutoffs` ; `order_cutoff_settings` lue sur les mêmes chemins                                                                                                                                                                              | MINEUR   | les deux dans l'instantané et sous déclencheur, à confirmer au bâti                                                                                  |
+| un déclencheur sur une ligne unique sérialise toutes les écritures du catalogue                                                                                                                                                                                       | MINEUR   | assumé : écritures rares                                                                                                                             |
+
+Réponses au § 6 : aucune divergence nuisible devis/passation (la passation
+relit et refuse sans écrire ; e2e « devis, réservation par une autre société,
+passation refusée ») ; l'opération écrite sans transaction reste transitoire
+(chaque instruction fait monter le numéro).
+
+**Encore ouvert** : la fonction de montée recrée-t-elle la ligne absente,
+comme celle du principal ? Si oui, « ligne absente = ne rien garder » ne coupe
+pas ; prévoir une autre coupure. L'ordre des verrous avec `principal_stamp`.
+
+**Avant de bâtir (Hugo, 2026-11-05)** : mesurer d'abord ce que pèse la lecture
+du catalogue dans un devis (marque `Server-Timing` `catalogue`, référence en
+production). Si elle pèse peu, seule la suppression des doublons, sans mémoire
+ni migration.
