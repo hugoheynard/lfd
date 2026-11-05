@@ -160,15 +160,64 @@ périmé` (le dernier total atténué du devis, la photo `STALE_PHOTO_MS` du
 
 **Découpe retenue** (proposée par `vitruve`) :
 
-| Lot | Contenu                                                                                                                                      | Dépend de |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| a   | le crochet de déconnexion et la liste d'oubli, alignée sur le registre — un manque RGPD réel, autonome                                       | —         |
-| b   | 🟦 bâti le 2026-11-05, sur `dev` — `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait | —         |
-| c   | la bascule : `switchTo`, état en cours, retour arrière                                                                                       | b         |
-| d   | la migration des autres stores, une par commit, porte en dette décroissante                                                                  | b, c      |
-| e   | l'espace retenu (état `essai`) sur les trois lecteurs du lot b                                                                               | a, b      |
+| Lot   | Contenu                                                                                                                                      | Dépend de   |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| a     | le crochet de déconnexion et la liste d'oubli, alignée sur le registre — un manque RGPD réel, autonome                                       | —           |
+| b     | 🟦 bâti le 2026-11-05, sur `dev` — `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait | —           |
+| c     | la bascule : `switchTo`, état en cours, retour arrière                                                                                       | b           |
+| c bis | **la brique de lecture par clé** (`contextResource`) : une seule mécanique de lecture rangée par clé de contexte — voir § 00 ter             | b, c        |
+| d     | la migration des autres stores **vers la brique**, une par commit, porte en dette décroissante                                               | b, c, c bis |
+| e     | l'espace retenu (état `essai`) sur les trois lecteurs du lot b                                                                               | a, b        |
 
 Le gain (e) ne demande pas la migration complète (d).
+
+### 00 ter. Lot c bis — la brique de lecture par clé (Hugo, 2026-11-05)
+
+> 📝 Ajouté le 2026-11-05 avant le lot d. `vitruve` avant le bâti : c'est
+> l'architecture de lecture du front pour longtemps.
+
+**Pourquoi.** Les lots a à c posent une session unique (`ClientContext`).
+Mais chaque store lit encore à sa façon : son `effect`, sa clé maison
+(`readFor`, `loadedFor`, `photoFor`…), son « déjà demandé », son état périmé
+— 37 fichiers lisent l'espace (§ 00 bis). Migrer chacun vers le contexte en
+gardant ces mécaniques ferait 37 implémentations de la même règle. Les fronts
+modernes ont **une seule brique** de lecture rangée par clé (le modèle de
+TanStack Query) ; Angular en a la base native, `resource()` /
+`httpResource()` (`@angular/core` 22.1.2, catalogue pnpm), qui relit quand
+le signal de clé change et annule la demande précédente. Aucun fichier de
+l'app ne s'en sert encore (vérifié le 2026-11-05).
+
+**La brique.** `contextResource({ key, load })` :
+
+- `key` : une fonction de signaux qui rend la part propre au store (rayon,
+  jour, mode, visite pro), ou `null` tant qu'elle n'est pas connue ; la
+  brique la préfixe par `ClientContext.prefix()`. Pas de préfixe, pas de
+  demande.
+- `load(key)` : l'appel, annulé si la clé change avant la réponse.
+- Elle expose un état d'affichage unique — `chargement`, `prêt`, `périmé`
+  (la dernière valeur de la MÊME clé de contexte, gardée pendant la
+  relecture, comme le dernier total atténué du devis) et `échec` — et ne rend
+  **jamais** une valeur lue pour une autre clé de contexte que la confirmée
+  (bascule en cours, essai, espace refusé).
+- Un rangement par clé, borné, pour qu'un retour à un espace déjà vu
+  réaffiche sans attendre (ce que fait aujourd'hui la photo du catalogue).
+
+**Ce qu'elle ne fait pas.** Les **écritures** (panier, préférences) n'y
+passent pas : elles restent des services, qui n'agissent qu'en `confirmé`.
+Elle ne remplace pas le cache serveur (`ProShelves`, bord Cloudflare) ; elle
+évite seulement de redemander ce que le navigateur a déjà.
+
+**Ce que le lot fait.** La brique, ses tests, et la migration des trois
+lecteurs du lot b dessus (rayon, vitrine, points de retrait), à
+comportement identique. Le lot d migre ensuite les autres stores vers elle,
+et la porte refuse un store neuf qui lit l'espace hors de la brique.
+
+**À trancher par `vitruve`** : `httpResource` sous le rendu serveur
+(hydratation, transfert d'état) ; le comportement de la brique avec les
+intercepteurs (l'en-tête d'espace doit suivre la clé de la demande, pas
+l'espace courant à l'envoi) ; les lecteurs qui ne sont pas de simples GET
+(le devis est un POST) ; la photo périmée du catalogue (`STALE_PHOTO_MS`) et
+sa relecture au retour d'onglet ; la borne du rangement.
 
 **Décisions pour Hugo** — la liste d'oubli à la déconnexion : le panier
 visiteur `lfc.cart` (un visiteur qui se connecte puis se déconnecte perd-il
