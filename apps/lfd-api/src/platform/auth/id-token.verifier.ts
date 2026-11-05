@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { createRemoteJWKSet, jwtVerify, type JWTPayload, type JWTVerifyGetKey } from "jose";
+import { jwtVerify, type JWTPayload, type JWTVerifyGetKey } from "jose";
 
 import {
   IdentityProofExpiredError,
@@ -8,6 +8,7 @@ import {
 } from "../shared/errors/identity-errors.js";
 import { Clock } from "../time/clock.js";
 import { AuthConfig } from "./auth.config.js";
+import { remoteKeySet } from "./remote-key-set.js";
 
 /**
  * Âge maximal d'une preuve : **cinq minutes**.
@@ -124,7 +125,7 @@ export class IdTokenVerifier {
    * fait.
    */
   protected keys(): JWTVerifyGetKey {
-    this.keySet ??= createRemoteJWKSet(this.config.jwksUri);
+    this.keySet ??= remoteKeySet(this.config.jwksUri);
     return this.keySet;
   }
 }

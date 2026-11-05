@@ -1,10 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
+import { jwtVerify, type JWTPayload } from "jose";
 import { AuthConfig } from "./auth.config.js";
 import { EMAIL_CLAIM, EMAIL_VERIFIED_CLAIM, readStringClaim } from "./auth0-claims.js";
 import type { VerifiedToken } from "./principal.js";
-
-type RemoteKeySet = ReturnType<typeof createRemoteJWKSet>;
+import { type RemoteKeySet, remoteKeySet } from "./remote-key-set.js";
 
 /**
  * Vérifie les access tokens Auth0 (RS256) : signature contre le JWKS du tenant,
@@ -30,7 +29,7 @@ export class AccessTokenVerifier {
   }
 
   private keys(): RemoteKeySet {
-    this.keySet ??= createRemoteJWKSet(this.config.jwksUri);
+    this.keySet ??= remoteKeySet(this.config.jwksUri);
     return this.keySet;
   }
 }

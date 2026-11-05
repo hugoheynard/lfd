@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
+import { jwtVerify, type JWTPayload } from "jose";
 
 import { AppConfig } from "../config/app-config.js";
 import { AuthConfig } from "./auth.config.js";
@@ -10,8 +10,7 @@ import {
   readStringClaim,
 } from "./auth0-claims.js";
 import type { StaffPrincipal } from "./staff-principal.js";
-
-type RemoteKeySet = ReturnType<typeof createRemoteJWKSet>;
+import { type RemoteKeySet, remoteKeySet } from "./remote-key-set.js";
 
 /**
  * Vérifie les access tokens **staff** (app admin) : même tenant Auth0 (donc même
@@ -47,7 +46,7 @@ export class AdminTokenVerifier {
   }
 
   private keys(): RemoteKeySet {
-    this.keySet ??= createRemoteJWKSet(this.authConfig.jwksUri);
+    this.keySet ??= remoteKeySet(this.authConfig.jwksUri);
     return this.keySet;
   }
 }
