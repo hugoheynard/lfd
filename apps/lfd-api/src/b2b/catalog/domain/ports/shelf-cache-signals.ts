@@ -7,7 +7,7 @@ export type ShelfFallbackReason = "timeout" | "error" | "unreadable" | "breaker_
 export type ShelfCacheOperation = "read" | "store" | "erase" | "public_state" | "public_purge";
 
 /**
- * **Ce que le cache des rayons donne à voir** — pro, et public depuis C3 (`plan-cache-du-catalogue.md`,
+ * **Ce que le cache des rayons donne à voir** — pro, et public depuis C3 (`le-rayon-en-cache.md`,
  * § 4 quater) : chaque nom est STABLE, c'est lui que la carte de santé (C5)
  * comptera. En renommer un, c'est éteindre une courbe sans que rien ne rougisse.
  *

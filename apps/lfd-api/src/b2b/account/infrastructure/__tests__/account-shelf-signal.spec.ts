@@ -13,7 +13,7 @@ import { PrismaCompanyRepository } from "../prisma-company.repository.js";
 
 /**
  * Le statut, le rattachement et le suivi d'une société décident de son rayon
- * et de celui de ses sites (`plan-cache-du-catalogue.md`, partie 1) : la
+ * et de celui de ses sites (`le-rayon-en-cache.md`, partie 1) : la
  * portée est la société, jamais tout.
  */
 async function moduleWith<T>(

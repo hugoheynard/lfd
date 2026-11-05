@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **qui écrit ce que le rayon lit émet le signal de purge**
- * (`documentation/caching-usage/plan-cache-du-catalogue.md`, § 7 et C1).
+ * (`documentation/caching-usage/le-rayon-en-cache.md`, § 7 et C1).
  *
  * Le cache des rayons (C2, C3) ne sait qu'un rayon est périmé que si celui
  * qui écrit le lui dit : c'est le modèle d'un Redis, « celui qui écrit

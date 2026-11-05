@@ -5,7 +5,7 @@ import {
 } from "../public-shelf-rules.js";
 
 /**
- * Les règles du rayon public (C3, `plan-cache-du-catalogue.md` § 3 et § 5).
+ * Les règles du rayon public (C3, `le-rayon-en-cache.md` § 3 et § 5).
  * Ces tests échouent si une réponse se garde drapeau éteint, sans relevé, ou
  * après une purge passée pendant son calcul — et si une purge de société
  * purge Workers Cache pour rien (l'offre gratuite limite les purges).

@@ -1,4 +1,4 @@
-// Les décisions de l'objet des rayons pro (`documentation/caching-usage/plan-cache-du-catalogue.md`,
+// Les décisions de l'objet des rayons pro (`documentation/caching-usage/le-rayon-en-cache.md`,
 // lot C2) : qui peut l'appeler, ce qu'une lecture rend, quand un rangement
 // est refusé, ce qu'un effacement emporte.
 //
@@ -46,7 +46,7 @@ export type ShelfCall =
   | { readonly kind: "public_state" };
 
 /**
- * Un geste de l'interrupteur (`plan-cache-du-catalogue.md`, « L'interrupteur ») :
+ * Un geste de l'interrupteur (`le-rayon-en-cache.md`, « L'interrupteur ») :
  * éteindre, rallumer, vider — et, depuis C3, allumer ou éteindre le rayon
  * PUBLIC seul. La même liste que la route machine de l'API.
  */
@@ -119,7 +119,7 @@ const REVISION_SEPARATOR = "/";
  *
  * Un déploiement change la révision, donc la clé : le rayon rangé par l'image
  * précédente n'est plus jamais lu, et il expire seul (plan
- * `plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1, 2026-11-04). Sans révision,
+ * `le-rayon-en-cache.md`, § 6, 2026-11-04). Sans révision,
  * la clé d'avant — l'API d'avant ce lot continue de lire ce qu'elle rangeait.
  */
 export function storageKeyOf(pathname: string, revision: string | null = null): string | null {

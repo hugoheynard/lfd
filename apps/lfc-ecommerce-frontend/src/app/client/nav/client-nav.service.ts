@@ -210,7 +210,7 @@ export class ClientNav {
       // trois surfaces n'affiche le compte d'une destination inerte (vérifié le
       // 2026-11-04 : `client-nav-bar`, `client-menu`, `account-menu` n'en
       // montrent que « bientôt ») — un menu ne lit pas ce qu'il ne montre pas
-      // (plan §9, plan-latence-de-navigation L1). `untracked` parce qu'il pose un effet,
+      // (plan §9, latence de navigation L1, 2026-11-04). `untracked` parce qu'il pose un effet,
       // ce qu'Angular refuse depuis un contexte réactif.
       const subscriptions = untracked(() => this.injector.get(ClientSubscriptions));
       const models = subscriptions.all().length;

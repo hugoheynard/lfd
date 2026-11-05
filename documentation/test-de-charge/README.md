@@ -150,7 +150,7 @@ cible (`ramping-vus`).
 - **Coût** : chaque requête lit la base. Lectures par requête × requêtes du test
   = opérations facturées ; les relever dans la console Prisma avant et après.
   Les ordres de grandeur par écran sont dans
-  [`plan-cache-du-catalogue.md`](../caching-usage/plan-cache-du-catalogue.md).
+  [`le-rayon-en-cache.md`](../caching-usage/le-rayon-en-cache.md).
 - **Côté Cloudflare** : Workers → l'API → Observability (logs et traces,
   activés dans `wrangler.jsonc`), et l'onglet Containers pour le CPU et la
   mémoire de l'instance.

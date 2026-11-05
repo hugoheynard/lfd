@@ -4,7 +4,7 @@ import { SHELF_PURGE_WINDOW_MS, ShelfChangeWindow } from "../shelf-change-window
 import { ManualShelfWindowTimer, RecordingShelfPurge } from "./shelf-window-doubles.js";
 
 /**
- * La fenêtre d'une seconde (`plan-cache-du-catalogue.md` § 5) : une ingestion
+ * La fenêtre d'une seconde (`le-rayon-en-cache.md` § 5) : une ingestion
  * de 200 fiches ne doit pas déclencher 200 purges.
  */
 const OPENED_AT = new Date(0);

@@ -49,7 +49,7 @@ export class CatalogViewers {
   /**
    * {@link forCompany}, plus le principal actuel de la société (actif ou non)
    * — dans la MÊME lecture. Le cache des rayons pro le range avec le rayon,
-   * pour qu'une purge du principal efface ses sites (`plan-cache-du-catalogue.md`, § 4).
+   * pour qu'une purge du principal efface ses sites (`le-rayon-en-cache.md`, § 4).
    */
   async forShelf(
     companyId: string | null,

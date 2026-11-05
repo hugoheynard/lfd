@@ -17,7 +17,7 @@ import { PrismaVolumeCommitmentRepository } from "../prisma-volume-commitment.re
 
 /**
  * Une décision de prix efface les rayons de son audience
- * (`plan-cache-du-catalogue.md`, partie 1) : une société et ses sites ; un
+ * (`le-rayon-en-cache.md`, partie 1) : une société et ses sites ; un
  * segment ou tous, tout — on ne sait pas énumérer les sociétés d'un segment.
  * Un engagement de volume efface la société qui l'a signé.
  */

@@ -1,5 +1,5 @@
 /**
- * **Purger le rayon public de Workers Cache** (`plan-cache-du-catalogue.md`,
+ * **Purger le rayon public de Workers Cache** (`le-rayon-en-cache.md`,
  * § 5) : l'étiquette `rayon-public`, partout. Seul le Worker de l'API peut le
  * faire — le conteneur le lui demande par le chemin interne.
  *

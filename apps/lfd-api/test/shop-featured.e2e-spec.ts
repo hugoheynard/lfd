@@ -124,7 +124,7 @@ describe("GET /shop/featured?audience=pro", () => {
 });
 
 /**
- * Workers Cache (C3, `plan-cache-du-catalogue.md` § 3) : l'en-tête que la
+ * Workers Cache (C3, `le-rayon-en-cache.md` § 3) : l'en-tête que la
  * route pose, à travers le vrai middleware. Échoue si la route s'offre à un
  * cache partagé drapeau éteint, ou si l'en-tête exact change.
  */

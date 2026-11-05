@@ -2,7 +2,7 @@
 export const SHELF_SWITCH_ACTIONS = ["off", "on", "purge", "public-on", "public-off"] as const;
 
 /**
- * Un geste de l'interrupteur du cache des rayons (`plan-cache-du-catalogue.md`,
+ * Un geste de l'interrupteur du cache des rayons (`le-rayon-en-cache.md`,
  * « L'interrupteur ») : éteindre, rallumer, vider — et, depuis C3, allumer
  * ou éteindre le rayon PUBLIC seul. La même liste que
  * `container/shelf-store.ts` (`ShelfSwitchAction`).

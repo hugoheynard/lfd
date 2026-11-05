@@ -6,7 +6,7 @@ import { ShelfChangeWindow } from "../shelf-change-window.js";
 import { ManualShelfWindowTimer, RecordingShelfPurge } from "./shelf-window-doubles.js";
 
 /**
- * « Après la validation » (`plan-cache-du-catalogue.md` § 5) : une purge montée
+ * « Après la validation » (`le-rayon-en-cache.md` § 5) : une purge montée
  * dans la transaction rouvrirait la course — un rayon recalculé sur l'état
  * d'avant, puis gardé. Le port diffère lui-même ; l'appelant ne peut l'oublier.
  */

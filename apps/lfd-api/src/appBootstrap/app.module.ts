@@ -294,7 +294,7 @@ export class AppModule implements NestModule {
    * Le `Cache-Control` par défaut de toute réponse, posé ICI et non dans
    * `main.ts` : le harnais e2e boote ce module sans recopier `main.ts`, et une
    * règle de sécurité que les e2e ne voient pas n'est pas éprouvée
-   * (`documentation/caching-usage/plan-aucun-cache-sur-le-personnel.md`).
+   * (`documentation/caching-usage/aucune-reponse-personnelle-en-cache.md`).
    */
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(serverTiming, cacheControlByDefault).forRoutes("{*splat}");

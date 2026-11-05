@@ -18,7 +18,7 @@ interface Kept {
 
 /**
  * **Le magasin des rayons pro en mémoire** — la version du port contre
- * laquelle tournent les tests d'application (`plan-cache-du-catalogue.md`,
+ * laquelle tournent les tests d'application (`le-rayon-en-cache.md`,
  * § 4 ter : jamais contre l'objet). Mêmes règles que l'objet
  * (`container/shelf-store.ts`) : version globale montée par tout effacement,
  * rangement refusé sur une version dépassée, une société efface aussi les

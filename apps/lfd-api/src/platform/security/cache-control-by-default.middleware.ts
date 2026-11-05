@@ -16,7 +16,7 @@ export const ANONYMOUS_CACHE_CONTROL = "private, no-cache";
 
 /**
  * Pose le `Cache-Control` par défaut de TOUTE réponse de l'API, avant le
- * handler — plan `documentation/caching-usage/plan-aucun-cache-sur-le-personnel.md`.
+ * handler — plan `documentation/caching-usage/aucune-reponse-personnelle-en-cache.md`.
  *
  * La règle se décide sur la **requête**, pas sur la route : une route
  * `@Public()` à jeton facultatif répond selon l'appelant sans que son nom le

@@ -4,7 +4,7 @@ import type { NextFunction } from "express";
 
 /**
  * Une étape chronométrée de la requête, rendue au navigateur dans
- * `Server-Timing` — plan `documentation/caching-usage/plan-latence-de-navigation.md`, L0.
+ * `Server-Timing` — `documentation/caching-usage/carte-des-caches.md`, § 6 (posé par le lot L0 de la latence de navigation, 2026-11-04).
  */
 export interface ServerTimingMark {
   readonly name: string;

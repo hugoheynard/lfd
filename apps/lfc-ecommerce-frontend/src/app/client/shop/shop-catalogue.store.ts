@@ -99,7 +99,7 @@ const NO_CATALOGUE: ShopCatalogueView = { shelves: [], items: [], operations: []
  *
  * ## Une seconde exception : le retour sur l'onglet, panier VIDE
  *
- * _(2026-11-04, Hugo, option b — `plan-cache-du-catalogue.md`, lot C4)_ Une
+ * _(2026-11-04, Hugo, option b — `le-rayon-en-cache.md`, lot C4)_ Une
  * personne qui revient sur un onglet laissé ouvert retrouve une photo d'une
  * heure. {@link refreshIfStale} la relit — mais seulement quand le panier est
  * vide (c'est `ShelfRefreshOnReturn` qui en décide) : personne n'est alors en

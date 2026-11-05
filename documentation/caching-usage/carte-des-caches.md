@@ -1,34 +1,78 @@
 # La carte des caches — ce qui est gardé, où, et qui le vide
 
-> 📍 **État au 2026-11-05 (C5, page Santé du back-office).** Principal : 92 %
-> servis en mémoire. Matériaux de prix : 86–96 %. Rayon public : 100 %.
-> **Rayon d'une société : 0 % en lecture** — la lecture de l'objet dépasse
-> son délai de 100 ms ; le rangement, lui, réussit depuis qu'il se fait après
-> la réponse. En cours : délai de lecture 400 ms et rayon rangé compressé.
+> ✅ **La porte d'entrée du dossier, relue contre le code le 2026-11-05**
+> (`dev` = `cde0901cf` ; production = `8710ec3ac`). Elle recense chaque endroit
+> où le système garde une réponse pour ne pas la relire, et, en tête, **ce
+> qui reste à faire** de tous les plans du dossier. Grand ménage du
+> 2026-11-05 : six plans terminés ou dépassés sont devenus des docs d'état ou
+> ont été retirés ; leurs objectifs encore actuels sont ci-dessous.
 
-> ✅ **Inventaire relu dans le code le 2026-11-05** (`dev`, après `474dd915d`).
-> Il recense chaque endroit où le système garde une réponse pour ne pas la
-> relire. Les plans qui ont conçu ces caches restent la référence de leur
-> pourquoi : ce document les **cartographie**, il ne les recopie pas
-> (cf. [`README.md`](README.md) du dossier pour la liste).
+## Objectifs restants
+
+Priorisés. Chacun dit son gain, ce qui le déclenche, et le doc où il vit.
+
+| #   | Objectif                                                                                                                                                                                                                                   | Gain attendu                                                                                                                                                                            | Déclencheur                                                                                                                                                         | Où                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 1   | **Prouver que Workers Cache sépare les adresses par leur paramètre** — `/shop/catalogue` et `?audience=pro`, `/pickup-addresses` et `?audience=pro`, `/delivery-zones` et `?audience=b2b` (aucun `cacheKey` dans le code : clé par défaut) | la justesse : sinon une clientèle reçoit la liste, les frais ou le seuil d'une autre                                                                                                    | **au déploiement sur `main` de `0d0ff6b4c`** (`/delivery-zones?audience=`, sur `dev` seulement) — deux `curl` en production, contenus et `cf-cache-status` comparés | ici, § 1 ; [`le-rayon-en-cache.md`](le-rayon-en-cache.md) § 3                      |
+| 2   | **Matériaux du catalogue** : un seul chargement par requête, **M2 (devis et estimation) avant M1 (rayon)**, puis M3 (mémoire vidée par `ShelfChanges`)                                                                                     | relevé M0 : le devis pro lit le catalogue 5 fois (15 appels à chaud), l'estimation 7 (25) ; cible 3 appels à froid, 0 à chaud après M3. Le rayon pro, lui, est déjà gardé par l'objet   | ouvert ; `vitruve` puis Hugo sur l'ordre M2 avant M1                                                                                                                | [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                 |
+| 3   | **Alerter sur une purge ratée** (relais 503, Cloudflare qui refuse, redémarrage dans la seconde) et sur le disjoncteur ouvert                                                                                                              | voir un cache qui sert du vieux au lieu d'attendre qu'un client le dise ; aujourd'hui une purge ratée n'est que journalisée, ni comptée ni alertée                                      | avant l'ouverture commerciale ; prouve du même coup le relais `ctx.exports`, encore « non prouvé en production »                                                    | ici, § 1 et § 6 ; [`le-rayon-en-cache.md`](le-rayon-en-cache.md) § 4 quater        |
+| 4   | **Accélérer `/me` davantage** — 226 ms relevés ce soir, déjà en lectures parallèles (`840e5dd46`, sur `dev`)                                                                                                                               | non chiffré : une partie des lectures n'existe que parce que Prisma 7 charge chaque relation par une requête séparée                                                                    | le passage à Prisma 8 (jointures), ou `/me` redevenu le plus lent de l'ouverture                                                                                    | [`../todos/todo-prisma-8-et-jointures.md`](../todos/todo-prisma-8-et-jointures.md) |
+| 5   | **Le `stale-while-revalidate` des réglages publics** (pied de page, ouverture, zones, disponibilité : 90 s au pire après une écriture dont la purge s'est perdue). Hugo : « on y reviendra »                                               | décider si les zones, qui portent désormais frais et seuil de livraison, gardent leur version précédente 60 s comme aujourd'hui, ou la perdent comme les points de retrait (2026-11-05) | décision de Hugo                                                                                                                                                    | ici, § 1                                                                           |
+| 6   | **Le rayon pro précalculé** (phase 3) — **seulement si 400 ms ne suffit pas**                                                                                                                                                              | le client ne paierait plus jamais le calcul (300 ms à 2 s quand l'objet manque)                                                                                                         | la page Santé : part `hit` de `shelf.read` et p95 de `cacheCalls` après le passage à 400 ms — non relevés au 2026-11-05 ; demande d'abord la phase 2 (a) et (c)     | [`le-rayon-en-cache.md`](le-rayon-en-cache.md) § 6.2 et § 8                        |
+| 7   | **L'objet des journées** (singleton qui relit le numéro de journée pour tous les écrans)                                                                                                                                                   | moins de lectures au rush quand plusieurs écrans regardent la même journée                                                                                                              | la mesure au rush du nombre d'écrans simultanés et du coût d'une relecture                                                                                          | [`version-par-journee.md`](version-par-journee.md) § 4                             |
+
+Les petits restes (pas assez pour un plan) sont dans
+[`../todos/todo-cache-restes.md`](../todos/todo-cache-restes.md).
+
+### Abandonnés ou dépassés (2026-11-05)
+
+- **Un appel unique « entrer dans l'espace »** — abandonné le 2026-11-04 :
+  les petites lectures partent déjà ensemble et finissent sous 900 ms ; le
+  chemin critique était fait des calculs de prix.
+- **« Ne plus attendre `/me` pour la vague suivante »** — dépassé par l'espace
+  retenu : le rayon part avec `/me`
+  ([`dans-quel-espace-est-le-client.md`](dans-quel-espace-est-le-client.md)).
+- **Les connexions froides à la base** (~200 ms après une pause) — traité
+  par le pool gardé ouvert (`min: 10`, `prisma.service.ts:72`, `962dda506`) ;
+  relevé de Hugo ce soir : estampille 10–19 ms après 2 min de calme,
+  10–52 ms après 10 min.
+- **Le cache de `/pickup-addresses/mine`** — renoncé (`vitruve`, 2026-11-05) :
+  1 à 2 lectures gagnées pour un cache à estampiller.
+- **Le cache de `/fulfillment-days/mine`** — renoncé : il dépend du stock du
+  jour et des plans clos ; un cache proposerait un jour impossible.
+- **Le cache de l'accès aux fonctions** — dépassé : la route
+  `/feature-access/mine` est retirée, les niveaux voyagent dans `/me`, en un
+  `findMany` (`840e5dd46`), toujours sans cache (décision écrite dans
+  `documentation/b2b/architecture-feature-flags.md`).
+- **Le rayon pro « jusqu'à la prochaine heure, plafond 1 h »** — remplacé
+  par 5 minutes ou la prochaine opération datée (trois objections bloquantes
+  de `vitruve`, 2026-11-04).
+- **Le cache des comptes clients du back-office** (doc-first du 2026-09-09) —
+  ajourné : son lot `cacheStrategy` est sans objet depuis la sortie
+  d'Accelerate (2026-09-19), et le reste ne vise qu'un écran du staff, peu
+  lu en pré-release. Le doublon de lecture de la liste et le piège à retenir
+  sont au TODO.
 
 # Partie 1 — L'explication simple
 
-Une requête de la boutique traverse jusqu'à cinq étages. À chaque étage, un
-cache peut répondre à la place de l'étage suivant. La règle commune : **celui
-qui écrit vide le cache après l'enregistrement**, une **durée courte** rattrape
-ce qui change sans écriture (une promotion qui s'ouvre à midi), et **si le
-cache tombe, on relit la base**.
+Une requête de la boutique traverse jusqu'à six étages. À chaque étage, un
+cache peut répondre à la place du suivant. La règle commune : **celui qui
+écrit vide le cache après l'enregistrement**, une **durée courte** rattrape ce
+qui change sans écriture (une promotion qui s'ouvre à midi), et **si le cache
+tombe, on relit la base** — aucun cache n'est sur le chemin de la
+disponibilité.
 
 ```mermaid
 flowchart LR
-  N["Navigateur<br/>photo du rayon, panier local,<br/>cache HTTP"] --> E["Bord Cloudflare<br/>Workers Cache<br/>rayon public, textes, réglages"]
-  E --> W["Worker de l'API<br/>container/worker.ts"]
-  W --> C["Container Nest<br/>(Backend, pas un cache)"]
-  C --> M["Mémoire de l'API<br/>principal, droits staff, prix,<br/>textes publiés, sondes"]
-  C -- "rayons.interne" --> P["Durable Object ProShelves<br/>rayon d'une société"]
-  M --> B[("Postgres<br/>estampilles principal_stamp,<br/>pricing_events")]
+  N["Navigateur<br/>photo du rayon, panier local,<br/>cache HTTP"] --> E["Bord Cloudflare<br/>Workers Cache<br/>rayon public, textes, réglages, points"]
+  E --> W["Worker de l'API"]
+  W --> C["Container Nest"]
+  C --> M["Mémoire de l'API<br/>principal, droits staff,<br/>matériaux de prix, textes"]
+  C -- "rayons.interne" --> P["Objet ProShelves<br/>rayon d'une société"]
+  M --> B[("Postgres<br/>10 connexions gardées ouvertes")]
 ```
+
+Le chemin d'un pro qui ouvre son rayon :
 
 ```mermaid
 sequenceDiagram
@@ -41,38 +85,78 @@ sequenceDiagram
   N->>E: GET /shop/catalogue/mine
   E->>W: réponse privée, jamais gardée au bord
   W->>A: requête
-  A->>B: estampille du principal (une ligne)
-  A->>P: rayon de la société, révision courante
+  A->>A: jeton vérifié, clés Auth0 en mémoire
+  A->>B: estampille du principal, une ligne
+  A->>P: rayon de la société, 400 ms au plus
   P-->>A: trouvé, ou raté avec la version
   A->>B: au raté seulement, calcul complet
-  A->>P: rangement sous la version relevée
   A-->>N: rayon
+  A->>P: rangement après la réponse
 ```
+
+## Les dernières mesures
+
+Relevé de Hugo **en production le 2026-11-05 au soir, après dix minutes sans
+trafic** (non remesuré ici) :
+
+| Étape ou appel                    | Durée    | Avant                                         |
+| --------------------------------- | -------- | --------------------------------------------- |
+| vérification du jeton (`verify`)  | 1–10 ms  | 3,3–3,8 s quand les clés Auth0 avaient expiré |
+| estampille du principal (`stamp`) | 10–52 ms | ~200 ms sur une connexion froide              |
+| `GET /me`                         | 226 ms   | —                                             |
+| `GET /shop/catalogue/mine`        | 385 ms   | —                                             |
+| panier                            | 110 ms   | —                                             |
+| ouverture après une pause         | —        | 3,4–4,2 s                                     |
+
+Carte de santé (C5), 2026-11-05 : principal **92 %** servi en mémoire,
+matériaux de prix **86–96 %**, rayon public **100 %** offert au bord ; rayon
+d'une société **0 % en lecture avant le passage à 400 ms** (la lecture
+dépassait 100 ms), part depuis non relevée.
 
 ## Une ligne par cache
 
-| Quoi                                                             | Où                                  | Combien de temps                                                      | Qu'est-ce qui le vide                                                                    |
-| ---------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Rayon public (`/shop/catalogue`, `/shop/featured`)               | bord Cloudflare                     | 30 s                                                                  | purge de l'étiquette `rayon-public` ; **éteint par défaut** (`public-on` pour l'allumer) |
-| Textes de la boutique (`/shop/copy`)                             | bord Cloudflare + navigateur        | 60 s, puis 10 min de version précédente pendant la revalidation       | purge `textes-boutique` à chaque publication                                             |
-| Réglages publics (pied de page, ouverture, zones, disponibilité) | bord Cloudflare + navigateur        | 30 s, puis 60 s de version précédente                                 | purge `reglages-publics` à chaque écriture d'un des quatre                               |
-| Points de retrait publics (`/pickup-addresses`)                  | bord Cloudflare + navigateur        | 30 s, sans version précédente                                         | purge `reglages-publics` : points, rôles d'un site, promotions                           |
-| Images de la médiathèque (R2, domaine public)                    | bord Cloudflare + navigateur        | un an, immuable (adresse = contenu)                                   | rien : une image changée a une autre adresse                                             |
-| Rayon d'une société (`/shop/catalogue/mine`)                     | Durable Object `ProShelves`         | 5 min au plus, ou jusqu'à la prochaine opération datée                | `ShelfChanges` (regroupé à la seconde) ; interrupteur ; nouvelle révision déployée       |
-| Le principal (qui est le client, sa société, son rôle)           | mémoire de l'API                    | 10 min au plus, **et** tant que l'estampille n'a pas bougé            | toute écriture sur `users`, `memberships`, `companies` (déclencheurs)                    |
-| Les droits d'un membre du staff                                  | mémoire de l'API                    | 30 s                                                                  | l'expiration ; `forget`/`forgetAll` sur l'instance qui change un droit                   |
-| Les matériaux de prix (règles, planchers, barèmes, promotions)   | mémoire de l'API                    | tant que l'estampille `pricing_events` n'a pas bougé                  | tout acte tarifaire (une ligne dans `pricing_events`)                                    |
-| Les textes publiés (boutique, e-mails), côté serveur             | mémoire de l'API                    | version relue toutes les 15 s                                         | `forget()` sur l'instance qui publie ; les autres par la version                         |
-| Le drapeau du rayon public                                       | mémoire de l'API                    | 5 s                                                                   | l'expiration                                                                             |
-| Sondes de la carte de santé, usage du container                  | mémoire de l'API                    | 30 s ; refus de portée Auth0 retenu 1 h                               | l'expiration ; un échec n'est pas gardé                                                  |
-| Jeton Auth0 de gestion, clés de signature (JWKS)                 | mémoire de l'API                    | jusqu'à l'expiration du jeton ; selon `jose` pour les clés            | l'expiration                                                                             |
-| Géocodages d'adresses                                            | **base** (table de cache)           | jusqu'à la purge RGPD                                                 | `purge-stale-geocodes`                                                                   |
-| Photo du rayon dans la boutique                                  | navigateur (`ShopCatalogue`)        | jusqu'au changement d'espace, ou 1 min au retour d'onglet panier vide | relecture ; le panier recalcule toujours au vrai prix                                    |
-| Panier, mode de service                                          | navigateur (`localStorage`, `lfc.`) | jusqu'à effacement ; le panier d'un client reconnu est aussi en base  | `ShopCartSync`                                                                           |
+| Quoi                                                             | Où                                  | Clé                           | Combien de temps                                                      | Qu'est-ce qui le vide                                                              |
+| ---------------------------------------------------------------- | ----------------------------------- | ----------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Rayon public (`/shop/catalogue`, `/shop/featured`)               | bord Cloudflare                     | l'adresse                     | 30 s                                                                  | purge de l'étiquette `rayon-public` ; drapeau public (`public-on` / `public-off`)  |
+| Textes de la boutique (`/shop/copy`)                             | bord Cloudflare + navigateur        | l'adresse                     | 60 s, puis 10 min de version précédente pendant la revalidation       | purge `textes-boutique` à chaque publication                                       |
+| Réglages publics (pied de page, ouverture, zones, disponibilité) | bord Cloudflare + navigateur        | l'adresse                     | 30 s, puis 60 s de version précédente                                 | purge `reglages-publics` à chaque écriture d'un des quatre                         |
+| Points de retrait publics (`/pickup-addresses`)                  | bord Cloudflare + navigateur        | l'adresse                     | 30 s, **sans** version précédente                                     | purge `reglages-publics` : points, rôles d'un site, promotions                     |
+| Images de la médiathèque (R2, domaine public)                    | bord Cloudflare + navigateur        | l'adresse = le contenu        | un an, immuable                                                       | rien : une image changée a une autre adresse                                       |
+| Rayon d'une société (`/shop/catalogue/mine`)                     | objet `ProShelves`                  | révision + société (ou perso) | 5 min au plus, ou jusqu'à la prochaine opération datée                | `ShelfChanges` (regroupé à la seconde) ; interrupteur ; nouvelle révision déployée |
+| Le principal (qui est le client, sa société, son rôle)           | mémoire de l'API                    | le `sub`                      | 10 min au plus, **et** tant que l'estampille n'a pas bougé ; 20 000   | toute écriture sur `users`, `memberships`, `companies` (déclencheurs)              |
+| Les droits d'un membre du staff                                  | mémoire de l'API                    | le `sub`                      | 30 s                                                                  | l'expiration ; `forget`/`forgetAll` sur l'instance qui change un droit             |
+| Les matériaux de prix (règles, planchers, barèmes, promotions)   | mémoire de l'API                    | six clés fixes                | tant que l'estampille `pricing_events` n'a pas bougé                  | tout acte tarifaire (une ligne dans `pricing_events`)                              |
+| Les textes publiés (boutique, e-mails), côté serveur             | mémoire de l'API                    | la langue                     | version relue toutes les 15 s                                         | `forget()` sur l'instance qui publie ; les autres par la version                   |
+| Le drapeau du rayon public                                       | mémoire de l'API                    | —                             | 5 s                                                                   | l'expiration                                                                       |
+| Clés de signature Auth0 (JWKS)                                   | mémoire de l'API                    | l'URI JWKS                    | **24 h** ; une clé inconnue recharge (30 s entre deux)                | l'expiration                                                                       |
+| Jeton Auth0 de gestion, sondes de la carte de santé              | mémoire de l'API                    | —                             | jusqu'à l'expiration du jeton ; 30 s ; refus de portée retenu 1 h     | l'expiration ; un échec n'est pas gardé                                            |
+| Géocodages d'adresses                                            | **base** (table de cache)           | l'adresse                     | jusqu'à la purge RGPD                                                 | `purge-stale-geocodes`                                                             |
+| Photo du rayon dans la boutique                                  | navigateur (`ShopCatalogue`)        | l'espace                      | jusqu'au changement d'espace, ou 1 min au retour d'onglet panier vide | relecture ; le panier recalcule toujours au vrai prix                              |
+| Panier, mode de service                                          | navigateur (`localStorage`, `lfc.`) | —                             | jusqu'à effacement ; le panier d'un client reconnu est aussi en base  | `ShopCartSync`                                                                     |
 
 **Ce qui n'est jamais caché** : le stock, le devis, la passation, les
-suggestions, et toute réponse qui dépend de l'appelant hors du rayon reconnu.
-Le stable va dans le rayon, le dynamique à côté.
+suggestions, les jours de service, et toute réponse qui dépend de l'appelant
+hors du rayon reconnu. Le stable va dans le rayon, le dynamique à côté.
+
+**Ce qui n'est pas un cache mais garde quelque chose chaud** : le pool
+Postgres garde **10 connexions ouvertes** (`min: 10`,
+`apps/lfd-api/src/platform/database/prisma.service.ts:72`, 2026-11-05) pour
+qu'une requête après une pause n'ouvre pas de connexion neuve.
+
+## Les documents du dossier
+
+| Document                                                                           | Sujet                                                                                      |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [`le-rayon-en-cache.md`](le-rayon-en-cache.md)                                     | le rayon public au bord, le rayon d'une société dans l'objet, la purge, la durée, le repli |
+| [`qui-est-le-client.md`](qui-est-le-client.md)                                     | le principal en mémoire, sous une estampille posée par la base                             |
+| [`dans-quel-espace-est-le-client.md`](dans-quel-espace-est-le-client.md)           | le contexte de lecture de la boutique, la brique `contextKeyed`                            |
+| [`aucune-reponse-personnelle-en-cache.md`](aucune-reponse-personnelle-en-cache.md) | la règle par défaut : rien de personnel dans un cache, et la porte                         |
+| [`version-par-journee.md`](version-par-journee.md)                                 | ne relire que ce qui a bougé, un numéro par journée                                        |
+| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                 | 📝 le seul plan ouvert : le catalogue chargé une fois par requête                          |
+
+Ailleurs, à lire avec :
+[`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md)
+(le cache des règles de prix).
 
 # Partie 2 — Le détail technique
 
@@ -87,8 +171,8 @@ Numéros de ligne relevés le 2026-11-05.
 `public`, tenus par la liste `ADMITTED` de `dev-toolbox/gates/cache-control.mjs:47`
 (`lint:cache-control`) ; la même porte n'admet une purge de Workers Cache, un
 gestionnaire de sortie et une classe `DurableObject` que dans `worker.ts` et
-`pro-shelves.ts` (`CONTAINER_ADMITTED`, `:123`). Conception :
-[`plan-aucun-cache-sur-le-personnel.md`](plan-aucun-cache-sur-le-personnel.md).
+`pro-shelves.ts` (`CONTAINER_ADMITTED`, `:123`). Détail :
+[`aucune-reponse-personnelle-en-cache.md`](aucune-reponse-personnelle-en-cache.md).
 
 ## 1. Le bord Cloudflare (Workers Cache)
 
@@ -188,8 +272,7 @@ Le rayon public, lui, **n'est pas** dans l'objet : l'objet ne porte que son
 drapeau (`public/state`), relu par l'API et retenu 5 s
 (`PUBLIC_FLAG_MEMORY_MS`, `public-shelf-flag-memory.ts:9`).
 
-Conception : [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md)
-(C1–C4) et [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md).
+Détail : [`le-rayon-en-cache.md`](le-rayon-en-cache.md).
 
 ## 3. La mémoire de l'API (Nest)
 
@@ -206,7 +289,7 @@ instances » dit ce qui resterait juste si ce chiffre montait.
 | Sondes OPS — `Cached<T>` (`apps/lfd-api/src/ops/cached.ts`), utilisé par `ops-health.service.ts:54-55` et `container-usage.service.ts:39`                                                                                                                             | une valeur par sonde                          | 30 s                                                                      | expiration ; un échec n'est pas gardé                                                                                                                                                                                   | sans enjeu (observation)                                                                  |
 | Refus de portée Auth0 — `auth0-readings.reader.ts:21`                                                                                                                                                                                                                 | —                                             | 1 h                                                                       | expiration                                                                                                                                                                                                              | sans enjeu                                                                                |
 | Jeton de gestion Auth0 — `apps/lfd-api/src/platform/identity/auth0-management.client.ts:50`                                                                                                                                                                           | —                                             | jusqu'à `expiresAtMs` du jeton                                            | expiration                                                                                                                                                                                                              | un jeton par instance                                                                     |
-| Clés de signature Auth0 — `createRemoteJWKSet` (`apps/lfd-api/src/platform/auth/access-token.verifier.ts:33`, `admin-token.verifier.ts:50`, `id-token.verifier.ts:127`)                                                                                               | l'URI JWKS                                    | règles internes de `jose` (non relues ici)                                | `jose` recharge sur une clé inconnue                                                                                                                                                                                    | un jeu par instance                                                                       |
+| Clés de signature Auth0 — `remoteKeySet` (`apps/lfd-api/src/platform/auth/remote-key-set.ts:20-21`, seul appel de `createRemoteJWKSet`), utilisé par `access-token.verifier.ts:32`, `admin-token.verifier.ts:49`, `id-token.verifier.ts:128`                          | l'URI JWKS                                    | **24 h** (`REMOTE_KEY_SET_MAX_AGE_MS`, `:17`, `7563aeef2`, 10 min avant)  | une clé inconnue force un rechargement, au plus une fois toutes les 30 s (`cooldownDuration` de `jose` 6.2.3, lu le 2026-11-05)                                                                                         | un jeu par instance                                                                       |
 
 **Ce qui ressemble à un cache et n'en est pas un** (relu le 2026-11-05) :
 `InMemoryShopShelfCache` ne sert qu'aux tests d'application (le module ne
@@ -244,10 +327,10 @@ Conception : [`qui-est-le-client.md`](qui-est-le-client.md),
 ## 5. Ce qui n'est pas caché, et pourquoi
 
 Règle : **le stable dans le rayon, le dynamique à côté**
-([`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md)).
+([`le-rayon-en-cache.md`](le-rayon-en-cache.md)).
 
 - **Le stock** : il change à chaque commande ; le garder ferait vendre ce qui
-  n'existe plus. C'est la limite du système nommée par ce plan.
+  n'existe plus. La vue gardée du rayon n'en porte aucun.
 - **Le devis** : il recompose le panier à chaque changement — c'est lui qui
   rattrape un rayon gardé trop longtemps.
 - **La passation** : relit tout et refuse un total que le client n'a pas vu.
@@ -277,10 +360,9 @@ Règle : **le stable dans le rayon, le dynamique à côté**
   ⚠️ non vérifié qu'il soit présent sur les réponses du Workers Cache.
 - **Le rayon pro** : pas d'en-tête dédié vu le 2026-11-05 ; les signaux
   `ShelfCacheSignals` sont journalisés (`logging-shelf-cache-signals.ts`). La
-  surveillance sur la carte de santé est le lot C5 de
-  [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md) (voir la ligne
-  suivante).
-- **Constater de l'intérieur** (C5, bâti le 2026-11-05) : trois caches
+  surveillance sur la carte de santé est décrite ligne suivante et dans
+  [`le-rayon-en-cache.md`](le-rayon-en-cache.md) § 4 quater.
+- **Constater de l'intérieur** (C5, bâti le 2026-11-05, affiché à la page Santé du back-office, `79bdf21cc`) : trois caches
   comptent leurs issues dans `CacheOutcomeRecorder`
   (`apps/lfd-api/src/platform/metrics/`), compteurs par minute en mémoire,
   fenêtre de 30 min, **par instance** — le principal (`principal` : la même
@@ -290,7 +372,8 @@ Règle : **le stable dans le rayon, le dynamique à côté**
   et les matériaux de prix (`pricing.materials` : `hit`/`miss`/`stamp_moved`,
   une issue par table demandée). La carte de santé
   (`GET /admin/ops/health`, champ `caches`) rend par cache le total et la part
-  de chaque issue. ⚠️ L'écran du back-office ne l'affiche pas encore.
+  de chaque issue ; la page Santé l'affiche. Les **purges ne sont pas
+  comptées** (événements journalisés seulement) et rien n'alerte.
 - **La durée de l'appel à l'objet** (2026-11-05) : `ShelfCallGuard` range
   chaque appel dans les minuteurs (`TimingRecorder`, 30 min, par instance) —
   `shelf_cache.round_trip` (étiquettes `operation`, `outcome` : `in_time`,
@@ -299,12 +382,11 @@ Règle : **le stable dans le rayon, le dynamique à côté**
   totale). La carte de santé les rend dans `cacheCalls` : par opération, le
   nombre d'appels, d'abandons, p50, p95 et le p95 de la fin des abandonnés
   (`apps/lfd-api/src/ops/health/cache-call-readings.ts`). C'est cette mesure qui a porté
-  `SHELF_CALL_LIMIT_MS` à 400 ms le 2026-11-05. ⚠️ L'écran du back-office ne l'affiche pas encore.
+  `SHELF_CALL_LIMIT_MS` à 400 ms le 2026-11-05 (`f631e0fb4`). Affiché à la page Santé (`aeeb14d05`).
 
 ## Ce qui n'est pas vérifié
 
 - le relais de purge par `ctx.exports` en production ;
-- le comportement de `jose` (durée de garde des clés) ;
 - la présence de `cf-cache-status` et l'absence d'étape `container` sur un
   `HIT` du bord ;
 - la configuration de cache des fichiers statiques de la boutique côté

@@ -12,7 +12,7 @@ import { LoggingShelfPurge } from "../b2b/shared/shelf-changes/infrastructure/lo
 import { NodeShelfWindowTimer } from "../b2b/shared/shelf-changes/infrastructure/node-shelf-window-timer.js";
 
 /**
- * **Le signal des rayons** (`documentation/caching-usage/plan-cache-du-catalogue.md`, C1).
+ * **Le signal des rayons** (`documentation/caching-usage/le-rayon-en-cache.md`, C1).
  *
  * `@Global` parce que les écrivains sont dispersés dans six contextes du
  * commerce (catalogue, opérations, heures limites, prix, promotions, comptes)

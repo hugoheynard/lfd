@@ -10,7 +10,7 @@ export type PublicShelfVerdict =
   { readonly cacheable: true } | { readonly cacheable: false; readonly reason: PublicShelfRefusal };
 
 /**
- * **Une réponse publique se garde-t-elle ?** (`plan-cache-du-catalogue.md`,
+ * **Une réponse publique se garde-t-elle ?** (`le-rayon-en-cache.md`,
  * § 3, « Le rayon douteux »). Seulement si le drapeau public est allumé aux
  * DEUX relevés et que la version n'a pas bougé entre eux : une purge passée
  * pendant le calcul a peut-être rendu ce rayon faux. Un relevé manquant

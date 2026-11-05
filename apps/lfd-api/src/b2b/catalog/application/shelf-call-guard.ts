@@ -14,7 +14,7 @@ import { ShelfCacheBreaker } from "./shelf-cache-breaker.js";
 
 /**
  * Le délai d'une **lecture** au magasin des rayons (et d'un effacement) :
- * 400 ms depuis le 2026-11-05, 100 ms avant (`plan-cache-du-catalogue.md`,
+ * 400 ms depuis le 2026-11-05, 100 ms avant (`le-rayon-en-cache.md`,
  * § 4 bis).
  *
  * Mesuré en production le 2026-11-05 (carte de santé, `cacheCalls`) : à

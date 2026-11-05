@@ -1,5 +1,9 @@
 # Plan — les matériaux du catalogue, chargés une fois
 
+> 🎯 **Le seul plan ouvert du dossier (2026-11-05).** Reste : M1, M2, M3 —
+> rien n'est bâti au-delà de M0. Objectif n° 2 de
+> [`carte-des-caches.md`](carte-des-caches.md).
+
 > 📏 **M0 mesuré le 2026-11-05** (`apps/lfd-api/test/catalogue-reads.e2e-spec.ts`,
 > relevé au § 1). Depuis l'écriture du plan, le rayon est gardé par l'objet
 > `ProShelves` (le recalcul n'a lieu qu'en cas d'absence) alors que le devis

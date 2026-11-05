@@ -16,7 +16,7 @@ const switchPayloadSchema = z.object({ action: z.enum(SHELF_SWITCH_ACTIONS) });
 type SwitchPayload = z.infer<typeof switchPayloadSchema>;
 
 /**
- * **L'interrupteur du cache des rayons** (`plan-cache-du-catalogue.md`,
+ * **L'interrupteur du cache des rayons** (`le-rayon-en-cache.md`,
  * « L'interrupteur ») : éteindre, rallumer, vider — et, depuis C3, allumer ou
  * éteindre le rayon public seul (`public-on`, `public-off`) — en production sans
  * redéployer ni redémarrer le conteneur. Actionné par le workflow

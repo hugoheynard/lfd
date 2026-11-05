@@ -1,6 +1,6 @@
 /**
  * E2E du **rayon reconnu gardé au magasin des rayons pro** — phase 1 de
- * `documentation/caching-usage/plan-rayon-jusqu-a-la-prochaine-heure.md`, § 3.
+ * `documentation/caching-usage/le-rayon-en-cache.md`, § 6.3.
  *
  * Ce que seul ce niveau prouve : la vraie route `/shop/catalogue/mine`, le vrai
  * calcul et les vraies opérations lues en base rangent le rayon, le servent au

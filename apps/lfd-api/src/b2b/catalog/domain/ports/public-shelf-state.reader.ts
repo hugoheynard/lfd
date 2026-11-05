@@ -9,7 +9,7 @@ export interface PublicShelfState {
 }
 
 /**
- * **Lire l'état du rayon public** (`plan-cache-du-catalogue.md`, § 3) : l'API
+ * **Lire l'état du rayon public** (`le-rayon-en-cache.md`, § 3) : l'API
  * le relève avant ET après le calcul d'un rayon public, et ne laisse
  * Cloudflare garder la réponse que si rien n'a bougé entre les deux.
  *

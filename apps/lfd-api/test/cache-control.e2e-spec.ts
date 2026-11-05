@@ -1,6 +1,6 @@
 /**
  * E2E du **`Cache-Control` par défaut** (plan
- * `documentation/caching-usage/plan-aucun-cache-sur-le-personnel.md`).
+ * `documentation/caching-usage/aucune-reponse-personnelle-en-cache.md`).
  *
  * Seul ce niveau prouve que la règle couvre TOUTES les réponses : celles des
  * contrôleurs, mais aussi un refus des guards, une 404 de chemin inconnu, et
@@ -108,7 +108,7 @@ describe("Cache-Control par défaut", () => {
 
 /**
  * La liste publique des points de retrait (2026-11-05,
- * `documentation/caching-usage/plan-lectures-par-audience.md`) : `public,
+ * `documentation/caching-usage/carte-des-caches.md`) : `public,
  * max-age=30` sans `stale-while-revalidate`, étiquetée pour la purge — sur
  * `list()` seulement : les créneaux dépendent de l'heure.
  */

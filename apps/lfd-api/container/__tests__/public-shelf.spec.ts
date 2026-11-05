@@ -18,7 +18,7 @@ import {
 } from "../public-shelf";
 
 /**
- * Le rayon public côté Worker (`plan-cache-du-catalogue.md`, C3). Ces tests
+ * Le rayon public côté Worker (`le-rayon-en-cache.md`, C3). Ces tests
  * échouent si une requête du dehors peut déclencher une purge, si l'étiquette
  * purgée diffère de celle que l'API pose, ou si un échec de purge passe pour
  * un succès.

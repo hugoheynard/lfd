@@ -191,7 +191,7 @@ dataset = "lfc_gateway_traffic"
 # Les traces (bêta Cloudflare, 2026-11-04) : le saut passerelle → Worker de
 # l'API, mesuré pour toutes les requêtes, sans code. Facturées à partir du
 # 2026-12-01 — baisser `head_sampling_rate` alors. Plan
-# `documentation/caching-usage/plan-latence-de-navigation.md`, L0.
+# `documentation/caching-usage/carte-des-caches.md`, § 6 (lot L0 de la latence de navigation, 2026-11-04).
 [observability.traces]
 enabled = true
 head_sampling_rate = 1

@@ -94,7 +94,7 @@ describe('Les destinations du menu', () => {
   });
 
   /**
-   * Régression (plan-latence-de-navigation, L1) : le compte des gabarits
+   * Régression (latence de navigation, L1, 2026-11-04) : le compte des gabarits
    * appelait `/subscriptions/mine` à chaque page, pour une destination dont
    * aucune surface n'affiche le compte tant que son écran n'existe pas.
    */

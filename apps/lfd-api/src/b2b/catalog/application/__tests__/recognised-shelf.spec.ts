@@ -27,7 +27,7 @@ import {
 
 /**
  * **Le rayon reconnu à travers le magasin des rayons pro** (C2,
- * `plan-cache-du-catalogue.md`) — contre le VRAI calcul du rayon et la
+ * `le-rayon-en-cache.md`) — contre le VRAI calcul du rayon et la
  * version en mémoire du port (§ 4 ter), jamais contre l'objet.
  */
 interface Rig {

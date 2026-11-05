@@ -1,6 +1,6 @@
 /**
  * Ajoute une étape à `Server-Timing`, après celles que les sauts suivants ont
- * déjà posées — plan `documentation/caching-usage/plan-latence-de-navigation.md`, L0.
+ * déjà posées — `documentation/caching-usage/carte-des-caches.md`, § 6 (posé par le lot L0 de la latence de navigation, 2026-11-04).
  *
  * La réponse d'un `fetch()` a des en-têtes immuables : on en refait une, même
  * corps (non relu, toujours en flux), mêmes statut et en-têtes.

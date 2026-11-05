@@ -157,7 +157,7 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     AdminCatalogController,
     // Le sur mesure et la réservation (`plan-articles-sur-mesure.md`, L1a).
     AdminMadeToOrderController,
-    // L'interrupteur du cache des rayons pro (`plan-cache-du-catalogue.md`).
+    // L'interrupteur du cache des rayons pro (`le-rayon-en-cache.md`).
     AdminShelfCacheController,
     // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
     ShopCatalogueController,

@@ -3,7 +3,7 @@ import type { PublicShelfReply } from "../application/public-shelf-cacheability.
 
 /**
  * La durée de vie d'un rayon public gardé : **30 secondes, fixes** (Hugo,
- * 2026-11-04, `plan-cache-du-catalogue.md` § 6). Ce qui change sans écriture
+ * 2026-11-04, `le-rayon-en-cache.md` § 6). Ce qui change sans écriture
  * — une promotion qui s'ouvre à midi — n'est rattrapé que par elle.
  */
 export const PUBLIC_SHELF_MAX_AGE_S = 30;

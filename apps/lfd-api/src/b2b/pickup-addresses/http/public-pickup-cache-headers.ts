@@ -7,7 +7,7 @@ import { PUBLIC_SETTINGS_CACHE_TAG } from "../../shared/public-settings-cache/do
  * publique des points sans redemander.
  *
  * **Sans `stale-while-revalidate`** (Hugo, 2026-11-05,
- * `documentation/caching-usage/plan-lectures-par-audience.md`) : la remise
+ * `documentation/caching-usage/carte-des-caches.md`) : la remise
  * affichée sur un point vient des promotions, jugées à l'heure, et une
  * promotion à horaires se ferme sans aucune écriture — donc sans purge. Au
  * plus 30 s après sa fin, la vitrine ne l'annonce plus.

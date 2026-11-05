@@ -2,8 +2,8 @@
 
 > 📍 **État au 2026-11-05.** ✅ En production. Mesuré sur la carte de santé
 > (C5) : **92 % des appels** trouvent leur principal en mémoire. Cette doc
-> remplace le plan du lot L4 de
-> [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md) ; la carte
+> remplace le plan du lot L4 du plan de latence de navigation (retiré le
+> 2026-11-05, dans l'historique git) ; la carte
 > de tous les caches est [`carte-des-caches.md`](carte-des-caches.md).
 
 # Partie 1 — Comprendre

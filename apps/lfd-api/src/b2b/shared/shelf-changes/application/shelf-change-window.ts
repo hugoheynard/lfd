@@ -6,7 +6,7 @@ import type { ShelfChangeScope } from "../domain/shelf-change-scope.js";
 import { ShelfPurge } from "../domain/ports/shelf-purge.js";
 import { ShelfWindowTimer } from "../domain/ports/shelf-window-timer.js";
 
-/** Au plus une purge par seconde (`plan-cache-du-catalogue.md` § 5). */
+/** Au plus une purge par seconde (`le-rayon-en-cache.md` § 5). */
 export const SHELF_PURGE_WINDOW_MS = 1000;
 
 /**
@@ -17,7 +17,7 @@ export const SHELF_PURGE_WINDOW_MS = 1000;
  * sans fin une fenêtre glissante, et aucun rayon ne serait jamais effacé.
  * Un redémarrage dans la seconde perd la purge en attente — la durée de vie
  * des rayons rattrape : 30 s au rayon public, 5 minutes au plus au rayon pro
- * depuis le 2026-11-04 (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 0).
+ * depuis le 2026-11-04 (`le-rayon-en-cache.md`, § 6.1).
  */
 @Injectable()
 export class ShelfChangeWindow {

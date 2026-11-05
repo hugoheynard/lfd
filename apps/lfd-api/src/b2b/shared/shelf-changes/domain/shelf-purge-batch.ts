@@ -11,7 +11,7 @@ export type ShelfPurgeOrder =
 
 /**
  * Le regroupement d'une fenêtre, pur : une rafale de changements donne UNE
- * purge (`plan-cache-du-catalogue.md` § 5 — une ingestion de 200 fiches en
+ * purge (`le-rayon-en-cache.md` § 5 — une ingestion de 200 fiches en
  * déclencherait 200, et l'offre gratuite plafonne les purges).
  */
 export class ShelfPurgeBatch {

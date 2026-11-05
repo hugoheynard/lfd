@@ -1,12 +1,12 @@
 # Les caches du système
 
-> ✅ **Carte relue contre le code le 2026-11-04.** Ce dossier rassemble tout ce
-> qui garde une donnée pour ne pas la relire : ce qui est caché, où, combien de
-> temps, et **qui le vide**. Partie 1 : la carte. Partie 2 : les documents.
+> ✅ **Index du dossier, relu le 2026-11-05** (grand ménage). Tout ce qui
+> garde une donnée pour ne pas la relire : ce qui est caché, où, combien de
+> temps, et **qui le vide**. La porte d'entrée est
+> [`carte-des-caches.md`](carte-des-caches.md) — chaque cache, les dernières
+> mesures, et les **objectifs restants** de tout le dossier, priorisés.
 
-# Partie 1 — La carte
-
-## Pourquoi on cache
+# Partie 1 — Pourquoi on cache
 
 La base de production (Prisma Postgres) est **facturée à l'opération**, et loin
 de l'API. Chaque lecture évitée est de l'argent et du temps. Mais un cache qui
@@ -20,62 +20,26 @@ pire que pas de cache. D'où trois règles qui valent pour tous :
 
 ```mermaid
 flowchart LR
-  V["Navigateur"] --> CF["Cloudflare<br/>Workers Cache"]
+  V["Navigateur"] --> CF["Bord Cloudflare<br/>Workers Cache"]
   CF --> W["Worker de l'API"]
   W --> API["API, en mémoire"]
   API --> DO["Objet des rayons pro"]
   API --> B[("Base")]
 ```
 
-## Ce qui est caché aujourd'hui
-
-| Quoi                                                                                      | Où                                                                                         | Combien de temps                                                                                           | Qui le vide                                                                                                                           |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **Les règles de prix** (règles, planchers, barèmes, engagements, mercuriales, promotions) | mémoire de l'API (`PricingMaterialsCache`)                                                 | jusqu'à la prochaine écriture tarifaire                                                                    | `PricingActWriter`, et une estampille (`pricing_events`) relue une fois par requête, qui le rend juste à plusieurs instances          |
-| **Le rayon d'une société** (`/shop/catalogue/mine`, pros et particuliers connectés)       | Durable Object `ProShelves`, une entrée par société, compressée                            | 5 min au plus, ou jusqu'au prochain instant d'une opération datée (2026-11-04 ; 30 s avant)                | `ShelfChanges` après toute écriture qui change un rayon ; l'interrupteur `ops_shelf_cache`                                            |
-| **Le rayon public** (`/shop/catalogue`, `/shop/featured`)                                 | Cloudflare, Workers Cache, au plus près du visiteur                                        | 30 s                                                                                                       | la purge de l'étiquette `rayon-public` sur une écriture qui touche tout le monde ; **éteint par défaut** (`public-on` pour l'allumer) |
-| **Les textes de la boutique** (`/shop/copy`)                                              | Cloudflare, Workers Cache, et le navigateur                                                | 60 s, puis jusqu'à 10 min de version précédente pendant le rafraîchissement                                | la purge de l'étiquette `textes-boutique` à chaque publication                                                                        |
-| **Les textes publiés de la boutique et des e-mails**, côté serveur                        | mémoire de l'API (`CachedPublishedShopCopyReader`, `CachedPublishedMailCopyReader`)        | la version publiée est relue au plus toutes les 15 s ; les textes ne se relisent que si elle a changé      | `forget()` sur l'instance qui publie ; les autres par la version (une estampille qui ne monte qu'à « Publier »)                       |
-| **Le rayon dans la boutique**                                                             | le navigateur (`ShopCatalogue`), une photo prise à l'ouverture                             | jusqu'au changement d'espace, ou au retour sur l'onglet **si le panier est vide** et la photo a une minute | — ; le panier recalcule toujours au vrai prix                                                                                         |
-| **Les versions de journée** (Supervision, fournil, comptoir)                              | rien n'est gardé : l'écran demande `GET admin/day-versions` et ne relit que ce qui a bougé | —                                                                                                          | —                                                                                                                                     |
-| **Les sondes de la carte de santé** (tiers, Auth0, CPU du conteneur)                      | mémoire de l'API (`ops/cached.ts`, `Cached<T>`)                                            | 30 s                                                                                                       | l'expiration ; un échec n'est jamais gardé                                                                                            |
-
-## Ce qui n'est jamais caché
-
-- **Toute réponse d'API** porte par défaut `private, no-store` (appelant
-  identifié) ou `private, no-cache` (visiteur) : aucun cache partagé ne la
-  garde (`cache-control-by-default.middleware.ts`). Seules trois routes
-  publiques, qui ne lisent jamais l'appelant, ont le droit de dire `public` ;
-  `lint:cache-control` le tient.
-- **L'identité et les droits** ne sont plus relus en base à chaque requête
-  depuis le 2026-11-04 (L4, `ad5c80190`) : le principal d'un client est gardé
-  en mémoire, mais servi seulement si l'estampille `principal_stamp` n'a pas
-  bougé — un compte désactivé reste donc bloqué tout de suite. Le staff a son
-  propre cache court. Détail : [`carte-des-caches.md`](carte-des-caches.md).
-- **La passation d'une commande** relit tout : c'est elle qui fait foi.
-
-## Ce qui est prévu
-
-- **Les matériaux du catalogue, chargés une fois** par requête et gardés en
-  mémoire de l'API, vidés par `ShelfChanges` — plan ci-dessous.
-- **La surveillance du cache** sur la carte de santé (lot C5 du plan du cache
-  du catalogue).
-
 # Partie 2 — Les documents
 
-| Document                                                                               | État                              | Sujet                                                                                                                                                                                                                                                               |
-| -------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`carte-des-caches.md`](carte-des-caches.md)                                           | ✅ relu le 2026-11-05             | l'inventaire exhaustif, couche par couche : clé, durée, purge, ce qui arrive si elle se perd, et comment savoir en production si un cache a servi                                                                                                                   |
-| [`plan-cache-du-catalogue.md`](plan-cache-du-catalogue.md)                             | C1 à C4 bâtis sur dev, C5 à faire | le rayon pro dans un Durable Object, le rayon public dans Workers Cache, la purge, l'interrupteur, le repli                                                                                                                                                         |
-| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                     | 📝 plan                           | un seul chargement du catalogue par requête, par construction                                                                                                                                                                                                       |
-| [`plan-aucun-cache-sur-le-personnel.md`](plan-aucun-cache-sur-le-personnel.md)         | ✅ bâti                           | aucune réponse personnelle dans un cache partagé : le middleware et la porte                                                                                                                                                                                        |
-| [`plan-latence-de-navigation.md`](plan-latence-de-navigation.md)                       | 📝 plan                           | le changement d'espace lent : mesurer le plancher par appel, aplatir la cascade, un appel d'entrée                                                                                                                                                                  |
-| [`qui-est-le-client.md`](qui-est-le-client.md)                                         | ✅ bâti                           | qui est le client à chaque appel (le principal), gardé en mémoire et relu sur une estampille posée par la base                                                                                                                                                      |
-| [`plan-rayon-jusqu-a-la-prochaine-heure.md`](plan-rayon-jusqu-a-la-prochaine-heure.md) | 📝 plan                           | le rayon pro gardé jusqu'à la prochaine heure qui change un prix ; le stock, limite du système                                                                                                                                                                      |
-| [`dans-quel-espace-est-le-client.md`](dans-quel-espace-est-le-client.md)               | ✅ état 2026-11-05                | **Dans quel espace est le client** : le contexte de lecture de la boutique (cinq états, l'essai au démarrage, la bascule d'un bloc), la brique `contextKeyed`, la porte à dette 0, l'oubli à la déconnexion — l'ancien plan de « l'espace retenu », tous lots bâtis |
-| [`plan-lectures-par-audience.md`](plan-lectures-par-audience.md)                       | 📝 plan                           | les points de retrait, les jours de service et l'accès aux fonctions : une base par audience gardée une fois, une correction par appelant                                                                                                                           |
-| [`version-par-journee.md`](version-par-journee.md)                                     | ✅ bâti                           | ne relire que ce qui a bougé, une porte par journée                                                                                                                                                                                                                 |
-| [`cache-compte-client.md`](cache-compte-client.md)                                     | 📝 doc-first                      | le cache des comptes clients du back-office                                                                                                                                                                                                                         |
+| Document                                                                           | État                  | Sujet                                                                                                                                                           |
+| ---------------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`carte-des-caches.md`](carte-des-caches.md)                                       | ✅ relu le 2026-11-05 | **la porte d'entrée** : objectifs restants priorisés, dernières mesures, chaque cache couche par couche (clé, durée, purge), comment le constater en production |
+| [`le-rayon-en-cache.md`](le-rayon-en-cache.md)                                     | ✅ état 2026-11-05    | le rayon public au bord de Cloudflare, le rayon d'une société dans l'objet `ProShelves` : purge, durée, repli, interrupteur, surveillance                       |
+| [`qui-est-le-client.md`](qui-est-le-client.md)                                     | ✅ état 2026-11-05    | le principal gardé en mémoire et relu sur une estampille posée par la base                                                                                      |
+| [`dans-quel-espace-est-le-client.md`](dans-quel-espace-est-le-client.md)           | ✅ état 2026-11-05    | le contexte de lecture de la boutique, la brique `contextKeyed`, l'oubli à la déconnexion                                                                       |
+| [`aucune-reponse-personnelle-en-cache.md`](aucune-reponse-personnelle-en-cache.md) | ✅ état 2026-11-05    | rien de personnel dans un cache partagé : le middleware et la porte `lint:cache-control`                                                                        |
+| [`version-par-journee.md`](version-par-journee.md)                                 | ✅ état 2026-11-04    | ne relire que ce qui a bougé, un numéro par journée                                                                                                             |
+| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                 | 📝 plan, M0 mesuré    | le catalogue chargé une fois par requête ; ordre proposé M2 (devis) avant M1 (rayon)                                                                            |
 
-Ailleurs, mais à lire avec : [`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md),
+Les petits restes : [`../todos/todo-cache-restes.md`](../todos/todo-cache-restes.md).
+Ailleurs, à lire avec :
+[`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md),
 ce que coûte un prix et le cache des règles de prix.

@@ -622,7 +622,7 @@ describe("la photo arrive sans push", () => {
 });
 
 /**
- * Workers Cache (C3, `plan-cache-du-catalogue.md` § 3) : l'en-tête exact, à
+ * Workers Cache (C3, `le-rayon-en-cache.md` § 3) : l'en-tête exact, à
  * travers le vrai middleware. Échoue si la vitrine s'offre à un cache partagé
  * drapeau éteint, ou si une purge passée pendant le calcul la laisse garder.
  */

@@ -6,7 +6,7 @@ import { ShopCatalogue } from './shop-catalogue.store';
 
 /**
  * **Le rayon relu au retour sur l'onglet, panier vide** (lot C4,
- * `documentation/caching-usage/plan-cache-du-catalogue.md` — Hugo,
+ * `documentation/caching-usage/le-rayon-en-cache.md` — Hugo,
  * 2026-11-04, option b).
  *
  * Le rayon est une photo qui ne se rafraîchit pas sous un client en train de

@@ -3,7 +3,7 @@ import type { SellableOperation } from "../ports/catalog-operations.reader.js";
 
 /**
  * Le prochain instant d'opération qui change un rayon
- * (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 3). La fonction ne lit AUCUNE
+ * (`le-rayon-en-cache.md`, § 6.3). La fonction ne lit AUCUNE
  * horloge — `now` est un argument —, donc ces dates ne sont comparées qu'entre
  * elles : elles peuvent rester absolues.
  */

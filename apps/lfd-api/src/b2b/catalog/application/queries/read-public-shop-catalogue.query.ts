@@ -4,7 +4,7 @@ import type { ShopAudience } from "../../domain/ports/catalog.reader.js";
 
 /**
  * **La vitrine de `GET /shop/catalogue`, et si Workers Cache peut la garder**
- * (C3, `plan-cache-du-catalogue.md` § 3). La même lecture que
+ * (C3, `le-rayon-en-cache.md` § 3). La même lecture que
  * `ReadShopCatalogueQuery` — que la vitrine de l'agence relit sans cache —,
  * entourée de la décision de cacheabilité.
  */

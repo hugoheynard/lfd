@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **aucune réponse de l'API ne s'offre à un cache partagé**, sauf
- * décision écrite (plan `documentation/caching-usage/plan-aucun-cache-sur-le-personnel.md`).
+ * décision écrite (plan `documentation/caching-usage/aucune-reponse-personnelle-en-cache.md`).
  *
  * Le middleware `cacheControlByDefault` pose `private, no-store` (appelant
  * identifié) ou `private, no-cache` (visiteur) sur toute réponse. Une route
@@ -17,7 +17,7 @@
  *   sur ce qu'elle ne comprend pas ne garantit rien ;
  * - `caches.default` et `caches.open` sont refusés dans `gateway/src` : la
  *   passerelle est le seul endroit où un cache partagé de l'API peut naître ;
- * - depuis le 2026-11-04 (lot C3, `documentation/caching-usage/plan-cache-du-catalogue.md`
+ * - depuis le 2026-11-04 (lot C3, `documentation/caching-usage/le-rayon-en-cache.md`
  *   § 7), Workers Cache garde toute réponse `public` du Worker de l'API. D'où :
  *   un fichier admis peut nommer ses LECTEURS, et tout autre fichier qui
  *   l'importe est refusé — `public` ne s'étend pas à une route de plus par un
@@ -492,7 +492,7 @@ if (offenders.length > 0) {
   }
   console.error(
     "\n  Une réponse qui n'est ni `private` ni `no-store` peut se garder dans un cache\n" +
-      "  partagé et servir un appelant à un autre (plan-aucun-cache-sur-le-personnel.md).\n" +
+      "  partagé et servir un appelant à un autre (aucune-reponse-personnelle-en-cache.md).\n" +
       "  Une exception se décide, avec sa raison, dans la liste ADMITTED de la porte.\n",
   );
   process.exit(1);

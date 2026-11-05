@@ -26,7 +26,7 @@ import { NodeShelfCallDeadline } from "../b2b/catalog/infrastructure/node-shelf-
 import { AppConfig } from "../platform/config/app-config.js";
 
 /**
- * **Le magasin des rayons pro** (`documentation/caching-usage/plan-cache-du-catalogue.md`, C2).
+ * **Le magasin des rayons pro** (`documentation/caching-usage/le-rayon-en-cache.md`, C2).
  *
  * Le choix du magasin est un fait de déploiement, donc il se fait ici : le
  * Durable Object quand la configuration le nomme (le Worker pose

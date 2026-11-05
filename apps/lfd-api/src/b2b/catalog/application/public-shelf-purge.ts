@@ -9,7 +9,7 @@ import { orderTouchesPublicShelf } from "../domain/public-shelf-rules.js";
 import { ResilientPublicShelf } from "./resilient-public-shelf.js";
 
 /**
- * **La purge du rayon public** (C3, `plan-cache-du-catalogue.md` § 5) : un
+ * **La purge du rayon public** (C3, `le-rayon-en-cache.md` § 5) : un
  * magasin de plus dans l'éventail (`FanOutShelfPurge`). Seule une purge
  * « tout » le touche ({@link orderTouchesPublicShelf}).
  *

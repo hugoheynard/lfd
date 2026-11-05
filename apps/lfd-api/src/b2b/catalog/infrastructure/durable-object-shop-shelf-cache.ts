@@ -31,7 +31,7 @@ const HTTP_CONFLICT = 409;
 export type ShelfFetch = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
- * **Le magasin des rayons pro, dans un Durable Object** (`plan-cache-du-catalogue.md`,
+ * **Le magasin des rayons pro, dans un Durable Object** (`le-rayon-en-cache.md`,
  * § 4). Le conteneur l'appelle à `http://rayons.interne` : un nom fictif que le
  * Worker intercepte (gestionnaire de sortie), et qu'il refuse à tout autre
  * appelant que ce conteneur. Ni route publique, ni jeton.
@@ -39,7 +39,7 @@ export type ShelfFetch = (url: string, init: RequestInit) => Promise<Response>;
  * La **révision de l'API** (`AppConfig.revision()`) part avec chaque lecture
  * et chaque rangement (`?revision=`), et l'objet la met dans sa clé : un
  * déploiement ne relit jamais le rayon que l'image précédente a rangé — il
- * expire seul (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1, 2026-11-04).
+ * expire seul (`le-rayon-en-cache.md`, § 6, 2026-11-04).
  *
  * Toute réponse inattendue est {@link UnreadableShelfReplyError} ; une panne
  * réseau remonte telle quelle. Le repli (`ResilientShopShelfCache`) traduit

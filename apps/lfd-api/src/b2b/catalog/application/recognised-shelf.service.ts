@@ -9,7 +9,7 @@ import { ShopCataloguePricing } from "./shop-catalogue-pricing.service.js";
 
 /**
  * Le plafond de la durée de vie d'un rayon pro rangé : **5 minutes** (Hugo,
- * 2026-11-04, `plan-rayon-jusqu-a-la-prochaine-heure.md` § 1 ; 30 s avant).
+ * 2026-11-04, `le-rayon-en-cache.md` § 6 ; 30 s avant).
  *
  * Les opérations datées n'attendent pas le plafond : le rayon expire à leur
  * prochain instant ({@link recognisedShelfExpiry}). Le plafond, lui, borne

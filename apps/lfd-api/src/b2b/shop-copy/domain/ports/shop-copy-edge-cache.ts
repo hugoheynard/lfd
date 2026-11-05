@@ -9,7 +9,7 @@ export const SHOP_COPY_CACHE_TAG = "textes-boutique";
 
 /**
  * **Oublier les textes publiés gardés en bordure** (décision de Hugo,
- * 2026-11-04, `plan-cache-du-catalogue.md`) : Workers Cache garde toute
+ * 2026-11-04, `le-rayon-en-cache.md`) : Workers Cache garde toute
  * réponse `public` du Worker, `GET /shop/copy` compris (`max-age=60`,
  * `stale-while-revalidate=600`). Sans purge, un texte publié mettrait jusqu'à
  * onze minutes à se voir partout.

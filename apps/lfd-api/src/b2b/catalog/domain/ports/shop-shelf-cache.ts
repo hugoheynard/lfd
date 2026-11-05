@@ -3,7 +3,7 @@ import type { ShopCatalogueView } from "@lfd/contracts";
 /**
  * La clé d'un rayon pro : la société résolue EN BASE par `@ActingCompany`,
  * jamais une valeur du client. `null` = l'espace perso (ou aucune société
- * résolue), qui a sa propre entrée (`plan-cache-du-catalogue.md`, § 4).
+ * résolue), qui a sa propre entrée (`le-rayon-en-cache.md`, § 4).
  */
 export type ShelfKey = string | null;
 
@@ -29,7 +29,7 @@ export interface ShelfToStore {
   /**
    * L'échéance, posée par l'API sur son `Clock` : 5 minutes au plus, ou plus
    * tôt le prochain instant d'une opération datée
-   * (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1).
+   * (`le-rayon-en-cache.md`, § 6).
    */
   readonly expiresAt: Date;
 }
@@ -42,7 +42,7 @@ export interface ShelfToStore {
 export type StoreOutcome = "stored" | "stale" | "not_kept";
 
 /**
- * **Le magasin des rayons pro**, vu par le service du rayon (`plan-cache-du-catalogue.md`,
+ * **Le magasin des rayons pro**, vu par le service du rayon (`le-rayon-en-cache.md`,
  * § 4 ter). Aujourd'hui un Durable Object joint par un gestionnaire de
  * sortie ; demain peut-être un Redis — un adaptateur de plus, ce port et ses
  * appelants inchangés.

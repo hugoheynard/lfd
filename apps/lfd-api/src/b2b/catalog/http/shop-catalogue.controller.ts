@@ -78,7 +78,7 @@ const languageQuerySchema = z
  * sans société, elle ne peut pas les lire. Même forme de vue, même porte ;
  * `isFeatured` y est la mise en avant PRO.
  *
- * **Workers Cache** (C3, `plan-cache-du-catalogue.md` § 3) : la réponse dit
+ * **Workers Cache** (C3, `le-rayon-en-cache.md` § 3) : la réponse dit
  * `public, max-age=30` quand le drapeau public est allumé et que rien n'a
  * bougé pendant le calcul, sinon elle garde le `private` du middleware.
  * `public` est juste même avec un jeton : cette route ne lit JAMAIS

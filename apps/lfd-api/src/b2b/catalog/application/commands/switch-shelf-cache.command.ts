@@ -15,7 +15,7 @@ export interface ShelfSwitchOutcome extends ShelfCacheState {
 
 /**
  * Éteindre, rallumer ou vider le cache des rayons en production, sans
- * redéployer (`plan-cache-du-catalogue.md`, « L'interrupteur ») — le rayon
+ * redéployer (`le-rayon-en-cache.md`, « L'interrupteur ») — le rayon
  * public compris depuis C3.
  */
 export class SwitchShelfCacheCommand {

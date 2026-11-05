@@ -5,7 +5,7 @@ import type { SellableOperation } from "./ports/catalog-operations.reader.js";
 
 /**
  * **Le prochain instant où une opération datée change d'elle-même ce qu'un
- * rayon montre** (`documentation/caching-usage/plan-rayon-jusqu-a-la-prochaine-heure.md`,
+ * rayon montre** (`documentation/caching-usage/le-rayon-en-cache.md`,
  * § 1). Rend `null` quand aucune opération n'a plus d'instant à venir.
  *
  * Les quatre instants de D4 (`operation-access.ts`) : l'annonce (l'encart

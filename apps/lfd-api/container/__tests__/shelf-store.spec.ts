@@ -16,7 +16,7 @@ import {
 } from "../shelf-store";
 
 /**
- * Les décisions de l'objet des rayons pro (`plan-cache-du-catalogue.md`, C2) —
+ * Les décisions de l'objet des rayons pro (`le-rayon-en-cache.md`, C2) —
  * `worker.ts` et `pro-shelves.ts` ne font que les relier au stockage. Ces
  * tests échouent si l'on :
  *
@@ -60,7 +60,7 @@ describe("les clés", () => {
   });
 });
 
-describe("la révision de l'API dans la clé (plan-rayon-jusqu-a-la-prochaine-heure.md, § 1)", () => {
+describe("la révision de l'API dans la clé (le-rayon-en-cache.md, § 6)", () => {
   it("deux révisions donnent deux clés, la même révision la même clé", () => {
     const first = storageKeyOf("/shelves/company/co_a", "abc123");
     const second = storageKeyOf("/shelves/company/co_a", "def456");

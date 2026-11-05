@@ -1,4 +1,4 @@
-/** Échecs consécutifs qui ouvrent le disjoncteur (`plan-cache-du-catalogue.md`, § 4 bis). */
+/** Échecs consécutifs qui ouvrent le disjoncteur (`le-rayon-en-cache.md`, § 4 bis). */
 export const SHELF_BREAKER_FAILURES = 5;
 
 /** Le temps pendant lequel un disjoncteur ouvert n'appelle plus le magasin. */

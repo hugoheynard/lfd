@@ -4,7 +4,7 @@ import { ShelfPurge, type ShelfPurgeRequest } from "../domain/ports/shelf-purge.
 
 /**
  * **La purge journalisée** : une trace de chaque fenêtre, posée en C1 avant
- * tout cache (`plan-cache-du-catalogue.md`), et gardée depuis à côté des
+ * tout cache (`le-rayon-en-cache.md`), et gardée depuis à côté des
  * vraies purges (`FanOutShelfPurge`, C2).
  *
  * Une ligne structurée par fenêtre, au niveau `log` : elle n'alerte pas, elle

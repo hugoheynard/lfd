@@ -21,7 +21,7 @@ interface CountedOutcome {
 }
 
 /**
- * **Les signaux du rayon, journalisés ET comptés** (`plan-cache-du-catalogue.md`,
+ * **Les signaux du rayon, journalisés ET comptés** (`le-rayon-en-cache.md`,
  * C5). Le journal reste ce qu'il était ({@link LoggingShelfCacheSignals}) ; ce
  * second abonné verse les signaux qui disent comment une lecture, un rangement
  * ou une réponse publique a été servi dans le compteur de `platform`, que la

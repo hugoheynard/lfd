@@ -11,7 +11,7 @@ import { ShelfCallGuard } from "./shelf-call-guard.js";
 
 /**
  * **Le rayon public derrière le même repli que le rayon pro** (C3,
- * `plan-cache-du-catalogue.md` § 4 bis) : même délai, même disjoncteur
+ * `le-rayon-en-cache.md` § 4 bis) : même délai, même disjoncteur
  * ({@link ShelfCallGuard}). Rien de ce qui sort d'ici ne lève.
  *
  * Tout relevé réussi range l'état du drapeau dans {@link PublicShelfFlagMemory} ;

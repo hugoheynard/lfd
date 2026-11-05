@@ -9,7 +9,7 @@ export type PublicShelfReply<T> = { readonly view: T } & PublicShelfVerdict;
 
 /**
  * **L'API décide de la cacheabilité, réponse par réponse** (C3,
- * `plan-cache-du-catalogue.md` § 3) : l'état du rayon public est relevé AVANT
+ * `le-rayon-en-cache.md` § 3) : l'état du rayon public est relevé AVANT
  * le calcul et relu APRÈS ; la réponse ne se garde que si le drapeau est
  * allumé aux deux relevés et que la version n'a pas bougé
  * ({@link publicShelfVerdict}).

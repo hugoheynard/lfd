@@ -261,7 +261,7 @@ export class AppConfig {
   }
 
   /**
-   * L'adresse du **magasin des rayons pro** (`plan-cache-du-catalogue.md`, C2)
+   * L'adresse du **magasin des rayons pro** (`le-rayon-en-cache.md`, C2)
    * — `http://rayons.interne`, posée par le Worker lui-même à côté du
    * gestionnaire de sortie qui l'intercepte (`container/worker.ts`) —, ou
    * `null` : aucun magasin, chaque rayon se calcule depuis la base (dev local

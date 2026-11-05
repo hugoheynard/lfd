@@ -6,7 +6,7 @@ import {
   targetedShelves,
 } from "../shelf-change-scope.js";
 
-/** Le regroupement d'une fenêtre (`plan-cache-du-catalogue.md`, C1). */
+/** Le regroupement d'une fenêtre (`le-rayon-en-cache.md`, C1). */
 describe("ShelfPurgeBatch — ce qu'une fenêtre efface", () => {
   it("une fenêtre vide ne demande aucune purge", () => {
     const batch = new ShelfPurgeBatch();

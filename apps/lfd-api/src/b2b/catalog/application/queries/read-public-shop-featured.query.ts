@@ -2,7 +2,7 @@ import type { ContentLocale, ShopFeaturedAudience } from "@lfd/contracts";
 
 /**
  * **Les incontournables de `GET /shop/featured`, et si Workers Cache peut les
- * garder** (C3, `plan-cache-du-catalogue.md` § 3).
+ * garder** (C3, `le-rayon-en-cache.md` § 3).
  */
 export class ReadPublicShopFeaturedQuery {
   constructor(

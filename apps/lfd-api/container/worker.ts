@@ -40,7 +40,7 @@ import {
 export { ProShelves } from "./pro-shelves";
 
 // Le point d'entrée par lequel un gestionnaire de sortie répond au container
-// (lot C0b, `documentation/caching-usage/plan-cache-du-catalogue.md`).
+// (lot C0b, `documentation/caching-usage/le-rayon-en-cache.md`).
 // L'exporter ne branche RIEN : sans `outboundByHost` sur `Backend`, aucune
 // interception n'est posée et le démarrage du container est inchangé
 // (`usingInterception` reste faux dans `@cloudflare/containers` 0.3.7, vérifié
@@ -225,7 +225,7 @@ export class Backend extends Container<Env> {
 }
 
 /**
- * **Le chemin conteneur → objet des rayons pro** (`plan-cache-du-catalogue.md`,
+ * **Le chemin conteneur → objet des rayons pro** (`le-rayon-en-cache.md`,
  * § 4) : le conteneur appelle `http://rayons.interne/…`, le Worker intercepte et
  * transmet à l'objet par sa liaison. Ni route publique, ni jeton.
  *

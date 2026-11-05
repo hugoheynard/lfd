@@ -9,7 +9,7 @@ import { PrismaCatalogVisualsProjection } from "../prisma-catalog-visuals.projec
 
 /**
  * Les écrivains du catalogue émettent le signal des rayons
- * (`plan-cache-du-catalogue.md`, C1) : un article ou une réservation change le
+ * (`le-rayon-en-cache.md`, C1) : un article ou une réservation change le
  * rayon de TOUS — une réservation retire l'article à tous sauf une société,
  * public compris.
  */

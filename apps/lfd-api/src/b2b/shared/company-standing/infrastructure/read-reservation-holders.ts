@@ -74,7 +74,7 @@ export interface ServedCompanyRow {
    * Le principal ACTUEL, quel que soit son statut — `holders` ne le garde que
    * s'il est `active`. Lu par le cache des rayons pro : un principal qui
    * redevient actif doit effacer le rayon de ses sites
-   * (`plan-cache-du-catalogue.md`, § 4). Aucune lecture de plus : la ligne
+   * (`le-rayon-en-cache.md`, § 4). Aucune lecture de plus : la ligne
    * était déjà lue.
    */
   readonly principalId: string | null;

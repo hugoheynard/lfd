@@ -20,7 +20,7 @@ export interface PricedShelf {
   /**
    * Le prochain instant où une opération datée change ce rayon d'elle-même,
    * ou `null` — l'échéance la plus tardive que le magasin peut lui donner
-   * (`plan-rayon-jusqu-a-la-prochaine-heure.md`, § 1).
+   * (`le-rayon-en-cache.md`, § 6).
    */
   readonly nextChangeAt: Date | null;
 }

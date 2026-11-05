@@ -2,7 +2,7 @@ import type { ShelfChangeScope } from "../shelf-change-scope.js";
 
 /**
  * **Le signal « un rayon a changé »** — appelé par tout écrivain d'un modèle
- * que le rayon lit (`plan-cache-du-catalogue.md`, C1 ; la porte
+ * que le rayon lit (`le-rayon-en-cache.md`, C1 ; la porte
  * `lint:shelf-writes` le tient).
  *
  * L'implémentation diffère elle-même jusqu'après la validation

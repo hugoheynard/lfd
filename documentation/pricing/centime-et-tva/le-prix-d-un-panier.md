@@ -157,7 +157,7 @@ requête) ; l'offre de connexion réemploie le classement de `loadCart`.
 deux fois (`OrderIntake` assume de relire) ; l'heure limite relue par
 l'estimation ; `order_delivery_vat` et le catalogue hors du cache faute
 d'invalidation. Le catalogue de la boutique a son propre plan :
-[`../../caching-usage/plan-cache-du-catalogue.md`](../../caching-usage/plan-cache-du-catalogue.md).
+[`../../caching-usage/le-rayon-en-cache.md`](../../caching-usage/le-rayon-en-cache.md).
 
 ## 5. Ce qui n'est pas de ce sujet
 
