@@ -3,12 +3,15 @@ import { computed, effect, inject, Injectable, signal, untracked } from '@angula
 // Un TYPE seulement : la boutique ne prend aucune valeur du baril au démarrage
 // (budget `cloudflare`).
 import type { OrderSaleUnit, ShelfStockTodayView } from '@lfd/contracts';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { AheadReads } from '../ahead-reads';
 import { ClientAudience } from '../client-audience.service';
+import { ClientContext } from '../client-context.service';
 import { OrderContextStore } from '../order-context.store';
 import { SHOP_TIME_ZONE } from '../shop-time-zone';
 import { VISITOR, PickupListGateway } from './pickup-list.gateway';
@@ -95,33 +98,48 @@ export class ShelfStockToday {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly list = inject(PickupListGateway);
+  private readonly context = inject(ClientContext);
   private readonly order = inject(OrderContextStore);
   private readonly audience = inject(ClientAudience);
   private readonly clock = inject(ShopClock);
 
   /** La cible d'aujourd'hui, ou `null` hors aujourd'hui / sans point. */
   private readonly target = computed<ShelfTarget | null>(
-    () => {
-      const service = this.order.choice() ?? this.order.draft();
-      if (service?.mode !== 'pickup') {
-        return null;
-      }
-      const pickupAddressId = service.pickupAddressId ?? null;
-      if (pickupAddressId === null || service.date !== parisDayOf(this.clock.now())) {
-        return null;
-      }
-      const reader = this.list.readerKey();
-      if (reader === null) {
-        return null;
-      }
-      return {
-        pickupAddressId,
-        reader,
-        audience: this.audience.shown() === 'b2b' ? 'pro' : 'public',
-      };
-    },
-    { equal: (a, b) => (a === null ? b === null : b !== null && keyOf(a) === keyOf(b)) },
+    () => this.targetFor(this.list.readerKey()),
+    { equal: sameTarget },
   );
+
+  /**
+   * La même cible, pour l'espace demandé pendant une bascule (lot c) : lue
+   * d'avance, jamais servie avant l'acceptation. L'audience est celle du
+   * moment ; si l'espace accepté en change, la clé diffère et la lecture
+   * d'avance est simplement perdue.
+   */
+  private readonly aheadTarget = computed<ShelfTarget | null>(
+    () => this.targetFor(this.context.ahead()),
+    { equal: sameTarget },
+  );
+
+  private readonly aheadReads = new AheadReads<ShelfStockTodayView>();
+
+  private targetFor(reader: string | null): ShelfTarget | null {
+    const service = this.order.choice() ?? this.order.draft();
+    if (service?.mode !== 'pickup') {
+      return null;
+    }
+    const pickupAddressId = service.pickupAddressId ?? null;
+    if (pickupAddressId === null || service.date !== parisDayOf(this.clock.now())) {
+      return null;
+    }
+    if (reader === null) {
+      return null;
+    }
+    return {
+      pickupAddressId,
+      reader,
+      audience: this.audience.shown() === 'b2b' ? 'pro' : 'public',
+    };
+  }
 
   /** La réponse, avec la clé pour laquelle elle a été servie. */
   private readonly served = signal<{
@@ -150,6 +168,17 @@ export class ShelfStockToday {
         void this.read(target);
       });
     });
+    effect(() => {
+      const ahead = this.aheadTarget();
+      if (ahead !== null) {
+        untracked(() => {
+          this.aheadReads.ask(ahead.reader, keyOf(ahead), () => this.request(ahead));
+        });
+      }
+    });
+    this.context.whenAbandoned((workspace) => {
+      this.aheadReads.forget(workspace);
+    });
   }
 
   /** L'état de cet article pour aujourd'hui. */
@@ -172,7 +201,7 @@ export class ShelfStockToday {
     const key = keyOf(target);
     this.askedFor = key;
     try {
-      const view = await this.request(target);
+      const view = await (this.aheadReads.take(key) ?? this.request(target));
       if (this.askedFor === key) {
         this.served.set({
           key,
@@ -199,6 +228,8 @@ export class ShelfStockToday {
         ),
       );
     }
+    // L'espace du LECTEUR, pas celui de l'intercepteur : pendant une bascule,
+    // celui-ci dit déjà l'espace pas encore accepté (lot c, 2026-11-05).
     return firstValueFrom(
       this.auth
         .accessToken$()
@@ -206,10 +237,14 @@ export class ShelfStockToday {
           switchMap((token) =>
             this.http.get<ShelfStockTodayView>(
               `${base}/shelf-stock/today/mine?pickupAddressId=${point}`,
-              { headers: { Authorization: `Bearer ${token}` } },
+              { headers: { Authorization: `Bearer ${token}`, [WORKSPACE_HEADER]: target.reader } },
             ),
           ),
         ),
     );
   }
+}
+
+function sameTarget(a: ShelfTarget | null, b: ShelfTarget | null): boolean {
+  return a === null ? b === null : b !== null && keyOf(a) === keyOf(b);
 }

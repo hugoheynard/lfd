@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import type { PublicStorefrontPageView } from '@lfd/contracts';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { firstValueFrom, type Observable, switchMap, timeout } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../../auth/auth.config';
@@ -61,6 +62,28 @@ export class ShopStorefront {
    */
   readonly reader = computed<string | null>(() => this.context.prefix());
 
+  /** Les rayons déjà demandés : ceux qu'une bascule lit d'avance. */
+  private readonly shelves = new Set<string>();
+
+  constructor() {
+    // Une bascule commence : les rayons déjà ouverts se lisent pour l'espace
+    // demandé, sans s'afficher.
+    effect(() => {
+      const ahead = this.context.ahead();
+      if (ahead === null) {
+        return;
+      }
+      untracked(() => {
+        for (const shelfKey of this.shelves) {
+          void this.loadFor(ahead, shelfKey);
+        }
+      });
+    });
+    this.context.whenAbandoned((workspace) => {
+      this.forget(workspace);
+    });
+  }
+
   /** L'état de la page d'un rayon pour le lecteur du moment ; `null` tant que personne ne l'a demandée. */
   stateOf(shelfKey: string): StorefrontPageState | null {
     const reader = this.reader();
@@ -74,12 +97,25 @@ export class ShopStorefront {
    * Demande la page d'un rayon pour le lecteur du moment. Idempotent : une
    * page chargée ou en cours ne se redemande pas ; rien ne part tant que
    * l'espace d'une personne reconnue n'est pas connu.
+   *
+   * Pendant une bascule, la page de l'espace demandé part AUSSI, rangée sous
+   * sa clé : {@link stateOf} ne la montre qu'une fois l'espace accepté, où
+   * elle est alors déjà là (lot c).
    */
   async load(shelfKey: string): Promise<void> {
     const reader = this.reader();
     if (reader === null) {
       return;
     }
+    this.shelves.add(shelfKey);
+    const ahead = this.context.ahead();
+    await Promise.all([
+      this.loadFor(reader, shelfKey),
+      ahead === null ? Promise.resolve() : this.loadFor(ahead, shelfKey),
+    ]);
+  }
+
+  private async loadFor(reader: string, shelfKey: string): Promise<void> {
     const key = keyOf(reader, shelfKey);
     if (this.pages().has(key)) {
       return;
@@ -89,11 +125,28 @@ export class ShopStorefront {
       const page = await firstValueFrom(
         this.request(reader, shelfKey).pipe(timeout(PAGE_TIMEOUT_MS)),
       );
+      // Jetée entre-temps (espace refusé) : elle ne revient pas.
+      if (!this.pages().has(key)) {
+        return;
+      }
       this.put(key, { status: 'ready', page });
+      // Le réglage d'affichage des allergènes est celui de la boutique, pas
+      // d'une audience : le poser depuis une page lue d'avance ne montre rien
+      // de l'espace demandé.
       this.allergenDisplay.served(page.allergenDisplay);
     } catch {
-      this.put(key, { status: 'failed' });
+      if (this.pages().has(key)) {
+        this.put(key, { status: 'failed' });
+      }
     }
+  }
+
+  /** Jette les pages d'un espace lu d'avance et abandonné. */
+  private forget(workspace: string): void {
+    const kept = new Map(
+      [...this.pages()].filter(([key]) => !key.startsWith(`${workspace}\u0000`)),
+    );
+    this.pages.set(kept);
   }
 
   private request(reader: string, shelfKey: string): Observable<PublicStorefrontPageView> {
@@ -101,10 +154,12 @@ export class ShopStorefront {
     if (reader === VISITOR) {
       return this.http.get<PublicStorefrontPageView>(url);
     }
+    // L'espace du LECTEUR, pas celui de l'intercepteur : pendant une bascule,
+    // celui-ci dit déjà l'espace pas encore accepté (lot c, 2026-11-05).
     return this.auth.accessToken$().pipe(
       switchMap((token) =>
         this.http.get<PublicStorefrontPageView>(`${url}/mine`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}`, [WORKSPACE_HEADER]: reader },
         }),
       ),
     );

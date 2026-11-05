@@ -125,6 +125,7 @@ function whoProviders(who: Regard, status?: CompanyStatus): readonly unknown[] {
         isPersonal: signal(who !== 'pro'),
         hasChoice: signal(who === 'pro'),
         options: signal([]),
+        switching: signal(null),
       },
     },
     { provide: ClientIdentity, useValue: { firstName: signal(null) } },

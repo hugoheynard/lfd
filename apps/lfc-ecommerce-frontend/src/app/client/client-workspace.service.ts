@@ -4,7 +4,8 @@ import type { CompanyView, ReachableSiteView } from '@lfd/contracts';
 // l'intercepteur (déploiement échoué le 2026-09-15 sur le budget du bundle).
 import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 
-import { AccountService } from '../account/account.service';
+import type { Account } from '../account/account.model';
+import { AccountService, type WorkspaceWriteOutcome } from '../account/account.service';
 import { defaultProWorkspace } from '../account/default-workspace';
 
 /** Un espace proposable : `personal`, ou une société de la personne. */
@@ -18,6 +19,13 @@ export interface WorkspaceOption {
    * et pour une société propre (S6, `plan-entrer-dans-ses-sites.md` R5).
    */
   readonly via: string | null;
+}
+
+/** Une bascule d'espace en attente du serveur (cf. {@link ClientWorkspace.switching}). */
+export interface WorkspaceSwitching {
+  /** L'espace confirmé qu'on quitte, `null` quand aucun n'a été montré. */
+  readonly from: string | null;
+  readonly to: string;
 }
 
 /**
@@ -67,20 +75,26 @@ export class ClientWorkspace {
     if (account === null) {
       return null;
     }
-    // Une société propre OU un site atteint (S6) : y être entré se mémorise
-    // comme le reste. Un site détaché quitte `reachableSites` au `/me`
-    // suivant, et l'espace retombe sur la règle par défaut — jamais sur un
-    // site, que rien ne sert d'office (R4).
-    const ids = [
-      ...account.companies.map((company) => company.id),
-      ...account.reachableSites.map((site) => site.company.id),
-    ];
     // `?? null` : un serveur d'avant le lot A rend un sac sans `workspace`.
-    const preferred = account.navPrefs.workspace ?? null;
-    if (preferred === PERSONAL_WORKSPACE || (preferred !== null && ids.includes(preferred))) {
-      return preferred;
+    return resolveWorkspace(account, account.navPrefs.workspace ?? null);
+  });
+
+  /**
+   * La bascule en attente du serveur, `null` hors bascule.
+   *
+   * `current()` vaut déjà `to` (l'écriture est optimiste) ; `from` est
+   * l'espace d'avant le premier geste — celui que les lecteurs montrent —, ou `null` à
+   * l'arrivée pro d'une connexion — rien n'a encore été montré. C'est la
+   * matière de l'état « bascule » de `ClientContext`.
+   */
+  readonly switching = computed<WorkspaceSwitching | null>(() => {
+    const write = this.account.workspaceWrite();
+    const account = this.account.account();
+    const to = this.current();
+    if (write === null || account === null || to === null) {
+      return null;
     }
-    return defaultProWorkspace(account.companies) ?? PERSONAL_WORKSPACE;
+    return { from: write.entering ? null : resolveWorkspace(account, write.shown), to };
   });
 
   /** La société de l'espace courant — `null` en perso comme avant `/me`. */
@@ -144,12 +158,31 @@ export class ClientWorkspace {
    * Bascule dans un espace. Sans effet sur une valeur qui n'est pas proposée :
    * l'écran n'a aucun moyen d'en produire une, et le serveur la refuserait.
    */
-  choose(workspace: string): void {
+  choose(workspace: string): Promise<WorkspaceWriteOutcome> {
     if (!this.options().some((option) => option.value === workspace)) {
-      return;
+      return Promise.resolve('unchanged');
     }
-    this.account.setWorkspace(workspace);
+    return this.account.setWorkspace(workspace);
   }
+}
+
+/**
+ * L'espace qu'une préférence brute désigne pour ce compte.
+ *
+ * Une société propre OU un site atteint (S6) : y être entré se mémorise comme
+ * le reste. Un site détaché quitte `reachableSites` au `/me` suivant, et
+ * l'espace retombe sur la règle par défaut — jamais sur un site, que rien ne
+ * sert d'office (R4).
+ */
+function resolveWorkspace(account: Account, preferred: string | null): string {
+  const ids = [
+    ...account.companies.map((company) => company.id),
+    ...account.reachableSites.map((site) => site.company.id),
+  ];
+  if (preferred === PERSONAL_WORKSPACE || (preferred !== null && ids.includes(preferred))) {
+    return preferred;
+  }
+  return defaultProWorkspace(account.companies) ?? PERSONAL_WORKSPACE;
 }
 
 /** Le nom sous lequel une maison se reconnaît : son enseigne, sa raison sociale à défaut. */

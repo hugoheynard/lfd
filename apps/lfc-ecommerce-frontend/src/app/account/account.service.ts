@@ -53,6 +53,27 @@ const FULFILLMENT_SAVED = "Préférence d'acheminement enregistrée.";
  */
 export type HolderDraft = Omit<ContactDraft, 'role'>;
 
+/**
+ * Une bascule d'espace écrite mais pas encore acceptée.
+ *
+ * Deux préférences BRUTES (`navPrefs.workspace`, `null` = la règle par
+ * défaut), et elles divergent dès deux bascules rapprochées : `shown` est
+ * celle d'avant le premier geste — ce que les lecteurs montrent encore —,
+ * `accepted` celle que le serveur porte aux dernières nouvelles — la cible
+ * d'un retour arrière. Les confondre ferait lire, et montrer, un espace
+ * intermédiaire que personne ne demande plus. `entering` : l'écriture est celle de l'arrivée pro après
+ * une connexion, sans espace montré à quitter.
+ */
+export interface WorkspaceWrite {
+  readonly to: string;
+  readonly shown: string | null;
+  readonly accepted: string | null;
+  readonly entering: boolean;
+}
+
+/** L'issue d'une écriture d'espace, telle que la bascule la lit pour faire suivre l'écran. */
+export type WorkspaceWriteOutcome = 'accepted' | 'refused' | 'superseded' | 'unchanged';
+
 /** Où en est le chargement du compte — l'app doit distinguer « vide » de « pas encore su ». */
 export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -79,6 +100,10 @@ export class AccountService {
   private readonly _error = signal<string | null>(null);
 
   readonly account = this.state.asReadonly();
+
+  private readonly _workspaceWrite = signal<WorkspaceWrite | null>(null);
+  /** L'écriture d'espace qui attend la réponse du serveur, `null` sinon (cf. {@link setWorkspace}). */
+  readonly workspaceWrite = this._workspaceWrite.asReadonly();
   readonly status = this._status.asReadonly();
   /** Message d'un échec de **chargement** (état de page) ; `null` sinon. */
   readonly error = this._error.asReadonly();
@@ -196,42 +221,85 @@ export class AccountService {
    * celle que cette écriture a posée, et l'échec ne revient en arrière que dans
    * le même cas — sans quoi une réponse tardive rebasculerait l'écran.
    *
+   * 🔴 **C'est ici que vit « accepté par le serveur »** (lot c du plan
+   * `documentation/caching-usage/plan-espace-retenu.md`) : l'écriture est la
+   * seule à savoir quand le `PATCH` a répondu. {@link workspaceWrite} le dit
+   * tant qu'il n'a pas répondu, et le contexte de lecture (`ClientContext`)
+   * en fait son état « bascule en cours ». L'optimisme de `navPrefs` reste —
+   * les relectures que l'intercepteur sert encore par `current()` l'attendent.
+   *
+   * Le retour arrière vise la DERNIÈRE préférence que le serveur a acceptée,
+   * plus l'espace d'avant le geste : après deux bascules dont la seconde est
+   * refusée, revenir à la première — jamais confirmée — afficherait un espace
+   * que le serveur n'a peut-être pas.
+   *
    * Aucune validation ici : c'est `ClientWorkspace` qui sait ce qu'est un
    * espace, et le serveur refuse une société hors rattachements.
+   *
+   * @returns l'issue de CETTE écriture — `superseded` quand une bascule plus
+   * récente l'a remplacée, pour que seule la dernière fasse suivre l'écran.
    */
-  setWorkspace(workspace: string): void {
+  setWorkspace(workspace: string): Promise<WorkspaceWriteOutcome> {
+    return this.writeWorkspace(workspace, false);
+  }
+
+  private writeWorkspace(workspace: string, entering: boolean): Promise<WorkspaceWriteOutcome> {
     const before = this.state();
     if (before === null || before.navPrefs.workspace === workspace) {
-      return;
+      return Promise.resolve('unchanged');
     }
-    const previous = before.navPrefs.workspace ?? null;
+    const pending = this._workspaceWrite();
+    this._workspaceWrite.set({
+      to: workspace,
+      shown: pending === null ? (before.navPrefs.workspace ?? null) : pending.shown,
+      // Une écriture déjà en vol garde la dernière préférence ACCEPTÉE.
+      accepted: pending === null ? (before.navPrefs.workspace ?? null) : pending.accepted,
+      entering: pending === null ? entering : pending.entering,
+    });
     this.state.set({ ...before, navPrefs: { ...before.navPrefs, workspace } });
-    const stillMine = (): boolean => this.state()?.navPrefs.workspace === workspace;
-    this.auth
-      .accessToken$()
-      .pipe(
-        switchMap((token) =>
-          this.http.patch<Account>(
-            `${AUTH_CONFIG.apiBaseUrl}/me/nav-prefs`,
-            { workspace },
-            headers(token),
+    const stillMine = (): boolean =>
+      this.state()?.navPrefs.workspace === workspace && this._workspaceWrite()?.to === workspace;
+    return new Promise<WorkspaceWriteOutcome>((resolve) => {
+      this.auth
+        .accessToken$()
+        .pipe(
+          switchMap((token) =>
+            this.http.patch<Account>(
+              `${AUTH_CONFIG.apiBaseUrl}/me/nav-prefs`,
+              { workspace },
+              headers(token),
+            ),
           ),
-        ),
-      )
-      .subscribe({
-        next: (account) => {
-          if (stillMine()) {
+        )
+        .subscribe({
+          next: (account) => {
+            if (!stillMine()) {
+              // Accepté, mais remplacé : la prochaine marche arrière vise lui.
+              this._workspaceWrite.update((write) =>
+                write === null ? null : { ...write, accepted: workspace },
+              );
+              resolve('superseded');
+              return;
+            }
             this.state.set(account);
-          }
-        },
-        error: (error: unknown) => {
-          const now = this.state();
-          if (now !== null && stillMine()) {
-            this.state.set({ ...now, navPrefs: { ...now.navPrefs, workspace: previous } });
-          }
-          this.notify.error(error);
-        },
-      });
+            this._workspaceWrite.set(null);
+            resolve('accepted');
+          },
+          error: (error: unknown) => {
+            const now = this.state();
+            const write = this._workspaceWrite();
+            if (now === null || write === null || !stillMine()) {
+              this.notify.error(error);
+              resolve('superseded');
+              return;
+            }
+            this.state.set({ ...now, navPrefs: { ...now.navPrefs, workspace: write.accepted } });
+            this._workspaceWrite.set(null);
+            this.notify.error(error);
+            resolve('refused');
+          },
+        });
+    });
   }
 
   /**
@@ -508,7 +576,9 @@ export class AccountService {
     }
     const pro = defaultProWorkspace(account.companies);
     if (pro !== null) {
-      this.setWorkspace(pro);
+      // Le même chemin que la bascule des menus, marqué « on entre » : aucun
+      // espace n'a été montré avant, le contexte n'en propose donc pas à quitter.
+      void this.writeWorkspace(pro, true);
     }
   }
 

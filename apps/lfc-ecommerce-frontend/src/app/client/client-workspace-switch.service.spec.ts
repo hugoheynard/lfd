@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { PERSONAL_WORKSPACE } from '@lfd/contracts';
 
+import { AuthFacade } from '../auth/auth.facade';
 import {
   ClientWorkspaceSwitch,
   COMPANY_HOME,
@@ -76,6 +77,7 @@ describe('ClientWorkspaceSwitch', () => {
     TestBed.configureTestingModule({
       providers: [
         provideWorkspace(workspace),
+        { provide: AuthFacade, useValue: { isAuthenticated: signal(true) } },
         provideRouter(
           [
             'nouvelle-commande',
@@ -125,6 +127,40 @@ describe('ClientWorkspaceSwitch', () => {
     const switcher = await startOn('/mes-commandes', TOMMEUSES.id);
 
     await switcher.switchTo(TOMMEUSES.id);
+
+    expect(visited).toEqual([]);
+  });
+
+  /** Lot c : l'écran ne suit plus un espace que le serveur refuse. */
+  it('🔴 ne déplace rien quand le serveur refuse la bascule', async () => {
+    const switcher = await startOn(COMPANY_HOME, TOMMEUSES.id);
+    workspace.answer = () => Promise.resolve('refused');
+
+    await switcher.switchTo(PERSONAL_WORKSPACE);
+
+    expect(visited).toEqual([]);
+    expect(router.url).toBe(COMPANY_HOME);
+  });
+
+  it('attend l’acceptation avant de passer par le détour', async () => {
+    const switcher = await startOn('/mes-commandes', TOMMEUSES.id);
+    let accept: (outcome: 'accepted') => void = () => undefined;
+    workspace.answer = () => new Promise((resolve) => (accept = resolve));
+
+    const switching = switcher.switchTo(PERSONAL_WORKSPACE);
+    await Promise.resolve();
+    expect(visited).toEqual([]);
+
+    accept('accepted');
+    await switching;
+    expect(visited).toEqual([WORKSPACE_RELOAD_ROUTE, '/mes-commandes']);
+  });
+
+  it('une bascule remplacée par une plus récente ne déplace rien', async () => {
+    const switcher = await startOn('/mes-commandes', TOMMEUSES.id);
+    workspace.answer = () => Promise.resolve('superseded');
+
+    await switcher.switchTo(PERSONAL_WORKSPACE);
 
     expect(visited).toEqual([]);
   });

@@ -285,6 +285,21 @@ describe('AccountService — l’espace à la connexion', () => {
     expect(TestBed.inject(LoginMoment).fresh()).toBe(false);
   });
 
+  /** Lot c : l'arrivée pro passe par la même bascule, sans espace montré à quitter. */
+  it('à la connexion, l’arrivée pro attend le serveur comme une bascule', () => {
+    const { http, account } = boot(true);
+    account.load();
+    http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET').flush(me('personal'));
+    expect(account.workspaceWrite()).toEqual({
+      to: 'cmp_1',
+      shown: 'personal',
+      accepted: 'personal',
+      entering: true,
+    });
+    http.expectOne((r) => r.url.endsWith('/me/nav-prefs')).flush(me('cmp_1'));
+    expect(account.workspaceWrite()).toBeNull();
+  });
+
   it('sans connexion (un rechargement), le perso mémorisé reste', () => {
     const { http, account } = boot(false);
     account.load();

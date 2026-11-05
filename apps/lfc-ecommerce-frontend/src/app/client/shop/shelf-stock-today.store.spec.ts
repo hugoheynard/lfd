@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientAudience } from '../client-audience.service';
+import { ClientContext } from '../client-context.service';
 import { OrderContextStore, type OrderDraft, type ServiceChoice } from '../order-context.store';
 import { PickupListGateway, VISITOR } from './pickup-list.gateway';
 import { ShopClock } from './shop-clock';
@@ -52,6 +53,11 @@ describe('ShelfStockToday — le reste d’aujourd’hui au point choisi (L7)', 
         provideHttpClientTesting(),
         { provide: AuthFacade, useValue: { accessToken$: () => of('jeton') } },
         { provide: PickupListGateway, useValue: { readerKey: () => reader } },
+        // Hors bascule : la lecture d'avance est éprouvée par `client-context.service.spec.ts`.
+        {
+          provide: ClientContext,
+          useValue: { ahead: signal(null), whenAbandoned: (): void => undefined },
+        },
         { provide: ClientAudience, useValue: { shown: signal('b2c') } },
         { provide: ShopClock, useValue: { now: signal(NOW) } },
         {

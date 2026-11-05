@@ -6,11 +6,13 @@ import type {
   ShopOperationView,
   ShopShelfView,
 } from '@lfd/contracts';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { AheadReads } from '../ahead-reads';
 import { ClientContext, VISITOR } from '../client-context.service';
 import { ProShelfSource } from './pro-shelf.source';
 import { ProVisit } from './pro-visit.service';
@@ -108,6 +110,9 @@ export class ShopCatalogue {
   /** Quand la photo a été posée — sur l'horloge de la boutique, à la minute. */
   private photoTakenAt: Date | null = null;
 
+  /** La photo de l'espace demandé, lue pendant la bascule et jamais montrée avant. */
+  private readonly aheadReads = new AheadReads<ShopCatalogueView>();
+
   /** Quelqu'un a-t-il demandé la vitrine ? Sans demande, une bascule ne relit rien. */
   private wanted = false;
   private readonly catalogue = signal<ShopCatalogueView>({
@@ -157,6 +162,19 @@ export class ShopCatalogue {
           void this.hydrate();
         });
       }
+    });
+    // Une bascule commence : la photo de l'espace demandé part tout de suite,
+    // sans s'afficher ; l'acceptation la reprendra dans `hydrate` (lot c).
+    effect(() => {
+      const ahead = this.context.ahead();
+      if (ahead !== null && this.wanted) {
+        untracked(() => {
+          this.aheadReads.ask(ahead, ahead, () => this.shelfFor(ahead));
+        });
+      }
+    });
+    this.context.whenAbandoned((workspace) => {
+      this.aheadReads.forget(workspace);
     });
   }
 
@@ -250,7 +268,7 @@ export class ShopCatalogue {
     this.photoFor = reader;
     this.state.set('loading');
     try {
-      const view = await this.shelfFor(reader);
+      const view = await (this.aheadReads.take(reader) ?? this.shelfFor(reader));
       if (this.photoFor === reader) {
         this.receive(view);
       }
@@ -265,7 +283,7 @@ export class ShopCatalogue {
     if (reader === VISITOR) {
       return this.publicShelf();
     }
-    return reader === PRO_VISITOR ? this.proShelf.load() : this.mine();
+    return reader === PRO_VISITOR ? this.proShelf.load() : this.mine(reader);
   }
 
   /** La vitrine publique : le tarif catalogue, sans jeton. */
@@ -279,15 +297,18 @@ export class ShopCatalogue {
    * La vitrine du client reconnu : son prix, et le tarif catalogue à barrer là
    * où il a négocié.
    *
-   * Aucun identifiant de société dans l'URL : l'espace part dans l'en-tête que
-   * pose `workspaceInterceptor`, et le serveur le confronte aux rattachements.
+   * Aucun identifiant de société dans l'URL : l'espace part dans l'en-tête,
+   * posé ici pour le LECTEUR et non par `workspaceInterceptor` — pendant une
+   * bascule, celui-ci dirait déjà l'espace demandé, et la photo rangée sous
+   * l'ancien porterait le tarif du nouveau. Le serveur le confronte aux
+   * rattachements.
    */
-  private async mine(): Promise<ShopCatalogueView> {
+  private async mine(workspace: string): Promise<ShopCatalogueView> {
     return firstValueFrom(
       this.auth.accessToken$().pipe(
         switchMap((token) =>
           this.http.get<ShopCatalogueView>(`${AUTH_CONFIG.apiBaseUrl}/shop/catalogue/mine`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}`, [WORKSPACE_HEADER]: workspace },
           }),
         ),
       ),

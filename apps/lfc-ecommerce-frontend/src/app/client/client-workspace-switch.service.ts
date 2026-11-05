@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { ClientContext } from './client-context.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { COMPANY_ONLY_ROUTES } from './nav/client-nav.service';
 
@@ -109,7 +110,7 @@ export function routeAfterSwitch(url: string, nowPersonal: boolean): string {
  * **Changer d'espace, et que l'écran suive** (Hugo, 2026-09-17 : « quand je
  * switch d'espace pour me mettre en perso, ça devrait recharger la page »).
  *
- * `ClientWorkspace.choose` ne fait que déclarer l'espace : les services qui le
+ * `ClientContext.switchTo` ne fait que déclarer l'espace : les services qui le
  * lisent se relisent, mais l'écran monté garde ce qu'il avait calculé, et
  * l'adresse ne bouge pas même quand elle n'a plus de sens dans le nouvel
  * espace. Ce service est le geste complet, partagé par les deux menus.
@@ -117,16 +118,31 @@ export function routeAfterSwitch(url: string, nowPersonal: boolean): string {
  * Il ne recharge PAS la page du navigateur : l'espace est enregistré par un
  * appel qui part en même temps, et un rechargement complet pourrait relire
  * `/me` avant qu'il n'ait abouti — donc revenir dans l'ancien espace.
+ *
+ * **L'écran ne suit qu'une bascule ACCEPTÉE** (lot c, 2026-11-05). Avant, il
+ * partait au détour dès le choix, et un refus le laissait monté pour l'espace
+ * refusé — sur l'accueil du perso, par exemple — pendant que l'espace
+ * revenait en arrière. Une bascule refusée, ou remplacée par une plus
+ * récente, ne déplace rien : la dernière demandée décide.
+ *
+ * Partir dès le geste a été écarté : l'écran de `to` (l'accueil du perso,
+ * par exemple) se monterait avec la donnée de `from`, puis changerait à
+ * l'acceptation, et un refus laisserait sur une adresse de l'espace refusé.
+ * Le coût de l'attente est le seul PATCH : les lecteurs du contexte lisent
+ * `to` PENDANT qu'il est en vol (`ClientContext.ahead`), si bien que
+ * l'écran remonté trouve leur donnée prête.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientWorkspaceSwitch {
+  private readonly context = inject(ClientContext);
   private readonly workspace = inject(ClientWorkspace);
   private readonly router = inject(Router);
 
   async switchTo(value: string): Promise<void> {
-    const before = this.workspace.current();
-    this.workspace.choose(value);
-    if (this.workspace.current() === before) {
+    if (value === this.workspace.current()) {
+      return;
+    }
+    if ((await this.context.switchTo(value)) !== 'accepted') {
       return;
     }
     const target = routeAfterSwitch(this.router.url, this.workspace.isPersonal());

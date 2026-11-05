@@ -1,7 +1,12 @@
 import { computed, signal, type WritableSignal } from '@angular/core';
 import { PERSONAL_WORKSPACE, type CompanyView, type ReachableSiteView } from '@lfd/contracts';
 
-import { ClientWorkspace, type WorkspaceOption } from './client-workspace.service';
+import type { WorkspaceWriteOutcome } from '../account/account.service';
+import {
+  ClientWorkspace,
+  type WorkspaceOption,
+  type WorkspaceSwitching,
+} from './client-workspace.service';
 
 /** Ce que les suites lisent de l'espace — les signaux publics, et le choix. */
 type WorkspaceSurface = Pick<
@@ -14,6 +19,7 @@ type WorkspaceSurface = Pick<
   | 'choose'
   | 'reachableSite'
   | 'siteBillingReadable'
+  | 'switching'
 >;
 
 /** Une doublure pilotable : `current` s'écrit, le reste en dérive comme dans le vrai service. */
@@ -23,6 +29,10 @@ export interface WorkspaceDouble extends WorkspaceSurface {
   /** Les sites atteints par héritage (S6), proposés après les sociétés. */
   readonly sites: WritableSignal<readonly ReachableSiteView[]>;
   readonly chosen: string[];
+  /** La bascule en attente du serveur — à poser à la main, comme `current`. */
+  readonly switching: WritableSignal<WorkspaceSwitching | null>;
+  /** La réponse du serveur à un choix : acceptée d'emblée, sauf à la remplacer. */
+  answer: (workspace: string) => Promise<WorkspaceWriteOutcome>;
 }
 
 /**
@@ -42,7 +52,7 @@ export function workspaceDouble(
   const companies$ = signal<readonly CompanyView[]>(companies);
   const sites$ = signal<readonly ReachableSiteView[]>([]);
   const chosen: string[] = [];
-  return {
+  const double: WorkspaceDouble = {
     current: current$,
     companies: companies$,
     sites: sites$,
@@ -63,11 +73,15 @@ export function workspaceDouble(
     // doublure ne fait que les proposer.
     reachableSite: computed(() => null),
     siteBillingReadable: computed(() => null),
-    choose: (workspace: string): void => {
+    switching: signal<WorkspaceSwitching | null>(null),
+    answer: () => Promise.resolve('accepted'),
+    choose: (workspace: string): Promise<WorkspaceWriteOutcome> => {
       chosen.push(workspace);
       current$.set(workspace);
+      return double.answer(workspace);
     },
   };
+  return double;
 }
 
 /** Le fournisseur à poser dans un `TestBed`. */

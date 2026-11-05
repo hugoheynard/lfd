@@ -99,6 +99,7 @@ function boot(
                   ],
             navPrefs: { catalogueView: null, workspace: site?.id ?? null },
           }),
+          workspaceWrite: () => null,
           load: (): void => {
             loads += 1;
           },
