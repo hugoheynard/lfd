@@ -65,6 +65,8 @@ interface Entry<T> {
   value?: T;
   /** La lecture faite d'avance, rendue une fois à qui la redemande. */
   ahead?: Promise<T>;
+  /** La dernière lecture en vol, que {@link ContextKeyed.ensure} reprend au lieu de relancer. */
+  pending?: Promise<T>;
 }
 
 /** Ce que la brique lit du contexte : la clé qui s'affiche (`ClientContext.prefix`). */
@@ -132,6 +134,29 @@ export class ContextKeyed<T> {
     return this.launch(key);
   }
 
+  /**
+   * **Le « déjà demandé »** que chaque store recopiait (`readFor`) : la valeur
+   * tenue pour cette clé s'il y en a une, sinon la lecture en vol, sinon la
+   * lecture d'avance, sinon une lecture neuve. Aucun second appel pour une
+   * clé déjà lue ou en cours ; un échec ne laisse rien, et se relit.
+   */
+  ensure(key: ContextKey): Promise<T> {
+    const held = this.held(key);
+    if (held !== undefined) {
+      return Promise.resolve(held);
+    }
+    const entry = this.entries.get(idOf(key));
+    const pending = entry?.pending;
+    if (entry === undefined || pending === undefined) {
+      return this.read(key);
+    }
+    // Reprise : la lecture d'avance, si c'est elle, est rendue une fois.
+    if (entry.ahead === pending) {
+      delete entry.ahead;
+    }
+    return pending;
+  }
+
   /** La dernière valeur lue pour CETTE clé, même périmée, ou `undefined`. */
   held(key: ContextKey): T | undefined {
     return this.entries.get(idOf(key))?.value;
@@ -176,6 +201,19 @@ export class ContextKeyed<T> {
   }
 
   private launch(key: ContextKey): Promise<T> {
+    const entry = this.entryOf(key);
+    const pending = this.call(key);
+    entry.pending = pending;
+    const done = (): void => {
+      if (entry.pending === pending) {
+        delete entry.pending;
+      }
+    };
+    pending.then(done, done);
+    return pending;
+  }
+
+  private call(key: ContextKey): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       let subscription: Subscription | null = null;
       let settled = false;

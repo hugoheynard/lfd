@@ -6,13 +6,14 @@ import {
   type AudienceContactSettingsView,
   type ContactLocalizedText,
 } from '@lfd/contracts/shop-values';
-import { firstValueFrom } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext, VISITOR } from '../client-context.service';
 import type { LocaleCode } from '../client-locale.service';
+import { contextKeyed, type ContextKey, workspaceHeadersOf } from '../context-keyed/context-keyed';
 
 /** Le défaut : aucun numéro, la carte vide du contrat (la boutique garde son dictionnaire). */
 export const NO_CONTACT_SETTINGS: AudienceContactSettingsView = {
@@ -23,9 +24,8 @@ export const NO_CONTACT_SETTINGS: AudienceContactSettingsView = {
 /** La vitrine qu'un visiteur regarde : celle des particuliers, ou la vitrine pro. */
 export type ContactShowcase = 'public' | 'pro';
 
-/** Les lecteurs anonymes : la route publique, sans ou avec `?audience=pro`. */
-const VISITOR = 'visiteur';
-const PRO_VISITOR = 'visiteur-pro';
+/** La part propre d'une clé visiteur sur la vitrine pro : `?audience=pro`. */
+const PRO_SHOWCASE = 'pro';
 
 /**
  * **La carte de contact réglée au back-office, pour qui regarde** — UNE carte
@@ -35,9 +35,12 @@ const PRO_VISITOR = 'visiteur-pro';
  * Un visiteur lit `GET /contact-settings` (particuliers) ou, sur la vitrine
  * pro, `GET /contact-settings?audience=pro` ; un client connecté lit
  * `GET /me/contact-settings`, la carte de son audience établie au serveur.
- * Comme `ServicePoints`, la carte se vide et se relit au changement de
- * lecteur (connexion, déconnexion, bascule d'espace) : celle de l'ancien ne
- * se montre pas au nouveau, même le temps d'une requête.
+ *
+ * Rangée par clé de contexte (lot d de `caching-usage/plan-espace-retenu.md`) :
+ * l'espace que `ClientContext` AFFICHE et, pour un visiteur, la vitrine. La
+ * carte d'une autre clé ne se montre jamais, même le temps d'une requête ;
+ * pendant une bascule, celle de l'espace demandé se lit d'avance et ne
+ * s'affiche qu'une fois l'espace accepté.
  *
  * Tant que la carte n'est pas lue, ou si sa lecture échoue, elle vaut son
  * défaut TOUT VIDE : l'écran garde alors les textes du dictionnaire.
@@ -46,30 +49,53 @@ const PRO_VISITOR = 'visiteur-pro';
 export class ContactSettingsStore {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
-  private readonly held = signal<AudienceContactSettingsView>(NO_CONTACT_SETTINGS);
   private readonly showcase = signal<ContactShowcase>('public');
-  /** Le lecteur dont {@link held} est la réponse — ou celle qu'on attend. */
-  private readFor: string | null = null;
+  /** Quelqu'un a-t-il demandé la carte ? Sans demande, rien ne se lit. */
   private asked = false;
+  /** Avance à chaque réponse : la brique n'est pas un signal. */
+  private readonly answered = signal(0);
 
-  readonly settings = this.held.asReadonly();
+  private readonly keyed = contextKeyed((key) => this.load(key));
 
-  /** {@link VISITOR}, {@link PRO_VISITOR}, l'espace reconnu, ou `null` tant qu'il n'est pas connu. */
-  private readonly readerKey = computed<string | null>(() => {
-    if (this.auth.isAuthenticated()) {
-      return this.workspace.current();
-    }
-    return this.showcase() === 'pro' ? PRO_VISITOR : VISITOR;
+  /** La clé de qui regarde, ou `null` tant que son espace n'est pas connu. */
+  private readonly key = computed<ContextKey | null>(
+    () => {
+      const workspace = this.context.prefix();
+      if (workspace === null) {
+        return null;
+      }
+      const own = workspace === VISITOR && this.showcase() === 'pro' ? PRO_SHOWCASE : '';
+      return { workspace, own };
+    },
+    { equal: (a, b) => a?.workspace === b?.workspace && a?.own === b?.own },
+  );
+
+  readonly settings = computed<AudienceContactSettingsView>(() => {
+    this.answered();
+    const key = this.key();
+    return (key === null ? undefined : this.keyed.shown(key)) ?? NO_CONTACT_SETTINGS;
   });
 
   constructor() {
-    // Le lecteur change : la carte se relit, mais seulement si quelqu'un l'a demandée.
+    // Le lecteur change : sa carte se lit, mais seulement si quelqu'un l'a
+    // demandée. Une clé déjà lue (retour à un espace vu) ne se relit pas.
     effect(() => {
-      const reader = this.readerKey();
-      if (this.asked) {
-        untracked(() => void this.read(reader));
+      const key = this.key();
+      if (this.asked && key !== null) {
+        untracked(() => void this.settle(this.keyed.ensure(key)));
+      }
+    });
+    // Une bascule : la carte de l'espace demandé part tout de suite, comme
+    // avant la brique — elle ne s'affiche qu'une fois l'espace accepté.
+    effect(() => {
+      const switching = this.context.switching();
+      const target = this.context.ahead();
+      if (switching && target !== null && this.asked) {
+        untracked(() => {
+          this.keyed.ahead({ workspace: target, own: '' });
+        });
       }
     });
   }
@@ -83,46 +109,34 @@ export class ContactSettingsStore {
       this.showcase.set(showcase);
     }
     this.asked = true;
-    await this.read(this.readerKey());
+    const key = untracked(() => this.key());
+    if (key !== null) {
+      await this.settle(this.keyed.ensure(key));
+    }
   }
 
-  /** Lit pour ce lecteur, sauf si c'est déjà fait. Un échec vide, et permet de relire. */
-  private async read(reader: string | null): Promise<void> {
-    if (reader === this.readFor) {
-      return;
-    }
-    this.readFor = reader;
-    this.held.set(NO_CONTACT_SETTINGS);
-    if (reader === null) {
-      return;
-    }
+  /** Un échec laisse le défaut vide, et permet de relire. */
+  private async settle(reading: Promise<AudienceContactSettingsView>): Promise<void> {
     try {
-      const served = await this.settingsOf(reader);
-      if (this.readFor === reader) {
-        this.held.set(served);
-      }
+      await reading;
     } catch {
-      if (this.readFor === reader) {
-        this.readFor = null;
-      }
+      // Le défaut reste : l'écran garde les textes du dictionnaire.
     }
+    this.answered.update((count) => count + 1);
   }
 
-  private settingsOf(reader: string): Promise<AudienceContactSettingsView> {
+  /** L'appel d'une clé — son en-tête d'espace vient de la clé, pas de l'envoi. */
+  private load(key: ContextKey): Observable<AudienceContactSettingsView> {
     const base = AUTH_CONFIG.apiBaseUrl;
-    if (reader === VISITOR || reader === PRO_VISITOR) {
-      const query = reader === PRO_VISITOR ? '?audience=pro' : '';
-      return firstValueFrom(
-        this.http.get<AudienceContactSettingsView>(`${base}/contact-settings${query}`),
-      );
+    if (key.workspace === VISITOR) {
+      const query = key.own === PRO_SHOWCASE ? '?audience=pro' : '';
+      return this.http.get<AudienceContactSettingsView>(`${base}/contact-settings${query}`);
     }
-    return firstValueFrom(
-      this.auth.accessToken$().pipe(
-        switchMap((token) =>
-          this.http.get<AudienceContactSettingsView>(`${base}/me/contact-settings`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ),
+    return this.auth.accessToken$().pipe(
+      switchMap((token) =>
+        this.http.get<AudienceContactSettingsView>(`${base}/me/contact-settings`, {
+          headers: { Authorization: `Bearer ${token}`, ...workspaceHeadersOf(key) },
+        }),
       ),
     );
   }

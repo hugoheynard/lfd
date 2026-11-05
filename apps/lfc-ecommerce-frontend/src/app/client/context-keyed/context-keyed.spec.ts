@@ -24,9 +24,15 @@ function harness() {
         const call = { key, reply, cancelled: false };
         calls.push(call);
         let answered = false;
-        const inner = reply.subscribe((value) => {
-          answered = true;
-          subscriber.next(value);
+        const inner = reply.subscribe({
+          next: (value) => {
+            answered = true;
+            subscriber.next(value);
+          },
+          error: (error: unknown) => {
+            answered = true;
+            subscriber.error(error);
+          },
         });
         // Quittée avant sa réponse : c'est une annulation.
         return () => {
@@ -81,6 +87,34 @@ describe('ContextKeyed — la lecture rangée par clé de contexte', () => {
     expect(calls).toHaveLength(1);
     calls[0]?.reply.next('d');
     expect(await keyed.read(A)).toBe('d');
+    void keyed.read(A);
+    expect(calls).toHaveLength(2);
+  });
+
+  it('ensure : ni second appel pour une clé en vol ou tenue, et un échec se relit', async () => {
+    const { calls, keyed } = harness();
+    const first = keyed.ensure(A);
+    const twin = keyed.ensure(A);
+    expect(calls).toHaveLength(1);
+    calls[0]?.reply.next('a');
+    expect([await first, await twin]).toEqual(['a', 'a']);
+    expect(await keyed.ensure(A)).toBe('a');
+    expect(calls).toHaveLength(1);
+
+    const other = { workspace: 'cmp_a', own: 'autre' };
+    const failing = keyed.ensure(other);
+    calls[1]?.reply.error(new Error('panne'));
+    await expect(failing).rejects.toThrow('panne');
+    void keyed.ensure(other);
+    expect(calls).toHaveLength(3);
+  });
+
+  it('ensure reprend la lecture d’avance, une fois', async () => {
+    const { calls, keyed } = harness();
+    keyed.ahead(A);
+    const taken = keyed.ensure(A);
+    calls[0]?.reply.next('d');
+    expect(await taken).toBe('d');
     void keyed.read(A);
     expect(calls).toHaveLength(2);
   });

@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { AudienceContactSettingsView } from '@lfd/contracts/shop-values';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
@@ -187,6 +188,33 @@ describe('ContactSettingsStore — la carte, par lecteur', () => {
     await flushed();
 
     expect(store.settings()).toEqual(NO_CONTACT_SETTINGS);
+    http.verify();
+  });
+
+  /**
+   * Lot d (brique par clé de contexte) : pendant une bascule, la carte de
+   * l'espace demandé part d'avance, avec SON en-tête, et ne s'affiche qu'une
+   * fois l'espace accepté ; rien de l'ancien espace n'est rendu ensuite.
+   */
+  it('rien de l’ancien espace n’est rendu après une bascule', async () => {
+    const workspace = workspaceDouble();
+    const { store, http } = boot(true, workspace);
+    const hydrating = store.hydrate();
+    http.expectOne(url('/me/contact-settings')).flush(PROS);
+    await hydrating;
+
+    workspace.switching.set({ from: workspace.current() ?? null, to: 'cmp_b' });
+    workspace.current.set('cmp_b');
+    TestBed.tick();
+    const ahead = http.expectOne(url('/me/contact-settings'));
+    expect(ahead.request.headers.get(WORKSPACE_HEADER)).toBe('cmp_b');
+    expect(store.settings()).toEqual(PROS);
+    ahead.flush(SETTINGS);
+    await flushed();
+
+    workspace.switching.set(null);
+    TestBed.tick();
+    expect(store.settings()).toEqual(SETTINGS);
     http.verify();
   });
 
