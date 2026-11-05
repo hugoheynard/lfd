@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.caches,
+.outcomes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.caches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.cache {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.name {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.outcomes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

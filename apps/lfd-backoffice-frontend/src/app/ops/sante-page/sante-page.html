@@ -118,6 +118,10 @@
     />
   </section>
 
+  <section aria-label="Caches de l'API">
+    <app-cache-outcomes [caches]="health()?.caches" />
+  </section>
+
   <section class="charge" aria-label="Charge par requête">
     <app-charge-table [windows]="windows()" />
   </section>

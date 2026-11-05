@@ -18,6 +18,7 @@ import type {
 } from '@lfd/ops-contract';
 
 import { Capabilities, type CapabilitiesState } from '../capabilities/capabilities';
+import { CacheOutcomes } from '../cache-outcomes/cache-outcomes';
 import { ChargeTable } from '../charge-table/charge-table';
 import { DeadLetters } from '../dead-letters/dead-letters';
 import { MediaThresholds } from '../media-thresholds/media-thresholds';
@@ -57,6 +58,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   standalone: true,
   imports: [
     PostDeployBanner,
+    CacheOutcomes,
     Capabilities,
     ChargeTable,
     DatePipe,

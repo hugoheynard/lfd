@@ -1,0 +1,40 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    title="Caches de l'API"
+    subtitle="Comment chaque cache a servi — par instance : avec plusieurs conteneurs, chacun compte sa part."
+  />
+
+  @if (lines().length === 0) {
+    <fold-empty-state
+      title="Aucune lecture de cache sur les 30 dernières minutes"
+      subtitle="L'API n'a compté aucune question à ses caches sur la fenêtre."
+    >
+      <fold-icon empty-icon name="archive" />
+    </fold-empty-state>
+  } @else {
+    <ul class="caches">
+      @for (line of lines(); track line.key) {
+        <li class="cache">
+          <span class="name">{{ line.label }}</span>
+          <span class="muted">{{ line.total }} lectures sur {{ line.windowMinutes }} minutes</span>
+          <ul class="outcomes">
+            @for (outcome of line.outcomes; track $index) {
+              <li>
+                @if (outcome.featured) {
+                  <fold-badge
+                    variant="success"
+                    [content]="outcome.label + ' · ' + (outcome.share | percent: '1.0-1')"
+                  />
+                } @else {
+                  {{ outcome.label }} · {{ outcome.share | percent: '1.0-1' }}
+                }
+                <span class="muted">({{ outcome.count }})</span>
+              </li>
+            }
+          </ul>
+        </li>
+      }
+    </ul>
+  }
+</fold-card>
