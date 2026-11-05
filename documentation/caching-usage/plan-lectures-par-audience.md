@@ -57,8 +57,7 @@ Ce qui suit l'emporte sur la Partie 2.
   ouvre un point à une audience) ET des cinq commandes de promotion. Une
   promotion à heures s'ouvre et se ferme sans aucune écriture : avec
   `max-age=30, stale-while-revalidate=60`, la vitrine pourrait annoncer
-  jusqu'à ~90 s une remise que la caisse ne fait plus. **À décider par Hugo** :
-  accepter cet écart, ou renoncer au `stale-while-revalidate` sur cette route.
+  jusqu'à ~90 s une remise que la caisse ne fait plus. **Décidé par Hugo le 2026-11-05** : pas de `stale-while-revalidate` sur cette route (`public, max-age=30` seul) — une remise à horaires reste annoncée 30 s au plus après sa fin, la purge vide le cache à chaque écriture.
   L'en-tête se pose sur `list()` seulement — `:id/creneaux` dépend de l'heure.
   La purge de `reglages-publics` reste « non prouvée » de bout en bout.
 - **`GET /pickup-addresses/mine` → renoncé.** Une base en mémoire ne ferait
