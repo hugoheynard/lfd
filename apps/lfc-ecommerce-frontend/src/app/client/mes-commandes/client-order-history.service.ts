@@ -1,13 +1,22 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { effect, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import type {
   CompanyOrderListItemView,
   CompanyOrderSiteView,
   CustomerOrderView,
 } from '@lfd/contracts';
-import { firstValueFrom } from 'rxjs';
+// Par le sous-chemin sans zod : le compte des commandes est lu par le menu, au démarrage.
+import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
+import { firstValueFrom, type Observable } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext } from '../client-context.service';
+import {
+  contextKeyed,
+  ContextReadAbandoned,
+  type ContextKey,
+  workspaceRequestOf,
+} from '../context-keyed/context-keyed';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { listedOf, type ListedOrder, type RowSource } from './order-rows';
@@ -27,10 +36,12 @@ import { listedOf, type ListedOrder, type RowSource } from './order-rows';
  * sans société (`GET /orders/mine`, qui ne rend que celles-là : vérifié le
  * 2026-09-15, `ListPersonalOrdersQuery`).
  *
- * L'historique suit l'**espace** (`ClientWorkspace`, plan D7) : en perso les
- * commandes perso, dans une société les siennes. Il les mêlait tant que
- * l'espace n'existait pas ; il **attend** désormais l'espace connu, et se vide
- * à une bascule avant de relire.
+ * L'historique suit l'**espace** (plan D7) : en perso les commandes perso,
+ * dans une société les siennes. Il les mêlait tant que l'espace n'existait
+ * pas ; il **attend** désormais l'espace connu. Depuis le lot d de
+ * `caching-usage/plan-espace-retenu.md`, il lit l'espace que `ClientContext`
+ * AFFICHE, par la brique : rien de l'espace quitté n'est rendu après une
+ * bascule, et la liste de l'espace demandé part d'avance.
  *
  * ## Rien pour un visiteur anonyme
  *
@@ -74,17 +85,35 @@ export const NO_DAYS: OrderDays = { from: null, to: null };
 export class ClientOrderHistory {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
-  private readonly rows = signal<readonly ListedOrder[]>([]);
+  /**
+   * Les listes, rangées par clé de contexte (lot d de
+   * `caching-usage/plan-espace-retenu.md`) : l'espace qui s'affiche, et pour
+   * une société le filtre (site, jours). Rien n'est rendu pour un autre
+   * espace que celui que `ClientContext` affiche.
+   */
+  private readonly keyed = contextKeyed((key) => this.read(key));
 
-  /** Toutes les commandes lues, **la plus récente en tête**. */
-  readonly orders = this.rows.asReadonly();
+  /** Avance à chaque réponse : la brique n'est pas un signal. */
+  private readonly answered = signal(0);
 
-  private readonly loadFailed = signal(false);
+  /** La dernière liste montrée, gardée pendant la relecture d'un AUTRE filtre du même espace. */
+  private readonly lastShown = signal<{
+    readonly workspace: string;
+    readonly rows: readonly ListedOrder[];
+  } | null>(null);
 
-  /** La dernière lecture de la liste a échoué : l'écran le dit, au lieu d'une liste vide. */
-  readonly failed = this.loadFailed.asReadonly();
+  /** Une liste posée par une suite ({@link receive}), tant que rien n'est lu. */
+  private readonly received = signal<readonly ListedOrder[]>([]);
+
+  /** L'espace dont la dernière lecture a échoué, `null` sinon. */
+  private readonly failedSpace = signal<string | null>(null);
+
+  /** L'espace d'un client reconnu, tel qu'il s'affiche — `null` sinon. */
+  private readonly space = computed<string | null>(() =>
+    this.auth.isAuthenticated() ? this.context.prefix() : null,
+  );
 
   private readonly siteFilter = signal<string | null>(null);
 
@@ -96,40 +125,87 @@ export class ClientOrderHistory {
   /** Les bornes posées sur le jour de retrait/livraison, `AAAA-MM-JJ` ou `null`. */
   readonly days = this.dayFilter.asReadonly();
 
-  private readonly knownSites = signal<readonly CompanyOrderSiteView[]>([]);
+  /** La clé de la liste demandée : l'espace et, dans une société, son filtre. */
+  private readonly key = computed<ContextKey | null>(
+    () => {
+      const workspace = this.space();
+      if (workspace === null) {
+        return null;
+      }
+      if (workspace === PERSONAL_WORKSPACE) {
+        return { workspace, own: '' };
+      }
+      return { workspace, own: ownOf(this.siteFilter(), this.dayFilter()) };
+    },
+    { equal: (a, b) => a?.workspace === b?.workspace && a?.own === b?.own },
+  );
+
+  /** Toutes les commandes lues, **la plus récente en tête**. */
+  readonly orders = computed<readonly ListedOrder[]>(() => {
+    this.answered();
+    const key = this.key();
+    if (key === null) {
+      return this.received();
+    }
+    const shown = this.keyed.shown(key);
+    if (shown !== undefined) {
+      return shown;
+    }
+    const last = this.lastShown();
+    return last !== null && last.workspace === key.workspace ? last.rows : this.received();
+  });
+
+  /** La dernière lecture de la liste a échoué : l'écran le dit, au lieu d'une liste vide. */
+  readonly failed = computed(() => {
+    const space = this.space();
+    return space !== null && this.failedSpace() === space;
+  });
 
   /**
    * Les sites que la liste complète porte — lus sur la dernière réponse NON
    * filtrée : filtrer sur un site ne doit pas faire disparaître les autres du
    * choix.
    */
-  readonly sites = this.knownSites.asReadonly();
-
-  /** Ce qu'on a déjà lu : sans ce garde, l'effet rechargerait à chaque signal. */
-  private loadedFor: string | null = null;
+  readonly sites = computed<readonly CompanyOrderSiteView[]>(() => {
+    this.answered();
+    const workspace = this.space();
+    if (workspace === null || workspace === PERSONAL_WORKSPACE) {
+      return [];
+    }
+    return sitesOf(this.keyed.shown({ workspace, own: '' }) ?? []);
+  });
 
   constructor() {
+    // Une lecture par ARRIVÉE dans un espace, comme avant la brique : y
+    // revenir relit la liste (celle déjà lue s'affiche pendant ce temps).
     effect(() => {
-      const current = this.workspace.current();
-      if (!this.auth.isAuthenticated() || current === null || current === this.loadedFor) {
+      const space = this.space();
+      if (space === null) {
         return;
       }
-      if (this.loadedFor !== null && this.loadedFor !== 'posé-par-la-suite') {
-        // Les commandes de l'espace quitté ne restent pas à l'écran pendant la relecture.
-        this.rows.set([]);
+      untracked(() => {
+        // Un filtre ne vaut que pour la société qui l'a rendu.
+        this.siteFilter.set(null);
+        this.dayFilter.set(NO_DAYS);
+        this.received.set([]);
+        this.reload();
+      });
+    });
+    // Une bascule : la liste de l'espace demandé part tout de suite, et ne
+    // s'affiche qu'une fois l'espace accepté.
+    effect(() => {
+      const target = this.context.switching() ? this.context.ahead() : null;
+      if (target !== null && this.auth.isAuthenticated()) {
+        untracked(() => {
+          this.keyed.ahead({ workspace: target, own: '' });
+        });
       }
-      // Un filtre et des sites ne valent que pour la société qui les a rendus.
-      this.siteFilter.set(null);
-      this.dayFilter.set(NO_DAYS);
-      this.knownSites.set([]);
-      this.loadedFor = current;
-      void this.load(current, this.workspace.company()?.id ?? null);
     });
   }
 
   /** Pose une liste déjà obtenue — les suites s'en servent au lieu de doubler. */
   receive(orders: readonly RowSource[]): void {
-    this.rows.set(
+    this.received.set(
       sorted(
         orders.map((order) => ({
           ...order,
@@ -138,7 +214,6 @@ export class ClientOrderHistory {
         })),
       ),
     );
-    this.loadedFor = 'posé-par-la-suite';
   }
 
   /**
@@ -146,12 +221,10 @@ export class ClientOrderHistory {
    * commande (une annulation) : le suivi et l'historique se recalculent dessus.
    */
   reload(): void {
-    const current = this.workspace.current();
-    if (!this.auth.isAuthenticated() || current === null) {
-      return;
+    const key = untracked(() => this.key());
+    if (key !== null) {
+      void this.load(key);
     }
-    this.loadedFor = current;
-    void this.load(current, this.workspace.company()?.id ?? null);
   }
 
   /**
@@ -159,7 +232,7 @@ export class ClientOrderHistory {
    * Sans effet hors d'une société : le perso n'a pas de site.
    */
   chooseSite(site: string | null): void {
-    if (site === this.siteFilter() || this.workspace.company() === null) {
+    if (site === this.siteFilter() || !this.inCompany()) {
       return;
     }
     this.siteFilter.set(site);
@@ -172,10 +245,7 @@ export class ClientOrderHistory {
    */
   chooseDays(days: OrderDays): void {
     const current = this.dayFilter();
-    if (
-      (days.from === current.from && days.to === current.to) ||
-      this.workspace.company() === null
-    ) {
+    if ((days.from === current.from && days.to === current.to) || !this.inCompany()) {
       return;
     }
     this.dayFilter.set(days.from === null && days.to === null ? NO_DAYS : days);
@@ -210,67 +280,78 @@ export class ClientOrderHistory {
     }
   }
 
-  private async load(workspace: string, companyId: string | null): Promise<void> {
-    const site = companyId === null ? null : this.siteFilter();
-    const days = companyId === null ? NO_DAYS : this.dayFilter();
-    try {
-      const token = await firstValueFrom(this.auth.accessToken$());
-      const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-      const orders = await (companyId === null
-        ? this.personal(headers)
-        : this.ofCompany(companyId, site, days, headers));
-      // Une réponse revenue après une bascule (d'espace OU de filtre) est la
-      // liste d'une autre question.
-      if (this.loadedFor !== workspace || this.siteFilter() !== site || this.dayFilter() !== days) {
-        return;
-      }
-      this.loadFailed.set(false);
-      this.rows.set(sorted(orders));
-      // Une liste bornée dans le temps tairait les sites sans commande ces jours-là.
-      if (site === null && days === NO_DAYS) {
-        this.knownSites.set(sitesOf(orders));
-      }
-    } catch {
-      // Relisible : un échec ne doit pas condamner l'écran pour la session.
-      if (this.loadedFor === workspace) {
-        this.loadedFor = null;
-        this.loadFailed.set(true);
-      }
-    }
+  private inCompany(): boolean {
+    const space = untracked(() => this.space());
+    return space !== null && space !== PERSONAL_WORKSPACE;
   }
 
-  private async personal(headers: HttpHeaders): Promise<readonly ListedOrder[]> {
-    const orders = await firstValueFrom(
-      this.http.get<readonly CustomerOrderView[]>(`${AUTH_CONFIG.apiBaseUrl}/orders/mine`, {
-        headers,
+  private async load(key: ContextKey): Promise<void> {
+    try {
+      const rows = await this.keyed.read(key);
+      if (untracked(() => this.space()) === key.workspace) {
+        this.lastShown.set({ workspace: key.workspace, rows });
+      }
+      if (this.failedSpace() === key.workspace) {
+        this.failedSpace.set(null);
+      }
+    } catch (error) {
+      // Relisible : un échec ne doit pas condamner l'écran pour la session.
+      if (!(error instanceof ContextReadAbandoned)) {
+        this.failedSpace.set(key.workspace);
+      }
+    }
+    this.answered.update((count) => count + 1);
+  }
+
+  /** L'appel d'une clé — son en-tête d'espace vient de la clé, pas de l'envoi. */
+  private read(key: ContextKey): Observable<readonly ListedOrder[]> {
+    return this.auth.accessToken$().pipe(
+      switchMap((token) => {
+        const request = workspaceRequestOf(key, { Authorization: `Bearer ${token}` });
+        if (key.workspace === PERSONAL_WORKSPACE) {
+          return this.http
+            .get<readonly CustomerOrderView[]>(`${AUTH_CONFIG.apiBaseUrl}/orders/mine`, request)
+            .pipe(map((orders) => sorted(orders.map(listedOf))));
+        }
+        return this.http
+          .get<readonly CompanyOrderListItemView[]>(
+            `${AUTH_CONFIG.apiBaseUrl}/companies/${key.workspace}/orders`,
+            { ...request, params: paramsOf(key.own) },
+          )
+          .pipe(map(sorted));
       }),
     );
-    return orders.map(listedOf);
   }
+}
 
-  private ofCompany(
-    companyId: string,
-    site: string | null,
-    days: OrderDays,
-    headers: HttpHeaders,
-  ): Promise<readonly CompanyOrderListItemView[]> {
-    let params = new HttpParams();
-    for (const [name, value] of [
-      ['site', site],
-      ['from', days.from],
-      ['to', days.to],
-    ] as const) {
-      if (value !== null) {
-        params = params.set(name, value);
-      }
-    }
-    return firstValueFrom(
-      this.http.get<readonly CompanyOrderListItemView[]>(
-        `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/orders`,
-        { headers, params },
-      ),
-    );
+/** Le séparateur de la part propre d'une clé : jamais dans un identifiant ni une date. */
+const OWN_SEPARATOR = '|';
+
+/** La part propre d'une clé de société : `''` sans filtre, sinon `site|from|to`. */
+function ownOf(site: string | null, days: OrderDays): string {
+  if (site === null && days === NO_DAYS) {
+    return '';
   }
+  return [site ?? '', days.from ?? '', days.to ?? ''].join(OWN_SEPARATOR);
+}
+
+/** Les paramètres de `GET /companies/:id/orders` tirés de la part propre d'une clé. */
+function paramsOf(own: string): HttpParams {
+  let params = new HttpParams();
+  if (own === '') {
+    return params;
+  }
+  const [site = '', from = '', to = ''] = own.split(OWN_SEPARATOR);
+  for (const [name, value] of [
+    ['site', site],
+    ['from', from],
+    ['to', to],
+  ] as const) {
+    if (value !== '') {
+      params = params.set(name, value);
+    }
+  }
+  return params;
 }
 
 /** Les sites distincts d'une liste, dans l'ordre alphabétique de leur nom. */

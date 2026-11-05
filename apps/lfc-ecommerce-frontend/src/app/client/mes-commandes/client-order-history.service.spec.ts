@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { CompanyOrderListItemView } from '@lfd/contracts';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { throwError } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -209,5 +210,58 @@ describe('ClientOrderHistory — un échec se dit', () => {
     await settle();
     expect(history.failed()).toBe(false);
     expect(history.orders().map((order) => order.id)).toEqual(['ord_own']);
+  });
+});
+
+describe('ClientOrderHistory — la bascule d’espace (lot d, brique par clé de contexte)', () => {
+  /**
+   * La liste suivait `ClientWorkspace.current()`, qui vaut la cible dès le
+   * geste : la clé maison `loadedFor` changeait avant la réponse du serveur.
+   * Elle lit désormais l'espace que `ClientContext` AFFICHE.
+   */
+  it('rien de l’ancien espace n’est rendu après une bascule', async () => {
+    const OTHER = { ...TOMMEUSES, id: 'cmp_b' };
+    const workspace = workspaceDouble(TOMMEUSES.id, [TOMMEUSES, OTHER]);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+        provideWorkspace(workspace),
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const history = TestBed.inject(ClientOrderHistory);
+    TestBed.tick();
+    await settle();
+    http.expectOne((r) => r.url.endsWith(`/companies/${TOMMEUSES.id}/orders`)).flush([OWN]);
+    await settle();
+    history.chooseSite(HOTEL.companyId);
+    await settle();
+    http.expectOne((r) => r.url.endsWith(`/companies/${TOMMEUSES.id}/orders`)).flush([OF_SITE]);
+    await settle();
+
+    // Le serveur n'a pas encore accepté : l'écran montre l'espace d'où l'on part,
+    // et la liste de l'espace demandé part d'avance, avec SON en-tête.
+    workspace.switching.set({ from: TOMMEUSES.id, to: OTHER.id });
+    workspace.current.set(OTHER.id);
+    TestBed.tick();
+    await settle();
+    const ahead = http.expectOne((r) => r.url.endsWith(`/companies/${OTHER.id}/orders`));
+    expect(ahead.request.headers.get(WORKSPACE_HEADER)).toBe(OTHER.id);
+    expect(history.orders().map((order) => order.id)).toEqual(['ord_site']);
+
+    // Acceptée : plus rien de la société quittée — ni liste, ni filtre, ni sites.
+    workspace.switching.set(null);
+    TestBed.tick();
+    expect(history.orders()).toEqual([]);
+    expect(history.site()).toBeNull();
+    expect(history.sites()).toEqual([]);
+
+    ahead.flush([{ ...OWN, id: 'ord_other' }]);
+    await settle();
+    expect(history.orders().map((order) => order.id)).toEqual(['ord_other']);
+    http.verify();
   });
 });
