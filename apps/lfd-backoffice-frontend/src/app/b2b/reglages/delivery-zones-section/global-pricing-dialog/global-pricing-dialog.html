@@ -1,0 +1,40 @@
+<fold-panel-header
+  title="Réglage global de livraison"
+  subtitle="Le frais de base de chaque clientèle, dans toute zone qui ne le remplace pas."
+/>
+
+<div class="body">
+  @for (audience of audiences(); track audience) {
+    <div class="audience">
+      <lfd-price-alteration-field
+        [label]="'Frais de livraison — ' + labels[audience]"
+        lockedDirection="increase"
+        allowZero
+        [value]="alteration(audience)"
+        (valueChange)="setFee(audience, $event)"
+      />
+      @if (fees()[audience] === null) {
+        <p class="hint">Rien de réglé : chaque zone garde son propre frais.</p>
+      } @else {
+        <button foldButton emphasis="outline" intent="neutral" size="sm" (click)="clear(audience)">
+          Revenir au frais de chaque zone
+        </button>
+      }
+    </div>
+  } @empty {
+    <fold-callout variant="info">
+      La livraison n'est proposée à aucune clientèle : il n'y a rien à régler.
+    </fold-callout>
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!dirty() || saving()" (click)="submit()">
+    Enregistrer
+  </button>
+</footer>

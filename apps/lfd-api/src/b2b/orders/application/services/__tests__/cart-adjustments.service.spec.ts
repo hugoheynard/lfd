@@ -12,7 +12,12 @@ import {
 } from "@lfd/contracts";
 
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
-import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { DeliveryZoneFeeResolver } from "../../../../delivery-zones/application/delivery-zone-fee.resolver.js";
+import {
+  FixedDeliveryPricing,
+  FixedZoneTerms,
+  withoutOverrides,
+} from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
   DeliveryClosedForAudienceError,
@@ -25,7 +30,6 @@ import { PickupChoiceRequiredError } from "../../../domain/errors/pickup-choice-
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
-import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import { pickupDiscountPromotions } from "../../../../promotions/domain/__tests__/pickup-discount-reprise.fixture.js";
 import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
 import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
@@ -104,26 +108,15 @@ class Preferences extends PreferredPickupReader {
 }
 
 /** Les zones, qui comptent leurs lectures : une livraison fermée ne doit pas en coûter. */
-class OneZone extends DeliveryZoneRepository {
-  lookups = 0;
-  list(): Promise<readonly DeliveryZoneView[]> {
-    return Promise.resolve([TARENTAISE]);
+class OneZone extends DeliveryZoneFeeResolver {
+  private readonly terms: FixedZoneTerms;
+  constructor() {
+    const terms = new FixedZoneTerms([withoutOverrides(TARENTAISE)]);
+    super(terms, new FixedDeliveryPricing());
+    this.terms = terms;
   }
-  findById(): Promise<DeliveryZoneView | null> {
-    return Promise.resolve(TARENTAISE);
-  }
-  resolveForPostalCode(codePostal: string): Promise<DeliveryZoneView | null> {
-    this.lookups += 1;
-    return Promise.resolve(codePostal.startsWith("73150") ? TARENTAISE : null);
-  }
-  create(): Promise<string> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-  update(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-  remove(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
+  get lookups(): number {
+    return this.terms.lookups;
   }
 }
 
@@ -145,7 +138,7 @@ const OPEN = new Settings(DEFAULT_DELIVERY_AVAILABILITY);
  */
 function cartAdjustments(
   points: Points,
-  zones: DeliveryZoneRepository,
+  zones: DeliveryZoneFeeResolver,
   settings: DeliveryAvailabilityReader,
   preferences: PreferredPickupReader,
   extra: readonly LivePromotion[] = [],
@@ -375,48 +368,6 @@ describe("CartAdjustments — un retrait sans point choisi", () => {
   });
 });
 
-describe("CartAdjustments — la promotion de livraison (L10)", () => {
-  const EN_LIVRAISON = livePromotion({
-    id: "promo_livraison",
-    label: "−10 % en livraison",
-    effect: { kind: "percent_off", basisPoints: 1_000 },
-    fulfillment: { kind: "basket", pickup: "none", delivery: "all" },
-    validFrom: new Date(Date.UTC(2020, 0, 1)),
-  });
-
-  function delivering() {
-    return cartAdjustments(
-      new OnePoint(point({ b2b: false, b2c: false })),
-      new OneZone(),
-      OPEN,
-      new Preferences(),
-      [EN_LIVRAISON],
-    );
-  }
-
-  it("sert la promotion « en livraison », le port à côté", async () => {
-    const resolved = await delivering().forDelivery("73150", BASKET, pickupBuyer("b2c", null));
-
-    expect(resolved.discount.discountCents).toBe(500);
-    expect(resolved.discount.promotionId).toBe("promo_livraison");
-    expect(resolved.feeCents).toBe(2_000);
-  });
-
-  it("ne sert pas une promotion « en retrait » à une livraison", async () => {
-    const adjustments = cartAdjustments(
-      new OnePoint(point({ b2b: false, b2c: false })),
-      new OneZone(),
-      OPEN,
-      new Preferences(),
-      [{ ...EN_LIVRAISON, fulfillment: { kind: "basket", pickup: "all", delivery: "none" } }],
-    );
-
-    const resolved = await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2c", null));
-
-    expect(resolved.discount.discountCents).toBe(0);
-  });
-});
-
 describe("CartAdjustments — la livraison, par clientèle", () => {
   it("chiffre la livraison ouverte, ligne absente comprise", async () => {
     const adjustments = cartAdjustments(
@@ -426,9 +377,13 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
       new Preferences(),
     );
 
-    const resolved = await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2c", null));
+    const route = await adjustments.deliveryRoute("73150", "b2c");
 
-    expect(resolved.feeCents).toBe(2_000);
+    expect(route.fee).toEqual({ mode: "amount", cents: 2_000 });
+    // Une seule arithmétique (0b) : la route rend le BARÈME, jamais un montant —
+    // `price-basket.ts` est le seul à chiffrer le frais.
+    expect(route).not.toHaveProperty("feeCents");
+    expect("forDelivery" in adjustments).toBe(false);
   });
 
   it("refuse la livraison fermée à la clientèle, AVANT de chercher la zone", async () => {
@@ -443,9 +398,9 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
 
     // Même vers un code postal non desservi : la raison du refus est la
     // fermeture, et dire « on ne livre pas là » mentirait.
-    await expect(
-      adjustments.forDelivery("99000", BASKET, pickupBuyer("b2c", null)),
-    ).rejects.toThrow(DeliveryClosedForAudienceError);
+    await expect(adjustments.deliveryRoute("99000", "b2c")).rejects.toThrow(
+      DeliveryClosedForAudienceError,
+    );
     expect(zones.lookups).toBe(0);
   });
 
@@ -458,12 +413,13 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
       new Preferences(),
     );
 
-    expect(
-      (await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2b", null))).feeCents,
-    ).toBe(2_000);
-    await expect(
-      adjustments.forDelivery("99000", BASKET, pickupBuyer("b2b", null)),
-    ).rejects.toThrow(NoDeliveryZoneForPostalCodeError);
+    expect((await adjustments.deliveryRoute("73150", "b2b")).fee).toEqual({
+      mode: "amount",
+      cents: 2_000,
+    });
+    await expect(adjustments.deliveryRoute("99000", "b2b")).rejects.toThrow(
+      NoDeliveryZoneForPostalCodeError,
+    );
   });
 
   it("porte le code partagé avec la boutique et le message du plan", () => {

@@ -3,7 +3,10 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  AdminDeliveryZoneView,
   CreatedDeliveryZoneResponse,
+  DeliveryPricingPatch,
+  DeliveryPricingView,
   DeliveryZonePayload,
   DeliveryZoneView,
   UncoveredPostalCodeView,
@@ -25,6 +28,28 @@ export class DeliveryZonesService {
     return firstValueFrom(
       this.http.get<readonly DeliveryZoneView[]>(`${B2B_API_BASE}/delivery-zones`),
     );
+  }
+
+  /**
+   * Les zones AVEC leurs remplacements par audience (staff, plan
+   * `plan-livraison-offerte.md`, 0b) — ce que la route publique ne sert pas.
+   */
+  listAdmin(): Promise<readonly AdminDeliveryZoneView[]> {
+    return firstValueFrom(
+      this.http.get<readonly AdminDeliveryZoneView[]>(`${B2B_API_BASE}/admin/delivery-zones`),
+    );
+  }
+
+  /** Le réglage global de livraison par audience (staff, 0b). */
+  pricing(): Promise<DeliveryPricingView> {
+    return firstValueFrom(
+      this.http.get<DeliveryPricingView>(`${B2B_API_BASE}/admin/delivery-pricing`),
+    );
+  }
+
+  /** Change le réglage global : seules les valeurs présentes changent. Répond `204`. */
+  async updatePricing(patch: DeliveryPricingPatch): Promise<void> {
+    await firstValueFrom(this.http.patch<void>(`${B2B_API_BASE}/admin/delivery-pricing`, patch));
   }
 
   /** Les codes postaux d'adresses de livraison qu'aucune zone ne couvre (staff). */

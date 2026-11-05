@@ -1,5 +1,6 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import {
+  type AdminDeliveryZoneView,
   type CreatedDeliveryZoneResponse,
   type DeliveryZonePayload,
   deliveryZonePayloadSchema,
@@ -20,6 +21,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateDeliveryZoneCommand } from "../application/create-delivery-zone.command.js";
+import { ListAdminDeliveryZonesQuery } from "../application/list-admin-delivery-zones.query.js";
 import { ListUncoveredPostalCodesQuery } from "../application/list-uncovered-postal-codes.query.js";
 import { RemoveDeliveryZoneCommand } from "../application/remove-delivery-zone.command.js";
 import { UpdateDeliveryZoneCommand } from "../application/update-delivery-zone.command.js";
@@ -37,6 +39,17 @@ export class AdminDeliveryZonesController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
+
+  /**
+   * Les zones avec leurs remplacements par audience (0b) — ce que la route
+   * publique `GET /delivery-zones` ne sert pas.
+   */
+  @Get()
+  list(): Promise<readonly AdminDeliveryZoneView[]> {
+    return this.queries.execute<ListAdminDeliveryZonesQuery, readonly AdminDeliveryZoneView[]>(
+      new ListAdminDeliveryZonesQuery(),
+    );
+  }
 
   /**
    * Les codes postaux d'adresses de livraison qu'aucune zone ne couvre : ces

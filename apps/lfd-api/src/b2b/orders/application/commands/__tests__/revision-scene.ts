@@ -28,7 +28,7 @@ import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js"
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
 import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
-import type { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import type { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
@@ -208,14 +208,7 @@ function pickupsOf(point: PickupAddressView): PickupAddressRepository {
   };
 }
 
-const zones: DeliveryZoneRepository = {
-  list: () => Promise.resolve([ZONE]),
-  findById: () => Promise.resolve(ZONE),
-  resolveForPostalCode: () => Promise.resolve(ZONE),
-  create: () => Promise.resolve("zone_1"),
-  update: () => Promise.resolve(),
-  remove: () => Promise.resolve(),
-};
+const zones = zoneFees([ZONE]);
 
 /** L'engagement comptable : `free` par défaut, comme une commande au compte encore libre. */
 export class FixedEngagements extends AccountOrderEngagementReader {

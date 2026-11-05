@@ -19,7 +19,8 @@ import {
   ServiceDayBeforeFirstOrderableDayError,
 } from "../../../domain/errors/service-day-before-first-orderable-day.error.js";
 
-import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
+import type { DeliveryZoneFeeReader } from "../../../domain/ports/delivery-zone-fee.reader.js";
 import {
   PaymentGateway,
   type CreateIntentParams,
@@ -361,20 +362,8 @@ function pickups(resolved: PickupAddressView | null = null): PickupAddressReposi
  * le code postal laisserait passer précisément ce qu'on veut interdire — un frais
  * servi par une zone qui ne dessert pas l'adresse livrée.
  */
-function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
-  return {
-    list: () => Promise.resolve(found === null ? [] : [found]),
-    findById: () => Promise.resolve(found),
-    resolveForPostalCode: (codePostal) =>
-      Promise.resolve(
-        found !== null && found.postalPrefixes.some((prefix) => codePostal.startsWith(prefix))
-          ? found
-          : null,
-      ),
-    create: () => Promise.resolve("zone_1"),
-    update: () => Promise.resolve(),
-    remove: () => Promise.resolve(),
-  };
+function zones(found: DeliveryZoneView | null = null): DeliveryZoneFeeReader {
+  return zoneFees(found === null ? [] : [found]);
 }
 
 /**
@@ -454,7 +443,7 @@ function deliveryAvailability(
 
 function drafting(
   pickupsDouble: PickupAddressRepository,
-  zonesDouble: DeliveryZoneRepository,
+  zonesDouble: DeliveryZoneFeeReader,
   audience: {
     readonly status?: CompanyStatusOf | null;
     readonly delivery?: DeliveryAvailabilityView;

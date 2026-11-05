@@ -2,30 +2,69 @@
  * E2E du **réglage global de livraison par audience** et des remplacements par
  * zone (plan `documentation/promotions/plan-livraison-offerte.md`, sous-lot
  * 0a) : lecture et écriture staff, ligne absente = rien de réglé, auteur figé,
- * refus nommés, colonnes de zone nulles — et SURTOUT rien de changé au frais :
- * un devis livré coûte toujours le frais de la zone, réglage posé ou non.
+ * refus nommés, colonnes de zone nulles.
+ *
+ * Depuis 0b, le frais facturé se RÉSOUT par audience : remplacement de la
+ * zone, sinon réglage global, sinon l'ancien frais de la zone — au devis comme
+ * à la passation, avec la clientèle que le serveur attribue (pending = pro).
  */
+import { randomUUID } from "node:crypto";
+
 import {
   DEFAULT_DELIVERY_PRICING,
+  type AdminDeliveryZoneView,
   type CreatedDeliveryZoneResponse,
   type DeliveryPricingView,
   type DeliveryZoneView,
+  type PlacedOrderResponse,
   type ShopQuoteView,
 } from "@lfd/contracts";
 
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
+let intentCounter = 0;
+const fakeGateway = {
+  createIntent: () => {
+    intentCounter += 1;
+    return Promise.resolve({
+      paymentIntentId: `pi_delivery_pricing_${intentCounter}`,
+      clientSecret: `pi_delivery_pricing_${intentCounter}_secret`,
+    });
+  },
+  retrieveIntent: (id: string) =>
+    Promise.resolve({
+      paymentIntentId: id,
+      clientSecret: `${id}_secret`,
+      state: "awaiting_payment" as const,
+    }),
+  publishableKey: () => "pk_e2e",
+  parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
+};
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: fakeGateway },
+    ],
   });
 });
 
@@ -161,17 +200,156 @@ describe("les remplacements par zone", () => {
   });
 });
 
-describe("le frais facturé est inchangé (0a)", () => {
-  it("un devis livré coûte le frais de la zone, avant comme après un réglage global et un remplacement", async () => {
-    const id = await createZone();
-    expect(await quotedDeliveryFee()).toBe(ZONE_FEE_CENTS);
+describe("le frais facturé, résolu par audience (0b)", () => {
+  const PENDING = "auth0|livraison-en-attente";
+  const ACTIVE = "auth0|livraison-active";
+  const SERVICE_DAY = serviceDay();
+  const AMOUNTS = {
+    b2b: { fee: { mode: "amount", cents: 900 }, freeDeliveryThresholdCents: null },
+    b2c: { fee: { mode: "amount", cents: 1_500 }, freeDeliveryThresholdCents: null },
+  };
+  const COURIER_ADDR = {
+    label: "",
+    ligne1: "12 rue du Test",
+    ligne2: "",
+    codePostal: "73150",
+    ville: "Val d'Isère",
+    pays: "France",
+  };
 
-    await staff().patch("/admin/delivery-pricing").send(GLOBAL).expect(204);
+  async function seedPros(): Promise<string> {
+    const pending = await createUser(ctx.prisma, { auth0Sub: PENDING });
+    const pendingCompany = await createCompany(ctx.prisma, { status: CompanyStatus.pending });
+    await attachTo(ctx.prisma, pending.id, pendingCompany.id, CustomerRole.owner);
+    const active = await createUser(ctx.prisma, { auth0Sub: ACTIVE });
+    const activeCompany = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    await attachTo(ctx.prisma, active.id, activeCompany.id, CustomerRole.owner);
+    return activeCompany.id;
+  }
+
+  async function quotedFor(sub: string): Promise<number> {
+    const response = await ctx.asSub(sub).post("/shop/quote/mine").send(DELIVERY_QUOTE).expect(200);
+    return jsonBody<ShopQuoteView>(response).deliveryFeeCents;
+  }
+
+  /** Un pro ne livre qu'à une heure INSCRITE sur son adresse (2026-10-12). */
+  async function placeProDelivery(companyId: string): Promise<number | null> {
+    const created = await ctx
+      .asSub(ACTIVE)
+      .post(`/companies/${companyId}/delivery-addresses`)
+      .send({
+        ...COURIER_ADDR,
+        label: "Hôtel",
+        isDefault: true,
+        specs: {
+          signatureRequired: null,
+          note: "",
+          slotList: { mode: "everyday", slots: [] },
+          deliveryContact: null,
+          gps: null,
+          windowMode: "deadline",
+          deadlines: { mode: "everyday", times: ["10:00"] },
+        },
+      })
+      .expect(201);
+    const placed = await ctx
+      .asSub(ACTIVE)
+      .post("/orders")
+      .send({
+        idempotencyKey: randomUUID(),
+        salesTerms: null,
+        deliveryAddressId: jsonBody<{ id: string }>(created).id,
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "delivery",
+        requestedWindow: { start: null, end: "10:00" },
+        deliveryAddress: COURIER_ADDR,
+        note: "",
+        lines: DELIVERY_QUOTE.lines,
+      })
+      .expect(201);
+    const row = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: jsonBody<PlacedOrderResponse>(placed).id },
+    });
+    return row.deliveryFeeCents;
+  }
+
+  /**
+   * Régression attendue : sans réglage global ni remplacement, un devis livré
+   * coûte EXACTEMENT l'ancien frais de la zone — le 0b ne change aucun prix
+   * tant que personne n'a rien saisi.
+   */
+  it("sans aucun réglage : l'ancien frais de la zone, pour un particulier comme pour un pro", async () => {
+    await seedPros();
+    await createZone();
+
+    expect(await quotedDeliveryFee()).toBe(ZONE_FEE_CENTS);
+    expect(await quotedFor(ACTIVE)).toBe(ZONE_FEE_CENTS);
+  });
+
+  it("le réglage global : chaque audience son frais, la société en attente au frais des pros", async () => {
+    const activeCompanyId = await seedPros();
+    await createZone();
+    await staff().patch("/admin/delivery-pricing").send(AMOUNTS).expect(204);
+
+    expect(await quotedDeliveryFee()).toBe(1_500);
+    expect(await quotedFor(PENDING)).toBe(900);
+    expect(await quotedFor(ACTIVE)).toBe(900);
+    // La passation facture ce que le devis annonce.
+    expect(await placeProDelivery(activeCompanyId)).toBe(900);
+  });
+
+  it("le remplacement de la zone l'emporte, pour son audience seule ; revenir au global le défait", async () => {
+    await seedPros();
+    const id = await createZone();
+    await staff().patch("/admin/delivery-pricing").send(AMOUNTS).expect(204);
+    const farther = {
+      b2b: { fee: null, freeDeliveryThresholdCents: null },
+      b2c: { fee: { mode: "amount", cents: 2_500 }, freeDeliveryThresholdCents: null },
+    };
     await staff()
       .patch(`/admin/delivery-zones/${id}`)
-      .send({ ...ZONE, audienceTerms: GLOBAL })
+      .send({ ...ZONE, audienceTerms: farther })
       .expect(204);
 
-    expect(await quotedDeliveryFee()).toBe(ZONE_FEE_CENTS);
+    expect(await quotedDeliveryFee()).toBe(2_500);
+    expect(await quotedFor(ACTIVE)).toBe(900);
+
+    await staff()
+      .patch(`/admin/delivery-zones/${id}`)
+      .send({
+        ...ZONE,
+        audienceTerms: { b2b: farther.b2b, b2c: { fee: null, freeDeliveryThresholdCents: null } },
+      })
+      .expect(204);
+    expect(await quotedDeliveryFee()).toBe(1_500);
+  });
+
+  it("la vue admin des zones porte les remplacements ; la route publique ne change pas", async () => {
+    const id = await createZone({ ...ZONE, audienceTerms: AMOUNTS });
+
+    const admin = jsonBody<AdminDeliveryZoneView[]>(
+      await staff().get("/admin/delivery-zones").expect(200),
+    );
+    expect(admin).toEqual([
+      {
+        id,
+        label: ZONE.label,
+        postalPrefixes: ZONE.postalPrefixes,
+        fee: ZONE.fee,
+        audienceTerms: AMOUNTS,
+      },
+    ]);
+    const zones = jsonBody<DeliveryZoneView[]>(await ctx.http().get("/delivery-zones").expect(200));
+    expect(zones[0]).not.toHaveProperty("audienceTerms");
+    await ctx.http().get("/admin/delivery-zones").expect(401);
+  });
+
+  it("le réglage global part au journal, avec l'état remplacé", async () => {
+    await staff().patch("/admin/delivery-pricing").send(AMOUNTS).expect(204);
+
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { type: "delivery_pricing.updated" },
+    });
+    expect(facts).toHaveLength(1);
   });
 });

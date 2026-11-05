@@ -1,6 +1,8 @@
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
+  type AdminDeliveryZoneView,
   type DeliveryAvailabilityView,
+  type DeliveryPricingTerms,
   type DeliveryVatMode,
   type DeliveryZoneView,
   type PickupAddressView,
@@ -10,7 +12,7 @@ import type { Clock } from "../../../../../platform/time/clock.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
-import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
@@ -73,27 +75,6 @@ export class CountedPoints extends PickupAddressRepository {
   }
 }
 
-class OneZone extends DeliveryZoneRepository {
-  list(): Promise<readonly DeliveryZoneView[]> {
-    return Promise.resolve([ZONE]);
-  }
-  findById(): Promise<DeliveryZoneView | null> {
-    return Promise.resolve(ZONE);
-  }
-  resolveForPostalCode(): Promise<DeliveryZoneView | null> {
-    return Promise.resolve(ZONE);
-  }
-  create(): Promise<string> {
-    return Promise.resolve(ZONE.id);
-  }
-  update(): Promise<void> {
-    return Promise.resolve();
-  }
-  remove(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
 class Open extends DeliveryAvailabilityReader {
   current(): Promise<DeliveryAvailabilityView> {
     return Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY);
@@ -121,6 +102,10 @@ export interface PricingContextSetup {
   readonly promotions?: readonly LivePromotion[];
   readonly deliveryVatMode?: DeliveryVatMode;
   readonly companyStatus?: OrderCompanyStatus | null;
+  /** La zone avec ses remplacements par audience (0b) ; {@link ZONE} sans remplacement sinon. */
+  readonly zone?: AdminDeliveryZoneView;
+  /** Le réglage global de livraison (0b) ; rien de réglé sinon. */
+  readonly deliveryPricing?: DeliveryPricingTerms;
   readonly gate?: { readonly clock?: Clock; readonly history?: CanonicalPriceHistoryReader };
 }
 
@@ -140,7 +125,7 @@ export function pricingContextOf(setup: PricingContextSetup = {}) {
     pricingOf([catalogItem("PAI-001", "Pain", 200_000, 5.5)], {}, setup.gate ?? {}),
     new CartAdjustments(
       points,
-      new OneZone(),
+      zoneFees([setup.zone ?? ZONE], setup.deliveryPricing),
       new Open(),
       new NoPreference(),
       basketPromotions(setup.promotions ?? [], classifications, new FixedClock(PRICED_AT)),

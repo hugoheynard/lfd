@@ -1,5 +1,10 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { DeliveryZonePayload, DeliveryZoneView } from '@lfd/contracts';
+import type {
+  AdminDeliveryZoneView,
+  CustomerAudience,
+  DeliveryZonePayload,
+  DeliveryZoneView,
+} from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -55,7 +60,11 @@ interface Harness {
   readonly ref: FoldPanelRef<boolean>;
 }
 
-async function mount(zone: DeliveryZoneView | null, postalCode?: string): Promise<Harness> {
+async function mount(
+  zone: DeliveryZoneView | AdminDeliveryZoneView | null,
+  postalCode?: string,
+  audiences?: readonly CustomerAudience[],
+): Promise<Harness> {
   const zones = new FakeZones();
   const ref = new FoldPanelRef<boolean>(1, () => undefined);
   TestBed.configureTestingModule({
@@ -67,7 +76,11 @@ async function mount(zone: DeliveryZoneView | null, postalCode?: string): Promis
     ],
   });
   const fixture = TestBed.createComponent(ZonePanel);
-  fixture.componentRef.setInput('data', postalCode === undefined ? { zone } : { zone, postalCode });
+  fixture.componentRef.setInput('data', {
+    zone,
+    ...(postalCode === undefined ? {} : { postalCode }),
+    ...(audiences === undefined ? {} : { audiences }),
+  });
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -157,5 +170,47 @@ describe('ZonePanel — la création préremplie', () => {
     const { fixture } = await mount(null);
 
     expect(fixture.componentInstance['prefixes']()).toEqual([]);
+  });
+});
+
+describe('ZonePanel — les remplacements par clientèle (0b)', () => {
+  const ADMIN_VAL: AdminDeliveryZoneView = {
+    ...VAL,
+    audienceTerms: {
+      b2b: { fee: { mode: 'amount', cents: 700 }, freeDeliveryThresholdCents: 4_000 },
+      b2c: { fee: { mode: 'percent', bp: 1_000 }, freeDeliveryThresholdCents: 6_000 },
+    },
+  };
+
+  it('une clientèle masquée garde ses valeurs, le franco aussi', async () => {
+    const { fixture, zones } = await mount(ADMIN_VAL, undefined, ['b2b']);
+
+    fixture.componentInstance['backToGlobal']('b2b');
+    await fixture.componentInstance['submit']();
+
+    expect(zones.updated[0]?.audienceTerms).toEqual({
+      b2b: { fee: null, freeDeliveryThresholdCents: 4_000 },
+      b2c: { fee: { mode: 'percent', bp: 1_000 }, freeDeliveryThresholdCents: 6_000 },
+    });
+  });
+
+  it('« Remplacer pour cette zone » part du frais de la zone', async () => {
+    const { fixture, zones } = await mount(null, '73320', ['b2c']);
+    fixture.componentInstance['setFee']({ direction: 'increase', mode: 'amount', cents: 1_500 });
+
+    fixture.componentInstance['startOverride']('b2c');
+    await fixture.componentInstance['submit']();
+
+    expect(zones.created[0]?.audienceTerms?.b2c.fee).toEqual(zones.created[0]?.fee);
+    expect(zones.created[0]?.audienceTerms?.b2b.fee).toBeNull();
+  });
+
+  it('une zone lue sans ses remplacements (route publique) ne les écrit pas', async () => {
+    const { fixture, zones } = await mount(VAL, undefined, ['b2b', 'b2c']);
+
+    await fixture.componentInstance['submit']();
+
+    expect(zones.updated[0]).not.toHaveProperty('audienceTerms');
+    expect(fixture.componentInstance['canOverride']()).toBe(false);
   });
 });

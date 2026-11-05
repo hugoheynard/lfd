@@ -25,7 +25,8 @@ import { UnknownSkuError } from "../../../../catalog/domain/errors/unknown-sku.e
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import { type UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
-import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
+import type { DeliveryZoneFeeReader } from "../../../domain/ports/delivery-zone-fee.reader.js";
 import {
   PaymentGateway,
   type CreateIntentParams,
@@ -251,20 +252,8 @@ function pickups(resolved: PickupAddressView | null = LABO_POINT): PickupAddress
   };
 }
 
-function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
-  return {
-    list: () => Promise.resolve(found === null ? [] : [found]),
-    findById: () => Promise.resolve(found),
-    resolveForPostalCode: (codePostal) =>
-      Promise.resolve(
-        found !== null && found.postalPrefixes.some((prefix) => codePostal.startsWith(prefix))
-          ? found
-          : null,
-      ),
-    create: () => Promise.resolve("zone_1"),
-    update: () => Promise.resolve(),
-    remove: () => Promise.resolve(),
-  };
+function zones(found: DeliveryZoneView | null = null): DeliveryZoneFeeReader {
+  return zoneFees(found === null ? [] : [found]);
 }
 
 /** La composition réelle, montée sur les doubles ci-dessus. */

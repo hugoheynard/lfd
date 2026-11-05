@@ -1,16 +1,19 @@
 import {
-  cartAdjustmentCents,
   deliveryOpenTo,
   pickupOpenTo,
   preselectedPickupId,
   type CustomerAudience,
   type LocalMoment,
 } from "@lfd/contracts";
-import type { DeliveryZoneView, PickupAddressView, WindowMode } from "@lfd/contracts";
+import type {
+  CartAdjustment,
+  DeliveryZoneView,
+  PickupAddressView,
+  WindowMode,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { DeliveryAvailabilityReader } from "../../../delivery-availability/domain/ports/delivery-availability.reader.js";
-import { DeliveryZoneRepository } from "../../../delivery-zones/domain/delivery-zone.repository.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
   DeliveryClosedForAudienceError,
@@ -20,15 +23,16 @@ import {
   PickupNotOfferedToAudienceError,
 } from "../../domain/errors/order-errors.js";
 import { PickupChoiceRequiredError } from "../../domain/errors/pickup-choice-errors.js";
+import { DeliveryZoneFeeReader } from "../../domain/ports/delivery-zone-fee.reader.js";
 import type { OrderLineClassification } from "../../domain/ports/order-line-classification.reader.js";
 import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reader.js";
 import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
 import type { KnownBuyerFacts } from "../../../promotions/application/promotion-audience-facts.resolver.js";
 import type { LoadedBasketPromotions } from "../../domain/services/loaded-basket-promotions.js";
 import { BasketPromotions } from "./basket-promotions.service.js";
-import type { PickupBuyer, ResolvedDelivery, ResolvedPickup } from "./cart-adjustments.types.js";
+import type { PickupBuyer, ResolvedPickup } from "./cart-adjustments.types.js";
 
-export type { PickupBuyer, ResolvedDelivery, ResolvedPickup } from "./cart-adjustments.types.js";
+export type { PickupBuyer, ResolvedPickup } from "./cart-adjustments.types.js";
 
 /**
  * **Ce que l'acheminement retire ou ajoute au panier**, et rien d'autre.
@@ -69,7 +73,7 @@ export type { PickupBuyer, ResolvedDelivery, ResolvedPickup } from "./cart-adjus
 export class CartAdjustments {
   constructor(
     private readonly pickups: PickupAddressRepository,
-    private readonly zones: DeliveryZoneRepository,
+    private readonly zones: DeliveryZoneFeeReader,
     private readonly delivery: DeliveryAvailabilityReader,
     private readonly preferences: PreferredPickupReader,
     private readonly basket: BasketPromotions,
@@ -177,9 +181,20 @@ export class CartAdjustments {
   }
 
   /**
-   * **La zone du code postal livré et le réglage de la livraison, sans
-   * promotion ni frais** — la lecture du chargement, que {@link forDelivery}
-   * réemploie. L'ouverture se juge AVANT la zone (cf. {@link forDelivery}).
+   * **La zone du code postal livré, le barème que CETTE clientèle y paie, et
+   * le réglage de la livraison** — la lecture du chargement.
+   *
+   * Déduite, jamais choisie : la zone est une propriété de l'adresse, et
+   * personne ne peut annoncer un secteur moins cher que le sien. L'ouverture
+   * se juge AVANT la zone : fermée, la livraison l'est partout, et répondre
+   * « on ne livre pas ce code postal » mentirait sur la raison.
+   *
+   * Le barème est RÉSOLU par audience (plan `plan-livraison-offerte.md`, 0b) :
+   * remplacement de la zone, sinon réglage global, sinon l'ancien frais de la
+   * zone. Il n'est pas APPLIQUÉ ici : `price-basket.ts` (`deliveryFeeOf`) est
+   * le seul endroit qui chiffre le frais — l'ancien `forDelivery`, qui le
+   * chiffrait une seconde fois sans appelant en production, a été retiré
+   * (vérifié le 2026-11-05).
    *
    * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
    * @throws {NoDeliveryZoneForPostalCodeError} on ne livre pas ce code postal.
@@ -187,16 +202,20 @@ export class CartAdjustments {
   async deliveryRoute(
     codePostal: string,
     audience: CustomerAudience,
-  ): Promise<{ readonly zone: DeliveryZoneView; readonly globalWindowMode: WindowMode }> {
+  ): Promise<{
+    readonly zone: DeliveryZoneView;
+    readonly fee: CartAdjustment;
+    readonly globalWindowMode: WindowMode;
+  }> {
     const settings = await this.delivery.current();
     if (!deliveryOpenTo(settings, audience)) {
       throw new DeliveryClosedForAudienceError();
     }
-    const zone = await this.zones.resolveForPostalCode(codePostal);
-    if (zone === null) {
+    const priced = await this.zones.zoneFor(codePostal, audience);
+    if (priced === null) {
       throw new NoDeliveryZoneForPostalCodeError(codePostal);
     }
-    return { zone, globalWindowMode: settings.windowMode };
+    return { zone: priced.zone, fee: priced.fee, globalWindowMode: settings.windowMode };
   }
 
   /**
@@ -229,53 +248,5 @@ export class CartAdjustments {
       throw new PickupChoiceRequiredError(offered.length);
     }
     return offered.find((point) => point.id === id) ?? null;
-  }
-
-  /**
-   * La zone **déduite du code postal livré**, ses frais, et la promotion de
-   * livraison — si la livraison est proposée à cette clientèle.
-   *
-   * Déduite, jamais choisie : c'est une propriété de l'adresse. Personne ne peut
-   * donc annoncer un secteur moins cher que le sien — ni à la commande, ni au
-   * devis, ce qui est la moitié de la raison d'être de ce service.
-   *
-   * L'ouverture se juge AVANT la zone : fermée, la livraison l'est partout, et
-   * répondre « on ne livre pas ce code postal » mentirait sur la raison.
-   *
-   * La promotion de livraison (L10) passe par le même chemin que celle du
-   * retrait (`BasketPromotions.resolve`). Les frais n'en sont pas
-   * l'assiette : elle porte sur les marchandises, comme celle du retrait.
-   *
-   * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
-   * @throws {NoDeliveryZoneForPostalCodeError} on ne livre pas ce code postal.
-   */
-  async forDelivery(
-    codePostal: string,
-    lines: readonly BasketLine[],
-    buyer: PickupBuyer,
-    known: ReadonlyMap<string, OrderLineClassification> | null = null,
-    handoverAt: LocalMoment | null = null,
-  ): Promise<ResolvedDelivery> {
-    const { zone, globalWindowMode } = await this.deliveryRoute(codePostal, buyer.audience);
-    const subtotalCents = lines.reduce((sum, line) => sum + line.htCents, 0);
-    const discount = await this.basket.resolve({
-      lines,
-      buyer: {
-        companyId: buyer.companyId,
-        companyStatus: buyer.companyStatus,
-        buyerKind: buyer.buyerKind,
-        // La zone des frais entre dans le fait (`promotions.md`, § 2.14).
-        fulfillment: { method: "delivery", zoneId: zone.id },
-      },
-      known,
-      handoverAt,
-    });
-    return {
-      zone,
-      globalWindowMode,
-      feeCents: cartAdjustmentCents(zone.fee, subtotalCents),
-      feeAdjustment: zone.fee,
-      discount,
-    };
   }
 }

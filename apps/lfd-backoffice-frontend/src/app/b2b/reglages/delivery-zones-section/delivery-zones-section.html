@@ -22,6 +22,38 @@
         }
       </div>
 
+      @if (canReadFees() && audiences().length > 0) {
+        <div class="global">
+          <div class="head">
+            <div class="head-text">
+              <h3 class="global-title">Réglage global</h3>
+              <p class="section-desc">
+                Le frais de base de chaque clientèle, dans toute zone qui ne le remplace pas.
+              </p>
+            </div>
+            @if (canWrite()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                (click)="editGlobal()"
+              >
+                Modifier
+              </button>
+            }
+          </div>
+          <ul class="global-fees">
+            @for (audience of audiences(); track audience) {
+              <li class="global-fee">
+                <span>{{ audienceLabels[audience] }}</span>
+                <fold-badge [content]="globalFee(pricing()[audience].fee)" variant="neutral" />
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
       @if (canReadFees()) {
         <app-uncovered-postal-codes
           class="uncovered"
@@ -40,6 +72,12 @@
                   <span class="zone-label">{{ zone.label }}</span>
                 }
                 <fold-badge [content]="'+ ' + fee(zone.fee)" variant="warning" />
+                @for (override of overridesOf(zone); track override.audience) {
+                  <fold-badge
+                    [content]="audienceLabels[override.audience] + ' + ' + fee(override.fee)"
+                    variant="info"
+                  />
+                }
               </div>
 
               <!-- Pas de menu : modifier comme supprimer se font dans le panneau. -->

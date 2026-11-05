@@ -208,9 +208,25 @@ const deliveryZoneBeforeLabel = () =>
   payload({ label: z.string(), postalPrefixes: count(), fee: percentOrAmount() });
 
 /**
+ * Ce qu'une audience paie pour être livrée, à un niveau (plan
+ * `plan-livraison-offerte.md`, 0b) : `null` = rien de réglé à ce niveau.
+ */
+const deliveryAudienceTerms = () =>
+  payload({ fee: percentOrAmount().nullable(), freeDeliveryThresholdCents: cents().nullable() });
+
+/** Les deux audiences, à un niveau : le réglage global, ou le remplacement d'une zone. */
+const deliveryPricingTerms = () =>
+  payload({ b2b: deliveryAudienceTerms(), b2c: deliveryAudienceTerms() });
+
+/**
  * Une zone de livraison et ses frais. Le NOMBRE de préfixes, pas leur liste :
  * deux cents codes postaux ne se relisent pas, leur compte dit si la zone a
  * grossi.
+ *
+ * `audienceTerms` (0b, 2026-11-05) : les remplacements du réglage global par
+ * audience, DANS le fait de la zone plutôt qu'un fait à part — ils sont
+ * écrits par le même geste, et le prix d'une zone ne se relit qu'entier.
+ * Facultatif : les faits d'avant ne le portent pas.
  */
 const deliveryZone = () =>
   payload({
@@ -218,6 +234,7 @@ const deliveryZone = () =>
     label: z.string(),
     postalPrefixCount: count(),
     fee: percentOrAmount(),
+    audienceTerms: deliveryPricingTerms().optional(),
   });
 
 /** Une heure limite de commande, avant le lot B : le point par son seul id. */
@@ -652,6 +669,18 @@ export const ORDERS_PRODUCTION_FACTS = {
    * chaque clientèle et celui qu'il remplace — un geste ne bascule qu'une case,
    * et « fermée aux particuliers » ne se relit qu'avec l'avant.
    */
+  /**
+   * **Le réglage global de livraison par audience** (plan
+   * `plan-livraison-offerte.md`, 0b) : l'état posé et celui qu'il remplace —
+   * un geste ne touche qu'une valeur, et un frais se relit avec l'avant.
+   */
+  "delivery_pricing.updated": fact(
+    payload({
+      b2b: deliveryAudienceTerms(),
+      b2c: deliveryAudienceTerms(),
+      previous: deliveryPricingTerms(),
+    }),
+  ),
   "order_opening.updated": fact(
     payload({
       ordersOpenToB2b: z.boolean(),

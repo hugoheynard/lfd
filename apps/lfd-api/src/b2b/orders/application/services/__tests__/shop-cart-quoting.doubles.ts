@@ -20,7 +20,7 @@ import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/ca
 import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
-import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
@@ -98,30 +98,6 @@ class OnePoint extends PickupAddressRepository {
   }
   resolve(): Promise<PickupAddressView | null> {
     return Promise.resolve(this.point);
-  }
-}
-
-class OneZone extends DeliveryZoneRepository {
-  constructor(private readonly zone: DeliveryZoneView | null) {
-    super();
-  }
-  list(): Promise<readonly DeliveryZoneView[]> {
-    return Promise.resolve(this.zone === null ? [] : [this.zone]);
-  }
-  findById(): Promise<DeliveryZoneView | null> {
-    return Promise.resolve(this.zone);
-  }
-  resolveForPostalCode(): Promise<DeliveryZoneView | null> {
-    return Promise.resolve(this.zone);
-  }
-  create(): Promise<string> {
-    return Promise.resolve("zone");
-  }
-  update(): Promise<void> {
-    return Promise.resolve();
-  }
-  remove(): Promise<void> {
-    return Promise.resolve();
   }
 }
 
@@ -264,7 +240,7 @@ export function cartAdjustmentsOf(setup: QuotingSetup): CartAdjustments {
   const classifications = new FixedLineClassifications(setup.classified ?? {});
   return new CartAdjustments(
     new OnePoint(point),
-    new OneZone(setup.zone ?? null),
+    zoneFees(setup.zone === undefined || setup.zone === null ? [] : [setup.zone]),
     new Open(),
     new NoPreference(),
     setup.basketPromotions === undefined

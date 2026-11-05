@@ -1,10 +1,18 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { StaffPermission } from '@lfd/contracts';
+import {
+  DEFAULT_DELIVERY_AVAILABILITY,
+  DEFAULT_DELIVERY_PRICING,
+  type AdminDeliveryZoneView,
+  type DeliveryAvailabilityView,
+  type DeliveryPricingView,
+  type StaffPermission,
+} from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { DeliveryAvailabilityService } from '../delivery-availability.service';
 import { DeliveryZonesService } from '../delivery-zones.service';
 import { DeliveryZonesSection } from './delivery-zones-section';
 import type { ZonePanelData } from './zone-panel/zone-panel';
@@ -27,8 +35,21 @@ class RecordingPanels {
   }
 }
 
-async function mount(url: string, granted: readonly StaffPermission[]): Promise<RecordingPanels> {
+interface Setup {
+  readonly open?: Pick<DeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>;
+  readonly pricing?: DeliveryPricingView;
+  readonly zones?: readonly AdminDeliveryZoneView[];
+}
+
+let mounted: HTMLElement | null = null;
+
+async function mount(
+  url: string,
+  granted: readonly StaffPermission[],
+  setup: Setup = {},
+): Promise<RecordingPanels> {
   const panels = new RecordingPanels();
+  const open = setup.open ?? { openToB2b: true, openToB2c: true };
   TestBed.configureTestingModule({
     imports: [DeliveryZonesSection],
     providers: [
@@ -37,7 +58,15 @@ async function mount(url: string, granted: readonly StaffPermission[]): Promise<
         provide: DeliveryZonesService,
         useValue: {
           list: () => Promise.resolve([]),
+          listAdmin: () => Promise.resolve(setup.zones ?? []),
+          pricing: () => Promise.resolve(setup.pricing ?? DEFAULT_DELIVERY_PRICING),
           uncoveredPostalCodes: () => Promise.resolve([]),
+        },
+      },
+      {
+        provide: DeliveryAvailabilityService,
+        useValue: {
+          readPublic: () => Promise.resolve({ ...DEFAULT_DELIVERY_AVAILABILITY, ...open }),
         },
       },
       { provide: FoldPanelHostService, useValue: panels },
@@ -51,8 +80,12 @@ async function mount(url: string, granted: readonly StaffPermission[]): Promise<
   // La navigation qui retire le paramètre part après le chargement des zones.
   await new Promise((resolve) => setTimeout(resolve));
   await fixture.whenStable();
+  fixture.detectChanges();
+  mounted = fixture.nativeElement as HTMLElement;
   return panels;
 }
+
+const text = (): string => mounted?.textContent?.replace(/\s+/gu, ' ') ?? '';
 
 describe('DeliveryZonesSection — ?addPostalCode', () => {
   it('ouvre le panneau en création avec le code, puis retire le paramètre', async () => {
@@ -61,7 +94,7 @@ describe('DeliveryZonesSection — ?addPostalCode', () => {
       'delivery_fee:write',
     ]);
 
-    expect(panels.opened).toEqual([{ zone: null, postalCode: '73320' }]);
+    expect(panels.opened).toEqual([{ zone: null, postalCode: '73320', audiences: ['b2b', 'b2c'] }]);
     expect(TestBed.inject(Router).url).toBe('/reglages/livraison/zones');
   });
 
@@ -79,5 +112,51 @@ describe('DeliveryZonesSection — ?addPostalCode', () => {
     ]);
 
     expect(panels.opened).toEqual([]);
+  });
+});
+
+describe('DeliveryZonesSection — le réglage global et les remplacements (0b)', () => {
+  const PRICED: DeliveryPricingView = {
+    ...DEFAULT_DELIVERY_PRICING,
+    b2b: { fee: { mode: 'amount', cents: 900 }, freeDeliveryThresholdCents: 5_000 },
+  };
+  const VAL: AdminDeliveryZoneView = {
+    id: 'zone_1',
+    postalPrefixes: ['73150'],
+    label: 'Val d’Isère',
+    fee: { mode: 'amount', cents: 2_000 },
+    audienceTerms: {
+      b2b: { fee: null, freeDeliveryThresholdCents: null },
+      b2c: { fee: { mode: 'amount', cents: 2_500 }, freeDeliveryThresholdCents: null },
+    },
+  };
+
+  it('montre le frais global de chaque clientèle ouverte, et les remplacements de la zone', async () => {
+    await mount('/reglages/livraison/zones', ['delivery_fee:read'], {
+      pricing: PRICED,
+      zones: [VAL],
+    });
+
+    expect(text()).toContain('Réglage global');
+    expect(text()).toContain('Pros');
+    expect(text()).toContain('Frais de chaque zone');
+    expect(text()).toMatch(/Particuliers \+ 25,00/u);
+  });
+
+  it('une clientèle fermée à la livraison ne s’affiche pas, même avec des valeurs', async () => {
+    await mount('/reglages/livraison/zones', ['delivery_fee:read'], {
+      open: { openToB2b: true, openToB2c: false },
+      pricing: PRICED,
+      zones: [VAL],
+    });
+
+    expect(text()).toContain('Pros');
+    expect(text()).not.toContain('Particuliers');
+  });
+
+  it('ne parle pas du franco : il n’est pas encore appliqué (lot 1)', async () => {
+    await mount('/reglages/livraison/zones', ['delivery_fee:read'], { pricing: PRICED });
+
+    expect(text()).not.toContain('50,00');
   });
 });

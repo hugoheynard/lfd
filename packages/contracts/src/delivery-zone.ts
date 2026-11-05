@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
-import { deliveryPricingTermsSchema } from "./delivery-pricing.js";
+import { deliveryPricingTermsSchema, type DeliveryPricingTerms } from "./delivery-pricing.js";
 
 /**
  * Contrat de fil des **zones de livraison** — un **secteur** de codes postaux
@@ -29,12 +29,11 @@ export const deliveryZonePayloadSchema = z.object({
   fee: cartAdjustmentSchema,
   /**
    * Les REMPLACEMENTS du réglage global, par audience (plan
-   * `plan-livraison-offerte.md`, sous-lot 0a). Facultatif : absent, une
-   * création les laisse vides et une modification n'y touche pas ; présent,
-   * il les remplace tous, `null` = la zone reprend le global. Pas encore lus
-   * par le calcul (0b), ni rendus par la vue — la route publique est inchangée.
-   * Le fait `delivery_zone.*` ne les porte pas encore : son schéma au journal
-   * est strict, et il s'étendra avec l'écran qui les pose (0b).
+   * `plan-livraison-offerte.md`, 0a/0b). Facultatif : absent, une création
+   * les laisse vides et une modification n'y touche pas ; présent, il les
+   * remplace tous, `null` = la zone reprend le global. Lus par le calcul du
+   * frais depuis 0b ; rendus par la vue ADMIN seule ({@link AdminDeliveryZoneView}) —
+   * la route publique est inchangée jusqu'au 0c.
    */
   audienceTerms: deliveryPricingTermsSchema.optional(),
 });
@@ -47,6 +46,14 @@ export interface DeliveryZoneView {
   readonly postalPrefixes: readonly string[];
   readonly label: string;
   readonly fee: CartAdjustment;
+}
+
+/**
+ * Une zone telle que le back-office la lit (`GET /admin/delivery-zones`, 0b) :
+ * la vue publique, plus ses remplacements par audience.
+ */
+export interface AdminDeliveryZoneView extends DeliveryZoneView {
+  readonly audienceTerms: DeliveryPricingTerms;
 }
 
 /** Réponse de création d'une zone de livraison. */

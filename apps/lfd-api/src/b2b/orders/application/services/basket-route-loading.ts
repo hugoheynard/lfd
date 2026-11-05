@@ -59,7 +59,10 @@ export async function loadPickupPoint(
   return { value: { point: point.value, promotions } };
 }
 
-/** La zone déduite du code postal, son barème, le mode créneau global, et ses promotions. */
+/**
+ * La zone déduite du code postal, le barème de la clientèle de l'acheteur
+ * (résolu, 0b), le mode créneau global, et ses promotions.
+ */
 export interface LoadedDeliveryZone {
   readonly zoneId: string;
   readonly fee: CartAdjustment;
@@ -84,12 +87,12 @@ export async function loadDeliveryZone(
   if ("refusal" in delivery) {
     return delivery;
   }
-  const { zone, globalWindowMode } = delivery.value;
+  const { zone, fee, globalWindowMode } = delivery.value;
   const promotions = await adjustments.promotionsFor({
     ...factsOf(buyer),
     fulfillment: { method: "delivery", zoneId: zone.id },
   });
-  return { value: { zoneId: zone.id, fee: zone.fee, globalWindowMode, promotions } };
+  return { value: { zoneId: zone.id, fee, globalWindowMode, promotions } };
 }
 
 /** Les faits que les promotions panier lisent de l'acheteur, l'acheminement à part. */

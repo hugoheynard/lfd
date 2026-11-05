@@ -2,6 +2,7 @@ import { DEFAULT_DELIVERY_PRICING, type DeliveryPricingView } from "@lfd/contrac
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   StaffDirectory,
@@ -48,6 +49,7 @@ function scene(current: DeliveryPricingView = DEFAULT_DELIVERY_PRICING) {
   const written = new Written();
   const edge = new RecordingPublicSettingsEdgeCache();
   const afterCommit = new HeldAfterCommit();
+  const events = new RecordingPublisher();
   const handler = new UpdateDeliveryPricingHandler(
     new Current(current),
     written,
@@ -55,9 +57,10 @@ function scene(current: DeliveryPricingView = DEFAULT_DELIVERY_PRICING) {
     new FixedClock(AT),
     new DirectUnitOfWork(),
     afterCommit,
+    events,
     edge,
   );
-  return { handler, written, edge, afterCommit };
+  return { handler, written, edge, afterCommit, events };
 }
 
 describe("UpdateDeliveryPricingHandler", () => {
@@ -83,6 +86,27 @@ describe("UpdateDeliveryPricingHandler", () => {
     });
   });
 
+  it("journalise le réglage posé ET celui qu'il remplace (`delivery_pricing.updated`)", async () => {
+    const { handler, events } = scene({
+      ...DEFAULT_DELIVERY_PRICING,
+      b2c: { fee: { mode: "percent", bp: 500 }, freeDeliveryThresholdCents: null },
+    });
+
+    await handler.execute(
+      new UpdateDeliveryPricingCommand({ b2b: { fee: { mode: "amount", cents: 900 } } }, "staff_a"),
+    );
+
+    expect(events.factTypes()).toEqual(["delivery_pricing.updated"]);
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      b2b: { fee: { cents: 900 }, freeDeliveryThresholdCents: null },
+      b2c: { fee: { bp: 500 }, freeDeliveryThresholdCents: null },
+      previous: {
+        b2b: { fee: null, freeDeliveryThresholdCents: null },
+        b2c: { fee: { bp: 500 }, freeDeliveryThresholdCents: null },
+      },
+    });
+  });
+
   it("purge les réglages publics après la validation, et pas avant", async () => {
     const { handler, edge, afterCommit } = scene();
 
@@ -96,7 +120,7 @@ describe("UpdateDeliveryPricingHandler", () => {
   });
 
   it("un franco négatif : refusé, rien d'écrit, rien de purgé", async () => {
-    const { handler, written, edge, afterCommit } = scene();
+    const { handler, written, edge, afterCommit, events } = scene();
 
     await expect(
       handler.execute(
@@ -107,6 +131,7 @@ describe("UpdateDeliveryPricingHandler", () => {
 
     expect(written.last).toBeNull();
     expect(edge.purges).toBe(0);
+    expect(events.factTypes()).toEqual([]);
   });
 });
 

@@ -1107,6 +1107,7 @@ export {
   UNCOVERED_POSTAL_CODE_COMPANIES_SHOWN,
 } from "./delivery-zone.js";
 export type {
+  AdminDeliveryZoneView,
   DeliveryZonePayload,
   DeliveryZoneView,
   CreatedDeliveryZoneResponse,

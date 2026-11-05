@@ -2,6 +2,7 @@ import type { DeliveryZonePayload } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
+import { feeOfFact, pricingTermsOfFact } from "./delivery-pricing-fact.js";
 
 /**
  * **Les faits des zones de livraison.**
@@ -27,13 +28,20 @@ export const DELIVERY_ZONE_FACTS = {
   removed: "delivery_zone.removed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
-/** Le tarif d'une zone, tel qu'on le relit : un pourcentage ou des centimes. */
+/**
+ * Le tarif d'une zone, tel qu'on le relit : un pourcentage ou des centimes —
+ * et, depuis 0b, ses remplacements par audience quand le geste les a posés
+ * (absents du payload : le geste n'y a pas touché, le fait ne les dit pas).
+ */
 function feeOf(payload: DeliveryZonePayload): Record<string, unknown> {
   return {
     subjectLabel: payload.label,
     label: payload.label,
     postalPrefixCount: payload.postalPrefixes.length,
-    fee: payload.fee.mode === "percent" ? { bp: payload.fee.bp } : { cents: payload.fee.cents },
+    fee: feeOfFact(payload.fee),
+    ...(payload.audienceTerms === undefined
+      ? {}
+      : { audienceTerms: pricingTermsOfFact(payload.audienceTerms) }),
   };
 }
 

@@ -20,13 +20,19 @@ import { DeliveryPricingReader } from "./domain/ports/delivery-pricing.reader.js
 import { DeliveryPricingRepository } from "./domain/ports/delivery-pricing.repository.js";
 import { PrismaDeliveryPricingReader } from "./infrastructure/prisma-delivery-pricing.reader.js";
 import { PrismaDeliveryPricingRepository } from "./infrastructure/prisma-delivery-pricing.repository.js";
+import { DeliveryZoneFeeReader } from "../orders/domain/ports/delivery-zone-fee.reader.js";
+import { DeliveryZoneFeeResolver } from "./application/delivery-zone-fee.resolver.js";
+import { ListAdminDeliveryZonesHandler } from "./application/list-admin-delivery-zones.handler.js";
+import { DeliveryZoneTermsReader } from "./domain/ports/delivery-zone-terms.reader.js";
+import { PrismaDeliveryZoneTermsReader } from "./infrastructure/prisma-delivery-zone-terms.reader.js";
 import { DeliveryZonesController } from "./http/delivery-zones.controller.js";
 
 /**
  * **Zones de livraison** (globales) — code postal → frais de livraison. Exporte
  * `DeliveryZoneRepository` : le contexte `orders` en a besoin pour calculer le
  * frais d'une commande livrée vers une zone, et `DeliveryZoneOfPostalCodeReader`,
- * la zone d'un code postal pour le fait d'acheminement des promotions. Importe `AccountModule` pour le
+ * la zone d'un code postal pour le fait d'acheminement des promotions, et
+ * `DeliveryZoneFeeReader`, la zone et le frais résolu d'une audience (0b). Importe `AccountModule` pour le
  * port des codes postaux de livraison (comptes non couverts, 2026-10-20) et
  * pour `StaffDirectory`, l'auteur figé du réglage global par audience (0a).
  */
@@ -50,7 +56,10 @@ import { DeliveryZonesController } from "./http/delivery-zones.controller.js";
     { provide: DeliveryPricingRepository, useClass: PrismaDeliveryPricingRepository },
     GetDeliveryPricingHandler,
     UpdateDeliveryPricingHandler,
+    { provide: DeliveryZoneTermsReader, useClass: PrismaDeliveryZoneTermsReader },
+    { provide: DeliveryZoneFeeReader, useClass: DeliveryZoneFeeResolver },
+    ListAdminDeliveryZonesHandler,
   ],
-  exports: [DeliveryZoneRepository, DeliveryZoneOfPostalCodeReader],
+  exports: [DeliveryZoneRepository, DeliveryZoneOfPostalCodeReader, DeliveryZoneFeeReader],
 })
 export class DeliveryZonesModule {}

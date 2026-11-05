@@ -43,6 +43,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   aspect: 'Section',
   at: 'Le',
   audience: 'Client visé',
+  // Les remplacements du réglage global de livraison d'une zone (0b, 2026-11-05).
+  audienceTerms: 'Frais par clientèle',
   b2b: 'Professionnels',
   b2c: 'Particuliers',
   backfilled: 'Reprise après coup',
@@ -142,6 +144,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   fields: 'Champs modifiés',
   fileName: 'Fichier',
   firstName: 'Prénom',
+  // Le franco (plan-livraison-offerte.md) : posé en 0a, appliqué au lot 1.
+  freeDeliveryThresholdCents: 'Livraison offerte dès (HT)',
   // Le premier jour commandable, par clientèle (plan-premier-jour-commandable.md, J3).
   firstServiceDayB2b: 'Commandes des professionnels à partir du',
   firstServiceDayB2c: 'Commandes des particuliers à partir du',

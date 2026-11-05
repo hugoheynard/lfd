@@ -7,7 +7,15 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { CartAdjustment, DeliveryZonePayload, DeliveryZoneView } from '@lfd/contracts';
+import {
+  UNSET_DELIVERY_AUDIENCE_TERMS,
+  type AdminDeliveryZoneView,
+  type CartAdjustment,
+  type CustomerAudience,
+  type DeliveryPricingTerms,
+  type DeliveryZonePayload,
+  type DeliveryZoneView,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -29,6 +37,7 @@ import {
 
 import { NotifyService } from '../../../../notify.service';
 import { DeliveryZonesService } from '../../delivery-zones.service';
+import { AUDIENCE_LABELS } from '../delivery-audiences';
 
 /**
  * Charge d'ouverture : la zone à éditer, ou `null` pour en créer une. En
@@ -36,8 +45,40 @@ import { DeliveryZonesService } from '../../delivery-zones.service';
  * de livraison qu'aucune zone ne couvre (2026-10-20).
  */
 export interface ZonePanelData {
-  readonly zone: DeliveryZoneView | null;
+  /** Avec ses remplacements quand le staff peut les lire (`GET /admin/delivery-zones`). */
+  readonly zone: DeliveryZoneView | AdminDeliveryZoneView | null;
   readonly postalCode?: string;
+  /** Les clientèles ouvertes à la livraison (0b) : seules elles ont un remplacement à l'écran. */
+  readonly audiences?: readonly CustomerAudience[];
+}
+
+type Overrides = Readonly<Record<CustomerAudience, CartAdjustment | null>>;
+
+const NO_TERMS: DeliveryPricingTerms = {
+  b2b: UNSET_DELIVERY_AUDIENCE_TERMS,
+  b2c: UNSET_DELIVERY_AUDIENCE_TERMS,
+};
+
+/** Les remplacements d'une zone lue par la route admin ; `null` par la route publique. */
+function termsOf(zone: DeliveryZoneView | AdminDeliveryZoneView): DeliveryPricingTerms | null {
+  return 'audienceTerms' in zone ? zone.audienceTerms : null;
+}
+
+/**
+ * Les remplacements à écrire : ceux des clientèles OUVERTES tels qu'à l'écran,
+ * le reste (clientèle masquée, franco — lot 1) tel qu'il était. Masquer une
+ * clientèle n'efface pas ses valeurs.
+ */
+function termsToWrite(
+  base: DeliveryPricingTerms,
+  shown: readonly CustomerAudience[],
+  overrides: Overrides,
+): DeliveryPricingTerms {
+  const at = (audience: CustomerAudience) => ({
+    fee: shown.includes(audience) ? overrides[audience] : base[audience].fee,
+    freeDeliveryThresholdCents: base[audience].freeDeliveryThresholdCents,
+  });
+  return { b2b: at('b2b'), b2c: at('b2c') };
 }
 
 /** Type d'une entrée : un code postal exact (5 chiffres) ou un préfixe de secteur. */
@@ -94,6 +135,24 @@ export class ZonePanel {
   protected readonly rows = signal<PrefixRow[]>([{ id: 0, type: 'postcode', value: '' }]);
   protected readonly label = signal('');
   protected readonly fee = signal<CartAdjustment | null>(null);
+  /** Le remplacement du réglage global, par clientèle ; `null` = la zone reprend le global. */
+  protected readonly overrides = signal<Overrides>({ b2b: null, b2c: null });
+  protected readonly audienceLabels = AUDIENCE_LABELS;
+  protected readonly audiences = computed(() => this.data()?.audiences ?? []);
+  /**
+   * Les remplacements tels qu'en base ; `null` quand la zone vient de la
+   * route publique (sans eux) : l'écriture n'y touche alors pas.
+   */
+  private readonly baseTerms = computed<DeliveryPricingTerms | null>(() => {
+    const zone = this.data()?.zone ?? null;
+    if (zone === null) {
+      return NO_TERMS;
+    }
+    return termsOf(zone);
+  });
+  protected readonly canOverride = computed(
+    () => this.baseTerms() !== null && this.audiences().length > 0,
+  );
   protected readonly saving = signal(false);
   /** Le dernier refus du serveur, en clair : il reste DANS le panneau. */
   protected readonly refusal = signal<string | null>(null);
@@ -107,6 +166,27 @@ export class ZonePanel {
 
   protected setFee(alteration: PriceAlteration | null): void {
     this.fee.set(toCartAdjustment(alteration));
+  }
+
+  protected overrideAlteration(audience: CustomerAudience): PriceAlteration | null {
+    return fromCartAdjustment(this.overrides()[audience], 'increase');
+  }
+
+  protected setOverride(audience: CustomerAudience, alteration: PriceAlteration | null): void {
+    this.overrides.update((all) => ({ ...all, [audience]: toCartAdjustment(alteration) }));
+  }
+
+  /** « Remplacer pour cette zone » : part du frais de la zone, qu'on corrige ensuite. */
+  protected startOverride(audience: CustomerAudience): void {
+    this.overrides.update((all) => ({
+      ...all,
+      [audience]: this.fee() ?? { mode: 'amount', cents: 0 },
+    }));
+  }
+
+  /** « Revenir au global » : la zone reprend le réglage global de la clientèle. */
+  protected backToGlobal(audience: CustomerAudience): void {
+    this.overrides.update((all) => ({ ...all, [audience]: null }));
   }
 
   /** Les préfixes valides (dédupliqués) — payload + gate de soumission. */
@@ -129,6 +209,8 @@ export class ZonePanel {
     // longueur, 5 chiffres = code postal exact).
     effect(() => {
       const zone = this.data()?.zone ?? null;
+      const terms = this.baseTerms() ?? NO_TERMS;
+      this.overrides.set({ b2b: terms.b2b.fee, b2c: terms.b2c.fee });
       if (zone === null) {
         this.prefill(this.data()?.postalCode ?? '');
         return;
@@ -179,10 +261,14 @@ export class ZonePanel {
     }
     this.saving.set(true);
     this.refusal.set(null);
+    const base = this.baseTerms();
     const payload: DeliveryZonePayload = {
       postalPrefixes: this.prefixes(),
       label: this.label().trim(),
       fee,
+      ...(base === null
+        ? {}
+        : { audienceTerms: termsToWrite(base, this.audiences(), this.overrides()) }),
     };
     try {
       if (zone === null) {

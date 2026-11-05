@@ -50,14 +50,58 @@
 
   <!-- Le frais reste OBLIGATOIRE, mais 0 en est une valeur (Hugo, 2026-11-03 :
        « régler pas de frais de livraison sur une zone ») : une zone offerte se
-       dit en tapant 0, jamais en laissant le champ vide. -->
-  <lfd-price-alteration-field
-    label="Frais de livraison"
-    lockedDirection="increase"
-    allowZero
-    [value]="feeAlteration()"
-    (valueChange)="setFee($event)"
-  />
+       dit en tapant 0, jamais en laissant le champ vide. Depuis 0b, il ne
+       s'applique qu'à défaut du réglage global et d'un remplacement. -->
+  <div class="audience">
+    <lfd-price-alteration-field
+      label="Frais de livraison de la zone"
+      lockedDirection="increase"
+      allowZero
+      [value]="feeAlteration()"
+      (valueChange)="setFee($event)"
+    />
+    <p class="rows-hint">
+      Appliqué à une clientèle quand ni le réglage global ni un remplacement ci-dessous ne fixent
+      son frais.
+    </p>
+  </div>
+
+  @if (canOverride()) {
+    @for (audience of audiences(); track audience) {
+      <div class="audience">
+        @if (overrides()[audience] === null) {
+          <span class="rows-label">{{ audienceLabels[audience] }}</span>
+          <p class="rows-hint">Reprend le réglage global.</p>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            (click)="startOverride(audience)"
+          >
+            Remplacer pour cette zone
+          </button>
+        } @else {
+          <lfd-price-alteration-field
+            [label]="'Frais de livraison — ' + audienceLabels[audience]"
+            lockedDirection="increase"
+            allowZero
+            [value]="overrideAlteration(audience)"
+            (valueChange)="setOverride(audience, $event)"
+          />
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            (click)="backToGlobal(audience)"
+          >
+            Revenir au global
+          </button>
+        }
+      </div>
+    }
+  }
 
   @if (refusal(); as message) {
     <fold-callout variant="alert" announce>{{ message }}</fold-callout>

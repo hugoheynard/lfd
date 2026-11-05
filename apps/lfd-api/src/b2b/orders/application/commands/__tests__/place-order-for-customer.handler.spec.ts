@@ -6,7 +6,7 @@ import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import type { AdminPlaceOrderPayload, PickupAddressView } from "@lfd/contracts";
 
-import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
   PaymentGateway,
@@ -264,14 +264,7 @@ function deliveryAvailability(
   return { current: () => Promise.resolve(view) };
 }
 
-const zones: DeliveryZoneRepository = {
-  list: () => Promise.resolve([]),
-  findById: () => Promise.resolve(null),
-  resolveForPostalCode: () => Promise.resolve(null),
-  create: () => Promise.resolve("zone_1"),
-  update: () => Promise.resolve(),
-  remove: () => Promise.resolve(),
-};
+const zones = zoneFees([]);
 
 function payments(sink: { intent: CreateIntentParams | null } = { intent: null }): PaymentGateway {
   return {

@@ -168,7 +168,7 @@ qu'après, pour les cas ciblés (une société, Noël).
   manquer et que chaque geste réécrit en entier). Son écrivain purge
   `reglages-publics`.
 - **Le frais est calculé à DEUX endroits** (`price-basket.ts` et
-  `cart-adjustments.service.ts:276`) : le second disparaît (« une seule
+  `CartAdjustments.forDelivery`, retiré au 0b) : le second disparaît (« une seule
   arithmétique ») ; la résolution zone → global → ancien frais entre dans
   `deliveryRoute`, qui reçoit déjà l'audience.
 - **La commande doit FIGER le franco** (« offerte, aurait coûté X », et le
@@ -210,7 +210,7 @@ particulier (TTC « environ », servi par le serveur).
 | Lot | Contenu                                                                                  | Seul ?                |
 | --- | ---------------------------------------------------------------------------------------- | --------------------- |
 | 0a  | 🟦 table du réglage global + colonnes de zone nullables ; rien ne change encore          | oui                   |
-| 0b  | résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge      | oui                   |
+| 0b  | 🟦 résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge   | oui                   |
 | 0c  | `GET /delivery-zones?audience=`, boutique et saisie staff                                | après « pending pro » |
 | 1a  | le franco figé sur la commande ; recomposition et bon partiel le lisent ; golden master  | avant 1b              |
 | 1b  | le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé | après 1a              |

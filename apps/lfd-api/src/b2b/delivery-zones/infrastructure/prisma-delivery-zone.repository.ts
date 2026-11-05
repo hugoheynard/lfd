@@ -1,8 +1,4 @@
-import {
-  longestMatchingPrefix,
-  type DeliveryZonePayload,
-  type DeliveryZoneView,
-} from "@lfd/contracts";
+import type { DeliveryZonePayload, DeliveryZoneView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -11,6 +7,7 @@ import {
   toAdjustmentColumns,
 } from "../../pricing/cart-adjustment.mapper.js";
 import { DeliveryZoneRepository } from "../domain/delivery-zone.repository.js";
+import { zoneOfPostalCode } from "../domain/zone-of-postal-code.js";
 import {
   UNSET_DELIVERY_PRICING_COLUMNS,
   termsToColumns,
@@ -106,17 +103,7 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
    * nombreuses (config globale) → on résout en mémoire.
    */
   async resolveForPostalCode(codePostal: string): Promise<DeliveryZoneView | null> {
-    const zones = await this.list();
-    let best: DeliveryZoneView | null = null;
-    let bestLength = -1;
-    for (const zone of zones) {
-      const length = longestMatchingPrefix(zone.postalPrefixes, codePostal);
-      if (length > bestLength) {
-        best = zone;
-        bestLength = length;
-      }
-    }
-    return best;
+    return zoneOfPostalCode(await this.list(), codePostal);
   }
 
   async create(payload: DeliveryZonePayload): Promise<string> {

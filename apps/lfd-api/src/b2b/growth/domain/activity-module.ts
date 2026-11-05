@@ -106,6 +106,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   commandes: [
     "order.",
     "delivery_zone.",
+    // Le réglage global de livraison par audience (0b, 2026-11-05) : ce que
+    // coûte une livraison, dans toute zone qui ne le remplace pas.
+    "delivery_pricing.",
     "pickup_address.",
     // Les créneaux PUBLICS d'un point : même famille que le point lui-même —
     // ils décident de l'heure à laquelle une commande change de mains.

@@ -18,6 +18,30 @@
   color: var(--fold-color-text-muted);
   max-width: 44rem;
 }
+.global {
+  margin-top: var(--fold-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+.global-title {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  font-weight: 600;
+}
+.global-fees {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+.global-fee {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
 .uncovered {
   margin-top: var(--fold-space-lg);
 }

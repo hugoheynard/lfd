@@ -2,12 +2,11 @@ import {
   type AudiencePickupDiscount,
   DEFAULT_DELIVERY_AVAILABILITY,
   type DeliveryAvailabilityView,
-  type DeliveryZoneView,
   type PickupAddressView,
 } from "@lfd/contracts";
 
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
-import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
+import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
@@ -57,27 +56,6 @@ class OnePoint extends PickupAddressRepository {
   }
 }
 
-class NoZones extends DeliveryZoneRepository {
-  list(): Promise<readonly DeliveryZoneView[]> {
-    return Promise.resolve([]);
-  }
-  findById(): Promise<DeliveryZoneView | null> {
-    return Promise.resolve(null);
-  }
-  resolveForPostalCode(): Promise<DeliveryZoneView | null> {
-    return Promise.resolve(null);
-  }
-  create(): Promise<string> {
-    return Promise.resolve("zone");
-  }
-  update(): Promise<void> {
-    return Promise.resolve();
-  }
-  remove(): Promise<void> {
-    return Promise.resolve();
-  }
-}
-
 class Open extends DeliveryAvailabilityReader {
   current(): Promise<DeliveryAvailabilityView> {
     return Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY);
@@ -109,7 +87,7 @@ function adjustments(
   // telle que la reprise l'écrit — l'ancien chemin est retiré.
   return new CartAdjustments(
     new OnePoint(point),
-    new NoZones(),
+    zoneFees([]),
     new Open(),
     new NoPreference(),
     basketPromotions(pickupDiscountPromotions([point]), classifications),
