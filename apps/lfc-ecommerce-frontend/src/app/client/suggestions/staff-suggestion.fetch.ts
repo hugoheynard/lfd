@@ -15,7 +15,11 @@ import { map, switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { VISITOR } from '../client-context.service';
-import { type ContextKey, workspaceRequestOf } from '../context-keyed/context-keyed';
+import {
+  type ContextKey,
+  type WorkspaceRequest,
+  workspaceRequestOf,
+} from '../context-keyed/context-keyed';
 import { isLocked } from '../shop/locked-item';
 
 /**
@@ -92,22 +96,17 @@ export function usualSuggestionsFor(
  * tiré de la CLÉ (`workspaceRequestOf`), jamais de l'espace courant à l'envoi.
  */
 function postFor<V extends { readonly item: ShopItemView }>(
-  http: HttpClient,
   route: string,
-  payload: HomeSuggestionsPayload | ProductSuggestionsPayload,
+  send: (url: string, request: WorkspaceRequest) => Observable<V[]>,
   token: Observable<string>,
   key: ContextKey,
 ): Observable<readonly V[]> {
   const request =
     key.workspace === VISITOR
-      ? http.post<V[]>(route, payload, workspaceRequestOf(key))
+      ? send(route, workspaceRequestOf(key))
       : token.pipe(
           switchMap((bearer) =>
-            http.post<V[]>(
-              `${route}/mine`,
-              payload,
-              workspaceRequestOf(key, { Authorization: `Bearer ${bearer}` }),
-            ),
+            send(`${route}/mine`, workspaceRequestOf(key, { Authorization: `Bearer ${bearer}` })),
           ),
         );
   return request.pipe(map(orderableOnly));
@@ -120,7 +119,12 @@ export function homeSuggestionsFor(
   token: Observable<string>,
   key: ContextKey,
 ): Observable<readonly HomeSuggestionView[]> {
-  return postFor(http, `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/home`, payload, token, key);
+  return postFor(
+    `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/home`,
+    (url, request) => http.post<HomeSuggestionView[]>(url, payload, request),
+    token,
+    key,
+  );
 }
 
 /** La suggestion d'une fiche pour une clé de la brique (cf. {@link fetchStaffSuggestions}). */
@@ -130,5 +134,10 @@ export function productSuggestionsFor(
   token: Observable<string>,
   key: ContextKey,
 ): Observable<readonly ProductSuggestionView[]> {
-  return postFor(http, `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/product`, payload, token, key);
+  return postFor(
+    `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/product`,
+    (url, request) => http.post<ProductSuggestionView[]>(url, payload, request),
+    token,
+    key,
+  );
 }
