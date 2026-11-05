@@ -107,6 +107,24 @@ qu'après, pour les cas ciblés (une société, Noël).
   retirés de la route ;
 - (g) le pro en cours d'inscription au frais particulier.
 
+## Décisions de Hugo (2026-11-05)
+
+- **Un réglage global de livraison, par audience** (Hugo : « ajouter un
+  réglage global pour toutes les zones ») : le frais de base et le **franco**
+  (le seuil au-delà duquel la livraison est offerte), pour les pros et pour
+  les particuliers. **Chaque zone hérite du global** et peut le remplacer
+  (une zone plus loin, plus chère). Le lot 0 devient : réglage global +
+  remplacement par zone, par audience.
+- **(a) — à confirmer** : le franco est un réglage de livraison (global ou
+  par zone), proposé en premier ; l'étage de promotions sur les frais vient
+  après, pour les cas ponctuels (Noël, une société).
+- **(b) Le seuil se compte en HT.** ⚠️ **Réserve de Hugo, à reprendre en
+  concevant l'affichage** : un particulier lit ses prix en TTC ; « offerte
+  dès 80 € » comparé à un panier de 82 € TTC (~77,7 € HT) lui dirait « plus
+  que 2,30 € », ce qui n'a pas de sens visuel pour lui. Piste : afficher le
+  seuil au particulier dans la base qu'il lit, en gardant le calcul en HT.
+- (c) à (g) : en attente.
+
 # Partie 2 — Le code
 
 ## 0. Lot 0 — le frais de base par audience (Hugo, 2026-11-05)
