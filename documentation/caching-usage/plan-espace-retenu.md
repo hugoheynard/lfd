@@ -117,6 +117,64 @@ pas ; chaque bascule garde ses tests et en ajoute un sur `shown`. Le
 périmètre est d'une vingtaine de fichiers (liste à établir au bâti, par
 `graphify explain "ClientWorkspace"` puis ouverture de chacun).
 
+### 00 bis. Contredit par `vitruve` le 2026-11-05 — ce qui change
+
+Le §00 tel qu'écrit ne tient pas ; ce qui suit l'emporte sur lui.
+
+- **La clé de contexte est un PRÉFIXE, pas la clé.** Le catalogue distingue
+  la visite pro (`PRO_VISITOR`, `shop-catalogue.store.ts:23`) du visiteur —
+  deux tarifs —, la vitrine range sous `keyOf(reader, shelfKey)`
+  (`shop-storefront.store.ts:124`). Chaque store compose son lecteur :
+  contexte + ce qui lui est propre (visite pro, rayon, jour, mode).
+  `readerKey` de `pickup-list.gateway.ts:30`, déjà partagé, est le modèle.
+- **« Confirmé » veut dire aujourd'hui « choisi localement »** :
+  `AccountService.setWorkspace` (`account.service.ts:202-225`) et
+  `enterProAfterLogin` (`:501-512`) écrivent l'espace avant la réponse du
+  serveur, et reviennent en arrière sur échec. Le contexte gagne un état
+  **bascule en cours** et un retour arrière.
+- **Pas de cycle d'injection** : `AuthFacade` → `ClientContext` →
+  `ClientWorkspace` → `AccountService` → `AuthFacade`. La façade expose un
+  **crochet « avant déconnexion »** auquel l'oubli s'abonne ; il couvre la
+  branche `DEV_BYPASS_AUTH`, et coupe d'abord l'envoi différé du panier
+  (`shop-cart-sync.service.ts:170-173`).
+- **Périmètre réel : 37 fichiers** importent `ClientWorkspace` (composants,
+  garde et routes compris), et trois services ont une clé `readFor` sans
+  l'importer (`client-bank-account`, `client-activation`, `client-mandate`).
+  La porte aura une liste admise (intercepteur, garde, bascule, menus) et
+  une dette décroissante, sur le modèle de `lint:controller-buses`.
+- **Trois états d'affichage, pas deux** : `affichable`, `même lecteur mais
+périmé` (le dernier total atténué du devis, la photo `STALE_PHOTO_MS` du
+  catalogue), `autre lecteur` (jeté).
+- **La bascule réelle** est `ClientWorkspaceSwitch.switchTo` (`choose` →
+  `routeAfterSwitch` → détour `WORKSPACE_RELOAD_ROUTE` → cible) : c'est le
+  détour de routeur qui ordonne aujourd'hui les relectures. Le lot (c) dit
+  qui déclenche qui.
+- **La liste d'oubli se tranche ligne par ligne** contre le registre des
+  traceurs — décision de Hugo (ci-dessous). Les clés anti-double-paiement
+  (`lfc.orders`, `lfc.order-attempt`, `lfc.cart-awaiting-payment`) ne
+  s'effacent pas sans y avoir réfléchi.
+- **Session expirée** : elle ne produit pas de `/me` qui contredit, mais un
+  401 ou un visiteur ; l'oubli doit aussi s'y accrocher.
+- **SSR** : l'état `essai` lu au stockage local reste `inconnu` côté serveur,
+  sans quoi l'hydratation diverge.
+
+**Découpe retenue** (proposée par `vitruve`) :
+
+| Lot | Contenu                                                                                                   | Dépend de |
+| --- | --------------------------------------------------------------------------------------------------------- | --------- |
+| a   | le crochet de déconnexion et la liste d'oubli, alignée sur le registre — un manque RGPD réel, autonome    | —         |
+| b   | `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait | —         |
+| c   | la bascule : `switchTo`, état en cours, retour arrière                                                    | b         |
+| d   | la migration des autres stores, une par commit, porte en dette décroissante                               | b, c      |
+| e   | l'espace retenu (état `essai`) sur les trois lecteurs du lot b                                            | a, b      |
+
+Le gain (e) ne demande pas la migration complète (d).
+
+**Décisions pour Hugo** — la liste d'oubli à la déconnexion : le panier
+visiteur `lfc.cart` (un visiteur qui se connecte puis se déconnecte perd-il
+son panier ?), `lfc.order.choice`, les paniers par espace, l'espace retenu,
+`lfc-b2b-commerce-company-v1`, `lfd.shop.pro-visit`.
+
 ## 0. Ce que `vitruve` a établi (2026-11-05) — le plan est resserré
 
 Deux bloquants, tous deux vérifiés dans le code :
