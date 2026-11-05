@@ -143,6 +143,34 @@ describe('DeliveryZonesSection — le réglage global et les remplacements (0b)'
     expect(text()).toMatch(/Particuliers \+ 25,00/u);
   });
 
+  it('une zone sans remplacement, sous un réglage global, dit « Global » et pas son ancien frais', async () => {
+    await mount('/reglages/livraison/zones', ['delivery_fee:read'], {
+      open: { openToB2b: true, openToB2c: false },
+      pricing: PRICED,
+      zones: [{ ...VAL, audienceTerms: { ...VAL.audienceTerms, b2c: VAL.audienceTerms.b2b } }],
+    });
+
+    const badges = [...document.querySelectorAll('.zone fold-badge')].map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(badges).toEqual(['Global']);
+  });
+
+  it('une zone dont une clientèle suit le global et l’autre l’ancien frais les nomme', async () => {
+    await mount('/reglages/livraison/zones', ['delivery_fee:read'], {
+      pricing: PRICED,
+      zones: [{ ...VAL, audienceTerms: { ...VAL.audienceTerms, b2c: VAL.audienceTerms.b2b } }],
+    });
+
+    const badges = [...document.querySelectorAll('.zone fold-badge')].map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(badges.map((b) => b?.replace(/\s/gu, ' '))).toEqual([
+      'Particuliers + 20,00 €',
+      'Pros Global',
+    ]);
+  });
+
   it('une clientèle fermée à la livraison ne s’affiche pas, même avec des valeurs', async () => {
     await mount('/reglages/livraison/zones', ['delivery_fee:read'], {
       open: { openToB2b: true, openToB2c: false },

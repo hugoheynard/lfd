@@ -107,6 +107,37 @@ export class DeliveryZonesSection {
     });
   }
 
+  /**
+   * Ce que la zone facture, clientèle par clientèle, dans l'ordre de la
+   * résolution (`delivery-fee-resolution.ts`, vérifié le 2026-11-05) : le
+   * remplacement de la zone, sinon le réglage global, sinon l'ancien frais de
+   * la zone. Les clientèles qui partagent une même source tiennent sur une
+   * pastille ; son nom de clientèle ne s'écrit que si les sources diffèrent.
+   */
+  protected zoneBadges(zone: DeliveryZoneView | AdminDeliveryZoneView): readonly ZoneBadge[] {
+    const overrides = this.overridesOf(zone);
+    const rest = this.audiences().filter((a) => !overrides.some((o) => o.audience === a));
+    const global = rest.filter((a) => this.pricing()[a].fee !== null);
+    const legacy = rest.filter((a) => this.pricing()[a].fee === null);
+    const whole = this.audiences().length === 0 || global.length === 0 || legacy.length === 0;
+    const named = (audiences: readonly CustomerAudience[], body: string): string =>
+      overrides.length === 0 && whole
+        ? body
+        : `${audiences.map((a) => this.audienceLabels[a]).join(', ')} ${body}`;
+    return [
+      ...(legacy.length > 0 || this.audiences().length === 0
+        ? [{ content: named(legacy, `+ ${this.fee(zone.fee)}`), variant: 'warning' as const }]
+        : []),
+      ...(global.length > 0
+        ? [{ content: named(global, 'Global'), variant: 'neutral' as const }]
+        : []),
+      ...overrides.map((o) => ({
+        content: `${this.audienceLabels[o.audience]} + ${this.fee(o.fee)}`,
+        variant: 'info' as const,
+      })),
+    ];
+  }
+
   constructor() {
     void this.load().then(() => this.openRequestedPostalCode());
   }
@@ -183,4 +214,10 @@ export class DeliveryZonesSection {
       await this.load();
     }
   }
+}
+
+/** Une pastille de zone : ce qu'une ou plusieurs clientèles y paient. */
+interface ZoneBadge {
+  readonly content: string;
+  readonly variant: 'warning' | 'neutral' | 'info';
 }

@@ -71,12 +71,8 @@
                 @if (zone.label) {
                   <span class="zone-label">{{ zone.label }}</span>
                 }
-                <fold-badge [content]="'+ ' + fee(zone.fee)" variant="warning" />
-                @for (override of overridesOf(zone); track override.audience) {
-                  <fold-badge
-                    [content]="audienceLabels[override.audience] + ' + ' + fee(override.fee)"
-                    variant="info"
-                  />
+                @for (badge of zoneBadges(zone); track badge.content) {
+                  <fold-badge [content]="badge.content" [variant]="badge.variant" />
                 }
               </div>
 
