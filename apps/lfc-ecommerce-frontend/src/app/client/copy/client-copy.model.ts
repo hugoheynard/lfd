@@ -522,6 +522,8 @@ export interface ClientCopy {
     /** `{count}` est remplacé par le nombre de pièces au panier. */
     readonly cartTitle: string;
     readonly cartEmpty: string;
+    /** Les lignes du panier attendent le catalogue de l'espace affiché — jamais « panier vide ». */
+    readonly cartLoading: string;
     /** La raison d'une suggestion du staff au PANIER qui n'a pas écrit de phrase (RS2). */
     readonly staffAdvice: string;
     /** La même, sur la FICHE d'un article (Hugo, 2026-10-18). */

@@ -7,7 +7,12 @@ import {
   input,
   type OnInit,
 } from '@angular/core';
-import { FoldCalloutComponent, FoldListboxComponent, type FoldSelectItem } from 'fold-ng';
+import {
+  FoldCalloutComponent,
+  FoldListboxComponent,
+  FoldLoadingStateComponent,
+  type FoldSelectItem,
+} from 'fold-ng';
 
 import { formatCents, formatRate } from '../../format-money';
 import { adjustmentValue, quoteDiscountRows } from '../quote-discount-rows';
@@ -45,7 +50,13 @@ import { ShopPriceBasis } from '../../shop/shop-price-basis.service';
 @Component({
   selector: 'app-cart-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CartProductLine, FoldCalloutComponent, FoldListboxComponent, StaffSuggestionCard],
+  imports: [
+    CartProductLine,
+    FoldCalloutComponent,
+    FoldListboxComponent,
+    FoldLoadingStateComponent,
+    StaffSuggestionCard,
+  ],
   templateUrl: './cart-summary.html',
   styleUrl: './cart-summary.scss',
 })

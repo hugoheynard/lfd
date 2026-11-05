@@ -3,7 +3,7 @@ import type { MyLoyaltyVoucherView } from '@lfd/contracts';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientLoyalty } from '../client-loyalty.service';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext } from '../client-context.service';
 
 /**
  * Le préfixe des refus d'un bon de fidélité — expiré, déjà utilisé, disputé
@@ -24,14 +24,16 @@ export const LOYALTY_REFUSAL_PREFIX = 'loyalty.';
  *
  * **Le choix n'existe qu'en espace personnel.** Il reste gardé (un retour au
  * perso le retrouve s'il est encore disponible), mais {@link effective} est
- * `null` dès qu'on bascule vers une société, sans attendre un devis : rien de
- * la fidélité ne paraît en pro (Hugo, 2026-09-27).
+ * `null` dès qu'une société s'affiche, sans attendre un devis : rien de la
+ * fidélité ne paraît en pro (Hugo, 2026-09-27). L'espace est celui qui
+ * S'AFFICHE (`ClientContext`) : pendant une bascule, le bon suit l'écran de
+ * départ, et s'éteint quand le serveur accepte la société (lot d, 2026-11-05).
  */
 @Injectable({ providedIn: 'root' })
 export class VoucherChoice {
   private readonly auth = inject(AuthFacade);
   private readonly loyalty = inject(ClientLoyalty);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
   private readonly picked = signal<string | null>(null);
 
@@ -41,7 +43,7 @@ export class VoucherChoice {
    */
   readonly available = computed<readonly MyLoyaltyVoucherView[]>(() => {
     const view = this.loyalty.view();
-    if (!this.auth.isAuthenticated() || !this.workspace.isPersonal() || view?.open !== true) {
+    if (!this.auth.isAuthenticated() || !this.context.shownIsPersonal() || view?.open !== true) {
       return [];
     }
     return view.vouchers.filter((voucher) => voucher.status === 'available');

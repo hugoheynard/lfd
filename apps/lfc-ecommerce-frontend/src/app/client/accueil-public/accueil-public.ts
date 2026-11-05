@@ -17,7 +17,7 @@ import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientContext } from '../client-context.service';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientChrome } from '../client-chrome.service';
 import { CurrentEvents } from '../current-events/current-events';
@@ -179,9 +179,11 @@ export class AccueilPublic {
    * La clientèle garde son rôle, et il n'a pas changé : elle décide des PRIX et
    * de l'état de la porte du coursier. Elle ne décide plus de la mise en page.
    */
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
-  protected readonly pro = computed(() => this.recognised() && this.workspace.company() !== null);
+  protected readonly pro = computed(
+    () => this.recognised() && this.context.shownCompany() !== null,
+  );
 
   /**
    * La porte du coursier est-elle ouverte, ou en attente ?
@@ -266,7 +268,7 @@ export class AccueilPublic {
    * une information, pas un refus — seul le paiement sur compte attend.
    */
   protected readonly companyPending = computed(
-    () => this.workspace.company()?.status === 'pending',
+    () => this.context.shownCompany()?.status === 'pending',
   );
 
   /** Le salut nomme, ou ne nomme pas — jamais le prénom de quelqu'un d'autre. */

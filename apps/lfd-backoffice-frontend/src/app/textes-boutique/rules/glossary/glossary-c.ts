@@ -19,6 +19,7 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   cardUnknownNote: 'Carte du compte — compte inconnu, note',
   cart: 'Panier',
   cartEmpty: 'Panier vide',
+  cartLoading: 'Panier — chargement après un changement d’espace',
   cartOpen: 'Ouvrir le panier',
   cartTitle: 'Panier — titre',
   cateringBadge: 'Traiteur — pastille',

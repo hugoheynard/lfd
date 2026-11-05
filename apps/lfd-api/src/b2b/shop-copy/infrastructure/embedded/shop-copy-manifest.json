@@ -1700,6 +1700,13 @@
           "variables": []
         },
         {
+          "key": "shop.cartLoading",
+          "fr": "Votre panier arrive…",
+          "en": "Your basket is on its way…",
+          "it": "Il carrello sta arrivando…",
+          "variables": []
+        },
+        {
           "key": "shop.staffAdvice",
           "fr": "Notre conseil",
           "en": "Our advice",

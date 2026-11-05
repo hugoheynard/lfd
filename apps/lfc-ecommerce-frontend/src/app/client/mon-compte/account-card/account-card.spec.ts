@@ -40,6 +40,8 @@ function boot(companies: readonly CompanyView[]): ComponentFixture<AccountCard> 
             reachableSites: [],
             navPrefs: { catalogueView: null, workspace: null },
           }),
+          // `ClientContext` en tire l'état de bascule : aucune en cours.
+          workspaceWrite: () => null,
         },
       },
     ],

@@ -20,6 +20,8 @@ type WorkspaceSurface = Pick<
   | 'reachableSite'
   | 'siteBillingReadable'
   | 'switching'
+  | 'companyOf'
+  | 'reachableSiteOf'
 >;
 
 /** Une doublure pilotable : `current` s'écrit, le reste en dérive comme dans le vrai service. */
@@ -58,6 +60,7 @@ export function workspaceDouble(
     sites: sites$,
     chosen,
     company: computed(() => companies$().find((c) => c.id === current$()) ?? null),
+    companyOf: (workspace) => companies$().find((c) => c.id === workspace) ?? null,
     isPersonal: computed(() => current$() === PERSONAL_WORKSPACE),
     hasChoice: computed(() => companies$().length > 0),
     options: computed<readonly WorkspaceOption[]>(() => [
@@ -73,6 +76,7 @@ export function workspaceDouble(
     // doublure ne fait que les proposer.
     reachableSite: computed(() => null),
     siteBillingReadable: computed(() => null),
+    reachableSiteOf: () => null,
     switching: signal<WorkspaceSwitching | null>(null),
     answer: () => Promise.resolve('accepted'),
     choose: (workspace: string): Promise<WorkspaceWriteOutcome> => {

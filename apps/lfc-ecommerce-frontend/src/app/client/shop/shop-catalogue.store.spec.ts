@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -133,6 +134,58 @@ describe('ShopCatalogue — refreshIfStale, la photo relue quand elle a vieilli'
   it('sans photo, rien ne part', async () => {
     await catalogue.refreshIfStale();
 
+    http.verify();
+  });
+});
+
+/**
+ * Lot d (2026-11-05) : la photo se range par clé de contexte. Rien ne s'affiche
+ * pour un autre espace que celui qui s'affiche, et un retour vers un espace
+ * déjà lu réaffiche sa photo sans attendre.
+ */
+describe('ShopCatalogue — rangé par la brique', () => {
+  const MINE = `${AUTH_CONFIG.apiBaseUrl}/shop/catalogue/mine`;
+  const ONLY_FIRST = { ...TEST_CATALOGUE, items: TEST_CATALOGUE.items.slice(0, 1) };
+
+  it('vide pendant la relecture d’un espace jamais vu, puis le retour réaffiche sans appel', async () => {
+    const space = workspaceDouble(PERSONAL_WORKSPACE);
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: signal(true), accessToken$: () => of('jeton') },
+        },
+        provideWorkspace(space),
+      ],
+    });
+    const catalogue = TestBed.inject(ShopCatalogue);
+    const http = TestBed.inject(HttpTestingController);
+
+    const first = catalogue.hydrate();
+    const perso = http.expectOne(MINE);
+    expect(perso.request.headers.get(WORKSPACE_HEADER)).toBe(PERSONAL_WORKSPACE);
+    perso.flush(TEST_CATALOGUE);
+    await first;
+    expect(catalogue.items()).toEqual(TEST_CATALOGUE.items);
+
+    space.current.set('cmp_1');
+    // Avant même que l'effet ne relise : rien de l'espace quitté.
+    expect(catalogue.items()).toEqual([]);
+    expect(catalogue.status()).toBe('loading');
+    TestBed.tick();
+    const company = http.expectOne(MINE);
+    expect(company.request.headers.get(WORKSPACE_HEADER)).toBe('cmp_1');
+    company.flush(ONLY_FIRST);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(catalogue.items()).toEqual(ONLY_FIRST.items);
+
+    space.current.set(PERSONAL_WORKSPACE);
+    expect(catalogue.items()).toEqual(TEST_CATALOGUE.items);
+    expect(catalogue.status()).toBe('ready');
+    TestBed.tick();
     http.verify();
   });
 });

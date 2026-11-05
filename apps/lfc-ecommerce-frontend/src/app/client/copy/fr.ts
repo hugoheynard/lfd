@@ -277,6 +277,7 @@ export const FR: ClientCopy = {
     cartTitle: 'Votre panier',
     cartEmpty:
       'Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi.',
+    cartLoading: 'Votre panier arrive…',
     staffAdvice: 'Notre conseil',
     alsoLike: 'Vous aimerez aussi',
     ourPicks: 'Notre sélection',

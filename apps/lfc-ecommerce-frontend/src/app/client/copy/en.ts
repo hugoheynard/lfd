@@ -279,6 +279,7 @@ export const EN: ClientCopy = {
     cartTitle: 'Your basket',
     cartEmpty:
       'Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.',
+    cartLoading: 'Your basket is on its way…',
     staffAdvice: 'Our advice',
     alsoLike: 'You may also like',
     ourPicks: 'Our picks',

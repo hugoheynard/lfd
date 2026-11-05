@@ -131,8 +131,14 @@ describe('ShopQuote', () => {
    * Régression de latence : le devis attendait 300 ms même après une bascule
    * d'espace, où aucune salve n'est à absorber — d'autant de retard sur le
    * total et sur les suggestions qui l'attendent (mesuré le 2026-11-05).
+   *
+   * ⚠️ Réécrit le 2026-11-05 (lot d, catalogue rangé par la brique) : ce test
+   * attendait un devis TOUT DE SUITE après la bascule, c'est-à-dire chiffré
+   * avec les lignes projetées par le catalogue de l'ESPACE QUITTÉ — le bug que
+   * la brique corrige. Le devis attend désormais le catalogue de l'espace
+   * affiché, puis part sans anti-rebond dès qu'il arrive.
    */
-  it('part sans attendre quand le lecteur change', () => {
+  it('attend le catalogue du nouvel espace, puis part sans attendre', () => {
     const space = workspaceDouble();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -164,6 +170,10 @@ describe('ShopQuote', () => {
     http.expectOne(QUOTE).flush(ANSWER);
 
     space.current.set('01-societe-test');
+    quiet(0);
+    expect(http.match(QUOTE)).toHaveLength(0);
+
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     quiet(0);
     http.expectOne(QUOTE).flush(ANSWER);
     http.verify();

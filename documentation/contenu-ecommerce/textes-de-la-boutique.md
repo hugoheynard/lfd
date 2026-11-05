@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1755 textes
+## Sommaire — 1756 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 84 |
+| [Rayon / boutique](#espace-shop) | `shop` | 85 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 34 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1755** |
+| **Total** | | **1756** |
 
 ## Le parcours de commande
 
@@ -308,7 +308,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 84 textes.
+Source : `fr.ts · en.ts · it.ts` · 85 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -360,6 +360,7 @@ Source : `fr.ts · en.ts · it.ts` · 84 textes.
 | `shop.storefrontTitle` | La vitrine | Shop window | La vetrina |  |
 | `shop.cartTitle` | Votre panier | Your basket | Il suo carrello |  |
 | `shop.cartEmpty` | Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi. | Empty basket. The morning batch goes fast — the praline ski never sees the afternoon. | Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio. |  |
+| `shop.cartLoading` | Votre panier arrive… | Your basket is on its way… | Il carrello sta arrivando… |  |
 | `shop.staffAdvice` | Notre conseil | Our advice | Il nostro consiglio |  |
 | `shop.alsoLike` | Vous aimerez aussi | You may also like | Potrebbe piacerti anche |  |
 | `shop.ourPicks` | Notre sélection | Our picks | La nostra selezione |  |

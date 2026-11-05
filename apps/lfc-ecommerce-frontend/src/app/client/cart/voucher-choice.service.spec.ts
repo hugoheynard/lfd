@@ -71,6 +71,19 @@ describe('VoucherChoice', () => {
     expect(choice.selected()).toBe('v_available');
   });
 
+  /** Lot d (2026-11-05) : le bon suit l'espace AFFICHÉ, pas la cible d'une bascule en vol. */
+  it('pendant une bascule vers une société, garde le bon jusqu’à l’acceptation', () => {
+    const choice = boot();
+    choice.select('v_available');
+
+    space.current.set('co_1');
+    space.switching.set({ from: PERSONAL_WORKSPACE, to: 'co_1' });
+    expect(choice.selected()).toBe('v_available');
+
+    space.switching.set(null);
+    expect(choice.selected()).toBeNull();
+  });
+
   it('n’envoie pas un bon qui n’est plus disponible à la relecture', () => {
     const choice = boot();
     choice.select('v_available');

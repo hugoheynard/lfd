@@ -1,4 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
+import type { CompanyView, ReachableSiteView } from '@lfd/contracts';
+// Par le sous-chemin sans zod : le contexte est chargé au démarrage.
+import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 import {
   computed,
   effect,
@@ -151,6 +154,38 @@ export class ClientContext {
    * sans rien en montrer. Faux pendant l'essai : personne n'a rien demandé.
    */
   readonly switching = computed<boolean>(() => this.state().kind === 'switching');
+
+  /**
+   * **La société de l'espace AFFICHÉ** — celui de {@link prefix}, `null` en
+   * perso, pour un visiteur, ou tant qu'aucun espace ne s'affiche.
+   *
+   * `ClientWorkspace.company()` suit l'espace COURANT, qui vaut la cible dès
+   * le départ d'une bascule (écriture optimiste) : l'audience, l'annonce de
+   * retrait ou la fiche de la société en tiraient l'espace d'arrivée pendant
+   * que les lecteurs montraient encore celui de départ — un écran qui mêlait
+   * deux espaces (plan espace retenu, lot d, 2026-11-05). Même règle que
+   * `company()`, appliquée à {@link prefix}.
+   */
+  readonly shownCompany = computed<CompanyView | null>(() =>
+    this.workspace.companyOf(this.prefix()),
+  );
+
+  /** Le site atteint par héritage de l'espace affiché, `null` ailleurs (cf. {@link shownCompany}). */
+  readonly shownReachableSite = computed<ReachableSiteView | null>(() =>
+    this.workspace.reachableSiteOf(this.prefix()),
+  );
+
+  /**
+   * La facturation de l'espace affiché se lit-elle ? `canReadBilling` d'un
+   * site atteint, `null` ailleurs — même sens que
+   * `ClientWorkspace.siteBillingReadable`.
+   */
+  readonly shownSiteBillingReadable = computed<boolean | null>(
+    () => this.shownReachableSite()?.canReadBilling ?? null,
+  );
+
+  /** Vrai quand l'espace affiché est le perso. */
+  readonly shownIsPersonal = computed<boolean>(() => this.prefix() === PERSONAL_WORKSPACE);
 
   constructor() {
     // Retenir l'espace confirmé — par `/me` ou par le serveur à la bascule —

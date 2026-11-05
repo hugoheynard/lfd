@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
@@ -15,12 +15,13 @@ import {
   DEFAULT_DELIVERY_AVAILABILITY,
   type DeliveryAvailabilityView,
 } from '@lfd/contracts/shop-values';
+import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
-import { ClientWorkspace } from '../client-workspace.service';
+import { ClientWorkspace, type WorkspaceSwitching } from '../client-workspace.service';
 import { ClientCart } from '../cart/client-cart.service';
 import { ACCUEIL_PUBLIC_FR } from '../copy/screens/accueil-public.copy';
 import { FR } from '../copy/fr';
@@ -109,7 +110,11 @@ class FakePoints {
  */
 type Regard = 'visiteur' | 'perso' | 'pro';
 
+/** La bascule de la doublure du dernier montage — à poser à la main. */
+let lastSwitching: WritableSignal<WorkspaceSwitching | null> = signal(null);
+
 function whoProviders(who: Regard, status?: CompanyStatus): readonly unknown[] {
+  lastSwitching = signal<WorkspaceSwitching | null>(null);
   // Sans statut, la société n'en dit rien : les cas qui en dépendent le posent.
   const company = who === 'pro' ? { raisonSociale: 'Tommeuses SAS', status } : null;
   // ⚠️ La doublure de l'espace porte TOUTE sa surface de lecture, pas seulement
@@ -122,10 +127,12 @@ function whoProviders(who: Regard, status?: CompanyStatus): readonly unknown[] {
       useValue: {
         current: signal(who === 'pro' ? 'c1' : null),
         company: signal(company),
+        companyOf: (workspace: string | null) => (workspace === 'c1' ? company : null),
+        reachableSiteOf: () => null,
         isPersonal: signal(who !== 'pro'),
         hasChoice: signal(who === 'pro'),
         options: signal([]),
-        switching: signal(null),
+        switching: lastSwitching,
       },
     },
     { provide: ClientIdentity, useValue: { firstName: signal(null) } },
@@ -679,6 +686,24 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
     expect(host.querySelector('fold-callout[variant="info"]')?.textContent?.trim()).toBe(
       EN_ATTENTE,
     );
+  });
+
+  /**
+   * Lot d (2026-11-05) : l'écran lisait la société de l'espace COURANT, qui vaut
+   * la cible dès le départ d'une bascule — il annonçait l'attente de validation
+   * de la société d'arrivée pendant qu'il montrait encore le perso.
+   */
+  it('pendant une bascule depuis le perso, n’annonce l’attente qu’à l’acceptation', async () => {
+    const fixture = await seenBy('pending');
+    const host: HTMLElement = fixture.nativeElement;
+
+    lastSwitching.set({ from: PERSONAL_WORKSPACE, to: 'c1' });
+    fixture.detectChanges();
+    expect(host.textContent).not.toContain(EN_ATTENTE);
+
+    lastSwitching.set(null);
+    fixture.detectChanges();
+    expect(host.textContent).toContain(EN_ATTENTE);
   });
 
   it('ne dit rien de la validation à une société ACTIVE', async () => {

@@ -98,20 +98,33 @@ export class ClientWorkspace {
   });
 
   /** La société de l'espace courant — `null` en perso comme avant `/me`. */
-  readonly company = computed<CompanyView | null>(() => {
-    const current = this.current();
-    return (
-      this.account.companies().find((company) => company.id === current) ??
-      this.reachableSite()?.company ??
-      null
-    );
-  });
+  readonly company = computed<CompanyView | null>(() => this.companyOf(this.current()));
 
   /** Le site atteint par héritage où l'on travaille, `null` ailleurs. */
-  readonly reachableSite = computed<ReachableSiteView | null>(() => {
-    const current = this.current();
-    return this.reachableSites().find((site) => site.company.id === current) ?? null;
-  });
+  readonly reachableSite = computed<ReachableSiteView | null>(() =>
+    this.reachableSiteOf(this.current()),
+  );
+
+  /**
+   * La société d'un espace donné — `null` en perso, pour un visiteur, ou
+   * inconnue. Lit des signaux : appelée dans un `computed`, elle le réveille.
+   *
+   * Publique pour `ClientContext`, qui dérive la société de l'espace AFFICHÉ
+   * (`prefix()`) avec la même règle que {@link company} sur l'espace courant —
+   * les deux divergent pendant une bascule (plan espace retenu, lot d).
+   */
+  companyOf(workspace: string | null): CompanyView | null {
+    return (
+      this.account.companies().find((company) => company.id === workspace) ??
+      this.reachableSiteOf(workspace)?.company ??
+      null
+    );
+  }
+
+  /** Le site atteint par héritage qu'un espace désigne, `null` sinon (cf. {@link companyOf}). */
+  reachableSiteOf(workspace: string | null): ReachableSiteView | null {
+    return this.reachableSites().find((site) => site.company.id === workspace) ?? null;
+  }
 
   /**
    * La facturation de l'espace (factures, impayés, compte bancaire) se

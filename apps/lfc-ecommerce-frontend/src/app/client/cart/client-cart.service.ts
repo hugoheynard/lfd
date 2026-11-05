@@ -165,6 +165,17 @@ export class ClientCart {
   readonly isEmpty = computed(() => this.count() === 0);
 
   /**
+   * **Les lignes ne sont pas encore connues** : le catalogue de l'espace
+   * AFFICHÉ se lit (premier chargement, ou bascule vers un espace jamais vu).
+   * Les {@link lines} sont alors vides sans que le panier le soit — l'écran
+   * montre un chargement, jamais « panier vide » (lot d, 2026-11-05). Faux en
+   * visite pro : le panier y est caché, pas en attente.
+   */
+  readonly linesPending = computed(
+    () => !this.proVisit.active() && this.catalogue.status() === 'loading',
+  );
+
+  /**
    * **Le décompte, tel que le serveur le rend** — plus une ligne d'arithmétique
    * d'argent dans ce fichier.
    *

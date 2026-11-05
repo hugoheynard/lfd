@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import type { CompanyView } from '@lfd/contracts';
 
 import { AccountService, type AccountStatus } from '../account/account.service';
+import { AuthFacade } from '../auth/auth.facade';
+import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
 import { ClientCompany } from './client-company.service';
 
 function boot(status: AccountStatus, companies: readonly CompanyView[]): ClientCompany {
@@ -19,8 +21,10 @@ function boot(status: AccountStatus, companies: readonly CompanyView[]): ClientC
             reachableSites: [],
             navPrefs: { catalogueView: null, workspace: null },
           }),
+          workspaceWrite: () => null,
         },
       },
+      { provide: AuthFacade, useValue: { isAuthenticated: () => true } },
     ],
   });
   return TestBed.inject(ClientCompany);
@@ -69,8 +73,10 @@ describe('ClientCompany — facturation d’un site atteint', () => {
               ],
               navPrefs: { catalogueView: null, workspace: 'cmp_site' },
             }),
+            workspaceWrite: () => null,
           },
         },
+        { provide: AuthFacade, useValue: { isAuthenticated: () => true } },
       ],
     });
     return TestBed.inject(ClientCompany);
@@ -87,5 +93,39 @@ describe('ClientCompany — facturation d’un site atteint', () => {
 
   it('un admin hérité ne lit pas, même si son rôle l’ouvrirait ailleurs', () => {
     expect(bootSite(false).readsBilling(ROLES)).toBe(false);
+  });
+});
+
+/**
+ * Lot d (2026-11-05) : la société suivait l'espace COURANT, qui vaut la cible
+ * dès le départ d'une bascule ; elle suit désormais l'espace AFFICHÉ.
+ */
+describe('ClientCompany — pendant une bascule', () => {
+  it('garde la société montrée, puis passe à la cible quand elle est acceptée', () => {
+    const pending = { ...company('pending'), id: 'cmp_a' } as CompanyView;
+    const active = { ...company('active'), id: 'cmp_b' } as CompanyView;
+    const space = workspaceDouble('cmp_a', [pending, active]);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideWorkspace(space),
+        {
+          provide: AccountService,
+          useValue: { status: signal<AccountStatus>('ready').asReadonly() },
+        },
+        { provide: AuthFacade, useValue: { isAuthenticated: () => true } },
+      ],
+    });
+    const client = TestBed.inject(ClientCompany);
+    expect(client.dossier()).toBe('pending');
+
+    space.current.set('cmp_b');
+    space.switching.set({ from: 'cmp_a', to: 'cmp_b' });
+    expect(client.company()).toBe(pending);
+    expect(client.dossier()).toBe('pending');
+
+    space.switching.set(null);
+    expect(client.company()).toBe(active);
+    expect(client.isActive()).toBe(true);
   });
 });

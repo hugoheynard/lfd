@@ -65,10 +65,17 @@ export class ClientMandate {
   private readonly asked = new Set<string>();
 
   private readonly keyed = contextKeyed((key) =>
-    this.get<CustomerMandateView | null>(this.url(key.workspace), key),
+    this.withToken((token) =>
+      this.http.get<CustomerMandateView | null>(this.url(key.workspace), this.readOf(key, token)),
+    ),
   );
   private readonly optionsKeyed = contextKeyed((key) =>
-    this.get<CustomerMandateOptionsSectionView>(this.optionsUrl(key.workspace), key),
+    this.withToken((token) =>
+      this.http.get<CustomerMandateOptionsSectionView>(
+        this.optionsUrl(key.workspace),
+        this.readOf(key, token),
+      ),
+    ),
   );
 
   /** Le mandat lu pour l'espace qui s'affiche — `undefined` s'il ne l'est pas encore. */
@@ -313,15 +320,17 @@ export class ClientMandate {
     return `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/mandate`;
   }
 
-  /** Une lecture — l'en-tête d'espace vient de la clé, pas de l'envoi. */
-  private get<V>(url: string, key: ContextKey): Observable<V> {
-    return this.auth
-      .accessToken$()
-      .pipe(
-        switchMap((token) =>
-          this.http.get<V>(url, workspaceRequestOf(key, { Authorization: `Bearer ${token}` })),
-        ),
-      );
+  /**
+   * Une lecture porteuse du jeton. Le type de la réponse reste écrit à l'appel,
+   * sur le type des contrats (`lint:api-types` ne suit pas un générique).
+   */
+  private withToken<V>(read: (token: string) => Observable<V>): Observable<V> {
+    return this.auth.accessToken$().pipe(switchMap(read));
+  }
+
+  /** L'en-tête d'espace vient de la clé, pas de l'envoi. */
+  private readOf(key: ContextKey, token: string): ReturnType<typeof workspaceRequestOf> {
+    return workspaceRequestOf(key, { Authorization: `Bearer ${token}` });
   }
 
   private async headers(): Promise<HttpHeaders> {

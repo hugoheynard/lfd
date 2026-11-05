@@ -7,7 +7,7 @@ import {
 } from '@lfd/contracts/shop-values';
 
 import { AuthFacade } from '../auth/auth.facade';
-import { ClientWorkspace } from './client-workspace.service';
+import { ClientContext } from './client-context.service';
 
 /**
  * **La clientèle de l'écran** — les pros (`b2b`) ou les particuliers (`b2c`).
@@ -22,7 +22,8 @@ import { ClientWorkspace } from './client-workspace.service';
  * 2026-09-15, Q3 ; la suspendue depuis le 2026-11-03, la société en attente
  * depuis le 2026-11-05) : un visiteur, l'espace perso et une société
  * `terminated` sont B2C. La règle est `audienceOf`, la MÊME que le serveur lit —
- * ce service ne fait que lui passer le statut de l'espace courant.
+ * ce service ne fait que lui passer le statut de l'espace AFFICHÉ
+ * (`ClientContext.shownCompany`) — pendant une bascule, celui de départ.
  *
  * Un seul endroit la calcule : deux écrans qui la déduiraient chacun finiraient
  * par ne pas voir le même client.
@@ -30,7 +31,7 @@ import { ClientWorkspace } from './client-workspace.service';
 @Injectable({ providedIn: 'root' })
 export class ClientAudience {
   private readonly auth = inject(AuthFacade);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
   /**
    * La clientèle, ou `null` quand elle n'est pas encore connue : un client
@@ -44,10 +45,12 @@ export class ClientAudience {
     if (!this.auth.isAuthenticated()) {
       return 'b2c';
     }
-    if (this.workspace.current() === null) {
+    // L'espace AFFICHÉ, pas le courant : pendant une bascule, la clientèle
+    // reste celle de l'écran qu'on voit encore (lot d, 2026-11-05).
+    if (this.context.prefix() === null) {
       return null;
     }
-    return audienceOf(this.workspace.company()?.status ?? null);
+    return audienceOf(this.context.shownCompany()?.status ?? null);
   });
 
   /**
@@ -75,6 +78,6 @@ export class ClientAudience {
     }
     // La règle partagée avec le serveur : toute annonce autre que celle des
     // particuliers est celle d'une société servie en pro.
-    return pickupAnnouncementOf(this.workspace.company()?.status ?? null) !== 'b2c';
+    return pickupAnnouncementOf(this.context.shownCompany()?.status ?? null) !== 'b2c';
   });
 }

@@ -101,3 +101,31 @@ describe('ClientAudience — servi en pro par la caisse', () => {
     expect(resolve(true, null).servedAsPro()).toBe(false);
   });
 });
+
+/**
+ * Lot d (2026-11-05) : la clientèle suivait l'espace COURANT, qui vaut la cible
+ * dès le départ d'une bascule ; elle suit désormais l'espace AFFICHÉ.
+ */
+describe('ClientAudience — pendant une bascule', () => {
+  it('reste celle de l’espace montré, puis passe à la cible quand elle est acceptée', () => {
+    const space = workspaceDouble('cmp_1', [company('active')]);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideWorkspace(space),
+        { provide: AuthFacade, useValue: { isAuthenticated: () => true } },
+      ],
+    });
+    const audience = TestBed.inject(ClientAudience);
+    expect(audience.current()).toBe('b2b');
+
+    space.current.set(PERSONAL_WORKSPACE);
+    space.switching.set({ from: 'cmp_1', to: PERSONAL_WORKSPACE });
+    expect(audience.current()).toBe('b2b');
+    expect(audience.servedAsPro()).toBe(true);
+
+    space.switching.set(null);
+    expect(audience.current()).toBe('b2c');
+    expect(audience.servedAsPro()).toBe(false);
+  });
+});

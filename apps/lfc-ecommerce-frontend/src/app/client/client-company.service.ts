@@ -3,7 +3,8 @@ import type { CompanyMemberRole, CompanyStatus, CompanyView } from '@lfd/contrac
 
 import { directDebitSuspended, settlesOnAccount } from '../account/settles-on-account';
 import { AccountService } from '../account/account.service';
-import { ClientWorkspace, companyName } from './client-workspace.service';
+import { ClientContext } from './client-context.service';
+import { companyName } from './client-workspace.service';
 
 /** L'état d'un dossier client : à compléter, ou le statut de sa société. */
 export type DossierState = 'incomplete' | CompanyStatus;
@@ -21,7 +22,8 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin', 'b
  *
  * ## Quelle société
  *
- * Celle de l'**espace de travail** courant (`ClientWorkspace`), `null` en perso.
+ * Celle de l'**espace de travail** affiché (`ClientContext.shownCompany`),
+ * `null` en perso — pendant une bascule, celle de départ jusqu'à l'acceptation.
  * C'était la première de `GET /me`, pendant que le serveur chiffrait et
  * encaissait pour `null` dès la deuxième société : l'écran montrait une maison,
  * la caisse en servait une autre (plan espace de travail, §1).
@@ -35,10 +37,10 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin', 'b
 @Injectable({ providedIn: 'root' })
 export class ClientCompany {
   private readonly account = inject(AccountService);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
 
   /** La société de l'espace, ou `null` — anonyme, perso, ou compte sans entreprise. */
-  readonly company = computed<CompanyView | null>(() => this.workspace.company());
+  readonly company = computed<CompanyView | null>(() => this.context.shownCompany());
 
   /**
    * Le nom sous lequel la maison se reconnaît : son **enseigne** si elle en a
@@ -87,7 +89,7 @@ export class ClientCompany {
    * fiche du site comme celle d'une société propre ; seule la facturation
    * diffère, cf. {@link readsBilling}.
    */
-  readonly isReachableSite = computed(() => this.workspace.reachableSite() !== null);
+  readonly isReachableSite = computed(() => this.context.shownReachableSite() !== null);
 
   /**
    * La facturation (factures, impayés, RIB) se LIT-elle ici ? Dans un site
@@ -96,7 +98,7 @@ export class ClientCompany {
    * une société propre, ce sont les rôles que l'écran nomme.
    */
   readsBilling(roles: ReadonlySet<CompanyMemberRole>): boolean {
-    const site = this.workspace.siteBillingReadable();
+    const site = this.context.shownSiteBillingReadable();
     if (site !== null) {
       return site;
     }

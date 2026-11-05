@@ -283,6 +283,7 @@ export const IT: ClientCopy = {
     cartTitle: 'Il suo carrello',
     cartEmpty:
       'Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.',
+    cartLoading: 'Il carrello sta arrivando…',
     staffAdvice: 'Il nostro consiglio',
     alsoLike: 'Potrebbe piacerti anche',
     ourPicks: 'La nostra selezione',

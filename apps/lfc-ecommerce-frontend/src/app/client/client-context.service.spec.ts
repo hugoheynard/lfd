@@ -467,9 +467,15 @@ describe('ClientContext — l’espace retenu (lot e)', () => {
     expect(context.state()).toEqual({ kind: 'confirmed', workspace: 'cmp_a' });
     expect(catalogue.items()).toEqual([]);
 
-    // Les points migrés sur la brique (lot c bis) COUPENT leur lecture de
-    // l'essai ; les autres répondent après /me, et sont jetés.
-    expect(ahead.filter((read) => read.cancelled).map(pathOf)).toEqual(['/pickup-addresses/mine']);
+    // Les points (lot c bis) et le catalogue (lot d, 2026-11-05), migrés sur
+    // la brique, COUPENT leur lecture de l'essai ; la vitrine répond après
+    // /me, et elle est jetée.
+    expect(
+      ahead
+        .filter((read) => read.cancelled)
+        .map(pathOf)
+        .sort(),
+    ).toEqual(['/pickup-addresses/mine', '/shop/catalogue/mine']);
     for (const read of ahead.filter((r) => !r.cancelled)) {
       read.flush(pathOf(read).endsWith('/pains/mine') ? PAGE_OF('b') : CATALOGUE_OF('b'));
     }

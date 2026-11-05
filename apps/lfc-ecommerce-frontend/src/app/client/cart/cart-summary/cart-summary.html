@@ -1,5 +1,7 @@
 @if (linesShown()) {
-  @if (cart.isEmpty()) {
+  @if (cart.linesPending()) {
+    <fold-loading [message]="t().shop.cartLoading" />
+  } @else if (cart.isEmpty()) {
     <p class="empty">{{ t().shop.cartEmpty }}</p>
   } @else {
     <ul class="lines">

@@ -84,13 +84,7 @@ export const ADMITTED = {
 };
 
 /** Les lecteurs pas encore migrés vers la brique (relevés le 2026-11-05). En retirer un = l'avoir migré. */
-export const DEBT = [
-  `${APP}/client/accueil-public/accueil-public.ts`,
-  `${APP}/client/cart/voucher-choice.service.ts`,
-  `${APP}/client/client-audience.service.ts`,
-  `${APP}/client/client-company.service.ts`,
-  `${APP}/client/shop/shop-catalogue.store.ts`,
-];
+export const DEBT = [];
 
 /** Les commentaires citent l'ancienne mécanique pour l'expliquer : on les blanchit. */
 export function withoutComments(source) {

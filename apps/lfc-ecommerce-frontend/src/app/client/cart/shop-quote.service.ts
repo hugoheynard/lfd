@@ -168,6 +168,8 @@ export class ShopQuote {
   private lastReader: string | null = null;
   /** Le dernier changement de clé venait-il d'un autre lecteur ? Lu par l'attente. */
   private readerChanged = false;
+  /** La clé précédente attendait-elle le catalogue ? Ce qui suit l'attente n'a pas de salve. */
+  private waited = false;
   /**
    * Le tour du décompte : {@link refresh} l'avance pour redemander un panier
    * inchangé — après un refus `orders.total_changed`, c'est le serveur qui a
@@ -249,7 +251,12 @@ export class ShopQuote {
    * redemande le décompte.
    */
   private readonly key = computed(() => {
-    const lines = this.payloadLines();
+    // `null` = le catalogue de l'espace affiché se lit encore : le décompte
+    // ATTEND (lot d, 2026-11-05). Chiffrer le panier d'un espace avec les
+    // lignes projetées par le catalogue d'un autre est ce que la brique
+    // corrige ; et des lignes vides ici ne disent pas un panier vide.
+    const catalogue = this.catalogue.status();
+    const lines = catalogue === 'loading' || catalogue === 'idle' ? null : this.payloadLines();
     const service = this.fulfillmentOf();
     // L'espace est dans la clé : le même panier ne coûte pas pareil en perso et
     // sous la mercuriale d'une société, donc une bascule redemande le décompte.
@@ -304,13 +311,16 @@ export class ShopQuote {
       .pipe(
         distinctUntilChanged(),
         tap((key) => {
-          this.state.set(linesOf(key).length === 0 ? 'idle' : 'loading');
+          const lines = linesOf(key);
+          this.state.set(lines !== null && lines.length === 0 ? 'idle' : 'loading');
           // Les points appartiennent au LECTEUR, pas au panier : après une
           // bascule d'espace, ceux du perso ne s'affichent pas un instant de
           // plus sous le décompte d'une société (Hugo, 2026-09-27 : « pas de
           // fidélité en pro »). Les montants, eux, restent — cf. plus haut.
           const reader = readerIn(key);
-          this.readerChanged = reader !== this.lastReader;
+          // Une clé qui suit une attente du catalogue n'a pas de salve non plus.
+          this.readerChanged = reader !== this.lastReader || this.waited;
+          this.waited = lines === null;
           if (reader !== this.lastReader) {
             this.lastReader = reader;
             this.points.set(null);
@@ -339,6 +349,10 @@ export class ShopQuote {
    */
   private ask(key: string) {
     const lines = linesOf(key);
+    if (lines === null) {
+      // Le catalogue de l'espace affiché se lit : son arrivée change la clé.
+      return of(null);
+    }
     if (lines.length === 0) {
       this.view.set(EMPTY);
       this.state.set('idle');
@@ -516,8 +530,8 @@ export class ShopQuote {
 }
 
 /** Les lignes encodées dans la clé — la clé EST la charge, pas son résumé. */
-function linesOf(key: string): ShopQuotePayload['lines'] {
-  return (JSON.parse(key) as { lines: ShopQuotePayload['lines'] }).lines;
+function linesOf(key: string): ShopQuotePayload['lines'] | null {
+  return (JSON.parse(key) as { lines: ShopQuotePayload['lines'] | null }).lines;
 }
 
 /** Le lecteur encodé dans la clé : l'espace, {@link VISITOR}, ou `null` s'il n'est pas connu. */

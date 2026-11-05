@@ -872,3 +872,48 @@ describe('CartSummary — une remise de retrait sur une partie du panier', () =>
     expect(el.querySelector('.excluded-note')).toBeNull();
   });
 });
+
+/**
+ * Lot d (2026-11-05) : pendant la relecture du catalogue d'un espace jamais vu,
+ * les lignes sont vides sans que le panier le soit — l'écran disait « Panier
+ * vide », un vide qui ment. Il dit maintenant qu'il charge.
+ */
+describe('CartSummary — pendant la relecture du catalogue', () => {
+  it('montre un chargement, jamais « panier vide », jusqu’au catalogue de l’espace', () => {
+    localStorage.clear();
+    const space = workspaceDouble();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(space),
+        provideRecognised(),
+      ],
+    });
+    const catalogue = TestBed.inject(ShopCatalogue);
+    hydrateWith(catalogue, TEST_CATALOGUE);
+    const cart = TestBed.inject(ClientCart);
+    cart.clear();
+    cart.add('VIE-001');
+    const fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelectorAll('.lines > li')).toHaveLength(1);
+
+    space.current.set('cmp_1');
+    fixture.detectChanges();
+    expect(host.querySelector('fold-loading')?.textContent).toContain(FR.shop.cartLoading);
+    expect(host.querySelector('.empty')).toBeNull();
+
+    hydrateWith(catalogue, TEST_CATALOGUE);
+    fixture.detectChanges();
+    // Le catalogue de l'espace est là : le panier dit ce qu'il contient pour
+    // cet espace — ses lignes, ou un vide qui, cette fois, est vrai.
+    expect(host.querySelector('fold-loading')).toBeNull();
+    expect(
+      host.querySelectorAll('.lines > li').length > 0 || host.querySelector('.empty') !== null,
+    ).toBe(true);
+  });
+});
