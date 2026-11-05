@@ -73,7 +73,9 @@ describe('GlobalPricingDialog', () => {
     });
     await fixture.componentInstance['submit']();
 
-    expect(zones.patches).toEqual([{ b2b: { fee: { mode: 'amount', cents: 1_200 } } }]);
+    expect(zones.patches).toEqual([
+      { b2b: { fee: { mode: 'amount', cents: 1_200 }, freeDeliveryThresholdCents: 5_000 } },
+    ]);
     expect(close).toHaveBeenCalledWith(true);
   });
 
@@ -83,7 +85,7 @@ describe('GlobalPricingDialog', () => {
     fixture.componentInstance['clear']('b2c');
     await fixture.componentInstance['submit']();
 
-    expect(zones.patches[0]?.b2c).toEqual({ fee: null });
+    expect(zones.patches[0]?.b2c).toEqual({ fee: null, freeDeliveryThresholdCents: null });
   });
 
   it('un refus reste dans le dialogue, sans le fermer', async () => {
@@ -99,5 +101,55 @@ describe('GlobalPricingDialog', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('fold-callout.v-alert')?.textContent,
     ).toContain('Frais invalide.');
+  });
+
+  it('un seuil saisi en euros part en centimes entiers', async () => {
+    const { fixture, zones } = await mount(['b2b', 'b2c']);
+
+    fixture.componentInstance['setThreshold']('b2c', 80);
+    expect(fixture.componentInstance['dirty']()).toBe(true);
+    await fixture.componentInstance['submit']();
+
+    expect(zones.patches[0]?.b2c).toEqual({
+      fee: { mode: 'amount', cents: 1_500 },
+      freeDeliveryThresholdCents: 8_000,
+    });
+  });
+
+  it('« retirer la livraison offerte » envoie null, jamais 0', async () => {
+    const { fixture, zones } = await mount(['b2b']);
+
+    fixture.componentInstance['clearThreshold']('b2b');
+    await fixture.componentInstance['submit']();
+
+    expect(zones.patches[0]?.b2b?.freeDeliveryThresholdCents).toBeNull();
+  });
+
+  it('un seuil négatif ou plus fin que le centime bloque l’enregistrement', async () => {
+    const { fixture, zones } = await mount(['b2b']);
+
+    fixture.componentInstance['setThreshold']('b2b', 10.005);
+    expect(fixture.componentInstance['invalid']()).toBe(true);
+    await fixture.componentInstance['submit']();
+    fixture.componentInstance['setThreshold']('b2b', -5);
+    await fixture.componentInstance['submit']();
+
+    expect(zones.patches).toEqual([]);
+  });
+
+  it('une clientèle fermée est montrée grisée, avec où l’ouvrir, et n’est pas envoyée', async () => {
+    const { fixture, zones } = await mount(['b2b']);
+    const host = fixture.nativeElement as HTMLElement;
+
+    const fieldsets = [...host.querySelectorAll('fieldset')];
+    expect(fieldsets.map((f) => f.disabled)).toEqual([false, true]);
+    expect(host.textContent).toContain('Particuliers');
+    expect(host.querySelector('fold-callout[data-closed]')?.textContent).toContain(
+      '« B2C » dans « Disponibilité de la livraison »',
+    );
+
+    fixture.componentInstance['setThreshold']('b2b', 60);
+    await fixture.componentInstance['submit']();
+    expect(Object.keys(zones.patches[0] ?? {})).toEqual(['b2b']);
   });
 });

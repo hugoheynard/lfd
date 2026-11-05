@@ -182,7 +182,7 @@ describe('ZonePanel — les remplacements par clientèle (0b)', () => {
     },
   };
 
-  it('une clientèle masquée garde ses valeurs, le franco aussi', async () => {
+  it('une clientèle masquée garde ses valeurs, sa livraison offerte aussi', async () => {
     const { fixture, zones } = await mount(ADMIN_VAL, undefined, ['b2b']);
 
     fixture.componentInstance['backToGlobal']('b2b');
@@ -212,5 +212,34 @@ describe('ZonePanel — les remplacements par clientèle (0b)', () => {
 
     expect(zones.updated[0]).not.toHaveProperty('audienceTerms');
     expect(fixture.componentInstance['canOverride']()).toBe(false);
+  });
+
+  it('remplace le seuil de livraison offerte de la zone, en centimes', async () => {
+    const { fixture, zones } = await mount(ADMIN_VAL, undefined, ['b2b', 'b2c']);
+
+    fixture.componentInstance['setThreshold']('b2c', 75.5);
+    await fixture.componentInstance['submit']();
+
+    expect(zones.updated[0]?.audienceTerms?.b2c.freeDeliveryThresholdCents).toBe(7_550);
+    expect(zones.updated[0]?.audienceTerms?.b2b.freeDeliveryThresholdCents).toBe(4_000);
+  });
+
+  it('un seuil vidé reprend le global : null, jamais 0', async () => {
+    const { fixture, zones } = await mount(ADMIN_VAL, undefined, ['b2b']);
+
+    fixture.componentInstance['clearThreshold']('b2b');
+    await fixture.componentInstance['submit']();
+
+    expect(zones.updated[0]?.audienceTerms?.b2b.freeDeliveryThresholdCents).toBeNull();
+  });
+
+  it('un seuil négatif bloque l’enregistrement', async () => {
+    const { fixture, zones } = await mount(ADMIN_VAL, undefined, ['b2b']);
+
+    fixture.componentInstance['setThreshold']('b2b', -1);
+    await fixture.componentInstance['submit']();
+
+    expect(fixture.componentInstance['canSubmit']()).toBe(false);
+    expect(zones.updated).toEqual([]);
   });
 });

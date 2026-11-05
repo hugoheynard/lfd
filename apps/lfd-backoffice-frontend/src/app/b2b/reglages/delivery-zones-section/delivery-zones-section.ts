@@ -23,7 +23,14 @@ import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryAvailabilityService } from '../delivery-availability.service';
 import { DeliveryZonesService } from '../delivery-zones.service';
-import { AUDIENCE_LABELS, dialogSide, openAudiences } from './delivery-audiences';
+import {
+  ALL_AUDIENCES,
+  AUDIENCE_LABELS,
+  closedAudienceNotice,
+  dialogSide,
+  openAudiences,
+} from './delivery-audiences';
+import { formatThreshold } from './delivery-threshold';
 import {
   GlobalPricingDialog,
   type GlobalPricingDialogData,
@@ -50,8 +57,10 @@ type LoadState = 'loading' | 'ready' | 'error';
  *
  * Depuis 0b (plan `plan-livraison-offerte.md`), le **réglage global** par
  * clientèle (frais de base) se lit et se règle en tête, et chaque zone dit
- * ses remplacements. Seules les clientèles OUVERTES à la livraison
- * s'affichent. Le franco, posé mais appliqué au lot 1, est masqué.
+ * ses remplacements. Le réglage global montre aussi le seuil de livraison
+ * offerte (lot 1) et TOUTES les clientèles, une fermée grisée avec où
+ * l'ouvrir (Hugo, 2026-11-05) ; les pastilles d'une zone ne parlent que des
+ * ouvertes, et du seuil seulement quand la zone le remplace.
  */
 @Component({
   selector: 'app-delivery-zones-section',
@@ -86,6 +95,16 @@ export class DeliveryZonesSection {
   protected readonly pricing = signal<DeliveryPricingView>(DEFAULT_DELIVERY_PRICING);
   protected readonly audiences = signal<readonly CustomerAudience[]>([]);
   protected readonly audienceLabels = AUDIENCE_LABELS;
+  protected readonly allAudiences = ALL_AUDIENCES;
+  protected readonly closedNotice = closedAudienceNotice;
+  protected readonly closedAudiences = computed(() =>
+    ALL_AUDIENCES.filter((audience) => !this.audiences().includes(audience)),
+  );
+
+  /** « Livraison offerte dès 80,00 € HT », ou rien quand aucun seuil n'est réglé. */
+  protected globalThreshold(cents: number | null): string | null {
+    return cents === null ? null : `Livraison offerte ${formatThreshold(cents)}`;
+  }
 
   protected readonly fee = formatAdjustmentValue;
 
@@ -135,7 +154,29 @@ export class DeliveryZonesSection {
         content: `${this.audienceLabels[o.audience]} + ${this.fee(o.fee)}`,
         variant: 'info' as const,
       })),
+      ...this.thresholdOverridesOf(zone),
     ];
+  }
+
+  /**
+   * Le seuil de livraison offerte n'a une pastille que quand la zone le
+   * remplace : hérité, il se lit déjà sous « Réglage global ».
+   */
+  private thresholdOverridesOf(zone: DeliveryZoneView | AdminDeliveryZoneView): ZoneBadge[] {
+    if (!('audienceTerms' in zone)) {
+      return [];
+    }
+    return this.audiences().flatMap((audience) => {
+      const cents = zone.audienceTerms[audience].freeDeliveryThresholdCents;
+      return cents === null
+        ? []
+        : [
+            {
+              content: `${this.audienceLabels[audience]} : livraison offerte ${formatThreshold(cents)}`,
+              variant: 'info' as const,
+            },
+          ];
+    });
   }
 
   constructor() {

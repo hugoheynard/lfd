@@ -4,27 +4,56 @@
 />
 
 <div class="body">
-  @for (audience of audiences(); track audience) {
-    <div class="audience">
-      <lfd-price-alteration-field
-        [label]="'Frais de livraison — ' + labels[audience]"
-        lockedDirection="increase"
-        allowZero
-        [value]="alteration(audience)"
-        (valueChange)="setFee(audience, $event)"
-      />
-      @if (fees()[audience] === null) {
-        <p class="hint">Rien de réglé : chaque zone garde son propre frais.</p>
-      } @else {
-        <button foldButton emphasis="outline" intent="neutral" size="sm" (click)="clear(audience)">
-          Revenir au frais de chaque zone
-        </button>
-      }
-    </div>
-  } @empty {
-    <fold-callout variant="info">
-      La livraison n'est proposée à aucune clientèle : il n'y a rien à régler.
-    </fold-callout>
+  @for (audience of all; track audience) {
+    @if (!isOpen(audience)) {
+      <fold-callout variant="info" data-closed>{{ closedNotice(audience) }}</fold-callout>
+    }
+    <fold-fieldset [legend]="labels[audience]" [disabled]="!isOpen(audience)">
+      <div class="audience">
+        <lfd-price-alteration-field
+          [label]="'Frais de livraison — ' + labels[audience]"
+          lockedDirection="increase"
+          allowZero
+          [value]="alteration(audience)"
+          (valueChange)="setFee(audience, $event)"
+        />
+        @if (fees()[audience] === null) {
+          <p class="hint">Rien de réglé : chaque zone garde son propre frais.</p>
+        } @else if (isOpen(audience)) {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            (click)="clear(audience)"
+          >
+            Revenir au frais de chaque zone
+          </button>
+        }
+      </div>
+      <div class="audience">
+        <fold-number-input
+          [label]="'Livraison offerte dès (€ HT) — ' + labels[audience]"
+          placeholder="Jamais offerte"
+          [min]="0"
+          [disabled]="!isOpen(audience)"
+          [hint]="hint(audience)"
+          [value]="thresholds()[audience]"
+          (valueChange)="setThreshold(audience, $event)"
+        />
+        @if (thresholds()[audience] !== null && isOpen(audience)) {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            (click)="clearThreshold(audience)"
+          >
+            Retirer la livraison offerte
+          </button>
+        }
+      </div>
+    </fold-fieldset>
   }
 
   @if (refusal(); as message) {
@@ -34,7 +63,12 @@
 
 <footer class="foot">
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
-  <button foldButton intent="primary" [disabled]="!dirty() || saving()" (click)="submit()">
+  <button
+    foldButton
+    intent="primary"
+    [disabled]="!dirty() || invalid() || saving()"
+    (click)="submit()"
+  >
     Enregistrer
   </button>
 </footer>

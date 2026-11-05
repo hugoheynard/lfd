@@ -17,6 +17,8 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldFieldsetComponent,
+  FoldNumberInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
   type FoldPanelDefaults,
@@ -31,7 +33,13 @@ import {
 
 import { NotifyService } from '../../../../notify.service';
 import { DeliveryZonesService } from '../../delivery-zones.service';
-import { AUDIENCE_LABELS } from '../delivery-audiences';
+import { ALL_AUDIENCES, AUDIENCE_LABELS, closedAudienceNotice } from '../delivery-audiences';
+import {
+  INVALID_THRESHOLD,
+  thresholdCents,
+  thresholdEuros,
+  thresholdHint,
+} from '../delivery-threshold';
 
 /** Le réglage tel qu'il est, et les clientèles ouvertes à la livraison. */
 export interface GlobalPricingDialogData {
@@ -40,6 +48,8 @@ export interface GlobalPricingDialogData {
 }
 
 type Fees = Readonly<Record<CustomerAudience, CartAdjustment | null>>;
+/** Les seuils tels que saisis, en euros ; `null` = pas de livraison offerte. */
+type Thresholds = Readonly<Record<CustomerAudience, number | null>>;
 
 function sameFee(a: CartAdjustment | null, b: CartAdjustment | null): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -49,11 +59,12 @@ function sameFee(a: CartAdjustment | null, b: CartAdjustment | null): boolean {
  * **Le réglage global de livraison** (plan `plan-livraison-offerte.md`, 0b) :
  * le frais de base de chaque clientèle ouverte, dont chaque zone hérite sauf
  * si elle le remplace. Vide = « rien de réglé » : chaque zone garde alors son
- * ancien frais. Le franco est posé côté serveur mais ne s'applique qu'au lot
- * 1 : ce dialogue ne le montre pas.
+ * ancien frais. Sous le frais, le seuil de livraison offerte (lot 1), en euros
+ * HT à l'écran et en centimes sur le fil ; vide = pas de livraison offerte.
  *
- * Seules les clientèles OUVERTES sont envoyées : une clientèle masquée garde
- * ses valeurs (le patch ne touche que ce qu'il dit).
+ * Seules les clientèles OUVERTES sont envoyées. Une clientèle fermée est
+ * montrée grisée avec ses valeurs, qui restent intactes (le patch ne touche
+ * que ce qu'il dit).
  */
 @Component({
   selector: 'app-global-pricing-dialog',
@@ -62,6 +73,8 @@ function sameFee(a: CartAdjustment | null, b: CartAdjustment | null): boolean {
     FoldPanelHeaderComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldFieldsetComponent,
+    FoldNumberInputComponent,
     PriceAlterationField,
   ],
   templateUrl: './global-pricing-dialog.html',
@@ -77,8 +90,11 @@ export class GlobalPricingDialog {
   readonly data = input<GlobalPricingDialogData | undefined>(undefined);
 
   protected readonly labels = AUDIENCE_LABELS;
+  protected readonly all = ALL_AUDIENCES;
+  protected readonly closedNotice = closedAudienceNotice;
   protected readonly audiences = computed(() => this.data()?.audiences ?? []);
   protected readonly fees = signal<Fees>({ b2b: null, b2c: null });
+  protected readonly thresholds = signal<Thresholds>({ b2b: null, b2c: null });
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
@@ -87,13 +103,51 @@ export class GlobalPricingDialog {
     return { b2b: pricing?.b2b.fee ?? null, b2c: pricing?.b2c.fee ?? null };
   });
 
+  private readonly initialThresholds = computed<Thresholds>(() => {
+    const pricing = this.data()?.pricing;
+    return {
+      b2b: thresholdEuros(pricing?.b2b.freeDeliveryThresholdCents ?? null),
+      b2c: thresholdEuros(pricing?.b2c.freeDeliveryThresholdCents ?? null),
+    };
+  });
+
   /** Enregistrer n'est cliquable que si une clientèle ouverte a changé. */
   protected readonly dirty = computed(() =>
-    this.audiences().some((audience) => !sameFee(this.fees()[audience], this.initial()[audience])),
+    this.audiences().some(
+      (audience) =>
+        !sameFee(this.fees()[audience], this.initial()[audience]) ||
+        thresholdCents(this.thresholds()[audience]) !==
+          thresholdCents(this.initialThresholds()[audience]),
+    ),
+  );
+
+  /** Un seuil ouvert mal formé bloque l'enregistrement. */
+  protected readonly invalid = computed(() =>
+    this.audiences().some(
+      (audience) => thresholdCents(this.thresholds()[audience]) === INVALID_THRESHOLD,
+    ),
   );
 
   constructor() {
     effect(() => this.fees.set(this.initial()));
+    effect(() => this.thresholds.set(this.initialThresholds()));
+  }
+
+  protected isOpen(audience: CustomerAudience): boolean {
+    return this.audiences().includes(audience);
+  }
+
+  protected setThreshold(audience: CustomerAudience, euros: number | null): void {
+    this.thresholds.update((all) => ({ ...all, [audience]: euros }));
+  }
+
+  /** « Retirer la livraison offerte » : plus de seuil pour cette clientèle. */
+  protected clearThreshold(audience: CustomerAudience): void {
+    this.setThreshold(audience, null);
+  }
+
+  protected hint(audience: CustomerAudience): string {
+    return thresholdHint(this.thresholds()[audience], 'Vide : la livraison n’est jamais offerte.');
   }
 
   protected alteration(audience: CustomerAudience): PriceAlteration | null {
@@ -110,11 +164,20 @@ export class GlobalPricingDialog {
   }
 
   protected async submit(): Promise<void> {
-    if (!this.dirty() || this.saving()) {
+    if (!this.dirty() || this.invalid() || this.saving()) {
       return;
     }
     const patch: DeliveryPricingPatch = Object.fromEntries(
-      this.audiences().map((audience) => [audience, { fee: this.fees()[audience] }]),
+      this.audiences().map((audience) => {
+        const threshold = thresholdCents(this.thresholds()[audience]);
+        return [
+          audience,
+          {
+            fee: this.fees()[audience],
+            freeDeliveryThresholdCents: threshold === INVALID_THRESHOLD ? null : threshold,
+          },
+        ];
+      }),
     );
     this.saving.set(true);
     this.refusal.set(null);

@@ -171,20 +171,47 @@ describe('DeliveryZonesSection — le réglage global et les remplacements (0b)'
     ]);
   });
 
-  it('une clientèle fermée à la livraison ne s’affiche pas, même avec des valeurs', async () => {
+  it('une clientèle fermée est montrée grisée au réglage global, avec où l’ouvrir', async () => {
     await mount('/reglages/livraison/zones', ['delivery_fee:read'], {
       open: { openToB2b: true, openToB2c: false },
       pricing: PRICED,
       zones: [VAL],
     });
 
-    expect(text()).toContain('Pros');
-    expect(text()).not.toContain('Particuliers');
+    const closed = document.querySelector('.global-fee.closed');
+    expect(closed?.textContent).toContain('Particuliers');
+    expect(document.querySelector('fold-callout[data-closed]')?.textContent).toContain(
+      'Disponibilité de la livraison',
+    );
+    // Les pastilles d'une zone ne parlent toujours que des clientèles ouvertes.
+    const badges = [...document.querySelectorAll('.zone fold-badge')].map((b) => b.textContent);
+    expect(badges.join(' ')).not.toContain('Particuliers');
   });
 
-  it('ne parle pas du franco : il n’est pas encore appliqué (lot 1)', async () => {
+  it('montre le seuil global de livraison offerte à côté du frais', async () => {
     await mount('/reglages/livraison/zones', ['delivery_fee:read'], { pricing: PRICED });
 
-    expect(text()).not.toContain('50,00');
+    expect(text().replace(/\s/gu, ' ')).toContain('Livraison offerte dès 50,00 € HT');
+  });
+
+  it('une zone n’a une pastille de seuil que si elle le remplace', async () => {
+    await mount('/reglages/livraison/zones', ['delivery_fee:read'], {
+      pricing: PRICED,
+      zones: [
+        {
+          ...VAL,
+          audienceTerms: {
+            ...VAL.audienceTerms,
+            b2b: { fee: null, freeDeliveryThresholdCents: 12_000 },
+          },
+        },
+      ],
+    });
+
+    const badges = [...document.querySelectorAll('.zone fold-badge')].map((b) =>
+      b.textContent?.replace(/\s/gu, ' ').trim(),
+    );
+    expect(badges).toContain('Pros : livraison offerte dès 120,00 € HT');
+    expect(badges.some((b) => b?.includes('50,00'))).toBe(false);
   });
 });

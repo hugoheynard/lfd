@@ -42,6 +42,9 @@
   align-items: center;
   gap: var(--fold-space-sm);
 }
+.global-fee.closed {
+  color: var(--fold-color-text-muted);
+}
 .uncovered {
   margin-top: var(--fold-space-lg);
 }

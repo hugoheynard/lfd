@@ -22,13 +22,14 @@
         }
       </div>
 
-      @if (canReadFees() && audiences().length > 0) {
+      @if (canReadFees()) {
         <div class="global">
           <div class="head">
             <div class="head-text">
               <h3 class="global-title">Réglage global</h3>
               <p class="section-desc">
-                Le frais de base de chaque clientèle, dans toute zone qui ne le remplace pas.
+                Le frais de base de chaque clientèle, dans toute zone qui ne le remplace pas, et le
+                montant HT à partir duquel la livraison est offerte.
               </p>
             </div>
             @if (canWrite()) {
@@ -44,13 +45,22 @@
             }
           </div>
           <ul class="global-fees">
-            @for (audience of audiences(); track audience) {
-              <li class="global-fee">
+            @for (audience of allAudiences; track audience) {
+              <li class="global-fee" [class.closed]="closedAudiences().includes(audience)">
                 <span>{{ audienceLabels[audience] }}</span>
                 <fold-badge [content]="globalFee(pricing()[audience].fee)" variant="neutral" />
+                @if (
+                  globalThreshold(pricing()[audience].freeDeliveryThresholdCents);
+                  as threshold
+                ) {
+                  <fold-badge [content]="threshold" variant="neutral" />
+                }
               </li>
             }
           </ul>
+          @for (audience of closedAudiences(); track audience) {
+            <fold-callout variant="info" data-closed>{{ closedNotice(audience) }}</fold-callout>
+          }
         </div>
       }
 

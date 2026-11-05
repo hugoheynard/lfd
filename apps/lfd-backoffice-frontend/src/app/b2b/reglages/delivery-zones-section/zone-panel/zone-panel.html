@@ -99,6 +99,25 @@
             Revenir au global
           </button>
         }
+        <fold-number-input
+          [label]="'Livraison offerte dès (€ HT) — ' + audienceLabels[audience]"
+          placeholder="Comme le réglage global"
+          [min]="0"
+          [hint]="thresholdHint(audience)"
+          [value]="thresholds()[audience]"
+          (valueChange)="setThreshold(audience, $event)"
+        />
+        @if (thresholds()[audience] !== null) {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            (click)="clearThreshold(audience)"
+          >
+            Reprendre la livraison offerte du global
+          </button>
+        }
       </div>
     }
   }

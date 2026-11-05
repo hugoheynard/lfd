@@ -23,6 +23,7 @@ import {
   FoldCalloutComponent,
   FoldDangerZoneComponent,
   FoldInputComponent,
+  FoldNumberInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
   FoldSelectComponent,
@@ -38,6 +39,12 @@ import {
 import { NotifyService } from '../../../../notify.service';
 import { DeliveryZonesService } from '../../delivery-zones.service';
 import { AUDIENCE_LABELS } from '../delivery-audiences';
+import {
+  INVALID_THRESHOLD,
+  thresholdCents,
+  thresholdEuros,
+  thresholdHint,
+} from '../delivery-threshold';
 
 /**
  * Charge d'ouverture : la zone à éditer, ou `null` pour en créer une. En
@@ -53,6 +60,8 @@ export interface ZonePanelData {
 }
 
 type Overrides = Readonly<Record<CustomerAudience, CartAdjustment | null>>;
+/** Les seuils remplacés, en euros saisis ; `null` = la zone reprend le global. */
+type Thresholds = Readonly<Record<CustomerAudience, number | null>>;
 
 const NO_TERMS: DeliveryPricingTerms = {
   b2b: UNSET_DELIVERY_AUDIENCE_TERMS,
@@ -65,19 +74,27 @@ function termsOf(zone: DeliveryZoneView | AdminDeliveryZoneView): DeliveryPricin
 }
 
 /**
- * Les remplacements à écrire : ceux des clientèles OUVERTES tels qu'à l'écran,
- * le reste (clientèle masquée, franco — lot 1) tel qu'il était. Masquer une
- * clientèle n'efface pas ses valeurs.
+ * Les remplacements à écrire : ceux des clientèles OUVERTES tels qu'à l'écran
+ * (frais et seuil de livraison offerte), ceux d'une clientèle masquée tels
+ * qu'ils étaient. Masquer une clientèle n'efface pas ses valeurs. Un seuil
+ * mal formé n'arrive pas ici : il bloque l'enregistrement.
  */
 function termsToWrite(
   base: DeliveryPricingTerms,
   shown: readonly CustomerAudience[],
   overrides: Overrides,
+  thresholds: Thresholds,
 ): DeliveryPricingTerms {
-  const at = (audience: CustomerAudience) => ({
-    fee: shown.includes(audience) ? overrides[audience] : base[audience].fee,
-    freeDeliveryThresholdCents: base[audience].freeDeliveryThresholdCents,
-  });
+  const at = (audience: CustomerAudience) => {
+    if (!shown.includes(audience)) {
+      return base[audience];
+    }
+    const threshold = thresholdCents(thresholds[audience]);
+    return {
+      fee: overrides[audience],
+      freeDeliveryThresholdCents: threshold === INVALID_THRESHOLD ? null : threshold,
+    };
+  };
   return { b2b: at('b2b'), b2c: at('b2c') };
 }
 
@@ -117,6 +134,7 @@ function isRowValid(row: PrefixRow): boolean {
     FoldDangerZoneComponent,
     FoldButtonIconComponent,
     FoldInputComponent,
+    FoldNumberInputComponent,
     FoldSelectComponent,
     PriceAlterationField,
   ],
@@ -137,6 +155,8 @@ export class ZonePanel {
   protected readonly fee = signal<CartAdjustment | null>(null);
   /** Le remplacement du réglage global, par clientèle ; `null` = la zone reprend le global. */
   protected readonly overrides = signal<Overrides>({ b2b: null, b2c: null });
+  /** Le seuil de livraison offerte remplacé, par clientèle ; `null` = reprend le global. */
+  protected readonly thresholds = signal<Thresholds>({ b2b: null, b2c: null });
   protected readonly audienceLabels = AUDIENCE_LABELS;
   protected readonly audiences = computed(() => this.data()?.audiences ?? []);
   /**
@@ -176,6 +196,19 @@ export class ZonePanel {
     this.overrides.update((all) => ({ ...all, [audience]: toCartAdjustment(alteration) }));
   }
 
+  protected setThreshold(audience: CustomerAudience, euros: number | null): void {
+    this.thresholds.update((all) => ({ ...all, [audience]: euros }));
+  }
+
+  /** « Reprendre la livraison offerte du global » : plus de seuil propre à la zone. */
+  protected clearThreshold(audience: CustomerAudience): void {
+    this.setThreshold(audience, null);
+  }
+
+  protected thresholdHint(audience: CustomerAudience): string {
+    return thresholdHint(this.thresholds()[audience], 'Vide : reprend le réglage global.');
+  }
+
   /** « Remplacer pour cette zone » : part du frais de la zone, qu'on corrige ensuite. */
   protected startOverride(audience: CustomerAudience): void {
     this.overrides.update((all) => ({
@@ -202,7 +235,17 @@ export class ZonePanel {
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouvelle zone de livraison' : 'Modifier la zone de livraison',
   );
-  protected readonly canSubmit = computed(() => this.prefixes().length > 0 && this.fee() !== null);
+  /** Un seuil mal formé d'une clientèle montrée bloque l'enregistrement. */
+  private readonly thresholdsValid = computed(
+    () =>
+      !this.canOverride() ||
+      this.audiences().every(
+        (audience) => thresholdCents(this.thresholds()[audience]) !== INVALID_THRESHOLD,
+      ),
+  );
+  protected readonly canSubmit = computed(
+    () => this.prefixes().length > 0 && this.fee() !== null && this.thresholdsValid(),
+  );
 
   constructor() {
     // Édition : reconstruit les lignes depuis les préfixes (type dérivé de la
@@ -211,6 +254,10 @@ export class ZonePanel {
       const zone = this.data()?.zone ?? null;
       const terms = this.baseTerms() ?? NO_TERMS;
       this.overrides.set({ b2b: terms.b2b.fee, b2c: terms.b2c.fee });
+      this.thresholds.set({
+        b2b: thresholdEuros(terms.b2b.freeDeliveryThresholdCents),
+        b2c: thresholdEuros(terms.b2c.freeDeliveryThresholdCents),
+      });
       if (zone === null) {
         this.prefill(this.data()?.postalCode ?? '');
         return;
@@ -268,7 +315,14 @@ export class ZonePanel {
       fee,
       ...(base === null
         ? {}
-        : { audienceTerms: termsToWrite(base, this.audiences(), this.overrides()) }),
+        : {
+            audienceTerms: termsToWrite(
+              base,
+              this.audiences(),
+              this.overrides(),
+              this.thresholds(),
+            ),
+          }),
     };
     try {
       if (zone === null) {
