@@ -276,6 +276,48 @@ devient par personne.
    requête comme aujourd'hui ; les écritures de société font monter N
    personnes.
 
+### 3 quinquies. Contredit par `vitruve` le 2026-11-05 — la version par personne n'est PAS retenue
+
+Trois bloquants, vérifiés dans le code :
+
+1. **La table du §3 quater se trompe de sens pour `companies`.** Le principal
+   lit, d'une société, le statut d'un SITE et son `parent_company_id` ; ceux
+   qui gagnent ou perdent un site sont les propriétaires et administrateurs
+   acceptés de l'ANCIEN et du NOUVEAU parent — pas « les détenteurs de ses
+   sites ». Rattacher ou détacher un site aurait manqué la révocation.
+2. **Une clé `sub` recrée un ABA** : un `sub` qui change de personne
+   (`unknown-subject-admission.ts`) peut retomber sur une valeur déjà gardée,
+   et servir le principal d'un autre. Il faudrait une séquence globale, une
+   clé `user_id` et une jointure sur `auth0_sub` à chaque lecture.
+3. **Une personne sans ligne** devrait être tranchée (création au `INSERT
+users`, ou état distinct).
+
+Et deux sérieux : les **interblocages** reviennent (un déclencheur par ligne
+verrouille la ligne métier AVANT l'estampille — l'ordre que le §3 bis a fui),
+et la migration demande **deux déploiements**. Le problème lui-même (« à 200
+pros, le cache sauterait souvent ») n'est pas mesuré.
+
+**Retenu à la place** : garder l'estampille globale en `BEFORE … FOR EACH
+STATEMENT`, mais ne la déclencher que sur les **colonnes que le principal
+lit** (`UPDATE OF …`) :
+
+| Table         | Colonnes qui font monter                                     |
+| ------------- | ------------------------------------------------------------ |
+| `users`       | `auth0_sub`, `email`, `email_verified`, `status`             |
+| `memberships` | `user_id`, `company_id`, `role`, `invited_at`, `accepted_at` |
+| `companies`   | `status`, `parent_company_id`                                |
+
+(`INSERT` et `DELETE` font toujours monter.) Ce qui ne fait plus monter :
+la première connexion (`first_login_at`), toute écriture d'une société sur
+ses autres colonnes (identité, adresse, conditions…). Aucun interblocage
+nouveau, une migration en un passage (`DROP` / `CREATE TRIGGER`), aucun `sub`
+rangé. Le risque — une liste trop étroite le jour où le principal lira une
+colonne de plus — est tenu par un test qui confronte les `select` de la
+résolution (`findBySub`, `readReachableSites`) à la liste de la migration.
+Reste : une instruction à zéro ligne sur une colonne listée fait toujours
+monter (assumé). La version par personne ne se rouvre qu'avec un taux de
+vidage MESURÉ qui resterait élevé après ce filtre.
+
 ## 4. Ce qui reste hors du lot
 
 - La **vérification du jeton** (`verify`) : à mesurer dans `Server-Timing`
