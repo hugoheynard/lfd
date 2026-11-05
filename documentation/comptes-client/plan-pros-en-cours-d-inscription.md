@@ -28,6 +28,43 @@
   rester refusé ; les lecteurs de `audienceOf` recomptés (§ 10, § 11) ;
   les commandes déjà passées (snapshot, inchangées).
 
+### 0 bis. Confirmé par Hugo, puis contredit par `vitruve` (2026-11-05)
+
+**Hugo** : « on a simplifié la logique, le pro en attente est une audience
+pro ». La raison historique d'`audienceOf` (« une remise pros seulement ne
+doit pas s'obtenir en tapant un SIRET ») est **levée sciemment** : la
+validation commerciale fait le tri, et le prix des articles est déjà pro
+pour un pending.
+
+**Ce que `vitruve` impose avant de toucher `audienceOf`** :
+
+1. **Les promotions « pros actifs » et « tous sauf pros actifs » changeraient
+   de sens sans bruit** : `promotion-targeting.ts` les lit par l'audience.
+   Elles doivent d'abord se lire **sur le statut** (`active` ou `suspended`),
+   sans quoi chaque promotion « pros actifs » déjà posée admettrait les
+   pending. `pros_pending` reste juste (il lit le statut).
+2. **La remise et les points de retrait d'un pending basculent vers ceux des
+   pros** (`cart-adjustments.service.ts`) : un point ouvert aux seuls
+   particuliers lui devient refusé, et un panier en cours qui le garde
+   échoue à la passation. L'annonce `b2bPending` (`pickup-discount-scope.ts`)
+   ne sert plus : champ à déprécier, pas à supprimer dans le même passage.
+3. **Neuf lecteurs, dont sept en production** (et non « 13 » ni « 9 » du
+   § 2) : le devis, la composition, la caisse, les points de retrait (par
+   `CustomerAudiences`), le **contact** (l'audience des messages), l'annonce
+   de retrait, le ciblage des promotions, l'affichage de la boutique, et le
+   **back-office** (nouvelle commande et révision : le staff verra coursier
+   et retraits pros pour un pending).
+4. **Les lots P1 à P4** (la case « traiter en pro », `pricingAudienceOf`)
+   sont abandonnés : à rayer, et `company-service.ts` à corriger.
+5. **À vérifier** : la révision d'une commande pending passée avant le
+   déploiement (`order-revising.service.ts` relit-il l'audience, ou reprend
+   le snapshot — CGV, remise, frais ?).
+
+**Ordre de bâti** : (1) réécrire `pros_active` / `everyone_but_active_pros`
+sur le statut, avec ses tests ; (2) faire dériver `audienceOf` de la règle
+unique du statut (`companyServiceOf`), pending compris ; (3) déprécier
+`b2bPending` ; (4) corriger les JSDoc et rayer P1 à P4.
+
 ## 1. La décision (révisée le 2026-10-30 après vitruve)
 
 Trois cas, trois règles, **une seule fabrique qui décide** (§ 3) :
