@@ -3,19 +3,23 @@ import localeFr from '@angular/common/locales/fr';
 import { LOCALE_ID } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import type { CacheReport } from '@lfd/ops-contract';
+import type { CacheCallReport, CacheReport } from '@lfd/ops-contract';
 
 import { CacheOutcomes } from './cache-outcomes';
 
 registerLocaleData(localeFr);
 
-function render(caches: readonly CacheReport[] | undefined): ComponentFixture<CacheOutcomes> {
+function render(
+  caches: readonly CacheReport[] | undefined,
+  calls?: readonly CacheCallReport[],
+): ComponentFixture<CacheOutcomes> {
   TestBed.configureTestingModule({
     imports: [CacheOutcomes],
     providers: [{ provide: LOCALE_ID, useValue: 'fr' }],
   });
   const fixture = TestBed.createComponent(CacheOutcomes);
   fixture.componentRef.setInput('caches', caches);
+  if (calls) fixture.componentRef.setInput('calls', calls);
   fixture.detectChanges();
   return fixture;
 }
@@ -91,5 +95,67 @@ describe('CacheOutcomes', () => {
     expect(content).toContain('92 % servis sans aller en base');
     expect(content).toContain('trouvé en mémoire, sans aller en base');
     expect(content).toContain('premier appel après un redémarrage');
+  });
+
+  it("affiche « 0 % » quand un cache n'a rien servi sans aller en base", () => {
+    const fixture = render([
+      {
+        cache: 'shelf.read',
+        total: 3,
+        windowMinutes: 30,
+        outcomes: [{ outcome: 'miss', count: 3, share: 1 }],
+      },
+    ]);
+    expect(text(fixture)).toContain('0 % servis sans aller en base');
+  });
+
+  it("affiche la mesure de l'appel à l'objet des rayons, par opération", () => {
+    const fixture = render(
+      [],
+      [
+        {
+          store: 'shelf_cache',
+          operation: 'read',
+          calls: 120,
+          late: 4,
+          p50Ms: 12,
+          p95Ms: 85,
+          lateFinishP95Ms: 140,
+          windowMinutes: 30,
+        },
+        {
+          store: 'shelf_cache',
+          operation: 'store',
+          calls: 10,
+          late: 0,
+          p50Ms: 20,
+          p95Ms: 40,
+          lateFinishP95Ms: null,
+          windowMinutes: 30,
+        },
+      ],
+    );
+    const content = text(fixture);
+    expect(content).toContain("Appel à l'objet des rayons");
+    expect(content).toContain(
+      'lecture : 120 appels — médiane 12 ms, 95 % sous 85 ms — 4 abandonnés (délai dépassé)',
+    );
+    expect(content).toContain('les abandonnés finissaient en 140 ms');
+    expect(content).toContain(
+      'rangement : 10 appels — médiane 20 ms, 95 % sous 40 ms — 0 abandonnés',
+    );
+    expect(content.match(/finissaient en/g)?.length).toBe(1);
+  });
+
+  it("n'affiche aucune mesure d'appel quand l'API ne l'envoie pas", () => {
+    const fixture = render([
+      {
+        cache: 'principal',
+        total: 1,
+        windowMinutes: 30,
+        outcomes: [{ outcome: 'memory', count: 1, share: 1 }],
+      },
+    ]);
+    expect(text(fixture)).not.toContain("Appel à l'objet");
   });
 });

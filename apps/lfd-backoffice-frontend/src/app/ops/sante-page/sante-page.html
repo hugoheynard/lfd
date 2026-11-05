@@ -119,7 +119,7 @@
   </section>
 
   <section aria-label="Caches de l'API">
-    <app-cache-outcomes [caches]="health()?.caches" />
+    <app-cache-outcomes [caches]="health()?.caches" [calls]="health()?.cacheCalls" />
   </section>
 
   <section class="charge" aria-label="Charge par requête">

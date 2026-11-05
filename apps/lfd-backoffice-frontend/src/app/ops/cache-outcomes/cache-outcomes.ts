@@ -8,7 +8,7 @@ import {
   FoldIconComponent,
 } from 'fold-ng';
 
-import type { CacheOutcomeView, CacheReport } from '@lfd/ops-contract';
+import type { CacheCallReport, CacheOutcomeView, CacheReport } from '@lfd/ops-contract';
 
 /** Les noms des caches que l'API compte (C5) ; un nom inconnu s'affiche tel quel. */
 const CACHE_LABEL: Readonly<Record<string, string>> = {
@@ -63,6 +63,24 @@ const OUTCOME_HINT: Readonly<Record<string, string>> = {
 /** Les issues où le cache a rendu service sans retourner en base. */
 const GOOD_OUTCOMES: ReadonlySet<string> = new Set(['memory', 'hit', 'cacheable', 'stored']);
 
+/** Les opérations sur l'objet des rayons ; une opération inconnue s'affiche telle quelle. */
+const OPERATION_LABEL: Readonly<Record<string, string>> = {
+  read: 'lecture',
+  store: 'rangement',
+  erase: 'effacement',
+};
+
+/** Une opération sur un magasin de cache, prête à afficher. */
+export interface CallLine {
+  readonly key: string;
+  readonly label: string;
+  readonly calls: number;
+  readonly late: number;
+  readonly p50Ms: number;
+  readonly p95Ms: number;
+  readonly lateFinishP95Ms: number | null;
+}
+
 /** Une issue prête à afficher ; `featured` marque la première issue « bonne » du cache. */
 export interface OutcomeLine {
   readonly label: string;
@@ -116,6 +134,21 @@ function toLines(outcomes: readonly CacheOutcomeView[]): OutcomeLine[] {
 export class CacheOutcomes {
   /** Le relevé servi, ou `undefined` quand l'API ne l'envoie pas. */
   readonly caches = input<readonly CacheReport[] | undefined>(undefined);
+
+  /** La mesure des appels à l'objet des rayons, ou `undefined` quand l'API ne l'envoie pas. */
+  readonly calls = input<readonly CacheCallReport[] | undefined>(undefined);
+
+  protected readonly callLines = computed<readonly CallLine[]>(() =>
+    (this.calls() ?? []).map((call) => ({
+      key: `${call.store}:${call.operation}`,
+      label: OPERATION_LABEL[call.operation] ?? call.operation,
+      calls: call.calls,
+      late: call.late,
+      p50Ms: call.p50Ms,
+      p95Ms: call.p95Ms,
+      lateFinishP95Ms: call.lateFinishP95Ms,
+    })),
+  );
 
   protected readonly lines = computed<readonly CacheLine[]>(() =>
     (this.caches() ?? []).map((report) => ({

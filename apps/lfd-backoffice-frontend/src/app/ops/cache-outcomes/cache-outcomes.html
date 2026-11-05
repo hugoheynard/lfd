@@ -45,4 +45,27 @@
       }
     </ul>
   }
+
+  @if (callLines().length > 0) {
+    <div class="cache">
+      <span class="name">Appel à l'objet des rayons</span>
+      <ul class="outcomes">
+        @for (call of callLines(); track call.key) {
+          <li>
+            {{ call.label }} : {{ call.calls }} appels — médiane {{ call.p50Ms }} ms, 95 % sous
+            {{ call.p95Ms }} ms — {{ call.late }} abandonnés (délai dépassé)
+            @if (call.lateFinishP95Ms !== null) {
+              <span class="muted"
+                >— les abandonnés finissaient en {{ call.lateFinishP95Ms }} ms</span
+              >
+            }
+          </li>
+        }
+      </ul>
+      <span class="muted"
+        >Si les abandonnés finissent juste après le délai, le délai est trop court ; s'ils finissent
+        bien plus tard, il est bien réglé.</span
+      >
+    </div>
+  }
 </fold-card>
