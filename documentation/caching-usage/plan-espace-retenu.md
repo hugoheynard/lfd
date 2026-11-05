@@ -165,7 +165,7 @@ périmé` (le dernier total atténué du devis, la photo `STALE_PHOTO_MS` du
 | a     | le crochet de déconnexion et la liste d'oubli, alignée sur le registre — un manque RGPD réel, autonome                                       | —           |
 | b     | 🟦 bâti le 2026-11-05, sur `dev` — `ClientContext` en lecture seule (état, préfixe), branché sur le rayon, la vitrine, les points de retrait | —           |
 | c     | la bascule : `switchTo`, état en cours, retour arrière                                                                                       | b           |
-| c bis | **la brique de lecture par clé** (`contextResource`) : une seule mécanique de lecture rangée par clé de contexte — voir § 00 ter             | b, c        |
+| c bis | **la brique réduite** (`contextKeyed`), éprouvée sur les points de retrait seuls — § 00 ter, après `vitruve`                                 | b, c        |
 | d     | la migration des autres stores **vers la brique**, une par commit, porte en dette décroissante                                               | b, c, c bis |
 | e     | l'espace retenu (état `essai`) sur les trois lecteurs du lot b                                                                               | a, b        |
 
@@ -218,6 +218,45 @@ intercepteurs (l'en-tête d'espace doit suivre la clé de la demande, pas
 l'espace courant à l'envoi) ; les lecteurs qui ne sont pas de simples GET
 (le devis est un POST) ; la photo périmée du catalogue (`STALE_PHOTO_MS`) et
 sa relecture au retour d'onglet ; la borne du rangement.
+
+#### Contredit par `vitruve` le 2026-11-05 — le lot c bis est RÉDUIT
+
+Ce qui précède ne tient pas ; ce qui suit l'emporte.
+
+- **Angular ne garde pas la valeur périmée** : `resource()` remet `value()`
+  à `undefined` dès que ses paramètres changent (égalité par référence,
+  `@angular/core` 22.1.2, `ResourceImpl`) ; seul `reload()` la garde. L'état
+  « périmé » est donc à tenir par la brique elle-même — `resource()` n'y
+  serait qu'un déclencheur.
+- **`httpResource` est inutilisable pour un client connecté** : sa requête
+  se calcule de façon synchrone, le jeton s'obtient de façon asynchrone
+  (`accessToken$`). Et l'annulation n'est « native » qu'en reliant soi-même
+  l'`abortSignal` à HttpClient.
+- **Pas d'hydratation dans l'app** (ni `provideClientHydration` ni cache de
+  transfert) : le contexte vaut `inconnu` côté serveur, la brique n'y lit
+  rien — comme aujourd'hui. La question SSR n'a pas d'objet.
+- **En-tête d'espace** : l'intercepteur ne remplace pas un en-tête déjà posé,
+  la brique pose celui de sa clé ; il manque un moyen de dire « sans espace »
+  (une clé visiteur partie pendant que l'espace courant est connu) — un
+  marqueur `HttpContext` à ajouter.
+- **Le devis reste dehors** (POST, anti-rebond conditionnel) : il lit
+  seulement `ClientContext.prefix()`. Le catalogue (photo périmée, relecture
+  au retour d'onglet, `receive()` des suites) est le cas le plus dur : pas
+  en premier.
+- **La mémoire par clé se vide à la déconnexion** (`forget()`, lot a), sans
+  quoi le tarif d'un espace reste lisible en mémoire.
+- **Recompter** : 33 fichiers hors specs citent `ClientWorkspace`, dont une
+  part relève d'une liste admise (intercepteur, garde, bascule, menus).
+
+**Ce qui est retenu à la place** :
+
+1. migrer les lecteurs vers `ClientContext.prefix()` — suffisant pour le
+   lot e ;
+2. un petit `contextKeyed`, écrit à la main : table par clé, dernière valeur
+   de la même clé, en-tête posé depuis la clé, vidage relié à `forget()` ;
+3. bâti d'abord sur UN lecteur simple en GET — les points de retrait —, pas
+   sur le catalogue ;
+4. la porte n'est armée qu'après trois migrations réelles.
 
 **Décisions pour Hugo** — la liste d'oubli à la déconnexion : le panier
 visiteur `lfc.cart` (un visiteur qui se connecte puis se déconnecte perd-il
