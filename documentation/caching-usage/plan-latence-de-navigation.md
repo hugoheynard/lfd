@@ -93,11 +93,25 @@ impression.
   ce qu'elle ne montre pas — `companies/:id/orders` (« Mes commandes »),
   `subscriptions/mine`, `me/loyalty`. Chacun se charge à l'ouverture de son
   écran.
-- **Regrouper les petites lectures de l'espace** (`me/contact-settings`,
-  `order-admission/mine`, `pickup-addresses/mine`) en une lecture « contexte
-  de l'espace », chaque morceau servi selon l'audience de l'appelant —
-  `vitruve` d'abord (audience).
-- Le délai avant le devis (300 ms) ramené à ~150 ms.
+- ~~Regrouper les petites lectures de l'espace~~ — **mesuré le 2026-11-05 :
+  elles partent déjà en parallèle**, et la vague la plus lente (9 appels) ne
+  descendrait pas sous son plus lent (le rayon, ~240 ms). Ce qui coûte, ce
+  sont les vagues qui s'attendent : `/me` (532 ms) → la vague 3 → le rayon
+  choisi (~900 ms pour voir la boutique) → le devis → les suggestions (1,9 s).
+- 🟦 **Le devis sans attente à un changement de lecteur, les suggestions à
+  100 ms du total** (`03f6a4b4a`, sur `dev`) : ~700 ms de moins sur l'arrivée
+  des suggestions au chargement et à la bascule.
+- 🟦 **Les réglages publics en cache Cloudflare** (Hugo, 2026-11-05) :
+  `/content/footer`, `/order-opening`, `/delivery-zones`,
+  `/delivery-availability` en `public, max-age=30, stale-while-revalidate=60`,
+  étiquette `reglages-publics`, purgée à chaque écriture du réglage
+  (`b2b/shared/public-settings-cache/`). Quatre appels de moins dans la file
+  du demi-vCPU à chaque ouverture ; la passation revérifie tout au serveur.
+- **Ne plus attendre `/me` pour la vague 3** (~280 ms sur l'affichage) :
+  sans en-tête d'espace, le serveur répond « perso » à qui a plusieurs
+  sociétés — partir plus tôt demande de se souvenir de l'espace dans le
+  navigateur. Touche l'audience : plan et `vitruve` d'abord.
+- Le rayon choisi (`storefront/<rayon>`) en même temps que la vague 3 (~100 ms).
 - `companies/_` lu deux fois par changement (vu le matin) : à revérifier, une
   seule lecture vue le soir.
 

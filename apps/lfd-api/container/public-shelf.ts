@@ -35,11 +35,19 @@ export const PUBLIC_SHELF_TAG = "rayon-public";
 export const SHOP_COPY_TAG = "textes-boutique";
 
 /**
+ * L'étiquette des réglages publics (`/content/footer`, `/order-opening`,
+ * `/delivery-zones`, `/delivery-availability`) — la même que celle que l'API
+ * pose (`PUBLIC_SETTINGS_CACHE_TAG`, `public-settings-edge-cache.ts`). Purgée
+ * à chaque écriture d'un des quatre réglages (2026-11-05).
+ */
+export const PUBLIC_SETTINGS_TAG = "reglages-publics";
+
+/**
  * **La liste fermée des étiquettes purgeables.** Une purge ne vise jamais une
  * étiquette venue de l'appel : seulement l'une de celles-ci, relue des deux
  * côtés de la boucle locale.
  */
-export const PURGEABLE_TAGS = [PUBLIC_SHELF_TAG, SHOP_COPY_TAG] as const;
+export const PURGEABLE_TAGS = [PUBLIC_SHELF_TAG, SHOP_COPY_TAG, PUBLIC_SETTINGS_TAG] as const;
 
 export type PurgeableTag = (typeof PURGEABLE_TAGS)[number];
 

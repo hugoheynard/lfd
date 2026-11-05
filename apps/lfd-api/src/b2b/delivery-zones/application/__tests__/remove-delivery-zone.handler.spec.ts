@@ -1,5 +1,7 @@
 import type { DeliveryZonePayload, DeliveryZoneView } from "@lfd/contracts";
 
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { DeliveryZoneTargetedByPromotionError } from "../../domain/delivery-zone-errors.js";
@@ -56,14 +58,18 @@ function scene(view?: readonly ZoneTargetingPromotion[]) {
   const calls: string[] = [];
   const zones = new OneZone(calls);
   const events = new RecordingPublisher();
+  const edge = new RecordingPublicSettingsEdgeCache();
+  const afterCommit = new HeldAfterCommit();
   const handler = new RemoveDeliveryZoneHandler(
     zones,
     new RecordingZoneLock(calls),
     new FixedPromotionsTargetingZone(view, calls),
     events,
     new DirectUnitOfWork(),
+    afterCommit,
+    edge,
   );
-  return { calls, zones, events, handler };
+  return { calls, zones, events, handler, edge, afterCommit };
 }
 
 describe("RemoveDeliveryZoneHandler — une zone nommée par une promotion (`promotions.md`, § 2.14)", () => {
@@ -103,5 +109,39 @@ describe("RemoveDeliveryZoneHandler — une zone nommée par une promotion (`pro
       `remove:${STORED.id}`,
     ]);
     expect(events.traced[0]?.journalFact().payload).toEqual({ subjectLabel: "La vallée" });
+  });
+});
+
+describe("RemoveDeliveryZoneHandler — la purge des réglages publics gardés par Workers Cache", () => {
+  it("après la validation d'une suppression, et pas avant", async () => {
+    const { handler, edge, afterCommit } = scene();
+
+    await handler.execute(new RemoveDeliveryZoneCommand(STORED.id));
+    expect(edge.purges).toBe(0);
+
+    await afterCommit.commit();
+    expect(edge.purges).toBe(1);
+  });
+
+  it("rien quand une promotion retient la zone", async () => {
+    const { handler, edge, afterCommit } = scene([
+      { id: "promo_1", name: "Livraison offerte en vallée", archived: true },
+    ]);
+
+    await expect(handler.execute(new RemoveDeliveryZoneCommand(STORED.id))).rejects.toBeInstanceOf(
+      DeliveryZoneTargetedByPromotionError,
+    );
+    await afterCommit.commit();
+
+    expect(edge.purges).toBe(0);
+  });
+
+  it("rien pour une zone inconnue", async () => {
+    const { handler, edge, afterCommit } = scene();
+
+    await expect(handler.execute(new RemoveDeliveryZoneCommand("zone_absente"))).rejects.toThrow();
+    await afterCommit.commit();
+
+    expect(edge.purges).toBe(0);
   });
 });

@@ -57,6 +57,11 @@
     "housePicker.ctaIdle": null,
     "slotPicker.days.none": null,
     "slotPicker.days.group": null,
-    "product.proDiscount": null
+    "product.proDiscount": null,
+    "chrome.installIosSafari": null,
+    "chrome.installIosOther": null,
+    "chrome.installPrompt": null,
+    "chrome.installAction": null,
+    "chrome.installLater": null
   }
 }

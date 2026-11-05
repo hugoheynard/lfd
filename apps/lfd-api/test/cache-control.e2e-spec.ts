@@ -8,6 +8,10 @@
  * portent que sur l'en-tête : le statut de chaque appel n'est pas le sujet.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import {
+  PUBLIC_SETTINGS_CACHE_CONTROL,
+  PUBLIC_SETTINGS_CACHE_TAG,
+} from "../src/b2b/shared/public-settings-cache/http/public-settings-cache-headers.js";
 import { SHOP_COPY_CACHE_CONTROL } from "../src/b2b/shop-copy/http/shop-copy-cache-headers.js";
 import {
   ANONYMOUS_CACHE_CONTROL,
@@ -75,5 +79,20 @@ describe("Cache-Control par défaut", () => {
       .send({ email: "visiteur@lfc.test" })
       .expect(200);
     expect(admission.headers[CACHE_CONTROL]).toBe("no-store");
+  });
+
+  it.each(["/content/footer", "/order-opening", "/delivery-zones", "/delivery-availability"])(
+    "le réglage public %s s'offre à Workers Cache, étiqueté pour la purge (2026-11-05)",
+    async (path) => {
+      const response = await ctx.http().get(path).expect(200);
+      expect(response.headers[CACHE_CONTROL]).toBe(PUBLIC_SETTINGS_CACHE_CONTROL);
+      expect(response.headers["cache-tag"]).toBe(PUBLIC_SETTINGS_CACHE_TAG);
+    },
+  );
+
+  it("les voisines du pied de page restent au défaut : seul le pied de page est ouvert", async () => {
+    const legal = await ctx.http().get("/content/accessibility-follow-up").expect(200);
+    expect(legal.headers[CACHE_CONTROL]).toBe(ANONYMOUS_CACHE_CONTROL);
+    expect(legal.headers["cache-tag"]).toBeUndefined();
   });
 });

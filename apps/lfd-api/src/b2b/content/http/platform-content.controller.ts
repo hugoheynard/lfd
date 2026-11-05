@@ -4,11 +4,13 @@ import type {
   LegalDocumentKey,
   PublishedLegalDocumentView,
 } from "@lfd/contracts";
-import { Controller, Get, Param } from "@nestjs/common";
+import { Controller, Get, Param, Res } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import type { Response } from "express";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
+import { cachePublicSettings } from "../../shared/public-settings-cache/http/public-settings-cache-headers.js";
 import { GetAccessibilityFollowUpQuery } from "../application/get-accessibility-follow-up.query.js";
 import { GetFooterContentQuery } from "../application/get-footer-content.query.js";
 import { GetPublishedLegalDocumentQuery } from "../application/get-published-legal-document.query.js";
@@ -28,11 +30,17 @@ import { LegalMentionParam } from "./legal-mention.pipe.js";
 export class PlatformContentController {
   constructor(private readonly queries: QueryBus) {}
 
+  /**
+   * Gardé par Workers Cache (`public`, 30 s, étiquette `reglages-publics`) :
+   * identique pour tous, purgé à chaque enregistrement du pied de page.
+   */
   @Get("footer")
-  footer(): Promise<FooterContentView> {
-    return this.queries.execute<GetFooterContentQuery, FooterContentView>(
+  async footer(@Res({ passthrough: true }) response: Response): Promise<FooterContentView> {
+    const footer = await this.queries.execute<GetFooterContentQuery, FooterContentView>(
       new GetFooterContentQuery(),
     );
+    cachePublicSettings(response);
+    return footer;
   }
 
   /**

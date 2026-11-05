@@ -68,11 +68,28 @@ const ADMITTED = new Map([
       ],
     },
   ],
+  [
+    "apps/lfd-api/src/b2b/shared/public-settings-cache/http/public-settings-cache-headers.ts",
+    {
+      since: "2026-11-05",
+      reason:
+        "les réglages publics (pied de page, ouverture des commandes, zones et disponibilité de livraison), " +
+        "identiques pour tous : `public, max-age=30, stale-while-revalidate=60`, purgés de Workers Cache " +
+        "à chaque écriture (`Cache-Tag: reglages-publics`)",
+      readers: [
+        "apps/lfd-api/src/b2b/content/http/platform-content.controller.ts",
+        "apps/lfd-api/src/b2b/order-opening/http/order-opening.controller.ts",
+        "apps/lfd-api/src/b2b/delivery-zones/http/delivery-zones.controller.ts",
+        "apps/lfd-api/src/b2b/delivery-availability/http/delivery-availability.controller.ts",
+      ],
+    },
+  ],
 ]);
 
 /**
- * Les fichiers des routes publiques du rayon et de ce qu'elles calculent :
- * `public` n'y est juste que tant qu'ils ne lisent pas l'appelant.
+ * Les fichiers des routes publiques du rayon et des réglages publics
+ * (2026-11-05), et de ce qu'elles calculent : `public` n'y est juste que tant
+ * qu'ils ne lisent pas l'appelant.
  */
 const CALLER_BLIND = [
   "apps/lfd-api/src/b2b/catalog/http/shop-catalogue.controller.ts",
@@ -81,6 +98,15 @@ const CALLER_BLIND = [
   "apps/lfd-api/src/b2b/catalog/application/queries/read-public-shop-featured.handler.ts",
   "apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts",
   "apps/lfd-api/src/b2b/catalog/application/queries/read-shop-featured.handler.ts",
+  // Les réglages publics (2026-11-05) : contrôleurs et lectures.
+  "apps/lfd-api/src/b2b/content/http/platform-content.controller.ts",
+  "apps/lfd-api/src/b2b/order-opening/http/order-opening.controller.ts",
+  "apps/lfd-api/src/b2b/delivery-zones/http/delivery-zones.controller.ts",
+  "apps/lfd-api/src/b2b/delivery-availability/http/delivery-availability.controller.ts",
+  "apps/lfd-api/src/b2b/content/application/get-footer-content.handler.ts",
+  "apps/lfd-api/src/b2b/order-opening/application/queries/get-order-opening.handler.ts",
+  "apps/lfd-api/src/b2b/delivery-zones/application/list-delivery-zones.handler.ts",
+  "apps/lfd-api/src/b2b/delivery-availability/application/queries/get-delivery-availability.handler.ts",
 ];
 
 /** Ce qui lit l'appelant : un décorateur d'identité, la requête brute, un type d'identité. */

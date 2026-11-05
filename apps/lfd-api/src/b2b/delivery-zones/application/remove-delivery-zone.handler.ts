@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../platform/database/after-commit.js";
+import { PublicSettingsEdgeCache } from "../../../b2b/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import {
@@ -23,6 +25,9 @@ import { RemoveDeliveryZoneCommand } from "./remove-delivery-zone.command.js";
  * (`documentation/promotions/promotions.md`, § 2.14) :
  * contrôle et suppression dans la même transaction, la zone verrouillée.
  *
+ * Les réglages publics gardés par Workers Cache sont purgés **après** la
+ * validation (`AfterCommit`) : une suppression refusée ne purge rien.
+ *
  * @throws {DeliveryZoneNotFoundError} la zone n'existe pas.
  * @throws {DeliveryZoneTargetedByPromotionError} une promotion la nomme.
  */
@@ -34,6 +39,8 @@ export class RemoveDeliveryZoneHandler implements ICommandHandler<RemoveDelivery
     private readonly promotions: PromotionsTargetingZoneReader,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   async execute(command: RemoveDeliveryZoneCommand): Promise<void> {
@@ -49,6 +56,7 @@ export class RemoveDeliveryZoneHandler implements ICommandHandler<RemoveDelivery
       }
       await this.zones.remove(command.id);
       await this.events.publishTraced(new DeliveryZoneRemovedEvent(command.id, zone.label));
+      this.afterCommit.defer(() => this.edge.purge(), "delivery-zone.edge-purge");
     });
   }
 }

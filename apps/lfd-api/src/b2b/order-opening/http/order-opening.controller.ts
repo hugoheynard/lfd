@@ -1,9 +1,11 @@
 import type { OrderOpeningView, PublicOrderOpeningView } from "@lfd/contracts";
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Res } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import type { Response } from "express";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
+import { cachePublicSettings } from "../../shared/public-settings-cache/http/public-settings-cache-headers.js";
 import { GetOrderOpeningQuery } from "../application/queries/get-order-opening.query.js";
 
 /**
@@ -12,6 +14,10 @@ import { GetOrderOpeningQuery } from "../application/queries/get-order-opening.q
  * serveur (`OrderIntake`) : cette route informe, elle ne garde rien.
  *
  * Surface anonyme ⇒ throttle resserré (60/min/IP), comme `delivery-availability`.
+ *
+ * Gardée par Workers Cache (`public`, 30 s, étiquette `reglages-publics`) :
+ * la réponse est la même pour tous, et chaque écriture du réglage la purge
+ * (`PublicSettingsEdgeCache`, 2026-11-05).
  */
 @Controller("order-opening")
 @Public()
@@ -25,10 +31,11 @@ export class OrderOpeningController {
    * la clientèle ; celle d'une personne exemptée se lit à `/order-admission`.
    */
   @Get()
-  async read(): Promise<PublicOrderOpeningView> {
+  async read(@Res({ passthrough: true }) response: Response): Promise<PublicOrderOpeningView> {
     const settings = await this.queries.execute<GetOrderOpeningQuery, OrderOpeningView>(
       new GetOrderOpeningQuery(),
     );
+    cachePublicSettings(response);
     return {
       ordersOpenToB2b: settings.ordersOpenToB2b,
       ordersOpenToB2c: settings.ordersOpenToB2c,

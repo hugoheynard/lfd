@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../../platform/database/after-commit.js";
+import { PublicSettingsEdgeCache } from "../../../../b2b/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -15,6 +17,10 @@ import { UpdateDeliveryAvailabilityCommand } from "./update-delivery-availabilit
  * Pose le réglage de livraison. L'état remplacé est relu DANS la transaction :
  * un patch ne dit qu'une case, et l'autre doit être celle qui est écrite, pas
  * celle qu'un écran a vue. L'écriture et sa trace partent ensemble.
+ *
+ * Les réglages publics gardés par Workers Cache sont purgés **après** la
+ * validation (`AfterCommit`) : une écriture refusée ne purge rien, et l'échec
+ * de la purge est journalisé sans retenir l'écriture.
  */
 @CommandHandler(UpdateDeliveryAvailabilityCommand)
 export class UpdateDeliveryAvailabilityHandler implements ICommandHandler<
@@ -28,6 +34,8 @@ export class UpdateDeliveryAvailabilityHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   async execute(command: UpdateDeliveryAvailabilityCommand): Promise<void> {
@@ -42,6 +50,7 @@ export class UpdateDeliveryAvailabilityHandler implements ICommandHandler<
       });
       await this.settings.put(next);
       await this.events.publishTraced(new DeliveryAvailabilityUpdatedEvent(next, previous));
+      this.afterCommit.defer(() => this.edge.purge(), "delivery-availability.edge-purge");
     });
   }
 }

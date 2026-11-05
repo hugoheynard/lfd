@@ -8,6 +8,8 @@ import {
   type LegalDocumentKey,
 } from "@lfd/contracts";
 
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { LegalDocument } from "../../domain/entities/legal-document.js";
 
 import { PlatformContentRepository } from "../../domain/platform-content.repository.js";
@@ -74,6 +76,21 @@ class FakeContentRepository extends PlatformContentRepository {
   }
 }
 
+function saveHandler(
+  repository: PlatformContentRepository,
+  edge = new RecordingPublicSettingsEdgeCache(),
+  afterCommit = new HeldAfterCommit(),
+): SaveFooterContentHandler {
+  return new SaveFooterContentHandler(repository, afterCommit, edge);
+}
+
+/** Un enregistrement que la base refuse. */
+class FailingContentRepository extends FakeContentRepository {
+  override saveFooter(): Promise<FooterContentView> {
+    return Promise.reject(new RangeError("base injoignable"));
+  }
+}
+
 describe("lire le pied de page", () => {
   it("aboutit toujours — il n'y a pas de cas « pas de contenu » à traiter", async () => {
     const repository = new FakeContentRepository();
@@ -92,7 +109,7 @@ describe("lire le pied de page", () => {
 describe("enregistrer le pied de page", () => {
   it("transmet QUI écrit, et pas seulement quoi", async () => {
     const repository = new FakeContentRepository();
-    await new SaveFooterContentHandler(repository).execute(
+    await saveHandler(repository).execute(
       new SaveFooterContentCommand(DEFAULT_FOOTER_CONTENT, "staff_42"),
     );
 
@@ -101,7 +118,7 @@ describe("enregistrer le pied de page", () => {
 
   it("fait monter la révision à chaque geste, même à texte identique", async () => {
     const repository = new FakeContentRepository();
-    const handler = new SaveFooterContentHandler(repository);
+    const handler = saveHandler(repository);
 
     const first = await handler.execute(
       new SaveFooterContentCommand(DEFAULT_FOOTER_CONTENT, "staff_42"),
@@ -118,11 +135,40 @@ describe("enregistrer le pied de page", () => {
 
   it("rend l'état résultant, pas la charge envoyée", async () => {
     const repository = new FakeContentRepository();
-    const view = await new SaveFooterContentHandler(repository).execute(
+    const view = await saveHandler(repository).execute(
       new SaveFooterContentCommand(DEFAULT_FOOTER_CONTENT, "staff_7"),
     );
 
     expect(view.updatedBy).toBe("staff_7");
     expect(view.revision).toBe(1);
+  });
+});
+
+describe("purger le pied de page gardé par Workers Cache", () => {
+  it("après la validation, et pas avant", async () => {
+    const edge = new RecordingPublicSettingsEdgeCache();
+    const afterCommit = new HeldAfterCommit();
+
+    await saveHandler(new FakeContentRepository(), edge, afterCommit).execute(
+      new SaveFooterContentCommand(DEFAULT_FOOTER_CONTENT, "staff_42"),
+    );
+    expect(edge.purges).toBe(0);
+
+    await afterCommit.commit();
+    expect(edge.purges).toBe(1);
+  });
+
+  it("rien si l'enregistrement échoue", async () => {
+    const edge = new RecordingPublicSettingsEdgeCache();
+    const afterCommit = new HeldAfterCommit();
+
+    await expect(
+      saveHandler(new FailingContentRepository(), edge, afterCommit).execute(
+        new SaveFooterContentCommand(DEFAULT_FOOTER_CONTENT, "staff_42"),
+      ),
+    ).rejects.toBeInstanceOf(RangeError);
+    await afterCommit.commit();
+
+    expect(edge.purges).toBe(0);
   });
 });

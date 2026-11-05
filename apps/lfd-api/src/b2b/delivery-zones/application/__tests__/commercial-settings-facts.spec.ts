@@ -1,5 +1,7 @@
 import type { DeliveryZonePayload, DeliveryZoneView, PickupAddressPayload } from "@lfd/contracts";
 
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { RemovePickupAddressCommand } from "../../../pickup-addresses/application/remove-pickup-address.command.js";
@@ -97,6 +99,8 @@ describe("Les réglages commerciaux au journal", () => {
       zones(),
       events,
       new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new CreateDeliveryZoneCommand(ZONE));
 
     expect(zoneId).toBe("zone_3");
@@ -123,6 +127,8 @@ describe("Les réglages commerciaux au journal", () => {
       new FixedPromotionsTargetingZone(),
       events,
       new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new RemoveDeliveryZoneCommand("zone_3"));
 
     expect(events.traced[0]?.journalFact()).toMatchObject({
@@ -142,6 +148,8 @@ describe("Les réglages commerciaux au journal", () => {
         new FixedPromotionsTargetingZone(),
         events,
         new DirectUnitOfWork(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
       ).execute(new RemoveDeliveryZoneCommand("zone_absente")),
     ).rejects.toBeInstanceOf(DeliveryZoneNotFoundError);
     expect(events.traced).toHaveLength(0);
@@ -150,9 +158,13 @@ describe("Les réglages commerciaux au journal", () => {
   it("distingue la modification de la création — même zone, deux faits", async () => {
     const events = new RecordingPublisher();
 
-    await new UpdateDeliveryZoneHandler(zones(), events, new DirectUnitOfWork()).execute(
-      new UpdateDeliveryZoneCommand("zone_3", ZONE),
-    );
+    await new UpdateDeliveryZoneHandler(
+      zones(),
+      events,
+      new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
+    ).execute(new UpdateDeliveryZoneCommand("zone_3", ZONE));
 
     expect(events.factTypes()).toEqual(["delivery_zone.updated"]);
   });

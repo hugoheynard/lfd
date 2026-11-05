@@ -1,5 +1,7 @@
 import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
 
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -48,6 +50,8 @@ function handler(
   written: Written,
   events: RecordingPublisher,
   identity: StaffIdentity | null = { name: "Camille Durand", role: "commercial" },
+  edge = new RecordingPublicSettingsEdgeCache(),
+  afterCommit = new HeldAfterCommit(),
 ): UpdateDeliveryAvailabilityHandler {
   return new UpdateDeliveryAvailabilityHandler(
     new Current(current),
@@ -56,6 +60,8 @@ function handler(
     new FixedClock(AT),
     events,
     new DirectUnitOfWork(),
+    afterCommit,
+    edge,
   );
 }
 
@@ -181,5 +187,46 @@ describe("GetDeliveryAvailabilityHandler", () => {
     ).rejects.toThrow(InvalidProductionMarginError);
     expect(written.last).toBeNull();
     expect(events.factTypes()).toEqual([]);
+  });
+});
+
+describe("purger les réglages publics gardés par Workers Cache", () => {
+  const IDENTITY = { name: "Camille Durand", role: "commercial" } as const;
+
+  it("après la validation, et pas avant", async () => {
+    const edge = new RecordingPublicSettingsEdgeCache();
+    const afterCommit = new HeldAfterCommit();
+
+    await handler(
+      DEFAULT_DELIVERY_AVAILABILITY,
+      new Written(),
+      new RecordingPublisher(),
+      IDENTITY,
+      edge,
+      afterCommit,
+    ).execute(new UpdateDeliveryAvailabilityCommand({ openToB2c: false }, "staff_agent"));
+    expect(edge.purges).toBe(0);
+
+    await afterCommit.commit();
+    expect(edge.purges).toBe(1);
+  });
+
+  it("rien sur un refus", async () => {
+    const edge = new RecordingPublicSettingsEdgeCache();
+    const afterCommit = new HeldAfterCommit();
+
+    await expect(
+      handler(
+        DEFAULT_DELIVERY_AVAILABILITY,
+        new Written(),
+        new RecordingPublisher(),
+        IDENTITY,
+        edge,
+        afterCommit,
+      ).execute(new UpdateDeliveryAvailabilityCommand({ pickupMarginMinutes: -10 }, "staff_agent")),
+    ).rejects.toThrow(InvalidProductionMarginError);
+    await afterCommit.commit();
+
+    expect(edge.purges).toBe(0);
   });
 });
