@@ -78,6 +78,7 @@ const DECISION: DecidedDeparture = {
   adjustments: {
     discounts: columnDiscounts({ mode: "percent", bp: 1_000 }),
     deliveryFee: { mode: "amount", cents: 800 },
+    freeDelivery: null,
     lateFee: null,
     deliveryVatMode: "standard",
     exact: null,

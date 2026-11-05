@@ -212,14 +212,36 @@ particulier (TTC « environ », servi par le serveur).
 
 **Sous-lots** :
 
-| Lot | Contenu                                                                                  | Seul ?                |
-| --- | ---------------------------------------------------------------------------------------- | --------------------- |
-| 0a  | 🟦 table du réglage global + colonnes de zone nullables ; rien ne change encore          | oui                   |
-| 0b  | 🟦 résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge   | oui                   |
-| 0c  | `GET /delivery-zones?audience=`, boutique et saisie staff                                | après « pending pro » |
-| 1a  | le franco figé sur la commande ; recomposition et bon partiel le lisent ; golden master  | avant 1b              |
-| 1b  | le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé | après 1a              |
-| 1c  | affichage et « Plus que… » servi par le serveur                                          | après 1b              |
+| Lot | Contenu                                                                                                   | Seul ?                |
+| --- | --------------------------------------------------------------------------------------------------------- | --------------------- |
+| 0a  | 🟦 table du réglage global + colonnes de zone nullables ; rien ne change encore                           | oui                   |
+| 0b  | 🟦 résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge                    | oui                   |
+| 0c  | `GET /delivery-zones?audience=`, boutique et saisie staff                                                 | après « pending pro » |
+| 1a  | 🟦 le franco figé sur la commande ; recomposition et bon partiel le lisent ; barème figé relu en révision | avant 1b              |
+| 1b  | le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé                  | après 1a              |
+| 1c  | affichage et « Plus que… » servi par le serveur                                                           | après 1b              |
+
+**Ce que 1a a bâti (2026-11-05)** :
+
+- **Le barème figé relu en révision** : `delivery_fee_adjustment` EST le
+  barème résolu à la passation (0b) ; la révision le passe au chargement
+  (`PricingRequest.frozenDeliveryFee`, `order-revising.service.ts`) au lieu de
+  re-résoudre celui du jour. ⚠️ **Il ne vaut que dans SA zone** : une révision
+  qui livre dans une autre zone prend le barème du jour de la nouvelle zone
+  (aucun tarif n'a été figé pour elle) — défaut du bâtisseur, à confirmer.
+- **Le franco figé** : trois colonnes nullables sur `orders`
+  (`free_delivery_threshold_cents`, `free_delivery_waived_cents`,
+  `free_delivery_waived_ttc_cents`, migration `20261105160000`, trois CHECK) ;
+  au franco, `delivery_fee_cents` vaut 0 et `delivery_fee_adjustment` garde le
+  barème offert. Rien ne les remplit encore (1b).
+- **Le franco se juge sur le panier COMMANDÉ** : un départ incomplet ne le fait
+  pas perdre — c'est le défaut qui suit « figé à la passation ». Le bon
+  partiel (`line_ht` et `exact_ht`), le reliquat, le soldé (somme des bons) et
+  la reprise des remises lisent le barème FACTURÉ (`billedDeliveryFeeOf` :
+  aucun au franco), jamais le barème figé seul.
+- **Pas encore** : le cas « franco figé » du golden master des paniers pro
+  (`pro-baskets.frozen.ts`) — l'agrégat ne chiffre que par `priceBasket`
+  (L7), qui ne sait pas encore produire un franco : le cas arrive avec 1b.
 
 # Partie 2 — Le code
 

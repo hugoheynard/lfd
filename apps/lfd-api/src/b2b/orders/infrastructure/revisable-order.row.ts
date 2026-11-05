@@ -112,6 +112,7 @@ export const REVISABLE_ORDER_SELECT = {
   discountCents: true,
   discountTtcCents: true,
   deliveryVatMode: true,
+  deliveryFeeAdjustment: true,
   loyaltyVoucherId: true,
   voucherDiscountCents: true,
   vatMethod: true,
@@ -175,6 +176,7 @@ export interface RevisableOrderRow {
   readonly discountCents: number;
   readonly discountTtcCents: number | null;
   readonly deliveryVatMode: string | null;
+  readonly deliveryFeeAdjustment: Prisma.JsonValue | null;
   readonly loyaltyVoucherId: string | null;
   readonly voucherDiscountCents: number;
   readonly vatMethod: string;
@@ -247,6 +249,10 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     discountTtcCents: row.discountTtcCents,
     deliveryVatMode:
       row.deliveryVatMode === null ? null : deliveryVatModeSchema.parse(row.deliveryVatMode),
+    deliveryFeeAdjustment:
+      row.deliveryFeeAdjustment === null
+        ? null
+        : cartAdjustmentSchema.parse(row.deliveryFeeAdjustment),
     vatMethod: vatMethodOf(row.id, row.vatMethod),
     // Ce que le bon a servi, dans l'unité de la méthode : sa valeur faciale
     // TTC pour `exact_ht` (plan du centime, § 5), le HT pour `line_ht`.

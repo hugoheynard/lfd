@@ -8,6 +8,7 @@ import type {
   RecoveryNote,
   RecoveryOrder,
 } from "../domain/services/order-discount-recovery-shapes.js";
+import { FREE_DELIVERY_SELECT, type FreeDeliveryRow } from "./free-delivery.columns.js";
 import { frozenCartAdjustmentOf } from "./order-discounts.columns.js";
 import { frozenAdjustmentsOf, vatMethodOf } from "./order-money-columns.js";
 import { orderLineSaleUnitOf } from "./order-line-row.js";
@@ -45,6 +46,7 @@ export const BACKFILL_ORDER_SELECT = {
   voucherTtcCents: true,
   deliveryFeeTtcCents: true,
   ttcByRate: true,
+  ...FREE_DELIVERY_SELECT,
   lines: { select: { id: true, ...LINE_SELECT }, orderBy: { sku: "asc" } },
   deliveryNotes: {
     select: {
@@ -70,7 +72,7 @@ interface LineRow {
 }
 
 /** La forme que Prisma rend pour {@link BACKFILL_ORDER_SELECT}. */
-export interface BackfillOrderRow {
+export interface BackfillOrderRow extends FreeDeliveryRow {
   readonly id: string;
   readonly orderNumber: string;
   readonly vatMethod: string;
@@ -115,6 +117,7 @@ export function toRecoveryOrder(row: BackfillOrderRow): RecoveryOrder {
     discountTtcCents: row.discountTtcCents,
     discountAdjustment: frozenCartAdjustmentOf(row.id, row.discountAdjustment, "remise"),
     deliveryFeeAdjustment: adjustments.deliveryFee,
+    freeDelivery: adjustments.freeDelivery,
     deliveryVatMode: adjustments.deliveryVatMode,
     voucherTtcCents: row.voucherTtcCents,
     deliveryFeeTtcCents: row.deliveryFeeTtcCents,

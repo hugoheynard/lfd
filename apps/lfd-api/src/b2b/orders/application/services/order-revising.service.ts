@@ -45,6 +45,7 @@ import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
 import { OrderIntake } from "./order-intake.service.js";
 import type { OrderParties } from "./order-parties.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
+import type { FrozenDeliveryFee } from "./pricing-context.service.js";
 import { ShelfRevising } from "./shelf-revising.service.js";
 
 /**
@@ -251,6 +252,9 @@ export class OrderRevising {
       // R2 : la clientèle de la COMMANDE, lue sur ses CGV figées (É13, Hugo,
       // 2026-11-03) — jamais le statut de la société aujourd'hui.
       frozenAudience: frozenAudienceOf(order),
+      // Le tarif de livraison du jour de la passation (1a, Hugo, 2026-11-05) :
+      // un frais relevé depuis ne renchérit pas la commande.
+      frozenDeliveryFee: frozenDeliveryFeeOf(order),
     });
     if (!fromShelf) {
       await this.ensureBeforeCutoff(order, content, actor);
@@ -435,6 +439,17 @@ function revisedInputOf(order: RevisableOrder, composed: ComposedDraft): PricedD
  */
 function frozenAudienceOf(order: RevisableOrder): CustomerAudience | null {
   return order.salesTerms === null ? null : audienceOfSalesTerms(order.salesTerms.document);
+}
+
+/**
+ * Le tarif de livraison figé à la passation, et sa zone (plan
+ * `plan-livraison-offerte.md`, 1a, Hugo, 2026-11-05) ; `null` en retrait ou
+ * sur une commande d'avant le barème figé.
+ */
+function frozenDeliveryFeeOf(order: RevisableOrder): FrozenDeliveryFee | null {
+  const zoneId = order.fulfillment.deliveryZoneId;
+  const fee = order.deliveryFeeAdjustment;
+  return zoneId === null || fee === null ? null : { zoneId, fee };
 }
 
 /** L'état que la règle de l'annulation lit, tiré de la commande. */

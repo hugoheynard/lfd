@@ -32,6 +32,7 @@ function input(overrides: Partial<PartialTermsInput> = {}): PartialTermsInput {
     adjustments: {
       discounts: [],
       deliveryFee: null,
+      freeDelivery: null,
       lateFee: null,
       deliveryVatMode: null,
       exact: null,
@@ -67,6 +68,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
         adjustments: {
           discounts: columnDiscounts({ mode: "percent", bp: 1_000 }),
           deliveryFee: null,
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: null,
           exact: null,
@@ -85,6 +87,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
         adjustments: {
           discounts: columnDiscounts({ mode: "amount", cents: 5_000 }),
           deliveryFee: null,
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: null,
           exact: null,
@@ -102,6 +105,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
         adjustments: {
           discounts: columnDiscounts({ mode: "amount", cents: 300 }),
           deliveryFee: null,
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: null,
           exact: null,
@@ -119,6 +123,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
         adjustments: {
           discounts: columnDiscounts({ mode: "percent", bp: 1_000 }),
           deliveryFee: null,
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: null,
           exact: null,
@@ -142,6 +147,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
         adjustments: {
           discounts: [],
           deliveryFee: { mode: "amount", cents: 700 },
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: null,
           exact: null,
@@ -154,6 +160,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
         adjustments: {
           discounts: [],
           deliveryFee: { mode: "percent", bp: 1_000 },
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: null,
           exact: null,
@@ -173,6 +180,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
         adjustments: {
           discounts: [],
           deliveryFee: fee,
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: "follows_goods",
           exact: null,
@@ -185,6 +193,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
         adjustments: {
           discounts: [],
           deliveryFee: fee,
+          freeDelivery: null,
           lateFee: null,
           deliveryVatMode: null,
           exact: null,
@@ -207,6 +216,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
         adjustments: {
           discounts: [],
           deliveryFee: null,
+          freeDelivery: null,
           lateFee: { adjustment: { mode: "percent", bp: 500 }, vatRatePercent: 20 },
           deliveryVatMode: null,
           exact: null,
@@ -232,6 +242,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
         adjustments: {
           discounts: [],
           deliveryFee: null,
+          freeDelivery: null,
           lateFee: { adjustment: { mode: "amount", cents: 0 }, vatRatePercent: 20 },
           deliveryVatMode: null,
           exact: null,
@@ -250,6 +261,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
         adjustments: {
           discounts: [],
           deliveryFee: null,
+          freeDelivery: null,
           lateFee,
           deliveryVatMode: null,
           exact: null,

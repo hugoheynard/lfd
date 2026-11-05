@@ -1,6 +1,8 @@
 import type { CartAdjustment, DeliveryVatMode, OrderRateAmounts } from "@lfd/contracts";
 import type { SaleUnit } from "@lfd/money";
 
+import type { FreeDelivery } from "../value-objects/free-delivery.js";
+
 /**
  * **Ce que la reprise des remises lit d'une commande, et ce qu'elle en tire**
  * — `documentation/promotions/promotions.md`, § 2.12, lot M2.
@@ -50,6 +52,8 @@ export interface RecoveryOrder {
   /** `NULL` : une commande d'avant la colonne — rien ne se recompose. */
   readonly discountAdjustment: CartAdjustment | null;
   readonly deliveryFeeAdjustment: CartAdjustment | null;
+  /** Le franco figé (1a) : présent, la commande et ses bons facturent un frais nul. */
+  readonly freeDelivery: FreeDelivery | null;
   readonly deliveryVatMode: DeliveryVatMode | null;
   readonly voucherTtcCents: number | null;
   readonly deliveryFeeTtcCents: number | null;

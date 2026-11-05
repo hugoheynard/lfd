@@ -27,6 +27,9 @@ function row(over: Partial<BackfillOrderRow> = {}): BackfillOrderRow {
     voucherTtcCents: null,
     deliveryFeeTtcCents: null,
     ttcByRate: null,
+    freeDeliveryThresholdCents: null,
+    freeDeliveryWaivedCents: null,
+    freeDeliveryWaivedTtcCents: null,
     lines: [
       {
         id: "l1",

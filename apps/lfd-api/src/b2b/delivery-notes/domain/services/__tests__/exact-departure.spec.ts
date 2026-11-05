@@ -52,6 +52,7 @@ function juice(quantity: number): DeliveryNoteSourceLine {
 const NO_RULES: FrozenOrderAdjustments = {
   discounts: [],
   deliveryFee: null,
+  freeDelivery: null,
   lateFee: null,
   deliveryVatMode: null,
   exact: { voucherTtcCents: 0, deliveryFeeTtcCents: 0 },
@@ -111,6 +112,7 @@ describe("exactDepartureOf — le BL partiel d'une commande en TTC", () => {
   it("port fixe : le TTC figé de la commande, sans reconversion sur le mélange livré", () => {
     const { lines, terms } = depart([bananaBread(1), juice(1)], {
       deliveryFee: { mode: "amount", cents: 500 },
+      freeDelivery: null,
       deliveryVatMode: "follows_goods",
       exact: { voucherTtcCents: 0, deliveryFeeTtcCents: 564 },
     });
@@ -123,6 +125,7 @@ describe("exactDepartureOf — le BL partiel d'une commande en TTC", () => {
   it("port en pourcentage : refait sur le TTC livré", () => {
     const { terms } = depart([juice(10)], {
       deliveryFee: { mode: "percent", bp: 1_000 },
+      freeDelivery: null,
       deliveryVatMode: "standard",
       exact: { voucherTtcCents: 0, deliveryFeeTtcCents: 999 },
     });

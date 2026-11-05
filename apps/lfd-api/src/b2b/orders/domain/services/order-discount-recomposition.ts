@@ -2,6 +2,7 @@ import type { CartAdjustment, OrderRateAmounts } from "@lfd/contracts";
 import type { TtcComposedTerm, TtcOrderComposition } from "@lfd/money";
 
 import { chainLineHtBasketDiscounts } from "./basket-discounts.js";
+import { billedDeliveryFeeOf } from "../value-objects/free-delivery.js";
 import { composeExactOrder } from "./exact-order-composition.js";
 import type {
   DiscountVatShare,
@@ -113,7 +114,7 @@ function exactOrderAmounts(
   const composition = composeExactOrder({
     lines: order.lines.map(compositionLine),
     discountAdjustment: adjustment,
-    deliveryFeeAdjustment: order.deliveryFeeAdjustment,
+    deliveryFeeAdjustment: billedDeliveryFeeOf(order.deliveryFeeAdjustment, order.freeDelivery),
     deliveryVatMode: order.deliveryVatMode,
     // Le bon imputé, déjà borné : la composition le reborne sans le changer.
     voucherFaceCents: order.voucherTtcCents ?? 0,
@@ -136,11 +137,13 @@ function exactNoteAmounts(
   adjustment: CartAdjustment,
   note: RecoveryNote,
 ): RecoveredAmounts | string {
-  const fixedFee = order.deliveryFeeAdjustment?.mode === "amount";
+  // Au franco figé, aucun barème n'est facturé, quoi qu'il parte (1a).
+  const billedFee = billedDeliveryFeeOf(order.deliveryFeeAdjustment, order.freeDelivery);
+  const fixedFee = billedFee?.mode === "amount";
   const composition = composeExactOrder({
     lines: note.lines.map(compositionLine),
     discountAdjustment: adjustment,
-    deliveryFeeAdjustment: order.deliveryFeeAdjustment,
+    deliveryFeeAdjustment: billedFee,
     deliveryVatMode: order.deliveryVatMode,
     voucherFaceCents: order.voucherTtcCents ?? 0,
     deliveryFeeFrozenTtcCents: fixedFee ? (order.deliveryFeeTtcCents ?? undefined) : undefined,

@@ -1,4 +1,9 @@
-import type { CustomerAudience, DeliveryVatMode, ShopQuoteFulfillment } from "@lfd/contracts";
+import type {
+  CartAdjustment,
+  CustomerAudience,
+  DeliveryVatMode,
+  ShopQuoteFulfillment,
+} from "@lfd/contracts";
 
 import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import {
@@ -83,6 +88,25 @@ export interface PricingRequest {
    * `null` à la passation, qui la lit au statut de la société d'aujourd'hui.
    */
   readonly frozenAudience: CustomerAudience | null;
+  /**
+   * Le barème de livraison figé sur la commande qu'on révise (plan
+   * `documentation/promotions/plan-livraison-offerte.md`, 1a, Hugo,
+   * 2026-11-05) ; `null` à la passation, en retrait, ou sur une commande
+   * d'avant le barème figé — le chargement résout alors celui du jour.
+   */
+  readonly frozenDeliveryFee: FrozenDeliveryFee | null;
+}
+
+/**
+ * **Le tarif de livraison du jour de la passation** : le barème résolu (0b)
+ * et la zone où il l'a été. Une commande garde ce tarif quand on la révise —
+ * un frais global relevé après la passation ne la renchérit pas. Il ne vaut
+ * que pour SA zone : une révision qui livre ailleurs n'a pas de tarif figé
+ * pour la nouvelle zone, et prend celui du jour.
+ */
+export interface FrozenDeliveryFee {
+  readonly zoneId: string;
+  readonly fee: CartAdjustment;
 }
 
 /**
@@ -137,7 +161,7 @@ export class PricingContext {
       companyStatus,
       buyerKind: request.parties.buyerKind,
     };
-    const routed = await this.routeOf(request.content, buyer);
+    const routed = await this.routeOf(request.content, buyer, request.frozenDeliveryFee);
     if ("refusal" in routed) {
       return refused(routed.refusal);
     }
@@ -243,11 +267,14 @@ export class PricingContext {
   /**
    * Le point ou la zone, et les promotions de cet acheminement. **Retrait** :
    * le point choisi ou présélectionné, puis la tranche contre ses fenêtres.
-   * **Coursier** : la zone déduite du code postal livré.
+   * **Coursier** : la zone déduite du code postal livré — toujours lue, car
+   * elle dit si la livraison reste ouverte et quelles promotions s'y lisent ;
+   * son barème cède au barème figé quand la révision livre la même zone.
    */
   private async routeOf(
     content: OrderContent,
     buyer: PickupBuyer,
+    frozenFee: FrozenDeliveryFee | null,
   ): Promise<Attempt<Pick<BasketPricingContext, "route" | "promotions">>> {
     if (content.fulfillmentMethod === "pickup") {
       return this.pickupRouteOf(content, buyer);
@@ -263,7 +290,8 @@ export class PricingContext {
     if ("refusal" in zone) {
       return zone;
     }
-    const { zoneId, fee, globalWindowMode, promotions } = zone.value;
+    const { zoneId, globalWindowMode, promotions } = zone.value;
+    const fee = frozenFee !== null && frozenFee.zoneId === zoneId ? frozenFee.fee : zone.value.fee;
     const route: BasketRoute = { method: "delivery", zoneId, address, fee, globalWindowMode };
     return { value: { route, promotions } };
   }

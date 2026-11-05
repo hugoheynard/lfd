@@ -22,6 +22,11 @@ import {
   type BasketDiscountColumnsRow,
 } from "./order-discounts.columns.js";
 import { asOrderVatMethod, type OrderVatMethod } from "../domain/value-objects/order-vat-method.js";
+import {
+  FREE_DELIVERY_SELECT,
+  freeDeliveryOfRow,
+  type FreeDeliveryRow,
+} from "./free-delivery.columns.js";
 
 /**
  * Les colonnes d'argent d'`orders` lues et écrites par le départ incomplet
@@ -47,9 +52,10 @@ export const FROZEN_ADJUSTMENT_SELECT = {
   vatMethod: true,
   voucherTtcCents: true,
   deliveryFeeTtcCents: true,
+  ...FREE_DELIVERY_SELECT,
 } as const;
 
-interface FrozenAdjustmentRow extends BasketDiscountColumnsRow {
+interface FrozenAdjustmentRow extends BasketDiscountColumnsRow, FreeDeliveryRow {
   readonly deliveryFeeAdjustment: Prisma.JsonValue;
   readonly lateFeeAdjustment: Prisma.JsonValue;
   readonly deliveryVatMode: string | null;
@@ -82,6 +88,7 @@ export function frozenAdjustmentsOf(
   return {
     discounts: basketDiscountsOfRow(orderId, row),
     deliveryFee: parsed(cartAdjustmentSchema, row.deliveryFeeAdjustment, orderId, "frais"),
+    freeDelivery: freeDeliveryOfRow(orderId, row),
     lateFee: parsed(lateFeeAdjustmentSchema, row.lateFeeAdjustment, orderId, "surtaxe"),
     deliveryVatMode: parsed(deliveryVatModeSchema, row.deliveryVatMode, orderId, "TVA du port"),
     exact: frozenExactTermsOf(orderId, row),

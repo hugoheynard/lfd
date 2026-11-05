@@ -32,6 +32,7 @@ const ORDER: DeliveryNoteSource = {
 const NO_RULES = {
   discounts: [],
   deliveryFee: null,
+  freeDelivery: null,
   lateFee: null,
   deliveryVatMode: null,
   exact: null,

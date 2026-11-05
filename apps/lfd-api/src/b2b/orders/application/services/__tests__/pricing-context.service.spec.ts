@@ -43,6 +43,7 @@ function request(over: Partial<PricingRequest> = {}): PricingRequest {
     vatMethod: "exact_ht",
     frozenDeliveryVatMode: null,
     frozenAudience: null,
+    frozenDeliveryFee: null,
     ...over,
   };
 }

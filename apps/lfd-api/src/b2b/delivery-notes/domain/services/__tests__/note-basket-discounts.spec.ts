@@ -39,7 +39,14 @@ function line(
 const LINES = [line("PAIN", 1_000, 5.5, true), line("JUS", 500, 20, false)];
 
 function rules(discounts: FrozenOrderAdjustments["discounts"]): FrozenOrderAdjustments {
-  return { discounts, deliveryFee: null, lateFee: null, deliveryVatMode: null, exact: null };
+  return {
+    discounts,
+    deliveryFee: null,
+    freeDelivery: null,
+    lateFee: null,
+    deliveryVatMode: null,
+    exact: null,
+  };
 }
 
 function partial(discounts: FrozenOrderAdjustments["discounts"]) {

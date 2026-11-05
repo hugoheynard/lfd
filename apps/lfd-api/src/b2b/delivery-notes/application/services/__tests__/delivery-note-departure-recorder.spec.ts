@@ -39,6 +39,7 @@ function noteWith(discounts: ReturnType<typeof columnDiscounts>): DeliveryNote {
     adjustments: {
       discounts,
       deliveryFee: null,
+      freeDelivery: null,
       lateFee: null,
       deliveryVatMode: null,
       exact: null,

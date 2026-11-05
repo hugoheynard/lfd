@@ -2,6 +2,7 @@ import type { CartAdjustment, DeliveryVatMode, LateFeeAdjustment } from "@lfd/co
 
 import type { DepartingQuantity } from "../entities/shortfall-decision.js";
 import type { FrozenBasketDiscount } from "../services/frozen-basket-discounts.js";
+import type { FreeDelivery } from "../value-objects/free-delivery.js";
 
 /**
  * Les règles d'argent figées sur la commande — celles qu'un bon de livraison
@@ -16,7 +17,13 @@ export interface FrozenOrderAdjustments {
    * une remise de rang 1. Vide sans remise.
    */
   readonly discounts: readonly FrozenBasketDiscount[];
+  /** Le barème figé — celui qu'un franco a offert compris : le facturé passe par `billedDeliveryFeeOf`. */
   readonly deliveryFee: CartAdjustment | null;
+  /**
+   * Le franco figé (plan `plan-livraison-offerte.md`, 1a), `null` sans
+   * franco : présent, le bon facture un frais nul, quoi qu'il parte.
+   */
+  readonly freeDelivery: FreeDelivery | null;
   readonly lateFee: LateFeeAdjustment | null;
   readonly deliveryVatMode: DeliveryVatMode | null;
   /**

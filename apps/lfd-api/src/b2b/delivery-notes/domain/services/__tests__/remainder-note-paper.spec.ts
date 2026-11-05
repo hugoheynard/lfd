@@ -42,6 +42,7 @@ describe("le BL d'un reste, sur le papier", () => {
     const adjustments = remainderAdjustmentsOf({
       discounts: columnDiscounts({ mode: "amount", cents: 500 }),
       deliveryFee: { mode: "amount", cents: 1_200 },
+      freeDelivery: null,
       lateFee: null,
       deliveryVatMode: "standard",
       exact: null,

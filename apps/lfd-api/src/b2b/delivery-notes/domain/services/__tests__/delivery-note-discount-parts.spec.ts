@@ -45,7 +45,14 @@ function rules(
   discounts: FrozenOrderAdjustments["discounts"],
   exact: FrozenOrderAdjustments["exact"] = null,
 ): FrozenOrderAdjustments {
-  return { discounts, deliveryFee: null, lateFee: null, deliveryVatMode: null, exact };
+  return {
+    discounts,
+    deliveryFee: null,
+    freeDelivery: null,
+    lateFee: null,
+    deliveryVatMode: null,
+    exact,
+  };
 }
 
 /** Un bon `line_ht` composé par la fabrique du bon partiel, puis parti. */

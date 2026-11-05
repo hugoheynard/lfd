@@ -22,7 +22,11 @@ import {
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import {
+  CompanyStatus,
+  CustomerRole,
+  DeferredTerm,
+} from "../src/platform/database/client/client.js";
 import {
   bootstrapE2e,
   E2E_STAFF_SUB,
@@ -234,6 +238,14 @@ describe("le frais facturé, résolu par audience (0b)", () => {
 
   /** Un pro ne livre qu'à une heure INSCRITE sur son adresse (2026-10-12). */
   async function placeProDelivery(companyId: string): Promise<number | null> {
+    return (await placedProDelivery(companyId)).deliveryFeeCents;
+  }
+
+  async function placedProDelivery(companyId: string): Promise<{
+    readonly orderId: string;
+    readonly addressId: string;
+    readonly deliveryFeeCents: number;
+  }> {
     const created = await ctx
       .asSub(ACTIVE)
       .post(`/companies/${companyId}/delivery-addresses`)
@@ -267,10 +279,13 @@ describe("le frais facturé, résolu par audience (0b)", () => {
         lines: DELIVERY_QUOTE.lines,
       })
       .expect(201);
-    const row = await ctx.prisma.order.findUniqueOrThrow({
-      where: { id: jsonBody<PlacedOrderResponse>(placed).id },
-    });
-    return row.deliveryFeeCents;
+    const orderId = jsonBody<PlacedOrderResponse>(placed).id;
+    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    return {
+      orderId,
+      addressId: jsonBody<{ id: string }>(created).id,
+      deliveryFeeCents: row.deliveryFeeCents,
+    };
   }
 
   /**
@@ -296,6 +311,50 @@ describe("le frais facturé, résolu par audience (0b)", () => {
     expect(await quotedFor(ACTIVE)).toBe(900);
     // La passation facture ce que le devis annonce.
     expect(await placeProDelivery(activeCompanyId)).toBe(900);
+  });
+
+  /**
+   * Régression (1a, Hugo, 2026-11-05) : la révision re-résolvait le barème au
+   * réglage du jour, si bien qu'un frais global relevé APRÈS la passation
+   * renchérissait la commande qu'on modifiait. Elle garde le tarif figé.
+   */
+  it("la révision garde le frais de la passation quand le réglage global change ensuite", async () => {
+    const companyId = await seedPros();
+    // Au compte : une commande réglée par carte ne se modifie pas (M1).
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { grantedTerms: [DeferredTerm.monthly] },
+    });
+    await createZone();
+    await staff().patch("/admin/delivery-pricing").send(AMOUNTS).expect(204);
+    const placed = await placedProDelivery(companyId);
+    expect(placed.deliveryFeeCents).toBe(900);
+
+    await staff()
+      .patch("/admin/delivery-pricing")
+      .send({ b2b: { fee: { mode: "amount", cents: 3_000 } } })
+      .expect(204);
+    await ctx
+      .asSub(ACTIVE)
+      .post(`/orders/${placed.orderId}/revisions`)
+      .send({
+        expectedRevision: 0,
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "delivery",
+        deliveryAddressId: placed.addressId,
+        deliveryAddress: COURIER_ADDR,
+        requestedWindow: { start: null, end: "10:00" },
+        note: "",
+        lines: [{ sku: "VIE-001-1", quantity: 12 }],
+      })
+      .expect(200);
+
+    const after = await ctx.prisma.order.findUniqueOrThrow({ where: { id: placed.orderId } });
+    expect(after.revision).toBe(1);
+    expect(after.deliveryFeeCents).toBe(900);
+    expect(after.deliveryFeeAdjustment).toEqual({ mode: "amount", cents: 900 });
+    // Le tarif du jour, lui, a bien changé : une nouvelle commande le paie.
+    expect(await quotedFor(ACTIVE)).toBe(3_000);
   });
 
   it("le remplacement de la zone l'emporte, pour son audience seule ; revenir au global le défait", async () => {

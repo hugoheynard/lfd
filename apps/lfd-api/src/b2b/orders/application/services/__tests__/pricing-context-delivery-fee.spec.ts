@@ -38,6 +38,7 @@ function request(over: Partial<PricingRequest> = {}): PricingRequest {
     vatMethod: "exact_ht",
     frozenDeliveryVatMode: null,
     frozenAudience: null,
+    frozenDeliveryFee: null,
     ...over,
   };
 }
@@ -125,6 +126,37 @@ describe("PricingContext — le frais de livraison par audience (0b)", () => {
     await expect(
       feeOf({ deliveryPricing: GLOBAL, companyStatus: "active" }, forCustomer),
     ).resolves.toEqual(PROS_FEE);
+  });
+
+  /**
+   * Régression (1a, Hugo, 2026-11-05) : la révision re-résolvait le barème au
+   * réglage du jour ; un frais relevé après la passation renchérissait la
+   * commande. Le barème figé l'emporte dans SA zone.
+   */
+  it("révision : le barème FIGÉ de la zone l'emporte sur le réglage du jour", async () => {
+    const frozen = { mode: "amount", cents: 300 } as const;
+
+    await expect(
+      feeOf(
+        { deliveryPricing: GLOBAL },
+        {
+          revised: { lines: [], discounts: [] },
+          frozenDeliveryFee: { zoneId: ZONE.id, fee: frozen },
+        },
+      ),
+    ).resolves.toEqual(frozen);
+  });
+
+  it("révision livrée dans une AUTRE zone : le barème du jour de cette zone", async () => {
+    await expect(
+      feeOf(
+        { deliveryPricing: GLOBAL },
+        {
+          revised: { lines: [], discounts: [] },
+          frozenDeliveryFee: { zoneId: "zone_ailleurs", fee: { mode: "amount", cents: 300 } },
+        },
+      ),
+    ).resolves.toEqual(INDIVIDUALS_FEE);
   });
 
   it("révision : la clientèle FIGÉE choisit le frais, pas le statut du jour", async () => {

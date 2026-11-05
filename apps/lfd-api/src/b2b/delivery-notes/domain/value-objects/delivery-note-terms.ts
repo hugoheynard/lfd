@@ -11,6 +11,7 @@ import { computeOrderTotals } from "../../../orders/domain/services/vat.js";
 import { noteBasketDiscountsOf } from "../services/note-basket-discounts.js";
 import { InvalidDeliveryNoteTermsError } from "../errors/delivery-note-errors.js";
 import type { OrderRateAmounts } from "../../../orders/domain/value-objects/order-rate-amounts.js";
+import { billedDeliveryFeeOf } from "../../../orders/domain/value-objects/free-delivery.js";
 import type { DeliveryNoteSourceLine } from "./delivery-note-line.js";
 
 /**
@@ -201,12 +202,11 @@ function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
   const { lines, adjustments } = input;
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
   const discounts = partialDiscountsOf(lines, adjustments);
+  // Au franco figé, aucun barème n'est facturé, quoi qu'il parte (1a).
+  const billedFee = billedDeliveryFeeOf(adjustments.deliveryFee, adjustments.freeDelivery);
   const terms = {
-    deliveryFeeAdjustment: adjustments.deliveryFee,
-    deliveryFeeCents:
-      adjustments.deliveryFee === null
-        ? 0
-        : cartAdjustmentCents(adjustments.deliveryFee, subtotalCents),
+    deliveryFeeAdjustment: billedFee,
+    deliveryFeeCents: billedFee === null ? 0 : cartAdjustmentCents(billedFee, subtotalCents),
     lateFeeAdjustment: adjustments.lateFee,
     lateFeeCents:
       adjustments.lateFee === null

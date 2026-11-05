@@ -131,6 +131,7 @@ function placed(
     note: "",
     lines: state.lines,
     deliveryVatMode: state.deliveryVatMode,
+    deliveryFeeAdjustment: state.deliveryFeeAdjustment,
     lateFeeAdjustment: null,
     voucher: null,
     salesTerms: state.salesTerms,

@@ -52,6 +52,23 @@ describe("simulateInvoiceDossier — les bons incohérents", () => {
     expect(dossier.gaps.inconsistentOrdersCents).toBe(0);
   });
 
+  /**
+   * Franco figé (plan `plan-livraison-offerte.md`, 1a) : la ligne « Livraison
+   * offerte » est affichée, pas comptable — le bon porte un port nul, et la
+   * facture le recompose tel quel, sans écart.
+   */
+  it("un bon livré au franco figé (port nul) est cohérent", () => {
+    const franco = {
+      ...bon("ORD-F", 30, 0),
+      deliveryFeeCents: 0,
+      deliveryVatMode: "standard" as const,
+    };
+    const dossier = simulateInvoiceDossier([franco]);
+
+    expect(dossier.inconsistentOrders).toEqual([]);
+    expect(dossier.threeGapInvariantHolds).toBe(true);
+  });
+
   it("un bon à remise plafonnée est signalé, et la somme des quatre termes reste exacte", () => {
     const capped = bon("ORD-9", 2, 500, 60);
     const dossier = simulateInvoiceDossier([bon("ORD-1", 7, 50), capped]);

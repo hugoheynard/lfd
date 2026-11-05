@@ -24,6 +24,7 @@ export function remainderAdjustmentsOf(order: FrozenOrderAdjustments): FrozenOrd
   return {
     discounts: remainderDiscountsOf(order.discounts),
     deliveryFee: null,
+    freeDelivery: order.freeDelivery,
     lateFee: null,
     deliveryVatMode: order.deliveryVatMode,
     // Le bon et le port d'une commande en TTC sont comptés sur le BL-1, comme le port HT.

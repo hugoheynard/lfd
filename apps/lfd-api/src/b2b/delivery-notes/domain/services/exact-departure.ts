@@ -1,3 +1,4 @@
+import type { CartAdjustment } from "@lfd/contracts";
 import type { TtcComposedLine, TtcOrderComposition } from "@lfd/money";
 
 import {
@@ -10,6 +11,7 @@ import type {
   FrozenOrderAdjustments,
 } from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import { composeExactOrder } from "../../../orders/domain/services/exact-order-composition.js";
+import { billedDeliveryFeeOf } from "../../../orders/domain/value-objects/free-delivery.js";
 import type { DeliveryNoteSourceLine } from "../value-objects/delivery-note-line.js";
 import { copyOfTerms, type DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
 import { noteBasketDiscountsOf } from "./note-basket-discounts.js";
@@ -53,7 +55,9 @@ export function exactDepartureOf(input: ExactDepartureInput): ExactDeparture {
   if (adjustments.lateFee !== null) {
     throw new LateFeeOnPersonalOrderError();
   }
-  const fixedFee = adjustments.deliveryFee?.mode === "amount";
+  // Au franco figé, aucun barème n'est facturé, quoi qu'il parte (1a).
+  const billedFee = billedDeliveryFeeOf(adjustments.deliveryFee, adjustments.freeDelivery);
+  const fixedFee = billedFee?.mode === "amount";
   // Chaque remise de panier sur SES lignes qui partent (plan des promotions, M4).
   const discounts = noteBasketDiscountsOf(adjustments.discounts, input.lines);
   const composition = composeExactOrder({
@@ -62,12 +66,12 @@ export function exactDepartureOf(input: ExactDepartureInput): ExactDeparture {
     lines: input.lines,
     discountAdjustment: null,
     basketDiscounts: discounts.map((discount) => discount.basket),
-    deliveryFeeAdjustment: adjustments.deliveryFee,
+    deliveryFeeAdjustment: billedFee,
     deliveryVatMode: adjustments.deliveryVatMode,
     voucherFaceCents: exact.voucherTtcCents,
     deliveryFeeFrozenTtcCents: fixedFee ? exact.deliveryFeeTtcCents : undefined,
   });
-  ensureFrozenFeeKept(adjustments, exact, composition);
+  ensureFrozenFeeKept(billedFee, exact, composition);
   const lines = input.lines.map((line, i) => rewritten(line, composition.lines[i]));
   return { lines, terms: termsOf(input, lines, composition) };
 }
@@ -78,11 +82,10 @@ export function exactDepartureOf(input: ExactDepartureInput): ExactDeparture {
  * @throws {InvalidOrderPaymentError}
  */
 function ensureFrozenFeeKept(
-  adjustments: FrozenOrderAdjustments,
+  fee: CartAdjustment | null,
   exact: FrozenExactTerms,
   composition: TtcOrderComposition,
 ): void {
-  const fee = adjustments.deliveryFee;
   const expected = fee === null ? 0 : fee.mode === "amount" ? exact.deliveryFeeTtcCents : null;
   if (expected !== null && composition.deliveryFee.ttcCents !== expected) {
     throw new InvalidOrderPaymentError(

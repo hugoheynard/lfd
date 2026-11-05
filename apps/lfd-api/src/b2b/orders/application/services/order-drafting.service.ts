@@ -186,6 +186,7 @@ export class OrderDrafting {
       vatMethod,
       frozenDeliveryVatMode: null,
       frozenAudience: null,
+      frozenDeliveryFee: null,
     });
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est

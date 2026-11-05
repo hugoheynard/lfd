@@ -39,6 +39,7 @@ function lineHtOrder(over: Partial<RecoveryOrder> = {}): RecoveryOrder {
     discountTtcCents: null,
     discountAdjustment: TEN_PERCENT,
     deliveryFeeAdjustment: null,
+    freeDelivery: null,
     deliveryVatMode: null,
     voucherTtcCents: null,
     deliveryFeeTtcCents: null,
@@ -285,6 +286,27 @@ describe("une commande exact_ht", () => {
     });
 
     expect(recovery.kind === "recovered" && recovery.discount.origin).toBe("frozen");
+  });
+
+  /**
+   * Franco figé (plan `plan-livraison-offerte.md`, 1a) : la commande a gardé
+   * le barème offert, mais n'a facturé aucun frais. Recomposer depuis le seul
+   * barème remettrait le port dans les parts par taux — un écart inventé.
+   */
+  it("au franco figé : le port offert ne se recompose pas, la reprise reste exacte", () => {
+    const placed = placedExact([BANANA]);
+    const fee: CartAdjustment = { mode: "amount", cents: 1_200 };
+
+    const offered = recoverOrderDiscount({
+      ...placed,
+      deliveryFeeAdjustment: fee,
+      freeDelivery: { thresholdCents: 1_000, waivedCents: 1_200, waivedTtcCents: 1_440 },
+    });
+    const billed = recoverOrderDiscount({ ...placed, deliveryFeeAdjustment: fee });
+
+    expect(offered.kind === "recovered" && offered.discount.origin).toBe("computed");
+    // Le même barème SANS franco aurait été facturé : les parts figées ne le portent pas.
+    expect(billed.kind === "recovered" && billed.discount.origin).toBe("frozen");
   });
 
   it("sans `ttc_by_rate` (commande d'avant la colonne) : le terme seul est comparé", () => {

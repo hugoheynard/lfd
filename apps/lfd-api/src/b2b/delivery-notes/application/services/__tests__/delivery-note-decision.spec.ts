@@ -91,6 +91,7 @@ const DECISION = {
   adjustments: {
     discounts: [],
     deliveryFee: { mode: "amount", cents: 800 },
+    freeDelivery: null,
     lateFee: null,
     deliveryVatMode: "standard",
     exact: null,

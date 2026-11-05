@@ -334,6 +334,17 @@ model Order {
   /// `NULL` = retrait (aucun frais) ou commande antérieure au 2026-09-09 ; les
   /// deux se distinguent par `delivery_fee_cents`, nul dans le premier cas.
   deliveryFeeAdjustment Json?           @map("delivery_fee_adjustment")
+  /// **Le franco figé à la passation** (plan
+  /// `documentation/promotions/plan-livraison-offerte.md`, 1a) : le seuil HT
+  /// appliqué, et ce que la livraison aurait coûté — HT, et TTC pour une
+  /// commande `exact_ht`. `NULL` = pas de franco (toute commande d'avant 1b).
+  /// Présent : `delivery_fee_cents` vaut 0 et `delivery_fee_adjustment` garde
+  /// le barème offert. CHECK `orders_free_delivery_*` (migration
+  /// `20261105160000`). Le franco se juge sur le panier COMMANDÉ : un départ
+  /// incomplet ne le fait pas perdre.
+  freeDeliveryThresholdCents  Int?      @map("free_delivery_threshold_cents")
+  freeDeliveryWaivedCents     Int?      @map("free_delivery_waived_cents")
+  freeDeliveryWaivedTtcCents  Int?      @map("free_delivery_waived_ttc_cents")
   vatCents              Int             @default(0) @map("vat_cents")
   /// La TVA **par taux**, figée à la passation — `[{ rate, amountCents }]`.
   ///
