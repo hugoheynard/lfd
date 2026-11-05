@@ -83,7 +83,6 @@
     "lint:rgpd-staff": "node dev-toolbox/gates/rgpd-staff.mjs",
     "lint:shop-copy-digest": "node dev-toolbox/gates/shop-copy-digest.mjs",
     "lint:rgaa-digest": "node dev-toolbox/gates/rgaa-digest.mjs",
-    "load:boutique": "k6 run dev-toolbox/load/boutique.k6.js",
     "copy:digest": "node dev-toolbox/shop-copy-digest.mjs",
     "lint:mail-copy-digest": "node dev-toolbox/gates/mail-copy-digest.mjs",
     "mail-copy:digest": "node dev-toolbox/mail-copy-digest.mjs"

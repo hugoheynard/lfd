@@ -1,8 +1,9 @@
 # Procédure de calcul de charge
 
-> 📐 **Préparé le 2026-11-05, jamais lancé.** Le script
-> [`dev-toolbox/load/boutique.k6.js`](../../dev-toolbox/load/boutique.k6.js)
-> existe ; aucun test de charge n'a tourné, ni sur dev ni sur la production.
+> 📐 **Préparé le 2026-11-05, jamais lancé.** Le script k6 décrit ici
+> **n'est pas encore écrit** (Hugo, 2026-11-05 : « pas de script pour
+> l'instant ») ; ce qui suit le spécifie. Aucun test de charge n'a tourné,
+> ni sur dev ni sur la production.
 > Les chiffres de la partie 1 sont des **hypothèses**, pas des mesures.
 
 La question de Hugo : la plateforme tiendra-t-elle **~200 clients pros**, plus
@@ -106,9 +107,9 @@ sont dans [`plan-environnement-de-charge.md`](plan-environnement-de-charge.md).
 
 ```bash
 brew install k6
-pnpm load:boutique                               # = k6 run dev-toolbox/load/boutique.k6.js
-LFD_SMOKE=1 pnpm load:boutique                    # un passage par scénario
-LFD_TOKENS=sub_test_1,sub_test_2 LFD_TARGET=20 LFD_STEP=2m pnpm load:boutique
+# le script n'existe pas encore : les variables ci-dessous sont sa spécification
+k6 run <script>                                   # LFD_SMOKE=1 : un passage par scénario
+LFD_TOKENS=sub_test_1,sub_test_2 LFD_TARGET=20 LFD_STEP=2m k6 run <script>
 ```
 
 Défaut : `http://localhost:3200` (l'API de dev). Une autre cible se donne par
