@@ -64,6 +64,29 @@ offerte ».
 
 # Partie 2 — Le code
 
+## 0. Lot 0 — le frais de base par audience (Hugo, 2026-11-05)
+
+Un prix de livraison différent pour les pros et pour les particuliers est un
+**tarif**, pas un geste commercial : il vit sur la zone, avant tout l'étage
+des promotions.
+
+- La zone porte **un frais par audience** (pros, particuliers), chacun en
+  montant ou en pourcentage — au lieu de `fee_mode` / `fee_value` uniques.
+- L'écran **Réglages › Livraison › Zones** n'affiche que les audiences
+  ouvertes dans la **disponibilité de la livraison**
+  (`b2b/delivery-availability/`, `openToB2b` / `openToB2c`). Ouvrir une
+  audience demande que chaque zone ait son frais pour elle.
+- **Migration** : les zones existantes recopient leur frais actuel dans les
+  deux audiences (le tarif d'aujourd'hui est le même pour tous) ; l'ancienne
+  colonne reste en base, morte, selon la règle du dépôt.
+- **À trancher par `vitruve`** : où l'audience de l'appelant entre dans le
+  calcul du frais ; la route publique `GET /delivery-zones`, qui sert
+  aujourd'hui `fee` à tout le monde (et en cache Cloudflare depuis le
+  2026-11-05) — elle ne doit servir à chaque audience que son frais ; une
+  zone sans frais pour une audience ouverte (refus à l'ouverture, ou refus à
+  la commande — jamais gratuit par accident) ; le staff qui commande pour un
+  client ; un pro en cours d'inscription, un particulier invité.
+
 ## 1. Ce qui existe (vérifié le 2026-11-05)
 
 - `delivery_zones` (`prisma/schema/public/settings.prisma`) : `fee_mode`
