@@ -115,7 +115,7 @@ export class ContextKeyed<T> {
     if (entry.ahead !== undefined) {
       return;
     }
-    const pending = this.fetch(key);
+    const pending = this.launch(key);
     // Sans preneur, un rejet ne doit pas remonter comme une erreur non traitée.
     pending.catch(() => undefined);
     entry.ahead = pending;
@@ -129,7 +129,7 @@ export class ContextKeyed<T> {
       delete entry.ahead;
       return ahead;
     }
-    return this.fetch(key);
+    return this.launch(key);
   }
 
   /** La dernière valeur lue pour CETTE clé, même périmée, ou `undefined`. */
@@ -175,7 +175,7 @@ export class ContextKeyed<T> {
     return entry;
   }
 
-  private fetch(key: ContextKey): Promise<T> {
+  private launch(key: ContextKey): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       let subscription: Subscription | null = null;
       let settled = false;
