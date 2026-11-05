@@ -1,14 +1,11 @@
 # Procédure de calcul de charge
 
-> 📍 **État au 2026-11-05.** Plan corrigé après `vitruve`, aucun script
-> (« pas de script pour l'instant »). **Attend Hugo** : copier les sites,
-> local puis staging, le mode d'authentification de charge, un rôle Postgres
-> en lecture seule sur la production.
-
-> 📐 **Préparé le 2026-11-05, jamais lancé.** Le script k6 décrit ici
-> **n'est pas encore écrit** (Hugo, 2026-11-05 : « pas de script pour
-> l'instant ») ; ce qui suit le spécifie. Aucun test de charge n'a tourné,
-> ni sur dev ni sur la production.
+> 📍 **État au 2026-11-05.** Le premier script existe : le **visiteur
+> anonyme** ([`visiteur.md`](visiteur.md)), essayé en fumée contre la
+> production, jamais lancé par paliers. Les scénarios connectés (pro, passation)
+> n'ont pas de script : ce qui suit les spécifie. **Attend Hugo** pour eux :
+> copier les sites, local puis staging, le mode d'authentification de charge,
+> un rôle Postgres en lecture seule sur la production.
 > Les chiffres de la partie 1 sont des **hypothèses**, pas des mesures.
 
 La question de Hugo : la plateforme tiendra-t-elle **~200 clients pros**, plus
