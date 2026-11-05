@@ -85,7 +85,6 @@ export const DEBT = [
   `${APP}/client/cart/voucher-choice.service.ts`,
   `${APP}/client/client-addresses.service.ts`,
   `${APP}/client/client-audience.service.ts`,
-  `${APP}/client/client-bank-account.service.ts`,
   `${APP}/client/client-company.service.ts`,
   `${APP}/client/client-mandate.service.ts`,
   `${APP}/client/client-orders.service.ts`,

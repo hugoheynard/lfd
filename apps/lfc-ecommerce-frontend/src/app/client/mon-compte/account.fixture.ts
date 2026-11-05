@@ -85,6 +85,8 @@ export function accountWith(
       companies: () => companies,
       profile: () => profile,
       status: () => 'ready',
+      // Aucune bascule en cours : `ClientContext` (lu par la brique) est confirmé.
+      workspaceWrite: () => null,
       // Le compte relu, dont `ClientWorkspace` tire l'espace : sans préférence,
       // une société seule est l'espace courant (plan D5).
       account: () =>

@@ -1,15 +1,18 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
   CustomerBankAccountSectionView,
   CustomerBankAccountView,
   SetCompanyBankAccountPayload,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { ClientContext } from './client-context.service';
+import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-keyed/context-keyed';
 
 /** Où en est la lecture du RIB. */
 export type BankReadStatus = 'loading' | 'failed' | 'ready';
@@ -32,12 +35,38 @@ export class ClientBankAccount {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
-  private readonly _status = signal<BankReadStatus>('loading');
-  private readonly _account = signal<CustomerBankAccountView | null>(null);
-  private readFor: string | null = null;
+  private readonly context = inject(ClientContext);
 
-  readonly status = this._status.asReadonly();
-  readonly account = this._account.asReadonly();
+  /** Avance à chaque réponse : la brique n'est pas un signal. */
+  private readonly answered = signal(0);
+  /** L'espace dont la dernière lecture a échoué, `null` sinon. */
+  private readonly failedSpace = signal<string | null>(null);
+
+  /**
+   * Le RIB, rangé par clé de contexte (lot d de
+   * `caching-usage/plan-espace-retenu.md`) : l'espace d'une société EST son
+   * identifiant, et rien n'est rendu pour un autre espace que celui qui
+   * s'affiche — après une bascule, les quatre derniers chiffres de la
+   * société quittée ne restent pas sous le nom de la suivante.
+   */
+  private readonly keyed = contextKeyed((key) => this.read(key));
+
+  /** La section lue pour l'espace qui s'affiche, ou `undefined`. */
+  private readonly shown = computed<CustomerBankAccountSectionView | undefined>(() => {
+    this.answered();
+    const space = this.context.prefix();
+    return space === null ? undefined : this.keyed.shown(keyOf(space));
+  });
+
+  readonly status = computed<BankReadStatus>(() => {
+    const space = this.context.prefix();
+    if (space !== null && this.failedSpace() === space) {
+      return 'failed';
+    }
+    return this.shown() === undefined ? 'loading' : 'ready';
+  });
+
+  readonly account = computed<CustomerBankAccountView | null>(() => this.shown()?.account ?? null);
 
   /**
    * Lit le RIB de la société si ce n'est pas déjà fait. Appelé par chaque
@@ -46,33 +75,45 @@ export class ClientBankAccount {
    * doivent pas déclencher une lecture que l'API leur refuserait.
    */
   ensure(companyId: string): void {
-    if (this.readFor !== companyId) {
-      void this.reload(companyId);
-    }
+    void this.settle(companyId, this.keyed.ensure(keyOf(companyId)));
   }
 
   /** Relit : après un échec (« Réessayer »), ou après un enregistrement. */
   async reload(companyId: string): Promise<void> {
-    this.readFor = companyId;
-    if (this._status() === 'failed') {
-      this._status.set('loading');
+    if (this.failedSpace() === companyId) {
+      this.failedSpace.set(null);
     }
+    await this.settle(companyId, this.keyed.read(keyOf(companyId)));
+  }
+
+  /** Un échec est un ÉTAT : la dernière section lue reste, l'écran dit qu'il n'a pas pu relire. */
+  private async settle(
+    companyId: string,
+    reading: Promise<CustomerBankAccountSectionView>,
+  ): Promise<void> {
     try {
-      const { account } = await this.read(companyId);
-      this._account.set(account);
-      this._status.set('ready');
+      await reading;
+      if (this.failedSpace() === companyId) {
+        this.failedSpace.set(null);
+      }
     } catch {
-      this._status.set('failed');
+      this.failedSpace.set(companyId);
     }
+    this.answered.update((count) => count + 1);
   }
 
   /** `GET /companies/:companyId/bank-account` — `{ account: null }` sans RIB déposé. */
-  async read(companyId: string): Promise<CustomerBankAccountSectionView> {
-    return firstValueFrom(
-      this.http.get<CustomerBankAccountSectionView>(this.url(companyId), {
-        headers: await this.headers(),
-      }),
-    );
+  private read(key: ContextKey): Observable<CustomerBankAccountSectionView> {
+    return this.auth
+      .accessToken$()
+      .pipe(
+        switchMap((token) =>
+          this.http.get<CustomerBankAccountSectionView>(
+            this.url(key.workspace),
+            workspaceRequestOf(key, { Authorization: `Bearer ${token}` }),
+          ),
+        ),
+      );
   }
 
   /**
@@ -102,4 +143,9 @@ export class ClientBankAccount {
     const token = await firstValueFrom(this.auth.accessToken$());
     return new HttpHeaders({ Authorization: `Bearer ${token}` });
   }
+}
+
+/** La clé d'une société : son espace, sans part propre. */
+function keyOf(companyId: string): ContextKey {
+  return { workspace: companyId, own: '' };
 }
