@@ -110,9 +110,19 @@ sont dans [`plan-environnement-de-charge.md`](plan-environnement-de-charge.md).
 
 ## Installer et lancer
 
+**Le visiteur anonyme existe** (2026-11-05) :
+[`dev-toolbox/charge/visiteur.js`](../../dev-toolbox/charge/visiteur.js) —
+paliers 10 → 50 → 100 → 250 → 500 (`LFD_STAGES`, `LFD_STEP`), trois
+comportements tirés au sort (curieux, flâneur, hésitant qui demande des
+devis), aucune écriture. Les 429 sont comptés à part (`limited`) ; les marques
+`Server-Timing` d'une réponse servie du cache sont écartées, elles datent du
+calcul d'origine. Hors localhost, il refuse de partir sans `LFD_PROD=oui`.
+
 ```bash
 brew install k6
-# le script n'existe pas encore : les variables ci-dessous sont sa spécification
+LFD_SMOKE=1 k6 run dev-toolbox/charge/visiteur.js   # un passage par comportement
+LFD_BASE_URL=https://lafoliecoffee.info/api/lfd LFD_SHOP_URL=https://lafoliecoffee.info LFD_PROD=oui k6 run dev-toolbox/charge/visiteur.js
+# les scénarios connectés n'existent pas encore : la suite est leur spécification
 k6 run <script>                                   # LFD_SMOKE=1 : un passage par scénario
 LFD_TOKENS=sub_test_1,sub_test_2 LFD_TARGET=20 LFD_STEP=2m k6 run <script>
 ```
