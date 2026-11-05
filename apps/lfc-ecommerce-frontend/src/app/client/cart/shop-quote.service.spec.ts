@@ -1,3 +1,4 @@
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -479,6 +480,49 @@ describe('la route du devis', () => {
     // Sans jeton : la vitrine se visite sans compte, c'est le parcours par défaut.
     expect(asked.request.headers.has('Authorization')).toBe(false);
     asked.flush(ANSWER);
+  });
+
+  /**
+   * Régression (2026-11-05) : le devis prenait son espace dans
+   * `ClientWorkspace.current()`, qui passe à la cible DÈS le clic d'une
+   * bascule, alors que ses lignes viennent du catalogue de l'espace montré —
+   * un panier de la maison A chiffré pour la maison B.
+   */
+  it('pendant une bascule, chiffre pour l’espace MONTRÉ, pas pour la cible', () => {
+    const space = workspaceDouble('01-maison-a');
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideWorkspace(space),
+        provideLoyalty(loyaltyDouble()),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: () => true, accessToken$: () => of('jeton-de-test') },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ShopQuote);
+    const cart = TestBed.inject(CartStore);
+    const http = TestBed.inject(HttpTestingController);
+    quiet(0);
+    for (const asked of http.match(QUOTE)) {
+      asked.flush(ANSWER);
+    }
+
+    space.switching.set({ from: '01-maison-a', to: '01-maison-b' });
+    space.current.set('01-maison-b');
+    cart.setQuantity(SKU, 3);
+    quiet();
+
+    const quotes = http.match(QUOTE);
+    expect(quotes.length).toBeGreaterThan(0);
+    for (const asked of quotes) {
+      expect(asked.request.headers.get(WORKSPACE_HEADER)).toBe('01-maison-a');
+      asked.flush(ANSWER);
+    }
   });
 
   it('demande la route RECONNUE, jeton en tête, à un client identifié', () => {

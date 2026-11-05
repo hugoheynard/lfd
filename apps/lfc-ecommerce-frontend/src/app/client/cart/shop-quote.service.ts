@@ -28,7 +28,8 @@ import {
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
-import { ClientWorkspace } from '../client-workspace.service';
+import { WORKSPACE_HEADER } from '@lfd/contracts/workspace';
+import { ClientContext } from '../client-context.service';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -154,7 +155,7 @@ export class ShopQuote {
   private readonly store = inject(CartStore);
   private readonly order = inject(OrderContextStore);
   private readonly catalogue = inject(ShopCatalogue);
-  private readonly workspace = inject(ClientWorkspace);
+  private readonly context = inject(ClientContext);
   private readonly voucher = inject(VoucherChoice);
 
   private readonly view = signal<ShopQuoteView>(EMPTY);
@@ -260,8 +261,11 @@ export class ShopQuote {
     const service = this.fulfillmentOf();
     // L'espace est dans la clé : le même panier ne coûte pas pareil en perso et
     // sous la mercuriale d'une société, donc une bascule redemande le décompte.
-    // `null` = reconnu, espace pas encore connu — cf. `ask`.
-    const reader = this.auth.isAuthenticated() ? this.workspace.current() : VISITOR;
+    // `null` = reconnu, espace pas encore connu — cf. `ask`. L'espace MONTRÉ,
+    // pas celui demandé : pendant une bascule, les lignes viennent du catalogue
+    // de l'espace affiché, et le décompte doit être chiffré pour le même
+    // (2026-11-05 — `ClientWorkspace.current()` passait à la cible dès le clic).
+    const reader = this.auth.isAuthenticated() ? this.context.prefix() : VISITOR;
     // Le bon choisi change le décompte : il est dans la clé. `null` hors de
     // l'espace personnel — cf. `VoucherChoice.effective`.
     const voucher = this.voucher.selected();
@@ -377,7 +381,7 @@ export class ShopQuote {
       // Les champs mêmes de la passation (`serviceContentOf`) ; omis sans créneau.
       ...(slot === null ? {} : slot),
     };
-    return this.quoted(body).pipe(
+    return this.quoted(body, readerIn(key)).pipe(
       tap((view) => {
         this.dropRemoved(view.removedLines ?? []);
         this.view.set(view);
@@ -461,7 +465,10 @@ export class ShopQuote {
    * réclamait, et rien de ce qu'on lui avait négocié ne lui était montré avant
    * la confirmation.
    */
-  private quoted(body: ShopQuotePayload): Observable<ShopQuoteView | MyShopQuoteView> {
+  private quoted(
+    body: ShopQuotePayload,
+    reader: string | null,
+  ): Observable<ShopQuoteView | MyShopQuoteView> {
     if (!this.auth.isAuthenticated()) {
       // Un bon appartient à une personne : la route anonyme le refuserait.
       const { voucherId, ...anonymous } = body;
@@ -470,7 +477,12 @@ export class ShopQuote {
     return this.auth.accessToken$().pipe(
       switchMap((token) =>
         this.http.post<MyShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote/mine`, body, {
-          headers: { Authorization: `Bearer ${token}` },
+          // L'en-tête vient de la clé, comme pour la brique : l'intercepteur
+          // n'écrase pas un en-tête posé, et poserait sinon l'espace DEMANDÉ.
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(reader === null ? {} : { [WORKSPACE_HEADER]: reader }),
+          },
         }),
       ),
     );

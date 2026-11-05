@@ -165,6 +165,10 @@ retire.
 - `cart/shop-quote.service.ts` : la clé du devis porte `lines: null` tant que
   le catalogue n'est pas prêt ; aucun POST ne part, puis le POST part sans
   anti-rebond à son arrivée.
+  Son interlocuteur est l'espace **montré** (`ClientContext.prefix()`), et
+  il pose lui-même l'en-tête `x-lfc-company` de cette clé : l'intercepteur
+  aurait posé l'espace demandé, qui passe à la cible dès le clic (corrigé le
+  2026-11-05, test « pendant une bascule, chiffre pour l'espace MONTRÉ »).
 
 ## L'oubli à la déconnexion — `sign-out/`
 
@@ -174,11 +178,11 @@ registre des traceurs ; la brique est vidée.
 
 ## Ce qui reste ouvert
 
-- **Le devis** prend encore son interlocuteur dans `ClientWorkspace.current()`
-  (la cible pendant une bascule) alors que ses lignes viennent du catalogue de
-  l'espace montré.
 - **Le bon de fidélité** reste choisi pendant une bascule et s'éteint à son
   acceptation, plus à son départ (décision du 2026-09-27 : « s'éteint dès la
-  bascule »). Le refus côté serveur d'un bon étranger à l'espace de la
-  commande n'a pas été revérifié le 2026-11-05.
+  bascule »). Sans risque d'argent, vérifié le 2026-11-05 : un bon appartient
+  à une PERSONNE (`loadOwnedVoucher`), et une commande de société le refuse
+  (`ensureVoucherUsable` → `VoucherNotForCompanyOrderError`, testé dans
+  `order.spec.ts`, `place-order.handler.spec.ts` et l'e2e
+  `loyalty-voucher-order`).
 - **Accélérer `/me`** (277 ms mesurés, dont 122 ms dans Nest).
