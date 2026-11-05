@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../platform/database/after-commit.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { PublicSettingsEdgeCache } from "../../shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { placeOf, writeOf } from "../../sites/application/site-place.js";
@@ -18,6 +20,9 @@ import { refuseLegacyPromotionEditor } from "../../promotions/domain/promotions-
  * `PickupDiscount` refuse une remise que ses règles rendent vide. Aucun site n'est « par
  * défaut » depuis le 2026-10-15 : la présélection se décide par client. Le
  * mur est la surface staff de la route.
+ *
+ * La liste publique des points, gardée par Workers Cache, est purgée
+ * **après** la validation : un refus ne purge rien.
  */
 @CommandHandler(CreatePickupAddressCommand)
 export class CreatePickupAddressHandler implements ICommandHandler<
@@ -29,6 +34,8 @@ export class CreatePickupAddressHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   /**
@@ -49,6 +56,7 @@ export class CreatePickupAddressHandler implements ICommandHandler<
       await this.sites.save(site);
       const written = writeOf(fields, resolved, position);
       await this.events.publishTraced(new PickupAddressCreatedEvent(site.id, written));
+      this.afterCommit.defer(() => this.edge.purge(), "pickup-address.created.edge-purge");
       return site.id;
     });
   }

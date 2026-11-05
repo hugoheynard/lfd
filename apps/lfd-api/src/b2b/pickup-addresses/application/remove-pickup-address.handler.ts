@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../platform/database/after-commit.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { PublicSettingsEdgeCache } from "../../shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { SiteArchivedEvent } from "../../sites/domain/site.events.js";
@@ -13,7 +15,8 @@ import { RemovePickupAddressCommand } from "./remove-pickup-address.command.js";
  * des sites, 2026-10-13, objection S1) — une ligne référencée par des
  * commandes, des abonnements et le départ des tournées ne se détruit pas.
  *
- * L'agrégat refuse d'archiver le site qui expédie.
+ * L'agrégat refuse d'archiver le site qui expédie. La liste publique des
+ * points (Workers Cache) est purgée **après** la validation.
  */
 @CommandHandler(RemovePickupAddressCommand)
 export class RemovePickupAddressHandler implements ICommandHandler<
@@ -25,6 +28,8 @@ export class RemovePickupAddressHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   /**
@@ -41,6 +46,7 @@ export class RemovePickupAddressHandler implements ICommandHandler<
       site.archive(this.clock.now());
       await this.sites.save(site);
       await this.events.publishTraced(new SiteArchivedEvent(site.id, site.label));
+      this.afterCommit.defer(() => this.edge.purge(), "pickup-address.removed.edge-purge");
     });
   }
 }

@@ -7,7 +7,10 @@
  * qu'une route qui pose son propre en-tête garde le sien. Les assertions ne
  * portent que sur l'en-tête : le statut de chaque appel n'est pas le sujet.
  */
+import type { CreatedPickupResponse } from "@lfd/contracts";
+
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { PUBLIC_PICKUPS_CACHE_CONTROL } from "../src/b2b/pickup-addresses/http/public-pickup-cache-headers.js";
 import {
   PUBLIC_SETTINGS_CACHE_CONTROL,
   PUBLIC_SETTINGS_CACHE_TAG,
@@ -17,7 +20,13 @@ import {
   ANONYMOUS_CACHE_CONTROL,
   PERSONAL_CACHE_CONTROL,
 } from "../src/platform/security/cache-control-by-default.middleware.js";
-import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 
 /** Le jeton porteur EST le `sub` : le mur se joue en base, comme en production. */
 const stubAdminVerifier = {
@@ -94,5 +103,54 @@ describe("Cache-Control par défaut", () => {
     const legal = await ctx.http().get("/content/accessibility-follow-up").expect(200);
     expect(legal.headers[CACHE_CONTROL]).toBe(ANONYMOUS_CACHE_CONTROL);
     expect(legal.headers["cache-tag"]).toBeUndefined();
+  });
+});
+
+/**
+ * La liste publique des points de retrait (2026-11-05,
+ * `documentation/caching-usage/plan-lectures-par-audience.md`) : `public,
+ * max-age=30` sans `stale-while-revalidate`, étiquetée pour la purge — sur
+ * `list()` seulement : les créneaux dépendent de l'heure.
+ */
+describe("Cache-Control de la liste publique des points", () => {
+  it.each(["/pickup-addresses", "/pickup-addresses?audience=pro"])(
+    "%s s'offre à Workers Cache, sans revalidation périmée, étiquetée",
+    async (path) => {
+      const response = await ctx.http().get(path).expect(200);
+      expect(response.headers[CACHE_CONTROL]).toBe(PUBLIC_PICKUPS_CACHE_CONTROL);
+      expect(response.headers[CACHE_CONTROL]).not.toContain("stale-while-revalidate");
+      expect(response.headers["cache-tag"]).toBe(PUBLIC_SETTINGS_CACHE_TAG);
+    },
+  );
+
+  it("une audience inconnue est refusée (400), et ne s'offre à aucun cache", async () => {
+    // Sinon, une adresse de cache par chaîne inventée.
+    const response = await ctx.http().get("/pickup-addresses?audience=inconnue").expect(400);
+    expect(response.headers[CACHE_CONTROL]).toBe(ANONYMOUS_CACHE_CONTROL);
+    expect(response.headers["cache-tag"]).toBeUndefined();
+  });
+
+  it("les créneaux d'un point restent au défaut : ils dépendent de l'heure", async () => {
+    const created = await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post("/admin/pickup-addresses")
+      .send({
+        label: "Point du cache",
+        ligne1: "1 rue du Test",
+        ligne2: "",
+        codePostal: "75001",
+        ville: "Paris",
+        pays: "France",
+        opening: { publicOpening: null, proPickup: null },
+      })
+      .expect(201);
+    const { id } = jsonBody<CreatedPickupResponse>(created);
+    const slots = await ctx
+      .http()
+      .get(`/pickup-addresses/${id}/creneaux`)
+      .query({ jour: serviceDay() })
+      .expect(200);
+    expect(slots.headers[CACHE_CONTROL]).toBe(ANONYMOUS_CACHE_CONTROL);
+    expect(slots.headers["cache-tag"]).toBeUndefined();
   });
 });

@@ -178,9 +178,13 @@ describe("Les réglages commerciaux au journal", () => {
     const events = new RecordingPublisher();
     const { discounts: _sent, ...withoutDiscounts } = PICKUP;
 
-    await new UpdatePickupAddressHandler(sites(), events, new DirectUnitOfWork()).execute(
-      new UpdatePickupAddressCommand("pickup_2", withoutDiscounts),
-    );
+    await new UpdatePickupAddressHandler(
+      sites(),
+      events,
+      new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
+    ).execute(new UpdatePickupAddressCommand("pickup_2", withoutDiscounts));
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       ville: "Paris",
@@ -200,9 +204,14 @@ describe("Les réglages commerciaux au journal", () => {
   it("garde le nom d'un point archivé, et refuse un point inconnu sans fait", async () => {
     const events = new RecordingPublisher();
     const remove = (id: string): Promise<void> =>
-      new RemovePickupAddressHandler(sites(), NOW, events, new DirectUnitOfWork()).execute(
-        new RemovePickupAddressCommand(id),
-      );
+      new RemovePickupAddressHandler(
+        sites(),
+        NOW,
+        events,
+        new DirectUnitOfWork(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
+      ).execute(new RemovePickupAddressCommand(id));
 
     await remove("pickup_2");
     await expect(remove("pickup_absent")).rejects.toBeInstanceOf(PickupAddressNotFoundError);

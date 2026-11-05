@@ -1,3 +1,5 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -18,6 +20,8 @@ describe("CreatePickupAddressHandler — les remises par clientèle", () => {
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     );
 
     await expect(
@@ -47,6 +51,8 @@ describe("CreatePickupAddressHandler — le point GPS", () => {
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(
       new CreatePickupAddressCommand({
         ...FIELDS,

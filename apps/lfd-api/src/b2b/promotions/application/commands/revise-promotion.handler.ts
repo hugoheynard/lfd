@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { PublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { PromotionRepository } from "../../domain/ports/promotion.repository.js";
 import { revisionActOf } from "../../domain/promotion-act.js";
 import { mustLoadPromotion } from "./promotion-support.js";
@@ -15,6 +17,8 @@ export class RevisePromotionHandler implements ICommandHandler<RevisePromotionCo
     private readonly guard: PromotionWriteGuard,
     private readonly names: PromotionFulfillmentNames,
     private readonly clock: Clock,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   async execute(command: RevisePromotionCommand): Promise<void> {
@@ -31,5 +35,6 @@ export class RevisePromotionHandler implements ICommandHandler<RevisePromotionCo
       revised,
       revisionActOf(promotion.terms, revised, command.staffUserId, now, command.reason, names),
     );
+    this.afterCommit.defer(() => this.edge.purge(), "promotion.revised.edge-purge");
   }
 }

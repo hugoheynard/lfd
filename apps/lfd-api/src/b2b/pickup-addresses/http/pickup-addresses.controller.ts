@@ -1,13 +1,15 @@
 import type { AudiencePickupAddressView, PublicPickupSlot } from "@lfd/contracts";
-import { Controller, Get, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query, Res } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import type { Response } from "express";
 import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ListShopPickupsQuery } from "../application/list-shop-pickups.query.js";
 import { ListPublicPickupSlotsQuery } from "../application/list-public-pickup-slots.query.js";
+import { cachePublicPickups } from "./public-pickup-cache-headers.js";
 
 /**
  * Le jour demandé, `AAAA-MM-JJ`. Validé À LA PORTE : passé plus loin, un format
@@ -57,14 +59,23 @@ export class PickupAddressesController {
    * pros et celle des pros en cours d'inscription. Cette dernière ne sort plus
    * que par `GET /pickup-addresses/mine`, à une société réellement en attente :
    * une audience qui se déclare ne s'établit pas.
+   *
+   * **Gardée par Workers Cache** (2026-11-05) : `public, max-age=30`, sans
+   * `stale-while-revalidate`, étiquetée `reglages-publics` et purgée après
+   * chaque écriture d'un point, de ses rôles ou d'une promotion. Une adresse
+   * de cache par audience : `?audience=` n'admet que `pro`, le reste est un 400.
    */
   @Get()
-  list(
+  async list(
     @Query("audience", new ZodQuery(listQuerySchema)) audience: "pro" | undefined,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<readonly AudiencePickupAddressView[]> {
-    return this.queries.execute<ListShopPickupsQuery, readonly AudiencePickupAddressView[]>(
-      new ListShopPickupsQuery(audience === "pro" ? "pro" : "visitor"),
-    );
+    const points = await this.queries.execute<
+      ListShopPickupsQuery,
+      readonly AudiencePickupAddressView[]
+    >(new ListShopPickupsQuery(audience === "pro" ? "pro" : "visitor"));
+    cachePublicPickups(response);
+    return points;
   }
 
   /**

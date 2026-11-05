@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../platform/database/after-commit.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { PublicSettingsEdgeCache } from "../../shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DepartureSiteReader } from "../../../delivery/channels/commerce/index.js";
 import { PickupAddressNotFoundError } from "../../pickup-addresses/domain/pickup-errors.js";
@@ -13,6 +15,9 @@ import { SetSiteRolesCommand } from "./set-site-roles.command.js";
  * Handler **staff** : règle les rôles d'un site — remet, approvisionné sur
  * place ou par transfert, expédie, mode du transfert, mise en place au
  * comptoir. Les refus sont ceux de l'agrégat (`Site.assignRoles`).
+ *
+ * Les clientèles d'un point décident de sa présence dans la liste publique
+ * (Workers Cache) : elle est purgée **après** la validation.
  */
 @CommandHandler(SetSiteRolesCommand)
 export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand, void> {
@@ -22,6 +27,8 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
     private readonly uow: UnitOfWork,
     private readonly departure: DepartureSiteReader,
     private readonly tables: SiteTablesRepository,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   /**
@@ -66,6 +73,7 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
           site.snapshot().place.gps,
         ),
       );
+      this.afterCommit.defer(() => this.edge.purge(), "site.roles-set.edge-purge");
     });
   }
 }

@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../platform/database/after-commit.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { PublicSettingsEdgeCache } from "../../shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { placeOf, writeOf } from "../../sites/application/site-place.js";
 import { SiteRepository } from "../../sites/domain/site.repository.js";
@@ -13,6 +15,9 @@ import { refuseLegacyPromotionEditor } from "../../promotions/domain/promotions-
 /**
  * Handler **staff** : modifie le lieu d'un site — adresse, heures, remise,
  * GPS. Ses rôles et ses couleurs ont leurs propres gestes (`b2b/sites/`).
+ *
+ * La liste publique des points (Workers Cache) est purgée **après** la
+ * validation : un refus ne purge rien.
  */
 @CommandHandler(UpdatePickupAddressCommand)
 export class UpdatePickupAddressHandler implements ICommandHandler<
@@ -23,6 +28,8 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
     private readonly sites: SiteRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   /**
@@ -57,6 +64,7 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
       await this.sites.save(site);
       const written = writeOf(fields, resolved, position);
       await this.events.publishTraced(new PickupAddressUpdatedEvent(command.id, written));
+      this.afterCommit.defer(() => this.edge.purge(), "pickup-address.updated.edge-purge");
     });
   }
 }

@@ -84,6 +84,18 @@ const ADMITTED = new Map([
       ],
     },
   ],
+  [
+    "apps/lfd-api/src/b2b/pickup-addresses/http/public-pickup-cache-headers.ts",
+    {
+      since: "2026-11-05",
+      reason:
+        "la liste publique des points de retrait (`GET /pickup-addresses`, avec ou sans `?audience=pro`), " +
+        "qui ne lit pas l'appelant : `public, max-age=30` SANS stale-while-revalidate (Hugo — une remise " +
+        "à horaires reste annoncée 30 s au plus après sa fin), purgée à chaque écriture d'un point, de ses " +
+        "rôles ou d'une promotion (`Cache-Tag: reglages-publics`)",
+      readers: ["apps/lfd-api/src/b2b/pickup-addresses/http/pickup-addresses.controller.ts"],
+    },
+  ],
 ]);
 
 /**
@@ -107,6 +119,14 @@ const CALLER_BLIND = [
   "apps/lfd-api/src/b2b/order-opening/application/queries/get-order-opening.handler.ts",
   "apps/lfd-api/src/b2b/delivery-zones/application/list-delivery-zones.handler.ts",
   "apps/lfd-api/src/b2b/delivery-availability/application/queries/get-delivery-availability.handler.ts",
+  // La liste publique des points (2026-11-05) : le contrôleur, la lecture,
+  // la coupe par audience, le décorateur qui y pose la remise, et l'annonceur.
+  "apps/lfd-api/src/b2b/pickup-addresses/http/pickup-addresses.controller.ts",
+  "apps/lfd-api/src/b2b/pickup-addresses/application/list-shop-pickups.handler.ts",
+  "apps/lfd-api/src/b2b/pickup-addresses/application/audience-pickup-address.ts",
+  "apps/lfd-api/src/b2b/pickup-addresses/infrastructure/announced-pickup-address.repository.ts",
+  "apps/lfd-api/src/b2b/pickup-addresses/infrastructure/prisma-pickup-address.repository.ts",
+  "apps/lfd-api/src/b2b/promotions/application/promotion-pickup-discount.announcer.ts",
 ];
 
 /** Ce qui lit l'appelant : un décorateur d'identité, la requête brute, un type d'identité. */

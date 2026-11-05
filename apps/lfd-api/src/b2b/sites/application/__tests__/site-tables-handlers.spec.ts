@@ -1,3 +1,5 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -166,6 +168,8 @@ describe("SetSiteRolesHandler — la case « Sur place »", () => {
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
       tables,
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     );
   }
 

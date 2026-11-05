@@ -1,4 +1,6 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   type PromotionCatalogue,
@@ -165,13 +167,25 @@ export function writeScene(at: Date) {
   const clock = new FixedClock(at);
   const guard = new PromotionWriteGuard(new InMemoryPromotionRivals(promotions.stored), catalogue);
   const names = fulfillmentNames();
+  const afterCommit = new HeldAfterCommit();
+  const edge = new RecordingPublicSettingsEdgeCache();
+  const purge = [afterCommit, edge] as const;
   return {
     promotions,
     catalogue,
-    pose: new PosePromotionHandler(promotions, guard, names, new FixedIdGenerator("promo"), clock),
-    revise: new RevisePromotionHandler(promotions, guard, names, clock),
-    pause: new PausePromotionHandler(promotions, names, clock),
-    resume: new ResumePromotionHandler(promotions, guard, names, clock),
-    archive: new ArchivePromotionHandler(promotions, names, clock),
+    afterCommit,
+    edge,
+    pose: new PosePromotionHandler(
+      promotions,
+      guard,
+      names,
+      new FixedIdGenerator("promo"),
+      clock,
+      ...purge,
+    ),
+    revise: new RevisePromotionHandler(promotions, guard, names, clock, ...purge),
+    pause: new PausePromotionHandler(promotions, names, clock, ...purge),
+    resume: new ResumePromotionHandler(promotions, guard, names, clock, ...purge),
+    archive: new ArchivePromotionHandler(promotions, names, clock, ...purge),
   };
 }

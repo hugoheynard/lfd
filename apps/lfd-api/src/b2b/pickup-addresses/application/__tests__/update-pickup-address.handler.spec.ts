@@ -1,3 +1,5 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import type {
   AudiencePickupDiscount,
   PickupAddressUpdatePayload,
@@ -31,9 +33,13 @@ function update(
   payload: PickupAddressUpdatePayload,
   events = new RecordingPublisher(),
 ): Promise<void> {
-  return new UpdatePickupAddressHandler(points, events, new DirectUnitOfWork()).execute(
-    new UpdatePickupAddressCommand("pickup_1", payload),
-  );
+  return new UpdatePickupAddressHandler(
+    points,
+    events,
+    new DirectUnitOfWork(),
+    new HeldAfterCommit(),
+    new RecordingPublicSettingsEdgeCache(),
+  ).execute(new UpdatePickupAddressCommand("pickup_1", payload));
 }
 
 describe("UpdatePickupAddressHandler — les remises par clientèle", () => {

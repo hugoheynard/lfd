@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { PublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { PromotionRepository } from "../../domain/ports/promotion.repository.js";
 import { promotionActOf } from "../../domain/promotion-act.js";
 import { PausePromotionCommand } from "./pause-promotion.command.js";
@@ -13,6 +15,8 @@ export class PausePromotionHandler implements ICommandHandler<PausePromotionComm
     private readonly promotions: PromotionRepository,
     private readonly names: PromotionFulfillmentNames,
     private readonly clock: Clock,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   async execute(command: PausePromotionCommand): Promise<void> {
@@ -24,5 +28,6 @@ export class PausePromotionHandler implements ICommandHandler<PausePromotionComm
       paused,
       promotionActOf(paused, "paused", command.staffUserId, now, command.reason, names),
     );
+    this.afterCommit.defer(() => this.edge.purge(), "promotion.paused.edge-purge");
   }
 }

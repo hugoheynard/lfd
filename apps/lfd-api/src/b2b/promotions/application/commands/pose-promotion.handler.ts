@@ -1,7 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { PublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { PromotionRepository } from "../../domain/ports/promotion.repository.js";
 import { promotionActOf } from "../../domain/promotion-act.js";
 import { Promotion } from "../../domain/promotion.js";
@@ -18,6 +20,8 @@ export class PosePromotionHandler implements ICommandHandler<PosePromotionComman
     private readonly names: PromotionFulfillmentNames,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly afterCommit: AfterCommit,
+    private readonly edge: PublicSettingsEdgeCache,
   ) {}
 
   async execute(command: PosePromotionCommand): Promise<string> {
@@ -29,6 +33,7 @@ export class PosePromotionHandler implements ICommandHandler<PosePromotionComman
       promotion,
       promotionActOf(promotion, "posed", command.staffUserId, now, command.terms.reason, names),
     );
+    this.afterCommit.defer(() => this.edge.purge(), "promotion.posed.edge-purge");
     return promotion.id;
   }
 }

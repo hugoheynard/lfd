@@ -1,3 +1,5 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublicSettingsEdgeCache } from "../../../shared/public-settings-cache/domain/__tests__/recording-public-settings-edge-cache.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -76,6 +78,8 @@ describe("SetSiteRolesHandler", () => {
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
       new InMemorySiteTables(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new SetSiteRolesCommand("site_village", ROLES));
 
     // Les clientèles du retrait, absentes de la charge, restent celles du site.
@@ -101,6 +105,8 @@ describe("SetSiteRolesHandler", () => {
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
       new InMemorySiteTables(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(
       new SetSiteRolesCommand("site_village", {
         ...ROLES,
@@ -128,6 +134,8 @@ describe("SetSiteRolesHandler", () => {
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
       new InMemorySiteTables(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new SetSiteRolesCommand("site_village", ROLES));
 
     expect(sites.stateOf("site_village")?.roles.pickupAudiences).toEqual({ b2b: false, b2c: true });
@@ -144,6 +152,8 @@ describe("SetSiteRolesHandler", () => {
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
         new InMemorySiteTables(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
       ).execute(
         new SetSiteRolesCommand("site_village", {
           ...ROLES,
@@ -166,6 +176,8 @@ describe("SetSiteRolesHandler", () => {
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
         new InMemorySiteTables(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
       ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, pickup: false })),
     ).rejects.toBeInstanceOf(SiteTransferWithoutHandoverError);
     expect(sites.saved).toEqual([]);
@@ -183,6 +195,8 @@ describe("SetSiteRolesHandler", () => {
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
         new InMemorySiteTables(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
       ).execute(
         new SetSiteRolesCommand("site_village", {
           ...ROLES,
@@ -203,6 +217,8 @@ describe("SetSiteRolesHandler", () => {
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
       new InMemorySiteTables(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(
       new SetSiteRolesCommand("site_village", {
         ...ROLES,
@@ -222,6 +238,8 @@ describe("SetSiteRolesHandler", () => {
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
         new InMemorySiteTables(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
       ).execute(new SetSiteRolesCommand("site_village", ROLES)),
     ).rejects.toBeInstanceOf(SiteTransferWithoutGpsError);
     expect(sites.saved).toEqual([]);
@@ -235,6 +253,8 @@ describe("SetSiteRolesHandler", () => {
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
       new InMemorySiteTables(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, gps: GPS }));
     expect(sites.stateOf("site_village")?.place.gps).toEqual(GPS);
   });
@@ -254,6 +274,8 @@ describe("SetSiteRolesHandler", () => {
         new DirectUnitOfWork(),
         departure,
         new InMemorySiteTables(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
       ).execute(new SetSiteRolesCommand("site_bakery", { ...ROLES, supply: "on_site" })),
     ).rejects.toBeInstanceOf(DepartureSiteMustDeliverError);
     expect(sites.saved).toEqual([]);
@@ -272,6 +294,8 @@ describe("SetSiteRolesHandler", () => {
       new DirectUnitOfWork(),
       new FixedDepartureSite("site_bakery"),
       new InMemorySiteTables(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, supply: "on_site" }));
     expect(sites.stateOf("site_village")?.roles.deliveryDeparture).toBe(false);
   });
@@ -284,6 +308,8 @@ describe("SetSiteRolesHandler", () => {
       new DirectUnitOfWork(),
       departure,
       new InMemorySiteTables(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new SetSiteRolesCommand("site_village", ROLES));
     expect(departure.reads).toBe(0);
   });
@@ -296,6 +322,8 @@ describe("SetSiteRolesHandler", () => {
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
         new InMemorySiteTables(),
+        new HeldAfterCommit(),
+        new RecordingPublicSettingsEdgeCache(),
       ).execute(new SetSiteRolesCommand("site_absent", ROLES)),
     ).rejects.toBeInstanceOf(PickupAddressNotFoundError);
   });
@@ -408,6 +436,8 @@ describe("Plus de site par défaut (Hugo, 2026-10-15)", () => {
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     );
     const payload = {
       label: "Fournil",
@@ -441,6 +471,8 @@ describe("RemovePickupAddressHandler — supprimer archive", () => {
       clock,
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new RemovePickupAddressCommand("site_village"));
 
     expect(sites.stateOf("site_village")?.archivedAt).toBe(clock.now());
@@ -455,6 +487,8 @@ describe("RemovePickupAddressHandler — supprimer archive", () => {
       clock,
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
     ).execute(new RemovePickupAddressCommand("site_bakery"));
 
     expect(sites.stateOf("site_bakery")?.archivedAt).toBe(clock.now());

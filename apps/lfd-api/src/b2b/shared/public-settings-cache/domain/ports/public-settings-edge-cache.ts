@@ -22,6 +22,13 @@ export const PUBLIC_SETTINGS_CACHE_TAG = "reglages-publics";
  * règle commune, pas du code semblable (CLAUDE.md §3, `b2b/shared`) : une
  * étiquette, une durée, une purge — que chacun déclarerait à l'identique.
  *
+ * Depuis le 2026-11-05, la liste publique des points de retrait
+ * (`GET /pickup-addresses`, `public-pickup-cache-headers.ts`) porte la même
+ * étiquette : ses écrivains — points, rôles d'un site, et les cinq gestes
+ * d'une promotion, dont vient la remise annoncée — purgent par ce port.
+ * Un geste de promotion écrit dans sa propre transaction (le dépôt l'ouvre) :
+ * hors d'une unité ambiante, `AfterCommit` exécute la purge aussitôt après.
+ *
  * Appelé APRÈS la validation de l'écriture (`AfterCommit`), jamais pendant.
  * Un adaptateur peut lever : l'appelant ne l'attend pas, et l'échec se
  * journalise sans retenir l'écriture.

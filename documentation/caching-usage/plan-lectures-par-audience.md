@@ -60,6 +60,18 @@ Ce qui suit l'emporte sur la Partie 2.
   jusqu'à ~90 s une remise que la caisse ne fait plus. **Décidé par Hugo le 2026-11-05** : pas de `stale-while-revalidate` sur cette route (`public, max-age=30` seul) — une remise à horaires reste annoncée 30 s au plus après sa fin, la purge vide le cache à chaque écriture.
   L'en-tête se pose sur `list()` seulement — `:id/creneaux` dépend de l'heure.
   La purge de `reglages-publics` reste « non prouvée » de bout en bout.
+  🟦 **Bâti le 2026-11-05, non déployé** : `apps/lfd-api/src/b2b/pickup-addresses/http/public-pickup-cache-headers.ts`,
+  étiquette `reglages-publics` réutilisée (la purge partagée existe, la liste
+  fermée du Worker ne grandit pas ; prix : une écriture de promotion purge
+  aussi les quatre réglages, écrits rarement). Purge après validation dans
+  `create-`/`update-`/`remove-pickup-address`, `set-site-roles` et les cinq
+  gestes de promotion ; `set-site-colors` et la grille des créneaux ne
+  changent pas la liste et ne purgent pas. `?audience=` inconnue : 400.
+  Porte `lint:cache-control` : `ADMITTED` + `CALLER_BLIND` (contrôleur,
+  lecture, coupe par audience, décorateur, adaptateur Prisma, annonceur).
+  ⚠️ Que Workers Cache sépare `?audience=pro` de la liste nue n'est pas
+  prouvé ici : c'est la même hypothèse que le rayon public (§ C0 de
+  `plan-cache-du-catalogue.md`), à vérifier sur dev déployé.
 - **`GET /pickup-addresses/mine` → renoncé.** Une base en mémoire ne ferait
   gagner que 1 à 2 lectures, pour un cache à estampiller (une deuxième
   instance le rendrait faux sans bruit, comme le prix avant le 2026-09-09).
