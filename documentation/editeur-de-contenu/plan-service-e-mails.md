@@ -203,6 +203,26 @@ flowchart LR
 | **S4**   | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                                                     | rien tant que rien n'est publié                                                                                         |
 | **S5**   | L'éditeur au back-office : ajouter, retirer, ordonner, écrire, insérer une variable, aperçu, essai, publier, versions, trois langues côte à côte ; le droit dédié                                                                                                                                                                                                                                                                                      | l'équipe compose ses e-mails                                                                                            |
 
+### À valider par Hugo à la fin de S2
+
+Les changements de comportement que les lots de S2 ont introduits
+**volontairement**. Rien n'est en production avant le soir du 2026-11-06 ;
+Hugo les relit ensemble à la fin de S2, avant le déploiement groupé.
+
+| Lot | Ce qui change                                                                                                                                | Avant                                                                        |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| S2a | Les e-mails des commandes partent **après la validation**, par le bloc ; délai non mesuré sur « commande prête » et « livreur en route »     | envoyés pendant ou juste après l'écriture                                    |
+| S2a | Un **échec d'envoi est relancé** automatiquement (balayeur, jusqu'à 23 h)                                                                    | « en route » et le retard ne relançaient jamais                              |
+| S2a | « Client prévenu » (retard, lettre de manque) veut dire **e-mail demandé** ; le résultat réel se lit au suivi                                | « accepté par Resend »                                                       |
+| S2a | Retard et lettre de manque : seul un échec de la **demande** fait échouer le geste ; un échec d'envoi ne remonte plus à l'écran              | un échec d'envoi s'affichait (lettre de manque) ou était journalisé (retard) |
+| S2a | « Livreur en route » : une demande en échec fait **rejouer** la livraison du fait, sans doublon                                              | un envoi raté était perdu                                                    |
+| S2a | Un rejeu de l'avis d'annulation à un client sans compte envoie **1 e-mail** au lieu de 2 (clé d'idempotence)                                 | 2 e-mails                                                                    |
+| S2a | Le bon de commande joint vient **du stockage** (rangé avant la demande) ; si le rangement échoue, l'e-mail part sans pièce, journalisé       | fabriqué en mémoire à l'envoi                                                |
+| S2b | Demande de support : un échec de la **demande** d'e-mail fait échouer le dépôt                                                               | une panne d'envoi était avalée                                               |
+| S2b | « Envoyé » à l'écran (ouvrir un accès) = Resend a rendu un identifiant ; un envoi accepté sans identifiant s'afficherait « non envoyé »      | `mailer.enabled` après un envoi réussi                                       |
+| S2b | **Une clé par geste** (ouvrir l'accès, rattacher, mot de passe, méthode liée) : chaque clic envoie son e-mail, le bloc gardant une clé un an | clé stable, dédoublonnée 24 h par Resend                                     |
+| S2b | Rattacher un titulaire envoie l'e-mail **avant** d'enregistrer la société (inchangé, signalé)                                                | pareil                                                                       |
+
 ### Les 31 envoyeurs à faire passer par la porte (S2)
 
 La liste est celle que tient `lint:mail-through-block` (`DEBT`,
