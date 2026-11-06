@@ -259,6 +259,96 @@ recalculé). Le **cache des rayons** (l'objet `ProShelves`, le bord Cloudflare)
 reste purgé par le signal applicatif `ShelfChanges` : une correction SQL à la
 main laisse le rayon faux jusqu'à son expiration. Inchangé par ce plan.
 
+### 2.2 bis Le schéma de M1a — où est la table, ce qu'elle contient
+
+> 📋 **Dessiné le 2026-11-06** depuis la migration mise de côté
+> (`git stash`, « M1a… forme suspendue »), relue ce jour-là. Rien de ceci
+> n'est en base, ni en dev ni en production.
+
+**En une phrase :** une petite table du commerce garde **un nombre**. À chaque
+écriture qui change ce que la boutique sert (un prix, un nom, un masquage, une
+heure limite), la base le fait monter **toute seule**. L'API garde le catalogue
+en mémoire et, à chaque requête, relit ce seul nombre : s'il n'a pas bougé, elle
+sert sa copie ; s'il a bougé, elle relit le catalogue.
+
+**Ce qui a été bâti puis mis de côté — un seul numéro pour trois contextes :**
+
+```mermaid
+flowchart LR
+  subgraph PIM["schéma pim — le référentiel"]
+    P["products, fiches…<br/>AUCUN déclencheur"]
+  end
+
+  subgraph PUB["schéma public — le commerce"]
+    subgraph CAT["contexte catalog"]
+      CI["catalog_items<br/>la copie publiée par le référentiel<br/>prix, nom, TVA, allergènes, images,<br/>audience, retrait de la vente…"]
+      CC["catalog_categories<br/>familles, ordre, parent"]
+      CO["catalog_item_overrides<br/>is_hidden (pro), is_hidden_public,<br/>mise en avant, visibilité réservée"]
+      CR["catalog_item_reservations<br/>sku, company_id"]
+    end
+    subgraph OPS["contexte operations"]
+      OP["catalog_operations<br/>dates, audience, hidden"]
+      OI["catalog_operation_items<br/>quels articles, dans quel ordre"]
+    end
+    subgraph CUT["contexte order-cutoffs"]
+      OC["order_cutoffs<br/>jour, heure limite par point"]
+      OS["order_cutoff_settings<br/>jour même, tolérances"]
+    end
+    S[("catalog_stamp<br/>une ligne : id = 1, value = 4217")]
+  end
+
+  P -. "publie par le canal, écrit catalog_items" .-> CI
+  CI -- déclencheur --> S
+  CC -- déclencheur --> S
+  CO -- déclencheur --> S
+  CR -- déclencheur --> S
+  OP -- déclencheur --> S
+  OI -- déclencheur --> S
+  OC -- déclencheur --> S
+  OS -- déclencheur --> S
+  S -- "1 lecture par requête" --> API["API : copie en mémoire<br/>gardée tant que value ne bouge pas"]
+```
+
+Ce que contient la table, et rien d'autre :
+
+| Colonne | Type       | Exemple | Sens                                           |
+| ------- | ---------- | ------- | ---------------------------------------------- |
+| `id`    | `smallint` | `1`     | toujours 1 — une seule ligne (`CHECK`)         |
+| `value` | `bigint`   | `4217`  | monte de 1 à chaque écriture d'une colonne lue |
+
+Elle ne contient **ni** le catalogue, **ni** la date, **ni** qui a écrit : c'est
+un compteur, pas un journal. Les huit déclencheurs ne regardent que les
+colonnes lues (`UPDATE OF …`) : réécrire l'auteur d'une décision ou un état
+technique ne fait rien monter.
+
+**Ce que Hugo a objecté le 2026-11-06 :** ce numéro unique fait dépendre trois
+contextes du commerce d'une même ligne — masquer une opération ferait relire
+les articles, et inversement. **La forme proposée — un numéro par contexte,
+lus ensemble (pas encore tranchée, pas encore contredite par `vitruve`) :**
+
+```mermaid
+flowchart LR
+  subgraph PUB["schéma public — le commerce"]
+    CAT["catalog<br/>articles, familles,<br/>dérogations, réservations"]
+    OPS["operations<br/>opérations, leurs articles"]
+    CUT["order-cutoffs<br/>heures limites, réglages"]
+    V[("platform_versions<br/>catalog = 4217<br/>operations = 88<br/>order-cutoffs = 12")]
+  end
+  CAT -- "ses déclencheurs, SA ligne" --> V
+  OPS -- "ses déclencheurs, SA ligne" --> V
+  CUT -- "ses déclencheurs, SA ligne" --> V
+  V -- "1 lecture, les 3 lignes" --> API["API : 3 morceaux en mémoire,<br/>chacun relu seulement si SON numéro bouge"]
+```
+
+| Colonne   | Type     | Exemple      | Sens                                        |
+| --------- | -------- | ------------ | ------------------------------------------- |
+| `context` | `text`   | `operations` | le contexte propriétaire de la ligne        |
+| `value`   | `bigint` | `88`         | monte quand une table de CE contexte change |
+
+Chaque contexte n'écrit que sa ligne : masquer Noël fait monter `operations`
+seul, et l'API ne relit que les opérations. Le schéma `pim` n'y figure dans
+aucune des deux formes.
+
 ### 2.3 La porte
 
 Un port `CatalogueSnapshotSource` (application du catalogue), un adaptateur
