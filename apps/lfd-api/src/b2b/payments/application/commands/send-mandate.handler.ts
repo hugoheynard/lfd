@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
-import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { CreditorReader } from "../../../accounting/domain/ports/creditor.reader.js";
 import { LegalEntityLogoReader } from "../../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
@@ -58,11 +58,12 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  *
  * ## L'idempotence
  *
- * Une clé **par geste** (`mandate-to-sign:<mandat>:<id>`), l'`<id>` venant de
- * l'`IdGenerator` : le bloc garde une clé un an et rend le reçu d'une clé déjà
- * envoyée sans renvoyer. Une clé par mandat ferait qu'un second « Envoyer »
- * du même brouillon — le client a perdu le courriel — ne renvoie plus rien,
- * là où Resend ne dédoublonnait que 24 h. Ni adresse ni RUM dans la clé.
+ * Une clé **par intention** (`mandate-to-sign:<mandat>:<intention>`), la clé
+ * que l'écran a fabriquée à l'ouverture de la confirmation (revue, cas 4) :
+ * un double clic ne réexécute rien et n'envoie qu'un courriel ; un second
+ * « Envoyer » du même brouillon — le client a perdu le courriel — porte une
+ * clé neuve et renvoie. Une clé par mandat tairait ce renvoi un an. Ni
+ * adresse ni RUM dans la clé.
  *
  * ## Le fait « mandat envoyé »
  *
@@ -74,8 +75,8 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  * `@hors-transaction` le courriel part chez un tiers et ne se rattrape pas :
  * aucune transaction ne peut l'annuler, et `sendAndAwaitReceipt` est refusé sous une
  * unité de travail. Si le journal refuse d'écrire, la requête échoue et le
- * courriel est déjà parti ; un second clic renvoie le courriel et écrit le
- * fait.
+ * courriel est déjà parti ; un second clic de même intention ne le renvoie
+ * pas (le bloc rend le reçu de la clé) et écrit le fait.
  */
 @CommandHandler(SendMandateCommand)
 export class SendMandateHandler implements ICommandHandler<SendMandateCommand, void> {
@@ -89,10 +90,23 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     private readonly events: DomainEventPublisher,
     private readonly debtors: MandateDebtorReader,
     private readonly clock: Clock,
-    private readonly ids: IdGenerator,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: SendMandateCommand): Promise<void> {
+  execute(command: SendMandateCommand): Promise<void> {
+    return this.intents.run(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "payments.send-mandate",
+        subject: command.mandateId,
+      },
+      NOTHING_TO_REPLAY,
+      () => this.send(command),
+    );
+  }
+
+  private async send(command: SendMandateCommand): Promise<void> {
     const mandate = await this.mandates.findById(command.mandateId);
     if (mandate === null || mandate.companyId !== command.companyId) {
       throw new MandateNotFoundError(command.companyId);
@@ -134,7 +148,7 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         pdfBase64: document.bytes.toString("base64"),
         fileName: document.fileName,
       },
-      idempotencyKey: `mandate-to-sign:${mandate.id}:${this.ids.next()}`,
+      idempotencyKey: `mandate-to-sign:${mandate.id}:${command.intentKey}`,
     });
     await this.events.publishTraced(
       new MandateSentEvent(

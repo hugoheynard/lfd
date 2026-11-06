@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Mail } from "../../../../mail/channels/requests/mail.js";
-import { Clock } from "../../../../platform/time/clock.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import {
   OrderNotFoundError,
   OrderPaymentLinkRefusedError,
@@ -21,8 +21,9 @@ import { ResendOrderPaymentLinkCommand } from "./resend-order-payment-link.comma
  * - l'espace client n'a pas d'adresse publique : le lien n'existe pas ;
  * - l'acheteur n'a pas d'adresse lisible.
  *
- * Comme le rappel de retrait, la clé d'idempotence porte l'instant : un renvoi
- * n'existe que pour repartir.
+ * La clé d'idempotence est l'intention de l'écran (revue, cas 4) :
+ * un double clic n'envoie qu'un e-mail, et un nouveau « Renvoyer »
+ * porte une clé neuve — un renvoi n'existe que pour repartir.
  */
 @CommandHandler(ResendOrderPaymentLinkCommand)
 export class ResendOrderPaymentLinkHandler implements ICommandHandler<
@@ -33,11 +34,24 @@ export class ResendOrderPaymentLinkHandler implements ICommandHandler<
     private readonly orders: OrderPaymentLinkReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    private readonly clock: Clock,
     private readonly mail: Mail,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ResendOrderPaymentLinkCommand): Promise<void> {
+  execute(command: ResendOrderPaymentLinkCommand): Promise<void> {
+    return this.intents.run(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "orders.resend-payment-link",
+        subject: command.orderId,
+      },
+      NOTHING_TO_REPLAY,
+      () => this.resend(command),
+    );
+  }
+
+  private async resend(command: ResendOrderPaymentLinkCommand): Promise<void> {
     const standing = await this.orders.findStanding(command.orderId);
     if (standing === null) {
       throw new OrderNotFoundError(command.orderId);
@@ -66,7 +80,7 @@ export class ResendOrderPaymentLinkHandler implements ICommandHandler<
       to: recipient.email,
       template: "customer.order-payment-link",
       data: { reference: standing.reference, totalCents: standing.totalCents, settleUrl },
-      idempotencyKey: `order.payment-link:${standing.orderId}:${this.clock.now().toISOString()}`,
+      idempotencyKey: `order.payment-link:${standing.orderId}:${command.intentKey}`,
     });
   }
 }

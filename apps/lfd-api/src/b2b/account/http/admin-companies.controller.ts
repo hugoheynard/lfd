@@ -5,6 +5,7 @@ import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post } from
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachAccountHolderCommand } from "../application/commands/attach-account-holder.command.js";
 import type { HolderAttached } from "../application/commands/attach-account-holder.handler.js";
@@ -134,6 +135,7 @@ export class AdminCompaniesController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
     @Body(new ZodBody(adminCreateCompanyPayload)) payload: AdminCreateCompanyPayload,
   ): Promise<CompanyOpened> {
     return await this.commands.execute<CreateCompanyByStaffCommand, CompanyOpened>(
@@ -146,6 +148,7 @@ export class AdminCompaniesController {
         payload.vatNumber,
         payload.primaryContact ?? null,
         staffUserId,
+        intentKey,
       ),
     );
   }
@@ -164,11 +167,12 @@ export class AdminCompaniesController {
   @HttpCode(HttpStatus.CREATED)
   attachHolder(
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
     @Param("companyId") companyId: string,
     @Body(new ZodBody(accountHolderPayloadSchema)) payload: AccountHolderPayload,
   ): Promise<HolderAttached> {
     return this.commands.execute<AttachAccountHolderCommand, HolderAttached>(
-      new AttachAccountHolderCommand(companyId, payload, staffUserId),
+      new AttachAccountHolderCommand(companyId, payload, staffUserId, intentKey),
     );
   }
 }

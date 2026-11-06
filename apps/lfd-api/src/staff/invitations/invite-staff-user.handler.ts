@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { MAIL_SENT_REPLAY, OncePerIntent } from "../../platform/intent/once-per-intent.js";
+
 import { OpenStaffAccess, type StaffAccessOpened } from "./open-staff-access.service.js";
 import { InviteStaffUserCommand } from "../directory/application/staff-user.commands.js";
 
@@ -18,15 +20,31 @@ export type StaffInvited = StaffAccessOpened;
  * Sa trace (`staff_user.invited`) est écrite par {@link OpenStaffAccess}, dans
  * la même transaction que `markInvited` et AVANT l'e-mail — c'est la seule
  * délégation que `lint:journal-tracked` admet dans l'équipe.
+ *
+ * **Une fois par intention** (plan `plan-service-e-mails.md`, revue, cas 4) :
+ * un double clic ne frappe pas un second lien et rend le `mailSent` du
+ * premier ; « Renvoyer » fabrique une clé neuve, et un lien neuf.
  */
 @CommandHandler(InviteStaffUserCommand)
 export class InviteStaffUserHandler implements ICommandHandler<
   InviteStaffUserCommand,
   StaffInvited
 > {
-  constructor(private readonly access: OpenStaffAccess) {}
+  constructor(
+    private readonly access: OpenStaffAccess,
+    private readonly intents: OncePerIntent,
+  ) {}
 
   execute(command: InviteStaffUserCommand): Promise<StaffInvited> {
-    return this.access.open(command.id);
+    return this.intents.run(
+      {
+        actorId: command.actorId,
+        key: command.intentKey,
+        gesture: "staff.invite",
+        subject: command.id,
+      },
+      MAIL_SENT_REPLAY,
+      () => this.access.open(command.id, command.intentKey),
+    );
   }
 }

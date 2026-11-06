@@ -248,6 +248,7 @@ describe("`became_account_at` — posé par les trois chemins, jamais réécrit"
       phone: "",
       role: "orders",
       invitedBy: E2E_STAFF_ID,
+      intentKey: "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c",
     } as const;
 
     await granter.grant(access);

@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { MAIL_SENT_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { CompanyAccessOpenedEvent } from "../../domain/events/person-acts.event.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
@@ -35,6 +36,10 @@ export interface HolderAttached {
  * (rôle `owner`) part après elle, dans la transaction qui range le détenteur
  * sur la fiche (depuis le 2026-09-19) : les deux tombent ensemble, et une
  * reprise repasse par le même chemin que ci-dessus.
+ *
+ * **Une fois par intention** (plan `plan-service-e-mails.md`, revue, cas 4) :
+ * un second clic de même clé rend `mailSent` du premier, sans rouvrir l'accès
+ * ni renvoyer l'e-mail.
  */
 @CommandHandler(AttachAccountHolderCommand)
 export class AttachAccountHolderHandler implements ICommandHandler<
@@ -46,9 +51,23 @@ export class AttachAccountHolderHandler implements ICommandHandler<
     private readonly access: AccountAccessGranter,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: AttachAccountHolderCommand): Promise<HolderAttached> {
+  execute(command: AttachAccountHolderCommand): Promise<HolderAttached> {
+    return this.intents.run(
+      {
+        actorId: command.invitedBy,
+        key: command.intentKey,
+        gesture: "account.attach-holder",
+        subject: command.companyId,
+      },
+      MAIL_SENT_REPLAY,
+      () => this.attach(command),
+    );
+  }
+
+  private async attach(command: AttachAccountHolderCommand): Promise<HolderAttached> {
     const company = await this.companies.load(command.companyId);
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
@@ -71,6 +90,7 @@ export class AttachAccountHolderHandler implements ICommandHandler<
       // DÉTENTEUR : celui dont l'adresse ouvre le compte. Le rôle se constate.
       role: "owner",
       invitedBy: command.invitedBy,
+      intentKey: command.intentKey,
     });
 
     await this.uow.run(async () => {

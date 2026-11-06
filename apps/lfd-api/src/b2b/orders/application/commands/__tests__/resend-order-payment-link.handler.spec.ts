@@ -1,5 +1,5 @@
 import { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
-import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import {
   OrderNotFoundError,
   OrderPaymentLinkRefusedError,
@@ -86,13 +86,14 @@ function handler(
     new OneStanding(options.order === undefined ? standing() : options.order),
     new OneRecipient(options.email === undefined ? "camille@halles.test" : options.email),
     new Origins(options.client === undefined ? "https://app.lfc.test" : options.client),
-    new FixedClock(NOW),
     mailer,
+    inMemoryIntents(),
   );
   return { run, mailer };
 }
 
-const RESEND = new ResendOrderPaymentLinkCommand("order_1", "staff_1");
+const INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
+const RESEND = new ResendOrderPaymentLinkCommand("order_1", "staff_1", INTENT);
 
 describe("ResendOrderPaymentLinkHandler", () => {
   it("envoie TOUT DE SUITE (`sendAndAwaitReceipt`) : l'agent lit l'échec à l'écran, rien n'est différé", async () => {
@@ -124,12 +125,31 @@ describe("ResendOrderPaymentLinkHandler", () => {
     });
   });
 
-  it("porte une clé DATÉE : un renvoi n'existe que pour repartir", async () => {
+  it("porte la clé de l'INTENTION : un renvoi en porte une neuve, donc repart", async () => {
     const subject = handler();
     await subject.run.execute(RESEND);
-    expect(subject.mailer.awaitedReceipt[0]?.idempotencyKey).toBe(
-      `order.payment-link:order_1:${NOW.toISOString()}`,
+    await subject.run.execute(
+      new ResendOrderPaymentLinkCommand(
+        "order_1",
+        "staff_1",
+        "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+      ),
     );
+    expect(subject.mailer.awaitedReceipt.map((mail) => mail.idempotencyKey)).toEqual([
+      `order.payment-link:order_1:${INTENT}`,
+      "order.payment-link:order_1:5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+    ]);
+  });
+
+  /**
+   * Régression (revue de S2, cas 4) : la clé portait l'instant, et deux clics
+   * à quelques millisecondes envoyaient deux e-mails.
+   */
+  it("un double clic de même intention n'envoie qu'un e-mail", async () => {
+    const subject = handler();
+    await subject.run.execute(RESEND);
+    await subject.run.execute(RESEND);
+    expect(subject.mailer.awaitedReceipt).toHaveLength(1);
   });
 
   it("renvoie aussi le lien d'un règlement refusé", async () => {

@@ -4,6 +4,7 @@
  * et le garde-fou qui interdit de retirer le **dernier administrateur**. Tout est
  * staff-only (aucune surface publique).
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -43,7 +44,11 @@ const user = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
 });
 
 async function create(over: Record<string, unknown> = {}): Promise<string> {
-  const response = await staff().post("/admin/staff-users").send(user(over)).expect(201);
+  const response = await staff()
+    .post("/admin/staff-users")
+    .set(INTENT_KEY, freshIntent())
+    .send(user(over))
+    .expect(201);
   return jsonBody<CreatedStaffUserResponse>(response).id;
 }
 
@@ -88,6 +93,7 @@ describe("annuaire staff", () => {
     await create({ email: "dup@lfc.test" });
     const response = await staff()
       .post("/admin/staff-users")
+      .set(INTENT_KEY, freshIntent())
       .send(user({ email: "DUP@lfc.test", firstName: "Bea" }));
     expect(response.status).toBe(409);
     expect(await list()).toHaveLength(1);
@@ -173,6 +179,7 @@ describe("annuaire staff — on ne se verrouille pas dehors", () => {
 
     await staff()
       .patch(`/admin/staff-users/${other}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
 
@@ -222,6 +229,7 @@ describe("annuaire staff — suspendre et réintégrer", () => {
 
     await staff()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
 
@@ -234,10 +242,15 @@ describe("annuaire staff — suspendre et réintégrer", () => {
     const id = await create({ email: "two@lfc.test", firstName: "Bea", role: "support" });
     await staff()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
 
-    await staff().patch(`/admin/staff-users/${id}/status`).send({ status: "active" }).expect(204);
+    await staff()
+      .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ status: "active" })
+      .expect(204);
 
     expect(await statusOf("two@lfc.test")).toBe("active");
   });
@@ -249,6 +262,7 @@ describe("annuaire staff — suspendre et réintégrer", () => {
 
     const refused = await staff()
       .patch(`/admin/staff-users/${me?.id ?? "?"}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" });
 
     expect(refused.status).toBe(409);
@@ -261,6 +275,7 @@ describe("annuaire staff — suspendre et réintégrer", () => {
 
     const response = await staff()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "invited" });
 
     expect(response.status).toBe(400);
@@ -312,6 +327,7 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
 
     const response = await staff()
       .post("/admin/staff-users")
+      .set(INTENT_KEY, freshIntent())
       .send(user({ email: "  ONE@lfc.TEST  ", firstName: "Bea" }));
 
     expect(response.status).toBe(409);
@@ -327,6 +343,7 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
   it("refuse un rôle qu'aucune définition ne porte (409), sans rien écrire", async () => {
     const response = await staff()
       .post("/admin/staff-users")
+      .set(INTENT_KEY, freshIntent())
       .send(user({ role: "super-admin" }));
 
     expect(response.status).toBe(409);
@@ -337,6 +354,7 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
   it("refuse une clé de rôle mal formée (400)", async () => {
     const response = await staff()
       .post("/admin/staff-users")
+      .set(INTENT_KEY, freshIntent())
       .send(user({ role: "Super Admin !" }));
 
     expect(response.status).toBe(400);
@@ -347,6 +365,7 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
     // base, où plus rien ne saurait la lire.
     const response = await staff()
       .post("/admin/staff-users")
+      .set(INTENT_KEY, freshIntent())
       .send(user({ overrides: [{ resource: "facturation", action: "read", effect: "allow" }] }));
 
     expect(response.status).toBe(400);

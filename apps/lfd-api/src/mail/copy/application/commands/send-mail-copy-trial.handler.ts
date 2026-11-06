@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { StaffContacts } from "../../../../staff/directory/domain/staff-contacts.js";
 import { MailCopyAdminReader } from "../../domain/ports/mail-copy-admin.reader.js";
 import { MailTrialSender } from "../../domain/ports/mail-specimen.renderer.js";
@@ -22,6 +23,9 @@ import { SendMailCopyTrialCommand } from "./send-mail-copy-trial.command.js";
  * pour un essai qui n'est pas parti mentirait. Si le journal échoue ensuite,
  * l'erreur remonte — l'essai est arrivé, sa trace manque, et la personne le
  * voit.
+ *
+ * **Une fois par intention** (plan `plan-service-e-mails.md`, revue, cas 4) :
+ * un double clic sur « M'envoyer un essai » n'en envoie qu'un.
  */
 @CommandHandler(SendMailCopyTrialCommand)
 export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTrialCommand, void> {
@@ -32,13 +36,27 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
     private readonly sender: MailTrialSender,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
    * @throws {UnknownMailError} l'e-mail n'est pas au registre.
    * @throws {TrialRecipientMissingError} la fiche n'a pas d'adresse active.
    */
-  async execute(command: SendMailCopyTrialCommand): Promise<void> {
+  execute(command: SendMailCopyTrialCommand): Promise<void> {
+    return this.intents.run(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "mail.trial",
+        subject: `${command.mail}:${command.locale}:${command.source}`,
+      },
+      NOTHING_TO_REPLAY,
+      () => this.trial(command),
+    );
+  }
+
+  private async trial(command: SendMailCopyTrialCommand): Promise<void> {
     if (!this.manifest.hasMail(command.mail)) {
       throw new UnknownMailError(command.mail);
     }
@@ -50,7 +68,7 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
     const texts = replacementTexts(states, this.manifest, command.locale, command.source);
     const order =
       replacementSectionOrders(orders, this.manifest, command.source)[command.mail] ?? null;
-    await this.sender.send(to, command.mail, command.locale, texts, order);
+    await this.sender.send(to, command.mail, command.locale, texts, order, command.intentKey);
     await this.uow.run(() =>
       this.events.publishTraced(
         new MailCopyTrialSentEvent(command.mail, command.locale, command.source),

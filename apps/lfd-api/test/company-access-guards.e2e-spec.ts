@@ -12,6 +12,7 @@
  * Frontières doublées : la signature du jeton staff et le fournisseur d'identité
  * (tenants distants). Le reste — guard, bus, domaine, SQL — est réel.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CompanyMemberRepository } from "../src/b2b/account/domain/ports/company-member.repository.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
@@ -89,6 +90,7 @@ function invite(email: string, role: string): ReturnType<ReturnType<E2eContext["
   return ctx
     .asSub("staff-e2e")
     .post(`/admin/companies/${companyId}/members`)
+    .set(INTENT_KEY, freshIntent())
     .send({ email, firstName: "Alex", lastName: "Martin", phone: "", role });
 }
 

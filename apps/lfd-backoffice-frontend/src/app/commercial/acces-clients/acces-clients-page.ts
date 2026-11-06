@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../shared/gesture-intents';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import type { CustomerAccessRowView } from '@lfd/contracts';
@@ -84,6 +85,8 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
 })
 export class AccesClientsPage {
   private readonly access = inject(CustomerAccessService);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly companies = inject(AdminCompaniesService);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
@@ -190,7 +193,12 @@ export class AccesClientsPage {
     }
     this.pending.set(row.companyId);
     try {
-      const result = await this.companies.inviteMember(row.companyId, payload);
+      const result = await this.companies.inviteMember(
+        row.companyId,
+        payload,
+        this.intents.keyFor(row.companyId),
+      );
+      this.intents.done(row.companyId);
       const message = resendMessage(result.mailSent, payload.email);
       if (result.mailSent) {
         this.notify.success(message);

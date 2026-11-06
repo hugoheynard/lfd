@@ -166,6 +166,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
     await page['createAccount']();
 
     expect(create).toHaveBeenCalledWith({
+      intentKey: expect.any(String),
       identity: {
         raisonSociale: '',
         enseigne: 'Le Comptoir',
@@ -184,6 +185,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
     await page['createAccount']();
 
     expect(create).toHaveBeenCalledWith({
+      intentKey: expect.any(String),
       identity: {
         raisonSociale: '',
         enseigne: 'Le Comptoir',

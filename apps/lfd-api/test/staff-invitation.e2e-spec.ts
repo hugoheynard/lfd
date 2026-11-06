@@ -12,6 +12,7 @@
  * du chaînon réel est un geste manuel, décrit dans
  * `documentation/droits-et-permissions/architecture-acces-staff.md` §13.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -73,6 +74,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub("staff-e2e");
 async function createColleague(email = "sophie@lfc.test"): Promise<string> {
   const response = await staff()
     .post("/admin/staff-users")
+    .set(INTENT_KEY, freshIntent())
     .send({ firstName: "Sophie", lastName: "Martin", email, role: "support" })
     .expect(201);
   return jsonBody<CreatedStaffUserResponse>(response).id;
@@ -124,22 +126,50 @@ describe("invitation staff — le renvoi", () => {
     // observer ce que le RENVOI fait, et lui seul.
     calls.provisioned = [];
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    await staff()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
 
     expect(calls.provisioned).toEqual([]);
     expect(calls.relinked).toEqual(["auth0|sophie@lfc.test"]);
   });
 
+  /**
+   * Régression (revue de S2, cas 4) : la clé de l'e-mail était tirée au hasard
+   * à chaque requête — un double clic frappait deux liens et envoyait deux
+   * e-mails. La clé d'intention de l'écran fait du second clic un rejeu.
+   */
+  it("un double clic de même intention ne frappe qu'un lien et rend la première réponse", async () => {
+    const id = await createColleague();
+    calls.relinked = [];
+    const intent = freshIntent();
+    const route = `/admin/staff-users/${id}/invitation`;
+
+    const first = await staff().post(route).set(INTENT_KEY, intent).expect(200);
+    const second = await staff().post(route).set(INTENT_KEY, intent).expect(200);
+
+    expect(jsonBody<unknown>(second)).toEqual(jsonBody<unknown>(first));
+    expect(calls.relinked).toEqual(["auth0|sophie@lfc.test"]);
+    await staff().post(route).expect(400);
+  });
+
   it("repousse l'échéance", async () => {
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    await staff()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
     const first = (await view(id)).invitedAt;
     await ctx.prisma.staffUser.update({
       where: { id },
       data: { invitedAt: new Date("2026-01-01T00:00:00.000Z") },
     });
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    await staff()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
 
     const second = (await view(id)).invitedAt;
     expect(second).not.toBe("2026-01-01T00:00:00.000Z");
@@ -155,7 +185,10 @@ describe("invitation staff — le renvoi", () => {
       data: { status: "active", auth0Id: "auth0|deja" },
     });
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    await staff()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
 
     expect((await view(id)).status).toBe("active");
     expect(calls.relinked).toEqual(["auth0|deja"]);
@@ -169,6 +202,7 @@ describe("invitation staff — les refus", () => {
     const id = await createColleague();
     await staff()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
 
@@ -177,14 +211,20 @@ describe("invitation staff — les refus", () => {
     calls.provisioned = [];
     calls.relinked = [];
 
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(409);
+    await staff()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
 
     expect(calls.provisioned).toEqual([]);
     expect(calls.relinked).toEqual([]);
   });
 
   it("404 sur une fiche inconnue", async () => {
-    await staff().post("/admin/staff-users/inconnu/invitation").expect(404);
+    await staff()
+      .post("/admin/staff-users/inconnu/invitation")
+      .set(INTENT_KEY, freshIntent())
+      .expect(404);
   });
 
   it("refuse l'invitation à qui n'a pas l'annuaire (403)", async () => {
@@ -207,7 +247,11 @@ describe("invitation staff — les refus", () => {
     calls.provisioned = [];
     calls.relinked = [];
 
-    await ctx.asSub("staff-compta").post(`/admin/staff-users/${id}/invitation`).expect(403);
+    await ctx
+      .asSub("staff-compta")
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(403);
 
     expect(calls.provisioned).toEqual([]);
   });
@@ -216,7 +260,10 @@ describe("invitation staff — les refus", () => {
 describe("invitation staff — la péremption se dit", () => {
   it("passe à `invitationExpired` une fois le délai franchi", async () => {
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    await staff()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
 
     // Une invitation datée d'un jour de trop : la borne est inclusive côté vie,
     // donc on la franchit franchement plutôt que de la frôler.
@@ -228,7 +275,10 @@ describe("invitation staff — la péremption se dit", () => {
 
   it("ne périme pas une invitation d'hier", async () => {
     const id = await createColleague();
-    await staff().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    await staff()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
 
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
     await ctx.prisma.staffUser.update({ where: { id }, data: { invitedAt: yesterday } });

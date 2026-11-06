@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../shared/gesture-intents';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { STAFF_STATUS_LABELS, type StaffUserView } from '@lfd/contracts';
@@ -62,6 +63,8 @@ type LoadState = 'loading' | 'ready' | 'error';
 })
 export class ReglagesStaffUsersPage {
   private readonly service = inject(StaffUsersService);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
 
@@ -229,7 +232,9 @@ export class ReglagesStaffUsersPage {
   /** Invite, ou renvoie un lien : même geste, même appel. */
   protected async invite(user: StaffUserView): Promise<void> {
     try {
-      const { mailSent } = await this.service.invite(user.id);
+      const subject = `invite:${user.id}`;
+      const { mailSent } = await this.service.invite(user.id, this.intents.keyFor(subject));
+      this.intents.done(subject);
       // Le canal peut être muet — mailer non configuré, fournisseur en panne.
       // L'annoncer parti serait envoyer quelqu'un attendre un e-mail qui
       // n'arrivera pas ; le lien se remet alors depuis « Accès à remettre ».
@@ -268,7 +273,10 @@ export class ReglagesStaffUsersPage {
   protected async toggleSuspension(user: StaffUserView): Promise<void> {
     const suspended = user.status === 'suspended';
     try {
-      await this.service.setStatus(user.id, { status: suspended ? 'active' : 'suspended' });
+      const status = suspended ? 'active' : 'suspended';
+      const subject = `status:${user.id}:${status}`;
+      await this.service.setStatus(user.id, { status }, this.intents.keyFor(subject));
+      this.intents.done(subject);
       this.notify.success(suspended ? 'Accès réactivé.' : 'Accès suspendu.');
       await this.load();
     } catch (error) {

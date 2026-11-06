@@ -2,6 +2,13 @@ import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import {
+  type IntentCodec,
+  OncePerIntent,
+  readIntentBoolean,
+  readIntentChoice,
+  readIntentString,
+} from "../../../../platform/intent/once-per-intent.js";
 import { Company } from "../../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../../domain/errors/account-errors.js";
 import { CompanyDeclaredEvent } from "../../domain/events/company-declared.event.js";
@@ -75,9 +82,28 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     private readonly companies: CompanyRepository,
     private readonly access: AccountAccessGranter,
     private readonly events: DomainEventPublisher,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CreateCompanyByStaffCommand): Promise<CompanyOpened> {
+  /**
+   * **Une fois par intention** (revue, cas 4) : un second clic de même clé
+   * rend la société du premier, sans en déclarer une seconde ni renvoyer
+   * l'e-mail. Le sujet est le SIRET saisi, jamais l'adresse du contact.
+   */
+  execute(command: CreateCompanyByStaffCommand): Promise<CompanyOpened> {
+    return this.intents.run(
+      {
+        actorId: command.invitedBy,
+        key: command.intentKey,
+        gesture: "account.create-company",
+        subject: command.siret === "" ? "sans-siret" : command.siret,
+      },
+      OPENED_REPLAY,
+      () => this.open(command),
+    );
+  }
+
+  private async open(command: CreateCompanyByStaffCommand): Promise<CompanyOpened> {
     // Contact saisi par le staff : on le fait passer par le value object, qui en
     // tient les règles (e-mail valide, fonction bornée). Absent, c'est `null` —
     // pas un contact aux champs vides (cf. `CompanyContact`).
@@ -127,6 +153,7 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
         // s'attribue pas — il se constate, ici et nulle part ailleurs.
         role: "owner",
         invitedBy: command.invitedBy,
+        intentKey: command.intentKey,
       });
       // On ne dit PAS si la personne était déjà connue : ce serait apprendre au
       // commercial que cette adresse travaille avec un autre de nos clients.
@@ -138,3 +165,14 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     }
   }
 }
+
+const HOLDER_OUTCOMES: readonly HolderOutcome[] = ["attached", "deferred", "failed"];
+
+const OPENED_REPLAY: IntentCodec<CompanyOpened> = {
+  write: (result) => ({ id: result.id, holder: result.holder, mailSent: result.mailSent }),
+  read: (record, gesture) => ({
+    id: readIntentString(record, "id", gesture),
+    holder: readIntentChoice(record, "holder", gesture, HOLDER_OUTCOMES),
+    mailSent: readIntentBoolean(record, "mailSent", gesture),
+  }),
+};

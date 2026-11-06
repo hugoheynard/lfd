@@ -42,12 +42,17 @@ export abstract class MailSpecimenRenderer {
  * envoyer sont deux gestes, et le second seul a un effet hors de l'API.
  */
 export abstract class MailTrialSender {
-  /** @throws {UnknownMailError} l'e-mail n'est pas au registre. */
+  /**
+   * @param intentKey la clé d'intention de l'essai (revue, cas 4) : elle fait
+   *   la clé de l'e-mail.
+   * @throws {UnknownMailError} l'e-mail n'est pas au registre.
+   */
   abstract send(
     to: string,
     mail: string,
     locale: MailCopyLocale,
     texts: MailTextsByMail,
     order: readonly string[] | null,
+    intentKey: string,
   ): Promise<void>;
 }

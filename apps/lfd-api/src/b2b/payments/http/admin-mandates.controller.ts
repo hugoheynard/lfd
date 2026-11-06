@@ -32,6 +32,8 @@ import {
 import type { Response } from "express";
 
 import { InvalidScannedDocumentError } from "../../../platform/shared/errors/storage-errors.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachMandateProofCommand } from "../application/commands/attach-mandate-proof.command.js";
 import { RevokeMandateCommand } from "../application/commands/revoke-mandate.command.js";
@@ -175,9 +177,11 @@ export class AdminMandatesController {
   async send(
     @Param("companyId") companyId: string,
     @Param("mandateId") mandateId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<SendMandateCommand, void>(
-      new SendMandateCommand(companyId, mandateId),
+      new SendMandateCommand(companyId, mandateId, staffUserId, intentKey),
     );
   }
 

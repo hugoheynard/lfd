@@ -29,5 +29,11 @@ export class CreateCompanyByStaffCommand {
     /** Le détenteur, ou `null` : il sera rattaché plus tard, par son adresse. */
     readonly contact: ContactDetailsInput | null,
     readonly invitedBy: string,
+    /**
+     * La clé d'intention fabriquée par l'écran à l'ouverture du dialogue
+     * (plan `plan-service-e-mails.md`, revue, cas 4) : un second clic ne
+     * déclare pas une seconde société et ne renvoie pas l'e-mail.
+     */
+    readonly intentKey: string,
   ) {}
 }

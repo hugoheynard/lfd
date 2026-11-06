@@ -1,5 +1,6 @@
 import type { StaffUserPayload } from "@lfd/contracts";
 
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingJournal } from "../../../../platform/journal/__tests__/recording-journal.js";
 import type { OpenStaffAccess } from "../../../invitations/open-staff-access.service.js";
 import { STAFF_FACTS } from "../../domain/staff-facts.js";
@@ -17,6 +18,8 @@ const PAYLOAD: StaffUserPayload = {
   overrides: [],
 };
 
+const INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
+
 interface Harness {
   readonly handler: CreateStaffUserHandler;
   readonly staff: ScriptedStaffUsers;
@@ -32,7 +35,7 @@ function harness(options: { journalDown?: boolean; openFails?: boolean } = {}): 
   // `OpenStaffAccess` est une classe concrète à sept dépendances : on n'en
   // double que le geste que le handler appelle.
   const access = {
-    open: (id: string) => {
+    open: (id: string, _intentKey: string) => {
       opened.push({ id, insideTransaction: uow.inside });
       return options.openFails
         ? Promise.reject(new Error("fournisseur d'identité injoignable"))
@@ -40,7 +43,7 @@ function harness(options: { journalDown?: boolean; openFails?: boolean } = {}): 
     },
   } as OpenStaffAccess;
   return {
-    handler: new CreateStaffUserHandler(staff, access, journal, uow),
+    handler: new CreateStaffUserHandler(staff, access, journal, uow, inMemoryIntents()),
     staff,
     journal,
     opened,
@@ -51,7 +54,7 @@ describe("créer un membre de l’équipe", () => {
   it("l’invite dans la foulée — la création EST l’invitation", async () => {
     const h = harness();
 
-    const id = await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi"));
+    const id = await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT));
 
     expect(id).toBe("s1");
     expect(h.opened.map((call) => call.id)).toEqual(["s1"]);
@@ -60,7 +63,7 @@ describe("créer un membre de l’équipe", () => {
   it("écrit la fiche ET son fait dans la même transaction, l'invitation HORS d'elle", async () => {
     const h = harness();
 
-    await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi"));
+    await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT));
 
     expect(h.staff.writes).toEqual([{ method: "create", insideTransaction: true }]);
     expect(h.journal.facts).toEqual([
@@ -83,9 +86,25 @@ describe("créer un membre de l’équipe", () => {
     const h = harness({ journalDown: true });
 
     await expect(
-      h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi")),
+      h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT)),
     ).rejects.toThrow("journal en panne");
     expect(h.opened).toEqual([]);
+  });
+
+  /**
+   * Régression (revue de S2, cas 4) : un double clic sur « Créer » créait deux
+   * fiches et envoyait deux invitations.
+   */
+  it("un double clic de même intention ne crée qu’une fiche et n’invite qu’une fois", async () => {
+    const h = harness();
+
+    await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT));
+    await expect(
+      h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT)),
+    ).resolves.toBe("s1");
+
+    expect(h.staff.writes).toHaveLength(1);
+    expect(h.opened).toHaveLength(1);
   });
 
   it("NE DÉFAIT PAS la fiche quand l’invitation échoue", async () => {
@@ -94,9 +113,9 @@ describe("créer un membre de l’équipe", () => {
     // Elle existe, et « Renvoyer le lien » reprend la main.
     const h = harness({ openFails: true });
 
-    await expect(h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi"))).resolves.toBe(
-      "s1",
-    );
+    await expect(
+      h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT)),
+    ).resolves.toBe("s1");
     expect(h.journal.types()).toEqual([STAFF_FACTS.created]);
   });
 });

@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { Mail } from "../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
 import { Journal } from "../../../platform/journal/journal.js";
 import { StaffAccessCache } from "../../permissions/staff-access-cache.port.js";
 import { staffStatusFact } from "../domain/staff-facts.js";
@@ -37,13 +37,31 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
     private readonly staff: StaffUserRepository,
     private readonly config: AppConfig,
     private readonly mail: Mail,
-    private readonly ids: IdGenerator,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
     private readonly cache: StaffAccessCache,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: SetStaffStatusCommand): Promise<void> {
+  /**
+   * **Une fois par intention** (plan `plan-service-e-mails.md`, revue, cas
+   * 4) : un double clic ne repasse pas la transition et ne redemande pas
+   * l'e-mail.
+   */
+  execute(command: SetStaffStatusCommand): Promise<void> {
+    return this.intents.run(
+      {
+        actorId: command.actorId,
+        key: command.intentKey,
+        gesture: "staff.set-status",
+        subject: `${command.id}:${command.change.status}`,
+      },
+      NOTHING_TO_REPLAY,
+      () => this.apply(command),
+    );
+  }
+
+  private async apply(command: SetStaffStatusCommand): Promise<void> {
     const { status } = command.change;
     await this.uow.run(async () => {
       const previous = await this.staff.setStatus(command.id, command.change, command.actorId);
@@ -51,18 +69,18 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
       if (fact !== null) {
         await this.journal.append(fact);
       }
-      await this.tell(command.id, previous, status);
+      await this.tell(command, previous, status);
     });
     this.cache.forgetAll();
   }
 
   /**
-   * Une clé par **geste** (un identifiant neuf à chaque changement) : le bloc
-   * garde la clé un an, et une clé fixe par personne tairait une seconde
-   * suspension. Ni adresse ni nom dans la clé.
+   * Une clé par **intention** (la clé de l'écran, revue, cas 4) : le bloc la
+   * garde un an ; un double clic n'en demande qu'un, et une clé fixe par
+   * personne tairait une seconde suspension. Ni adresse ni nom dans la clé.
    */
   private async tell(
-    staffUserId: string,
+    { id: staffUserId, intentKey }: SetStaffStatusCommand,
     target: StaffUserSnapshot,
     status: "active" | "suspended",
   ): Promise<void> {
@@ -71,7 +89,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
         brand: "lfc",
         to: target.email,
         template: "staff.access-suspended",
-        idempotencyKey: `staff.access-suspended:${staffUserId}:${this.ids.next()}`,
+        idempotencyKey: `staff.access-suspended:${staffUserId}:${intentKey}`,
         data: { firstName: target.firstName },
       });
       return;
@@ -80,7 +98,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
       brand: "lfc",
       to: target.email,
       template: "staff.access-restored",
-      idempotencyKey: `staff.access-restored:${staffUserId}:${this.ids.next()}`,
+      idempotencyKey: `staff.access-restored:${staffUserId}:${intentKey}`,
       data: { firstName: target.firstName, backOfficeUrl: this.config.adminBaseUrl() ?? "" },
     });
   }

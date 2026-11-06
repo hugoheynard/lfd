@@ -18,6 +18,7 @@
  * personne au moment du geste, et cite l'adresse ou le contact avec son nom du
  * moment — un renommage après coup ne réécrit pas la ligne.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { IdentityWithoutLoginMethods } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -426,6 +427,7 @@ describe("le staff, sur l'accès d'un client", () => {
   it("inviter un membre : `company.access_opened` sous la fiche staff, la personne par son id", async () => {
     await staff()
       .post(`/admin/companies/${companyId}/members`)
+      .set(INTENT_KEY, freshIntent())
       .send({ email: EMAIL, firstName: "Karim", lastName: "Benali", phone: PHONE, role: "orders" })
       .expect(201);
 

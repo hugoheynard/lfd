@@ -1,3 +1,4 @@
+import { intentOptions } from '../shared/gesture-intents';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -61,11 +62,12 @@ export class IssuedInvoicesService {
    * « Votre facture » (E6, suite (b)), `b2b_accounting:write`. 409 nommé si
    * personne n'est joignable ou si le fournisseur refuse.
    */
-  async resendNotice(invoiceId: string): Promise<void> {
+  async resendNotice(invoiceId: string, intentKey: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(
         `${B2B_API_BASE}/admin/accounting/invoices/${encodeURIComponent(invoiceId)}/resend-notice`,
         {},
+        intentOptions(intentKey),
       ),
     );
   }

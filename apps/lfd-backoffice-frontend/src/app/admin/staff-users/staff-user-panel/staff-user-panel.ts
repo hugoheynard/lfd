@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../../shared/gesture-intents';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -65,6 +66,8 @@ const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+$/u;
 })
 export class StaffUserPanel {
   private readonly staff = inject(StaffUsersService);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
   private readonly permissions = inject(PermissionsStore);
@@ -225,7 +228,9 @@ export class StaffUserPanel {
     };
     try {
       if (user === null) {
-        await this.staff.create(payload);
+        // Une clé par ouverture du panneau : un double clic sur « Ajouter » ne
+        // crée qu'une fiche et n'envoie qu'une invitation.
+        await this.staff.create(payload, this.intents.keyFor('create'));
         this.notify.success('Utilisateur ajouté.');
       } else {
         await this.staff.update(user.id, payload);

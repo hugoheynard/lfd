@@ -5,7 +5,7 @@ import {
   type DeferredMailDemand,
 } from "../../../../mail/channels/requests/mail.js";
 import { RecordingMail } from "../../../../mail/channels/requests/__tests__/recording-mail.js";
-import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { STAFF_FACTS } from "../../domain/staff-facts.js";
 import type { StaffUserSnapshot } from "../../domain/staff-user-state.js";
 import { SetStaffStatusCommand } from "../set-staff-status.command.js";
@@ -42,15 +42,17 @@ function harness(before: StaffUserSnapshot, journalDown = false) {
     staff,
     config,
     mails,
-    new FixedIdGenerator("geste"),
     journal,
     uow,
     cache,
+    inMemoryIntents(),
   );
   return { handler, journal, cache, mails };
 }
 
-const suspend = new SetStaffStatusCommand("s1", { status: "suspended" }, "staff_moi");
+const FIRST = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
+const SECOND = "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
+const suspend = new SetStaffStatusCommand("s1", { status: "suspended" }, "staff_moi", FIRST);
 
 describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
   it("suspend : un fait et la demande d'e-mail dans la transaction, le cache oublié APRÈS", async () => {
@@ -75,7 +77,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
         brand: "lfc",
         to: CECILE.email,
         template: "staff.access-suspended",
-        idempotencyKey: "staff.access-suspended:s1:geste_000001",
+        idempotencyKey: `staff.access-suspended:s1:${FIRST}`,
         data: { firstName: "Cécile" },
       },
     ]);
@@ -86,7 +88,9 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
   it("réintègre une personne suspendue", async () => {
     const h = harness({ ...CECILE, status: "suspended" });
 
-    await h.handler.execute(new SetStaffStatusCommand("s1", { status: "active" }, "staff_moi"));
+    await h.handler.execute(
+      new SetStaffStatusCommand("s1", { status: "active" }, "staff_moi", FIRST),
+    );
 
     expect(h.journal.types()).toEqual([STAFF_FACTS.reinstated]);
     expect(h.mails.queued).toEqual([
@@ -94,7 +98,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
         brand: "lfc",
         to: CECILE.email,
         template: "staff.access-restored",
-        idempotencyKey: "staff.access-restored:s1:geste_000001",
+        idempotencyKey: `staff.access-restored:s1:${FIRST}`,
         data: { firstName: "Cécile", backOfficeUrl: "https://admin.test" },
       },
     ]);
@@ -103,7 +107,9 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
   it("active pour la PREMIÈRE fois une fiche en attente : `activated`, pas `reinstated` (D7)", async () => {
     const h = harness({ ...CECILE, status: "pending" });
 
-    await h.handler.execute(new SetStaffStatusCommand("s1", { status: "active" }, "staff_moi"));
+    await h.handler.execute(
+      new SetStaffStatusCommand("s1", { status: "active" }, "staff_moi", FIRST),
+    );
 
     expect(h.journal.types()).toEqual([STAFF_FACTS.activated]);
   });
@@ -124,16 +130,32 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
     expect(h.cache.forgotten).toEqual([]);
   });
 
-  it("deux suspensions de la même personne ont deux clés : la seconde n'est pas tue", async () => {
+  it("deux suspensions VOULUES de la même personne ont deux clés : la seconde n'est pas tue", async () => {
     // Le bloc garde une clé un an et ne renvoie pas une clé connue : une clé
     // fixe par personne aurait tu l'e-mail d'une seconde suspension.
     const h = harness(CECILE);
 
     await h.handler.execute(suspend);
-    await h.handler.execute(suspend);
+    await h.handler.execute(
+      new SetStaffStatusCommand("s1", { status: "suspended" }, "staff_moi", SECOND),
+    );
 
     const keys = h.mails.queued.map((mail) => mail.idempotencyKey);
     expect(new Set(keys).size).toBe(2);
+  });
+
+  /**
+   * Régression (revue de S2, cas 4) : la clé était tirée au hasard, et un
+   * double clic demandait deux e-mails.
+   */
+  it("un double clic de même intention ne demande qu'un e-mail et ne repasse pas le geste", async () => {
+    const h = harness(CECILE);
+
+    await h.handler.execute(suspend);
+    await h.handler.execute(suspend);
+
+    expect(h.mails.queued).toHaveLength(1);
+    expect(h.journal.facts).toHaveLength(1);
   });
 
   it("une demande d'e-mail refusée fait échouer le geste, et le cache n'est pas oublié", async () => {

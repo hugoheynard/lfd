@@ -1,5 +1,6 @@
 import { IdentityWithoutLoginMethods } from "../../../domain/ports/__tests__/login-method-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { Company } from "../../../domain/entities/company.js";
@@ -226,10 +227,20 @@ describe("l'accès à une société", () => {
       new OneMember(),
       new Access(OPENED),
       events,
+      inMemoryIntents(),
     );
 
     await handler.execute(
-      new InviteCompanyMemberCommand("c1", EMAIL, "Karim", "Benali", PHONE, "orders", "fiche-1"),
+      new InviteCompanyMemberCommand(
+        "c1",
+        EMAIL,
+        "Karim",
+        "Benali",
+        PHONE,
+        "orders",
+        "fiche-1",
+        "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c",
+      ),
     );
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
@@ -253,11 +264,21 @@ describe("l'accès à une société", () => {
       new OneMember(),
       new Access(new Error("fournisseur indisponible")),
       events,
+      inMemoryIntents(),
     );
 
     await expect(
       handler.execute(
-        new InviteCompanyMemberCommand("c1", EMAIL, "Karim", "Benali", PHONE, "orders", "fiche-1"),
+        new InviteCompanyMemberCommand(
+          "c1",
+          EMAIL,
+          "Karim",
+          "Benali",
+          PHONE,
+          "orders",
+          "fiche-1",
+          "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c",
+        ),
       ),
     ).rejects.toThrow(/indisponible/u);
     expect(events.traced).toHaveLength(0);
@@ -271,6 +292,7 @@ describe("l'accès à une société", () => {
       new Access(OPENED),
       events,
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
     await handler.execute(
@@ -278,6 +300,7 @@ describe("l'accès à une société", () => {
         "c1",
         { firstName: "Camille", lastName: "Rousseau", fonction: "", email: EMAIL, phone: PHONE },
         "fiche-1",
+        "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c",
       ),
     );
 

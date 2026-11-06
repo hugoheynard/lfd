@@ -5,7 +5,6 @@ import {
   type MailDemand,
   Mail,
 } from "../../../../../mail/channels/requests/mail.js";
-import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
@@ -222,6 +221,7 @@ const INPUT: AccessToGrant = {
   phone: "0600000000",
   role: "owner",
   invitedBy: "staff-sub",
+  intentKey: "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c",
 };
 
 /** Une racine cliente posée : le `.env` du poste ne décide de rien. */
@@ -243,13 +243,7 @@ function granter(
   clientRoot: string | null = "https://boutique.lfc.test/",
 ) {
   return {
-    service: new GrantAccountAccess(
-      members,
-      identity,
-      mail,
-      new FakeConfig(clientRoot),
-      new FixedIdGenerator("mail"),
-    ),
+    service: new GrantAccountAccess(members, identity, mail, new FakeConfig(clientRoot)),
     identity,
   };
 }
@@ -642,20 +636,35 @@ describe("GrantAccountAccess — l'adresse passe par le value object", () => {
 /**
  * S2b (2026-11-06) : l'envoi passe par le bloc `mail`, dont la clé
  * d'idempotence est gardée un an. Une clé stable par compte rendrait le reçu
- * du premier envoi au second clic — sans renvoyer le lien neuf.
+ * du premier envoi au second clic — sans renvoyer le lien neuf. Revue de S2,
+ * cas 4 (2026-11-06) : la clé est celle de l'INTENTION fabriquée par l'écran,
+ * plus un identifiant tiré au hasard — un double clic en tirait deux.
  */
 describe("GrantAccountAccess — la clé d'envoi", () => {
-  it("change à chaque geste, et ne porte ni l'adresse ni le sujet", async () => {
+  it("suit l'intention : la même pour un double clic, une neuve pour un renvoi", async () => {
     const members = new FakeMembers({ account: account("invited") });
     const { mailer } = fakeMailer();
     const { service } = granter(members, mailer);
 
     await service.grant(INPUT);
     await service.grant(INPUT);
+    await service.grant({ ...INPUT, intentKey: "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f" });
 
-    expect(new Set(mailer.keys).size).toBe(2);
+    expect(mailer.keys).toEqual([
+      `account.access-opened:user_known:cmp_1:${INPUT.intentKey}`,
+      `account.access-opened:user_known:cmp_1:${INPUT.intentKey}`,
+      "account.access-opened:user_known:cmp_1:5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+    ]);
+  });
+
+  it("ne porte ni l'adresse ni le sujet", async () => {
+    const members = new FakeMembers({ account: account("invited") });
+    const { mailer } = fakeMailer();
+    const { service } = granter(members, mailer);
+
+    await service.grant(INPUT);
+
     for (const key of mailer.keys) {
-      expect(key).toMatch(/^account\.access-opened:user_known:cmp_1:/u);
       expect(key).not.toContain(INPUT.email);
       expect(key).not.toContain("auth0|");
     }

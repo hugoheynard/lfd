@@ -5,7 +5,7 @@ import {
   RecordingMail,
 } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import type { MailDemand } from "../../../../../mail/channels/requests/mail.js";
-import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { LegalEntityLogoReader } from "../../../../accounting/domain/ports/legal-entity-logo.reader.js";
@@ -53,6 +53,9 @@ class StepMail extends RecordingMail {
   }
 }
 
+const FIRST_INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
+const SECOND_INTENT = "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
+
 function harness(providerId: string | null = "re_1") {
   const steps = new Steps();
   const mandates = new InMemoryMandates(steps);
@@ -71,14 +74,15 @@ function harness(providerId: string | null = "re_1") {
     events,
     new FixedDebtors(mandates),
     new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
-    new FixedIdGenerator("send"),
+    inMemoryIntents(),
   );
   return {
     steps,
     mandates,
     mails,
     events,
-    run: (mandateId = "mdt_1") => handler.execute(new SendMandateCommand("cmp_1", mandateId)),
+    run: (mandateId = "mdt_1", intentKey = FIRST_INTENT) =>
+      handler.execute(new SendMandateCommand("cmp_1", mandateId, "staff_1", intentKey)),
   };
 }
 
@@ -152,18 +156,32 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
    * Le bloc garde une clé un an : une clé par mandat aurait fait qu'un second
    * « Envoyer » du même brouillon ne renvoie plus rien.
    */
-  it("une clé par geste : deux envois du même brouillon ont deux clés, sans adresse", async () => {
+  it("une clé par intention : deux envois voulus du même brouillon ont deux clés, sans adresse", async () => {
+    const h = harness();
+
+    await h.run("mdt_1", FIRST_INTENT);
+    await h.run("mdt_1", SECOND_INTENT);
+
+    const keys = h.mails.awaitedReceipt.map((mail) => mail.idempotencyKey);
+    expect(keys).toEqual([
+      `mandate-to-sign:mdt_1:${FIRST_INTENT}`,
+      `mandate-to-sign:mdt_1:${SECOND_INTENT}`,
+    ]);
+    expect(keys.join()).not.toContain(HOLDER.email);
+  });
+
+  /**
+   * Régression (revue de S2, cas 4) : la clé était tirée au hasard à chaque
+   * requête, et un double clic envoyait deux courriels et deux faits.
+   */
+  it("un double clic de même intention n'envoie qu'un courriel et n'écrit qu'un fait", async () => {
     const h = harness();
 
     await h.run();
     await h.run();
 
-    const keys = h.mails.awaitedReceipt.map((mail) => mail.idempotencyKey);
-    expect(keys).toEqual([
-      "mandate-to-sign:mdt_1:send_000001",
-      "mandate-to-sign:mdt_1:send_000002",
-    ]);
-    expect(keys.join()).not.toContain(HOLDER.email);
+    expect(h.mails.awaitedReceipt).toHaveLength(1);
+    expect(h.events.traced).toHaveLength(1);
   });
 
   it("n'envoie rien et n'écrit rien pour un mandat déjà signé", async () => {

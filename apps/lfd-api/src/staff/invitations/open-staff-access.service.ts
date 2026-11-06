@@ -5,7 +5,6 @@ import { IdentitySubjectUnknownError } from "../../platform/shared/errors/identi
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { Journal } from "../../platform/journal/journal.js";
 import { Clock } from "../../platform/time/clock.js";
-import { IdGenerator } from "../../platform/id/id-generator.js";
 import { Mail } from "../../mail/channels/requests/mail.js";
 import { StaffIdentityPort } from "./staff-identity.port.js";
 import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
@@ -58,13 +57,17 @@ export class OpenStaffAccess {
     private readonly identities: StaffIdentityPort,
     private readonly clock: Clock,
     private readonly mail: Mail,
-    private readonly ids: IdGenerator,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
     private readonly cache: StaffAccessCache,
   ) {}
 
-  async open(staffUserId: string): Promise<StaffAccessOpened> {
+  /**
+   * @param intentKey la clé d'intention du geste (revue, cas 4) : elle fait
+   *   la clé de l'e-mail, et un second passage de même intention ne renvoie
+   *   pas l'e-mail.
+   */
+  async open(staffUserId: string, intentKey: string): Promise<StaffAccessOpened> {
     const target = await this.staff.identityOf(staffUserId);
     if (target.status === "suspended") {
       throw new SuspendedStaffInviteError();
@@ -85,7 +88,7 @@ export class OpenStaffAccess {
     // Le lien ne sort d'ici que par cette adresse-là. Il vaut prise de contrôle
     // du compte : ni journal, ni réponse HTTP, ni écran de celui qui invite.
     return {
-      mailSent: await this.deliver(template, target, passwordSetupUrl),
+      mailSent: await this.deliver(template, target, passwordSetupUrl, intentKey),
     };
   }
 
@@ -96,21 +99,23 @@ export class OpenStaffAccess {
    * identifiant : répondre `true` ferait annoncer une invitation envoyée à
    * quelqu'un qui n'attendra jamais rien.
    *
-   * La clé est celle du **geste** (un identifiant neuf par ouverture) : le
-   * bloc la garde un an, et une clé stable par personne tairait le renvoi
-   * d'un lien neuf. Ni adresse ni `sub` dans la clé.
+   * La clé est celle de l'**intention** (la clé que l'écran a fabriquée,
+   * revue, cas 4) : le bloc la garde un an ; un double clic n'envoie qu'un
+   * e-mail, et un vrai renvoi en porte une neuve — une clé stable par
+   * personne le tairait. Ni adresse ni `sub` dans la clé.
    */
   private async deliver(
     template: "staff.invited" | "staff.password-reset",
     target: StaffIdentityFacts,
     passwordSetupUrl: string,
+    intentKey: string,
   ): Promise<boolean> {
     try {
       const receipt = await this.mail.sendAndAwaitReceipt({
         brand: "lfc",
         to: target.email,
         template,
-        idempotencyKey: `${template}:${target.id}:${this.ids.next()}`,
+        idempotencyKey: `${template}:${target.id}:${intentKey}`,
         data: { firstName: target.firstName, passwordSetupUrl },
       });
       return receipt.providerId !== null;

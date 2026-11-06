@@ -174,6 +174,7 @@ export class RecordingTrialSender extends MailTrialSender {
     locale: MailCopyLocale;
     texts: MailTextsByMail;
     order: readonly string[] | null;
+    intentKey: string;
   }[] = [];
   failure: Error | null = null;
 
@@ -183,11 +184,12 @@ export class RecordingTrialSender extends MailTrialSender {
     locale: MailCopyLocale,
     texts: MailTextsByMail,
     order: readonly string[] | null,
+    intentKey: string,
   ): Promise<void> {
     if (this.failure !== null) {
       return Promise.reject(this.failure);
     }
-    this.sent.push({ to, mail, locale, texts, order });
+    this.sent.push({ to, mail, locale, texts, order, intentKey });
     return Promise.resolve();
   }
 }

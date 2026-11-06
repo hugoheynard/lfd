@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../shared/gesture-intents';
 import { inject, Injectable, signal } from '@angular/core';
 import type {
   CompanyMemberInvitedView,
@@ -26,6 +27,8 @@ import { validUntil } from '../../admin/acces-en-attente/pending-access.model';
 @Injectable()
 export class FicheClientActions {
   private readonly service = inject(AdminCompaniesService);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly notify = inject(NotifyService);
 
   /** Une ouverture d'accès est en cours — empêche le double envoi. */
@@ -52,6 +55,7 @@ export class FicheClientActions {
     this.creating.set(true);
     try {
       const created = await this.service.create({
+        intentKey: this.intents.keyFor('open-account'),
         identity: trimIdentity(identity),
         // Le détenteur EST le contact principal de la société : celui qu'on
         // rappelle est celui qui commande. Absent, la société s'ouvre sur son
@@ -73,6 +77,7 @@ export class FicheClientActions {
                 role: '',
               },
       });
+      this.intents.done('open-account');
       this.notify.success(openingMessage(created));
       return created.id;
     } catch (error) {
@@ -183,13 +188,19 @@ export class FicheClientActions {
     }
     this.granting.set(true);
     try {
-      const result = await this.service.inviteMember(company.id, {
-        email: contact.email,
-        firstName: contact.firstName,
-        lastName: contact.lastName,
-        phone: contact.phone,
-        role: contact.role,
-      });
+      const subject = `member:${company.id}:${contact.email}`;
+      const result = await this.service.inviteMember(
+        company.id,
+        {
+          email: contact.email,
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          phone: contact.phone,
+          role: contact.role,
+        },
+        this.intents.keyFor(subject),
+      );
+      this.intents.done(subject);
       // Le sort de l'envoi n'est pas arrondi : un « c'est envoyé ! » de
       // politesse ferait attendre un e-mail qui n'arrivera jamais.
       this.notify.success(accessMessage(result));
@@ -220,13 +231,19 @@ export class FicheClientActions {
     }
     this.granting.set(true);
     try {
-      const result = await this.service.attachHolder(company.id, {
-        email: holder.email,
-        firstName: holder.firstName,
-        lastName: holder.lastName,
-        fonction: '',
-        phone: holder.phone,
-      });
+      const subject = `holder:${company.id}`;
+      const result = await this.service.attachHolder(
+        company.id,
+        {
+          email: holder.email,
+          firstName: holder.firstName,
+          lastName: holder.lastName,
+          fonction: '',
+          phone: holder.phone,
+        },
+        this.intents.keyFor(subject),
+      );
+      this.intents.done(subject);
       this.notify.success(
         result.mailSent
           ? `Détenteur rattaché, l'accès est en route vers ${holder.email}.`

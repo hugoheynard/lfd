@@ -11,6 +11,7 @@
  * Doublés, et eux seuls : le fournisseur d'identité et le courrier — deux
  * frontières sortantes.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { CreatedStaffUserResponse } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -81,6 +82,7 @@ async function operatorId(): Promise<string> {
 async function createColleague(over: Record<string, unknown> = {}): Promise<string> {
   const response = await operator()
     .post("/admin/staff-users")
+    .set(INTENT_KEY, freshIntent())
     .send({
       firstName: "Cécile",
       lastName: "Martin",
@@ -277,6 +279,7 @@ describe("le journal de l'annuaire — chaque geste a sa trace, et son auteur", 
     await ctx.prisma.staffUser.update({ where: { id }, data: { status: "active" } });
     await operator()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
 
@@ -306,7 +309,11 @@ describe("le journal de l'annuaire — activer n'est pas rétablir (D7)", () => 
   it("la première activation s'écrit `activated`, la reprise d'une fiche suspendue `reinstated`", async () => {
     const id = await createColleague();
     const status = (next: "active" | "suspended") =>
-      operator().patch(`/admin/staff-users/${id}/status`).send({ status: next }).expect(204);
+      operator()
+        .patch(`/admin/staff-users/${id}/status`)
+        .set(INTENT_KEY, freshIntent())
+        .send({ status: next })
+        .expect(204);
 
     await status("active");
     await status("suspended");
@@ -341,6 +348,7 @@ describe("le journal de l'annuaire — la suspension mord tout de suite", () => 
 
     await operator()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
 
@@ -360,7 +368,9 @@ describe("le journal de l'annuaire — une trace qui tombe annule le geste", () 
     sent.length = 0;
     await breakJournal("staff_user.invited");
 
-    const response = await operator().post(`/admin/staff-users/${id}/invitation`);
+    const response = await operator()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent());
 
     expect(response.status).toBeGreaterThanOrEqual(500);
     const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id } });
@@ -377,6 +387,7 @@ describe("le journal de l'annuaire — une trace qui tombe annule le geste", () 
 
     const response = await operator()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" });
 
     expect(response.status).toBeGreaterThanOrEqual(500);
@@ -404,10 +415,12 @@ describe("l'annuaire — ses e-mails passent par le bloc `mail`", () => {
 
     await operator()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
     await operator()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "active" })
       .expect(204);
     await ctx.drain();
@@ -438,7 +451,9 @@ describe("l'annuaire — ses e-mails passent par le bloc `mail`", () => {
     sent.length = 0;
     const outboxBefore = await ctx.prisma.outboxMessage.count();
 
-    const response = await operator().post(`/admin/staff-users/${id}/invitation`);
+    const response = await operator()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent());
 
     expect(response.status).toBeLessThan(300);
     expect(sent).toEqual(["staff.invited → cecile@lfc.test"]);

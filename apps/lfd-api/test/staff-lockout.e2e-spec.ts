@@ -14,6 +14,7 @@
  *
  * Modèle : `documentation/droits-et-permissions/architecture-acces-staff.md` §6.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { CreatedStaffUserResponse, StaffUserView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -118,6 +119,7 @@ describe("porte de secours — l'admin racine résiste aux vraies routes", () =>
     // exactement la même perte.
     await admin()
       .patch(`/admin/staff-users/${await rootId()}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(409);
   });
@@ -174,6 +176,7 @@ describe("porte de secours — il reste toujours un administrateur", () => {
 
     await admin()
       .patch(`/admin/staff-users/${self.id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(409);
   });
@@ -241,6 +244,7 @@ describe("porte de secours — il reste toujours un administrateur", () => {
 
     await admin()
       .patch(`/admin/staff-users/${id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
   });
@@ -249,6 +253,7 @@ describe("porte de secours — il reste toujours un administrateur", () => {
 async function create(over: Record<string, unknown>): Promise<string> {
   const response = await admin()
     .post("/admin/staff-users")
+    .set(INTENT_KEY, freshIntent())
     .send({
       firstName: "Camille",
       lastName: "Durand",

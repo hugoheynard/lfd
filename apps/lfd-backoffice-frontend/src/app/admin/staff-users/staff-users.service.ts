@@ -1,3 +1,4 @@
+import { intentOptions } from '../../shared/gesture-intents';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -32,9 +33,13 @@ export class StaffUsersService {
   }
 
   /** Crée un user staff. */
-  async create(payload: StaffUserPayload): Promise<CreatedStaffUserResponse> {
+  async create(payload: StaffUserPayload, intentKey: string): Promise<CreatedStaffUserResponse> {
     return firstValueFrom(
-      this.http.post<CreatedStaffUserResponse>(`${B2B_API_BASE}/admin/staff-users`, payload),
+      this.http.post<CreatedStaffUserResponse>(
+        `${B2B_API_BASE}/admin/staff-users`,
+        payload,
+        intentOptions(intentKey),
+      ),
     );
   }
 
@@ -59,9 +64,13 @@ export class StaffUsersService {
    * Suspend une personne, ou la réintègre. Geste distinct de l'édition : on ne
    * ferme pas un accès en enregistrant un formulaire de coordonnées.
    */
-  async setStatus(id: string, change: StaffStatusChange): Promise<void> {
+  async setStatus(id: string, change: StaffStatusChange, intentKey: string): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(`${B2B_API_BASE}/admin/staff-users/${id}/status`, change),
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/staff-users/${id}/status`,
+        change,
+        intentOptions(intentKey),
+      ),
     );
   }
 
@@ -71,11 +80,12 @@ export class StaffUsersService {
    * L'écran n'a pas à le deviner — il se tromperait dès qu'un second onglet est
    * ouvert sur la même fiche.
    */
-  async invite(id: string): Promise<InvitationSentResponse> {
+  async invite(id: string, intentKey: string): Promise<InvitationSentResponse> {
     return firstValueFrom(
       this.http.post<InvitationSentResponse>(
         `${B2B_API_BASE}/admin/staff-users/${id}/invitation`,
         {},
+        intentOptions(intentKey),
       ),
     );
   }

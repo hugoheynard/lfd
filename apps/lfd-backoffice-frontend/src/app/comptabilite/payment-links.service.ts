@@ -1,3 +1,4 @@
+import { intentOptions } from '../shared/gesture-intents';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -33,8 +34,10 @@ export class PaymentLinksService {
     );
   }
 
-  async resendOrderLink(orderId: string): Promise<void> {
-    await firstValueFrom(this.http.post<void>(`${this.base}/orders/${orderId}/resend`, {}));
+  async resendOrderLink(orderId: string, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base}/orders/${orderId}/resend`, {}, intentOptions(intentKey)),
+    );
   }
 
   async listLinks(): Promise<readonly PaymentLinkView[]> {

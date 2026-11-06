@@ -18,6 +18,7 @@
  *   staff, avec le reçu du fournisseur et **sans l'adresse** — cherchée, elle
  *   aussi, dans la ligne SQL (décision de Hugo, 2026-09-19).
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { MailReceipt } from "@lfd/mailer";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -318,6 +319,7 @@ describe("l'envoi du mandat au client par le staff", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post(`/admin/companies/${companyId}/mandate/${mandateId}/send`)
+      .set(INTENT_KEY, freshIntent())
       .expect(204);
 
     const { reference } = await ctx.prisma.paymentMandate.findUniqueOrThrow({

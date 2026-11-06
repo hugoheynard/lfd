@@ -26,6 +26,7 @@ import { ResetMailCopyDraftCommand } from "../application/commands/reset-mail-co
 import { ResetMailSectionOrderDraftCommand } from "../application/commands/reset-mail-section-order-draft.command.js";
 import { SaveMailCopyDraftCommand } from "../application/commands/save-mail-copy-draft.command.js";
 import { SaveMailSectionOrderDraftCommand } from "../application/commands/save-mail-section-order-draft.command.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { SendMailCopyTrialCommand } from "../application/commands/send-mail-copy-trial.command.js";
 import { GetMailCopyAdminQuery } from "../application/queries/get-mail-copy-admin.query.js";
 import { GetMailCopyPreviewQuery } from "../application/queries/get-mail-copy-preview.query.js";
@@ -148,9 +149,16 @@ export class AdminMailCopyController {
   async trial(
     @Body(new ZodBody(mailCopyTrialPayloadSchema)) payload: MailCopyTrialPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<SendMailCopyTrialCommand, void>(
-      new SendMailCopyTrialCommand(payload.mail, payload.locale, payload.source, staffUserId),
+      new SendMailCopyTrialCommand(
+        payload.mail,
+        payload.locale,
+        payload.source,
+        staffUserId,
+        intentKey,
+      ),
     );
   }
 }

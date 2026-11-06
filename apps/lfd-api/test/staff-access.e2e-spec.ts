@@ -7,6 +7,7 @@
  * chose. Chaque cas ici correspond à une décision de
  * `documentation/droits-et-permissions/architecture-acces-staff.md`.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import type { RoleGrant, StaffUserView } from "@lfd/contracts";
 
@@ -242,6 +243,7 @@ describe("le mur staff — une décision mord tout de suite", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .patch(`/admin/staff-users/${target.id}/status`)
+      .set(INTENT_KEY, freshIntent())
       .send({ status: "suspended" })
       .expect(204);
 

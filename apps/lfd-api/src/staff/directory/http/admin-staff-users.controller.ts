@@ -27,6 +27,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ListStaffUsersQuery } from "../application/list-staff-users.query.js";
 import { SetStaffStatusCommand } from "../application/set-staff-status.command.js";
@@ -62,9 +63,10 @@ export class AdminStaffUsersController {
   async create(
     @Body(new ZodBody(staffUserPayloadSchema)) payload: StaffUserPayload,
     @StaffUserId() actorId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedStaffUserResponse> {
     const id = await this.commands.execute<CreateStaffUserCommand, string>(
-      new CreateStaffUserCommand(payload, actorId),
+      new CreateStaffUserCommand(payload, actorId, intentKey),
     );
     return { id };
   }
@@ -98,9 +100,10 @@ export class AdminStaffUsersController {
     @Param("id") id: string,
     @Body(new ZodBody(staffStatusChangeSchema)) change: StaffStatusChange,
     @StaffUserId() actorId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<SetStaffStatusCommand, void>(
-      new SetStaffStatusCommand(id, change, actorId),
+      new SetStaffStatusCommand(id, change, actorId, intentKey),
     );
   }
 
@@ -110,8 +113,9 @@ export class AdminStaffUsersController {
    * l'exposerait à se tromper dès qu'un second onglet est ouvert.
    *
    * `POST` et non `PATCH` : ce n'est pas la fiche qu'on modifie, c'est un lien
-   * qu'on **émet**. Volontairement non idempotent — chaque appel frappe un
-   * ticket neuf et tue le précédent, ce qui est exactement ce qu'on veut quand
+   * qu'on **émet**. Idempotent par INTENTION seulement (revue, cas 4) : un
+   * double clic de même clé ne frappe qu'un ticket ; « Renvoyer » fabrique une
+   * clé neuve, donc un ticket neuf qui tue le précédent — ce qu'on veut quand
    * une boîte partagée a vu passer le lien.
    *
    * Le verbe suffit à exiger `staff:write` (surface réflexive) : inviter
@@ -121,9 +125,13 @@ export class AdminStaffUsersController {
   // rien dire, et l'écran annonçait donc un envoi qu'il n'avait pas constaté.
   @Post(":id/invitation")
   @HttpCode(HttpStatus.OK)
-  invite(@Param("id") id: string, @StaffUserId() actorId: string): Promise<StaffInvited> {
+  invite(
+    @Param("id") id: string,
+    @StaffUserId() actorId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<StaffInvited> {
     return this.commands.execute<InviteStaffUserCommand, StaffInvited>(
-      new InviteStaffUserCommand(id, actorId),
+      new InviteStaffUserCommand(id, actorId, intentKey),
     );
   }
 

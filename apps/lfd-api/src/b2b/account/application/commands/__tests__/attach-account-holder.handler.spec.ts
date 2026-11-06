@@ -1,5 +1,6 @@
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { Company } from "../../../domain/entities/company.js";
 import {
   CompanyAlreadyHasOwnerError,
@@ -70,9 +71,10 @@ function doubles(
   options: { company?: Company | null; access?: AccessGranted | Error } = {},
 ): Doubles {
   const saved: Company[] = [];
-  const company = options.company === undefined ? withoutHolder() : options.company;
+  // Une société relue à chaque chargement, comme le dépôt réel : un essai raté
+  // ne laisse pas au suivant l'agrégat qu'il a muté.
   const companies: CompanyRepository = {
-    load: () => Promise.resolve(company),
+    load: () => Promise.resolve(options.company === undefined ? withoutHolder() : options.company),
     save: (written: Company) => {
       saved.push(written);
       return Promise.resolve();
@@ -92,6 +94,7 @@ function doubles(
       access,
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     ),
     access,
     saved,
@@ -99,8 +102,10 @@ function doubles(
 }
 
 function command(): AttachAccountHolderCommand {
-  return new AttachAccountHolderCommand("cmp_1", HOLDER, "staff-sub");
+  return new AttachAccountHolderCommand("cmp_1", HOLDER, "staff-sub", INTENT);
 }
+
+const INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
 
 describe("AttachAccountHolderHandler", () => {
   it("rattache le détenteur et lui ouvre l'accès en propriétaire", async () => {
@@ -151,10 +156,38 @@ describe("AttachAccountHolderHandler", () => {
 
   it("refuse une adresse invalide avant tout effet de bord", async () => {
     const { handler, access } = doubles();
-    const bad = new AttachAccountHolderCommand("cmp_1", { ...HOLDER, email: "" }, "staff-sub");
+    const bad = new AttachAccountHolderCommand(
+      "cmp_1",
+      { ...HOLDER, email: "" },
+      "staff-sub",
+      INTENT,
+    );
 
     await expect(handler.execute(bad)).rejects.toBeInstanceOf(InvalidEmailError);
     expect(access.granted).toEqual([]);
+  });
+
+  /**
+   * Régression (revue de S2, cas 4) : un double clic ouvrait deux fois
+   * l'accès et envoyait deux e-mails, la clé de l'e-mail étant tirée au hasard.
+   */
+  it("un second clic de même intention ne rouvre rien et rend le premier résultat", async () => {
+    const { handler, access, saved } = doubles();
+
+    await handler.execute(command());
+    await expect(handler.execute(command())).resolves.toEqual({ mailSent: true });
+
+    expect(access.granted).toHaveLength(1);
+    expect(access.granted[0]?.intentKey).toBe(INTENT);
+    expect(saved).toHaveLength(1);
+  });
+
+  it("un échec rend l'intention : le même clic réessaie", async () => {
+    const { handler, access } = doubles({ access: new Error("canal indisponible") });
+
+    await expect(handler.execute(command())).rejects.toThrow("canal indisponible");
+    await expect(handler.execute(command())).rejects.toThrow("canal indisponible");
+    expect(access.granted).toHaveLength(2);
   });
 
   it("404 sur une société inconnue", async () => {

@@ -1,3 +1,4 @@
+import { intentOptions } from '../../shared/gesture-intents';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
@@ -67,7 +68,14 @@ export class MailCopyService {
   }
 
   /** À l'adresse de la fiche de l'appelant, et à elle seule — `409` s'il n'en a pas. */
-  async sendTrial(mail: string, locale: ContentLocale, source: MailCopySource): Promise<void> {
-    await firstValueFrom(this.http.post<void>(`${BASE}/trials`, { mail, locale, source }));
+  async sendTrial(
+    mail: string,
+    locale: ContentLocale,
+    source: MailCopySource,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${BASE}/trials`, { mail, locale, source }, intentOptions(intentKey)),
+    );
   }
 }

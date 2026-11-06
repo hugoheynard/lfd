@@ -1,3 +1,4 @@
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { randomUUID } from "node:crypto";
 /**
  * E2E des **liens de paiement** (`/admin/accounting/payment-links`, plan
@@ -222,7 +223,7 @@ describe("2a — les commandes à régler par carte", () => {
     const orderId = await placeCardOrder(companyId);
     sentMails.splice(0);
 
-    await staff().post(`${ORDERS}/${orderId}/resend`).expect(204);
+    await staff().post(`${ORDERS}/${orderId}/resend`).set(INTENT_KEY, freshIntent()).expect(204);
 
     const mails = sentMails.filter((mail) => mail.template === "customer.order-payment-link");
     expect(mails).toHaveLength(1);
@@ -240,7 +241,10 @@ describe("2a — les commandes à régler par carte", () => {
     const rows = jsonBody<OrderAwaitingPaymentView[]>(await staff().get(ORDERS).expect(200));
     expect(rows[0]?.paymentUrl).toBeNull();
 
-    const refused = await staff().post(`${ORDERS}/${orderId}/resend`).expect(409);
+    const refused = await staff()
+      .post(`${ORDERS}/${orderId}/resend`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
     expect(refused.body).toMatchObject({ code: "orders.payment_link.refused" });
     expect(JSON.stringify(refused.body)).toContain("CLIENT_BASE_URL");
   });
@@ -250,7 +254,7 @@ describe("2a — les commandes à régler par carte", () => {
     const orderId = await placeCardOrder(companyId);
     await ctx.prisma.order.update({ where: { id: orderId }, data: { paymentStatus: "paid" } });
 
-    await staff().post(`${ORDERS}/${orderId}/resend`).expect(409);
+    await staff().post(`${ORDERS}/${orderId}/resend`).set(INTENT_KEY, freshIntent()).expect(409);
   });
 });
 

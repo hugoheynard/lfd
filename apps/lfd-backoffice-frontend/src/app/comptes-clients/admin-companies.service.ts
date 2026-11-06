@@ -1,3 +1,4 @@
+import { intentOptions } from '../shared/gesture-intents';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -75,9 +76,16 @@ export class AdminCompaniesService {
   async create(input: {
     readonly identity: CompanyIdentityDraft;
     readonly contact?: CompanyContactDraft | undefined;
+    readonly intentKey: string;
   }): Promise<CompanyOpened> {
     const body = { ...input.identity, primaryContact: input.contact };
-    return firstValueFrom(this.http.post<CompanyOpened>(`${B2B_API_BASE}/admin/companies`, body));
+    return firstValueFrom(
+      this.http.post<CompanyOpened>(
+        `${B2B_API_BASE}/admin/companies`,
+        body,
+        intentOptions(input.intentKey),
+      ),
+    );
   }
 
   /**
@@ -87,11 +95,16 @@ export class AdminCompaniesService {
    * celui-là **désigne** la personne du compte. Le serveur reconnaît l'adresse
    * si elle a déjà un espace chez nous, et la société vient l'y rejoindre.
    */
-  async attachHolder(companyId: string, payload: AccountHolderPayload): Promise<HolderAttached> {
+  async attachHolder(
+    companyId: string,
+    payload: AccountHolderPayload,
+    intentKey: string,
+  ): Promise<HolderAttached> {
     return firstValueFrom(
       this.http.post<HolderAttached>(
         `${B2B_API_BASE}/admin/companies/${companyId}/holder`,
         payload,
+        intentOptions(intentKey),
       ),
     );
   }
@@ -115,11 +128,13 @@ export class AdminCompaniesService {
   async inviteMember(
     companyId: string,
     payload: InviteCompanyMemberPayload,
+    intentKey: string,
   ): Promise<CompanyMemberInvitedView> {
     return firstValueFrom(
       this.http.post<CompanyMemberInvitedView>(
         `${B2B_API_BASE}/admin/companies/${companyId}/members`,
         payload,
+        intentOptions(intentKey),
       ),
     );
   }

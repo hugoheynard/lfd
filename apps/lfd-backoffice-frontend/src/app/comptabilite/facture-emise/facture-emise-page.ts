@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../shared/gesture-intents';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -73,6 +74,8 @@ type InvoiceState = 'loading' | 'ready' | 'not-found' | 'error';
 })
 export class FactureEmisePage {
   private readonly api = inject(IssuedInvoicesService);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
@@ -137,7 +140,8 @@ export class FactureEmisePage {
     }
     this.resending.set(true);
     try {
-      await this.api.resendNotice(invoice.invoiceId);
+      await this.api.resendNotice(invoice.invoiceId, this.intents.keyFor(invoice.invoiceId));
+      this.intents.done(invoice.invoiceId);
       this.notify.success(`L’e-mail de la facture ${invoice.number} est reparti.`);
     } catch (error) {
       this.notify.error(

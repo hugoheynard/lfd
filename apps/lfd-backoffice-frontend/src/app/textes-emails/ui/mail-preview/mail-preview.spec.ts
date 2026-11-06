@@ -108,7 +108,12 @@ describe('MailPreview — le vrai gabarit, des données d’exemple', () => {
     );
     button?.click();
     await fixture.whenStable();
-    expect(api.sendTrial).toHaveBeenCalledWith('customer.order-placed', 'fr', 'draft');
+    expect(api.sendTrial).toHaveBeenCalledWith(
+      'customer.order-placed',
+      'fr',
+      'draft',
+      expect.any(String),
+    );
     expect(notify.success).toHaveBeenCalled();
   });
 

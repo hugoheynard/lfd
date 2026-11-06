@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../../shared/gesture-intents';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -88,6 +89,8 @@ export class MailPreview {
   readonly mail = input.required<MailCopyMailView>();
 
   protected readonly store = inject(MailCopyStore);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly writer = inject(MailDraftWriter);
   private readonly api = inject(MailCopyService);
   private readonly notify = inject(NotifyService);
@@ -227,7 +230,14 @@ export class MailPreview {
     this.sending.set(true);
     try {
       await this.writer.flush();
-      await this.api.sendTrial(this.mail().mail, this.locale(), this.source());
+      const subject = `${this.mail().mail}:${this.locale()}:${this.source()}`;
+      await this.api.sendTrial(
+        this.mail().mail,
+        this.locale(),
+        this.source(),
+        this.intents.keyFor(subject),
+      );
+      this.intents.done(subject);
       this.notify.success('Essai envoyé à votre adresse.');
     } catch (error) {
       this.notify.error(error, 'L’essai n’a pas pu partir.');

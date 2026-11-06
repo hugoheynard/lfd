@@ -13,6 +13,12 @@ export class CreateStaffUserCommand {
   constructor(
     readonly payload: StaffUserPayload,
     readonly actorId: string,
+    /**
+     * La clé d'intention fabriquée par l'écran (en-tête `Idempotency-Key`,
+     * plan `plan-service-e-mails.md`, revue, cas 4) : un second clic de même
+     * clé ne réexécute rien ; un vrai renvoi en porte une neuve.
+     */
+    readonly intentKey: string,
   ) {}
 }
 
@@ -46,5 +52,11 @@ export class InviteStaffUserCommand {
   constructor(
     readonly id: string,
     readonly actorId: string,
+    /**
+     * La clé d'intention fabriquée par l'écran (en-tête `Idempotency-Key`,
+     * plan `plan-service-e-mails.md`, revue, cas 4) : un second clic de même
+     * clé ne réexécute rien ; un vrai renvoi en porte une neuve.
+     */
+    readonly intentKey: string,
   ) {}
 }

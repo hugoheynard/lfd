@@ -2,6 +2,11 @@ import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import {
+  type IntentCodec,
+  OncePerIntent,
+  readIntentString,
+} from "../../../platform/intent/once-per-intent.js";
 import { Journal } from "../../../platform/journal/journal.js";
 import { OpenStaffAccess } from "../../invitations/open-staff-access.service.js";
 import { staffUserCreatedFact } from "../domain/staff-facts.js";
@@ -26,6 +31,10 @@ import { CreateStaffUserCommand } from "./staff-user.commands.js";
  * d'identité ou le courrier tombe, la personne existe quand même dans
  * l'annuaire et « Renvoyer le lien » reprend la main. L'inverse perdrait une
  * saisie pour une panne de canal, et ne laisserait rien à rattraper.
+ *
+ * **Une fois par intention** (plan `plan-service-e-mails.md`, revue, cas 4) :
+ * un double clic sur « Créer » rend la fiche du premier, sans en créer une
+ * seconde ni renvoyer l'invitation.
  */
 @CommandHandler(CreateStaffUserCommand)
 export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCommand, string> {
@@ -36,9 +45,19 @@ export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCo
     private readonly access: OpenStaffAccess,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CreateStaffUserCommand): Promise<string> {
+  execute(command: CreateStaffUserCommand): Promise<string> {
+    // Le sujet n'est pas encore né : la clé seule désigne la création.
+    return this.intents.run(
+      { actorId: command.actorId, key: command.intentKey, gesture: "staff.create", subject: "new" },
+      CREATED_REPLAY,
+      () => this.create(command),
+    );
+  }
+
+  private async create(command: CreateStaffUserCommand): Promise<string> {
     const id = await this.uow.run(async () => {
       const created = await this.staff.create(command.payload, command.actorId);
       await this.journal.append(
@@ -47,7 +66,7 @@ export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCo
       return created.id;
     });
     try {
-      await this.access.open(id);
+      await this.access.open(id, command.intentKey);
     } catch (error) {
       this.logger.error(
         `Membre ${id} créé, mais son invitation n'est pas partie — à renvoyer depuis sa fiche.`,
@@ -57,3 +76,8 @@ export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCo
     return id;
   }
 }
+
+const CREATED_REPLAY: IntentCodec<string> = {
+  write: (id) => ({ id }),
+  read: (record, gesture) => readIntentString(record, "id", gesture),
+};

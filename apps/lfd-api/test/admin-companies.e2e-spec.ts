@@ -12,6 +12,7 @@
  * double **déclare** le porteur staff sans vérifier ; le reste (guard, bus,
  * domaine, SQL) est réel.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
@@ -81,7 +82,11 @@ const valide = {
 
 describe("POST /admin/companies", () => {
   it("crée une société pending et rattache son détenteur, contact inclus", async () => {
-    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const created = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({
       where: { id: jsonBody<CreatedCompanyResponse>(created).id },
@@ -101,7 +106,11 @@ describe("POST /admin/companies", () => {
 
   /** Régression : `invitedBy` recevait le `sub` du jeton staff (plan de l'auteur, D2). */
   it("trace le détenteur comme provisionné par la FICHE de l'agent", async () => {
-    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const created = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
 
     const holder = await ctx.prisma.user.findFirstOrThrow({
       where: { memberships: { some: { companyId: jsonBody<CreatedCompanyResponse>(created).id } } },
@@ -113,7 +122,10 @@ describe("POST /admin/companies", () => {
   it("refuse un SIRET déjà enregistré (unicité globale)", async () => {
     await createCompany(ctx.prisma, { siret: "81245678900021" });
 
-    const response = await staff().post("/admin/companies").send(valide);
+    const response = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide);
 
     expect(response.status).toBe(409);
   });
@@ -121,6 +133,7 @@ describe("POST /admin/companies", () => {
   it("refuse un contact invalide (e-mail vide)", async () => {
     const response = await staff()
       .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...valide, primaryContact: { ...valide.primaryContact, email: "" } });
 
     expect(response.status).toBe(400);
@@ -130,6 +143,7 @@ describe("POST /admin/companies", () => {
     // Le parcours au téléphone : le commercial n'a que le nom de la maison.
     const created = await staff()
       .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ enseigne: "Chez Milo" })
       .expect(201);
 
@@ -151,6 +165,7 @@ describe("POST /admin/companies/:id/holder", () => {
   async function openWithoutHolder(): Promise<string> {
     const created = await staff()
       .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ enseigne: "Chez Milo" })
       .expect(201);
     return jsonBody<{ id: string }>(created).id;
@@ -167,7 +182,11 @@ describe("POST /admin/companies/:id/holder", () => {
   it("rattache le détenteur d'un compte ouvert sans lui", async () => {
     const companyId = await openWithoutHolder();
 
-    await staff().post(`/admin/companies/${companyId}/holder`).send(holder).expect(201);
+    await staff()
+      .post(`/admin/companies/${companyId}/holder`)
+      .set(INTENT_KEY, freshIntent())
+      .send(holder)
+      .expect(201);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({
       where: { id: companyId },
@@ -182,10 +201,17 @@ describe("POST /admin/companies/:id/holder", () => {
   });
 
   it("REFUSE de remplacer un détenteur en place", async () => {
-    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const created = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
     const companyId = jsonBody<CreatedCompanyResponse>(created).id;
 
-    const response = await staff().post(`/admin/companies/${companyId}/holder`).send(holder);
+    const response = await staff()
+      .post(`/admin/companies/${companyId}/holder`)
+      .set(INTENT_KEY, freshIntent())
+      .send(holder);
 
     expect(response.status).toBe(409);
   });
@@ -205,7 +231,11 @@ describe("POST /admin/companies/:id/holder", () => {
    * pas deux personnes d'être détenteur.
    */
   it("la BASE refuse un second détenteur, garde applicative contournée", async () => {
-    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const created = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
     const companyId = jsonBody<CreatedCompanyResponse>(created).id;
     const rival = await createUser(ctx.prisma, {
       auth0Sub: "auth0|rival",
@@ -224,7 +254,11 @@ describe("POST /admin/companies/:id/holder", () => {
 
   /** Un rôle NON détenteur reste libre : l'index ne vise que `owner`. */
   it("laisse une seconde personne rejoindre la société avec un autre rôle", async () => {
-    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const created = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
     const companyId = jsonBody<CreatedCompanyResponse>(created).id;
     const colleague = await createUser(ctx.prisma, {
       auth0Sub: "auth0|compta",
@@ -241,6 +275,7 @@ describe("POST /admin/companies/:id/holder", () => {
 
     await staff()
       .post(`/admin/companies/${companyId}/holder`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...holder, email: "" })
       .expect(400);
 
@@ -249,7 +284,10 @@ describe("POST /admin/companies/:id/holder", () => {
   });
 
   it("répond 404 pour une société inconnue", async () => {
-    const response = await staff().post("/admin/companies/company_inexistante/holder").send(holder);
+    const response = await staff()
+      .post("/admin/companies/company_inexistante/holder")
+      .set(INTENT_KEY, freshIntent())
+      .send(holder);
 
     expect(response.status).toBe(404);
   });
@@ -291,7 +329,11 @@ describe("GET /admin/companies — canal de déclaration et pièces", () => {
       .send({ firstName: "Lou", lastName: "Seul", phone: "01 42 71 08 44", enseigne: "Seul" })
       .expect(201);
     const selfId = jsonBody<{ companyId: string }>(declared).companyId;
-    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const created = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
     const staffId = jsonBody<CreatedCompanyResponse>(created).id;
 
     const rows = jsonBody<AdminCompanyListBody[]>(

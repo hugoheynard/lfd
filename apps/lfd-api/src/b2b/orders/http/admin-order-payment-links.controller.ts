@@ -4,6 +4,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ResendOrderPaymentLinkCommand } from "../application/commands/resend-order-payment-link.command.js";
 import { ListOrdersAwaitingPaymentQuery } from "../application/queries/list-orders-awaiting-payment.query.js";
 
@@ -34,10 +35,11 @@ export class AdminOrderPaymentLinksController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async resend(
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
     @Param("orderId") orderId: string,
   ): Promise<void> {
     await this.commands.execute<ResendOrderPaymentLinkCommand, void>(
-      new ResendOrderPaymentLinkCommand(orderId, staffUserId),
+      new ResendOrderPaymentLinkCommand(orderId, staffUserId, intentKey),
     );
   }
 }

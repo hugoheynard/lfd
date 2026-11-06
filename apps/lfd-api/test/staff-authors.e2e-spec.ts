@@ -11,6 +11,7 @@
  * Doublés, et eux seuls : la signature du jeton, le fournisseur d'identité et
  * le courrier.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { ActivityPageView, CreatedStaffUserResponse } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -82,6 +83,7 @@ const operator = (): ReturnType<E2eContext["asSub"]> => ctx.asSub("staff-e2e");
 async function createColleague(firstName: string, lastName: string, email: string) {
   const response = await operator()
     .post("/admin/staff-users")
+    .set(INTENT_KEY, freshIntent())
     .send({ firstName, lastName, email, role: "commercial" })
     .expect(201);
   return jsonBody<CreatedStaffUserResponse>(response).id;
@@ -115,7 +117,10 @@ describe("la table des `sub` — chaque liaison y laisse sa ligne", () => {
     const id = await createColleague("Sophie", "Bernard", "sophie@lfc.test");
     expect(await aliasesOf(id)).toEqual([{ sub: "auth0|sophie@lfc.test", source: "linked" }]);
 
-    await operator().post(`/admin/staff-users/${id}/invitation`).expect(200);
+    await operator()
+      .post(`/admin/staff-users/${id}/invitation`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
 
     expect(await aliasesOf(id)).toEqual([{ sub: "auth0|sophie@lfc.test", source: "linked" }]);
   });

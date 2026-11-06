@@ -11,6 +11,7 @@
  *
  * Doublés, et eux seuls : le fournisseur d'identité et le courrier.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { ActivityEventView, ActivityPageView, CreatedStaffUserResponse } from "@lfd/contracts";
 
 import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
@@ -67,6 +68,7 @@ const operator = (): ReturnType<E2eContext["asSub"]> => ctx.asSub("staff-e2e");
 async function createColleague(firstName: string, lastName: string): Promise<string> {
   const response = await operator()
     .post("/admin/staff-users")
+    .set(INTENT_KEY, freshIntent())
     .send({ firstName, lastName, email: `${lastName.toLowerCase()}@lfc.test`, role: "commercial" })
     .expect(201);
   return jsonBody<CreatedStaffUserResponse>(response).id;

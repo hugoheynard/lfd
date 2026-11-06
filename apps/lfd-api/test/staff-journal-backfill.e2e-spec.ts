@@ -11,6 +11,7 @@
  * Aucune date du calendrier : chaque instant est relatif à maintenant
  * (`daysAgo`). La migration ne compare rien à l'horloge, mais l'écran si.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -140,6 +141,7 @@ async function createByRoute(email: string): Promise<string> {
   const response = await ctx
     .asSub("staff-e2e")
     .post("/admin/staff-users")
+    .set(INTENT_KEY, freshIntent())
     .send({ firstName: "Cécile", lastName: "Martin", email, role: "commercial" })
     .expect(201);
   await ctx.drain();

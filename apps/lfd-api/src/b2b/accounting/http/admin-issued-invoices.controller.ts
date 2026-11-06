@@ -13,6 +13,8 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ResendInvoiceNoticeCommand } from "../application/commands/resend-invoice-notice.command.js";
 import type { InvoiceDocument } from "../application/invoice-document-support.js";
 import {
@@ -39,9 +41,13 @@ export class AdminIssuedInvoicesController {
   /** Renvoie « Votre facture » aux destinataires d'aujourd'hui ; 409 nommé si rien n'est parti. */
   @Post("accounting/invoices/:invoiceId/resend-notice")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async resendNotice(@Param("invoiceId") invoiceId: string): Promise<void> {
+  async resendNotice(
+    @Param("invoiceId") invoiceId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
     await this.commands.execute<ResendInvoiceNoticeCommand, void>(
-      new ResendInvoiceNoticeCommand(invoiceId),
+      new ResendInvoiceNoticeCommand(invoiceId, staffUserId, intentKey),
     );
   }
 

@@ -63,3 +63,35 @@ model OutboxDelivery {
   @@map("outbox_delivery")
   @@schema("platform")
 }
+
+/// **Une intention d'un geste du staff** — la clé que l'écran fabrique à
+/// l'ouverture d'un dialogue et renvoie à chaque clic (plan
+/// `documentation/editeur-de-contenu/plan-service-e-mails.md`, revue, cas 4).
+///
+/// Une seconde requête de même clé ne réexécute rien : elle relit `result`.
+/// L'index unique `(actor_id, key)` arbitre deux clics simultanés, comme
+/// `order_idempotency` pour la passation. `gesture` et `subject` sont des
+/// VALEURS opaques ici : le schéma ne sait pas ce qu'est une société.
+model GestureIntent {
+  /// ULID assigné par l'`IdGenerator`.
+  id         String    @id
+  /// L'identifiant opaque de la fiche du staff qui agit — jamais son adresse.
+  actorId    String    @map("actor_id") @db.VarChar(64)
+  /// La clé d'intention, un UUID imposé par le contrat de la route.
+  key        String    @db.VarChar(64)
+  /// Le nom stable du geste (`account.attach-holder`).
+  gesture    String    @db.VarChar(80)
+  /// Ce que le geste vise (identifiants opaques) : une clé réutilisée sur un
+  /// autre sujet est refusée, jamais rejouée.
+  subject    String    @db.VarChar(300)
+  /// Lu du `Clock`. Une intention non résolue plus vieille que le bail est reprise.
+  claimedAt  DateTime  @map("claimed_at") @db.Timestamptz(3)
+  /// `null` tant que le geste n'a pas abouti.
+  resolvedAt DateTime? @map("resolved_at") @db.Timestamptz(3)
+  /// Ce que le geste a rendu, relu tel quel au rejeu ; sans donnée personnelle.
+  result     Json?
+
+  @@unique([actorId, key])
+  @@map("gesture_intent")
+  @@schema("platform")
+}

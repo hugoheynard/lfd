@@ -1,3 +1,4 @@
+import { intentOptions } from '../../shared/gesture-intents';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -83,11 +84,12 @@ export class MandatesService {
    * et un mandat déjà signé (un second exemplaire de la même référence
    * circulerait).
    */
-  async send(companyId: string, mandateId: string): Promise<void> {
+  async send(companyId: string, mandateId: string, intentKey: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(
         `${B2B_API_BASE}/admin/companies/${companyId}/mandate/${mandateId}/send`,
         {},
+        intentOptions(intentKey),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { MANIFEST, SUBJECT, stamp } from "../../domain/__tests__/mail-copy-fixtures.js";
 import { TrialRecipientMissingError, UnknownMailError } from "../../domain/mail-copy-errors.js";
@@ -15,6 +16,7 @@ import {
 } from "./mail-copy-doubles.js";
 
 const AT = new Date(0);
+const INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
 const COLETTE = {
   staffUserId: "fiche-colette",
   firstName: "Colette",
@@ -55,6 +57,7 @@ function world(contacts = [COLETTE]) {
       sender,
       events,
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     ),
   };
 }
@@ -87,7 +90,7 @@ describe("« M'envoyer un essai » (C6)", () => {
   it("part à l'adresse de la fiche de l'appelant, puis se trace", async () => {
     const w = world();
     await w.trial.execute(
-      new SendMailCopyTrialCommand(SUBJECT.mail, "fr", "draft", "fiche-colette"),
+      new SendMailCopyTrialCommand(SUBJECT.mail, "fr", "draft", "fiche-colette", INTENT),
     );
 
     expect(w.sender.sent).toEqual([
@@ -97,6 +100,7 @@ describe("« M'envoyer un essai » (C6)", () => {
         locale: "fr",
         texts: { [SUBJECT.mail]: { subject: "Brouillon {ref}" } },
         order: null,
+        intentKey: INTENT,
       },
     ]);
     expect(w.events.factTypes()).toEqual(["mail_copy.trial_sent"]);
@@ -110,10 +114,29 @@ describe("« M'envoyer un essai » (C6)", () => {
     for (const contacts of [[], [{ ...COLETTE, active: false }], [{ ...COLETTE, email: " " }]]) {
       const w = world(contacts);
       await expect(
-        w.trial.execute(new SendMailCopyTrialCommand(SUBJECT.mail, "fr", "draft", "fiche-colette")),
+        w.trial.execute(
+          new SendMailCopyTrialCommand(SUBJECT.mail, "fr", "draft", "fiche-colette", INTENT),
+        ),
       ).rejects.toBeInstanceOf(TrialRecipientMissingError);
       expect(w.sender.sent).toEqual([]);
     }
+  });
+
+  /** Régression (revue de S2, cas 4) : un double clic envoyait deux essais. */
+  it("un double clic de même intention n'envoie qu'un essai", async () => {
+    const w = world();
+    const command = new SendMailCopyTrialCommand(
+      SUBJECT.mail,
+      "fr",
+      "draft",
+      "fiche-colette",
+      INTENT,
+    );
+    await w.trial.execute(command);
+    await w.trial.execute(command);
+
+    expect(w.sender.sent).toHaveLength(1);
+    expect(w.events.traced).toHaveLength(1);
   });
 
   it("un envoi en échec ne se trace pas", async () => {
@@ -121,7 +144,7 @@ describe("« M'envoyer un essai » (C6)", () => {
     w.sender.failure = new Error("transport en panne");
     await expect(
       w.trial.execute(
-        new SendMailCopyTrialCommand(SUBJECT.mail, "fr", "published", "fiche-colette"),
+        new SendMailCopyTrialCommand(SUBJECT.mail, "fr", "published", "fiche-colette", INTENT),
       ),
     ).rejects.toThrow("transport en panne");
     expect(w.events.traced).toHaveLength(0);
@@ -130,7 +153,7 @@ describe("« M'envoyer un essai » (C6)", () => {
   it("refuse un e-mail hors du registre", async () => {
     await expect(
       world().trial.execute(
-        new SendMailCopyTrialCommand("pas.un.mail", "fr", "draft", "fiche-colette"),
+        new SendMailCopyTrialCommand("pas.un.mail", "fr", "draft", "fiche-colette", INTENT),
       ),
     ).rejects.toBeInstanceOf(UnknownMailError);
   });

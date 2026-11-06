@@ -1,6 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { InvoiceNotFoundError } from "../../domain/errors/invoice-access-errors.js";
 import {
   InvoiceNoticeNobodyToNotifyError,
@@ -14,8 +14,9 @@ import { ResendInvoiceNoticeCommand } from "./resend-invoice-notice.command.js";
 
 /**
  * Renvoie « Votre facture » aux destinataires d'aujourd'hui, PDF joint
- * (rendu au passage s'il manquait), sous une clé d'idempotence neuve par
- * renvoi : chaque clic est un envoi. Fait `invoice.notice_resent`.
+ * (rendu au passage s'il manquait), sous la clé d'intention de l'écran
+ * (revue, cas 4) : un double clic ne renvoie rien, un nouveau « Renvoyer »
+ * porte une clé neuve et repart. Fait `invoice.notice_resent`.
  *
  * Synchrone, à la différence de l'envoi d'origine : le staff attend la
  * réponse, et un refus se lit à l'écran (409 nommé) autant qu'au journal.
@@ -34,10 +35,23 @@ export class ResendInvoiceNoticeHandler implements ICommandHandler<
     private readonly invoices: InvoiceReader,
     private readonly documents: InvoiceDocumentRenderer,
     private readonly sender: InvoiceNoticeSender,
-    private readonly ids: IdGenerator,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ResendInvoiceNoticeCommand): Promise<void> {
+  execute(command: ResendInvoiceNoticeCommand): Promise<void> {
+    return this.intents.run(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "accounting.resend-invoice-notice",
+        subject: command.invoiceId,
+      },
+      NOTHING_TO_REPLAY,
+      () => this.resend(command),
+    );
+  }
+
+  private async resend(command: ResendInvoiceNoticeCommand): Promise<void> {
     const invoice = await this.invoices.byId(command.invoiceId);
     if (invoice === null) {
       throw new InvoiceNotFoundError(command.invoiceId);
@@ -47,7 +61,7 @@ export class ResendInvoiceNoticeHandler implements ICommandHandler<
       throw new InvoiceNoticeNotForCreditNoteError(number);
     }
     const document = await this.documents.ensure(invoice.id);
-    const outcome = await this.sender.resend(invoice.id, document, this.ids.next());
+    const outcome = await this.sender.resend(invoice.id, document, command.intentKey);
     if (outcome === null) {
       throw new InvoiceNotFoundError(command.invoiceId);
     }

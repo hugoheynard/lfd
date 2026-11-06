@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../../shared/gesture-intents';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { OrderAwaitingPaymentView } from '@lfd/contracts';
 import {
@@ -58,6 +59,8 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
 })
 export class OrdersToSettle {
   private readonly api = inject(PaymentLinksService);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
@@ -112,7 +115,8 @@ export class OrdersToSettle {
     this.pending.set(row.orderId);
     this.actionError.set(null);
     try {
-      await this.api.resendOrderLink(row.orderId);
+      await this.api.resendOrderLink(row.orderId, this.intents.keyFor(row.orderId));
+      this.intents.done(row.orderId);
       this.notify.success(`Lien de paiement renvoyé pour la commande ${row.reference}.`);
     } catch (caught) {
       this.actionError.set(httpErrorMessage(caught, "Le lien n'a pas pu être renvoyé."));

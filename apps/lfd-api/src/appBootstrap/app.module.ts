@@ -92,6 +92,7 @@ import { ContextModule } from "../platform/context/context.module.js";
 import { MetricsModule } from "../platform/metrics/metrics.module.js";
 import { EventsModule } from "../platform/events/events.module.js";
 import { OutboxModule } from "../platform/outbox/outbox.module.js";
+import { IntentModule } from "../platform/intent/intent.module.js";
 import { IdentityModule } from "../platform/identity/identity.module.js";
 import { LoggingModule } from "../platform/logging/logging.module.js";
 import { StartupModule } from "../platform/startup/startup.module.js";
@@ -126,6 +127,9 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // injectable. Les émetteurs publient, le journal croissance écoute.
     EventsModule,
     OutboxModule,
+    // Les intentions des gestes du staff (@Global) : un double clic ne
+    // réexécute rien (plan `plan-service-e-mails.md`, revue, cas 4).
+    IntentModule,
     IdentityModule,
     StartupModule,
     LoggingModule,

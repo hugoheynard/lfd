@@ -3,7 +3,6 @@ import type { MailReceipt } from "@lfd/mailer";
 
 import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
-import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { IdentitySubjectUnknownError } from "../../../../platform/shared/errors/identity-errors.js";
 import {
   AccountDisabledError,
@@ -37,6 +36,13 @@ export interface AccessToGrant {
   readonly role: CompanyRole;
   /** L'id de la fiche du staff qui provisionne — trace, pas autorisation. */
   readonly invitedBy: string;
+  /**
+   * La clé d'intention du geste qui ouvre l'accès (plan
+   * `plan-service-e-mails.md`, revue, cas 4) : elle fait la clé de l'e-mail.
+   * Un second clic de même intention ne renvoie rien ; un vrai renvoi en
+   * porte une neuve.
+   */
+  readonly intentKey: string;
 }
 
 /** Ce qui s'est réellement passé — dit sans arrondir. */
@@ -99,7 +105,6 @@ export class GrantAccountAccess extends AccountAccessGranter {
     private readonly identity: CustomerIdentityPort,
     private readonly mail: Mail,
     private readonly config: AppConfig,
-    private readonly ids: IdGenerator,
   ) {
     super();
   }
@@ -285,7 +290,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
         template: "customer.company-attached",
         // Son prénom à ELLE, pas celui saisi par le commercial.
         data: { firstName: known.firstName, companyName: input.companyName },
-        idempotencyKey: this.keyOf("company-attached", known.userId, input.companyId),
+        idempotencyKey: this.keyOf("company-attached", known.userId, input),
       }),
     );
     return { userId: known.userId, outcome: "attached", mailSent };
@@ -321,7 +326,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
         brand: "lfc",
         to: input.email,
         template: "customer.access-opened",
-        idempotencyKey: this.keyOf("access-opened", userId, input.companyId),
+        idempotencyKey: this.keyOf("access-opened", userId, input),
         data: {
           firstName: input.firstName,
           companyName: input.companyName,
@@ -345,12 +350,13 @@ export class GrantAccountAccess extends AccountAccessGranter {
   }
 
   /**
-   * Une clé par GESTE, sans donnée personnelle (des identifiants opaques) :
-   * chaque clic sur « ouvrir l'accès » fabrique un lien neuf, et une clé
-   * stable par compte rendrait le reçu du premier envoi sans rien renvoyer.
+   * Une clé par INTENTION, sans donnée personnelle (des identifiants opaques)
+   * : la clé que l'écran a fabriquée à l'ouverture du dialogue (revue, cas 4).
+   * Un double clic garde la même et n'envoie qu'un e-mail ; un vrai renvoi
+   * en porte une neuve, et une clé stable par compte tairait ce renvoi.
    */
-  private keyOf(mail: string, userId: string, companyId: string): string {
-    return `account.${mail}:${userId}:${companyId}:${this.ids.next()}`;
+  private keyOf(mail: string, userId: string, input: AccessToGrant): string {
+    return `account.${mail}:${userId}:${input.companyId}:${input.intentKey}`;
   }
 
   /**

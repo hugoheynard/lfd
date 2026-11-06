@@ -16,6 +16,7 @@
  * `monthly-invoices.e2e-spec.ts`. Aucune date absolue : le mois est le
  * PRÉCÉDENT du jour du test, l'horloge FIXE est posée relativement à lui.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 
@@ -391,8 +392,8 @@ describe("renvoyer « Votre facture » (E6, suite (b))", () => {
     sentMails.splice(0);
     const route = `/admin/accounting/invoices/${invoice.id}/resend-notice`;
 
-    await staff().post(route).expect(204);
-    await staff().post(route).expect(204);
+    await staff().post(route).set(INTENT_KEY, freshIntent()).expect(204);
+    await staff().post(route).set(INTENT_KEY, freshIntent()).expect(204);
 
     const keys = invoiceMails().map((mail) => mail.idempotencyKey ?? "");
     expect(invoiceMails().map((mail) => mail.to)).toEqual([
@@ -411,7 +412,37 @@ describe("renvoyer « Votre facture » (E6, suite (b))", () => {
     });
     expect(resent).toHaveLength(2);
     expect(resent[0]?.payload).toMatchObject({ recipientCount: 1, failure: null });
-    await staff().post("/admin/accounting/invoices/absente/resend-notice").expect(404);
+    await staff()
+      .post("/admin/accounting/invoices/absente/resend-notice")
+      .set(INTENT_KEY, freshIntent())
+      .expect(404);
+  });
+
+  /**
+   * Régression (revue de S2, cas 4) : la clé du renvoi était tirée au hasard
+   * à chaque requête, et un double clic renvoyait deux fois la facture.
+   */
+  it("un double clic de même intention ne renvoie qu'une fois, et sans clé la route refuse", async () => {
+    const id = await entity();
+    const { company, owner } = await payer(id, "patron@double.test");
+    await orderOf(company.id, owner);
+    await issue(id);
+    const invoice = await ctx.prisma.invoice.findFirstOrThrow({
+      where: { payerCompanyId: company.id },
+    });
+    sentMails.splice(0);
+    const route = `/admin/accounting/invoices/${invoice.id}/resend-notice`;
+    const intent = freshIntent();
+
+    await staff().post(route).set(INTENT_KEY, intent).expect(204);
+    await staff().post(route).set(INTENT_KEY, intent).expect(204);
+    await staff().post(route).expect(400);
+
+    expect(invoiceMails()).toHaveLength(1);
+    const resent = await ctx.prisma.activityEvent.count({
+      where: { subjectId: invoice.id, type: "invoice.notice_resent" },
+    });
+    expect(resent).toBe(1);
   });
 });
 

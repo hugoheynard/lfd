@@ -4,6 +4,7 @@
  * l'aperçu rend le vrai gabarit sans rien écrire ni envoyer, l'essai part à
  * la seule adresse de l'appelant, et le mur `b2b_storefront` tient les deux.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { E2E_STAFF_EMAIL, E2E_STAFF_ID } from "./e2e-harness.js";
 import { ADMIN, mailCopyScene, ORDER_PLACED } from "./mail-copy-scene.js";
 
@@ -33,6 +34,7 @@ describe("l'aperçu et l'essai (C6)", () => {
     await draft("subject", "Essai {ref}");
     await staff()
       .post(`${ADMIN}/trials`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mail: ORDER_PLACED, locale: "fr", source: "draft", to: "tiers@exemple.invalid" })
       .expect(204);
 
@@ -76,6 +78,7 @@ describe("le mur : `b2b_storefront`", () => {
     await ctx()
       .asSub(sub)
       .post(`${ADMIN}/trials`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mail: ORDER_PLACED, locale: "fr" })
       .expect(204);
     expect(transport.sent.map((sent) => sent.to)).toEqual(["communication@lfc.test"]);
@@ -100,6 +103,7 @@ describe("le mur : `b2b_storefront`", () => {
     await ctx()
       .asSub(sub)
       .post(`${ADMIN}/trials`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mail: ORDER_PLACED, locale: "fr" })
       .expect(403);
     expect(transport.sent).toEqual([]);

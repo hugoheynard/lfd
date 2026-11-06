@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../shared/gesture-intents';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -94,6 +95,8 @@ export class MandatePreviewPanel implements FoldPanelContent<MandatePreviewPanel
 
   private readonly panel = inject<FoldPanelRef<void>>(FoldPanelRef);
   private readonly accounts = inject(BankAccountService);
+  /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
+  private readonly intents = new GestureIntents();
   private readonly sanitizer = inject(DomSanitizer);
 
   protected readonly state = signal<LoadState>('loading');
@@ -164,7 +167,8 @@ export class MandatePreviewPanel implements FoldPanelContent<MandatePreviewPanel
     }
     this.sending.set(true);
     try {
-      await this.mandates.send(opened.companyId, mandate.id);
+      await this.mandates.send(opened.companyId, mandate.id, this.intents.keyFor(mandate.id));
+      this.intents.done(mandate.id);
       this.notify.success('Mandat envoyé au client.');
       this.confirming.set(false);
     } catch (error) {

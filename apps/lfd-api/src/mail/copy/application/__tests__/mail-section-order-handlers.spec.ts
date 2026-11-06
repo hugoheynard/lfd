@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -75,7 +76,15 @@ function world() {
       uow,
     ),
     preview: new GetMailCopyPreviewHandler(reader, MANIFEST, renderer),
-    trial: new SendMailCopyTrialHandler(reader, MANIFEST, contacts, sender, events, uow),
+    trial: new SendMailCopyTrialHandler(
+      reader,
+      MANIFEST,
+      contacts,
+      sender,
+      events,
+      uow,
+      inMemoryIntents(),
+    ),
   };
 }
 
@@ -136,7 +145,15 @@ describe("l'ordre dans l'aperçu, l'essai et l'écran", () => {
     await w.save.execute(order(QR_FIRST));
     await w.preview.execute(new GetMailCopyPreviewQuery(MAIL, "fr", "draft"));
     await w.preview.execute(new GetMailCopyPreviewQuery(MAIL, "fr", "published"));
-    await w.trial.execute(new SendMailCopyTrialCommand(MAIL, "fr", "draft", STAFF));
+    await w.trial.execute(
+      new SendMailCopyTrialCommand(
+        MAIL,
+        "fr",
+        "draft",
+        STAFF,
+        "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c",
+      ),
+    );
     expect(w.renderer.calls.map((call) => call.order)).toEqual([[...QR_FIRST], null]);
     expect(w.sender.sent.map((sent) => sent.order)).toEqual([[...QR_FIRST]]);
   });

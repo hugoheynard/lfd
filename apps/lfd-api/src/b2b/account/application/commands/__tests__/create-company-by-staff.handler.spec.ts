@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import type { Company } from "../../../domain/entities/company.js";
 import {
@@ -65,7 +66,7 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
     options.access ?? { userId: "user_1", outcome: "identity_created", mailSent: true },
   );
   return {
-    handler: new CreateCompanyByStaffHandler(companies, access, events),
+    handler: new CreateCompanyByStaffHandler(companies, access, events, inMemoryIntents()),
     access,
     unowned,
     owned,
@@ -75,7 +76,17 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
 
 /** La même commande, **sans** détenteur : l'ouverture sur la seule enseigne. */
 function commandWithoutHolder(): CreateCompanyByStaffCommand {
-  return new CreateCompanyByStaffCommand("", "Café des Halles", "", "", "", "", null, "staff-sub");
+  return new CreateCompanyByStaffCommand(
+    "",
+    "Café des Halles",
+    "",
+    "",
+    "",
+    "",
+    null,
+    "staff-sub",
+    INTENT,
+  );
 }
 
 function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyByStaffCommand {
@@ -95,10 +106,27 @@ function command(contact: Partial<ContactDetailsInput> = {}): CreateCompanyBySta
       ...contact,
     },
     "staff-sub",
+    INTENT,
   );
 }
 
+const INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
+
 describe("CreateCompanyByStaffHandler", () => {
+  /**
+   * Régression (revue de S2, cas 4) : un double clic sur « Créer » rejouait
+   * tout le geste — le second se faisait refuser au SIRET après un second
+   * e-mail d'accès.
+   */
+  it("un second clic de même intention rend la société du premier, sans rien rejouer", async () => {
+    const { handler, unowned, access } = doubles();
+
+    const first = await handler.execute(command());
+    await expect(handler.execute(command())).resolves.toEqual(first);
+    expect(unowned).toHaveLength(1);
+    expect(access.granted).toHaveLength(1);
+  });
+
   it("crée la société SANS propriétaire et retourne son seul identifiant", async () => {
     const { handler, unowned, owned } = doubles();
 

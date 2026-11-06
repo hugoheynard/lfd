@@ -8,6 +8,7 @@
  * remplissage de la migration, rejoué sur des valeurs connues, n'écrit jamais un
  * préfixe que le domaine refuserait.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -95,6 +96,7 @@ describe("création", () => {
     const created = await ctx
       .asSub(STAFF)
       .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ enseigne: "Le Comptoir", siret: SIRET })
       .expect(201);
 
@@ -108,6 +110,7 @@ describe("création", () => {
     const refused = await ctx
       .asSub(STAFF)
       .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ enseigne: "Le Comptoir", siret: SIRET, siren: OTHER_SIREN })
       .expect(400);
 

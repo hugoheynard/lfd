@@ -15,7 +15,6 @@ import type { MailReceipt } from "@lfd/mailer";
 import type { MailDemand } from "../../../mail/channels/requests/mail.js";
 import { RecordingMail } from "../../../mail/channels/requests/__tests__/recording-mail.js";
 import type { B2bMails } from "../../../mail/channels/templates/b2b-mails.js";
-import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
 
@@ -127,7 +126,6 @@ function harness(
     identities,
     { now: (): Date => NOW },
     requests,
-    new FixedIdGenerator("geste"),
     journal,
     uow,
     cache,
@@ -154,12 +152,14 @@ function harness(
 }
 
 const SUBJECT = "s1";
+const FIRST = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
+const SECOND = "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
 
 describe("OpenStaffAccess — première invitation", () => {
   it("ouvre une identité, date l'invitation et envoie le lien", async () => {
     const h = harness(target());
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.provisioned).toEqual(["sophie@lfc.test"]);
     expect(h.relinked).toEqual([]);
@@ -174,7 +174,7 @@ describe("OpenStaffAccess — renvoi", () => {
     // et le rapprochement d'annuaire devient un tirage au sort.
     const h = harness(target({ auth0Id: "auth0|deja", status: "invited" }));
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.provisioned).toEqual([]);
     expect(h.relinked).toEqual(["auth0|deja"]);
@@ -184,7 +184,7 @@ describe("OpenStaffAccess — renvoi", () => {
   it("renvoie aussi à quelqu'un déjà entré — c'est le mot de passe oublié", async () => {
     const h = harness(target({ auth0Id: "auth0|deja", status: "active" }));
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.mails).toHaveLength(1);
   });
@@ -199,7 +199,7 @@ describe("OpenStaffAccess — 🔴 la réinvitation relie à nouveau", () => {
   it("rouvre par l'adresse un `sub` que le fournisseur ne connaît plus", async () => {
     const h = harness(target({ auth0Id: DEAD_SUBJECT, status: "active" }));
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.provisioned).toEqual(["sophie@lfc.test"]);
     expect(h.marked).toEqual([{ id: "s1", subject: "auth0|neuf", at: NOW }]);
@@ -209,7 +209,7 @@ describe("OpenStaffAccess — 🔴 la réinvitation relie à nouveau", () => {
   it("rouvre par l'adresse une fiche liée à un `sub` Google, sans lui demander de lien", async () => {
     const h = harness(target({ auth0Id: "google-oauth2|104233", status: "active" }));
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.relinked).toEqual([]);
     expect(h.provisioned).toEqual(["sophie@lfc.test"]);
@@ -223,7 +223,7 @@ describe("OpenStaffAccess — suspendue", () => {
     // le suivre vaut entrée, et l'entrée réactive la fiche.
     const h = harness(target({ auth0Id: "auth0|deja", status: "suspended" }));
 
-    await expect(h.handler.open(SUBJECT)).rejects.toBeInstanceOf(SuspendedStaffInviteError);
+    await expect(h.handler.open(SUBJECT, FIRST)).rejects.toBeInstanceOf(SuspendedStaffInviteError);
 
     expect(h.provisioned).toEqual([]);
     expect(h.relinked).toEqual([]);
@@ -239,7 +239,7 @@ describe("OpenStaffAccess — ordre des opérations", () => {
     // attendrait une réponse à un e-mail jamais parti.
     const h = harness(target(), true);
 
-    await expect(h.handler.open(SUBJECT)).rejects.toBeInstanceOf(IdentityDown);
+    await expect(h.handler.open(SUBJECT, FIRST)).rejects.toBeInstanceOf(IdentityDown);
 
     expect(h.marked).toEqual([]);
     expect(h.mails).toEqual([]);
@@ -250,7 +250,7 @@ describe("OpenStaffAccess — ce que l'écran a le droit d'annoncer", () => {
   it("dit que l'e-mail est parti quand le canal est ouvert", async () => {
     const h = harness(target());
 
-    await expect(h.handler.open(SUBJECT)).resolves.toEqual({ mailSent: true });
+    await expect(h.handler.open(SUBJECT, FIRST)).resolves.toEqual({ mailSent: true });
   });
 
   it("dit qu'il n'est PAS parti quand le mailer tourne à blanc", async () => {
@@ -259,7 +259,7 @@ describe("OpenStaffAccess — ce que l'écran a le droit d'annoncer", () => {
     // quelqu'un qui n'attendrait jamais rien — le lien se remet alors à la main.
     const h = harness(target(), false, false);
 
-    await expect(h.handler.open(SUBJECT)).resolves.toEqual({ mailSent: false });
+    await expect(h.handler.open(SUBJECT, FIRST)).resolves.toEqual({ mailSent: false });
   });
 });
 
@@ -267,7 +267,7 @@ describe("OpenStaffAccess — la trace de l'invitation", () => {
   it("écrit `markInvited` ET le fait ensemble, puis oublie le cache après le commit", async () => {
     const h = harness(target());
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.markedInside).toEqual([true]);
     expect(h.journal.facts).toEqual([
@@ -289,7 +289,7 @@ describe("OpenStaffAccess — la trace de l'invitation", () => {
   it("dit « mot de passe » quand la personne est déjà entrée", async () => {
     const h = harness(target({ auth0Id: "auth0|deja", status: "active" }));
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.journal.facts[0]?.payload).toMatchObject({ kind: "password_reset" });
   });
@@ -301,7 +301,7 @@ describe("OpenStaffAccess — la trace de l'invitation", () => {
   it("n'envoie AUCUN e-mail quand le journal tombe", async () => {
     const h = harness(target(), false, true, true);
 
-    await expect(h.handler.open(SUBJECT)).rejects.toThrow("journal en panne");
+    await expect(h.handler.open(SUBJECT, FIRST)).rejects.toThrow("journal en panne");
 
     expect(h.mails).toEqual([]);
     expect(h.cache.forgotten).toEqual([]);
@@ -309,10 +309,10 @@ describe("OpenStaffAccess — la trace de l'invitation", () => {
 });
 
 describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
-  it("envoie en `sendAndAwaitReceipt`, HORS transaction, avec une clé par geste sans adresse", async () => {
+  it("envoie en `sendAndAwaitReceipt`, HORS transaction, avec la clé de l'intention, sans adresse", async () => {
     const h = harness(target());
 
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
 
     expect(h.requests.queued).toEqual([]);
     expect(h.requests.insideTransaction).toEqual([false]);
@@ -321,7 +321,7 @@ describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
         brand: "lfc",
         to: "sophie@lfc.test",
         template: "staff.invited",
-        idempotencyKey: "staff.invited:s1:geste_000001",
+        idempotencyKey: `staff.invited:s1:${FIRST}`,
         data: { firstName: "Sophie", passwordSetupUrl: "https://lien/neuf" },
       },
     ]);
@@ -329,15 +329,16 @@ describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
 
   it("un renvoi a une clé neuve : le bloc ne le tait pas", async () => {
     // Le bloc garde une clé un an : une clé fixe par personne aurait rendu le
-    // reçu du premier lien sans envoyer le second, qui est un lien NEUF.
+    // reçu du premier lien sans envoyer le second, qui est un lien NEUF. Le
+    // renvoi est une intention neuve, fabriquée par l'écran (revue, cas 4).
     const h = harness(target({ auth0Id: "auth0|deja", status: "active" }));
 
-    await h.handler.open(SUBJECT);
-    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT, FIRST);
+    await h.handler.open(SUBJECT, SECOND);
 
     expect(h.requests.awaitedReceipt.map((mail) => mail.idempotencyKey)).toEqual([
-      "staff.password-reset:s1:geste_000001",
-      "staff.password-reset:s1:geste_000002",
+      `staff.password-reset:s1:${FIRST}`,
+      `staff.password-reset:s1:${SECOND}`,
     ]);
   });
 
@@ -345,7 +346,7 @@ describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
     const h = harness(target());
     h.requests.failWith = new Error("Resend refuse");
 
-    await expect(h.handler.open(SUBJECT)).resolves.toEqual({ mailSent: false });
+    await expect(h.handler.open(SUBJECT, FIRST)).resolves.toEqual({ mailSent: false });
     expect(h.marked).toHaveLength(1);
   });
 });

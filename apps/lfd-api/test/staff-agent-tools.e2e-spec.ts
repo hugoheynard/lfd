@@ -11,6 +11,7 @@
  *
  * Doublés : la signature Auth0 et le fournisseur d'identité — deux frontières.
  */
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { CreatedStaffUserResponse, StaffRoleView, StaffUserView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -160,6 +161,7 @@ describe("PATCH admin/staff-users/:id — précondition et trace", () => {
   async function createCecile(): Promise<string> {
     const response = await operator()
       .post("/admin/staff-users")
+      .set(INTENT_KEY, freshIntent())
       .send({
         firstName: "Cécile",
         lastName: "Martin",
