@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { CreditorReader } from "../../../accounting/domain/ports/creditor.reader.js";
 import { LegalEntityLogoReader } from "../../../accounting/domain/ports/legal-entity-logo.reader.js";
+import { CustomerDocumentStore } from "../../../../platform/storage/customer-document-store.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import {
   MandateNotFoundError,
@@ -15,8 +16,10 @@ import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-ac
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { buildCustomerMandate } from "../customer-mandate-support.js";
+import { buildCustomerMandate, type CustomerMandateDocument } from "../customer-mandate-support.js";
 import { SendMandateCommand } from "./send-mandate.command.js";
+
+const PDF_CONTENT_TYPE = "application/pdf";
 
 /**
  * Envoie au client le mandat **frappé**, prêt à signer.
@@ -53,8 +56,23 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  *   (S2a) ou celui d'une facture (S2d).
  *
  * Aucun état du mandat ne dépend de l'envoi (il reste `draft` jusqu'à la
- * preuve signée). Le PDF part donc en octets, comme avant : `sendAndAwaitReceipt` les
- * accepte, et rien n'est rangé au stockage pour cet envoi.
+ * preuve signée).
+ *
+ * ## Le papier envoyé est l'exemplaire gardé (revue, cas 7)
+ *
+ * Décision de Hugo du 2026-11-06 : aucune pièce jointe n'est plus fabriquée
+ * en mémoire au moment de l'envoi. Le PDF rendu est d'abord RANGÉ au
+ * stockage des pièces client (`CustomerDocumentStore`, le seul que le bloc
+ * `mail` ouvre), puis la demande ne porte que sa place (`pdfStored`) ; le
+ * bloc le relit pour l'envoyer. Ce qu'on a envoyé se relit donc à l'octet
+ * près, ce qui compte pour un mandat qu'on oppose en contestation.
+ *
+ * La clé est {@link mandateCopyKey} : une par envoi voulu, jamais écrasée par
+ * le suivant (le rendu lit l'horloge, deux envois ne rangent pas forcément
+ * les mêmes octets). Ni adresse, ni IBAN, ni nom de titulaire, ni RUM : des
+ * identifiants opaques seulement. Le rangement qui échoue fait échouer le
+ * geste AVANT l'envoi ; une pièce que le bloc ne retrouve pas est refusée
+ * par lui (`MailAttachmentMissingError`), et rien ne part.
  *
  * ## L'idempotence
  *
@@ -78,6 +96,15 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  * courriel est déjà parti ; un second clic de même intention ne le renvoie
  * pas (le bloc rend le reçu de la clé) et écrit le fait.
  */
+/**
+ * La place de l'exemplaire envoyé : `mandates/<société>/<mandat>/<intention>.pdf`.
+ * Trois identifiants opaques (l'intention est un UUID validé par le
+ * contrôleur) ; un rejeu de la même intention range au même endroit.
+ */
+export function mandateCopyKey(companyId: string, mandateId: string, intentKey: string): string {
+  return `mandates/${companyId}/${mandateId}/${intentKey}.pdf`;
+}
+
 @CommandHandler(SendMandateCommand)
 export class SendMandateHandler implements ICommandHandler<SendMandateCommand, void> {
   constructor(
@@ -86,6 +113,7 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     private readonly creditors: CreditorReader,
     private readonly logos: LegalEntityLogoReader,
     private readonly store: DocumentStore,
+    private readonly kept: CustomerDocumentStore,
     private readonly mail: Mail,
     private readonly events: DomainEventPublisher,
     private readonly debtors: MandateDebtorReader,
@@ -119,20 +147,15 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     if (holder === null) {
       throw new MandateNotFoundError(command.companyId);
     }
-
-    const document = await buildCustomerMandate(
-      {
-        accounts: this.accounts,
-        mandates: this.mandates,
-        creditors: this.creditors,
-        logos: this.logos,
-        store: this.store,
-        debtors: this.debtors,
-        clock: this.clock,
-      },
-      command.companyId,
-    );
+    const document = await this.render(command.companyId);
     const snapshot = mandate.toSnapshot();
+    const key = await this.kept.save(
+      mandateCopyKey(command.companyId, mandate.id, command.intentKey),
+      {
+        bytes: document.bytes,
+        contentType: PDF_CONTENT_TYPE,
+      },
+    );
 
     const receipt = await this.mail.sendAndAwaitReceipt({
       to: holder.email,
@@ -145,7 +168,7 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         reference: snapshot.reference,
         creditorIdentifier: document.creditorIdentifier,
         creditorName: document.creditorName,
-        pdfBase64: document.bytes.toString("base64"),
+        pdfStored: { store: "customer-documents", key },
         fileName: document.fileName,
       },
       idempotencyKey: `mandate-to-sign:${mandate.id}:${command.intentKey}`,
@@ -157,6 +180,22 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         snapshot.reference,
         receipt.providerId,
       ),
+    );
+  }
+
+  /** Le mandat par la lecture même de l'aperçu (cf. la classe). */
+  private render(companyId: string): Promise<CustomerMandateDocument> {
+    return buildCustomerMandate(
+      {
+        accounts: this.accounts,
+        mandates: this.mandates,
+        creditors: this.creditors,
+        logos: this.logos,
+        store: this.store,
+        debtors: this.debtors,
+        clock: this.clock,
+      },
+      companyId,
     );
   }
 }

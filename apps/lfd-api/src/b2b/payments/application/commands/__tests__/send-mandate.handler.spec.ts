@@ -7,6 +7,9 @@ import {
 import type { MailDemand } from "../../../../../mail/channels/requests/mail.js";
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
+import { DocumentStorageUnavailableError } from "../../../../../platform/shared/errors/storage-errors.js";
+import { KeptDocumentStore } from "../../../../../platform/storage/kept-document-store.js";
+import type { StoredDocument } from "../../../../../platform/storage/document-store.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { LegalEntityLogoReader } from "../../../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { MandateNotSendableError } from "../../../domain/errors/mandate-errors.js";
@@ -24,7 +27,7 @@ import {
   Steps,
 } from "../../__tests__/payment-doubles.js";
 import { SendMandateCommand } from "../send-mandate.command.js";
-import { SendMandateHandler } from "../send-mandate.handler.js";
+import { mandateCopyKey, SendMandateHandler } from "../send-mandate.handler.js";
 
 class NoLogo extends LegalEntityLogoReader {
   logoKeyOf(): Promise<string | null> {
@@ -53,6 +56,18 @@ class StepMail extends RecordingMail {
   }
 }
 
+/** Le stockage des pièces client, qui tombe en panne sur demande. */
+class FailingStore extends MemoryStore {
+  failSaves = false;
+
+  override save(key: string, document: StoredDocument): Promise<string> {
+    if (this.failSaves) {
+      return Promise.reject(new DocumentStorageUnavailableError("écriture refusée (doublé)."));
+    }
+    return super.save(key, document);
+  }
+}
+
 const FIRST_INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
 const SECOND_INTENT = "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
 
@@ -63,6 +78,7 @@ function harness(providerId: string | null = "re_1") {
   const accounts = new InMemoryBankAccounts(steps);
   accounts.stored = bankAccount();
   const mails = new StepMail(steps, providerId);
+  const kept = new FailingStore(steps);
   const events = new StepPublisher(steps);
   const handler = new SendMandateHandler(
     mandates,
@@ -70,6 +86,7 @@ function harness(providerId: string | null = "re_1") {
     new FixedCreditors(),
     new NoLogo(),
     new MemoryStore(steps),
+    new KeptDocumentStore(kept),
     mails,
     events,
     new FixedDebtors(mandates),
@@ -79,6 +96,7 @@ function harness(providerId: string | null = "re_1") {
   return {
     steps,
     mandates,
+    kept,
     mails,
     events,
     run: (mandateId = "mdt_1", intentKey = FIRST_INTENT) =>
@@ -93,7 +111,11 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
 
     await h.run();
 
-    expect(h.steps.log).toEqual(["mail:customer.mandate-to-sign", "journal:payment_mandate.sent"]);
+    expect(h.steps.log).toEqual([
+      "store",
+      "mail:customer.mandate-to-sign",
+      "journal:payment_mandate.sent",
+    ]);
     expect(h.events.traced[0]?.journalFact()).toEqual({
       type: "payment_mandate.sent",
       subjectType: "payment_mandate",
@@ -148,8 +170,52 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
       template: "customer.mandate-to-sign",
       data: { reference: "LFC-9P2X4B-260914-K7M3QT" },
     });
-    expect(JSON.stringify(h.mails.awaitedReceipt[0]?.data)).toContain('"pdfBase64":"');
-    expect(JSON.stringify(h.mails.awaitedReceipt[0]?.data)).not.toContain("pdfStored");
+    expect(JSON.stringify(h.mails.awaitedReceipt[0]?.data)).not.toContain("pdfBase64");
+  });
+
+  /** Revue, cas 7 (Hugo, 2026-11-06) : tout document envoyé est l'exemplaire gardé. */
+  it("range le PDF au stockage des pièces client AVANT l'envoi, et ne joint que sa place", async () => {
+    const h = harness();
+
+    await h.run();
+
+    const key = `mandates/cmp_1/mdt_1/${FIRST_INTENT}.pdf`;
+    expect(h.kept.objects.get(key)?.contentType).toBe("application/pdf");
+    expect(h.kept.objects.get(key)?.bytes.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(h.mails.awaitedReceipt[0]?.data).toMatchObject({
+      pdfStored: { store: "customer-documents", key },
+    });
+  });
+
+  it("une place par envoi voulu : un renvoi ne réécrit pas l'exemplaire déjà envoyé", async () => {
+    const h = harness();
+
+    await h.run("mdt_1", FIRST_INTENT);
+    await h.run("mdt_1", SECOND_INTENT);
+
+    expect([...h.kept.objects.keys()]).toEqual([
+      mandateCopyKey("cmp_1", "mdt_1", FIRST_INTENT),
+      mandateCopyKey("cmp_1", "mdt_1", SECOND_INTENT),
+    ]);
+  });
+
+  /** Le PDF porte l'IBAN : la clé ne nomme ni adresse, ni titulaire, ni RUM. */
+  it("la clé ne porte que des identifiants opaques", () => {
+    const key = mandateCopyKey("cmp_1", "mdt_1", FIRST_INTENT);
+
+    expect(key).toBe(`mandates/cmp_1/mdt_1/${FIRST_INTENT}.pdf`);
+    expect(key).not.toContain(HOLDER.email);
+    expect(key).not.toContain("LFC-9P2X4B");
+  });
+
+  /** La pièce introuvable du côté du bloc a son test là-bas (`mail-attachments.spec`). */
+  it("le rangement refusé : rien ne part, rien n'est écrit au journal", async () => {
+    const h = harness();
+    h.kept.failSaves = true;
+
+    await expect(h.run()).rejects.toBeInstanceOf(DocumentStorageUnavailableError);
+    expect(h.mails.awaitedReceipt).toEqual([]);
+    expect(h.events.traced).toHaveLength(0);
   });
 
   /**

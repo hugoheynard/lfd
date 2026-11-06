@@ -20,7 +20,7 @@ export type MailBrandName = "lfc";
 export interface MailDemand<K extends keyof B2bMails> {
   readonly template: K;
   readonly to: string;
-  readonly data: B2bMails[K];
+  readonly data: ImmediateMailData<K>;
   readonly brand: MailBrandName;
   /**
    * Déterministe chez l'appelant (`order.placed:<orderId>`) : une seconde
@@ -68,8 +68,8 @@ type Every<B> = [B] extends [true] ? true : false;
  *
  * `store` nomme le stockage où la pièce est rangée. Seul celui des pièces
  * attachées à un client est ouvert au 2026-11-06 (le bon de commande, la
- * facture) ; le dossier du fournil n'y passe pas : il part en `sendAndAwaitReceipt`
- * (lot S2f).
+ * facture, le mandat à signer) ; le dossier du fournil n'y passe pas : il
+ * part en `sendAndAwaitReceipt` (lot S2f).
  */
 export interface StoredPdf {
   readonly store: "customer-documents";
@@ -95,20 +95,36 @@ export type ByReference<T> = T extends string | number | boolean | null | undefi
 
 /**
  * Les modèles à PDF ouverts à `send`, leur pièce passant par référence.
- * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a) et la
+ * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a), la
  * facture Factur-X, rangée au même stockage sous `Invoice.documentKey` (lot
- * S2d). Le dossier du fournil RESTE fermé (S2f). Le mandat RESTE fermé :
- * son seul envoyeur passe par `sendAndAwaitReceipt` (lot S2e, le fait lit le reçu).
+ * S2d), et le mandat à signer, rangé avant l'envoi sous
+ * `mandates/<société>/<mandat>/<intention>.pdf` (revue, cas 7). Le dossier
+ * du fournil RESTE fermé : il est rangé au stockage du fournil, que le bloc
+ * n'ouvre pas.
  */
-type OpenedByReference = "customer.order-placed" | "customer.invoice-issued";
+type OpenedByReference =
+  "customer.order-placed" | "customer.invoice-issued" | "customer.mandate-to-sign";
+
+/**
+ * Les données d'un envoi immédiat : la pièce par référence (`pdfStored`), ou
+ * encore en octets (`pdfBase64`). Le bloc relit la pièce rangée dans les deux
+ * gestes.
+ *
+ * Revue, cas 7 (Hugo, 2026-11-06) : « tout document envoyé est l'exemplaire
+ * gardé ». Les octets restent exprimables ici parce que le bloc lui-même en
+ * envoie (l'essai d'un modèle, ses données d'exemple) ; HORS du bloc,
+ * `lint:mail-attachment-by-reference` refuse `pdfBase64` dans une demande,
+ * sauf les envoyeurs inscrits en dette datée. Un type qui distinguerait
+ * l'appelant n'existe pas : c'est la porte qui tient la frontière.
+ */
+export type ImmediateMailData<K extends keyof B2bMails> = B2bMails[K] | ByReference<B2bMails[K]>;
 
 /**
  * Les modèles que `send` accepte : ceux dont les données — sous leur forme
  * différée — traversent la boîte d'envoi intactes, et parmi ceux qui joignent
  * un PDF, seulement ceux que {@link OpenedByReference} ouvre. Au 2026-11-06,
- * deux en restent exclus (`customer.mandate-to-sign`,
- * `staff.production-dossier`) : ils n'ont que
- * `sendAndAwaitReceipt` — le mandat (S2e) et le dossier (S2f) par choix : leur appelant lit le reçu.
+ * un seul en reste exclu (`staff.production-dossier`) : il n'a que
+ * `sendAndAwaitReceipt`, ses octets en mémoire (S2f).
  */
 export type DeferrableMailTemplate = {
   [K in keyof B2bMails]: Every<DefersIntact<B2bMails[K]>> extends true

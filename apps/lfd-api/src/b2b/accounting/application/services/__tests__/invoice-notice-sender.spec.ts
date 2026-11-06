@@ -290,14 +290,23 @@ describe("le renvoi de « Votre facture » (E6, suite (b)) — envoyé sur-le-ch
     expect(facts[0]?.payload).toMatchObject({ recipientCount: 1, failure: null });
   });
 
-  it("joint les octets du PDF rendu : un envoi immédiat ne passe pas par la boîte d'envoi", async () => {
-    const h = setup();
+  /**
+   * Régression : le renvoi joignait un PDF rendu à nouveau, en octets — pas
+   * l'exemplaire rangé à l'émission (revue du service d'e-mails, cas 7, 2026-11-06).
+   */
+  it("joint l'exemplaire rangé à l'émission, jamais des octets refaits", async () => {
+    const h = setup({ documented: true });
 
     await h.sender.resend(h.invoice.id, PDF, "rs_4");
 
-    expect(h.mails.awaitedReceipt[0]?.data).toMatchObject({
-      document: { fileName: PDF.fileName, pdfBase64: PDF.bytes.toString("base64") },
+    const data = h.mails.awaitedReceipt[0]?.data;
+    expect(data).toMatchObject({
+      document: {
+        fileName: PDF.fileName,
+        pdfStored: { store: "customer-documents", key: DOCUMENT_KEY },
+      },
     });
+    expect(JSON.stringify(data)).not.toContain("pdfBase64");
   });
 
   it("un refus du fournisseur n'empêche pas les autres, est rendu et journalisé sous le même fait", async () => {

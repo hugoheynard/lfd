@@ -4,6 +4,7 @@ import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
+import type { ByReference } from "../../../../mail/channels/requests/mail.js";
 import type { InvoiceIssuedMailData } from "../../../../mail/channels/templates/b2b-mails.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { Invoice } from "../../domain/entities/invoice.js";
@@ -150,12 +151,18 @@ export class InvoiceNoticeSender {
     if (recipients.length === 0) {
       return { recipients, failure: NO_RECIPIENT };
     }
-    const data: InvoiceIssuedMailData = {
+    // L'exemplaire rangé à l'émission, comme au premier envoi : le renvoi joint
+    // le MÊME fichier, jamais un rendu refait (revue du service d'e-mails, cas 7).
+    const key = document === null ? null : invoice.toState().documentKey;
+    const data = {
       ...content,
       document:
-        document === null
+        document === null || key === null
           ? null
-          : { fileName: document.fileName, pdfBase64: document.bytes.toString("base64") },
+          : {
+              fileName: document.fileName,
+              pdfStored: { store: "customer-documents" as const, key },
+            },
     };
     const failure = await this.sendEach(data, recipients, resendId);
     await this.uow.run(() => this.journal(invoice, recipients, failure, true));
@@ -220,7 +227,7 @@ export class InvoiceNoticeSender {
 
   /** @returns `null` si le fournisseur a tout accepté, sinon ses refus. */
   private async sendEach(
-    data: InvoiceIssuedMailData,
+    data: ByReference<InvoiceIssuedMailData>,
     recipients: readonly InvoiceRecipient[],
     resendId: string,
   ): Promise<string | null> {

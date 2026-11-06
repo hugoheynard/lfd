@@ -203,6 +203,13 @@
       "watch": ["apps/lfd-api/src/**"]
     },
     {
+      "name": "mail-attachment-by-reference",
+      "script": "dev-toolbox/gates/mail-attachment-by-reference.mjs",
+      "holds": "Hors du bloc mail, une pièce jointe d'e-mail ne voyage plus en octets (`pdfBase64`) : elle est rangée au stockage et jointe par sa place (`pdfStored`) ; dette datée.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
       "name": "handler-per-file",
       "script": "dev-toolbox/gates/handler-per-file.mjs",
       "holds": "Un seul handler par fichier.",

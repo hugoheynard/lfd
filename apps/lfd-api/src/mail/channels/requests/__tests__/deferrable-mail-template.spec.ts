@@ -1,5 +1,5 @@
 import type { B2bMails } from "../../templates/b2b-mails.js";
-import type { ByReference, DeferrableMailTemplate } from "../mail.js";
+import type { ByReference, DeferrableMailTemplate, ImmediateMailData } from "../mail.js";
 
 /**
  * Les modèles que `send` refuse, figés par le compilateur : un `Record` sur
@@ -8,8 +8,6 @@ import type { ByReference, DeferrableMailTemplate } from "../mail.js";
  * fichier — l'occasion de décider s'il doit passer au stockage d'abord.
  */
 const NOT_DEFERRABLE: Record<Exclude<keyof B2bMails, DeferrableMailTemplate>, string> = {
-  "customer.mandate-to-sign":
-    "le mandat joint (pdfBase64) — envoyé par `sendAndAwaitReceipt` seulement (S2e)",
   "staff.production-dossier":
     "le dossier du jour joint (pdfBase64) — envoyé par `sendAndAwaitReceipt` seulement (S2f)",
 };
@@ -23,6 +21,20 @@ const PLACED_DOCUMENT: ByReference<B2bMails["customer.order-placed"]["document"]
   pdfStored: { store: "customer-documents", key: "orders/o-1/bon-de-commande-r0-d2.pdf" },
 };
 
+/**
+ * Le mandat à signer, par la place où son envoyeur l'a rangé (revue, cas 7) :
+ * la forme qu'un envoi immédiat accepte aussi.
+ */
+const MANDATE_DATA: ImmediateMailData<"customer.mandate-to-sign"> = {
+  scheme: "CORE",
+  companyName: "Le Refuge du Col",
+  reference: "LFC-1",
+  creditorIdentifier: "FR00ZZZ000000",
+  creditorName: "La Folie Douce",
+  fileName: "mandat.pdf",
+  pdfStored: { store: "customer-documents", key: "mandates/cmp_1/mdt_1/i-1.pdf" },
+};
+
 /** La facture jointe, par la clé où le rendu Factur-X l'a rangée (S2d). */
 const INVOICE_DOCUMENT: ByReference<B2bMails["customer.invoice-issued"]["document"]> = {
   fileName: "FA-LFD-2026-000001.pdf",
@@ -30,11 +42,14 @@ const INVOICE_DOCUMENT: ByReference<B2bMails["customer.invoice-issued"]["documen
 };
 
 describe("DeferrableMailTemplate — ce que la boîte d'envoi peut porter", () => {
-  it("exclut les deux modèles à PDF non ouverts par référence — le mandat reste en `sendAndAwaitReceipt` (S2e, 2026-11-06)", () => {
-    expect(Object.keys(NOT_DEFERRABLE).sort()).toEqual([
-      "customer.mandate-to-sign",
-      "staff.production-dossier",
-    ]);
+  it("n'exclut plus que le dossier du fournil — le mandat passe par référence (revue, cas 7, 2026-11-06)", () => {
+    expect(Object.keys(NOT_DEFERRABLE).sort()).toEqual(["staff.production-dossier"]);
+  });
+
+  it("ouvre `customer.mandate-to-sign`, son mandat passant par référence", () => {
+    const opened: DeferrableMailTemplate = "customer.mandate-to-sign";
+    expect(opened).toBe("customer.mandate-to-sign");
+    expect(MANDATE_DATA).not.toHaveProperty("pdfBase64");
   });
 
   it("ouvre `customer.order-placed`, son bon passant par référence", () => {

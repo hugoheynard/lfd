@@ -157,7 +157,11 @@
 >   aucune n'est construite avec une adresse. Et **66** le même jour avec
 >   `lint:log-no-email` (cas 6) : aucun journal n'écrit une adresse e-mail —
 >   un log de production est gardé hors du registre RGPD ; la personne s'y
->   désigne par son identifiant. C'est la
+>   désigne par son identifiant. Et **67** le même jour avec
+>   `lint:mail-attachment-by-reference` (cas 7) : hors du bloc `mail`, une
+>   pièce jointe ne part plus en octets (`pdfBase64`) — tout document envoyé
+>   est l'exemplaire gardé, rangé au stockage et joint par `pdfStored` ; les
+>   envoyeurs qui ne le font pas encore sont une dette datée. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1355,7 +1359,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 66 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 67 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>
