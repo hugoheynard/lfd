@@ -23,6 +23,8 @@ export const EVERY_FIVE_MINUTES = [
   "admin/orders/unsettled-shop-orders/expire",
   "admin/orders/refunds/sweep",
   "admin/vitrine/sweep",
+  // Le balayeur des e-mails (S1b) : reprend les envois restés en route.
+  "admin/mail/requests/sweep",
 ];
 
 /** À chaque heure pile, comme le cron `0 *` du Worker (`hourlySweeps`). */
@@ -48,6 +50,11 @@ export const NOT_IN_DEV = new Map([
   [
     "admin/accounting/collection/autopilot",
     "constitue les lots de prélèvement : à jouer à la main quand on l'éprouve",
+  ],
+  ["admin/outbox/purge", "purge de la boîte d'envoi (à blanc par défaut) : rien à éprouver en dev"],
+  [
+    "admin/mail/requests/purge",
+    "purge du suivi des e-mails (à blanc par défaut) : rien à éprouver en dev",
   ],
   [
     "admin/accounting/monthly-invoices/autopilot",
