@@ -707,3 +707,20 @@ Relu le 2026-11-06 :
   mandat d'avant aurait fait qu'un second « Envoyer » du même brouillon ne
   renvoie plus rien. Prix : deux clics rapides envoient deux courriels (et
   écrivent deux faits), comme S2b.
+
+### 14 bis. Ce que la maquette à colonnes a tranché (Hugo, 2026-11-06)
+
+- **Une seule structure de blocs par e-mail, des textes traduits par bloc.**
+  L'ordre, les colonnes et leurs largeurs, les images et les blocs système
+  sont communs aux trois langues ; chaque bloc de texte porte son texte en
+  FR, EN et IT. Ajouter ou retirer un bloc vaut pour les trois langues. C'est
+  la forme du modèle enregistré (S4).
+- À l'écran (S5), à porter au plan :
+  - un **panneau de réglages du bloc sélectionné** (lien d'un bouton, ton d'un
+    encadré, texte alternatif d'une image, alignement), en bas de la colonne
+    de droite ; le texte, lui, s'écrit dans l'aperçu ;
+  - un **sélecteur de langue** au-dessus de l'aperçu ; un texte manquant dans
+    une langue se signale ;
+  - l'**aperçu avec des données d'exemple** et « M'envoyer un essai », comme
+    l'écran des textes d'aujourd'hui ;
+  - la barre **brouillon / publier / historique**.
