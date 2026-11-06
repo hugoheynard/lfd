@@ -54,17 +54,22 @@ export class PrismaOperationRepository extends OperationRepository {
     if (preparedAt === undefined) {
       throw new CorruptedRecordError("catalog_operations.written_at");
     }
-    try {
-      await this.prisma.catalogOperation.create({
-        data: { key: snapshot.key, ...operationColumns(snapshot), receivedAt: preparedAt },
-      });
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw new OperationKeyTakenError(snapshot.key);
+    // L'opération et ses articles partent ENSEMBLE, comme dans `save` (lot M2
+    // du plan des matériaux du catalogue) : entre les deux, une lecture verrait
+    // une opération sans article, et l'instantané la garderait sous ce numéro.
+    await this.uow.run(async () => {
+      try {
+        await this.prisma.catalogOperation.create({
+          data: { key: snapshot.key, ...operationColumns(snapshot), receivedAt: preparedAt },
+        });
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw new OperationKeyTakenError(snapshot.key);
+        }
+        throw error;
       }
-      throw error;
-    }
-    await this.writeItems(operation);
+      await this.writeItems(operation);
+    });
     this.shelves.changed(ALL_SHELVES);
   }
 

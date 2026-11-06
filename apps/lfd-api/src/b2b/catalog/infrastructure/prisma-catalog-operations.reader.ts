@@ -3,12 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import { OperationImageLibrary } from "../../operations/channels/media/operation-image-library.js";
-import { operationAsHeld } from "../domain/effective-operation.js";
 import {
   CatalogOperationsReader,
   type SellableOperation,
 } from "../domain/ports/catalog-operations.reader.js";
-import { ITEMS_IN_ORDER, toOperationState } from "./catalog-operation-rows.js";
+import { ITEMS_IN_ORDER } from "./catalog-operation-rows.js";
+import { sellableOperationsOf } from "./sellable-operations-of.js";
 import { withLibraryAlts } from "./operation-library-alts.js";
 import { operationOnlySkusOf } from "./prisma-catalog.reader.js";
 
@@ -36,29 +36,7 @@ export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
         orderBy: [{ announceFrom: "desc" }, { key: "asc" }],
       }),
     );
-    const sellable: SellableOperation[] = [];
-    for (const row of rows) {
-      const { facts } = toOperationState(row);
-      const held = operationAsHeld(facts, row.hidden);
-      if (held.isHidden || held.audience === "none") {
-        continue;
-      }
-      sellable.push({
-        key: facts.key,
-        name: facts.name,
-        lede: facts.lede,
-        image: facts.image,
-        announceFrom: facts.announceFrom,
-        orderFrom: facts.orderFrom,
-        orderUntil: held.orderUntil,
-        pickupFrom: facts.pickupFrom,
-        pickupUntil: facts.pickupUntil,
-        audience: held.audience,
-        skus: held.skus,
-        showsOrderUntilTime: row.showsOrderUntilTime,
-      });
-    }
-    return withLibraryAlts(this.library, sellable);
+    return withLibraryAlts(this.library, sellableOperationsOf(rows));
   }
 
   operationOnlySkus(): Promise<ReadonlySet<string>> {

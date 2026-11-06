@@ -6,9 +6,11 @@
  * Le devis et l'estimation lisent le catalogue dans l'instantané : à chaud,
  * **une** lecture des numéros (`ContextVersion`) et, pour un appelant qui a
  * une société, **une** lecture de ses réservations — rien d'autre. À froid,
- * le chargement des morceaux s'y ajoute. Le rayon (M2) et la passation (hors
- * de la porte, § 2.5) gardent les chiffres du relevé du 2026-11-05. Le budget
- * (`pricing-budget.e2e-spec.ts`) reste la garde du total.
+ * le chargement des morceaux s'y ajoute. Depuis le lot M2, le recalcul du
+ * rayon aussi : une lecture des numéros à chaud (plus les réservations d'un
+ * pro). La passation (hors de la porte, § 2.5) garde les chiffres du relevé
+ * du 2026-11-05. Le budget (`pricing-budget.e2e-spec.ts`) reste la garde du
+ * total.
  *
  * ## La mesure
  *
@@ -20,8 +22,8 @@
  * « À froid » : les mémoires de l'API (matériaux des prix, accès staff,
  * instantané du catalogue) oubliées juste avant ; la mémoire du principal
  * n'est pas un provider et reste ce qu'elle est. « À chaud » : le même appel,
- * rejoué aussitôt. Hors de l'instantané (rayon, passation), les deux sont
- * égaux — rien ne garde leur catalogue en mémoire.
+ * rejoué aussitôt. Hors de l'instantané (la passation), les deux sont
+ * égaux — rien ne garde son catalogue en mémoire.
  *
  * ⚠️ Le corpus n'a que des familles à plat : la lignée des familles
  * (`catalogCategory.findMany`, `PrismaCatalogReader.lineage`) n'est lue que
@@ -218,32 +220,39 @@ function unchanged(expected: Reads): { readonly cold: Reads; readonly warm: Read
   return { cold: expected, warm: expected };
 }
 
-describe("le rayon et la passation : hors de l'instantané, le relevé du 2026-11-05", () => {
+describe("le rayon (M2) : le recalcul lit l'instantané", () => {
   /**
-   * Le rayon (M2) : la liste des articles en vente, les SKU réservés aux
-   * opérations, les colonnes du kilo, les opérations, l'heure limite générale.
+   * À froid, les trois morceaux : articles (avec les SKU des opérations et
+   * les colonnes du kilo), opérations, heure limite. À chaud, les numéros
+   * seulement — les textes des images d'opération (médiathèque) ne comptent
+   * pas ici, la scène n'a pas d'opération.
    */
-  it("le rayon public : CatalogItem ×3, CatalogOperation ×1, OrderCutoff ×1", async () => {
-    await expectReads(
-      () => agents().anonymous().get("/shop/catalogue"),
-      unchanged({ items: 3, operations: 1, cutoffs: 1 }),
-    );
+  const SHELF = {
+    cold: { versions: 1, items: 1, operations: 1, cutoffs: 1 },
+    warm: { versions: 1 },
+  } as const;
+
+  it("le rayon public : à chaud, 1 numéro ; à froid, + les trois morceaux", async () => {
+    await expectReads(() => agents().anonymous().get("/shop/catalogue"), SHELF);
   });
 
-  it("le rayon pro de base (?audience=pro) : le même relevé", async () => {
-    await expectReads(
-      () => agents().anonymous().get("/shop/catalogue?audience=pro"),
-      unchanged({ items: 3, operations: 1, cutoffs: 1 }),
-    );
+  it("le rayon pro de base (?audience=pro) : le même budget", async () => {
+    await expectReads(() => agents().anonymous().get("/shop/catalogue?audience=pro"), SHELF);
   });
 
-  it("le rayon d'un pro connecté : le même relevé", async () => {
+  /** Un pro a une société : ses réservations, filtrées en SQL, à chaque recalcul. */
+  it("le rayon d'un pro connecté : à chaud, 1 numéro + 1 réservations", async () => {
     await expectReads(
       () => agents().as(BUYER_SUB, scene.pro.companyId).get("/shop/catalogue/mine"),
-      unchanged({ items: 3, operations: 1, cutoffs: 1 }),
+      {
+        cold: { ...SHELF.cold, reservations: 1 },
+        warm: { versions: 1, reservations: 1 },
+      },
     );
   });
+});
 
+describe("la passation : hors de l'instantané, le relevé du 2026-11-05", () => {
   /** Hors de la porte (elle relit pour ce qu'elle écrit, § 2.5) : inchangée. */
   it("la passation d'un pro : CatalogItem ×5, OrderCutoff ×1, aucun numéro", async () => {
     const quoted = await agents()
@@ -339,10 +348,11 @@ describe("la marque Server-Timing du catalogue", () => {
     expect(marks.durationMs).toBeGreaterThan(0);
   });
 
-  it("le rayon public : catalogue-reads = 5", async () => {
+  it("le rayon public, à chaud : catalogue-reads = 1", async () => {
+    await agents().anonymous().get("/shop/catalogue").expect(200);
     const response = await agents().anonymous().get("/shop/catalogue");
     expect(response.status).toBe(200);
-    expect(catalogueMarksOf(response).reads).toBe("5");
+    expect(catalogueMarksOf(response).reads).toBe("1");
   });
 
   it("l'estimation de la saisie, à chaud : catalogue-reads = 2", async () => {

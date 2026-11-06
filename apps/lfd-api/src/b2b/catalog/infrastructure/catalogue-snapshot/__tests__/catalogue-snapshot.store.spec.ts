@@ -1,6 +1,6 @@
 import { runWithRequestContext } from "../../../../../platform/context/request-context.store.js";
 import { withCatalogueSnapshot } from "../../../application/catalogue-snapshot-scope.js";
-import { article, inQuote, snapshotModule } from "./snapshot-doubles.js";
+import { article, inQuote, operation, snapshotModule } from "./snapshot-doubles.js";
 
 /**
  * La mémoire de l'instantané (plan des matériaux du catalogue, § 2.3) : quand
@@ -18,7 +18,7 @@ describe("CatalogueSnapshotStore — quand l'instantané sert", () => {
     await expect(withCatalogueSnapshot(() => Promise.resolve(store.serves()))).resolves.toBe(false);
   });
 
-  it("hors de la portée (la passation, le rayon) : il ne sert pas", async () => {
+  it("hors de la portée (la passation, l'administration) : il ne sert pas", async () => {
     const { store } = await snapshotModule([]);
     const served = runWithRequestContext({ now: new Date(0), traceId: "passation" }, () =>
       store.serves(),
@@ -88,17 +88,41 @@ describe("CatalogueSnapshotStore — les numéros et les morceaux", () => {
     expect(base.calls.filter((call) => call === "articles")).toHaveLength(2);
   });
 
-  it("range les articles dans l'ordre à trois clés : famille, position, SKU", async () => {
+  /**
+   * Régression (§ 12, lot M2) : l'instantané triait le SKU en unités de code,
+   * Postgres selon sa collation — deux SKU qui ne diffèrent que par la
+   * ponctuation pouvaient s'ordonner autrement au rayon. L'ordre est désormais
+   * demandé à la base, et gardé tel qu'elle le rend.
+   */
+  it("demande l'ordre à trois clés à Postgres, et le garde tel quel", async () => {
     const { base, store } = await snapshotModule([]);
-    const second = { ...article("Z").category, id: "fam-b", position: 2 };
-    base.articles = [
-      article("B-2", { position: 1 }),
-      article("Z-1", { category: second, categoryId: "fam-b" }),
-      article("B-1", { position: 1 }),
-      article("C-1", { position: 0 }),
-    ];
+    base.articles = [article("B-1"), article("B.1"), article("B_1")];
     const snapshot = await inQuote(() => store.articles());
-    expect(snapshot.rows.map((row) => row.sku)).toEqual(["C-1", "B-1", "B-2", "Z-1"]);
+    expect(base.lastArticleRead?.orderBy).toEqual([
+      { category: { position: "asc" } },
+      { position: "asc" },
+      { sku: "asc" },
+    ]);
+    expect(snapshot.rows.map((row) => row.sku)).toEqual(["B-1", "B.1", "B_1"]);
+  });
+
+  it("le morceau des opérations se garde sous SON numéro, sans relire les articles", async () => {
+    const { base, store } = await snapshotModule([]);
+    base.operations = [operation("noel")];
+    await inQuote(() => Promise.all([store.articles(), store.operations()]));
+    base.versions.set("operations", 2n);
+    base.calls.length = 0;
+    const second = await inQuote(() => Promise.all([store.articles(), store.operations()]));
+    expect(base.calls).toEqual(["versions", "operations"]);
+    expect(second[1].rows.map((row) => row.key)).toEqual(["noel"]);
+  });
+
+  it("oublie aussi le morceau des opérations", async () => {
+    const { base, store } = await snapshotModule([]);
+    await inQuote(() => store.operations());
+    store.forget();
+    await inQuote(() => store.operations());
+    expect(base.calls.filter((call) => call === "operations")).toHaveLength(2);
   });
 });
 

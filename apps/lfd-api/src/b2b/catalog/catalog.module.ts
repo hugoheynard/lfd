@@ -110,6 +110,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
 import { CatalogueSnapshotModule } from "./catalogue-snapshot.module.js";
 import { SnapshotCatalogReader } from "./infrastructure/catalogue-snapshot/snapshot-catalog.reader.js";
 import { SnapshotCatalogOperationsReader } from "./infrastructure/catalogue-snapshot/snapshot-catalog-operations.reader.js";
+import { SnapshotCatalogPricePerKgReader } from "./infrastructure/catalogue-snapshot/snapshot-catalog-price-per-kg.reader.js";
+import { SnapshotDefaultSaleReferenceReader } from "./infrastructure/catalogue-snapshot/snapshot-default-sale-reference.reader.js";
 import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogue-snapshot/snapshot-order-line-classification.reader.js";
 
 /**
@@ -225,9 +227,10 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     { provide: CatalogRulesProjection, useClass: PrismaCatalogRulesProjection },
     { provide: CatalogOrderLimits, useClass: PrismaCatalogOrderLimits },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
-    // L'instantané (plan des matériaux du catalogue, M1b) : dans la portée
-    // `withCatalogueSnapshot` (devis, estimation, suggestions), les lectures A,
-    // B, C et D viennent de la mémoire ; partout ailleurs, de la base.
+    // L'instantané (plan des matériaux du catalogue, M1b puis M2) : dans la
+    // portée `withCatalogueSnapshot` (devis, estimation, suggestions, rayon),
+    // les lectures A à E et les opérations viennent de la mémoire ; partout
+    // ailleurs, de la base.
     PrismaCatalogReader,
     { provide: CatalogReader, useClass: SnapshotCatalogReader },
     // 🔴 **L'autorité de prix du checkout**, ramenée là d'où vient sa donnée le
@@ -264,7 +267,10 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     { provide: SaleReferenceSuccessionReader, useClass: PrismaSaleReferenceSuccessionReader },
     // La même lignée remontée, que les alertes lisent (L7d-bis).
     { provide: SaleReferenceLineageReader, useClass: PrismaSaleReferenceLineageReader },
-    { provide: CatalogPricePerKgReader, useClass: PrismaCatalogPricePerKgReader },
+    // Le kilo et le défaut des tuiles : de l'instantané dans la portée du
+    // rayon (lot M2), de la base partout ailleurs.
+    PrismaCatalogPricePerKgReader,
+    { provide: CatalogPricePerKgReader, useClass: SnapshotCatalogPricePerKgReader },
     // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
     // ici sur les articles : la table appartient au catalogue.
     PrismaOrderLineClassificationReader,
@@ -278,7 +284,8 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
     PrismaSaleReferenceUsage,
     // Une fiche montrée sous la référence de vente de son défaut (L3).
-    { provide: DefaultSaleReferenceReader, useClass: PrismaDefaultSaleReferenceReader },
+    PrismaDefaultSaleReferenceReader,
+    { provide: DefaultSaleReferenceReader, useClass: SnapshotDefaultSaleReferenceReader },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.

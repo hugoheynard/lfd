@@ -36,6 +36,12 @@
 > médianes) : catalogue **127 → 11 ms**, 7 → **1** lecture ; temps de l'API
 > 155 → 36 ms ; requête complète 337 → 140 ms (§ 13).
 >
+> 🟦 **M2 bâti le 2026-11-06** (non commité au moment d'écrire, option 1 du
+> § 12) : le recalcul du rayon lit l'instantané, à chaud 1 lecture des numéros
+> (+ 1 des réservations pour un pro) ; `ShelfChanges` part après la
+> validation, transaction directe comprise ; portes
+> `lint:shelf-changes-after-commit` et `lint:catalogue-door`. Écarts au § 14.
+>
 > 🧭 **Prochain pas** : remesurer le panier connecté (devis + suggestions),
 > puis M2 en option 1 (§ 12). Restent à mesurer avant M1b : le devis d'un espace pro et
 > l'estimation de la saisie (§ 10.3).
@@ -738,3 +744,61 @@ anonyme, 30 appels), juste après le déploiement de `5e805275a` :
 Le gain sur le catalogue est celui que le plan visait (~10–20 ms à chaud). Il
 reste à remesurer le panier d'un client connecté (devis et suggestions, ~285 ms
 par clic avant), sur le compte de test, panier vidé après.
+
+## 14. Ce que le bâti de M2 a tranché (2026-11-06)
+
+**Le chemin.** La portée `withCatalogueSnapshot` est posée sur le recalcul
+du rayon : `shopCatalogueFor` (`GET /shop/catalogue`, public et
+`?audience=pro`), `RecognisedShelf.read` (le rayon pro calculé quand l'objet
+`ProShelves` n'a rien), la page publique de la vitrine
+(`GET /shop/storefront/:shelfKey` et `/mine`) et les incontournables
+(`shopFeaturedFor`, ajoutés parce qu'ils composent le rayon de la même
+façon). Les aperçus du personnel (`pricedWithoutCompany` appelé par l'éditeur
+des suggestions, la grille de prix) restent sur la base.
+
+**Ce qui est chargé en plus.** Le morceau `operations` (opérations non
+retirées et leurs articles, en `select` tiré de la constante), servi par
+`SnapshotCatalogOperationsReader.sellableOperations` avec la même règle que la
+lecture en base (`sellable-operations-of.ts`) ; les textes des images restent
+lus à la médiathèque à chaque appel. Deux vues de plus sur le morceau
+`catalog` : le prix au kilo (lecture E) et le défaut des tuiles de la vitrine
+(`DefaultSaleReferenceReader`).
+
+**Le tri par SKU.** L'ordre à trois clés (et celui des opérations, par
+clé) est désormais **demandé à Postgres** dans le chargeur, plus refait en
+mémoire : l'instantané a l'ordre de la base, quelle que soit sa collation.
+Collation relevée : la base locale et celle de la CI sont des images Alpine
+(`en_US.utf8` sur musl, qui compare les octets) ; **celle de production n'a
+pas été relevée** (aucun accès depuis ce bâti). L'e2e compare le rayon
+mémoire allumée et éteinte avec deux SKU qui ne diffèrent que par la
+ponctuation ; sur une base Alpine il ne peut pas rougir pour l'ancien tri, le
+test unitaire vérifie l'`orderBy` envoyé.
+
+**Le classement du § 2.4.** `PrismaWithdrawnShopSkusReader` : liste admise
+(administration des décisions tarifaires ; il cherche des articles RETIRÉS,
+absents de l'instantané par construction). `storefront-catalog-operations.ts`
+ne lit aucune table : c'est une fonction pure de l'éditeur de vitrine, nourrie
+par `PrismaReceivedOperationsReader`, qui est admis (administration).
+
+**`ShelfChanges` après la validation.** Le mécanisme existait
+(`DeferredShelfChanges` → `AfterCommit`) ; relevé des 40 appels de
+`changed(…)` dans 22 fichiers : tous émettent après leur écriture, dans une
+unité de travail (différés) ou après leur propre écriture validée. Le trou
+était ailleurs : une transaction **directe**
+(`prisma.$transaction(async (tx) => …)` hors unité de travail) n'avait pas de
+file, et un signal émis dans son callback serait parti avant la validation.
+Aucun émetteur ne le faisait (trois le disaient en commentaire) ; la file est
+désormais posée sur toute transaction directe (`transactional-prisma.ts`,
+`runWithCommitQueue`), sans changer son routage.
+
+**`add` d'une opération** passe dans une unité de travail, comme `save`.
+
+**Le budget**, tenu par `apps/lfd-api/test/catalogue-reads.e2e-spec.ts` :
+rayon public et pro de base, à chaud 1 lecture (numéros), à froid 4 (numéros,
+articles, opérations, heure limite) ; rayon d'un pro, + 1 réservations dans
+les deux cas. Le plan visait « 5 → 2 lectures » : c'est 1 sans société, 2
+avec.
+
+**Ce qui reste lu en base sur le chemin du devis** : les réglages du jour
+même (`prisma-order-cutoff-settings.reader.ts`), admis par
+`lint:catalogue-door` avec la raison du § 12.

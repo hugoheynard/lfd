@@ -82,4 +82,19 @@ describe("Opérations — le signal des rayons", () => {
     expect(writes.map((write) => write.statement)).toEqual(["update", "deleteMany", "createMany"]);
     expect(writes.every((write) => write.inUnit)).toBe(true);
   });
+
+  /**
+   * Régression : `add` créait l'opération puis ses articles en deux
+   * instructions hors transaction — la forme que M1a avait corrigée dans
+   * `save` seulement ; un chargement de l'instantané entre les deux rangeait
+   * une opération vide (plan-materiaux-du-catalogue.md, § 11.1, lot M2).
+   */
+  it("ajoute l'opération et ses articles dans une seule unité de travail", async () => {
+    const { repo, writes } = await repository();
+    const operation = preparedNoel();
+    operation.select(["BUCHE-6"], { by: "staff_jour", at: new Date("2026-10-02T09:00:00.000Z") });
+    await repo.add(operation);
+    expect(writes.map((write) => write.statement)).toEqual(["create", "createMany"]);
+    expect(writes.every((write) => write.inUnit)).toBe(true);
+  });
 });

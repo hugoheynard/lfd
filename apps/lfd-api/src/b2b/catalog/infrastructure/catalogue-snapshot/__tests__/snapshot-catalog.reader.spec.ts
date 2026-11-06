@@ -79,10 +79,11 @@ describe("SnapshotCatalogReader — le mur des réservations", () => {
 describe("SnapshotCatalogReader — ce que chaque lecture réapplique", () => {
   it("la lecture A écarte l'article sans taux, et garde l'ordre à trois clés", async () => {
     const { base, reader } = await setup();
+    // La base rend l'ordre à trois clés (`SHELF_ORDER`) ; la vue le garde.
     base.articles = [
-      article("B-1", { position: 2 }),
-      article("SANS-TAUX", { vatRatePercent: null }),
       article("A-1", { position: 1 }),
+      article("SANS-TAUX", { vatRatePercent: null }),
+      article("B-1", { position: 2 }),
     ];
     const sellable = await inQuote(() => reader.listSellable(staffViewer("pro")));
     expect(sellable.map((item) => item.sku)).toEqual(["A-1", "B-1"]);

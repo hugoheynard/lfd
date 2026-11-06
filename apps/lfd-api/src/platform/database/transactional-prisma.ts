@@ -1,4 +1,4 @@
-import { currentTransaction } from "./transaction.store.js";
+import { CommitQueue, currentTransaction, runWithCommitQueue } from "./transaction.store.js";
 
 /**
  * Les membres qui ne suivent JAMAIS la transaction ambiante.
@@ -32,6 +32,9 @@ export function transactionalPrisma<T extends object>(base: T): T {
   return new Proxy(base, {
     get(target, property, receiver): unknown {
       const tx = currentTransaction();
+      if (tx === undefined && property === "$transaction") {
+        return directTransaction(target, Reflect.get(target, property, receiver));
+      }
       if (tx === undefined || (typeof property === "string" && LIFECYCLE.has(property))) {
         return Reflect.get(target, property, receiver);
       }
@@ -70,5 +73,40 @@ function joinTransaction(tx: object) {
       return (operations as (client: object) => Promise<unknown>)(tx);
     }
     throw new TypeError("$transaction attend un tableau d'opérations ou une fonction");
+  };
+}
+
+/** La signature de `$transaction` que ce module relaie, sans la typer davantage. */
+type RawTransaction = (operations: unknown, options?: unknown) => Promise<unknown>;
+
+/**
+ * `$transaction` **hors de toute unité de travail** : la transaction de la
+ * base, avec en plus sa file d'après validation (lot M2 du plan des
+ * matériaux du catalogue, `ShelfChanges` après la validation).
+ *
+ * Un rappel inscrit dans le callback (`AfterCommit`, donc le signal des
+ * rayons) attend la validation, comme sous `UnitOfWork.run` ; une
+ * transaction qui échoue ne l'exécute jamais. Le routage, lui, ne change
+ * pas : le callback vise `tx` en clair. La forme tableau n'a pas de
+ * callback, rien à inscrire : elle passe telle quelle.
+ */
+function directTransaction(target: object, original: unknown): unknown {
+  if (typeof original !== "function") {
+    return original;
+  }
+  const raw = original as RawTransaction;
+  return async (operations: unknown, options?: unknown): Promise<unknown> => {
+    if (typeof operations !== "function") {
+      return raw.call(target, operations, options);
+    }
+    const work = operations as (client: object) => Promise<unknown>;
+    const commits = new CommitQueue();
+    const result = await raw.call(
+      target,
+      (client: object) => runWithCommitQueue(commits, () => work(client)),
+      options,
+    );
+    commits.flush();
+    return result;
   };
 }

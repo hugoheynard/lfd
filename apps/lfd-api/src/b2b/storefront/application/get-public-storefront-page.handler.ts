@@ -2,6 +2,7 @@ import type { PublicStorefrontPageView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
+import { withCatalogueSnapshot } from "../../catalog/application/catalogue-snapshot-scope.js";
 import { DefaultSaleReferenceReader } from "../../catalog/domain/ports/default-sale-reference.reader.js";
 import { PublicStorefrontReader } from "../domain/public-storefront.reader.js";
 import { StorefrontSettingsReader } from "../domain/storefront-settings.reader.js";
@@ -33,7 +34,15 @@ export class GetPublicStorefrontPageHandler implements IQueryHandler<
     private readonly saleReferences: DefaultSaleReferenceReader,
   ) {}
 
-  async execute(query: GetPublicStorefrontPageQuery): Promise<PublicStorefrontPageView> {
+  /**
+   * Les défauts des tuiles et les opérations annoncées se lisent dans
+   * l'instantané du catalogue (lot M2) : la page est un affichage du rayon.
+   */
+  execute(query: GetPublicStorefrontPageQuery): Promise<PublicStorefrontPageView> {
+    return withCatalogueSnapshot(() => this.compose(query));
+  }
+
+  private async compose(query: GetPublicStorefrontPageQuery): Promise<PublicStorefrontPageView> {
     const [stored, setting] = await Promise.all([
       this.reader.pageOf(query.shelfKey),
       this.settings.allergenDisplay(),

@@ -116,7 +116,15 @@
 >   déclencheur qui fait monter `context_versions`) ou ignorée avec sa
 >   raison, et le déclencheur d'une table appelle la fonction de SON
 >   contexte — une colonne oubliée servirait un catalogue périmé sans le
->   dire. C'est la
+>   dire. Et **58** et **59** le même jour (lot M2 du plan des matériaux du
+>   catalogue) avec `lint:shelf-changes-after-commit` : le signal des rayons
+>   ne part que par `DeferredShelfChanges` → `AfterCommit` (la file d'après
+>   validation, posée aussi sur une transaction directe), jamais émis avant
+>   l'écriture qu'il annonce — sans quoi un rayon recalculé sur l'état
+>   d'avant serait gardé ; et `lint:catalogue-door` : tout fichier servi qui
+>   lit une table de l'instantané du catalogue est le chargeur, un repli
+>   qu'un adaptateur `Snapshot*` enveloppe, ou un chemin hors du devis et du
+>   rayon inscrit avec sa raison. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1293,7 +1301,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 57 portes du dépôt, d’un coup
+pnpm lint:gates         # les 59 portes du dépôt, d’un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

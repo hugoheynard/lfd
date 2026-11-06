@@ -10,9 +10,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
  * même port (`ProductCatalogReader`). Brancher l'instantané sur le port aurait
  * fait lire la passation dans la mémoire, alors qu'elle relit la base pour ce
  * qu'elle écrit et fait foi (§ 2.5). Seuls les chemins qui ENTRENT dans cette
- * portée la lisent : le devis, l'estimation de la saisie, les suggestions.
- * Partout ailleurs — la passation, le rayon (M2), l'administration —, les
- * adaptateurs lisent la base comme avant.
+ * portée la lisent : le devis, l'estimation de la saisie, les suggestions
+ * (M1b), et depuis le lot M2 le recalcul du rayon — public, pro, vitrine et
+ * incontournables. Partout ailleurs — la passation, l'administration, les
+ * aperçus du personnel —, les adaptateurs lisent la base comme avant.
  *
  * La portée ne garde rien : elle dit seulement « ici, l'instantané est permis ».
  * La mémoire décide ensuite (réglage, contexte de requête, numéros).

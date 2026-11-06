@@ -41,11 +41,29 @@ export type SnapshotGeneralCutoff = Awaited<ReturnType<typeof loadGeneralCutoff>
  * du rayon, indexés par SKU, et la lignée des familles.
  */
 export interface SnapshotArticles {
-  /** Famille, position, SKU — l'ordre de `listSellable` (§ 9). */
+  /** Famille, position, SKU — l'ordre de `listSellable` (§ 9), tranché par Postgres. */
   readonly rows: readonly SnapshotArticleRow[];
   readonly bySku: ReadonlyMap<string, SnapshotArticleRow>;
   readonly lineage: Lineage;
 }
+
+/**
+ * **L'ordre du rayon, tranché par Postgres** — le tri à trois clés de la
+ * lecture A (`prisma-catalog.reader.ts`, `listSellable`) : la position de la
+ * famille, celle de l'article, puis le SKU, qui départage (le référentiel
+ * envoie `position: 0` partout).
+ *
+ * Demandé à la base plutôt que refait en mémoire (lot M2, § 12) : le SKU s'y
+ * compare selon la collation de la base, et un tri en unités de code pouvait
+ * ordonner autrement deux SKU qui ne diffèrent que par la ponctuation. Le
+ * rayon lu dans l'instantané a donc l'ordre du rayon lu en base, quelle que
+ * soit la collation de l'environnement.
+ */
+export const SHELF_ORDER = [
+  { category: { position: "asc" } },
+  { position: "asc" },
+  { sku: "asc" },
+] as const;
 
 function readArticleRows(prisma: PrismaService) {
   return timeCatalogueRead(() =>
@@ -54,13 +72,14 @@ function readArticleRows(prisma: PrismaService) {
       // comme de la lecture B, donc aucune vue ne peut le chiffrer (§ 2.1).
       where: STILL_SOLD,
       select: ARTICLE_SELECT,
+      orderBy: [...SHELF_ORDER],
     }),
   );
 }
 
 /** Charge le morceau `catalog` — un appel, plus un pour la lignée si une famille a une parente. */
 export async function loadArticles(prisma: PrismaService): Promise<SnapshotArticles> {
-  const rows = [...(await readArticleRows(prisma))].sort(byShelfOrder);
+  const rows = await readArticleRows(prisma);
   const nested = rows.some((row) => row.category.parentId !== null);
   const lineage = nested ? lineageFrom(await readFamilies(prisma)) : FLAT_LINEAGE;
   return Object.freeze({
@@ -78,28 +97,48 @@ function readFamilies(prisma: PrismaService) {
   );
 }
 
-/**
- * **Le tri à trois clés** de la lecture A (`prisma-catalog.reader.ts`,
- * `listSellable`) : la position de la famille, celle de l'article, puis le
- * SKU, qui départage (le référentiel envoie `position: 0` partout).
- *
- * ⚠️ Le SKU se compare ici en unités de code, là où Postgres applique la
- * collation de la base : deux SKU qui ne diffèrent que par la ponctuation
- * peuvent s'ordonner autrement. L'ordre reste total et stable.
- */
-function byShelfOrder(left: SnapshotArticleRow, right: SnapshotArticleRow): number {
-  return (
-    left.category.position - right.category.position ||
-    left.position - right.position ||
-    (left.sku < right.sku ? -1 : left.sku > right.sku ? 1 : 0)
-  );
-}
-
 /** Charge le morceau `order_cutoffs` : l'heure limite générale. */
 export function loadGeneralCutoff(prisma: PrismaService) {
   return timeCatalogueRead(() =>
     prisma.orderCutoff.findFirst({ where: GENERAL_ORDER_CUTOFF_WHERE, select: CUTOFF_SELECT }),
   );
+}
+
+/** Les colonnes d'une opération, et ses articles dans l'ordre du rayon. */
+const OPERATION_SELECT = {
+  ...selectOf(COLUMNS.operations.catalog_operations),
+  items: { select: { sku: true }, orderBy: { position: "asc" } },
+} as const;
+
+/** Une opération de l'instantané, telle que Prisma la rend. */
+export type SnapshotOperationRow = Awaited<ReturnType<typeof readOperationRows>>[number];
+
+/**
+ * **Le morceau `operations`** (lot M2) : les opérations NON RETIRÉES, avec
+ * leurs articles, dans l'ordre de `PrismaCatalogOperationsReader` — la plus
+ * récemment annoncée d'abord, la clé départage. Le jugement (masquée, sans
+ * clientèle, fenêtre) se fait à la lecture, à l'instant de la requête.
+ */
+export interface SnapshotOperations {
+  readonly rows: readonly SnapshotOperationRow[];
+}
+
+function readOperationRows(prisma: PrismaService) {
+  return timeCatalogueRead(() =>
+    prisma.catalogOperation.findMany({
+      where: { withdrawnAt: null },
+      select: OPERATION_SELECT,
+      // L'ordre tranché par Postgres, comme celui des articles : la clé se
+      // compare selon la collation de la base.
+      orderBy: [{ announceFrom: "desc" }, { key: "asc" }],
+    }),
+  );
+}
+
+/** Charge le morceau `operations` — un appel, ses articles en `include`. */
+export async function loadOperations(prisma: PrismaService): Promise<SnapshotOperations> {
+  const rows = await readOperationRows(prisma);
+  return Object.freeze({ rows: Object.freeze(rows) });
 }
 
 /** Les trois numéros, en une lecture ; un contexte sans ligne est absent. */

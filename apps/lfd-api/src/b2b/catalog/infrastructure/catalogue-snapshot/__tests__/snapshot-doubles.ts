@@ -53,6 +53,8 @@ export interface ArticleFixture {
   readonly weightStepGrams: number | null;
   readonly proMinQuantity: number | null;
   readonly publicMinQuantity: number | null;
+  readonly proPricePerKgMillicents: number | null;
+  readonly publicPricePerKgTtcCents: number | null;
   readonly category: {
     readonly id: string;
     readonly name: string;
@@ -72,6 +74,61 @@ export interface ArticleFixture {
 }
 
 const rate = (value: number) => ({ toNumber: () => value });
+
+/** Une opération telle que le morceau `operations` la lit. */
+export interface OperationFixture {
+  readonly key: string;
+  readonly name: unknown;
+  readonly lede: unknown;
+  readonly imageUrl: string | null;
+  readonly imageAlt: string | null;
+  readonly imageFocalX: number | null;
+  readonly imageFocalY: number | null;
+  readonly announceFrom: Date;
+  readonly orderFrom: Date | null;
+  readonly orderUntil: Date;
+  readonly pickupFrom: Date;
+  readonly pickupUntil: Date;
+  readonly showsOrderUntilTime: boolean;
+  readonly audience: string;
+  readonly receivedAt: Date;
+  readonly withdrawnAt: Date | null;
+  readonly hidden: boolean;
+  readonly items: readonly { readonly sku: string }[];
+}
+
+/**
+ * Une opération ouverte aux deux clientèles. Les dates ne sont comparées à
+ * aucune horloge par les lectures éprouvées ici (le jugement de fenêtre se
+ * fait au rayon) : elles restent relatives à l'époque, sans calendrier.
+ */
+export function operation(
+  key: string,
+  overrides: Partial<OperationFixture> = {},
+): OperationFixture {
+  const day = 86_400_000;
+  return {
+    key,
+    name: { fr: `Opération ${key}` },
+    lede: null,
+    imageUrl: null,
+    imageAlt: null,
+    imageFocalX: null,
+    imageFocalY: null,
+    announceFrom: new Date(day),
+    orderFrom: null,
+    orderUntil: new Date(5 * day),
+    pickupFrom: new Date(6 * day),
+    pickupUntil: new Date(7 * day),
+    showsOrderUntilTime: false,
+    audience: "both",
+    receivedAt: new Date(day),
+    withdrawnAt: null,
+    hidden: false,
+    items: [{ sku: "OP-1" }],
+    ...overrides,
+  };
+}
 
 /** Un article vendu aux deux clientèles, défaut de sa fiche, famille à plat. */
 export function article(sku: string, overrides: Partial<ArticleFixture> = {}): ArticleFixture {
@@ -120,6 +177,8 @@ export function article(sku: string, overrides: Partial<ArticleFixture> = {}): A
     weightStepGrams: null,
     proMinQuantity: null,
     publicMinQuantity: null,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     category: {
       id: "fam-a",
       name: "Famille A",
@@ -162,8 +221,13 @@ export class FakeCatalogueBase {
     },
   };
 
+  /** Les arguments de la dernière lecture d'articles — l'ordre demandé à Postgres. */
+  lastArticleRead: { readonly select?: unknown; readonly orderBy?: unknown } | null = null;
+  operations: readonly OperationFixture[] = [];
+
   readonly catalogItem = {
-    findMany: (args: { readonly select?: unknown }) => {
+    findMany: (args: { readonly select?: unknown; readonly orderBy?: unknown }) => {
+      this.lastArticleRead = args;
       this.calls.push(args.select === undefined ? "base:articles" : "articles");
       return Promise.resolve(args.select === undefined ? [] : [...this.articles]);
     },
@@ -185,6 +249,13 @@ export class FakeCatalogueBase {
     findFirst: () => {
       this.calls.push("cutoff");
       return Promise.resolve(this.cutoff);
+    },
+  };
+
+  readonly catalogOperation = {
+    findMany: (args: { readonly select?: unknown }) => {
+      this.calls.push(args.select === undefined ? "base:operations" : "operations");
+      return Promise.resolve([...this.operations]);
     },
   };
 

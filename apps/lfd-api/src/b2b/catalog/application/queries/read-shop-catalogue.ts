@@ -2,6 +2,7 @@ import type { ContentLocale, ShopCatalogueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import type { ShopAudience } from "../../domain/ports/catalog.reader.js";
+import { withCatalogueSnapshot } from "../catalogue-snapshot-scope.js";
 import { ShopCataloguePricing } from "../shop-catalogue-pricing.service.js";
 
 /**
@@ -54,8 +55,20 @@ export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogue
  *
  * 🔴 Ne lit JAMAIS l'appelant : c'est ce qui rend `public` juste sur
  * `GET /shop/catalogue` (`lint:cache-control` le tient).
+ *
+ * Le recalcul lit le catalogue dans l'instantané (lot M2 du plan des
+ * matériaux du catalogue) : à chaud, une lecture des numéros au lieu de cinq
+ * lectures du catalogue. Un rayon n'est qu'un affichage ; la passation relit
+ * la base pour ce qu'elle écrit (§ 2.5).
  */
 export function shopCatalogueFor(
+  pricing: ShopCataloguePricing,
+  query: ReadShopCatalogueQuery,
+): Promise<ShopCatalogueView> {
+  return withCatalogueSnapshot(() => shelfOf(pricing, query));
+}
+
+function shelfOf(
   pricing: ShopCataloguePricing,
   query: ReadShopCatalogueQuery,
 ): Promise<ShopCatalogueView> {

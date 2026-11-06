@@ -127,3 +127,49 @@ describe("AfterCommit", () => {
     expect(seen).toEqual(["suivant"]);
   });
 });
+
+/**
+ * Régression (lot M2 du plan des matériaux du catalogue) : une transaction
+ * DIRECTE — `prisma.$transaction(async (tx) => …)` hors unité de travail —
+ * n'avait pas de file. Un rappel inscrit dans son callback (le signal des
+ * rayons) partait tout de suite, AVANT la validation.
+ */
+describe("AfterCommit dans une transaction directe", () => {
+  const afterCommit = new AmbientAfterCommit();
+
+  it("le rappel attend la validation, et part hors du callback", async () => {
+    const seen: string[] = [];
+
+    await client().$transaction(() => {
+      afterCommit.defer(() => {
+        seen.push("rappel");
+      }, "direct");
+      seen.push("travail");
+      return Promise.resolve();
+    });
+
+    expect(seen).toEqual(["travail", "rappel"]);
+  });
+
+  it("n'exécute rien si la validation échoue", async () => {
+    const seen: string[] = [];
+
+    await expect(
+      client(true).$transaction(() => {
+        afterCommit.defer(() => {
+          seen.push("rappel");
+        }, "perdu");
+        return Promise.resolve();
+      }),
+    ).rejects.toThrow("validation refusée");
+    await settle();
+
+    expect(seen).toEqual([]);
+  });
+
+  it("ne route rien : le callback vise sa transaction en clair", async () => {
+    const seen = await client().$transaction(() => Promise.resolve(currentTransaction()));
+
+    expect(seen).toBeUndefined();
+  });
+});

@@ -8,10 +8,12 @@ import type { VersionedContext } from "../catalogue-snapshot-columns.js";
 import {
   loadArticles,
   loadGeneralCutoff,
+  loadOperations,
   readContextVersions,
   readReservations,
   type SnapshotArticles,
   type SnapshotGeneralCutoff,
+  type SnapshotOperations,
 } from "./catalogue-snapshot.loader.js";
 import { VersionedChunkMemory } from "./versioned-chunk-memory.js";
 
@@ -28,11 +30,11 @@ interface PerRequest {
  * **L'instantané du catalogue, en mémoire de l'API**
  * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.3, lot M1b).
  *
- * Deux morceaux servis au devis, chacun rangé sous le numéro de SON contexte
- * dans `context_versions` : `catalog` (articles, familles, dérogations,
- * compteur de réservations) et `order_cutoffs` (l'heure limite générale). Le
- * morceau `operations` n'est lu par aucun chemin de M1b (le rayon, M2) : il
- * n'est pas chargé.
+ * Trois morceaux, chacun rangé sous le numéro de SON contexte dans
+ * `context_versions` : `catalog` (articles, familles, dérogations, compteur
+ * de réservations), `order_cutoffs` (l'heure limite générale) et, depuis le
+ * lot M2, `operations` (les opérations non retirées et leurs articles), que
+ * seul le rayon lit. Un morceau n'est chargé que si un chemin le demande.
  *
  * - les numéros se lisent **une fois par requête**, gardés sur le contexte de
  *   la requête comme l'estampille des prix (`PricingMaterialsCache`) ;
@@ -46,6 +48,7 @@ interface PerRequest {
 export class CatalogueSnapshotStore {
   private readonly articleMemory = new VersionedChunkMemory<SnapshotArticles>();
   private readonly cutoffMemory = new VersionedChunkMemory<SnapshotGeneralCutoff>();
+  private readonly operationMemory = new VersionedChunkMemory<SnapshotOperations>();
   private readonly perRequest = new WeakMap<object, PerRequest>();
 
   constructor(
@@ -72,6 +75,12 @@ export class CatalogueSnapshotStore {
   async generalCutoff(): Promise<SnapshotGeneralCutoff> {
     const version = await this.versionOf("order_cutoffs");
     return this.cutoffMemory.of(version, () => loadGeneralCutoff(this.prisma));
+  }
+
+  /** Le morceau `operations` (lot M2), sous le numéro de la requête. */
+  async operations(): Promise<SnapshotOperations> {
+    const version = await this.versionOf("operations");
+    return this.operationMemory.of(version, () => loadOperations(this.prisma));
   }
 
   /**
@@ -101,6 +110,7 @@ export class CatalogueSnapshotStore {
   forget(): void {
     this.articleMemory.forget();
     this.cutoffMemory.forget();
+    this.operationMemory.forget();
   }
 
   /** Le numéro d'un contexte pour cette requête, ou `null` si sa ligne manque. */

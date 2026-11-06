@@ -21,7 +21,13 @@ import { Logger } from "@nestjs/common";
  * Les appelants, eux, gardent le type complet du client compté.
  */
 interface TransactionFrame {
-  readonly tx: object;
+  /**
+   * Le client de transaction à viser, ou `undefined` pour une transaction
+   * DIRECTE (`prisma.$transaction(async (tx) => …)` hors unité de travail) :
+   * elle a sa file d'après validation, mais son code vise `tx` en clair et
+   * le routage n'est pas changé pour elle (cf. {@link runWithCommitQueue}).
+   */
+  readonly tx: object | undefined;
   readonly commits: CommitQueue;
 }
 
@@ -99,6 +105,21 @@ export function runInTransaction<T>(
   commits: CommitQueue = new CommitQueue(),
 ): Promise<T> {
   return storage.run({ tx, commits }, work);
+}
+
+/**
+ * Exécute `work` avec sa **file d'après validation**, sans rien router.
+ *
+ * C'est le cadre d'une transaction DIRECTE — un dépôt qui appelle
+ * `prisma.$transaction(async (tx) => …)` hors de toute unité de travail
+ * (`transactional-prisma.ts`). Sans lui, un rappel inscrit dans son
+ * callback partait tout de suite, AVANT la validation : la purge des rayons
+ * pouvait laisser recalculer un rayon sur l'état d'avant, puis le garder
+ * (`plan-materiaux-du-catalogue.md`, § 12, lot M2). Le client n'est pas
+ * routé : le callback vise `tx` en clair, comme il l'a toujours fait.
+ */
+export function runWithCommitQueue<T>(commits: CommitQueue, work: () => Promise<T>): Promise<T> {
+  return storage.run({ tx: undefined, commits }, work);
 }
 
 /**

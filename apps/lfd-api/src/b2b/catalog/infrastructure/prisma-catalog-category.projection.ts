@@ -40,7 +40,8 @@ export class PrismaCatalogCategoryProjection extends CatalogCategoryProjection {
         });
       }
     });
-    // Après la transaction : `$transaction` direct n'ouvre pas d'unité ambiante.
+    // Après la transaction, par lisibilité : depuis le 2026-11-06 (lot M2), une
+    // transaction directe a aussi sa file d'après validation (`transactional-prisma.ts`).
     this.shelves.changed(ALL_SHELVES);
   }
 }

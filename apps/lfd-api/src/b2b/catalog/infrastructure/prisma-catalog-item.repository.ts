@@ -161,8 +161,8 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
         await tx.catalogPriceHistory.createMany({ data: changes });
       }
     });
-    // Après la transaction, jamais dedans : `$transaction` direct n'ouvre pas
-    // d'unité ambiante, un signal émis dans le rappel partirait avant le commit.
+    // Après la transaction, par lisibilité : depuis le 2026-11-06 (lot M2), une
+    // transaction directe a aussi sa file d'après validation (`transactional-prisma.ts`).
     this.shelves.changed(ALL_SHELVES);
   }
 }

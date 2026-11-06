@@ -4,6 +4,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../../domain/ports/catalog-operations.reader.js";
 import { CatalogReader } from "../../domain/ports/catalog.reader.js";
+import { withCatalogueSnapshot } from "../catalogue-snapshot-scope.js";
 import { inShopLanguage, shopCatalogueOf } from "../shop-catalogue-view.js";
 import { ReadShopFeaturedQuery } from "./read-shop-featured.query.js";
 import { anonymousViewer } from "../../domain/catalog-viewer.js";
@@ -50,7 +51,15 @@ export interface ShopFeaturedSources {
  * 🔴 Ne lit JAMAIS l'appelant (`anonymousViewer`) : c'est ce qui rend `public`
  * juste sur `GET /shop/featured` (`lint:cache-control` le tient).
  */
-export async function shopFeaturedFor(
+export function shopFeaturedFor(
+  sources: ShopFeaturedSources,
+  query: ReadShopFeaturedQuery,
+): Promise<ShopFeaturedView> {
+  // Les incontournables se composent comme le rayon : dans l'instantané (lot M2).
+  return withCatalogueSnapshot(() => featuredOf(sources, query));
+}
+
+async function featuredOf(
   sources: ShopFeaturedSources,
   query: ReadShopFeaturedQuery,
 ): Promise<ShopFeaturedView> {

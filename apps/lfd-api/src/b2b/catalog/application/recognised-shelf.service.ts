@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { Clock } from "../../../platform/time/clock.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import type { ShelfKey } from "../domain/ports/shop-shelf-cache.js";
+import { withCatalogueSnapshot } from "./catalogue-snapshot-scope.js";
 import { ResilientShopShelfCache } from "./resilient-shop-shelf-cache.js";
 import { ShopCataloguePricing } from "./shop-catalogue-pricing.service.js";
 
@@ -71,10 +72,10 @@ export class RecognisedShelf {
     }
     // En français : la route reconnue n'a pas de paramètre de langue
     // (`my-shop-catalogue.controller.ts`) — la clé n'en a donc pas besoin.
-    const { view, principalId, nextChangeAt } = await this.pricing.shelf(
-      key,
-      "registered",
-      CATALOG_SOURCE_LANGUAGE,
+    // Le recalcul lit le catalogue dans l'instantané (lot M2) ; la clé et
+    // l'audience, elles, viennent du principal relu en base.
+    const { view, principalId, nextChangeAt } = await withCatalogueSnapshot(() =>
+      this.pricing.shelf(key, "registered", CATALOG_SOURCE_LANGUAGE),
     );
     if (lookup !== null) {
       this.cache.storeAfterReply({
