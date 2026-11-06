@@ -146,6 +146,33 @@ flowchart LR
   ses modèles dans sa base). Plus simple au départ, elle aurait donné deux
   éditeurs pour une seule équipe, et deux endroits où chercher un rebond.
 
+**Pour l'instant : un bloc de `lfd-api`, pas une app à part** (Hugo,
+2026-11-06 : « j'aime le modular monolith »). Le service d'e-mails est un
+**bloc** de premier niveau de `apps/lfd-api/src/` (nom à fixer au plan, par
+exemple `mail/`), avec **son schéma Postgres** dans la base unique, comme
+`delivery`, `packing` ou `production` :
+
+- **Les autres blocs ne l'importent que par un canal** : le bloc d'e-mails
+  déclare la porte « demander un e-mail » (`<bloc>/channels/…`), les blocs
+  métier la lisent en `port uniquement`, et la demande part par l'outbox
+  durable, comme une vraie messagerie entre deux applications. Le bloc
+  n'importe aucun bloc métier en retour.
+- **Ses tables ne sont lues que par lui** (`lint:prisma-model-ownership`) et
+  jamais jointes à une autre (`lint:cross-schema-join`).
+- **La matrice du § 3 de `CLAUDE.md` gagne une ligne et une colonne**, et
+  `lint:context-boundaries` doit connaître le bloc AVANT le premier fichier
+  qui y entre — une porte qui ignore un dossier neuf ne refuse rien.
+- **L'extraire plus tard** en app à part, quand la billetterie en aura besoin
+  ou plus tôt si l'exploitation le demande, revient à déménager un bloc dont
+  les frontières sont déjà tenues : son schéma part avec lui, les demandes
+  passent déjà par une file. La billetterie, elle, devra d'ici là joindre ce
+  bloc par une route de `lfd-api` (à concevoir au plan, avec son jeton de
+  service), puisqu'elle aura sa propre API.
+
+Les coûts 1 (une app de plus) et 5 (une migration entre deux bases)
+ci-dessous sont donc **reportés à l'extraction** : aujourd'hui, la bascule se
+fait dans la même base.
+
 **Ce que ça coûte, à porter au plan :**
 
 1. **Une app de plus** : son conteneur, sa base, son entrée dans la
