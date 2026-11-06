@@ -32,6 +32,7 @@ export class MailerMailDispatch extends MailDispatch {
         template: mail.template as keyof B2bMails,
         data: mail.data as B2bMails[keyof B2bMails],
         idempotencyKey: mail.idempotencyKey,
+        ...(mail.replyTo === undefined ? {} : { replyTo: mail.replyTo }),
       });
       return receipt.providerId;
     } catch (error) {

@@ -1,4 +1,7 @@
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -13,6 +16,7 @@ import {
 } from "../../../domain/errors/order-change-errors.js";
 import { AT, CHANGE, reason } from "../../../domain/__tests__/request-fixtures.js";
 import type { ChangeableOrder } from "../../../domain/ports/changeable-order.reader.js";
+import { CustomerRequestMail } from "../../services/customer-request-mail.service.js";
 import { RequestOrderChangeCommand } from "../request-order-change.command.js";
 import { RequestOrderChangeHandler } from "../request-order-change.handler.js";
 import { Authors, FixedAudiences, MemoryReasons, MemoryRequests } from "./contact-doubles.js";
@@ -45,6 +49,8 @@ function setup(
   const requests = new MemoryRequests();
   const events = new RecordingPublisher();
   const reasons = over.reasons ?? [CHANGE_REASON];
+  const uow = new OpenableUnitOfWork();
+  const mails = new RecordingMailRequests(uow);
   const handler = new RequestOrderChangeHandler(
     new ChangeableOrders({ o1: over.order ?? LATE }),
     new PendingChanges(over.pending),
@@ -56,9 +62,10 @@ function setup(
     new FixedIdGenerator("q"),
     new FixedClock(AT),
     events,
-    new DirectUnitOfWork(),
+    uow,
+    new CustomerRequestMail(mails),
   );
-  return { handler, requests, events };
+  return { handler, requests, events, mails };
 }
 
 function ask(revision = 1, userId = "u1", orderId = "o1"): RequestOrderChangeCommand {
@@ -75,6 +82,18 @@ function ask(revision = 1, userId = "u1", orderId = "o1"): RequestOrderChangeCom
  * partent ensemble, le courriel à l'équipe suit.
  */
 describe("RequestOrderChangeHandler", () => {
+  it("demande le courriel à l'équipe au bloc `mail`, dans la transaction de la demande (S2c)", async () => {
+    const { handler, mails } = setup();
+    const id = await handler.execute(ask());
+    expect(mails.requested).toEqual([
+      expect.objectContaining({
+        template: "staff.customer-request",
+        to: "commandes@lfc.fr",
+        idempotencyKey: `customer-request:${id}`,
+      }),
+    ]);
+  });
+
   it("range la demande au motif de la modification, journalise, prévient l'équipe", async () => {
     const { handler, requests, events } = setup();
     const id = await handler.execute(ask());

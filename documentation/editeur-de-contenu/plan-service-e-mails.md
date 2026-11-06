@@ -31,6 +31,9 @@
 >
 > 🏗️ **S2b bâti le 2026-11-06** (§ 10) : le bloc `b2b/account` (5 envoyeurs)
 > passé par la porte. Dette : **15**.
+>
+> 🏗️ **S2c bâti le 2026-11-06** (§ 11) : le bloc `b2b/contact` (3 envoyeurs)
+> passé par la porte ; la demande porte un `replyTo`. Dette : **12**.
 
 ## Partie 1 — Comprendre
 
@@ -198,7 +201,8 @@ flowchart LR
 | **S2**   | Faire passer les 31 envoyeurs par la porte, bloc par bloc : `sendNow` pour les ~6 producteurs de `mailSent`, l'essai (`specimen-mail-trial`) et la sonde (`admin-mail-check`) ; `request` pour le reste. Les PDF passent au stockage                                                                                                                                                                                                                   | les e-mails des abonnés en mémoire deviennent durables ; délai à mesurer sur « commande prête » et « livreur en route » |
 | **S2a**  | ✅ bâti le 2026-11-06 (`6abe4d3ee`, § 9) : les fondations (`request` rend l'identifiant de la demande, pièces jointes par référence au stockage — `pdfStored` remplace `pdfBase64` dans les données —, la porte servie par un module global) puis le bloc `b2b/orders` (11 envoyeurs) ; dette 31 → 20                                                                                                                                                  | les e-mails des commandes partent après la validation, par le bloc                                                      |
 | **S2b**  | ✅ bâti le 2026-11-06 (`851cb1037`, § 10) : le bloc `b2b/account` (5 envoyeurs) ; `sendNow` pour l'ouverture d'accès et le lien de mot de passe, `request` pour le reste ; dette 20 → 15                                                                                                                                                                                                                                                               | la demande de rappel et l'alerte de rattachement partent après la validation, par le bloc                               |
-| **S2c…** | à venir, un bloc à la fois : `b2b/contact`, `b2b/accounting` (facture), `b2b/payments` (mandat), `production` (dossier), `staff`, puis les isolés (`alerts`, `growth`, `vitrine`, `sub-account-notices`, `platform/mailer`) ; la dette de `lint:mail-through-block` descend jusqu'à 0                                                                                                                                                                  | selon le bloc                                                                                                           |
+| **S2c**  | ✅ bâti le 2026-11-06 (§ 11) : le bloc `b2b/contact` (3 envoyeurs), tous en `request` depuis la transaction du geste qui publie ; la demande gagne `replyTo` ; dette 15 → 12                                                                                                                                                                                                                                                                           | la demande client et la réponse à une modification partent après la validation, par le bloc                             |
+| **S2d…** | à venir, un bloc à la fois : `b2b/accounting` (facture), `b2b/payments` (mandat), `production` (dossier), `staff`, puis les isolés (`alerts`, `growth`, `vitrine`, `sub-account-notices`, `platform/mailer`) ; la dette de `lint:mail-through-block` descend jusqu'à 0                                                                                                                                                                                 | selon le bloc                                                                                                           |
 | **S3**   | Déménager les gabarits, le dictionnaire et les sections de `platform/mailer/` dans le bloc. **Restent dans `platform/mailer/`** : `webhook/` (lu par `ops`), `inbound/` et `journal/`, techniques. Les trois tables `public.mail_*` **restent dans `public`** : seul leur écrivain change (de `b2b/mail-copy` au bloc `mail`), dans le même déploiement que leur lecteur. Les tables neuves du bloc vont dans son schéma                               | rien                                                                                                                    |
 | **S4**   | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                                                     | rien tant que rien n'est publié                                                                                         |
 | **S5**   | L'éditeur au back-office : ajouter, retirer, ordonner, écrire, insérer une variable, aperçu, essai, publier, versions, trois langues côte à côte ; le droit dédié                                                                                                                                                                                                                                                                                      | l'équipe compose ses e-mails                                                                                            |
@@ -222,6 +226,10 @@ Hugo les relit ensemble à la fin de S2, avant le déploiement groupé.
 | S2b | « Envoyé » à l'écran (ouvrir un accès) = Resend a rendu un identifiant ; un envoi accepté sans identifiant s'afficherait « non envoyé »      | `mailer.enabled` après un envoi réussi                                       |
 | S2b | **Une clé par geste** (ouvrir l'accès, rattacher, mot de passe, méthode liée) : chaque clic envoie son e-mail, le bloc gardant une clé un an | clé stable, dédoublonnée 24 h par Resend                                     |
 | S2b | Rattacher un titulaire envoie l'e-mail **avant** d'enregistrer la société (inchangé, signalé)                                                | pareil                                                                       |
+| S2c | « Nous écrire », « Signaler un problème », « Demander une modification » : un échec de la **demande** d'e-mail fait échouer le dépôt         | la demande était rangée, une panne d'envoi était avalée (journalisée)        |
+| S2c | « Appliquer » / « Refuser » une modification : un échec de la **demande** d'e-mail annule la réponse (et la révision appliquée)              | la réponse tenait, une panne d'envoi était avalée (journalisée)              |
+| S2c | Ces quatre e-mails partent **après la validation** et sont **relancés** par le balayeur ; plus rien n'est perdu à un redémarrage             | envoyés en fond après la réponse HTTP, jamais relancés                       |
+| S2c | « Signaler un problème » : la demande d'e-mail entre dans la transaction de la demande ; les photos restent rangées avant                    | photos, puis transaction, puis envoi en fond                                 |
 
 ### Les 31 envoyeurs à faire passer par la porte (S2)
 
@@ -249,9 +257,9 @@ pourquoi. Chemins sous `apps/lfd-api/src/`.
 | S2b | `b2b/account/application/services/grant-account-access.service.ts`                                      | `sendNow` (l'écran lit `mailSent`)                                       | ✅   |
 | S2b | `b2b/account/infrastructure/auth0-customer-identity.ts`                                                 | `sendNow` — tranché : le lien de mot de passe (§ 10)                     | ✅   |
 | S2b | `b2b/account/infrastructure/dev-customer-identity.ts`                                                   | `sendNow` — même forme que l'adaptateur Auth0                            | ✅   |
-| S2c | `b2b/contact/application/handlers/mail-customer-request.handler.ts`                                     | `request` (`replyTo`)                                                    | ⬜   |
-| S2c | `b2b/contact/application/handlers/mail-order-change-applied.handler.ts`                                 | `request`                                                                | ⬜   |
-| S2c | `b2b/contact/application/handlers/mail-order-change-refused.handler.ts`                                 | `request`                                                                | ⬜   |
+| S2c | `b2b/contact/application/services/customer-request-mail.service.ts` (ex-abonné `MailCustomerRequest`)   | `request` (`replyTo`) — depuis les trois commandes de dépôt (§ 11)       | ✅   |
+| S2c | `b2b/contact/application/services/order-change-applied-mail.service.ts` (ex-abonné)                     | `request` — depuis la transaction d'« Appliquer » (§ 11)                 | ✅   |
+| S2c | `b2b/contact/application/services/order-change-refused-mail.service.ts` (ex-abonné)                     | `request` — depuis la transaction de « Refuser » (§ 11)                  | ✅   |
 | S2d | `b2b/accounting/application/services/collection-notice-sender.ts`                                       | `request`                                                                | ⬜   |
 | S2d | `b2b/accounting/application/services/invoice-notice-sender.ts`                                          | `request` (facture par référence)                                        | ⬜   |
 | S2e | `b2b/payments/application/commands/send-mandate.handler.ts`                                             | `request` (mandat par référence)                                         | ⬜   |
@@ -431,8 +439,7 @@ sending` tant que la première tentative a moins de **23 h** et que le
   `customer.mandate-to-sign`, `staff.production-dossier` (ils s'ouvriront
   avec leur bloc).
 - **`replyTo`** : aucun envoyeur d'`orders` n'en a besoin ; la demande ne le
-  porte pas encore. À ajouter avec le bloc `contact`
-  (`mail-customer-request.handler.ts` le passe aujourd'hui au mailer).
+  portait pas. Ajouté avec le bloc `contact` (S2c, § 11).
 - **La porte est servie par un module GLOBAL** : `MailModule` est
   `@Global()`, importé une fois par `AppModule`. Un bloc métier n'a le droit
   d'importer que `mail/channels/requests/` (« port uniquement ») ; importer
@@ -529,3 +536,54 @@ route » (un saut de plus par la boîte d'envoi).
   même méthode — la seule alerte de ce geste.
 - **Non changé** : `attach-account-holder` envoie (par `grant`) AVANT son
   `uow.run` qui enregistre la société ; c'était déjà le cas.
+
+## 11. S2c — bâti le 2026-11-06 : `b2b/contact`
+
+Les trois envoyeurs étaient des **abonnés en mémoire** (`@EventsHandler`), qui
+envoyaient en fond après la réponse HTTP. Appeler `MailRequests` depuis là est
+refusé par `lint:durable-cross-block` ; un `@DurableHandler` aurait demandé
+d'écrire un fait durable de plus pour chaque geste, alors que chaque geste a
+déjà sa transaction. Ils sont donc devenus des **services appelés dans
+l'unité de travail du geste qui publie** — la forme de S2b.
+
+| Fichier                                                    | Geste     | Raison                                                                                                                                                                                                            |
+| ---------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `customer-request-mail.service` (ex-`MailCustomerRequest`) | `request` | appelé par « Nous écrire » (unité de travail ouverte autour de la demande, il n'y en avait pas), « Signaler un problème » (dans `persist`, avec le fait du site) et « Demander une modification » (avec son fait) |
+| `order-change-applied-mail.service` (ex-abonné)            | `request` | dans l'unité de travail d'« Appliquer », qui tenait déjà la révision et la réponse                                                                                                                                |
+| `order-change-refused-mail.service` (ex-abonné)            | `request` | dans l'unité de travail de « Refuser »                                                                                                                                                                            |
+
+La cloche (`RingCustomerRequestReceived`) reste un abonné en mémoire, hors du
+lot : elle n'envoie pas d'e-mail. `CustomerRequestReceivedEvent` est toujours
+publié, après la validation, pour elle seule.
+
+### `replyTo`
+
+- **La porte** : `MailDemand.replyTo?` (et donc la demande différée). Le bloc
+  le porte jusqu'au mailer : `OutgoingMail.replyTo?`, dans le **fait**
+  `mail.requested` (relu par l'abonné et par le balayeur), passé à
+  `mailer.send` par `MailerMailDispatch`. `@lfd/mailer` l'admettait déjà
+  (`SendMailArgs.replyTo`, revalidé en en-tête) : `packages/` ne change pas.
+- **Pas au suivi** : `mail.mail_request` n'a pas de colonne de plus ; le
+  balayeur relit le fait, pas la ligne. Pas de migration.
+- **RGPD** : l'adresse de réponse est une donnée personnelle (l'auteur), mais
+  elle ne vit que dans `platform.outbox.payload`, déjà au registre (30 jours,
+  purge à blanc) ; aucune colonne neuve, donc rien à classer en plus.
+- L'envoyeur garde le garde-fou d'avant : une adresse que `isValidReplyTo`
+  refuse est **écartée** (demande sans `replyTo`, avertissement), sinon le
+  mailer refuserait l'envoi entier — ce qui serait désormais un `refused`
+  (erreur `business`).
+
+### Écarts au texte, à relire
+
+- **Clés d'idempotence inchangées** (`customer-request:<id>`,
+  `order-change-applied:<requestId>`, `order-change-refused:<requestId>`) :
+  chacune nomme un geste qui n'a lieu qu'une fois (une demande, une réponse
+  verrouillée sur une demande en attente) ; ni adresse ni `sub`.
+- **Changement de sens** : un échec de la DEMANDE d'e-mail fait échouer le
+  geste (dépôt du client, réponse de l'équipe — révision comprise), là où une
+  panne d'envoi était avalée. Un échec d'ENVOI se lit au suivi et se relance.
+- « Nous écrire » n'avait pas d'unité de travail : il en a une, autour de
+  l'écriture de la demande et de la demande d'e-mail.
+- `documentation/pricing/obsolete/recensement-montants-de-commande.md` citait
+  l'ancien chemin de l'abonné « modification appliquée » : repointé vers le
+  service (`lint:doc-references`).

@@ -28,6 +28,13 @@ export interface MailDemand<K extends keyof B2bMails> {
    * double pas l'envoi.
    */
   readonly idempotencyKey: string;
+  /**
+   * L'adresse à laquelle répondre, quand ce n'est pas l'expéditeur : l'auteur
+   * d'une demande client, pour que l'équipe lui réponde d'un clic (lot S2c).
+   * Le mailer la revalide avant d'en faire un en-tête ; une adresse refusée
+   * refuse l'envoi — à l'appelant de l'écarter avant (`isValidReplyTo`).
+   */
+  readonly replyTo?: string;
 }
 
 /**

@@ -55,7 +55,7 @@ export class OrderChangeRequestedEvent implements JournaledEvent {
 
 /**
  * Le commerce a répondu. `request` est la demande telle qu'elle vient d'être
- * enregistrée : l'abonné du courriel y lit l'adresse de l'auteur et la réponse.
+ * enregistrée : le courriel au client (S2c) y lit l'adresse de l'auteur et la réponse.
  */
 abstract class OrderChangeAnsweredEvent implements JournaledEvent {
   constructor(

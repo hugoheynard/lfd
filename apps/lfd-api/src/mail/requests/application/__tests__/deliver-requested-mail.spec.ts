@@ -2,10 +2,12 @@ import { MailerSendError } from "@lfd/mailer";
 
 import type { MailDemand } from "../../../channels/requests/mail-requests.js";
 import {
+  InvalidMailRequestError,
   MailInFlightError,
   MailRefusedError,
   MailRequestMissingError,
 } from "../../domain/errors/mail-request.errors.js";
+import { MAIL_REQUESTED } from "../mail-requested.fact.js";
 import { mailScene } from "./mail-doubles.js";
 
 /*
@@ -75,6 +77,31 @@ describe("l'abonné durable — marquer dans la transaction, envoyer après", ()
       },
     ]);
     expect(rowOf(scene)).toMatchObject({ status: "sent", providerId: "re_1" });
+  });
+
+  it("le Reply-To traverse le fait jusqu'à l'envoi, et n'entre pas au suivi (S2c)", async () => {
+    const scene = mailScene();
+    scene.probe.open = true;
+    await scene.port.request({ ...SUSPENDED, replyTo: "auteur@example.test" });
+    expect(scene.facts.facts[0]?.payload).toMatchObject({ replyTo: "auteur@example.test" });
+    await deliverLast(scene);
+
+    await scene.afterCommit.commit();
+
+    expect(scene.dispatch.sent[0]).toMatchObject({ replyTo: "auteur@example.test" });
+    expect(JSON.stringify(rowOf(scene))).not.toContain("auteur@example.test");
+  });
+
+  it("un fait dont le Reply-To n'est pas une chaîne est refusé, pas deviné", async () => {
+    const scene = await requested();
+    const fact = scene.facts.facts[0];
+    await expect(
+      scene.subscriber.handle({
+        eventId: "outbox_1",
+        type: MAIL_REQUESTED,
+        payload: { ...fact?.payload, replyTo: 42 },
+      }),
+    ).rejects.toThrow(InvalidMailRequestError);
   });
 
   it("une livraison annulée n'envoie rien", async () => {

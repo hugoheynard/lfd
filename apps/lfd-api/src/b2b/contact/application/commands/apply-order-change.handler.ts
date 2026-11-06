@@ -10,6 +10,7 @@ import { OrderChangeUnreadableError } from "../../domain/errors/order-change-err
 import { OrderChangeAppliedEvent } from "../../domain/order-change.events.js";
 import { CustomerRequestRepository } from "../../domain/ports/customer-request.repository.js";
 import { OrderChangeApplier } from "../../domain/ports/order-change.applier.js";
+import { OrderChangeAppliedMail } from "../services/order-change-applied-mail.service.js";
 import { ApplyOrderChangeCommand } from "./apply-order-change.command.js";
 
 /**
@@ -27,6 +28,10 @@ import { ApplyOrderChangeCommand } from "./apply-order-change.command.js";
  * « appliquée » sans révision. Une réponse concurrente attend, puis lit la
  * demande traitée. Le prix : la recomposition de la révision tient la
  * transaction le temps de ses lectures (un geste rare, à la main).
+ *
+ * Le courriel au client est demandé au bloc `mail` dans la même unité de
+ * travail (S2c, `plan-service-e-mails.md`) : il part après la validation, et
+ * un échec de la DEMANDE annule la réponse.
  */
 @CommandHandler(ApplyOrderChangeCommand)
 export class ApplyOrderChangeHandler implements ICommandHandler<ApplyOrderChangeCommand, number> {
@@ -37,6 +42,7 @@ export class ApplyOrderChangeHandler implements ICommandHandler<ApplyOrderChange
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly mail: OrderChangeAppliedMail,
   ) {}
 
   async execute(command: ApplyOrderChangeCommand): Promise<number> {
@@ -58,13 +64,13 @@ export class ApplyOrderChangeHandler implements ICommandHandler<ApplyOrderChange
       );
       request.recordChangeApplied(applied.revision, author, this.clock.now());
       await this.requests.save(request);
-      await this.events.publishTraced(
-        new OrderChangeAppliedEvent(
-          request,
-          { requestId: request.id, order: pending.order, baseRevision: pending.baseRevision },
-          applied,
-        ),
+      const answered = new OrderChangeAppliedEvent(
+        request,
+        { requestId: request.id, order: pending.order, baseRevision: pending.baseRevision },
+        applied,
       );
+      await this.mail.request(answered);
+      await this.events.publishTraced(answered);
       return applied.revision;
     });
   }

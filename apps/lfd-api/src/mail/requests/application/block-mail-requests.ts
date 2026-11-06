@@ -18,6 +18,7 @@ interface TypedDemand {
   readonly data: unknown;
   readonly brand: string;
   readonly idempotencyKey: string;
+  readonly replyTo?: string;
 }
 
 function checked(demand: TypedDemand): CheckedMailDemand {
@@ -27,6 +28,7 @@ function checked(demand: TypedDemand): CheckedMailDemand {
     data: demand.data,
     brand: demand.brand,
     idempotencyKey: demand.idempotencyKey,
+    ...(demand.replyTo === undefined ? {} : { replyTo: demand.replyTo }),
   };
 }
 

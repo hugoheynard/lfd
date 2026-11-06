@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -10,6 +11,7 @@ import { CustomerRequestReceivedEvent } from "../../domain/customer-request.even
 import { ContactSenderAudience } from "../../domain/ports/contact-sender-audience.js";
 import { CustomerRequestRepository } from "../../domain/ports/customer-request.repository.js";
 import { RequestReasonRepository } from "../../domain/ports/request-reason.repository.js";
+import { CustomerRequestMail } from "../services/customer-request-mail.service.js";
 import { offeredReason } from "./offered-reason.js";
 import { SendContactMessageCommand } from "./send-contact-message.command.js";
 
@@ -21,8 +23,10 @@ import { SendContactMessageCommand } from "./send-contact-message.command.js";
  * a choisi), puis le motif — un motif `contact`, actif et proposé au public
  * DÉDUIT de qui écrit (visiteur → `b2c`) ; un motif `order_problem` est
  * refusé —, puis la demande, que l'agrégat refuse incomplète. Elle est RANGÉE
- * avant toute chose ; le courriel et la cloche partent ensuite, par ses
- * abonnés, et leur échec ne le défait pas.
+ * avec la demande du courriel à l'équipe, dans une seule transaction (lot S2c,
+ * `plan-service-e-mails.md`) : un échec de la demande d'e-mail annule le
+ * dépôt ; l'envoi part après la validation, par le bloc `mail`. La cloche
+ * sonne ensuite, par son abonné, et son échec ne défait rien.
  *
  * @sans-journal ce n'est pas un acte du staff, et la charge porterait des
  * données personnelles qui s'anonymisent à douze mois ; le traitement, lui,
@@ -39,6 +43,8 @@ export class SendContactMessageHandler implements ICommandHandler<SendContactMes
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly audiences: ContactSenderAudience,
+    private readonly uow: UnitOfWork,
+    private readonly mail: CustomerRequestMail,
   ) {}
 
   async execute(command: SendContactMessageCommand): Promise<void> {
@@ -64,7 +70,11 @@ export class SendContactMessageHandler implements ICommandHandler<SendContactMes
       companyId: sender?.companyId ?? null,
       at: this.clock.now(),
     });
-    await this.requests.save(request);
-    this.events.publish(new CustomerRequestReceivedEvent(request, reason.recipientEmail));
+    const received = new CustomerRequestReceivedEvent(request, reason.recipientEmail);
+    await this.uow.run(async () => {
+      await this.requests.save(request);
+      await this.mail.request(received);
+    });
+    this.events.publish(received);
   }
 }

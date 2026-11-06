@@ -4,6 +4,8 @@ export interface OutgoingMail {
   readonly to: string;
   readonly data: unknown;
   readonly idempotencyKey: string;
+  /** L'adresse de réponse de ce message, s'il en a une (`MailDemand.replyTo`). */
+  readonly replyTo?: string;
 }
 
 /**

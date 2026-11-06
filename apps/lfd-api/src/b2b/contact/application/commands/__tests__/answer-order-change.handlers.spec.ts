@@ -1,4 +1,7 @@
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CustomerRequestNotFoundError } from "../../../domain/errors/contact-errors.js";
@@ -13,6 +16,8 @@ import {
   contactRequest,
   orderChange,
 } from "../../../domain/__tests__/request-fixtures.js";
+import { OrderChangeAppliedMail } from "../../services/order-change-applied-mail.service.js";
+import { OrderChangeRefusedMail } from "../../services/order-change-refused-mail.service.js";
 import { ApplyOrderChangeCommand } from "../apply-order-change.command.js";
 import { ApplyOrderChangeHandler } from "../apply-order-change.handler.js";
 import { RefuseOrderChangeCommand } from "../refuse-order-change.command.js";
@@ -27,24 +32,38 @@ import {
 
 const STAFF = { name: "Camille Durand", role: "commercial" };
 
-function applying(requests: MemoryRequests, applier: RecordingApplier, events: RecordingPublisher) {
+// La porte doublée refuse `request` hors de l'unité de travail du geste (S2c).
+function applying(
+  requests: MemoryRequests,
+  applier: RecordingApplier,
+  events: RecordingPublisher,
+  uow = new OpenableUnitOfWork(),
+  mails = new RecordingMailRequests(uow),
+) {
   return new ApplyOrderChangeHandler(
     requests,
     applier,
     new Directory(STAFF),
     new FixedClock(LATER),
     events,
-    new DirectUnitOfWork(),
+    uow,
+    new OrderChangeAppliedMail(mails),
   );
 }
 
-function refusing(requests: MemoryRequests, events: RecordingPublisher) {
+function refusing(
+  requests: MemoryRequests,
+  events: RecordingPublisher,
+  uow = new OpenableUnitOfWork(),
+  mails = new RecordingMailRequests(uow),
+) {
   return new RefuseOrderChangeHandler(
     requests,
     new Directory(STAFF),
     new FixedClock(LATER),
     events,
-    new DirectUnitOfWork(),
+    uow,
+    new OrderChangeRefusedMail(mails),
   );
 }
 
@@ -87,6 +106,45 @@ describe("ApplyOrderChangeHandler", () => {
       totalCents: APPLIED_TOTAL_CENTS,
       previousTotalCents: APPLIED_PREVIOUS_TOTAL_CENTS,
     });
+  });
+
+  it("demande le courriel au client dans la transaction de la réponse (S2c)", async () => {
+    const uow = new OpenableUnitOfWork();
+    const mails = new RecordingMailRequests(uow);
+    await applying(
+      new MemoryRequests([orderChange()]),
+      new RecordingApplier(),
+      new RecordingPublisher(),
+      uow,
+      mails,
+    ).execute(new ApplyOrderChangeCommand("q1", "staff_1"));
+    expect(mails.requested).toEqual([
+      expect.objectContaining({
+        template: "customer.order-change-applied",
+        to: "jean@exemple.fr",
+        idempotencyKey: "order-change-applied:q1",
+        data: {
+          reference: "ORD-0001",
+          totalCents: APPLIED_TOTAL_CENTS,
+          previousTotalCents: APPLIED_PREVIOUS_TOTAL_CENTS,
+          locale: "fr",
+        },
+      }),
+    ]);
+  });
+
+  it("une demande d'e-mail refusée annule la réponse : rien n'est journalisé", async () => {
+    const uow = new OpenableUnitOfWork();
+    const mails = new RecordingMailRequests(uow);
+    mails.failWith = new Error("boîte d'envoi indisponible");
+    const events = new RecordingPublisher();
+    const requests = new MemoryRequests([orderChange()]);
+    await expect(
+      applying(requests, new RecordingApplier(), events, uow, mails).execute(
+        new ApplyOrderChangeCommand("q1", "staff_1"),
+      ),
+    ).rejects.toThrow("boîte d'envoi indisponible");
+    expect(events.traced).toHaveLength(0);
   });
 
   it("la révision refusée (inscrite entre-temps…) : rien enregistré, la demande reste en attente", async () => {
@@ -149,6 +207,25 @@ describe("RefuseOrderChangeHandler", () => {
       reason: "La fournée est lancée.",
       orderNumber: "ORD-0001",
     });
+  });
+
+  it("demande le courriel au client, avec le mot de l'équipe, dans la transaction (S2c)", async () => {
+    const uow = new OpenableUnitOfWork();
+    const mails = new RecordingMailRequests(uow);
+    await refusing(
+      new MemoryRequests([orderChange()]),
+      new RecordingPublisher(),
+      uow,
+      mails,
+    ).execute(new RefuseOrderChangeCommand("q1", "staff_1", "La fournée est lancée."));
+    expect(mails.requested).toEqual([
+      expect.objectContaining({
+        template: "customer.order-change-refused",
+        to: "jean@exemple.fr",
+        idempotencyKey: "order-change-refused:q1",
+        data: { reference: "ORD-0001", reason: "La fournée est lancée.", locale: "fr" },
+      }),
+    ]);
   });
 
   it("refuse un refus sans mot", async () => {

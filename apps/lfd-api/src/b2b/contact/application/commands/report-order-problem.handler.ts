@@ -23,6 +23,7 @@ import { RequestPhotoStore } from "../../domain/ports/request-photo.store.js";
 import { RequestReasonRepository } from "../../domain/ports/request-reason.repository.js";
 import { OrderProblemReportedFact } from "../../domain/order-problem-reported.fact.js";
 import { RequestPhoto } from "../../domain/request-photo.js";
+import { CustomerRequestMail } from "../services/customer-request-mail.service.js";
 import { offeredReason } from "./offered-reason.js";
 import { ReportOrderProblemCommand } from "./report-order-problem.command.js";
 
@@ -45,7 +46,8 @@ import { ReportOrderProblemCommand } from "./report-order-problem.command.js";
  * s'écrivent dans la même unité de travail — le principal du site en est
  * prévenu même après un redémarrage. Le fait porte le principal COPIÉ sur la
  * commande ; une commande d'avant la copie n'en a pas, et personne n'est
- * prévenu (assumé). Le courriel à l'équipe reste en mémoire, comme avant.
+ * prévenu (assumé). Depuis S2c (`plan-service-e-mails.md`), le courriel à
+ * l'équipe est demandé au bloc `mail` dans cette même unité de travail.
  */
 @CommandHandler(ReportOrderProblemCommand)
 export class ReportOrderProblemHandler implements ICommandHandler<
@@ -64,6 +66,7 @@ export class ReportOrderProblemHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly durable: DurablePublisher,
     private readonly uow: UnitOfWork,
+    private readonly mail: CustomerRequestMail,
   ) {}
 
   async execute(command: ReportOrderProblemCommand): Promise<string> {
@@ -105,22 +108,26 @@ export class ReportOrderProblemHandler implements ICommandHandler<
     for (const { photo, ref } of attached) {
       await this.store.save(ref.storageKey, { bytes: photo.bytes, contentType: photo.contentType });
     }
-    await this.persist(request, order, actor.userId);
-    this.events.publish(new CustomerRequestReceivedEvent(request, reason.recipientEmail));
+    const received = new CustomerRequestReceivedEvent(request, reason.recipientEmail);
+    await this.persist(received, order, actor.userId);
+    this.events.publish(received);
     return request.id;
   }
 
   /**
    * La demande, et sur une commande d'entreprise le fait durable qui la dit,
-   * dans la même transaction : l'un ne part jamais sans l'autre.
+   * dans la même transaction, avec la demande du courriel à l'équipe : l'un
+   * ne part jamais sans l'autre.
    */
   private async persist(
-    request: CustomerRequest,
+    received: CustomerRequestReceivedEvent,
     order: ReportableOrder,
     authorUserId: string,
   ): Promise<void> {
+    const { request } = received;
     await this.uow.run(async () => {
       await this.requests.save(request);
+      await this.mail.request(received);
       if (order.site !== null) {
         const fact = new OrderProblemReportedFact(
           request.id,

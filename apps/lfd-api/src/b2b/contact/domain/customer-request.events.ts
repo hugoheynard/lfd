@@ -14,9 +14,10 @@ export const CUSTOMER_REQUEST_FACTS = {
 /**
  * Une demande vient d'être rangée — photos comprises. **Pas journalisé** : ce
  * n'est pas un acte du staff, et la charge porterait des données
- * personnelles qui s'anonymisent. Ses abonnés envoient le courriel à
- * l'adresse du motif et font sonner la cloche ; un échec de l'un ne défait
- * pas la demande.
+ * personnelles qui s'anonymisent. Son abonné fait sonner la cloche, et son
+ * échec ne défait pas la demande ; le courriel à l'adresse du motif, lui, est
+ * demandé au bloc `mail` dans la transaction qui range la demande
+ * (`CustomerRequestMail`, lot S2c).
  */
 export class CustomerRequestReceivedEvent {
   constructor(

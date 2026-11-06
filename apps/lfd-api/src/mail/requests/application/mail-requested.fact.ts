@@ -27,6 +27,8 @@ export function mailRequestedFact(mail: OutgoingMail): DurableFact {
       to: mail.to,
       data: mail.data,
       idempotencyKey: mail.idempotencyKey,
+      // Rejouée par le balayeur, qui ne relit que ce fait ; jamais rangée au suivi.
+      ...(mail.replyTo === undefined ? {} : { replyTo: mail.replyTo }),
     },
   };
 }
@@ -39,12 +41,22 @@ function text(payload: Readonly<Record<string, unknown>>, field: string): string
   return value;
 }
 
+/** Un champ facultatif : absent, ou une chaîne. */
+function optionalText(
+  payload: Readonly<Record<string, unknown>>,
+  field: string,
+): string | undefined {
+  return payload[field] === undefined ? undefined : text(payload, field);
+}
+
 /** Relit le fait livré ; un fait mal formé est refusé, pas deviné. */
 export function outgoingMailOf(payload: Readonly<Record<string, unknown>>): OutgoingMail {
-  return {
+  const mail: OutgoingMail = {
     template: text(payload, "template"),
     to: text(payload, "to"),
     data: payload["data"],
     idempotencyKey: text(payload, "idempotencyKey"),
   };
+  const replyTo = optionalText(payload, "replyTo");
+  return replyTo === undefined ? mail : { ...mail, replyTo };
 }

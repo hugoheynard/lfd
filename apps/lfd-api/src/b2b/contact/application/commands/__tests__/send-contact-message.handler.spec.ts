@@ -1,5 +1,9 @@
 import type { ContactMessagePayload } from "@lfd/contracts";
 
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -11,6 +15,7 @@ import {
   RequestReasonUnavailableError,
 } from "../../../domain/errors/contact-errors.js";
 import { AT, CONTACT_SETTINGS, reason } from "../../../domain/__tests__/request-fixtures.js";
+import { CustomerRequestMail } from "../../services/customer-request-mail.service.js";
 import { SendContactMessageCommand } from "../send-contact-message.command.js";
 import { SendContactMessageHandler } from "../send-contact-message.handler.js";
 import { FixedAudiences, MemoryReasons, MemoryRequests } from "./contact-doubles.js";
@@ -32,9 +37,12 @@ function setup(...reasons: RequestReason[]): {
   handler: SendContactMessageHandler;
   messages: MemoryRequests;
   events: RecordingPublisher;
+  mails: RecordingMailRequests;
 } {
   const messages = new MemoryRequests();
   const events = new RecordingPublisher();
+  const uow = new OpenableUnitOfWork();
+  const mails = new RecordingMailRequests(uow);
   const handler = new SendContactMessageHandler(
     new MemoryReasons(...reasons),
     messages,
@@ -42,8 +50,10 @@ function setup(...reasons: RequestReason[]): {
     new FixedClock(AT),
     events,
     new FixedAudiences(),
+    uow,
+    new CustomerRequestMail(mails),
   );
-  return { handler, messages, events };
+  return { handler, messages, events, mails };
 }
 
 describe("SendContactMessageHandler — « Nous écrire »", () => {
@@ -65,6 +75,27 @@ describe("SendContactMessageHandler — « Nous écrire »", () => {
     expect(received).toMatchObject({ recipientEmail: "commercial@lfc.fr" });
     // Pas journalisé : la charge porterait des données qui s'anonymisent.
     expect(events.traced).toHaveLength(0);
+  });
+
+  it("demande le courriel à l'équipe au bloc `mail`, dans la transaction du dépôt (S2c)", async () => {
+    const { handler, mails } = setup(reason());
+    await handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP));
+    expect(mails.requested).toHaveLength(1);
+    expect(mails.requested[0]).toMatchObject({
+      template: "staff.customer-request",
+      to: "commercial@lfc.fr",
+      replyTo: "jean@exemple.fr",
+      idempotencyKey: "customer-request:msg_000001",
+    });
+  });
+
+  it("une demande d'e-mail refusée fait échouer le dépôt, et la cloche ne sonne pas", async () => {
+    const { handler, mails, events } = setup(reason());
+    mails.failWith = new Error("boîte d'envoi indisponible");
+    await expect(handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP))).rejects.toThrow(
+      "boîte d'envoi indisponible",
+    );
+    expect(events.published).toHaveLength(0);
   });
 
   it("fige la priorité de l'motif : la changer ensuite ne requalifie pas le message", async () => {

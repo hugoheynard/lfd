@@ -8,6 +8,7 @@ import { authorOf } from "../../../feature-access/application/feature-access-aut
 import { CustomerRequestNotFoundError } from "../../domain/errors/contact-errors.js";
 import { OrderChangeRefusedEvent } from "../../domain/order-change.events.js";
 import { CustomerRequestRepository } from "../../domain/ports/customer-request.repository.js";
+import { OrderChangeRefusedMail } from "../services/order-change-refused-mail.service.js";
 import { RefuseOrderChangeCommand } from "./refuse-order-change.command.js";
 
 /**
@@ -16,7 +17,8 @@ import { RefuseOrderChangeCommand } from "./refuse-order-change.command.js";
  * commande ne bouge pas ; la demande est traitée avec le mot adressé au
  * client, qui le reçoit par courriel et le lit sur sa commande. La ligne de
  * la demande est verrouillée, comme pour « Appliquer » : les deux réponses ne
- * se croisent pas.
+ * se croisent pas. Le courriel est demandé au bloc `mail` dans la même unité
+ * de travail (S2c, `plan-service-e-mails.md`).
  */
 @CommandHandler(RefuseOrderChangeCommand)
 export class RefuseOrderChangeHandler implements ICommandHandler<RefuseOrderChangeCommand, void> {
@@ -26,6 +28,7 @@ export class RefuseOrderChangeHandler implements ICommandHandler<RefuseOrderChan
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly mail: OrderChangeRefusedMail,
   ) {}
 
   async execute(command: RefuseOrderChangeCommand): Promise<void> {
@@ -38,13 +41,13 @@ export class RefuseOrderChangeHandler implements ICommandHandler<RefuseOrderChan
       const { order, baseRevision } = request.pendingOrderChange();
       const reason = request.refuseChange(command.reason, author, this.clock.now());
       await this.requests.save(request);
-      await this.events.publishTraced(
-        new OrderChangeRefusedEvent(
-          request,
-          { requestId: request.id, order, baseRevision },
-          reason,
-        ),
+      const answered = new OrderChangeRefusedEvent(
+        request,
+        { requestId: request.id, order, baseRevision },
+        reason,
       );
+      await this.mail.request(answered);
+      await this.events.publishTraced(answered);
     });
   }
 }

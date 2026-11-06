@@ -22,6 +22,7 @@ import { ContactSenderAudience } from "../../domain/ports/contact-sender-audienc
 import { CustomerRequestRepository } from "../../domain/ports/customer-request.repository.js";
 import { OrderChangeRequestReader } from "../../domain/ports/order-change-request.reader.js";
 import { RequestAuthorDirectory } from "../../domain/ports/request-author.directory.js";
+import { CustomerRequestMail } from "../services/customer-request-mail.service.js";
 import { orderChangeReason } from "./order-change-reason.js";
 import { RequestOrderChangeCommand } from "./request-order-change.command.js";
 import { RequestReasonReader } from "../../domain/ports/request-reason.reader.js";
@@ -42,8 +43,8 @@ import { RequestReasonRepository } from "../../domain/ports/request-reason.repos
  * moment où le commerce l'applique, sur la commande telle qu'elle sera.
  *
  * La demande et le fait `order.change_requested` partent dans la même unité
- * de travail ; le courriel à l'équipe et la cloche suivent, en mémoire, comme
- * pour toute demande.
+ * de travail, avec la demande du courriel à l'équipe au bloc `mail` (S2c,
+ * `plan-service-e-mails.md`) ; la cloche suit, en mémoire.
  */
 @CommandHandler(RequestOrderChangeCommand)
 export class RequestOrderChangeHandler implements ICommandHandler<
@@ -62,6 +63,7 @@ export class RequestOrderChangeHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly mail: CustomerRequestMail,
   ) {}
 
   async execute(command: RequestOrderChangeCommand): Promise<string> {
@@ -87,8 +89,10 @@ export class RequestOrderChangeHandler implements ICommandHandler<
       change,
       at: this.clock.now(),
     });
+    const received = new CustomerRequestReceivedEvent(request, reason.recipientEmail);
     await this.uow.run(async () => {
       await this.requests.save(request);
+      await this.mail.request(received);
       await this.events.publishTraced(
         new OrderChangeRequestedEvent({
           requestId: request.id,
@@ -97,7 +101,7 @@ export class RequestOrderChangeHandler implements ICommandHandler<
         }),
       );
     });
-    this.events.publish(new CustomerRequestReceivedEvent(request, reason.recipientEmail));
+    this.events.publish(received);
     return request.id;
   }
 

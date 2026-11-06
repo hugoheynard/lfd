@@ -360,6 +360,14 @@ describe("la boîte des demandes — l'équipe répond", () => {
       status: "refused",
       refusalReason: "La fournée est déjà lancée.",
     });
+    // Le courriel au client part par le bloc `mail`, après la validation (S2c).
+    await ctx.drain();
+    const refusedMail = sentMails.find((m) => m.template === "customer.order-change-refused");
+    expect(refusedMail?.data).toMatchObject({ reason: "La fournée est déjà lancée." });
+    const tracked = await ctx.prisma.mailRequest.findUniqueOrThrow({
+      where: { idempotencyKey: `order-change-refused:${id}` },
+    });
+    expect(tracked.status).toBe("sent");
     // Une nouvelle demande est de nouveau possible.
     await ask(BUYER, s).expect(201);
   });

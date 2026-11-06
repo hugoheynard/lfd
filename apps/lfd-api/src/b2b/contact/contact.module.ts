@@ -28,9 +28,9 @@ import { ReviseContactPhoneHandler } from "./application/commands/revise-contact
 import { ReviseRequestReasonHandler } from "./application/commands/revise-request-reason.handler.js";
 import { SendContactMessageHandler } from "./application/commands/send-contact-message.handler.js";
 import { UpdateContactSettingsHandler } from "./application/commands/update-contact-settings.handler.js";
-import { MailOrderChangeApplied } from "./application/handlers/mail-order-change-applied.handler.js";
-import { MailOrderChangeRefused } from "./application/handlers/mail-order-change-refused.handler.js";
-import { MailCustomerRequest } from "./application/handlers/mail-customer-request.handler.js";
+import { OrderChangeAppliedMail } from "./application/services/order-change-applied-mail.service.js";
+import { OrderChangeRefusedMail } from "./application/services/order-change-refused-mail.service.js";
+import { CustomerRequestMail } from "./application/services/customer-request-mail.service.js";
 import { RingCustomerRequestReceived } from "./application/handlers/ring-customer-request-received.handler.js";
 import { RingCustomerEmailReplyReceived } from "./application/handlers/ring-customer-email-reply-received.handler.js";
 import { ReceiveEmailReplyHandler } from "./application/commands/receive-email-reply.handler.js";
@@ -164,9 +164,9 @@ import {
     GetContactSettingsHandler,
     GetShopContactSettingsHandler,
     GetMyShopContactSettingsHandler,
-    MailCustomerRequest,
-    MailOrderChangeApplied,
-    MailOrderChangeRefused,
+    CustomerRequestMail,
+    OrderChangeAppliedMail,
+    OrderChangeRefusedMail,
     RingCustomerRequestReceived,
     // Les réponses par e-mail (plan `plan-reponses-par-e-mail.md`, R2).
     { provide: RecentEmailRepliesReader, useClass: PrismaRecentEmailRepliesReader },
