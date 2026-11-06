@@ -2699,6 +2699,18 @@
       "raison": "Horodatage d'un échec ou d'un refus ; part avec la ligne."
     },
     {
+      "colonne": "mail.mail_request.attempts",
+      "raison": "Nombre de tentatives d'envoi du système (S1b) ; part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.first_attempt_at",
+      "raison": "Horodatage de la première tentative d'envoi du système (S1b) ; part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.last_attempt_at",
+      "raison": "Horodatage de la dernière tentative d'envoi du système (S1b) ; part avec la ligne."
+    },
+    {
       "colonne": "platform.outbox.id",
       "raison": "Identifiant technique (ULID) du message."
     },

@@ -49,6 +49,13 @@ describe("isMailRequestPurgeable", () => {
     ).toBe(false);
   });
 
+  /** Régression (2026-11-06) : S1b a ajouté `sending`, que la purge ignorait. */
+  it("en vol (sending) : jamais purgée, le balayeur peut encore la reprendre", () => {
+    expect(
+      isMailRequestPurgeable({ status: "sending", sentAt: null, failedAt: daysAgo(900) }, cutoff),
+    ).toBe(false);
+  });
+
   it("close sans date d'issue : gardée (on ne devine pas son âge)", () => {
     expect(isMailRequestPurgeable({ status: "sent", sentAt: null, failedAt: null }, cutoff)).toBe(
       false,

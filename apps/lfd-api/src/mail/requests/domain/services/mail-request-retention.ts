@@ -44,6 +44,9 @@ export interface MailRequestRetentionFacts {
 export function isMailRequestPurgeable(facts: MailRequestRetentionFacts, cutoff: Date): boolean {
   switch (facts.status) {
     case "requested":
+    case "sending":
+      // Une demande en vol n'est jamais purgée : le balayeur peut encore la
+      // reprendre (S1b, plan § 8).
       return false;
     case "sent":
       return facts.sentAt !== null && facts.sentAt < cutoff;
