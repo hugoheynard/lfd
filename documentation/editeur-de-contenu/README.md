@@ -219,5 +219,4 @@ fait dans la même base.
 4. ✅ **Rien hors e-mail pour l'instant** : les e-mails seuls ; le socle reste
    pensé pour d'autres emplacements, sans en bâtir (Hugo, 2026-11-06).
 
-Prochain pas : écrire le plan (lots, catalogue de blocs, moteur de rendu,
-migration du stockage des sections), puis `vitruve`.
+Le plan : [`plan-service-e-mails.md`](plan-service-e-mails.md).
