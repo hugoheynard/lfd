@@ -636,3 +636,38 @@ jour).
 L'éditeur des e-mails (S5) a **son entrée dans le menu principal du
 back-office, au-dessus de la Médiathèque**, avec sa propre icône. Il absorbe
 l'écran `textes-emails` d'aujourd'hui (sous Communication).
+
+## 14. Le catalogue de blocs et l'écran de l'éditeur — premières décisions (Hugo, 2026-11-06)
+
+Tirées d'une maquette manipulée par Hugo le 2026-11-06 (variables à gauche,
+aperçu au milieu, bibliothèque à droite, glisser-déposer) : « c'est pas mal
+pour commencer ».
+
+**L'écran (S5)** : trois colonnes.
+
+- **À gauche, les variables** que le modèle fournit, glissées dans un texte ;
+  jamais tapées à la main.
+- **Au milieu, l'aperçu** de l'e-mail : les blocs s'y déplacent par
+  glisser-déposer, s'y retirent, et leur texte s'y modifie.
+- **À droite, la bibliothèque** : les blocs, et les images de la médiathèque.
+
+**Les blocs (S4)** — ceux de la maquette : titre, paragraphe, bouton, lien
+secondaire, encadré, séparateur, image de la médiathèque, pied ; et les blocs
+système du modèle (récapitulatif, QR, itinéraire), déplaçables mais non
+retirables.
+
+**Les mises en page à colonnes** (Hugo, 2026-11-06 : « des layouts genre 2
+cols, 3 cols, pouvoir les étirer, mettre des boutons, du texte, des images
+dedans ») : un bloc **conteneur** à 2 ou 3 colonnes, dont chaque colonne
+reçoit des blocs (texte, bouton, image). Les largeurs s'étirent à la souris.
+
+Ce que l'e-mail impose, à trancher au plan de S4 :
+
+- **Les largeurs s'arrêtent sur des crans** (par exemple 25 / 33 / 50 / 67 /
+  75 %) plutôt qu'au pixel : une colonne d'e-mail est un tableau, et un
+  pourcentage libre se rend mal dans Outlook.
+- **Sur téléphone, les colonnes s'empilent** les unes sous les autres.
+- **Pas de colonne dans une colonne** : un conteneur ne reçoit que des blocs
+  simples, pas un autre conteneur.
+- Un bloc système (récapitulatif, QR) ne va pas dans une colonne : il reste
+  sur toute la largeur.
