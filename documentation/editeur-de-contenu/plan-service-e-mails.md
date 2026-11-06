@@ -194,6 +194,48 @@ flowchart LR
 | **S4**   | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                                                     | rien tant que rien n'est publié                                                                                         |
 | **S5**   | L'éditeur au back-office : ajouter, retirer, ordonner, écrire, insérer une variable, aperçu, essai, publier, versions, trois langues côte à côte ; le droit dédié                                                                                                                                                                                                                                                                                      | l'équipe compose ses e-mails                                                                                            |
 
+### Les 31 envoyeurs à faire passer par la porte (S2)
+
+La liste est celle que tient `lint:mail-through-block` (`DEBT`,
+`dev-toolbox/gates/mail-through-block.mjs`, relue le 2026-11-06) : un
+fichier coché est retiré de la dette, et la porte échoue s'il y reste. Le
+geste est celui **prévu** ; le bâti de chaque lot le confirme et dit
+pourquoi. Chemins sous `apps/lfd-api/src/`.
+
+| Lot | Fichier                                                                     | Geste prévu                                   | État |
+| --- | --------------------------------------------------------------------------- | --------------------------------------------- | ---- |
+| S2a | `b2b/orders/application/commands/resend-order-payment-link.handler.ts`      | `request`                                     | 🏗️   |
+| S2a | `b2b/orders/application/commands/warn-customer-of-delay.handler.ts`         | `request`                                     | 🏗️   |
+| S2a | `b2b/orders/application/commands/write-shortfall-letter.handler.ts`         | `request`                                     | 🏗️   |
+| S2a | `b2b/orders/application/handlers/send-guest-order-notice.handler.ts`        | `request` (abonné durable)                    | 🏗️   |
+| S2a | `b2b/orders/application/handlers/send-order-cancelled-mail.handler.ts`      | `request` (abonné durable)                    | 🏗️   |
+| S2a | `b2b/orders/application/handlers/send-order-placed-mail.handler.ts`         | `request` (abonné durable, PDF par référence) | 🏗️   |
+| S2a | `b2b/orders/application/handlers/send-payment-expired-mail.handler.ts`      | `request` (abonné durable)                    | 🏗️   |
+| S2a | `b2b/orders/application/handlers/send-payment-failed-mail.handler.ts`       | `request` (abonné durable)                    | 🏗️   |
+| S2a | `b2b/orders/application/services/delivery-en-route-mail.service.ts`         | `request` — délai à mesurer                   | 🏗️   |
+| S2a | `b2b/orders/application/services/order-placed-mail.service.ts`              | `request` (PDF par référence)                 | 🏗️   |
+| S2a | `b2b/orders/application/services/order-ready-mail.service.ts`               | `request` — délai à mesurer                   | 🏗️   |
+| S2b | `b2b/account/application/handlers/mail-support-requested.handler.ts`        | `request`                                     | ⬜   |
+| S2b | `b2b/account/application/handlers/send-login-method-linked-mail.handler.ts` | `request` (abonné durable)                    | ⬜   |
+| S2b | `b2b/account/application/services/grant-account-access.service.ts`          | `sendNow` (l'écran lit `mailSent`)            | ⬜   |
+| S2b | `b2b/account/infrastructure/auth0-customer-identity.ts`                     | à trancher au bâti                            | ⬜   |
+| S2b | `b2b/account/infrastructure/dev-customer-identity.ts`                       | à trancher au bâti (double de dev)            | ⬜   |
+| S2c | `b2b/contact/application/handlers/mail-customer-request.handler.ts`         | `request` (`replyTo`)                         | ⬜   |
+| S2c | `b2b/contact/application/handlers/mail-order-change-applied.handler.ts`     | `request`                                     | ⬜   |
+| S2c | `b2b/contact/application/handlers/mail-order-change-refused.handler.ts`     | `request`                                     | ⬜   |
+| S2d | `b2b/accounting/application/services/collection-notice-sender.ts`           | `request`                                     | ⬜   |
+| S2d | `b2b/accounting/application/services/invoice-notice-sender.ts`              | `request` (facture par référence)             | ⬜   |
+| S2e | `b2b/payments/application/commands/send-mandate.handler.ts`                 | `request` (mandat par référence)              | ⬜   |
+| S2f | `production/application/services/dossier-dispatch.service.ts`               | `request` (dossier par référence)             | ⬜   |
+| S2g | `staff/directory/application/set-staff-status.handler.ts`                   | à trancher au bâti                            | ⬜   |
+| S2g | `staff/invitations/open-staff-access.service.ts`                            | `sendNow` (l'écran lit `mailSent`)            | ⬜   |
+| S2h | `b2b/alerts/application/handlers/dispatch-alert-channels.service.ts`        | `request`                                     | ⬜   |
+| S2h | `b2b/growth/infrastructure/mail-appointment-booked-alert.ts`                | `request`                                     | ⬜   |
+| S2h | `b2b/sub-account-notices/application/services/principal-notice.sender.ts`   | `request`                                     | ⬜   |
+| S2h | `b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`             | `sendNow` (l'écran lit `mailSent`)            | ⬜   |
+| S2h | `b2b/mail-copy/infrastructure/specimen-mail-trial.sender.ts`                | `sendNow` (l'essai)                           | ⬜   |
+| S2h | `platform/mailer/admin-mail-check.controller.ts`                            | `sendNow` (la sonde)                          | ⬜   |
+
 ### 4. Tranché par `vitruve` (2026-11-06)
 
 Les questions posées ici sont répondues au § 6.
