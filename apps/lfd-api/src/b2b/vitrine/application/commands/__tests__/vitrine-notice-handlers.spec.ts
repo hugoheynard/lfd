@@ -15,7 +15,7 @@ import { PreviewVitrineNoticeHandler } from "../../queries/preview-vitrine-notic
 import { VitrineNoticeDispatcher } from "../../services/vitrine-notice-dispatcher.js";
 import { SendVitrineNoticeCommand } from "../send-vitrine-notice.command.js";
 import { SendVitrineNoticeHandler } from "../send-vitrine-notice.handler.js";
-import { MemoryNotices, RecordingMailer, StaticReader } from "./vitrine-notice-doubles.js";
+import { MemoryNotices, RecordingVitrineMails, StaticReader } from "./vitrine-notice-doubles.js";
 
 const KEY = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 class EchoRenderer extends VitrineNoticeMailRenderer {
@@ -24,7 +24,7 @@ class EchoRenderer extends VitrineNoticeMailRenderer {
   }
 }
 
-function setup(mailer = new RecordingMailer()) {
+function setup(mailer = new RecordingVitrineMails()) {
   const notices = new MemoryNotices();
   const clock = new FixedClock(AT);
   const handler = new SendVitrineNoticeHandler(
@@ -72,7 +72,7 @@ describe("SendVitrineNoticeHandler", () => {
   });
 
   it("un refus du fournisseur est consigné « non envoyé » et n'arrête pas les autres", async () => {
-    const mailer = new RecordingMailer();
+    const mailer = new RecordingVitrineMails();
     mailer.refused.add("web@agence.fr");
     const { notices, handler } = setup(mailer);
     const id = await handler.execute(send());
@@ -80,7 +80,7 @@ describe("SendVitrineNoticeHandler", () => {
   });
 
   it("à blanc, rien n'est prétendu accepté", async () => {
-    const { notices, handler } = setup(new RecordingMailer(false));
+    const { notices, handler } = setup(new RecordingVitrineMails(false));
     const id = await handler.execute(send(["s1"]));
     expect(notices.rows.get(id)?.recipients).toMatchObject([{ mailSent: false }]);
   });

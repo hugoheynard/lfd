@@ -27,11 +27,16 @@ interface SentMail {
   readonly idempotencyKey?: string;
 }
 const sentMails: SentMail[] = [];
+/**
+ * Le transport doublé rend un identifiant de fournisseur : depuis le lot S2h
+ * (`plan-service-e-mails.md`, § 18), « envoyé » se lit sur le reçu du bloc
+ * `mail` — un identifiant rendu —, plus sur `mailer.enabled`.
+ */
 const recordingMailer = {
   enabled: true,
-  send: (args: SentMail): Promise<{ providerId: null }> => {
+  send: (args: SentMail): Promise<{ providerId: string }> => {
     sentMails.push(args);
-    return Promise.resolve({ providerId: null });
+    return Promise.resolve({ providerId: `re_${sentMails.length}` });
   },
 };
 
@@ -166,6 +171,11 @@ describe("reprendre l'envoi d'une annonce interrompue", () => {
       where: { noticeId_subscriberId: { noticeId: id, subscriberId: cut } },
       data: { mailSent: null, attemptedAt: null },
     });
+    // Un processus tué avant l'envoi n'a rien laissé non plus au suivi du bloc
+    // `mail` (S2h : `sendNow` l'écrit APRÈS l'envoi) — l'état exact, des deux côtés.
+    await ctx.prisma.mailRequest.delete({
+      where: { idempotencyKey: `vitrine-notice:${id}:${cut}` },
+    });
     sentMails.splice(0);
 
     await staff().post(`/admin/vitrine/notices/${id}/resume`).expect(204);
@@ -179,6 +189,33 @@ describe("reprendre l'envoi d'une annonce interrompue", () => {
     const refused = await staff().post(`/admin/vitrine/notices/${id}/resume`).expect(409);
     expect(jsonBody<{ code: string }>(refused).code).toBe("vitrine.notice.nothing_to_resume");
     expect(sentMails).toHaveLength(1);
+  });
+
+  /**
+   * Le bloc `mail` garde la clé un an (S2h) : un processus tué APRÈS l'envoi,
+   * avant la consignation sur l'annonce, ne fait pas écrire deux fois — la
+   * reprise lit le reçu et consigne « envoyé ».
+   */
+  it("un e-mail déjà parti sous la même clé n'est pas renvoyé par la reprise", async () => {
+    await subscribe("Agence", "web@agence.fr");
+    const cut = await subscribe("Coupée", "coupee@agence.fr");
+    const id = jsonBody<{ id: string }>(
+      await staff()
+        .post("/admin/vitrine/notices")
+        .send({ ...draft, subscriberIds: null, idempotencyKey: KEY })
+        .expect(201),
+    ).id;
+    await ctx.prisma.vitrineNoticeRecipient.update({
+      where: { noticeId_subscriberId: { noticeId: id, subscriberId: cut } },
+      data: { mailSent: null, attemptedAt: null },
+    });
+    sentMails.splice(0);
+
+    await staff().post(`/admin/vitrine/notices/${id}/resume`).expect(204);
+
+    expect(sentMails).toEqual([]);
+    const [notice] = await notices();
+    expect(notice?.recipients.every((r) => r.mailSent === true)).toBe(true);
   });
 
   it("une annonce inconnue répond 404", async () => {

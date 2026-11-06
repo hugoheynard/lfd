@@ -278,7 +278,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
   /** Cliente active : une société de plus dans son espace, pas un second compte. */
   private async attachToActive(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
     await this.attach(known.userId, input);
-    const mailSent = await this.send(input.email, () =>
+    const mailSent = await this.send(known.userId, () =>
       this.mails.sendNow({
         brand: "lfc",
         to: input.email,
@@ -316,7 +316,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
     passwordSetupUrl: string,
     input: AccessToGrant,
   ): Promise<AccessGranted> {
-    const mailSent = await this.send(input.email, () =>
+    const mailSent = await this.send(userId, () =>
       this.mails.sendNow({
         brand: "lfc",
         to: input.email,
@@ -364,13 +364,17 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * n'attendra jamais rien. Le reçu le dit : à blanc, aucun identifiant de
    * fournisseur (`providerId: null`) ; « envoyé » veut donc dire « accepté
    * par Resend », comme avant le passage par le bloc.
+   *
+   * Le log nomme le COMPTE, jamais l'adresse (lot S2h, comme l'invitation de
+   * l'équipe en S2g) : une adresse en clair dans un log de production est une
+   * donnée personnelle hors de tout registre.
    */
-  private async send(to: string, deliver: () => Promise<MailReceipt>): Promise<boolean> {
+  private async send(userId: string, deliver: () => Promise<MailReceipt>): Promise<boolean> {
     try {
       const receipt = await deliver();
       return receipt.providerId !== null;
     } catch (error) {
-      this.logger.error(`E-mail d'accès non envoyé à ${to}`, error);
+      this.logger.error(`E-mail d'accès non envoyé au compte ${userId}`, error);
       return false;
     }
   }

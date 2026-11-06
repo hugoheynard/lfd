@@ -7,7 +7,7 @@ import {
   FixedLifecycle,
   FixedMembers,
   MemoryNoticeJournal,
-  RecordingMailer,
+  RecordingNoticeMails,
 } from "../../__tests__/order-notice-doubles.js";
 import { GestureNoticeDispatcher } from "../../services/gesture-notice.dispatcher.js";
 import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
@@ -54,7 +54,7 @@ function build(
   status: CompanyStatus = "active",
   switches: InMemoryNoticeSwitches = new InMemoryNoticeSwitches("alpes"),
 ) {
-  const mailer = new RecordingMailer();
+  const mailer = new RecordingNoticeMails();
   const journal = new MemoryNoticeJournal();
   const rules = new InMemoryNoticeRules();
   const sender = new PrincipalNoticeSender(
@@ -101,7 +101,7 @@ function reportedFact(principalCompanyId: string | null = "alpes") {
   return { eventId: "evt_pb", type: "order.problem_reported", payload: fact.durableFact().payload };
 }
 
-const recipients = (mailer: RecordingMailer): string[] => mailer.sent.map((m) => m.to).sort();
+const recipients = (mailer: RecordingNoticeMails): string[] => mailer.sent.map((m) => m.to).sort();
 
 describe("NotifyPrincipalOnOrderProblemReported — problème signalé par un site", () => {
   it("prévient owner, admin et orders du principal, moins l'auteure ; dit le site et la commande", async () => {

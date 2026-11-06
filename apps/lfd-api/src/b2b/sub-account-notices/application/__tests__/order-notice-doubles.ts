@@ -1,5 +1,3 @@
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
 import {
   AcceptedMembersReader,
   type AcceptedMember,
@@ -11,8 +9,10 @@ import {
   OrderNoticeSummaryReader,
   type OrderNoticeSummary,
 } from "../../../orders/domain/ports/order-notice-summary.reader.js";
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import {
+  type RecordedMail,
+  RecordingMailRequests,
+} from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { NoticeSendJournal } from "../../domain/ports/notice-send.journal.js";
 
 /** Une commande du site `chalet`, principal `alpes` copié, au compte du principal. */
@@ -81,11 +81,16 @@ export class MemoryNoticeJournal extends NoticeSendJournal {
   }
 }
 
-export class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails>[] = [];
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.sent.push(args);
-    return Promise.resolve({ providerId: "re_1" });
+/**
+ * La porte du bloc `mail`, doublée : les avis sont DEMANDÉS (lot S2h), dans la
+ * transaction de la livraison que ces tests ne jouent pas. `sent` nomme ce
+ * qui a été demandé, et seulement ça — un `sendNow` y serait une faute.
+ */
+export class RecordingNoticeMails extends RecordingMailRequests {
+  get sent(): readonly RecordedMail[] {
+    if (this.sentNow.length > 0) {
+      throw new TypeError("un avis au principal se demande, il ne s'envoie pas sur-le-champ");
+    }
+    return this.requested;
   }
 }

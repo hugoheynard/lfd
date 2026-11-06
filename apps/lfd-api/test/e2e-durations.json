@@ -254,6 +254,7 @@
   "test/made-to-order-wall.e2e-spec.ts": 15021,
   "test/made-to-order.e2e-spec.ts": 20337,
   "test/mail-attachments.e2e-spec.ts": 9000,
+  "test/mail-check.e2e-spec.ts": 6993,
   "test/mail-copy-default-drift.e2e-spec.ts": 8000,
   "test/mail-copy-preview.e2e-spec.ts": 5000,
   "test/mail-copy.e2e-spec.ts": 6000,

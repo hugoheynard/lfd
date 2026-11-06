@@ -16,12 +16,12 @@ import { ResumeVitrineNoticeCommand } from "../resume-vitrine-notice.command.js"
 import { ResumeVitrineNoticeHandler } from "../resume-vitrine-notice.handler.js";
 import { SendVitrineNoticeCommand } from "../send-vitrine-notice.command.js";
 import { SendVitrineNoticeHandler } from "../send-vitrine-notice.handler.js";
-import { MemoryNotices, RecordingMailer, StaticReader } from "./vitrine-notice-doubles.js";
+import { MemoryNotices, RecordingVitrineMails, StaticReader } from "./vitrine-notice-doubles.js";
 
 const KEY = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
 /** Une annonce envoyée à s1 et s3, puis « interrompue » : s3 remis à « pas tenté ». */
-async function interrupted(mailer = new RecordingMailer()) {
+async function interrupted(mailer = new RecordingVitrineMails()) {
   const notices = new MemoryNotices();
   const clock = new FixedClock(AT);
   const dispatcher = new VitrineNoticeDispatcher(notices, mailer, clock);
@@ -72,7 +72,7 @@ describe("ResumeVitrineNoticeHandler", () => {
   });
 
   it("ne reprend pas un destinataire refusé : son issue reste au journal", async () => {
-    const mailer = new RecordingMailer();
+    const mailer = new RecordingVitrineMails();
     mailer.refused.add("web@agence.fr");
     const { id, notices, resume } = await interrupted(mailer);
     mailer.refused.clear();

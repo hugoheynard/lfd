@@ -1,8 +1,9 @@
 import type { AlertKind, AlertRule } from "@lfd/contracts";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.module.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
 import { ALERT_KIND_TITLES } from "../../domain/alert-labels.js";
 import { alertIdempotencyKey, type AlertDraft } from "../../domain/evaluate-order.js";
@@ -18,6 +19,12 @@ import { AlertChannels, type AlertContext } from "../../domain/ports/alert-chann
  * **Un canal qui échoue ne fait pas échouer la commande.** L'alerte est déjà au
  * journal ; perdre un e-mail est ennuyeux, refuser une commande passée et payée
  * pour cette raison serait absurde. On journalise et on continue.
+ *
+ * **L'e-mail se demande au bloc `mail`** (lot S2h,
+ * `plan-service-e-mails.md`) : la demande s'écrit dans SA PROPRE unité de
+ * travail et part après la validation, relancée par le balayeur. Pas dans
+ * celle du journal des alertes : une demande refusée y annulerait la trace,
+ * et la règle ci-dessus — l'e-mail ne l'emporte jamais — tomberait.
  */
 @Injectable()
 export class DispatchAlertChannels extends AlertChannels {
@@ -25,7 +32,8 @@ export class DispatchAlertChannels extends AlertChannels {
 
   constructor(
     private readonly notifier: StaffNotifier,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
+    private readonly unitOfWork: UnitOfWork,
     private readonly config: AppConfig,
   ) {
     super();
@@ -82,24 +90,34 @@ export class DispatchAlertChannels extends AlertChannels {
     }
     const base = this.config.adminBaseUrl();
     try {
-      await this.mailer.send({
-        to: inbox,
-        template: "staff.account-alert",
-        data: {
-          companyName: context.companyName,
-          ruleLabel: ALERT_KIND_TITLES[draft.kind],
-          orderNumber: context.orderNumber,
-          findings: draft.findings.map((finding) => finding.message),
-          // Sans racine configurée, la chaîne n'est pas une URL : le gabarit omet
-          // alors le bouton plutôt que d'en rendre un qui ne mène nulle part.
-          accountUrl: base === null ? "" : `${base}/comptes-clients/${context.companyId}/alertes`,
-        },
-        // Le fournisseur ne renverra pas deux fois le même fait.
-        idempotencyKey: `mail:${alertIdempotencyKey(draft.kind, context.orderNumber)}`,
-      });
+      await this.unitOfWork.run(() => this.requestMail(inbox, base, draft, context));
     } catch (error) {
-      this.logger.error(`E-mail d'alerte non envoyé (${draft.kind})`, error);
+      this.logger.error(`E-mail d'alerte non demandé (${draft.kind})`, error);
     }
+  }
+
+  private async requestMail(
+    inbox: string,
+    base: string | null,
+    draft: AlertDraft,
+    context: AlertContext,
+  ): Promise<void> {
+    await this.mails.request({
+      brand: "lfc",
+      to: inbox,
+      template: "staff.account-alert",
+      data: {
+        companyName: context.companyName,
+        ruleLabel: ALERT_KIND_TITLES[draft.kind],
+        orderNumber: context.orderNumber,
+        findings: draft.findings.map((finding) => finding.message),
+        // Sans racine configurée, la chaîne n'est pas une URL : le gabarit omet
+        // alors le bouton plutôt que d'en rendre un qui ne mène nulle part.
+        accountUrl: base === null ? "" : `${base}/comptes-clients/${context.companyId}/alertes`,
+      },
+      // Une alerte par sorte et par commande : un fait rejoué ne demande rien de plus.
+      idempotencyKey: `mail:${alertIdempotencyKey(draft.kind, context.orderNumber)}`,
+    });
   }
 }
 

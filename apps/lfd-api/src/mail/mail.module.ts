@@ -5,6 +5,7 @@ import { DurableFactPayloads } from "../platform/outbox/durable-fact-payloads.js
 import { PrismaDurableFactPayloads } from "../platform/outbox/prisma-durable-fact-payloads.js";
 import { MailRequests } from "./channels/requests/mail-requests.js";
 import { MAIL_REQUEST_PURGE_MODE } from "./requests/domain/services/mail-request-retention.js";
+import { CheckMailDeliveryHandler } from "./requests/application/check-mail-delivery.handler.js";
 import { BlockMailRequests } from "./requests/application/block-mail-requests.js";
 import { DeferredMailSender } from "./requests/application/deferred-mail-sender.service.js";
 import { DeliverRequestedMail } from "./requests/application/deliver-requested-mail.handler.js";
@@ -18,6 +19,7 @@ import { MailAttachmentStore } from "./requests/domain/ports/mail-attachment.sto
 import { MailDispatch } from "./requests/domain/ports/mail-dispatch.js";
 import { MailRequestPruner } from "./requests/domain/ports/mail-request.pruner.js";
 import { MailRequestRepository } from "./requests/domain/ports/mail-request.repository.js";
+import { MailCheckController } from "./requests/http/mail-check.controller.js";
 import { MailRequestPurgeController } from "./requests/http/mail-request-purge.controller.js";
 import { StalledMailRequests } from "./requests/domain/ports/stalled-mail-requests.js";
 import { MailRequestsSweepController } from "./requests/http/mail-requests-sweep.controller.js";
@@ -42,7 +44,7 @@ import { StorageMailAttachmentStore } from "./requests/infrastructure/storage-ma
  */
 @Global()
 @Module({
-  controllers: [MailRequestPurgeController, MailRequestsSweepController],
+  controllers: [MailRequestPurgeController, MailRequestsSweepController, MailCheckController],
   providers: [
     { provide: MailRequestPruner, useClass: PrismaMailRequestPruner },
     {
@@ -67,6 +69,8 @@ import { StorageMailAttachmentStore } from "./requests/infrastructure/storage-ma
     { provide: DurableFactPayloads, useClass: PrismaDurableFactPayloads },
     DeferredMailSender,
     SweepMailRequestsHandler,
+    // S2h : la sonde de déploiement, sortie de `platform/mailer/`.
+    CheckMailDeliveryHandler,
   ],
   exports: [MailRequests],
 })

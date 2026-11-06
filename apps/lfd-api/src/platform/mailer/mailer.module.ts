@@ -5,7 +5,6 @@ import { AppConfig } from "../config/app-config.js";
 import { AfterCommit } from "../database/after-commit.js";
 import { BackgroundWork } from "../events/background-work.js";
 import { Clock } from "../time/clock.js";
-import { AdminMailCheckController } from "./admin-mail-check.controller.js";
 import { InboundMailReader } from "./inbound/inbound-mail.reader.js";
 import { ResendInboundMailReader } from "./inbound/resend-inbound-mail.reader.js";
 import { JournalingMailer } from "./journal/journaling-mailer.js";
@@ -35,11 +34,11 @@ export type { B2bMailer };
  */
 @Global()
 @Module({
-  // Le contrôle de mise en service vit ici plutôt que dans un module `ops/` : il
-  // n'a d'autre dépendance que le mailer et la configuration, et le garder à
-  // côté de l'adaptateur qu'il éprouve évite qu'on le déplace un jour sans voir
-  // ce qu'il teste réellement.
-  controllers: [AdminMailCheckController, ResendWebhookController],
+  // Le contrôle de mise en service vivait ici ; il est dans le bloc `mail`
+  // depuis le lot S2h (`mail/requests/http/mail-check.controller.ts`) : tout
+  // e-mail passe par le bloc, et une sonde qui le contournerait resterait
+  // verte avec un bloc cassé. Il éprouve toujours ce mailer, par `sendNow`.
+  controllers: [ResendWebhookController],
   providers: [
     { provide: MailJournal, useClass: PrismaMailJournal },
     ResendWebhookChecker,

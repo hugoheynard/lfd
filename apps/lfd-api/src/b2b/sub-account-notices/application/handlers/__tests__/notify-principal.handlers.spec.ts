@@ -10,7 +10,7 @@ import {
   FixedMembers,
   FixedOrderSummaries,
   MemoryNoticeJournal,
-  RecordingMailer,
+  RecordingNoticeMails,
 } from "../../__tests__/order-notice-doubles.js";
 import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
 import { SubAccountNoticeDispatcher } from "../../services/sub-account-notice.dispatcher.js";
@@ -40,7 +40,7 @@ interface Options {
 }
 
 function build(options: Options = {}) {
-  const mailer = new RecordingMailer();
+  const mailer = new RecordingNoticeMails();
   const journal = new MemoryNoticeJournal();
   const rules = new InMemoryNoticeRules();
   const dispatcher = new SubAccountNoticeDispatcher(
@@ -89,7 +89,7 @@ const cancelledFact = (cancelledByUserId: string | null) => ({
   ).durableFact().payload,
 });
 
-const recipients = (mailer: RecordingMailer) => mailer.sent.map((mail) => mail.to);
+const recipients = (mailer: RecordingNoticeMails) => mailer.sent.map((mail) => mail.to);
 
 describe("NotifyPrincipalOnOrderPlaced", () => {
   it("prévient owner, admin et orders du principal — pas billing", async () => {

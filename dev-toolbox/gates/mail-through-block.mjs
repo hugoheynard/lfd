@@ -49,16 +49,11 @@ export const ADMITTED = {
  * En retirer un = l'avoir fait passer par `MailRequests` (lot S2). S2a a rayé
  * les 11 de `b2b/orders` (2026-11-06), S2b les 5 de `b2b/account`, S2c les
  * 3 de `b2b/contact`, S2d les 2 de `b2b/accounting`, S2e le mandat de
- * `b2b/payments`, S2f le dossier de `production`, S2g les 2 de `staff` (2026-11-06) : 6 restent.
+ * `b2b/payments`, S2f le dossier de `production`, S2g les 2 de `staff`, S2h
+ * les 6 isolés — la sonde de déploiement comprise, entrée dans le bloc
+ * (2026-11-06). Liste VIDE : tout envoyeur neuf hors du bloc échoue.
  */
-export const DEBT = [
-  `${SRC}/b2b/alerts/application/handlers/dispatch-alert-channels.service.ts`,
-  `${SRC}/b2b/growth/infrastructure/mail-appointment-booked-alert.ts`,
-  `${SRC}/b2b/mail-copy/infrastructure/specimen-mail-trial.sender.ts`,
-  `${SRC}/b2b/sub-account-notices/application/services/principal-notice.sender.ts`,
-  `${SRC}/b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`,
-  `${SRC}/platform/mailer/admin-mail-check.controller.ts`,
-];
+export const DEBT = [];
 
 /** Les commentaires citent le mailer pour l'expliquer : on les blanchit. */
 export function withoutComments(source) {

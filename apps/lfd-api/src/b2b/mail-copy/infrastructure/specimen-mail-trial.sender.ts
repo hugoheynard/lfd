@@ -1,9 +1,10 @@
 import { isLayoutSectionId } from "@lfd/mailer";
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
+import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { withMailCopyOverlay } from "../../../platform/mailer/copy/mail-copy-overlay.js";
 import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
-import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
 import { withMailLayout } from "../../../platform/mailer/sections/mail-layout-scope.js";
 import { isMailKey, specimenDataOf } from "../../../platform/mailer/specimens/mail-specimens.js";
 import { MailTrialSender } from "../domain/ports/mail-specimen.renderer.js";
@@ -17,10 +18,20 @@ import type { MailTextsByMail } from "../domain/mail-copy-texts.js";
  * ouverts en périmètre. Le mailer laisse un périmètre ouvert l'emporter sur
  * le publié (`EffectiveCopyMailer`) : l'essai d'un brouillon part avec le
  * brouillon.
+ *
+ * **Par le bloc `mail`, en `sendNow`** (lot S2h, `plan-service-e-mails.md`) :
+ * le staff lit l'issue de l'essai à l'écran, et l'appelant envoie hors de son
+ * unité de travail (`SendMailCopyTrialHandler`, relu le 2026-11-06). Le bloc
+ * envoie dans la même chaîne asynchrone, donc sous le périmètre ouvert ici.
+ * Une clé par essai (`mail-copy.trial:<id>`) : le bloc garde une clé un an,
+ * et chaque clic doit repartir.
  */
 @Injectable()
 export class SpecimenMailTrialSender extends MailTrialSender {
-  constructor(@Inject(MAILER) private readonly mailer: B2bMailer) {
+  constructor(
+    private readonly mails: MailRequests,
+    private readonly ids: IdGenerator,
+  ) {
     super();
   }
 
@@ -49,6 +60,12 @@ export class SpecimenMailTrialSender extends MailTrialSender {
     mail: K,
     locale: MailCopyLocale,
   ): Promise<void> {
-    await this.mailer.send({ to, template: mail, data: specimenDataOf(mail, locale) });
+    await this.mails.sendNow({
+      brand: "lfc",
+      to,
+      template: mail,
+      data: specimenDataOf(mail, locale),
+      idempotencyKey: `mail-copy.trial:${this.ids.next()}`,
+    });
   }
 }

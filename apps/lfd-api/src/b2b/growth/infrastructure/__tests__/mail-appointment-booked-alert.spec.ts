@@ -1,24 +1,10 @@
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { AppConfig, type MailerConfig } from "../../../../platform/config/app-config.js";
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import { Appointment } from "../../domain/entities/appointment.js";
 import { MailAppointmentBookedAlert, parisDateTime } from "../mail-appointment-booked-alert.js";
-
-class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails>[] = [];
-  refusal: Error | null = null;
-
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    if (this.refusal !== null) {
-      return Promise.reject(this.refusal);
-    }
-    this.sent.push(args);
-    return Promise.resolve({ providerId: "re_1" });
-  }
-}
 
 /** La vraie configuration, dont seuls les deux réglages lus sont fixés. */
 class Settings extends AppConfig {
@@ -59,25 +45,29 @@ function appointment(): Appointment {
   });
 }
 
+/** L'adaptateur devant la porte doublée, qui refuse `request` hors transaction. */
+function setup(inbox: string | null, base: string | null) {
+  const uow = new OpenableUnitOfWork();
+  const mails = new RecordingMailRequests(uow);
+  const alert = new MailAppointmentBookedAlert(mails, uow, new Settings(inbox, base));
+  return { mails, alert };
+}
+
 describe("MailAppointmentBookedAlert", () => {
-  it("sans boîte d'équipe, rien ne part", async () => {
-    const mailer = new RecordingMailer();
-    await new MailAppointmentBookedAlert(mailer, new Settings(null, "https://bo.lfc.fr")).notify(
-      "appt_1",
-      appointment(),
-    );
-    expect(mailer.sent).toEqual([]);
+  it("sans boîte d'équipe, rien n'est demandé", async () => {
+    const { mails, alert } = setup(null, "https://bo.lfc.fr");
+    await alert.notify("appt_1", appointment());
+    expect(mails.requested).toEqual([]);
   });
 
-  it("écrit l'heure de Paris, les libellés français, le lien et la clé d'idempotence", async () => {
-    const mailer = new RecordingMailer();
-    await new MailAppointmentBookedAlert(
-      mailer,
-      new Settings("equipe@lfc.fr", "https://bo.lfc.fr"),
-    ).notify("appt_1", appointment());
+  it("demande au bloc, dans une unité de travail : heure de Paris, libellés, lien et clé", async () => {
+    const { mails, alert } = setup("equipe@lfc.fr", "https://bo.lfc.fr");
+    await alert.notify("appt_1", appointment());
 
-    expect(mailer.sent).toEqual([
+    expect(mails.sentNow).toEqual([]);
+    expect(mails.requested).toEqual([
       {
+        brand: "lfc",
         to: "equipe@lfc.fr",
         template: "staff.appointment-booked",
         data: {
@@ -94,23 +84,16 @@ describe("MailAppointmentBookedAlert", () => {
   });
 
   it("sans racine du back-office, le lien est vide — le gabarit omet le bouton", async () => {
-    const mailer = new RecordingMailer();
-    await new MailAppointmentBookedAlert(mailer, new Settings("equipe@lfc.fr", null)).notify(
-      "appt_1",
-      appointment(),
-    );
-    expect(mailer.sent[0]?.data).toMatchObject({ appointmentUrl: "" });
+    const { mails, alert } = setup("equipe@lfc.fr", null);
+    await alert.notify("appt_1", appointment());
+    expect(mails.requested[0]?.data).toMatchObject({ appointmentUrl: "" });
   });
 
-  it("une panne du fournisseur est avalée", async () => {
-    const mailer = new RecordingMailer();
-    mailer.refusal = new Error("Resend indisponible");
-    await expect(
-      new MailAppointmentBookedAlert(mailer, new Settings("equipe@lfc.fr", null)).notify(
-        "appt_1",
-        appointment(),
-      ),
-    ).resolves.toBeUndefined();
+  it("une demande refusée est avalée : le rendez-vous est déjà pris", async () => {
+    const { mails, alert } = setup("equipe@lfc.fr", null);
+    mails.failWith = new Error("base indisponible");
+    await expect(alert.notify("appt_1", appointment())).resolves.toBeUndefined();
+    expect(mails.requested).toEqual([]);
   });
 
   it("l'heure d'hiver est aussi celle de Paris (UTC+1)", () => {
