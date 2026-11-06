@@ -382,7 +382,72 @@ describe("le journal de l'annuaire — une trace qui tombe annule le geste", () 
     expect(response.status).toBeGreaterThanOrEqual(500);
     const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id } });
     expect(row.status).toBe("active");
+    await ctx.drain();
     expect(sent).toEqual([]);
+    // La demande d'e-mail entrait dans la transaction (S2g) : annulée avec elle.
+    expect(
+      await ctx.prisma.mailRequest.count({ where: { template: "staff.access-suspended" } }),
+    ).toBe(0);
+  });
+});
+
+/**
+ * Plan `plan-service-e-mails.md`, S2g : les e-mails de l'annuaire passent par
+ * le bloc `mail`. La suspension et le rétablissement les DEMANDENT dans leur
+ * transaction ; l'invitation les ENVOIE après, et lit le reçu.
+ */
+describe("l'annuaire — ses e-mails passent par le bloc `mail`", () => {
+  it("suspension puis rétablissement : deux demandes, deux clés, parties après la validation", async () => {
+    const id = await createColleague();
+    await ctx.prisma.staffUser.update({ where: { id }, data: { status: "active" } });
+    sent.length = 0;
+
+    await operator()
+      .patch(`/admin/staff-users/${id}/status`)
+      .send({ status: "suspended" })
+      .expect(204);
+    await operator()
+      .patch(`/admin/staff-users/${id}/status`)
+      .send({ status: "active" })
+      .expect(204);
+    await ctx.drain();
+
+    expect([...sent].sort()).toEqual([
+      "staff.access-restored → cecile@lfc.test",
+      "staff.access-suspended → cecile@lfc.test",
+    ]);
+    const rows = await ctx.prisma.mailRequest.findMany({
+      where: { template: { in: ["staff.access-suspended", "staff.access-restored"] } },
+    });
+    expect(rows.map((row) => row.template).sort()).toEqual([
+      "staff.access-restored",
+      "staff.access-suspended",
+    ]);
+    for (const row of rows) {
+      expect(row.idempotencyKey.startsWith(`${row.template}:${id}:`)).toBe(true);
+      expect(row.idempotencyKey).not.toContain("@");
+    }
+  });
+
+  it("invitation : envoyée sur-le-champ, suivie au bloc, rien dans la boîte d'envoi", async () => {
+    const id = await createColleague();
+    await ctx.prisma.staffUser.update({
+      where: { id },
+      data: { status: "pending", invitedAt: null },
+    });
+    sent.length = 0;
+    const outboxBefore = await ctx.prisma.outboxMessage.count();
+
+    const response = await operator().post(`/admin/staff-users/${id}/invitation`);
+
+    expect(response.status).toBeLessThan(300);
+    expect(sent).toEqual(["staff.invited → cecile@lfc.test"]);
+    const row = await ctx.prisma.mailRequest.findFirstOrThrow({
+      where: { template: "staff.invited" },
+    });
+    expect(row.idempotencyKey.startsWith(`staff.invited:${id}:`)).toBe(true);
+    // `sendNow` : le lien — un secret — n'entre pas dans la boîte d'envoi.
+    expect(await ctx.prisma.outboxMessage.count()).toBe(outboxBefore);
   });
 });
 

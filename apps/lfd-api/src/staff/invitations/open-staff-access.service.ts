@@ -1,11 +1,12 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { isOutsideDatabaseConnection } from "../../platform/auth/auth0-claims.js";
 import { IdentitySubjectUnknownError } from "../../platform/shared/errors/identity-errors.js";
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { Journal } from "../../platform/journal/journal.js";
 import { Clock } from "../../platform/time/clock.js";
-import { MAILER, type B2bMailer } from "../../platform/mailer/mailer.tokens.js";
+import { IdGenerator } from "../../platform/id/id-generator.js";
+import { MailRequests } from "../../mail/channels/requests/mail-requests.js";
 import { StaffIdentityPort } from "./staff-identity.port.js";
 import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
 import { staffUserInvitedFact } from "../directory/domain/staff-facts.js";
@@ -40,7 +41,9 @@ export interface StaffAccessOpened {
  * 1. on frappe le lien chez le fournisseur **d'abord** — un appel réseau, donc
  *    hors transaction ;
  * 2. `markInvited` et le fait `staff_user.invited` partent **ensemble** ;
- * 3. **puis** l'e-mail.
+ * 3. **puis** l'e-mail, par le bloc `mail` en `sendNow` (plan
+ *    `plan-service-e-mails.md`, S2g) : l'écran lit `mailSent`, et `request`
+ *    écrirait le lien — un secret — dans la boîte d'envoi.
  *
  * Si le journal tombe, rien n'est écrit et **aucun e-mail ne part** : l'écran
  * dit l'échec, et un nouvel essai frappe un lien neuf. Jamais un e-mail envoyé
@@ -54,7 +57,8 @@ export class OpenStaffAccess {
     private readonly staff: StaffUserRepository,
     private readonly identities: StaffIdentityPort,
     private readonly clock: Clock,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
+    private readonly ids: IdGenerator,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
     private readonly cache: StaffAccessCache,
@@ -81,28 +85,37 @@ export class OpenStaffAccess {
     // Le lien ne sort d'ici que par cette adresse-là. Il vaut prise de contrôle
     // du compte : ni journal, ni réponse HTTP, ni écran de celui qui invite.
     return {
-      mailSent: await this.deliver(template, target.email, passwordSetupUrl, target.firstName),
+      mailSent: await this.deliver(template, target, passwordSetupUrl),
     };
   }
 
   /**
-   * Envoie, et dit si c'est **vraiment** parti.
+   * Envoie, et dit si c'est **vraiment** parti — « accepté par Resend ».
    *
-   * Sans clé de fournisseur, le mailer tourne « à blanc » : il rend le gabarit,
-   * le journalise, et résout sans erreur. Répondre `true` ici ferait annoncer
-   * une invitation envoyée à quelqu'un qui n'attendra jamais rien.
+   * Sans clé de fournisseur, le mailer tourne « à blanc » et rend un reçu sans
+   * identifiant : répondre `true` ferait annoncer une invitation envoyée à
+   * quelqu'un qui n'attendra jamais rien.
+   *
+   * La clé est celle du **geste** (un identifiant neuf par ouverture) : le
+   * bloc la garde un an, et une clé stable par personne tairait le renvoi
+   * d'un lien neuf. Ni adresse ni `sub` dans la clé.
    */
   private async deliver(
     template: "staff.invited" | "staff.password-reset",
-    to: string,
+    target: StaffIdentityFacts,
     passwordSetupUrl: string,
-    firstName: string,
   ): Promise<boolean> {
     try {
-      await this.mailer.send({ to, template, data: { firstName, passwordSetupUrl } });
-      return this.mailer.enabled;
+      const receipt = await this.mails.sendNow({
+        brand: "lfc",
+        to: target.email,
+        template,
+        idempotencyKey: `${template}:${target.id}:${this.ids.next()}`,
+        data: { firstName: target.firstName, passwordSetupUrl },
+      });
+      return receipt.providerId !== null;
     } catch (error) {
-      this.logger.error(`Invitation non envoyée à ${to}`, error);
+      this.logger.error(`Invitation non envoyée à la fiche ${target.id}`, error);
       return false;
     }
   }

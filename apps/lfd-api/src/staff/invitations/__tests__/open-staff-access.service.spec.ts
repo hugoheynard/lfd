@@ -12,8 +12,10 @@ import { SuspendedStaffInviteError } from "../../directory/domain/staff-user-err
 import type { StaffIdentityFacts } from "../../directory/domain/staff-user.repository.js";
 import { OpenStaffAccess } from "../open-staff-access.service.js";
 import type { MailReceipt } from "@lfd/mailer";
-import type { SendMailArgs } from "@lfd/mailer";
+import type { MailDemand } from "../../../mail/channels/requests/mail-requests.js";
+import { RecordingMailRequests } from "../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
+import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
 
@@ -40,6 +42,7 @@ interface Harness {
   readonly mails: { to: string; url: string }[];
   readonly journal: RecordingJournal;
   readonly cache: RecordingAccessCache;
+  readonly requests: StaffMailRequests;
   /** Chaque `markInvited`, avec l'état de la transaction au moment de l'appel. */
   readonly markedInside: boolean[];
 }
@@ -50,6 +53,27 @@ type Deps = ConstructorParameters<typeof OpenStaffAccess>;
 class IdentityDown extends Error {
   constructor() {
     super("fournisseur indisponible");
+  }
+}
+
+/**
+ * La porte du bloc, qui note si chaque `sendNow` est arrivé hors transaction
+ * et peut jouer le mailer « à blanc » (reçu sans identifiant de fournisseur).
+ */
+class StaffMailRequests extends RecordingMailRequests {
+  readonly insideTransaction: boolean[] = [];
+
+  constructor(
+    private readonly tracking: TrackingUnitOfWork,
+    private readonly blank: boolean,
+  ) {
+    super();
+  }
+
+  override async sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+    this.insideTransaction.push(this.tracking.inside);
+    const receipt = await super.sendNow(demand);
+    return this.blank ? { providerId: null } : receipt;
   }
 }
 
@@ -66,7 +90,6 @@ function harness(
   const provisioned: string[] = [];
   const relinked: string[] = [];
   const marked: { id: string; subject: string; at: Date }[] = [];
-  const mails: { to: string; url: string }[] = [];
 
   const staff: Pick<Deps[0], "identityOf" | "markInvited"> = {
     identityOf: (): Promise<StaffIdentityFacts> => Promise.resolve(row),
@@ -96,29 +119,36 @@ function harness(
       return Promise.resolve("https://lien/renvoi");
     },
   };
-  // Le `send` du port est générique sur la clé de gabarit : sans annoter ici, le
-  // paramètre arrive en union de tous les gabarits et `data` n'a plus de forme.
-  // On déclare celui qu'on attend — un envoi d'un autre gabarit ne compilerait
-  // pas, ce qui est exactement le garde qu'on veut.
-  const mailer: Pick<Deps[3], "enabled" | "send"> = {
-    enabled: mailerOn,
-    send: <K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> => {
-      const url = "passwordSetupUrl" in args.data ? String(args.data.passwordSetupUrl) : "";
-      mails.push({ to: args.to, url });
-      return Promise.resolve({ providerId: null });
-    },
-  };
-
+  const requests = new StaffMailRequests(uow, !mailerOn);
   const handler = new OpenStaffAccess(
     staff as Deps[0],
     identities,
     { now: (): Date => NOW },
-    mailer,
+    requests,
+    new FixedIdGenerator("geste"),
     journal,
     uow,
     cache,
   );
-  return { handler, provisioned, relinked, marked, mails, journal, cache, markedInside };
+  return {
+    handler,
+    provisioned,
+    relinked,
+    marked,
+    get mails(): { to: string; url: string }[] {
+      return requests.sentNow.map((mail) => ({
+        to: mail.to,
+        url:
+          typeof mail.data === "object" && mail.data !== null && "passwordSetupUrl" in mail.data
+            ? String(mail.data.passwordSetupUrl)
+            : "",
+      }));
+    },
+    journal,
+    cache,
+    markedInside,
+    requests,
+  };
 }
 
 const SUBJECT = "s1";
@@ -273,5 +303,47 @@ describe("OpenStaffAccess — la trace de l'invitation", () => {
 
     expect(h.mails).toEqual([]);
     expect(h.cache.forgotten).toEqual([]);
+  });
+});
+
+describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
+  it("envoie en `sendNow`, HORS transaction, avec une clé par geste sans adresse", async () => {
+    const h = harness(target());
+
+    await h.handler.open(SUBJECT);
+
+    expect(h.requests.requested).toEqual([]);
+    expect(h.requests.insideTransaction).toEqual([false]);
+    expect(h.requests.sentNow).toEqual([
+      {
+        brand: "lfc",
+        to: "sophie@lfc.test",
+        template: "staff.invited",
+        idempotencyKey: "staff.invited:s1:geste_000001",
+        data: { firstName: "Sophie", passwordSetupUrl: "https://lien/neuf" },
+      },
+    ]);
+  });
+
+  it("un renvoi a une clé neuve : le bloc ne le tait pas", async () => {
+    // Le bloc garde une clé un an : une clé fixe par personne aurait rendu le
+    // reçu du premier lien sans envoyer le second, qui est un lien NEUF.
+    const h = harness(target({ auth0Id: "auth0|deja", status: "active" }));
+
+    await h.handler.open(SUBJECT);
+    await h.handler.open(SUBJECT);
+
+    expect(h.requests.sentNow.map((mail) => mail.idempotencyKey)).toEqual([
+      "staff.password-reset:s1:geste_000001",
+      "staff.password-reset:s1:geste_000002",
+    ]);
+  });
+
+  it("un envoi refusé ne défait pas l'ouverture : l'écran lit « non envoyé »", async () => {
+    const h = harness(target());
+    h.requests.failWith = new Error("Resend refuse");
+
+    await expect(h.handler.open(SUBJECT)).resolves.toEqual({ mailSent: false });
+    expect(h.marked).toHaveLength(1);
   });
 });
