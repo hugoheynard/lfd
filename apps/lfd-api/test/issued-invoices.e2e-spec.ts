@@ -259,13 +259,19 @@ describe("« Votre facture » à l'émission (E6, Q3)", () => {
     });
     expect(fact.type).toBe("invoice.issued");
     // Demandés ensemble (S2d), envoyés par la boîte d'envoi dans un ordre
-    // qu'elle ne promet pas : on compare par rang.
-    const byRank = [...invoiceMails()].sort((a, b) =>
-      (a.idempotencyKey ?? "").localeCompare(b.idempotencyKey ?? ""),
-    );
-    expect(byRank.map((mail) => [mail.to, mail.idempotencyKey])).toEqual([
-      ["compta@groupe.test", `invoice.notice:${invoice.id}:1`],
-      ["gerante@chalet.test", `invoice.notice:${invoice.id}:2`],
+    // qu'elle ne promet pas : on compare par destinataire. La clé porte
+    // l'identifiant stable de chacun, jamais son rang ni son adresse (revue du
+    // service d'e-mails, cas 4).
+    const contact = await ctx.prisma.companyContact.findFirstOrThrow({
+      where: { companyId: company.id, email: "compta@groupe.test" },
+    });
+    const gerante = await ctx.prisma.user.findFirstOrThrow({
+      where: { email: "gerante@chalet.test" },
+    });
+    const byRecipient = [...invoiceMails()].sort((a, b) => a.to.localeCompare(b.to));
+    expect(byRecipient.map((mail) => [mail.to, mail.idempotencyKey])).toEqual([
+      ["compta@groupe.test", `invoice.notice:${invoice.id}:contact:${contact.id}`],
+      ["gerante@chalet.test", `invoice.notice:${invoice.id}:user:${gerante.id}`],
     ]);
     expect(invoiceMails()[0]?.data).toMatchObject({
       invoiceNumber: invoice.number,

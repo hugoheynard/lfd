@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { InvoiceSiteContactsReader } from "../domain/ports/invoice-site-contacts.reader.js";
+import type { NoticeAddress } from "../domain/services/collection-notice-recipient.js";
 
 /**
  * Les sociétés qui ont passé les bons (`orders.company_id`), sauf le payeur,
@@ -16,10 +17,10 @@ export class PrismaInvoiceSiteContactsReader extends InvoiceSiteContactsReader {
     super();
   }
 
-  async billingEmailsOf(
+  async billingContactsOf(
     orderIds: readonly string[],
     payerCompanyId: string,
-  ): Promise<readonly string[]> {
+  ): Promise<readonly NoticeAddress[]> {
     if (orderIds.length === 0) {
       return [];
     }
@@ -40,16 +41,16 @@ export class PrismaInvoiceSiteContactsReader extends InvoiceSiteContactsReader {
     const contacts = await this.prisma.companyContact.findMany({
       where: { companyId: { in: siteIds }, role: "billing" },
       orderBy: [{ companyId: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-      select: { email: true },
+      select: { id: true, email: true },
     });
     const members = await this.prisma.membership.findMany({
       where: { companyId: { in: siteIds }, role: "billing" },
       orderBy: [{ companyId: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-      select: { user: { select: { email: true } } },
+      select: { user: { select: { id: true, email: true } } },
     });
     return [
-      ...contacts.map((contact) => contact.email),
-      ...members.map((member) => member.user.email),
+      ...contacts.map((contact) => ({ id: `contact:${contact.id}`, email: contact.email })),
+      ...members.map((member) => ({ id: `user:${member.user.id}`, email: member.user.email })),
     ];
   }
 }

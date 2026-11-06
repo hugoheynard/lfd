@@ -26,23 +26,26 @@ export class PrismaPayerNoticeContactsReader extends PayerNoticeContactsReader {
     const contacts = await this.prisma.companyContact.findMany({
       where: { companyId: { in: [...companyIds] }, role: "billing" },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: { companyId: true, email: true },
+      select: { id: true, companyId: true, email: true },
     });
     const owners = await this.prisma.membership.findMany({
       where: { companyId: { in: [...companyIds] }, role: "owner" },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: { companyId: true, user: { select: { email: true } } },
+      select: { companyId: true, user: { select: { id: true, email: true } } },
     });
     return new Map(
-      companyIds.map((companyId) => [
-        companyId,
-        {
-          billingContactEmails: contacts
-            .filter((contact) => contact.companyId === companyId)
-            .map((contact) => contact.email),
-          ownerEmail: owners.find((owner) => owner.companyId === companyId)?.user.email ?? null,
-        },
-      ]),
+      companyIds.map((companyId) => {
+        const owner = owners.find((row) => row.companyId === companyId)?.user ?? null;
+        return [
+          companyId,
+          {
+            billingContacts: contacts
+              .filter((contact) => contact.companyId === companyId)
+              .map((contact) => ({ id: `contact:${contact.id}`, email: contact.email })),
+            owner: owner === null ? null : { id: `user:${owner.id}`, email: owner.email },
+          },
+        ];
+      }),
     );
   }
 }

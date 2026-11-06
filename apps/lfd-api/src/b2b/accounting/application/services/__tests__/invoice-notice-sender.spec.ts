@@ -1,3 +1,4 @@
+import type { NoticeAddress } from "../../../domain/services/collection-notice-recipient.js";
 import { Buffer } from "node:buffer";
 
 import {
@@ -28,14 +29,19 @@ const DOCUMENT_KEY = "invoices/le_1/FA-LFD-2026-000001.pdf";
 
 class FixedSites extends InvoiceSiteContactsReader {
   readonly asked: { orderIds: readonly string[]; payer: string }[] = [];
-  constructor(private readonly emails: readonly string[]) {
+  constructor(private readonly contacts: readonly NoticeAddress[]) {
     super();
   }
-  billingEmailsOf(orderIds: readonly string[], payerCompanyId: string): Promise<readonly string[]> {
+  billingContactsOf(
+    orderIds: readonly string[],
+    payerCompanyId: string,
+  ): Promise<readonly NoticeAddress[]> {
     this.asked.push({ orderIds, payer: payerCompanyId });
-    return Promise.resolve(this.emails);
+    return Promise.resolve(this.contacts);
   }
 }
+
+const CHALET: NoticeAddress = { id: "contact:chalet", email: "compta@chalet.test" };
 
 class FixedOrigins extends InvoiceMailOrigins {
   constructor(private readonly client: string | null) {
@@ -55,7 +61,7 @@ function monthly(): Invoice {
 function setup(
   options: {
     readonly payer?: PayerNoticeContacts;
-    readonly sites?: readonly string[];
+    readonly sites?: readonly NoticeAddress[];
     readonly origin?: string | null;
     readonly period?: BillingCycle;
     readonly documented?: boolean;
@@ -78,8 +84,8 @@ function setup(
         [
           payerId,
           options.payer ?? {
-            billingContactEmails: ["compta@port.test"],
-            ownerEmail: "patron@port.test",
+            billingContacts: [{ id: "contact:1", email: "compta@port.test" }],
+            owner: { id: "user:owner", email: "patron@port.test" },
           },
         ],
       ]),
@@ -110,8 +116,8 @@ describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () =
     expect(h.mails.queued[0]?.data).toMatchObject({ period: "du 5 au 11 octobre 2026" });
   });
 
-  it("au payeur et aux sous-comptes, une clé par facture et par RANG (jamais l'adresse), puis le journal", async () => {
-    const h = setup({ sites: ["compta@chalet.test"] });
+  it("au payeur et aux sous-comptes, une clé par facture et par DESTINATAIRE (jamais l'adresse), puis le journal", async () => {
+    const h = setup({ sites: [CHALET] });
 
     const recipients = await h.sender.send(h.invoice.id, null);
 
@@ -120,8 +126,18 @@ describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () =
     expect(
       h.mails.queued.map((mail) => [mail.to, mail.template, mail.brand, mail.idempotencyKey]),
     ).toEqual([
-      ["compta@port.test", "customer.invoice-issued", "lfc", `invoice.notice:${h.invoice.id}:1`],
-      ["compta@chalet.test", "customer.invoice-issued", "lfc", `invoice.notice:${h.invoice.id}:2`],
+      [
+        "compta@port.test",
+        "customer.invoice-issued",
+        "lfc",
+        `invoice.notice:${h.invoice.id}:contact:1`,
+      ],
+      [
+        "compta@chalet.test",
+        "customer.invoice-issued",
+        "lfc",
+        `invoice.notice:${h.invoice.id}:contact:chalet`,
+      ],
     ]);
     expect(h.mails.awaitedReceipt).toEqual([]);
     expect(h.mails.queued[0]?.data).toMatchObject({
@@ -176,7 +192,7 @@ describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () =
   });
 
   it("une adresse commune au payeur et à un sous-compte ne reçoit qu'un message", async () => {
-    const h = setup({ sites: ["COMPTA@port.test"] });
+    const h = setup({ sites: [{ id: "user:site", email: "COMPTA@port.test" }] });
 
     await h.sender.send(h.invoice.id, null);
 
@@ -193,8 +209,32 @@ describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () =
     expect(new Set(keys).size).toBe(1);
   });
 
+  /**
+   * Régression (revue du service d'e-mails, cas 4) : la clé portait le RANG
+   * du destinataire. Entre deux passages, le contact de facturation du payeur
+   * disparaît et le détenteur prend la première place : sous `…:1`, le bloc
+   * rendait le reçu du contact d'hier, et le détenteur n'était jamais prévenu.
+   */
+  it("une liste changée entre deux passages ne tait pas le destinataire qui a pris le rang d'un autre", async () => {
+    const before = setup({ sites: [CHALET] });
+    const after = setup({
+      payer: { billingContacts: [], owner: { id: "user:owner", email: "patron@port.test" } },
+      sites: [CHALET],
+    });
+
+    await before.sender.send(before.invoice.id, null);
+    await after.sender.send(after.invoice.id, null);
+
+    const first = new Set(before.mails.queued.map((mail) => mail.idempotencyKey));
+    const [owner, chalet] = after.mails.queued;
+    expect(owner?.to).toBe("patron@port.test");
+    expect(first.has(owner?.idempotencyKey ?? "")).toBe(false);
+    // Le même destinataire, lui, garde sa clé : son rejeu reste sans doublon.
+    expect(first.has(chalet?.idempotencyKey ?? "")).toBe(true);
+  });
+
   it("personne à prévenir : rien n'est demandé, et le journal le signale en nommant le geste", async () => {
-    const h = setup({ payer: { billingContactEmails: [], ownerEmail: null } });
+    const h = setup({ payer: { billingContacts: [], owner: null } });
 
     expect(await h.sender.send(h.invoice.id, null)).toEqual([]);
 
@@ -232,7 +272,7 @@ describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () =
 });
 
 describe("le renvoi de « Votre facture » (E6, suite (b)) — envoyé sur-le-champ", () => {
-  it("une clé propre au renvoi et au rang, jamais celle de l'envoi d'origine, et le fait `invoice.notice_resent`", async () => {
+  it("une clé propre au renvoi et au destinataire, jamais celle de l'envoi d'origine, et le fait `invoice.notice_resent`", async () => {
     const h = setup();
 
     const outcome = await h.sender.resend(h.invoice.id, null, "rs_1");
@@ -243,7 +283,7 @@ describe("le renvoi de « Votre facture » (E6, suite (b)) — envoyé sur-le-ch
     });
     expect(h.mails.queued).toEqual([]);
     expect(h.mails.awaitedReceipt.map((mail) => mail.idempotencyKey)).toEqual([
-      "invoice.notice-resend:rs_1:1",
+      "invoice.notice-resend:rs_1:contact:1",
     ]);
     const facts = h.events.traced.map((event) => event.journalFact());
     expect(facts.map((fact) => fact.type)).toEqual(["invoice.notice_resent"]);
@@ -261,7 +301,7 @@ describe("le renvoi de « Votre facture » (E6, suite (b)) — envoyé sur-le-ch
   });
 
   it("un refus du fournisseur n'empêche pas les autres, est rendu et journalisé sous le même fait", async () => {
-    const h = setup({ sites: ["compta@chalet.test"] });
+    const h = setup({ sites: [CHALET] });
     h.mails.failWith = new Error("rebond dur");
 
     const outcome = await h.sender.resend(h.invoice.id, null, "rs_2");
@@ -274,7 +314,7 @@ describe("le renvoi de « Votre facture » (E6, suite (b)) — envoyé sur-le-ch
   });
 
   it("personne à prévenir : rien ne part, rien n'est journalisé", async () => {
-    const h = setup({ payer: { billingContactEmails: [], ownerEmail: null } });
+    const h = setup({ payer: { billingContacts: [], owner: null } });
 
     const outcome = await h.sender.resend(h.invoice.id, null, "rs_3");
 

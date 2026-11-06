@@ -78,8 +78,8 @@ function plan(
 }
 
 const BILLING = (debtor: string): PayerNoticeContacts => ({
-  billingContactEmails: [`compta@${debtor}.test`],
-  ownerEmail: null,
+  billingContacts: [{ id: "contact:1", email: `compta@${debtor}.test` }],
+  owner: null,
 });
 
 describe("les avis d'une constitution (PA2)", () => {

@@ -104,10 +104,10 @@ describe("l'avis de prélèvement, à la constitution", () => {
     w.candidates.orders = [order("c_port"), order("c_chalet")];
     w.mandates.mandates = [mandate("c_port"), mandate("c_chalet")];
     w.contacts.overrides.set("c_port", {
-      billingContactEmails: [],
-      ownerEmail: "patron@port.test",
+      billingContacts: [],
+      owner: { id: "user:owner", email: "patron@port.test" },
     });
-    w.contacts.overrides.set("c_chalet", { billingContactEmails: [], ownerEmail: null });
+    w.contacts.overrides.set("c_chalet", { billingContacts: [], owner: null });
 
     await constitute(w);
 
@@ -149,7 +149,7 @@ describe("« Marquer déposé » exige les avis envoyés", () => {
     const w = world();
     w.candidates.orders = [order("c_port")];
     w.mandates.mandates = [mandate("c_port")];
-    w.contacts.overrides.set("c_port", { billingContactEmails: [], ownerEmail: null });
+    w.contacts.overrides.set("c_port", { billingContacts: [], owner: null });
     const batchId = await constitute(w);
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
 

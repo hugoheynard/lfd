@@ -96,8 +96,8 @@ export class FixedNoticeContacts extends PayerNoticeContactsReader {
         companyIds.map((id) => [
           id,
           this.overrides.get(id) ?? {
-            billingContactEmails: [`compta@${id}.test`],
-            ownerEmail: null,
+            billingContacts: [{ id: "contact:1", email: `compta@${id}.test` }],
+            owner: null,
           },
         ]),
       ),

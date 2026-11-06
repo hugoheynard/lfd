@@ -63,8 +63,11 @@ interface NoticeSubject {
  * **Le renvoi du staff ENVOIE** (`sendAndAwaitReceipt`) : il attend la réponse, et un
  * refus du fournisseur s'affiche (409 nommé) autant qu'il se journalise.
  *
- * La clé d'idempotence est la facture (ou le renvoi) ET le RANG du
- * destinataire, jamais son adresse : le bloc garde la clé un an.
+ * La clé d'idempotence est la facture (ou le renvoi) ET l'IDENTIFIANT STABLE
+ * du destinataire (`contact:<id>`, `user:<id>`), jamais son adresse : le bloc
+ * garde la clé un an. Le rang, qui la portait jusqu'au 2026-11-06, taisait un
+ * destinataire décalé quand la liste changeait entre deux passages (revue du
+ * service d'e-mails, cas 4).
  */
 @Injectable()
 export class InvoiceNoticeSender {
@@ -109,13 +112,13 @@ export class InvoiceNoticeSender {
             },
     };
     await this.uow.run(async () => {
-      for (const [rank, recipient] of recipients.entries()) {
+      for (const recipient of recipients) {
         await this.mail.send({
           template: TEMPLATE,
           to: recipient.email,
           brand: "lfc",
           data,
-          idempotencyKey: `invoice.notice:${invoice.id}:${String(rank + 1)}`,
+          idempotencyKey: `invoice.notice:${invoice.id}:${recipient.id}`,
         });
       }
       await this.journal(invoice, recipients, recipients.length === 0 ? NO_RECIPIENT : null, false);
@@ -126,7 +129,7 @@ export class InvoiceNoticeSender {
   /**
    * **Le renvoi** demandé par le staff (E6, suite (b)) : les destinataires
    * d'aujourd'hui, sous une clé d'idempotence propre au renvoi
-   * (`invoice.notice-resend:<renvoi>:<rang>`) — celle de l'envoi d'origine
+   * (`invoice.notice-resend:<renvoi>:<destinataire>`) — celle de l'envoi d'origine
    * ferait taire le bloc. Issue au journal `invoice.notice_resent`. Personne
    * à prévenir : rien ne part, rien n'est journalisé, l'appelant refuse.
    *
@@ -208,7 +211,7 @@ export class InvoiceNoticeSender {
     const state = invoice.toState();
     const payerId = state.buyer.companyId;
     const payer = (await this.payers.contactsOf([payerId])).get(payerId);
-    const sites = await this.sites.billingEmailsOf(
+    const sites = await this.sites.billingContactsOf(
       state.orders.map((order) => order.orderId),
       payerId,
     );
@@ -222,14 +225,14 @@ export class InvoiceNoticeSender {
     resendId: string,
   ): Promise<string | null> {
     const refusals: string[] = [];
-    for (const [rank, recipient] of recipients.entries()) {
+    for (const recipient of recipients) {
       try {
         await this.mail.sendAndAwaitReceipt({
           template: TEMPLATE,
           to: recipient.email,
           brand: "lfc",
           data,
-          idempotencyKey: `invoice.notice-resend:${resendId}:${String(rank + 1)}`,
+          idempotencyKey: `invoice.notice-resend:${resendId}:${recipient.id}`,
         });
       } catch (cause: unknown) {
         refusals.push(cause instanceof Error ? cause.message : String(cause));
