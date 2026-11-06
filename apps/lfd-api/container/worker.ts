@@ -174,6 +174,11 @@ const RUNTIME_KEYS = [
   // L'arrêt d'urgence de l'instantané du catalogue (`le-catalogue-en-memoire.md`,
   // M1b) : `off` fait relire la base à chaque requête. Absente, `on`.
   "CATALOGUE_SNAPSHOT_MEMORY",
+  // Les crans de sûreté des purges (boîte d'envoi, suivi des e-mails) :
+  // absents, `dry-run` — la purge compte sans supprimer. Leur activation est
+  // une décision ; le workflow de déploiement ne les pose pas.
+  "OUTBOX_PURGE",
+  "MAIL_REQUEST_PURGE",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];

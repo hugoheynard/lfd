@@ -183,6 +183,7 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
     referencedBy: ["platform.outbox_delivery"],
   },
   { table: "platform.outbox_delivery", purgedIn: "outbox.purge.ts", referencedBy: [] },
+  { table: "mail.mail_request", purgedIn: "mail.purge.ts", referencedBy: [] },
   { table: "ops.mail_send", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "growth.activity_events", purgedIn: "journals.purge.ts", referencedBy: [] },
 ];

@@ -41,6 +41,8 @@ const MEASURED_SCHEMAS = [
   "production",
   "packing",
   "delivery",
+  // Le suivi des e-mails (S2) : chaque demande du scénario y laisse une ligne.
+  "mail",
 ];
 
 /**

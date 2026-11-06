@@ -5,6 +5,7 @@ import type { StorageResetReport } from "../../seeding/storage.seed.js";
 import { purgeCommerce } from "./commerce.purge.js";
 import { purgeDelivery } from "./delivery.purge.js";
 import { purgeJournals } from "./journals.purge.js";
+import { purgeMailRequests } from "./mail.purge.js";
 import { purgeOutbox } from "./outbox.purge.js";
 import { purgePacking } from "./packing.purge.js";
 import { purgeProduction } from "./production.purge.js";
@@ -52,6 +53,8 @@ export async function purgeScenario(
   const packing = await prisma.$transaction((tx) => purgePacking(tx, scope), options);
   const production = await prisma.$transaction((tx) => purgeProduction(tx, scope), options);
   const outbox = await prisma.$transaction((tx) => purgeOutbox(tx, scope), options);
+  // Le suivi des e-mails compte avec la boîte d'envoi : c'est le même envoi.
+  const mails = await prisma.$transaction((tx) => purgeMailRequests(tx, scope), options);
   const commerce = await prisma.$transaction((tx) => purgeCommerce(tx, scope), options);
   const resupplies = await prisma.$transaction((tx) => purgeReserveResupplies(tx, scope), options);
   const journals = await prisma.$transaction((tx) => purgeJournals(tx, scope, delivery), options);
@@ -65,7 +68,7 @@ export async function purgeScenario(
       { category: "production", rows: production.rows },
       { category: "packing", rows: packing },
       { category: "delivery", rows: delivery.rows },
-      { category: "outbox", rows: outbox },
+      { category: "outbox", rows: outbox + mails },
       { category: "journals", rows: journals },
     ],
     orders: commerce.orders,

@@ -369,8 +369,11 @@ avec les autres purges RGPD) — `POST /admin/outbox/purge` et
 défaut, et le passage ne fait que compter et journaliser ce qu'il supprimerait
 (nombre, date la plus ancienne). `off` coupe même le compte ; `on` supprime.
 **Leur activation est une décision à part de Hugo** : aucune des deux
-variables n'est posée au déploiement, et le Worker ne les transmet pas
-encore au container — `on` demandera aussi de les y ajouter.
+variables n'est posée au déploiement. Le Worker les transmet au container
+depuis le 2026-11-06 (`RUNTIME_KEYS`, `apps/lfd-api/container/worker.ts`) :
+absentes, elles valent `dry-run` ; `on` ne demandera que de les poser dans
+`deploy_lfd_api.yml` (et de les retirer de `NOT_DEPLOYED` dans
+`container/__tests__/runtime-keys.spec.ts`).
 
 - Boîte d'envoi : un message est éligible quand TOUTES ses livraisons sont
   faites depuis plus de 30 jours ; une livraison en attente ou morte garde le

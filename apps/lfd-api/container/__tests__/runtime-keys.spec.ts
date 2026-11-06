@@ -16,6 +16,10 @@ const NOT_DEPLOYED: Readonly<Record<string, string>> = {
   // et le code accepte l'autre nom pour ne pas casser un environnement existant.
   // Poser les deux depuis la CI donnerait deux sources pour une seule valeur.
   RESEND_API_KEY: "alias de repli — la CI ne pose que RESEND_MAILER_B2B_API_KEY",
+  // Les crans de sûreté des purges (plan-service-e-mails.md § 7) : absents,
+  // `dry-run`. Les poser au déploiement, c'est décider de supprimer — Hugo.
+  OUTBOX_PURGE: "purge à blanc par défaut — son activation est une décision de Hugo",
+  MAIL_REQUEST_PURGE: "purge à blanc par défaut — son activation est une décision de Hugo",
 };
 
 /**

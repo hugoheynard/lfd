@@ -1,4 +1,8 @@
+import { mailKeyFragment } from "./mail.purge.js";
 import type { PurgeClient, ScenarioScope } from "./scenario-scope.js";
+
+/** Le type du fait d'une demande d'e-mail — une valeur, pas un import du bloc mail. */
+const MAIL_REQUESTED = "mail.requested";
 
 /**
  * **Les faits d'outbox du scénario**, et leurs livraisons : tout fait dont la
@@ -24,6 +28,14 @@ export async function purgeOutbox(tx: PurgeClient, scope: ScenarioScope): Promis
       // N4) ne portent ni journée ni commande : leur clé est la société. Sans
       // cette ligne, chaque rechargement en ajoutait (2026-10-20).
       ...scope.companyIds.map((id) => ({ payload: { path: ["siteCompanyId"], equals: id } })),
+      // Les e-mails demandés au bloc mail (`mail.requested`, S2) ne portent ni
+      // journée ni commande au premier niveau : leur commande est dans la clé
+      // d'idempotence (`order.placed:<id>`, `order.ready:<id>[#rang]`). Sans
+      // cette ligne, chaque rechargement en ajoutait 146 (mesuré le 2026-11-06).
+      ...scope.orderIds.map((id) => ({
+        type: MAIL_REQUESTED,
+        payload: { path: ["idempotencyKey"], string_contains: mailKeyFragment(id) },
+      })),
     ],
   };
   if (message.OR.length === 0) {
