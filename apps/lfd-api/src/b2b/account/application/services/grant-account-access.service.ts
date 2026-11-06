@@ -230,7 +230,10 @@ export class GrantAccountAccess extends AccountAccessGranter {
     // ouverte. Rien à distinguer du cas du sujet périmé ci-dessous : les deux se
     // réparent par le même geste, et `provision` est idempotent sur l'adresse.
     if (known.subject === null) {
-      this.logger.log(`Ouverture d'une identité pour ${email} — invité sans sujet.`);
+      // Le compte par son id, jamais par son adresse (`lint:log-no-email`).
+      this.logger.log(
+        `Ouverture d'une identité pour le compte ${known.userId} — invité sans sujet.`,
+      );
       const provisioned = await this.openIdentity(known, email);
       // Le premier `sub` : la fiche DEVIENT un compte (plan bienvenue, §7 S1).
       await this.members.bindGuestSubject(known.userId, provisioned.subject);
@@ -242,10 +245,10 @@ export class GrantAccountAccess extends AccountAccessGranter {
       if (!(error instanceof IdentitySubjectUnknownError)) {
         throw error;
       }
-      // L'id LOCAL, jamais le `sub` : un identifiant chez un tiers n'a rien à
+      // L'id LOCAL, jamais le `sub` ni l'adresse : ni l'un ni l'autre n'a rien à
       // faire dans un journal de production (`architecture-journalisation.md` §12, §8).
       this.logger.warn(
-        `Sujet d'identité périmé pour ${email} (compte ${known.userId}) — réalignement sur le fournisseur.`,
+        `Sujet d'identité périmé pour le compte ${known.userId} — réalignement sur le fournisseur.`,
       );
       return this.adoptIdentity(known, email);
     }

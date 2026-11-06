@@ -185,9 +185,10 @@ describe("UpdateStaffUserHandler — l'adresse de connexion suit l'annuaire", ()
   /**
    * Régression : l'échec de propagation écrivait le `sub` Auth0 de la fiche dans
    * le log de production (« Adresse désynchronisée pour auth0|… ») — un
-   * identifiant chez un tiers dans nos logs (fix 2026-09-18).
+   * identifiant chez un tiers dans nos logs (fix 2026-09-18). Et ses deux
+   * adresses, en clair, jusqu'au 2026-11-06 (revue du service d'e-mails, cas 6).
    */
-  it("désigne la fiche par son id dans le log d'échec, jamais par son `sub`", async () => {
+  it("désigne la fiche par son id dans le log d'échec, jamais par son `sub` ni ses adresses", async () => {
     // Le dépôt tourne en ESM, sans `jest` global : on remplace la méthode du
     // Logger à la main, et on la rend quoi qu'il arrive.
     const logged: string[] = [];
@@ -212,5 +213,7 @@ describe("UpdateStaffUserHandler — l'adresse de connexion suit l'annuaire", ()
     expect(logged[0]).toContain(CECILE.id);
     expect(CECILE.auth0Id).not.toBeNull();
     expect(logged[0]).not.toContain(CECILE.auth0Id ?? "");
+    expect(logged[0]).not.toContain("c.martin@lfc.test");
+    expect(logged[0]).not.toContain("@");
   });
 });

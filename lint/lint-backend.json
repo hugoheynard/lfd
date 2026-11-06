@@ -196,6 +196,13 @@
       "watch": ["apps/lfd-api/src/**"]
     },
     {
+      "name": "log-no-email",
+      "script": "dev-toolbox/gates/log-no-email.mjs",
+      "holds": "Aucun journal n'écrit une adresse e-mail : la personne s'y désigne par son identifiant.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
       "name": "handler-per-file",
       "script": "dev-toolbox/gates/handler-per-file.mjs",
       "holds": "Un seul handler par fichier.",

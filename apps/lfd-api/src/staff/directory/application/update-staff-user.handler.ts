@@ -69,11 +69,12 @@ export class UpdateStaffUserHandler implements ICommandHandler<UpdateStaffUserCo
     try {
       await this.identities.changeEmail(before.auth0Id, after.email);
     } catch (error) {
-      // La fiche se désigne par SON id, jamais par son `sub` : un identifiant
-      // chez un tiers n'a rien à faire dans nos logs (`lint:auth0-id-readers`).
+      // La fiche se désigne par SON id, jamais par son `sub` ni ses adresses :
+      // ni l'un ni l'autre n'a rien à faire dans nos logs (`lint:auth0-id-readers`,
+      // `lint:log-no-email`). Les deux adresses se relisent sur la fiche.
       this.logger.error(
-        `Adresse désynchronisée pour la fiche ${before.id} : annuaire=${after.email}, ` +
-          `fournisseur=${before.email}. À reprendre à la main.`,
+        `Adresse désynchronisée pour la fiche ${before.id} : l'annuaire a la nouvelle, ` +
+          `le fournisseur garde l'ancienne. À reprendre à la main.`,
         error,
       );
       throw error;
