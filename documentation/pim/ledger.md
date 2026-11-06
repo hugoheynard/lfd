@@ -515,7 +515,7 @@ direct. **Deux filets** :
 1. **ESLint** — couvre `process.env`, `process['env']`, la déstructuration, l'**alias**
    (`VariableDeclarator[init.name='process']`), `globalThis.process` et l'import `node:process`.
    Les 6 formes vérifiées une par une par fichiers sondes.
-2. **Gate** `dev-toolbox/gates/no-direct-env.mjs` (`pnpm lint:no-direct-env`), **indépendant
+2. **Gate** `dev-toolbox/gates/no-direct-env.mjs` (`pnpm gate no-direct-env`), **indépendant
    d'ESLint** : il détecte en plus les `// eslint-disable` visant la règle. Démonstration faite —
    ESLint seul se laisse bâillonner, le gate non.
 

@@ -600,7 +600,7 @@ ORDER BY occurred_at DESC;
 
 ## 14. Ce qui n'est PAS journalisé
 
-À jour au **2026-08-25**. Le chiffre exact sort de `pnpm lint:journal-tracked`.
+À jour au **2026-08-25**. Le chiffre exact sort de `pnpm gate journal-tracked`.
 
 - ~~14 handlers du PIM écrivent sans fait nommé~~ — **plus aucun depuis le
   2026-08-25** : `27/27`. Les quatorze gestes qui restaient (ouverture /

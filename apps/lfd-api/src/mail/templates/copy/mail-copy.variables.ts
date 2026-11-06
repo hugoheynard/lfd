@@ -18,7 +18,7 @@ export type MailCopyVariables = { readonly [K in keyof MailCopy]: MailSectionVar
  * gabarit ne fournit pas resterait affichée telle quelle (`{ref}`) dans la
  * boîte du client. Les variables **obligatoires** ne s'écrivent pas ici :
  * ce sont celles que le texte français par défaut contient, et le manifeste
- * (`pnpm mail-copy:digest`) les en déduit.
+ * (`pnpm tool mail-copy:digest`) les en déduit.
  *
  * `mail-copy.spec.ts` refuse un texte qui emploie une variable non déclarée
  * ici, et un chemin déclaré qui n'existe plus au dictionnaire.

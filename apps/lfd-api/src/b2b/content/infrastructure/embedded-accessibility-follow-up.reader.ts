@@ -44,7 +44,7 @@ export function followUpViewOf(embedded: EmbeddedFollowUp): AccessibilityFollowU
 
 /**
  * **Le suivi que cette API a compilé** : `embedded/accessibility-follow-up.json`,
- * déposé par `pnpm rgaa:digest` depuis la grille d'audit. L'API part de
+ * déposé par `pnpm tool rgaa:digest` depuis la grille d'audit. L'API part de
  * `src/` et ne peut pas lire `documentation/` en place ; `lint:rgaa-digest`
  * refuse une copie qui retarde sur la grille.
  *

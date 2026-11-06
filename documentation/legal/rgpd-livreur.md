@@ -274,7 +274,7 @@ Vérifié le 2026-10-06.
 Depuis le 2026-10-06, l'inventaire des §2 et §3 a une forme machine :
 [`rgpd-registre.json`](rgpd-registre.json), une entrée par colonne
 `schéma.table.colonne` (personne, catégorie, finalité, conservation, purge,
-information). `pnpm lint:rgpd-staff` (`dev-toolbox/gates/rgpd-staff.mjs`) le
+information). `pnpm gate rgpd-staff` (`dev-toolbox/gates/rgpd-staff.mjs`) le
 confronte au schéma Prisma à chaque exécution de `lint:gates`.
 
 - **Colonnes candidates**, détectées par leur nom Postgres (`@map` compris) :

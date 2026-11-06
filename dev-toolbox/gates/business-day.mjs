@@ -26,7 +26,7 @@
  * ⚠️ Cette porte lit les **gabarits littéraux**, que `clock-port` efface au
  * contraire avant de chercher. Les deux ne peuvent pas partager leur nettoyage.
  *
- * Usage : `pnpm lint:business-day` (branché dans `lint:gates`).
+ * Usage : `pnpm gate business-day` (branché dans `lint:gates`).
  *
  * ⚠️ Branchée dans le MÊME commit qui l'écrit, et sur un dépôt propre — cf.
  * l'avertissement de `no-direct-env.mjs`.

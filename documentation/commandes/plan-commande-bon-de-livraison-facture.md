@@ -379,7 +379,7 @@ commande ». Les quatre documents, une fois E5 bâti :
 
 **À faire en E5** : renommer partout les **libellés** (titre du PDF, courriels,
 écrans, fichiers téléchargés, textes du recueil de la boutique et du manifeste
-des e-mails — `pnpm copy:digest`, `pnpm mail-copy:digest`), et la doc
+des e-mails — `pnpm tool copy:digest`, `pnpm tool mail-copy:digest`), et la doc
 [`bon-et-pieces/architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md).
 Les **identifiants** du code (`OrderSheet`, `clientSheetOf`…) ne changent pas :
 une valeur ou un nom technique n'est pas un libellé (CLAUDE.md § 8). La

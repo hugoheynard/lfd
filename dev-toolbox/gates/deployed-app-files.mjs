@@ -21,7 +21,7 @@
  * Eux sont consommés par résolution de workspace, pas par `pnpm deploy` — le
  * champ y est légitime.
  *
- * Usage : `pnpm lint:deployed-app-files` (branché en CI).
+ * Usage : `pnpm gate deployed-app-files` (branché en CI).
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";

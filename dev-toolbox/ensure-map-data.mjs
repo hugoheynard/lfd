@@ -21,7 +21,7 @@
  * Il n'échoue JAMAIS : sans réseau ou sans Docker, il avertit et rend la main,
  * parce que Postgres et MinIO doivent monter quoi qu'il arrive.
  *
- * Refabrication forcée : `--refresh` ou `LFD_MAP_REFRESH=1` (`pnpm dev:map:refresh`).
+ * Refabrication forcée : `--refresh` ou `LFD_MAP_REFRESH=1` (`pnpm tool dev:map:refresh`).
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
@@ -100,7 +100,7 @@ function ensureGraph() {
   const built = buildInto(GRAPH_DIR, (staging) => run("bash", [BUILD_GRAPH, staging]));
   if (!built)
     warn(
-      "graphe non fabriqué (réseau ? Docker ?). Le calcul routier restera indisponible ; relancer `pnpm dev:map:refresh`.",
+      "graphe non fabriqué (réseau ? Docker ?). Le calcul routier restera indisponible ; relancer `pnpm tool dev:map:refresh`.",
     );
   return built;
 }
@@ -144,7 +144,7 @@ function ensureDevTiles() {
     buildInto(DEV_TILES_DIR, extractDevTiles);
   if (!built)
     warn(
-      "tuiles non fabriquées (réseau ? Docker ?). La carte restera vide ; relancer `pnpm dev:map:refresh`.",
+      "tuiles non fabriquées (réseau ? Docker ?). La carte restera vide ; relancer `pnpm tool dev:map:refresh`.",
     );
 }
 

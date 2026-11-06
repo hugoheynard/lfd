@@ -28,7 +28,7 @@
  * Portée : `apps/lfd-api/src/**.ts`, hors `__tests__/` et `*.spec.ts`. Les
  * commentaires sont blanchis : ils citent le mailer pour l'expliquer.
  *
- * Usage : `pnpm lint:mail-through-block`. Tests :
+ * Usage : `pnpm gate mail-through-block`. Tests :
  * `node --test dev-toolbox/__tests__/mail-through-block.test.mjs`.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";

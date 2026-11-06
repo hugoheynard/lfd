@@ -35,7 +35,7 @@
  * littéraux typographiques ; les taire serait pire que de ne pas avoir de
  * gate, donc ils sont comptés et affichés à chaque exécution.
  *
- * Usage : `pnpm lint:fold-typography`.
+ * Usage : `pnpm gate fold-typography`.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

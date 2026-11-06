@@ -35,7 +35,7 @@
  * `*.fixture.ts`. Les commentaires sont blanchis : ils citent l'ancienne
  * mécanique pour l'expliquer.
  *
- * Usage : `pnpm lint:context-keyed-readers`. Tests :
+ * Usage : `pnpm gate context-keyed-readers`. Tests :
  * `node --test dev-toolbox/__tests__/context-keyed-readers.test.mjs`.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";

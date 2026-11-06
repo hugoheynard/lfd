@@ -19,7 +19,7 @@
  * généré ne joint que ce que le schéma déclare, et un `@@schema` par modèle
  * garantit déjà l'appartenance. Seul le SQL **écrit à la main** échappe à ça.
  *
- * Usage : `pnpm lint:cross-schema-join` (branché en CI).
+ * Usage : `pnpm gate cross-schema-join` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

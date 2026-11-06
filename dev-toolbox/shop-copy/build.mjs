@@ -22,7 +22,7 @@ import { GRAFTED_SCREEN_FILES, ORDER_JOURNEY, OTHER_SPACES } from "./spaces.mjs"
 export const COPY_DIR = "apps/lfc-ecommerce-frontend/src/app/client/copy";
 export const DIGEST_PATH = "documentation/contenu-ecommerce/textes-de-la-boutique.md";
 export const MANIFEST_PATH = `${COPY_DIR}/shop-copy-manifest.json`;
-export const REGENERATE = "pnpm copy:digest";
+export const REGENERATE = "pnpm tool copy:digest";
 
 const LOCALES = ["fr", "en", "it"];
 const VARIABLE = /\{(\w+)\}/g;

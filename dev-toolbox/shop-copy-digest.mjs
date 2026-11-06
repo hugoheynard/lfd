@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Régénère le **recueil des textes de la boutique** et son manifeste
- * (`pnpm copy:digest`) — plan `documentation/contenu-ecommerce/plan-textes-de-la-boutique.md`, §7 bis.
+ * (`pnpm tool copy:digest`) — plan `documentation/contenu-ecommerce/plan-textes-de-la-boutique.md`, §7 bis.
  *
  * Un recueil recopié vieillirait au premier texte changé ; celui-ci se refait
  * depuis les dictionnaires, et `lint:shop-copy-digest` refuse qu'il retarde.

@@ -30,7 +30,7 @@
  * C'est une lecture du texte, pas du typage : un `where` construit ailleurs et
  * passé par variable lui échappe. Les tests ne sont pas lus.
  *
- * Usage : `pnpm lint:company-role-readers` (branché dans `lint:gates`).
+ * Usage : `pnpm gate company-role-readers` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

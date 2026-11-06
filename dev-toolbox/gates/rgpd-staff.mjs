@@ -40,7 +40,7 @@
  * COMPTÉES à chaque exécution. Elles ne font pas échouer : elles sont l'état
  * réel, et le taire serait pire.
  *
- * Usage : `pnpm lint:rgpd-staff` (branché dans `lint:gates`).
+ * Usage : `pnpm gate rgpd-staff` (branché dans `lint:gates`).
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";

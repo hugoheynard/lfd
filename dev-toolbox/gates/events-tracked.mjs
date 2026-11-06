@@ -24,7 +24,7 @@
  * la garde commune l'ouvre, avec le reçu ; une seconde, imbriquée, rejoindrait
  * la première sans rien changer — mais dirait au lecteur le contraire.
  *
- * Usage : `pnpm lint:events-tracked` (branché en CI).
+ * Usage : `pnpm gate events-tracked` (branché en CI).
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

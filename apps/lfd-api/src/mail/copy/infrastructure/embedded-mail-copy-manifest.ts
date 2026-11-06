@@ -17,7 +17,7 @@ import type {
  * **Le dictionnaire des e-mails que cette API a compilé**, vu comme un
  * manifeste (plan `plan-textes-des-e-mails.md`, E1, E2).
  *
- * Le manifeste généré (`pnpm mail-copy:digest`, tenu par
+ * Le manifeste généré (`pnpm tool mail-copy:digest`, tenu par
  * `lint:mail-copy-digest`) donne pour chaque texte ses variables permises et
  * obligatoires ; les textes par défaut des trois langues se relisent dans le
  * dictionnaire lui-même, d'où le manifeste est tiré. Les sections de chaque

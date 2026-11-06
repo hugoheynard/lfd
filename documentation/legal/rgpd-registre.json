@@ -1,5 +1,5 @@
 {
-  "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`), des tiers — prestataire, partenaire, agence (`tiers`, 2026-10-18) — et des destinataires des e-mails que nous envoyons (`client`, 2026-11-06). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
+  "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`), des tiers — prestataire, partenaire, agence (`tiers`, 2026-10-18) — et des destinataires des e-mails que nous envoyons (`client`, 2026-11-06). Tenu par `pnpm gate rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
   "texteInformation": {
     "version": 3,
     "empreinte": "b9f91594585842d2"

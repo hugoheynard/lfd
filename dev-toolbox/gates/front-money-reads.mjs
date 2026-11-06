@@ -25,7 +25,7 @@
  * Portée : `apps/*-frontend/src` et `packages/b2b-ui/src`, hors specs
  * (`*.spec.ts`, `__tests__/`) — une fixture a le droit de calculer son attendu.
  *
- * Usage : `pnpm lint:front-money-reads`. Tests :
+ * Usage : `pnpm gate front-money-reads`. Tests :
  * `node --test dev-toolbox/__tests__/front-money-reads.test.mjs`.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";

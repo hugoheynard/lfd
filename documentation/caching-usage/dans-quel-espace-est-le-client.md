@@ -136,7 +136,7 @@ brique tient donc elle-même la valeur de chaque clé, et n'utilise pas
 
 ## Qui passe par la brique, et qui en est dispensé
 
-La porte `pnpm lint:context-keyed-readers`
+La porte `pnpm gate context-keyed-readers`
 ([`dev-toolbox/gates/context-keyed-readers.mjs`](../../dev-toolbox/gates/context-keyed-readers.mjs))
 refuse tout fichier de la boutique qui lit l'espace hors de la brique.
 **Dette : 0** depuis le 2026-11-05 (`15747b5e0`). Sa liste `ADMITTED` nomme

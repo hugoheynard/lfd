@@ -1,5 +1,5 @@
 {
-  "$comment": "Généré par `pnpm mail-copy:digest` depuis apps/lfd-api/src/mail/templates/copy/ — ne pas éditer à la main.",
+  "$comment": "Généré par `pnpm tool mail-copy:digest` depuis apps/lfd-api/src/mail/templates/copy/ — ne pas éditer à la main.",
   "mails": {
     "customer.order-placed": {
       "subject": {

@@ -4,7 +4,7 @@
  * (`documentation/accessibilite/grille-audit-rgaa.md`).
  *
  * Il régénère en mémoire le fichier embarqué et échoue s'il diffère de celui
- * commité. Une correction ajoutée à la grille sans `pnpm rgaa:digest` ne
+ * commité. Une correction ajoutée à la grille sans `pnpm tool rgaa:digest` ne
  * serait jamais publiée — et une ligne retirée resterait affichée.
  */
 import { existsSync, readFileSync } from "node:fs";

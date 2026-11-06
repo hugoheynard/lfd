@@ -47,7 +47,7 @@ Android.
 
 ## Du statut des cases au taux
 
-C'est la règle RGAA, et `pnpm rgaa:rate`
+C'est la règle RGAA, et `pnpm tool rgaa:rate`
 ([`dev-toolbox/accessibilite/rgaa-rate.mjs`](../../dev-toolbox/accessibilite/rgaa-rate.mjs))
 l'applique :
 
@@ -68,7 +68,7 @@ case est `NT`, il refuse de rendre un statut et répond « audit incomplet ».
   sera publié avant la fin de l'audit** : la déclaration reprendra le taux, la liste des NC,
   les dérogations (iframe Stripe, PDF) et l'échantillon de cette grille une fois toutes les
   cases tranchées et contre-vérifiées.
-- **La [porte axe](porte-axe.md)** (`pnpm a11y:axe`) : un contrôle automatique ne couvre qu'une partie des critères ;
+- **La [porte axe](porte-axe.md)** (`pnpm tool a11y:axe`) : un contrôle automatique ne couvre qu'une partie des critères ;
   il empêche une régression sur ce qu'il voit, mais ne remplace pas une case de la grille.
 
 ## Le suivi des corrections publié
@@ -91,11 +91,11 @@ fait. Sa source est dans cette grille, à deux clés de premier niveau :
 Le cycle :
 
 1. modifier `corrections` ou `audit` ici ;
-2. lancer `pnpm rgaa:digest`
+2. lancer `pnpm tool rgaa:digest`
    ([`dev-toolbox/rgaa-digest.mjs`](../../dev-toolbox/rgaa-digest.mjs)) : il valide les entrées et
    écrit la part publique dans l'API
    (`apps/lfd-api/src/b2b/content/infrastructure/embedded/accessibility-follow-up.json`) ;
-3. commiter la grille et le fichier généré ensemble — `pnpm lint:rgaa-digest` refuse un fichier
+3. commiter la grille et le fichier généré ensemble — `pnpm gate rgaa-digest` refuse un fichier
    embarqué qui ne suit plus la grille ;
 4. déployer l'API : c'est elle qui sert `GET /content/accessibility-follow-up`.
 
@@ -122,10 +122,9 @@ axe, écrans hors de la porte, onglets et toasts), décidé par Hugo le
 2. **L'audit complet sur la grille** : les 106 critères sur les 12 pages de
    l'échantillon, avec les lecteurs d'écran (NVDA + Firefox, JAWS + Chrome,
    VoiceOver macOS et iOS, TalkBack). Rempli en interne, puis contre-vérifié par
-   un auditeur RGAA. C'est la seule étape qui produit un taux ; `pnpm
-rgaa:rate` refuse d'en donner un tant qu'une case est `NT`.
+   un auditeur RGAA. C'est la seule étape qui produit un taux ; `pnpm tool rgaa:rate` refuse d'en donner un tant qu'une case est `NT`.
 3. **La déclaration mise à jour** avec ce taux : au-delà de 50 %, « partiellement
-   conforme ». Renseigner `audit.fait`, relancer `pnpm rgaa:digest` : le
+   conforme ». Renseigner `audit.fait`, relancer `pnpm tool rgaa:digest` : le
    dialogue de la boutique remplace alors le suivi par la table d'audit, sans
    code nouveau. Mettre à jour la mention `accessibility` au back-office.
 4. **Hors du parcours client, plus tard** : les PDF remis aux clients

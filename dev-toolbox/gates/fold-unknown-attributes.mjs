@@ -49,7 +49,7 @@
  * fichier de la liste qui n'en a plus échoue aussi — pour que la liste se vide
  * au lieu de mentir. Même mécanique que `lint:no-type-escapes`.
  *
- * Usage : `pnpm lint:fold-unknown-attributes` (branché en CI).
+ * Usage : `pnpm gate fold-unknown-attributes` (branché en CI).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";

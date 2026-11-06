@@ -66,7 +66,7 @@ lecteur ne les lisait plus.
 
 ## La porte
 
-`pnpm lint:former-channel-name` (`dev-toolbox/gates/former-channel-name.mjs`)
+`pnpm gate former-channel-name` (`dev-toolbox/gates/former-channel-name.mjs`)
 refuse le nom de l'ancien canal, insensible à la casse, dans tout ce que git
 suit. **Seule admission** : `apps/lfd-api/prisma/migrations/**` — les
 `migration.sql` appliquées ne se touchent pas (checksum Prisma). Le nom de la

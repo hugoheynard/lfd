@@ -10,7 +10,7 @@ export class InvalidAccessibilityFollowUpError extends TechnicalError {
   constructor(readonly status: string) {
     super(
       "accessibility_follow_up_invalid",
-      `Le suivi d'accessibilité embarqué porte un statut inconnu (« ${status} »). Régénérer le fichier par \`pnpm rgaa:digest\` depuis la grille d'audit, puis redéployer l'API.`,
+      `Le suivi d'accessibilité embarqué porte un statut inconnu (« ${status} »). Régénérer le fichier par \`pnpm tool rgaa:digest\` depuis la grille d'audit, puis redéployer l'API.`,
     );
   }
 }

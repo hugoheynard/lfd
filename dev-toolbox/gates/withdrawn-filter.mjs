@@ -32,7 +32,7 @@
  * pas la ligne retirée tenterait une création, et la clé primaire refuserait —
  * un article qui revient au catalogue ferait tomber le push.
  *
- * Usage : `pnpm lint:withdrawn-filter`.
+ * Usage : `pnpm gate withdrawn-filter`.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

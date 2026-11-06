@@ -345,7 +345,7 @@ numéro, ni le fournil comme acteur.
   formulaire (`cancel-order-form/`).
 
 Libellés fr/en/it dans `copy/screens/order-cancel.copy.ts`, recueil régénéré
-par `pnpm copy:digest`.
+par `pnpm tool copy:digest`.
 
 ## C6.9 Le courriel et la cloche
 

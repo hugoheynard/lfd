@@ -8,8 +8,8 @@ boutique (`apps/lfc-ecommerce-frontend`) ne régresse plus sur ce qu'une machine
 ## Ce qu'elle fait
 
 ```bash
-pnpm a11y:axe        # la porte : mesure, puis compare à la référence
-pnpm a11y:baseline   # régénère la référence (dev-toolbox/accessibilite/axe-baseline.json)
+pnpm tool a11y:axe        # la porte : mesure, puis compare à la référence
+pnpm tool a11y:baseline   # régénère la référence (dev-toolbox/accessibilite/axe-baseline.json)
 ```
 
 1. Playwright sert l'**aperçu** de la boutique (`preview/`, `ng serve lfc-ecommerce-preview`
@@ -40,7 +40,7 @@ La porte échoue :
 - sur toute scène qui n'a pas pu être mesurée (aperçu qui ne démarre pas, geste introuvable) :
   une page non mesurée n'est pas une page propre.
 
-Après une correction : `pnpm a11y:baseline`, relire le diff de la référence (il ne doit que
+Après une correction : `pnpm tool a11y:baseline`, relire le diff de la référence (il ne doit que
 descendre), et le committer avec la correction.
 
 ## Ce qu'elle couvre

@@ -52,7 +52,7 @@
  * on croirait le travail fini. Ajouter un fichier au SCOPE, c'est déclarer que
  * ses lectures ont un nom et un handler.
  *
- * Usage : `pnpm lint:controller-buses`.
+ * Usage : `pnpm gate controller-buses`.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

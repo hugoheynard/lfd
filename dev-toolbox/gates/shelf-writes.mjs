@@ -25,7 +25,7 @@
  * ces modèles le 2026-11-04.
  *
  * Commentaires retirés : une phrase qui raconte une écriture n'en est pas une.
- * Usage : `pnpm lint:shelf-writes` (branché dans `lint:gates`).
+ * Usage : `pnpm gate shelf-writes` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";

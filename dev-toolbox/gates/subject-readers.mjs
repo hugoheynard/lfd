@@ -33,7 +33,7 @@
  * Les tests ne sont pas lus : un doublé qui fabrique un principal écrit son
  * `subject`, et c'est son travail.
  *
- * Usage : `pnpm lint:subject-readers` (branché dans `lint:gates`).
+ * Usage : `pnpm gate subject-readers` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

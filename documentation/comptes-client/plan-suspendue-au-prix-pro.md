@@ -42,7 +42,7 @@
   suspendu : il commande à son tarif, mais réglé immédiatement — pas au
   compte. »
 - **Les textes de la boutique** qui annoncent le prix public à une société
-  suspendue (`shop-copy`, à chercher) : réécrits, puis `pnpm copy:digest`.
+  suspendue (`shop-copy`, à chercher) : réécrits, puis `pnpm tool copy:digest`.
 - **La limite d'É13** (une ligne ajoutée en révision se tarife au statut du
   jour) disparaît pour la suspension : le prix ne dépend plus d'elle.
 - **Le golden master** (`le-prix-d-un-panier.md` §3) : seules les entrées

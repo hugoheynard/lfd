@@ -65,7 +65,7 @@
 >   ne lui aura pas annoncée ; les durées non décidées sont comptées. Et **43**
 >   depuis le 2026-10-11 avec `lint:shop-copy-digest` : le recueil des textes de
 >   la boutique (`documentation/contenu-ecommerce/textes-de-la-boutique.md`) est
->   généré depuis les dictionnaires, et un texte changé sans `pnpm copy:digest`
+>   généré depuis les dictionnaires, et un texte changé sans `pnpm tool copy:digest`
 >   le fait mentir. Et **44** depuis le 2026-10-12 avec `lint:doc-orphans` :
 >   aucune doc de `documentation/` qui ne soit citée par une autre — le
 >   graphe d'Obsidian les montrait, la porte les tient. Et **45** depuis le
@@ -78,7 +78,7 @@
 >   avec `lint:mail-copy-digest` : le manifeste des textes des e-mails
 >   (`apps/lfd-api/src/mail/templates/copy/mail-copy-manifest.json` — chaque
 >   texte, ses variables permises et obligatoires) est généré depuis le
->   dictionnaire, et un texte changé sans `pnpm mail-copy:digest` le fait
+>   dictionnaire, et un texte changé sans `pnpm tool mail-copy:digest` le fait
 >   mentir. Et **48** le même jour avec `lint:company-role-readers` : le rôle
 >   d'une personne dans une société — propre, ou hérité du principal par ses
 >   sites — ne se lit que par la requête partagée `readCompanyStanding`
@@ -88,7 +88,7 @@
 >   avec `lint:rgaa-digest` : le suivi des corrections d'accessibilité publié
 >   dans le dialogue de la boutique est tiré de la grille d'audit
 >   (`documentation/accessibilite/grille-audit-rgaa.json`), et une ligne changée
->   sans `pnpm rgaa:digest` le fait mentir. Et **50** depuis le 2026-10-31
+>   sans `pnpm tool rgaa:digest` le fait mentir. Et **50** depuis le 2026-10-31
 >   avec `lint:typical-buyer` : l'acheteur « type » de l'export de grille de
 >   prix (un pro sans société, pour l'aperçu du staff) ne se fabrique que
 >   dans `pricing/application/price-grid-*` — ailleurs, il publierait un prix
@@ -137,7 +137,13 @@
 >   `mail.sendAndAwaitReceipt` (immédiat, on attend le reçu de Resend) ne
 >   s'appelle hors du bloc `mail` que depuis une liste admise et datée,
 >   chaque appelant avec sa raison, et une entrée qui ne l'appelle plus
->   échoue. C'est la
+>   échoue. Et **62** le même jour avec `lint:no-stale-commands` : les
+>   portes ont quitté le `package.json` racine pour `lint/lint-backend.json`
+>   (`pnpm gate <nom>`, `pnpm gate --list`, `pnpm lint:watch`) et les outils
+>   occasionnels pour `lint/tools.json` (`pnpm tool <nom>`) ; une citation
+>   d'une commande retirée échoue, avec son fichier et sa ligne. Le lanceur
+>   (`lint/run.mjs`) refuse de tourner si le compte du § 10 ne dit plus la
+>   liste. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -799,7 +805,7 @@ src/orders/application/commands/__tests__/place-order.handler.spec.ts
 Seule exception : les e2e HTTP, qui traversent l'app entière et n'appartiennent à
 aucun module — ils restent dans `test/*.e2e-spec.ts` à la racine de l'app.
 
-`pnpm lint:tests-colocated` le tient, sur `apps/lfd-api/src` **et lui seul** :
+`pnpm gate tests-colocated` le tient, sur `apps/lfd-api/src` **et lui seul** :
 les frontends prescrivent l'inverse (« un spec par NOUVEAU composant,
 colocalisé »), et un dossier par composant y rend déjà visible ce qui est testé.
 La raison de la règle côté backend est la même que celle de leur exception : on
@@ -950,7 +956,7 @@ la même bombe, déguisée en donnée métier.
 ## 6. Qualité de code
 
 - **Zéro `any`, zéro `as unknown as T`, zéro `@ts-ignore`, zéro
-  `eslint-disable`.** `pnpm lint:no-type-escapes` tient les trois derniers
+  `eslint-disable`.** `pnpm gate no-type-escapes` tient les trois derniers
   depuis le 2026-09-03 — le premier l'était déjà par ESLint. Directives : zéro,
   partout. `as unknown as` : **deux fichiers** (quinze jusqu'au 2026-09-27, seize jusqu'au 2026-09-18), tous des tests, comptés et
   affichés ; un fichier hors liste qui en gagne un échoue, un fichier nettoyé
@@ -984,7 +990,7 @@ paierait au démarrage plutôt qu'à la compilation, vit dans le `catalog:` de
 `pnpm-workspace.yaml`. Les `package.json` écrivent `"catalog:"` — jamais une
 plage. Un bump se fait alors sur une ligne, une fois, pour tout le dépôt.
 
-La règle est **vérifiée**, pas espérée : `pnpm lint:catalog-shared-deps`
+La règle est **vérifiée**, pas espérée : `pnpm gate catalog-shared-deps`
 échoue dès qu'un paquet déclaré par deux manifestes porte une plage au lieu de
 `catalog:`. Pin **exact** dans le catalogue : on adopte une version, on ne la
 subit pas.
@@ -1098,7 +1104,7 @@ pas, une exception tacite si :
   lecteur, pour toujours. Réécrire une graphie n'altère ni le fait, ni le sujet,
   ni la charge — c'est une traduction, pas une falsification.
 
-`pnpm lint:code-language` tient la ligne : les dossiers drainés échouent au
+`pnpm gate code-language` tient la ligne : les dossiers drainés échouent au
 premier mot français, le reste est compté et affiché à chaque exécution.
 
 ### JSDoc
@@ -1318,8 +1324,8 @@ Sans uv, `pnpm install` réussit quand même et dit la commande à lancer.
 ```bash
 pnpm dev:infra          # Postgres de dev (localhost:5433) — requis pour les e2e
 pnpm dev:infra:down     # arrêt, données conservées
-pnpm dev:infra:nuke     # arrêt + destruction du volume
-pnpm dev:map:refresh    # refabrique graphe OSRM + tuiles (dev:infra les fait une fois)
+pnpm tool dev:infra:nuke  # arrêt + destruction du volume
+pnpm tool dev:map:refresh # refabrique graphe OSRM + tuiles (dev:infra les fait une fois)
 
 pnpm --filter lfd-api dev        # Nest en watch
 pnpm --filter lfd-api lint
@@ -1335,8 +1341,10 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 61 portes du dépôt, d’un coup
-pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
+pnpm lint:gates         # les 62 portes du dépôt, toutes, et un résumé à la fin
+pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
+pnpm lint:watch         # relance les portes dont un fichier lu change
+pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>
 ```
 
 Configurations WebStorm en un clic : `.run/`.

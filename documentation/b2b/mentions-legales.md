@@ -226,7 +226,7 @@ fait.
 
 - La source est la grille d'audit, clé `corrections` et `audit`
   ([`../accessibilite/grille-audit-rgaa.md`](../accessibilite/grille-audit-rgaa.md)) ;
-  l'API sert sa part publique, embarquée par `pnpm rgaa:digest`, par
+  l'API sert sa part publique, embarquée par `pnpm tool rgaa:digest`, par
   `GET /content/accessibility-follow-up`. Aucune table, aucune édition au
   back-office.
 - Le composant (`client/accessibility-follow-up/`) est **différé** (`@defer`)

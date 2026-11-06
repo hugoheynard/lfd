@@ -10,7 +10,7 @@ import { POSITION_RETENTION_DAYS } from "../services/position-retention.js";
  * 🔴 **Ce texte est tenu par une porte.** `documentation/legal/rgpd-registre.json`
  * porte `texteInformation: { version, empreinte }` : l'empreinte des entrées
  * `livreur` du registre doit être celle que CETTE version a vue
- * (`pnpm lint:rgpd-staff`). Ajouter une donnée du livreur fait échouer la porte
+ * (`pnpm gate rgpd-staff`). Ajouter une donnée du livreur fait échouer la porte
  * tant qu'on n'a pas écrit ici une nouvelle version — et une nouvelle version
  * réaffiche le dialogue une fois à chaque livreur.
  *

@@ -86,7 +86,7 @@
   déclarée, dans les trois langues.
 - **Le manifeste** `apps/lfd-api/src/mail/templates/copy/mail-copy-manifest.json`
   (e-mail → clé → variables permises, obligatoires → texte français) est
-  généré par `pnpm mail-copy:digest` ; `lint:mail-copy-digest` (47ᵉ porte)
+  généré par `pnpm tool mail-copy:digest` ; `lint:mail-copy-digest` (47ᵉ porte)
   refuse qu'il retarde. 325 textes, 28 e-mails.
 - **Aucun octet changé** : `apps/lfd-api/src/mail/templates/__tests__/mail-rendering-golden.spec.ts` compare
   81 cas (chaque branche de chaque e-mail, en français) aux empreintes

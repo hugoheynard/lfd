@@ -72,7 +72,7 @@
  * Un plancher qu'on serre jusqu'à frôler le vrai finit désactivé au premier
  * document court et légitime. Celui-ci a de la marge par construction.
  *
- * Usage : `pnpm lint:doc-substance` (branché dans `lint:gates` dans le MÊME
+ * Usage : `pnpm gate doc-substance` (branché dans `lint:gates` dans le MÊME
  * commit qui écrit cette porte — cf. l'avertissement de `no-direct-env.mjs`,
  * restée des mois sans tourner nulle part parce que personne ne l'appelait).
  */

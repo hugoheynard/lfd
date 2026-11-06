@@ -51,8 +51,7 @@
    d'allergènes, rien d'autre ; l'e2e qui énumère ses clés est mis à jour.
 4. **Boutique** : fiche produit — « Allergènes : … », « Peut contenir : … »,
    ou « Aucun allergène », ou « Information précise non disponible — peut
-   contenir : … » ; textes dans les dictionnaires fr/en/it (`pnpm
-copy:digest`) ; budget du bundle initial (`ng build -c cloudflare`) et
+   contenir : … » ; textes dans les dictionnaires fr/en/it (`pnpm tool copy:digest`) ; budget du bundle initial (`ng build -c cloudflare`) et
    accessibilité (porte axe) tenus.
 
 ## 3. Ce qui ne change pas

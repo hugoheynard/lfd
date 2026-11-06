@@ -31,7 +31,7 @@
  * Ce qu'elle ne voit pas, et c'est dit : une lecture IMBRIQUÉE (une table de
  * l'instantané en `include` d'un autre modèle), et un accès au client par
  * une clé calculée. Commentaires retirés.
- * Usage : `pnpm lint:catalogue-door` (branché dans `lint:gates`).
+ * Usage : `pnpm gate catalogue-door` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";

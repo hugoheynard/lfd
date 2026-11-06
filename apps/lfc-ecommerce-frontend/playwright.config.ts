@@ -14,7 +14,7 @@ const PORT = 4318;
  * démarrée sur un backend simulé dans la page — déterministe, sans réseau,
  * sans compte. Chaque scène écrit ses violations axe dans `tmp/axe-results/` ;
  * c'est `dev-toolbox/accessibilite/axe-gate.mjs` qui les compare à la
- * référence. Ne se lance pas seule : `pnpm a11y:axe` à la racine.
+ * référence. Ne se lance pas seule : `pnpm tool a11y:axe` à la racine.
  */
 export default defineConfig({
   testDir: './a11y',

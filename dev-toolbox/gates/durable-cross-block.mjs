@@ -48,7 +48,7 @@
  * mémoire de celui qui l'a fait, et la ligne resterait un passe-droit. Le
  * solde est compté et affiché à chaque passage.
  *
- * Usage : `pnpm lint:durable-cross-block`.
+ * Usage : `pnpm gate durable-cross-block`.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";

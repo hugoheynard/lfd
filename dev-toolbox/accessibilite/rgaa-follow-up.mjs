@@ -6,7 +6,7 @@
  * pas de quoi publier. Ce module n'en garde que ce que le public peut lire —
  * les corrections, l'état de l'audit et, une fois l'audit fini, les comptes
  * par thématique — et le rend dans la forme du contrat
- * `AccessibilityFollowUpView` (`packages/contracts`). `pnpm rgaa:digest` écrit
+ * `AccessibilityFollowUpView` (`packages/contracts`). `pnpm tool rgaa:digest` écrit
  * le résultat dans l'API ; `lint:rgaa-digest` refuse qu'il retarde.
  */
 import { readFileSync } from "node:fs";
@@ -17,7 +17,7 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 export const GRID_PATH = "documentation/accessibilite/grille-audit-rgaa.json";
 export const EMBEDDED_PATH =
   "apps/lfd-api/src/b2b/content/infrastructure/embedded/accessibility-follow-up.json";
-export const REGENERATE = "pnpm rgaa:digest";
+export const REGENERATE = "pnpm tool rgaa:digest";
 
 const THEMES = 13;
 const STATUSES = { fait: "done", en_cours: "in_progress", prevu: "planned" };

@@ -17,7 +17,7 @@
  * d'un autre bloc que si la matrice l'autorise. Il ne dit rien de la qualité de
  * l'import, ni de son sens — seulement de sa **direction**.
  *
- * Usage : `pnpm lint:context-boundaries` (branché en CI).
+ * Usage : `pnpm gate context-boundaries` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

@@ -34,7 +34,7 @@
  * définition (`@lfd/money`). Le dire ici plutôt que de laisser croire que la
  * porte couvre tout.
  *
- * Usage : `pnpm lint:price-pipeline` (branché dans `lint:gates`).
+ * Usage : `pnpm gate price-pipeline` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

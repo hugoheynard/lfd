@@ -1,0 +1,479 @@
+{
+  "$comment": "Les portes du dépôt, dans l'ordre où `pnpm lint:gates` les lance. Lu par lint/run.mjs. `since` : la date à laquelle le fichier de la porte est entré dans le dépôt (historique git, relevé le 2026-11-06). `watch` : les chemins qu'elle lit, pour `pnpm lint:watch` — larges en cas de doute. Une porte ajoutée ici l'est aussi au compte du § 10 de CLAUDE.md, que le lanceur vérifie.",
+  "gates": [
+    {
+      "name": "api-types",
+      "script": "dev-toolbox/gates/api-types-from-contracts.mjs",
+      "holds": "Un front ne redéclare pas les types que l'API lui sert : ils viennent du paquet de contrats.",
+      "since": "2026-08-29",
+      "watch": [
+        "apps/lfd-backoffice-frontend/src/**",
+        "apps/lfc-ecommerce-frontend/src/**",
+        "packages/contracts/src/**"
+      ]
+    },
+    {
+      "name": "dated-decisions",
+      "script": "dev-toolbox/gates/dated-decisions.mjs",
+      "holds": "Toute décision qui entre dans la résolution du prix porte une fenêtre de validité.",
+      "since": "2026-09-09",
+      "watch": ["apps/lfd-api/src/b2b/**"]
+    },
+    {
+      "name": "no-direct-env",
+      "script": "dev-toolbox/gates/no-direct-env.mjs",
+      "holds": "L'environnement ne se lit que par AppConfig, jamais par process.env.",
+      "since": "2026-07-21",
+      "watch": ["apps/**"]
+    },
+    {
+      "name": "no-type-escapes",
+      "script": "dev-toolbox/gates/no-type-escapes.mjs",
+      "holds": "Ni @ts-ignore, ni eslint-disable, ni `as unknown as` hors de la dette comptée.",
+      "since": "2026-09-03",
+      "watch": ["apps/**", "packages/**", "gateway/**"]
+    },
+    {
+      "name": "money-units",
+      "script": "dev-toolbox/gates/money-units.mjs",
+      "holds": "Un montant en centimes ne se dérive pas d'un prix en millicentimes par une multiplication à la main.",
+      "since": "2026-09-06",
+      "watch": ["apps/**", "packages/**"]
+    },
+    {
+      "name": "price-door",
+      "script": "dev-toolbox/gates/price-door.mjs",
+      "holds": "Un prix se demande par la porte `Pricer.load`, pas par ses rouages.",
+      "since": "2026-09-09",
+      "watch": ["apps/lfd-api/**"]
+    },
+    {
+      "name": "typical-buyer",
+      "script": "dev-toolbox/gates/typical-buyer.mjs",
+      "holds": "Le pro « type » ne se fabrique que dans l'export de la grille de prix.",
+      "since": "2026-10-31",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "price-pipeline",
+      "script": "dev-toolbox/gates/price-pipeline.mjs",
+      "holds": "Il n'y a qu'un chemin pour fabriquer un prix (`resolvePrice`), et ses entrées sont nommées.",
+      "since": "2026-09-08",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "prisma-model-ownership",
+      "script": "dev-toolbox/gates/prisma-model-ownership.mjs",
+      "holds": "Un modèle Prisma n'est lu que par le bloc qui l'écrit.",
+      "since": "2026-09-08",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/prisma/schema/**"]
+    },
+    {
+      "name": "prisma-schema-layout",
+      "script": "dev-toolbox/gates/prisma-schema-layout.mjs",
+      "holds": "Un fichier du schéma Prisma est rangé sous le dossier du schéma Postgres qu'il déclare.",
+      "since": "2026-09-10",
+      "watch": ["apps/lfd-api/prisma/schema/**"]
+    },
+    {
+      "name": "business-day",
+      "script": "dev-toolbox/gates/business-day.mjs",
+      "holds": "Un jour se convertit en instant à l'heure de Paris, jamais en UTC.",
+      "since": "2026-09-08",
+      "watch": [
+        "apps/lfd-backoffice-frontend/src/**",
+        "apps/lfc-ecommerce-frontend/src/**",
+        "apps/lfd-api/src/b2b/**"
+      ]
+    },
+    {
+      "name": "clock-port",
+      "script": "dev-toolbox/gates/clock-port.mjs",
+      "holds": "Le temps et l'aléa passent par un port (Clock, IdGenerator), jamais par new Date() ni Math.random().",
+      "since": "2026-09-03",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "catalog-shared-deps",
+      "script": "dev-toolbox/gates/catalog-shared-deps.mjs",
+      "holds": "Une dépendance déclarée par deux manifestes prend sa version au catalogue pnpm.",
+      "since": "2026-08-19",
+      "watch": ["**/package.json", "pnpm-workspace.yaml"]
+    },
+    {
+      "name": "catalogue-authority",
+      "script": "dev-toolbox/gates/catalogue-authority.mjs",
+      "holds": "Seul `b2b/catalog/` frappe un article scellé du catalogue.",
+      "since": "2026-09-09",
+      "watch": ["apps/lfd-api/**"]
+    },
+    {
+      "name": "no-shelf-literals",
+      "script": "dev-toolbox/gates/no-shelf-literals.mjs",
+      "holds": "Aucun rayon écrit en dur dans le code : la famille est une donnée.",
+      "since": "2026-09-26",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/test/**", "packages/**"]
+    },
+    {
+      "name": "no-role-grants-in-migrations",
+      "script": "dev-toolbox/gates/no-role-grants-in-migrations.mjs",
+      "holds": "Une migration ajoute une ressource, jamais un droit à un rôle.",
+      "since": "2026-10-01",
+      "watch": ["apps/lfd-api/prisma/migrations/**"]
+    },
+    {
+      "name": "code-language",
+      "script": "dev-toolbox/gates/code-language.mjs",
+      "holds": "Les identifiants sont en anglais ; la dette des dossiers non drainés est comptée.",
+      "since": "2026-08-24",
+      "watch": ["apps/**", "packages/**", "documentation/langue-du-code.md"]
+    },
+    {
+      "name": "context-boundaries",
+      "script": "dev-toolbox/gates/context-boundaries.mjs",
+      "holds": "Un bloc n'importe un autre bloc que si la matrice du § 3 le permet, et par son canal.",
+      "since": "2026-08-18",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "controller-buses",
+      "script": "dev-toolbox/gates/controller-buses.mjs",
+      "holds": "Un contrôleur n'injecte que CommandBus et QueryBus.",
+      "since": "2026-09-01",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "front-money-reads",
+      "script": "dev-toolbox/gates/front-money-reads.mjs",
+      "holds": "Un écran lit ses montants, il ne les calcule pas.",
+      "since": "2026-11-04",
+      "watch": [
+        "apps/lfd-backoffice-frontend/src/**",
+        "apps/lfc-ecommerce-frontend/src/**",
+        "packages/b2b-ui/src/**"
+      ]
+    },
+    {
+      "name": "context-keyed-readers",
+      "script": "dev-toolbox/gates/context-keyed-readers.mjs",
+      "holds": "Un lecteur de la boutique lit l'espace du client par la brique `client/context-keyed/`.",
+      "since": "2026-11-05",
+      "watch": ["apps/lfc-ecommerce-frontend/src/app/**"]
+    },
+    {
+      "name": "durable-cross-block",
+      "script": "dev-toolbox/gates/durable-cross-block.mjs",
+      "holds": "Un fait qui traverse un bloc passe par la boîte d'envoi (@DurableHandler), pas par le bus en mémoire.",
+      "since": "2026-10-04",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "mail-through-block",
+      "script": "dev-toolbox/gates/mail-through-block.mjs",
+      "holds": "Un e-mail s'envoie par la porte `Mail` du bloc `mail` ; personne d'autre n'injecte le mailer.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "mail-receipt-admitted",
+      "script": "dev-toolbox/gates/mail-receipt-admitted.mjs",
+      "holds": "`mail.sendAndAwaitReceipt` ne s'appelle que depuis une liste admise, et la porte `Mail` s'injecte sous le nom `mail`.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "handler-per-file",
+      "script": "dev-toolbox/gates/handler-per-file.mjs",
+      "holds": "Un seul handler par fichier.",
+      "since": "2026-09-09",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "cross-schema-join",
+      "script": "dev-toolbox/gates/cross-schema-join.mjs",
+      "holds": "Aucune requête SQL brute ne joint deux schémas Postgres.",
+      "since": "2026-08-18",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/prisma/schema/**"]
+    },
+    {
+      "name": "deployed-app-files",
+      "script": "dev-toolbox/gates/deployed-app-files.mjs",
+      "holds": "Une app conteneurisée ne déclare pas de champ `files` dans son manifeste.",
+      "since": "2026-08-19",
+      "watch": ["apps/*/package.json"]
+    },
+    {
+      "name": "doc-references",
+      "script": "dev-toolbox/gates/doc-references.mjs",
+      "holds": "Un fichier nommé dans la documentation existe encore.",
+      "since": "2026-09-06",
+      "watch": ["**"]
+    },
+    {
+      "name": "doc-substance",
+      "script": "dev-toolbox/gates/doc-substance.mjs",
+      "holds": "Un document normatif ne se vide pas sans que quelqu'un le décide.",
+      "since": "2026-09-07",
+      "watch": ["documentation/**", "CLAUDE.md", "apps/*/CLAUDE.md"]
+    },
+    {
+      "name": "doc-orphans",
+      "script": "dev-toolbox/gates/doc-orphans.mjs",
+      "holds": "Aucune doc de `documentation/` n'est orpheline : une autre la cite.",
+      "since": "2026-10-12",
+      "watch": ["documentation/**"]
+    },
+    {
+      "name": "e2e-durations",
+      "script": "dev-toolbox/gates/e2e-durations.mjs",
+      "holds": "Chaque suite e2e a sa durée mesurée, pour le découpage en shards.",
+      "since": "2026-08-29",
+      "watch": ["apps/lfd-api/test/**"]
+    },
+    {
+      "name": "events-tracked",
+      "script": "dev-toolbox/gates/events-tracked.mjs",
+      "holds": "Un abonné d'événement s'inscrit au travail de fond (BackgroundWork).",
+      "since": "2026-08-12",
+      "watch": ["apps/**"]
+    },
+    {
+      "name": "fold-tokens",
+      "script": "dev-toolbox/gates/fold-tokens.mjs",
+      "holds": "On ne lit que des variables CSS fold qui existent.",
+      "since": "2026-08-15",
+      "watch": ["apps/**", "packages/**"]
+    },
+    {
+      "name": "fold-unknown-attributes",
+      "script": "dev-toolbox/gates/fold-unknown-attributes.mjs",
+      "holds": "Un attribut posé sur un composant fold existe chez fold ; la dette est comptée.",
+      "since": "2026-09-10",
+      "watch": ["apps/**", "packages/**"]
+    },
+    {
+      "name": "fold-typography",
+      "script": "dev-toolbox/gates/fold-typography.mjs",
+      "holds": "La typographie et les couleurs passent par les tokens fold.",
+      "since": "2026-08-23",
+      "watch": [
+        "apps/lfd-backoffice-frontend/src/**",
+        "apps/lfc-ecommerce-frontend/src/**",
+        "packages/b2b-ui/src/**"
+      ]
+    },
+    {
+      "name": "import-cycles",
+      "script": "dev-toolbox/gates/import-cycles.mjs",
+      "holds": "Aucun cycle d'import entre les modules d'une même app ou d'un même paquet.",
+      "since": "2026-08-22",
+      "watch": ["apps/*/src/**", "packages/*/src/**"]
+    },
+    {
+      "name": "mermaid",
+      "script": "dev-toolbox/gates/mermaid.mjs",
+      "holds": "Un diagramme Mermaid de la documentation se dessine vraiment.",
+      "since": "2026-08-31",
+      "watch": ["**/*.md"]
+    },
+    {
+      "name": "journal-tracked",
+      "script": "dev-toolbox/gates/journal-tracked.mjs",
+      "holds": "Un handler qui écrit un acte dont on devra répondre le journalise.",
+      "since": "2026-08-25",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "pim-data-neutral",
+      "script": "dev-toolbox/gates/pim-data-neutral.mjs",
+      "holds": "La couche modèle du référentiel côté front ne connaît aucun canal.",
+      "since": "2026-08-23",
+      "watch": ["apps/*/src/app/pim/data/**"]
+    },
+    {
+      "name": "former-channel-name",
+      "script": "dev-toolbox/gates/former-channel-name.mjs",
+      "holds": "Le nom de l'ancien canal de vente en ligne ne revient pas dans le dépôt.",
+      "since": "2026-10-16",
+      "watch": ["**"]
+    },
+    {
+      "name": "router-links",
+      "script": "dev-toolbox/gates/router-links.mjs",
+      "holds": "Un lien absolu d'un front mène à une route qui existe.",
+      "since": "2026-08-21",
+      "watch": ["apps/lfd-backoffice-frontend/src/app/**", "apps/lfc-ecommerce-frontend/src/app/**"]
+    },
+    {
+      "name": "sku-never-recycled",
+      "script": "dev-toolbox/gates/sku-never-recycled.mjs",
+      "holds": "Un SKU n'est jamais réattribué : aucune suppression physique de produit ou de variante.",
+      "since": "2026-09-01",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "subject-readers",
+      "script": "dev-toolbox/gates/subject-readers.mjs",
+      "holds": "Le `sub` du jeton ne se lit que là où il sert à l'identité.",
+      "since": "2026-09-18",
+      "watch": ["apps/**"]
+    },
+    {
+      "name": "company-role-readers",
+      "script": "dev-toolbox/gates/company-role-readers.mjs",
+      "holds": "Le rôle d'une personne dans une société ne se lit que par `readCompanyStanding`.",
+      "since": "2026-10-23",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "auth0-id-readers",
+      "script": "dev-toolbox/gates/auth0-id-readers.mjs",
+      "holds": "L'identifiant de connexion rangé en base ne se lit que pour l'identité et ne s'écrit jamais dans un message.",
+      "since": "2026-09-18",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "rgpd-staff",
+      "script": "dev-toolbox/gates/rgpd-staff.mjs",
+      "holds": "Toute colonne qui porte une donnée personnelle est au registre RGPD.",
+      "since": "2026-10-06",
+      "watch": ["apps/lfd-api/prisma/schema/**", "apps/lfd-api/src/**", "documentation/legal/**"]
+    },
+    {
+      "name": "shop-copy-digest",
+      "script": "dev-toolbox/gates/shop-copy-digest.mjs",
+      "holds": "Le recueil des textes de la boutique est à jour des dictionnaires (`pnpm tool copy:digest`).",
+      "since": "2026-10-11",
+      "watch": [
+        "apps/lfc-ecommerce-frontend/src/app/client/copy/**",
+        "apps/lfd-api/src/b2b/shop-copy/**",
+        "documentation/contenu-ecommerce/**",
+        "dev-toolbox/shop-copy/**",
+        "dev-toolbox/shop-copy-digest.mjs"
+      ]
+    },
+    {
+      "name": "rgaa-digest",
+      "script": "dev-toolbox/gates/rgaa-digest.mjs",
+      "holds": "Le suivi d'accessibilité que l'API sert est à jour de la grille d'audit (`pnpm tool rgaa:digest`).",
+      "since": "2026-10-26",
+      "watch": [
+        "documentation/accessibilite/**",
+        "apps/lfd-api/src/b2b/content/**",
+        "dev-toolbox/accessibilite/**",
+        "dev-toolbox/rgaa-digest.mjs",
+        "packages/contracts/src/**"
+      ]
+    },
+    {
+      "name": "mail-copy-digest",
+      "script": "dev-toolbox/gates/mail-copy-digest.mjs",
+      "holds": "Le manifeste des textes des e-mails est à jour du dictionnaire (`pnpm tool mail-copy:digest`).",
+      "since": "2026-10-23",
+      "watch": [
+        "apps/lfd-api/src/mail/**",
+        "dev-toolbox/mail-copy/**",
+        "dev-toolbox/mail-copy-digest.mjs"
+      ]
+    },
+    {
+      "name": "test-dates",
+      "script": "dev-toolbox/gates/test-dates.mjs",
+      "holds": "Aucune date absolue dans une fixture qui sème le journal.",
+      "since": "2026-08-29",
+      "watch": ["apps/*/test/**", "apps/*/src/**"]
+    },
+    {
+      "name": "tests-colocated",
+      "script": "dev-toolbox/gates/tests-colocated.mjs",
+      "holds": "Un test du backend vit dans un `__tests__/` à côté de ce qu'il teste.",
+      "since": "2026-09-03",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/test/**"]
+    },
+    {
+      "name": "withdrawn-filter",
+      "script": "dev-toolbox/gates/withdrawn-filter.mjs",
+      "holds": "Aucune lecture de `catalog_items` n'oublie le retrait (`withdrawnAt: null`).",
+      "since": "2026-09-02",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "pdf-specimens",
+      "script": "dev-toolbox/gates/pdf-specimens.mjs",
+      "holds": "Tout PDF que le système produit a son exemple sur la planche des documents.",
+      "since": "2026-10-22",
+      "watch": [
+        "apps/lfd-api/src/**",
+        "apps/lfd-backoffice-frontend/src/app/comptabilite/**",
+        "documentation/comptabilite/planche-des-documents.md"
+      ]
+    },
+    {
+      "name": "spec-types",
+      "command": ["pnpm", "--filter", "lfd-api", "run", "typecheck:tests"],
+      "holds": "Les specs de lfd-api se typent (leur tsconfig propre, que `tsc --noEmit` ne lit pas).",
+      "since": "2026-09-12",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/test/**", "packages/*/src/**"]
+    },
+    {
+      "name": "cache-control",
+      "script": "dev-toolbox/gates/cache-control.mjs",
+      "holds": "Aucune réponse de l'API ne s'offre à un cache partagé hors d'une liste admise.",
+      "since": "2026-11-02",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/container/**", "gateway/src/**"]
+    },
+    {
+      "name": "day-version-door",
+      "script": "dev-toolbox/gates/day-version-door.mjs",
+      "holds": "Une seule porte pour savoir si une journée a changé.",
+      "since": "2026-11-03",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-backoffice-frontend/src/**"]
+    },
+    {
+      "name": "container-start",
+      "script": "dev-toolbox/gates/container-start.mjs",
+      "holds": "Un container qui intercepte ses sorties démarre quand même (ContainerProxy exporté, ctx.exports).",
+      "since": "2026-11-04",
+      "watch": [
+        "apps/lfd-api/wrangler.jsonc",
+        "apps/lfd-api/container/**",
+        "apps/lfd-route-planner/**"
+      ]
+    },
+    {
+      "name": "shelf-writes",
+      "script": "dev-toolbox/gates/shelf-writes.mjs",
+      "holds": "Qui écrit un modèle que le rayon lit émet le signal de purge `ShelfChanges`.",
+      "since": "2026-11-04",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/prisma/schema/**"]
+    },
+    {
+      "name": "context-version-columns",
+      "script": "dev-toolbox/gates/context-version-columns.mjs",
+      "holds": "Toute colonne d'une table de l'instantané du catalogue est classée face à la version de son contexte.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/b2b/catalog/infrastructure/**", "apps/lfd-api/prisma/**"]
+    },
+    {
+      "name": "shelf-changes-after-commit",
+      "script": "dev-toolbox/gates/shelf-changes-after-commit.mjs",
+      "holds": "Le signal des rayons part après la validation, et par un seul chemin.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "catalogue-door",
+      "script": "dev-toolbox/gates/catalogue-door.mjs",
+      "holds": "Le catalogue servi se lit par l'instantané, pas en direct.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "no-stale-commands",
+      "script": "dev-toolbox/gates/no-stale-commands.mjs",
+      "holds": "Aucune commande retirée du package.json racine n'est encore citée (`pnpm lint:x` → `pnpm gate x`, outils → `pnpm tool`).",
+      "since": "2026-11-06",
+      "watch": ["**"]
+    }
+  ]
+}

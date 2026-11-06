@@ -25,7 +25,7 @@
  * d'une fiche avec un canal, et c'est légitime — un opérateur veut le voir à côté du
  * produit. Ce gate ne garde que la couche partagée, là où l'accident est muet.
  *
- * Usage : `pnpm lint:pim-data-neutral` (branché en CI).
+ * Usage : `pnpm gate pim-data-neutral` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

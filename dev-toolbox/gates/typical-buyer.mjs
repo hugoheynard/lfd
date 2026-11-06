@@ -25,7 +25,7 @@
  * compte comme une valeur — comme pour `lint:import-cycles`. Les tests ne
  * sont pas lus : ils éprouvent la fabrique, ils ne servent rien.
  *
- * Usage : `pnpm lint:typical-buyer` (branché dans `lint:gates`).
+ * Usage : `pnpm gate typical-buyer` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

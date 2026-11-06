@@ -11,17 +11,17 @@
  * une nouvelle (spam de fenêtres). Ouverture **opt-in** via `SUITE_OPEN=1`.
  * `SUITE_URL` surcharge l'URL (défaut le back-office).
  */
-import { spawn } from 'node:child_process';
-import { setTimeout as sleep } from 'node:timers/promises';
+import { spawn } from "node:child_process";
+import { setTimeout as sleep } from "node:timers/promises";
 
-const URL = process.env['SUITE_URL'] ?? 'http://localhost:7317';
+const URL = process.env["SUITE_URL"] ?? "http://localhost:7317";
 const DEADLINE_MS = 120_000;
 const POLL_MS = 1500;
 
 /** Vrai dès que l'app accepte une requête (peu importe le code). */
 async function ready() {
   try {
-    await fetch(URL, { redirect: 'manual' });
+    await fetch(URL, { redirect: "manual" });
     return true;
   } catch {
     return false;
@@ -31,12 +31,12 @@ async function ready() {
 /** Ouvre l'URL dans le navigateur par défaut — **opt-in** (`SUITE_OPEN=1`) pour
  *  éviter d'ouvrir une fenêtre à chaque relance du launcher. */
 function openBrowser() {
-  if (!process.env['SUITE_OPEN']) {
+  if (!process.env["SUITE_OPEN"]) {
     return;
   }
   const cmd =
-    process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-  spawn(cmd, [URL], { stdio: 'ignore', detached: true, shell: true }).unref();
+    process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+  spawn(cmd, [URL], { stdio: "ignore", detached: true, shell: true }).unref();
 }
 
 const deadline = Date.now() + DEADLINE_MS;
@@ -49,5 +49,5 @@ while (Date.now() < deadline) {
   await sleep(POLL_MS);
 }
 process.stdout.write(
-  `\n  ⚠️  Back-office pas prêt après ${DEADLINE_MS / 1000}s (${URL}) — voir 'pnpm dev:status'.\n\n`,
+  `\n  ⚠️  Back-office pas prêt après ${DEADLINE_MS / 1000}s (${URL}) — voir 'pnpm tool dev:status'.\n\n`,
 );

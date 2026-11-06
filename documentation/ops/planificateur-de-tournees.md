@@ -369,7 +369,7 @@ ni `ROUTE_PLANNER_TOKEN` ne sont exigés. Graphe absent : le conteneur sort en l
 et redémarre de lui-même dès qu'il apparaît.
 
 ```bash
-pnpm dev:map:refresh   # refabrique graphe + tuiles (ou LFD_MAP_REFRESH=1 pnpm dev:infra)
+pnpm tool dev:map:refresh   # refabrique graphe + tuiles (ou LFD_MAP_REFRESH=1 pnpm dev:infra)
 curl 'http://localhost:5055/route/v1/driving/6.988,45.4481;6.7713,45.5724?overview=false'
 ```
 

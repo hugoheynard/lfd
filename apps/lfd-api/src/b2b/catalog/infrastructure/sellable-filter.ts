@@ -28,7 +28,7 @@
  *    en vente. Silencieusement.
  *
  * Ce qui reste est plus modeste et vrai partout : la condition est nommée, elle
- * s'épand dans le `where`, et `pnpm lint:withdrawn-filter` refuse qu'une
+ * s'épand dans le `where`, et `pnpm gate withdrawn-filter` refuse qu'une
  * nouvelle lecture de `catalogItem` naisse ailleurs que dans les adaptateurs
  * qui la portent.
  *

@@ -348,7 +348,7 @@ model CatalogItem {
   /// récents — ceux sur lesquels un commercial vient de travailler.
   ///
   /// L'objection restante — un SKU réattribué ressusciterait un prix qui ne le
-  /// concerne pas — est tenue par une porte (`pnpm lint:sku-never-recycled`), pas
+  /// concerne pas — est tenue par une porte (`pnpm gate sku-never-recycled`), pas
   /// par une convention.
   ///
   /// 🔴 **La cascade vers `catalog_item_overrides` reste, elle ne se déclenche

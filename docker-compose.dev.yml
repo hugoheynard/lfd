@@ -5,8 +5,8 @@
 # Usage :
 #   pnpm dev:infra              # démarre (docker compose up -d)
 #   pnpm dev:infra:down         # arrête, garde les données
-#   pnpm dev:infra:nuke         # arrête ET détruit les volumes (repart de zéro)
-#   pnpm dev:map:refresh        # refabrique graphe OSRM + tuiles de la carte
+#   pnpm tool dev:infra:nuke         # arrête ET détruit les volumes (repart de zéro)
+#   pnpm tool dev:map:refresh        # refabrique graphe OSRM + tuiles de la carte
 #
 # Miroir prod : Neon (Postgres managé, ADR-09). Même contrat de connexion via
 # `DATABASE_URL` — seule l'URL change. En dev :
@@ -155,7 +155,7 @@ services:
     command:
       - >
         if [ ! -f /data/savoie.osrm.cell_metrics ]; then
-        echo "graphe absent de ~/.cache/lfd-map/graph : lancer pnpm dev:map:refresh"; exit 1; fi;
+        echo "graphe absent de ~/.cache/lfd-map/graph : lancer pnpm tool dev:map:refresh"; exit 1; fi;
         exec osrm-routed --algorithm mld --max-table-size 200 /data/savoie.osrm
     ports:
       - "5055:5000"

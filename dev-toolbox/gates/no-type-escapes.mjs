@@ -40,7 +40,7 @@
  * La dette ne peut donc que décroître, et elle est affichée à chaque exécution
  * plutôt que tue.
  *
- * Usage : `pnpm lint:no-type-escapes` (branché en CI).
+ * Usage : `pnpm gate no-type-escapes` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

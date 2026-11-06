@@ -1,0 +1,75 @@
+{
+  "$comment": "Les outils occasionnels du dépôt, sortis du package.json racine le 2026-11-06 pour qu'un nouvel arrivant n'y lise que l'essentiel. `pnpm tool` les liste, `pnpm tool <nom> [arguments…]` en lance un. `run` est passé à un shell, les arguments suivent.",
+  "tools": [
+    {
+      "name": "copy:digest",
+      "run": "node dev-toolbox/shop-copy-digest.mjs",
+      "does": "Régénère le recueil des textes de la boutique et son manifeste après un texte changé (porte shop-copy-digest)."
+    },
+    {
+      "name": "mail-copy:digest",
+      "run": "node dev-toolbox/mail-copy-digest.mjs",
+      "does": "Régénère le manifeste des textes des e-mails après un texte changé (porte mail-copy-digest)."
+    },
+    {
+      "name": "rgaa:digest",
+      "run": "node dev-toolbox/rgaa-digest.mjs",
+      "does": "Régénère le suivi d'accessibilité que l'API embarque depuis la grille d'audit (porte rgaa-digest)."
+    },
+    {
+      "name": "rgaa:rate",
+      "run": "node dev-toolbox/accessibilite/rgaa-rate.mjs",
+      "does": "Calcule le taux de conformité RGAA de la grille d'audit."
+    },
+    {
+      "name": "a11y:axe",
+      "run": "node dev-toolbox/accessibilite/axe-gate.mjs",
+      "does": "La porte axe de la boutique (Playwright) : refuse une violation d'accessibilité hors de la référence."
+    },
+    {
+      "name": "a11y:baseline",
+      "run": "node dev-toolbox/accessibilite/axe-gate.mjs --update",
+      "does": "Réécrit la référence de la porte axe, à committer quand l'écart est voulu ou la dette remboursée."
+    },
+    {
+      "name": "dev:map:refresh",
+      "run": "node dev-toolbox/ensure-docker.mjs && node dev-toolbox/ensure-map-data.mjs --refresh && docker compose --env-file apps/lfd-route-planner/osrm-version.env -f docker-compose.dev.yml up -d",
+      "does": "Refabrique le graphe OSRM et les tuiles de la carte (dev:infra les fabrique une fois)."
+    },
+    {
+      "name": "dev:infra:nuke",
+      "run": "docker compose --env-file apps/lfd-route-planner/osrm-version.env -f docker-compose.dev.yml down -v",
+      "does": "Arrête l'infra de dev ET détruit ses volumes : la base de dev repart de zéro."
+    },
+    {
+      "name": "dev:status",
+      "run": "node dev-toolbox/suite-status.mjs",
+      "does": "Dit ce qui tourne de la pile de dev (API, fronts, passerelle) et sur quels ports."
+    },
+    {
+      "name": "dev:gateway",
+      "run": "SUITE_URL=http://b2b-admin.localhost:8787 bash dev-toolbox/dev-stack.sh --filter=lfd-gateway... --filter=lfc-ecommerce-frontend... --filter=lfd-api... --filter=lfd-backoffice-frontend...",
+      "does": "Lance la pile de dev derrière la passerelle, comme en production."
+    },
+    {
+      "name": "dev:watch",
+      "run": "turbo run dev --filter=lfd-backoffice-frontend --filter=lfd-api",
+      "does": "Lance le back-office et l'API seuls, en watch."
+    },
+    {
+      "name": "db:dev:sync",
+      "run": "node dev-toolbox/migrate-dev-db.mjs",
+      "does": "Applique les migrations à la base de dev locale (la pile le fait à son démarrage)."
+    },
+    {
+      "name": "setup:hooks",
+      "run": "git config core.hooksPath .githooks",
+      "does": "Branche les hooks git du dépôt (`prepare` le fait déjà à l'installation)."
+    },
+    {
+      "name": "clean",
+      "run": "turbo run clean",
+      "does": "Nettoie les sorties de build de toutes les apps et paquets."
+    }
+  ]
+}

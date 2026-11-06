@@ -22,7 +22,7 @@
  * compatibilité annoncée aux consommateurs ; l'épingler exact le transformerait
  * en exigence, ce qui est le contraire de son rôle.
  *
- * Usage : `pnpm lint:catalog-shared-deps` (branché en CI).
+ * Usage : `pnpm gate catalog-shared-deps` (branché en CI).
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";

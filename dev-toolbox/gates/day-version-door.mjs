@@ -19,7 +19,7 @@
  *   la question que le veilleur pose déjà pour tout l'onglet.
  *
  * Commentaires retirés : une phrase qui raconte l'ancienne route n'est pas
- * une route. Les tests ne sont pas lus. Usage : `pnpm lint:day-version-door`
+ * une route. Les tests ne sont pas lus. Usage : `pnpm gate day-version-door`
  * (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync } from "node:fs";

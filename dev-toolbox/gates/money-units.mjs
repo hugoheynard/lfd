@@ -72,7 +72,7 @@
  *   c'est la SOURCE d'un nom qui est surveillée, pas ce qu'on en fait ensuite.
  *   Sur `D1`, la source suffisait — corriger la source corrige les deux écrans.
  *
- * Usage : `pnpm lint:money-units` (branché dans `lint:gates`).
+ * Usage : `pnpm gate money-units` (branché dans `lint:gates`).
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

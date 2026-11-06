@@ -6,7 +6,7 @@
  * neutraliserait la règle lint, pas ce gate. Il détecte d'ailleurs aussi les
  * tentatives de désactivation de la règle.
  *
- * Usage : `pnpm lint:no-direct-env` (branché en CI et dans le `pre-push`).
+ * Usage : `pnpm gate no-direct-env` (branché en CI et dans le `pre-push`).
  *
  * ⚠️ Cette porte a existé PENDANT DES MOIS sans tourner nulle part. Sa liste de
  * dérogations n'avait pas suivi la croissance du dépôt — treize fichiers

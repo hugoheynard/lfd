@@ -8,5 +8,5 @@
 # rouge en CI, huit minutes pour deux sauts de ligne.
 #
 # S'installe seul au `pnpm install` (script `prepare`) ; à la main :
-#   pnpm run setup:hooks
+#   pnpm tool setup:hooks
 pnpm exec lint-staged

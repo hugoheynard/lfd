@@ -39,7 +39,7 @@
  * Elle lit le schéma et les migrations ; elle ne recopie aucune liste de
  * tables.
  *
- * Usage : `pnpm lint:context-version-columns` (branché dans `lint:gates`).
+ * Usage : `pnpm gate context-version-columns` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";

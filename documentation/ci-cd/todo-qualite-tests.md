@@ -218,7 +218,7 @@ d'app déployée, événements suivis.
 
 Il n'existe **aucune commande qui les lance toutes**. `pnpm lint` fait
 `turbo run lint`, c'est-à-dire ESLint par app — et rien d'autre. Chaque garde a
-son script (`pnpm lint:fold-tokens`, …), qu'il faut connaître et appeler une par
+son script (`pnpm gate fold-tokens`, …), qu'il faut connaître et appeler une par
 une.
 
 Conséquence observée : une session entière de travail vérifiée par ESLint,

@@ -6,7 +6,7 @@ import renamesJson from "./embedded/shop-copy-renames.json" with { type: "json" 
  * **Le manifeste et les renommages que cette API a compilés** (plan §10, B1).
  *
  * Les deux fichiers de `embedded/` sont des COPIES de ceux de la boutique,
- * déposées par `pnpm copy:digest` : l'émission de l'API part de `src/` et le
+ * déposées par `pnpm tool copy:digest` : l'émission de l'API part de `src/` et le
  * déploiement n'empaquette qu'elle. `lint:shop-copy-digest` refuse une copie
  * qui diffère de sa source — API et boutique valident donc contre les mêmes
  * clés quand elles sortent du même commit.

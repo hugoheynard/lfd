@@ -20,7 +20,7 @@
  * - un fichier qui **surcharge** un token fold pour l'application entière (le
  *   `styles.scss` d'une app), pour la même raison.
  *
- * Usage : `pnpm lint:fold-tokens` (branché en CI).
+ * Usage : `pnpm gate fold-tokens` (branché en CI).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";

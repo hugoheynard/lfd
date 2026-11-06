@@ -321,7 +321,7 @@ ne le peut pas sur une autre origine) quand le navigateur le permet.
   `GET /admin/shop-copy`, `PUT /admin/shop-copy/drafts`,
   `POST /admin/shop-copy/resets`, `POST|GET /admin/shop-copy/publications`.
   Fait `shop_copy.published` (avant/après par texte).
-- **Manifeste embarqué** : `pnpm copy:digest` dépose une copie à l'identique
+- **Manifeste embarqué** : `pnpm tool copy:digest` dépose une copie à l'identique
   du manifeste et des renommages sous
   `apps/lfd-api/src/b2b/shop-copy/infrastructure/embedded/` — l'émission de
   l'API part de `src/` et son déploiement n'empaquette qu'elle.

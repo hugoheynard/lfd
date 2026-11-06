@@ -222,7 +222,7 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   (`apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary.service.ts`).
 - **Textes** : `apps/lfc-ecommerce-frontend/src/app/client/copy/screens/order-summary.copy.ts` (fr/en/it), sous
   `orders.summary`, rangé dans `dev-toolbox/shop-copy/spaces.mjs` ; recueil
-  régénéré (`pnpm copy:digest`).
+  régénéré (`pnpm tool copy:digest`).
 - ⚠️ **« N sans date » n'est toujours pas servi** (§7) : la phrase de l'écran
   dit la règle, pas le compte.
 - Tests : `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-period.spec.ts`,

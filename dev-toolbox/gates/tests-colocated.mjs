@@ -24,7 +24,7 @@
  *   entière et n'appartiennent à aucun module — c'est l'exception que §5 nomme.
  *   Ils vivent hors de `src/`, donc hors de portée sans qu'on ait à les exclure.
  *
- * Usage : `pnpm lint:tests-colocated` (branché en CI).
+ * Usage : `pnpm gate tests-colocated` (branché en CI).
  */
 import { readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";

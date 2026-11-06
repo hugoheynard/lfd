@@ -212,7 +212,7 @@ l'annonce ; le registre (`documentation/legal/rgpd-registre.json`) porte les six
 colonnes en catégorie `position`, conservation 60 jours, et l'empreinte que la
 v2 a vue. Trois liens tiennent le texte, le registre et le code ensemble :
 
-- `pnpm lint:rgpd-staff` échoue si une colonne du livreur ou sa catégorie
+- `pnpm gate rgpd-staff` échoue si une colonne du livreur ou sa catégorie
   change sans nouvelle version du texte : son empreinte porte
   `colonne|catégorie`, **pas la durée** ;
 - `driver-notice-registry.spec.ts` lie la version du texte à celle du

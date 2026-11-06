@@ -35,7 +35,7 @@
  * et aucune règle mécanique ne le dira. La porte tient la frontière que Postgres
  * connaît ; le reste est de la relecture, et c'est assumé.
  *
- * Usage : `pnpm lint:prisma-schema-layout` (branché dans `lint:gates`).
+ * Usage : `pnpm gate prisma-schema-layout` (branché dans `lint:gates`).
  */
 import { readFileSync } from "node:fs";
 import { relative, sep } from "node:path";

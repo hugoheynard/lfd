@@ -35,7 +35,7 @@
  * rend **visible**, ce qui est le cran au-dessus de la relecture et le cran en
  * dessous de l'interdiction — cf. la hiérarchie des garde-fous.
  *
- * Usage : `pnpm lint:prisma-model-ownership` (branché dans `lint:gates`).
+ * Usage : `pnpm gate prisma-model-ownership` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

@@ -27,7 +27,7 @@
  * le 2026-11-06 : les 40 appels de `changed(…)` suivent tous leur écriture.
  *
  * Commentaires retirés : une phrase qui raconte une écriture n'en est pas une.
- * Usage : `pnpm lint:shelf-changes-after-commit` (branché dans `lint:gates`).
+ * Usage : `pnpm gate shelf-changes-after-commit` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";

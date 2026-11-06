@@ -1003,7 +1003,7 @@ lisible de l'intérieur, contre la règle « port uniquement ». Lot **S3b**.
   passe sans régénération.
 - Le manifeste (`apps/lfd-api/src/mail/templates/copy/mail-copy-manifest.json`) :
   `dev-toolbox/mail-copy/build.mjs`, `lint:mail-copy-digest`, `.prettierignore`
-  et le bandeau de `CLAUDE.md` (porte 47) suivent ; `pnpm mail-copy:digest` ne
+  et le bandeau de `CLAUDE.md` (porte 47) suivent ; `pnpm tool mail-copy:digest` ne
   change que le `$comment` qui nomme le dossier.
 - **Le mailer lui-même** (le transport `MAIL_TRANSPORT` chargé des gabarits,
   `EffectiveCopyMailer`, `JournalingMailer` par-dessus, le jeton `MAILER` et

@@ -36,7 +36,7 @@
  * Les tests ne sont pas lus : un doublé écrit un `sub`, c'est son travail. Le
  * client Prisma généré non plus.
  *
- * Usage : `pnpm lint:auth0-id-readers` (branché dans `lint:gates`).
+ * Usage : `pnpm gate auth0-id-readers` (branché dans `lint:gates`).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

@@ -82,7 +82,7 @@ fi
 cd "$ROOT"
 node dev-toolbox/fresh-vite-deps.mjs
 pnpm dev:infra
-pnpm db:dev:sync
+pnpm tool db:dev:sync
 
 # ─── Les compagnons, cette fois adoptés ──────────────────────────────────────
 #

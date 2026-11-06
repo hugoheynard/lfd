@@ -28,7 +28,7 @@
  * relit avant d'être adoptée.
  *
  * Commentaires retirés : une phrase qui parle d'`outboundByHost` n'en déclare
- * pas. Usage : `pnpm lint:container-start` (branché dans `lint:gates`).
+ * pas. Usage : `pnpm gate container-start` (branché dans `lint:gates`).
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

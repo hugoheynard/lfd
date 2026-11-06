@@ -248,7 +248,7 @@ info dans le rayon de l'opération » ; le texte est le **chapeau**) :
 
 Bâti au **lot 3** (la bascule touche déjà la lecture de la vitrine,
 `storefront-catalog-operations.ts`, `operationShelvesOf`) ; les textes de
-l'encart vont au dictionnaire de la boutique (`pnpm copy:digest`).
+l'encart vont au dictionnaire de la boutique (`pnpm tool copy:digest`).
 
 **`received_at` d'une opération née au commerce (Hugo, 2026-10-15)** :
 l'instant de sa préparation. La colonne reste `NOT NULL`.

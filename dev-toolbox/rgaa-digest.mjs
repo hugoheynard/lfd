@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Régénère le **suivi d'accessibilité** que l'API embarque (`pnpm rgaa:digest`)
+ * Régénère le **suivi d'accessibilité** que l'API embarque (`pnpm tool rgaa:digest`)
  * depuis la grille d'audit — `documentation/accessibilite/grille-audit-rgaa.md`.
  *
  * L'API part de `src/` et le déploiement n'empaquette qu'elle : elle ne peut

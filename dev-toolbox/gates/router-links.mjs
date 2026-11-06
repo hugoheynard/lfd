@@ -21,7 +21,7 @@
  * Restent hors de portée : les liens relatifs et les chemins entièrement
  * calculés. C'est assumé — les résoudre demanderait d'exécuter l'application.
  *
- * Usage : `pnpm lint:router-links` (branché en CI).
+ * Usage : `pnpm gate router-links` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

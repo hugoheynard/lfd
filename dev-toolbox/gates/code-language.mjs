@@ -34,7 +34,7 @@
  *   pas des identifiants : les renommer est une migration, pas un renommage.
  *   Elles sont donc ignorées entre guillemets ; seuls les NOMS comptent.
  *
- * Usage : `pnpm lint:code-language`.
+ * Usage : `pnpm gate code-language`.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

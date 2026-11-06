@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * **La porte axe de la boutique** — `pnpm a11y:axe` ; `pnpm a11y:baseline`
+ * **La porte axe de la boutique** — `pnpm tool a11y:axe` ; `pnpm tool a11y:baseline`
  * (`--update`) régénère la référence. Doc : documentation/accessibilite/porte-axe.md.
  *
  * 1. Lance les scènes Playwright de l'aperçu (`apps/lfc-ecommerce-frontend/a11y/`),
@@ -33,7 +33,9 @@ const started = Date.now();
 const run = spawnSync("pnpm", ["exec", "playwright", "test"], { cwd: APP, stdio: "inherit" });
 const seconds = Math.round((Date.now() - started) / 1000);
 if (run.status !== 0) {
-  console.error(`\n✗ a11y:axe — une scène n'a pas pu être mesurée (${seconds} s). Rien n'est comparé.`);
+  console.error(
+    `\n✗ a11y:axe — une scène n'a pas pu être mesurée (${seconds} s). Rien n'est comparé.`,
+  );
   process.exit(1);
 }
 
@@ -49,16 +51,26 @@ if (update) {
     (n, counts) => n + Object.values(counts).reduce((a, b) => a + b, 0),
     0,
   );
-  console.log(`\n✓ a11y:baseline — ${Object.keys(measured).length} pages, ${total} nœud(s) en violation inscrits (${seconds} s).`);
+  console.log(
+    `\n✓ a11y:baseline — ${Object.keys(measured).length} pages, ${total} nœud(s) en violation inscrits (${seconds} s).`,
+  );
   process.exit(0);
 }
 
 const baseline = JSON.parse(readFileSync(BASELINE, "utf8"));
 const { regressions, repaid, missingPages, newPages } = compareAxe(baseline, measured);
-const fix = "→ corriger, ou, si c'est voulu, `pnpm a11y:baseline` et committer la référence.";
+const fix = "→ corriger, ou, si c'est voulu, `pnpm tool a11y:baseline` et committer la référence.";
 const report = [
-  [regressions, "Violations nouvelles ou en hausse", "→ corriger la régression. La référence ne s'élargit pas."],
-  [repaid, "Dette remboursée mais encore inscrite", "→ `pnpm a11y:baseline` et committer la référence : elle ne descendra plus."],
+  [
+    regressions,
+    "Violations nouvelles ou en hausse",
+    "→ corriger la régression. La référence ne s'élargit pas.",
+  ],
+  [
+    repaid,
+    "Dette remboursée mais encore inscrite",
+    "→ `pnpm tool a11y:baseline` et committer la référence : elle ne descendra plus.",
+  ],
   [missingPages, "Pages inscrites et non mesurées", fix],
   [newPages, "Pages mesurées et non inscrites", fix],
 ];
@@ -71,4 +83,6 @@ for (const [items, title, hint] of report) {
   console.error(`  ${hint}`);
 }
 if (failed) process.exit(1);
-console.log(`\n✓ a11y:axe — ${Object.keys(measured).length} pages conformes à la référence (${seconds} s).`);
+console.log(
+  `\n✓ a11y:axe — ${Object.keys(measured).length} pages conformes à la référence (${seconds} s).`,
+);

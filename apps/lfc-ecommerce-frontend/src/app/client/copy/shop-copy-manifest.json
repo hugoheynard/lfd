@@ -1,5 +1,5 @@
 {
-  "generatedBy": "dev-toolbox/shop-copy-digest.mjs — ne pas éditer à la main, régénérer par `pnpm copy:digest`",
+  "generatedBy": "dev-toolbox/shop-copy-digest.mjs — ne pas éditer à la main, régénérer par `pnpm tool copy:digest`",
   "locales": ["fr", "en", "it"],
   "spaces": [
     {

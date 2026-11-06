@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Régénère le **manifeste des textes des e-mails** (`pnpm mail-copy:digest`) —
+ * Régénère le **manifeste des textes des e-mails** (`pnpm tool mail-copy:digest`) —
  * plan `documentation/contenu-ecommerce/plan-textes-des-e-mails.md`, E1.
  *
  * Un manifeste recopié vieillirait au premier texte changé ; celui-ci se

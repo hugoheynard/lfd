@@ -31,7 +31,7 @@
  * `mermaid.parse` lui-même : sans DOM, DOMPurify n'est pas initialisé et tout
  * échoue, y compris le valide.
  *
- * Usage : `pnpm lint:mermaid` (branché dans `lint:gates`).
+ * Usage : `pnpm gate mermaid` (branché dans `lint:gates`).
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";

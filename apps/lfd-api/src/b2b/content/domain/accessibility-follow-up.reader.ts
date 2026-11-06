@@ -7,7 +7,7 @@ import type { AccessibilityFollowUpView } from "@lfd/contracts";
  *
  * Lecture seule : la source est la grille d'audit du dépôt, pas une table.
  * Rien ne s'y écrit depuis l'API ; on la change dans
- * `documentation/accessibilite/grille-audit-rgaa.json`, puis `pnpm rgaa:digest`.
+ * `documentation/accessibilite/grille-audit-rgaa.json`, puis `pnpm tool rgaa:digest`.
  */
 export abstract class AccessibilityFollowUpReader {
   abstract read(): AccessibilityFollowUpView;

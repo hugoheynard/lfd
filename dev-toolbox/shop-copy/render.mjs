@@ -67,7 +67,7 @@ export function renderDigest(spaces) {
   return [
     "# Les textes de la boutique",
     "",
-    `> **Généré** par \`${GENERATOR}\` depuis les dictionnaires de \`apps/lfc-ecommerce-frontend/src/app/client/copy/\`. **Ne pas éditer à la main** : régénérer par \`pnpm copy:digest\`. La porte \`pnpm lint:shop-copy-digest\` échoue si ce fichier ne correspond plus au code.`,
+    `> **Généré** par \`${GENERATOR}\` depuis les dictionnaires de \`apps/lfc-ecommerce-frontend/src/app/client/copy/\`. **Ne pas éditer à la main** : régénérer par \`pnpm tool copy:digest\`. La porte \`pnpm gate shop-copy-digest\` échoue si ce fichier ne correspond plus au code.`,
     ">",
     "> La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.",
     "",

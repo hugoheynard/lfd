@@ -35,7 +35,7 @@
  * plus large est encore tenue par la revue. Ici on ne tient qu'une chose, celle
  * dont dépend l'identité : **produits et déclinaisons**.
  *
- * Usage : `pnpm lint:sku-never-recycled` (branché en CI).
+ * Usage : `pnpm gate sku-never-recycled` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

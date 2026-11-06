@@ -74,7 +74,7 @@ sans lot est NOTRE retard, pas celui du client.
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **P1** | Serveur : le statut dérivé dans `IssuedInvoiceSummaryView` (contrat), lu en UNE requête par lot de factures (pas une par facture) ; tri plus récent d'abord ; filtres `year`, `month`, `kind` en query ; total dû calculé côté serveur sur le périmètre filtré ; tests aux trois niveaux, dont le mur | batisseur |
 | **P2** | Serveur : `GET …/invoices.zip` (mêmes filtres, ou une liste d'ids), PDF rangés seulement (`documentAvailable`), noms `FA-AAAA-NNNNNN.pdf`, plafond de pièces ; bibliothèque zip à choisir (consommateur unique : hors catalogue)                                                                      | batisseur |
-| **P3** | Front : la page, son entrée de menu, le retrait de la carte et de la redirection ; textes dans les dictionnaires (+ `pnpm copy:digest`)                                                                                                                                                               | pablo     |
+| **P3** | Front : la page, son entrée de menu, le retrait de la carte et de la redirection ; textes dans les dictionnaires (+ `pnpm tool copy:digest`)                                                                                                                                                          | pablo     |
 
 ## 4. Hors périmètre
 
@@ -291,7 +291,7 @@ seule lecture `visibleTo` filtrée par les ids.
   `one`, `document`, `archive`).
 - **Textes** : `account-invoices.copy.ts` (fr/en/it) ; `account.sections.invoices`
   renommé en `account.invoices.title`, `count`/`countOne` retirés
-  (`shop-copy-renames.json`), `pnpm copy:digest` passé.
+  (`shop-copy-renames.json`), `pnpm tool copy:digest` passé.
 - **Tests** : `apps/lfc-ecommerce-frontend/src/app/client/mes-factures/invoices-page/invoices-page.spec.ts` (total, filtres, statuts et tons,
   sélection, zip et son refus, cartes en pile, rôle refusé),
   `apps/lfc-ecommerce-frontend/src/app/client/mes-factures/invoice-format.spec.ts`, `content-disposition.spec.ts`.

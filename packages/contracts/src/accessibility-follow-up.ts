@@ -2,7 +2,7 @@
  * **Le suivi d'accessibilité de la boutique**, tel que le public le lit — sous
  * la déclaration d'accessibilité (Hugo, 2026-10-26).
  *
- * Il est produit par `pnpm rgaa:digest` depuis la grille d'audit
+ * Il est produit par `pnpm tool rgaa:digest` depuis la grille d'audit
  * (`documentation/accessibilite/grille-audit-rgaa.json`), embarqué par l'API et
  * servi tel quel par `GET /content/accessibility-follow-up`. Types seulement :
  * la boutique l'importe sans tirer zod au démarrage.

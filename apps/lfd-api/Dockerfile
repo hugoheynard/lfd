@@ -33,7 +33,7 @@ RUN pnpm --filter lfd-api run build
 # DANS `src/` puis émis dans `dist/`, et personne ne penserait à les lister. Un
 # `files` ajouté un jour pour « faire propre » les ferait disparaître de l'image
 # sans rien rendre rouge, et le container mourrait au démarrage. Le gate
-# `pnpm lint:deployed-app-files` interdit ce champ, et dit pourquoi.
+# `pnpm gate deployed-app-files` interdit ce champ, et dit pourquoi.
 RUN pnpm --filter lfd-api deploy --legacy --prod /app
 
 # ---- runtime ----

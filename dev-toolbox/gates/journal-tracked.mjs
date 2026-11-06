@@ -69,7 +69,7 @@
  * **La livraison** (`delivery/**`, depuis le 2026-09-29) : même discipline —
  * cf. `DELIVERY_ZONE` plus bas.
  *
- * Usage : `pnpm lint:journal-tracked` (branché en CI).
+ * Usage : `pnpm gate journal-tracked` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";

@@ -146,7 +146,7 @@ n'appartiennent à personne.
 
 ## La porte qui tient la planche complète (2026-10-22)
 
-`pnpm lint:pdf-specimens` (`dev-toolbox/gates/pdf-specimens.mjs`) suit chaque
+`pnpm gate pdf-specimens` (`dev-toolbox/gates/pdf-specimens.mjs`) suit chaque
 document PDF du serveur — une fonction exportée `render…Pdf` — jusqu'à l'écran :
 un handler d'exemple (`…/application/queries/*specimen*.handler.ts`) qui
 l'appelle, une route `admin/document-specimens/<clé>.pdf` qui sert sa requête,

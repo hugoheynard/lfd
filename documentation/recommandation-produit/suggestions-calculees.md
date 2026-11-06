@@ -104,7 +104,7 @@ inventé. **Aucun nombre de clients ni part n'est exposé** : un compte exact,
 près du seuil, dirait combien de personnes ont fait ce panier.
 
 La boutique met la phrase : **« Souvent pris avec {name} »** (`shop.boughtWith`,
-FR / EN / IT, glossaire du back-office, recueil régénéré par `pnpm copy:digest`).
+FR / EN / IT, glossaire du back-office, recueil régénéré par `pnpm tool copy:digest`).
 
 ## 4. Au panier
 
@@ -247,7 +247,7 @@ La boutique met la phrase : **« Tous les mardis »** (`shop.usualEvery.<jour>`,
 une phrase par jour, l'accord ne se composant pas dans les trois langues) et
 **« Commandé {count} fois »** (`shop.usualOrdered`) ; la rangée s'intitule
 **« Vos habituels »** (`shop.usuals`). FR / EN / IT, glossaire du back-office,
-recueil régénéré par `pnpm copy:digest`.
+recueil régénéré par `pnpm tool copy:digest`.
 
 ### 8.3 À l'accueil
 

@@ -23,7 +23,7 @@
  * n'est **ni gelable en test, ni rejouable**. Un prix qu'on ne peut pas rejouer
  * à un instant nommé ne se défend pas devant le client qui le conteste.
  *
- * Usage : `pnpm lint:clock-port` (branché en CI et dans `lint:gates`).
+ * Usage : `pnpm gate clock-port` (branché en CI et dans `lint:gates`).
  *
  * ⚠️ Cette porte est branchée dans le MÊME commit qui l'écrit — cf. l'avertissement
  * de `no-direct-env.mjs`, restée des mois sans tourner nulle part parce que sa

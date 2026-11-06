@@ -14,7 +14,7 @@
 //
 // 🔴 Le nom du dossier ne prouve RIEN à Prisma : `@@schema("…")` reste
 // obligatoire sur chaque bloc, et un modèle rangé dans `pim/` qui déclarerait
-// `@@schema("public")` compilerait sans un mot. C'est `pnpm lint:prisma-schema-
+// `@@schema("public")` compilerait sans un mot. C'est `pnpm gate prisma-schema-
 // layout` qui tient la correspondance — sans elle, l'arborescence serait une
 // affirmation que personne ne vérifie.
 //

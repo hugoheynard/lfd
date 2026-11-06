@@ -110,7 +110,7 @@
  * honoré, identique partout. La liste de dossiers à sauter disparaît avec — et
  * une liste qu'on n'écrit pas ne dérive pas.
  *
- * Usage : `pnpm lint:doc-references` (branché dans `lint:gates` dans le MÊME
+ * Usage : `pnpm gate doc-references` (branché dans `lint:gates` dans le MÊME
  * commit qui écrit cette porte — cf. l'avertissement de `no-direct-env.mjs`,
  * restée des mois sans tourner nulle part).
  */

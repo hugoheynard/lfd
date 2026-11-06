@@ -27,7 +27,7 @@
  *   `caches.*`, et la purge de Workers Cache, le gestionnaire de sortie et
  *   une classe de Durable Object n'y vivent que dans les fichiers admis.
  *
- * Les tests ne sont pas lus. Usage : `pnpm lint:cache-control` (branché dans
+ * Les tests ne sont pas lus. Usage : `pnpm gate cache-control` (branché dans
  * `lint:gates`).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
