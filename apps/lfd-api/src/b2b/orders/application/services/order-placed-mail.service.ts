@@ -1,8 +1,8 @@
 import { exposedHandoverToken } from "@lfd/contracts";
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -51,7 +51,7 @@ export class OrderPlacedMail {
     private readonly origins: OrderMailOrigins,
     private readonly attachment: OrderSheetAttachment,
     private readonly manageLink: OrderManageLink,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
   ) {}
 
   /**
@@ -79,7 +79,8 @@ export class OrderPlacedMail {
     const token = exposedHandoverToken(owned.view);
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
 
-    await this.mailer.send({
+    await this.mails.request({
+      brand: "lfc",
       to: recipient.email,
       template: "customer.order-placed",
       data: {

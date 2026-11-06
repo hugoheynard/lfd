@@ -2,15 +2,35 @@ import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
 import type { MailRequest } from "../domain/entities/mail-request.js";
-import { MailInFlightError, MailRefusedError } from "../domain/errors/mail-request.errors.js";
+import {
+  InvalidMailRequestError,
+  MailAttachmentMissingError,
+  MailInFlightError,
+  MailRefusedError,
+} from "../domain/errors/mail-request.errors.js";
 import { MailDispatch, type OutgoingMail } from "../domain/ports/mail-dispatch.js";
+import { MailAttachments } from "./mail-attachments.js";
 
 /** Ce qu'un essai d'envoi a donné ; la demande a déjà pris la transition. */
 export type MailAttemptOutcome =
   | { readonly kind: "sent" }
-  | { readonly kind: "refused"; readonly error: MailRefusedError }
+  | {
+      readonly kind: "refused";
+      readonly error: Unhealable;
+    }
   | { readonly kind: "in-flight"; readonly error: MailInFlightError }
   | { readonly kind: "failed"; readonly error: unknown };
+
+/** Ce qu'un nouvel essai ne guérira pas : refus du fournisseur, pièce absente ou mal désignée. */
+type Unhealable = MailRefusedError | MailAttachmentMissingError | InvalidMailRequestError;
+
+function isUnhealable(error: unknown): error is Unhealable {
+  return (
+    error instanceof MailRefusedError ||
+    error instanceof MailAttachmentMissingError ||
+    error instanceof InvalidMailRequestError
+  );
+}
 
 function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -30,19 +50,21 @@ function reasonOf(error: unknown): string {
 export class MailSendAttempt {
   constructor(
     private readonly dispatch: MailDispatch,
+    private readonly attachments: MailAttachments,
     private readonly clock: Clock,
   ) {}
 
   async attempt(request: MailRequest, mail: OutgoingMail): Promise<MailAttemptOutcome> {
     try {
-      const providerId = await this.dispatch.dispatch(mail);
+      // Les pièces sont relues à CHAQUE essai : la demande n'en porte que la place.
+      const providerId = await this.dispatch.dispatch(await this.attachments.resolve(mail));
       request.markSent(providerId, this.clock.now());
       return { kind: "sent" };
     } catch (error) {
       if (error instanceof MailInFlightError) {
         return { kind: "in-flight", error };
       }
-      if (error instanceof MailRefusedError) {
+      if (isUnhealable(error)) {
         request.markRefused(error.message, this.clock.now());
         return { kind: "refused", error };
       }

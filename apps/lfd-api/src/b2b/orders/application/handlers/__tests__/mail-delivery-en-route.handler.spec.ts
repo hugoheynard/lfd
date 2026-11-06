@@ -1,7 +1,13 @@
 import type { OrderView } from "@lfd/contracts";
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
+import type {
+  DeferrableMailTemplate,
+  DeferredMailDemand,
+} from "../../../../../mail/channels/requests/mail-requests.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import {
@@ -9,18 +15,11 @@ import {
   DeliveryRoundDepartedFact,
   DeliveryRoundDepartedPayloadError,
 } from "../../../../../delivery/channels/commerce/index.js";
-import { AmbientAfterCommit } from "../../../../../platform/database/after-commit.js";
-import {
-  CommitQueue,
-  currentTransaction,
-  runInTransaction,
-} from "../../../../../platform/database/transaction.store.js";
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
 import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import type { DurableSubscriber } from "../../../../../platform/outbox/durable-handler.js";
 import { DeliveryEnRouteMail } from "../../services/delivery-en-route-mail.service.js";
 import { MAIL_DELIVERY_EN_ROUTE, MailDeliveryEnRoute } from "../mail-delivery-en-route.handler.js";
-import { OneRecipientReader, orderView, RecordingMailer } from "./payment-failure-doubles.js";
+import { OneRecipientReader, orderView } from "./payment-failure-doubles.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 import { ShipmentRef } from "../../../../../production/channels/commerce/index.js";
 import type { RemainderShipment } from "../../../domain/ports/remainder-shipment.reader.js";
@@ -29,19 +28,11 @@ import { FixedRemainders } from "./remainder-shipment-doubles.js";
 /*
  * Le commerce entend le départ, fait durable (en-route.md ; plan-depart-durable.md,
  * DD1) : un courriel par commande encore en route, à l'auteur, avec une clé
- * par commande ET par tournée ; un échec journalisé, jamais relancé.
+ * par commande ET par tournée — DEMANDÉ au bloc `mail` dans la transaction de
+ * la livraison depuis S2a (plan `plan-service-e-mails.md`).
  */
 
 const DEPARTED = new Date(60_000);
-
-/**
- * Le client de la transaction de la garde. Jamais lu : seul compte qu'une
- * transaction soit ambiante pendant `handle`, comme sous la garde.
- */
-const GUARD_TX = {};
-
-/** Laisse partir ce qui aurait été lancé sans être attendu. */
-const settle = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
 function delivered(id: string, overrides: Partial<OrderView> = {}): OrderView {
   return {
@@ -114,63 +105,58 @@ class FixedOrigins extends OrderMailOrigins {
   }
 }
 
-/** Note, à chaque envoi, s'il part sous une transaction ambiante. */
-class TransactionWitnessMailer extends RecordingMailer {
-  readonly underTransaction: boolean[] = [];
-
-  override send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.underTransaction.push(currentTransaction() !== undefined);
-    return super.send(args);
-  }
-}
-
-/** Refuse l'envoi d'une commande choisie, transmet les autres. */
-class FailingFor extends RecordingMailer {
-  constructor(private readonly reference: string) {
-    super();
+/** Refuse la demande d'une commande choisie — la base qui tombe à mi-tournée. */
+class FailingFor extends RecordingMailRequests {
+  constructor(
+    private readonly reference: string,
+    unitOfWork: OpenableUnitOfWork,
+  ) {
+    super(unitOfWork);
   }
 
-  override send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    const data: B2bMails[keyof B2bMails] = args.data;
-    if ("reference" in data && data.reference === this.reference) {
-      return Promise.reject(new Error("Resend en panne"));
+  override request<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<string> {
+    const data: unknown = demand.data;
+    if (typeof data === "object" && data !== null && "reference" in data) {
+      if (data.reference === this.reference) {
+        return Promise.reject(new Error("base indisponible"));
+      }
     }
-    return super.send(args);
+    return super.request(demand);
   }
 }
 
 /**
- * L'abonné tel que la garde le fait tourner : `handle` dans une transaction,
- * puis la validation — la file d'après validation se vide —, puis le travail
- * de fond qu'elle a lancé. Les cas métier se lisent ainsi sur le vrai chemin.
+ * L'abonné tel que la garde le fait tourner : `handle` dans la transaction de
+ * la livraison. La porte doublée REFUSE une demande hors d'elle, comme la
+ * vraie.
  */
-function guarded(handler: DurableSubscriber, work: BackgroundWork): DurableSubscriber {
-  return {
-    handle: async (delivery) => {
-      const commits = new CommitQueue();
-      await runInTransaction(GUARD_TX, () => handler.handle(delivery), commits);
-      commits.flush();
-      await work.whenIdle();
-    },
-  };
-}
-
 function subscriber(
   views: readonly OrderView[],
-  mailer: RecordingMailer = new RecordingMailer(),
-  email: string | null = "camille@halles.test",
-  remainders: ReadonlyMap<string, RemainderShipment> = new Map(),
+  options: {
+    readonly email?: string | null;
+    readonly remainders?: ReadonlyMap<string, RemainderShipment>;
+    readonly failFor?: string;
+  } = {},
 ) {
+  const unitOfWork = new OpenableUnitOfWork();
+  const mailer =
+    options.failFor === undefined
+      ? new RecordingMailRequests(unitOfWork)
+      : new FailingFor(options.failFor, unitOfWork);
   const mail = new DeliveryEnRouteMail(
     new ManyOrdersReader(views),
-    new OneRecipientReader(email),
+    new OneRecipientReader(options.email === undefined ? "camille@halles.test" : options.email),
     new FixedOrigins(),
     mailer,
-    new FixedRemainders(remainders),
+    new FixedRemainders(options.remainders ?? new Map()),
   );
-  const work = new BackgroundWork();
-  const handler = new MailDeliveryEnRoute(mail, new AmbientAfterCommit(), work);
-  return { subject: guarded(handler, work), handler, mailer, work };
+  const handler = new MailDeliveryEnRoute(mail);
+  const subject: DurableSubscriber = {
+    handle: (delivery) => unitOfWork.run(() => handler.handle(delivery)),
+  };
+  return { subject, handler, mailer };
 }
 
 /** Le fait tel que le relais le livre : relu de sa charge, comme en production. */
@@ -197,11 +183,11 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
     await subject.handle(departed("r_1", ["o_1", "o_2"]));
 
-    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+    expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
       "delivery.en_route:o_1:r_1",
       "delivery.en_route:o_2:r_1",
     ]);
-    expect(mailer.sent[0]).toMatchObject({
+    expect(mailer.requested[0]).toMatchObject({
       to: "camille@halles.test",
       template: "customer.delivery-en-route",
       data: {
@@ -226,8 +212,8 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
     await subject.handle(departed("r_1", ["o_1", "o_2"]));
 
-    expect(mailer.sent[0]).toMatchObject({ data: { window } });
-    expect(mailer.sent[1]).toMatchObject({ data: { window: null } });
+    expect(mailer.requested[0]).toMatchObject({ data: { window } });
+    expect(mailer.requested[1]).toMatchObject({ data: { window: null } });
   });
 
   it("rejoué, il redemande la même clé : Resend absorbe, pas de second courriel", async () => {
@@ -236,7 +222,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     await subject.handle(departed("r_1", ["o_1"]));
     await subject.handle(departed("r_1", ["o_1"]));
 
-    expect(new Set(mailer.sent.map((sent) => sent.idempotencyKey))).toEqual(
+    expect(new Set(mailer.requested.map((sent) => sent.idempotencyKey))).toEqual(
       new Set(["delivery.en_route:o_1:r_1"]),
     );
   });
@@ -247,7 +233,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     await subject.handle(departed("r_1", ["o_1"]));
     await subject.handle(departed("r_2", ["o_1"]));
 
-    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+    expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
       "delivery.en_route:o_1:r_1",
       "delivery.en_route:o_1:r_2",
     ]);
@@ -263,7 +249,9 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
     await subject.handle(departed("r_1", ["o_1", "o_2", "o_3", "o_4"]));
 
-    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_4:r_1"]);
+    expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
+      "delivery.en_route:o_4:r_1",
+    ]);
   });
 
   describe("par envoi (plan E7 reliquat, choix 17)", () => {
@@ -272,122 +260,96 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     it("le reste a son courriel, sa clé, et dit « le reste »", async () => {
       const { subject, mailer } = subscriber(
         [delivered("o_1", { status: "fulfilled", handedOverAt: new Date(0).toISOString() })],
-        new RecordingMailer(),
-        "camille@halles.test",
-        new Map([["o_1:2", { pieces: 2, handedOver: false }]]),
+        { remainders: new Map([["o_1:2", { pieces: 2, handedOver: false }]]) },
       );
 
       await subject.handle(departed("r_1", [], [REST]));
 
-      expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+      expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
         "delivery.en_route:o_1:r_1:r2",
       ]);
-      expect(mailer.sent[0]?.data).toMatchObject({ reference: "ORD-o_1", remainder: true });
+      expect(mailer.requested[0]?.data).toMatchObject({ reference: "ORD-o_1", remainder: true });
     });
 
     it("deux envois de la même commande dans la tournée : deux courriels", async () => {
-      const { subject, mailer } = subscriber(
-        [delivered("o_1")],
-        new RecordingMailer(),
-        "camille@halles.test",
-        new Map([["o_1:2", { pieces: 2, handedOver: false }]]),
-      );
+      const { subject, mailer } = subscriber([delivered("o_1")], {
+        remainders: new Map([["o_1:2", { pieces: 2, handedOver: false }]]),
+      });
 
       await subject.handle(departed("r_1", ["o_1"], [REST]));
 
-      expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+      expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
         "delivery.en_route:o_1:r_1",
         "delivery.en_route:o_1:r_1:r2",
       ]);
-      expect(mailer.sent[0]?.data).not.toHaveProperty("remainder");
+      expect(mailer.requested[0]?.data).not.toHaveProperty("remainder");
     });
 
     it("se tait pour un reste remis, annulé, ou d'une commande annulée", async () => {
       const { subject, mailer } = subscriber(
         [delivered("o_1"), delivered("o_2", { status: "cancelled" })],
-        new RecordingMailer(),
-        "camille@halles.test",
-        new Map([
-          ["o_1:2", { pieces: 2, handedOver: true }],
-          ["o_2:2", { pieces: 2, handedOver: false }],
-        ]),
+        {
+          remainders: new Map([
+            ["o_1:2", { pieces: 2, handedOver: true }],
+            ["o_2:2", { pieces: 2, handedOver: false }],
+          ]),
+        },
       );
 
       await subject.handle(
         departed("r_1", [], [REST, ShipmentRef.of("o_1", 3), ShipmentRef.of("o_2", 2)]),
       );
 
-      expect(mailer.sent).toEqual([]);
+      expect(mailer.requested).toEqual([]);
     });
   });
 
   it("se tait pour une commande disparue ou un client sans adresse", async () => {
-    const { subject, mailer } = subscriber([delivered("o_1")], new RecordingMailer(), null);
+    const { subject, mailer } = subscriber([delivered("o_1")], { email: null });
 
     await subject.handle(departed("r_1", ["o_1", "o_inconnue"]));
 
-    expect(mailer.sent).toEqual([]);
+    expect(mailer.requested).toEqual([]);
   });
 
-  it("🔴 un envoi raté ne prive pas les suivants, et n'est PAS relancé : l'abonné ne lève pas", async () => {
-    const mailer = new FailingFor("ORD-o_1");
-    const { subject } = subscriber([delivered("o_1"), delivered("o_2")], mailer);
+  /**
+   * Depuis S2a, l'abonné ne fait que DEMANDER : une demande qui échoue est une
+   * écriture qui tombe, et la livraison avec elle — elle sera rejouée. Les
+   * demandes déjà faites ne se doublent pas au rejeu : même clé.
+   */
+  it("🔴 une demande qui échoue fait échouer la livraison, qui sera rejouée", async () => {
+    const { subject } = subscriber([delivered("o_1"), delivered("o_2")], { failFor: "ORD-o_2" });
 
-    await expect(subject.handle(departed("r_1", ["o_1", "o_2"]))).resolves.toBeUndefined();
-
-    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_2:r_1"]);
+    await expect(subject.handle(departed("r_1", ["o_1", "o_2"]))).rejects.toThrow(
+      "base indisponible",
+    );
   });
 
   /**
    * Régression (audit du 2026-10-07, B1) : l'abonné envoyait DANS la
    * transaction que la garde ouvre pour poser le reçu — un appel à Resend par
-   * commande, une connexion du pool tenue, et passé le délai la transaction
-   * tombait avec le reçu : le fait était relivré, chaque envoi redemandé.
+   * commande, une connexion du pool tenue. Depuis S2a, il n'appelle plus le
+   * fournisseur du tout : il DEMANDE, dans la transaction (la porte doublée
+   * refuse sinon), et le bloc `mail` envoie après la validation.
    */
-  it("🔴 n'envoie pas dans la transaction de la garde : les courriels partent après la validation", async () => {
-    const mailer = new TransactionWitnessMailer();
-    const { handler, work } = subscriber([delivered("o_1"), delivered("o_2")], mailer);
-    const commits = new CommitQueue();
+  it("🔴 demande dans la transaction de la livraison, et n'envoie rien lui-même", async () => {
+    const { handler, mailer } = subscriber([delivered("o_1"), delivered("o_2")]);
 
-    await runInTransaction(
-      GUARD_TX,
-      () => handler.handle(departed("r_1", ["o_1", "o_2"])),
-      commits,
+    await expect(handler.handle(departed("r_1", ["o_1"]))).rejects.toThrow(
+      "request hors transaction",
     );
-    await settle();
-    expect(mailer.sent).toEqual([]);
-
-    commits.flush();
-    await work.whenIdle();
-    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
-      "delivery.en_route:o_1:r_1",
-      "delivery.en_route:o_2:r_1",
-    ]);
-    expect(mailer.underTransaction).toEqual([false, false]);
+    expect(mailer.sentNow).toEqual([]);
   });
 
-  it("une charge illisible lève dans la transaction : la livraison échoue, sera rejouée, et rien n'est inscrit", async () => {
-    const { handler, mailer, work } = subscriber([delivered("o_1")]);
-    const commits = new CommitQueue();
+  it("une charge illisible lève : la livraison échoue, sera rejouée, et rien n'est demandé", async () => {
+    const { subject, mailer } = subscriber([delivered("o_1")]);
     const unreadable: DurableDelivery = {
       eventId: "evt_r_1",
       type: DELIVERY_ROUND_DEPARTED,
       payload: { roundId: "r_1", orderIds: ["o_1"] },
     };
 
-    // Comme la garde : l'appel vit dans une fonction async, qui rend l'échec.
-    await expect(
-      runInTransaction(
-        GUARD_TX,
-        async () => {
-          await handler.handle(unreadable);
-        },
-        commits,
-      ),
-    ).rejects.toThrow(DeliveryRoundDepartedPayloadError);
-    commits.flush();
-    await work.whenIdle();
-
-    expect(mailer.sent).toEqual([]);
+    await expect(subject.handle(unreadable)).rejects.toThrow(DeliveryRoundDepartedPayloadError);
+    expect(mailer.requested).toEqual([]);
   });
 });

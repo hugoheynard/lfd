@@ -78,6 +78,9 @@ describe("« Écrire au client » (E6d)", () => {
 
     const relu = `${draft.message}\n\nNous vous rappelons demain.`;
     expect((await write(order.id, relu)).status).toBe(204);
+    // Depuis S2a, le courriel est DEMANDÉ avec la trace, et le bloc `mail`
+    // l'envoie après la validation : on attend qu'il soit parti.
+    await ctx.drain();
 
     const decision = await ctx.prisma.orderShortfallDecision.findUniqueOrThrow({
       where: { orderId_rank: { orderId: order.id, rank: 1 } },
@@ -108,6 +111,7 @@ describe("« Écrire au client » (E6d)", () => {
       code: "orders.shortfall_letter.already_sent",
     });
     await ctx.asSub(STAFF).get(letterPath(order.id)).expect(409);
+    await ctx.drain();
     expect(shortfallMails()).toHaveLength(1);
   });
 

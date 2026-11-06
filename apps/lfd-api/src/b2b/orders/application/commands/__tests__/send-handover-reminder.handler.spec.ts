@@ -1,5 +1,7 @@
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderCustomerNudgesSnapshot } from "../../../domain/entities/order-customer-nudges.js";
 import {
@@ -12,7 +14,6 @@ import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 import {
   OneOrderReader,
   OneRecipientReader,
-  RecordingMailer,
   orderView,
 } from "../../../application/handlers/__tests__/payment-failure-doubles.js";
 import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
@@ -53,8 +54,8 @@ function setup(
     readonly delay?: number;
   } = {},
 ) {
-  const mailer = new RecordingMailer();
-  const work = new BackgroundWork();
+  const unitOfWork = new OpenableUnitOfWork();
+  const mailer = new RecordingMailRequests(unitOfWork);
   const nudges = new OneOrderNudges(
     options.snapshot === undefined ? nudgeSnapshot() : options.snapshot,
   );
@@ -79,12 +80,10 @@ function setup(
     recipients,
     new OrderReadyMail(orders, recipients, new FixedOrigins(), mailer, new FixedRemainders()),
     new FixedClock(options.now ?? minutesAfterEnd(20)),
-    new DirectUnitOfWork(),
-    work,
+    unitOfWork,
   );
   const run = async (): Promise<void> => {
     await handler.execute(new SendHandoverReminderCommand("order_1", "staff_karim"));
-    await work.whenIdle();
   };
   return { run, mailer, nudges };
 }
@@ -100,10 +99,10 @@ describe("« Rappel au client »", () => {
         pickupReminder: { at: minutesAfterEnd(20), byStaffId: "staff_karim" },
       }),
     ]);
-    expect(subject.mailer.sent).toHaveLength(1);
-    expect(subject.mailer.sent[0]?.to).toBe("camille@halles.test");
-    expect(subject.mailer.sent[0]?.template).toBe("customer.order-ready");
-    expect(subject.mailer.sent[0]?.data).toMatchObject({ reminder: true });
+    expect(subject.mailer.requested).toHaveLength(1);
+    expect(subject.mailer.requested[0]?.to).toBe("camille@halles.test");
+    expect(subject.mailer.requested[0]?.template).toBe("customer.order-ready");
+    expect(subject.mailer.requested[0]?.data).toMatchObject({ reminder: true });
   });
 
   it("🔴 porte UNE clé par commande : il ne part qu'une fois", async () => {
@@ -111,7 +110,7 @@ describe("« Rappel au client »", () => {
 
     await subject.run();
 
-    expect(subject.mailer.sent[0]?.idempotencyKey).toBe("order.pickup-reminder:order_1");
+    expect(subject.mailer.requested[0]?.idempotencyKey).toBe("order.pickup-reminder:order_1");
   });
 
   it("🔴 refuse un second rappel, sans rien envoyer", async () => {
@@ -122,7 +121,7 @@ describe("« Rappel au client »", () => {
     });
 
     await expect(subject.run()).rejects.toBeInstanceOf(PickupReminderAlreadySentError);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.requested).toEqual([]);
     expect(subject.nudges.saved).toEqual([]);
   });
 
@@ -130,21 +129,21 @@ describe("« Rappel au client »", () => {
     const subject = setup({ now: minutesAfterEnd(10), delay: 15 });
 
     await expect(subject.run()).rejects.toBeInstanceOf(PickupReminderTooEarlyError);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.requested).toEqual([]);
   });
 
   it("🔴 refuse sur une commande que le fournil n'a pas déclarée prête", async () => {
     const subject = setup({ snapshot: nudgeSnapshot({ status: "confirmed", readyAt: null }) });
 
     await expect(subject.run()).rejects.toBeInstanceOf(ReminderRefusedError);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.requested).toEqual([]);
   });
 
   it("refuse sans adresse lisible, plutôt que de dire qu'un message est parti", async () => {
     const subject = setup({ email: null });
 
     await expect(subject.run()).rejects.toBeInstanceOf(ReminderRefusedError);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.requested).toEqual([]);
   });
 
   it("refuse sur une commande introuvable", async () => {

@@ -46,7 +46,8 @@ export const ADMITTED = {
 
 /**
  * Les envoyeurs qui injectent encore le mailer (relevés le 2026-11-06, lot S1).
- * En retirer un = l'avoir fait passer par `MailRequests` (lot S2).
+ * En retirer un = l'avoir fait passer par `MailRequests` (lot S2). S2a a rayé
+ * les 11 de `b2b/orders` (2026-11-06) : 20 restent.
  */
 export const DEBT = [
   `${SRC}/b2b/account/application/handlers/mail-support-requested.handler.ts`,
@@ -62,17 +63,6 @@ export const DEBT = [
   `${SRC}/b2b/contact/application/handlers/mail-order-change-refused.handler.ts`,
   `${SRC}/b2b/growth/infrastructure/mail-appointment-booked-alert.ts`,
   `${SRC}/b2b/mail-copy/infrastructure/specimen-mail-trial.sender.ts`,
-  `${SRC}/b2b/orders/application/commands/resend-order-payment-link.handler.ts`,
-  `${SRC}/b2b/orders/application/commands/warn-customer-of-delay.handler.ts`,
-  `${SRC}/b2b/orders/application/commands/write-shortfall-letter.handler.ts`,
-  `${SRC}/b2b/orders/application/handlers/send-guest-order-notice.handler.ts`,
-  `${SRC}/b2b/orders/application/handlers/send-order-cancelled-mail.handler.ts`,
-  `${SRC}/b2b/orders/application/handlers/send-order-placed-mail.handler.ts`,
-  `${SRC}/b2b/orders/application/handlers/send-payment-expired-mail.handler.ts`,
-  `${SRC}/b2b/orders/application/handlers/send-payment-failed-mail.handler.ts`,
-  `${SRC}/b2b/orders/application/services/delivery-en-route-mail.service.ts`,
-  `${SRC}/b2b/orders/application/services/order-placed-mail.service.ts`,
-  `${SRC}/b2b/orders/application/services/order-ready-mail.service.ts`,
   `${SRC}/b2b/payments/application/commands/send-mandate.handler.ts`,
   `${SRC}/b2b/sub-account-notices/application/services/principal-notice.sender.ts`,
   `${SRC}/b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`,

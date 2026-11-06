@@ -1,9 +1,6 @@
 import type { OrderStatus, OrderView, PaymentStatus } from "@lfd/contracts";
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
 import { BackgroundWork } from "../../../../../platform/events/background-work.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
 import {
   OrderRecipientReader,
   type OrderRecipient,
@@ -111,16 +108,8 @@ export class OneRecipientReader extends OrderRecipientReader {
   }
 }
 
-/** Garde tous les envois, pour qu'on puisse les ouvrir. */
-export class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails, keyof B2bMails>[] = [];
-
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.sent.push(args);
-    return Promise.resolve({ providerId: "msg_1" });
-  }
-}
+/** La porte du bloc `mail` doublée : ce que l'abonné a demandé (plan S2a). */
+export { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 
 /** Le travail de fond joué en attendant la tâche : aucun test ne rend la main trop tôt. */
 export class ImmediateWork extends BackgroundWork {

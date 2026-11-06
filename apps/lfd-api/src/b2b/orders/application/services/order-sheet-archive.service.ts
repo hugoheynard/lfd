@@ -111,6 +111,34 @@ export class OrderSheetArchive {
   }
 
   /**
+   * **Le bon rangé, pour le joindre par référence** (plan
+   * `plan-service-e-mails.md`, S2a) : sa clé au stockage et son nom, le bon
+   * étant fabriqué et rangé s'il manque. Contrairement à {@link pdfOf}, le
+   * rangement n'est PAS best-effort : un courriel ne joint que ce qui est à
+   * sa place, et le bloc `mail` le relira au moment d'envoyer.
+   *
+   * `null` pour un bon de retrait qui attend son QR : il ne s'archive pas
+   * (cf. {@link pdfOf}), il n'y a donc rien à désigner.
+   *
+   * @throws {DocumentStorageUnavailableError} le stockage est indisponible.
+   * @throws {BrandLogoUnavailableError} le logo manque sur le disque.
+   */
+  async kept(
+    sheet: ClientSheet,
+    handoverToken: string | null,
+  ): Promise<{ readonly key: string; readonly fileName: string } | null> {
+    if (awaitsItsQr(sheet, handoverToken)) {
+      return null;
+    }
+    const key = orderSheetPdfKey(sheet);
+    if ((await this.documents.readIfPresent(key)) === null) {
+      const bytes = await this.render(sheet, handoverToken);
+      await this.documents.save(key, { bytes, contentType: "application/pdf" });
+    }
+    return { key, fileName: orderSheetPdfFileName(sheet) };
+  }
+
+  /**
    * La couleur est lue AU RENDU (plan `commandes/back-office/tri-depart-et-couleurs.md`,
    * L5) : celle de la passation pour le bon archivé et joint au courriel. Un
    * bon déjà rangé n'est pas refait — c'est pourquoi la version de dessin

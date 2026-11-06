@@ -5,7 +5,7 @@ import {
   type MailOutcome,
   type MailSendRecord,
 } from "../../../../../platform/mailer/journal/mail-journal.port.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
+import { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import {
   GuestOrderNoticeReader,
@@ -39,13 +39,6 @@ const GUEST_ORDER: OwnedOrder = {
   buyerPhone: null,
   revision: AT_PLACEMENT,
 };
-
-/** Ce qu'on prévient : à qui, avec quel gabarit, et quoi. */
-interface Sent {
-  readonly to: string;
-  readonly template: string;
-  readonly data: unknown;
-}
 
 /** Il y a quelqu'un à prévenir, ou personne — la seule question que ce port pose. */
 class NoticeStub extends GuestOrderNoticeReader {
@@ -106,23 +99,16 @@ function scene(
   notice: GuestOrderNotice | null = PROPRIETAIRE,
   orders: OrderReader = new OneOrderReader(GUEST_ORDER),
 ) {
-  const sent: Sent[] = [];
   const journal = new JournalStub();
   const clock = new ClockStub(UN_MARDI);
   const notices = new NoticeStub(notice);
-  const mailer: B2bMailer = {
-    enabled: true,
-    send: (args) => {
-      sent.push({ to: args.to, template: String(args.template), data: args.data });
-      return Promise.resolve({ providerId: "re_1" });
-    },
-  };
+  const mailer = new RecordingMailRequests();
 
   const handler = new SendGuestOrderNotice(orders, notices, journal, clock, mailer);
   const onPaid = new SendGuestOrderNoticeOnPaid(orders, notices, journal, clock, mailer);
 
   return {
-    sent,
+    sent: mailer.requested,
     keys: journal.keys,
     asked: notices.asked,
     /** Livre le fait comme la boîte d'envoi le livre. */
@@ -186,6 +172,8 @@ describe("SendGuestOrderNotice — qui l'on prévient", () => {
     await world.fire();
 
     expect(world.sent[0]?.data).toEqual({ firstName: "Camille" });
+    // Une clé par commande, sans l'adresse : elle est rangée au suivi des e-mails.
+    expect(world.sent[0]?.idempotencyKey).toBe("order.guest-notice:ord_1");
   });
 
   /**

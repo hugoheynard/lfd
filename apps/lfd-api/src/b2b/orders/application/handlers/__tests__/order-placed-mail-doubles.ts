@@ -1,8 +1,9 @@
 import type { OrderView } from "@lfd/contracts";
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
+import {
+  type RecordedMail,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import {
   OrderRecipientReader,
@@ -90,14 +91,13 @@ export function view(overrides: Partial<OrderView> = {}): OrderView {
   };
 }
 
-/** Un doublé qui garde le dernier envoi, pour qu'on puisse l'ouvrir. */
-export class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  sent: SendMailArgs<B2bMails, keyof B2bMails> | null = null;
-
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.sent = args;
-    return Promise.resolve({ providerId: "msg_1" });
+/**
+ * La porte du bloc `mail` doublée, lue par sa DERNIÈRE demande : ces suites
+ * n'en attendent qu'une, ou aucune (`null`).
+ */
+export class LastMailRequest extends RecordingMailRequests {
+  get last(): RecordedMail | null {
+    return this.requested.at(-1) ?? null;
   }
 }
 

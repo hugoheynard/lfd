@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -6,7 +6,7 @@ import {
 } from "../../../../platform/outbox/durable-handler.js";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import {
   ORDER_PAYMENT_FAILED,
   OrderPaymentFailedEvent,
@@ -67,7 +67,7 @@ export class SendPaymentFailedMail implements DurableSubscriber {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -91,7 +91,8 @@ export class SendPaymentFailedMail implements DurableSubscriber {
     }
 
     const client = this.origins.clientBaseUrl();
-    await this.mailer.send({
+    await this.mails.request({
+      brand: "lfc",
       to: recipient.email,
       template: "customer.payment-failed",
       data: {

@@ -1,11 +1,11 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import {
   COMMERCE_ORDER_PLACED,
   CommerceOrderPlacedFact,
 } from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import { MailJournal } from "../../../../platform/mailer/journal/mail-journal.port.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -75,7 +75,7 @@ export class SendGuestOrderNotice implements DurableSubscriber {
     private readonly notices: GuestOrderNoticeReader,
     private readonly journal: MailJournal,
     private readonly clock: Clock,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
   ) {}
 
   /** L'auteur d'une commande réglée, ou `null` si elle est introuvable. */
@@ -100,10 +100,10 @@ export class SendGuestOrderNotice implements DurableSubscriber {
     if (order.view.paymentStatus !== "not_required") {
       return;
     }
-    await this.run(order.placedByUserId);
+    await this.run(order.placedByUserId, fact.orderId);
   }
 
-  protected async run(placedByUserId: string): Promise<void> {
+  protected async run(placedByUserId: string, orderId: string): Promise<void> {
     const notice = await this.notices.noticeFor(placedByUserId);
     // Le cas NORMAL : le porteur n'est pas un invité, ou personne d'autre ne
     // porte cette adresse. On ne prévient personne, et ce n'est pas un échec.
@@ -122,13 +122,17 @@ export class SendGuestOrderNotice implements DurableSubscriber {
       return;
     }
 
-    await this.mailer.send({
+    await this.mails.request({
+      brand: "lfc",
       to: notice.email,
       template: "customer.order-placed-with-your-email",
       // Le prénom du COMPTE, jamais celui tapé au panier : on salue la personne
       // qu'on prévient, pas celle qui a commandé — et les deux peuvent différer,
       // c'est même toute la raison de cet envoi.
       data: { firstName: notice.firstName },
+      // Une par commande : le registre ci-dessus borne déjà à une par adresse
+      // et par jour. L'adresse n'entre pas dans la clé, qui est rangée au suivi.
+      idempotencyKey: `order.guest-notice:${orderId}`,
     });
   }
 }

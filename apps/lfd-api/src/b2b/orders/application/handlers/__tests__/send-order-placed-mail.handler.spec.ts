@@ -3,15 +3,20 @@ import { Buffer } from "node:buffer";
 import type { OrderView } from "@lfd/contracts";
 
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
+import type { ByReference } from "../../../../../mail/channels/requests/mail-requests.js";
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import { OrderSheetLogoSource } from "../../../domain/ports/order-sheet-logo.source.js";
-import { MissingLogo, sheetAttachment } from "../../services/__tests__/order-sheet-doubles.js";
+import {
+  MemoryCustomerDocuments,
+  MissingLogo,
+  sheetAttachment,
+} from "../../services/__tests__/order-sheet-doubles.js";
 import { SendOrderPlacedMail } from "../send-order-placed-mail.handler.js";
 import {
   FixedOrigins,
   readerOf,
   recipientOf,
-  RecordingMailer,
+  LastMailRequest,
   view,
 } from "./order-placed-mail-doubles.js";
 import { OrderManageLink } from "../../services/order-manage-link.js";
@@ -19,6 +24,9 @@ import {
   FixedCustomerSubjects,
   ReadableSigner,
 } from "../../commands/__tests__/customer-cancellation-doubles.js";
+
+/** Les données de la demande : le bon y est une référence au stockage. */
+type PlacedDemandData = ByReference<B2bMails["customer.order-placed"]>;
 
 /**
  * Ce qui compte ici n'est pas qu'un e-mail parte — c'est **ce qu'il emporte**,
@@ -35,8 +43,9 @@ function handler(options: {
   client?: string | null;
   admin?: string | null;
   logo?: OrderSheetLogoSource;
-}): { readonly run: SendOrderPlacedMail; readonly mailer: RecordingMailer } {
-  const mailer = new RecordingMailer();
+  documents?: MemoryCustomerDocuments;
+}): { readonly run: SendOrderPlacedMail; readonly mailer: LastMailRequest } {
+  const mailer = new LastMailRequest();
   const run = new SendOrderPlacedMail(
     readerOf(options.order === undefined ? view() : options.order),
     recipientOf(options.email === undefined ? "camille@halles.test" : options.email),
@@ -46,6 +55,7 @@ function handler(options: {
     ),
     sheetAttachment({
       ...(options.logo === undefined ? {} : { logo: options.logo }),
+      ...(options.documents === undefined ? {} : { documents: options.documents }),
       admin: options.admin === undefined ? "https://admin.lfc.test" : options.admin,
     }),
     // Lot C6 : aucune fiche lisible ici → le lien de compte, sans secret.
@@ -65,9 +75,9 @@ describe("l'accusé de réception d'une commande", () => {
     const subject = handler({});
     await fire(subject);
 
-    expect(subject.mailer.sent?.to).toBe("camille@halles.test");
-    expect(subject.mailer.sent?.template).toBe("customer.order-placed");
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    expect(subject.mailer.last?.to).toBe("camille@halles.test");
+    expect(subject.mailer.last?.template).toBe("customer.order-placed");
+    const data = subject.mailer.last?.data as PlacedDemandData;
     expect(data.sheet.audience).toBe("client");
     expect(data.handoverToken).toBe("tok_secret_42");
   });
@@ -83,7 +93,7 @@ describe("l'accusé de réception d'une commande", () => {
     const subject = handler({});
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    const data = subject.mailer.last?.data as PlacedDemandData;
     expect(JSON.stringify(data.sheet)).toContain("PAIN-TRAD");
     expect(JSON.stringify(data.sheet)).not.toContain("entryPriceMillicents");
     expect(JSON.stringify(data.sheet)).not.toContain("floored");
@@ -93,14 +103,14 @@ describe("l'accusé de réception d'une commande", () => {
     const subject = handler({});
     await fire(subject);
 
-    expect(subject.mailer.sent?.idempotencyKey).toBe("order.placed:order_1");
+    expect(subject.mailer.last?.idempotencyKey).toBe("order.placed:order_1");
   });
 
   it("compose l'URL du QR sur le BACK-OFFICE : c'est l'équipe qui scanne", async () => {
     const subject = handler({});
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    const data = subject.mailer.last?.data as PlacedDemandData;
     expect(data.handoverUrl).toBe("https://admin.lfc.test/retrait/tok_secret_42");
   });
 
@@ -110,7 +120,7 @@ describe("l'accusé de réception d'une commande", () => {
     });
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    const data = subject.mailer.last?.data as PlacedDemandData;
     expect(data.handoverUrl).toBe("");
   });
 
@@ -120,7 +130,7 @@ describe("l'accusé de réception d'une commande", () => {
     const subject = handler({ client: null, admin: null });
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    const data = subject.mailer.last?.data as PlacedDemandData;
     expect(data.orderUrl).toBe("");
     expect(data.handoverUrl).toBe("");
   });
@@ -131,24 +141,30 @@ describe("l'accusé de réception d'une commande", () => {
     const subject = handler({ email: null });
     await fire(subject);
 
-    expect(subject.mailer.sent).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 
   it("n'envoie rien si la commande est introuvable", async () => {
     const subject = handler({ order: null });
     await fire(subject);
 
-    expect(subject.mailer.sent).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 
-  it("joint la CONFIRMATION DE COMMANDE en PDF — le même que l'archive", async () => {
-    const subject = handler({});
+  it("joint la CONFIRMATION DE COMMANDE par RÉFÉRENCE — le bon rangé, jamais ses octets", async () => {
+    const documents = new MemoryCustomerDocuments();
+    const subject = handler({ documents });
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    const data = subject.mailer.last?.data as PlacedDemandData;
     expect(data.document?.fileName).toBe("confirmation-de-commande-ORD-4812.pdf");
+    expect(data.document).not.toHaveProperty("pdfBase64");
+    const key = data.document?.pdfStored.key ?? "";
+    expect(data.document?.pdfStored.store).toBe("customer-documents");
+    // Le bon est À SA PLACE avant la demande : le bloc `mail` le relira à l'envoi.
+    const stored = await documents.readIfPresent(key);
     expect(
-      Buffer.from(data.document?.pdfBase64 ?? "", "base64")
+      Buffer.from(stored ?? [])
         .subarray(0, 5)
         .toString(),
     ).toBe("%PDF-");
@@ -158,8 +174,8 @@ describe("l'accusé de réception d'une commande", () => {
     const subject = handler({ logo: new MissingLogo() });
     await fire(subject);
 
-    expect(subject.mailer.sent?.template).toBe("customer.order-placed");
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    expect(subject.mailer.last?.template).toBe("customer.order-placed");
+    const data = subject.mailer.last?.data as PlacedDemandData;
     expect(data.document).toBeNull();
   });
 
@@ -168,7 +184,7 @@ describe("l'accusé de réception d'une commande", () => {
     const subject = handler({ order: view({ paymentStatus: "pending" }) });
     await fire(subject);
 
-    expect(subject.mailer.sent).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 
   /**
@@ -182,7 +198,7 @@ describe("l'accusé de réception d'une commande", () => {
       const subject = handler({ order: view({ paymentStatus }) });
       await fire(subject);
 
-      expect(subject.mailer.sent).toBeNull();
+      expect(subject.mailer.last).toBeNull();
     },
   );
 
@@ -192,6 +208,6 @@ describe("l'accusé de réception d'une commande", () => {
     await expect(
       subject.run.handle({ eventId: "evt_2", type: "commerce.order_placed", payload: {} }),
     ).rejects.toThrow("illisible");
-    expect(subject.mailer.sent).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 });

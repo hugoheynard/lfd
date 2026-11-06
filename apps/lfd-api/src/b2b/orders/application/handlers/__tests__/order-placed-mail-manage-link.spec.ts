@@ -1,6 +1,7 @@
 import type { OrderView } from "@lfd/contracts";
 
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
+import type { ByReference } from "../../../../../mail/channels/requests/mail-requests.js";
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import type { CustomerCancellationSubject } from "../../../domain/ports/customer-cancellation-subject.reader.js";
 import {
@@ -16,7 +17,7 @@ import {
   FixedOrigins,
   readerOf,
   recipientOf,
-  RecordingMailer,
+  LastMailRequest,
   view,
 } from "./order-placed-mail-doubles.js";
 
@@ -29,6 +30,9 @@ import {
  * commande saisie par l'équipe. Un invité reçoit la page `/annuler` et son
  * jeton ; un compte reçoit SA commande dans « Mes commandes ».
  */
+
+/** Les données de la demande : le bon y est une référence au stockage. */
+type PlacedDemandData = ByReference<B2bMails["customer.order-placed"]>;
 
 const CLIENT = "https://app.lfc.test";
 const ORDER_ID = "order_1";
@@ -61,7 +65,7 @@ function orderOf(kind: Kind, overrides: Partial<OrderView>): OrderView {
 }
 
 function wiring(kind: Kind, order: OrderView) {
-  const mailer = new RecordingMailer();
+  const mailer = new LastMailRequest();
   const args = [
     readerOf(order),
     recipientOf("camille@halles.test"),
@@ -73,8 +77,8 @@ function wiring(kind: Kind, order: OrderView) {
   return { mailer, args };
 }
 
-function manageUrlOf(mailer: RecordingMailer): string | undefined {
-  return (mailer.sent?.data as B2bMails["customer.order-placed"] | undefined)?.manageUrl;
+function manageUrlOf(mailer: LastMailRequest): string | undefined {
+  return (mailer.last?.data as PlacedDemandData | undefined)?.manageUrl;
 }
 
 const PLACED = { eventId: "evt_1", ...new CommerceOrderPlacedFact(ORDER_ID).durableFact() };

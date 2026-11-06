@@ -1,9 +1,7 @@
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderCustomerNudgesSnapshot } from "../../../domain/entities/order-customer-nudges.js";
 import {
@@ -40,21 +38,6 @@ class FixedOrigins extends OrderMailOrigins {
   }
 }
 
-/** Garde les envois ; peut refuser, comme un fournisseur en panne. */
-class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails, keyof B2bMails>[] = [];
-  refusal: Error | null = null;
-
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    if (this.refusal !== null) {
-      return Promise.reject(this.refusal);
-    }
-    this.sent.push(args);
-    return Promise.resolve({ providerId: "msg_1" });
-  }
-}
-
 function setup(
   options: {
     readonly snapshot?: OrderCustomerNudgesSnapshot | null;
@@ -63,8 +46,8 @@ function setup(
     readonly delay?: number;
   } = {},
 ) {
-  const mailer = new RecordingMailer();
-  const work = new BackgroundWork();
+  const unitOfWork = new OpenableUnitOfWork();
+  const mailer = new RecordingMailRequests(unitOfWork);
   const nudges = new OneOrderNudges(options.snapshot === undefined ? NOT_READY : options.snapshot);
   const handler = new WarnCustomerOfDelayHandler(
     nudges,
@@ -73,12 +56,10 @@ function setup(
     new FixedOrigins(),
     mailer,
     new FixedClock(options.now ?? minutesAfterEnd(20)),
-    new DirectUnitOfWork(),
-    work,
+    unitOfWork,
   );
   const run = async (): Promise<void> => {
     await handler.execute(new WarnCustomerOfDelayCommand("order_1", "staff_lea"));
-    await work.whenIdle();
   };
   return { run, mailer, nudges };
 }
@@ -94,8 +75,9 @@ describe("« Avertir le client »", () => {
         delayWarning: { at: minutesAfterEnd(20), byStaffId: "staff_lea" },
       }),
     ]);
-    expect(subject.mailer.sent).toEqual([
+    expect(subject.mailer.requested).toEqual([
       {
+        brand: "lfc",
         to: "camille@halles.test",
         template: "customer.order-delayed",
         idempotencyKey: "order.delay-warning:order_1",
@@ -118,21 +100,21 @@ describe("« Avertir le client »", () => {
     });
 
     await expect(subject.run()).rejects.toBeInstanceOf(DelayWarningAlreadySentError);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.requested).toEqual([]);
   });
 
   it("🔴 refuse avant le délai réglé après la fin du créneau", async () => {
     const subject = setup({ now: minutesAfterEnd(4), delay: 5 });
 
     await expect(subject.run()).rejects.toBeInstanceOf(DelayWarningTooEarlyError);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.requested).toEqual([]);
   });
 
   it("🔴 refuse sur une commande déjà prête : c'est un rappel qu'il faut", async () => {
     const subject = setup({ snapshot: nudgeSnapshot() });
 
     await expect(subject.run()).rejects.toBeInstanceOf(DelayWarningRefusedError);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.requested).toEqual([]);
   });
 
   it("refuse sans adresse lisible", async () => {
@@ -145,11 +127,17 @@ describe("« Avertir le client »", () => {
     await expect(setup({ snapshot: null }).run()).rejects.toBeInstanceOf(OrderNotFoundError);
   });
 
-  it("un envoi refusé par le fournisseur ne fait pas échouer le geste : il est journalisé", async () => {
+  /**
+   * Depuis S2a (plan `plan-service-e-mails.md`), le courriel est DEMANDÉ dans
+   * la transaction du geste : l'envoi au fournisseur se fait après la
+   * validation, par le bloc `mail`, et son échec ne remonte plus ici. Ce qui
+   * peut encore échouer est la demande elle-même — une écriture — et elle
+   * emporte la trace avec elle.
+   */
+  it("une demande qui échoue fait échouer le geste : la trace et le courriel tombent ensemble", async () => {
     const subject = setup();
-    subject.mailer.refusal = new Error("Resend indisponible");
+    subject.mailer.failWith = new TypeError("base indisponible");
 
-    await expect(subject.run()).resolves.toBeUndefined();
-    expect(subject.nudges.saved).toHaveLength(1);
+    await expect(subject.run()).rejects.toThrow("base indisponible");
   });
 });

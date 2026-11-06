@@ -8,7 +8,7 @@ import { SendPaymentFailedMail } from "../send-payment-failed-mail.handler.js";
 import {
   OneOrderReader,
   OneRecipientReader,
-  RecordingMailer,
+  RecordingMailRequests,
   orderView,
 } from "./payment-failure-doubles.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
@@ -31,7 +31,7 @@ class FixedOrigins extends OrderMailOrigins {
 }
 
 function subscribers(email: string | null = "camille@example.test") {
-  const mailer = new RecordingMailer();
+  const mailer = new RecordingMailRequests();
   const orders = new OneOrderReader({
     view: orderView("placed", "failed"),
     companyId: null,
@@ -65,8 +65,8 @@ describe("les courriels d'un règlement mort", () => {
 
     await publish("refused");
 
-    expect(mailer.sent.map((mail) => mail.template)).toEqual(["customer.payment-failed"]);
-    expect(mailer.sent[0]?.idempotencyKey).toBe("order.payment-failed:order_1");
+    expect(mailer.requested.map((mail) => mail.template)).toEqual(["customer.payment-failed"]);
+    expect(mailer.requested[0]?.idempotencyKey).toBe("order.payment-failed:order_1");
   });
 
   it("la clôture envoie « pas à temps », sans lien de reprise", async () => {
@@ -74,8 +74,8 @@ describe("les courriels d'un règlement mort", () => {
 
     await publish("day_closed");
 
-    expect(mailer.sent).toHaveLength(1);
-    const mail = mailer.sent[0];
+    expect(mailer.requested).toHaveLength(1);
+    const mail = mailer.requested[0];
     expect(mail?.template).toBe("customer.payment-expired");
     expect(mail?.to).toBe("camille@example.test");
     expect(mail?.idempotencyKey).toBe("order.payment-expired:order_1");
@@ -87,7 +87,7 @@ describe("les courriels d'un règlement mort", () => {
 
     await publish("abandoned");
 
-    expect(mailer.sent).toEqual([]);
+    expect(mailer.requested).toEqual([]);
   });
 
   it("un client sans adresse lisible ne fait pas échouer l'abonné de la clôture", async () => {
@@ -95,13 +95,13 @@ describe("les courriels d'un règlement mort", () => {
 
     await publish("day_closed");
 
-    expect(mailer.sent).toEqual([]);
+    expect(mailer.requested).toEqual([]);
   });
 });
 
 describe("le fait livré hors forme", () => {
   it("refuse une cause inconnue : aucun courriel ne part sur un fait illisible", async () => {
-    const mailer = new RecordingMailer();
+    const mailer = new RecordingMailRequests();
     const subscriber = new SendPaymentExpiredMail(
       new OneOrderReader(null),
       new OneRecipientReader("camille@example.test"),
@@ -115,6 +115,6 @@ describe("le fait livré hors forme", () => {
         payload: { orderId: "order_1", cause: "lost" },
       }),
     ).rejects.toThrow("order.payment_failed");
-    expect(mailer.sent).toEqual([]);
+    expect(mailer.requested).toEqual([]);
   });
 });

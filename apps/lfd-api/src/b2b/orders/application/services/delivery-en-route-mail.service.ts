@@ -1,8 +1,8 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { OrderView } from "@lfd/contracts";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader, type OwnedOrder } from "../../domain/ports/order.reader.js";
@@ -34,7 +34,7 @@ export class DeliveryEnRouteMail {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
     private readonly remainders: RemainderShipmentReader,
   ) {}
 
@@ -59,7 +59,8 @@ export class DeliveryEnRouteMail {
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
     const address = sheet.fulfillment.address;
     const client = this.origins.clientBaseUrl();
-    await this.mailer.send({
+    await this.mails.request({
+      brand: "lfc",
       to: recipient.email,
       template: "customer.delivery-en-route",
       data: {

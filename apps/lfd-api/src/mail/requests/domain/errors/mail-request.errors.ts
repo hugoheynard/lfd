@@ -145,3 +145,19 @@ export class MailRequestOutsideUnitOfWorkError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Une pièce jointe désignée par la demande n'est pas au stockage au moment de
+ * l'envoi. L'e-mail ne part PAS sans elle : il annoncerait une pièce absente.
+ * Refus, et non échec technique — réessayer ne fera pas apparaître le fichier.
+ */
+export class MailAttachmentMissingError extends BusinessError {
+  constructor(key: string) {
+    super(
+      "MAIL_ATTACHMENT_MISSING",
+      `La pièce jointe « ${key} » est introuvable au stockage : l'e-mail n'est pas parti. ` +
+        "Vérifier que le document a bien été déposé (et non retiré), puis refaire le geste " +
+        "qui demande l'e-mail.",
+    );
+  }
+}

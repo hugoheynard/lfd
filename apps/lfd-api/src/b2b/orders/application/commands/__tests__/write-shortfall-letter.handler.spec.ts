@@ -1,8 +1,11 @@
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
+import type {
+  DeferrableMailTemplate,
+  DeferredMailDemand,
+} from "../../../../../mail/channels/requests/mail-requests.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   ShortfallNotice,
@@ -11,7 +14,6 @@ import {
 import {
   ShortfallCustomerAlreadyNotifiedError,
   ShortfallLetterNoRecipientError,
-  ShortfallLetterNotSentError,
   ShortfallLetterRequiredError,
   ShortfallLetterWithoutDecisionError,
 } from "../../../domain/errors/shortfall-letter-errors.js";
@@ -80,20 +82,20 @@ class Recipients extends OrderRecipientReader {
   }
 }
 
-class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails>[] = [];
-  refusal: Error | null = null;
+/** La porte du bloc `mail`, qui note sa demande dans la trace. */
+class TracedMailRequests extends RecordingMailRequests {
+  constructor(
+    private readonly trace: Trace,
+    unitOfWork: OpenableUnitOfWork,
+  ) {
+    super(unitOfWork);
+  }
 
-  constructor(private readonly trace: Trace) {}
-
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.trace.push("send");
-    if (this.refusal !== null) {
-      return Promise.reject(this.refusal);
-    }
-    this.sent.push(args);
-    return Promise.resolve({ providerId: "re_1" });
+  override request<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<string> {
+    this.trace.push("request");
+    return super.request(demand);
   }
 }
 
@@ -104,13 +106,14 @@ function scene(
 ) {
   const trace: Trace = [];
   const notices = new FixedNotices(trace, snapshot, locale);
-  const mailer = new RecordingMailer(trace);
+  const unitOfWork = new OpenableUnitOfWork();
+  const mailer = new TracedMailRequests(trace, unitOfWork);
   const handler = new WriteShortfallLetterHandler(
     notices,
     new Recipients(email),
     mailer,
     new FixedClock(NOW),
-    new DirectUnitOfWork(),
+    unitOfWork,
   );
   const write = (message = "  Il manque deux croissants.  "): Promise<void> =>
     handler.execute(new WriteShortfallLetterCommand("ord_1", "staff_1", message));
@@ -118,15 +121,18 @@ function scene(
 }
 
 describe("« Écrire au client » (E6d)", () => {
-  it("trace l'envoi puis envoie le texte RELU, au client, dans la langue de la commande", async () => {
+  it("trace l'envoi puis DEMANDE le texte RELU, au client, dans la langue de la commande", async () => {
     const { trace, notices, mailer, write } = scene();
 
     await write();
 
-    expect(trace).toEqual(["lock", "save", "send"]);
+    // La demande est faite DANS la transaction de la trace (la porte doublée
+    // refuse sinon) : elles tombent ensemble.
+    expect(trace).toEqual(["lock", "save", "request"]);
     expect(notices.saved).toEqual([{ ...BLANK, notifiedAt: NOW, notifiedBy: "staff_1" }]);
-    expect(mailer.sent).toEqual([
+    expect(mailer.requested).toEqual([
       {
+        brand: "lfc",
         to: "jean@exemple.fr",
         template: "customer.order-shortfall",
         idempotencyKey: "order-shortfall:dec_1",
@@ -140,7 +146,7 @@ describe("« Écrire au client » (E6d)", () => {
 
     await write();
 
-    expect(mailer.sent[0]?.data).toMatchObject({ locale: "fr" });
+    expect(mailer.requested[0]?.data).toMatchObject({ locale: "fr" });
   });
 
   it("refuse un second envoi sans rien envoyer", async () => {
@@ -148,7 +154,7 @@ describe("« Écrire au client » (E6d)", () => {
 
     await expect(write()).rejects.toBeInstanceOf(ShortfallCustomerAlreadyNotifiedError);
     expect(trace).toEqual(["lock"]);
-    expect(mailer.sent).toEqual([]);
+    expect(mailer.requested).toEqual([]);
   });
 
   it("refuse un texte vide avant même de verrouiller", async () => {
@@ -162,20 +168,26 @@ describe("« Écrire au client » (E6d)", () => {
     const { mailer, write } = scene(null);
 
     await expect(write()).rejects.toBeInstanceOf(ShortfallLetterWithoutDecisionError);
-    expect(mailer.sent).toEqual([]);
+    expect(mailer.requested).toEqual([]);
   });
 
   it("refuse un client sans adresse : rien ne part", async () => {
     const { trace, write } = scene(BLANK, null);
 
     await expect(write()).rejects.toBeInstanceOf(ShortfallLetterNoRecipientError);
-    expect(trace).not.toContain("send");
+    expect(trace).not.toContain("request");
   });
 
-  it("un envoi refusé par le fournisseur remonte, pour que la trace soit annulée avec lui", async () => {
+  /**
+   * Depuis S2a (plan `plan-service-e-mails.md`), l'envoi au fournisseur se
+   * fait après la validation, par le bloc `mail` : son refus ne remonte plus
+   * ici. Ce qui peut échouer dans la transaction est la DEMANDE — et elle
+   * remonte, pour que la trace soit annulée avec elle.
+   */
+  it("une demande qui échoue remonte, pour que la trace soit annulée avec elle", async () => {
     const { mailer, write } = scene();
-    mailer.refusal = new RangeError("Resend injoignable");
+    mailer.failWith = new RangeError("base injoignable");
 
-    await expect(write()).rejects.toBeInstanceOf(ShortfallLetterNotSentError);
+    await expect(write()).rejects.toThrow("base injoignable");
   });
 });

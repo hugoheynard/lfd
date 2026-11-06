@@ -54,15 +54,69 @@ type DefersIntact<T> = T extends string | number | boolean | null | undefined
 type Every<B> = [B] extends [true] ? true : false;
 
 /**
- * Les modèles que `request` accepte : ceux dont les données traversent la
- * boîte d'envoi intactes. Au 2026-11-06, quatre en sont exclus parce qu'ils
- * joignent un PDF en base64 (`customer.order-placed`, `customer.invoice-issued`,
- * `customer.mandate-to-sign`, `staff.production-dossier`) : ils attendent le
- * passage des PDF au stockage (lot S2) et n'ont que `sendNow` d'ici là.
+ * **Une pièce jointe par référence** (plan C2 : « une pièce jointe n'entre
+ * jamais dans la demande ») : le PDF est déposé au stockage par l'appelant,
+ * la demande ne porte que sa clé, et le bloc le relit au moment de l'envoi —
+ * après la validation, comme au balayeur.
+ *
+ * `store` nomme le stockage où la pièce est rangée. Seul celui des pièces
+ * attachées à un client est ouvert au 2026-11-06 (le bon de commande) ; celui
+ * du fournil s'ouvrira avec le dossier du jour.
+ */
+export interface StoredPdf {
+  readonly store: "customer-documents";
+  readonly key: string;
+}
+
+/**
+ * La forme différée des données d'un modèle : partout où le gabarit attend
+ * `pdfBase64`, la demande porte `pdfStored`, la référence au stockage. Le
+ * bloc fait la substitution inverse à l'envoi ; le gabarit ne change pas.
+ */
+export type ByReference<T> = T extends string | number | boolean | null | undefined
+  ? T
+  : T extends readonly (infer U)[]
+    ? readonly ByReference<U>[]
+    : T extends object
+      ? "pdfBase64" extends keyof T
+        ? { readonly [P in keyof T as Exclude<P, "pdfBase64">]: ByReference<T[P]> } & {
+            readonly pdfStored: StoredPdf;
+          }
+        : { readonly [P in keyof T]: ByReference<T[P]> }
+      : T;
+
+/**
+ * Les modèles à PDF ouverts à `request`, leur pièce passant par référence.
+ * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a). La
+ * facture, le mandat et le dossier du fournil s'ouvriront avec leur bloc.
+ */
+type OpenedByReference = "customer.order-placed";
+
+/**
+ * Les modèles que `request` accepte : ceux dont les données — sous leur forme
+ * différée — traversent la boîte d'envoi intactes, et parmi ceux qui joignent
+ * un PDF, seulement ceux que {@link OpenedByReference} ouvre. Au 2026-11-06,
+ * trois en restent exclus (`customer.invoice-issued`,
+ * `customer.mandate-to-sign`, `staff.production-dossier`) : ils n'ont que
+ * `sendNow` d'ici le passage de leur bloc.
  */
 export type DeferrableMailTemplate = {
-  [K in keyof B2bMails]: Every<DefersIntact<B2bMails[K]>> extends true ? K : never;
+  [K in keyof B2bMails]: Every<DefersIntact<B2bMails[K]>> extends true
+    ? K
+    : K extends OpenedByReference
+      ? Every<DefersIntact<ByReference<B2bMails[K]>>> extends true
+        ? K
+        : never
+      : never;
 }[keyof B2bMails];
+
+/** Une demande différée : ses pièces jointes y sont des références. */
+export interface DeferredMailDemand<K extends DeferrableMailTemplate> extends Omit<
+  MailDemand<K>,
+  "data"
+> {
+  readonly data: ByReference<B2bMails[K]>;
+}
 
 /**
  * **La porte du bloc `mail`** : demander un e-mail. Déclarée et implémentée
@@ -80,9 +134,13 @@ export type DeferrableMailTemplate = {
  */
 export abstract class MailRequests {
   /**
+   * @returns l'identifiant de la demande — celle qui existait déjà pour une
+   *   clé d'idempotence connue —, pour qu'un bloc puisse suivre son envoi.
    * @throws {MailRequestOutsideUnitOfWorkError} hors d'une `UnitOfWork`.
    */
-  abstract request<K extends DeferrableMailTemplate>(demand: MailDemand<K>): Promise<void>;
+  abstract request<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<string>;
 
   /**
    * Le suivi s'écrit APRÈS l'envoi, dans sa propre écriture. Une demande de

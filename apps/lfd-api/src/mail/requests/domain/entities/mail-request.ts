@@ -137,6 +137,10 @@ export class MailRequest {
     return new MailRequest({ ...snapshot, brand: MailBrand.of(snapshot.brand).code });
   }
 
+  get id(): string {
+    return this.state.id;
+  }
+
   get idempotencyKey(): string {
     return this.state.idempotencyKey;
   }

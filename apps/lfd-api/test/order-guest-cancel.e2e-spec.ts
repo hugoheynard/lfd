@@ -9,6 +9,7 @@ import type { GuestOrderCancellationView } from "@lfd/contracts";
 import { OrderPlacedMail } from "../src/b2b/orders/application/services/order-placed-mail.service.js";
 import { CancellationLinkSigner } from "../src/b2b/orders/domain/ports/cancellation-link-signer.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
+import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import {
   bootCustomerScene,
@@ -36,6 +37,16 @@ beforeEach(async () => {
   await setCancellation(true);
 });
 
+/**
+ * L'accusé tel que `order.paid` le fait partir : DEMANDÉ dans une transaction
+ * (plan `plan-service-e-mails.md`, S2a), puis envoyé par le bloc `mail` après
+ * la validation — que `drain` attend.
+ */
+async function sendPlacedMail(orderId: string): Promise<void> {
+  await ctx.app.get(UnitOfWork).run(() => ctx.app.get(OrderPlacedMail).send(orderId));
+  await ctx.drain();
+}
+
 const tokenOf = (orderId: string) => ctx.app.get(CancellationLinkSigner).sign(orderId);
 const view = (orderId: string, token: string) =>
   visitor().post("/shop/orders/cancellation/view").send({ orderId, token });
@@ -49,27 +60,25 @@ async function guestOrder(seed: { readonly inDays?: number | null } = {}) {
 }
 
 describe("le lien du courriel (C6.4, B1)", () => {
-  it("l'accusé d'un invité porte la page d'annulation, le jeton en fragment — le même au rejeu", async () => {
+  it("l'accusé d'un invité porte la page d'annulation, le jeton en fragment — et ne repart pas au rejeu", async () => {
     const { orderId, token } = await guestOrder();
-    const mail = ctx.app.get(OrderPlacedMail);
 
-    await mail.send(orderId);
-    await mail.send(orderId);
+    await sendPlacedMail(orderId);
+    // Le rejeu redemande la même clé (`order.placed:<id>`) : depuis S2a, le
+    // bloc `mail` ne la renvoie pas — il en garde le suivi.
+    await sendPlacedMail(orderId);
 
     const links = scene.mails
       .filter((sent) => sent.template === "customer.order-placed")
       .map((sent) => (sent.data as { readonly manageUrl?: string }).manageUrl);
-    expect(links).toEqual([
-      `${CLIENT_BASE_URL}/annuler#${orderId}.${token}`,
-      `${CLIENT_BASE_URL}/annuler#${orderId}.${token}`,
-    ]);
+    expect(links).toEqual([`${CLIENT_BASE_URL}/annuler#${orderId}.${token}`]);
   });
 
   it("l'accusé d'un compte porte SA commande dans « Mes commandes », sans secret", async () => {
     const author = await customer();
     const { orderId } = await seedCustomerOrder({ placedByUserId: author.id });
 
-    await ctx.app.get(OrderPlacedMail).send(orderId);
+    await sendPlacedMail(orderId);
 
     expect(scene.mails[0]?.data).toMatchObject({
       manageUrl: `${CLIENT_BASE_URL}/mes-commandes/${orderId}`,

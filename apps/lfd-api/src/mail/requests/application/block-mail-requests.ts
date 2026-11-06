@@ -4,13 +4,23 @@ import type { MailReceipt } from "@lfd/mailer";
 import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
 import {
   type DeferrableMailTemplate,
+  type DeferredMailDemand,
   type MailDemand,
   MailRequests,
 } from "../../channels/requests/mail-requests.js";
 import { ImmediateMailSender } from "./immediate-mail-sender.service.js";
 import { type CheckedMailDemand, MailRequester } from "./mail-requester.service.js";
 
-function checked<K extends keyof B2bMails>(demand: MailDemand<K>): CheckedMailDemand {
+/** Ce que les deux formes de demande ont en commun, une fois le type vérifié. */
+interface TypedDemand {
+  readonly template: string;
+  readonly to: string;
+  readonly data: unknown;
+  readonly brand: string;
+  readonly idempotencyKey: string;
+}
+
+function checked(demand: TypedDemand): CheckedMailDemand {
   return {
     template: demand.template,
     to: demand.to,
@@ -33,7 +43,7 @@ export class BlockMailRequests extends MailRequests {
     super();
   }
 
-  request<K extends DeferrableMailTemplate>(demand: MailDemand<K>): Promise<void> {
+  request<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
     return this.requester.request(checked(demand));
   }
 

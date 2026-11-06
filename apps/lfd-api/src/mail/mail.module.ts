@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { DurableFactPayloads } from "../platform/outbox/durable-fact-payloads.js";
@@ -10,9 +10,11 @@ import { DeferredMailSender } from "./requests/application/deferred-mail-sender.
 import { DeliverRequestedMail } from "./requests/application/deliver-requested-mail.handler.js";
 import { ImmediateMailSender } from "./requests/application/immediate-mail-sender.service.js";
 import { MailRequester } from "./requests/application/mail-requester.service.js";
+import { MailAttachments } from "./requests/application/mail-attachments.js";
 import { MailSendAttempt } from "./requests/application/mail-send-attempt.js";
 import { PurgeSettledMailRequestsHandler } from "./requests/application/purge-settled-mail-requests.handler.js";
 import { SweepMailRequestsHandler } from "./requests/application/sweep-mail-requests.handler.js";
+import { MailAttachmentStore } from "./requests/domain/ports/mail-attachment.store.js";
 import { MailDispatch } from "./requests/domain/ports/mail-dispatch.js";
 import { MailRequestPruner } from "./requests/domain/ports/mail-request.pruner.js";
 import { MailRequestRepository } from "./requests/domain/ports/mail-request.repository.js";
@@ -25,15 +27,20 @@ import { MailerMailDispatch } from "./requests/infrastructure/mailer-mail-dispat
 import { PrismaMailRequestPruner } from "./requests/infrastructure/prisma-mail-request.pruner.js";
 import { PrismaMailRequestRepository } from "./requests/infrastructure/prisma-mail-request.repository.js";
 import { PrismaStalledMailRequests } from "./requests/infrastructure/prisma-stalled-mail-requests.js";
+import { StorageMailAttachmentStore } from "./requests/infrastructure/storage-mail-attachment.store.js";
 
 /**
  * **Le bloc des e-mails** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, S1) :
  * sa porte `MailRequests`, le suivi des demandes, l'abonné durable qui
  * engage l'envoi et le fait partir après la validation, et son balayeur (S1b). Le rendu reste celui de `platform/mailer`.
  *
- * Au 2026-11-06, aucun envoyeur ne passe encore par la porte : S2 les fera
- * migrer, bloc par bloc, et décidera comment la porte leur est servie.
+ * Les envoyeurs y passent bloc par bloc (S2 ; `b2b/orders` le premier, lot
+ * S2a). **Global** : un bloc métier n'a le droit d'importer que le canal
+ * (`mail/channels/requests/`), pas ce module — la matrice du § 3 de
+ * `CLAUDE.md` dit « port uniquement ». `AppModule` l'importe une fois, et la
+ * porte `MailRequests` est servie partout, comme les ports de `ContextModule`.
  */
+@Global()
 @Module({
   controllers: [MailRequestPurgeController, MailRequestsSweepController],
   providers: [
@@ -47,6 +54,9 @@ import { PrismaStalledMailRequests } from "./requests/infrastructure/prisma-stal
     { provide: MailRequestRepository, useClass: PrismaMailRequestRepository },
     { provide: MailDispatch, useClass: MailerMailDispatch },
     { provide: UnitOfWorkProbe, useClass: AmbientUnitOfWorkProbe },
+    // S2a : les pièces jointes relues au stockage, à chaque essai.
+    { provide: MailAttachmentStore, useClass: StorageMailAttachmentStore },
+    MailAttachments,
     MailSendAttempt,
     MailRequester,
     ImmediateMailSender,

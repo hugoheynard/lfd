@@ -1,5 +1,4 @@
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
+import { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   OrderNotFoundError,
@@ -75,25 +74,14 @@ class Origins extends OrderMailOrigins {
   }
 }
 
-/** Le mailer au plus près de sa forme — `enabled` compris (cf. le rappel de retrait). */
-class RecordingMailer {
-  readonly enabled = false;
-  readonly sent: SendMailArgs<never, never>[] = [];
-
-  send(args: unknown): Promise<MailReceipt> {
-    this.sent.push(args as SendMailArgs<never, never>);
-    return Promise.resolve({ providerId: "msg_1" });
-  }
-}
-
 function handler(
   options: {
     order?: OrderPaymentStanding | null;
     email?: string | null;
     client?: string | null;
   } = {},
-): { readonly run: ResendOrderPaymentLinkHandler; readonly mailer: RecordingMailer } {
-  const mailer = new RecordingMailer();
+): { readonly run: ResendOrderPaymentLinkHandler; readonly mailer: RecordingMailRequests } {
+  const mailer = new RecordingMailRequests();
   const run = new ResendOrderPaymentLinkHandler(
     new OneStanding(options.order === undefined ? standing() : options.order),
     new OneRecipient(options.email === undefined ? "camille@halles.test" : options.email),
@@ -107,12 +95,25 @@ function handler(
 const RESEND = new ResendOrderPaymentLinkCommand("order_1", "staff_1");
 
 describe("ResendOrderPaymentLinkHandler", () => {
+  it("envoie TOUT DE SUITE (`sendNow`) : l'agent lit l'échec à l'écran, rien n'est différé", async () => {
+    const subject = handler();
+    await subject.run.execute(RESEND);
+    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.sentNow[0]?.brand).toBe("lfc");
+  });
+
+  it("un envoi qui échoue remonte à l'agent", async () => {
+    const subject = handler();
+    subject.mailer.failWith = new TypeError("fournisseur indisponible");
+    await expect(subject.run.execute(RESEND)).rejects.toThrow("fournisseur indisponible");
+  });
+
   it("envoie le lien de règlement à l'acheteur, par le nouveau gabarit", async () => {
     const subject = handler();
     await subject.run.execute(RESEND);
 
-    expect(subject.mailer.sent).toHaveLength(1);
-    expect(subject.mailer.sent[0]).toMatchObject({
+    expect(subject.mailer.sentNow).toHaveLength(1);
+    expect(subject.mailer.sentNow[0]).toMatchObject({
       to: "camille@halles.test",
       template: "customer.order-payment-link",
       data: {
@@ -126,7 +127,7 @@ describe("ResendOrderPaymentLinkHandler", () => {
   it("porte une clé DATÉE : un renvoi n'existe que pour repartir", async () => {
     const subject = handler();
     await subject.run.execute(RESEND);
-    expect(subject.mailer.sent[0]?.idempotencyKey).toBe(
+    expect(subject.mailer.sentNow[0]?.idempotencyKey).toBe(
       `order.payment-link:order_1:${NOW.toISOString()}`,
     );
   });
@@ -134,7 +135,7 @@ describe("ResendOrderPaymentLinkHandler", () => {
   it("renvoie aussi le lien d'un règlement refusé", async () => {
     const subject = handler({ order: standing({ paymentStatus: "failed" }) });
     await subject.run.execute(RESEND);
-    expect(subject.mailer.sent).toHaveLength(1);
+    expect(subject.mailer.sentNow).toHaveLength(1);
   });
 
   it("refuse une commande inconnue", async () => {
@@ -150,7 +151,7 @@ describe("ResendOrderPaymentLinkHandler", () => {
   ])("refuse une commande %s, en le disant", async (_, order) => {
     const subject = handler({ order });
     await expect(subject.run.execute(RESEND)).rejects.toThrow(/n'attend plus de règlement/u);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.sentNow).toEqual([]);
   });
 
   it("🔴 refuse sans CLIENT_BASE_URL, en nommant le réglage", async () => {
@@ -158,7 +159,7 @@ describe("ResendOrderPaymentLinkHandler", () => {
     const refused = subject.run.execute(RESEND);
     await expect(refused).rejects.toBeInstanceOf(OrderPaymentLinkRefusedError);
     await expect(subject.run.execute(RESEND)).rejects.toThrow(/CLIENT_BASE_URL/u);
-    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.mailer.sentNow).toEqual([]);
   });
 
   it("refuse un acheteur sans adresse lisible, et propose de copier le lien", async () => {

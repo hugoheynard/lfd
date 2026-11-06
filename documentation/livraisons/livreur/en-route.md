@@ -40,7 +40,7 @@ sequenceDiagram
   `DepartDeliveryRoundHandler` ; livreur, `DepartMyRoundHandler`), DANS la
   transaction du départ. Un départ refusé ou annulé n'a pas de fait ; le
   fait d'un départ validé est livré au moins une fois à chaque abonné, y
-  compris à travers un redémarrage (le courriel, lui, a sa fenêtre : § 3).
+  compris à travers un redémarrage (le courriel aussi, depuis S2a : § 3).
 - **Le journal** est à part : `DeliveryRoundDepartedEvent` (`JournaledEvent`)
   écrit toujours `delivery_round.departed`. Un fait de journal et un fait
   durable sont deux classes.
@@ -49,16 +49,15 @@ sequenceDiagram
   abonné `b2b.mail-delivery-en-route` — nom stable depuis le premier
   déploiement de DD1, c'est la clé de son reçu dans la boîte d'envoi. La
   garde du relais (`DurableDeliveryGuard`) le fait tourner dans la
-  transaction qui pose ce reçu ; il n'y fait que décoder le fait (une charge
-  illisible lève, la livraison échoue et sera rejouée), et **inscrit les
-  envois pour après la validation** — le port `AfterCommit`, sur
-  `deferUntilCommit` (`platform/database/transaction.store.ts`), le travail
-  suivi par `BackgroundWork`. Les envois partent donc hors transaction, une
-  fois le reçu validé, commande par commande et TOUTES : un envoi raté ne
-  prive pas les suivants. Un échec est journalisé
-  (`DeliveryEnRouteMailFailedError`, construite après avoir tenté toute la
-  tournée) et **jamais relancé** : un courriel « en route » n'est pas
-  critique, et le reçu est déjà validé quand les envois partent.
+  transaction qui pose ce reçu. **Depuis le 2026-11-06 (S2a,
+  [`plan-service-e-mails.md`](../../editeur-de-contenu/plan-service-e-mails.md))**,
+  il y **demande** un courriel par envoi au bloc `mail` (`MailRequests.request`)
+  — une écriture, aucun appel au fournisseur — et le bloc envoie après la
+  validation ; son balayeur reprend un envoi interrompu. Une demande qui
+  échoue fait échouer la livraison, qui sera rejouée ; les demandes déjà
+  faites ne se doublent pas (même clé). Avant S2a, l'abonné inscrivait les
+  envois pour après la validation (`AfterCommit`), les journalisait
+  (`DeliveryEnRouteMailFailedError`, retirée) et ne les relançait jamais.
 - **Pourquoi après la validation** (audit du 2026-10-07, B1).
   Jusque-là, l'abonné envoyait DANS la transaction du reçu, ce que
   `UnitOfWork` interdit : une transaction interactive a un délai (5 s, le
@@ -101,11 +100,12 @@ après la requête » ont été **mesurés une fois, à la main**, en bâtissant
 mesurent le réveil du relais, pas Resend. Si le chemin rapide manque (un
 redémarrage), le balayage de la boîte d'envoi rattrape.
 
-**Ce qui reste perdable** depuis le 2026-10-07 (B1) : un redémarrage pendant
-les envois perd ceux qui restaient, puisque le reçu dit déjà l'abonné servi.
-La fenêtre va de la validation du reçu au dernier envoi de la tournée ; avant
-DD1, elle couvrait tout le trajet depuis la validation du départ, par le bus
-en mémoire. Un départ annulé, lui, n'envoie jamais rien.
+**Plus rien n'est perdable depuis S2a (2026-11-06)** : les demandes sont
+écrites avec le reçu, et le bloc `mail` les envoie après la validation, son
+balayeur reprenant un envoi interrompu par un redémarrage. Du 2026-10-07 (B1)
+à S2a, un redémarrage pendant les envois perdait ceux qui restaient. Le délai
+gagne un saut (le fait `mail.requested` à livrer) : il reste à mesurer
+(plan, S2). Un départ annulé, lui, n'envoie jamais rien.
 
 ## 4. Les preuves
 

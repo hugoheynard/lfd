@@ -1,8 +1,4 @@
-import {
-  BusinessError,
-  DomainError,
-  TechnicalError,
-} from "../../../../platform/shared/errors/app-error.js";
+import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus de **« Écrire au client »** après un départ incomplet (plan
@@ -57,17 +53,6 @@ export class ShortfallLetterNoRecipientError extends BusinessError {
       "orders.shortfall_letter.no_recipient",
       `Le client qui a passé ${reference} n'a pas d'adresse lisible : le courriel n'est pas parti. ` +
         "Prévenez-le par téléphone.",
-    );
-  }
-}
-
-/** Le fournisseur a refusé l'envoi : la trace est annulée avec lui. */
-export class ShortfallLetterNotSentError extends TechnicalError {
-  constructor(reference: string, cause: unknown) {
-    super(
-      "orders.shortfall_letter.not_sent",
-      `Le courriel au client de ${reference} n'est pas parti, et rien n'a été tracé. Réessayez dans un instant.`,
-      cause,
     );
   }
 }

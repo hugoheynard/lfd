@@ -6,7 +6,9 @@ import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { MailRequest } from "../../domain/entities/mail-request.js";
+import { MailAttachmentStore } from "../../domain/ports/mail-attachment.store.js";
 import { MailDispatch, type OutgoingMail } from "../../domain/ports/mail-dispatch.js";
+import type { StoredPdfRef } from "../../domain/services/stored-pdfs.js";
 import { MailRequestRepository } from "../../domain/ports/mail-request.repository.js";
 import {
   type StalledMailCriteria,
@@ -18,6 +20,7 @@ import { DeferredMailSender } from "../deferred-mail-sender.service.js";
 import { DeliverRequestedMail } from "../deliver-requested-mail.handler.js";
 import { ImmediateMailSender } from "../immediate-mail-sender.service.js";
 import { MailRequester } from "../mail-requester.service.js";
+import { MailAttachments } from "../mail-attachments.js";
 import { MailSendAttempt } from "../mail-send-attempt.js";
 import { SweepMailRequestsHandler } from "../sweep-mail-requests.handler.js";
 
@@ -101,6 +104,21 @@ export class RecordingDispatch extends MailDispatch {
   }
 }
 
+/** Le stockage des pièces, en mémoire : `put` y dépose, `reads` compte les relectures. */
+export class InMemoryAttachmentStore extends MailAttachmentStore {
+  readonly files = new Map<string, Buffer>();
+  reads = 0;
+
+  put(key: string, bytes: Buffer): void {
+    this.files.set(key, bytes);
+  }
+
+  readIfPresent(ref: StoredPdfRef): Promise<Buffer | null> {
+    this.reads += 1;
+    return Promise.resolve(this.files.get(ref.key) ?? null);
+  }
+}
+
 /** Les faits durables écrits, dans l'ordre. */
 export class RecordingFacts extends DurablePublisher {
   readonly facts: DurableFact[] = [];
@@ -129,7 +147,8 @@ export function mailScene() {
   const clock = new FixedClock(new Date(0));
   const ids = new FixedIdGenerator("mail");
   const afterCommit = new HeldAfterCommit();
-  const attempt = new MailSendAttempt(dispatch, clock);
+  const attachments = new InMemoryAttachmentStore();
+  const attempt = new MailSendAttempt(dispatch, new MailAttachments(attachments), clock);
   const deferred = new DeferredMailSender(requests, attempt);
   const requester = new MailRequester(requests, facts, probe, clock, ids);
   const immediate = new ImmediateMailSender(requests, attempt, probe, clock, ids);
@@ -142,6 +161,7 @@ export function mailScene() {
   );
   return {
     requests,
+    attachments,
     dispatch,
     facts,
     probe,

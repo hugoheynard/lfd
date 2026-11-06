@@ -1,8 +1,6 @@
 import type { OrderView } from "@lfd/contracts";
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
 import { OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import {
@@ -14,6 +12,7 @@ import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
 import { SendOrderReadyMail } from "../send-order-ready-mail.handler.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 import type { RemainderShipment } from "../../../domain/ports/remainder-shipment.reader.js";
+import { LastMailRequest } from "./order-placed-mail-doubles.js";
 import { FixedRemainders } from "./remainder-shipment-doubles.js";
 
 /**
@@ -108,17 +107,6 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
   };
 }
 
-/** Un doublé qui garde le dernier envoi, pour qu'on puisse l'ouvrir. */
-class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  sent: SendMailArgs<B2bMails, keyof B2bMails> | null = null;
-
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.sent = args;
-    return Promise.resolve({ providerId: "msg_1" });
-  }
-}
-
 /** Les deux origines, fixées. Le port est étroit : rien d'autre à jouer. */
 class FixedOrigins extends OrderMailOrigins {
   constructor(
@@ -211,10 +199,10 @@ function handler(options: {
   remainders?: ReadonlyMap<string, RemainderShipment>;
 }): {
   readonly run: SendOrderReadyMail;
-  readonly mailer: RecordingMailer;
+  readonly mailer: LastMailRequest;
   readonly remainders: FixedRemainders;
 } {
-  const mailer = new RecordingMailer();
+  const mailer = new LastMailRequest();
   const remainders = new FixedRemainders(options.remainders);
   // 🔴 L'abonné est monté SUR le composeur réel, pas sur un doublé de celui-ci.
   // Ce que ces cas tiennent — à qui on écrit, ce que le message emporte, la clé
@@ -249,8 +237,8 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({});
     await fire(subject);
 
-    expect(subject.mailer.sent?.to).toBe("camille@halles.test");
-    expect(subject.mailer.sent?.template).toBe("customer.order-ready");
+    expect(subject.mailer.last?.to).toBe("camille@halles.test");
+    expect(subject.mailer.last?.template).toBe("customer.order-ready");
   });
 
   it("emporte la feuille PROJETÉE, et le SKU y est désormais", async () => {
@@ -265,7 +253,7 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({});
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
     expect(data.sheet.audience).toBe("client");
     expect(JSON.stringify(data.sheet)).toContain("PAIN-TRAD");
     expect(JSON.stringify(data.sheet)).not.toContain("entryPriceMillicents");
@@ -276,7 +264,7 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({});
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
     expect(data.handoverUrl).toBe("https://admin.lfc.test/retrait/tok_secret_42");
   });
 
@@ -288,7 +276,7 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({ order: view({ paymentStatus: "pending" }) });
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
     expect(data.handoverToken).toBeNull();
     expect(data.handoverUrl).toBe("");
   });
@@ -299,7 +287,7 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({});
     await fire(subject);
 
-    expect(subject.mailer.sent?.idempotencyKey).toBe("order.ready:order_1");
+    expect(subject.mailer.last?.idempotencyKey).toBe("order.ready:order_1");
   });
 
   /** Plan E7 reliquat, choix 17 : une clé oubliée avale le courriel du second envoi. */
@@ -310,14 +298,14 @@ describe("le courriel « votre commande est prête »", () => {
       ...new OrderReadyFact("order_1", 2).durableFact(),
     });
 
-    expect(subject.mailer.sent?.idempotencyKey).toBe("order.ready:order_1:r2");
+    expect(subject.mailer.last?.idempotencyKey).toBe("order.ready:order_1:r2");
   });
 
   it("un reste prêt dit « le reste », avec les pièces de SON bon", async () => {
     const subject = handler({ remainders: REMAINDER });
     await subject.run.handle(REMAINDER_READY);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
     expect(data.remainder).toEqual({ pieces: 3 });
     // Le QR reste celui de la commande : le comptoir montre le reste prêt (L4c).
     expect(data.handoverUrl).toBe("https://admin.lfc.test/retrait/tok_secret_42");
@@ -327,7 +315,7 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({ remainders: REMAINDER });
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
     expect(data).not.toHaveProperty("remainder");
     expect(subject.remainders.asked).toEqual([]);
   });
@@ -340,8 +328,8 @@ describe("le courriel « votre commande est prête »", () => {
     const absent = handler({});
     await absent.run.handle(REMAINDER_READY);
 
-    expect(handedOver.mailer.sent).toBeNull();
-    expect(absent.mailer.sent).toBeNull();
+    expect(handedOver.mailer.last).toBeNull();
+    expect(absent.mailer.last).toBeNull();
   });
 
   it("n'invente pas de code sur une LIVRAISON", async () => {
@@ -350,7 +338,7 @@ describe("le courriel « votre commande est prête »", () => {
     });
     await fire(subject);
 
-    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
     expect(data.handoverUrl).toBe("");
   });
 
@@ -358,14 +346,14 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({ email: null });
     await fire(subject);
 
-    expect(subject.mailer.sent).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 
   it("n'envoie rien si la commande est introuvable", async () => {
     const subject = handler({ order: null });
     await fire(subject);
 
-    expect(subject.mailer.sent).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 
   it("lève sur un fait illisible — le message reste visible dans la boîte d'envoi", async () => {
@@ -374,6 +362,6 @@ describe("le courriel « votre commande est prête »", () => {
     await expect(
       subject.run.handle({ eventId: "evt_2", type: "order.ready", payload: {} }),
     ).rejects.toThrow("illisible");
-    expect(subject.mailer.sent).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 });

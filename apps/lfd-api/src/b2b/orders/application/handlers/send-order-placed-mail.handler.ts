@@ -1,12 +1,12 @@
 import { exposedHandoverToken, type PaymentStatus } from "@lfd/contracts";
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import {
   COMMERCE_ORDER_PLACED,
   CommerceOrderPlacedFact,
 } from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -68,7 +68,7 @@ export class SendOrderPlacedMail implements DurableSubscriber {
     private readonly origins: OrderMailOrigins,
     private readonly attachment: OrderSheetAttachment,
     private readonly manageLink: OrderManageLink,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -128,7 +128,8 @@ export class SendOrderPlacedMail implements DurableSubscriber {
     const token = exposedHandoverToken(owned.view);
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
 
-    await this.mailer.send({
+    await this.mails.request({
+      brand: "lfc",
       to: recipient.email,
       template: "customer.order-placed",
       data: {

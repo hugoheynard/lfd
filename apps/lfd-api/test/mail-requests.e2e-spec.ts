@@ -71,7 +71,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-function requestInTransaction(): Promise<void> {
+function requestInTransaction(): Promise<string> {
   return unitOfWork.run(() => requests.request(RESTORED));
 }
 

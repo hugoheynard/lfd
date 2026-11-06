@@ -4,7 +4,10 @@ import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { MailRequest } from "../domain/entities/mail-request.js";
-import { MailRequestOutsideUnitOfWorkError } from "../domain/errors/mail-request.errors.js";
+import {
+  MailRequestMissingError,
+  MailRequestOutsideUnitOfWorkError,
+} from "../domain/errors/mail-request.errors.js";
 import type { OutgoingMail } from "../domain/ports/mail-dispatch.js";
 import { MailRequestRepository } from "../domain/ports/mail-request.repository.js";
 import { UnitOfWorkProbe } from "../domain/ports/unit-of-work-probe.js";
@@ -37,7 +40,8 @@ export function newMailRequest(demand: CheckedMailDemand, id: string, at: Date):
  * par la boîte d'envoi même si le processus tombe juste après.
  *
  * Une clé déjà connue ne fait rien : ni ligne, ni fait. C'est ce qui permet à
- * un appelant de redemander sans compter.
+ * un appelant de redemander sans compter. L'identifiant rendu est alors celui
+ * de la demande qui existait.
  */
 @Injectable()
 export class MailRequester {
@@ -49,7 +53,7 @@ export class MailRequester {
     private readonly ids: IdGenerator,
   ) {}
 
-  async request(demand: CheckedMailDemand): Promise<void> {
+  async request(demand: CheckedMailDemand): Promise<string> {
     // Avant toute écriture : hors transaction, la ligne partirait seule et le
     // fait lèverait ensuite — un suivi « demandé » que rien n'enverrait.
     if (!this.unitOfWork.isOpen()) {
@@ -57,8 +61,18 @@ export class MailRequester {
     }
     const request = newMailRequest(demand, this.ids.next(), this.clock.now());
     if (!(await this.requests.addIfAbsent(request))) {
-      return;
+      return this.knownIdOf(demand.idempotencyKey);
     }
     await this.publisher.publish(mailRequestedFact(demand));
+    return request.id;
+  }
+
+  private async knownIdOf(idempotencyKey: string): Promise<string> {
+    const known = await this.requests.findByIdempotencyKey(idempotencyKey);
+    // `addIfAbsent` vient de la voir : son absence serait une base incohérente.
+    if (known === null) {
+      throw new MailRequestMissingError(idempotencyKey);
+    }
+    return known.id;
   }
 }

@@ -18,7 +18,7 @@ export class SendGuestOrderNoticeOnPaid extends SendGuestOrderNotice implements 
     const fact = OrderPaidFact.fromPayload(delivery.payload);
     const order = await this.paidOrder(fact.orderId);
     if (order !== null) {
-      await this.run(order);
+      await this.run(order, fact.orderId);
     }
   }
 }
