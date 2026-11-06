@@ -278,7 +278,7 @@ export class AppConfig {
   /**
    * L'instantané du catalogue est-il gardé en mémoire ? `CATALOGUE_SNAPSHOT_MEMORY`,
    * `on` par défaut ; `off` = l'arrêt d'urgence, chaque requête relit la base
-   * (`plan-materiaux-du-catalogue.md`, § 2.2).
+   * (`le-catalogue-en-memoire.md`, § 2.2).
    */
   catalogueSnapshotMemory(): boolean {
     return this.catalogueSnapshotMemoryValue;

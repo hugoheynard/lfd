@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Les versions par contexte —
-// `documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.2 (lot M1a).
+// `documentation/caching-usage/le-catalogue-en-memoire.md`, § 2.2 (lot M1a).
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// **Un numéro par contexte du commerce dont l'instantané du catalogue lit des

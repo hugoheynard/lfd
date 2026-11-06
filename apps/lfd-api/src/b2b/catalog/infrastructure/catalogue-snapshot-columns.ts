@@ -4,7 +4,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
  * **Les colonnes que l'instantané du catalogue lira, contexte par contexte et
  * table par table** — et EXACTEMENT celles qui font monter la ligne du
  * contexte dans `context_versions`
- * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.2, § 11,
+ * (`documentation/caching-usage/le-catalogue-en-memoire.md`, § 2.2, § 11,
  * lot M1a).
  *
  * Le premier niveau est le contexte propriétaire de la table (celui de

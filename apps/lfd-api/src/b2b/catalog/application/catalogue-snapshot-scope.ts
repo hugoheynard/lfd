@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 /**
  * **Les chemins qui lisent le catalogue dans l'instantané**
- * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.4, § 2.5,
+ * (`documentation/caching-usage/le-catalogue-en-memoire.md`, § 2.4, § 2.5,
  * lot M1b).
  *
  * Une portée explicite, et pas un adaptateur branché pour tout le monde : le

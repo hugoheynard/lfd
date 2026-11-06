@@ -1,6 +1,6 @@
 /**
  * **L'instantané du catalogue : l'invalidation et le mur** — lot M1b du plan
- * `documentation/caching-usage/plan-materiaux-du-catalogue.md` (§ 3).
+ * `documentation/caching-usage/le-catalogue-en-memoire.md` (§ 3).
  *
  * Le devis lit le catalogue dans une mémoire rangée sous les numéros de
  * `context_versions`. Ce qui est éprouvé ici traverse le vrai SQL — les

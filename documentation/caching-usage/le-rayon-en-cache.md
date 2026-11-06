@@ -16,7 +16,7 @@
 La base de production (Prisma Postgres) est **facturée à l'opération**, et
 loin de l'API. Calculer un rayon coûte 6 appels à chaud pour un visiteur, 13
 pour un pro connecté (relevé M0 du 2026-11-05,
-[`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)). Le rayon
+[`le-catalogue-en-memoire.md`](le-catalogue-en-memoire.md)). Le rayon
 change rarement : on le garde.
 
 ## Deux caches, parce que deux sortes de rayons

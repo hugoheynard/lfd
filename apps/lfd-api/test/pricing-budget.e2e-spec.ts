@@ -208,7 +208,7 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * par trace des modèles, avant/après.
  *
  * 🔴 **De 10 à 9 le 2026-11-06** (lot M1b de
- * `documentation/caching-usage/plan-materiaux-du-catalogue.md`) : le devis lit
+ * `documentation/caching-usage/le-catalogue-en-memoire.md`) : le devis lit
  * le catalogue dans l'instantané. Les trois lectures de `catalog_items` (les
  * lignes, les SKU d'opération, le classement) deviennent les numéros de
  * `context_versions` et UN chargement des articles. Mesuré par trace des

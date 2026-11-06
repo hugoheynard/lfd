@@ -1,6 +1,6 @@
 /**
  * **Le rayon recalculé sur l'instantané du catalogue** — lot M2 du plan
- * `documentation/caching-usage/plan-materiaux-du-catalogue.md` (§ 3, § 12).
+ * `documentation/caching-usage/le-catalogue-en-memoire.md` (§ 3, § 12).
  *
  * Le recalcul du rayon (public, pro de base, pro reconnu, vitrine) lit le
  * catalogue dans la mémoire rangée sous les numéros de `context_versions`.

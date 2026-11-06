@@ -3,7 +3,7 @@
  * Gate : **toute colonne d'une table de l'instantané du catalogue est classée
  * face à la version de son contexte, et toute table reliée aussi.**
  *
- * Plan : `documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.2,
+ * Plan : `documentation/caching-usage/le-catalogue-en-memoire.md`, § 2.2,
  * § 3 et § 11 (lot M1a). Demandé par Hugo le 2026-11-05 : « à chaque nouvelle
  * colonne ou table liée au catalogue, on doit regarder si ça bouge le stamp ».
  * Un numéro par contexte depuis le 2026-11-06 (`context_versions`).

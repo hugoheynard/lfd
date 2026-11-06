@@ -71,7 +71,7 @@ describe("Opérations — le signal des rayons", () => {
   /**
    * Régression : `save` écrivait l'opération, effaçait ses articles et les
    * recréait en trois instructions hors transaction ; une lecture entre les
-   * deux dernières voyait une opération vide (plan-materiaux-du-catalogue.md,
+   * deux dernières voyait une opération vide (le-catalogue-en-memoire.md,
    * § 11, lot M1a, 2026-11-06).
    */
   it("enregistre l'opération et ses articles dans une seule unité de travail", async () => {
@@ -87,7 +87,7 @@ describe("Opérations — le signal des rayons", () => {
    * Régression : `add` créait l'opération puis ses articles en deux
    * instructions hors transaction — la forme que M1a avait corrigée dans
    * `save` seulement ; un chargement de l'instantané entre les deux rangeait
-   * une opération vide (plan-materiaux-du-catalogue.md, § 11.1, lot M2).
+   * une opération vide (le-catalogue-en-memoire.md, § 11.1, lot M2).
    */
   it("ajoute l'opération et ses articles dans une seule unité de travail", async () => {
     const { repo, writes } = await repository();

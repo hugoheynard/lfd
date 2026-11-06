@@ -115,7 +115,7 @@ export function runInTransaction<T>(
  * (`transactional-prisma.ts`). Sans lui, un rappel inscrit dans son
  * callback partait tout de suite, AVANT la validation : la purge des rayons
  * pouvait laisser recalculer un rayon sur l'état d'avant, puis le garder
- * (`plan-materiaux-du-catalogue.md`, § 12, lot M2). Le client n'est pas
+ * (`le-catalogue-en-memoire.md`, § 12, lot M2). Le client n'est pas
  * routé : le callback vise `tx` en clair, comme il l'a toujours fait.
  */
 export function runWithCommitQueue<T>(commits: CommitQueue, work: () => Promise<T>): Promise<T> {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **le catalogue servi se lit par l'instantané**, pas en direct
- * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 3, lot M2 ;
+ * (`documentation/caching-usage/le-catalogue-en-memoire.md`, § 3, lot M2 ;
  * modèle : `lint:price-door`).
  *
  * Le devis, l'estimation de la saisie et le recalcul du rayon lisent le

@@ -1,5 +1,5 @@
 {
-  "$comment": "Registre des versions par contexte (lint:context-version-columns, plan-materiaux-du-catalogue.md § 2.2, § 11). Les colonnes LUES sont dans catalogue-snapshot-columns.ts, rangées par contexte ; ici, les colonnes IGNORÉES des tables sous déclencheur, et les tables reliées laissées HORS de l'instantané, chacune avec sa raison (relevé le 2026-11-05, order_cutoff_settings le 2026-11-06).",
+  "$comment": "Registre des versions par contexte (lint:context-version-columns, le-catalogue-en-memoire.md § 2.2, § 11). Les colonnes LUES sont dans catalogue-snapshot-columns.ts, rangées par contexte ; ici, les colonnes IGNORÉES des tables sous déclencheur, et les tables reliées laissées HORS de l'instantané, chacune avec sa raison (relevé le 2026-11-05, order_cutoff_settings le 2026-11-06).",
   "ignorees": {
     "catalog_items": {
       "kind": "type de ligne du référentiel, lu par aucun lecteur du devis, de l'estimation ni du rayon",

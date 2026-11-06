@@ -115,7 +115,7 @@ describe("AppConfig — l'URL de la base", () => {
 });
 
 /**
- * L'arrêt d'urgence de l'instantané du catalogue (`plan-materiaux-du-catalogue.md`,
+ * L'arrêt d'urgence de l'instantané du catalogue (`le-catalogue-en-memoire.md`,
  * M1b). Ce test écrit `process.env`, comme `app-config.spec.ts` : la clé
  * touchée est restaurée après chaque cas.
  */

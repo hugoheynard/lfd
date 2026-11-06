@@ -87,7 +87,7 @@ export class PrismaOperationRepository extends OperationRepository {
    * lot 2 (lu à la médiathèque au choix de l'image).
    *
    * Les trois instructions partent ENSEMBLE (plan
-   * `plan-materiaux-du-catalogue.md`, § 11, lot M1a) : entre l'effacement et la
+   * `le-catalogue-en-memoire.md`, § 11, lot M1a) : entre l'effacement et la
    * recréation des articles, une lecture verrait une opération vide, et
    * l'instantané du catalogue la garderait sous ce numéro. Dans un `uow.run`
    * déjà ouvert — le cas des cas d'usage —, on rejoint la transaction en cours.

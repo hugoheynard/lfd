@@ -28,7 +28,7 @@ interface PerRequest {
 
 /**
  * **L'instantané du catalogue, en mémoire de l'API**
- * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.3, lot M1b).
+ * (`documentation/caching-usage/le-catalogue-en-memoire.md`, § 2.3, lot M1b).
  *
  * Trois morceaux, chacun rangé sous le numéro de SON contexte dans
  * `context_versions` : `catalog` (articles, familles, dérogations, compteur

@@ -285,7 +285,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // mémoire du résolveur est vidée plus bas, pour cette raison.
         await ensurePrincipalStamp(prisma);
         // Les trois versions par contexte, pour la même raison
-        // (plan-materiaux-du-catalogue.md, § 2.2, § 11, lot M1a) : REMISES à
+        // (le-catalogue-en-memoire.md, § 2.2, § 11, lot M1a) : REMISES à
         // 0, pas seulement recréées — le semis du catalogue, plus bas, les
         // fait monter depuis 0 à chaque remise. La mémoire de l'instantané est
         // vidée plus bas (M1b) : un morceau gardé sous un numéro que cette

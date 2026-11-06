@@ -8,7 +8,7 @@ import { PrismaStoredOrderCutoffReader } from "./prisma-stored-order-cutoff.read
 /**
  * **L'heure limite générale sur l'instantané du catalogue** — le morceau
  * `order_cutoffs`, rangé sous le numéro de ce contexte
- * (`plan-materiaux-du-catalogue.md`, § 2.1, § 2.3). Hors de la portée de
+ * (`le-catalogue-en-memoire.md`, § 2.1, § 2.3). Hors de la portée de
  * l'instantané (passation, écrans, tâches de fond), la base comme avant.
  */
 @Injectable()

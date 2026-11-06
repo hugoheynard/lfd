@@ -1,6 +1,6 @@
 /**
  * **Le budget des lectures du catalogue** — lot M0 (le relevé) devenu budget
- * au lot M1b du plan `documentation/caching-usage/plan-materiaux-du-catalogue.md`
+ * au lot M1b du plan `documentation/caching-usage/le-catalogue-en-memoire.md`
  * (§ 3).
  *
  * Le devis et l'estimation lisent le catalogue dans l'instantané : à chaud,

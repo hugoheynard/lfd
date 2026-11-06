@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **le signal des rayons part APRÈS la validation, et par un seul
- * chemin** (`documentation/caching-usage/plan-materiaux-du-catalogue.md`,
+ * chemin** (`documentation/caching-usage/le-catalogue-en-memoire.md`,
  * § 12, lot M2 — décision de Hugo du 2026-11-06, option 1).
  *
  * Depuis M2, un rayon recalculé lit le catalogue dans l'instantané : un

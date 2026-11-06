@@ -12,7 +12,7 @@ interface Loading<T> {
 
 /**
  * **Un morceau de l'instantané, gardé sous SON numéro**
- * (`plan-materiaux-du-catalogue.md`, § 2.3).
+ * (`le-catalogue-en-memoire.md`, § 2.3).
  *
  * Les règles, toutes portées ici et éprouvées sans base :
  *

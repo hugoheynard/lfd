@@ -1,6 +1,6 @@
 /**
  * Référence — ce que pèse la lecture du catalogue dans un devis anonyme
- * (plan `documentation/caching-usage/plan-materiaux-du-catalogue.md`,
+ * (plan `documentation/caching-usage/le-catalogue-en-memoire.md`,
  * « Mesurer avant de bâtir »).
  *
  * Ce n'est PAS un test de charge : un seul visiteur, une requête toutes les

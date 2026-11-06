@@ -508,7 +508,7 @@ export function optionalJournalStrictFacts(): boolean {
 
 /**
  * **L'arrêt d'urgence de l'instantané du catalogue** — `CATALOGUE_SNAPSHOT_MEMORY`
- * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.2, lot M1b).
+ * (`documentation/caching-usage/le-catalogue-en-memoire.md`, § 2.2, lot M1b).
  *
  * `on` par défaut (absente comprise) ; `off` fait relire la base à chaque
  * requête, exactement comme avant l'instantané. Une autre valeur refuse de

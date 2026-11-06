@@ -113,7 +113,7 @@ const ALLOWED = new Set([
   // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
   // le handler refuse ensuite un article retiré.
   "apps/lfd-api/src/dev/seeding/sale-references.seed.ts",
-  // Le chargeur de l'instantané du catalogue (`plan-materiaux-du-catalogue.md`,
+  // Le chargeur de l'instantané du catalogue (`le-catalogue-en-memoire.md`,
   // M1b, 2026-11-06) : il PORTE le filtre (`where: STILL_SOLD`) — un article
   // retiré est absent de l'instantané, donc d'aucune vue du devis.
   "apps/lfd-api/src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts",

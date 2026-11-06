@@ -1,6 +1,6 @@
 /**
  * E2E des **versions par contexte** —
- * `documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.2, § 11
+ * `documentation/caching-usage/le-catalogue-en-memoire.md`, § 2.2, § 11
  * (lot M1a).
  *
  * Ce que seule la base migrée peut dire : les huit déclencheurs existent,

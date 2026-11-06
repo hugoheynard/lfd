@@ -4,7 +4,7 @@ import { CatalogueSnapshotStore } from "./infrastructure/catalogue-snapshot/cata
 
 /**
  * **L'instantané du catalogue, une seule mémoire pour le processus**
- * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, lot M1b).
+ * (`documentation/caching-usage/le-catalogue-en-memoire.md`, lot M1b).
  *
  * Un module à lui, qui n'importe rien (base et configuration sont globales) :
  * le catalogue le lit pour ses articles, et `OrderCutoffsInForceModule` pour

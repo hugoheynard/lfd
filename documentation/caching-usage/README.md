@@ -37,7 +37,7 @@ flowchart LR
 | [`dans-quel-espace-est-le-client.md`](dans-quel-espace-est-le-client.md)           | ✅ état 2026-11-05    | le contexte de lecture de la boutique, la brique `contextKeyed`, l'oubli à la déconnexion                                                                       |
 | [`aucune-reponse-personnelle-en-cache.md`](aucune-reponse-personnelle-en-cache.md) | ✅ état 2026-11-05    | rien de personnel dans un cache partagé : le middleware et la porte `lint:cache-control`                                                                        |
 | [`version-par-journee.md`](version-par-journee.md)                                 | ✅ état 2026-11-04    | ne relire que ce qui a bougé, un numéro par journée                                                                                                             |
-| [`plan-materiaux-du-catalogue.md`](plan-materiaux-du-catalogue.md)                 | 📝 plan, M0 mesuré    | le catalogue chargé une fois par requête ; ordre proposé M2 (devis) avant M1 (rayon)                                                                            |
+| [`le-catalogue-en-memoire.md`](le-catalogue-en-memoire.md)                         | ✅ en production      | le catalogue en mémoire, un numéro par contexte tenu par la base ; les deux mémoires d'un prix (catalogue, règles)                                              |
 
 Les petits restes : [`../todos/todo-cache-restes.md`](../todos/todo-cache-restes.md).
 Ailleurs, à lire avec :
