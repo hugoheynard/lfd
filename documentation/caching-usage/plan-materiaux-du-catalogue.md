@@ -802,3 +802,19 @@ avec.
 **Ce qui reste lu en base sur le chemin du devis** : les réglages du jour
 même (`prisma-order-cutoff-settings.reader.ts`), admis par
 `lint:catalogue-door` avec la raison du § 12.
+
+## 15. Mesuré en production après M2 (2026-11-06)
+
+Le rayon public recalculé (`/shop/catalogue`, passage forcé hors cache, 8
+appels), juste après le déploiement de `a9c95d2ab` :
+
+| Marque                | Avant M2, médiane | Après M2, médiane   |
+| --------------------- | ----------------- | ------------------- |
+| `catalogue`           | ~65 ms (60–80)    | **~14 ms** (12–18)  |
+| lectures du catalogue | 6                 | **1** (les numéros) |
+| `app` (l'API)         | ~85 ms            | ~65 ms (50–108)     |
+
+Le reste du temps de l'API est la mise en forme des ~200 articles du rayon,
+que M2 ne visait pas. Le recalcul n'a lieu qu'à l'expiration du cache
+Cloudflare (30 s) : le gain porte sur un appel par expiration et par site
+Cloudflare, pas sur chaque visite.
