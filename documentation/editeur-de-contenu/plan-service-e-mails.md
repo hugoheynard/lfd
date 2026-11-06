@@ -983,3 +983,21 @@ comportement passent par des ports que le bloc implémente :
 
 Ouvrir `mail/templates/` aux blocs métier (voie 2) aurait rendu le bloc
 lisible de l'intérieur, contre la règle « port uniquement ». Lot **S3b**.
+
+### 20. Le nom de la porte (Hugo, 2026-11-06 — revue de la DX)
+
+Hors contexte, `request` et `sendNow` ne disaient ni qu'il s'agit d'un
+e-mail, ni lequel est le geste normal ; « commit » est un mot technique,
+réservé à la base. Décidé :
+
+| Aujourd'hui                    | Demain                                                                                                                                                                                          |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| porte `MailRequests`           | **`Mail`**, injectée sous le nom `mail`                                                                                                                                                         |
+| `request(demande)`             | **`mail.send(demande)`** — le geste par défaut : durable, part après l'enregistrement, relancé ; lève une erreur nommée hors d'une unité de travail (dit dans son JSDoc, éprouvé par les tests) |
+| `sendNow(demande)`             | **`mail.sendAndAwaitReceipt(demande)`** — l'exception : immédiat, on attend le reçu de Resend ; réservé à une liste admise                                                                      |
+| porte `lint:send-now-admitted` | **`lint:mail-receipt-admitted`**                                                                                                                                                                |
+
+Des méthodes statiques (`Mail.send(…)`) ont été écartées : elles auraient
+caché les dépendances (base, outbox, mailer) dans un singleton, contre le § 2
+de `CLAUDE.md`, et empêché les tests d'injecter une doublure. Le renommage se
+fait dans un passage dédié, avec le rangement des portes dans `lint/`.
