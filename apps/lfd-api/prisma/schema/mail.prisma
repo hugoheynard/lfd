@@ -16,8 +16,11 @@
 /// (`request`) ou après l'envoi (`sendNow`) ; les données du modèle n'y sont
 /// PAS — elles voyagent dans le fait `mail.requested` de la boîte d'envoi.
 ///
-/// ⚠️ `recipient` est une donnée personnelle (client ou staff). Sa durée de
-/// conservation n'est pas décidée (plan C7, à Hugo).
+/// ⚠️ `recipient` est une donnée personnelle (client ou staff), au registre
+/// RGPD. Durée décidée par Hugo le 2026-11-06 (plan § 7) : une demande close
+/// (`sent`, `failed`, `refused`) se garde **1 an**. La purge est bâtie À BLANC
+/// (`MAIL_REQUEST_PURGE`, `dry-run` par défaut) : elle compte, elle ne
+/// supprime rien tant que Hugo ne l'a pas activée.
 model MailRequest {
   id             String    @id
   /// La clé du registre `B2bMails` (`customer.order-ready`).

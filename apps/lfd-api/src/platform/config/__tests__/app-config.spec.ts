@@ -156,3 +156,47 @@ describe("AppConfig — CATALOGUE_SNAPSHOT_MEMORY", () => {
     expect(() => new AppConfig()).toThrow(/« on » et « off »/);
   });
 });
+
+/**
+ * Le cran de sûreté des purges (Hugo, 2026-11-06 : « je ne veux pas perdre de
+ * la data sans le savoir »). Mêmes précautions sur `process.env`.
+ */
+describe("AppConfig — OUTBOX_PURGE et MAIL_REQUEST_PURGE", () => {
+  const keys = ["OUTBOX_PURGE", "MAIL_REQUEST_PURGE"] as const;
+  let saved: Record<string, string | undefined>;
+
+  beforeEach(() => {
+    saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+    for (const key of keys) delete process.env[key];
+  });
+
+  afterEach(() => {
+    for (const key of keys) {
+      const value = saved[key];
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  });
+
+  it("absentes : à blanc (dry-run), rien n'est supprimé", () => {
+    const config = new AppConfig();
+    expect(config.outboxPurgeMode()).toBe("dry-run");
+    expect(config.mailRequestPurgeMode()).toBe("dry-run");
+  });
+
+  it("« on » et « off » sont lus, chacune pour soi", () => {
+    process.env["OUTBOX_PURGE"] = " ON ";
+    process.env["MAIL_REQUEST_PURGE"] = "off";
+    const config = new AppConfig();
+    expect(config.outboxPurgeMode()).toBe("on");
+    expect(config.mailRequestPurgeMode()).toBe("off");
+  });
+
+  it("une autre valeur refuse de démarrer, en nommant la variable", () => {
+    process.env["MAIL_REQUEST_PURGE"] = "true";
+    expect(() => new AppConfig()).toThrow(/MAIL_REQUEST_PURGE vaut « true »/);
+  });
+});

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Gate : **toute colonne qui porte une donnée personnelle du staff, d'un
- * réceptionnaire, d'une personne qui nous écrit (`contact` — une demande client)
- * ou d'un tiers (`tiers` — prestataire, partenaire, agence) est au registre — et
+ * réceptionnaire, d'une personne qui nous écrit (`contact` — une demande client),
+ * d'un tiers (`tiers` — prestataire, partenaire, agence) ou du destinataire d'un
+ * e-mail (`client`) est au registre — et
  * le registre ne cite que des colonnes qui existent.**
  *
  * ## Le trou que cette porte ferme
@@ -58,8 +59,13 @@ const REGISTRY_PATH = "documentation/legal/rgpd-registre.json";
  * `tiers` (Hugo, 2026-10-18) : une personne d'un prestataire, d'un partenaire
  * ou d'une agence — le contact de l'agence de la vitrine, d'abord. Catégorie
  * générique : le prochain partenaire n'en demandera pas une de plus.
+ *
+ * `client` (Hugo, 2026-11-06, `plan-service-e-mails.md` § 7) : le destinataire
+ * d'un e-mail que nous envoyons — client d'abord, et parfois un membre du
+ * staff, que la ligne ne distingue pas. Le registre ne couvre pas pour autant
+ * TOUTES les données des clients : seules les tables nommées ci-dessous.
  */
-const PERSONS = ["livreur", "staff", "receptionnaire", "contact", "tiers"];
+export const PERSONS = ["livreur", "staff", "receptionnaire", "contact", "tiers", "client"];
 const DURATION_WORDS = ["aucune-limite-decidee", "a-decider"];
 
 /** Motifs valables dans tout schéma : un auteur, un livreur, une preuve. */
@@ -79,7 +85,16 @@ const NAME_PATTERNS = [
  * données d'un tiers qui écrit, et une colonne neuve y est présumée
  * personnelle — inscrite au registre, ou exclue avec sa raison.
  */
-const ALL_PERSONAL_TABLES = new Set(["public.customer_request", "public.customer_request_photo"]);
+const ALL_PERSONAL_TABLES = new Set([
+  "public.customer_request",
+  "public.customer_request_photo",
+  // Le suivi des e-mails (2026-11-06) : à qui, en quelle langue, et ce que le
+  // fournisseur a répondu — une colonne neuve y est présumée personnelle.
+  "mail.mail_request",
+  // La boîte d'envoi (2026-11-06) : sa `payload` portera les données des
+  // e-mails demandés dès S2 ; une colonne neuve y est présumée personnelle.
+  "platform.outbox",
+]);
 
 /**
  * Une position n'est candidate que dans le schéma de la livraison : ailleurs,
@@ -276,7 +291,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    "✓ rgpd-staff : chaque donnée personnelle du staff, des réceptionnaires, des contacts et des tiers est au registre.",
+    "✓ rgpd-staff : chaque donnée personnelle du staff, des réceptionnaires, des contacts, des tiers et des destinataires d'e-mails est au registre.",
   );
   for (const line of debtLines(registry)) console.log(line);
 }

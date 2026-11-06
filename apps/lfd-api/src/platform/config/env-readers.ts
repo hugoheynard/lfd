@@ -1,3 +1,4 @@
+import { DEFAULT_PURGE_MODE, isPurgeMode, type PurgeMode } from "../retention/purge-mode.js";
 import type { S3StorageConfig } from "@lfd/storage";
 
 import type {
@@ -526,6 +527,29 @@ export function optionalCatalogueSnapshotMemory(): boolean {
   throw new Error(
     `CATALOGUE_SNAPSHOT_MEMORY vaut « ${value} » : seules « on » et « off » sont admises. ` +
       "Corriger la variable, ou la retirer pour revenir au défaut (on).",
+  );
+}
+
+/**
+ * **Le cran de sûreté d'une purge** (`OUTBOX_PURGE`, `MAIL_REQUEST_PURGE`,
+ * Hugo, 2026-11-06 : « je ne veux pas perdre de la data sans le savoir »).
+ *
+ * `dry-run` par défaut (absente comprise) : le passage compte sans supprimer.
+ * Une autre valeur que `off` / `dry-run` / `on` refuse de démarrer, comme
+ * `CATALOGUE_SNAPSHOT_MEMORY` : une faute de frappe ne doit ni couper ni
+ * activer une suppression en silence.
+ */
+export function optionalPurgeMode(key: string): PurgeMode {
+  const value = process.env[key]?.trim().toLowerCase() ?? "";
+  if (value === "") {
+    return DEFAULT_PURGE_MODE;
+  }
+  if (isPurgeMode(value)) {
+    return value;
+  }
+  throw new Error(
+    `${key} vaut « ${value} » : seules « off », « dry-run » et « on » sont admises. ` +
+      "Corriger la variable, ou la retirer pour revenir au défaut (dry-run, rien n'est supprimé).",
   );
 }
 

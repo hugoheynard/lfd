@@ -1,5 +1,5 @@
 {
-  "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`), et des tiers — prestataire, partenaire, agence (`tiers`, 2026-10-18). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
+  "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`), des tiers — prestataire, partenaire, agence (`tiers`, 2026-10-18) — et des destinataires des e-mails que nous envoyons (`client`, 2026-11-06). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
   "texteInformation": {
     "version": 3,
     "empreinte": "b9f91594585842d2"
@@ -2503,6 +2503,50 @@
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
+    },
+    {
+      "colonne": "mail.mail_request.recipient",
+      "personne": "client",
+      "categorie": "identite",
+      "finalite": "L'adresse du destinataire d'un e-mail envoyé (client, parfois un membre du staff) : suivre ce qui est parti, à qui. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Durée décidée le 2026-11-06, purge NON activée (à blanc) : le passage nocturne compte ce qu'il supprimerait et ne supprime rien tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` / `OUTBOX_PURGE` = `on`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/requests/infrastructure/prisma-mail-request.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_request.locale",
+      "personne": "client",
+      "categorie": "preference",
+      "finalite": "La langue dans laquelle l'e-mail a été écrit au destinataire. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Durée décidée le 2026-11-06, purge NON activée (à blanc) : le passage nocturne compte ce qu'il supprimerait et ne supprime rien tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` / `OUTBOX_PURGE` = `on`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/requests/infrastructure/prisma-mail-request.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_request.failure_reason",
+      "personne": "client",
+      "categorie": "suivi-envoi",
+      "finalite": "La raison d'un échec ou d'un refus, telle que le fournisseur la rend — elle peut citer l'adresse. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Durée décidée le 2026-11-06, purge NON activée (à blanc) : le passage nocturne compte ce qu'il supprimerait et ne supprime rien tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` / `OUTBOX_PURGE` = `on`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/requests/infrastructure/prisma-mail-request.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "platform.outbox.payload",
+      "personne": "client",
+      "categorie": "donnees-email",
+      "finalite": "Les données d'un e-mail demandé (destinataire, contenu du modèle), le temps de le livrer par la boîte d'envoi. À supprimer 30 jours après la livraison à tous les abonnés ; un message non livré reste jusqu'à son rejeu (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Durée décidée le 2026-11-06, purge NON activée (à blanc) : le passage nocturne compte ce qu'il supprimerait et ne supprime rien tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` / `OUTBOX_PURGE` = `on`).",
+      "conservation": {
+        "jours": 30
+      },
+      "purge": "apps/lfd-api/src/platform/outbox/prisma-outbox-pruner.ts",
+      "information": false
     }
   ],
   "exclusions": [
@@ -2617,6 +2661,66 @@
     {
       "colonne": "public.customer_request.email_authentication",
       "raison": "Le verdict SPF / DKIM / DMARC de l'expéditeur d'une réponse par e-mail (`pass`, `fail`, `unknown`…) et l'alignement DKIM : un résultat de contrôle technique, sans identité ni coordonnée — l'adresse vérifiée est dans `author_email`, déjà au registre (plan `plan-reponses-par-e-mail.md`, R1)."
+    },
+    {
+      "colonne": "mail.mail_request.id",
+      "raison": "Identifiant technique (ULID) de la demande, sans rien de la personne."
+    },
+    {
+      "colonne": "mail.mail_request.template",
+      "raison": "La clé du modèle d'e-mail (`customer.order-ready`) : la même pour tous les destinataires."
+    },
+    {
+      "colonne": "mail.mail_request.brand",
+      "raison": "La marque qui envoie (`lfc`), pas la personne qui reçoit."
+    },
+    {
+      "colonne": "mail.mail_request.status",
+      "raison": "L'état de la demande (`requested` | `sent` | `failed` | `refused`), sans rien de la personne."
+    },
+    {
+      "colonne": "mail.mail_request.provider_id",
+      "raison": "L'identifiant opaque du message chez Resend : il ne désigne la personne qu'à travers `recipient`, déjà au registre, et part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.idempotency_key",
+      "raison": "Clé d'idempotence fabriquée par l'appelant à partir d'identifiants opaques (commande, geste), jamais d'une adresse ; part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.requested_at",
+      "raison": "Horodatage d'un envoi du système, pas d'un geste de la personne ; part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.sent_at",
+      "raison": "Horodatage de l'acceptation par le fournisseur ; part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.failed_at",
+      "raison": "Horodatage d'un échec ou d'un refus ; part avec la ligne."
+    },
+    {
+      "colonne": "platform.outbox.id",
+      "raison": "Identifiant technique (ULID) du message."
+    },
+    {
+      "colonne": "platform.outbox.key",
+      "raison": "Clé déterministe du fait, faite d'identifiants opaques (`order.packed:<orderId>`), jamais d'une adresse ; part avec le message."
+    },
+    {
+      "colonne": "platform.outbox.type",
+      "raison": "Le nom du fait (`mail.requested`), le même pour tous."
+    },
+    {
+      "colonne": "platform.outbox.occurred_at",
+      "raison": "L'instant où le fait a été écrit par le système ; part avec le message."
+    },
+    {
+      "colonne": "platform.outbox.trace_id",
+      "raison": "Identifiant de corrélation technique d'une requête, sans rien de la personne."
+    },
+    {
+      "colonne": "platform.outbox.deliveries",
+      "raison": "Pas une colonne : le champ de relation Prisma vers `outbox_delivery`, qui ne porte que des noms d'abonnés, des compteurs et des instants techniques (la porte lit le schéma Prisma ligne à ligne, relu le 2026-11-06)."
     }
   ]
 }

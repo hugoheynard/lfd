@@ -3,6 +3,7 @@ import { hkdfSync } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
 
+import type { PurgeMode } from "../retention/purge-mode.js";
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 import {
   type RoutePlannerEndpoint,
@@ -21,6 +22,7 @@ import {
   optionalManagementCredentials,
   optionalMediaPublicBaseUrl,
   optionalPort,
+  optionalPurgeMode,
   optionalR2Storage,
   optionalString,
   optionalStripeConfig,
@@ -90,6 +92,8 @@ export class AppConfig {
   private readonly geocoderUrlValue: string | null;
   private readonly shopShelfCacheUrlValue: string | null;
   private readonly catalogueSnapshotMemoryValue: boolean;
+  private readonly outboxPurgeModeValue: PurgeMode;
+  private readonly mailRequestPurgeModeValue: PurgeMode;
   private readonly routePlannerEndpointValue: RoutePlannerEndpoint | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
@@ -125,6 +129,8 @@ export class AppConfig {
     this.geocoderUrlValue = optionalString("BAN_GEOCODER_URL");
     this.shopShelfCacheUrlValue = optionalString("SHOP_SHELF_CACHE_URL");
     this.catalogueSnapshotMemoryValue = optionalCatalogueSnapshotMemory();
+    this.outboxPurgeModeValue = optionalPurgeMode("OUTBOX_PURGE");
+    this.mailRequestPurgeModeValue = optionalPurgeMode("MAIL_REQUEST_PURGE");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.routePlannerEndpointValue = resolveRoutePlannerEndpoint({
@@ -282,6 +288,20 @@ export class AppConfig {
    */
   catalogueSnapshotMemory(): boolean {
     return this.catalogueSnapshotMemoryValue;
+  }
+
+  /**
+   * Le cran de sûreté de la purge de la boîte d'envoi — `OUTBOX_PURGE`,
+   * `dry-run` par défaut : rien n'est supprimé sans décision de Hugo
+   * (2026-11-06, `plan-service-e-mails.md` § 7).
+   */
+  outboxPurgeMode(): PurgeMode {
+    return this.outboxPurgeModeValue;
+  }
+
+  /** Le même cran pour le suivi des e-mails — `MAIL_REQUEST_PURGE`, `dry-run` par défaut. */
+  mailRequestPurgeMode(): PurgeMode {
+    return this.mailRequestPurgeModeValue;
   }
 
   /**

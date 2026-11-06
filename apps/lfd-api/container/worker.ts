@@ -463,6 +463,13 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     // L'anonymisation des messages « Nous écrire » traités depuis douze mois
     // (`documentation/demandes-client/demandes-clients.md`, §5.3).
     "admin/contact/messages/anonymization/sweep",
+    // La purge des messages livrés depuis 30 jours et du suivi des e-mails
+    // clos depuis un an (`documentation/editeur-de-contenu/plan-service-e-mails.md`,
+    // § 7) : une fois par nuit suffit à une durée qui se compte en jours. À
+    // BLANC par défaut (`OUTBOX_PURGE`, `MAIL_REQUEST_PURGE` = `dry-run`) :
+    // le passage compte ce qu'il supprimerait, et ne supprime rien.
+    "admin/outbox/purge",
+    "admin/mail/requests/purge",
   ]) {
     await postSweep(env, token, path);
   }

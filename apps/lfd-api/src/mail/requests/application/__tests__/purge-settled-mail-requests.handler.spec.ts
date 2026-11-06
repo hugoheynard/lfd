@@ -1,0 +1,94 @@
+import type { PurgeCensus, PurgeMode } from "../../../../platform/retention/purge-mode.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { MailRequestPruner } from "../../domain/ports/mail-request.pruner.js";
+import {
+  isMailRequestPurgeable,
+  type MailRequestRetentionFacts,
+} from "../../domain/services/mail-request-retention.js";
+import {
+  MAIL_REQUEST_PURGE_BATCH_SIZE,
+  PurgeSettledMailRequestsHandler,
+} from "../purge-settled-mail-requests.handler.js";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const clock = new FixedClock(new Date());
+const daysAgo = (days: number): Date => new Date(clock.now().getTime() - days * MS_PER_DAY);
+
+/** Des demandes en mémoire, jugées par la règle même que le SQL transcrit. */
+class InMemoryMailRequestPruner extends MailRequestPruner {
+  readonly limits: number[] = [];
+  constructor(public rows: MailRequestRetentionFacts[]) {
+    super();
+  }
+  census(at: Date): Promise<PurgeCensus> {
+    const count = this.rows.filter((row) => isMailRequestPurgeable(row, at)).length;
+    return Promise.resolve({ count, oldest: null });
+  }
+  pruneBatch(at: Date, limit: number): Promise<number> {
+    this.limits.push(limit);
+    const doomed = this.rows.filter((row) => isMailRequestPurgeable(row, at)).slice(0, limit);
+    this.rows = this.rows.filter((row) => !doomed.includes(row));
+    return Promise.resolve(doomed.length);
+  }
+}
+
+const OLD_SENT: MailRequestRetentionFacts = {
+  status: "sent",
+  sentAt: daysAgo(400),
+  failedAt: null,
+};
+const OLD_REQUESTED: MailRequestRetentionFacts = {
+  status: "requested",
+  sentAt: null,
+  failedAt: null,
+};
+const RECENT_FAILED: MailRequestRetentionFacts = {
+  status: "failed",
+  sentAt: null,
+  failedAt: daysAgo(3),
+};
+
+function handler(pruner: MailRequestPruner, mode: PurgeMode): PurgeSettledMailRequestsHandler {
+  return new PurgeSettledMailRequestsHandler(pruner, clock, mode);
+}
+
+describe("PurgeSettledMailRequestsHandler", () => {
+  it("dry-run (défaut) : compte la demande close ancienne, ne supprime rien", async () => {
+    const pruner = new InMemoryMailRequestPruner([OLD_SENT, OLD_REQUESTED, RECENT_FAILED]);
+
+    await expect(handler(pruner, "dry-run").execute()).resolves.toMatchObject({
+      mode: "dry-run",
+      eligible: 1,
+      purged: 0,
+    });
+    expect(pruner.rows).toHaveLength(3);
+    expect(pruner.limits).toEqual([]);
+  });
+
+  it("off : ne fait rien", async () => {
+    const pruner = new InMemoryMailRequestPruner([OLD_SENT]);
+
+    await expect(handler(pruner, "off").execute()).resolves.toMatchObject({
+      eligible: null,
+      purged: 0,
+    });
+    expect(pruner.rows).toEqual([OLD_SENT]);
+  });
+
+  it("on : supprime la close ancienne, jamais la demande en attente", async () => {
+    const pruner = new InMemoryMailRequestPruner([OLD_SENT, OLD_REQUESTED, RECENT_FAILED]);
+
+    await expect(handler(pruner, "on").execute()).resolves.toMatchObject({ purged: 1 });
+    expect(pruner.rows).toEqual([OLD_REQUESTED, RECENT_FAILED]);
+  });
+
+  it("on : par lots bornés", async () => {
+    const total = MAIL_REQUEST_PURGE_BATCH_SIZE + 1;
+    const pruner = new InMemoryMailRequestPruner(
+      Array.from({ length: total }, () => ({ ...OLD_SENT })),
+    );
+
+    await expect(handler(pruner, "on").execute()).resolves.toMatchObject({ purged: total });
+    expect(pruner.limits).toEqual([MAIL_REQUEST_PURGE_BATCH_SIZE, MAIL_REQUEST_PURGE_BATCH_SIZE]);
+  });
+});

@@ -16,8 +16,9 @@
 > `lint:mail-through-block` (dette : 31). Aucun envoyeur ne passe encore par la
 > porte. Écarts au texte : `request` n'accepte en S1 que les 28 modèles sans PDF
 > en base64 (les 4 autres attendent le stockage, S2) ; la langue n'est pas un
-> champ de la demande, elle est lue dans `locale` des données ; la durée de
-> conservation du destinataire reste à décider (C7).
+> champ de la demande, elle est lue dans `locale` des données. La durée de
+> conservation du destinataire a été décidée après coup (1 an, § 7) ; sa purge
+> est bâtie à blanc.
 
 ## Partie 1 — Comprendre
 
@@ -167,8 +168,8 @@ flowchart LR
   à reconsidérer si un client de messagerie résiste.
 - **C7 — Le suivi** : chaque demande laisse une ligne (modèle, marque,
   destinataire, langue, état, identifiant Resend, dates). Une donnée
-  personnelle de plus au registre RGPD, avec sa durée de conservation, à
-  décider par Hugo.
+  personnelle de plus au registre RGPD, avec sa durée de conservation
+  (1 an, décidée le 2026-11-06, § 7).
 - **C8 — L'éditeur** est au back-office, sous Communication, à la place de
   l'écran `textes-emails` qu'il absorbe ; un droit dédié se règle à l'écran
   des rôles (une migration ajoute la ressource, jamais le droit — `CLAUDE.md`,
@@ -224,6 +225,32 @@ les composeurs de `LayoutInput` hors de `platform/mailer`.
   neuve.
 - **Le suivi des envois** (`mail.mail_request`) se conserve **1 an**, puis se
   purge.
+
+**Bâti le 2026-11-06, À BLANC** (Hugo, le même jour : « je ne veux pas perdre
+de la data sans le savoir »). Les deux purges existent et tournent chaque nuit
+sur le cron `45 3 * * *` (`QUALITY_UPLOAD_SWEEP_CRON`, `container/worker.ts`,
+avec les autres purges RGPD) — `POST /admin/outbox/purge` et
+`POST /admin/mail/requests/purge` —, mais **ne suppriment rien** : leur réglage
+(`OUTBOX_PURGE`, `MAIL_REQUEST_PURGE`, lus par `AppConfig`) vaut `dry-run` par
+défaut, et le passage ne fait que compter et journaliser ce qu'il supprimerait
+(nombre, date la plus ancienne). `off` coupe même le compte ; `on` supprime.
+**Leur activation est une décision à part de Hugo** : aucune des deux
+variables n'est posée au déploiement, et le Worker ne les transmet pas
+encore au container — `on` demandera aussi de les y ajouter.
+
+- Boîte d'envoi : un message est éligible quand TOUTES ses livraisons sont
+  faites depuis plus de 30 jours ; une livraison en attente ou morte garde le
+  message entier, et un message sans livraison n'est jamais éligible.
+  Code : `apps/lfd-api/src/platform/outbox/prisma-outbox-pruner.ts`, index
+  `outbox_occurred_at_idx` (migration `20261106170000`). À peser avant `on` :
+  la clé d'un message purgé est oubliée, un même fait réémis après 30 jours
+  serait relivré.
+- Suivi des e-mails : une demande `sent`, `failed` ou `refused` dont l'issue
+  date de plus d'un an ; jamais une demande `requested`. Code :
+  `apps/lfd-api/src/mail/requests/infrastructure/prisma-mail-request.pruner.ts`.
+- Registre RGPD : catégorie `client` ; `mail.mail_request.recipient`, `locale`,
+  `failure_reason` (1 an) et `platform.outbox.payload` (30 jours), chacune
+  marquée « purge non activée (à blanc) ».
 
 ## 8. Contredit par `vitruve` le 2026-11-06 — l'envoi sort de la transaction (lot S1b, avant S2)
 

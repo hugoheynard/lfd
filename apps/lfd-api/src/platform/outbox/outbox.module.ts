@@ -14,12 +14,18 @@ import { OutboxDeliveryRepository } from "./outbox-delivery.repository.js";
 import { OutboxRelay } from "./outbox-relay.js";
 import { OutboxRelayStore } from "./outbox-relay-store.js";
 import { OutboxRelayTrigger } from "./outbox-relay-trigger.js";
+import { AppConfig } from "../config/app-config.js";
+import { OutboxPruner } from "./outbox-pruner.js";
+import { OUTBOX_PURGE_MODE } from "./outbox-retention.js";
+import { OutboxPurgeController } from "./outbox-purge.controller.js";
 import { OutboxSweepController } from "./outbox-sweep.controller.js";
 import { ListDeadLettersHandler } from "./list-dead-letters.handler.js";
 import { PrismaDeadLettersReader } from "./prisma-dead-letters.reader.js";
 import { PrismaOutbox } from "./prisma-outbox.js";
 import { PrismaOutboxDeliveryRepository } from "./prisma-outbox-delivery.repository.js";
+import { PrismaOutboxPruner } from "./prisma-outbox-pruner.js";
 import { PrismaOutboxRelayStore } from "./prisma-outbox-relay-store.js";
+import { PurgeDeliveredOutboxHandler } from "./purge-delivered-outbox.handler.js";
 import { ReplayOutboxDeliveryHandler } from "./replay-outbox-delivery.handler.js";
 import { SweepOutboxHandler } from "./sweep-outbox.handler.js";
 
@@ -31,7 +37,12 @@ import { SweepOutboxHandler } from "./sweep-outbox.handler.js";
 @Global()
 @Module({
   imports: [DiscoveryModule],
-  controllers: [OutboxSweepController, AdminOutboxController, AdminOutboxDeadLettersController],
+  controllers: [
+    OutboxSweepController,
+    OutboxPurgeController,
+    AdminOutboxController,
+    AdminOutboxDeadLettersController,
+  ],
   providers: [
     DiscoveredDurableSubscribers,
     { provide: DurableSubscribers, useExisting: DiscoveredDurableSubscribers },
@@ -46,6 +57,13 @@ import { SweepOutboxHandler } from "./sweep-outbox.handler.js";
     ReplayOutboxDeliveryHandler,
     { provide: DeadLettersReader, useClass: PrismaDeadLettersReader },
     ListDeadLettersHandler,
+    { provide: OutboxPruner, useClass: PrismaOutboxPruner },
+    {
+      provide: OUTBOX_PURGE_MODE,
+      useFactory: (config: AppConfig) => config.outboxPurgeMode(),
+      inject: [AppConfig],
+    },
+    PurgeDeliveredOutboxHandler,
   ],
   exports: [DurablePublisher, OutboxRelayTrigger, OutboxRelay],
 })
