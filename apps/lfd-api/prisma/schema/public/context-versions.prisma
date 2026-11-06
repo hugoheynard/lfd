@@ -1,0 +1,27 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Les versions par contexte —
+// `documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.2 (lot M1a).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Un numéro par contexte du commerce dont l'instantané du catalogue lit des
+/// tables** — `catalog` (articles, familles, dérogations, réservations),
+/// `operations` (opérations et leurs articles), `order_cutoffs` (heures
+/// limites et réglage du jour même). Chacun monte quand une table de CE
+/// contexte change, et lui seul.
+///
+/// 🔴 Aucun code ne l'écrit : huit déclencheurs `BEFORE … FOR EACH STATEMENT`
+/// resserrés en `UPDATE OF`, chacun appelant la fonction de son contexte
+/// (`catalog_version_bump`, `operations_version_bump`,
+/// `order_cutoffs_version_bump` — migration `20261106120000_les_versions_par_contexte`).
+/// Les colonnes sont celles de `catalogue-snapshot-columns.ts`, tenues par
+/// `lint:context-version-columns`. Rien ne la lit avant M1b.
+///
+/// Le fichier ne porte le nom d'aucun des trois contextes : la table n'est à
+/// aucun d'eux en propre. Trois lignes, `context` borné par un `CHECK`.
+model ContextVersion {
+  context String @id
+  value   BigInt @default(0)
+
+  @@map("context_versions")
+  @@schema("public")
+}

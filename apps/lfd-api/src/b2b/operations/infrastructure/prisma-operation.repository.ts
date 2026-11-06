@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
 import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import {
@@ -25,6 +26,7 @@ export class PrismaOperationRepository extends OperationRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly shelves: ShelfChanges,
+    private readonly uow: UnitOfWork,
   ) {
     super();
   }
@@ -78,15 +80,23 @@ export class PrismaOperationRepository extends OperationRepository {
   /**
    * Écrit l'état entier, point focal compris : l'agrégat le tient depuis le
    * lot 2 (lu à la médiathèque au choix de l'image).
+   *
+   * Les trois instructions partent ENSEMBLE (plan
+   * `plan-materiaux-du-catalogue.md`, § 11, lot M1a) : entre l'effacement et la
+   * recréation des articles, une lecture verrait une opération vide, et
+   * l'instantané du catalogue la garderait sous ce numéro. Dans un `uow.run`
+   * déjà ouvert — le cas des cas d'usage —, on rejoint la transaction en cours.
    */
   async save(operation: Operation): Promise<void> {
     const snapshot = operation.snapshot();
-    await this.prisma.catalogOperation.update({
-      where: { key: snapshot.key },
-      data: operationColumns(snapshot),
+    await this.uow.run(async () => {
+      await this.prisma.catalogOperation.update({
+        where: { key: snapshot.key },
+        data: operationColumns(snapshot),
+      });
+      await this.prisma.catalogOperationItem.deleteMany({ where: { operationKey: snapshot.key } });
+      await this.writeItems(operation);
     });
-    await this.prisma.catalogOperationItem.deleteMany({ where: { operationKey: snapshot.key } });
-    await this.writeItems(operation);
     this.shelves.changed(ALL_SHELVES);
   }
 

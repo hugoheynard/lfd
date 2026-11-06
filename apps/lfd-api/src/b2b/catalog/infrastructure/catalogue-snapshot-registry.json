@@ -1,0 +1,59 @@
+{
+  "$comment": "Registre des versions par contexte (lint:context-version-columns, plan-materiaux-du-catalogue.md § 2.2, § 11). Les colonnes LUES sont dans catalogue-snapshot-columns.ts, rangées par contexte ; ici, les colonnes IGNORÉES des tables sous déclencheur, et les tables reliées laissées HORS de l'instantané, chacune avec sa raison (relevé le 2026-11-05, order_cutoff_settings le 2026-11-06).",
+  "ignorees": {
+    "catalog_items": {
+      "kind": "type de ligne du référentiel, lu par aucun lecteur du devis, de l'estimation ni du rayon",
+      "weight_grams": "poids nominal, non servi au devis (seuls le pas et le minimum du poids le sont)",
+      "public_ttc_cents": "ancienne étiquette publique ; le prix public servi vient de public_by_context",
+      "may_contain": "traces, servies par les écrans allergènes, pas par le devis ni le rayon",
+      "received_at": "horodatage d'arrivée du référentiel, jamais servi",
+      "requires_cold": "lu par la livraison (catalog-delivery-cold-skus.reader.ts), pas par le devis",
+      "visuals_gesture_id": "trace du geste de la projection des visuels ; les visuels eux-mêmes sont lus",
+      "variant_id": "identifiant de déclinaison du référentiel, jamais servi"
+    },
+    "catalog_categories": {
+      "vat_rate_percent": "le taux de la famille n'est plus lu depuis le 2026-09-06 (billableRate, article seul)",
+      "received_at": "horodatage d'arrivée du référentiel, jamais servi",
+      "applied_seq": "séquence de projection, jamais servie",
+      "withdrawn_at": "une famille retirée n'est filtrée par aucun lecteur aujourd'hui ; ses articles le sont par leur propre withdrawn_at",
+      "audience": "l'audience servie est celle de l'article, pas celle de la famille"
+    },
+    "catalog_item_overrides": {
+      "price_millicents": "plus aucun prix décidé ici depuis le lot D (2026-10-15, servedPriceOf)",
+      "decided_public_ttc_cents": "plus aucun prix décidé ici depuis le lot D (2026-10-15, servedPriceOf)",
+      "is_featured": "mise en avant d'avant la séparation pro/public, remplacée par is_featured_pro et is_featured_public",
+      "decided_by": "auteur de la décision, sélectionné par DECISION_COLUMNS mais jamais servi par ItemRow",
+      "decided_at": "date de la décision (@updatedAt), jamais servie par ItemRow — la lister ferait monter toute écriture de dérogation",
+      "is_made_to_order": "colonne morte depuis R3-1 (2026-11-02) : le sur mesure est custom_recipe sur l'article"
+    },
+    "catalog_item_reservations": {
+      "reserved_at": "date de la réservation, ni comptée ni servie",
+      "reserved_by": "auteur de la réservation, ni compté ni servi"
+    },
+    "catalog_operations": {
+      "image_gesture_id": "trace du geste de la médiathèque ; l'image elle-même est lue",
+      "written_by": "auteur de la saisie, jamais servi",
+      "written_at": "date de la saisie, jamais servie"
+    },
+    "order_cutoffs": {
+      "created_at": "horodatage technique, jamais servi",
+      "updated_at": "horodatage technique (@updatedAt), jamais servi"
+    },
+    "order_cutoff_settings": {
+      "enabled": "interrupteur retiré le 2026-10-21, plus lu (prisma-order-cutoff-settings.reader.ts)",
+      "same_day_allowed": "colonne morte depuis L4 : remplacée par le jour même par clientèle, plus recopiée par settings-same-day-order.reader.ts",
+      "resupply_cutoff_time": "heure du réassort, lue par le réassort (settings-resupply-cutoff.ts) et le plan du fournil, jamais par le devis ni l'estimation",
+      "pickup_reminder_delay_minutes": "délai de relance d'un retrait en retard, lu par la Supervision et l'envoi du rappel, pas par le devis",
+      "delay_warning_delay_minutes": "délai de l'alerte de retard, lu par la Supervision et l'envoi de l'alerte, pas par le devis",
+      "late_tolerance_minutes": "tolérance de retard, lue par la Supervision et le comptoir, pas par le devis",
+      "shelf_hold_minutes": "durée de garde du stock en rayon, lue par l'expiration des paiements en cours (unsettled-shop-order-expiry.service.ts), pas par le devis",
+      "updated_at": "instant du dernier réglage, servi à l'écran seulement",
+      "updated_by_staff_id": "auteur, servi à l'écran seulement",
+      "updated_by_name": "nom de l'auteur, servi à l'écran seulement",
+      "updated_by_role": "rôle de l'auteur, jamais servi"
+    }
+  },
+  "horsInstantane": {
+    "catalog_operation_overrides": "personne ne la lit aujourd'hui (plan § 9) ; l'appliquer serait une fonctionnalité à décider"
+  }
+}

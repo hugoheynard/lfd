@@ -283,6 +283,15 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // numéro qu'un principal gardé par la suite d'avant peut porter : la
         // mémoire du résolveur est vidée plus bas, pour cette raison.
         await ensurePrincipalStamp(prisma);
+        // Les trois versions par contexte, pour la même raison
+        // (plan-materiaux-du-catalogue.md, § 2.2, § 11, lot M1a) : REMISES à
+        // 0, pas seulement recréées — le semis du catalogue, plus bas, les
+        // fait monter depuis 0 à chaque remise.
+        // ⚠️ TODO M1b (noté le 2026-11-06) : quand la mémoire de l'instantané
+        // existera, son `forget()` va avec les autres oublis ci-dessous — un
+        // morceau gardé sous un numéro que cette remise fait revenir serait
+        // resservi à la suite suivante.
+        await resetContextVersions(prisma);
         // Le référentiel d'allergènes est posé par migration, comme les contextes
         // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
         // donc qu'à effacer ce qu'un TEST y aurait ajouté.
@@ -584,6 +593,17 @@ async function ensurePrincipalStamp(prisma: PrismaService): Promise<void> {
   await prisma.$executeRaw`
     INSERT INTO "public"."principal_stamp" ("id", "value") VALUES (1, 0)
     ON CONFLICT ("id") DO NOTHING`;
+}
+
+/**
+ * Les trois lignes de `context_versions`, à l'identique de `20261106120000` :
+ * recréées si un test les a effacées, et ramenées à 0 sinon.
+ */
+async function resetContextVersions(prisma: PrismaService): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO "public"."context_versions" ("context", "value")
+    VALUES ('catalog', 0), ('operations', 0), ('order_cutoffs', 0)
+    ON CONFLICT ("context") DO UPDATE SET "value" = 0`;
 }
 
 async function ensureSalesContexts(prisma: PrismaService): Promise<void> {

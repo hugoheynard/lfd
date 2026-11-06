@@ -21,8 +21,12 @@
 > `order_cutoffs`, chacun avec ses déclencheurs, lus en une requête (§ 2.2).
 > Remplace la forme à un seul numéro, bâtie le 2026-11-05 puis mise de côté.
 >
-> 🧭 **Prochain pas** : `vitruve` sur la forme par contexte, puis M1a (les
-> estampilles seules, sans lecteur ; retour arrière gratuit), puis M1b. Restent à mesurer avant M1b : le devis d'un espace pro et
+> ✅ **M1a bâti le 2026-11-06** sur `dev` (migration
+> `20261106120000_les_versions_par_contexte`, porte
+> `lint:context-version-columns`, e2e `apps/lfd-api/test/context-versions.e2e-spec.ts`) ; rien
+> ne lit encore les versions. Pas en production.
+>
+> 🧭 **Prochain pas** : M1b. Restent à mesurer avant M1b : le devis d'un espace pro et
 > l'estimation de la saisie (§ 10.3).
 >
 > Ce qui a changé depuis la version du 2026-11-04 : l'invalidation par une
@@ -321,10 +325,10 @@ main laisse le rayon faux jusqu'à son expiration. Inchangé par ce plan.
 
 ### 2.2 bis Le schéma
 
-> 📋 Rien de ceci n'est en base, ni en dev ni en production. La forme à un
-> seul numéro, bâtie le 2026-11-05, est mise de côté (`git stash`, « M1a…
-> forme suspendue ») : sa liste de colonnes, son registre, sa porte et ses
-> e2e se reprennent tels quels, seules la table et les fonctions changent.
+> ✅ Bâti le 2026-11-06 (M1a) : la table, ses trois fonctions et ses huit
+> déclencheurs existent sur `dev`, pas encore en production. La forme à un
+> seul numéro, bâtie le 2026-11-05, a été abandonnée ; sa liste de colonnes et
+> son registre ont été repris, rangés par contexte (§ 11).
 
 ```mermaid
 flowchart LR
@@ -418,8 +422,7 @@ base :
   l'instantané en direct ; liste admise datée pour l'administration et la
   passation.
 - **La porte des déclencheurs, par colonne et par contexte**
-  (`lint:catalog-stamp-columns`, bâtie le 2026-11-05 et mise de côté avec
-  M1a) : les colonnes lues viennent de la constante que le chargeur importe
+  (`lint:context-version-columns`, bâtie en M1a le 2026-11-06) : les colonnes lues viennent de la constante que le chargeur importe
   pour son `select` ; chaque table de la constante a son déclencheur, en
   `UPDATE OF` sur exactement ces colonnes ; chaque autre colonne est
   « ignorée » au registre avec sa raison ; toute table reliée au catalogue est
@@ -636,3 +639,22 @@ Aucun bloquant. Ce qui change :
 **Non vérifié** : qu'aucune transaction n'écrive `catalog_item_reservations`
 avec `companies` ou `memberships` (archivage d'une société) — à remonter
 depuis les appelants de `prisma-catalog-reservations.ts` au bâti de M1a.
+
+### 11.1 Ce que le bâti de M1a a appris (2026-11-06)
+
+- **Le `save` d'une opération était déjà presque toujours en transaction** :
+  sept appelants sur huit l'appellent dans un `uow.run`. Le huitième,
+  `repoint-operation-image.ts`, reçoit un `WriteTicket` de la médiathèque,
+  probablement transactionnel (non vérifié). Le `uow.run` posé dans `save`
+  rejoint la transaction en cours et protège un futur appelant. `add` a la
+  même forme (création, puis articles) et n'a pas été touché.
+- **Les réglages d'heure limite lus par le devis**, relevés depuis ses
+  appelants (`OrderPlanGate.ensureNotTooSoon`, `ShelfCircuit.refusalFor`,
+  `staff-settlement-refusal.ts`) : les quatre drapeaux du jour même par
+  clientèle. L'heure de réassort ne sert qu'au réassort et au fournil.
+- **Le « non vérifié » du § 11 est fermé** : les seuls écrivains des
+  réservations (`ReserveArticleHandler`, `ReleaseArticleHandler`) ne font que
+  LIRE la société ; aucune transaction n'écrit réservations et
+  `companies`/`memberships`.
+- **Les colonnes de `order_cutoffs`** ont été reprises de l'ancienne liste,
+  pas relevées depuis le devis : à confirmer au chargeur de M1b.

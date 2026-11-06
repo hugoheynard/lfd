@@ -110,7 +110,13 @@
 >   suivant `ClientWorkspace` avec une clé maison (`readFor`…) qui laissait
 >   voir, le temps d'une requête, l'espace d'où l'on venait ; liste admise
 >   (intercepteur, garde, bascule, menus, écritures du panier) et lecteurs
->   pas encore migrés comptés en dette décroissante. C'est la
+>   pas encore migrés comptés en dette décroissante. Et **57** depuis le
+>   2026-11-06 avec `lint:context-version-columns` : chaque colonne d'une
+>   table que l'instantané du catalogue lit est lue (dans l'`UPDATE OF` du
+>   déclencheur qui fait monter `context_versions`) ou ignorée avec sa
+>   raison, et le déclencheur d'une table appelle la fonction de SON
+>   contexte — une colonne oubliée servirait un catalogue périmé sans le
+>   dire. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1287,7 +1293,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 56 portes du dépôt, d’un coup
+pnpm lint:gates         # les 57 portes du dépôt, d’un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
