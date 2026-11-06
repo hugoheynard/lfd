@@ -182,6 +182,20 @@
       "watch": ["apps/lfd-api/src/**"]
     },
     {
+      "name": "intent-key-gestures",
+      "script": "dev-toolbox/gates/intent-key-gestures.mjs",
+      "holds": "Un geste du staff qui envoie un e-mail porte la clé d'intention de l'écran (commande et contrôleur), et aucune clé d'e-mail n'est tirée au hasard hors liste.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "mail-key-no-pii",
+      "script": "dev-toolbox/gates/mail-key-no-pii.mjs",
+      "holds": "Aucune clé d'idempotence d'e-mail n'est construite avec une adresse.",
+      "since": "2026-11-06",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
       "name": "handler-per-file",
       "script": "dev-toolbox/gates/handler-per-file.mjs",
       "holds": "Un seul handler par fichier.",

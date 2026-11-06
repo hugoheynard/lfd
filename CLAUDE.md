@@ -149,7 +149,12 @@
 >   BAN, web-push) pose la garde `assertOutsideTransaction`, qui journalise
 >   (`NETWORK_IN_TRANSACTION=report`, le défaut) ou refuse (`enforce`) un
 >   appel parti dans une transaction ; les exceptions sont inscrites et datées.
->   C'est la
+>   Et **64** et **65** le même jour avec `lint:intent-key-gestures` et
+>   `lint:mail-key-no-pii` (revue du service d'e-mails, cas 4) : un geste du
+>   staff qui envoie un e-mail porte la clé d'intention de l'écran (en-tête
+>   `Idempotency-Key`, champ obligatoire de la commande, lu par le
+>   contrôleur), aucune clé d'e-mail n'est tirée au hasard hors liste, et
+>   aucune n'est construite avec une adresse. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1347,7 +1352,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 63 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 65 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>
