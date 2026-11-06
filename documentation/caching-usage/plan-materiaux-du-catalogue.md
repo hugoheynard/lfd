@@ -17,8 +17,12 @@
 > compteur de réservations dans l'instantané, la liste filtrée par société en
 > SQL à chaque requête.
 >
-> 🧭 **Prochain pas** : M1a (l'estampille seule, sans lecteur ; retour arrière
-> gratuit), puis M1b. Restent à mesurer avant M1b : le devis d'un espace pro et
+> 🔢 **Un numéro par contexte** (Hugo, 2026-11-06) : `catalog`, `operations`,
+> `order-cutoffs`, chacun avec ses déclencheurs, lus en une requête (§ 2.2).
+> Remplace la forme à un seul numéro, bâtie le 2026-11-05 puis mise de côté.
+>
+> 🧭 **Prochain pas** : `vitruve` sur la forme par contexte, puis M1a (les
+> estampilles seules, sans lecteur ; retour arrière gratuit), puis M1b. Restent à mesurer avant M1b : le devis d'un espace pro et
 > l'estimation de la saisie (§ 10.3).
 >
 > Ce qui a changé depuis la version du 2026-11-04 : l'invalidation par une
@@ -197,8 +201,8 @@ bâti.
   (`reservationInclude`, `catalog-item-access.ts`) : un nombre, identique pour
   tous les lecteurs, sans aucun identifiant de société ;
 - **la lignée des familles** (`catalog_categories`) ;
-- **les opérations** non retirées, avec leurs articles et leur surcharge
-  locale (`catalog_operation_overrides`), jugées à l'instant de la requête par
+- **les opérations** non retirées, avec leurs articles (pas leur surcharge
+  locale, que personne ne lit — § 9), jugées à l'instant de la requête par
   les mêmes fonctions qu'aujourd'hui ;
 - **les heures limites** : `b2b/order-cutoffs` est dans le même bloc que
   `b2b/catalog`, et `lint:prisma-model-ownership` raisonne par bloc
@@ -226,32 +230,88 @@ pas de code, seulement de source.
 
 Indexé au chargement (par SKU, par famille) : les vues lisent des `Map`.
 
-### 2.2 L'estampille
+### 2.2 Les estampilles — un numéro par contexte (décidé par Hugo le 2026-11-06)
 
-Une table d'une ligne, `catalog_stamp`, sur le modèle de `principal_stamp` **dans
-sa forme en service** : un compteur, des déclencheurs `BEFORE … FOR EACH
-STATEMENT`, **resserrés aux colonnes lues** (`UPDATE OF …`, comme la migration
-`20261105120000_l_estampille_filtree_par_colonnes` l'a fait pour le principal,
-parce que les déclencheurs larges vidaient le cache pour rien). `catalog_items`
-est réécrit par des écritures qui ne changent rien à ce que l'instantané porte
-— la projection des visuels (`prisma-catalog-visuals.projection.ts`), les
-états de revue, les limites de commande — : seules les colonnes que le
-chargeur lit font monter le numéro ; `INSERT` et `DELETE` toujours.
+**En une phrase :** chaque contexte du commerce dont l'instantané lit des
+tables tient **son propre numéro**. À chaque écriture qui change ce que la
+boutique sert, la base fait monter le numéro **du contexte qui possède la
+table**, et lui seul. L'API relit les numéros à chaque requête, en une seule
+lecture, et ne recharge que le morceau dont le numéro a bougé.
 
-Tables sous déclencheur (noms vérifiés dans `prisma/schema/public/` le
-2026-11-05) : `catalog_items`, `catalog_categories`, `catalog_item_overrides`,
-`catalog_item_reservations` (le compteur en dépend), `catalog_operations`,
-`catalog_operation_items`, `catalog_operation_overrides`, et la table des
-heures limites.
+**Pourquoi pas un seul numéro** (la forme bâtie le 2026-11-05, puis mise de
+côté) : il faisait dépendre trois contextes d'une même ligne. Masquer une
+opération faisait relire tous les articles. Hugo l'a refusé le 2026-11-06 :
+« le stamp est une conséquence de deux schémas qui ne devraient pas se
+parler ». C'est aussi la pratique des grandes plateformes : chacun versionne
+son propre domaine.
 
-**Retour arrière** : `DROP TRIGGER`, `DROP FUNCTION`, `DROP TABLE`. Une ligne
-d'estampille **absente** veut dire « ne rien garder » : le binaire relit la
-base à chaque requête, comme aujourd'hui.
+| Contexte (propriétaire, `lint:prisma-model-ownership`) | Tables sous déclencheur                                                                      | Morceau de l'instantané      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ---------------------------- |
+| `catalog` (`b2b/catalog`)                              | `catalog_items`, `catalog_categories`, `catalog_item_overrides`, `catalog_item_reservations` | articles, familles, lignée   |
+| `operations` (`b2b/operations`)                        | `catalog_operations`, `catalog_operation_items`                                              | opérations et leurs articles |
+| `order-cutoffs` (`b2b/order-cutoffs`)                  | `order_cutoffs`, `order_cutoff_settings`                                                     | heures limites, réglages     |
+
+Propriétaires à revérifier au bâti dans le code des écrivains (relevé le
+2026-11-05, pas rouvert le 2026-11-06). `catalog_operation_overrides` n'a pas
+de déclencheur : personne ne la lit (§ 9).
+
+**La table** : `catalog_versions` est déjà prise (l'archive des arrivées du
+référentiel). Nom proposé : `context_versions`, dans le schéma `public` :
+
+| Colonne   | Type     | Exemple      | Sens                                                   |
+| --------- | -------- | ------------ | ------------------------------------------------------ |
+| `context` | `text`   | `operations` | clé primaire ; `CHECK` sur les trois valeurs ci-dessus |
+| `value`   | `bigint` | `88`         | monte quand une table de CE contexte change            |
+
+Elle ne contient ni le catalogue, ni la date, ni l'auteur : c'est un compteur
+par contexte, pas un journal.
+
+**Une fonction de montée par contexte** (`catalog_version_bump()`,
+`operations_version_bump()`, `order_cutoffs_version_bump()`) : chaque
+déclencheur appelle celle de SON contexte, qui n'écrit que SA ligne. Une
+fonction générique avec le contexte en argument (`TG_ARGV`) ferait la même
+chose en une seule ; écartée pour que la porte (§ 3) lise, dans la migration,
+quel contexte possède quel déclencheur sans interpréter d'argument. À trancher
+par `vitruve`.
+
+**La mécanique de chaque déclencheur est celle de `principal_stamp` dans sa
+forme en service** :
+
+- un **compteur**, pas un `max(id)` (attribué à l'écriture, pas à la
+  validation) ;
+- `BEFORE … FOR EACH STATEMENT`, pour que le verrou de la ligne du contexte
+  soit pris avant ceux des lignes écrites ;
+- **resserré aux colonnes lues** (`UPDATE OF …`, comme
+  `20261105120000_l_estampille_filtree_par_colonnes`) ; `INSERT` et `DELETE`
+  toujours. Une réécriture de l'auteur d'une décision ou d'un état technique
+  ne fait rien monter ;
+- la fonction **recrée** la ligne absente (`INSERT … ON CONFLICT DO UPDATE`) :
+  un `UPDATE` sur zéro ligne laisserait passer l'écriture sans faire monter le
+  numéro.
+
+**Corrigé au bâti du 2026-11-05 :** cette section disait que les visuels et
+les limites de commande ne changeaient rien à l'instantané. C'était faux : les
+images, vignettes, cadrages et limites de commande sont **servis** par la
+boutique. Ils sont lus, donc ils font monter `catalog`.
+
+**L'arrêt d'urgence est un réglage, pas une ligne effacée.** Puisque la
+fonction recrée la ligne, « ligne absente = ne rien garder » ne coupe rien.
+`CATALOGUE_SNAPSHOT_MEMORY=off`, lu par `AppConfig`, fait relire la base à
+chaque requête, comme aujourd'hui. À poser en M1b, avec le premier lecteur.
+
+**Retour arrière** de M1a : `DROP TRIGGER` des huit déclencheurs, `DROP
+FUNCTION` des trois fonctions, `DROP TABLE "context_versions"`. Gratuit tant
+que M1b n'est pas déployé : rien ne la lit.
 
 **Pourquoi pas `catalog_versions`** : c'est une **archive** des arrivées du
 référentiel, où « la surcharge locale n'y entre pas » (`catalog.prisma`) ; une
 dérogation ou une réservation changent le catalogue servi sans créer de
 version.
+
+**Le référentiel n'y figure pas.** Aucun déclencheur dans le schéma `pim`.
+Quand il publie, le commerce écrit sa copie dans `catalog_items`, et c'est
+cette écriture qui fait monter `catalog`. La frontière du § 1 de `CLAUDE.md`
+reste intacte.
 
 **Ce que la promesse couvre, et ce qu'elle ne couvre pas** : « aucune écriture
 ne peut l'oublier » vaut pour l'**instantané** (devis, estimation, rayon
@@ -259,19 +319,12 @@ recalculé). Le **cache des rayons** (l'objet `ProShelves`, le bord Cloudflare)
 reste purgé par le signal applicatif `ShelfChanges` : une correction SQL à la
 main laisse le rayon faux jusqu'à son expiration. Inchangé par ce plan.
 
-### 2.2 bis Le schéma de M1a — où est la table, ce qu'elle contient
+### 2.2 bis Le schéma
 
-> 📋 **Dessiné le 2026-11-06** depuis la migration mise de côté
-> (`git stash`, « M1a… forme suspendue »), relue ce jour-là. Rien de ceci
-> n'est en base, ni en dev ni en production.
-
-**En une phrase :** une petite table du commerce garde **un nombre**. À chaque
-écriture qui change ce que la boutique sert (un prix, un nom, un masquage, une
-heure limite), la base le fait monter **toute seule**. L'API garde le catalogue
-en mémoire et, à chaque requête, relit ce seul nombre : s'il n'a pas bougé, elle
-sert sa copie ; s'il a bougé, elle relit le catalogue.
-
-**Ce qui a été bâti puis mis de côté — un seul numéro pour trois contextes :**
+> 📋 Rien de ceci n'est en base, ni en dev ni en production. La forme à un
+> seul numéro, bâtie le 2026-11-05, est mise de côté (`git stash`, « M1a…
+> forme suspendue ») : sa liste de colonnes, son registre, sa porte et ses
+> e2e se reprennent tels quels, seules la table et les fonctions changent.
 
 ```mermaid
 flowchart LR
@@ -294,74 +347,42 @@ flowchart LR
       OC["order_cutoffs<br/>jour, heure limite par point"]
       OS["order_cutoff_settings<br/>jour même, tolérances"]
     end
-    S[("catalog_stamp<br/>une ligne : id = 1, value = 4217")]
+    V[("context_versions<br/>catalog = 4217<br/>operations = 88<br/>order-cutoffs = 12")]
   end
 
-  P -. "publie par le canal, écrit catalog_items" .-> CI
-  CI -- déclencheur --> S
-  CC -- déclencheur --> S
-  CO -- déclencheur --> S
-  CR -- déclencheur --> S
-  OP -- déclencheur --> S
-  OI -- déclencheur --> S
-  OC -- déclencheur --> S
-  OS -- déclencheur --> S
-  S -- "1 lecture par requête" --> API["API : copie en mémoire<br/>gardée tant que value ne bouge pas"]
-```
-
-Ce que contient la table, et rien d'autre :
-
-| Colonne | Type       | Exemple | Sens                                           |
-| ------- | ---------- | ------- | ---------------------------------------------- |
-| `id`    | `smallint` | `1`     | toujours 1 — une seule ligne (`CHECK`)         |
-| `value` | `bigint`   | `4217`  | monte de 1 à chaque écriture d'une colonne lue |
-
-Elle ne contient **ni** le catalogue, **ni** la date, **ni** qui a écrit : c'est
-un compteur, pas un journal. Les huit déclencheurs ne regardent que les
-colonnes lues (`UPDATE OF …`) : réécrire l'auteur d'une décision ou un état
-technique ne fait rien monter.
-
-**Ce que Hugo a objecté le 2026-11-06 :** ce numéro unique fait dépendre trois
-contextes du commerce d'une même ligne — masquer une opération ferait relire
-les articles, et inversement. **La forme proposée — un numéro par contexte,
-lus ensemble (pas encore tranchée, pas encore contredite par `vitruve`) :**
-
-```mermaid
-flowchart LR
-  subgraph PUB["schéma public — le commerce"]
-    CAT["catalog<br/>articles, familles,<br/>dérogations, réservations"]
-    OPS["operations<br/>opérations, leurs articles"]
-    CUT["order-cutoffs<br/>heures limites, réglages"]
-    V[("platform_versions<br/>catalog = 4217<br/>operations = 88<br/>order-cutoffs = 12")]
-  end
-  CAT -- "ses déclencheurs, SA ligne" --> V
-  OPS -- "ses déclencheurs, SA ligne" --> V
-  CUT -- "ses déclencheurs, SA ligne" --> V
+  P -. "publie par le canal, le commerce écrit catalog_items" .-> CI
+  CI -- "monte catalog" --> V
+  CC -- "monte catalog" --> V
+  CO -- "monte catalog" --> V
+  CR -- "monte catalog" --> V
+  OP -- "monte operations" --> V
+  OI -- "monte operations" --> V
+  OC -- "monte order-cutoffs" --> V
+  OS -- "monte order-cutoffs" --> V
   V -- "1 lecture, les 3 lignes" --> API["API : 3 morceaux en mémoire,<br/>chacun relu seulement si SON numéro bouge"]
 ```
 
-| Colonne   | Type     | Exemple      | Sens                                        |
-| --------- | -------- | ------------ | ------------------------------------------- |
-| `context` | `text`   | `operations` | le contexte propriétaire de la ligne        |
-| `value`   | `bigint` | `88`         | monte quand une table de CE contexte change |
-
-Chaque contexte n'écrit que sa ligne : masquer Noël fait monter `operations`
-seul, et l'API ne relit que les opérations. Le schéma `pim` n'y figure dans
-aucune des deux formes.
+Masquer un article fait monter `catalog` seul, et l'API ne relit que les
+articles. Masquer Noël fait monter `operations` seul.
 
 ### 2.3 La porte
 
 Un port `CatalogueSnapshotSource` (application du catalogue), un adaptateur
 Prisma et une mémoire :
 
-- `current()` lit l'estampille **une fois par requête** (sur le contexte de la
-  requête, comme celle des prix), puis rend l'instantané rangé sous ce numéro,
-  ou le charge : **trois appels en parallèle** — les articles (avec leurs
-  `include`), les opérations (avec articles et surcharges), les heures
-  limites ; un quatrième pour la lignée si une famille a un parent ;
-- **une seule lecture en vol** par numéro ;
-- **rangé sous le numéro lu AVANT le chargement** (la règle d'ordre de
-  `CachedPrincipalResolver`) ;
+- `current()` lit les **trois numéros en une seule lecture** (`SELECT context,
+value FROM context_versions`), **une fois par requête** (sur le contexte de
+  la requête, comme l'estampille des prix) ;
+- l'instantané est fait de **trois morceaux**, chacun rangé sous SON numéro :
+  les articles (avec familles, dérogations, compteur de réservations ; un
+  appel de plus pour la lignée si une famille a un parent), les opérations
+  (avec leurs articles), les heures limites et leurs réglages. Seul le
+  morceau dont le numéro a bougé est rechargé ;
+- **une seule lecture en vol** par (morceau, numéro) ;
+- **chaque morceau est rangé sous le numéro lu AVANT son chargement** (la
+  règle d'ordre de `CachedPrincipalResolver`) ;
+- une ligne absente de `context_versions` (base vidée à la main) : le morceau
+  n'est **pas** gardé, il est relu à chaque requête ;
 - **hors requête** (cron, semis), rien n'est gardé ;
 - **une borne** : le dernier instantané, plus celui en cours de chargement.
 
@@ -396,11 +417,16 @@ base :
   devis, de l'estimation et du rayon, aucun fichier ne lit les tables de
   l'instantané en direct ; liste admise datée pour l'administration et la
   passation.
-- **La porte des déclencheurs, avec un critère** : elle compare **les modèles
-  que l'adaptateur de l'instantané lit** (relevés dans son code, ou par la
-  sonde dans une e2e) aux **tables sous déclencheur** de la migration. Une
-  table lue sans déclencheur échoue ; les archives (`catalog_versions`,
-  `catalog_price_history`…) ne sont pas lues, donc pas exigées.
+- **La porte des déclencheurs, par colonne et par contexte**
+  (`lint:catalog-stamp-columns`, bâtie le 2026-11-05 et mise de côté avec
+  M1a) : les colonnes lues viennent de la constante que le chargeur importe
+  pour son `select` ; chaque table de la constante a son déclencheur, en
+  `UPDATE OF` sur exactement ces colonnes ; chaque autre colonne est
+  « ignorée » au registre avec sa raison ; toute table reliée au catalogue est
+  sous déclencheur ou classée « hors de l'instantané ». **Ajouté par la forme
+  par contexte** : la constante range chaque table sous son contexte, et la
+  porte vérifie que son déclencheur appelle la fonction de CE contexte. Une
+  table rangée sous `operations` qui ferait monter `catalog` échoue.
 - **Le budget** : `test/catalogue-reads.e2e-spec.ts` devient un budget — à
   chaud, **1 estampille + 1 réservations** sur le devis et l'estimation, plus
   les textes des images sur le rayon.
@@ -418,11 +444,11 @@ par requête. Aucune purge en éventail.
 
 Après les deux passages de `vitruve` (§ 8, § 9) et la mesure (§ 10) :
 
-| Lot     | Contenu                                                                                                                                                                                                                                                                                                            | Gain mesurable                                                |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| **M1a** | l'estampille seule : la table `catalog_stamp`, sa fonction, les déclencheurs resserrés aux colonnes du `select` du chargeur ; la porte par colonne ; `ensureCatalogStamp` et le `forget()` dans le harnais e2e. **Rien ne la lit** : retour arrière gratuit. `lecteur-de-migrations` avant `main`                  | aucun (prépare M1b)                                           |
-| **M1b** | l'instantané (chargeur en `select` explicite), sa mémoire, ses vues ; le **devis**, l'**estimation** et les **suggestions** (`catalog-suggestion-catalogue.ts`, qui lit aujourd'hui `listSellable` deux fois) y passent ; les réservations de l'appelant lues **avant** l'estampille ; le budget et les e2e du § 3 | devis ~130 → ~10–20 ms, suggestions ~155 → ~10–20 ms, à chaud |
-| **M2**  | le **rayon** recalculé passe par la même porte ; `lint:catalogue-door`                                                                                                                                                                                                                                             | rayon recalculé 5 → 2 lectures à chaud                        |
+| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                           | Gain mesurable                                                |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **M1a** | les estampilles seules : la table `context_versions` (trois lignes), une fonction par contexte, les huit déclencheurs resserrés aux colonnes du `select` du chargeur ; la porte par colonne et par contexte ; la remise des trois lignes dans le harnais e2e. **Rien ne la lit** : retour arrière gratuit. Repris de ce qui est mis de côté. `lecteur-de-migrations` avant `main` | aucun (prépare M1b)                                           |
+| **M1b** | l'instantané en trois morceaux (chargeur en `select` explicite), sa mémoire, ses vues, le réglage `CATALOGUE_SNAPSHOT_MEMORY` ; le **devis**, l'**estimation** et les **suggestions** (`catalog-suggestion-catalogue.ts`, qui lit aujourd'hui `listSellable` deux fois) y passent ; les réservations de l'appelant lues **avant** l'estampille ; le budget et les e2e du § 3      | devis ~130 → ~10–20 ms, suggestions ~155 → ~10–20 ms, à chaud |
+| **M2**  | le **rayon** recalculé passe par la même porte ; `lint:catalogue-door`                                                                                                                                                                                                                                                                                                            | rayon recalculé 5 → 2 lectures à chaud                        |
 
 On mesure **après chaque lot** avec les mêmes outils (§ 10) et on reporte les
 chiffres dans le tableau de référence.
@@ -485,9 +511,10 @@ relit et refuse sans écrire ; e2e « devis, réservation par une autre sociét�
 passation refusée ») ; l'opération écrite sans transaction reste transitoire
 (chaque instruction fait monter le numéro).
 
-**Encore ouvert** : la fonction de montée recrée-t-elle la ligne absente,
-comme celle du principal ? Si oui, « ligne absente = ne rien garder » ne coupe
-pas ; prévoir une autre coupure. L'ordre des verrous avec `principal_stamp`.
+**Encore ouvert** : l'ordre des verrous avec `principal_stamp`, et désormais
+entre les trois lignes de `context_versions`. **Tranché au bâti du
+2026-11-05** : la fonction de montée recrée la ligne absente ; l'arrêt
+d'urgence est donc un réglage (§ 2.2).
 
 **Avant de bâtir (Hugo, 2026-11-05)** : mesurer d'abord ce que pèse la lecture
 du catalogue dans un devis (marque `Server-Timing` `catalogue`, référence en
