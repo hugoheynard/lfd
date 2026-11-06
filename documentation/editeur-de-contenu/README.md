@@ -131,8 +131,12 @@ métier** appartiennent chacun à leur contexte, qui les déclare.
    éditeur. Le marketing viendra plus tard, probablement par un outil
    spécialisé (Brevo, ~20–30 € par mois en offre Standard selon des
    comparatifs tiers de 2026, prix non vérifié sur le site de Brevo).
-2. **Qui édite** : Hugo seul, ou l'équipe, avec un droit dédié ?
-3. **Changer la structure** (ajouter, retirer des blocs), ou seulement le
-   texte et l'ordre dans une structure fixe par e-mail ? La seconde est déjà
-   presque là, et couvre souvent l'essentiel du besoin.
-4. **Les premiers emplacements hors e-mail** : le texte du panier d'abord ?
+2. ✅ **L'équipe, avec un droit dédié** réglé à l'écran des rôles (Hugo,
+   2026-11-06).
+3. ✅ **Ajouter et retirer des blocs** d'un catalogue commun, pas seulement le
+   texte et l'ordre (Hugo, 2026-11-06).
+4. ✅ **Rien hors e-mail pour l'instant** : les e-mails seuls ; le socle reste
+   pensé pour d'autres emplacements, sans en bâtir (Hugo, 2026-11-06).
+
+Prochain pas : écrire le plan (lots, catalogue de blocs, moteur de rendu,
+migration du stockage des sections), puis `vitruve`.
