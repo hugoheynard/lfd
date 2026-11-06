@@ -344,7 +344,7 @@ const PORT_SURFACE = {
   "pim→media": "media/channels/carriers/",
   // Tous les blocs métier DEMANDENT un e-mail par le canal que le bloc `mail`
   // déclare ET implémente lui-même (2026-11-06, Hugo — `plan-service-e-mails.md`,
-  // C2) : `mail/channels/requests/` porte `MailRequests`, typée par modèle.
+  // C2) : `mail/channels/requests/` porte `Mail`, typée par modèle.
   // Ni ses modèles, ni son rendu, ni ses tables ne sont atteignables.
   //
   // ⚠️ `mail → <bloc métier>` reste INTERDIT : le service ne sait pas qui lui

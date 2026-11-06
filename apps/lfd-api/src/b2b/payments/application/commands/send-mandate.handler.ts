@@ -1,6 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CreditorReader } from "../../../accounting/domain/ports/creditor.reader.js";
@@ -39,13 +39,13 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  * second exemplaire de la même RUM, et c'est celui qui revient en dernier qui
  * gagnerait — sur une autorisation qu'on oppose en contestation.
  *
- * ## Le geste : `sendNow`, par le bloc `mail` (lot S2e)
+ * ## Le geste : `sendAndAwaitReceipt`, par le bloc `mail` (lot S2e)
  *
- * Envoi IMMÉDIAT par la porte du bloc (`MailRequests.sendNow`), pas une
+ * Envoi IMMÉDIAT par la porte du bloc (`Mail.sendAndAwaitReceipt`), pas une
  * demande différée — relu le 2026-11-06 :
  *
  * - le fait `payment_mandate.sent` porte l'identifiant que le fournisseur a
- *   rendu (décision de Hugo du 2026-09-19) : avec `request`, il n'existerait
+ *   rendu (décision de Hugo du 2026-09-19) : avec `send`, il n'existerait
  *   pas encore au moment d'écrire le fait, et « envoyé » voudrait dire
  *   « demandé » ;
  * - c'est un clic du staff sans écriture locale ni unité de travail : un refus
@@ -53,7 +53,7 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  *   (S2a) ou celui d'une facture (S2d).
  *
  * Aucun état du mandat ne dépend de l'envoi (il reste `draft` jusqu'à la
- * preuve signée). Le PDF part donc en octets, comme avant : `sendNow` les
+ * preuve signée). Le PDF part donc en octets, comme avant : `sendAndAwaitReceipt` les
  * accepte, et rien n'est rangé au stockage pour cet envoi.
  *
  * ## L'idempotence
@@ -72,7 +72,7 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  * un envoi refusé laisserait au journal un papier qui n'est jamais parti.
  *
  * `@hors-transaction` le courriel part chez un tiers et ne se rattrape pas :
- * aucune transaction ne peut l'annuler, et `sendNow` est refusé sous une
+ * aucune transaction ne peut l'annuler, et `sendAndAwaitReceipt` est refusé sous une
  * unité de travail. Si le journal refuse d'écrire, la requête échoue et le
  * courriel est déjà parti ; un second clic renvoie le courriel et écrit le
  * fait.
@@ -85,7 +85,7 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     private readonly creditors: CreditorReader,
     private readonly logos: LegalEntityLogoReader,
     private readonly store: DocumentStore,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly events: DomainEventPublisher,
     private readonly debtors: MandateDebtorReader,
     private readonly clock: Clock,
@@ -120,7 +120,7 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     );
     const snapshot = mandate.toSnapshot();
 
-    const receipt = await this.mails.sendNow({
+    const receipt = await this.mail.sendAndAwaitReceipt({
       to: holder.email,
       brand: "lfc",
       template: "customer.mandate-to-sign",

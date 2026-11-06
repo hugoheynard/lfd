@@ -12,7 +12,7 @@ import {
 } from "../../../../platform/database/transaction.store.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
-import type { MailDemand } from "../../../../mail/channels/requests/mail-requests.js";
+import type { MailDemand } from "../../../../mail/channels/requests/mail.js";
 import type { B2bMails } from "../../../../mail/channels/templates/b2b-mails.js";
 import type { DurableSubscriber } from "../../../../platform/outbox/durable-handler.js";
 import type { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
@@ -126,9 +126,11 @@ export const settle = (): Promise<void> => new Promise((resolve) => setImmediate
 export class TransactionWitnessMailer extends RecordingDossierMails {
   readonly underTransaction: boolean[] = [];
 
-  override sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  override sendAndAwaitReceipt<K extends keyof B2bMails>(
+    demand: MailDemand<K>,
+  ): Promise<MailReceipt> {
     this.underTransaction.push(currentTransaction() !== undefined);
-    return super.sendNow(demand);
+    return super.sendAndAwaitReceipt(demand);
   }
 }
 

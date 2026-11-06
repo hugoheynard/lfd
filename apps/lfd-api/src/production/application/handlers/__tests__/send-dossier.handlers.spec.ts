@@ -60,11 +60,11 @@ describe("l'envoi du dossier à l'arrêt", () => {
    * Lot S2f : le dossier passe par le bloc `mail`, sur-le-champ — la trace,
    * le journal et la cloche lisent l'issue de chaque envoi.
    */
-  it("envoie par `sendNow` (jamais `request`), le PDF en octets, sous la marque de la boutique", async () => {
+  it("envoie par `sendAndAwaitReceipt` (jamais `send`), le PDF en octets, sous la marque de la boutique", async () => {
     const { closed, mailer } = setup([PAUL]);
     await closed.handle(closure());
 
-    expect(mailer.requested).toEqual([]);
+    expect(mailer.queued).toEqual([]);
     expect(mailer.sent).toHaveLength(1);
     expect(mailer.sent[0]?.brand).toBe("lfc");
     expect(JSON.stringify(mailer.sent[0]?.data)).toContain('"pdfBase64":"');

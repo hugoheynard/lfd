@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { CustomerRequestReceivedEvent } from "../../../domain/customer-request.events.js";
 import {
   AT,
@@ -24,9 +24,9 @@ function problemEvent(): CustomerRequestReceivedEvent {
 }
 
 /** Demande l'e-mail dans une unité de travail ouverte, comme le font les trois gestes de dépôt. */
-async function requestOf(event: CustomerRequestReceivedEvent): Promise<RecordingMailRequests> {
+async function requestOf(event: CustomerRequestReceivedEvent): Promise<RecordingMail> {
   const uow = new OpenableUnitOfWork();
-  const mails = new RecordingMailRequests(uow);
+  const mails = new RecordingMail(uow);
   await uow.run(() => new CustomerRequestMail(mails).request(event));
   return mails;
 }
@@ -34,7 +34,7 @@ async function requestOf(event: CustomerRequestReceivedEvent): Promise<Recording
 describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc `mail`", () => {
   it("« Nous écrire » : Reply-To = l'auteur, sans commande ni photo", async () => {
     const mails = await requestOf(CONTACT);
-    expect(mails.requested).toEqual([
+    expect(mails.queued).toEqual([
       {
         brand: "lfc",
         to: "commercial@lfc.fr",
@@ -61,13 +61,13 @@ describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc
 
   it("un signalement porte la référence de la commande et le nombre de photos — pas les photos", async () => {
     const mails = await requestOf(problemEvent());
-    expect(mails.requested[0]?.data).toMatchObject({
+    expect(mails.queued[0]?.data).toMatchObject({
       formLabel: "Signaler un problème",
       orderNumber: "ORD-0001",
       photoCount: 2,
       clientLabel: "compte u1",
     });
-    expect(JSON.stringify(mails.requested[0])).not.toContain("requests/");
+    expect(JSON.stringify(mails.queued[0])).not.toContain("requests/");
   });
 
   it("une adresse refusée en en-tête est demandée SANS Reply-To plutôt que pas du tout", async () => {
@@ -76,12 +76,12 @@ describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc
       author: { name: "Jean", email: "jean<x>@exemple.fr", phone: "" },
     });
     const mails = await requestOf(new CustomerRequestReceivedEvent(odd, "commercial@lfc.fr"));
-    expect(mails.requested).toHaveLength(1);
-    expect(mails.requested[0]).not.toHaveProperty("replyTo");
+    expect(mails.queued).toHaveLength(1);
+    expect(mails.queued[0]).not.toHaveProperty("replyTo");
   });
 
   it("hors d'une unité de travail, la porte refuse : l'e-mail ne partirait pas avec la demande", async () => {
-    const mails = new RecordingMailRequests(new OpenableUnitOfWork());
+    const mails = new RecordingMail(new OpenableUnitOfWork());
     await expect(new CustomerRequestMail(mails).request(CONTACT)).rejects.toThrow(
       "request hors transaction",
     );
@@ -89,7 +89,7 @@ describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc
 
   it("une demande d'e-mail refusée remonte : c'est le dépôt qui échoue", async () => {
     const uow = new OpenableUnitOfWork();
-    const mails = new RecordingMailRequests(uow);
+    const mails = new RecordingMail(uow);
     mails.failWith = new Error("boîte d'envoi indisponible");
     await expect(uow.run(() => new CustomerRequestMail(mails).request(CONTACT))).rejects.toThrow(
       "boîte d'envoi indisponible",

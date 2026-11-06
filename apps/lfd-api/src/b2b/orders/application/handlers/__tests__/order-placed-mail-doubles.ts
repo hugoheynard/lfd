@@ -2,8 +2,8 @@ import type { OrderView } from "@lfd/contracts";
 
 import {
   type RecordedMail,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import {
   OrderRecipientReader,
@@ -95,9 +95,9 @@ export function view(overrides: Partial<OrderView> = {}): OrderView {
  * La porte du bloc `mail` doublée, lue par sa DERNIÈRE demande : ces suites
  * n'en attendent qu'une, ou aucune (`null`).
  */
-export class LastMailRequest extends RecordingMailRequests {
+export class LastMailRequest extends RecordingMail {
   get last(): RecordedMail | null {
-    return this.requested.at(-1) ?? null;
+    return this.queued.at(-1) ?? null;
   }
 }
 

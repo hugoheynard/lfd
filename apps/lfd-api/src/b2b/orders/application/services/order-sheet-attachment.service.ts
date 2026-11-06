@@ -1,7 +1,7 @@
 import type { ClientSheet } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
-import type { ByReference } from "../../../../mail/channels/requests/mail-requests.js";
+import type { ByReference } from "../../../../mail/channels/requests/mail.js";
 import type { OrderSheetMailDocument } from "../../../../mail/channels/templates/b2b-mails.js";
 import { OrderSheetArchive } from "./order-sheet-archive.service.js";
 

@@ -3,7 +3,8 @@
 > 📋 **Noté le 2026-11-06**, à la revue des changements de S2 avec Hugo :
 > « tout envoi de mail ou notification doit outbox ? ». Pour les e-mails,
 > c'est tenu : tout passe par le bloc `mail` (`lint:mail-through-block`), et
-> `sendNow` n'est permis que depuis une liste admise (`lint:send-now-admitted`).
+> `mail.sendAndAwaitReceipt` n'est permis que depuis une liste admise
+> (`lint:mail-receipt-admitted`, ex-`sendNow` et `lint:send-now-admitted`).
 > Pour les autres canaux, **rien n'est relevé** — d'où ce TODO.
 
 ## Ce qu'il faut relever avant d'écrire une règle

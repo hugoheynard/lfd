@@ -11,8 +11,8 @@ import {
 } from "../../../orders/domain/ports/order-notice-summary.reader.js";
 import {
   type RecordedMail,
-  RecordingMailRequests,
-} from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { NoticeSendJournal } from "../../domain/ports/notice-send.journal.js";
 
 /** Une commande du site `chalet`, principal `alpes` copié, au compte du principal. */
@@ -84,13 +84,13 @@ export class MemoryNoticeJournal extends NoticeSendJournal {
 /**
  * La porte du bloc `mail`, doublée : les avis sont DEMANDÉS (lot S2h), dans la
  * transaction de la livraison que ces tests ne jouent pas. `sent` nomme ce
- * qui a été demandé, et seulement ça — un `sendNow` y serait une faute.
+ * qui a été demandé, et seulement ça — un `sendAndAwaitReceipt` y serait une faute.
  */
-export class RecordingNoticeMails extends RecordingMailRequests {
+export class RecordingNoticeMails extends RecordingMail {
   get sent(): readonly RecordedMail[] {
-    if (this.sentNow.length > 0) {
+    if (this.awaitedReceipt.length > 0) {
       throw new TypeError("un avis au principal se demande, il ne s'envoie pas sur-le-champ");
     }
-    return this.requested;
+    return this.queued;
   }
 }

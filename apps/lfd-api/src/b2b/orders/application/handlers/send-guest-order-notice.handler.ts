@@ -5,7 +5,7 @@ import {
   CommerceOrderPlacedFact,
 } from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import { MailJournal } from "../../../../platform/mailer/journal/mail-journal.port.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -75,7 +75,7 @@ export class SendGuestOrderNotice implements DurableSubscriber {
     private readonly notices: GuestOrderNoticeReader,
     private readonly journal: MailJournal,
     private readonly clock: Clock,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   /** L'auteur d'une commande réglée, ou `null` si elle est introuvable. */
@@ -122,7 +122,7 @@ export class SendGuestOrderNotice implements DurableSubscriber {
       return;
     }
 
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: notice.email,
       template: "customer.order-placed-with-your-email",

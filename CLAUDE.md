@@ -126,15 +126,18 @@
 >   qu'un adaptateur `Snapshot*` enveloppe, ou un chemin hors du devis et du
 >   rayon inscrit avec sa raison. Et **60** le même jour avec
 >   `lint:mail-through-block` (plan du service d'e-mails, lot S1) : un
->   e-mail se demande au bloc `mail` par sa porte `MailRequests` ; un
+>   e-mail s'envoie au bloc `mail` par sa porte `Mail` ; un
 >   fichier hors du bloc qui injecte `MAILER` (ou `MAIL_TRANSPORT`) échoue,
 >   et les 31 envoyeurs d'aujourd'hui sont une dette comptée qui ne peut que
 >   décroître (lot S2). Et **61** depuis le 2026-11-06 avec
->   `lint:send-now-admitted` (plan du service d'e-mails, C2) : `request`
->   (outbox, envoyé après validation, relancé) est le geste par défaut ;
->   `sendNow` (immédiat, sans outbox) ne s'appelle hors du bloc `mail` que
->   depuis une liste admise et datée, chaque appelant avec sa raison, et une
->   entrée qui n'appelle plus `sendNow` échoue. C'est la
+>   `lint:mail-receipt-admitted` (plan du service d'e-mails, C2 et § 21 ;
+>   `lint:send-now-admitted` avant le renommage du 2026-11-06) : la porte
+>   s'appelle `Mail` et s'injecte sous le nom `mail` ; `mail.send` (outbox,
+>   envoyé après validation, relancé) est le geste par défaut ;
+>   `mail.sendAndAwaitReceipt` (immédiat, on attend le reçu de Resend) ne
+>   s'appelle hors du bloc `mail` que depuis une liste admise et datée,
+>   chaque appelant avec sa raison, et une entrée qui ne l'appelle plus
+>   échoue. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -499,7 +502,7 @@ pas qui le branche, et « Proposer » ne fait donc pas de cycle.
 C1–C2). Le bloc n'a pas de métier propre : il reçoit des demandes
 (« l'e-mail _commande passée_, à cette personne, avec ces données »), compose,
 envoie et garde le suivi. Il DÉCLARE et IMPLÉMENTE lui-même
-`mail/channels/requests/` (`MailRequests`, typée par modèle), et c'est la seule
+`mail/channels/requests/` (`Mail`, typée par modèle), et c'est la seule
 surface qu'un autre bloc atteint — `staff` et `production` compris : n'importer
 que ce canal ne couple à rien d'autre, et une porte déclarée dans `platform/`
 aurait perdu le typage des 32 modèles. `mail` n'importe que `platform` et

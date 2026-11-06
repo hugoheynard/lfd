@@ -11,7 +11,7 @@
 > intégrés (§ 6). Nom du bloc et du schéma : **`mail`** (Hugo, 2026-11-06).
 >
 > 🏗️ **S0 et S1 bâtis le 2026-11-06.** S1 : `apps/lfd-api/src/mail/` (porte
-> `apps/lfd-api/src/mail/channels/requests/mail-requests.ts`, contexte `mail/requests/`), table
+> `apps/lfd-api/src/mail/channels/requests/mail.ts` depuis le § 21, contexte `mail/requests/`), table
 > `mail.mail_request`, abonné durable `mail.requested`, porte
 > `lint:mail-through-block` (dette : 31). Au bâti de S1, aucun envoyeur ne passait
 > par la porte. Écarts au texte : `request` n'accepte en S1 que les 28 modèles sans PDF
@@ -131,6 +131,8 @@ flowchart LR
 - **C1 — Un bloc `mail/`** de premier niveau de `apps/lfd-api/src/`, avec son
   schéma Postgres `mail` (nom tranché par Hugo le 2026-11-06).
 - **C2 — Une porte, deux gestes, déclarée par le bloc** (Hugo, 2026-11-06).
+  _Noms d'origine ci-dessous ; depuis le § 21 : `Mail`, `mail.send`,
+  `mail.sendAndAwaitReceipt`, `lint:mail-receipt-admitted`._
   `mail/channels/requests/` déclare `MailRequests`, **typée par modèle** :
   `request("order-placed", { … })` est vérifié par le compilateur, comme
   `mailer.send()` aujourd'hui. Le bloc l'implémente lui-même. La matrice gagne
@@ -538,8 +540,8 @@ désormais dans sa transaction, via `OrderReadyMail`.
   (`documentation/livraisons/livreur/en-route.md`, § 3) ; une demande qui
   échoue fait échouer la livraison, rejouée sans doublon.
 - **Un double partagé** pour les tests des blocs : `RecordingMailRequests`
-  et `OpenableUnitOfWork`
-  (`apps/lfd-api/src/mail/channels/requests/__tests__/recording-mail-requests.ts`) ; le
+  et `OpenableUnitOfWork` (`RecordingMail`, dans
+  `apps/lfd-api/src/mail/channels/requests/__tests__/recording-mail.ts`, depuis le § 21) ; le
   double refuse `request` hors transaction et `sendNow` dedans, comme la
   porte.
 
@@ -1048,6 +1050,15 @@ lisible de l'intérieur, contre la règle « port uniquement ». Lot **S3b**.
 journal, le webhook Resend et la lecture des e-mails reçus.
 
 ### 21. Le nom de la porte (Hugo, 2026-11-06 — revue de la DX)
+
+> ✅ **Fait le 2026-11-06** (`refactor(mail)`) : la porte est `Mail`
+> (`apps/lfd-api/src/mail/channels/requests/mail.ts` ; le dossier garde son nom,
+> `requests/` — ce que la porte reçoit est une demande, et la matrice des
+> frontières le cite), implémentée par `BlockMail`, doublée par `RecordingMail`
+> (`queued` pour `send`, `awaitedReceipt` pour l'autre geste), injectée
+> sous le nom `mail` partout. La porte `lint:mail-receipt-admitted` tient la
+> liste admise ET le nom d'injection. Les sections datées plus haut gardent
+> les noms d'origine : ce sont des comptes rendus.
 
 Hors contexte, `request` et `sendNow` ne disaient ni qu'il s'agit d'un
 e-mail, ni lequel est le geste normal ; « commit » est un mot technique,

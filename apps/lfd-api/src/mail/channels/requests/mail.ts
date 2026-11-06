@@ -68,7 +68,7 @@ type Every<B> = [B] extends [true] ? true : false;
  *
  * `store` nomme le stockage où la pièce est rangée. Seul celui des pièces
  * attachées à un client est ouvert au 2026-11-06 (le bon de commande, la
- * facture) ; le dossier du fournil n'y passe pas : il part en `sendNow`
+ * facture) ; le dossier du fournil n'y passe pas : il part en `sendAndAwaitReceipt`
  * (lot S2f).
  */
 export interface StoredPdf {
@@ -94,21 +94,21 @@ export type ByReference<T> = T extends string | number | boolean | null | undefi
       : T;
 
 /**
- * Les modèles à PDF ouverts à `request`, leur pièce passant par référence.
+ * Les modèles à PDF ouverts à `send`, leur pièce passant par référence.
  * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a) et la
  * facture Factur-X, rangée au même stockage sous `Invoice.documentKey` (lot
  * S2d). Le dossier du fournil RESTE fermé (S2f). Le mandat RESTE fermé :
- * son seul envoyeur passe par `sendNow` (lot S2e, le fait lit le reçu).
+ * son seul envoyeur passe par `sendAndAwaitReceipt` (lot S2e, le fait lit le reçu).
  */
 type OpenedByReference = "customer.order-placed" | "customer.invoice-issued";
 
 /**
- * Les modèles que `request` accepte : ceux dont les données — sous leur forme
+ * Les modèles que `send` accepte : ceux dont les données — sous leur forme
  * différée — traversent la boîte d'envoi intactes, et parmi ceux qui joignent
  * un PDF, seulement ceux que {@link OpenedByReference} ouvre. Au 2026-11-06,
  * deux en restent exclus (`customer.mandate-to-sign`,
  * `staff.production-dossier`) : ils n'ont que
- * `sendNow` — le mandat (S2e) et le dossier (S2f) par choix : leur appelant lit le reçu.
+ * `sendAndAwaitReceipt` — le mandat (S2e) et le dossier (S2f) par choix : leur appelant lit le reçu.
  */
 export type DeferrableMailTemplate = {
   [K in keyof B2bMails]: Every<DefersIntact<B2bMails[K]>> extends true
@@ -129,35 +129,51 @@ export interface DeferredMailDemand<K extends DeferrableMailTemplate> extends Om
 }
 
 /**
- * **La porte du bloc `mail`** : demander un e-mail. Déclarée et implémentée
+ * **La porte du bloc `mail`** : envoyer un e-mail. Déclarée et implémentée
  * par le bloc ; tout bloc métier l'importe en « port uniquement » (`CLAUDE.md`
- * § 3, colonne `mail`).
+ * § 3, colonne `mail`) et l'injecte sous le nom `mail`
+ * (`lint:mail-receipt-admitted` le tient).
  *
- * Deux gestes (C2) :
+ * Deux gestes (C2, nommés au § 21 de `plan-service-e-mails.md`) :
  *
- * - `request` — **le défaut**. La demande s'écrit dans la transaction de
- *   l'appelant et part après la validation, par la boîte d'envoi. Une
- *   écriture annulée n'envoie rien ; un service arrêté retarde, ne perd pas.
- * - `sendNow` — pour le geste qui doit lire le résultat à l'écran (`mailSent`),
- *   l'essai et la sonde. Envoi immédiat, reçu rendu ; jamais sous une unité
- *   de travail.
+ * - `mail.send` — **le défaut**. Durable : la demande s'écrit dans la
+ *   transaction de l'appelant, part après l'enregistrement par la boîte
+ *   d'envoi, et se relance seule. Une écriture annulée n'envoie rien ; un
+ *   service arrêté retarde, ne perd pas.
+ * - `mail.sendAndAwaitReceipt` — **l'exception**, réservée à une liste
+ *   admise : envoi immédiat, on attend le reçu de Resend. Pour le geste qui
+ *   doit lire le résultat à l'écran (`mailSent`), l'essai et la sonde ;
+ *   jamais sous une unité de travail.
+ *
+ * Des méthodes statiques ont été écartées (§ 21) : elles cacheraient la base,
+ * l'outbox et le mailer dans un singleton, et les tests n'y injecteraient
+ * plus de doublure.
  */
-export abstract class MailRequests {
+export abstract class Mail {
   /**
+   * **Le geste par défaut.** À appeler DANS l'`UnitOfWork` de l'écriture
+   * qu'il accompagne : l'e-mail part après l'enregistrement, relancé tant
+   * que Resend ne l'a pas accepté. Une seconde demande de même clé ne fait
+   * rien.
+   *
    * @returns l'identifiant de la demande — celle qui existait déjà pour une
    *   clé d'idempotence connue —, pour qu'un bloc puisse suivre son envoi.
-   * @throws {MailRequestOutsideUnitOfWorkError} hors d'une `UnitOfWork`.
+   * @throws {MailRequestOutsideUnitOfWorkError} appelé hors d'une
+   *   `UnitOfWork` : la demande serait écrite sans le fait qui la fait partir.
    */
-  abstract request<K extends DeferrableMailTemplate>(
-    demand: DeferredMailDemand<K>,
-  ): Promise<string>;
+  abstract send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string>;
 
   /**
-   * Le suivi s'écrit APRÈS l'envoi, dans sa propre écriture. Une demande de
-   * même clé déjà envoyée n'est pas renvoyée : son reçu est rendu.
+   * **L'exception** : envoi immédiat, reçu de Resend rendu — sans outbox,
+   * donc sans relance. Hors du bloc, seuls les appelants admis par
+   * `lint:mail-receipt-admitted` y ont droit. Le suivi s'écrit APRÈS l'envoi,
+   * dans sa propre écriture ; une demande de même clé déjà envoyée n'est pas
+   * renvoyée : son reçu est rendu.
    *
    * @throws {ImmediateMailInsideUnitOfWorkError} sous une `UnitOfWork`.
    * @throws l'erreur du mailer si l'envoi échoue (après l'avoir suivie).
    */
-  abstract sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt>;
+  abstract sendAndAwaitReceipt<K extends keyof B2bMails>(
+    demand: MailDemand<K>,
+  ): Promise<MailReceipt>;
 }

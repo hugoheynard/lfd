@@ -2,10 +2,10 @@ import type { CatalogFamilyView } from "@lfd/contracts";
 import type { MailReceipt } from "@lfd/mailer";
 
 import {
-  RecordingMailRequests,
+  RecordingMail,
   type RecordedMail,
-} from "../../../mail/channels/requests/__tests__/recording-mail-requests.js";
-import type { MailDemand } from "../../../mail/channels/requests/mail-requests.js";
+} from "../../../mail/channels/requests/__tests__/recording-mail.js";
+import type { MailDemand } from "../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import type { B2bMails } from "../../../mail/channels/templates/b2b-mails.js";
 import {
@@ -68,18 +68,20 @@ function keyOf(slot: DossierDispatchSlot): string {
  * sur-le-champ, et refuse les adresses désignées comme le ferait le
  * fournisseur.
  */
-export class RecordingDossierMails extends RecordingMailRequests {
+export class RecordingDossierMails extends RecordingMail {
   readonly refused = new Set<string>();
 
   get sent(): readonly RecordedMail[] {
-    return this.sentNow;
+    return this.awaitedReceipt;
   }
 
-  override sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  override sendAndAwaitReceipt<K extends keyof B2bMails>(
+    demand: MailDemand<K>,
+  ): Promise<MailReceipt> {
     if (this.refused.has(demand.to)) {
       return Promise.reject(new RangeError("adresse refusée par le fournisseur"));
     }
-    return super.sendNow(demand);
+    return super.sendAndAwaitReceipt(demand);
   }
 }
 

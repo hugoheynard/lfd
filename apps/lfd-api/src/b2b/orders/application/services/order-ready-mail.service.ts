@@ -2,7 +2,7 @@ import { exposedHandoverToken } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -52,7 +52,7 @@ export class OrderReadyMail {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly remainders: RemainderShipmentReader,
   ) {}
 
@@ -91,7 +91,7 @@ export class OrderReadyMail {
     const admin = this.origins.adminBaseUrl();
     const token = exposedHandoverToken(owned.view);
 
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: recipient.email,
       template: "customer.order-ready",

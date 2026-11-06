@@ -1,7 +1,7 @@
 import type { SupportRequestView } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { purposeLabel } from "../../../../mail/channels/templates/staff-mail-labels.js";
 import { SupportRequestReader } from "../../domain/ports/support-request.reader.js";
@@ -56,7 +56,7 @@ export class SupportRequestedMail {
 
   constructor(
     private readonly requests: SupportRequestReader,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly config: AppConfig,
   ) {}
 
@@ -74,7 +74,7 @@ export class SupportRequestedMail {
       this.logger.warn(`Demande de contact ${supportRequestId} introuvable : équipe non prévenue.`);
       return;
     }
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: inbox,
       template: "staff.support-requested",

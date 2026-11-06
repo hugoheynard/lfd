@@ -1,32 +1,38 @@
 #!/usr/bin/env node
 /**
- * Gate : **`sendNow` ne s'appelle que depuis une liste admise** (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, C2 ; décidé par
- * Hugo le 2026-11-06).
+ * Gate : **`mail.sendAndAwaitReceipt` ne s'appelle que depuis une liste
+ * admise, et la porte `Mail` s'injecte sous le nom `mail`** (plan
+ * `documentation/editeur-de-contenu/plan-service-e-mails.md`, C2 et § 21 ;
+ * décidé par Hugo le 2026-11-06). Elle s'est appelée `send-now-admitted`
+ * jusqu'au renommage de la porte (§ 21), le même jour.
  *
- * La porte `MailRequests` offre deux gestes. `request` est le défaut : la
- * demande s'écrit dans la transaction de l'appelant, part après validation par
- * l'outbox, et se relance seule. `sendNow` envoie tout de suite, sans outbox :
- * un échec n'est pas relancé, il est rendu à l'appelant. Il ne se justifie que
- * pour un geste qui doit lire le résultat (un staff à l'écran, un reçu écrit
- * dans un fait). Chaque appelant est donc inscrit ici avec sa raison et sa
- * date.
+ * La porte `Mail` offre deux gestes. `mail.send` est le défaut : la demande
+ * s'écrit dans la transaction de l'appelant, part après validation par
+ * l'outbox, et se relance seule. `mail.sendAndAwaitReceipt` envoie tout de
+ * suite, sans outbox : un échec n'est pas relancé, il est rendu à l'appelant.
+ * Il ne se justifie que pour un geste qui doit lire le résultat (un staff à
+ * l'écran, un reçu écrit dans un fait). Chaque appelant est donc inscrit ici
+ * avec sa raison et sa date.
  *
  * ## Ce que la porte refuse
  *
- * - un appel `sendNow(` dans un fichier hors du bloc `mail` et hors de
- *   ADMITTED : passer par `request`, ou s'inscrire avec sa raison ;
- * - une entrée de ADMITTED qui n'appelle plus `sendNow` (ou a disparu) : la
- *   liste n'a pas d'entrée morte.
+ * - un appel `sendAndAwaitReceipt(` dans un fichier hors du bloc `mail` et
+ *   hors de ADMITTED : passer par `mail.send`, ou s'inscrire avec sa raison ;
+ * - une entrée de ADMITTED qui n'appelle plus `sendAndAwaitReceipt` (ou a
+ *   disparu) : la liste n'a pas d'entrée morte ;
+ * - une injection de `Mail` sous un autre nom que `mail`
+ *   (`private readonly mails: Mail`) : lu hors contexte, `this.mail.send(…)`
+ *   dit ce qu'il fait ; `this.requests.send(…)` ne le dit pas.
  *
- * Le bloc `mail` lui-même est hors portée : il implémente `sendNow`, et sa
- * sonde de déploiement comme l'essai d'un e-mail y vivent.
+ * Le bloc `mail` lui-même est hors portée des appels : il implémente
+ * `sendAndAwaitReceipt`, et sa sonde de déploiement comme l'essai d'un e-mail
+ * y vivent. Il reste dans la portée du nom.
  *
  * Portée : `apps/lfd-api/src/**.ts`, hors `__tests__/` et `*.spec.ts`. Les
- * commentaires sont blanchis : ils citent `sendNow` pour l'expliquer.
+ * commentaires sont blanchis : ils citent les gestes pour les expliquer.
  *
- * Usage : `pnpm lint:send-now-admitted`. Tests :
- * `node --test dev-toolbox/__tests__/send-now-admitted.test.mjs`.
+ * Usage : `pnpm gate mail-receipt-admitted`. Tests :
+ * `node --test dev-toolbox/__tests__/mail-receipt-admitted.test.mjs`.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -38,8 +44,9 @@ export { withoutComments };
 
 const SRC = "apps/lfd-api/src";
 const MAIL_BLOCK = `${SRC}/mail/`;
+const SELF = "dev-toolbox/gates/mail-receipt-admitted.mjs";
 
-/** Les appelants admis de `sendNow`, chacun avec sa raison (relevés le 2026-11-06). */
+/** Les appelants admis de `sendAndAwaitReceipt`, chacun avec sa raison (relevés le 2026-11-06). */
 export const ADMITTED = {
   [`${SRC}/b2b/orders/application/commands/resend-order-payment-link.handler.ts`]:
     "2026-11-06, S2a — le staff renvoie le lien de paiement et lit à l'écran s'il est parti",
@@ -63,13 +70,15 @@ export const ADMITTED = {
     "2026-11-06, S2h — vitrine : chaque avis lit son reçu pour écrire son issue",
 };
 
-const CALL = /\bsendNow\s*(?:<[^>]*>)?\s*\(/g;
+const CALL = /\bsendAndAwaitReceipt\s*(?:<[^>]*>)?\s*\(/g;
+const INJECTION =
+  /\b(?:private|protected|public|readonly)\s+(?:readonly\s+)?(\w+)\s*:\s*Mail\b(?![\w.])/g;
 const lineOf = (source, index) => source.slice(0, index).split("\n").length;
 
 const TEMPLATE = /^[^;]*?\btemplate\s*:\s*["'`]([^"'`]+)["'`]/;
 
-/** Les appels `sendNow(` d'une source, commentaires blanchis : ligne et modèle s'il se lit. */
-export function sendNowCalls(raw) {
+/** Les appels `sendAndAwaitReceipt(` d'une source, commentaires blanchis : ligne et modèle s'il se lit. */
+export function receiptCalls(raw) {
   const source = withoutComments(raw);
   return [...source.matchAll(CALL)].map((match) => {
     const after = source.slice(match.index + match[0].length, match.index + match[0].length + 600);
@@ -77,21 +86,37 @@ export function sendNowCalls(raw) {
   });
 }
 
-/** Les lignes des appels `sendNow(` d'une source. */
+/** Les lignes des appels `sendAndAwaitReceipt(` d'une source. */
 export function callsIn(raw) {
-  return sendNowCalls(raw).map((call) => call.line);
+  return receiptCalls(raw).map((call) => call.line);
+}
+
+/** Les injections de `Mail` sous un autre nom que `mail` : ligne et nom. */
+export function misnamedInjections(raw) {
+  const source = withoutComments(raw);
+  return [...source.matchAll(INJECTION)]
+    .filter((match) => match[1] !== "mail")
+    .map((match) => ({ line: lineOf(source, match.index), name: match[1] }));
 }
 
 /** Le message d'un appel refusé : où, quoi, pourquoi, et les deux sorties. */
 export function refusal(path, { line, template }) {
   const model = template === null ? "modèle non lisible" : `modèle « ${template} »`;
   return [
-    `${path}:${line}  sendNow hors liste (${model})`,
-    "      pourquoi : sendNow envoie sans outbox : un redémarrage ou une panne de Resend perd l'e-mail, sans relance",
-    "      sortie 1 : passe par request dans une unité de travail",
-    "      sortie 2 : ajoute ce fichier à ADMITTED (dev-toolbox/gates/send-now-admitted.mjs) avec sa raison et la date, " +
+    `${path}:${line}  mail.sendAndAwaitReceipt hors liste (${model})`,
+    "      pourquoi : sendAndAwaitReceipt envoie sans outbox : un redémarrage ou une panne de Resend perd l'e-mail, sans relance",
+    "      sortie 1 : passe par mail.send dans une unité de travail",
+    `      sortie 2 : ajoute ce fichier à ADMITTED (${SELF}) avec sa raison et la date, ` +
       "si un écran lit le reçu ou si un état métier dépend de l'acceptation par Resend",
   ].join("\n");
+}
+
+/** Le message d'une injection mal nommée. */
+export function misnamed(path, { line, name }) {
+  return (
+    `${path}:${line}  la porte Mail est injectée sous le nom « ${name} » — ` +
+    "renomme-la `mail` (`private readonly mail: Mail`) : `this.mail.send(…)` se lit sans contexte"
+  );
 }
 
 /** Le verdict, pur : ce qui échoue, et le nombre d'appels admis. */
@@ -100,8 +125,9 @@ export function verdict(files, admitted) {
   const callers = new Set();
   let admittedCalls = 0;
   for (const { path, source } of files) {
+    for (const injection of misnamedInjections(source)) failures.push(misnamed(path, injection));
     if (path.startsWith(MAIL_BLOCK)) continue;
-    const calls = sendNowCalls(source);
+    const calls = receiptCalls(source);
     if (calls.length === 0) continue;
     callers.add(path);
     if (path in admitted) {
@@ -113,7 +139,7 @@ export function verdict(files, admitted) {
   for (const path of Object.keys(admitted)) {
     if (!callers.has(path)) {
       failures.push(
-        `${path}  admis mais n'appelle plus sendNow (ou disparu) — retire-la de ADMITTED`,
+        `${path}  admis mais n'appelle plus mail.sendAndAwaitReceipt (ou disparu) — retire-la de ADMITTED`,
       );
     }
   }
@@ -142,16 +168,17 @@ function main() {
   }));
   const { failures, admitted, admittedCalls } = verdict(files, ADMITTED);
   if (failures.length > 0) {
-    console.error("\n✗ send-now-admitted\n");
+    console.error("\n✗ mail-receipt-admitted\n");
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
-      `\n  ${failures.length} écart(s). \`request\` est le geste par défaut ; ` +
-        "`sendNow` se justifie (plan-service-e-mails.md, C2).\n",
+      `\n  ${failures.length} écart(s). \`mail.send\` est le geste par défaut ; ` +
+        "`mail.sendAndAwaitReceipt` se justifie (plan-service-e-mails.md, C2 et § 21).\n",
     );
     process.exit(1);
   }
   console.log(
-    `✓ send-now-admitted : ${files.length} fichier(s) lus, ${admittedCalls} appel(s) admis de sendNow dans ${admitted.length} fichier(s), aucun hors liste.`,
+    `✓ mail-receipt-admitted : ${files.length} fichier(s) lus, ${admittedCalls} appel(s) admis de ` +
+      `mail.sendAndAwaitReceipt dans ${admitted.length} fichier(s), aucun hors liste, porte injectée sous « mail » partout.`,
   );
 }
 

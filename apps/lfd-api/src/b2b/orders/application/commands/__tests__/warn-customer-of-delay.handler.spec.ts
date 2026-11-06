@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderCustomerNudgesSnapshot } from "../../../domain/entities/order-customer-nudges.js";
 import {
@@ -47,7 +47,7 @@ function setup(
   } = {},
 ) {
   const unitOfWork = new OpenableUnitOfWork();
-  const mailer = new RecordingMailRequests(unitOfWork);
+  const mailer = new RecordingMail(unitOfWork);
   const nudges = new OneOrderNudges(options.snapshot === undefined ? NOT_READY : options.snapshot);
   const handler = new WarnCustomerOfDelayHandler(
     nudges,
@@ -75,7 +75,7 @@ describe("« Avertir le client »", () => {
         delayWarning: { at: minutesAfterEnd(20), byStaffId: "staff_lea" },
       }),
     ]);
-    expect(subject.mailer.requested).toEqual([
+    expect(subject.mailer.queued).toEqual([
       {
         brand: "lfc",
         to: "camille@halles.test",
@@ -100,21 +100,21 @@ describe("« Avertir le client »", () => {
     });
 
     await expect(subject.run()).rejects.toBeInstanceOf(DelayWarningAlreadySentError);
-    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.queued).toEqual([]);
   });
 
   it("🔴 refuse avant le délai réglé après la fin du créneau", async () => {
     const subject = setup({ now: minutesAfterEnd(4), delay: 5 });
 
     await expect(subject.run()).rejects.toBeInstanceOf(DelayWarningTooEarlyError);
-    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.queued).toEqual([]);
   });
 
   it("🔴 refuse sur une commande déjà prête : c'est un rappel qu'il faut", async () => {
     const subject = setup({ snapshot: nudgeSnapshot() });
 
     await expect(subject.run()).rejects.toBeInstanceOf(DelayWarningRefusedError);
-    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.queued).toEqual([]);
   });
 
   it("refuse sans adresse lisible", async () => {

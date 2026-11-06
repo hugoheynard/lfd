@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -25,13 +25,13 @@ const MAX_FAILURE_LENGTH = 500;
  * file (déjà envoyé, en échec) n'est pas renvoyé — un échec se règle en
  * annulant le lot et en le préparant de nouveau.
  *
- * **`sendNow`, pas `request`** (plan service d'e-mails, S2d) : l'issue écrite
+ * **`sendAndAwaitReceipt`, pas `send`** (plan service d'e-mails, S2d) : l'issue écrite
  * sur l'avis est celle du FOURNISSEUR, et le dépôt du lot exige des avis
  * `sent` (`CollectionBatch.markDeposited`, relu le 2026-11-06) — le préavis
- * SEPA doit être parti avant que la banque prélève. Avec `request`, `sent`
+ * SEPA doit être parti avant que la banque prélève. Avec `send`, `sent`
  * voudrait dire « demandé », et un lot se déposerait sur un avis que Resend a
  * refusé. L'appel est déjà hors de toute transaction (exigence de
- * `sendNow`) ; le bloc garde la clé et rend le reçu d'un avis déjà parti sans
+ * `sendAndAwaitReceipt`) ; le bloc garde la clé et rend le reçu d'un avis déjà parti sans
  * le renvoyer.
  */
 @Injectable()
@@ -42,7 +42,7 @@ export class CollectionNoticeSender {
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   /** @returns l'état de l'avis après le passage, `null` s'il n'existe pas. */
@@ -85,7 +85,7 @@ export class CollectionNoticeSender {
       return "rien à envoyer : avis reconduit ou sans adresse";
     }
     try {
-      await this.mails.sendNow({
+      await this.mail.sendAndAwaitReceipt({
         to: state.recipient.email,
         brand: "lfc",
         template: "customer.collection-notice",

@@ -1,6 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   OrderNotFoundError,
@@ -34,7 +34,7 @@ export class ResendOrderPaymentLinkHandler implements ICommandHandler<
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
     private readonly clock: Clock,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   async execute(command: ResendOrderPaymentLinkCommand): Promise<void> {
@@ -61,7 +61,7 @@ export class ResendOrderPaymentLinkHandler implements ICommandHandler<
           "copiez le lien et transmettez-le autrement.",
       );
     }
-    await this.mails.sendNow({
+    await this.mail.sendAndAwaitReceipt({
       brand: "lfc",
       to: recipient.email,
       template: "customer.order-payment-link",

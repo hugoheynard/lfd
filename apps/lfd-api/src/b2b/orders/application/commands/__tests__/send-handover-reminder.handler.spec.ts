@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderCustomerNudgesSnapshot } from "../../../domain/entities/order-customer-nudges.js";
 import {
@@ -55,7 +55,7 @@ function setup(
   } = {},
 ) {
   const unitOfWork = new OpenableUnitOfWork();
-  const mailer = new RecordingMailRequests(unitOfWork);
+  const mailer = new RecordingMail(unitOfWork);
   const nudges = new OneOrderNudges(
     options.snapshot === undefined ? nudgeSnapshot() : options.snapshot,
   );
@@ -99,10 +99,10 @@ describe("« Rappel au client »", () => {
         pickupReminder: { at: minutesAfterEnd(20), byStaffId: "staff_karim" },
       }),
     ]);
-    expect(subject.mailer.requested).toHaveLength(1);
-    expect(subject.mailer.requested[0]?.to).toBe("camille@halles.test");
-    expect(subject.mailer.requested[0]?.template).toBe("customer.order-ready");
-    expect(subject.mailer.requested[0]?.data).toMatchObject({ reminder: true });
+    expect(subject.mailer.queued).toHaveLength(1);
+    expect(subject.mailer.queued[0]?.to).toBe("camille@halles.test");
+    expect(subject.mailer.queued[0]?.template).toBe("customer.order-ready");
+    expect(subject.mailer.queued[0]?.data).toMatchObject({ reminder: true });
   });
 
   it("🔴 porte UNE clé par commande : il ne part qu'une fois", async () => {
@@ -110,7 +110,7 @@ describe("« Rappel au client »", () => {
 
     await subject.run();
 
-    expect(subject.mailer.requested[0]?.idempotencyKey).toBe("order.pickup-reminder:order_1");
+    expect(subject.mailer.queued[0]?.idempotencyKey).toBe("order.pickup-reminder:order_1");
   });
 
   it("🔴 refuse un second rappel, sans rien envoyer", async () => {
@@ -121,7 +121,7 @@ describe("« Rappel au client »", () => {
     });
 
     await expect(subject.run()).rejects.toBeInstanceOf(PickupReminderAlreadySentError);
-    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.queued).toEqual([]);
     expect(subject.nudges.saved).toEqual([]);
   });
 
@@ -129,21 +129,21 @@ describe("« Rappel au client »", () => {
     const subject = setup({ now: minutesAfterEnd(10), delay: 15 });
 
     await expect(subject.run()).rejects.toBeInstanceOf(PickupReminderTooEarlyError);
-    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.queued).toEqual([]);
   });
 
   it("🔴 refuse sur une commande que le fournil n'a pas déclarée prête", async () => {
     const subject = setup({ snapshot: nudgeSnapshot({ status: "confirmed", readyAt: null }) });
 
     await expect(subject.run()).rejects.toBeInstanceOf(ReminderRefusedError);
-    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.queued).toEqual([]);
   });
 
   it("refuse sans adresse lisible, plutôt que de dire qu'un message est parti", async () => {
     const subject = setup({ email: null });
 
     await expect(subject.run()).rejects.toBeInstanceOf(ReminderRefusedError);
-    expect(subject.mailer.requested).toEqual([]);
+    expect(subject.mailer.queued).toEqual([]);
   });
 
   it("refuse sur une commande introuvable", async () => {

@@ -5,7 +5,7 @@ import {
   type MailOutcome,
   type MailSendRecord,
 } from "../../../../../platform/mailer/journal/mail-journal.port.js";
-import { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import {
   GuestOrderNoticeReader,
@@ -102,13 +102,13 @@ function scene(
   const journal = new JournalStub();
   const clock = new ClockStub(UN_MARDI);
   const notices = new NoticeStub(notice);
-  const mailer = new RecordingMailRequests();
+  const mailer = new RecordingMail();
 
   const handler = new SendGuestOrderNotice(orders, notices, journal, clock, mailer);
   const onPaid = new SendGuestOrderNoticeOnPaid(orders, notices, journal, clock, mailer);
 
   return {
-    sent: mailer.requested,
+    sent: mailer.queued,
     keys: journal.keys,
     asked: notices.asked,
     /** Livre le fait comme la boîte d'envoi le livre. */

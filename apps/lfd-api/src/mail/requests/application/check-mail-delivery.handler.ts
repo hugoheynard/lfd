@@ -2,11 +2,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
-import { MailRequests } from "../../channels/requests/mail-requests.js";
+import { Mail } from "../../channels/requests/mail.js";
 import { CheckMailDeliveryCommand, type MailCheckResult } from "./check-mail-delivery.command.js";
 
 /**
- * **La sonde de déploiement du courrier**, par la porte du bloc, en `sendNow`.
+ * **La sonde de déploiement du courrier**, par la porte du bloc, en `sendAndAwaitReceipt`.
  *
  * Elle répond à un défaut structurel du mailer, décrit dans
  * `documentation/ops/mailer-resend.md` : **il ne tombe jamais en panne
@@ -18,7 +18,7 @@ import { CheckMailDeliveryCommand, type MailCheckResult } from "./check-mail-del
  * Elle vivait à côté du mailer, dans `platform/`, « pour qu'on ne la déplace
  * pas sans voir ce qu'elle teste ». Depuis S2, tout e-mail passe par le bloc :
  * une sonde qui le contournerait resterait verte avec un bloc cassé (schéma
- * `mail` absent, suivi qui n'écrit plus). Par `sendNow`, elle éprouve la même
+ * `mail` absent, suivi qui n'écrit plus). Par `sendAndAwaitReceipt`, elle éprouve la même
  * chaîne qu'avant — `RUNTIME_KEYS` → `envVars` → `AppConfig` → le mailer →
  * Resend — plus le bloc. Et `platform` n'a le droit d'importer aucun bloc.
  *
@@ -38,7 +38,7 @@ export class CheckMailDeliveryHandler implements ICommandHandler<
   MailCheckResult
 > {
   constructor(
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly config: AppConfig,
     private readonly ids: IdGenerator,
   ) {}
@@ -51,7 +51,7 @@ export class CheckMailDeliveryHandler implements ICommandHandler<
     const from = this.config.mailerConfig().fromAddress;
     const to = this.config.bootstrapAdminEmail();
 
-    await this.mails.sendNow({
+    await this.mail.sendAndAwaitReceipt({
       brand: "lfc",
       to,
       template: "ops.deploy-check",

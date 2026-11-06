@@ -1,11 +1,11 @@
 import type {
   DeferrableMailTemplate,
   DeferredMailDemand,
-} from "../../../../../mail/channels/requests/mail-requests.js";
+} from "../../../../../mail/channels/requests/mail.js";
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   ShortfallNotice,
@@ -83,7 +83,7 @@ class Recipients extends OrderRecipientReader {
 }
 
 /** La porte du bloc `mail`, qui note sa demande dans la trace. */
-class TracedMailRequests extends RecordingMailRequests {
+class TracedMail extends RecordingMail {
   constructor(
     private readonly trace: Trace,
     unitOfWork: OpenableUnitOfWork,
@@ -91,11 +91,9 @@ class TracedMailRequests extends RecordingMailRequests {
     super(unitOfWork);
   }
 
-  override request<K extends DeferrableMailTemplate>(
-    demand: DeferredMailDemand<K>,
-  ): Promise<string> {
+  override send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
     this.trace.push("request");
-    return super.request(demand);
+    return super.send(demand);
   }
 }
 
@@ -107,7 +105,7 @@ function scene(
   const trace: Trace = [];
   const notices = new FixedNotices(trace, snapshot, locale);
   const unitOfWork = new OpenableUnitOfWork();
-  const mailer = new TracedMailRequests(trace, unitOfWork);
+  const mailer = new TracedMail(trace, unitOfWork);
   const handler = new WriteShortfallLetterHandler(
     notices,
     new Recipients(email),
@@ -130,7 +128,7 @@ describe("« Écrire au client » (E6d)", () => {
     // refuse sinon) : elles tombent ensemble.
     expect(trace).toEqual(["lock", "save", "request"]);
     expect(notices.saved).toEqual([{ ...BLANK, notifiedAt: NOW, notifiedBy: "staff_1" }]);
-    expect(mailer.requested).toEqual([
+    expect(mailer.queued).toEqual([
       {
         brand: "lfc",
         to: "jean@exemple.fr",
@@ -146,7 +144,7 @@ describe("« Écrire au client » (E6d)", () => {
 
     await write();
 
-    expect(mailer.requested[0]?.data).toMatchObject({ locale: "fr" });
+    expect(mailer.queued[0]?.data).toMatchObject({ locale: "fr" });
   });
 
   it("refuse un second envoi sans rien envoyer", async () => {
@@ -154,7 +152,7 @@ describe("« Écrire au client » (E6d)", () => {
 
     await expect(write()).rejects.toBeInstanceOf(ShortfallCustomerAlreadyNotifiedError);
     expect(trace).toEqual(["lock"]);
-    expect(mailer.requested).toEqual([]);
+    expect(mailer.queued).toEqual([]);
   });
 
   it("refuse un texte vide avant même de verrouiller", async () => {
@@ -168,7 +166,7 @@ describe("« Écrire au client » (E6d)", () => {
     const { mailer, write } = scene(null);
 
     await expect(write()).rejects.toBeInstanceOf(ShortfallLetterWithoutDecisionError);
-    expect(mailer.requested).toEqual([]);
+    expect(mailer.queued).toEqual([]);
   });
 
   it("refuse un client sans adresse : rien ne part", async () => {

@@ -3,8 +3,8 @@ import { RecordingJournal } from "../../../../platform/journal/__tests__/recordi
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
-} from "../../../../mail/channels/requests/mail-requests.js";
-import { RecordingMailRequests } from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+} from "../../../../mail/channels/requests/mail.js";
+import { RecordingMail } from "../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { STAFF_FACTS } from "../../domain/staff-facts.js";
 import type { StaffUserSnapshot } from "../../domain/staff-user-state.js";
@@ -18,18 +18,16 @@ import {
 } from "./staff-doubles.js";
 
 /** La porte du bloc, qui note en plus si chaque demande est arrivée DANS la transaction. */
-class InsideMailRequests extends RecordingMailRequests {
+class InsideMail extends RecordingMail {
   readonly inside: boolean[] = [];
 
   constructor(private readonly tracking: TrackingUnitOfWork) {
     super();
   }
 
-  override request<K extends DeferrableMailTemplate>(
-    demand: DeferredMailDemand<K>,
-  ): Promise<string> {
+  override send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
     this.inside.push(this.tracking.inside);
-    return super.request(demand);
+    return super.send(demand);
   }
 }
 
@@ -38,7 +36,7 @@ function harness(before: StaffUserSnapshot, journalDown = false) {
   const staff = new ScriptedStaffUsers(uow, before);
   const journal = new RecordingJournal(journalDown ? new Error("journal en panne") : null);
   const cache = new RecordingAccessCache(uow);
-  const mails = new InsideMailRequests(uow);
+  const mails = new InsideMail(uow);
   const config = { adminBaseUrl: (): string => "https://admin.test" } as AppConfig;
   const handler = new SetStaffStatusHandler(
     staff,
@@ -72,7 +70,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
       },
     ]);
     expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);
-    expect(h.mails.requested).toEqual([
+    expect(h.mails.queued).toEqual([
       {
         brand: "lfc",
         to: CECILE.email,
@@ -82,7 +80,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
       },
     ]);
     expect(h.mails.inside).toEqual([true]);
-    expect(h.mails.sentNow).toEqual([]);
+    expect(h.mails.awaitedReceipt).toEqual([]);
   });
 
   it("réintègre une personne suspendue", async () => {
@@ -91,7 +89,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
     await h.handler.execute(new SetStaffStatusCommand("s1", { status: "active" }, "staff_moi"));
 
     expect(h.journal.types()).toEqual([STAFF_FACTS.reinstated]);
-    expect(h.mails.requested).toEqual([
+    expect(h.mails.queued).toEqual([
       {
         brand: "lfc",
         to: CECILE.email,
@@ -122,7 +120,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
     const h = harness(CECILE, true);
 
     await expect(h.handler.execute(suspend)).rejects.toThrow("journal en panne");
-    expect(h.mails.requested).toEqual([]);
+    expect(h.mails.queued).toEqual([]);
     expect(h.cache.forgotten).toEqual([]);
   });
 
@@ -134,7 +132,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
     await h.handler.execute(suspend);
     await h.handler.execute(suspend);
 
-    const keys = h.mails.requested.map((mail) => mail.idempotencyKey);
+    const keys = h.mails.queued.map((mail) => mail.idempotencyKey);
     expect(new Set(keys).size).toBe(2);
   });
 

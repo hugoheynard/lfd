@@ -172,7 +172,7 @@ describe("reprendre l'envoi d'une annonce interrompue", () => {
       data: { mailSent: null, attemptedAt: null },
     });
     // Un processus tué avant l'envoi n'a rien laissé non plus au suivi du bloc
-    // `mail` (S2h : `sendNow` l'écrit APRÈS l'envoi) — l'état exact, des deux côtés.
+    // `mail` (S2h : `sendAndAwaitReceipt` l'écrit APRÈS l'envoi) — l'état exact, des deux côtés.
     await ctx.prisma.mailRequest.delete({
       where: { idempotencyKey: `vitrine-notice:${id}:${cut}` },
     });

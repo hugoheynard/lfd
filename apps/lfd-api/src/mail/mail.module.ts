@@ -3,10 +3,10 @@ import { Global, Module } from "@nestjs/common";
 import { AppConfig } from "../platform/config/app-config.js";
 import { DurableFactPayloads } from "../platform/outbox/durable-fact-payloads.js";
 import { PrismaDurableFactPayloads } from "../platform/outbox/prisma-durable-fact-payloads.js";
-import { MailRequests } from "./channels/requests/mail-requests.js";
+import { Mail } from "./channels/requests/mail.js";
 import { MAIL_REQUEST_PURGE_MODE } from "./requests/domain/services/mail-request-retention.js";
 import { CheckMailDeliveryHandler } from "./requests/application/check-mail-delivery.handler.js";
-import { BlockMailRequests } from "./requests/application/block-mail-requests.js";
+import { BlockMail } from "./requests/application/block-mail.js";
 import { DeferredMailSender } from "./requests/application/deferred-mail-sender.service.js";
 import { DeliverRequestedMail } from "./requests/application/deliver-requested-mail.handler.js";
 import { ImmediateMailSender } from "./requests/application/immediate-mail-sender.service.js";
@@ -38,7 +38,7 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
 
 /**
  * **Le bloc des e-mails** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, S1) :
- * sa porte `MailRequests`, le suivi des demandes, l'abonné durable qui
+ * sa porte `Mail`, le suivi des demandes, l'abonné durable qui
  * engage l'envoi et le fait partir après la validation, et son balayeur (S1b).
  * Depuis S3b, le rendu aussi : les gabarits, le dictionnaire, le texte
  * effectif et le mailer qui les charge (`mail/templates/`).
@@ -47,7 +47,7 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
  * S2a). **Global** : un bloc métier n'a le droit d'importer que le canal
  * (`mail/channels/requests/`), pas ce module — la matrice du § 3 de
  * `CLAUDE.md` dit « port uniquement ». `AppModule` l'importe une fois, et la
- * porte `MailRequests` est servie partout, comme les ports de `ContextModule`.
+ * porte `Mail` est servie partout, comme les ports de `ContextModule`.
  */
 @Global()
 @Module({
@@ -73,7 +73,7 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
     MailRequester,
     ImmediateMailSender,
     DeliverRequestedMail,
-    { provide: MailRequests, useClass: BlockMailRequests },
+    { provide: Mail, useClass: BlockMail },
     // S1b (plan § 8) : l'envoi d'après validation et son balayeur.
     { provide: StalledMailRequests, useClass: PrismaStalledMailRequests },
     { provide: DurableFactPayloads, useClass: PrismaDurableFactPayloads },
@@ -86,6 +86,6 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
     { provide: MailTemplatePreview, useClass: RegistryMailTemplatePreview },
     { provide: ShortfallLetterDrafter, useClass: PublishedShortfallLetterDrafter },
   ],
-  exports: [MailRequests, MailTemplatePreview, ShortfallLetterDrafter],
+  exports: [Mail, MailTemplatePreview, ShortfallLetterDrafter],
 })
 export class MailModule {}

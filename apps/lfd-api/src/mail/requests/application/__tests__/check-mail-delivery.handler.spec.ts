@@ -2,8 +2,8 @@ import { AppConfig, type MailerConfig } from "../../../../platform/config/app-co
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../channels/requests/__tests__/recording-mail.js";
 import { CheckMailDeliveryHandler } from "../check-mail-delivery.handler.js";
 
 /** La vraie configuration, dont seuls les trois réglages lus sont fixés. */
@@ -27,14 +27,14 @@ class Settings extends AppConfig {
 }
 
 function setup(settings: Settings) {
-  const mails = new RecordingMailRequests(new OpenableUnitOfWork());
+  const mails = new RecordingMail(new OpenableUnitOfWork());
   const handler = new CheckMailDeliveryHandler(mails, settings, new FixedIdGenerator());
   return { mails, handler };
 }
 
 /*
  * La sonde de déploiement du courrier, entrée dans le bloc `mail` au lot S2h
- * (plan `plan-service-e-mails.md`, § 18) : `sendNow`, jamais `request` —
+ * (plan `plan-service-e-mails.md`, § 18) : `sendAndAwaitReceipt`, jamais `send` —
  * le workflow lit l'issue, et un échec doit faire échouer le déploiement.
  */
 describe("le contrôle de mise en service du courrier", () => {
@@ -51,8 +51,8 @@ describe("le contrôle de mise en service du courrier", () => {
       to: "admin@exemple.test",
       revision: "abc1234",
     });
-    expect(mails.requested).toEqual([]);
-    expect(mails.sentNow).toEqual([
+    expect(mails.queued).toEqual([]);
+    expect(mails.awaitedReceipt).toEqual([
       {
         brand: "lfc",
         to: "admin@exemple.test",
@@ -69,7 +69,7 @@ describe("le contrôle de mise en service du courrier", () => {
     );
 
     expect((await handler.execute()).revision).toBe("deadbee");
-    expect(mails.sentNow[0]?.data).toMatchObject({ revision: "deadbee" });
+    expect(mails.awaitedReceipt[0]?.data).toMatchObject({ revision: "deadbee" });
   });
 
   it("deux contrôles de la même révision font deux e-mails : une clé par appel", async () => {
@@ -80,7 +80,7 @@ describe("le contrôle de mise en service du courrier", () => {
     await handler.execute();
     await handler.execute();
 
-    expect(mails.sentNow.map((mail) => mail.idempotencyKey)).toEqual([
+    expect(mails.awaitedReceipt.map((mail) => mail.idempotencyKey)).toEqual([
       "ops.deploy-check:abc1234:id_000001",
       "ops.deploy-check:abc1234:id_000002",
     ]);

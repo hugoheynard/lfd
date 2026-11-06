@@ -3,8 +3,8 @@ import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
   type MailDemand,
-  MailRequests,
-} from "../../../../../mail/channels/requests/mail-requests.js";
+  Mail,
+} from "../../../../../mail/channels/requests/mail.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
@@ -149,10 +149,10 @@ interface SentMail {
 /**
  * La porte du bloc `mail`, doublée — capture les envois immédiats, refuse pour
  * simuler un canal en panne, ou tourne **à blanc** (reçu sans identifiant de
- * fournisseur) comme lorsqu'aucune clé n'est configurée. Un `request` serait
+ * fournisseur) comme lorsqu'aucune clé n'est configurée. Un `send` serait
  * une faute : l'écran lit `mailSent`, l'envoi est immédiat (S2b).
  */
-class GrantMails extends MailRequests {
+class GrantMails extends Mail {
   readonly sent: SentMail[] = [];
   readonly keys: string[] = [];
 
@@ -160,11 +160,11 @@ class GrantMails extends MailRequests {
     super();
   }
 
-  request<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+  send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
     return Promise.reject(new TypeError(`request inattendu (${demand.template})`));
   }
 
-  sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  sendAndAwaitReceipt<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
     if (this.options.failing) {
       return Promise.reject(new Error("canal indisponible"));
     }
@@ -238,7 +238,7 @@ class FakeConfig extends AppConfig {
 /** Le service, monté sur des doubles — aucun réseau, aucune base. */
 function granter(
   members: FakeMembers,
-  mailer: MailRequests,
+  mail: Mail,
   identity = new FakeIdentity(),
   clientRoot: string | null = "https://boutique.lfc.test/",
 ) {
@@ -246,7 +246,7 @@ function granter(
     service: new GrantAccountAccess(
       members,
       identity,
-      mailer,
+      mail,
       new FakeConfig(clientRoot),
       new FixedIdGenerator("mail"),
     ),

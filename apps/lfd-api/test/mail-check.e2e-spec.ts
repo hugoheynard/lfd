@@ -3,7 +3,7 @@
  * `documentation/editeur-de-contenu/plan-service-e-mails.md`, lot S2h, § 18).
  *
  * Elle a quitté `platform/mailer/` pour le bloc `mail` : sa route ne change
- * pas (le workflow l'appelle par son chemin), elle part par `sendNow`, et le
+ * pas (le workflow l'appelle par son chemin), elle part par `sendAndAwaitReceipt`, et le
  * suivi du bloc l'inscrit. Ce qu'un test unitaire ne peut pas dire : que la
  * route est encore servie au même chemin, derrière le même jeton, et que
  * l'envoi traverse le bloc jusqu'au transport. Seul le transport est doublé.

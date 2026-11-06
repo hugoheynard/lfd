@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-import { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import {
   TransactionalDurablePublisher,
@@ -79,9 +79,9 @@ function setup(...reasons: ReturnType<typeof reason>[]): {
   events: RecordingPublisher;
   uow: TransactionalUnitOfWork;
   log: string[];
-  mails: RecordingMailRequests;
+  mails: RecordingMail;
 } {
-  const mails = new RecordingMailRequests();
+  const mails = new RecordingMail();
   const log: string[] = [];
   const requests = new MemoryRequests([], log);
   const store = new MemoryPhotoStore(log);
@@ -136,14 +136,14 @@ describe("ReportOrderProblemHandler — signaler un problème", () => {
   it("demande le courriel à l'équipe au bloc `mail`, avec la référence et sans les photos (S2c)", async () => {
     const { handler, mails } = setup();
     await handler.execute(report("o1", [pngOf(40, 30)]));
-    expect(mails.requested).toHaveLength(1);
-    expect(mails.requested[0]).toMatchObject({
+    expect(mails.queued).toHaveLength(1);
+    expect(mails.queued[0]).toMatchObject({
       template: "staff.customer-request",
       to: "commercial@lfc.fr",
       idempotencyKey: "customer-request:q_000001",
       data: { orderNumber: "ORD-0001", photoCount: 1 },
     });
-    expect(JSON.stringify(mails.requested[0])).not.toContain("requests/");
+    expect(JSON.stringify(mails.queued[0])).not.toContain("requests/");
   });
 
   it("range les photos AVANT la demande, sous `requests/<id>/…`", async () => {

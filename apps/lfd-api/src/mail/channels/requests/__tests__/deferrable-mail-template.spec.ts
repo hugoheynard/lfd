@@ -1,16 +1,17 @@
 import type { B2bMails } from "../../templates/b2b-mails.js";
-import type { ByReference, DeferrableMailTemplate } from "../mail-requests.js";
+import type { ByReference, DeferrableMailTemplate } from "../mail.js";
 
 /**
- * Les modèles que `request` refuse, figés par le compilateur : un `Record` sur
+ * Les modèles que `send` refuse, figés par le compilateur : un `Record` sur
  * l'exclusion exige exactement ces clés, ni plus ni moins. Un modèle neuf qui
  * joindrait un PDF en base64 (ou un `Date`) fait échouer la compilation de ce
  * fichier — l'occasion de décider s'il doit passer au stockage d'abord.
  */
 const NOT_DEFERRABLE: Record<Exclude<keyof B2bMails, DeferrableMailTemplate>, string> = {
-  "customer.mandate-to-sign": "le mandat joint (pdfBase64) — envoyé par `sendNow` seulement (S2e)",
+  "customer.mandate-to-sign":
+    "le mandat joint (pdfBase64) — envoyé par `sendAndAwaitReceipt` seulement (S2e)",
   "staff.production-dossier":
-    "le dossier du jour joint (pdfBase64) — envoyé par `sendNow` seulement (S2f)",
+    "le dossier du jour joint (pdfBase64) — envoyé par `sendAndAwaitReceipt` seulement (S2f)",
 };
 
 /**
@@ -29,7 +30,7 @@ const INVOICE_DOCUMENT: ByReference<B2bMails["customer.invoice-issued"]["documen
 };
 
 describe("DeferrableMailTemplate — ce que la boîte d'envoi peut porter", () => {
-  it("exclut les deux modèles à PDF non ouverts par référence — le mandat reste en `sendNow` (S2e, 2026-11-06)", () => {
+  it("exclut les deux modèles à PDF non ouverts par référence — le mandat reste en `sendAndAwaitReceipt` (S2e, 2026-11-06)", () => {
     expect(Object.keys(NOT_DEFERRABLE).sort()).toEqual([
       "customer.mandate-to-sign",
       "staff.production-dossier",

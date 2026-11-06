@@ -111,7 +111,7 @@ describe("MailRequest — l'envoi différé engagé (`sending`)", () => {
     expect(() => request.beginSending(at(60 * MINUTE))).toThrow(MailRequestNotResumableError);
   });
 
-  it("un échec sans tentative différée (sendNow) ne se reprend pas seul", () => {
+  it("un échec sans tentative différée (sendAndAwaitReceipt) ne se reprend pas seul", () => {
     const request = MailRequest.request(DRAFT);
     request.markFailed("réseau", at(MINUTE));
 

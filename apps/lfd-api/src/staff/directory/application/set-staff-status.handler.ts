@@ -1,6 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
@@ -20,7 +20,7 @@ import { SetStaffStatusCommand } from "./set-staff-status.command.js";
  * évite le ticket et la mauvaise interprétation.
  *
  * La porte se ferme **avec sa trace et la demande d'e-mail**, dans la même
- * transaction (`request` du bloc `mail`, plan `plan-service-e-mails.md`,
+ * transaction (`send` du bloc `mail`, plan `plan-service-e-mails.md`,
  * S2g) : aucun écran ne lit l'issue de l'envoi, et l'e-mail part après la
  * validation, relancé par le balayeur. Le cache d'accès est oublié juste APRÈS
  * le commit : vidé avant, une requête concurrente le remplirait avec l'état
@@ -36,7 +36,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
   constructor(
     private readonly staff: StaffUserRepository,
     private readonly config: AppConfig,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly ids: IdGenerator,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
@@ -67,7 +67,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
     status: "active" | "suspended",
   ): Promise<void> {
     if (status === "suspended") {
-      await this.mails.request({
+      await this.mail.send({
         brand: "lfc",
         to: target.email,
         template: "staff.access-suspended",
@@ -76,7 +76,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
       });
       return;
     }
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: target.email,
       template: "staff.access-restored",

@@ -109,7 +109,7 @@ export class OneRecipientReader extends OrderRecipientReader {
 }
 
 /** La porte du bloc `mail` doublée : ce que l'abonné a demandé (plan S2a). */
-export { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+export { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 
 /** Le travail de fond joué en attendant la tâche : aucun test ne rend la main trop tôt. */
 export class ImmediateWork extends BackgroundWork {

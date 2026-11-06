@@ -6,7 +6,7 @@ import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { Journal } from "../../platform/journal/journal.js";
 import { Clock } from "../../platform/time/clock.js";
 import { IdGenerator } from "../../platform/id/id-generator.js";
-import { MailRequests } from "../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../mail/channels/requests/mail.js";
 import { StaffIdentityPort } from "./staff-identity.port.js";
 import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
 import { staffUserInvitedFact } from "../directory/domain/staff-facts.js";
@@ -41,8 +41,8 @@ export interface StaffAccessOpened {
  * 1. on frappe le lien chez le fournisseur **d'abord** — un appel réseau, donc
  *    hors transaction ;
  * 2. `markInvited` et le fait `staff_user.invited` partent **ensemble** ;
- * 3. **puis** l'e-mail, par le bloc `mail` en `sendNow` (plan
- *    `plan-service-e-mails.md`, S2g) : l'écran lit `mailSent`, et `request`
+ * 3. **puis** l'e-mail, par le bloc `mail` en `sendAndAwaitReceipt` (plan
+ *    `plan-service-e-mails.md`, S2g) : l'écran lit `mailSent`, et `send`
  *    écrirait le lien — un secret — dans la boîte d'envoi.
  *
  * Si le journal tombe, rien n'est écrit et **aucun e-mail ne part** : l'écran
@@ -57,7 +57,7 @@ export class OpenStaffAccess {
     private readonly staff: StaffUserRepository,
     private readonly identities: StaffIdentityPort,
     private readonly clock: Clock,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly ids: IdGenerator,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
@@ -106,7 +106,7 @@ export class OpenStaffAccess {
     passwordSetupUrl: string,
   ): Promise<boolean> {
     try {
-      const receipt = await this.mails.sendNow({
+      const receipt = await this.mail.sendAndAwaitReceipt({
         brand: "lfc",
         to: target.email,
         template,

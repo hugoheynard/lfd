@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -50,7 +50,7 @@ function setup(
   const events = new RecordingPublisher();
   const reasons = over.reasons ?? [CHANGE_REASON];
   const uow = new OpenableUnitOfWork();
-  const mails = new RecordingMailRequests(uow);
+  const mails = new RecordingMail(uow);
   const handler = new RequestOrderChangeHandler(
     new ChangeableOrders({ o1: over.order ?? LATE }),
     new PendingChanges(over.pending),
@@ -85,7 +85,7 @@ describe("RequestOrderChangeHandler", () => {
   it("demande le courriel à l'équipe au bloc `mail`, dans la transaction de la demande (S2c)", async () => {
     const { handler, mails } = setup();
     const id = await handler.execute(ask());
-    expect(mails.requested).toEqual([
+    expect(mails.queued).toEqual([
       expect.objectContaining({
         template: "staff.customer-request",
         to: "commandes@lfc.fr",

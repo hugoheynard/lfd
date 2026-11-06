@@ -33,7 +33,7 @@ export function newMailRequest(demand: CheckedMailDemand, id: string, at: Date):
 }
 
 /**
- * **Demander un e-mail** — le geste par défaut (plan C2, `request`).
+ * **Demander un e-mail** — le geste par défaut (plan C2, `send`).
  *
  * La ligne de suivi ET le fait `mail.requested` s'écrivent dans la transaction
  * de l'appelant : une écriture annulée n'envoie rien, une écriture validée part

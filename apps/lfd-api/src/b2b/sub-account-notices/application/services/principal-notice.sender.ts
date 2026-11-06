@@ -5,10 +5,7 @@ import { AcceptedMembersReader } from "../../../account/domain/ports/accepted-me
 import { CompanyLifecycleReader } from "../../../account/domain/ports/company-lifecycle.reader.js";
 import { SubAccountNoticeSwitchReader } from "../../../account/domain/ports/sub-account-notice-switch.js";
 import { SubAccountNoticeRulesReader } from "../../../account/domain/ports/sub-account-notice-rules.reader.js";
-import {
-  type ByReference,
-  MailRequests,
-} from "../../../../mail/channels/requests/mail-requests.js";
+import { type ByReference, Mail } from "../../../../mail/channels/requests/mail.js";
 import type { B2bMails } from "../../../../mail/channels/templates/b2b-mails.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { noticeRecipients, principalStillWritten } from "../../domain/notice-recipients.js";
@@ -57,7 +54,7 @@ export class PrincipalNoticeSender {
     private readonly members: AcceptedMembersReader,
     private readonly journal: NoticeSendJournal,
     private readonly clock: Clock,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   /**
@@ -85,7 +82,7 @@ export class PrincipalNoticeSender {
       if (!(await this.journal.claim(target.eventId, recipient.userId, this.clock.now()))) {
         continue;
       }
-      await this.mails.request({
+      await this.mail.send({
         brand: "lfc",
         to: recipient.email,
         template,

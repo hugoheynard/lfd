@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import {
   OrderChangeAppliedEvent,
   OrderChangeRefusedEvent,
@@ -13,9 +13,9 @@ import { OrderChangeRefusedMail } from "../order-change-refused-mail.service.js"
 const SUBJECT = { requestId: "q1", order: ORDER, baseRevision: 1 };
 const APPLIED = { revision: 2, totalCents: 4250, previousTotalCents: 3800 };
 
-function recording(): { uow: OpenableUnitOfWork; mails: RecordingMailRequests } {
+function recording(): { uow: OpenableUnitOfWork; mails: RecordingMail } {
   const uow = new OpenableUnitOfWork();
-  return { uow, mails: new RecordingMailRequests(uow) };
+  return { uow, mails: new RecordingMail(uow) };
 }
 
 /** Les deux réponses partent à l'auteur de la demande (M4), demandées au bloc `mail` (S2c). */
@@ -27,7 +27,7 @@ describe("les courriels de réponse à une demande de modification", () => {
         new OrderChangeAppliedEvent(orderChange(), SUBJECT, APPLIED),
       ),
     );
-    expect(mails.requested).toEqual([
+    expect(mails.queued).toEqual([
       {
         brand: "lfc",
         to: "jean@exemple.fr",
@@ -45,7 +45,7 @@ describe("les courriels de réponse à une demande de modification", () => {
         new OrderChangeRefusedEvent(orderChange(), SUBJECT, "La fournée est lancée."),
       ),
     );
-    expect(mails.requested).toEqual([
+    expect(mails.queued).toEqual([
       {
         brand: "lfc",
         to: "jean@exemple.fr",

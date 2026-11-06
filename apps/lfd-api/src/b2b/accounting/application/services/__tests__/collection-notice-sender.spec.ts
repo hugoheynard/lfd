@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CollectionNotice, type NoticeDraft } from "../../../domain/entities/collection-notice.js";
@@ -39,7 +39,7 @@ function setup(notice: CollectionNotice) {
   const store = new NoticeStore();
   store.notices.push(notice);
   const uow = new OpenableUnitOfWork();
-  const mails = new RecordingMailRequests(uow);
+  const mails = new RecordingMail(uow);
   const events = new RecordingPublisher();
   const sender = new CollectionNoticeSender(
     new MemoryNotices(store),
@@ -53,13 +53,13 @@ function setup(notice: CollectionNotice) {
 }
 
 describe("l'envoi d'un avis de prélèvement", () => {
-  it("envoie sur-le-champ hors transaction (`sendNow`), avec la clé de l'avis, puis le marque envoyé", async () => {
+  it("envoie sur-le-champ hors transaction (`sendAndAwaitReceipt`), avec la clé de l'avis, puis le marque envoyé", async () => {
     const { sender, mails, events, notice } = setup(CollectionNotice.announce(draft()));
 
     expect(await sender.send("n1")).toBe("sent");
 
-    expect(mails.requested).toEqual([]);
-    expect(mails.sentNow).toEqual([
+    expect(mails.queued).toEqual([]);
+    expect(mails.awaitedReceipt).toEqual([
       {
         to: "compta@port.test",
         brand: "lfc",
@@ -104,7 +104,7 @@ describe("l'envoi d'un avis de prélèvement", () => {
 
     expect(await sender.send("n1")).toBe("sent");
 
-    expect(mails.sentNow).toHaveLength(0);
+    expect(mails.awaitedReceipt).toHaveLength(0);
     expect(events.factTypes()).toEqual([]);
   });
 
@@ -113,6 +113,6 @@ describe("l'envoi d'un avis de prélèvement", () => {
 
     expect(await sender.send("n1")).toBe("unsendable");
     expect(await sender.send("absent")).toBeNull();
-    expect(mails.sentNow).toHaveLength(0);
+    expect(mails.awaitedReceipt).toHaveLength(0);
   });
 });

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { VitrineNoticeRepository } from "../../domain/ports/vitrine-notice.repository.js";
 import type { VitrineNotice, VitrineNoticeRecipientRow } from "../../domain/vitrine-notice.js";
@@ -15,7 +15,7 @@ import type { VitrineNotice, VitrineNoticeRecipientRow } from "../../domain/vitr
  * d'une clé déjà envoyée sans renvoyer — un e-mail accepté juste avant une
  * interruption ne part pas deux fois.
  *
- * **`sendNow`, pas `request`** (lot S2h, `plan-service-e-mails.md`) : chaque
+ * **`sendAndAwaitReceipt`, pas `send`** (lot S2h, `plan-service-e-mails.md`) : chaque
  * issue est consignée sur l'annonce (`recordAttempt`) et l'écran la lit ; une
  * demande différée ne dirait que « demandé ». Aucun appelant n'ouvre d'unité
  * de travail (envoi et reprise, relus le 2026-11-06).
@@ -31,7 +31,7 @@ export class VitrineNoticeDispatcher {
 
   constructor(
     private readonly notices: VitrineNoticeRepository,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly clock: Clock,
   ) {}
 
@@ -48,7 +48,7 @@ export class VitrineNoticeDispatcher {
 
   private async deliver(notice: VitrineNotice, subscriberId: string, to: string): Promise<boolean> {
     try {
-      const receipt = await this.mails.sendNow({
+      const receipt = await this.mail.sendAndAwaitReceipt({
         brand: "lfc",
         to,
         template: "agency.vitrine-notice",

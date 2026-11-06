@@ -1,4 +1,4 @@
-import { RecordingMailRequests } from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import { RecordingMail } from "../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { Auth0IdentityGateway } from "../../../../platform/identity/auth0-identity.gateway.js";
@@ -23,7 +23,7 @@ class Auth0Spy extends Auth0CustomerIdentity {
     super(
       new Auth0IdentityGateway(new Auth0ManagementClient(new AppConfig())),
       new AppConfig(),
-      new RecordingMailRequests(),
+      new RecordingMail(),
       new FixedIdGenerator("mail"),
     );
   }
@@ -53,7 +53,7 @@ class DevSpy extends DevCustomerIdentity {
   constructor() {
     // La porte n'est jamais appelée ici : ce fichier n'éprouve QUE l'aiguillage,
     // et chaque méthode observée est remplacée juste en dessous.
-    super(new AppConfig(), new RecordingMailRequests(), new FixedIdGenerator("mail"));
+    super(new AppConfig(), new RecordingMail(), new FixedIdGenerator("mail"));
   }
 
   override listLoginMethods(subject: string): Promise<readonly LoginMethod[]> {

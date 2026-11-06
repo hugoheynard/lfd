@@ -2,8 +2,8 @@ import type { ContactMessagePayload } from "@lfd/contracts";
 
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -37,12 +37,12 @@ function setup(...reasons: RequestReason[]): {
   handler: SendContactMessageHandler;
   messages: MemoryRequests;
   events: RecordingPublisher;
-  mails: RecordingMailRequests;
+  mails: RecordingMail;
 } {
   const messages = new MemoryRequests();
   const events = new RecordingPublisher();
   const uow = new OpenableUnitOfWork();
-  const mails = new RecordingMailRequests(uow);
+  const mails = new RecordingMail(uow);
   const handler = new SendContactMessageHandler(
     new MemoryReasons(...reasons),
     messages,
@@ -80,8 +80,8 @@ describe("SendContactMessageHandler — « Nous écrire »", () => {
   it("demande le courriel à l'équipe au bloc `mail`, dans la transaction du dépôt (S2c)", async () => {
     const { handler, mails } = setup(reason());
     await handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP));
-    expect(mails.requested).toHaveLength(1);
-    expect(mails.requested[0]).toMatchObject({
+    expect(mails.queued).toHaveLength(1);
+    expect(mails.queued[0]).toMatchObject({
       template: "staff.customer-request",
       to: "commercial@lfc.fr",
       replyTo: "jean@exemple.fr",

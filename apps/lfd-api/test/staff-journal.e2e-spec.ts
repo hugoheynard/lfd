@@ -446,7 +446,7 @@ describe("l'annuaire — ses e-mails passent par le bloc `mail`", () => {
       where: { template: "staff.invited" },
     });
     expect(row.idempotencyKey.startsWith(`staff.invited:${id}:`)).toBe(true);
-    // `sendNow` : le lien — un secret — n'entre pas dans la boîte d'envoi.
+    // `sendAndAwaitReceipt` : le lien — un secret — n'entre pas dans la boîte d'envoi.
     expect(await ctx.prisma.outboxMessage.count()).toBe(outboxBefore);
   });
 });

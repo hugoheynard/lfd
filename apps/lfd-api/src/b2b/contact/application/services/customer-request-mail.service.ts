@@ -1,7 +1,7 @@
 import { isValidReplyTo } from "@lfd/mailer";
 import { Injectable, Logger } from "@nestjs/common";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import type { CustomerRequestReceivedEvent } from "../../domain/customer-request.events.js";
 import { presentationOf } from "../handlers/request-mail-details.js";
 
@@ -31,7 +31,7 @@ const ORIGIN_LABELS = { b2b: "Espace pro", b2c: "Particulier" } as const;
 export class CustomerRequestMail {
   private readonly logger = new Logger(CustomerRequestMail.name);
 
-  constructor(private readonly mails: MailRequests) {}
+  constructor(private readonly mail: Mail) {}
 
   /** À appeler DANS l'unité de travail qui range la demande. */
   async request(event: CustomerRequestReceivedEvent): Promise<void> {
@@ -42,7 +42,7 @@ export class CustomerRequestMail {
         `Courriel de demande sans Reply-To (${request.id}) : adresse refusée en en-tête.`,
       );
     }
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: event.recipientEmail,
       ...(replyable ? { replyTo: request.author.email } : {}),

@@ -46,7 +46,7 @@ test("dette : un fichier inscrit passe et se compte", () => {
 
 test("dette : un fichier neuf qui injecte le mailer échoue", () => {
   const { failures } = verdict([{ path: "b.ts", source: SENDER }], []);
-  assert.match(failures[0] ?? "", /MailRequests/u);
+  assert.match(failures[0] ?? "", /porte `Mail`/u);
 });
 
 test("dette : un fichier inscrit devenu propre échoue, pour qu'on le raye", () => {

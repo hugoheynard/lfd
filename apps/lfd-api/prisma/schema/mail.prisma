@@ -13,7 +13,7 @@
 
 /// **Une demande d'e-mail et son suivi** (S1, C7) : ce qui a été demandé, à
 /// qui, et ce qu'il en est advenu. Écrite dans la transaction de l'appelant
-/// (`request`) ou après l'envoi (`sendNow`) ; les données du modèle n'y sont
+/// (`mail.send`) ou après l'envoi (`mail.sendAndAwaitReceipt`) ; les données du modèle n'y sont
 /// PAS — elles voyagent dans le fait `mail.requested` de la boîte d'envoi.
 ///
 /// ⚠️ `recipient` est une donnée personnelle (client ou staff), au registre

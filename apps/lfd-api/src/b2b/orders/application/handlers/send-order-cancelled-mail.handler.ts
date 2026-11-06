@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import type { OrderCancelledMailData } from "../../../../mail/channels/templates/b2b-mails.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
@@ -41,7 +41,7 @@ export class SendOrderCancelledMail implements DurableSubscriber {
   constructor(
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -56,7 +56,7 @@ export class SendOrderCancelledMail implements DurableSubscriber {
     if (recipient === null) {
       return;
     }
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: recipient.email,
       template: "customer.order-cancelled",

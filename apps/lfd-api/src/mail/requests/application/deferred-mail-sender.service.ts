@@ -9,7 +9,7 @@ import { type MailAttemptOutcome, MailSendAttempt } from "./mail-send-attempt.js
  * **L'envoi d'une demande déjà passée en `sending`**, HORS de toute
  * transaction (plan `plan-service-e-mails.md`, § 8, point 2) : l'appel au
  * fournisseur avec la clé d'idempotence de la demande, puis une écriture
- * courte du résultat (`sent`, `refused`, `failed`) — la forme que `sendNow`
+ * courte du résultat (`sent`, `refused`, `failed`) — la forme que `sendAndAwaitReceipt`
  * a déjà.
  *
  * Partagé par l'envoi d'après validation de l'abonné durable et par le

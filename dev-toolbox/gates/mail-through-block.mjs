@@ -5,8 +5,8 @@
  *
  * Aujourd'hui chaque bloc qui envoie un e-mail injecte le mailer lui-même
  * (`MAILER`) : il choisit le gabarit, envoie, lit le résultat. Le bloc `mail`
- * déclare désormais sa porte, `MailRequests` (`mail/channels/requests/`) —
- * `request` dans la transaction, `sendNow` pour le résultat à l'écran. Le lot
+ * déclare désormais sa porte, `Mail` (`mail/channels/requests/`) —
+ * `mail.send` dans la transaction, `mail.sendAndAwaitReceipt` pour le résultat à l'écran. Le lot
  * S2 fera passer les envoyeurs par elle, bloc par bloc.
  *
  * ## Ce que la porte refuse
@@ -47,7 +47,7 @@ export const ADMITTED = {
 
 /**
  * Les envoyeurs qui injectent encore le mailer (relevés le 2026-11-06, lot S1).
- * En retirer un = l'avoir fait passer par `MailRequests` (lot S2). S2a a rayé
+ * En retirer un = l'avoir fait passer par la porte `Mail` (lot S2). S2a a rayé
  * les 11 de `b2b/orders` (2026-11-06), S2b les 5 de `b2b/account`, S2c les
  * 3 de `b2b/contact`, S2d les 2 de `b2b/accounting`, S2e le mandat de
  * `b2b/payments`, S2f le dossier de `production`, S2g les 2 de `staff`, S2h
@@ -105,7 +105,7 @@ export function verdict(files, debt, admitted = {}) {
     }
     for (const [line, token] of found) {
       failures.push(
-        `${path}:${line}  injecte ${token} — demander l'e-mail par \`MailRequests\` ` +
+        `${path}:${line}  injecte ${token} — envoyer l'e-mail par la porte \`Mail\` (\`mail.send\`) ` +
           "(mail/channels/requests/) ; la dette ne fait que décroître",
       );
     }

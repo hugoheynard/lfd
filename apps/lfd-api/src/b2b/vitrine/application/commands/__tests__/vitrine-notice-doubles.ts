@@ -1,11 +1,11 @@
 import type { MailReceipt } from "@lfd/mailer";
 
-import type { MailDemand } from "../../../../../mail/channels/requests/mail-requests.js";
+import type { MailDemand } from "../../../../../mail/channels/requests/mail.js";
 import {
   OpenableUnitOfWork,
   type RecordedMail,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import {
   type VitrineNoticeEntry,
@@ -25,12 +25,12 @@ export const CANDIDATES: readonly VitrineNoticeCandidate[] = [
 ];
 
 /**
- * La porte du bloc `mail`, doublée pour l'annonce (lot S2h) : `sendNow`
- * seulement — l'unité de travail n'est jamais ouverte, donc un `request`
+ * La porte du bloc `mail`, doublée pour l'annonce (lot S2h) : `sendAndAwaitReceipt`
+ * seulement — l'unité de travail n'est jamais ouverte, donc un `send`
  * serait refusé. Une adresse de `refused` est refusée par le fournisseur ;
  * `live = false` joue le mailer à blanc (aucun identifiant rendu).
  */
-export class RecordingVitrineMails extends RecordingMailRequests {
+export class RecordingVitrineMails extends RecordingMail {
   readonly refused = new Set<string>();
 
   constructor(private readonly live = true) {
@@ -39,14 +39,16 @@ export class RecordingVitrineMails extends RecordingMailRequests {
 
   /** Ce qui est parti sur-le-champ. */
   get sent(): RecordedMail[] {
-    return this.sentNow;
+    return this.awaitedReceipt;
   }
 
-  override async sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  override async sendAndAwaitReceipt<K extends keyof B2bMails>(
+    demand: MailDemand<K>,
+  ): Promise<MailReceipt> {
     if (this.refused.has(demand.to)) {
       throw new Error("refus du fournisseur");
     }
-    const receipt = await super.sendNow(demand);
+    const receipt = await super.sendAndAwaitReceipt(demand);
     return this.live ? receipt : { providerId: null };
   }
 }

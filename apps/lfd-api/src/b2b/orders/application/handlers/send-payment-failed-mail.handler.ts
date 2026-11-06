@@ -6,7 +6,7 @@ import {
 } from "../../../../platform/outbox/durable-handler.js";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import {
   ORDER_PAYMENT_FAILED,
   OrderPaymentFailedEvent,
@@ -67,7 +67,7 @@ export class SendPaymentFailedMail implements DurableSubscriber {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -91,7 +91,7 @@ export class SendPaymentFailedMail implements DurableSubscriber {
     }
 
     const client = this.origins.clientBaseUrl();
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: recipient.email,
       template: "customer.payment-failed",

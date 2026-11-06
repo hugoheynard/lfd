@@ -24,7 +24,7 @@ import { ResendWebhookController } from "./webhook/resend-webhook.controller.js"
   // Le contrôle de mise en service vivait ici ; il est dans le bloc `mail`
   // depuis le lot S2h (`mail/requests/http/mail-check.controller.ts`) : tout
   // e-mail passe par le bloc, et une sonde qui le contournerait resterait
-  // verte avec un bloc cassé. Il éprouve le mailer du bloc, par `sendNow`.
+  // verte avec un bloc cassé. Il éprouve le mailer du bloc, par `sendAndAwaitReceipt`.
   controllers: [ResendWebhookController],
   providers: [
     { provide: MailJournal, useClass: PrismaMailJournal },

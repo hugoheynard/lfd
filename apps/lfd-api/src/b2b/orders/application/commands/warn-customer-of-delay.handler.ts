@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { DelayWarningRefusedError } from "../../domain/errors/customer-nudge-errors.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
@@ -50,7 +50,7 @@ export class WarnCustomerOfDelayHandler implements ICommandHandler<
     private readonly delays: CustomerNudgeDelaysReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
@@ -83,7 +83,7 @@ export class WarnCustomerOfDelayHandler implements ICommandHandler<
   /** Dans la transaction du geste : la trace et la demande tombent ensemble. */
   private async request(orderId: string, letter: DelayLetter): Promise<void> {
     const client = this.origins.clientBaseUrl();
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: letter.to,
       template: "customer.order-delayed",

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { MailReceipt } from "@lfd/mailer";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { IdentitySubjectUnknownError } from "../../../../platform/shared/errors/identity-errors.js";
@@ -80,7 +80,7 @@ export abstract class AccountAccessGranter {
  * Et deux refus qui valent pour les trois : le détenteur ne se rétrograde pas
  * par ce geste, et une adresse portée par plusieurs comptes n'en désigne aucun.
  *
- * **L'e-mail part tout de suite, par le bloc `mail`** (`sendNow`, plan
+ * **L'e-mail part tout de suite, par le bloc `mail`** (`sendAndAwaitReceipt`, plan
  * `plan-service-e-mails.md`, S2b) : l'écran lit `mailSent`, et ce service
  * n'écrit dans aucune unité de travail — les écritures du dépôt sont
  * chacune la sienne (vérifié le 2026-11-06), l'envoi vient après elles.
@@ -97,7 +97,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
   constructor(
     private readonly members: CompanyMemberRepository,
     private readonly identity: CustomerIdentityPort,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly config: AppConfig,
     private readonly ids: IdGenerator,
   ) {
@@ -279,7 +279,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
   private async attachToActive(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
     await this.attach(known.userId, input);
     const mailSent = await this.send(known.userId, () =>
-      this.mails.sendNow({
+      this.mail.sendAndAwaitReceipt({
         brand: "lfc",
         to: input.email,
         template: "customer.company-attached",
@@ -317,7 +317,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
     input: AccessToGrant,
   ): Promise<AccessGranted> {
     const mailSent = await this.send(userId, () =>
-      this.mails.sendNow({
+      this.mail.sendAndAwaitReceipt({
         brand: "lfc",
         to: input.email,
         template: "customer.access-opened",

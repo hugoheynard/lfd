@@ -2,8 +2,8 @@ import { ALERT_KINDS, type AlertKind, type AlertRule } from "@lfd/contracts";
 
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { AppConfig, type MailerConfig } from "../../../../../platform/config/app-config.js";
 import {
   type StaffNotice,
@@ -70,7 +70,7 @@ function rules(staffEmail: boolean, staffInApp = false): ReadonlyMap<AlertKind, 
 
 function setup(inbox: string | null = "equipe@lfc.fr") {
   const uow = new OpenableUnitOfWork();
-  const mails = new RecordingMailRequests(uow);
+  const mails = new RecordingMail(uow);
   const notifier = new RecordingNotifier();
   const channels = new DispatchAlertChannels(
     notifier,
@@ -84,7 +84,7 @@ function setup(inbox: string | null = "equipe@lfc.fr") {
 /*
  * Les canaux d'une alerte de compte, lot S2h (`plan-service-e-mails.md`) :
  * l'e-mail se DEMANDE au bloc `mail`, dans sa propre unité de travail — le
- * double refuse `request` hors transaction —, et un refus ne remonte jamais.
+ * double refuse `send` hors transaction —, et un refus ne remonte jamais.
  */
 describe("DispatchAlertChannels — le canal e-mail", () => {
   it("demande l'e-mail au bloc, dans une unité de travail, clé par sorte et par commande", async () => {
@@ -92,8 +92,8 @@ describe("DispatchAlertChannels — le canal e-mail", () => {
 
     await channels.dispatch([DRAFT], rules(true), CONTEXT);
 
-    expect(mails.sentNow).toEqual([]);
-    expect(mails.requested).toEqual([
+    expect(mails.awaitedReceipt).toEqual([]);
+    expect(mails.queued).toEqual([
       {
         brand: "lfc",
         to: "equipe@lfc.fr",
@@ -113,13 +113,13 @@ describe("DispatchAlertChannels — le canal e-mail", () => {
   it("canal e-mail coupé par la règle : rien n'est demandé", async () => {
     const { mails, channels } = setup();
     await channels.dispatch([DRAFT], rules(false), CONTEXT);
-    expect(mails.requested).toEqual([]);
+    expect(mails.queued).toEqual([]);
   });
 
   it("sans boîte d'équipe configurée : rien n'est demandé", async () => {
     const { mails, channels } = setup(null);
     await channels.dispatch([DRAFT], rules(true), CONTEXT);
-    expect(mails.requested).toEqual([]);
+    expect(mails.queued).toEqual([]);
   });
 
   it("une demande refusée ne remonte pas, et la cloche sonne quand même", async () => {
@@ -128,7 +128,7 @@ describe("DispatchAlertChannels — le canal e-mail", () => {
 
     await expect(channels.dispatch([DRAFT], rules(true, true), CONTEXT)).resolves.toBeUndefined();
 
-    expect(mails.requested).toEqual([]);
+    expect(mails.queued).toEqual([]);
     expect(notifier.notices).toHaveLength(1);
   });
 });

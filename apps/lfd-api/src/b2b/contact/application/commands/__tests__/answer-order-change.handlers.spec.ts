@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CustomerRequestNotFoundError } from "../../../domain/errors/contact-errors.js";
@@ -32,13 +32,13 @@ import {
 
 const STAFF = { name: "Camille Durand", role: "commercial" };
 
-// La porte doublée refuse `request` hors de l'unité de travail du geste (S2c).
+// La porte doublée refuse `send` hors de l'unité de travail du geste (S2c).
 function applying(
   requests: MemoryRequests,
   applier: RecordingApplier,
   events: RecordingPublisher,
   uow = new OpenableUnitOfWork(),
-  mails = new RecordingMailRequests(uow),
+  mails = new RecordingMail(uow),
 ) {
   return new ApplyOrderChangeHandler(
     requests,
@@ -55,7 +55,7 @@ function refusing(
   requests: MemoryRequests,
   events: RecordingPublisher,
   uow = new OpenableUnitOfWork(),
-  mails = new RecordingMailRequests(uow),
+  mails = new RecordingMail(uow),
 ) {
   return new RefuseOrderChangeHandler(
     requests,
@@ -110,7 +110,7 @@ describe("ApplyOrderChangeHandler", () => {
 
   it("demande le courriel au client dans la transaction de la réponse (S2c)", async () => {
     const uow = new OpenableUnitOfWork();
-    const mails = new RecordingMailRequests(uow);
+    const mails = new RecordingMail(uow);
     await applying(
       new MemoryRequests([orderChange()]),
       new RecordingApplier(),
@@ -118,7 +118,7 @@ describe("ApplyOrderChangeHandler", () => {
       uow,
       mails,
     ).execute(new ApplyOrderChangeCommand("q1", "staff_1"));
-    expect(mails.requested).toEqual([
+    expect(mails.queued).toEqual([
       expect.objectContaining({
         template: "customer.order-change-applied",
         to: "jean@exemple.fr",
@@ -135,7 +135,7 @@ describe("ApplyOrderChangeHandler", () => {
 
   it("une demande d'e-mail refusée annule la réponse : rien n'est journalisé", async () => {
     const uow = new OpenableUnitOfWork();
-    const mails = new RecordingMailRequests(uow);
+    const mails = new RecordingMail(uow);
     mails.failWith = new Error("boîte d'envoi indisponible");
     const events = new RecordingPublisher();
     const requests = new MemoryRequests([orderChange()]);
@@ -211,14 +211,14 @@ describe("RefuseOrderChangeHandler", () => {
 
   it("demande le courriel au client, avec le mot de l'équipe, dans la transaction (S2c)", async () => {
     const uow = new OpenableUnitOfWork();
-    const mails = new RecordingMailRequests(uow);
+    const mails = new RecordingMail(uow);
     await refusing(
       new MemoryRequests([orderChange()]),
       new RecordingPublisher(),
       uow,
       mails,
     ).execute(new RefuseOrderChangeCommand("q1", "staff_1", "La fournée est lancée."));
-    expect(mails.requested).toEqual([
+    expect(mails.queued).toEqual([
       expect.objectContaining({
         template: "customer.order-change-refused",
         to: "jean@exemple.fr",

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -50,7 +50,7 @@ export const SEND_LOGIN_METHOD_LINKED_MAIL = "account.send-login-method-linked-m
  * ## Demandé au bloc `mail` depuis le 2026-11-06 (lot S2b)
  *
  * Il envoyait dans la transaction de livraison ; il y DEMANDE désormais
- * l'e-mail (`request`), qui part après la validation
+ * l'e-mail (`send`), qui part après la validation
  * (`documentation/editeur-de-contenu/plan-service-e-mails.md`, § 8).
  */
 @Injectable()
@@ -58,7 +58,7 @@ export const SEND_LOGIN_METHOD_LINKED_MAIL = "account.send-login-method-linked-m
 export class SendLoginMethodLinkedMail implements DurableSubscriber {
   constructor(
     private readonly profiles: UserProfileRepository,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -69,7 +69,7 @@ export class SendLoginMethodLinkedMail implements DurableSubscriber {
     if (profile === null) {
       return;
     }
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: profile.email,
       template: "customer.login-method-linked",

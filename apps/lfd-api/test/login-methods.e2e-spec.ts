@@ -16,7 +16,7 @@
 
 import { AppConfig } from "../src/platform/config/app-config.js";
 import { FixedIdGenerator } from "../src/platform/id/fixed-id-generator.js";
-import { RecordingMailRequests } from "../src/mail/channels/requests/__tests__/recording-mail-requests.js";
+import { RecordingMail } from "../src/mail/channels/requests/__tests__/recording-mail.js";
 import { DevCustomerIdentity } from "../src/b2b/account/infrastructure/dev-customer-identity.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import {
@@ -49,7 +49,7 @@ beforeAll(async () => {
         token: CustomerIdentityPort,
         value: new DevCustomerIdentity(
           new AppConfig(),
-          new RecordingMailRequests(),
+          new RecordingMail(),
           new FixedIdGenerator("mail"),
         ),
       },

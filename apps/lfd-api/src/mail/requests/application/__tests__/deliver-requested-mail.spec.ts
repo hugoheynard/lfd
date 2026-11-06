@@ -1,6 +1,6 @@
 import { MailerSendError } from "@lfd/mailer";
 
-import type { MailDemand } from "../../../channels/requests/mail-requests.js";
+import type { MailDemand } from "../../../channels/requests/mail.js";
 import {
   InvalidMailRequestError,
   MailInFlightError,
@@ -30,7 +30,7 @@ type Scene = ReturnType<typeof mailScene>;
 async function requested(): Promise<Scene> {
   const scene = mailScene();
   scene.probe.open = true;
-  await scene.port.request(SUSPENDED);
+  await scene.port.send(SUSPENDED);
   return scene;
 }
 
@@ -82,7 +82,7 @@ describe("l'abonné durable — marquer dans la transaction, envoyer après", ()
   it("le Reply-To traverse le fait jusqu'à l'envoi, et n'entre pas au suivi (S2c)", async () => {
     const scene = mailScene();
     scene.probe.open = true;
-    await scene.port.request({ ...SUSPENDED, replyTo: "auteur@example.test" });
+    await scene.port.send({ ...SUSPENDED, replyTo: "auteur@example.test" });
     expect(scene.facts.facts[0]?.payload).toMatchObject({ replyTo: "auteur@example.test" });
     await deliverLast(scene);
 

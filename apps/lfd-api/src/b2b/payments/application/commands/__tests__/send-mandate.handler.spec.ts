@@ -2,9 +2,9 @@ import { MailerSendError, type MailReceipt } from "@lfd/mailer";
 
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
-import type { MailDemand } from "../../../../../mail/channels/requests/mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
+import type { MailDemand } from "../../../../../mail/channels/requests/mail.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -36,7 +36,7 @@ class NoLogo extends LegalEntityLogoReader {
  * La porte du bloc `mail`, doublée : range l'envoi immédiat dans le journal
  * des étapes (pour l'ordre envoi → fait), rend le reçu qu'on lui donne.
  */
-class StepMailRequests extends RecordingMailRequests {
+class StepMail extends RecordingMail {
   constructor(
     private readonly steps: Steps,
     private readonly providerId: string | null,
@@ -44,9 +44,11 @@ class StepMailRequests extends RecordingMailRequests {
     super(new OpenableUnitOfWork());
   }
 
-  override async sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  override async sendAndAwaitReceipt<K extends keyof B2bMails>(
+    demand: MailDemand<K>,
+  ): Promise<MailReceipt> {
     this.steps.log.push(`mail:${String(demand.template)}`);
-    await super.sendNow(demand);
+    await super.sendAndAwaitReceipt(demand);
     return { providerId: this.providerId };
   }
 }
@@ -57,7 +59,7 @@ function harness(providerId: string | null = "re_1") {
   mandates.draft = mandate();
   const accounts = new InMemoryBankAccounts(steps);
   accounts.stored = bankAccount();
-  const mails = new StepMailRequests(steps, providerId);
+  const mails = new StepMail(steps, providerId);
   const events = new StepPublisher(steps);
   const handler = new SendMandateHandler(
     mandates,
@@ -129,21 +131,21 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
   });
 
   /** Lot S2e : le mandat passe par le bloc `mail`, sur-le-champ et hors transaction. */
-  it("envoie par `sendNow` (jamais `request`), le PDF en pièce et la marque de la boutique", async () => {
+  it("envoie par `sendAndAwaitReceipt` (jamais `send`), le PDF en pièce et la marque de la boutique", async () => {
     const h = harness();
 
     await h.run();
 
-    expect(h.mails.requested).toEqual([]);
-    expect(h.mails.sentNow).toHaveLength(1);
-    expect(h.mails.sentNow[0]).toMatchObject({
+    expect(h.mails.queued).toEqual([]);
+    expect(h.mails.awaitedReceipt).toHaveLength(1);
+    expect(h.mails.awaitedReceipt[0]).toMatchObject({
       to: HOLDER.email,
       brand: "lfc",
       template: "customer.mandate-to-sign",
       data: { reference: "LFC-9P2X4B-260914-K7M3QT" },
     });
-    expect(JSON.stringify(h.mails.sentNow[0]?.data)).toContain('"pdfBase64":"');
-    expect(JSON.stringify(h.mails.sentNow[0]?.data)).not.toContain("pdfStored");
+    expect(JSON.stringify(h.mails.awaitedReceipt[0]?.data)).toContain('"pdfBase64":"');
+    expect(JSON.stringify(h.mails.awaitedReceipt[0]?.data)).not.toContain("pdfStored");
   });
 
   /**
@@ -156,7 +158,7 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
     await h.run();
     await h.run();
 
-    const keys = h.mails.sentNow.map((mail) => mail.idempotencyKey);
+    const keys = h.mails.awaitedReceipt.map((mail) => mail.idempotencyKey);
     expect(keys).toEqual([
       "mandate-to-sign:mdt_1:send_000001",
       "mandate-to-sign:mdt_1:send_000002",

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import type { OrderChangeAppliedEvent } from "../../domain/order-change.events.js";
 
@@ -18,12 +18,12 @@ import type { OrderChangeAppliedEvent } from "../../domain/order-change.events.j
  */
 @Injectable()
 export class OrderChangeAppliedMail {
-  constructor(private readonly mails: MailRequests) {}
+  constructor(private readonly mail: Mail) {}
 
   /** À appeler DANS l'unité de travail de la réponse. */
   async request(event: OrderChangeAppliedEvent): Promise<void> {
     const { requestId, order } = event.subject;
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: event.request.author.email,
       template: "customer.order-change-applied",

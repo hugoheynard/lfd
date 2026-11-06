@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
@@ -52,7 +52,7 @@ interface NoticeSubject {
  * `facture-emise.md`, Q3) : un e-mail par adresse, puis
  * l'issue au journal.
  *
- * **L'envoi d'origine DEMANDE** (`request`, plan service d'e-mails, S2d) : les
+ * **L'envoi d'origine DEMANDE** (`send`, plan service d'e-mails, S2d) : les
  * demandes et le fait `invoice.notice_sent` s'écrivent dans une même
  * transaction, et le bloc `mail` envoie après la validation. La pièce passe
  * PAR RÉFÉRENCE : le PDF/A-3 Factur-X est déjà rangé au stockage des pièces
@@ -60,7 +60,7 @@ interface NoticeSubject {
  * avant par l'abonné) — la demande porte cette clé, rien n'est rangé deux
  * fois. Pas de PDF rendu (`null`) ou pas de clé : l'e-mail part sans.
  *
- * **Le renvoi du staff ENVOIE** (`sendNow`) : il attend la réponse, et un
+ * **Le renvoi du staff ENVOIE** (`sendAndAwaitReceipt`) : il attend la réponse, et un
  * refus du fournisseur s'affiche (409 nommé) autant qu'il se journalise.
  *
  * La clé d'idempotence est la facture (ou le renvoi) ET le RANG du
@@ -77,7 +77,7 @@ export class InvoiceNoticeSender {
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   /**
@@ -110,7 +110,7 @@ export class InvoiceNoticeSender {
     };
     await this.uow.run(async () => {
       for (const [rank, recipient] of recipients.entries()) {
-        await this.mails.request({
+        await this.mail.send({
           template: TEMPLATE,
           to: recipient.email,
           brand: "lfc",
@@ -130,7 +130,7 @@ export class InvoiceNoticeSender {
    * ferait taire le bloc. Issue au journal `invoice.notice_resent`. Personne
    * à prévenir : rien ne part, rien n'est journalisé, l'appelant refuse.
    *
-   * Hors de toute transaction (exigence de `sendNow`).
+   * Hors de toute transaction (exigence de `sendAndAwaitReceipt`).
    *
    * @returns les destinataires et le refus du fournisseur ; `null` si rien n'était à envoyer.
    */
@@ -224,7 +224,7 @@ export class InvoiceNoticeSender {
     const refusals: string[] = [];
     for (const [rank, recipient] of recipients.entries()) {
       try {
-        await this.mails.sendNow({
+        await this.mail.sendAndAwaitReceipt({
           template: TEMPLATE,
           to: recipient.email,
           brand: "lfc",

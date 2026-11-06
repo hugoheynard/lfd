@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { LinkableIdentity } from "../domain/value-objects/linkable-identity.js";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
-import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../mail/channels/requests/mail.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { passwordResetMailKey } from "./password-reset-mail-key.js";
 import {
@@ -48,7 +48,7 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
 
   constructor(
     private readonly config: AppConfig,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly ids: IdGenerator,
   ) {
     super();
@@ -100,9 +100,9 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
    */
   async sendPasswordResetLink(subject: string, email: string): Promise<void> {
     const passwordSetupUrl = devPasswordUrl(subject);
-    // Même geste que l'adaptateur Auth0 (`sendNow`) : le chemin local garde
+    // Même geste que l'adaptateur Auth0 (`sendAndAwaitReceipt`) : le chemin local garde
     // la forme de la production, bloc `mail` compris.
-    await this.mails.sendNow({
+    await this.mail.sendAndAwaitReceipt({
       brand: "lfc",
       to: email,
       template: "customer.password-reset",

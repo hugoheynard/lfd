@@ -1,7 +1,7 @@
 import { isLayoutSectionId } from "@lfd/mailer";
 import { Injectable } from "@nestjs/common";
 
-import { MailRequests } from "../../channels/requests/mail-requests.js";
+import { Mail } from "../../channels/requests/mail.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { withMailCopyOverlay } from "../../templates/copy/mail-copy-overlay.js";
 import type { B2bMails } from "../../templates/mail-templates.js";
@@ -19,7 +19,7 @@ import type { MailTextsByMail } from "../domain/mail-copy-texts.js";
  * le publié (`EffectiveCopyMailer`) : l'essai d'un brouillon part avec le
  * brouillon.
  *
- * **Par le bloc `mail`, en `sendNow`** (lot S2h, `plan-service-e-mails.md`) :
+ * **Par le bloc `mail`, en `sendAndAwaitReceipt`** (lot S2h, `plan-service-e-mails.md`) :
  * le staff lit l'issue de l'essai à l'écran, et l'appelant envoie hors de son
  * unité de travail (`SendMailCopyTrialHandler`, relu le 2026-11-06). Le bloc
  * envoie dans la même chaîne asynchrone, donc sous le périmètre ouvert ici.
@@ -29,7 +29,7 @@ import type { MailTextsByMail } from "../domain/mail-copy-texts.js";
 @Injectable()
 export class SpecimenMailTrialSender extends MailTrialSender {
   constructor(
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly ids: IdGenerator,
   ) {
     super();
@@ -60,7 +60,7 @@ export class SpecimenMailTrialSender extends MailTrialSender {
     mail: K,
     locale: MailCopyLocale,
   ): Promise<void> {
-    await this.mails.sendNow({
+    await this.mail.sendAndAwaitReceipt({
       brand: "lfc",
       to,
       template: mail,

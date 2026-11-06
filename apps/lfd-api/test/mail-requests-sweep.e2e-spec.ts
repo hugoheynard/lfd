@@ -13,7 +13,7 @@
  */
 import { MailerIdempotencyInFlightError, type MailReceipt, type SendMailArgs } from "@lfd/mailer";
 
-import { MailRequests, type MailDemand } from "../src/mail/channels/requests/mail-requests.js";
+import { Mail, type MailDemand } from "../src/mail/channels/requests/mail.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import type { B2bMails } from "../src/mail/templates/mail-templates.js";
 import { MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
@@ -70,8 +70,8 @@ afterAll(async () => {
 });
 
 async function requestAndDeliver(): Promise<void> {
-  const requests = ctx.app.get(MailRequests);
-  await ctx.app.get(UnitOfWork).run(() => requests.request(RESTORED));
+  const mail = ctx.app.get(Mail);
+  await ctx.app.get(UnitOfWork).run(() => mail.send(RESTORED));
   await ctx.drain();
 }
 

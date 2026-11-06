@@ -90,7 +90,7 @@ export class MailInFlightError extends TechnicalError {
 }
 
 /**
- * `sendNow` appelé sous une unité de travail — le symétrique de
+ * `sendAndAwaitReceipt` appelé sous une unité de travail — le symétrique de
  * `DurableFactOutsideUnitOfWorkError` : l'e-mail partirait pour une écriture
  * qui peut encore être annulée. Une faute de programmation, d'où la catégorie.
  */
@@ -99,8 +99,8 @@ export class ImmediateMailInsideUnitOfWorkError extends TechnicalError {
     super(
       "IMMEDIATE_MAIL_INSIDE_UNIT_OF_WORK",
       `L'e-mail « ${template} » a été envoyé tout de suite depuis une unité de travail : ` +
-        "il partirait même si la transaction était annulée. Appeler `sendNow` APRÈS " +
-        "`UnitOfWork.run`, ou `request` dans la transaction.",
+        "il partirait même si la transaction était annulée. Appeler `sendAndAwaitReceipt` APRÈS " +
+        "`UnitOfWork.run`, ou `send` dans la transaction.",
     );
   }
 }
@@ -132,7 +132,7 @@ export class UnknownMailRequestStatusError extends TechnicalError {
 }
 
 /**
- * `request` appelé hors d'une unité de travail : la ligne de suivi serait
+ * `send` appelé hors d'une unité de travail : la ligne de suivi serait
  * écrite sans le fait qui la fait partir.
  */
 export class MailRequestOutsideUnitOfWorkError extends TechnicalError {
@@ -141,7 +141,7 @@ export class MailRequestOutsideUnitOfWorkError extends TechnicalError {
       "MAIL_REQUEST_OUTSIDE_UNIT_OF_WORK",
       `La demande d'e-mail « ${template} » a été faite hors de toute unité de travail. ` +
         "L'envelopper dans UnitOfWork.run avec l'écriture qu'elle accompagne, " +
-        "ou appeler `sendNow` pour un envoi immédiat.",
+        "ou appeler `sendAndAwaitReceipt` pour un envoi immédiat.",
     );
   }
 }

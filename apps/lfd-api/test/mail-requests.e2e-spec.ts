@@ -9,7 +9,7 @@
  */
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import { MailRequests, type MailDemand } from "../src/mail/channels/requests/mail-requests.js";
+import { Mail, type MailDemand } from "../src/mail/channels/requests/mail.js";
 import { DeliverRequestedMail } from "../src/mail/requests/application/deliver-requested-mail.handler.js";
 import { ImmediateMailInsideUnitOfWorkError } from "../src/mail/requests/domain/errors/mail-request.errors.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
@@ -53,12 +53,12 @@ const RESTORED: MailDemand<"staff.access-restored"> = {
 
 const mailer = new RecordingMailer();
 let ctx: E2eContext;
-let requests: MailRequests;
+let mail: Mail;
 let unitOfWork: UnitOfWork;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({ overrides: [{ token: MAILER, value: mailer }] });
-  requests = ctx.app.get(MailRequests);
+  mail = ctx.app.get(Mail);
   unitOfWork = ctx.app.get(UnitOfWork);
 });
 
@@ -72,7 +72,7 @@ afterAll(async () => {
 });
 
 function requestInTransaction(): Promise<string> {
-  return unitOfWork.run(() => requests.request(RESTORED));
+  return unitOfWork.run(() => mail.send(RESTORED));
 }
 
 describe("request — la demande écrite avec la transaction de l'appelant", () => {
@@ -104,7 +104,7 @@ describe("request — la demande écrite avec la transaction de l'appelant", () 
   it("une transaction annulée n'écrit rien et n'envoie rien", async () => {
     await expect(
       unitOfWork.run(async () => {
-        await requests.request(RESTORED);
+        await mail.send(RESTORED);
         throw new CallerFailed("l'appelant tombe après avoir demandé");
       }),
     ).rejects.toThrow(CallerFailed);
@@ -132,9 +132,9 @@ describe("request — la demande écrite avec la transaction de l'appelant", () 
   });
 });
 
-describe("sendNow — l'envoi immédiat", () => {
+describe("sendAndAwaitReceipt — l'envoi immédiat", () => {
   it("envoie hors transaction, rend le reçu, et range le suivi", async () => {
-    await expect(requests.sendNow(RESTORED)).resolves.toEqual({ providerId: "re_1" });
+    await expect(mail.sendAndAwaitReceipt(RESTORED)).resolves.toEqual({ providerId: "re_1" });
 
     expect(mailer.sent).toHaveLength(1);
     expect(
@@ -146,7 +146,7 @@ describe("sendNow — l'envoi immédiat", () => {
   });
 
   it("refuse sous une unité de travail, sans rien envoyer ni écrire", async () => {
-    await expect(unitOfWork.run(() => requests.sendNow(RESTORED))).rejects.toThrow(
+    await expect(unitOfWork.run(() => mail.sendAndAwaitReceipt(RESTORED))).rejects.toThrow(
       ImmediateMailInsideUnitOfWorkError,
     );
 

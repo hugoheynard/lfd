@@ -39,7 +39,7 @@ function reasonOf(error: unknown): string {
 /**
  * **Un essai d'envoi**, partagé par les deux gestes : envoyer, puis faire
  * prendre à la demande la transition qui dit ce qui s'est passé. Il ne range
- * rien — c'est à l'appelant d'écrire l'issue (`sendNow`, l'envoi différé
+ * rien — c'est à l'appelant d'écrire l'issue (`sendAndAwaitReceipt`, l'envoi différé
  * d'après validation, le balayeur).
  *
  * Un envoi de même clé encore en cours chez le fournisseur (`in-flight`) ne

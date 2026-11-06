@@ -16,7 +16,7 @@ const placeOf = (ref: StoredPdfRef): string => `${ref.store}:${ref.key}`;
  * référence au stockage que la demande porte devient le contenu que le
  * gabarit attend. Une demande sans pièce repart telle quelle, sans lecture.
  *
- * Appelé à chaque essai — après la validation, au balayeur, par `sendNow` :
+ * Appelé à chaque essai — après la validation, au balayeur, par `sendAndAwaitReceipt` :
  * la pièce n'est jamais recopiée dans la boîte d'envoi ni dans le suivi.
  */
 @Injectable()

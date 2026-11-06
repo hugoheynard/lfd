@@ -2,7 +2,7 @@ import { exposedHandoverToken } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -51,7 +51,7 @@ export class OrderPlacedMail {
     private readonly origins: OrderMailOrigins,
     private readonly attachment: OrderSheetAttachment,
     private readonly manageLink: OrderManageLink,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   /**
@@ -79,7 +79,7 @@ export class OrderPlacedMail {
     const token = exposedHandoverToken(owned.view);
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
 
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: recipient.email,
       template: "customer.order-placed",

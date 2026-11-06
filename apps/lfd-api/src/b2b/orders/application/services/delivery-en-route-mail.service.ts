@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { OrderView } from "@lfd/contracts";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader, type OwnedOrder } from "../../domain/ports/order.reader.js";
@@ -34,7 +34,7 @@ export class DeliveryEnRouteMail {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly remainders: RemainderShipmentReader,
   ) {}
 
@@ -59,7 +59,7 @@ export class DeliveryEnRouteMail {
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
     const address = sheet.fulfillment.address;
     const client = this.origins.clientBaseUrl();
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: recipient.email,
       template: "customer.delivery-en-route",

@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   ShortfallLetterNoRecipientError,
@@ -42,7 +42,7 @@ export class WriteShortfallLetterHandler implements ICommandHandler<
   constructor(
     private readonly notices: ShortfallNoticeRepository,
     private readonly recipients: OrderRecipientReader,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
@@ -61,7 +61,7 @@ export class WriteShortfallLetterHandler implements ICommandHandler<
       if (recipient === null) {
         throw new ShortfallLetterNoRecipientError(notice.reference);
       }
-      await this.mails.request({
+      await this.mail.send({
         brand: "lfc",
         to: recipient.email,
         template: "customer.order-shortfall",

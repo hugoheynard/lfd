@@ -6,8 +6,8 @@ import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
   type MailDemand,
-  MailRequests,
-} from "../mail-requests.js";
+  Mail,
+} from "../mail.js";
 
 /** Une demande telle que le double l'a reçue. */
 export interface RecordedMail {
@@ -20,7 +20,7 @@ export interface RecordedMail {
 
 /**
  * Une unité de travail sans transaction qui sait si elle est OUVERTE — ce que
- * la porte du bloc vérifie (`request` dedans, `sendNow` dehors).
+ * la porte du bloc vérifie (`send` dedans, `sendAndAwaitReceipt` dehors).
  */
 export class OpenableUnitOfWork extends UnitOfWork {
   open = false;
@@ -46,22 +46,22 @@ export class MisplacedMailRequestError extends TypeError {}
  * soit.
  *
  * Donnée une {@link OpenableUnitOfWork}, elle tient la règle de la vraie
- * porte : `request` refusé hors d'une unité de travail, `sendNow` refusé
+ * porte : `send` refusé hors d'une unité de travail, `sendAndAwaitReceipt` refusé
  * dedans. Sans, elle ne vérifie rien (un abonné durable est TOUJOURS appelé
  * dans la transaction de sa livraison, que son test ne joue pas).
  *
  * Un bloc métier ne double plus le mailer : il ne le connaît plus.
  */
-export class RecordingMailRequests extends MailRequests {
-  readonly requested: RecordedMail[] = [];
-  readonly sentNow: RecordedMail[] = [];
+export class RecordingMail extends Mail {
+  readonly queued: RecordedMail[] = [];
+  readonly awaitedReceipt: RecordedMail[] = [];
   failWith: Error | null = null;
 
   constructor(private readonly unitOfWork: OpenableUnitOfWork | null = null) {
     super();
   }
 
-  request<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+  send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
     if (this.unitOfWork !== null && !this.unitOfWork.open) {
       return Promise.reject(
         new MisplacedMailRequestError(`request hors transaction (${demand.template})`),
@@ -71,22 +71,24 @@ export class RecordingMailRequests extends MailRequests {
     if (failure !== null) {
       return Promise.reject(failure);
     }
-    this.requested.push(demand);
-    return Promise.resolve(`mail_${this.requested.length}`);
+    this.queued.push(demand);
+    return Promise.resolve(`mail_${this.queued.length}`);
   }
 
-  sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  sendAndAwaitReceipt<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
     if (this.unitOfWork?.open === true) {
       return Promise.reject(
-        new MisplacedMailRequestError(`sendNow dans une transaction (${demand.template})`),
+        new MisplacedMailRequestError(
+          `sendAndAwaitReceipt dans une transaction (${demand.template})`,
+        ),
       );
     }
     const failure = this.takeFailure();
     if (failure !== null) {
       return Promise.reject(failure);
     }
-    this.sentNow.push(demand);
-    return Promise.resolve({ providerId: `re_${this.sentNow.length}` });
+    this.awaitedReceipt.push(demand);
+    return Promise.resolve({ providerId: `re_${this.awaitedReceipt.length}` });
   }
 
   private takeFailure(): Error | null {

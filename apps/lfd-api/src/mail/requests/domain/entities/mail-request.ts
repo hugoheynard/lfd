@@ -71,7 +71,7 @@ export interface MailRequestSnapshot {
   readonly firstAttemptAt: Date | null;
   /** L'instant du dernier envoi différé engagé. */
   readonly lastAttemptAt: Date | null;
-  /** Les envois différés engagés. `sendNow` n'en compte pas : il ne passe pas par `sending`. */
+  /** Les envois différés engagés. `sendAndAwaitReceipt` n'en compte pas : il ne passe pas par `sending`. */
   readonly attempts: number;
 }
 
@@ -172,7 +172,7 @@ export class MailRequest {
   /**
    * Un envoi différé déjà engagé (`sending` orphelin, `failed`) peut-il
    * repartir, avec la même clé ? Seulement dans la fenêtre comptée depuis la
-   * première tentative, et sous le plafond d'essais. Un échec de `sendNow`
+   * première tentative, et sous le plafond d'essais. Un échec de `sendAndAwaitReceipt`
    * (sans tentative différée) ne se reprend jamais seul : l'équipe a vu
    * l'erreur à l'écran, et c'est à elle de refaire le geste.
    */

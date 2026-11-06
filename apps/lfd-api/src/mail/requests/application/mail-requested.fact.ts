@@ -11,7 +11,7 @@ export function mailRequestedKey(idempotencyKey: string): string {
 }
 
 /**
- * **Un e-mail est demandé** : le fait que `request` écrit dans la transaction
+ * **Un e-mail est demandé** : le fait que `send` écrit dans la transaction
  * de l'appelant. Il porte ce qu'il faut pour envoyer sans rien relire chez
  * l'appelant — les données du modèle comprises, qui ne vont PAS dans le suivi.
  *

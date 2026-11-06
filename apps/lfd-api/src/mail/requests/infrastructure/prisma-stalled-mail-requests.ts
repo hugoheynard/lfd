@@ -10,7 +10,7 @@ import { toDomain } from "./prisma-mail-request.repository.js";
 
 /**
  * Les envois différés en retard, lus par l'index `(status, last_attempt_at)`.
- * Un échec de `sendNow` n'a pas de première tentative différée : le filtre
+ * Un échec de `sendAndAwaitReceipt` n'a pas de première tentative différée : le filtre
  * `first_attempt_at >= …` l'écarte, comme l'agrégat (`canResume`).
  */
 @Injectable()

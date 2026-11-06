@@ -13,7 +13,7 @@ import { MailSendAttempt } from "./mail-send-attempt.js";
 import { type CheckedMailDemand, newMailRequest } from "./mail-requester.service.js";
 
 /**
- * **Envoyer tout de suite** (plan C2, `sendNow`) — pour le geste du staff qui
+ * **Envoyer tout de suite** (plan C2, `sendAndAwaitReceipt`) — pour le geste du staff qui
  * lit le résultat à l'écran, l'essai et la sonde.
  *
  * Refusé sous une unité de travail : l'e-mail partirait pour une écriture
@@ -33,7 +33,7 @@ export class ImmediateMailSender {
     private readonly ids: IdGenerator,
   ) {}
 
-  async sendNow(demand: CheckedMailDemand): Promise<MailReceipt> {
+  async sendAndAwaitReceipt(demand: CheckedMailDemand): Promise<MailReceipt> {
     if (this.unitOfWork.isOpen()) {
       throw new ImmediateMailInsideUnitOfWorkError(demand.template);
     }

@@ -1,7 +1,7 @@
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { Auth0IdentityGateway } from "../../../../platform/identity/auth0-identity.gateway.js";
 import { Auth0ManagementClient } from "../../../../platform/identity/auth0-management.client.js";
@@ -46,7 +46,7 @@ function adapter(fail: () => never): Auth0CustomerIdentity {
   return new Auth0CustomerIdentity(
     new FailingGateway(fail),
     new AppConfig(),
-    new RecordingMailRequests(),
+    new RecordingMail(),
     new FixedIdGenerator("mail"),
   );
 }
@@ -64,12 +64,12 @@ class IssuingGateway extends Auth0IdentityGateway {
 
 /**
  * S2b (2026-11-06) : le lien demandé par la personne part par le bloc `mail`,
- * TOUT DE SUITE (`sendNow`) — l'échec doit atteindre son écran, et une
+ * TOUT DE SUITE (`sendAndAwaitReceipt`) — l'échec doit atteindre son écran, et une
  * demande différée écrirait le lien dans la boîte d'envoi.
  */
 describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", () => {
   it("envoie tout de suite, hors transaction, sous une clé sans donnée personnelle", async () => {
-    const mails = new RecordingMailRequests(new OpenableUnitOfWork());
+    const mails = new RecordingMail(new OpenableUnitOfWork());
     const port = new Auth0CustomerIdentity(
       new IssuingGateway(),
       new AppConfig(),
@@ -79,8 +79,8 @@ describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", 
 
     await port.sendPasswordResetLink(SUBJECT, "camille@halles.fr");
 
-    expect(mails.requested).toEqual([]);
-    expect(mails.sentNow).toEqual([
+    expect(mails.queued).toEqual([]);
+    expect(mails.awaitedReceipt).toEqual([
       {
         brand: "lfc",
         to: "camille@halles.fr",
@@ -92,7 +92,7 @@ describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", 
   });
 
   it("laisse remonter un envoi refusé : la personne ne doit pas guetter une boîte vide", async () => {
-    const mails = new RecordingMailRequests();
+    const mails = new RecordingMail();
     mails.failWith = new Error("Resend indisponible");
     const port = new Auth0CustomerIdentity(
       new IssuingGateway(),

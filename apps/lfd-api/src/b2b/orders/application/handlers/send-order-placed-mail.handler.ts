@@ -6,7 +6,7 @@ import {
   CommerceOrderPlacedFact,
 } from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../../mail/channels/requests/mail.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -68,7 +68,7 @@ export class SendOrderPlacedMail implements DurableSubscriber {
     private readonly origins: OrderMailOrigins,
     private readonly attachment: OrderSheetAttachment,
     private readonly manageLink: OrderManageLink,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -128,7 +128,7 @@ export class SendOrderPlacedMail implements DurableSubscriber {
     const token = exposedHandoverToken(owned.view);
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
 
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: recipient.email,
       template: "customer.order-placed",

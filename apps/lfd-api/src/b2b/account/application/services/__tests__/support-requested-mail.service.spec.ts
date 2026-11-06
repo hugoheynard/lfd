@@ -2,19 +2,19 @@ import type { SupportRequestView } from "@lfd/contracts";
 
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { availabilityOf, SupportRequestedMail } from "../support-requested-mail.service.js";
 import { OneRequest, REQUEST, Settings } from "./support-request-doubles.js";
 
-/** L'unité de travail du test : la porte doublée refuse `request` hors d'elle, comme la vraie. */
+/** L'unité de travail du test : la porte doublée refuse `send` hors d'elle, comme la vraie. */
 const uow = new OpenableUnitOfWork();
 
 async function deliver(
   stored: SupportRequestView | null,
   inbox: string | null,
-  mails = new RecordingMailRequests(uow),
-): Promise<RecordingMailRequests> {
+  mails = new RecordingMail(uow),
+): Promise<RecordingMail> {
   const mail = new SupportRequestedMail(new OneRequest(stored), mails, new Settings(inbox));
   await uow.run(() => mail.request("sr_1", "Le Pain Quotidien"));
   return mails;
@@ -23,8 +23,8 @@ async function deliver(
 describe("SupportRequestedMail — la demande de rappel, à la boîte de l'équipe", () => {
   it("relit la demande et DEMANDE staff.support-requested au bloc mail", async () => {
     const mails = await deliver(REQUEST, "equipe@lfc.fr");
-    expect(mails.sentNow).toEqual([]);
-    expect(mails.requested).toEqual([
+    expect(mails.awaitedReceipt).toEqual([]);
+    expect(mails.queued).toEqual([
       {
         brand: "lfc",
         to: "equipe@lfc.fr",
@@ -42,15 +42,15 @@ describe("SupportRequestedMail — la demande de rappel, à la boîte de l'équi
   });
 
   it("sans boîte d'équipe, rien ne part", async () => {
-    expect((await deliver(REQUEST, null)).requested).toEqual([]);
+    expect((await deliver(REQUEST, null)).queued).toEqual([]);
   });
 
   it("une demande introuvable n'envoie rien", async () => {
-    expect((await deliver(null, "equipe@lfc.fr")).requested).toEqual([]);
+    expect((await deliver(null, "equipe@lfc.fr")).queued).toEqual([]);
   });
 
   it("laisse remonter une demande refusée par le bloc : le dépôt tombe avec elle", async () => {
-    const mails = new RecordingMailRequests(uow);
+    const mails = new RecordingMail(uow);
     mails.failWith = new Error("base indisponible");
     await expect(deliver(REQUEST, "equipe@lfc.fr", mails)).rejects.toThrow("base indisponible");
   });
@@ -58,7 +58,7 @@ describe("SupportRequestedMail — la demande de rappel, à la boîte de l'équi
   it("refuse d'être appelé hors d'une unité de travail, comme la porte", async () => {
     const mail = new SupportRequestedMail(
       new OneRequest(REQUEST),
-      new RecordingMailRequests(new OpenableUnitOfWork()),
+      new RecordingMail(new OpenableUnitOfWork()),
       new Settings("equipe@lfc.fr"),
     );
     await expect(mail.request("sr_1", null)).rejects.toThrow("hors transaction");

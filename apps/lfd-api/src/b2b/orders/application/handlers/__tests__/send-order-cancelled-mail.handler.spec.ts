@@ -4,7 +4,7 @@ import { SendOrderCancelledMail } from "../send-order-cancelled-mail.handler.js"
 import {
   OneOrderReader,
   OneRecipientReader,
-  RecordingMailRequests,
+  RecordingMail,
   orderView,
 } from "./payment-failure-doubles.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
@@ -12,7 +12,7 @@ import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 /** Le courriel de l'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). */
 
 function subscriber(email: string | null = "camille@example.test") {
-  const mailer = new RecordingMailRequests();
+  const mailer = new RecordingMail();
   const orders = new OneOrderReader({
     view: orderView("cancelled", "failed"),
     companyId: null,
@@ -53,8 +53,8 @@ describe("SendOrderCancelledMail", () => {
 
     await handler.handle({ eventId: "evt_1", type: FACT.type, payload: FACT.payload });
 
-    expect(mailer.requested).toHaveLength(1);
-    expect(mailer.requested[0]).toMatchObject({
+    expect(mailer.queued).toHaveLength(1);
+    expect(mailer.queued[0]).toMatchObject({
       to: "camille@example.test",
       template: "customer.order-cancelled",
       idempotencyKey: "order.cancelled:order_1",
@@ -68,7 +68,7 @@ describe("SendOrderCancelledMail", () => {
         },
       },
     });
-    expect(JSON.stringify(mailer.requested[0]?.data)).not.toContain("Le client a appelé");
+    expect(JSON.stringify(mailer.queued[0]?.data)).not.toContain("Le client a appelé");
   });
 
   it("un client sans adresse lisible ne fait pas échouer l'abonné", async () => {
@@ -76,7 +76,7 @@ describe("SendOrderCancelledMail", () => {
 
     await handler.handle({ eventId: "evt_1", type: FACT.type, payload: FACT.payload });
 
-    expect(mailer.requested).toEqual([]);
+    expect(mailer.queued).toEqual([]);
   });
 
   it("refuse un fait hors forme : aucun courriel ne part", async () => {
@@ -85,6 +85,6 @@ describe("SendOrderCancelledMail", () => {
     await expect(
       handler.handle({ eventId: "evt_1", type: FACT.type, payload: { orderId: "order_1" } }),
     ).rejects.toBeInstanceOf(OrderSettlementPayloadError);
-    expect(mailer.requested).toEqual([]);
+    expect(mailer.queued).toEqual([]);
   });
 });

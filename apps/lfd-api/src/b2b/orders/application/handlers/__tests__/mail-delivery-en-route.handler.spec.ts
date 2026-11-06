@@ -3,11 +3,11 @@ import type { OrderView } from "@lfd/contracts";
 import type {
   DeferrableMailTemplate,
   DeferredMailDemand,
-} from "../../../../../mail/channels/requests/mail-requests.js";
+} from "../../../../../mail/channels/requests/mail.js";
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import {
@@ -106,7 +106,7 @@ class FixedOrigins extends OrderMailOrigins {
 }
 
 /** Refuse la demande d'une commande choisie — la base qui tombe à mi-tournée. */
-class FailingFor extends RecordingMailRequests {
+class FailingFor extends RecordingMail {
   constructor(
     private readonly reference: string,
     unitOfWork: OpenableUnitOfWork,
@@ -114,16 +114,14 @@ class FailingFor extends RecordingMailRequests {
     super(unitOfWork);
   }
 
-  override request<K extends DeferrableMailTemplate>(
-    demand: DeferredMailDemand<K>,
-  ): Promise<string> {
+  override send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
     const data: unknown = demand.data;
     if (typeof data === "object" && data !== null && "reference" in data) {
       if (data.reference === this.reference) {
         return Promise.reject(new Error("base indisponible"));
       }
     }
-    return super.request(demand);
+    return super.send(demand);
   }
 }
 
@@ -143,7 +141,7 @@ function subscriber(
   const unitOfWork = new OpenableUnitOfWork();
   const mailer =
     options.failFor === undefined
-      ? new RecordingMailRequests(unitOfWork)
+      ? new RecordingMail(unitOfWork)
       : new FailingFor(options.failFor, unitOfWork);
   const mail = new DeliveryEnRouteMail(
     new ManyOrdersReader(views),
@@ -183,11 +181,11 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
     await subject.handle(departed("r_1", ["o_1", "o_2"]));
 
-    expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
+    expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual([
       "delivery.en_route:o_1:r_1",
       "delivery.en_route:o_2:r_1",
     ]);
-    expect(mailer.requested[0]).toMatchObject({
+    expect(mailer.queued[0]).toMatchObject({
       to: "camille@halles.test",
       template: "customer.delivery-en-route",
       data: {
@@ -212,8 +210,8 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
     await subject.handle(departed("r_1", ["o_1", "o_2"]));
 
-    expect(mailer.requested[0]).toMatchObject({ data: { window } });
-    expect(mailer.requested[1]).toMatchObject({ data: { window: null } });
+    expect(mailer.queued[0]).toMatchObject({ data: { window } });
+    expect(mailer.queued[1]).toMatchObject({ data: { window: null } });
   });
 
   it("rejoué, il redemande la même clé : Resend absorbe, pas de second courriel", async () => {
@@ -222,7 +220,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     await subject.handle(departed("r_1", ["o_1"]));
     await subject.handle(departed("r_1", ["o_1"]));
 
-    expect(new Set(mailer.requested.map((sent) => sent.idempotencyKey))).toEqual(
+    expect(new Set(mailer.queued.map((sent) => sent.idempotencyKey))).toEqual(
       new Set(["delivery.en_route:o_1:r_1"]),
     );
   });
@@ -233,7 +231,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     await subject.handle(departed("r_1", ["o_1"]));
     await subject.handle(departed("r_2", ["o_1"]));
 
-    expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
+    expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual([
       "delivery.en_route:o_1:r_1",
       "delivery.en_route:o_1:r_2",
     ]);
@@ -249,9 +247,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
     await subject.handle(departed("r_1", ["o_1", "o_2", "o_3", "o_4"]));
 
-    expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
-      "delivery.en_route:o_4:r_1",
-    ]);
+    expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_4:r_1"]);
   });
 
   describe("par envoi (plan E7 reliquat, choix 17)", () => {
@@ -265,10 +261,10 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
       await subject.handle(departed("r_1", [], [REST]));
 
-      expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
+      expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual([
         "delivery.en_route:o_1:r_1:r2",
       ]);
-      expect(mailer.requested[0]?.data).toMatchObject({ reference: "ORD-o_1", remainder: true });
+      expect(mailer.queued[0]?.data).toMatchObject({ reference: "ORD-o_1", remainder: true });
     });
 
     it("deux envois de la même commande dans la tournée : deux courriels", async () => {
@@ -278,11 +274,11 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
       await subject.handle(departed("r_1", ["o_1"], [REST]));
 
-      expect(mailer.requested.map((sent) => sent.idempotencyKey)).toEqual([
+      expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual([
         "delivery.en_route:o_1:r_1",
         "delivery.en_route:o_1:r_1:r2",
       ]);
-      expect(mailer.requested[0]?.data).not.toHaveProperty("remainder");
+      expect(mailer.queued[0]?.data).not.toHaveProperty("remainder");
     });
 
     it("se tait pour un reste remis, annulé, ou d'une commande annulée", async () => {
@@ -300,7 +296,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
         departed("r_1", [], [REST, ShipmentRef.of("o_1", 3), ShipmentRef.of("o_2", 2)]),
       );
 
-      expect(mailer.requested).toEqual([]);
+      expect(mailer.queued).toEqual([]);
     });
   });
 
@@ -309,7 +305,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
 
     await subject.handle(departed("r_1", ["o_1", "o_inconnue"]));
 
-    expect(mailer.requested).toEqual([]);
+    expect(mailer.queued).toEqual([]);
   });
 
   /**
@@ -338,7 +334,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     await expect(handler.handle(departed("r_1", ["o_1"]))).rejects.toThrow(
       "request hors transaction",
     );
-    expect(mailer.sentNow).toEqual([]);
+    expect(mailer.awaitedReceipt).toEqual([]);
   });
 
   it("une charge illisible lève : la livraison échoue, sera rejouée, et rien n'est demandé", async () => {
@@ -350,6 +346,6 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     };
 
     await expect(subject.handle(unreadable)).rejects.toThrow(DeliveryRoundDepartedPayloadError);
-    expect(mailer.requested).toEqual([]);
+    expect(mailer.queued).toEqual([]);
   });
 });

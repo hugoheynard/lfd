@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../mail/channels/requests/mail.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffContacts } from "../../../staff/directory/domain/staff-contacts.js";
@@ -72,14 +72,14 @@ interface DispatchTally {
  * `settle` sont validés chacun seul, si bien qu'aucune transaction annulée
  * n'efface plus la trace d'un e-mail parti.
  *
- * ## Par le bloc `mail`, en `sendNow` (lot S2f, 2026-11-06)
+ * ## Par le bloc `mail`, en `sendAndAwaitReceipt` (lot S2f, 2026-11-06)
  *
  * L'issue de chaque envoi est lue sur-le-champ : la trace la note (`sent` et
  * l'identifiant du fournisseur, ou `failed`), le fait du journal compte les
  * envoyés et les refusés, et la cloche nomme ceux qui n'ont rien reçu. Une
- * demande différée (`request`) viderait ces trois lectures de leur sens.
+ * demande différée (`send`) viderait ces trois lectures de leur sens.
  * `deliver` tourne déjà hors transaction (la file d'après validation sort du
- * contexte), là où `sendNow` est permis ; le PDF part donc en octets, sans
+ * contexte), là où `sendAndAwaitReceipt` est permis ; le PDF part donc en octets, sans
  * passer par la boîte d'envoi ni par le stockage. La clé d'idempotence est par
  * occasion (clôture ou retirage) et par ligne de la liste, sans adresse.
  *
@@ -106,7 +106,7 @@ export class DossierDispatch {
     private readonly staff: StaffContacts,
     private readonly papers: ProductionPapers,
     private readonly log: DossierDispatchLog,
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly bell: PlanArrestBell,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -221,7 +221,7 @@ export class DossierDispatch {
     }
     const counts = dossierCountsOf(day.orders, day.resupplies);
     try {
-      const receipt = await this.mails.sendNow({
+      const receipt = await this.mail.sendAndAwaitReceipt({
         to: addressee.email,
         brand: "lfc",
         template: "staff.production-dossier",

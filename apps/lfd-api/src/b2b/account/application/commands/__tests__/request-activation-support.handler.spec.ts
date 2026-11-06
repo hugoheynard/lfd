@@ -16,8 +16,8 @@ import { RequestActivationSupportCommand } from "../request-activation-support.c
 import { RequestActivationSupportHandler } from "../request-activation-support.handler.js";
 import {
   OpenableUnitOfWork,
-  RecordingMailRequests,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+  RecordingMail,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { SupportRequestedMail } from "../../services/support-requested-mail.service.js";
 import { OneRequest, REQUEST, Settings } from "../../services/__tests__/support-request-doubles.js";
 import { journalNames } from "./member-acts-doubles.js";
@@ -78,8 +78,8 @@ function wiring(): [OpenableUnitOfWork, SupportRequestedMail] {
   return [uow, staffMail(uow).mail];
 }
 
-/** Le courriel à l'équipe, sur la porte doublée : `request` refusé hors transaction. */
-function staffMail(uow: OpenableUnitOfWork, mails = new RecordingMailRequests(uow)) {
+/** Le courriel à l'équipe, sur la porte doublée : `send` refusé hors transaction. */
+function staffMail(uow: OpenableUnitOfWork, mails = new RecordingMail(uow)) {
   const stored = { ...REQUEST, id: "support_1" };
   return {
     mails,
@@ -199,14 +199,14 @@ describe("RequestActivationSupportHandler", () => {
 
     await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD));
 
-    expect(mails.requested.map((m) => [m.template, m.idempotencyKey])).toEqual([
+    expect(mails.queued.map((m) => [m.template, m.idempotencyKey])).toEqual([
       ["staff.support-requested", "mail:support.requested:support_1"],
     ]);
   });
 
   it("échoue, sans rien publier, quand la demande d'e-mail est refusée", async () => {
     const uow = new OpenableUnitOfWork();
-    const mails = new RecordingMailRequests(uow);
+    const mails = new RecordingMail(uow);
     mails.failWith = new Error("base indisponible");
     const published: unknown[] = [];
     const handler = new RequestActivationSupportHandler(

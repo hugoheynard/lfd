@@ -1,4 +1,4 @@
-import type { MailDemand } from "../../../channels/requests/mail-requests.js";
+import type { MailDemand } from "../../../channels/requests/mail.js";
 import { MAIL_RESUME_WINDOW_MS, MAX_MAIL_ATTEMPTS } from "../../domain/entities/mail-request.js";
 import { MailInFlightError } from "../../domain/errors/mail-request.errors.js";
 import { MAIL_STALE_AFTER_MS, MAIL_SWEEP_BATCH } from "../sweep-mail-requests.handler.js";
@@ -25,7 +25,7 @@ function demand(key: string): MailDemand<"staff.access-suspended"> {
 /** Une demande engagée dont l'envoi d'après validation n'a jamais eu lieu. */
 async function orphan(scene: Scene, key: string): Promise<void> {
   scene.probe.open = true;
-  await scene.port.request(demand(key));
+  await scene.port.send(demand(key));
   const fact = scene.facts.facts.at(-1);
   if (fact === undefined) {
     throw new TypeError("aucun fait écrit");
@@ -139,10 +139,10 @@ describe("le balayeur des e-mails", () => {
     expect(await scene.sweeper.execute()).toMatchObject({ examined: MAIL_SWEEP_BATCH });
   });
 
-  it("ignore un échec de `sendNow` : l'équipe a vu l'erreur, à elle de refaire le geste", async () => {
+  it("ignore un échec de `sendAndAwaitReceipt` : l'équipe a vu l'erreur, à elle de refaire le geste", async () => {
     const scene = mailScene();
     scene.dispatch.failWith = new TypeError("réseau");
-    await expect(scene.port.sendNow(demand("k:now"))).rejects.toThrow(TypeError);
+    await expect(scene.port.sendAndAwaitReceipt(demand("k:now"))).rejects.toThrow(TypeError);
     scene.clock.advanceMs(LATER);
 
     expect(await scene.sweeper.execute()).toMatchObject({ examined: 0 });

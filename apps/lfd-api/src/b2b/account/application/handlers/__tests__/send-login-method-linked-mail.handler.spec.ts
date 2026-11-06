@@ -1,4 +1,4 @@
-import { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { LoginMethodLinkedFact } from "../../../domain/events/login-method-linked.fact.js";
 import { OneProfile } from "../../commands/__tests__/member-acts-doubles.js";
 import { SendLoginMethodLinkedMail } from "../send-login-method-linked-mail.handler.js";
@@ -17,16 +17,16 @@ function deliveryFor(userId: string, eventId = "evt_1") {
  */
 describe("SendLoginMethodLinkedMail — l'alerte au titulaire", () => {
   it("écrit à l'adresse du compte, avec le mot de l'écran", async () => {
-    const mails = new RecordingMailRequests();
+    const mails = new RecordingMail();
 
     await new SendLoginMethodLinkedMail(new OneProfile(), mails).handle(deliveryFor("u1"));
 
-    expect(mails.requested).toHaveLength(1);
-    expect(mails.requested[0]?.to).toBe("camille@pqmarais.fr");
-    expect(mails.requested[0]?.template).toBe("customer.login-method-linked");
-    expect(mails.requested[0]?.data).toEqual({ firstName: "Camille", methodLabel: "Google" });
-    expect(mails.requested[0]?.idempotencyKey).toBe("login_method.linked:u1:google-oauth2:evt_1");
-    expect(mails.sentNow).toEqual([]);
+    expect(mails.queued).toHaveLength(1);
+    expect(mails.queued[0]?.to).toBe("camille@pqmarais.fr");
+    expect(mails.queued[0]?.template).toBe("customer.login-method-linked");
+    expect(mails.queued[0]?.data).toEqual({ firstName: "Camille", methodLabel: "Google" });
+    expect(mails.queued[0]?.idempotencyKey).toBe("login_method.linked:u1:google-oauth2:evt_1");
+    expect(mails.awaitedReceipt).toEqual([]);
   });
 
   /**
@@ -35,25 +35,25 @@ describe("SendLoginMethodLinkedMail — l'alerte au titulaire", () => {
    * second rattachement des semaines plus tard.
    */
   it("deux rattachements de la même méthode font deux demandes distinctes", async () => {
-    const mails = new RecordingMailRequests();
+    const mails = new RecordingMail();
     const handler = new SendLoginMethodLinkedMail(new OneProfile(), mails);
 
     await handler.handle(deliveryFor("u1", "evt_1"));
     await handler.handle(deliveryFor("u1", "evt_2"));
 
-    expect(new Set(mails.requested.map((mail) => mail.idempotencyKey)).size).toBe(2);
+    expect(new Set(mails.queued.map((mail) => mail.idempotencyKey)).size).toBe(2);
   });
 
   it("n'écrit rien, sans lever, quand le profil a disparu", async () => {
-    const mails = new RecordingMailRequests();
+    const mails = new RecordingMail();
 
     await new SendLoginMethodLinkedMail(new OneProfile(), mails).handle(deliveryFor("u9"));
 
-    expect(mails.requested).toEqual([]);
+    expect(mails.queued).toEqual([]);
   });
 
   it("lève sur un fait illisible", async () => {
-    const mails = new RecordingMailRequests();
+    const mails = new RecordingMail();
 
     await expect(
       new SendLoginMethodLinkedMail(new OneProfile(), mails).handle({
@@ -62,6 +62,6 @@ describe("SendLoginMethodLinkedMail — l'alerte au titulaire", () => {
         payload: { userId: "u1" },
       }),
     ).rejects.toThrow("illisible");
-    expect(mails.requested).toEqual([]);
+    expect(mails.queued).toEqual([]);
   });
 });

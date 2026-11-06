@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { Mail } from "../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import {
@@ -49,7 +49,7 @@ export class MailAppointmentBookedAlert extends AppointmentBookedAlert {
   private readonly logger = new Logger(MailAppointmentBookedAlert.name);
 
   constructor(
-    private readonly mails: MailRequests,
+    private readonly mail: Mail,
     private readonly unitOfWork: UnitOfWork,
     private readonly config: AppConfig,
   ) {
@@ -78,7 +78,7 @@ export class MailAppointmentBookedAlert extends AppointmentBookedAlert {
     appointmentId: string,
     appointment: Appointment,
   ): Promise<void> {
-    await this.mails.request({
+    await this.mail.send({
       brand: "lfc",
       to: inbox,
       template: "staff.appointment-booked",

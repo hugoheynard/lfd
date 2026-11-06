@@ -14,7 +14,7 @@ import { MailDispatch, type OutgoingMail } from "../domain/ports/mail-dispatch.j
  * ## Le seul endroit où le type du modèle est repris sur parole
  *
  * Le compilateur a vérifié le couple modèle × données chez l'appelant
- * (`MailRequests`). Une demande différée l'a ensuite traversé en `jsonb`, d'où
+ * (`Mail`). Une demande différée l'a ensuite traversé en `jsonb`, d'où
  * elle revient sans type. Le contrat de chaque modèle (schéma Zod, plan C3)
  * n'existe pas encore pour la revalider : les assertions ci-dessous disent
  * cette confiance, au seul point où elle s'exerce. Elles tomberont avec C3.

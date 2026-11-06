@@ -15,7 +15,7 @@ import {
   StalledMailRequests,
 } from "../../domain/ports/stalled-mail-requests.js";
 import { UnitOfWorkProbe } from "../../domain/ports/unit-of-work-probe.js";
-import { BlockMailRequests } from "../block-mail-requests.js";
+import { BlockMail } from "../block-mail.js";
 import { DeferredMailSender } from "../deferred-mail-sender.service.js";
 import { DeliverRequestedMail } from "../deliver-requested-mail.handler.js";
 import { ImmediateMailSender } from "../immediate-mail-sender.service.js";
@@ -168,7 +168,7 @@ export function mailScene() {
     clock,
     afterCommit,
     sweeper,
-    port: new BlockMailRequests(requester, immediate),
+    port: new BlockMail(requester, immediate),
     subscriber: new DeliverRequestedMail(
       requests,
       deferred,

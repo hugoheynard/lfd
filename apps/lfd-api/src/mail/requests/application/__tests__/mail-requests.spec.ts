@@ -1,6 +1,6 @@
 import { MailerInvalidReplyToError, MailerSendError } from "@lfd/mailer";
 
-import type { MailDemand } from "../../../channels/requests/mail-requests.js";
+import type { MailDemand } from "../../../channels/requests/mail.js";
 import {
   ImmediateMailInsideUnitOfWorkError,
   MailRefusedError,
@@ -23,7 +23,7 @@ describe("request — la demande différée", () => {
     const scene = mailScene();
     scene.probe.open = true;
 
-    await scene.port.request(SUSPENDED);
+    await scene.port.send(SUSPENDED);
 
     expect(scene.dispatch.sent).toEqual([]);
     expect(scene.facts.facts).toEqual([
@@ -48,7 +48,7 @@ describe("request — la demande différée", () => {
   it("refuse hors d'une unité de travail, avant toute écriture", async () => {
     const scene = mailScene();
 
-    await expect(scene.port.request(SUSPENDED)).rejects.toThrow(MailRequestOutsideUnitOfWorkError);
+    await expect(scene.port.send(SUSPENDED)).rejects.toThrow(MailRequestOutsideUnitOfWorkError);
     expect(scene.requests.rows.size).toBe(0);
     expect(scene.facts.facts).toEqual([]);
   });
@@ -57,8 +57,8 @@ describe("request — la demande différée", () => {
     const scene = mailScene();
     scene.probe.open = true;
 
-    await scene.port.request(SUSPENDED);
-    await scene.port.request(SUSPENDED);
+    await scene.port.send(SUSPENDED);
+    await scene.port.send(SUSPENDED);
 
     expect(scene.facts.facts).toHaveLength(1);
     expect(scene.requests.rows.size).toBe(1);
@@ -67,11 +67,13 @@ describe("request — la demande différée", () => {
 
 // L'abonné durable (S1b) : `deliver-requested-mail.spec.ts`.
 
-describe("sendNow — l'envoi immédiat", () => {
+describe("sendAndAwaitReceipt — l'envoi immédiat", () => {
   it("envoie, rend le reçu, puis écrit le suivi", async () => {
     const scene = mailScene();
 
-    await expect(scene.port.sendNow(SUSPENDED)).resolves.toEqual({ providerId: "re_1" });
+    await expect(scene.port.sendAndAwaitReceipt(SUSPENDED)).resolves.toEqual({
+      providerId: "re_1",
+    });
     expect(scene.dispatch.sent).toHaveLength(1);
     expect(scene.requests.rows.get("staff.suspended:s1")?.snapshot()).toMatchObject({
       status: "sent",
@@ -83,16 +85,20 @@ describe("sendNow — l'envoi immédiat", () => {
     const scene = mailScene();
     scene.probe.open = true;
 
-    await expect(scene.port.sendNow(SUSPENDED)).rejects.toThrow(ImmediateMailInsideUnitOfWorkError);
+    await expect(scene.port.sendAndAwaitReceipt(SUSPENDED)).rejects.toThrow(
+      ImmediateMailInsideUnitOfWorkError,
+    );
     expect(scene.dispatch.sent).toEqual([]);
     expect(scene.requests.rows.size).toBe(0);
   });
 
   it("une clé déjà envoyée ne repart pas : le reçu suivi est rendu", async () => {
     const scene = mailScene();
-    await scene.port.sendNow(SUSPENDED);
+    await scene.port.sendAndAwaitReceipt(SUSPENDED);
 
-    await expect(scene.port.sendNow(SUSPENDED)).resolves.toEqual({ providerId: "re_1" });
+    await expect(scene.port.sendAndAwaitReceipt(SUSPENDED)).resolves.toEqual({
+      providerId: "re_1",
+    });
     expect(scene.dispatch.sent).toHaveLength(1);
   });
 
@@ -100,10 +106,12 @@ describe("sendNow — l'envoi immédiat", () => {
     const scene = mailScene();
     scene.dispatch.failWith = new MailerSendError("Resend injoignable");
 
-    await expect(scene.port.sendNow(SUSPENDED)).rejects.toThrow(MailerSendError);
+    await expect(scene.port.sendAndAwaitReceipt(SUSPENDED)).rejects.toThrow(MailerSendError);
     expect(scene.requests.rows.get("staff.suspended:s1")?.status).toBe("failed");
 
-    await expect(scene.port.sendNow(SUSPENDED)).resolves.toEqual({ providerId: "re_1" });
+    await expect(scene.port.sendAndAwaitReceipt(SUSPENDED)).resolves.toEqual({
+      providerId: "re_1",
+    });
     expect(scene.requests.rows.get("staff.suspended:s1")?.status).toBe("sent");
   });
 
@@ -114,9 +122,11 @@ describe("sendNow — l'envoi immédiat", () => {
       new MailerInvalidReplyToError(),
     );
 
-    await expect(scene.port.sendNow(SUSPENDED)).rejects.toThrow(MailRefusedError);
+    await expect(scene.port.sendAndAwaitReceipt(SUSPENDED)).rejects.toThrow(MailRefusedError);
     expect(scene.requests.rows.get("staff.suspended:s1")?.status).toBe("refused");
-    await expect(scene.port.sendNow(SUSPENDED)).rejects.toThrow(MailRequestAlreadySettledError);
+    await expect(scene.port.sendAndAwaitReceipt(SUSPENDED)).rejects.toThrow(
+      MailRequestAlreadySettledError,
+    );
     expect(scene.dispatch.sent).toEqual([]);
   });
 });

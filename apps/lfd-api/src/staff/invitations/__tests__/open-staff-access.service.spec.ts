@@ -12,8 +12,8 @@ import { SuspendedStaffInviteError } from "../../directory/domain/staff-user-err
 import type { StaffIdentityFacts } from "../../directory/domain/staff-user.repository.js";
 import { OpenStaffAccess } from "../open-staff-access.service.js";
 import type { MailReceipt } from "@lfd/mailer";
-import type { MailDemand } from "../../../mail/channels/requests/mail-requests.js";
-import { RecordingMailRequests } from "../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import type { MailDemand } from "../../../mail/channels/requests/mail.js";
+import { RecordingMail } from "../../../mail/channels/requests/__tests__/recording-mail.js";
 import type { B2bMails } from "../../../mail/channels/templates/b2b-mails.js";
 import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
 
@@ -42,7 +42,7 @@ interface Harness {
   readonly mails: { to: string; url: string }[];
   readonly journal: RecordingJournal;
   readonly cache: RecordingAccessCache;
-  readonly requests: StaffMailRequests;
+  readonly requests: StaffMail;
   /** Chaque `markInvited`, avec l'état de la transaction au moment de l'appel. */
   readonly markedInside: boolean[];
 }
@@ -57,10 +57,10 @@ class IdentityDown extends Error {
 }
 
 /**
- * La porte du bloc, qui note si chaque `sendNow` est arrivé hors transaction
+ * La porte du bloc, qui note si chaque `sendAndAwaitReceipt` est arrivé hors transaction
  * et peut jouer le mailer « à blanc » (reçu sans identifiant de fournisseur).
  */
-class StaffMailRequests extends RecordingMailRequests {
+class StaffMail extends RecordingMail {
   readonly insideTransaction: boolean[] = [];
 
   constructor(
@@ -70,9 +70,11 @@ class StaffMailRequests extends RecordingMailRequests {
     super();
   }
 
-  override async sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  override async sendAndAwaitReceipt<K extends keyof B2bMails>(
+    demand: MailDemand<K>,
+  ): Promise<MailReceipt> {
     this.insideTransaction.push(this.tracking.inside);
-    const receipt = await super.sendNow(demand);
+    const receipt = await super.sendAndAwaitReceipt(demand);
     return this.blank ? { providerId: null } : receipt;
   }
 }
@@ -119,7 +121,7 @@ function harness(
       return Promise.resolve("https://lien/renvoi");
     },
   };
-  const requests = new StaffMailRequests(uow, !mailerOn);
+  const requests = new StaffMail(uow, !mailerOn);
   const handler = new OpenStaffAccess(
     staff as Deps[0],
     identities,
@@ -136,7 +138,7 @@ function harness(
     relinked,
     marked,
     get mails(): { to: string; url: string }[] {
-      return requests.sentNow.map((mail) => ({
+      return requests.awaitedReceipt.map((mail) => ({
         to: mail.to,
         url:
           typeof mail.data === "object" && mail.data !== null && "passwordSetupUrl" in mail.data
@@ -307,14 +309,14 @@ describe("OpenStaffAccess — la trace de l'invitation", () => {
 });
 
 describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
-  it("envoie en `sendNow`, HORS transaction, avec une clé par geste sans adresse", async () => {
+  it("envoie en `sendAndAwaitReceipt`, HORS transaction, avec une clé par geste sans adresse", async () => {
     const h = harness(target());
 
     await h.handler.open(SUBJECT);
 
-    expect(h.requests.requested).toEqual([]);
+    expect(h.requests.queued).toEqual([]);
     expect(h.requests.insideTransaction).toEqual([false]);
-    expect(h.requests.sentNow).toEqual([
+    expect(h.requests.awaitedReceipt).toEqual([
       {
         brand: "lfc",
         to: "sophie@lfc.test",
@@ -333,7 +335,7 @@ describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
     await h.handler.open(SUBJECT);
     await h.handler.open(SUBJECT);
 
-    expect(h.requests.sentNow.map((mail) => mail.idempotencyKey)).toEqual([
+    expect(h.requests.awaitedReceipt.map((mail) => mail.idempotencyKey)).toEqual([
       "staff.password-reset:s1:geste_000001",
       "staff.password-reset:s1:geste_000002",
     ]);

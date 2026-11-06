@@ -1,5 +1,5 @@
 import { ORDER_CASES } from "../../../templates/__tests__/rendering-golden/order-cases.js";
-import type { DeferredMailDemand } from "../../../channels/requests/mail-requests.js";
+import type { DeferredMailDemand } from "../../../channels/requests/mail.js";
 import {
   MailAttachmentMissingError,
   MailRequestOutsideUnitOfWorkError,
@@ -46,7 +46,7 @@ type Scene = ReturnType<typeof mailScene>;
 async function requestedAndDelivered(): Promise<Scene> {
   const scene = mailScene();
   scene.probe.open = true;
-  await scene.port.request(PLACED);
+  await scene.port.send(PLACED);
   const fact = scene.facts.facts.at(-1);
   if (fact === undefined) {
     throw new TypeError("aucun fait à livrer");
@@ -60,17 +60,15 @@ describe("request — rend l'identifiant de la demande", () => {
     const scene = mailScene();
     scene.probe.open = true;
 
-    const first = await scene.port.request(PLACED);
-    const again = await scene.port.request(PLACED);
+    const first = await scene.port.send(PLACED);
+    const again = await scene.port.send(PLACED);
 
     expect(first).toBe(scene.requests.rows.get(PLACED.idempotencyKey)?.id);
     expect(again).toBe(first);
   });
 
   it("hors d'une unité de travail, refuse toujours avant d'écrire", async () => {
-    await expect(mailScene().port.request(PLACED)).rejects.toThrow(
-      MailRequestOutsideUnitOfWorkError,
-    );
+    await expect(mailScene().port.send(PLACED)).rejects.toThrow(MailRequestOutsideUnitOfWorkError);
   });
 });
 
@@ -79,7 +77,7 @@ describe("la pièce jointe par référence", () => {
     const scene = mailScene();
     scene.probe.open = true;
 
-    await scene.port.request(PLACED);
+    await scene.port.send(PLACED);
 
     const payload = JSON.stringify(scene.facts.facts[0]?.payload);
     expect(payload).toContain(KEY);
@@ -118,7 +116,7 @@ describe("la pièce jointe par référence", () => {
   it("un modèle sans pièce part sans aucune lecture du stockage", async () => {
     const scene = mailScene();
 
-    await scene.port.sendNow({
+    await scene.port.sendAndAwaitReceipt({
       template: "staff.access-suspended",
       to: "equipe@example.test",
       data: { firstName: "Ada" },

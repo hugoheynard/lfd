@@ -12,10 +12,7 @@ import { randomUUID } from "node:crypto";
 
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import {
-  type DeferredMailDemand,
-  MailRequests,
-} from "../src/mail/channels/requests/mail-requests.js";
+import { type DeferredMailDemand, Mail } from "../src/mail/channels/requests/mail.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { ORDER_CASES } from "../src/mail/templates/__tests__/rendering-golden/order-cases.js";
 import type { B2bMails } from "../src/mail/templates/mail-templates.js";
@@ -87,7 +84,7 @@ afterAll(async () => {
 const freshKey = (): string => `orders/e2e-${randomUUID()}/bon-de-commande-r0-d2.pdf`;
 
 async function request(key: string): Promise<string> {
-  return ctx.app.get(UnitOfWork).run(() => ctx.app.get(MailRequests).request(placedDemand(key)));
+  return ctx.app.get(UnitOfWork).run(() => ctx.app.get(Mail).send(placedDemand(key)));
 }
 
 describe("la pièce jointe par référence (S2a)", () => {
@@ -128,7 +125,7 @@ describe("la pièce jointe par référence (S2a)", () => {
     expect(row.failureReason).toContain(key);
   });
 
-  it("`request` rend l'identifiant de la demande, le même pour une clé déjà connue", async () => {
+  it("`send` rend l'identifiant de la demande, le même pour une clé déjà connue", async () => {
     const key = freshKey();
 
     const first = await request(key);
