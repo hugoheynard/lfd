@@ -20,6 +20,8 @@ const NOT_DEPLOYED: Readonly<Record<string, string>> = {
   // `dry-run`. Les poser au déploiement, c'est décider de supprimer — Hugo.
   OUTBOX_PURGE: "purge à blanc par défaut — son activation est une décision de Hugo",
   MAIL_REQUEST_PURGE: "purge à blanc par défaut — son activation est une décision de Hugo",
+  NETWORK_IN_TRANSACTION:
+    "mesure du réseau dans une transaction (report par défaut) — enforce sera une décision à part",
 };
 
 /**

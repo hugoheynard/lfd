@@ -179,6 +179,7 @@ const RUNTIME_KEYS = [
   // une décision ; le workflow de déploiement ne les pose pas.
   "OUTBOX_PURGE",
   "MAIL_REQUEST_PURGE",
+  "NETWORK_IN_TRANSACTION",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];
