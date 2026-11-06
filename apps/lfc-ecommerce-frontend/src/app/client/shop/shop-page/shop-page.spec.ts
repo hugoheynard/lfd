@@ -784,7 +784,7 @@ describe('ShopPage — la visite pro par #pro', () => {
       expect(page.querySelector('app-order-bar')).toBeNull();
       expect(TestBed.inject(ClientCart).count()).toBe(0);
 
-      page.querySelector<HTMLButtonElement>('app-product-tile .quick')?.click();
+      page.querySelector<HTMLButtonElement>('app-product-tile .quick:not(.less)')?.click();
 
       expect(opened).toEqual([
         { component: SignInDialog, data: { target: '/mon-compte', email: '' } },

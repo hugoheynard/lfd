@@ -55,7 +55,7 @@ describe('StorefrontProduct', () => {
     render(productContent('VIE-001'));
 
     el().querySelector<HTMLButtonElement>('.photo')?.click();
-    el().querySelector<HTMLButtonElement>('.quick')?.click();
+    el().querySelector<HTMLButtonElement>('.quick:not(.less)')?.click();
 
     expect(opened).toEqual(['VIE-001']);
     expect(added).toEqual(['VIE-001']);

@@ -56,7 +56,7 @@ describe('ShelfGrid', () => {
   it('ajoute au panier sans passer par la page', () => {
     const first = TEST_ITEMS[0];
     // Le « + » de la première pièce.
-    tiles()[0]?.querySelector<HTMLButtonElement>('.quick')?.click();
+    tiles()[0]?.querySelector<HTMLButtonElement>('.quick:not(.less)')?.click();
     fixture.detectChanges();
 
     expect(cart.quantityOf(first?.sku ?? '')).toBe(1);
@@ -242,7 +242,7 @@ describe('ShelfGrid', () => {
       fixture.detectChanges();
 
       const posed = slots()[0];
-      posed?.querySelector<HTMLButtonElement>('.quick')?.click();
+      posed?.querySelector<HTMLButtonElement>('.quick:not(.less)')?.click();
       posed?.querySelector<HTMLButtonElement>('.photo')?.click();
       fixture.detectChanges();
 
