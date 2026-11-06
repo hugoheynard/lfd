@@ -1,5 +1,6 @@
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { SHOP_COPY_CACHE_TAG, ShopCopyEdgeCache } from "../domain/ports/shop-copy-edge-cache.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /**
  * Contrat de `container/public-shelf.ts` (`PUBLIC_SHELF_PURGE_PATH`, `PURGE_TAG_PARAM`) :
@@ -41,6 +42,7 @@ export class InternalShopCopyEdgeCache extends ShopCopyEdgeCache {
   }
 
   async purge(): Promise<void> {
+    assertOutsideTransaction("purge-cache.textes-boutique");
     const response = await this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${PURGE_PATH}`, {
       method: "POST",
       signal: AbortSignal.timeout(SOCKET_TIMEOUT_MS),

@@ -6,6 +6,7 @@ import type { CheckoutSession } from "../domain/entities/payment-link.js";
 import { PaymentGatewayUnavailableError } from "../domain/errors/payment-errors.js";
 import { CheckoutGateway, type CheckoutSessionRequest } from "../domain/ports/checkout-gateway.js";
 import { ACCEPTED_PAYMENT_METHOD_TYPES } from "./accepted-payment-methods.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /**
  * La clé de métadonnée qui marque une session ouverte pour un lien libre. Le
@@ -33,6 +34,7 @@ export class StripeCheckoutGateway extends CheckoutGateway {
   }
 
   async createCheckoutSession(request: CheckoutSessionRequest): Promise<CheckoutSession> {
+    assertOutsideTransaction("Stripe.checkout.sessions.create");
     const metadata = {
       [PAYMENT_LINK_METADATA_KEY]: request.paymentLinkId,
       companyId: request.companyId,
@@ -62,6 +64,7 @@ export class StripeCheckoutGateway extends CheckoutGateway {
   }
 
   async expireCheckoutSession(sessionId: string): Promise<void> {
+    assertOutsideTransaction("Stripe.checkout.sessions.expire");
     try {
       await this.requireClient().checkout.sessions.expire(sessionId);
     } catch (cause) {

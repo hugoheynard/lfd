@@ -10,6 +10,7 @@ import {
   scopesFromAccessToken,
   REQUIRED_MANAGEMENT_SCOPES,
 } from "./identity-diagnosis.js";
+import { assertOutsideTransaction } from "../database/outside-transaction.js";
 
 /** Marge avant expiration du jeton M2M, pour ne pas l'utiliser à la seconde près. */
 const TOKEN_EXPIRY_MARGIN_SECONDS = 60;
@@ -76,6 +77,7 @@ export class Auth0ManagementClient {
     path: string,
     body?: Readonly<Record<string, unknown>>,
   ): Promise<unknown> {
+    assertOutsideTransaction("Auth0.management");
     const token = await this.token();
     const response = await fetch(`https://${this.config.auth0Domain()}${path}`, {
       method,
@@ -142,6 +144,7 @@ export class Auth0ManagementClient {
    * Le jeton ne sort jamais d'ici : on ne publie que ce qu'il ouvre.
    */
   async diagnose(): Promise<IdentityDiagnosis> {
+    assertOutsideTransaction("Auth0.diagnose");
     const credentials = this.config.auth0ManagementCredentials();
     if (credentials === null) {
       return { configured: false, tokenGranted: false, missingScopes: REQUIRED_MANAGEMENT_SCOPES };

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { EstablishmentDirectory } from "../domain/ports/establishment-directory.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /**
  * Délai d'une résolution. Sans lui, `fetch` attend la réponse jusqu'à cinq
@@ -23,6 +24,7 @@ export class RechercheEntreprisesEstablishmentDirectory extends EstablishmentDir
   private readonly base = "https://recherche-entreprises.api.gouv.fr/search";
 
   async resolveNaf(siret: string): Promise<string | null> {
+    assertOutsideTransaction("recherche-entreprises.resolveNaf");
     const url = `${this.base}?q=${encodeURIComponent(siret)}&page=1&per_page=1`;
     try {
       const res = await fetch(url, {

@@ -6,6 +6,7 @@ import {
   type PublicShelfState,
 } from "../domain/ports/public-shelf-state.reader.js";
 import type { ShelfFetch } from "./durable-object-shop-shelf-cache.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /** Contrat de `container/shelf-store.ts` (`PUBLIC_SHELF_STATE_PATH`) : servi par l'objet. */
 const STATE_PATH = "/public/state";
@@ -41,6 +42,7 @@ export class InternalPublicShelf extends PublicShelfStateReader implements Publi
   }
 
   async read(): Promise<PublicShelfState> {
+    assertOutsideTransaction("rayon-public.read");
     const response = await this.call(STATE_PATH, { method: "GET" });
     if (response.status !== HTTP_OK) {
       throw new UnreadableShelfReplyError(`état public, statut ${response.status}`);
@@ -53,6 +55,7 @@ export class InternalPublicShelf extends PublicShelfStateReader implements Publi
   }
 
   async purge(): Promise<void> {
+    assertOutsideTransaction("rayon-public.purge");
     const response = await this.call(PURGE_PATH, { method: "POST" });
     if (response.status !== HTTP_NO_CONTENT) {
       throw new UnreadableShelfReplyError(`purge publique, statut ${response.status}`);

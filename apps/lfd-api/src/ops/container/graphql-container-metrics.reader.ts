@@ -13,6 +13,7 @@ import {
   type ContainerMetricsResult,
 } from "./container-metrics-reader.port.js";
 import { CONTAINER_METRICS_SETTINGS } from "./unconfigured-container-metrics.reader.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 
 /** L'API GraphQL d'analytics de Cloudflare — la même pour tous les datasets. */
 const GRAPHQL_ENDPOINT = "https://api.cloudflare.com/client/v4/graphql";
@@ -39,6 +40,7 @@ export class GraphqlContainerMetricsReader extends ContainerMetricsReader {
   }
 
   async read(from: Date, to: Date): Promise<ContainerMetricsResult> {
+    assertOutsideTransaction("Cloudflare.graphql.containers");
     const settings = this.config.containerMetricsConfig();
     if (settings === null) {
       return { kind: "not-configured", setting: CONTAINER_METRICS_SETTINGS };

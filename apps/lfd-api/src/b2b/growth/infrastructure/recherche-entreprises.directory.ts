@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { MarketDirectory } from "../domain/ports/market-directory.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /** Même délai, et même raison, que la résolution du NAF (`RECHERCHE_ENTREPRISES_TIMEOUT_MS`). */
 const COUNT_TIMEOUT_MS = 5000;
@@ -17,6 +18,7 @@ export class RechercheEntreprisesDirectory extends MarketDirectory {
   private readonly base = "https://recherche-entreprises.api.gouv.fr/search";
 
   async countEstablishments(nafCode: string, codePostal: string): Promise<number> {
+    assertOutsideTransaction("recherche-entreprises.countEstablishments");
     const url =
       `${this.base}?activite_principale=${encodeURIComponent(nafCode)}` +
       `&code_postal=${encodeURIComponent(codePostal)}&page=1&per_page=1`;

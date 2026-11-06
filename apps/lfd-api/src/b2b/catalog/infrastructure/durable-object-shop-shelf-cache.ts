@@ -9,6 +9,7 @@ import {
 } from "../domain/ports/shop-shelf-cache.js";
 import type { ShopShelfEraser } from "../domain/ports/shop-shelf-eraser.js";
 import { packedShelf, shelfPath, unpackedShelf } from "./shelf-wire.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /**
  * Le filet du socket, au-delà du délai du repli (`SHELF_CALL_LIMIT_MS`) : le
@@ -55,6 +56,7 @@ export class DurableObjectShopShelfCache extends ShopShelfCache implements ShopS
   }
 
   async read(key: ShelfKey, now: Date): Promise<ShelfLookup> {
+    assertOutsideTransaction("cache-des-rayons.read");
     const query = new URLSearchParams({ now: String(now.getTime()), revision: this.revision });
     const response = await this.call(`${shelfPath(key)}?${query.toString()}`, { method: "GET" });
     if (response.status === HTTP_NOT_FOUND) {
@@ -71,6 +73,7 @@ export class DurableObjectShopShelfCache extends ShopShelfCache implements ShopS
   }
 
   async store(entry: ShelfToStore): Promise<StoreOutcome> {
+    assertOutsideTransaction("cache-des-rayons.store");
     const query = new URLSearchParams({
       version: String(entry.version),
       expires: String(entry.expiresAt.getTime()),
@@ -97,6 +100,7 @@ export class DurableObjectShopShelfCache extends ShopShelfCache implements ShopS
   }
 
   async erase(order: ShelfPurgeOrder): Promise<void> {
+    assertOutsideTransaction("cache-des-rayons.erase");
     const response = await this.call("/erase", {
       method: "POST",
       body: JSON.stringify(order),

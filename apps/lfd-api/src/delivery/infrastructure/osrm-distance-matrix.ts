@@ -9,6 +9,7 @@ import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
 import type { RoutePlannerEndpoint } from "../../platform/config/route-planner-endpoint.js";
 import { type OsrmFetchOutcome, type OsrmWakePacing, osrmGet, withBearer } from "./osrm-fetch.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 
 /**
  * Le délai d'UN appel à `/table`. Un réveil se rattrape par les nouveaux
@@ -88,6 +89,7 @@ export class OsrmDistanceMatrix extends DistanceMatrix {
   }
 
   async build(points: ReadonlyMap<string, GeoPoint>): Promise<CostFn> {
+    assertOutsideTransaction("OSRM.table");
     const entries = [...points.entries()];
     const coordinates = entries.map(([, point]) => point);
     const all = entries.map((_, index) => index);

@@ -29,6 +29,12 @@ interface TransactionFrame {
    */
   readonly tx: object | undefined;
   readonly commits: CommitQueue;
+  /**
+   * La pile d'ouverture de la transaction, relevée seulement quand une mesure
+   * la demande ({@link traceTransactionOrigins}) : la garde du réseau
+   * (`outside-transaction.ts`) la cite pour dire OÙ la transaction s'ouvre.
+   */
+  readonly origin?: string | undefined;
 }
 
 const storage = new AsyncLocalStorage<TransactionFrame>();
@@ -86,6 +92,41 @@ function runGuarded(callback: AfterCommitCallback, label: string, logger: Logger
 
 const immediate = new CommitQueue();
 
+let tracingOrigins = false;
+
+/**
+ * Relève (ou non) la pile d'ouverture de chaque transaction. Coûte une pile
+ * par transaction : réservé à la mesure des appels réseau (le harnais e2e),
+ * jamais allumé en production.
+ */
+export function traceTransactionOrigins(on: boolean): void {
+  tracingOrigins = on;
+}
+
+function originHere(): string | undefined {
+  if (!tracingOrigins) {
+    return undefined;
+  }
+  const here: { stack?: string } = {};
+  Error.captureStackTrace(here, originHere);
+  return here.stack;
+}
+
+/**
+ * Une transaction est-elle ouverte ici — **unité de travail OU transaction
+ * directe** ? {@link currentTransaction} ne voit que la première : le cadre
+ * d'une transaction directe ({@link runWithCommitQueue}) a `tx: undefined`,
+ * et c'est pourtant une transaction ouverte.
+ */
+export function isInsideTransaction(): boolean {
+  return storage.getStore() !== undefined;
+}
+
+/** La pile d'ouverture de la transaction ambiante, si elle a été relevée. */
+export function currentTransactionOrigin(): string | undefined {
+  return storage.getStore()?.origin;
+}
+
 /** Le client de transaction en cours, ou `undefined` hors transaction. */
 export function currentTransaction(): object | undefined {
   return storage.getStore()?.tx;
@@ -104,7 +145,7 @@ export function runInTransaction<T>(
   work: () => Promise<T>,
   commits: CommitQueue = new CommitQueue(),
 ): Promise<T> {
-  return storage.run({ tx, commits }, work);
+  return storage.run({ tx, commits, origin: originHere() }, work);
 }
 
 /**
@@ -119,7 +160,7 @@ export function runInTransaction<T>(
  * routé : le callback vise `tx` en clair, comme il l'a toujours fait.
  */
 export function runWithCommitQueue<T>(commits: CommitQueue, work: () => Promise<T>): Promise<T> {
-  return storage.run({ tx: undefined, commits }, work);
+  return storage.run({ tx: undefined, commits, origin: originHere() }, work);
 }
 
 /**

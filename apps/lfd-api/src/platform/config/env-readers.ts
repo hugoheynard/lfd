@@ -1,3 +1,8 @@
+import {
+  DEFAULT_NETWORK_CALL_MODE,
+  isNetworkCallMode,
+  type NetworkCallMode,
+} from "../database/network-call-mode.js";
 import { DEFAULT_PURGE_MODE, isPurgeMode, type PurgeMode } from "../retention/purge-mode.js";
 import type { S3StorageConfig } from "@lfd/storage";
 
@@ -550,6 +555,26 @@ export function optionalPurgeMode(key: string): PurgeMode {
   throw new Error(
     `${key} vaut « ${value} » : seules « off », « dry-run » et « on » sont admises. ` +
       "Corriger la variable, ou la retirer pour revenir au défaut (dry-run, rien n'est supprimé).",
+  );
+}
+
+/**
+ * **La garde du réseau dans une transaction** — `NETWORK_IN_TRANSACTION`
+ * (`documentation/todos/todo-reseau-hors-transaction.md`, 2026-11-06).
+ * `report` par défaut ; une valeur inconnue refuse de démarrer, comme
+ * `OUTBOX_PURGE` : une faute de frappe ne doit pas couper la mesure en silence.
+ */
+export function optionalNetworkCallMode(): NetworkCallMode {
+  const value = process.env["NETWORK_IN_TRANSACTION"]?.trim().toLowerCase() ?? "";
+  if (value === "") {
+    return DEFAULT_NETWORK_CALL_MODE;
+  }
+  if (isNetworkCallMode(value)) {
+    return value;
+  }
+  throw new Error(
+    `NETWORK_IN_TRANSACTION vaut « ${value} » : seules « off », « report » et « enforce » sont admises. ` +
+      "Corriger la variable, ou la retirer pour revenir au défaut (report : journalisé, rien n'est refusé).",
   );
 }
 

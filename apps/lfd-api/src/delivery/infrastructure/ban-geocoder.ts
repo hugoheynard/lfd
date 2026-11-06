@@ -2,6 +2,7 @@ import { GeocoderUnavailableError } from "../domain/errors/delivery-routing-erro
 import { type GeocodeAnswer, Geocoder, type GeocodeRequest } from "../domain/ports/geocoder.js";
 import { geoPoint } from "../domain/value-objects/geo-point.js";
 import { csvField, csvRows } from "./csv-rows.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 
 /** Au-delà, la BAN n'a pas répondu : on n'attend pas plus longtemps un tiers (L7-C9). */
 export const BAN_TIMEOUT_MS = 5000;
@@ -34,6 +35,7 @@ export class BanGeocoder extends Geocoder {
   }
 
   async geocode(requests: readonly GeocodeRequest[]): Promise<readonly GeocodeAnswer[]> {
+    assertOutsideTransaction("BAN.geocode");
     if (requests.length === 0) {
       return [];
     }

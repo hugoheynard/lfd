@@ -8,6 +8,7 @@ import {
   type PushOutcome,
   type StaffPushTarget,
 } from "../domain/ports/staff-push.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /**
  * Les codes que rend un service de push pour un abonnement **définitivement**
@@ -64,6 +65,7 @@ export class WebPushSender extends StaffPushSender {
   }
 
   async send(targets: readonly StaffPushTarget[], notice: StaffNotice): Promise<PushOutcome> {
+    assertOutsideTransaction("web-push.send");
     const config = this.config;
     if (config === null) {
       return { gone: [], rejected: [] };

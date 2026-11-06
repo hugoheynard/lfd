@@ -24,6 +24,7 @@ import {
 } from "./stripe-intent-translation.js";
 import { PAYMENT_LINK_METADATA_KEY } from "./stripe-checkout-gateway.js";
 import { ACCEPTED_PAYMENT_METHOD_TYPES } from "./accepted-payment-methods.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 /**
  * Adaptateur **Stripe** du port {@link PaymentGateway}.
@@ -46,6 +47,7 @@ export class StripePaymentGateway extends PaymentGateway {
   }
 
   async createIntent(params: CreateIntentParams): Promise<CreatedIntent> {
+    assertOutsideTransaction("Stripe.paymentIntents.create");
     const client = this.requireClient();
     const intent = await client.paymentIntents.create({
       amount: params.amountCents,
@@ -61,6 +63,7 @@ export class StripePaymentGateway extends PaymentGateway {
   }
 
   async retrieveIntent(paymentIntentId: string): Promise<RetrievedIntent> {
+    assertOutsideTransaction("Stripe.paymentIntents.retrieve");
     const client = this.requireClient();
     const intent = await client.paymentIntents.retrieve(paymentIntentId);
     if (intent.client_secret === null) {
@@ -79,6 +82,7 @@ export class StripePaymentGateway extends PaymentGateway {
    * parce que Stripe manque.
    */
   async cancelIntent(paymentIntentId: string): Promise<IntentCancellation> {
+    assertOutsideTransaction("Stripe.paymentIntents.cancel");
     if (this.client === null) {
       return { kind: "unavailable", reason: "STRIPE_SECRET_KEY non configurée" };
     }

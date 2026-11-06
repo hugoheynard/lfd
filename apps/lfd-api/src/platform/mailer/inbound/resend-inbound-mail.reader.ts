@@ -2,6 +2,7 @@ import { MailerReceiveError, type ReceivedMail, type ResendInboundReader } from 
 
 import { InboundMailReader } from "./inbound-mail.reader.js";
 import { InboundMailUnreadableError } from "./inbound-mail-unreadable.error.js";
+import { assertOutsideTransaction } from "../../database/outside-transaction.js";
 
 /**
  * Adaptateur : la lecture de `@lfd/mailer`, ses pannes traduites en
@@ -14,6 +15,7 @@ export class ResendInboundMailReader extends InboundMailReader {
   }
 
   async read(emailId: string): Promise<ReceivedMail> {
+    assertOutsideTransaction("Resend.emails.receiving.get");
     if (this.reader === null) {
       throw new InboundMailUnreadableError(emailId, "aucune clé Resend configurée");
     }

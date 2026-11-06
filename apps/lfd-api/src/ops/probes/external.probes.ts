@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { AppConfig } from "../../platform/config/app-config.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 import {
   NodeProbe,
   probeHttp,
@@ -31,6 +32,7 @@ export class Auth0Probe extends NodeProbe {
   }
 
   check(): Promise<ProbeOutcome> {
+    assertOutsideTransaction("sonde.auth0");
     const domain = this.config.auth0Domain();
     if (domain === "") {
       return Promise.resolve(notConfigured("Auth0"));
@@ -63,6 +65,7 @@ export class ResendProbe extends NodeProbe {
   }
 
   check(): Promise<ProbeOutcome> {
+    assertOutsideTransaction("sonde.resend");
     const { apiKey } = this.config.mailerConfig();
     if (apiKey === null) {
       return Promise.resolve(notConfigured("Resend"));
@@ -129,6 +132,7 @@ export class StripeProbe extends NodeProbe {
   }
 
   check(): Promise<ProbeOutcome> {
+    assertOutsideTransaction("sonde.stripe");
     const stripe = this.config.stripeConfig();
     if (stripe === null) {
       return Promise.resolve(notConfigured("Stripe"));
@@ -174,6 +178,7 @@ export class R2Probe extends NodeProbe {
   }
 
   check(): Promise<ProbeOutcome> {
+    assertOutsideTransaction("sonde.r2");
     const base = this.config.mediaPublicBaseUrl();
     if (base === null) {
       return Promise.resolve(notConfigured("Domaine public des images (R2)"));

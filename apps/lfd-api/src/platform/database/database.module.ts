@@ -9,6 +9,7 @@ import {
 
 import { AppConfig } from "../config/app-config.js";
 import { AmbientAfterCommit, AfterCommit } from "./after-commit.js";
+import { configureNetworkCallGuard } from "./outside-transaction.js";
 import { countedPrisma, type CountedPrismaClient } from "./counted-prisma.js";
 import { PrismaService } from "./prisma.service.js";
 import { assertSchemaIsFresh } from "./schema-freshness.js";
@@ -72,6 +73,19 @@ class PrismaConnection implements OnModuleInit, OnModuleDestroy {
 }
 
 /**
+ * Règle la garde du réseau dans une transaction (`outside-transaction.ts`)
+ * depuis `AppConfig`, une fois, au démarrage.
+ */
+@Injectable()
+class NetworkCallGuardSetup implements OnModuleInit {
+  constructor(private readonly config: AppConfig) {}
+
+  onModuleInit(): void {
+    configureNetworkCallGuard(this.config.networkCallMode());
+  }
+}
+
+/**
  * Couche infrastructure : accès base de données.
  * Global pour que `PrismaService` soit injectable partout sans réimport.
  *
@@ -90,6 +104,7 @@ class PrismaConnection implements OnModuleInit, OnModuleDestroy {
   providers: [
     SchemaOpsCounter,
     PrismaConnection,
+    NetworkCallGuardSetup,
     {
       provide: RAW_PRISMA,
       inject: [AppConfig],

@@ -17,6 +17,7 @@ import {
   type SurfaceRow,
   type TrafficRow,
 } from "./traffic-query.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 
 /** L'API SQL d'Analytics Engine — un POST, la requête en texte brut. */
 const SQL_ENDPOINT = (accountId: string): string =>
@@ -44,6 +45,7 @@ export class AnalyticsEngineTrafficReader extends TrafficReader {
   }
 
   async read(minutes: number): Promise<TrafficReport> {
+    assertOutsideTransaction("Cloudflare.analytics-engine");
     const analytics = this.config.analyticsConfig();
     if (analytics === null) {
       // Ne devrait pas arriver : la racine ne câble ce lecteur que configuré.

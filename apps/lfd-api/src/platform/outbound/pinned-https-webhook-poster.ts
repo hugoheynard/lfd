@@ -8,6 +8,7 @@ import { Injectable } from "@nestjs/common";
 import { HostResolver, type ResolvedAddress } from "./host-resolver.js";
 import { CLOSED_ADDRESS_LABELS, classifyAddress } from "./public-address.js";
 import { WebhookPoster, type WebhookPost, type WebhookPostOutcome } from "./webhook-poster.js";
+import { assertOutsideTransaction } from "../database/outside-transaction.js";
 
 /** Le délai TOTAL d'un envoi, connexion comprise (S2). */
 export const WEBHOOK_TIMEOUT_MS = 5_000;
@@ -40,6 +41,7 @@ export class PinnedHttpsWebhookPoster extends WebhookPoster {
   }
 
   async post(post: WebhookPost): Promise<WebhookPostOutcome> {
+    assertOutsideTransaction("webhook.post");
     const url = parsedUrl(post.url);
     if (url === null) {
       return { kind: "refused", reason: "adresse illisible" };

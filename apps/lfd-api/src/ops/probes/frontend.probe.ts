@@ -1,4 +1,5 @@
 import { NodeProbe, PROBE_TIMEOUT_MS, type ProbeOutcome } from "./probe.port.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 
 /**
  * **Un front servi** — sonde en deux temps sur une Page statique.
@@ -45,6 +46,7 @@ export class FrontendProbe extends NodeProbe {
   }
 
   async check(): Promise<ProbeOutcome> {
+    assertOutsideTransaction("sonde.frontend");
     const startedAt = Date.now();
     try {
       const page = await this.http(this.origin, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });

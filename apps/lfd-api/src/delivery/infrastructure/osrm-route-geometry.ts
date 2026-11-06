@@ -5,6 +5,7 @@ import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
 import type { RoutePlannerEndpoint } from "../../platform/config/route-planner-endpoint.js";
 import { type OsrmWakePacing, osrmGet, withBearer } from "./osrm-fetch.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 
 /**
  * Le délai d'un tracé. Plus court que celui de la table : quand on trace,
@@ -39,6 +40,7 @@ export class OsrmRouteGeometry extends RouteGeometry {
   }
 
   async trace(waypoints: readonly GeoPoint[]): Promise<RouteLine | null> {
+    assertOutsideTransaction("OSRM.route");
     if (waypoints.length < 2) {
       return null;
     }

@@ -46,6 +46,13 @@ export const E2E_WORKERS = Number(process.env["E2E_WORKERS"] ?? "4");
 export const E2E_BOOT_LOG: string | undefined = process.env["E2E_BOOT_LOG"];
 
 /**
+ * Où la mesure des appels réseau dans une transaction écrit ce qu'elle voit,
+ * une ligne JSON par violation (`test/network-measure.ts`,
+ * `todo-reseau-hors-transaction.md`). Absent : rien n'est mesuré ni écrit.
+ */
+export const E2E_NETWORK_LOG: string | undefined = process.env["E2E_NETWORK_LOG"];
+
+/**
  * **Réécrire l'instantané du golden master du chiffrage** au lieu de le
  * comparer (`test/pricing-golden-master.e2e-spec.ts`). Jamais posé par
  * défaut, ni en CI : un instantané réécrit d'office ne prouverait plus rien.

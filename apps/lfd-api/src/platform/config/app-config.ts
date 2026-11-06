@@ -3,6 +3,7 @@ import { hkdfSync } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
 
+import type { NetworkCallMode } from "../database/network-call-mode.js";
 import type { PurgeMode } from "../retention/purge-mode.js";
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 import {
@@ -22,6 +23,7 @@ import {
   optionalManagementCredentials,
   optionalMediaPublicBaseUrl,
   optionalPort,
+  optionalNetworkCallMode,
   optionalPurgeMode,
   optionalR2Storage,
   optionalString,
@@ -94,6 +96,7 @@ export class AppConfig {
   private readonly catalogueSnapshotMemoryValue: boolean;
   private readonly outboxPurgeModeValue: PurgeMode;
   private readonly mailRequestPurgeModeValue: PurgeMode;
+  private readonly networkCallModeValue: NetworkCallMode;
   private readonly routePlannerEndpointValue: RoutePlannerEndpoint | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
@@ -131,6 +134,7 @@ export class AppConfig {
     this.catalogueSnapshotMemoryValue = optionalCatalogueSnapshotMemory();
     this.outboxPurgeModeValue = optionalPurgeMode("OUTBOX_PURGE");
     this.mailRequestPurgeModeValue = optionalPurgeMode("MAIL_REQUEST_PURGE");
+    this.networkCallModeValue = optionalNetworkCallMode();
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.routePlannerEndpointValue = resolveRoutePlannerEndpoint({
@@ -297,6 +301,14 @@ export class AppConfig {
    */
   outboxPurgeMode(): PurgeMode {
     return this.outboxPurgeModeValue;
+  }
+
+  /**
+   * La garde des appels sortants dans une transaction — `NETWORK_IN_TRANSACTION`,
+   * `report` par défaut (`todo-reseau-hors-transaction.md`, 2026-11-06).
+   */
+  networkCallMode(): NetworkCallMode {
+    return this.networkCallModeValue;
   }
 
   /** Le même cran pour le suivi des e-mails — `MAIL_REQUEST_PURGE`, `dry-run` par défaut. */

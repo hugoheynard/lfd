@@ -143,7 +143,13 @@
 >   occasionnels pour `lint/tools.json` (`pnpm tool <nom>`) ; une citation
 >   d'une commande retirée échoue, avec son fichier et sa ligne. Le lanceur
 >   (`lint/run.mjs`) refuse de tourner si le compte du § 10 ne dit plus la
->   liste. C'est la
+>   liste. Et **63** le même jour avec `network-outside-transaction`
+>   (`documentation/todos/todo-reseau-hors-transaction.md`) : tout adaptateur
+>   qui appelle le réseau (`fetch`, Stripe, stockage, Resend, Auth0, OSRM,
+>   BAN, web-push) pose la garde `assertOutsideTransaction`, qui journalise
+>   (`NETWORK_IN_TRANSACTION=report`, le défaut) ou refuse (`enforce`) un
+>   appel parti dans une transaction ; les exceptions sont inscrites et datées.
+>   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1341,7 +1347,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 62 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 63 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

@@ -4,6 +4,7 @@ import { AfterCommit } from "../../database/after-commit.js";
 import { BackgroundWork } from "../../events/background-work.js";
 import { Clock } from "../../time/clock.js";
 import { MailJournal } from "./mail-journal.port.js";
+import { assertOutsideTransaction } from "../../database/outside-transaction.js";
 
 /**
  * Le mailer, **doublé d'un journal**.
@@ -59,6 +60,7 @@ export class JournalingMailer<M extends TemplateMap> implements Mailer<M> {
    * déjà touché. Hors transaction, `AfterCommit` exécute tout de suite.
    */
   async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
+    assertOutsideTransaction("Resend.emails.send");
     const receipt = await this.inner.send(args);
     const at = this.clock.now();
     this.afterCommit.defer(

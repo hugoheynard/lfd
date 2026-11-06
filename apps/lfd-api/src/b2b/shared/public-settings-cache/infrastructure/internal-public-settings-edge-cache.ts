@@ -3,6 +3,7 @@ import {
   PUBLIC_SETTINGS_CACHE_TAG,
   PublicSettingsEdgeCache,
 } from "../domain/ports/public-settings-edge-cache.js";
+import { assertOutsideTransaction } from "../../../../platform/database/outside-transaction.js";
 
 /**
  * Contrat de `container/public-shelf.ts` (`PUBLIC_SHELF_PURGE_PATH`, `PURGE_TAG_PARAM`) :
@@ -44,6 +45,7 @@ export class InternalPublicSettingsEdgeCache extends PublicSettingsEdgeCache {
   }
 
   async purge(): Promise<void> {
+    assertOutsideTransaction("purge-cache.reglages-publics");
     const response = await this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${PURGE_PATH}`, {
       method: "POST",
       signal: AbortSignal.timeout(SOCKET_TIMEOUT_MS),

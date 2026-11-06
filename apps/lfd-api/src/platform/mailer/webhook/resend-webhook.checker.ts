@@ -6,6 +6,7 @@ import {
   type DeclarationVerdict,
   type DeclaredWebhook,
 } from "./webhook-declaration.js";
+import { assertOutsideTransaction } from "../../database/outside-transaction.js";
 
 /** L'appel n'a pas le droit de retenir un démarrage. */
 const LIST_TIMEOUT_MS = 3000;
@@ -41,6 +42,7 @@ export class ResendWebhookChecker implements OnApplicationBootstrap {
 
   /** Le verdict, ou `null` si on ne peut pas demander (pas de clé, tiers muet). */
   async check(): Promise<DeclarationVerdict | null> {
+    assertOutsideTransaction("Resend.webhooks.list");
     const { apiKey } = this.config.mailerConfig();
     if (apiKey === null) {
       return null;

@@ -56,6 +56,7 @@ import { waitForDatabase } from "./database-readiness.js";
 import { assertMigrationsUnchanged } from "./migration-drift.js";
 import { armSessionTimeouts, watchStall } from "./database-stall.js";
 import { drainOrExplain } from "./drain-guard.js";
+import { startNetworkMeasure } from "./network-measure.js";
 import {
   forbidOutboundFetch,
   OfflineEstablishmentDirectory,
@@ -214,6 +215,9 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   app.useGlobalFilters(new AppErrorFilter());
   await app.init();
   stopwatch.mark("init");
+  // La mesure des appels réseau dans une transaction, si `E2E_NETWORK_LOG`
+  // est posé (`test/network-measure.ts`) ; sinon, rien.
+  const networkMeasure = startNetworkMeasure(app);
 
   const prisma = app.get(PrismaService);
   const background = app.get(BackgroundWork);
@@ -347,6 +351,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       stopwatch.timeClose(async () => {
         await drainOrExplain(background, prisma, "close() avant de fermer");
         await app.close();
+        networkMeasure.stop();
       }),
   };
 }

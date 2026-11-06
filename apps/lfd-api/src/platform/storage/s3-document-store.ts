@@ -5,6 +5,7 @@ import { DocumentStorageUnavailableError } from "../shared/errors/storage-errors
 import { AppConfig } from "../config/app-config.js";
 import type { R2StorageUsage } from "../config/env-readers.js";
 import { DocumentStore, type StoredDocument } from "./document-store.js";
+import { assertOutsideTransaction } from "../database/outside-transaction.js";
 
 /**
  * Adaptateur **R2/S3** du stockage de pièces (`@lfd/storage`).
@@ -34,6 +35,7 @@ export class S3DocumentStore extends DocumentStore {
   }
 
   async save(key: string, document: StoredDocument): Promise<string> {
+    assertOutsideTransaction("S3.documents.save");
     await this.attempt("dépôt", key, () =>
       this.service().upload(key, document.bytes, document.contentType),
     );
@@ -41,6 +43,7 @@ export class S3DocumentStore extends DocumentStore {
   }
 
   read(key: string): Promise<Buffer> {
+    assertOutsideTransaction("S3.documents.read");
     return this.attempt("lecture", key, () => this.service().downloadToBuffer(key));
   }
 
@@ -62,6 +65,7 @@ export class S3DocumentStore extends DocumentStore {
    * plus diverger, parce qu'il n'y en a plus qu'une.
    */
   async readIfPresent(key: string): Promise<Buffer | null> {
+    assertOutsideTransaction("S3.documents.readIfPresent");
     try {
       return await this.service().downloadToBuffer(key);
     } catch (error) {
@@ -90,6 +94,7 @@ export class S3DocumentStore extends DocumentStore {
    * sinon une panne pour un travail déjà fait.
    */
   async delete(key: string): Promise<void> {
+    assertOutsideTransaction("S3.documents.delete");
     try {
       await this.service().delete(key);
     } catch (error) {

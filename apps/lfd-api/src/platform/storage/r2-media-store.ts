@@ -4,6 +4,7 @@ import { contentAddressedKey, S3StorageService } from "@lfd/storage";
 import { MediaStorageUnavailableError } from "../shared/errors/storage-errors.js";
 import { AppConfig } from "../config/app-config.js";
 import { MediaStore, type PublicAsset, type StoredAsset } from "./media-store.js";
+import { assertOutsideTransaction } from "../database/outside-transaction.js";
 
 /**
  * Le refus, dit avec ce qui manque VRAIMENT.
@@ -52,6 +53,7 @@ export class R2MediaStore extends MediaStore {
   }
 
   async put(prefix: string, asset: PublicAsset): Promise<StoredAsset> {
+    assertOutsideTransaction("R2.media.put");
     const { service, baseUrl } = this.channel();
     const storageKey = contentAddressedKey(prefix, asset.bytes, asset.contentType);
     if (storageKey === null) {
@@ -73,6 +75,7 @@ export class R2MediaStore extends MediaStore {
   }
 
   async remove(storageKey: string): Promise<void> {
+    assertOutsideTransaction("R2.media.remove");
     const { service } = this.channel();
     try {
       await service.delete(storageKey);

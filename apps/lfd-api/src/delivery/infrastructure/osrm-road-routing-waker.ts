@@ -5,6 +5,7 @@ import type { RoutePlannerEndpoint } from "../../platform/config/route-planner-e
 import type { FetchFn } from "./ban-geocoder.js";
 import { type OsrmWakePacing, osrmGet, withBearer } from "./osrm-fetch.js";
 import { OSRM_ROUTE_TIMEOUT_MS } from "./osrm-route-geometry.js";
+import { assertOutsideTransaction } from "../../platform/database/outside-transaction.js";
 
 /**
  * Le point du réveil, `longitude,latitude` : Chambéry, au cœur de la carte de
@@ -39,6 +40,7 @@ export class OsrmRoadRoutingWaker extends RoadRoutingWaker {
   }
 
   async wake(): Promise<void> {
+    assertOutsideTransaction("OSRM.wake");
     const outcome = await osrmGet(this.fetchFn, this.url, this.timeoutMs, this.pacing, isOk);
     if ("failure" in outcome) {
       this.logger.warn(`Le calcul routier ne s'est pas réveillé (${outcome.failure}).`);

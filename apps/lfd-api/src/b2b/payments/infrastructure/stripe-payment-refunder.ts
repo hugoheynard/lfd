@@ -9,6 +9,7 @@ import {
   type RefundRequestParams,
 } from "../domain/payment-refunder.js";
 import { StripeRefundCalls } from "./stripe-refund-calls.js";
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 
 const NOT_CONFIGURED = "STRIPE_SECRET_KEY non configurée";
 
@@ -29,6 +30,7 @@ export class StripePaymentRefunder extends PaymentRefunder {
   }
 
   refundRemainder(params: RefundRequestParams): Promise<RefundIssuance> {
+    assertOutsideTransaction("Stripe.refunds.create");
     if (this.calls === null) {
       return Promise.resolve({ kind: "unavailable", reason: NOT_CONFIGURED });
     }
@@ -36,6 +38,7 @@ export class StripePaymentRefunder extends PaymentRefunder {
   }
 
   findRefund(params: RefundRequestParams): Promise<RefundLookup> {
+    assertOutsideTransaction("Stripe.refunds.list");
     if (this.calls === null) {
       return Promise.resolve({ kind: "unavailable", reason: NOT_CONFIGURED });
     }
