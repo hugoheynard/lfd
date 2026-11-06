@@ -18,7 +18,7 @@
 > SQL à chaque requête.
 >
 > 🔢 **Un numéro par contexte** (Hugo, 2026-11-06) : `catalog`, `operations`,
-> `order-cutoffs`, chacun avec ses déclencheurs, lus en une requête (§ 2.2).
+> `order_cutoffs`, chacun avec ses déclencheurs, lus en une requête (§ 2.2).
 > Remplace la forme à un seul numéro, bâtie le 2026-11-05 puis mise de côté.
 >
 > 🧭 **Prochain pas** : `vitruve` sur la forme par contexte, puis M1a (les
@@ -100,7 +100,7 @@ Le rayon (`ShopCataloguePricing.pricedFor`,
 | `CatalogReader.listSellable`                 | `prisma-catalog.reader.ts`                         | `catalogItem.findMany` (avec dérogations et réservations), puis `catalogCategory.findMany` (la lignée des familles) |
 | `CatalogOperationsReader.operationOnlySkus`  | `operationOnlySkusOf` (`prisma-catalog.reader.ts`) | `catalogItem.findMany` (les SKU réservés aux opérations)                                                            |
 | `CatalogOperationsReader.sellableOperations` | `prisma-catalog-operations.reader.ts`              | `catalogOperation.findMany` (avec leurs articles)                                                                   |
-| `ShopOrderCutoffsReader.list`                | `OrderCutoffsInForce` (bloc `order-cutoffs`)       | les heures limites                                                                                                  |
+| `ShopOrderCutoffsReader.list`                | `OrderCutoffsInForce` (bloc `order_cutoffs`)       | les heures limites                                                                                                  |
 | `CatalogPricePerKgReader.bySkus`             | `prisma-catalog-price-per-kg.reader.ts`            | `catalogItem.findMany` — **les colonnes du kilo, relues**                                                           |
 | `CatalogViewers.forCompany`                  | `prisma-served-company.reader.ts`                  | la société servie                                                                                                   |
 | `Pricer.load`                                | `PricingMaterialsLoader` (+ cache)                 | règles de prix, estampille                                                                                          |
@@ -249,7 +249,7 @@ son propre domaine.
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ---------------------------- |
 | `catalog` (`b2b/catalog`)                              | `catalog_items`, `catalog_categories`, `catalog_item_overrides`, `catalog_item_reservations` | articles, familles, lignée   |
 | `operations` (`b2b/operations`)                        | `catalog_operations`, `catalog_operation_items`                                              | opérations et leurs articles |
-| `order-cutoffs` (`b2b/order-cutoffs`)                  | `order_cutoffs`, `order_cutoff_settings`                                                     | heures limites, réglages     |
+| `order_cutoffs` (`b2b/order-cutoffs`)                  | `order_cutoffs`, `order_cutoff_settings`                                                     | heures limites, réglages     |
 
 Propriétaires à revérifier au bâti dans le code des écrivains (relevé le
 2026-11-05, pas rouvert le 2026-11-06). `catalog_operation_overrides` n'a pas
@@ -270,9 +270,9 @@ par contexte, pas un journal.
 `operations_version_bump()`, `order_cutoffs_version_bump()`) : chaque
 déclencheur appelle celle de SON contexte, qui n'écrit que SA ligne. Une
 fonction générique avec le contexte en argument (`TG_ARGV`) ferait la même
-chose en une seule ; écartée pour que la porte (§ 3) lise, dans la migration,
-quel contexte possède quel déclencheur sans interpréter d'argument. À trancher
-par `vitruve`.
+chose ; écartée parce qu'un nom de fonction mal écrit échoue **à la
+migration**, alors qu'un argument mal orthographié n'échouerait qu'au `CHECK`,
+à la première écriture en production (`vitruve`, 2026-11-06).
 
 **La mécanique de chaque déclencheur est celle de `principal_stamp` dans sa
 forme en service** :
@@ -343,11 +343,11 @@ flowchart LR
       OP["catalog_operations<br/>dates, audience, hidden"]
       OI["catalog_operation_items<br/>quels articles, dans quel ordre"]
     end
-    subgraph CUT["contexte order-cutoffs"]
+    subgraph CUT["contexte order_cutoffs"]
       OC["order_cutoffs<br/>jour, heure limite par point"]
       OS["order_cutoff_settings<br/>jour même, tolérances"]
     end
-    V[("context_versions<br/>catalog = 4217<br/>operations = 88<br/>order-cutoffs = 12")]
+    V[("context_versions<br/>catalog = 4217<br/>operations = 88<br/>order_cutoffs = 12")]
   end
 
   P -. "publie par le canal, le commerce écrit catalog_items" .-> CI
@@ -357,8 +357,8 @@ flowchart LR
   CR -- "monte catalog" --> V
   OP -- "monte operations" --> V
   OI -- "monte operations" --> V
-  OC -- "monte order-cutoffs" --> V
-  OS -- "monte order-cutoffs" --> V
+  OC -- "monte order_cutoffs" --> V
+  OS -- "monte order_cutoffs" --> V
   V -- "1 lecture, les 3 lignes" --> API["API : 3 morceaux en mémoire,<br/>chacun relu seulement si SON numéro bouge"]
 ```
 
@@ -616,3 +616,23 @@ entrent dans le périmètre de l'instantané (à ajouter à M1b). Restent à rel
 | devis d'un espace **pro** (`/shop/quote/mine`)         | dans la boutique connectée, basculer sur l'espace société, ajouter 2–3 articles, lire `Server-Timing` (onglet Réseau, ou `performance.getEntriesByType('resource')`) | rebasculer sur l'espace d'origine ; vider le panier               |
 | **estimation** de la saisie (`/admin/orders/estimate`) | back-office, « Nouvelle commande », choisir le client **Les Tommeuses** (le compte réservé à ces essais, Hugo, 2026-11-05), ajouter des lignes                       | **ne jamais enregistrer la commande** : seule l'estimation compte |
 | après **M1b**                                          | le script `reference-devis.js` et les mêmes gestes dans la boutique                                                                                                  | comparer médianes et p95 au tableau                               |
+
+## 11. Troisième passage de `vitruve` (2026-11-06) — la forme par contexte
+
+Aucun bloquant. Ce qui change :
+
+| Objection                                                                                                                                                                                                                   | Gravité | Ce que le plan fait maintenant                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| « repris tels quels » est faux : la porte mise de côté code en dur une fonction (`catalog_stamp_bump`) et le suffixe `_catalog_stamp`, et la constante des colonnes est une liste plate sans contexte                       | SÉRIEUX | M1a **refait** la forme de la constante (rangée par contexte), la porte et ses tests, la remise du harnais et l'e2e. Se reprennent tels quels : la liste des colonnes de `catalog_items`, `catalog_categories`, `catalog_item_overrides`, `catalog_item_reservations` et des opérations, le registre des colonnes ignorées et ses raisons                                                                   |
+| `order_cutoff_settings` : la constante mise de côté retenait l'auteur (`updated_at`, `updated_by_name`) et des réglages sans rapport avec le devis (rappel, alerte de retard, garde en rayon)                               | SÉRIEUX | le lecteur actuel (`prisma-order-cutoff-settings.reader.ts`) lit la ligne entière pour les écrans ; l'instantané, lui, ne lira que ce que le devis et l'estimation jugent (le jour même, par clientèle, et l'heure de réassort si elle y sert). La liste est relevée au bâti **depuis les appelants du devis**, le reste passe au registre « ignorée » avec sa raison                                       |
+| `save` d'une opération : trois instructions hors transaction (`prisma-operation.repository.ts:84-97`) ; un chargement entre l'effacement et la recréation des articles range une opération vide jusqu'à la requête suivante | SÉRIEUX | **M1a met ce `save` en transaction.** Le reste vérifié par `vitruve` le 2026-11-06 : aucun écrivain ne touche deux contextes dans une même transaction, aucune cascade ne traverse vers `catalog_operation_items` — un devis n'assemble donc jamais un état qui n'a pas existé en base                                                                                                                      |
+| ordre des verrous « encore ouvert »                                                                                                                                                                                         | SÉRIEUX | **constaté le 2026-11-06, non tenu par un mécanisme** : aucune transaction n'écrit deux contextes, ni un contexte et une table de `principal_stamp`. Si cela arrivait un jour dans les deux ordres, Postgres détecte l'interblocage et annule une des deux transactions (erreur, pas de blocage silencieux). Assumé ; l'e2e de M1a vérifie qu'une écriture dans chaque contexte ne fait monter que sa ligne |
+| raison du choix « une fonction par contexte »                                                                                                                                                                               | MINEUR  | réécrite au § 2.2 : une faute de nom échoue à la migration                                                                                                                                                                                                                                                                                                                                                  |
+| « ligne absente = morceau non gardé » ne sert qu'au harnais ; la fonction recrée à 1, le harnais remet à 0                                                                                                                  | MINEUR  | gardé (il ne coûte rien et protège une base vidée à la main) ; la remise du harnais **vide aussi la mémoire** (`forget()`), sans quoi un numéro qui repart d'en bas servirait un vieux morceau                                                                                                                                                                                                              |
+| où vit le modèle de `context_versions`                                                                                                                                                                                      | MINEUR  | un fichier `context-versions` (à créer sous `public/`) : un nom qui n'est celui d'aucun des trois contextes                                                                                                                                                                                                                                                                                                 |
+| la clé `order-cutoffs` avec un tiret                                                                                                                                                                                        | MINEUR  | `order_cutoffs`, comme les autres valeurs du dépôt                                                                                                                                                                                                                                                                                                                                                          |
+| `order_cutoff_settings` est rangé dans `settings.prisma`, pas avec `order_cutoffs`                                                                                                                                          | MINEUR  | noté, non déplacé : ranger un fichier n'est pas l'objet de M1a                                                                                                                                                                                                                                                                                                                                              |
+
+**Non vérifié** : qu'aucune transaction n'écrive `catalog_item_reservations`
+avec `companies` ou `memberships` (archivage d'une société) — à remonter
+depuis les appelants de `prisma-catalog-reservations.ts` au bâti de M1a.
