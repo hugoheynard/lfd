@@ -169,6 +169,13 @@ exemple `mail/`), avec **son schéma Postgres** dans la base unique, comme
   bloc par une route de `lfd-api` (à concevoir au plan, avec son jeton de
   service), puisqu'elle aura sa propre API.
 
+**L'éditeur vit dans le back-office `lfd-backoffice-frontend`** (Hugo,
+2026-11-06), là où l'écran des textes des e-mails est déjà, sous
+Communication. Le personnel s'y connecte comme aujourd'hui, et le droit
+d'éditer se règle à l'écran des rôles : le coût 3 (les droits) se résout par
+l'existant tant que le bloc vit dans `lfd-api`. Les modèles de la billetterie
+s'y éditeront aussi, rangés par produit.
+
 Les coûts 1 (une app de plus) et 5 (une migration entre deux bases)
 ci-dessous sont donc **reportés à l'extraction** : aujourd'hui, la bascule se
 fait dans la même base.
