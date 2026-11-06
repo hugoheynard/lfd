@@ -1,10 +1,10 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
 import type { InvoiceIssuedMailData } from "../../../../platform/mailer/invoice-issued-mail.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { Invoice } from "../../domain/entities/invoice.js";
 import { InvoiceNoticeEvent } from "../../domain/events/invoice.events.js";
@@ -23,6 +23,9 @@ import type { InvoiceDocument } from "../invoice-document-support.js";
 /** Longueur gardée d'un refus du fournisseur : un témoin, pas une pile. */
 const MAX_FAILURE_LENGTH = 500;
 
+/** Le modèle de l'e-mail. */
+const TEMPLATE = "customer.invoice-issued";
+
 /** L'ancre de « Mes factures » dans `/mon-compte`. */
 export const INVOICES_PATH = "/mon-compte#compte-invoices";
 
@@ -37,20 +40,31 @@ export interface InvoiceNoticeOutcome {
   readonly failure: string | null;
 }
 
+/** Ce qu'un envoi a à dire : la facture, les mots sans la pièce, et à qui. */
+interface NoticeSubject {
+  readonly invoice: Invoice;
+  readonly content: Omit<InvoiceIssuedMailData, "document">;
+  readonly recipients: readonly InvoiceRecipient[];
+}
+
 /**
  * **Prévient de l'émission d'une facture** (plan
  * `facture-emise.md`, Q3) : un e-mail par adresse, puis
- * l'issue au journal — `invoice.notice_sent`, ou `invoice.notice_failed`
- * quand personne n'est joignable ou que le fournisseur refuse.
+ * l'issue au journal.
  *
- * Hors de toute transaction pendant les appels au fournisseur ; seul le fait
- * de journal s'écrit dans la sienne. La clé d'idempotence est la facture ET
- * l'adresse : un second passage ne fait pas partir de second message chez
- * Resend, et ajouter un destinataire n'empêche pas les autres de partir.
+ * **L'envoi d'origine DEMANDE** (`request`, plan service d'e-mails, S2d) : les
+ * demandes et le fait `invoice.notice_sent` s'écrivent dans une même
+ * transaction, et le bloc `mail` envoie après la validation. La pièce passe
+ * PAR RÉFÉRENCE : le PDF/A-3 Factur-X est déjà rangé au stockage des pièces
+ * client sous `Invoice.documentKey` (`InvoiceDocumentRenderer.ensure`, appelé
+ * avant par l'abonné) — la demande porte cette clé, rien n'est rangé deux
+ * fois. Pas de PDF rendu (`null`) ou pas de clé : l'e-mail part sans.
  *
- * Le PDF/A-3 Factur-X (E3b) est reçu de l'abonné, qui l'a fait rendre
- * avant : il part en pièce jointe. `null` (rendu en échec, journalisé) :
- * l'e-mail part sans.
+ * **Le renvoi du staff ENVOIE** (`sendNow`) : il attend la réponse, et un
+ * refus du fournisseur s'affiche (409 nommé) autant qu'il se journalise.
+ *
+ * La clé d'idempotence est la facture (ou le renvoi) ET le RANG du
+ * destinataire, jamais son adresse : le bloc garde la clé un an.
  */
 @Injectable()
 export class InvoiceNoticeSender {
@@ -63,78 +77,116 @@ export class InvoiceNoticeSender {
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
   ) {}
 
-  /** @returns les destinataires prévenus ; `null` si rien n'était à envoyer (avoir, facture absente). */
+  /**
+   * Demande un e-mail par destinataire, et journalise `invoice.notice_sent`
+   * (« demandé ») ou `invoice.notice_failed` (personne à prévenir). Une
+   * demande refusée annule le tout et lève : l'abonné le journalise.
+   *
+   * @param document le PDF rendu, ou `null` (rendu en échec) : sa clé est relue sur la facture.
+   * @returns les destinataires ; `null` si rien n'était à envoyer (avoir, facture absente).
+   */
   async send(
     invoiceId: string,
     document: InvoiceDocument | null,
   ): Promise<readonly InvoiceRecipient[] | null> {
-    const outcome = await this.deliverNotice(invoiceId, document, null);
-    return outcome === null ? null : outcome.recipients;
+    const subject = await this.subjectOf(invoiceId);
+    if (subject === null) {
+      return null;
+    }
+    const { invoice, content, recipients } = subject;
+    const key = document === null ? null : invoice.toState().documentKey;
+    const data = {
+      ...content,
+      document:
+        document === null || key === null
+          ? null
+          : {
+              fileName: document.fileName,
+              pdfStored: { store: "customer-documents" as const, key },
+            },
+    };
+    await this.uow.run(async () => {
+      for (const [rank, recipient] of recipients.entries()) {
+        await this.mails.request({
+          template: TEMPLATE,
+          to: recipient.email,
+          brand: "lfc",
+          data,
+          idempotencyKey: `invoice.notice:${invoice.id}:${String(rank + 1)}`,
+        });
+      }
+      await this.journal(invoice, recipients, recipients.length === 0 ? NO_RECIPIENT : null, false);
+    });
+    return recipients;
   }
 
   /**
    * **Le renvoi** demandé par le staff (E6, suite (b)) : les destinataires
    * d'aujourd'hui, sous une clé d'idempotence propre au renvoi
-   * (`invoice.notice-resend:<renvoi>:<adresse>`) — celle de l'envoi
-   * d'origine ferait taire le fournisseur. Issue au journal
-   * `invoice.notice_resent`. Personne à prévenir : rien ne part, rien n'est
-   * journalisé, l'appelant refuse.
+   * (`invoice.notice-resend:<renvoi>:<rang>`) — celle de l'envoi d'origine
+   * ferait taire le bloc. Issue au journal `invoice.notice_resent`. Personne
+   * à prévenir : rien ne part, rien n'est journalisé, l'appelant refuse.
+   *
+   * Hors de toute transaction (exigence de `sendNow`).
    *
    * @returns les destinataires et le refus du fournisseur ; `null` si rien n'était à envoyer.
    */
-  resend(
+  async resend(
     invoiceId: string,
     document: InvoiceDocument | null,
     resendId: string,
   ): Promise<InvoiceNoticeOutcome | null> {
-    return this.deliverNotice(invoiceId, document, resendId);
+    const subject = await this.subjectOf(invoiceId);
+    if (subject === null) {
+      return null;
+    }
+    const { invoice, content, recipients } = subject;
+    if (recipients.length === 0) {
+      return { recipients, failure: NO_RECIPIENT };
+    }
+    const data: InvoiceIssuedMailData = {
+      ...content,
+      document:
+        document === null
+          ? null
+          : { fileName: document.fileName, pdfBase64: document.bytes.toString("base64") },
+    };
+    const failure = await this.sendEach(data, recipients, resendId);
+    await this.uow.run(() => this.journal(invoice, recipients, failure, true));
+    return { recipients, failure };
   }
 
-  private async deliverNotice(
-    invoiceId: string,
-    document: InvoiceDocument | null,
-    resendId: string | null,
-  ): Promise<InvoiceNoticeOutcome | null> {
+  private journal(
+    invoice: Invoice,
+    recipients: readonly InvoiceRecipient[],
+    failure: string | null,
+    resent: boolean,
+  ): Promise<void> {
+    return this.events.publishTraced(
+      new InvoiceNoticeEvent(invoice, recipients.length, failure, this.clock.now(), resent),
+    );
+  }
+
+  /** La facture, ses mots et ses destinataires ; `null` pour une pièce absente ou un avoir. */
+  private async subjectOf(invoiceId: string): Promise<NoticeSubject | null> {
     const invoice = await this.invoices.byId(invoiceId);
     if (invoice === null) {
       return null;
     }
-    const data = await this.mailDataOf(invoice, document);
-    if (data === null) {
+    const content = await this.contentOf(invoice);
+    if (content === null) {
       return null;
     }
-    const recipients = await this.recipientsOf(invoice);
-    if (resendId !== null && recipients.length === 0) {
-      return { recipients, failure: NO_RECIPIENT };
-    }
-    const keyOf = (email: string): string =>
-      resendId === null
-        ? `invoice.notice:${invoice.id}:${email.toLowerCase()}`
-        : `invoice.notice-resend:${resendId}:${email.toLowerCase()}`;
-    const failure =
-      recipients.length === 0 ? NO_RECIPIENT : await this.deliver(data, recipients, keyOf);
-    await this.uow.run(() =>
-      this.events.publishTraced(
-        new InvoiceNoticeEvent(
-          invoice,
-          recipients.length,
-          failure,
-          this.clock.now(),
-          resendId !== null,
-        ),
-      ),
-    );
-    return { recipients, failure };
+    return { invoice, content, recipients: await this.recipientsOf(invoice) };
   }
 
-  /** Le contenu de l'e-mail ; `null` pour un avoir (Q3 ne prévient qu'à la facture). */
-  private async mailDataOf(
+  /** Les mots de l'e-mail ; `null` pour un avoir (Q3 ne prévient qu'à la facture). */
+  private async contentOf(
     invoice: Invoice,
-    document: InvoiceDocument | null,
-  ): Promise<InvoiceIssuedMailData | null> {
+  ): Promise<Omit<InvoiceIssuedMailData, "document"> | null> {
     const state = invoice.toState();
     const period = (await this.periods.periodsOf([state.id])).get(state.id) ?? null;
     // La période du payeur, rangée à l'émission (M4a) : « commandes du 5 au
@@ -148,15 +200,8 @@ export class InvoiceNoticeSender {
     if (content === null) {
       return null;
     }
-    return {
-      ...content,
-      // Aucune langue de destinataire n'existe encore (cf. `mail-copy.ts`).
-      locale: DEFAULT_MAIL_LOCALE,
-      document:
-        document === null
-          ? null
-          : { fileName: document.fileName, pdfBase64: document.bytes.toString("base64") },
-    };
+    // Aucune langue de destinataire n'existe encore (cf. `mail-copy.ts`).
+    return { ...content, locale: DEFAULT_MAIL_LOCALE };
   }
 
   private async recipientsOf(invoice: Invoice): Promise<readonly InvoiceRecipient[]> {
@@ -171,19 +216,20 @@ export class InvoiceNoticeSender {
   }
 
   /** @returns `null` si le fournisseur a tout accepté, sinon ses refus. */
-  private async deliver(
+  private async sendEach(
     data: InvoiceIssuedMailData,
     recipients: readonly InvoiceRecipient[],
-    keyOf: (email: string) => string,
+    resendId: string,
   ): Promise<string | null> {
     const refusals: string[] = [];
-    for (const recipient of recipients) {
+    for (const [rank, recipient] of recipients.entries()) {
       try {
-        await this.mailer.send({
+        await this.mails.sendNow({
+          template: TEMPLATE,
           to: recipient.email,
-          template: "customer.invoice-issued",
+          brand: "lfc",
           data,
-          idempotencyKey: keyOf(recipient.email),
+          idempotencyKey: `invoice.notice-resend:${resendId}:${String(rank + 1)}`,
         });
       } catch (cause: unknown) {
         refusals.push(cause instanceof Error ? cause.message : String(cause));

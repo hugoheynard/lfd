@@ -21,8 +21,10 @@ export const SEND_INVOICE_NOTICE = "accounting.send-invoice-notice";
  * après sa validation, et le balayage du cron rattrape un réveil manqué.
  *
  * Même patron que `SendCollectionNotice` : seul le décodage se fait dans la
- * transaction du reçu ; l'envoi part APRÈS, hors transaction, et son issue
- * s'écrit au journal (`invoice.notice_sent` | `invoice.notice_failed`).
+ * transaction du reçu ; le rendu se fait APRÈS, hors transaction, puis les
+ * demandes d'e-mail et leur fait (`invoice.notice_sent` = demandé |
+ * `invoice.notice_failed` = personne à prévenir) s'écrivent ensemble — le bloc
+ * `mail` envoie après la validation (S2d). Le résultat réel se lit au suivi.
  *
  * **Le PDF d'abord, puis l'e-mail** (E3b) : l'envoi attend le rendu
  * (`InvoiceDocumentRenderer.ensure`, idempotent — une pièce déjà rendue rend

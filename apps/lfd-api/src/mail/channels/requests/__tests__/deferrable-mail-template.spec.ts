@@ -8,7 +8,6 @@ import type { ByReference, DeferrableMailTemplate } from "../mail-requests.js";
  * fichier — l'occasion de décider s'il doit passer au stockage d'abord.
  */
 const NOT_DEFERRABLE: Record<Exclude<keyof B2bMails, DeferrableMailTemplate>, string> = {
-  "customer.invoice-issued": "la facture jointe (document.pdfBase64)",
   "customer.mandate-to-sign": "le mandat joint (pdfBase64)",
   "staff.production-dossier": "le dossier du jour joint (pdfBase64)",
 };
@@ -22,10 +21,15 @@ const PLACED_DOCUMENT: ByReference<B2bMails["customer.order-placed"]["document"]
   pdfStored: { store: "customer-documents", key: "orders/o-1/bon-de-commande-r0-d2.pdf" },
 };
 
+/** La facture jointe, par la clé où le rendu Factur-X l'a rangée (S2d). */
+const INVOICE_DOCUMENT: ByReference<B2bMails["customer.invoice-issued"]["document"]> = {
+  fileName: "FA-LFD-2026-000001.pdf",
+  pdfStored: { store: "customer-documents", key: "invoices/le_1/FA-LFD-2026-000001.pdf" },
+};
+
 describe("DeferrableMailTemplate — ce que la boîte d'envoi peut porter", () => {
-  it("exclut les trois modèles à PDF pas encore ouverts par référence (S2a, 2026-11-06)", () => {
+  it("exclut les deux modèles à PDF pas encore ouverts par référence (S2d, 2026-11-06)", () => {
     expect(Object.keys(NOT_DEFERRABLE).sort()).toEqual([
-      "customer.invoice-issued",
       "customer.mandate-to-sign",
       "staff.production-dossier",
     ]);
@@ -35,5 +39,11 @@ describe("DeferrableMailTemplate — ce que la boîte d'envoi peut porter", () =
     const opened: DeferrableMailTemplate = "customer.order-placed";
     expect(opened).toBe("customer.order-placed");
     expect(PLACED_DOCUMENT).not.toHaveProperty("pdfBase64");
+  });
+
+  it("ouvre `customer.invoice-issued`, sa facture passant par référence", () => {
+    const opened: DeferrableMailTemplate = "customer.invoice-issued";
+    expect(opened).toBe("customer.invoice-issued");
+    expect(INVOICE_DOCUMENT).not.toHaveProperty("pdfBase64");
   });
 });

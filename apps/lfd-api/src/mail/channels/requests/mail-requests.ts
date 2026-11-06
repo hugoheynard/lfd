@@ -67,7 +67,8 @@ type Every<B> = [B] extends [true] ? true : false;
  * après la validation, comme au balayeur.
  *
  * `store` nomme le stockage où la pièce est rangée. Seul celui des pièces
- * attachées à un client est ouvert au 2026-11-06 (le bon de commande) ; celui
+ * attachées à un client est ouvert au 2026-11-06 (le bon de commande, la
+ * facture) ; celui
  * du fournil s'ouvrira avec le dossier du jour.
  */
 export interface StoredPdf {
@@ -94,17 +95,18 @@ export type ByReference<T> = T extends string | number | boolean | null | undefi
 
 /**
  * Les modèles à PDF ouverts à `request`, leur pièce passant par référence.
- * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a). La
- * facture, le mandat et le dossier du fournil s'ouvriront avec leur bloc.
+ * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a) et la
+ * facture Factur-X, rangée au même stockage sous `Invoice.documentKey` (lot
+ * S2d). Le mandat et le dossier du fournil s'ouvriront avec leur bloc.
  */
-type OpenedByReference = "customer.order-placed";
+type OpenedByReference = "customer.order-placed" | "customer.invoice-issued";
 
 /**
  * Les modèles que `request` accepte : ceux dont les données — sous leur forme
  * différée — traversent la boîte d'envoi intactes, et parmi ceux qui joignent
  * un PDF, seulement ceux que {@link OpenedByReference} ouvre. Au 2026-11-06,
- * trois en restent exclus (`customer.invoice-issued`,
- * `customer.mandate-to-sign`, `staff.production-dossier`) : ils n'ont que
+ * deux en restent exclus (`customer.mandate-to-sign`,
+ * `staff.production-dossier`) : ils n'ont que
  * `sendNow` d'ici le passage de leur bloc.
  */
 export type DeferrableMailTemplate = {

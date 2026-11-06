@@ -1,8 +1,8 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CollectionNotice } from "../../domain/entities/collection-notice.js";
 import { CollectionNoticeEvent } from "../../domain/events/collection-notice.events.js";
@@ -24,6 +24,15 @@ const MAX_FAILURE_LENGTH = 500;
  * fait pas partir de second message chez Resend. Un avis qui n'est plus en
  * file (déjà envoyé, en échec) n'est pas renvoyé — un échec se règle en
  * annulant le lot et en le préparant de nouveau.
+ *
+ * **`sendNow`, pas `request`** (plan service d'e-mails, S2d) : l'issue écrite
+ * sur l'avis est celle du FOURNISSEUR, et le dépôt du lot exige des avis
+ * `sent` (`CollectionBatch.markDeposited`, relu le 2026-11-06) — le préavis
+ * SEPA doit être parti avant que la banque prélève. Avec `request`, `sent`
+ * voudrait dire « demandé », et un lot se déposerait sur un avis que Resend a
+ * refusé. L'appel est déjà hors de toute transaction (exigence de
+ * `sendNow`) ; le bloc garde la clé et rend le reçu d'un avis déjà parti sans
+ * le renvoyer.
  */
 @Injectable()
 export class CollectionNoticeSender {
@@ -33,7 +42,7 @@ export class CollectionNoticeSender {
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
   ) {}
 
   /** @returns l'état de l'avis après le passage, `null` s'il n'existe pas. */
@@ -76,8 +85,9 @@ export class CollectionNoticeSender {
       return "rien à envoyer : avis reconduit ou sans adresse";
     }
     try {
-      await this.mailer.send({
+      await this.mails.sendNow({
         to: state.recipient.email,
+        brand: "lfc",
         template: "customer.collection-notice",
         data: content,
         idempotencyKey: `collection.notice:${state.id}`,

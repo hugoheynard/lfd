@@ -257,9 +257,14 @@ describe("« Votre facture » à l'émission (E6, Q3)", () => {
       where: { key: `invoice.issued:${invoice.id}` },
     });
     expect(fact.type).toBe("invoice.issued");
-    expect(invoiceMails().map((mail) => [mail.to, mail.idempotencyKey])).toEqual([
-      ["compta@groupe.test", `invoice.notice:${invoice.id}:compta@groupe.test`],
-      ["gerante@chalet.test", `invoice.notice:${invoice.id}:gerante@chalet.test`],
+    // Demandés ensemble (S2d), envoyés par la boîte d'envoi dans un ordre
+    // qu'elle ne promet pas : on compare par rang.
+    const byRank = [...invoiceMails()].sort((a, b) =>
+      (a.idempotencyKey ?? "").localeCompare(b.idempotencyKey ?? ""),
+    );
+    expect(byRank.map((mail) => [mail.to, mail.idempotencyKey])).toEqual([
+      ["compta@groupe.test", `invoice.notice:${invoice.id}:1`],
+      ["gerante@chalet.test", `invoice.notice:${invoice.id}:2`],
     ]);
     expect(invoiceMails()[0]?.data).toMatchObject({
       invoiceNumber: invoice.number,
@@ -268,6 +273,17 @@ describe("« Votre facture » à l'émission (E6, Q3)", () => {
       // E3b : l'envoi attend le rendu, et part avec le PDF/A-3.
       document: { fileName: `${invoice.number}.pdf` },
     });
+    // S2d : la demande porte la clé où le rendu a rangé la facture, jamais ses octets.
+    const rendered = await ctx.prisma.invoice.findUniqueOrThrow({ where: { id: invoice.id } });
+    const requested = await ctx.prisma.outboxMessage.findMany({
+      where: { type: "mail.requested", key: { startsWith: "mail.requested:invoice.notice:" } },
+    });
+    expect(requested).toHaveLength(2);
+    for (const message of requested) {
+      expect(JSON.stringify(message.payload)).toContain(`"pdfStored"`);
+      expect(JSON.stringify(message.payload)).toContain(String(rendered.documentKey));
+      expect(JSON.stringify(message.payload)).not.toContain("pdfBase64");
+    }
     const journal = await ctx.prisma.activityEvent.findMany({
       where: { subjectId: invoice.id },
       orderBy: { id: "asc" },

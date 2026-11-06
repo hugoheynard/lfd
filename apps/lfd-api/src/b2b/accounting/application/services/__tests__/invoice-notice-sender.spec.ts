@@ -1,11 +1,10 @@
 import { Buffer } from "node:buffer";
 
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { Invoice } from "../../../domain/entities/invoice.js";
 import { issueInput } from "../../../domain/entities/__tests__/invoice-fixtures.js";
@@ -24,18 +23,8 @@ import {
 /** Comparé au tampon du fait seulement, jamais au mur. */
 const NOW = new Date("2026-09-30T20:05:00.000Z");
 
-class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails>[] = [];
-  readonly refused = new Set<string>();
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    if (this.refused.has(args.to)) {
-      return Promise.reject(new Error(`rebond dur : ${args.to}`));
-    }
-    this.sent.push(args);
-    return Promise.resolve({ providerId: "re_1" });
-  }
-}
+/** La clé sous laquelle le rendu Factur-X a rangé la pièce. */
+const DOCUMENT_KEY = "invoices/le_1/FA-LFD-2026-000001.pdf";
 
 class FixedSites extends InvoiceSiteContactsReader {
   readonly asked: { orderIds: readonly string[]; payer: string }[] = [];
@@ -57,9 +46,11 @@ class FixedOrigins extends InvoiceMailOrigins {
   }
 }
 
-const MONTHLY = Invoice.issue(
-  issueInput({ paymentMeans: { code: "59", mandateReference: "RUM-PORT-1" } }),
-);
+function monthly(): Invoice {
+  return Invoice.issue(
+    issueInput({ paymentMeans: { code: "59", mandateReference: "RUM-PORT-1" } }),
+  );
+}
 
 function setup(
   options: {
@@ -67,37 +58,45 @@ function setup(
     readonly sites?: readonly string[];
     readonly origin?: string | null;
     readonly period?: BillingCycle;
+    readonly documented?: boolean;
   } = {},
 ) {
-  const mailer = new RecordingMailer();
+  const invoice = monthly();
+  if (options.documented === true) {
+    invoice.attachDocument(DOCUMENT_KEY, "a".repeat(64));
+  }
+  const uow = new OpenableUnitOfWork();
+  const mails = new RecordingMailRequests(uow);
   const events = new RecordingPublisher();
   const sites = new FixedSites(options.sites ?? []);
+  const payerId = invoice.toState().buyer.companyId;
   const sender = new InvoiceNoticeSender(
-    new MemoryInvoiceReader([MONTHLY]),
-    new FixedInvoicePeriods(new Map([[MONTHLY.id, options.period ?? SEPTEMBER_2026]])),
+    new MemoryInvoiceReader([invoice]),
+    new FixedInvoicePeriods(new Map([[invoice.id, options.period ?? SEPTEMBER_2026]])),
     new FixedPayerContacts(
-      new Map(
-        options.payer === undefined
-          ? [
-              [
-                MONTHLY.toState().buyer.companyId,
-                { billingContactEmails: ["compta@port.test"], ownerEmail: "patron@port.test" },
-              ],
-            ]
-          : [[MONTHLY.toState().buyer.companyId, options.payer]],
-      ),
+      new Map([
+        [
+          payerId,
+          options.payer ?? {
+            billingContactEmails: ["compta@port.test"],
+            ownerEmail: "patron@port.test",
+          },
+        ],
+      ]),
     ),
     sites,
     new FixedOrigins(options.origin === undefined ? "https://boutique.test" : options.origin),
     new FixedClock(NOW),
     events,
-    new DirectUnitOfWork(),
-    mailer,
+    uow,
+    mails,
   );
-  return { sender, mailer, events, sites };
+  return { sender, mails, events, sites, invoice };
 }
 
-describe("« Votre facture » part à l'émission (E6, Q3)", () => {
+const PDF = { fileName: "FA-LFD-2026-000001.pdf", bytes: Buffer.from("%PDF-1.7 rendu") };
+
+describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () => {
   it("dit la période rangée du payeur — une semaine, pas le mois où elle s'achève (M4a)", async () => {
     const h = setup({
       period: {
@@ -106,41 +105,36 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
       },
     });
 
-    await h.sender.send(MONTHLY.id, null);
+    await h.sender.send(h.invoice.id, null);
 
-    expect(h.mailer.sent[0]?.data).toMatchObject({ period: "du 5 au 11 octobre 2026" });
+    expect(h.mails.requested[0]?.data).toMatchObject({ period: "du 5 au 11 octobre 2026" });
   });
 
-  it("au payeur et aux sous-comptes, une clé par facture et par adresse, puis le journal", async () => {
+  it("au payeur et aux sous-comptes, une clé par facture et par RANG (jamais l'adresse), puis le journal", async () => {
     const h = setup({ sites: ["compta@chalet.test"] });
 
-    const recipients = await h.sender.send(MONTHLY.id, null);
+    const recipients = await h.sender.send(h.invoice.id, null);
 
     expect(recipients?.map((r) => r.email)).toEqual(["compta@port.test", "compta@chalet.test"]);
     expect(h.sites.asked).toEqual([{ orderIds: ["o_1", "o_2"], payer: "c_port" }]);
-    expect(h.mailer.sent.map((mail) => [mail.to, mail.template, mail.idempotencyKey])).toEqual([
-      [
-        "compta@port.test",
-        "customer.invoice-issued",
-        `invoice.notice:${MONTHLY.id}:compta@port.test`,
-      ],
-      [
-        "compta@chalet.test",
-        "customer.invoice-issued",
-        `invoice.notice:${MONTHLY.id}:compta@chalet.test`,
-      ],
+    expect(
+      h.mails.requested.map((mail) => [mail.to, mail.template, mail.brand, mail.idempotencyKey]),
+    ).toEqual([
+      ["compta@port.test", "customer.invoice-issued", "lfc", `invoice.notice:${h.invoice.id}:1`],
+      ["compta@chalet.test", "customer.invoice-issued", "lfc", `invoice.notice:${h.invoice.id}:2`],
     ]);
-    expect(h.mailer.sent[0]?.data).toMatchObject({
+    expect(h.mails.sentNow).toEqual([]);
+    expect(h.mails.requested[0]?.data).toMatchObject({
       invoiceNumber: "FA-LFD-2026-000001",
       period: "du 1er au 30 septembre 2026",
-      total: "16,55\u00A0€",
+      total: "16,55 €",
       paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
       invoicesUrl: "https://boutique.test/mon-compte#compte-invoices",
     });
     expect(h.events.traced.map((event) => event.journalFact())).toEqual([
       expect.objectContaining({
         type: "invoice.notice_sent",
-        subjectId: MONTHLY.id,
+        subjectId: h.invoice.id,
         occurredAt: NOW,
         payload: {
           subjectLabel: "FA-LFD-2026-000001",
@@ -151,109 +145,129 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
     ]);
   });
 
-  it("joint le PDF Factur-X rendu à chaque message, sous le nom de la pièce", async () => {
-    const h = setup();
-    const pdf = Buffer.from("%PDF-1.7 rendu");
+  it("joint la facture PAR RÉFÉRENCE à la clé où le rendu l'a rangée, jamais ses octets", async () => {
+    const h = setup({ documented: true });
 
-    await h.sender.send(MONTHLY.id, { fileName: "FA-LFD-2026-000001.pdf", bytes: pdf });
+    await h.sender.send(h.invoice.id, PDF);
 
-    expect(h.mailer.sent[0]?.data).toMatchObject({
-      document: { fileName: "FA-LFD-2026-000001.pdf", pdfBase64: pdf.toString("base64") },
+    expect(h.mails.requested[0]?.data).toMatchObject({
+      document: {
+        fileName: "FA-LFD-2026-000001.pdf",
+        pdfStored: { store: "customer-documents", key: DOCUMENT_KEY },
+      },
     });
+    expect(JSON.stringify(h.mails.requested[0]?.data)).not.toContain("pdfBase64");
   });
 
-  it("sans PDF (rendu en échec), l'e-mail part quand même, sans pièce", async () => {
+  it("sans PDF (rendu en échec), l'e-mail est demandé quand même, sans pièce", async () => {
+    const h = setup({ documented: true });
+
+    await h.sender.send(h.invoice.id, null);
+
+    expect(h.mails.requested[0]?.data).toMatchObject({ document: null });
+  });
+
+  it("un PDF reçu sans clé rangée sur la facture part sans pièce plutôt qu'une référence vide", async () => {
     const h = setup();
 
-    await h.sender.send(MONTHLY.id, null);
+    await h.sender.send(h.invoice.id, PDF);
 
-    expect(h.mailer.sent[0]?.data).toMatchObject({ document: null });
+    expect(h.mails.requested[0]?.data).toMatchObject({ document: null });
   });
 
   it("une adresse commune au payeur et à un sous-compte ne reçoit qu'un message", async () => {
     const h = setup({ sites: ["COMPTA@port.test"] });
 
-    await h.sender.send(MONTHLY.id, null);
+    await h.sender.send(h.invoice.id, null);
 
-    expect(h.mailer.sent.map((mail) => mail.to)).toEqual(["compta@port.test"]);
+    expect(h.mails.requested.map((mail) => mail.to)).toEqual(["compta@port.test"]);
   });
 
-  it("rejoué, il renvoie les mêmes clés : le fournisseur dédoublonne, aucun second message", async () => {
+  it("rejoué, il redemande sous les mêmes clés : le bloc dédoublonne, aucun second message", async () => {
     const h = setup();
 
-    await h.sender.send(MONTHLY.id, null);
-    await h.sender.send(MONTHLY.id, null);
+    await h.sender.send(h.invoice.id, null);
+    await h.sender.send(h.invoice.id, null);
 
-    const keys = h.mailer.sent.map((mail) => mail.idempotencyKey);
+    const keys = h.mails.requested.map((mail) => mail.idempotencyKey);
     expect(new Set(keys).size).toBe(1);
   });
 
-  it("personne à prévenir : rien ne part, et le journal le signale en nommant le geste", async () => {
+  it("personne à prévenir : rien n'est demandé, et le journal le signale en nommant le geste", async () => {
     const h = setup({ payer: { billingContactEmails: [], ownerEmail: null } });
 
-    expect(await h.sender.send(MONTHLY.id, null)).toEqual([]);
+    expect(await h.sender.send(h.invoice.id, null)).toEqual([]);
 
-    expect(h.mailer.sent).toEqual([]);
+    expect(h.mails.requested).toEqual([]);
     const [fact] = h.events.traced.map((event) => event.journalFact());
     expect(fact?.type).toBe("invoice.notice_failed");
     expect(fact?.payload).toMatchObject({ recipientCount: 0 });
     expect(String(fact?.payload["failure"])).toContain("contact de facturation");
   });
 
-  it("un refus du fournisseur n'empêche pas les autres, et se journalise", async () => {
-    const h = setup({ sites: ["compta@chalet.test"] });
-    h.mailer.refused.add("compta@port.test");
+  it("une demande refusée lève, et rien n'est journalisé avec elle", async () => {
+    const h = setup();
+    h.mails.failWith = new Error("boîte d'envoi indisponible");
 
-    await h.sender.send(MONTHLY.id, null);
+    await expect(h.sender.send(h.invoice.id, null)).rejects.toThrow("boîte d'envoi");
 
-    expect(h.mailer.sent.map((mail) => mail.to)).toEqual(["compta@chalet.test"]);
-    const [fact] = h.events.traced.map((event) => event.journalFact());
-    expect(fact?.type).toBe("invoice.notice_failed");
-    expect(String(fact?.payload["failure"])).toContain("1 envoi(s) refusé(s) sur 2");
+    expect(h.events.traced).toEqual([]);
   });
 
   it("sans origine de boutique, le lien est vide (le gabarit omet le bouton)", async () => {
     const h = setup({ origin: null });
 
-    await h.sender.send(MONTHLY.id, null);
+    await h.sender.send(h.invoice.id, null);
 
-    expect(h.mailer.sent[0]?.data).toMatchObject({ invoicesUrl: "" });
+    expect(h.mails.requested[0]?.data).toMatchObject({ invoicesUrl: "" });
   });
 
-  it("une facture introuvable : rien ne part, rien n'est journalisé", async () => {
+  it("une facture introuvable : rien n'est demandé, rien n'est journalisé", async () => {
     const h = setup();
 
     expect(await h.sender.send("absente", null)).toBeNull();
-    expect(h.mailer.sent).toEqual([]);
+    expect(h.mails.requested).toEqual([]);
     expect(h.events.traced.map((event) => event.journalFact())).toEqual([]);
   });
 });
 
-describe("le renvoi de « Votre facture » (E6, suite (b))", () => {
-  it("une clé propre au renvoi, jamais celle de l'envoi d'origine, et le fait `invoice.notice_resent`", async () => {
+describe("le renvoi de « Votre facture » (E6, suite (b)) — envoyé sur-le-champ", () => {
+  it("une clé propre au renvoi et au rang, jamais celle de l'envoi d'origine, et le fait `invoice.notice_resent`", async () => {
     const h = setup();
 
-    const outcome = await h.sender.resend(MONTHLY.id, null, "rs_1");
+    const outcome = await h.sender.resend(h.invoice.id, null, "rs_1");
 
     expect(outcome).toEqual({
       recipients: [expect.objectContaining({ email: "compta@port.test" })],
       failure: null,
     });
-    expect(h.mailer.sent.map((mail) => mail.idempotencyKey)).toEqual([
-      "invoice.notice-resend:rs_1:compta@port.test",
+    expect(h.mails.requested).toEqual([]);
+    expect(h.mails.sentNow.map((mail) => mail.idempotencyKey)).toEqual([
+      "invoice.notice-resend:rs_1:1",
     ]);
     const facts = h.events.traced.map((event) => event.journalFact());
     expect(facts.map((fact) => fact.type)).toEqual(["invoice.notice_resent"]);
     expect(facts[0]?.payload).toMatchObject({ recipientCount: 1, failure: null });
   });
 
-  it("un refus du fournisseur est rendu et journalisé sous le même fait", async () => {
+  it("joint les octets du PDF rendu : un envoi immédiat ne passe pas par la boîte d'envoi", async () => {
     const h = setup();
-    h.mailer.refused.add("compta@port.test");
 
-    const outcome = await h.sender.resend(MONTHLY.id, null, "rs_2");
+    await h.sender.resend(h.invoice.id, PDF, "rs_4");
 
-    expect(outcome?.failure).toMatch(/rebond dur/u);
+    expect(h.mails.sentNow[0]?.data).toMatchObject({
+      document: { fileName: PDF.fileName, pdfBase64: PDF.bytes.toString("base64") },
+    });
+  });
+
+  it("un refus du fournisseur n'empêche pas les autres, est rendu et journalisé sous le même fait", async () => {
+    const h = setup({ sites: ["compta@chalet.test"] });
+    h.mails.failWith = new Error("rebond dur");
+
+    const outcome = await h.sender.resend(h.invoice.id, null, "rs_2");
+
+    expect(h.mails.sentNow.map((mail) => mail.to)).toEqual(["compta@chalet.test"]);
+    expect(outcome?.failure).toMatch(/1 envoi\(s\) refusé\(s\) sur 2 : rebond dur/u);
     expect(h.events.traced.map((event) => event.journalFact().type)).toEqual([
       "invoice.notice_resent",
     ]);
@@ -262,10 +276,10 @@ describe("le renvoi de « Votre facture » (E6, suite (b))", () => {
   it("personne à prévenir : rien ne part, rien n'est journalisé", async () => {
     const h = setup({ payer: { billingContactEmails: [], ownerEmail: null } });
 
-    const outcome = await h.sender.resend(MONTHLY.id, null, "rs_3");
+    const outcome = await h.sender.resend(h.invoice.id, null, "rs_3");
 
     expect(outcome?.recipients).toEqual([]);
-    expect(h.mailer.sent).toEqual([]);
+    expect(h.mails.sentNow).toEqual([]);
     expect(h.events.traced).toEqual([]);
   });
 });
