@@ -126,8 +126,11 @@ métier** appartiennent chacun à leur contexte, qui les déclare.
 
 ### 5. Les questions avant le plan
 
-1. **Transactionnel seulement** (confirmation, rappel de retrait,
-   invitation…), ou aussi du **marketing** un jour ?
+1. ✅ **Tranché par Hugo le 2026-11-06 : le transactionnel d'abord**
+   (confirmation, rappel de retrait, invitation…), sur Resend et notre
+   éditeur. Le marketing viendra plus tard, probablement par un outil
+   spécialisé (Brevo, ~20–30 € par mois en offre Standard selon des
+   comparatifs tiers de 2026, prix non vérifié sur le site de Brevo).
 2. **Qui édite** : Hugo seul, ou l'équipe, avec un droit dédié ?
 3. **Changer la structure** (ajouter, retirer des blocs), ou seulement le
    texte et l'ordre dans une structure fixe par e-mail ? La seconde est déjà
