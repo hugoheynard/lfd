@@ -76,7 +76,7 @@
 >   sur la planche des documents ; ceux qui n'en ont pas encore sont une
 >   dette comptée qui ne peut que décroître. Et **47** depuis le 2026-10-23
 >   avec `lint:mail-copy-digest` : le manifeste des textes des e-mails
->   (`apps/lfd-api/src/platform/mailer/copy/mail-copy-manifest.json` — chaque
+>   (`apps/lfd-api/src/mail/templates/copy/mail-copy-manifest.json` — chaque
 >   texte, ses variables permises et obligatoires) est généré depuis le
 >   dictionnaire, et un texte changé sans `pnpm mail-copy:digest` le fait
 >   mentir. Et **48** le même jour avec `lint:company-role-readers` : le rôle

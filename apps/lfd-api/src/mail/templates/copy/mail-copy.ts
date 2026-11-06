@@ -17,17 +17,9 @@ import { markedCopy } from "../sections/mail-text-markers.js";
  */
 export const MAIL_COPY: MailCopyBook = { fr: MAIL_FR, en: MAIL_EN, it: MAIL_IT };
 
-/**
- * La langue de repli.
- *
- * ⚠️ **Rien ne choisit encore la langue d'un client** : `User` ne porte pas de
- * préférence, et l'inventer depuis l'en-tête `Accept-Language` d'une requête
- * HTTP donnerait la langue du NAVIGATEUR de celui qui commande, pas celle dans
- * laquelle la personne veut être écrite. Tant que la préférence n'existe pas,
- * l'appelant passe `fr` — et le jour où elle existera, il n'y aura qu'un
- * paramètre à remplir, pas un gabarit à traduire.
- */
-export const DEFAULT_MAIL_LOCALE: ContentLocale = "fr";
+// La langue de repli est au contrat du bloc depuis le lot S3b : les blocs
+// métier la lisent, par le canal.
+export { DEFAULT_MAIL_LOCALE } from "../../channels/templates/mail-locale.js";
 
 /**
  * Les textes EFFECTIFS d'une langue — ceux du code, remplacés par les textes

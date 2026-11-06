@@ -1,4 +1,4 @@
-import { MAIL_COPY } from "../../../../platform/mailer/copy/mail-copy.js";
+import { MAIL_COPY } from "../../../templates/copy/mail-copy.js";
 import { embeddedMailCopyManifest } from "../embedded-mail-copy-manifest.js";
 
 describe("le manifeste des textes d'e-mails que l'API embarque", () => {

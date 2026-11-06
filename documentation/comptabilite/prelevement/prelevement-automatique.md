@@ -92,7 +92,7 @@ carte « Prélèvement automatique » de la fiche de l'entité, sous
 - **Envoi** : le fait durable part par la boîte d'envoi transactionnelle ;
   l'abonné `SendCollectionNotice` envoie après validation, clé
   d'idempotence `collection.notice:<id>`, et écrit `sent` ou `failed` sur
-  l'avis. Gabarit : `platform/mailer/collection-notice-mail.ts`.
+  l'avis. Gabarit : `mail/templates/collection-notice-mail.ts`.
 - **Préparer de nouveau** un lot annulé, pour chaque payeur dont le
   dernier avis était `sent` : termes identiques → rien ne part ; montant,
   date ou RUM différents → **rectificatif** ; payeur plus prélevé →

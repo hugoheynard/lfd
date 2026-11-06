@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { MailReceipt } from "@lfd/mailer";
 
-import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../templates/mail-templates.js";
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,

@@ -1,14 +1,11 @@
-import { MAIL_COPY } from "../../../platform/mailer/copy/mail-copy.js";
-import manifestJson from "../../../platform/mailer/copy/mail-copy-manifest.json" with { type: "json" };
+import { MAIL_COPY } from "../../templates/copy/mail-copy.js";
+import manifestJson from "../../templates/copy/mail-copy-manifest.json" with { type: "json" };
 import {
   mailFamilyOf,
   mailFollowsLocale,
   mailKeys,
-} from "../../../platform/mailer/specimens/mail-specimens.js";
-import {
-  mailLayouts,
-  type MailSectionText,
-} from "../../../platform/mailer/sections/mail-layouts.js";
+} from "../../templates/specimens/mail-specimens.js";
+import { mailLayouts, type MailSectionText } from "../../templates/sections/mail-layouts.js";
 import type { MailCopyLocale } from "../domain/mail-copy-locale.js";
 import { MailCopyManifest, type MailCopyManifestEntry } from "../domain/mail-copy-manifest.js";
 import type {
@@ -24,7 +21,7 @@ import type {
  * `lint:mail-copy-digest`) donne pour chaque texte ses variables permises et
  * obligatoires ; les textes par défaut des trois langues se relisent dans le
  * dictionnaire lui-même, d'où le manifeste est tiré. Les sections de chaque
- * e-mail (E4) se lisent dans leurs déclarations (`platform/mailer/sections/`).
+ * e-mail (E4) se lisent dans leurs déclarations (`mail/templates/sections/`).
  */
 export function embeddedMailCopyManifest(
   rewrites: readonly MailDefaultRewrite[] = [],

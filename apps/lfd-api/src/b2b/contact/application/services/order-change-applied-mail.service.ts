@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import type { OrderChangeAppliedEvent } from "../../domain/order-change.events.js";
 
 /**

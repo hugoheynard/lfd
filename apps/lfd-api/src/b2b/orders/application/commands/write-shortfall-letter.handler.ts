@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {

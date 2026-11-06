@@ -20,7 +20,7 @@ import type {
 import { DEFAULT_CONTACT_SETTINGS } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";

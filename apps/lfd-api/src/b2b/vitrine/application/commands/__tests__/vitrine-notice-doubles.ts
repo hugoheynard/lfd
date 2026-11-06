@@ -6,7 +6,7 @@ import {
   type RecordedMail,
   RecordingMailRequests,
 } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import {
   type VitrineNoticeEntry,
   VitrineNoticeReader,

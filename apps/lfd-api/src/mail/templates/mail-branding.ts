@@ -1,4 +1,4 @@
-import type { AppConfig } from "../config/app-config.js";
+import type { AppConfig } from "../../platform/config/app-config.js";
 import type { MailBranding } from "./mail-templates.js";
 
 /**

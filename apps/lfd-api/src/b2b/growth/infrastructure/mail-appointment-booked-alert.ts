@@ -6,7 +6,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import {
   appointmentChannelLabel,
   purposeLabel,
-} from "../../../platform/mailer/staff-mail-labels.js";
+} from "../../../mail/channels/templates/staff-mail-labels.js";
 import type { Appointment } from "../domain/entities/appointment.js";
 import { AppointmentBookedAlert } from "../domain/ports/appointment-booked-alert.js";
 

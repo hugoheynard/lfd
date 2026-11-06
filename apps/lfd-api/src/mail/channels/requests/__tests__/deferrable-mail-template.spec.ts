@@ -1,4 +1,4 @@
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../templates/b2b-mails.js";
 import type { ByReference, DeferrableMailTemplate } from "../mail-requests.js";
 
 /**

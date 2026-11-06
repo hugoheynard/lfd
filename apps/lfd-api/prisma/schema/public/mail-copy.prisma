@@ -5,7 +5,7 @@
 // Plan : documentation/contenu-ecommerce/plan-textes-des-e-mails.md (C2, C3,
 // C5, lot E2). Écrites et lues par `mail/copy` seul ; le mailer
 // (`platform/`) ne lit le publié que par un port relié dans `appBootstrap/`.
-// Le dictionnaire du code (`platform/mailer/copy/`) reste la source de chaque
+// Le dictionnaire du code (`mail/templates/copy/`) reste la source de chaque
 // texte : une base vide envoie les e-mails d'aujourd'hui.
 //
 // 🔴 Les CHECK (forme du brouillon, langues admises, version positive) vivent

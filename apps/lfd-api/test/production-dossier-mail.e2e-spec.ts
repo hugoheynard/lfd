@@ -9,7 +9,7 @@
  */
 import { Buffer } from "node:buffer";
 
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import {

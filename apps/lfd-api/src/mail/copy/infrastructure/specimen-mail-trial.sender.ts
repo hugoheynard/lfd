@@ -1,12 +1,12 @@
 import { isLayoutSectionId } from "@lfd/mailer";
 import { Injectable } from "@nestjs/common";
 
-import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { MailRequests } from "../../channels/requests/mail-requests.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
-import { withMailCopyOverlay } from "../../../platform/mailer/copy/mail-copy-overlay.js";
-import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
-import { withMailLayout } from "../../../platform/mailer/sections/mail-layout-scope.js";
-import { isMailKey, specimenDataOf } from "../../../platform/mailer/specimens/mail-specimens.js";
+import { withMailCopyOverlay } from "../../templates/copy/mail-copy-overlay.js";
+import type { B2bMails } from "../../templates/mail-templates.js";
+import { withMailLayout } from "../../templates/sections/mail-layout-scope.js";
+import { isMailKey, specimenDataOf } from "../../templates/specimens/mail-specimens.js";
 import { MailTrialSender } from "../domain/ports/mail-specimen.renderer.js";
 import { UnknownMailError } from "../domain/mail-copy-errors.js";
 import type { MailCopyLocale } from "../domain/mail-copy-locale.js";

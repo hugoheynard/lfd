@@ -13,7 +13,7 @@ import { addBillingAddress, attachTo, createCompany, createUser, handOver } from
 import { placeServedOrder } from "./served-order.js";
 import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";

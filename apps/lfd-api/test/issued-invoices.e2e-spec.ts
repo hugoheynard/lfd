@@ -32,8 +32,8 @@ import { noticeAmount } from "../src/b2b/accounting/domain/services/collection-n
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import type { B2bMails } from "../src/platform/mailer/mail-templates.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import type { B2bMails } from "../src/mail/templates/mail-templates.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";

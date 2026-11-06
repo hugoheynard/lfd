@@ -8,8 +8,8 @@ import type { MailCopyPreviewView } from "@lfd/contracts";
 import type { Mailer, MailReceipt, SendMailArgs } from "@lfd/mailer";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { b2bMailTemplates, type B2bMails } from "../src/platform/mailer/mail-templates.js";
-import { MAIL_TRANSPORT, MAILER, type B2bMailer } from "../src/platform/mailer/mailer.tokens.js";
+import { b2bMailTemplates, type B2bMails } from "../src/mail/templates/mail-templates.js";
+import { MAIL_TRANSPORT, MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Le jeton porteur EST le `sub` — le mur se joue en base, comme en production. */

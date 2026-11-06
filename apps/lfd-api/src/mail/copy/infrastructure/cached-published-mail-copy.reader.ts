@@ -1,9 +1,9 @@
 import { isLayoutSectionId } from "@lfd/mailer";
 import { Injectable } from "@nestjs/common";
 
-import type { MailCopyOverlay } from "../../../platform/mailer/copy/mail-copy-overlay.js";
-import { PublishedMailCopyReader } from "../../../platform/mailer/effective-copy/published-mail-copy.reader.js";
-import type { MailSectionOrders } from "../../../platform/mailer/sections/mail-layout-scope.js";
+import type { MailCopyOverlay } from "../../templates/copy/mail-copy-overlay.js";
+import { PublishedMailCopyReader } from "../../templates/effective-copy/published-mail-copy.reader.js";
+import type { MailSectionOrders } from "../../templates/sections/mail-layout-scope.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PublishedMailCopyCache } from "../domain/ports/published-mail-copy.cache.js";
 import { MAIL_COPY_LOCALES } from "../domain/mail-copy-locale.js";

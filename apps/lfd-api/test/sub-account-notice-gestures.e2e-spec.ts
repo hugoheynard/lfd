@@ -19,7 +19,7 @@ import { NotifyPrincipalOnOrderProblemReported } from "../src/b2b/sub-account-no
 import { ORDER_PROBLEM_REPORTED } from "../src/b2b/contact/domain/order-problem-reported.fact.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";

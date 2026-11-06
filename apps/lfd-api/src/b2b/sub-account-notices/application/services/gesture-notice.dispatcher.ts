@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { SubAccountNoticeKind } from "@lfd/contracts";
 
-import type { SubAccountGesture } from "../../../../platform/mailer/sub-account-gesture-mail.js";
+import type { SubAccountGesture } from "../../../../mail/channels/templates/b2b-mails.js";
 import { PrincipalNoticeSender } from "./principal-notice.sender.js";
 
 /**

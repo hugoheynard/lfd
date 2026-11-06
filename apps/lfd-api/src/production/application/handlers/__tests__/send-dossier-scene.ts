@@ -13,7 +13,7 @@ import {
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import type { MailDemand } from "../../../../mail/channels/requests/mail-requests.js";
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../../mail/channels/templates/b2b-mails.js";
 import type { DurableSubscriber } from "../../../../platform/outbox/durable-handler.js";
 import type { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";

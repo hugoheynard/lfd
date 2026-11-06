@@ -17,7 +17,7 @@
  */
 import { importTs } from "../shop-copy/load-ts.mjs";
 
-export const COPY_DIR = "apps/lfd-api/src/platform/mailer/copy";
+export const COPY_DIR = "apps/lfd-api/src/mail/templates/copy";
 export const MANIFEST_PATH = `${COPY_DIR}/mail-copy-manifest.json`;
 export const REGENERATE = "pnpm mail-copy:digest";
 

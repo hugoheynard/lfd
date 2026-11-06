@@ -1,7 +1,7 @@
 import type { MailReceipt } from "@lfd/mailer";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../templates/b2b-mails.js";
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,

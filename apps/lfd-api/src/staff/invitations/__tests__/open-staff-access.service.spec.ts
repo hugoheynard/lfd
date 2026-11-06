@@ -14,7 +14,7 @@ import { OpenStaffAccess } from "../open-staff-access.service.js";
 import type { MailReceipt } from "@lfd/mailer";
 import type { MailDemand } from "../../../mail/channels/requests/mail-requests.js";
 import { RecordingMailRequests } from "../../../mail/channels/requests/__tests__/recording-mail-requests.js";
-import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../mail/channels/templates/b2b-mails.js";
 import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");

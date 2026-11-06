@@ -18,4 +18,4 @@ documentation/contenu-ecommerce/textes-de-la-boutique.md
 # Le manifeste des textes des e-mails est GÉNÉRÉ (`pnpm mail-copy:digest`) et
 # comparé octet par octet par `lint:mail-copy-digest` : Prettier replierait ses
 # listes de variables, et le hook de commit réécrirait ce que la porte compare.
-apps/lfd-api/src/platform/mailer/copy/mail-copy-manifest.json
+apps/lfd-api/src/mail/templates/copy/mail-copy-manifest.json

@@ -23,7 +23,7 @@ if (!existsSync(full) || readFileSync(full, "utf8") !== json) {
   console.error("\n✖ Le manifeste des textes des e-mails ne correspond plus au dictionnaire :\n");
   console.error(`  ${MANIFEST_PATH}`);
   console.error(
-    `\n  Un texte, une section ou une variable permise a changé dans apps/lfd-api/src/platform/mailer/copy/.\n  Régénérer par \`${REGENERATE}\` et commiter le résultat avec le texte.\n`,
+    `\n  Un texte, une section ou une variable permise a changé dans apps/lfd-api/src/mail/templates/copy/.\n  Régénérer par \`${REGENERATE}\` et commiter le résultat avec le texte.\n`,
   );
   process.exit(1);
 }

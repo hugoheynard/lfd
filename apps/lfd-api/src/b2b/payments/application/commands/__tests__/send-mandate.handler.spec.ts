@@ -6,7 +6,7 @@ import {
 } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import type { MailDemand } from "../../../../../mail/channels/requests/mail-requests.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { LegalEntityLogoReader } from "../../../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { MandateNotSendableError } from "../../../domain/errors/mandate-errors.js";

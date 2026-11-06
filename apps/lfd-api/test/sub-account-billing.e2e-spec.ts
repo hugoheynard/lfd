@@ -32,7 +32,7 @@ import {
 
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";

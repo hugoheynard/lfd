@@ -22,7 +22,7 @@ import type { MailReceipt } from "@lfd/mailer";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import {
   bootstrapE2e,
   daysAgo,

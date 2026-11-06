@@ -5,8 +5,9 @@ import type { B2bMails } from "./mail-templates.js";
 /**
  * Le jeton d'injection et le type du mailer, **hors du module**.
  *
- * Ils vivraient naturellement dans `mailer.module.ts`, mais ce module déclare
- * un contrôleur qui, lui, doit injecter le mailer : le module importerait le
+ * Ils vivraient naturellement dans le module qui fabrique le mailer
+ * (`mail/mail.module.ts` depuis le lot S3b, `platform/mailer/mailer.module.ts`
+ * avant), mais ce module déclare un contrôleur qui, lui, doit injecter le mailer : le module importerait le
  * contrôleur qui importerait le module. Un cycle ESM ne casse pas toujours —
  * il casse au pire moment, quand le symbole vaut `undefined` à l'évaluation
  * d'un décorateur, et le message d'erreur ne désigne alors rien d'utile.

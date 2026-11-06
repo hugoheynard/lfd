@@ -26,7 +26,7 @@ import {
   OrderStatus,
   PaymentStatus,
 } from "../src/platform/database/client/client.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";

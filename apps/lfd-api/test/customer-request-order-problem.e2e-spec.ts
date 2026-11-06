@@ -16,7 +16,7 @@ import type { Test } from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";

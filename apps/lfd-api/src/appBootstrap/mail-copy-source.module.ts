@@ -2,7 +2,7 @@ import { Global, Module } from "@nestjs/common";
 
 import { MailCopyModule } from "../mail/copy/mail-copy.module.js";
 import { CachedPublishedMailCopyReader } from "../mail/copy/infrastructure/cached-published-mail-copy.reader.js";
-import { PublishedMailCopyReader } from "../platform/mailer/effective-copy/published-mail-copy.reader.js";
+import { PublishedMailCopyReader } from "../mail/templates/effective-copy/published-mail-copy.reader.js";
 
 /**
  * **Les textes d'e-mails publiés, reliés au mailer** (plan

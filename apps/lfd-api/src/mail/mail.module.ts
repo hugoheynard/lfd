@@ -30,11 +30,18 @@ import { PrismaMailRequestPruner } from "./requests/infrastructure/prisma-mail-r
 import { PrismaMailRequestRepository } from "./requests/infrastructure/prisma-mail-request.repository.js";
 import { PrismaStalledMailRequests } from "./requests/infrastructure/prisma-stalled-mail-requests.js";
 import { StorageMailAttachmentStore } from "./requests/infrastructure/storage-mail-attachment.store.js";
+import { MAIL_TRANSPORT_PROVIDERS } from "./templates/mail-transport.providers.js";
+import { MailTemplatePreview } from "./channels/templates/mail-template-preview.js";
+import { ShortfallLetterDrafter } from "./channels/templates/shortfall-letter-drafter.js";
+import { PublishedShortfallLetterDrafter } from "./templates/published-shortfall-letter-drafter.js";
+import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-preview.js";
 
 /**
  * **Le bloc des e-mails** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, S1) :
  * sa porte `MailRequests`, le suivi des demandes, l'abonné durable qui
- * engage l'envoi et le fait partir après la validation, et son balayeur (S1b). Le rendu reste celui de `platform/mailer`.
+ * engage l'envoi et le fait partir après la validation, et son balayeur (S1b).
+ * Depuis S3b, le rendu aussi : les gabarits, le dictionnaire, le texte
+ * effectif et le mailer qui les charge (`mail/templates/`).
  *
  * Les envoyeurs y passent bloc par bloc (S2 ; `b2b/orders` le premier, lot
  * S2a). **Global** : un bloc métier n'a le droit d'importer que le canal
@@ -46,6 +53,9 @@ import { StorageMailAttachmentStore } from "./requests/infrastructure/storage-ma
 @Module({
   controllers: [MailRequestPurgeController, MailRequestsSweepController, MailCheckController],
   providers: [
+    // S3b : le mailer (transport, texte effectif, journal), sorti de
+    // `platform/mailer/` avec les gabarits qu'il charge.
+    ...MAIL_TRANSPORT_PROVIDERS,
     { provide: MailRequestPruner, useClass: PrismaMailRequestPruner },
     {
       provide: MAIL_REQUEST_PURGE_MODE,
@@ -71,7 +81,11 @@ import { StorageMailAttachmentStore } from "./requests/infrastructure/storage-ma
     SweepMailRequestsHandler,
     // S2h : la sonde de déploiement, sortie de `platform/mailer/`.
     CheckMailDeliveryHandler,
+    // S3b : les deux comportements des gabarits que des blocs métier
+    // demandent, par le canal `mail/channels/templates/`.
+    { provide: MailTemplatePreview, useClass: RegistryMailTemplatePreview },
+    { provide: ShortfallLetterDrafter, useClass: PublishedShortfallLetterDrafter },
   ],
-  exports: [MailRequests],
+  exports: [MailRequests, MailTemplatePreview, ShortfallLetterDrafter],
 })
 export class MailModule {}

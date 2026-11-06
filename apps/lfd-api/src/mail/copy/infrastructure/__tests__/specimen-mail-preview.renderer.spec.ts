@@ -1,6 +1,6 @@
 import { AppConfig } from "../../../../platform/config/app-config.js";
-import { MAIL_LOGO_ATTACHMENT } from "../../../../platform/mailer/mail-logo.js";
-import { mailKeys } from "../../../../platform/mailer/specimens/mail-specimens.js";
+import { MAIL_LOGO_ATTACHMENT } from "../../../templates/mail-logo.js";
+import { mailKeys } from "../../../templates/specimens/mail-specimens.js";
 import { SpecimenMailPreviewRenderer } from "../specimen-mail-preview.renderer.js";
 
 /** Une config qui ne lit pas l'environnement : seule la marque des e-mails compte ici. */

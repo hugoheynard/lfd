@@ -143,7 +143,7 @@ l'objet). Une réannonce, une clôture déjà dépassée par un retirage ou un
 retirage déjà dépassé n'envoient rien : le dernier tirage envoie le sien.
 
 **Ce qui part** : un e-mail par destinataire (gabarit `staff.production-dossier`,
-`apps/lfd-api/src/platform/mailer/production-dossier-mail.ts`), le PDF joint
+`apps/lfd-api/src/mail/templates/production-dossier-mail.ts`), le PDF joint
 (`dossier-du-jour-<jour>.pdf`).
 
 - Objet : « Dossier de production — plan du mercredi 7 octobre 2026 » ; après
@@ -200,7 +200,7 @@ l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires
 - Envoi : `application/services/dossier-dispatch.service.ts`, abonnés
   `application/handlers/send-dossier-on-day-closed.handler.ts` et
   `send-dossier-on-day-retaken.handler.ts`, gabarit
-  `apps/lfd-api/src/platform/mailer/production-dossier-mail.ts`.
+  `apps/lfd-api/src/mail/templates/production-dossier-mail.ts`.
 - Destinataires : `domain/entities/dossier-recipients.ts`, routes
   `http/production-dossier-recipients.controller.ts`.
 - Écrans : `apps/lfd-backoffice-frontend/src/app/production/previsionnel/dossier-du-jour/`,

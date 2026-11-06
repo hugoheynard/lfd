@@ -18,7 +18,7 @@ import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoici
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { invoicedPayer, setUpEntity } from "./collection-returns-scene.js";

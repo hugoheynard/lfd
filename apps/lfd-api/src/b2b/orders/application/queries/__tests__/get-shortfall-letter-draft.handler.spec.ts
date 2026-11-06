@@ -1,6 +1,7 @@
-import type { MailCopyOverlay } from "../../../../../platform/mailer/copy/mail-copy-overlay.js";
-import { PublishedMailCopyReader } from "../../../../../platform/mailer/effective-copy/published-mail-copy.reader.js";
-import type { MailSectionOrders } from "../../../../../platform/mailer/sections/mail-layout-scope.js";
+import {
+  ShortfallLetterDrafter,
+  type OrderShortfallDraftData,
+} from "../../../../../mail/channels/templates/shortfall-letter-drafter.js";
 import {
   ShortfallCustomerAlreadyNotifiedError,
   ShortfallLetterWithoutDecisionError,
@@ -40,43 +41,50 @@ class FixedLetters extends ShortfallLetterReader {
   }
 }
 
-class Published extends PublishedMailCopyReader {
-  constructor(private readonly overlay: MailCopyOverlay | Error) {
-    super();
-  }
+/**
+ * La rédaction est au bloc `mail` depuis le lot S3b (ses textes sont éprouvés
+ * par `mail/templates/__tests__/published-shortfall-letter-drafter.spec.ts`) :
+ * ici, ce que la commande lui demande.
+ */
+class RecordingDrafter extends ShortfallLetterDrafter {
+  readonly asked: OrderShortfallDraftData[] = [];
 
-  read(): Promise<MailCopyOverlay> {
-    return this.overlay instanceof Error
-      ? Promise.reject(this.overlay)
-      : Promise.resolve(this.overlay);
-  }
-
-  sectionOrders(): Promise<MailSectionOrders> {
-    return Promise.resolve({});
+  draft(data: OrderShortfallDraftData): Promise<string> {
+    this.asked.push(data);
+    return Promise.resolve(`proposition ${data.reference}`);
   }
 }
 
-const draft = (
+const draft = async (
   subject: ShortfallLetterSubject | null,
-  published: PublishedMailCopyReader | null = null,
-): Promise<{ message: string }> =>
-  new GetShortfallLetterDraftHandler(new FixedLetters(subject), published).execute(
-    new GetShortfallLetterDraftQuery("ord_1"),
-  );
+): Promise<{ readonly message: string; readonly asked: OrderShortfallDraftData | undefined }> => {
+  const drafter = new RecordingDrafter();
+  const { message } = await new GetShortfallLetterDraftHandler(
+    new FixedLetters(subject),
+    drafter,
+  ).execute(new GetShortfallLetterDraftQuery("ord_1"));
+  return { message, asked: drafter.asked[0] };
+};
 
 describe("la proposition « Écrire au client » (E6d)", () => {
-  it("dit ce qui part, ce qui manque, et la suite — en français pour une commande sans langue", async () => {
-    const { message } = await draft(SUBJECT);
+  it("demande ce qui part et ce qui manque — en français pour une commande sans langue", async () => {
+    const { message, asked } = await draft(SUBJECT);
 
-    expect(message).toContain("ORD-0001");
-    expect(message).toContain("Ce qui part :\n– 1 × Croissant\n– 2 × Pain au chocolat");
-    expect(message).toContain("Ce qui manque :\n– 2 × Croissant");
-    expect(message).toContain("Contactez le service commercial.");
+    expect(message).toBe("proposition ORD-0001");
+    expect(asked).toEqual({
+      reference: "ORD-0001",
+      departed: [
+        { product: "Croissant", quantity: 1 },
+        { product: "Pain au chocolat", quantity: 2 },
+      ],
+      missing: [{ product: "Croissant", quantity: 2 }],
+      locale: "fr",
+    });
   });
 
   /** P6 de `pricing/vente-au-poids.md` : un manquant au poids se dit en grammes, pas en pièces. */
-  it("dit un manquant partiel au poids en grammes, et le lot parti en kilos", async () => {
-    const { message } = await draft({
+  it("passe un manquant partiel au poids en grammes, et le lot parti, marqués au poids", async () => {
+    const { asked } = await draft({
       ...SUBJECT,
       lines: [
         { sku: "SAU", due: 1250, packed: 1000 },
@@ -92,34 +100,31 @@ describe("la proposition « Écrire au client » (E6d)", () => {
       ]),
     });
 
-    expect(message).toContain("Ce qui part :\n– 1 kg × Saumon gravlax\n– 3 × Croissant");
-    expect(message).toContain("Ce qui manque :\n– 250 g × Saumon gravlax");
-    expect(message).not.toContain("250 × Saumon");
+    expect(asked?.departed).toEqual([
+      { product: "Saumon gravlax", quantity: 1000, saleUnit: "weight" },
+      { product: "Croissant", quantity: 3 },
+    ]);
+    expect(asked?.missing).toEqual([
+      { product: "Saumon gravlax", quantity: 250, saleUnit: "weight" },
+    ]);
   });
 
   it("un article au poids entièrement absent manque de tout son poids", async () => {
-    const { message } = await draft({
+    const { asked } = await draft({
       ...SUBJECT,
       lines: [{ sku: "SAU", due: 500, packed: 0 }],
       names: new Map([["SAU", "Saumon gravlax"]]),
       units: new Map([["SAU", "weight"]]),
     });
 
-    expect(message).toContain("Ce qui manque :\n– 500 g × Saumon gravlax");
+    expect(asked?.departed).toEqual([]);
+    expect(asked?.missing).toEqual([
+      { product: "Saumon gravlax", quantity: 500, saleUnit: "weight" },
+    ]);
   });
 
-  it("parle la langue de la commande", async () => {
-    expect((await draft({ ...SUBJECT, locale: "en" })).message).toContain("What leaves:");
-  });
-
-  it("suit les textes publiés, et le texte du code quand leur lecture échoue", async () => {
-    const published = new Published({
-      fr: { "customer.order-shortfall": { closing: "Pardon, vraiment." } },
-    });
-    expect((await draft(SUBJECT, published)).message).toContain("Pardon, vraiment.");
-    expect((await draft(SUBJECT, new Published(new RangeError("base")))).message).toContain(
-      "Toutes nos excuses",
-    );
+  it("demande la langue de la commande", async () => {
+    expect((await draft({ ...SUBJECT, locale: "en" })).asked?.locale).toBe("en");
   });
 
   it("refuse une commande sans décision, et un client déjà prévenu", async () => {

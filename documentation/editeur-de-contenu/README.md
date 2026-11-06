@@ -70,14 +70,14 @@ Une bonne part du chemin est faite pour les e-mails, par le plan
 (E1 à E4b, bâtis le 2026-10-23) :
 
 - **Les textes** des 28 e-mails sont au dictionnaire, en trois langues
-  (`apps/lfd-api/src/platform/mailer/copy/`), avec un manifeste généré qui
+  (`apps/lfd-api/src/mail/templates/copy/`), avec un manifeste généré qui
   liste pour chaque texte ses variables permises et obligatoires
   (`mail-copy-manifest.json`, tenu par `lint:mail-copy-digest`).
 - **Le texte effectif** (défaut + publié) est servi par
-  `apps/lfd-api/src/platform/mailer/effective-copy/` ; l'écran de
+  `apps/lfd-api/src/mail/templates/effective-copy/` ; l'écran de
   Communication édite, prévisualise, envoie un essai au staff, publie.
 - **Les sections** : un e-mail est déjà une suite de sections déclarées par
-  gabarit (`apps/lfd-api/src/platform/mailer/sections/`), de nature `text`
+  gabarit (`apps/lfd-api/src/mail/templates/sections/`), de nature `text`
   (ses textes se réécrivent) ou `system` (produite par les données : QR,
   récapitulatif, itinéraire), dont **l'ordre** se règle, en brouillon puis
   publié. L'en-tête et le pied sont des cadres fixes.

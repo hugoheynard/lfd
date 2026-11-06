@@ -1,7 +1,7 @@
 import { MailerInvalidReplyToError, type MailReceipt, type SendMailArgs } from "@lfd/mailer";
 
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import type { B2bMails } from "../../../templates/mail-templates.js";
+import type { B2bMailer } from "../../../templates/mailer.tokens.js";
 import { MailRefusedError } from "../../domain/errors/mail-request.errors.js";
 import { MailerMailDispatch } from "../mailer-mail-dispatch.js";
 

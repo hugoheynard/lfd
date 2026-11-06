@@ -13,8 +13,8 @@ import { MailRequests, type MailDemand } from "../src/mail/channels/requests/mai
 import { DeliverRequestedMail } from "../src/mail/requests/application/deliver-requested-mail.handler.js";
 import { ImmediateMailInsideUnitOfWorkError } from "../src/mail/requests/domain/errors/mail-request.errors.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import type { B2bMails } from "../src/platform/mailer/mail-templates.js";
-import { MAILER, type B2bMailer } from "../src/platform/mailer/mailer.tokens.js";
+import type { B2bMails } from "../src/mail/templates/mail-templates.js";
+import { MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
 
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 

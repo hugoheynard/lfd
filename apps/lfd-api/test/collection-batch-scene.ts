@@ -27,7 +27,7 @@ import {
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";

@@ -18,7 +18,7 @@ import { SUBSCRIPTION_CREATED } from "../src/b2b/account/domain/events/site-gest
 import { NotifyPrincipalOnSubscriptionCreated } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-subscription-created.handler.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";

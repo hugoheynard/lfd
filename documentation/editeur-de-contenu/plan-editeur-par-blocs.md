@@ -65,7 +65,7 @@ flowchart LR
   marque** (`ops.deploy-check`, `staff.account-alert`,
   `staff.appointment-booked`, `staff.support-requested`). Rien n'est déclaré
   pour le mode sombre.
-- **Les phrases** : le dictionnaire du code (`platform/mailer/copy/`), ses
+- **Les phrases** : le dictionnaire du code (`mail/templates/copy/`), ses
   réécritures publiées (`b2b/mail-copy`, `public.mail_copy_entries`), l'ordre
   des sections publié (`public.mail_section_orders`), l'écran `textes-emails`.
   Les variantes y existent déjà (`title.paid`, S6 du plan des textes).
@@ -75,7 +75,7 @@ flowchart LR
   `customer.order-shortfall` (le message écrit à l'envoi) et
   `agency.vitrine-notice` (objet, titre et corps).
 - Le QR : PNG déterministe, fond blanc opaque, zone de silence intégrée
-  (`apps/lfd-api/src/platform/mailer/qr-image.ts`).
+  (`apps/lfd-api/src/mail/templates/qr-image.ts`).
 - Le back-office a `@angular/cdk` (22.1.2) pour le glisser-déposer.
 
 ### 2. Le document d'un e-mail (S4)
@@ -96,7 +96,7 @@ type Block =
 ```
 
 - **Les blocs du modèle** sont les sections que chaque modèle déclare
-  aujourd'hui (`platform/mailer/sections/`), généralisées : titre, message,
+  aujourd'hui (`mail/templates/sections/`), généralisées : titre, message,
   récapitulatif, QR, itinéraire, bouton de commande, lien secondaire, pied,
   le bouton et son lien secondaire forment **un seul bloc** (le lien n'est rendu qu'avec le bouton). Le code les compose comme aujourd'hui ; **un bloc du modèle absent d'un envoi est rendu exactement comme aujourd'hui** (`joinSections` laisse une ligne vide à la place de 7 des 8 sections absentes, rien pour l'itinéraire). **Ne sont pas des blocs** : l'en-tête, le surtitre, le logo et le recours (cadres fixes), et les pièces jointes (données de l'envoi, sans place dans l'e-mail). L'objet de l'e-mail reste
   composé par le code, ses phrases réécrites dans le dictionnaire.
@@ -143,7 +143,7 @@ type Block =
 - **La garantie, testée pour les 32 modèles** : le document de départ rend
   **les mêmes octets** que la coquille actuelle (HTML, objet, pièces jointes),
   sur les jeux de données des empreintes existantes
-  (`platform/mailer/__tests__/rendering-golden/`). Un document réarrangé, lui,
+  (`mail/templates/__tests__/rendering-golden/`). Un document réarrangé, lui,
   change le rendu, et c'est voulu.
 - `@lfd/mailer` change : `pnpm test` à la racine.
 

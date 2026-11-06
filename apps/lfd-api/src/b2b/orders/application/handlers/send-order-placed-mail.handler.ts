@@ -5,7 +5,7 @@ import {
   COMMERCE_ORDER_PLACED,
   CommerceOrderPlacedFact,
 } from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {

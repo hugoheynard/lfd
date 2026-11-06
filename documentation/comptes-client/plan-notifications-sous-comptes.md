@@ -172,7 +172,7 @@ touche cinq contextes qui ne publient aujourd'hui qu'au journal.
 - Trois `@DurableHandler` dans `b2b/sub-account-notices/application/handlers/`,
   un service commun (`SubAccountNoticeDispatcher`) et des règles pures
   (`apps/lfd-api/src/b2b/sub-account-notices/domain/notice-recipients.ts`). Gabarit `customer.sub-account-activity`
-  (`apps/lfd-api/src/platform/mailer/sub-account-activity-mail.ts`), français seul. e2e
+  (`apps/lfd-api/src/mail/templates/sub-account-activity-mail.ts`), français seul. e2e
   `apps/lfd-api/test/sub-account-notices.e2e-spec.ts`.
 - **La passation n'a pas de fait `order.placed` durable** : le seul fait
   durable est `commerce.order_placed` (canal de la livraison), écrit par les
@@ -430,7 +430,7 @@ pas à la même chose :
   la fin commune ; `SubAccountNoticeDispatcher` (commande) et
   `GestureNoticeDispatcher` (gestes) n'en sont plus que la lecture. Gabarit
   `customer.sub-account-gesture`
-  (`apps/lfd-api/src/platform/mailer/sub-account-gesture-mail.ts`), union
+  (`apps/lfd-api/src/mail/templates/sub-account-gesture-mail.ts`), union
   `SubAccountGesture` à un membre (`problem_reported`). Liste partagée
   `SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL` (`packages/contracts/src/sub-account-notices.ts`),
   lue par la carte N3 : la ligne « Problème de commande signalé » s'affiche.

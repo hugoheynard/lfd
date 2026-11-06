@@ -5,7 +5,7 @@ import {
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import {
   ORDER_PAYMENT_FAILED,

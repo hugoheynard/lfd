@@ -1,20 +1,20 @@
 import type { MailReceipt } from "@lfd/mailer";
 
-import type { MailDemand } from "../../../../mail/channels/requests/mail-requests.js";
+import type { MailDemand } from "../../../channels/requests/mail-requests.js";
 import {
   OpenableUnitOfWork,
   RecordingMailRequests,
-} from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+} from "../../../channels/requests/__tests__/recording-mail-requests.js";
 import {
   activeMailCopyOverlay,
   type MailCopyOverlay,
-} from "../../../../platform/mailer/copy/mail-copy-overlay.js";
+} from "../../../templates/copy/mail-copy-overlay.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../templates/mail-templates.js";
 import {
   activeMailLayout,
   type MailLayoutScope,
-} from "../../../../platform/mailer/sections/mail-layout-scope.js";
+} from "../../../templates/sections/mail-layout-scope.js";
 import { UnknownMailError } from "../../domain/mail-copy-errors.js";
 import { SpecimenMailTrialSender } from "../specimen-mail-trial.sender.js";
 

@@ -4,7 +4,7 @@ import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/state
 import { PrismaOrderRowsLock } from "../src/b2b/accounting/infrastructure/prisma-order-rows-lock.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";

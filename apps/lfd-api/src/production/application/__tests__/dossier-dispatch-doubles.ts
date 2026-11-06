@@ -7,7 +7,7 @@ import {
 } from "../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import type { MailDemand } from "../../../mail/channels/requests/mail-requests.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
-import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../mail/channels/templates/b2b-mails.js";
 import {
   StaffNotifier,
   type StaffNotice,

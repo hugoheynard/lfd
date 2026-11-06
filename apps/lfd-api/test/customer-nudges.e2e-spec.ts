@@ -10,7 +10,7 @@
  */
 import { localToInstant, type CustomerNudgesView } from "@lfd/contracts";
 
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";

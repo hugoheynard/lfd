@@ -15,7 +15,7 @@ import type { ActivityPageView, CreatedStaffUserResponse } from "@lfd/contracts"
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import type { StaffPrincipal } from "../src/platform/auth/staff-principal.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import {
   StaffAuthorDirectory,
   StaffAuthorReferences,

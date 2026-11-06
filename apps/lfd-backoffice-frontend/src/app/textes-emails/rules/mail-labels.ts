@@ -9,7 +9,7 @@ export interface MailLabel {
 
 /**
  * **Les intitulés des 32 e-mails du registre** (`B2bMails`,
- * `apps/lfd-api/src/platform/mailer/mail-templates.ts`, relu le 2026-10-25) —
+ * `apps/lfd-api/src/mail/channels/templates/b2b-mails.ts`, relu le 2026-10-25 ; déplacé au lot S3b) —
  * la clé technique reste au survol. Une clé que l'écran ne connaît pas
  * s'affiche telle quelle (`mailLabel`) : un e-mail neuf reste éditable avant
  * d'avoir son intitulé.

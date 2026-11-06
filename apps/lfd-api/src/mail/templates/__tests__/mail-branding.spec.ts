@@ -1,4 +1,4 @@
-import { AppConfig } from "../../config/app-config.js";
+import { AppConfig } from "../../../platform/config/app-config.js";
 import { mailBrandingOf } from "../mail-branding.js";
 import { b2bMailTemplates } from "../mail-templates.js";
 

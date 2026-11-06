@@ -1,4 +1,4 @@
-import { ORDER_CASES } from "../../../../platform/mailer/__tests__/rendering-golden/order-cases.js";
+import { ORDER_CASES } from "../../../templates/__tests__/rendering-golden/order-cases.js";
 import type { DeferredMailDemand } from "../../../channels/requests/mail-requests.js";
 import {
   MailAttachmentMissingError,

@@ -9,7 +9,7 @@ import {
   type ByReference,
   MailRequests,
 } from "../../../../mail/channels/requests/mail-requests.js";
-import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../../mail/channels/templates/b2b-mails.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { noticeRecipients, principalStillWritten } from "../../domain/notice-recipients.js";
 import { notifiedRoles } from "../../domain/notified-roles.js";

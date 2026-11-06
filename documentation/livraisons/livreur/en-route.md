@@ -85,7 +85,7 @@ sequenceDiagram
 - Le contenu : la référence, l'adresse de livraison suivie du créneau de la
   commande quand elle en a un (« entre 07:00 et 09:00 », « avant 08:00 »),
   « Votre livreur est parti. Il arrive bientôt. » (2026-10-28). **Pas d'heure
-  estimée**, pas de nom ni de téléphone du livreur. Gabarit : `platform/mailer/delivery-en-route-mail.ts`.
+  estimée**, pas de nom ni de téléphone du livreur. Gabarit : `mail/templates/delivery-en-route-mail.ts`.
 
 ## 3. Le délai
 

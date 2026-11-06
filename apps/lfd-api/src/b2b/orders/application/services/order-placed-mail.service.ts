@@ -1,7 +1,7 @@
 import { exposedHandoverToken } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";

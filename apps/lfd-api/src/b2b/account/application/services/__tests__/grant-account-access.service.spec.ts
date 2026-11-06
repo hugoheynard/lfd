@@ -6,7 +6,7 @@ import {
   MailRequests,
 } from "../../../../../mail/channels/requests/mail-requests.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
   AccountDisabledError,

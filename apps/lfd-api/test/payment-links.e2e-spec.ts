@@ -32,7 +32,7 @@ import { OrderMailOrigins } from "../src/b2b/orders/domain/ports/order-mail-orig
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import {
   DuplicateResourceError,
   mapPersistenceError,

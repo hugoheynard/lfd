@@ -22,7 +22,7 @@ import { DeliveryOrdersBroughtBackFact } from "../src/delivery/channels/handover
 import { ShipmentRef } from "../src/production/channels/delivery/index.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { staffWithRole } from "./delivery-driver-scene.js";
 import { DOOR_ROLE, departedStop } from "./delivery-handover-scene.js";

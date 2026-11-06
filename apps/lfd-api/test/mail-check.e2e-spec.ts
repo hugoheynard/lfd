@@ -10,8 +10,8 @@
  */
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import type { B2bMails } from "../src/platform/mailer/mail-templates.js";
-import { MAILER, type B2bMailer } from "../src/platform/mailer/mailer.tokens.js";
+import type { B2bMails } from "../src/mail/templates/mail-templates.js";
+import { MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
 
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";

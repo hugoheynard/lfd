@@ -2,7 +2,7 @@ import type { OrderView } from "@lfd/contracts";
 
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import type { ByReference } from "../../../../../mail/channels/requests/mail-requests.js";
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import type { CustomerCancellationSubject } from "../../../domain/ports/customer-cancellation-subject.reader.js";
 import {
   customerSubject,

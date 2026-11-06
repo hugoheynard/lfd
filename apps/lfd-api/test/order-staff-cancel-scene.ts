@@ -5,7 +5,7 @@ import {
   PaymentGateway,
   type IntentCancellation,
 } from "../src/b2b/payments/domain/payment-gateway.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { ProductionOrderWithdrawalDesk } from "../src/production/application/services/production-order-withdrawal.desk.js";
 import {

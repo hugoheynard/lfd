@@ -1,7 +1,7 @@
 import type { SubAccountNoticeKind } from "@lfd/contracts";
 
 import { SiteGestureFact } from "../../../account/domain/events/site-gesture.fact.js";
-import type { SubAccountGesture } from "../../../../platform/mailer/sub-account-gesture-mail.js";
+import type { SubAccountGesture } from "../../../../mail/channels/templates/b2b-mails.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import type { GestureNotice } from "../services/gesture-notice.dispatcher.js";
 

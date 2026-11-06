@@ -40,7 +40,7 @@ rien une fois la personne entrée.
 - **Throttler** : **300**/min par IP par défaut (`security.module.ts`) ; des routes
   publiques le serrent à 60 par `@Throttle`.
 - **Gabarits** `customer.access-opened` et `customer.company-attached`
-  (`platform/mailer/mail-templates.ts`) disent « par l'équipe La Folie Douce » ;
+  (`mail/templates/mail-templates.ts`) disent « par l'équipe La Folie Douce » ;
   le second promet « répondez, nous le retirerons ».
 - **Rôles** : `owner | admin | orders | billing` ; `owner` ne s'attribue pas.
   Statuts de société : quatre valeurs, dont `suspended` et `terminated`.

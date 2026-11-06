@@ -1,15 +1,8 @@
 import type { AdminShortfallLetterDraft } from "@lfd/contracts";
-import { Logger, Optional } from "@nestjs/common";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
-import {
-  NO_MAIL_COPY_OVERLAY,
-  withMailCopyOverlay,
-  type MailCopyOverlay,
-} from "../../../../platform/mailer/copy/mail-copy-overlay.js";
-import { PublishedMailCopyReader } from "../../../../platform/mailer/effective-copy/published-mail-copy.reader.js";
-import { draftOrderShortfallMessage } from "../../../../platform/mailer/order-shortfall-mail.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
+import { ShortfallLetterDrafter } from "../../../../mail/channels/templates/shortfall-letter-drafter.js";
 import {
   ShortfallCustomerAlreadyNotifiedError,
   ShortfallLetterWithoutDecisionError,
@@ -23,9 +16,9 @@ import { GetShortfallLetterDraftQuery } from "./get-shortfall-letter-draft.query
  * ce qui part, ce qui manque, la suite — par le dictionnaire des e-mails, dans
  * la langue de la commande (le français pour une commande sans langue).
  *
- * Les textes PUBLIÉS à l'écran des textes s'appliquent, comme à l'envoi ; une
- * lecture du publié qui échoue rend la proposition du code, et le dit au
- * journal de l'API.
+ * Les textes PUBLIÉS à l'écran des textes s'appliquent, comme à l'envoi : la
+ * rédaction est celle du bloc `mail`, par son canal (`ShortfallLetterDrafter`,
+ * lot S3b), qui se replie sur le texte du code quand le publié est illisible.
  *
  * @throws {ShortfallLetterWithoutDecisionError} commande inconnue, ou départ non décidé.
  * @throws {ShortfallCustomerAlreadyNotifiedError} le client a déjà été prévenu.
@@ -35,11 +28,9 @@ export class GetShortfallLetterDraftHandler implements IQueryHandler<
   GetShortfallLetterDraftQuery,
   AdminShortfallLetterDraft
 > {
-  private readonly logger = new Logger(GetShortfallLetterDraftHandler.name);
-
   constructor(
     private readonly letters: ShortfallLetterReader,
-    @Optional() private readonly published: PublishedMailCopyReader | null = null,
+    private readonly drafter: ShortfallLetterDrafter,
   ) {}
 
   async execute(query: GetShortfallLetterDraftQuery): Promise<AdminShortfallLetterDraft> {
@@ -51,28 +42,11 @@ export class GetShortfallLetterDraftHandler implements IQueryHandler<
       throw new ShortfallCustomerAlreadyNotifiedError(subject.reference);
     }
     const lines = shortfallLetterLines(subject.lines, subject.names, subject.units);
-    const overlay = await this.publishedTexts();
-    const message = withMailCopyOverlay(overlay, () =>
-      draftOrderShortfallMessage({
-        reference: subject.reference,
-        ...lines,
-        locale: subject.locale ?? DEFAULT_MAIL_LOCALE,
-      }),
-    );
+    const message = await this.drafter.draft({
+      reference: subject.reference,
+      ...lines,
+      locale: subject.locale ?? DEFAULT_MAIL_LOCALE,
+    });
     return { message };
-  }
-
-  private async publishedTexts(): Promise<MailCopyOverlay> {
-    if (this.published === null) {
-      return NO_MAIL_COPY_OVERLAY;
-    }
-    try {
-      return await this.published.read();
-    } catch (error: unknown) {
-      this.logger.warn(
-        `Textes d'e-mails publiés illisibles : la proposition « Écrire au client » suit le texte du code. Cause : ${String(error)}`,
-      );
-      return NO_MAIL_COPY_OVERLAY;
-    }
   }
 }

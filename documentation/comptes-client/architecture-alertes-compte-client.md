@@ -222,7 +222,7 @@ delivery: {
 ```
 
 - **`staffEmail`** — le template `staff.account-alert` de
-  `apps/lfd-api/src/platform/mailer/mail-templates.ts`.
+  `apps/lfd-api/src/mail/templates/mail-templates.ts`.
 - **`staffInApp`** — le socle de notification staff construit en tranche D :
   le modèle `StaffNotification` (`prisma/schema/public/staff.prisma`), la route
   de `src/staff/notifications/http/my-staff-notifications.controller.ts`, et la

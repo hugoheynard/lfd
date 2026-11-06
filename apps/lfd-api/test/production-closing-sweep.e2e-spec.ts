@@ -26,7 +26,7 @@ import {
   OrderStatus,
   PaymentStatus,
 } from "../src/platform/database/client/client.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,

@@ -4,7 +4,7 @@ import {
   OrderNoticeSummaryReader,
   type OrderNoticeSummary,
 } from "../../../orders/domain/ports/order-notice-summary.reader.js";
-import type { SubAccountActivity } from "../../../../platform/mailer/sub-account-activity-mail.js";
+import type { SubAccountActivity } from "../../../../mail/channels/templates/b2b-mails.js";
 import { chargedToPrincipal } from "../../domain/notice-recipients.js";
 import { PrincipalNoticeSender } from "./principal-notice.sender.js";
 

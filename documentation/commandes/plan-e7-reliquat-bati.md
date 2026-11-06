@@ -1118,8 +1118,8 @@ la plupart n'ont rien à changer.
 | `b2b/orders/application/services/order-placed-mail.service.ts`      | 90                          | aucun                             |
 | `b2b/orders/application/services/order-sheet-archive.service.ts`    | 95, 99                      | aucun                             |
 | `b2b/orders/application/services/order-sheet-attachment.service.ts` | 29, 32                      | aucun                             |
-| `platform/mailer/mail-templates.ts`                                 | 94, 211                     | aucun                             |
-| `platform/mailer/specimens/order-specimens.ts`                      | 95, 107                     | aucun                             |
+| `mail/templates/mail-templates.ts`                                  | 94, 211                     | aucun                             |
+| `mail/templates/specimens/order-specimens.ts`                       | 95, 107                     | aucun                             |
 | `b2b/orders/domain/services/handover.ts`                            | commentaire                 | aucun                             |
 
 Côté écran (hors compte backend) : `handover-shop/scan-dialog/` et

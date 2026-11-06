@@ -92,7 +92,7 @@ lui soit créé :
 
 ## 4. L'e-mail d'invitation
 
-`customer.access-opened` (`platform/mailer/customer-access-opened-mail.ts`,
+`customer.access-opened` (`mail/templates/customer-access-opened-mail.ts`,
 français seulement) dit « Connectez-vous avec votre adresse … : vous recevrez
 un code par e-mail », avec un bouton vers `/connexion/code` ; le lien de
 création de mot de passe reste en lien secondaire (« Ou choisissez un mot de

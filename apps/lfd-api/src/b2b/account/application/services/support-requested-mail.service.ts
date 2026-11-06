@@ -3,7 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
-import { purposeLabel } from "../../../../platform/mailer/staff-mail-labels.js";
+import { purposeLabel } from "../../../../mail/channels/templates/staff-mail-labels.js";
 import { SupportRequestReader } from "../../domain/ports/support-request.reader.js";
 
 /** Le jour souhaité, en toutes lettres. Une colonne DATE : lue à midi UTC, elle ne change pas de jour. */

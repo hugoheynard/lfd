@@ -14,7 +14,7 @@
 import type { CreatedStaffUserResponse } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { StaffIdentityPort } from "../src/staff/invitations/staff-identity.port.js";
 import { bootstrapE2e, E2E_STAFF_EMAIL, jsonBody, type E2eContext } from "./e2e-harness.js";
 

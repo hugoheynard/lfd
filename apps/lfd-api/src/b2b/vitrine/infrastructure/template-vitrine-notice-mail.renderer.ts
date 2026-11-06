@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { AppConfig } from "../../../platform/config/app-config.js";
-import { mailBrandingOf } from "../../../platform/mailer/mail-branding.js";
-import { b2bMailTemplates } from "../../../platform/mailer/mail-templates.js";
+import { MailTemplatePreview } from "../../../mail/channels/templates/mail-template-preview.js";
 import {
   type RenderedVitrineNotice,
   VitrineNoticeMailRenderer,
@@ -10,18 +8,20 @@ import {
 import type { VitrineNoticeText } from "../domain/vitrine-notice-text.js";
 
 /**
- * Le rendu de l'aperçu par le gabarit MÊME de l'envoi, avec la marque même du
- * mailer (`mailBrandingOf`) : l'aperçu et l'e-mail ne peuvent pas diverger.
+ * Le rendu de l'aperçu par le gabarit MÊME de l'envoi, demandé au bloc `mail`
+ * par son canal (`MailTemplatePreview`, lot S3b) : l'aperçu et l'e-mail ne
+ * peuvent pas diverger.
  */
 @Injectable()
 export class TemplateVitrineNoticeMailRenderer extends VitrineNoticeMailRenderer {
-  constructor(private readonly config: AppConfig) {
+  constructor(private readonly preview: MailTemplatePreview) {
     super();
   }
 
   render(text: VitrineNoticeText): RenderedVitrineNotice {
-    const template = b2bMailTemplates(mailBrandingOf(this.config))["agency.vitrine-notice"];
-    const { subject, html } = template({ subject: text.subject, message: text.message });
-    return { subject, html };
+    return this.preview.render("agency.vitrine-notice", {
+      subject: text.subject,
+      message: text.message,
+    });
   }
 }

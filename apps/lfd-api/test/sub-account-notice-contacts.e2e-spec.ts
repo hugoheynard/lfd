@@ -15,7 +15,7 @@ import { CONTACT_ADDED } from "../src/b2b/account/domain/events/site-gesture.fac
 import { NotifyPrincipalOnContactAdded } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-contact-added.handler.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";

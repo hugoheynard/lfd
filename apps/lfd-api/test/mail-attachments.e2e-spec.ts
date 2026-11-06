@@ -17,9 +17,9 @@ import {
   MailRequests,
 } from "../src/mail/channels/requests/mail-requests.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { ORDER_CASES } from "../src/platform/mailer/__tests__/rendering-golden/order-cases.js";
-import type { B2bMails } from "../src/platform/mailer/mail-templates.js";
-import { MAILER, type B2bMailer } from "../src/platform/mailer/mailer.tokens.js";
+import { ORDER_CASES } from "../src/mail/templates/__tests__/rendering-golden/order-cases.js";
+import type { B2bMails } from "../src/mail/templates/mail-templates.js";
+import { MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
 import { CustomerDocumentStore } from "../src/platform/storage/customer-document-store.js";
 
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";

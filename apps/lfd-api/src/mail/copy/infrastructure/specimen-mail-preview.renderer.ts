@@ -2,16 +2,10 @@ import { isLayoutSectionId, type RenderedMail, type TemplateRegistry } from "@lf
 import { Injectable } from "@nestjs/common";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
-import { mailBrandingOf } from "../../../platform/mailer/mail-branding.js";
-import { b2bMailTemplates, type B2bMails } from "../../../platform/mailer/mail-templates.js";
-import {
-  revealTextMarkers,
-  stripTextMarkers,
-} from "../../../platform/mailer/sections/mail-text-markers.js";
-import {
-  isMailKey,
-  renderMailSpecimen,
-} from "../../../platform/mailer/specimens/mail-specimens.js";
+import { mailBrandingOf } from "../../templates/mail-branding.js";
+import { b2bMailTemplates, type B2bMails } from "../../templates/mail-templates.js";
+import { revealTextMarkers, stripTextMarkers } from "../../templates/sections/mail-text-markers.js";
+import { isMailKey, renderMailSpecimen } from "../../templates/specimens/mail-specimens.js";
 import {
   MailSpecimenRenderer,
   type MailSpecimenRendering,
@@ -23,7 +17,7 @@ import type { MailTextsByMail } from "../domain/mail-copy-texts.js";
 /**
  * Adaptateur de l'aperçu : le registre RÉEL des e-mails, avec la même marque
  * que le mailer (`mailBrandingOf`), sur les données d'exemple du mailer
- * (`platform/mailer/specimens/`).
+ * (`mail/templates/specimens/`).
  *
  * Les images du corps partent en pièce jointe `cid:` — qu'un navigateur ne
  * sait pas afficher : l'aperçu les incruste en `data:`, et le HTML envoyé,

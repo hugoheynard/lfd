@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
-import type { OrderCancelledMailData } from "../../../../platform/mailer/order-cancelled-mail.js";
+import type { OrderCancelledMailData } from "../../../../mail/channels/templates/b2b-mails.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,

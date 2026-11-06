@@ -10,7 +10,7 @@ export interface OutgoingMail {
 
 /**
  * Port d'**envoi** : rendre et envoyer par le mailer d'aujourd'hui
- * (`platform/mailer` — plan S1 : le rendu ne change pas).
+ * (`mail/templates/` depuis S3b — plan S1 : le rendu ne change pas).
  *
  * @returns l'identifiant du fournisseur, `null` en mode à blanc.
  * @throws {MailInFlightError} un envoi de même clé est encore en cours chez le

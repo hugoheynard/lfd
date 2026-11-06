@@ -443,7 +443,7 @@ sa présence.
 
 - **E-mail** : fait durable `invoice.issued` (380 seulement), abonné
   `SendInvoiceNotice` → `InvoiceNoticeSender`, gabarit `customer.invoice-issued`
-  (`platform/mailer/invoice-issued-mail.ts`, dictionnaire `invoiceIssued`). Le
+  (`mail/templates/invoice-issued-mail.ts`, dictionnaire `invoiceIssued`). Le
   PDF est rendu d'abord puis joint ; un rendu en échec laisse partir l'e-mail
   sans pièce. Destinataires (`invoiceNoticeRecipients`) : le contact `billing`
   le plus ancien du payeur (sinon son détenteur), et les contacts et membres

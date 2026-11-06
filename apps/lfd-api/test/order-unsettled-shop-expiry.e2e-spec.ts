@@ -18,7 +18,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";

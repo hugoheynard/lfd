@@ -2,7 +2,7 @@ import type { ClientSheet } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import type { ByReference } from "../../../../mail/channels/requests/mail-requests.js";
-import type { OrderSheetMailDocument } from "../../../../platform/mailer/order-sheet-mail-document.js";
+import type { OrderSheetMailDocument } from "../../../../mail/channels/templates/b2b-mails.js";
 import { OrderSheetArchive } from "./order-sheet-archive.service.js";
 
 /** Le bon tel que la demande d'e-mail le porte : sa place au stockage, pas ses octets. */

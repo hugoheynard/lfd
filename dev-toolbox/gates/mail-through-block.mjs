@@ -18,8 +18,8 @@
  *
  * ## Deux listes
  *
- * - **ADMITTED** : le bloc `mail` (c'est son travail), et le module du mailer,
- *   qui fabrique ce qu'il fournit.
+ * - **ADMITTED** : le bloc `mail` (c'est son travail — il fabrique aussi le
+ *   mailer depuis le lot S3b).
  * - **DEBT** : les envoyeurs pas encore passés par la porte, relevés le
  *   2026-11-06 (31, le compte du plan, § 1). Un fichier hors des deux listes
  *   qui injecte le mailer échoue ; un fichier de la dette devenu propre échoue
@@ -39,9 +39,10 @@ const SRC = "apps/lfd-api/src";
 
 /** Ceux dont le travail EST l'envoi. Une entrée finissant par `/` couvre un dossier. */
 export const ADMITTED = {
-  [`${SRC}/mail/`]: "le bloc des e-mails : sa porte envoie par le mailer",
-  [`${SRC}/platform/mailer/mailer.module.ts`]:
-    "le module du mailer fabrique MAILER à partir de MAIL_TRANSPORT",
+  // Le module du mailer (`platform/mailer/mailer.module.ts`) y figurait : il
+  // fabriquait MAILER. Il ne le fait plus depuis le lot S3b — le bloc `mail`
+  // compose le mailer avec ses gabarits (`mail/templates/mail-transport.providers.ts`).
+  [`${SRC}/mail/`]: "le bloc des e-mails : il compose le mailer et sa porte envoie par lui",
 };
 
 /**

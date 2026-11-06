@@ -9,11 +9,11 @@
 ## 0. Ce qui existe (ouvert le 2026-10-23)
 
 - **28 e-mails**, déclarés dans le registre
-  `apps/lfd-api/src/platform/mailer/mail-templates.ts` (`B2bMails`) : 17 pour
+  `apps/lfd-api/src/mail/templates/mail-templates.ts` (`B2bMails`) : 17 pour
   le client (`customer.*`), 10 pour l'équipe (`staff.*` et `ops.deploy-check`),
   1 pour l'agence (`agency.vitrine-notice`).
 - **Une partie de leurs textes** est déjà dans un dictionnaire en trois
-  langues, `platform/mailer/copy/` (`MAIL_COPY`, `mail-copy.model.ts`, ~140
+  langues, `mail/templates/copy/` (`MAIL_COPY`, `mail-copy.model.ts`, ~140
   lignes par langue) : la confirmation de commande, la tournée partie, la
   facture émise, l'annulation. **Le reste est écrit dans les gabarits** :
   l'avis de prélèvement, l'accès ouvert, les demandes clients, le dossier du
@@ -80,17 +80,17 @@
   « Libellé : valeur » des e-mails internes, guillemets autour d'un message
   saisi, séparateurs de liste). `mandate-to-sign-wording.ts` ne garde que
   son type.
-- **Les variables permises** sont déclarées dans `apps/lfd-api/src/platform/mailer/copy/mail-copy.variables.ts`
+- **Les variables permises** sont déclarées dans `apps/lfd-api/src/mail/templates/copy/mail-copy.variables.ts`
   (ce que le gabarit passe à `fill`) ; les **obligatoires** sont celles du
   texte français par défaut. `mail-copy.spec.ts` refuse une variable non
   déclarée, dans les trois langues.
-- **Le manifeste** `apps/lfd-api/src/platform/mailer/copy/mail-copy-manifest.json`
+- **Le manifeste** `apps/lfd-api/src/mail/templates/copy/mail-copy-manifest.json`
   (e-mail → clé → variables permises, obligatoires → texte français) est
   généré par `pnpm mail-copy:digest` ; `lint:mail-copy-digest` (47ᵉ porte)
   refuse qu'il retarde. 325 textes, 28 e-mails.
-- **Aucun octet changé** : `apps/lfd-api/src/platform/mailer/__tests__/mail-rendering-golden.spec.ts` compare
+- **Aucun octet changé** : `apps/lfd-api/src/mail/templates/__tests__/mail-rendering-golden.spec.ts` compare
   81 cas (chaque branche de chaque e-mail, en français) aux empreintes
-  capturées AVANT le déménagement (`apps/lfd-api/src/platform/mailer/__tests__/rendering-golden/mail-rendering.golden.json` :
+  capturées AVANT le déménagement (`apps/lfd-api/src/mail/templates/__tests__/rendering-golden/mail-rendering.golden.json` :
   objet en clair, SHA-256 du HTML et des pièces jointes).
 
 ### Traductions neuves à relire (anglais et italien)
@@ -124,7 +124,7 @@ anglais et en italien :
   `20261023180000_les_textes_des_e_mails`, aucun droit accordé.
 - **Le texte effectif** : les gabarits lisent toujours `mailCopyOf(locale)` ;
   il rend le dictionnaire du code, remplacé par les textes d'un périmètre
-  ouvert (`apps/lfd-api/src/platform/mailer/copy/mail-copy-overlay.ts`). Le mailer (`MAILER`) est désormais
+  ouvert (`apps/lfd-api/src/mail/templates/copy/mail-copy-overlay.ts`). Le mailer (`MAILER`) est désormais
   `JournalingMailer(EffectiveCopyMailer(MAIL_TRANSPORT))` : il ouvre le
   périmètre du publié avant chaque envoi. Le publié se lit par le port
   `PublishedMailCopyReader`, que le mailer déclare (`platform/`) et que
@@ -136,7 +136,7 @@ anglais et en italien :
 - **C5** : vide, variable obligatoire perdue ou variable inconnue → `400`,
   le message liste les variables permises.
 - **L'aperçu et l'essai** rendent le vrai gabarit sur un exemple par e-mail
-  (`platform/mailer/specimens/`, tout ce qui nomme quelqu'un dit
+  (`mail/templates/specimens/`, tout ce qui nomme quelqu'un dit
   « EXEMPLE », liens vers `exemple.invalid`). L'aperçu incruste les images
   `cid:` ; l'essai part par le vrai mailer à l'adresse de la fiche de
   l'appelant, jamais à une adresse de la requête.
@@ -277,14 +277,14 @@ par section avec badge, monter / descendre, clic aperçu → carte, survol carte
   vide quand elles sont absentes : c'est ce qui garde l'ordre par défaut
   **identique à l'octet** (S5) — les 77 empreintes qui ne portent pas de
   retrait n'ont pas bougé.
-- **Chaque e-mail déclare ses sections** (`apps/lfd-api/src/platform/mailer/sections/`,
+- **Chaque e-mail déclare ses sections** (`apps/lfd-api/src/mail/templates/sections/`,
   `MAIL_LAYOUTS`, exhaustif sur le registre : un e-mail sans déclaration ne
   compile pas) : ses deux cadres (objet, en-tête), puis ses sections et, dans
   chacune, ses textes du dictionnaire. Nature `text` (titre, paragraphes,
   pied) ou `system` (récapitulatif, image, itinéraire, bouton, lien
   secondaire ; le titre et le corps de l'annonce de l'agence, saisis). Les
   pièces jointes ne sont pas une section : elles n'ont pas de place dans le
-  corps. `apps/lfd-api/src/platform/mailer/sections/__tests__/mail-layouts.spec.ts` rend les 81 cas en aperçu repéré et vérifie
+  corps. `apps/lfd-api/src/mail/templates/sections/__tests__/mail-layouts.spec.ts` rend les 81 cas en aperçu repéré et vérifie
   que chaque texte s'affiche dans la section qui le déclare.
 - **S6 — Les variantes** portent leur nom lisible (« Commande payée par
   carte », « Prénom inconnu ») dans la déclaration, côté serveur, à côté du
@@ -310,7 +310,7 @@ par section avec badge, monter / descendre, clic aperçu → carte, survol carte
   chaque section rendue, `<span data-mail-text="<chemin>" data-mail-text-of="<e-mail>">`
   autour de chaque texte (ôté d'un attribut : le `alt` du QR). Rien de tout
   ça dans l'essai ni dans un envoi.
-- **S7 — L'itinéraire** (`apps/lfd-api/src/platform/mailer/pickup-itinerary.ts`) :
+- **S7 — L'itinéraire** (`apps/lfd-api/src/mail/templates/pickup-itinerary.ts`) :
   un bouton encadré « Itinéraire vers la boutique » (fr/en/it au
   dictionnaire, chemin `itinerary`) dans la confirmation et le « c'est prêt »
   d'un RETRAIT, vers `https://www.google.com/maps/dir/?api=1&destination=…`,

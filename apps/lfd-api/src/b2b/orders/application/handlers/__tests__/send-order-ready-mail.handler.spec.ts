@@ -1,6 +1,6 @@
 import type { OrderView } from "@lfd/contracts";
 
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import {

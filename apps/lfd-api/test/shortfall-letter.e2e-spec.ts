@@ -10,7 +10,7 @@
  */
 import type { AdminOrderView, AdminShortfallLetterDraft } from "@lfd/contracts";
 
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { bootstrapProductionDay, STAFF } from "./production-day-fixture.js";
 import { accountOrder, decide, report } from "./shortfall-decision-scene.js";

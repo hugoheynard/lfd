@@ -1,6 +1,6 @@
 import type { MailReceipt } from "@lfd/mailer";
 
-import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
+import type { B2bMails } from "../templates/b2b-mails.js";
 
 /**
  * La marque au nom de laquelle un e-mail part. La Folie Coffee seule

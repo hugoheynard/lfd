@@ -1,14 +1,14 @@
 import { MailerError, MailerIdempotencyInFlightError } from "@lfd/mailer";
 import { Inject, Injectable } from "@nestjs/common";
 
-import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
-import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
+import type { B2bMails } from "../../templates/mail-templates.js";
+import { MAILER, type B2bMailer } from "../../templates/mailer.tokens.js";
 import { MailInFlightError, MailRefusedError } from "../domain/errors/mail-request.errors.js";
 import { MailDispatch, type OutgoingMail } from "../domain/ports/mail-dispatch.js";
 
 /**
  * L'envoi par le mailer d'aujourd'hui — texte effectif, journal, disjoncteur,
- * mode à blanc compris (`platform/mailer/mailer.module.ts`). Le rendu ne
+ * mode à blanc compris (`mail/templates/mail-transport.providers.ts` depuis S3b). Le rendu ne
  * change pas en S1.
  *
  * ## Le seul endroit où le type du modèle est repris sur parole

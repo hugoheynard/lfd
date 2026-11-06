@@ -15,8 +15,8 @@ import { MailerIdempotencyInFlightError, type MailReceipt, type SendMailArgs } f
 
 import { MailRequests, type MailDemand } from "../src/mail/channels/requests/mail-requests.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import type { B2bMails } from "../src/platform/mailer/mail-templates.js";
-import { MAILER, type B2bMailer } from "../src/platform/mailer/mailer.tokens.js";
+import type { B2bMails } from "../src/mail/templates/mail-templates.js";
+import { MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
 
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";

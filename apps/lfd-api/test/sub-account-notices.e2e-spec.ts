@@ -25,7 +25,7 @@ import { NotifyPrincipalOnOrderPlaced } from "../src/b2b/sub-account-notices/app
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { COMMERCE_ORDER_PLACED } from "../src/delivery/channels/commerce/commerce-order-placed.fact.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,

@@ -18,7 +18,7 @@ import {
 } from "./delivery-rounds-scene.js";
 import { composedOrder, declareBins, depart, loadBin } from "./delivery-loading-scene.js";
 import { receivedColumns } from "./factories.js";
-import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
