@@ -129,7 +129,12 @@
 >   e-mail se demande au bloc `mail` par sa porte `MailRequests` ; un
 >   fichier hors du bloc qui injecte `MAILER` (ou `MAIL_TRANSPORT`) échoue,
 >   et les 31 envoyeurs d'aujourd'hui sont une dette comptée qui ne peut que
->   décroître (lot S2). C'est la
+>   décroître (lot S2). Et **61** depuis le 2026-11-06 avec
+>   `lint:send-now-admitted` (plan du service d'e-mails, C2) : `request`
+>   (outbox, envoyé après validation, relancé) est le geste par défaut ;
+>   `sendNow` (immédiat, sans outbox) ne s'appelle hors du bloc `mail` que
+>   depuis une liste admise et datée, chaque appelant avec sa raison, et une
+>   entrée qui n'appelle plus `sendNow` échoue. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1327,7 +1332,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 60 portes du dépôt, d’un coup
+pnpm lint:gates         # les 61 portes du dépôt, d’un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

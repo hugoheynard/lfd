@@ -166,6 +166,10 @@ flowchart LR
     `request`, ils seraient écrits dans le `jsonb` de l'outbox et rejoués.
     L'appelant dépose le PDF au stockage (`@lfd/storage`), la demande porte sa
     clé, le bloc le relit au rendu.
+  - **`lint:send-now-admitted` le tient** (2026-11-06) : hors du bloc `mail`,
+    `sendNow` ne s'appelle que depuis une liste admise, chaque appelant avec
+    sa raison et sa date (dix aujourd'hui) ; un appel hors liste échoue
+    (passer par `request`), une entrée qui n'appelle plus `sendNow` aussi.
 - **C3 — Le contrat d'un modèle** : chaque modèle déclare la forme de ses
   données (schéma Zod), ses variables et ses blocs `system`. Le manifeste des
   variables d'aujourd'hui devient ce contrat ; la porte
