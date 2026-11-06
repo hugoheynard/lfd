@@ -299,7 +299,7 @@ export class ProductSheet {
     this.showsTtc() ? this.t().shop.ttcSuffix : this.t().shop.htSuffix,
   );
 
-  /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
+  /** « 12,40 € TTC / kg » sous le prix d'une pièce, quand le référentiel l'a saisi. */
   /**
    * « −20 % client Folie Coffee », ou la valeur seule — les promotions qu'un
    * acheminement ouvert au lecteur appliquerait, sans que le prix affiché les

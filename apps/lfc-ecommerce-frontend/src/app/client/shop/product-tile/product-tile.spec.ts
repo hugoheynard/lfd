@@ -80,7 +80,7 @@ describe('ProductTile', () => {
 
     const el = fixture.nativeElement as HTMLElement;
     expect(priceText()).toBe('1,48 € TTC');
-    expect(el.querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € / kg TTC');
+    expect(el.querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € TTC / kg');
   });
 
   /**
@@ -99,7 +99,7 @@ describe('ProductTile', () => {
     expect(el.querySelector('[data-per-kilo-was]')?.textContent?.trim()).toBe('9,90 €');
     expect(el.querySelector('[data-per-kilo-was]')?.getAttribute('aria-hidden')).toBe('true');
     expect(el.querySelector('[data-per-kilo] .sr-only')?.textContent?.trim()).toBe(
-      'Ancien prix au kilo : 9,90 €, nouveau prix au kilo : 7,90 € / kg TTC',
+      'Ancien prix au kilo : 9,90 €, nouveau prix au kilo : 7,90 € TTC / kg',
     );
   });
 
@@ -177,7 +177,7 @@ describe('ProductTile', () => {
     fixture.componentRef.setInput('quantity', 500);
     fixture.detectChanges();
 
-    expect(priceText()).toBe('12,40 € / kg TTC');
+    expect(priceText()).toBe('12,40 € TTC / kg');
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('.count')?.textContent?.trim(),
     ).toBe('500 g');

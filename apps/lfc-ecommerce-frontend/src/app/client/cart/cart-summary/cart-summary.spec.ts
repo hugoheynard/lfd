@@ -713,7 +713,7 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
     fixture.detectChanges();
 
     expect(card()?.textContent).toContain(
-      `${shelfPriceLabel(baguette, false, FR.product.perKilogram)} HT`,
+      shelfPriceLabel(baguette, false, 'HT', FR.product.perKilogram),
     );
   });
 
@@ -1051,5 +1051,116 @@ describe('CartSummary — la livraison offerte (1c)', () => {
     expect(el.querySelector('.courier-offered')).toBeNull();
     expect(el.textContent).not.toContain('Plus que');
     expect(el.textContent).not.toContain(FR.cart.courierOffered);
+  });
+});
+
+/**
+ * **Une ligne en attente** (2026-11-06) : seule la ligne dont la quantité
+ * attend son décompte s'atténue ; aucun montant n'est calculé à l'écran.
+ */
+describe('CartSummary — la ligne qui attend son décompte', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const QUOTE = (r: { url: string }): boolean => r.url.endsWith('/shop/quote');
+  const ANSWER = {
+    lines: [],
+    subtotalHtCents: 300,
+    discountCents: 0,
+    discountAdjustment: null,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 0,
+    deliveryVatMode: 'standard',
+    vat: [],
+    pretaxCents: 300,
+    totalCents: 300,
+  };
+
+  function settle(): void {
+    TestBed.tick();
+    vi.advanceTimersByTime(400);
+    TestBed.tick();
+  }
+
+  function boot(): {
+    fixture: ComponentFixture<CartSummary>;
+    cart: ClientCart;
+    http: HttpTestingController;
+  } {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspaceDouble()),
+        { provide: AuthFacade, useValue: { isAuthenticated: () => false } },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    const cart = TestBed.inject(ClientCart);
+    const http = TestBed.inject(HttpTestingController);
+    cart.add('VIE-001');
+    cart.add('VIE-002');
+    const fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    settle();
+    http.expectOne(QUOTE).flush(ANSWER);
+    fixture.detectChanges();
+    return { fixture, cart, http };
+  }
+
+  const pendingSums = (fixture: ComponentFixture<CartSummary>): Element[] => [
+    ...(fixture.nativeElement as HTMLElement).querySelectorAll('.lines > li .sum.pending'),
+  ];
+
+  const lineOf = (fixture: ComponentFixture<CartSummary>, index: number): Element | undefined =>
+    [...(fixture.nativeElement as HTMLElement).querySelectorAll('.lines > li')][index];
+
+  it('atténue la seule ligne changée, sans région vivante', () => {
+    const { fixture, cart, http } = boot();
+    expect(pendingSums(fixture)).toHaveLength(0);
+
+    cart.setQuantity('VIE-001', 4);
+    TestBed.tick();
+    fixture.detectChanges();
+
+    const pending = pendingSums(fixture);
+    expect(pending).toHaveLength(1);
+    expect(lineOf(fixture, 0)?.querySelector('.sum.pending fold-spinner')).not.toBeNull();
+    expect(lineOf(fixture, 1)?.querySelector('.sum.pending')).toBeNull();
+    expect(pending[0]?.getAttribute('aria-busy')).toBe('true');
+    // Le spinner est décoratif : rien n'est annoncé à chaque clic.
+    expect(pending[0]?.querySelector('[aria-live], [role="status"]')).toBeNull();
+
+    settle();
+    http.expectOne(QUOTE).flush(ANSWER);
+  });
+
+  it('plus rien d’atténué au retour du devis', () => {
+    const { fixture, cart, http } = boot();
+    cart.setQuantity('VIE-001', 4);
+    settle();
+    http.expectOne(QUOTE).flush(ANSWER);
+    fixture.detectChanges();
+
+    expect(pendingSums(fixture)).toHaveLength(0);
+    expect(lineOf(fixture, 0)?.querySelector('fold-spinner')).toBeNull();
+  });
+
+  it('un devis en échec ne laisse pas l’indicateur', () => {
+    const { fixture, cart, http } = boot();
+    cart.setQuantity('VIE-001', 4);
+    settle();
+    http.expectOne(QUOTE).error(new ProgressEvent('boom'));
+    fixture.detectChanges();
+
+    expect(pendingSums(fixture)).toHaveLength(0);
   });
 });

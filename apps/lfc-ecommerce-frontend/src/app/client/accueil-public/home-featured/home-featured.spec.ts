@@ -77,7 +77,7 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
   it('écrit finement le prix au kilo d’une pièce, dans l’assiette du lecteur', async () => {
     const host = await mount(true, { pro: 1_500_000, ttc: 1_590 });
     expect(host.querySelector('[data-test="featured-per-kilo"]')?.textContent?.trim()).toBe(
-      `${formatCents(1_590)} / kg ${FR.shop.ttcSuffix}`,
+      `${formatCents(1_590)} ${FR.shop.ttcSuffix} / kg`,
     );
   });
 
@@ -85,7 +85,7 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
     showsTtc.set(false);
     const host = await mount(true, { pro: 1_500_000, ttc: 1_590 });
     expect(host.querySelector('[data-test="featured-per-kilo"]')?.textContent?.trim()).toBe(
-      `${formatCents(1_500)} / kg ${FR.shop.htSuffix}`,
+      `${formatCents(1_500)} ${FR.shop.htSuffix} / kg`,
     );
   });
 

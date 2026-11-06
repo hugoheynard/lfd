@@ -242,7 +242,7 @@ describe('ProductSheet', () => {
     mount({ ...(TEST_ITEMS[0] as ShopItemView), publicPricePerKgTtcCents: 1_590 }, 0, false);
 
     expect(el().querySelector('.amount')?.textContent?.trim()).toBe('1,48 €');
-    expect(el().querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € / kg TTC');
+    expect(el().querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € TTC / kg');
   });
 
   it('sous une promotion, barre le kilo saisi à côté du kilo servi, et le dit en une phrase', () => {
@@ -259,7 +259,7 @@ describe('ProductSheet', () => {
     expect(el().querySelector('[data-per-kilo-was]')?.textContent?.trim()).toBe('9,90 €');
     expect(el().querySelector('[data-per-kilo-was]')?.getAttribute('aria-hidden')).toBe('true');
     expect(el().querySelector('[data-per-kilo] .sr-only')?.textContent?.trim()).toBe(
-      'Ancien prix au kilo : 9,90 €, nouveau prix au kilo : 7,90 € / kg TTC',
+      'Ancien prix au kilo : 9,90 €, nouveau prix au kilo : 7,90 € TTC / kg',
     );
   });
 

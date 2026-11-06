@@ -62,8 +62,8 @@ export class HomeFeatured {
       .filter((item) => item.isFeatured)
       .map((item) => {
         const art = artOfFeatured(item);
-        const price = `${shelfPriceLabel(item, ttc, this.t().product.perKilogram)} ${ttc ? shop.ttcSuffix : shop.htSuffix}`;
         const basisSuffix = ttc ? shop.ttcSuffix : shop.htSuffix;
+        const price = shelfPriceLabel(item, ttc, basisSuffix, this.t().product.perKilogram);
         return {
           price,
           perKilo: perKiloHintLabel(item, ttc, basisSuffix, this.t().product.perKilogram),

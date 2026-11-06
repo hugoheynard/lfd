@@ -25,7 +25,8 @@ import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import {
   perKiloHintLabel,
-  shelfPriceLabel,
+  shelfAmountLabel,
+  shelfUnitLabel,
   ShopPriceBasis,
   struckPerKiloLabel,
   struckPriceLabel,
@@ -232,11 +233,15 @@ export class ProductTile {
     quantityLabel(this.quantity(), saleUnitOf(this.product())),
   );
 
-  protected readonly price = computed(() =>
-    shelfPriceLabel(this.product(), this.showsTtc(), this.t().product.perKilogram),
+  /** Le montant ; l'assiette (`.price-ht`) puis l'unité se posent après lui. */
+  protected readonly price = computed(() => shelfAmountLabel(this.product(), this.showsTtc()));
+
+  /** « / kg » au poids, après l'assiette : « 12,40 € TTC / kg ». */
+  protected readonly unit = computed(() =>
+    shelfUnitLabel(this.product(), this.t().product.perKilogram),
   );
 
-  /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
+  /** « 12,40 € TTC / kg » sous le prix d'une pièce, quand le référentiel l'a saisi. */
   /**
    * « −20 % client Folie Coffee », ou la valeur seule — les promotions qu'un
    * acheminement ouvrirait, sans que le prix affiché les compte (L10).

@@ -7,7 +7,7 @@
          décrit le bouton de la fiche. -->
     <button class="pitch" type="button" [attr.aria-describedby]="lockedId" (click)="open()">
       <span class="pitch-title">{{ card().title }}</span>
-      <span class="pitch-line">{{ card().line }} · {{ card().price }} {{ card().suffix }}</span>
+      <span class="pitch-line">{{ card().line }} · {{ card().price }}</span>
     </button>
     <span [id]="lockedId" data-locked-reason>
       <fold-badge variant="neutral" [content]="reason.short" />
@@ -18,7 +18,7 @@
     </button>
     <button class="pitch" type="button" (click)="open()">
       <span class="pitch-title">{{ card().title }}</span>
-      <span class="pitch-line">{{ card().line }} · {{ card().price }} {{ card().suffix }}</span>
+      <span class="pitch-line">{{ card().line }} · {{ card().price }}</span>
     </button>
   }
 </div>

@@ -129,7 +129,7 @@ describe('StaffSuggestionCard', () => {
 
     expect(card()?.textContent).toContain('Vous aimerez aussi');
     expect(card()?.textContent).toContain(
-      `${shelfPriceLabel(BAGUETTE, false, FR.product.perKilogram)} HT`,
+      shelfPriceLabel(BAGUETTE, false, 'HT', FR.product.perKilogram),
     );
   });
 

@@ -53,18 +53,36 @@ export class ShopPriceBasis {
 export function shelfPriceLabel(
   item: ShopItemView,
   showsTtc: boolean,
+  basisSuffix: string,
   perKilogram: string,
 ): string {
-  const amount = showsTtc
+  const unit = shelfUnitLabel(item, perKilogram);
+  const label = `${shelfAmountLabel(item, showsTtc)} ${basisSuffix}`;
+  return unit === null ? label : `${label} ${unit}`;
+}
+
+/**
+ * Le montant seul du prix de rayon (« 12,40 € », « 0,8184 € »), sans
+ * assiette ni unité — pour l'écran qui met l'assiette en forme à part.
+ */
+export function shelfAmountLabel(item: ShopItemView, showsTtc: boolean): string {
+  return showsTtc
     ? formatCents(item.unitPriceTtcCents)
     : formatMillicents(item.unitPriceMillicents);
-  // Au poids, le prix servi EST le prix au kilo (P4) : « 12,40 € / kg ».
-  return isSoldByWeight(item) ? `${amount} ${perKilogram}` : amount;
+}
+
+/**
+ * L'unité du prix de rayon : « / kg » au poids — le prix servi EST le prix au
+ * kilo (P4) —, `null` à la pièce. Elle se place APRÈS l'assiette :
+ * « 12,40 € HT / kg », comme une étiquette de balance (Hugo, 2026-11-06).
+ */
+export function shelfUnitLabel(item: ShopItemView, perKilogram: string): string | null {
+  return isSoldByWeight(item) ? perKilogram : null;
 }
 
 /**
  * **Le prix au kilo d'un article vendu à la pièce**, en mention fine sous le
- * prix (« 12,40 € / kg TTC », dans l'ordre de l'étiquette au poids), ou `null` quand il n'y a rien à dire.
+ * prix (« 12,40 € TTC / kg », dans l'ordre de l'étiquette au poids), ou `null` quand il n'y a rien à dire.
  *
  * Le montant est celui que le serveur SERT : le kilo saisi au référentiel,
  * ou, sous une promotion qui baisse la pièce, le kilo après promotion — que
@@ -94,7 +112,7 @@ export function perKiloHintLabel(
     : ht === null
       ? null
       : formatMillicents(ht);
-  return amount === null ? null : `${amount} ${perKilogram} ${basisSuffix}`;
+  return amount === null ? null : `${amount} ${basisSuffix} ${perKilogram}`;
 }
 
 /**

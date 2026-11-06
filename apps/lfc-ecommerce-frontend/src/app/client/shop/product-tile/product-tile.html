@@ -94,6 +94,9 @@
           <span class="price-ht" [attr.aria-hidden]="striked() ? 'true' : null">{{
             showsTtc() ? t().shop.ttcSuffix : t().shop.htSuffix
           }}</span>
+          @if (unit(); as perUnit) {
+            <span [attr.aria-hidden]="striked() ? 'true' : null">&#32;{{ perUnit }}</span>
+          }
         </span>
         @if (perKiloHint(); as hint) {
           <span class="per-kilo" data-per-kilo>
