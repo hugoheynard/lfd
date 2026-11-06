@@ -354,6 +354,11 @@ src/
 │                   `packing`, tenu EN OMBRE par les faits que le fournil
 │                   publie (`production/channels/packing/`). Personne ne
 │                   l'importe. Cf. colisage/colisage.md
+├── mail/         ▸ LES E-MAILS — reçoit les demandes, compose, envoie, suit.
+│                   Ouvert le 2026-11-06 (plan service d'e-mails, lot S0) :
+│                   son schéma `mail`, sans métier propre. Tous les blocs
+│                   métier l'atteignent par `mail/channels/` SEULEMENT.
+│                   Cf. editeur-de-contenu/plan-service-e-mails.md
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
@@ -365,20 +370,21 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `platform` |
-| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
-| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | ✓          |
-| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | ✓          |
-| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | ✓          |
-| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓          |
-| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `platform` |
+| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✓          |
+| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | **port uniquement** | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | **port uniquement** | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | **port uniquement** | ✓          |
+| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✓          |
+| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✓          |
+| **`mail`**         | ✓ (autorisation) | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✓          |
+| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓          |
+| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓          |
 
 🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
 `handover` était seul à connaître. Chacun déclare ce dont il a besoin et
@@ -476,6 +482,21 @@ transaction de l'appelant, et `ContainerManagedOrders`, qu'il implémente
 lui-même et que les anciennes routes des bacs lisent pour refuser une commande
 gérée au colisage. `packing → delivery` reste interdit : le colisage ne sait
 pas qui le branche, et « Proposer » ne fait donc pas de cycle.
+
+🔴 **`mail` est consommé par TOUS les blocs métier, par son canal seulement**
+(2026-11-06, Hugo ;
+[`documentation/editeur-de-contenu/plan-service-e-mails.md`](documentation/editeur-de-contenu/plan-service-e-mails.md),
+C1–C2). Le bloc n'a pas de métier propre : il reçoit des demandes
+(« l'e-mail _commande passée_, à cette personne, avec ces données »), compose,
+envoie et garde le suivi. Il DÉCLARE et IMPLÉMENTE lui-même
+`mail/channels/requests/` (`MailRequests`, typée par modèle), et c'est la seule
+surface qu'un autre bloc atteint — `staff` et `production` compris : n'importer
+que ce canal ne couple à rien d'autre, et une porte déclarée dans `platform/`
+aurait perdu le typage des 32 modèles. `mail` n'importe que `platform` et
+`staff` (l'autorisation de l'éditeur) ; `staff ↔ mail` se lisent donc dans les
+deux sens, par des fichiers distincts — la figure de `handover`. `mail → <bloc
+métier>` reste interdit : le service ne sait pas qui lui écrit. `ops` ne
+l'atteint pas.
 
 🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce

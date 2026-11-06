@@ -1,0 +1,12 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIL — le service d'e-mails, son propre schéma (2026-11-06)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, lot S0 : le
+// schéma est déclaré AVANT le premier modèle, pour que les portes le
+// connaissent avant le premier fichier du bloc `src/mail/`. Vide jusqu'à S1
+// (les demandes et leur suivi).
+//
+// ⚠️ Les trois tables `public.mail_copy_*` / `public.mail_section_orders`
+// RESTENT dans `public` (plan, S3) : seul leur écrivain changera. Ce fichier ne
+// porte que les tables neuves du bloc.

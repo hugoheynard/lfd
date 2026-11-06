@@ -85,6 +85,14 @@ const BLOCK_OF = {
   //   et la plateforme. Personne ne l'importe : il publie, il ne se lit pas.
   packing: "packing",
 
+  // ▸ LES E-MAILS — le service que tous les blocs consomment (2026-11-06,
+  //   `documentation/editeur-de-contenu/plan-service-e-mails.md`, C1–C2). Il
+  //   n'a pas de métier propre : il reçoit des demandes, compose, envoie et
+  //   garde le suivi. Tous les blocs métier l'atteignent par
+  //   `mail/channels/` SEULEMENT ; lui n'atteint que le socle (l'autorisation
+  //   de l'éditeur) et la plateforme.
+  mail: "mail",
+
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
   //   entre eux. Personne ne l'importe en retour : un contexte qui remonte
@@ -134,28 +142,40 @@ const BLOCK_OF = {
  * c'est pourquoi aucun bloc ne la contient en retour.
  */
 const ALLOWED = {
-  staff: new Set(["platform"]),
+  // `mail` depuis le 2026-11-06, par son canal SEULEMENT (`PORT_SURFACE`) :
+  // l'annuaire et les invitations envoient des e-mails. `mail → staff` vit
+  // dans d'autres fichiers (l'autorisation de l'éditeur), comme `handover`.
+  staff: new Set(["platform", "mail"]),
   // 🔴 `pim → media` n'est autorisé que par le CANAL que la médiathèque
   // déclare : le référentiel implémente « qui affiche cette image » pour ses
   // fiches et ses familles. Il ne voit rien d'autre d'elle — ni ses tables, ni
   // ses règles. Les deux blocs sont donc des DEUX CÔTÉS d'un canal, comme
   // `handover` l'était seul à l'être.
-  pim: new Set(["staff", "platform", "media"]),
+  pim: new Set(["staff", "platform", "media", "mail"]),
   // 🔴 `media → pim` est autorisé pour UNE raison : la bibliothèque implémente
   // le canal que le référentiel déclare. Le sens de la flèche est celui de
   // l'IMPORT, pas celui de la donnée — c'est le PIM qui a besoin d'images.
   //
   // ⚠️ Le référentiel, lui, n'atteint PAS `media` : il déclare son port et ne
   // sait pas qui le branche. C'est `appBootstrap` qui relie.
-  media: new Set(["staff", "platform", "pim"]),
+  media: new Set(["staff", "platform", "pim", "mail"]),
   // `packing` depuis le 2026-10-21 (réassort, R3b) : par son canal SEULEMENT
   // (`PORT_SURFACE`) — le commerce lit la quantité emballée d'un réassort.
-  b2b: new Set(["staff", "pim", "platform", "production", "handover", "delivery", "packing"]),
-  production: new Set(["staff", "platform"]),
+  b2b: new Set([
+    "staff",
+    "pim",
+    "platform",
+    "production",
+    "handover",
+    "delivery",
+    "packing",
+    "mail",
+  ]),
+  production: new Set(["staff", "platform", "mail"]),
   // `delivery` depuis le 2026-10-01 (a-la-porte.md, BQ) : le retrait
   // implémente ce que la livraison déclare — par son canal SEULEMENT, cf.
   // `PORT_SURFACE`.
-  handover: new Set(["staff", "platform", "production", "delivery"]),
+  handover: new Set(["staff", "platform", "production", "delivery", "mail"]),
   // Le socle (l'auteur d'un geste) et la plateforme, rien d'autre : ce dont
   // elle a besoin du commerce, elle le DÉCLARE (2026-09-29).
   // Et le fournil par son canal SEULEMENT depuis le 2026-10-04 (option B) : la
@@ -164,13 +184,16 @@ const ALLOWED = {
   // `colisage/colisage.md` §5) : la livraison implémente
   // `BinDesk` et lit `ContainerManagedOrders` ; `packing → delivery` reste
   // interdit.
-  delivery: new Set(["staff", "platform", "production", "packing"]),
+  delivery: new Set(["staff", "platform", "production", "packing", "mail"]),
   // Le fournil par son canal SEULEMENT (`PORT_SURFACE`) ; ⚠️ `production →
   // packing` reste interdit : le fournil publie, il ne sait pas qui écoute.
   // Et le retrait par son canal SEULEMENT depuis le 2026-11-03 (Hugo, option
   // b) : le colisage écoute `handover.handed_over` pour sortir de sa liste la
   // fiche d'un envoi déjà remis. `handover → packing` reste interdit.
-  packing: new Set(["staff", "platform", "production", "handover"]),
+  packing: new Set(["staff", "platform", "production", "handover", "mail"]),
+  // Le socle pour l'autorisation de l'éditeur, la plateforme pour le reste ;
+  // aucun bloc métier : `mail` ne sait pas qui lui écrit (2026-11-06).
+  mail: new Set(["staff", "platform"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
   root: new Set([
@@ -184,8 +207,21 @@ const ALLOWED = {
     "media",
     "delivery",
     "packing",
+    "mail",
   ]),
 };
+
+/** Les blocs qui demandent des e-mails : tous les blocs métier (2026-11-06). */
+const MAIL_CLIENTS = [
+  "staff",
+  "pim",
+  "media",
+  "b2b",
+  "production",
+  "handover",
+  "delivery",
+  "packing",
+];
 
 /**
  * **« Port uniquement » — la matrice le disait en prose, ceci le tient.**
@@ -306,6 +342,14 @@ const PORT_SURFACE = {
   // tables des porteurs, et `lint:prisma-model-ownership` dit qu'un modèle
   // n'est lu que par son propriétaire. Elle pose la question, ils répondent.
   "pim→media": "media/channels/carriers/",
+  // Tous les blocs métier DEMANDENT un e-mail par le canal que le bloc `mail`
+  // déclare ET implémente lui-même (2026-11-06, Hugo — `plan-service-e-mails.md`,
+  // C2) : `mail/channels/requests/` porte `MailRequests`, typée par modèle.
+  // Ni ses modèles, ni son rendu, ni ses tables ne sont atteignables.
+  //
+  // ⚠️ `mail → <bloc métier>` reste INTERDIT : le service ne sait pas qui lui
+  // écrit — sauf `staff`, pour l'autorisation de l'éditeur.
+  ...Object.fromEntries(MAIL_CLIENTS.map((block) => [`${block}→mail`, "mail/channels/"])),
 };
 
 /**
@@ -376,108 +420,143 @@ function importedPath(fromRelative, specifier) {
 
 const IMPORT = /(?:^|\n)\s*(?:import|export)[\s\S]*?from\s+["']([^"']+)["']/g;
 
-const unknownDirs = new Set();
-const violations = [];
-const offSurface = [];
-const unusedExceptions = new Set(KNOWN.keys());
-
-for (const absolute of walk(join(ROOT, SRC))) {
-  const fromRelative = relative(join(ROOT, SRC), absolute);
+/**
+ * **Le verdict sur un import**, sans lire le disque — c'est ce que les tests
+ * de la porte éprouvent (`dev-toolbox/__tests__/context-boundaries.test.mjs`).
+ *
+ * @param {string} fromRelative chemin du fichier importeur, relatif à `SRC`
+ * @param {string} specifier ce que l'import écrit après `from`
+ * @returns {{ kind: "ok" }
+ *   | { kind: "unknown", dir: string }
+ *   | { kind: "forbidden", key: string, fromBlock: string, toBlock: string }
+ *   | { kind: "off-surface", key: string, fromBlock: string, toBlock: string, surface: string }}
+ */
+export function judgeImport(fromRelative, specifier) {
   const fromTop = topOf(fromRelative);
   if (fromTop === null) {
-    continue;
+    return { kind: "ok" };
   }
   const fromBlock = BLOCK_OF[fromTop];
   if (fromBlock === undefined) {
-    unknownDirs.add(fromTop);
-    continue;
+    return { kind: "unknown", dir: fromTop };
   }
+  const target = importedPath(fromRelative, specifier);
+  if (target === null || target.top === fromTop) {
+    return { kind: "ok" };
+  }
+  const toBlock = BLOCK_OF[target.top];
+  if (toBlock === undefined) {
+    return { kind: "unknown", dir: target.top };
+  }
+  if (toBlock === fromBlock) {
+    return { kind: "ok" };
+  }
+  if (!ALLOWED[fromBlock].has(toBlock)) {
+    return { kind: "forbidden", key: `${fromRelative} → ${target.top}`, fromBlock, toBlock };
+  }
+  // La direction est permise ; reste à savoir PAR OÙ.
+  const surface = PORT_SURFACE[`${fromBlock}→${toBlock}`];
+  if (surface === undefined || target.path.startsWith(surface)) {
+    return { kind: "ok" };
+  }
+  return {
+    kind: "off-surface",
+    key: `${fromRelative} → ${target.path}`,
+    fromBlock,
+    toBlock,
+    surface,
+  };
+}
 
-  const source = readFileSync(absolute, "utf8");
-  for (const match of source.matchAll(IMPORT)) {
-    const target = importedPath(fromRelative, match[1]);
-    if (target === null || target.top === fromTop) {
+/** Parcourt `SRC` et range chaque verdict défavorable. */
+function scan() {
+  const unknownDirs = new Set();
+  const violations = [];
+  const offSurface = [];
+  const unusedExceptions = new Set(KNOWN.keys());
+
+  for (const absolute of walk(join(ROOT, SRC))) {
+    const fromRelative = relative(join(ROOT, SRC), absolute);
+    const fromTop = topOf(fromRelative);
+    if (fromTop !== null && BLOCK_OF[fromTop] === undefined) {
+      unknownDirs.add(fromTop);
       continue;
     }
-    const toBlock = BLOCK_OF[target.top];
-    if (toBlock === undefined) {
-      unknownDirs.add(target.top);
-      continue;
-    }
-    if (toBlock === fromBlock) {
-      continue;
-    }
-    if (!ALLOWED[fromBlock].has(toBlock)) {
-      const key = `${fromRelative} → ${target.top}`;
-      if (KNOWN.has(key)) {
-        unusedExceptions.delete(key);
+    const source = readFileSync(absolute, "utf8");
+    for (const match of source.matchAll(IMPORT)) {
+      const verdict = judgeImport(fromRelative, match[1]);
+      if (verdict.kind === "ok") {
         continue;
       }
-      violations.push({ key, fromBlock, toBlock });
-      continue;
+      if (verdict.kind === "unknown") {
+        unknownDirs.add(verdict.dir);
+        continue;
+      }
+      if (KNOWN.has(verdict.key)) {
+        unusedExceptions.delete(verdict.key);
+        continue;
+      }
+      (verdict.kind === "forbidden" ? violations : offSurface).push(verdict);
     }
-    // La direction est permise ; reste à savoir PAR OÙ.
-    const surface = PORT_SURFACE[`${fromBlock}→${toBlock}`];
-    if (surface === undefined || target.path.startsWith(surface)) {
-      continue;
-    }
-    const key = `${fromRelative} → ${target.path}`;
-    if (KNOWN.has(key)) {
-      unusedExceptions.delete(key);
-      continue;
-    }
-    offSurface.push({ key, fromBlock, toBlock, surface });
   }
+  return { unknownDirs, violations, offSurface, unusedExceptions };
 }
 
-let failed = false;
+function main() {
+  const { unknownDirs, violations, offSurface, unusedExceptions } = scan();
+  let failed = false;
 
-if (unknownDirs.size > 0) {
-  failed = true;
-  console.error("\n❌ Dossiers de premier niveau sans bloc déclaré :\n");
-  for (const dir of [...unknownDirs].sort()) {
-    console.error(`   ${SRC}/${dir}`);
+  if (unknownDirs.size > 0) {
+    failed = true;
+    console.error("\n❌ Dossiers de premier niveau sans bloc déclaré :\n");
+    for (const dir of [...unknownDirs].sort()) {
+      console.error(`   ${SRC}/${dir}`);
+    }
+    console.error("\n   Un nouveau contexte choisit son camp : ajoute-le à BLOCK_OF.");
   }
-  console.error("\n   Un nouveau contexte choisit son camp : ajoute-le à BLOCK_OF.");
-}
 
-if (violations.length > 0) {
-  failed = true;
-  console.error("\n❌ Franchissements de frontière :\n");
-  for (const { key, fromBlock, toBlock } of violations) {
-    console.error(`   ${key}\n      ${fromBlock} → ${toBlock} : interdit par la matrice.`);
+  if (violations.length > 0) {
+    failed = true;
+    console.error("\n❌ Franchissements de frontière :\n");
+    for (const { key, fromBlock, toBlock } of violations) {
+      console.error(`   ${key}\n      ${fromBlock} → ${toBlock} : interdit par la matrice.`);
+    }
+    console.error(
+      "\n   Le franchissement passe par un PORT déclaré chez l'appelant, jamais par un import direct.",
+    );
   }
-  console.error(
-    "\n   Le franchissement passe par un PORT déclaré chez l'appelant, jamais par un import direct.",
+
+  if (offSurface.length > 0) {
+    failed = true;
+    console.error("\n❌ Franchissements HORS de la surface publiée :\n");
+    for (const { key, fromBlock, toBlock, surface } of offSurface) {
+      console.error(
+        `   ${key}\n      ${fromBlock} → ${toBlock} est permis, mais par ${SRC}/${surface} uniquement.`,
+      );
+    }
+    console.error("\n   Ce qui manque se publie dans le canal, en classe ABSTRAITE — on n'atteint");
+    console.error("   pas l'intérieur d'un autre bloc parce qu'on en connaît le chemin.");
+  }
+
+  if (unusedExceptions.size > 0) {
+    failed = true;
+    console.error("\n❌ Exceptions devenues inutiles — la liste doit se vider, pas mentir :\n");
+    for (const key of unusedExceptions) {
+      console.error(`   ${key}`);
+    }
+  }
+
+  if (failed) {
+    process.exit(1);
+  }
+
+  console.log(
+    KNOWN.size === 0
+      ? "✅ Frontières de contexte tenues, sans aucune exception."
+      : `✅ Frontières de contexte tenues (${String(KNOWN.size)} exception(s) connue(s) à résorber).`,
   );
 }
 
-if (offSurface.length > 0) {
-  failed = true;
-  console.error("\n❌ Franchissements HORS de la surface publiée :\n");
-  for (const { key, fromBlock, toBlock, surface } of offSurface) {
-    console.error(
-      `   ${key}\n      ${fromBlock} → ${toBlock} est permis, mais par ${SRC}/${surface} uniquement.`,
-    );
-  }
-  console.error("\n   Ce qui manque se publie dans le canal, en classe ABSTRAITE — on n'atteint");
-  console.error("   pas l'intérieur d'un autre bloc parce qu'on en connaît le chemin.");
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
 }
-
-if (unusedExceptions.size > 0) {
-  failed = true;
-  console.error("\n❌ Exceptions devenues inutiles — la liste doit se vider, pas mentir :\n");
-  for (const key of unusedExceptions) {
-    console.error(`   ${key}`);
-  }
-}
-
-if (failed) {
-  process.exit(1);
-}
-
-console.log(
-  KNOWN.size === 0
-    ? "✅ Frontières de contexte tenues, sans aucune exception."
-    : `✅ Frontières de contexte tenues (${String(KNOWN.size)} exception(s) connue(s) à résorber).`,
-);

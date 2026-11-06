@@ -81,6 +81,10 @@ const BLOCKS = new Set([
   //   le bloc existe : sans cette ligne, `src/packing/` serait ignoré, et le
   //   fournil pourrait écrire l'ombre du colisage sans que rien ne rougisse.
   "packing",
+  // ▸ LES E-MAILS (2026-11-06, `plan-service-e-mails.md`, S0). Armée AVANT que
+  //   le bloc existe, pour la même raison : sans cette ligne, `src/mail/`
+  //   serait ignoré, et un autre bloc pourrait lire ses demandes et son suivi.
+  "mail",
 ]);
 
 /**
