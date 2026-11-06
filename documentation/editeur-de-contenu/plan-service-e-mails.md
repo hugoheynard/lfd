@@ -8,7 +8,7 @@
 > comme le sera la billetterie ; l'éditeur vit dans le **back-office**.
 >
 > ⚔️ **Contredit par `vitruve` le 2026-11-06** : 3 bloquants, 6 sérieux, tous
-> intégrés (§ 6). Rien n'est bâti. Reste à Hugo : le nom du bloc et du schéma.
+> intégrés (§ 6). Rien n'est bâti. Nom du bloc et du schéma : **`mail`** (Hugo, 2026-11-06).
 
 ## Partie 1 — Comprendre
 
