@@ -630,3 +630,9 @@ jour).
   `BackgroundWork`) : un redémarrage entre les deux ne laisse toujours aucune
   demande (inchangé, documenté sur l'abonné ; le staff renvoie).
 - **Clés sans adresse** : rang du destinataire dans la liste dédoublonnée.
+
+## 13. L'éditeur dans le back-office — où il vit (Hugo, 2026-11-06)
+
+L'éditeur des e-mails (S5) a **son entrée dans le menu principal du
+back-office, au-dessus de la Médiathèque**, avec sa propre icône. Il absorbe
+l'écran `textes-emails` d'aujourd'hui (sous Communication).
