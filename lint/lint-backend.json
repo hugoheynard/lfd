@@ -499,7 +499,7 @@
     {
       "name": "network-outside-transaction",
       "script": "dev-toolbox/gates/network-outside-transaction.mjs",
-      "holds": "Tout adaptateur qui appelle le réseau pose la garde `assertOutsideTransaction`, ou est inscrit avec sa raison datée.",
+      "holds": "Tout adaptateur qui appelle le réseau pose la garde `assertOutsideTransaction`, ou est inscrit avec sa raison datée ; tout paquet externe importé par l’API (node:* et @lfd/* compris) est classé network ou local dans lint/dependency-network-class.json, et un import non typé d’un paquet network compte comme appel sortant.",
       "since": "2026-11-06",
       "watch": ["apps/lfd-api/src/**"]
     }

@@ -103,3 +103,92 @@ test("chaque entrée datée porte sa raison", () => {
     assert.match(guard, /^apps\/lfd-api\/src\//);
   }
 });
+
+const CLASSES = {
+  axios: { class: "network", reason: "client HTTP" },
+  zod: { class: "local", reason: "validation" },
+  "@lfd/storage": { class: "network", reason: "client S3", networkImports: ["S3StorageService"] },
+  "@lfd/money": { class: "local", reason: "arithmétique" },
+};
+const USES_ALL = [
+  {
+    path: "apps/lfd-api/src/a.ts",
+    source: 'import { z } from "zod";\nimport { m } from "@lfd/money";',
+  },
+  {
+    path: "apps/lfd-api/src/b.ts",
+    source:
+      'import type { AxiosInstance } from "axios";\nimport { sanitiseFileName } from "@lfd/storage";',
+  },
+];
+
+test("classement : tout importé et classé → aucun écart", () => {
+  assert.deepEqual(verdict(USES_ALL, {}, {}, CLASSES).failures, []);
+});
+
+test("classement : un paquet non classé échoue avec fichier:ligne", () => {
+  const source = 'import { x } from "./x.js";\nimport twilio from "twilio/lib";';
+  const { failures } = verdict([...USES_ALL, { path: PATH, source }], {}, {}, CLASSES);
+  assert.equal(failures.length, 1);
+  assert.match(
+    failures[0],
+    /nouvelle dépendance `twilio` importée par .*thing\.client\.ts:2 : classe-la `network` ou `local` dans lint\/dependency-network-class\.json/,
+  );
+});
+
+test("classement : un node:* et un @lfd/* non classés échouent aussi", () => {
+  const source = 'import { a } from "node:dns/promises";\nimport { b } from "@lfd/mailer/x";';
+  const failures = verdict([...USES_ALL, { path: PATH, source }], {}, {}, CLASSES).failures;
+  assert.match(failures.join("\n"), /`node:dns` importée/);
+  assert.match(failures.join("\n"), /`@lfd\/mailer` importée/);
+});
+
+test("classement : une entrée que plus rien n'importe échoue", () => {
+  const { failures } = verdict(USES_ALL.slice(0, 1), {}, {}, CLASSES);
+  assert.equal(failures.length, 2);
+  assert.match(failures[0], /`axios` n'est plus importé .* retire l'entrée/);
+});
+
+test("classement : un import non typé d'un paquet network sans garde échoue", () => {
+  const source = 'import axios from "axios";\nexport const go = () => axios.get("u");';
+  const { failures } = verdict([...USES_ALL, { path: PATH, source }], {}, {}, CLASSES);
+  assert.equal(failures.length, 1);
+  assert.match(
+    failures[0],
+    /thing\.client\.ts:1 {2}appel sortant \(paquet réseau axios\) sans assertOutsideTransaction/,
+  );
+});
+
+test("classement : un import réseau gardé passe", () => {
+  const source = `import axios from "axios";\n${GUARDED}`;
+  const { failures, guarded } = verdict([...USES_ALL, { path: PATH, source }], {}, {}, CLASSES);
+  assert.deepEqual(failures, []);
+  assert.deepEqual(guarded, [PATH]);
+});
+
+test("classement : `import type` et `{ type X }` d'un paquet réseau sont ignorés", () => {
+  assert.equal(firstOutbound('import type { A } from "axios";', CLASSES), null);
+  assert.equal(firstOutbound('import { type A, type B } from "axios";', CLASSES), null);
+  assert.equal(firstOutbound('// import x from "axios";', CLASSES), null);
+  const mixed = firstOutbound('import { type A, b } from "axios";', CLASSES);
+  assert.equal(mixed?.name, "paquet réseau axios");
+  const dynamic = firstOutbound('const a = await import("axios");', CLASSES);
+  assert.equal(dynamic?.name, "paquet réseau axios");
+});
+
+test("classement : un @lfd/* réseau ne compte que par ses noms réseau", () => {
+  assert.equal(firstOutbound('import { sanitiseFileName } from "@lfd/storage";', CLASSES), null);
+  assert.equal(firstOutbound('import { m } from "@lfd/money";', CLASSES), null);
+  const named = 'import { contentAddressedKey, S3StorageService } from "@lfd/storage";';
+  assert.equal(firstOutbound(named, CLASSES)?.name, "paquet réseau @lfd/storage");
+  const star = 'import * as storage from "@lfd/storage";';
+  assert.equal(firstOutbound(star, CLASSES)?.name, "paquet réseau @lfd/storage");
+});
+
+test("classement : une classe autre que network/local, ou sans raison, échoue", () => {
+  const files = [{ path: PATH, source: 'import { z } from "zod";' }];
+  const odd = verdict(files, {}, {}, { zod: { class: "maybe", reason: "r" } }).failures;
+  assert.match(odd[0], /« maybe »/);
+  const mute = verdict(files, {}, {}, { zod: { class: "local", reason: "" } }).failures;
+  assert.match(mute[0], /pas de raison/);
+});

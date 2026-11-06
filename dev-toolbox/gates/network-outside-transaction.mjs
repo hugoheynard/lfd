@@ -23,6 +23,14 @@
  * `fetch(` (`auth0-management.client.ts`), le planificateur de tournées et
  * le géocodage aussi.
  *
+ * **Et tout import non typé d'un paquet classé `network`** dans
+ * `lint/dependency-network-class.json` (2026-11-06, Hugo) : les motifs ne
+ * reconnaissent que les clients connus, et une bibliothèque réseau ajoutée
+ * demain n'en emprunterait aucun. Chaque paquet externe importé par l'API —
+ * `node:*` et `@lfd/*` compris — y est classé `network` ou `local`, avec sa
+ * raison (`network-dependency-class.mjs`). Les motifs restent : `fetch` est
+ * global, sans import.
+ *
  * ## Ce que la porte refuse
  *
  * - un fichier qui fait un appel sortant sans appeler
@@ -30,6 +38,9 @@
  * - une entrée DELEGATED dont le fichier gardien n'appelle pas la garde ;
  * - une entrée de ADMITTED ou DELEGATED qui ne fait plus d'appel sortant (ou
  *   a disparu) : la liste n'a pas d'entrée morte.
+ *
+ * - un import d'un paquet non classé (« nouvelle dépendance ») ;
+ * - une entrée du classement que plus rien n'importe, ou sans raison.
  *
  * Portée : `apps/lfd-api/src/**.ts`, hors `__tests__/` et `*.spec.ts`.
  *
@@ -41,6 +52,11 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { withoutComments } from "./mail-through-block.mjs";
+import {
+  CLASS_FILE,
+  classificationFailures,
+  firstNetworkImport,
+} from "./network-dependency-class.mjs";
 
 const SRC = "apps/lfd-api/src";
 const SELF = "dev-toolbox/gates/network-outside-transaction.mjs";
@@ -109,14 +125,15 @@ export const DELEGATED = {
 const lineOf = (source, index) => source.slice(0, index).split("\n").length;
 
 /** Le premier appel sortant d'une source, commentaires blanchis : ligne et nature, ou `null`. */
-export function firstOutbound(raw) {
+export function firstOutbound(raw, classes = {}) {
   const source = withoutComments(raw);
-  let first = null;
+  let first = firstNetworkImport(raw, classes);
   for (const { name, pattern } of OUTBOUND) {
     pattern.lastIndex = 0;
     const match = pattern.exec(source);
-    if (match !== null && (first === null || match.index < first.index)) {
-      first = { index: match.index, line: lineOf(source, match.index), name };
+    const line = match === null ? 0 : lineOf(source, match.index);
+    if (match !== null && (first === null || line < first.line)) {
+      first = { line, name };
     }
   }
   return first === null ? null : { line: first.line, name: first.name };
@@ -140,13 +157,13 @@ export function refusal(path, { line, name }) {
 }
 
 /** Le verdict, pur : ce qui échoue, et le relevé des adaptateurs. */
-export function verdict(files, admitted, delegated) {
-  const failures = [];
+export function verdict(files, admitted, delegated, classes = null) {
+  const failures = classes === null ? [] : classificationFailures(files, classes);
   const outbound = new Map();
   const bySource = new Map(files.map((file) => [file.path, file.source]));
   const guarded = [];
   for (const { path, source } of files) {
-    const call = firstOutbound(source);
+    const call = firstOutbound(source, classes ?? {});
     if (call === null) continue;
     outbound.set(path, call);
     if (path in admitted || path in delegated) continue;
@@ -174,11 +191,15 @@ export function verdict(files, admitted, delegated) {
   return { failures, guarded, outbound: outbound.size };
 }
 
+/** Le client Prisma généré (ignoré par git, 500 Ko) : ni un adaptateur, ni une dépendance à classer. */
+const GENERATED = join(SRC, "platform/database/client");
+
 function typescriptFiles(dir) {
   const out = [];
   for (const entry of readdirSync(dir)) {
     if (entry === "__tests__" || entry === "node_modules") continue;
     const full = join(dir, entry);
+    if (full.endsWith(GENERATED)) continue;
     if (statSync(full).isDirectory()) {
       out.push(...typescriptFiles(full));
     } else if (entry.endsWith(".ts") && !entry.endsWith(".spec.ts")) {
@@ -194,7 +215,8 @@ function main() {
     path: relative(root, full).replace(/\\/g, "/"),
     source: readFileSync(full, "utf8"),
   }));
-  const { failures, guarded, outbound } = verdict(files, ADMITTED, DELEGATED);
+  const classes = JSON.parse(readFileSync(join(root, CLASS_FILE), "utf8")).packages;
+  const { failures, guarded, outbound } = verdict(files, ADMITTED, DELEGATED, classes);
   if (failures.length > 0) {
     console.error("\n✗ network-outside-transaction\n");
     for (const failure of failures) console.error(`  ${failure}`);
@@ -206,7 +228,7 @@ function main() {
   }
   console.log(
     `✓ network-outside-transaction : ${files.length} fichier(s) lus, ${outbound} font un appel sortant — ` +
-      `${guarded.length} gardés, ${Object.keys(DELEGATED).length} délégués, ${Object.keys(ADMITTED).length} admis.`,
+      `${guarded.length} gardés, ${Object.keys(DELEGATED).length} délégués, ${Object.keys(ADMITTED).length} admis ; ${Object.keys(classes).length} paquet(s) classés.`,
   );
 }
 

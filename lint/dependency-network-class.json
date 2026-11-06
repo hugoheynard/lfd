@@ -1,0 +1,92 @@
+{
+  "$comment": "Chaque paquet externe importé par apps/lfd-api/src (hors tests), classé network ou local — lu par dev-toolbox/gates/network-outside-transaction.mjs (2026-11-06). Un import non typé d'un paquet network rend le fichier « appel sortant » ; networkImports restreint ce réseau à certains noms.",
+  "packages": {
+    "@aws-sdk/client-s3": {
+      "class": "network",
+      "reason": "Le SDK S3 parle au stockage objet (R2)."
+    },
+    "@lfd/catalog-sync": {
+      "class": "local",
+      "reason": "Calculs purs sur l'instantané du catalogue, sans client."
+    },
+    "@lfd/contracts": {
+      "class": "local",
+      "reason": "Schémas Zod et constantes partagés avec les fronts."
+    },
+    "@lfd/endpoints": {
+      "class": "local",
+      "reason": "Liste des origines connues : des chaînes, aucun appel."
+    },
+    "@lfd/mailer": {
+      "class": "network",
+      "reason": "Porte le transport Resend (envoi et lecture du courrier entrant) ; le reste est du rendu pur.",
+      "networkImports": [
+        "createMailer",
+        "createResendMailer",
+        "ResendMailer",
+        "createResendInboundReader",
+        "ResendInboundReader",
+        "CircuitBreakerMailer"
+      ]
+    },
+    "@lfd/money": { "class": "local", "reason": "Arithmétique des montants en entiers." },
+    "@lfd/ops-contract": { "class": "local", "reason": "Types et schémas de la carte de santé." },
+    "@lfd/pim-contracts": { "class": "local", "reason": "Schémas et constantes du référentiel." },
+    "@lfd/storage": {
+      "class": "network",
+      "reason": "Porte le client S3 ; ses utilitaires (noms de fichiers, en-têtes, dimensions d'image) sont purs.",
+      "networkImports": ["S3StorageService", "S3CleanupQueueProcessor"]
+    },
+    "@lfd/storefront-layout": {
+      "class": "local",
+      "reason": "Règles de composition de la vitrine, pures."
+    },
+    "@nestjs/common": { "class": "local", "reason": "Décorateurs et injection de Nest." },
+    "@nestjs/config": { "class": "local", "reason": "Lecture de la configuration au démarrage." },
+    "@nestjs/core": { "class": "local", "reason": "Cœur du conteneur Nest." },
+    "@nestjs/cqrs": { "class": "local", "reason": "Bus de commandes et de requêtes en mémoire." },
+    "@nestjs/platform-express": {
+      "class": "local",
+      "reason": "Serveur HTTP entrant : il reçoit, il n'appelle pas."
+    },
+    "@nestjs/throttler": { "class": "local", "reason": "Limitation de débit en mémoire." },
+    "@prisma/adapter-pg": {
+      "class": "local",
+      "reason": "Le transport de la base elle-même : c'est la transaction, pas un tiers."
+    },
+    "express": { "class": "local", "reason": "Types et middlewares du serveur entrant." },
+    "fflate": { "class": "local", "reason": "Compression d'archives en mémoire." },
+    "helmet": { "class": "local", "reason": "En-têtes de sécurité des réponses." },
+    "jose": {
+      "class": "network",
+      "reason": "Vérifie les jetons en local ; seules les clés distantes (JWKS) passent par le réseau.",
+      "networkImports": ["createRemoteJWKSet"]
+    },
+    "node:async_hooks": { "class": "local", "reason": "Contexte de requête (AsyncLocalStorage)." },
+    "node:buffer": { "class": "local", "reason": "Octets en mémoire." },
+    "node:crypto": { "class": "local", "reason": "Hachage et signatures en local." },
+    "node:dns": { "class": "network", "reason": "Résolution de noms : une requête au résolveur." },
+    "node:fs": { "class": "local", "reason": "Fichiers locaux (polices, gabarits)." },
+    "node:http": { "class": "network", "reason": "Client HTTP de Node." },
+    "node:https": { "class": "network", "reason": "Client HTTPS de Node." },
+    "node:net": {
+      "class": "local",
+      "reason": "N'est importé que pour ses utilitaires d'adresses (isIP, BlockList), sans socket."
+    },
+    "node:path": { "class": "local", "reason": "Chemins de fichiers." },
+    "node:url": { "class": "local", "reason": "Analyse d'URL, sans requête." },
+    "node:util": { "class": "local", "reason": "Utilitaires de Node." },
+    "node:zlib": { "class": "local", "reason": "Compression en mémoire." },
+    "pdfkit": { "class": "local", "reason": "Rendu de PDF en mémoire." },
+    "qrcode-generator": { "class": "local", "reason": "Calcul d'un QR code en mémoire." },
+    "rxjs": { "class": "local", "reason": "Flux en mémoire (bus, intercepteurs)." },
+    "stripe": { "class": "network", "reason": "Le SDK Stripe appelle l'API Stripe." },
+    "ulid": { "class": "local", "reason": "Fabrique d'identifiants." },
+    "uuid": { "class": "local", "reason": "Fabrique d'identifiants." },
+    "web-push": {
+      "class": "network",
+      "reason": "Envoie les notifications aux services push des navigateurs."
+    },
+    "zod": { "class": "local", "reason": "Validation de forme." }
+  }
+}

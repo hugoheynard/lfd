@@ -65,7 +65,17 @@ reste : corriger ce que la mesure a trouvé (tableau 2), puis passer en
 - **La porte** : `pnpm gate network-outside-transaction`
   (`dev-toolbox/gates/network-outside-transaction.mjs`). Tout fichier de
   `apps/lfd-api/src` qui fait un appel sortant appelle le garde, ou est inscrit
-  (admis ou délégué) avec sa raison datée.
+  (admis ou délégué) avec sa raison datée. Depuis le 2026-11-06 (Hugo), elle
+  tient aussi **le classement des dépendances**
+  (`lint/dependency-network-class.json`) : chaque paquet externe importé par
+  l'API — `node:*` et `@lfd/*` compris, relevé par les imports — est classé
+  `network` ou `local` avec sa raison ; un paquet non classé échoue
+  (« nouvelle dépendance… », fichier:ligne), une entrée que plus rien
+  n'importe aussi, et un import non typé d'un paquet `network` fait du
+  fichier un appel sortant. Une entrée `network` peut restreindre le réseau à
+  certains noms (`networkImports`) : `@lfd/storage` et `@lfd/mailer` exportent
+  aussi des utilitaires purs, `jose` ne lit le réseau que par
+  `createRemoteJWKSet`. Les motifs restent, `fetch` étant global.
 - **La mesure e2e** : `E2E_NETWORK_LOG=<fichier>` allume
   `apps/lfd-api/test/network-measure.ts`, une ligne JSON par violation (suite,
   cas, appel, pile, pile d'ouverture de la transaction). Comme les e2e doublent
@@ -157,4 +167,7 @@ Ce que ça dit :
   production, ou `E2E_NETWORK_LOG` sur la suite complète, les couvrira.
 - **Un appel sortant hors des motifs de la porte** (`fetch(`, `new Stripe(`,
   `S3StorageService`, `node:https`…) : un nouveau client qui n'en emprunte
-  aucun ne serait pas vu.
+  aucun ne serait pas vu. **Fermé le 2026-11-06** par le classement des
+  dépendances (ci-dessus) : une bibliothèque nouvelle doit être classée avant
+  que la porte repasse. Ce qui reste hors de vue : un nom réseau ajouté à un
+  paquet déjà classé avec `networkImports` sans que la liste suive.
