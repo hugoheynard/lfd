@@ -108,43 +108,59 @@ toutes les destinations.
   actuelle — les octets d'aujourd'hui servent de référence de non-régression,
   comme pour E1.
 
-### 3. Où il vit — décidé par Hugo le 2026-11-06
+### 3. Où il vit — un service d'e-mails commun (Hugo, 2026-11-06)
 
-**Deux produits, un même code, des données séparées.** La Folie Coffee envoie
-des e-mails ; la future **billetterie d'événements** en enverra aussi. Elle
-vivra **dans ce monorepo, avec sa propre API et sa propre base** (Hugo,
-2026-11-06).
+**Le constat.** La Folie Coffee envoie des e-mails ; la future **billetterie
+d'événements** en enverra aussi. Elle vivra dans ce monorepo, avec sa propre
+API et sa propre base. Les deux produits relèvent de **la même société**, et
+**les mêmes personnes** éditent leurs e-mails (Hugo, 2026-11-06).
 
-On partage donc le **code**, jamais les **données** (option A) :
+**La décision : les apps demandent, le service d'e-mails compose et envoie**
+(proposition de Hugo, le modèle de Postmark, SendGrid ou Customer.io).
 
-| Paquet du monorepo                         | Ce qu'il porte                                                                                                                                                      |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@lfd/mailer` (`packages/mailer/`, existe) | l'envoi (Resend), le disjoncteur, le mode à blanc ; s'y ajoute le moteur de rendu e-mail, la **charte passée en paramètre** pour que chaque produit garde sa marque |
-| un paquet de blocs (nom à fixer au plan)   | le catalogue de blocs, leurs règles, leur rendu e-mail et web                                                                                                       |
-| un paquet d'éditeur (nom à fixer au plan)  | les composants Angular de l'éditeur, que chaque back-office monte, et son aperçu                                                                                    |
+```mermaid
+flowchart LR
+  LFC["API La Folie Coffee"] -- "mail.demandé<br/>(outbox durable)" --> SVC
+  TIX["API billetterie"] -- "mail.demandé<br/>(outbox durable)" --> SVC
+  subgraph SVC["service e-mails — sa propre app, sa propre base"]
+    T["modèles par blocs<br/>une charte par marque"]
+    E["éditeur<br/>(une équipe, deux produits)"]
+    R["rendu + envoi (Resend)"]
+    H["historique, rebonds,<br/>désinscriptions"]
+  end
+```
 
-Chaque produit garde dans **sa** base, dans un schéma Postgres dédié
-`content`, ses documents, leurs versions et l'historique de ses envois. Les
-données de ses clients ne quittent jamais son API. Pour La Folie Coffee, ce
-schéma rejoint `public`, `growth`, `ops`, `pim`… dans la base unique : une
-seule URL, une seule transaction, et la frontière tenue par
-`lint:cross-schema-join`, `lint:prisma-schema-layout` et
-`lint:prisma-model-ownership`. Côté API, le socle relève de `platform/` (sans
-métier) ; les emplacements et les blocs métier (récapitulatif, QR,
-itinéraire) sont déclarés par les contextes qui les produisent.
+- **Une demande dit quoi, à qui, avec quelles données** : le modèle (par
+  exemple `order-placed`), le produit, le destinataire, la langue, et les
+  données que le modèle déclare. Elle part par l'**outbox durable** que les
+  API ont déjà : un service d'e-mails arrêté retarde l'envoi, il ne le perd
+  pas, et la commande n'attend jamais l'e-mail.
+- **Le contrat d'un modèle** : chaque modèle déclare la forme de ses données
+  (variables, récapitulatif, QR, itinéraire), versionnée dans un paquet de
+  contrats partagé. Le manifeste des variables d'aujourd'hui
+  (`mail-copy-manifest.json`) en est l'amorce.
+- **Le service possède** les modèles, l'éditeur, le rendu, l'envoi et le suivi
+  (rebonds, liste de suppression chez Resend, historique). Les apps ne savent
+  plus rien de la mise en page.
+- **Écartée : la bibliothèque partagée** (chaque produit avec son éditeur et
+  ses modèles dans sa base). Plus simple au départ, elle aurait donné deux
+  éditeurs pour une seule équipe, et deux endroits où chercher un rebond.
 
-**Écarté : un service d'envoi commun** (option B, une app à part que les deux
-produits appelleraient) : il ferait passer les clients des deux produits par
-un même service, coupler leur disponibilité, et ajouter un déploiement et une
-authentification entre produits. À reconsidérer seulement si une même équipe
-doit éditer les deux produits au même endroit ; les paquets rendent ce
-passage possible.
+**Ce que ça coûte, à porter au plan :**
 
-**Conséquence pour La Folie Coffee** : les textes et l'ordre des sections
-publiés aujourd'hui dans `public` (`prisma/schema/public/mail-copy.prisma`)
-passeront dans `content`, devenus des documents par blocs, sans changer un
-octet des e-mails envoyés. C'est une migration de données : le plan passe par
-`vitruve`.
+1. **Une app de plus** : son conteneur, sa base, son entrée dans la
+   passerelle, son `/health`, son déploiement.
+2. **Les données des clients traversent** (nom, e-mail, détail d'une
+   commande) : un traitement de plus au registre RGPD
+   (`documentation/legal/rgpd-registre.json`), avec sa durée de conservation.
+   Le service ne garde des données d'un envoi que ce que le suivi exige.
+3. **Les droits** : les personnes du staff se connectent à l'éditeur ; la
+   manière (l'annuaire du staff de La Folie Coffee, Auth0) est à trancher.
+4. **L'aperçu et l'essai** demandent des données d'exemple par modèle.
+5. **La bascule de La Folie Coffee** : ses textes et l'ordre de ses sections
+   publiés aujourd'hui (`prisma/schema/public/mail-copy.prisma`) deviennent
+   des modèles du service, sans changer un octet des e-mails envoyés. C'est
+   une migration de données entre deux bases : le plan passe par `vitruve`.
 
 ### 4. Ce qui n'est pas vérifié
 
@@ -152,7 +168,8 @@ octet des e-mails envoyés. C'est une migration de données : le plan passe par
   MJML sans changer les octets des e-mails existants ;
 - le poids d'un tel moteur dans le conteneur de l'API ;
 - le besoin réel d'ajouter et de retirer des blocs, par rapport au seul
-  réordonnancement déjà bâti (question 3 ci-dessous).
+  réordonnancement déjà bâti (question 3 ci-dessous) ;
+- la façon dont la passerelle et Auth0 accueilleraient une troisième API.
 
 ### 5. Les questions avant le plan
 
