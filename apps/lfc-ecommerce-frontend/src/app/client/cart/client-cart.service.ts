@@ -192,6 +192,9 @@ export class ClientCart {
    */
   readonly pricing = this.quote.status;
 
+  /** Les lignes dont le montant attend le décompte en vol — cf. {@link ShopQuote.pendingSkus}. */
+  readonly pendingSkus = this.quote.pendingSkus;
+
   /** Redemande le décompte d'un panier inchangé — cf. {@link ShopQuote.refresh}. */
   requote(): void {
     this.quote.refresh();

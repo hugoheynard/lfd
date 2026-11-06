@@ -25,7 +25,15 @@
   }
 </span>
 
-<span class="sum">{{ sum() }}</span>
+<!-- En attente du décompte : le montant périmé reste, atténué, avec un
+     indicateur décoratif. `aria-busy` plutôt qu'une région vivante : un
+     lecteur d'écran n'annonce rien à chaque clic (2026-11-06). -->
+<span class="sum" [class.pending]="pending()" [attr.aria-busy]="pending() || null">
+  @if (pending()) {
+    <fold-spinner size="xs" />
+  }
+  {{ sum() }}
+</span>
 
 <!-- − et + DE CHAQUE CÔTÉ d'un champ plus grand (Hugo, 2026-10-27) : le
      stepper empilé était trop petit pour le doigt. La quantité se tape

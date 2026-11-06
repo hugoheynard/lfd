@@ -12,6 +12,7 @@
           [totalHtCents]="totalOf(line.product.sku)?.ht ?? null"
           [totalTtcCents]="totalOf(line.product.sku)?.ttc ?? null"
           [excluded]="excludedSkus().has(line.product.sku)"
+          [pending]="cart.pendingSkus().has(line.product.sku)"
           (quantityChange)="cart.setQuantity(line.product.sku, $event)"
           (dropped)="cart.drop(line.product.sku)"
         ></li>

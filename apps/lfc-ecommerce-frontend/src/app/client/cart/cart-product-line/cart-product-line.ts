@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { FoldIconComponent, FoldNumberInputComponent } from 'fold-ng';
+import { FoldIconComponent, FoldNumberInputComponent, FoldSpinnerComponent } from 'fold-ng';
 
 import { formatCents, formatMillicents } from '../../format-money';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
@@ -45,7 +45,7 @@ import {
 @Component({
   selector: 'li[app-cart-product-line]',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, FoldNumberInputComponent],
+  imports: [FoldIconComponent, FoldNumberInputComponent, FoldSpinnerComponent],
   // Plus de `role="group"` sur l'hôte (lot A5, 2026-10-26) : il effaçait le
   // `listitem` du `<li>`, et la liste n'avait plus d'items (axe `list`). Le
   // champ est nommé par son propre `<label for>`, la corbeille par le sien.
@@ -167,6 +167,13 @@ export class CartProductLine {
    * ligne reçoit les deux montants et n'en choisit qu'un.
    */
   readonly totalTtcCents = input<number | null>(null);
+
+  /**
+   * Le décompte en vol re-chiffre CETTE ligne (sa quantité a changé depuis le
+   * dernier décompte reçu) : son montant est périmé et s'atténue. Le parent le
+   * lit sur `ShopQuote.pendingSkus`, la ligne ne le déduit pas.
+   */
+  readonly pending = input(false);
 
   protected readonly sum = computed(() => {
     const cents = this.basis.showsTtc() ? this.totalTtcCents() : this.totalHtCents();

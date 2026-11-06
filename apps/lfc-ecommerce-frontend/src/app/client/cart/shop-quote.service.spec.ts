@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { CartStore } from './cart.store';
-import { ShopQuote } from './shop-quote.service';
+import { QUOTE_DEBOUNCE_MS, ShopQuote } from './shop-quote.service';
 import {
   hydrateWith,
   LOCKED_CATALOGUE,
@@ -621,5 +621,90 @@ describe('le bon au devis', () => {
     const again = http().expectOne(QUOTE);
     expect('voucherId' in (again.request.body as object)).toBe(false);
     again.flush(ANSWER);
+  });
+});
+
+/**
+ * **Les lignes en attente** (2026-11-06) : pendant qu'un décompte est en vol,
+ * seule la ligne dont la quantité a changé depuis le dernier décompte REÇU a
+ * un montant périmé. Aucun montant n'est calculé ici.
+ */
+describe('ShopQuote — lignes en attente', () => {
+  const OTHER = TEST_ITEMS[1]?.sku ?? '';
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function settled(): { quote: ShopQuote; cart: CartStore; http: HttpTestingController } {
+    // Le panier se garde dans le stockage local : sans ce nettoyage, celui du
+    // test précédent partirait au démarrage.
+    localStorage.clear();
+    const booted = boot();
+    quiet(0);
+    booted.cart.setQuantity(SKU, 1);
+    booted.cart.setQuantity(OTHER, 2);
+    quiet();
+    booted.http.expectOne(QUOTE).flush(ANSWER);
+    return booted;
+  }
+
+  it("l'accalmie est de 200 ms : le devis part sans attendre davantage", () => {
+    const { cart, http } = settled();
+    cart.setQuantity(SKU, 2);
+    quiet(QUOTE_DEBOUNCE_MS - 1);
+    expect(http.match(QUOTE)).toHaveLength(0);
+    quiet(1);
+    http.expectOne(QUOTE).flush(ANSWER);
+    expect(QUOTE_DEBOUNCE_MS).toBe(200);
+  });
+
+  it('seule la ligne changée est en attente, les autres non', () => {
+    const { quote, cart, http } = settled();
+    expect(quote.pendingSkus().size).toBe(0);
+
+    cart.setQuantity(SKU, 3);
+    TestBed.tick();
+
+    expect(quote.status()).toBe('loading');
+    expect([...quote.pendingSkus()]).toEqual([SKU]);
+    quiet();
+    http.expectOne(QUOTE).flush(ANSWER);
+  });
+
+  it('une ligne revenue à la quantité déjà chiffrée n’est plus en attente', () => {
+    const { quote, cart, http } = settled();
+    cart.setQuantity(SKU, 3);
+    TestBed.tick();
+    cart.setQuantity(SKU, 1);
+    TestBed.tick();
+
+    expect(quote.pendingSkus().has(SKU)).toBe(false);
+    quiet();
+    http.match(QUOTE).forEach((request) => request.flush(ANSWER));
+  });
+
+  it('plus rien en attente au retour du devis', () => {
+    const { quote, cart, http } = settled();
+    cart.setQuantity(SKU, 3);
+    quiet();
+    http.expectOne(QUOTE).flush(ANSWER);
+
+    expect(quote.status()).toBe('ready');
+    expect(quote.pendingSkus().size).toBe(0);
+  });
+
+  it('un devis en échec ne laisse aucune ligne en attente', () => {
+    const { quote, cart, http } = settled();
+    cart.setQuantity(SKU, 3);
+    quiet();
+    http.expectOne(QUOTE).error(new ProgressEvent('boom'));
+
+    expect(quote.status()).toBe('failed');
+    expect(quote.pendingSkus().size).toBe(0);
   });
 });

@@ -46,11 +46,18 @@ import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './voucher-choice.service'
  * de prix par ligne — sur une route **publique**, donc la surface la plus
  * exposée de l'API.
  *
- * Le même délai que le panier du back-office, et pour la même raison : c'est la
- * durée d'une frappe, pas un réglage d'environnement. Diverger de trois cents
- * millisecondes entre deux paniers n'aurait eu aucune justification.
+ * 🔴 **La boutique attend moins que le back-office (300 ms) depuis le
+ * 2026-11-06.** Le devis est 2,4× plus rapide depuis que l'API lit le
+ * catalogue en mémoire (~337 ms → ~140 ms en production, M1b) : l'accalmie de
+ * 300 ms était devenue la plus grosse part de l'attente du client. 200 ms
+ * absorbent encore une salve de clics rapides sur « + ». Le back-office n'a
+ * pas suivi : le commercial y lit le prix au téléphone, il ne clique pas en
+ * rafale sous les yeux du client.
  */
-export const QUOTE_DEBOUNCE_MS = 300;
+export const QUOTE_DEBOUNCE_MS = 200;
+
+/** Aucune ligne en attente — une seule instance, pour ne pas réveiller les lecteurs. */
+const NO_SKUS: ReadonlySet<string> = new Set();
 
 /** Le lecteur d'un visiteur non reconnu — la route publique. */
 const VISITOR = 'visiteur';
@@ -165,6 +172,11 @@ export class ShopQuote {
   private readonly voucherEffect = signal(0);
   private readonly voucherRest = signal<number | null>(null);
   private readonly removed = signal<readonly ShopQuoteRemovedLineView[]>([]);
+  /**
+   * Chaque ligne du DERNIER décompte reçu, sous sa forme envoyée (SKU → ligne
+   * sérialisée) — ce que {@link pendingSkus} compare à la clé courante.
+   */
+  private readonly quotedLines = signal<ReadonlyMap<string, string>>(new Map());
   /** Le lecteur du dernier décompte demandé — cf. la remise à zéro des points. */
   private lastReader: string | null = null;
   /** Le dernier changement de clé venait-il d'un autre lecteur ? Lu par l'attente. */
@@ -222,6 +234,30 @@ export class ShopQuote {
   readonly removedLines = computed(() => {
     const quantities = this.store.quantities();
     return this.removed().filter((line) => (quantities[line.sku] ?? 0) === 0);
+  });
+
+  /**
+   * **Les lignes dont le montant affiché n'est plus le bon**, le temps qu'un
+   * décompte revienne : celles dont la quantité (ou l'unité) a changé depuis
+   * le dernier décompte reçu, et les lignes neuves. Vide hors attente — un
+   * échec ou un refus ne laisse rien « en attente ».
+   *
+   * Déduit de la clé envoyée et des lignes du dernier décompte reçu, ici et
+   * nulle part ailleurs : aucun montant n'est calculé, l'écran atténue
+   * seulement le montant périmé (Hugo, 2026-11-06 — pas de montant optimiste).
+   */
+  readonly pendingSkus = computed<ReadonlySet<string>>(() => {
+    if (this.state() !== 'loading') {
+      return NO_SKUS;
+    }
+    const lines = linesOf(this.key());
+    if (lines === null) {
+      return NO_SKUS;
+    }
+    const quoted = this.quotedLines();
+    return new Set(
+      lines.filter((line) => quoted.get(line.sku) !== JSON.stringify(line)).map((l) => l.sku),
+    );
   });
 
   /**
@@ -385,6 +421,7 @@ export class ShopQuote {
       tap((view) => {
         this.dropRemoved(view.removedLines ?? []);
         this.view.set(view);
+        this.quotedLines.set(new Map(lines.map((line) => [line.sku, JSON.stringify(line)])));
         // Le devis anonyme n'a pas la clé (absente, pas nulle).
         this.points.set('loyaltyPointsToEarn' in view ? view.loyaltyPointsToEarn : null);
         this.voucherEffect.set(

@@ -108,6 +108,16 @@
   font-weight: var(--lfc-weight-black);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+
+  /* Périmé, le temps que le décompte revienne : atténué, sans transition
+     (rien à animer, donc rien à couper sous `prefers-reduced-motion` — le
+     spinner fold s'y arrête de lui-même). */
+  &.pending {
+    color: var(--fold-color-text-muted);
+  }
 }
 
 /* Lu, pas vu : le nom du champ de quantité et l'exclusion de la ligne (lot A5). */

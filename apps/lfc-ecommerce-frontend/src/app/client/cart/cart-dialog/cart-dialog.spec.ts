@@ -165,6 +165,7 @@ function quoteDouble() {
     endedDiscounts: signal([]),
     signInOffer: signal(null),
     refusal: signal(null),
+    pendingSkus: signal<ReadonlySet<string>>(new Set()),
     loyaltyPointsToEarn: signal(null),
     voucherTotalEffectCents: signal(0),
     voucherRemainderCents: signal<number | null>(null),
