@@ -108,13 +108,43 @@ toutes les destinations.
   actuelle — les octets d'aujourd'hui servent de référence de non-régression,
   comme pour E1.
 
-### 3. Où il vit
+### 3. Où il vit — décidé par Hugo le 2026-11-06
 
-À trancher au plan. Le socle (catalogue de blocs, document, cycle de vie) est
-transverse et sans métier : il relève de `platform/` côté API et d'un paquet
-partagé côté front (la matrice du § 3 de `CLAUDE.md` interdit à `platform`
-de connaître un contexte métier). Les **emplacements** et les **blocs
-métier** appartiennent chacun à leur contexte, qui les déclare.
+**Deux produits, un même code, des données séparées.** La Folie Coffee envoie
+des e-mails ; la future **billetterie d'événements** en enverra aussi. Elle
+vivra **dans ce monorepo, avec sa propre API et sa propre base** (Hugo,
+2026-11-06).
+
+On partage donc le **code**, jamais les **données** (option A) :
+
+| Paquet du monorepo                         | Ce qu'il porte                                                                                                                                                      |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@lfd/mailer` (`packages/mailer/`, existe) | l'envoi (Resend), le disjoncteur, le mode à blanc ; s'y ajoute le moteur de rendu e-mail, la **charte passée en paramètre** pour que chaque produit garde sa marque |
+| un paquet de blocs (nom à fixer au plan)   | le catalogue de blocs, leurs règles, leur rendu e-mail et web                                                                                                       |
+| un paquet d'éditeur (nom à fixer au plan)  | les composants Angular de l'éditeur, que chaque back-office monte, et son aperçu                                                                                    |
+
+Chaque produit garde dans **sa** base, dans un schéma Postgres dédié
+`content`, ses documents, leurs versions et l'historique de ses envois. Les
+données de ses clients ne quittent jamais son API. Pour La Folie Coffee, ce
+schéma rejoint `public`, `growth`, `ops`, `pim`… dans la base unique : une
+seule URL, une seule transaction, et la frontière tenue par
+`lint:cross-schema-join`, `lint:prisma-schema-layout` et
+`lint:prisma-model-ownership`. Côté API, le socle relève de `platform/` (sans
+métier) ; les emplacements et les blocs métier (récapitulatif, QR,
+itinéraire) sont déclarés par les contextes qui les produisent.
+
+**Écarté : un service d'envoi commun** (option B, une app à part que les deux
+produits appelleraient) : il ferait passer les clients des deux produits par
+un même service, coupler leur disponibilité, et ajouter un déploiement et une
+authentification entre produits. À reconsidérer seulement si une même équipe
+doit éditer les deux produits au même endroit ; les paquets rendent ce
+passage possible.
+
+**Conséquence pour La Folie Coffee** : les textes et l'ordre des sections
+publiés aujourd'hui dans `public` (`prisma/schema/public/mail-copy.prisma`)
+passeront dans `content`, devenus des documents par blocs, sans changer un
+octet des e-mails envoyés. C'est une migration de données : le plan passe par
+`vitruve`.
 
 ### 4. Ce qui n'est pas vérifié
 
