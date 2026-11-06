@@ -753,3 +753,5 @@ le déplace et réécrit la ligne de repli ; elle ne le retire pas, ne le met
 pas en colonne, ne change ni sa taille ni sa couleur. **À vérifier en vrai** :
 que l'inversion d'Outlook en mode sombre ne touche pas ce carré blanc (un
 e-mail d'essai ouvert dans Outlook).
+
+Le plan détaillé de S4 et S5 : [`plan-editeur-par-blocs.md`](plan-editeur-par-blocs.md).
