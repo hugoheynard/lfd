@@ -24,16 +24,20 @@
 > ✅ **M1a bâti le 2026-11-06** sur `dev` (migration
 > `20261106120000_les_versions_par_contexte`, porte
 > `lint:context-version-columns`, e2e `apps/lfd-api/test/context-versions.e2e-spec.ts`) ; rien
-> ne lit encore les versions. Pas en production.
+> ne lit encore les versions. En production le 2026-11-06 (`5e805275a`).
 >
 > ✅ **M1b bâti le 2026-11-06** sur `dev` : le devis, l'estimation de la
 > saisie et les suggestions du panier lisent le catalogue en mémoire
 > (`apps/lfd-api/src/b2b/catalog/infrastructure/catalogue-snapshot/`), à chaud
 > 1 lecture des numéros (+ 1 des réservations pour un pro). Écarts au § 12.
-> Pas en production.
+> En production le 2026-11-06 (`5e805275a`).
 >
-> 🧭 **Prochain pas** : `lecteur-de-migrations`, « pousse main », remesurer
-> (§ 10) ; puis M2 en option 1 (§ 12). Restent à mesurer avant M1b : le devis d'un espace pro et
+> 📏 **Remesuré en production le 2026-11-06** (devis anonyme, 30 appels,
+> médianes) : catalogue **127 → 11 ms**, 7 → **1** lecture ; temps de l'API
+> 155 → 36 ms ; requête complète 337 → 140 ms (§ 13).
+>
+> 🧭 **Prochain pas** : remesurer le panier connecté (devis + suggestions),
+> puis M2 en option 1 (§ 12). Restent à mesurer avant M1b : le devis d'un espace pro et
 > l'estimation de la saisie (§ 10.3).
 >
 > Ce qui a changé depuis la version du 2026-11-04 : l'invalidation par une
@@ -333,7 +337,7 @@ main laisse le rayon faux jusqu'à son expiration. Inchangé par ce plan.
 ### 2.2 bis Le schéma
 
 > ✅ Bâti le 2026-11-06 (M1a) : la table, ses trois fonctions et ses huit
-> déclencheurs existent sur `dev`, pas encore en production. La forme à un
+> déclencheurs existent en production depuis le 2026-11-06. La forme à un
 > seul numéro, bâtie le 2026-11-05, a été abandonnée ; sa liste de colonnes et
 > son registre ont été repris, rangés par contexte (§ 11).
 
@@ -718,3 +722,19 @@ transaction chez tous les écrivains, tenu par une porte ; `lint:catalogue-door`
 affichage, ou toutes les N secondes) — on ne fait pas attendre chaque
 visiteur pour le cas d'une correction en SQL, qui veut dire qu'on a raté ;
 après une telle correction, purger le rayon fait partie de l'incident.
+
+## 13. Mesuré en production après M1b (2026-11-06)
+
+Même script que la référence (`dev-toolbox/charge/reference-devis.js`, devis
+anonyme, 30 appels), juste après le déploiement de `5e805275a` :
+
+| Marque                | Référence (2026-11-05), médiane / p95 | Après M1b, médiane / p95 |
+| --------------------- | ------------------------------------- | ------------------------ |
+| requête complète      | 337 / 446 ms                          | **140 / 160 ms**         |
+| `app` (l'API)         | 155 / 180 ms                          | **36 / 44 ms**           |
+| `catalogue`           | 127 / 148 ms                          | **11 / 16 ms**           |
+| lectures du catalogue | 7                                     | **1** (les numéros)      |
+
+Le gain sur le catalogue est celui que le plan visait (~10–20 ms à chaud). Il
+reste à remesurer le panier d'un client connecté (devis et suggestions, ~285 ms
+par clic avant), sur le compte de test, panier vidé après.
