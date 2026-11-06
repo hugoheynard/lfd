@@ -57,6 +57,7 @@ import { DeliveryNotePlanningModule } from "./delivery-note-planning.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
+import { MailModule } from "../mail/mail.module.js";
 import { AccountFeatureLevelsModule } from "./account-feature-levels.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { ShelfDrawsFeedModule } from "./shelf-draws-feed.module.js";
@@ -228,6 +229,9 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PackingDeliveryFeedModule,
     PackingCommerceFeedModule,
     CitedAllergensFeedModule,
+    // Le bloc des e-mails : sa porte et le suivi des demandes
+    // (plan `editeur-de-contenu/plan-service-e-mails.md`, S1).
+    MailModule,
     // La livraison : la flotte et le départ des tournées (lot 2 du plan de
     // tournée). Le fil relie les points de retrait du commerce à son port.
     DeliveryModule,

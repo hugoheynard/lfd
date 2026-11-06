@@ -8,7 +8,16 @@
 > comme le sera la billetterie ; l'éditeur vit dans le **back-office**.
 >
 > ⚔️ **Contredit par `vitruve` le 2026-11-06** : 3 bloquants, 6 sérieux, tous
-> intégrés (§ 6). Rien n'est bâti. Nom du bloc et du schéma : **`mail`** (Hugo, 2026-11-06).
+> intégrés (§ 6). Nom du bloc et du schéma : **`mail`** (Hugo, 2026-11-06).
+>
+> 🏗️ **S0 et S1 bâtis le 2026-11-06.** S1 : `apps/lfd-api/src/mail/` (porte
+> `apps/lfd-api/src/mail/channels/requests/mail-requests.ts`, contexte `mail/requests/`), table
+> `mail.mail_request`, abonné durable `mail.requested`, porte
+> `lint:mail-through-block` (dette : 31). Aucun envoyeur ne passe encore par la
+> porte. Écarts au texte : `request` n'accepte en S1 que les 28 modèles sans PDF
+> en base64 (les 4 autres attendent le stockage, S2) ; la langue n'est pas un
+> champ de la demande, elle est lue dans `locale` des données ; la durée de
+> conservation du destinataire reste à décider (C7).
 
 ## Partie 1 — Comprendre
 

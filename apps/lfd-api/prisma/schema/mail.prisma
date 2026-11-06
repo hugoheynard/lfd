@@ -4,9 +4,44 @@
 //
 // Plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, lot S0 : le
 // schéma est déclaré AVANT le premier modèle, pour que les portes le
-// connaissent avant le premier fichier du bloc `src/mail/`. Vide jusqu'à S1
-// (les demandes et leur suivi).
+// connaissent avant le premier fichier du bloc `src/mail/`. S1 y pose les
+// demandes et leur suivi.
 //
 // ⚠️ Les trois tables `public.mail_copy_*` / `public.mail_section_orders`
 // RESTENT dans `public` (plan, S3) : seul leur écrivain changera. Ce fichier ne
 // porte que les tables neuves du bloc.
+
+/// **Une demande d'e-mail et son suivi** (S1, C7) : ce qui a été demandé, à
+/// qui, et ce qu'il en est advenu. Écrite dans la transaction de l'appelant
+/// (`request`) ou après l'envoi (`sendNow`) ; les données du modèle n'y sont
+/// PAS — elles voyagent dans le fait `mail.requested` de la boîte d'envoi.
+///
+/// ⚠️ `recipient` est une donnée personnelle (client ou staff). Sa durée de
+/// conservation n'est pas décidée (plan C7, à Hugo).
+model MailRequest {
+  id             String    @id
+  /// La clé du registre `B2bMails` (`customer.order-ready`).
+  template       String    @db.VarChar(80)
+  /// `lfc` aujourd'hui (CHECK en base).
+  brand          String    @db.VarChar(16)
+  /// L'adresse du destinataire.
+  recipient      String    @db.VarChar(320)
+  /// La langue lue dans les données du modèle ; `null` s'il n'en déclare pas.
+  locale         String?   @db.VarChar(8)
+  /// `requested` | `sent` | `failed` | `refused` (CHECK en base).
+  status         String    @db.VarChar(10)
+  /// L'identifiant Resend ; `null` tant que rien n'est parti, ou en mode à blanc.
+  providerId     String?   @map("provider_id")
+  /// Unique : un rejeu ne crée pas une seconde demande.
+  idempotencyKey String    @unique @map("idempotency_key") @db.VarChar(200)
+  /// La raison d'un échec ou d'un refus, tronquée à 500 caractères.
+  failureReason  String?   @map("failure_reason") @db.VarChar(500)
+  requestedAt    DateTime  @map("requested_at") @db.Timestamptz(6)
+  sentAt         DateTime? @map("sent_at") @db.Timestamptz(6)
+  /// L'instant du dernier échec ou du refus.
+  failedAt       DateTime? @map("failed_at") @db.Timestamptz(6)
+
+  @@index([status, requestedAt])
+  @@map("mail_request")
+  @@schema("mail")
+}
