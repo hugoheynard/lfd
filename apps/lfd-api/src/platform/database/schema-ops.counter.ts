@@ -301,6 +301,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // SQL brut — compté dans le seau brut ; seul le rejeu passe par ces modèles.
   OutboxMessage: "platform",
   OutboxDelivery: "platform",
+  // Les intentions des gestes du staff (revue du service d'e-mails, cas 4,
+  // 2026-11-06) : un double clic n'exécute qu'une fois.
+  GestureIntent: "platform",
   // Le colisage, en ombre (2026-10-04, `colisage/colisage.md`, K1) :
   // écrit par les abonnés durables, une ligne par fait reçu. La réserve
   // s'écrit aussi en SQL brut — comptée dans le seau brut.
