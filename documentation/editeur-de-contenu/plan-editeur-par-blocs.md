@@ -25,7 +25,7 @@ Un e-mail est une suite de **blocs**, de deux sortes :
 
 - **les blocs du modèle** — ce que le code compose à partir des données :
   le titre, le message (avec toutes ses variantes), le récapitulatif, le QR,
-  l'itinéraire, le bouton de commande, la pièce jointe. L'équipe les **déplace**
+  l'itinéraire, le bouton de commande et son lien secondaire, le pied. L'équipe les **déplace**
   et **réécrit leurs phrases** (dans toutes leurs variantes), elle ne les
   supprime pas et n'en change pas la logique ;
 - **les blocs libres** — ce que l'équipe **ajoute** : un titre, un paragraphe,
@@ -98,8 +98,7 @@ type Block =
 - **Les blocs du modèle** sont les sections que chaque modèle déclare
   aujourd'hui (`platform/mailer/sections/`), généralisées : titre, message,
   récapitulatif, QR, itinéraire, bouton de commande, lien secondaire, pied,
-  pièce jointe. Le code les compose comme aujourd'hui ; **un bloc du modèle
-  absent d'un envoi est sauté**, comme aujourd'hui. L'objet de l'e-mail reste
+  le bouton et son lien secondaire forment **un seul bloc** (le lien n'est rendu qu'avec le bouton). Le code les compose comme aujourd'hui ; **un bloc du modèle absent d'un envoi est rendu exactement comme aujourd'hui** (`joinSections` laisse une ligne vide à la place de 7 des 8 sections absentes, rien pour l'itinéraire). **Ne sont pas des blocs** : l'en-tête, le surtitre, le logo et le recours (cadres fixes), et les pièces jointes (données de l'envoi, sans place dans l'e-mail). L'objet de l'e-mail reste
   composé par le code, ses phrases réécrites dans le dictionnaire.
 - **Les blocs libres** n'ont **pas de variable ni de variante** : un texte
   fixe par langue. Ce qui dépend des données reste dans les blocs du modèle.
@@ -118,7 +117,7 @@ type Block =
 ### 3. Les phrases : une seule source
 
 - Réécrire une phrase d'un bloc du modèle (dans toutes ses variantes), c'est
-  écrire dans `public.mail_copy_entries`, **comme aujourd'hui** : brouillon,
+  écrire dans `public.mail_copy_entries`, comme aujourd'hui — **par le bloc `mail`**, qui en devient l'écrivain en S3 (`plan-service-e-mails.md`, § 3) : brouillon,
   publication, variables gardées, trois langues. L'écran `textes-emails` est
   absorbé par l'éditeur : quand un bloc du modèle est sélectionné, le panneau
   de droite montre ses phrases et leurs variantes (la carte de section
@@ -133,14 +132,12 @@ type Block =
 ### 4. Le rendu (S4)
 
 - `@lfd/mailer` rend un document : les blocs du modèle exactement comme la
-  coquille aujourd'hui, les blocs libres avec les mêmes styles en ligne
+  coquille aujourd'hui, les blocs libres avec les mêmes styles en ligne — **tirés des mêmes constantes**, exportées de `html.ts` (`BRAND` et les fragments de style, privés aujourd'hui), jamais recopiés
   (titre, paragraphe, encadré, bouton) et les colonnes en tableaux ;
-  l'empilement sur téléphone par une règle `@media` (Apple Mail, Gmail web ;
+  l'empilement sur téléphone par une règle `@media` — **émise seulement pour un document réarrangé** (§ 4, garantie) — (Apple Mail, Gmail web ;
   ailleurs les colonnes restent côte à côte).
 - **Trois chartes**, celles qui existent : `lfc` (clients), `lfd` (équipe,
-  avec recours), `internal` (sans marque) ; la billetterie viendra. Chacune
-  avec une variante sombre déclarée par `prefers-color-scheme`, lue par les
-  messageries qui la respectent.
+  dont l'e-mail reçoit son recours), `internal` (sans marque) ; la billetterie viendra. L'adresse de recours reste une donnée de l'envoi, pas un style. Chacune avec une variante sombre déclarée par `prefers-color-scheme`, lue par les messageries qui la respectent — **émise seulement pour un document réarrangé** : un `<style>` dans le `<head>` changerait les octets du document de départ (la coquille n'a de `<head>` qu'avec une police, `layout-header.ts`).
 - **Le QR** garde son PNG sur fond blanc opaque, dans une cellule
   `bgcolor="#ffffff"`. À vérifier en vrai dans Gmail et Outlook sombres.
 - **La garantie, testée pour les 32 modèles** : le document de départ rend
@@ -188,15 +185,15 @@ fold-ng d'abord (`apps/lfd-backoffice-frontend/CLAUDE.md`).
 
 ### 7. Les lots
 
-| Lot     | Contenu                                                                                                                                                                 | Ce qui change pour un client    |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| **S4a** | Le contrat (paquet dédié), les déclarations par modèle (blocs du modèle, langues, charte), ses tests. Peut précéder S3                                                  | rien                            |
-| **S4b** | Le rendu d'un document dans `@lfd/mailer`, les trois chartes et leur variante sombre, les colonnes ; le test « mêmes octets » du document de départ pour les 32 modèles | rien                            |
-| **S4c** | Le stockage, la publication, le retour au modèle d'origine, le journal, la permission ; le bloc `mail` rend un document publié s'il existe                              | rien tant que rien n'est publié |
-| **S5a** | L'entrée au menu, la liste, l'aperçu fidèle en lecture seule                                                                                                            | rien                            |
-| **S5b** | Le canevas : glisser-déposer, blocs libres, colonnes, réglages, phrases du modèle et leurs variantes (l'écran `textes-emails` absorbé), langues, cas                    | rien tant que rien n'est publié |
-| **S5c** | Vue téléphone, clair / sombre, essai, publier, historique, revenir au modèle d'origine                                                                                  | l'équipe publie ses e-mails     |
-| **S5d** | Le bloc image, par un canal `mail/channels/images/` que `media` implémente, selon la réponse à la question 1                                                            | des images dans les e-mails     |
+| Lot     | Contenu                                                                                                                                                                                                                                                                | Ce qui change pour un client    |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **S4a** | Le contrat (paquet dédié), les déclarations par modèle (blocs du modèle, langues, charte), ses tests. Peut précéder S3                                                                                                                                                 | rien                            |
+| **S4b** | Le rendu d'un document dans `@lfd/mailer` (constantes de style exportées de `html.ts`), les trois chartes, les colonnes ; variante sombre et `@media` émises pour un document réarrangé seulement ; le test « mêmes octets » du document de départ pour les 32 modèles | rien                            |
+| **S4c** | **Après S3.** Le stockage, une seule publication (arrangement et phrases, dans le bloc `mail`), le retour au modèle d'origine, le journal, la permission ; l'envoi lit le document publié s'il existe                                                                  | rien tant que rien n'est publié |
+| **S5a** | L'entrée au menu, la liste, l'aperçu fidèle en lecture seule                                                                                                                                                                                                           | rien                            |
+| **S5b** | Le canevas : glisser-déposer, blocs libres, colonnes, réglages, phrases du modèle et leurs variantes (l'écran `textes-emails` absorbé), langues, cas                                                                                                                   | rien tant que rien n'est publié |
+| **S5c** | Vue téléphone, clair / sombre, essai, publier, historique, revenir au modèle d'origine                                                                                                                                                                                 | l'équipe publie ses e-mails     |
+| **S5d** | Le bloc image, par un canal `mail/channels/images/` que `media` implémente, selon la réponse à la question 1                                                                                                                                                           | des images dans les e-mails     |
 
 S3 (déménager gabarits, dictionnaire et sections dans le bloc `mail`) reste
 le préalable de S4b et S4c.
@@ -260,3 +257,21 @@ au modèle d'origine trompeur, périmètre C2, contradictions du plan).
 Les listes d'axes et de données par modèle relevées par `vitruve` au second
 passage restent valables : ce sont les cas que le panneau de gauche montre
 (S5b), et les jeux de données du test « mêmes octets » (S4b).
+
+## 11. Troisième passage de `vitruve` (2026-11-06) — ce qui change
+
+| Objection                                                                                          | Gravité  | Ce que le plan fait maintenant                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| variante sombre et `@media` dans `<head>` contredisent « mêmes octets »                            | BLOQUANT | émises **seulement pour un document réarrangé** ; le document de départ rend la coquille d'aujourd'hui (§ 4)                                                                                                                              |
+| « un bloc absent est sauté » est faux : `joinSections` laisse une ligne vide pour 7 sections sur 8 | BLOQUANT | un bloc du modèle absent est rendu **exactement comme aujourd'hui** (§ 2)                                                                                                                                                                 |
+| la pièce jointe n'est pas un bloc visuel                                                           | BLOQUANT | retirée des blocs ; en-tête, surtitre, logo, recours et pièces jointes sont fixes (§ 2)                                                                                                                                                   |
+| deux publications indépendantes (phrases par `b2b/mail-copy`, arrangement par `mail`)              | SÉRIEUX  | **une seule publication**, dans le bloc `mail`, qui devient en S3 l'écrivain des phrases : S4c vient **après S3** (§ 7). Un bouton « Publier » publie l'arrangement et les phrases ensemble, dans une transaction                         |
+| C2 n'est pas « inchangé » : l'envoi doit lire une troisième source                                 | SÉRIEUX  | l'envoi lit le document publié s'il existe, sinon l'ordre publié de l'ancienne table, sinon l'ordre du code ; un document publié illisible se replie sur **l'ordre du code**, comme `layoutOrCode` aujourd'hui, et l'échec est journalisé |
+| propriété des tables avant S3                                                                      | SÉRIEUX  | S4a (contrat pur) ne lit aucune table ; S4c et S5b viennent après S3                                                                                                                                                                      |
+| styles des blocs libres dupliqués                                                                  | SÉRIEUX  | constantes de style exportées de `html.ts`, jamais recopiées (§ 4)                                                                                                                                                                        |
+| lien secondaire déplacé seul disparaît                                                             | SÉRIEUX  | bouton et lien secondaire forment un seul bloc (§ 2)                                                                                                                                                                                      |
+| recours confondu avec la charte                                                                    | SÉRIEUX  | l'adresse de recours est une donnée de l'envoi (§ 4)                                                                                                                                                                                      |
+
+**Non vérifié** (reporté de `vitruve`) : une version texte (`text`) des
+e-mails, à ordonner aussi si elle existe ; le contenu exact des empreintes de
+rendu.
