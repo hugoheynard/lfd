@@ -724,3 +724,32 @@ Relu le 2026-11-06 :
   - l'**aperçu avec des données d'exemple** et « M'envoyer un essai », comme
     l'écran des textes d'aujourd'hui ;
   - la barre **brouillon / publier / historique**.
+
+### 14 ter. Le mode sombre et le QR (Hugo, 2026-11-06)
+
+**Le mode sombre d'un e-mail est décidé par la messagerie du destinataire.**
+Apple Mail respecte un rendu sombre déclaré (`prefers-color-scheme`) ; Gmail
+(application) et Outlook inversent les couleurs à leur façon, sans le lire.
+On ne l'impose donc pas : on prépare l'e-mail à le subir.
+
+- **S4 — une variante sombre dans la charte de chaque marque**, déclarée dans
+  le HTML pour les messageries qui la respectent ; rien à régler e-mail par
+  e-mail. Images qui survivent à l'inversion : logo sur fond transparent avec
+  un contour, pas de texte important dans une image sur fond blanc. **Non
+  vérifié** : ce que la coquille de `@lfd/mailer` déclare déjà pour le mode
+  sombre — à relever avant le plan de S4.
+- **S5 — un bouton clair / sombre au-dessus de l'aperçu**, à côté de « vue
+  téléphone » : une simulation, pour repérer un logo qui disparaît ou un texte
+  illisible. Le seul vrai test reste « M'envoyer un essai », ouvert sur un
+  téléphone.
+
+**Le QR de retrait est un bloc système, jamais inversé.** Son contenu (le
+jeton de retrait) vient de la commande ; le serveur le fabrique en PNG
+déterministe, noir sur blanc, avec la zone de silence de la norme (4 modules)
+**intégrée à l'image sur fond blanc opaque**
+(`apps/lfd-api/src/platform/mailer/qr-image.ts`, relu le 2026-11-06), joint en
+ligne (`cid:`), avec une ligne de repli sous l'image. Dans l'éditeur, l'équipe
+le déplace et réécrit la ligne de repli ; elle ne le retire pas, ne le met
+pas en colonne, ne change ni sa taille ni sa couleur. **À vérifier en vrai** :
+que l'inversion d'Outlook en mode sombre ne touche pas ce carré blanc (un
+e-mail d'essai ouvert dans Outlook).
