@@ -135,22 +135,28 @@
              devenait le chiffre, et le doigt qui revenait ajouter tombait sur
              un compteur. Une fois l'article pris, un « − » plus petit paraît
              à sa gauche ; la quantité, elle, est sur la photo. -->
+        <!-- La place du « − » est RÉSERVÉE dès zéro (Hugo, 2026-11-06) : il
+             n'existait qu'à la première pièce, le bloc s'élargissait et le prix
+             pouvait passer à la ligne. À zéro, le bouton est là mais invisible
+             (`visibility: hidden`), désactivé et caché aux lecteurs d'écran ;
+             il paraît à la première pièce sans que rien ne bouge. -->
         <!-- « + » et « − » restent à la souris et au doigt, HORS de la
              tabulation (`tabindex="-1"`) : trois arrêts par tuile rendaient le
              rayon interminable au clavier. Le clavier règle la quantité dans la
              fiche, que le nom ouvre (RGAA 12.8, lot A2). -->
         <div class="steps">
-          @if (quantity() > 0) {
-            <button
-              class="quick less"
-              type="button"
-              tabindex="-1"
-              [attr.aria-label]="removeLabel()"
-              (click)="removed.emit()"
-            >
-              <fold-icon name="minus" />
-            </button>
-          }
+          <button
+            class="quick less"
+            type="button"
+            tabindex="-1"
+            [class.reserved]="quantity() === 0"
+            [disabled]="quantity() === 0"
+            [attr.aria-hidden]="quantity() === 0 || null"
+            [attr.aria-label]="removeLabel()"
+            (click)="removed.emit()"
+          >
+            <fold-icon name="minus" />
+          </button>
           <button
             class="quick"
             type="button"

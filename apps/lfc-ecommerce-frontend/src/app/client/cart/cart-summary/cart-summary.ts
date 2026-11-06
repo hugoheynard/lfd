@@ -98,6 +98,9 @@ export class CartSummary implements OnInit {
    * règlement.
    */
   private readonly firm = inject(ClientCompany);
+  /** Le total attend le devis en vol — l'état est celui de `ShopQuote`, lu tel quel. */
+  protected readonly totalPending = computed(() => this.cart.pricing() === 'loading');
+
   protected readonly onAccount = computed(() => settlesOnAccount(this.firm.company()));
 
   protected readonly totals = this.cart.totals;

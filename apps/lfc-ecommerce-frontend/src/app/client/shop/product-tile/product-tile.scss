@@ -295,6 +295,11 @@
   background: var(--fold-color-surface-card);
   color: var(--fold-color-primary);
   box-shadow: inset 0 0 0 1px var(--fold-color-border);
+
+  /* À zéro, la place est tenue, rien n'est montré ni cliquable. */
+  &.reserved {
+    visibility: hidden;
+  }
 }
 
 /* La pastille de quantité, en haut à droite de la photo — le best-seller tient

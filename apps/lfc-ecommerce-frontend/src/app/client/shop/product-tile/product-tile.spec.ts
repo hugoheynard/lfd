@@ -347,8 +347,15 @@ describe('ProductTile', () => {
     fixture.componentInstance.added.subscribe(() => gestures.push('+'));
     fixture.componentInstance.removed.subscribe(() => gestures.push('-'));
 
-    expect(el.querySelectorAll('.quick')).toHaveLength(1);
-    expect(el.querySelector('.quick.less')).toBeNull();
+    // La place du « − » est réservée dès zéro (Hugo, 2026-11-06) : présente,
+    // invisible, désactivée, cachée aux lecteurs d'écran.
+    const reserved = el.querySelector<HTMLButtonElement>('.quick.less');
+    expect(el.querySelectorAll('.quick')).toHaveLength(2);
+    expect(reserved?.classList).toContain('reserved');
+    expect(reserved?.disabled).toBe(true);
+    expect(reserved?.getAttribute('aria-hidden')).toBe('true');
+    reserved?.click();
+    expect(gestures).toEqual([]);
     expect(el.querySelector('.count')).toBeNull();
 
     fixture.componentRef.setInput('quantity', 3);
@@ -356,6 +363,10 @@ describe('ProductTile', () => {
 
     const [less, more] = [...el.querySelectorAll<HTMLButtonElement>('.quick')];
     expect(less?.classList).toContain('less');
+    expect(less).toBe(reserved);
+    expect(less?.classList).not.toContain('reserved');
+    expect(less?.disabled).toBe(false);
+    expect(less?.getAttribute('aria-hidden')).toBeNull();
     expect(more?.querySelector('fold-icon')).not.toBeNull();
     expect(more?.textContent?.trim()).toBe('');
     expect(el.querySelector('.media .count')?.textContent?.trim()).toBe('3');

@@ -240,6 +240,71 @@ describe('CartSummary — les points à gagner', () => {
     );
   });
 
+  /** Le total atténué pendant le devis en vol (Hugo, 2026-11-06). */
+  describe('le total pendant le calcul', () => {
+    const grand = (f: ComponentFixture<CartSummary>): HTMLElement | null =>
+      (f.nativeElement as HTMLElement).querySelector('.grand dd');
+
+    /** Une pièce de plus : le devis repart, la requête attend d'être rendue. */
+    function another(f: ComponentFixture<CartSummary>) {
+      TestBed.inject(ClientCart).add('VIE-001');
+      TestBed.tick();
+      f.detectChanges();
+      const before = grand(f);
+      vi.advanceTimersByTime(400);
+      TestBed.tick();
+      const request = TestBed.inject(HttpTestingController).expectOne((r) =>
+        r.url.endsWith('/shop/quote/mine'),
+      );
+      return { before, request };
+    }
+
+    it('net une fois le devis rendu', () => {
+      const dd = grand(quoted(0));
+      expect(dd?.classList.contains('pending')).toBe(false);
+      expect(dd?.getAttribute('aria-busy')).toBeNull();
+    });
+
+    it('atténué et occupé pendant le calcul, l’ancien montant gardé', () => {
+      const f = quoted(0);
+      const { before, request } = another(f);
+      f.detectChanges();
+      const dd = grand(f);
+      expect(before?.classList.contains('pending')).toBe(true);
+      expect(dd?.classList.contains('pending')).toBe(true);
+      expect(dd?.getAttribute('aria-busy')).toBe('true');
+      expect(dd?.textContent?.trim()).toBe(formatCents(264));
+      expect(dd?.querySelector('[aria-live]')).toBeNull();
+      request.flush({
+        lines: [],
+        subtotalHtCents: 500,
+        discountCents: 0,
+        discountAdjustment: null,
+        voucherDiscountCents: 0,
+        deliveryFeeCents: 0,
+        deliveryVatMode: 'standard',
+        vat: [],
+        pretaxCents: 500,
+        totalCents: 528,
+        loyaltyPointsToEarn: 0,
+        voucherTotalEffectCents: 0,
+        voucherRemainderCents: null,
+      } satisfies MyShopQuoteView);
+      f.detectChanges();
+      expect(grand(f)?.classList.contains('pending')).toBe(false);
+      expect(grand(f)?.getAttribute('aria-busy')).toBeNull();
+    });
+
+    it('net après un échec du calcul', () => {
+      const f = quoted(0);
+      const { request } = another(f);
+      request.flush(null, { status: 500, statusText: 'Server Error' });
+      f.detectChanges();
+      expect(grand(f)?.classList.contains('pending')).toBe(false);
+      expect(grand(f)?.getAttribute('aria-busy')).toBeNull();
+    });
+  });
+
   it.each([0, null])('se tait quand le serveur annonce %s', (points) => {
     expect(el(quoted(points)).querySelector('.points')).toBeNull();
   });

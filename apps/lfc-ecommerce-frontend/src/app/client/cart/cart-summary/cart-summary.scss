@@ -138,6 +138,11 @@
     font-size: var(--fold-text-xl);
     font-weight: var(--lfc-weight-black);
     letter-spacing: var(--lfc-tracking-block);
+
+    /* Périmé, le temps que le décompte revienne : atténué, sans transition. */
+    &.pending {
+      color: var(--fold-color-text-muted);
+    }
   }
 }
 

@@ -104,9 +104,14 @@
       </div>
     }
 
+    <!-- Pendant un devis en vol, l'ancien total reste, atténué, comme les
+         lignes en attente : `aria-busy` et pas de région vivante, pour qu'un
+         lecteur d'écran n'annonce rien à chaque clic (Hugo, 2026-11-06). -->
     <div class="row grand">
       <dt>{{ onAccount() ? t().cart.totalPretax : t().cart.total }}</dt>
-      <dd>{{ money(shownTotalCents()) }}</dd>
+      <dd [class.pending]="totalPending()" [attr.aria-busy]="totalPending() || null">
+        {{ money(shownTotalCents()) }}
+      </dd>
     </div>
   </dl>
 
