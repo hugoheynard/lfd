@@ -260,4 +260,9 @@ que S2 n'a pas branché les envoyeurs. Les six abonnés durables du commerce
 qui envoient dans la transaction rejoindront cette forme en S2, en passant
 par la porte.
 
-**Non vérifié** : la fenêtre de l'`Idempotency-Key` chez Resend.
+**La fenêtre d'idempotence de Resend : 24 heures** (documentation de Resend,
+`resend.com/docs/dashboard/emails/idempotency-keys`, relue le 2026-11-06 : une
+clé est gardée 24 h ; une requête de même clé encore en cours rend un 409
+`concurrent_idempotent_requests`, qu'on peut retenter). Le balayeur ne
+renvoie donc jamais une demande dont la première tentative date de plus de
+**23 heures** : au-delà, `failed`, visible, et un humain décide.
