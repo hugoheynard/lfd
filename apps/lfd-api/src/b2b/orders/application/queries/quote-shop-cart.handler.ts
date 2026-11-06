@@ -2,6 +2,7 @@ import type { ShopQuotePayload, ShopQuoteView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { ShopCartQuoting } from "../services/shop-cart-quoting.service.js";
+import { withCatalogueSnapshot } from "../../../catalog/application/catalogue-snapshot-scope.js";
 
 /**
  * **Ce que le panier de la boutique coûte** — sans jeton, sans commande.
@@ -43,7 +44,8 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
   async execute(query: QuoteShopCartQuery): Promise<ShopQuoteView> {
     // Le décompte seul : l'effet du bon n'a pas de sens sans personne, et la
     // clé n'appartient pas à ce contrat servi.
-    const { view } = await this.quoting.quote(query);
+    // Le catalogue lu dans l'instantané (plan des matériaux du catalogue, M1b).
+    const { view } = await withCatalogueSnapshot(() => this.quoting.quote(query));
     return view;
   }
 }

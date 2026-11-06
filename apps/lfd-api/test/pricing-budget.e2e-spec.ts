@@ -207,11 +207,18 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * anonyme en payait deux (le chargeur des prix, l'offre de connexion). Mesuré
  * par trace des modèles, avant/après.
  *
+ * 🔴 **De 10 à 9 le 2026-11-06** (lot M1b de
+ * `documentation/caching-usage/plan-materiaux-du-catalogue.md`) : le devis lit
+ * le catalogue dans l'instantané. Les trois lectures de `catalog_items` (les
+ * lignes, les SKU d'opération, le classement) deviennent les numéros de
+ * `context_versions` et UN chargement des articles. Mesuré par trace des
+ * modèles (`catalogue-reads.e2e-spec.ts`).
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
  * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 10;
+const COLD_QUOTE_OPS = 9;
 
 /**
  * **Le même devis, à chaud** (2026-11-04) : les matériaux sont en mémoire, il
@@ -219,8 +226,13 @@ const COLD_QUOTE_OPS = 10;
  * classement), le mode de TVA du port — et UNE estampille. Ce chiffre garde
  * l'estampille par requête : une question de plus au cache qui relirait le
  * journal le ferait monter.
+ *
+ * 🔴 **De 5 à 3 le 2026-11-06** (lot M1b, plan des matériaux du catalogue) :
+ * à chaud, le catalogue ne coûte plus que les numéros de `context_versions`
+ * (un visiteur n'a pas de réservations à lire). Restent le mode de TVA du port
+ * et l'estampille des prix.
  */
-const WARM_QUOTE_OPS = 5;
+const WARM_QUOTE_OPS = 3;
 
 /**
  * Sème `count` règles **distinctes** — d'étage `geste` depuis L12
@@ -618,12 +630,17 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
  * lit une fois par requête (le chargeur des prix, la remise du point et les
  * promotions panier la relisaient chacun). Mesuré par trace des modèles.
  *
+ * 🔴 **De 31 à 28 le 2026-11-06** (lot M1b, plan des matériaux du catalogue) :
+ * les lignes lues trois fois, les SKU d'opération, le classement et l'heure
+ * limite lue deux fois (sept lectures) deviennent les numéros, les
+ * réservations du client, les articles et l'heure limite (quatre).
+ *
  * Il est plus cher qu'un devis, et c'est le prix d'une seule arithmétique :
  * le front ne l'appelle qu'une fois la saisie assez complète, après 400 ms
  * d'inactivité. Ce qui compte ici, comme pour le devis, est qu'il ne suive
  * pas la taille du panier.
  */
-const COLD_ESTIMATE_OPS = 31;
+const COLD_ESTIMATE_OPS = 28;
 
 describe("l'estimation de la saisie", () => {
   async function seedBuyer(): Promise<Record<string, unknown>> {
@@ -703,8 +720,13 @@ describe("l'estimation de la saisie", () => {
  * lue : une lecture de plus, constante, que la mémoire rembourse aux appels
  * suivants (le principal n'y est plus relu). Le devis anonyme et l'estimation
  * du staff ne passent pas par ce résolveur et ne bougent pas.
+ *
+ * 🔴 **De 21 à 20 le 2026-11-06** (lot M1b, plan des matériaux du catalogue) :
+ * les lignes lues deux fois, les SKU d'opération, le classement et l'heure
+ * limite (cinq lectures) deviennent les numéros, les réservations de la
+ * société, les articles et l'heure limite (quatre).
  */
-const COLD_COMPANY_QUOTE_OPS = 21;
+const COLD_COMPANY_QUOTE_OPS = 20;
 
 describe("le devis d'une société, un jour choisi", () => {
   async function seedBuyer(): Promise<string> {

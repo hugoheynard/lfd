@@ -12,6 +12,7 @@ import {
 import {
   optionalAdminDevBypass,
   optionalAnalyticsConfig,
+  optionalCatalogueSnapshotMemory,
   optionalContainerApplicationId,
   optionalDevImpersonation,
   optionalFieldEncryptionKey,
@@ -88,6 +89,7 @@ export class AppConfig {
   private readonly adminBaseUrlValue: string | null;
   private readonly geocoderUrlValue: string | null;
   private readonly shopShelfCacheUrlValue: string | null;
+  private readonly catalogueSnapshotMemoryValue: boolean;
   private readonly routePlannerEndpointValue: RoutePlannerEndpoint | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
@@ -122,6 +124,7 @@ export class AppConfig {
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.geocoderUrlValue = optionalString("BAN_GEOCODER_URL");
     this.shopShelfCacheUrlValue = optionalString("SHOP_SHELF_CACHE_URL");
+    this.catalogueSnapshotMemoryValue = optionalCatalogueSnapshotMemory();
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.routePlannerEndpointValue = resolveRoutePlannerEndpoint({
@@ -270,6 +273,15 @@ export class AppConfig {
    */
   shopShelfCacheUrl(): string | null {
     return this.shopShelfCacheUrlValue;
+  }
+
+  /**
+   * L'instantané du catalogue est-il gardé en mémoire ? `CATALOGUE_SNAPSHOT_MEMORY`,
+   * `on` par défaut ; `off` = l'arrêt d'urgence, chaque requête relit la base
+   * (`plan-materiaux-du-catalogue.md`, § 2.2).
+   */
+  catalogueSnapshotMemory(): boolean {
+    return this.catalogueSnapshotMemoryValue;
   }
 
   /**

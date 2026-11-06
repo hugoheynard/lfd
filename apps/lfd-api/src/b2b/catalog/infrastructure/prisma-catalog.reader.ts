@@ -35,8 +35,13 @@ import { soldUnderShopSkus } from "./shop-sku-filter.js";
 import type { CatalogTranslations } from "../domain/catalog-translations.js";
 import type { CatalogFamily } from "../domain/catalog-family.js";
 
-/** La forme que Prisma rend, article + famille + décision locale + réservation. */
-interface ItemRow extends AccessRow {
+/**
+ * La forme que Prisma rend, article + famille + décision locale + réservation.
+ * Exportée pour l'instantané (`catalogue-snapshot/`), dont les vues passent
+ * leurs lignes à {@link servedItem} : le filtrage ne change pas de code,
+ * seulement de source (plan des matériaux du catalogue, § 2.1).
+ */
+export interface ItemRow extends AccessRow {
   readonly sku: string;
   readonly productSku: string;
   readonly name: string;
@@ -240,7 +245,7 @@ function itemInclude(viewer: CatalogViewer) {
  * masquages, validations, S3, réservation (`plan-articles-sur-mesure.md`,
  * § 5) ; `locked` n'arrive que chez le lecteur qui l'a demandé (S7).
  */
-function servedItem(
+export function servedItem(
   row: ItemRow,
   viewer: CatalogViewer,
   lineage: Lineage,

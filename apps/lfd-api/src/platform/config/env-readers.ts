@@ -506,6 +506,29 @@ export function optionalJournalStrictFacts(): boolean {
   return enabled && !production;
 }
 
+/**
+ * **L'arrêt d'urgence de l'instantané du catalogue** — `CATALOGUE_SNAPSHOT_MEMORY`
+ * (`documentation/caching-usage/plan-materiaux-du-catalogue.md`, § 2.2, lot M1b).
+ *
+ * `on` par défaut (absente comprise) ; `off` fait relire la base à chaque
+ * requête, exactement comme avant l'instantané. Une autre valeur refuse de
+ * démarrer : un arrêt d'urgence mal orthographié qui ne couperait rien serait
+ * pire qu'un démarrage refusé.
+ */
+export function optionalCatalogueSnapshotMemory(): boolean {
+  const value = process.env["CATALOGUE_SNAPSHOT_MEMORY"]?.trim().toLowerCase() ?? "";
+  if (value === "" || value === "on") {
+    return true;
+  }
+  if (value === "off") {
+    return false;
+  }
+  throw new Error(
+    `CATALOGUE_SNAPSHOT_MEMORY vaut « ${value} » : seules « on » et « off » sont admises. ` +
+      "Corriger la variable, ou la retirer pour revenir au défaut (on).",
+  );
+}
+
 /** AES-256 : la clé fait 32 octets, ni plus ni moins. */
 const FIELD_ENCRYPTION_KEY_BYTES = 32;
 

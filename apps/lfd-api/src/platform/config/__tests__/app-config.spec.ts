@@ -113,3 +113,46 @@ describe("AppConfig — l'URL de la base", () => {
     expect(() => urlOf("mysql://u:p@localhost:3306/db")).toThrow(/DATABASE_LFD_URL/);
   });
 });
+
+/**
+ * L'arrêt d'urgence de l'instantané du catalogue (`plan-materiaux-du-catalogue.md`,
+ * M1b). Ce test écrit `process.env`, comme `app-config.spec.ts` : la clé
+ * touchée est restaurée après chaque cas.
+ */
+const KEY = "CATALOGUE_SNAPSHOT_MEMORY";
+
+describe("AppConfig — CATALOGUE_SNAPSHOT_MEMORY", () => {
+  let saved: string | undefined;
+
+  beforeEach(() => {
+    saved = process.env[KEY];
+    delete process.env[KEY];
+  });
+
+  afterEach(() => {
+    if (saved === undefined) {
+      delete process.env[KEY];
+    } else {
+      process.env[KEY] = saved;
+    }
+  });
+
+  it("absente : l'instantané est gardé (on)", () => {
+    expect(new AppConfig().catalogueSnapshotMemory()).toBe(true);
+  });
+
+  it("« on » : gardé", () => {
+    process.env[KEY] = "on";
+    expect(new AppConfig().catalogueSnapshotMemory()).toBe(true);
+  });
+
+  it("« off » : chaque requête relit la base", () => {
+    process.env[KEY] = " OFF ";
+    expect(new AppConfig().catalogueSnapshotMemory()).toBe(false);
+  });
+
+  it("une autre valeur refuse de démarrer, en nommant les deux admises", () => {
+    process.env[KEY] = "false";
+    expect(() => new AppConfig()).toThrow(/« on » et « off »/);
+  });
+});

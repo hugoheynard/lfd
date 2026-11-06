@@ -171,6 +171,9 @@ const RUNTIME_KEYS = [
   // des coordonnées bancaires en clair dans une colonne que tout le monde croit
   // scellée, et personne ne le saurait avant de lire la base.
   "FIELD_ENCRYPTION_KEY",
+  // L'arrêt d'urgence de l'instantané du catalogue (`plan-materiaux-du-catalogue.md`,
+  // M1b) : `off` fait relire la base à chaque requête. Absente, `on`.
+  "CATALOGUE_SNAPSHOT_MEMORY",
 ] as const;
 
 type RuntimeKey = (typeof RUNTIME_KEYS)[number];

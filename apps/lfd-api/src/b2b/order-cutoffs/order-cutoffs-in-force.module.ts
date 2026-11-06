@@ -7,6 +7,8 @@ import { StoredOrderCutoffReader } from "./domain/stored-order-cutoff.reader.js"
 import { CommerceGeneralOrderCutoffReader } from "./infrastructure/pim-general-order-cutoff.reader.js";
 import { PrismaOrderCutoffSettingsReader } from "./infrastructure/prisma-order-cutoff-settings.reader.js";
 import { PrismaStoredOrderCutoffReader } from "./infrastructure/prisma-stored-order-cutoff.reader.js";
+import { SnapshotStoredOrderCutoffReader } from "./infrastructure/snapshot-stored-order-cutoff.reader.js";
+import { CatalogueSnapshotModule } from "../catalog/catalogue-snapshot.module.js";
 
 /**
  * **Les règles d'heure limite en vigueur, sans rien d'autre** — la lecture
@@ -16,12 +18,15 @@ import { PrismaStoredOrderCutoffReader } from "./infrastructure/prisma-stored-or
  * stricte que la générale — `limites-de-commande/limites-produit.md` §4), et
  * que `OrderCutoffsModule` importe `CatalogModule` pour les jours d'une
  * opération datée : l'importer en retour fermerait un cycle. Ce module-ci
- * n'importe rien ; `OrderCutoffsModule` l'importe et le réexporte, et ses
+ * n'importe que l'instantané (`CatalogueSnapshotModule`, qui n'importe rien) ; `OrderCutoffsModule` l'importe et le réexporte, et ses
  * lecteurs n'ont pas changé.
  */
 @Module({
+  // L'instantané du catalogue (M1b) : l'heure limite générale y est un morceau.
+  imports: [CatalogueSnapshotModule],
   providers: [
-    { provide: StoredOrderCutoffReader, useClass: PrismaStoredOrderCutoffReader },
+    PrismaStoredOrderCutoffReader,
+    { provide: StoredOrderCutoffReader, useClass: SnapshotStoredOrderCutoffReader },
     { provide: OrderCutoffSettingsReader, useClass: PrismaOrderCutoffSettingsReader },
     { provide: OrderCutoffsInForce, useClass: GeneralOrderCutoffInForce },
     // Ce que le référentiel lit de la règle générale (2026-10-21), relié par

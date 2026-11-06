@@ -67,6 +67,7 @@ import { BootStopwatch } from "./e2e-boot-log.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
 import { CachedPrincipalResolver } from "../src/b2b/account/infrastructure/cached-principal.resolver.js";
+import { CatalogueSnapshotStore } from "../src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { resetRolesToSeed } from "../src/dev/seeding/roles.seed.js";
 
 /**
@@ -286,11 +287,9 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // Les trois versions par contexte, pour la même raison
         // (plan-materiaux-du-catalogue.md, § 2.2, § 11, lot M1a) : REMISES à
         // 0, pas seulement recréées — le semis du catalogue, plus bas, les
-        // fait monter depuis 0 à chaque remise.
-        // ⚠️ TODO M1b (noté le 2026-11-06) : quand la mémoire de l'instantané
-        // existera, son `forget()` va avec les autres oublis ci-dessous — un
-        // morceau gardé sous un numéro que cette remise fait revenir serait
-        // resservi à la suite suivante.
+        // fait monter depuis 0 à chaque remise. La mémoire de l'instantané est
+        // vidée plus bas (M1b) : un morceau gardé sous un numéro que cette
+        // remise fait revenir serait resservi à la suite suivante.
         await resetContextVersions(prisma);
         // Le référentiel d'allergènes est posé par migration, comme les contextes
         // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
@@ -306,6 +305,10 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // Le principal client, gardé sous l'estampille que le `TRUNCATE` fait
         // revenir en arrière : sans cet oubli, deux suites partageraient un principal.
         app.get(CachedPrincipalResolver).forget();
+        // L'instantané du catalogue, pour la même raison : ses numéros viennent
+        // d'être remis à 0, puis le semis les a fait remonter — peut-être au
+        // numéro sous lequel la suite d'avant avait gardé SON catalogue.
+        app.get(CatalogueSnapshotStore).forget();
         // 🔴 Et les matériaux de prix, pour la MÊME raison — mais avec un piège en
         // plus. En production, le cache est vidé par `PricingActWriter`, passage
         // obligé de toute écriture tarifaire. Les suites, elles, sèment leurs

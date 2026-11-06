@@ -107,6 +107,11 @@ import { CatalogPromotionProPricesReader } from "./infrastructure/catalog-promot
 import { DefaultSaleReferenceReader } from "./domain/ports/default-sale-reference.reader.js";
 import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-default-sale-reference.reader.js";
 
+import { CatalogueSnapshotModule } from "./catalogue-snapshot.module.js";
+import { SnapshotCatalogReader } from "./infrastructure/catalogue-snapshot/snapshot-catalog.reader.js";
+import { SnapshotCatalogOperationsReader } from "./infrastructure/catalogue-snapshot/snapshot-catalog-operations.reader.js";
+import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogue-snapshot/snapshot-order-line-classification.reader.js";
+
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
  * ici (prix B2B, visibilité).
@@ -148,6 +153,7 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     PricingModule,
     CanonicalPriceHistoryModule,
     OrderCutoffsInForceModule,
+    CatalogueSnapshotModule,
     // Le rayon ne cite pas un acheminement fermé à la clientèle du lecteur.
     DeliveryAvailabilityModule,
     // … ni un point de retrait que sa clientèle ne peut pas choisir.
@@ -219,7 +225,11 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     { provide: CatalogRulesProjection, useClass: PrismaCatalogRulesProjection },
     { provide: CatalogOrderLimits, useClass: PrismaCatalogOrderLimits },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
-    { provide: CatalogReader, useClass: PrismaCatalogReader },
+    // L'instantané (plan des matériaux du catalogue, M1b) : dans la portée
+    // `withCatalogueSnapshot` (devis, estimation, suggestions), les lectures A,
+    // B, C et D viennent de la mémoire ; partout ailleurs, de la base.
+    PrismaCatalogReader,
+    { provide: CatalogReader, useClass: SnapshotCatalogReader },
     // 🔴 **L'autorité de prix du checkout**, ramenée là d'où vient sa donnée le
     // 2026-09-09. Elle vivait dans `OrdersModule`, alors que son unique
     // adaptateur ne fait que TRADUIRE `CatalogReader` — deux ports empilés, dont
@@ -232,7 +242,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // l'éditeur de vitrine voit tout le miroir, les vendeurs du lot 3 ne
     // voient que ce qui s'applique.
     { provide: ReceivedOperationsReader, useClass: PrismaReceivedOperationsReader },
-    { provide: CatalogOperationsReader, useClass: PrismaCatalogOperationsReader },
+    PrismaCatalogOperationsReader,
+    { provide: CatalogOperationsReader, useClass: SnapshotCatalogOperationsReader },
     // Ce que les vendeurs par SKU produit appliquent (lot 3) : la caisse, le
     // devis, les jours proposés, les abonnements.
     SaleOperations,
@@ -256,7 +267,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     { provide: CatalogPricePerKgReader, useClass: PrismaCatalogPricePerKgReader },
     // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
     // ici sur les articles : la table appartient au catalogue.
-    { provide: OrderLineClassificationReader, useClass: PrismaOrderLineClassificationReader },
+    PrismaOrderLineClassificationReader,
+    { provide: OrderLineClassificationReader, useClass: SnapshotOrderLineClassificationReader },
     // Le port que les promotions DÉCLARENT (plan des promotions, L7) : le
     // catalogue vendable, que le refus de chevauchement compare.
     { provide: PromotionCatalogueReader, useClass: CatalogPromotionCatalogueReader },

@@ -67,6 +67,7 @@
   "test/catalog-unknown-family.e2e-spec.ts": 4837,
   "test/catalog-variants-as-tiles.e2e-spec.ts": 12000,
   "test/catalogue-reads.e2e-spec.ts": 16700,
+  "test/catalogue-snapshot.e2e-spec.ts": 13000,
   "test/client-notes-wall.e2e-spec.ts": 4369,
   "test/client-notes.e2e-spec.ts": 8535,
   "test/cockpit.e2e-spec.ts": 3637,

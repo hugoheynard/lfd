@@ -21,6 +21,7 @@ import { prepareStaffOrder } from "../services/staff-order-preparation.js";
 import { staffSettlementRefusal } from "../services/staff-settlement-refusal.js";
 import { isCounterEntry } from "../../domain/services/order-supply-rules.js";
 import { EstimateOrderForCustomerQuery } from "./estimate-order-for-customer.query.js";
+import { withCatalogueSnapshot } from "../../../catalog/application/catalogue-snapshot-scope.js";
 
 /**
  * **L'estimation de la saisie de l'équipe** : la commande que
@@ -51,7 +52,15 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
     private readonly cutoffNotice: OrderCutoffNotice,
   ) {}
 
-  async execute(query: EstimateOrderForCustomerQuery): Promise<AdminOrderEstimateView> {
+  /**
+   * Le catalogue lu dans l'instantané (plan des matériaux du catalogue, M1b) :
+   * l'estimation chiffre, la passation qui suit relit la base et fait foi.
+   */
+  execute(query: EstimateOrderForCustomerQuery): Promise<AdminOrderEstimateView> {
+    return withCatalogueSnapshot(() => this.estimate(query));
+  }
+
+  private async estimate(query: EstimateOrderForCustomerQuery): Promise<AdminOrderEstimateView> {
     const { payload } = query;
     const drafted = await this.draftOrRefusal(query);
     const cutoff = await this.cutoffOf(payload);

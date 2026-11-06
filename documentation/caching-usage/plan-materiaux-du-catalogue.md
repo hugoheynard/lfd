@@ -26,7 +26,14 @@
 > `lint:context-version-columns`, e2e `apps/lfd-api/test/context-versions.e2e-spec.ts`) ; rien
 > ne lit encore les versions. Pas en production.
 >
-> 🧭 **Prochain pas** : M1b. Restent à mesurer avant M1b : le devis d'un espace pro et
+> ✅ **M1b bâti le 2026-11-06** sur `dev` : le devis, l'estimation de la
+> saisie et les suggestions du panier lisent le catalogue en mémoire
+> (`apps/lfd-api/src/b2b/catalog/infrastructure/catalogue-snapshot/`), à chaud
+> 1 lecture des numéros (+ 1 des réservations pour un pro). Écarts au § 12.
+> Pas en production.
+>
+> 🧭 **Prochain pas** : `lecteur-de-migrations`, « pousse main », remesurer
+> (§ 10) ; puis M2 en option 1 (§ 12). Restent à mesurer avant M1b : le devis d'un espace pro et
 > l'estimation de la saisie (§ 10.3).
 >
 > Ce qui a changé depuis la version du 2026-11-04 : l'invalidation par une
@@ -658,3 +665,56 @@ depuis les appelants de `prisma-catalog-reservations.ts` au bâti de M1a.
   `companies`/`memberships`.
 - **Les colonnes de `order_cutoffs`** ont été reprises de l'ancienne liste,
   pas relevées depuis le devis : à confirmer au chargeur de M1b.
+
+## 12. Ce que le bâti de M1b a tranché (2026-11-06)
+
+**Le chemin.** Le devis et la passation partagent les mêmes ports
+(`OrderLinePricing`, `ProductCatalogReader`). Pour que la passation reste sur la
+base (§ 2.5), l'instantané n'est lu que dans une **portée explicite**,
+`withCatalogueSnapshot` (`apps/lfd-api/src/b2b/catalog/application/catalogue-snapshot-scope.ts`),
+posée sur quatre cas d'usage : les deux devis de la boutique, l'estimation
+de la saisie et les suggestions du panier. Hors de la portée, les mêmes
+lecteurs lisent la base comme avant : la passation, l'administration, le rayon
+(jusqu'à M2). Le port `CatalogueSnapshotSource` prévu au § 2.3 n'existe pas :
+tout le dispositif vit dans l'infrastructure du catalogue.
+
+**Ce qui est chargé.** Le morceau `catalog` (articles, familles, lignée, compteur
+de réservations) et, du morceau `order_cutoffs`, l'heure limite générale. Le
+morceau `operations` n'est pas chargé : seul le rayon le lit (M2). Les
+réglages du jour même restent lus en base : leur port (`SameDayOrderReader`)
+rend aussi la garde en rayon, que le registre classe « ignorée » ; servi depuis
+l'instantané, ce champ pourrait être périmé. Resserrer ce port d'abord.
+
+**Les suggestions du panier** passent par `ReadCartSuggestionsHandler`, pas par
+`catalog-suggestion-catalogue.ts` comme le disait le § 10.2 : ce dernier sert
+l'éditeur des suggestions du personnel et les commandes. Les deux sont couverts.
+
+**L'ordre « réservations avant numéros »** n'est tenu que par le lecteur
+d'articles. Si le classement ou l'heure limite sont lus avant lui dans une
+requête, les numéros le sont d'abord : l'écart ne peut que refuser à
+l'appelant son propre article réservé le temps d'une requête, jamais servir
+celui d'une autre société (analyse du bâtisseur, non éprouvée de bout en bout).
+
+**L'arrêt d'urgence.** `CATALOGUE_SNAPSHOT_MEMORY` (`on` par défaut, `off` relit
+la base, toute autre valeur refuse de démarrer), lu par `AppConfig`, posé par
+le déploiement depuis la variable GitHub du même nom. Pour couper sans
+redéployer : `wrangler secret put CATALOGUE_SNAPSHOT_MEMORY` avec `off`. Une
+fois posée, la retirer de GitHub ne la retire pas du Worker : poser `on`.
+
+**Le budget**, tenu par `apps/lfd-api/test/catalogue-reads.e2e-spec.ts` : à
+chaud, 1 lecture (numéros) pour un devis anonyme, 2 (numéros, réservations)
+pour un devis pro et pour l'estimation. Les budgets de
+`apps/lfd-api/test/pricing-budget.e2e-spec.ts` ont baissé en conséquence.
+
+**Vu au passage.** Le tri par SKU de l'instantané compare en unités de code,
+Postgres selon sa collation : deux SKU de même position qui ne diffèrent que
+par la ponctuation peuvent s'ordonner autrement. Sans effet sur un prix ; à
+regarder en M2, où l'ordre se voit.
+
+**M2 (décidé par Hugo le 2026-11-06) : option 1.** Le recalcul du rayon passe
+par l'instantané ; `ShelfChanges` part **après** la validation de la
+transaction chez tous les écrivains, tenu par une porte ; `lint:catalogue-door`.
+Écartées : une clé du rayon portant les numéros (une lecture en base à chaque
+affichage, ou toutes les N secondes) — on ne fait pas attendre chaque
+visiteur pour le cas d'une correction en SQL, qui veut dire qu'on a raté ;
+après une telle correction, purger le rayon fait partie de l'incident.

@@ -1,13 +1,13 @@
 /**
- * **Le relevé des lectures du catalogue** — lot M0 du plan
- * `documentation/caching-usage/plan-materiaux-du-catalogue.md`.
+ * **Le budget des lectures du catalogue** — lot M0 (le relevé) devenu budget
+ * au lot M1b du plan `documentation/caching-usage/plan-materiaux-du-catalogue.md`
+ * (§ 3).
  *
- * Ce n'est PAS un budget : les chiffres ci-dessous sont ceux du 2026-11-05,
- * relevés et figés tels quels. Ils disent ce que le rayon, le devis anonyme,
- * le devis pro, l'estimation de la saisie et la passation lisent du catalogue,
- * modèle par modèle, à froid et à chaud. Quand M1 et M2 seront bâtis, ces
- * chiffres DOIVENT bouger : c'est ce qui prouvera que la porte unique
- * (`CatalogueMaterials`) a remplacé les lecteurs d'aujourd'hui. Le budget
+ * Le devis et l'estimation lisent le catalogue dans l'instantané : à chaud,
+ * **une** lecture des numéros (`ContextVersion`) et, pour un appelant qui a
+ * une société, **une** lecture de ses réservations — rien d'autre. À froid,
+ * le chargement des morceaux s'y ajoute. Le rayon (M2) et la passation (hors
+ * de la porte, § 2.5) gardent les chiffres du relevé du 2026-11-05. Le budget
  * (`pricing-budget.e2e-spec.ts`) reste la garde du total.
  *
  * ## La mesure
@@ -17,10 +17,11 @@
  * garde aussi la trace des MODÈLES — le même point d'appel (`record`, branché
  * sur `$allOperations`), donc la même unité : un appel du client ORM.
  *
- * « À froid » : les mémoires de l'API (matériaux des prix, accès staff)
- * oubliées juste avant ; la mémoire du principal n'est pas un provider et
- * reste ce qu'elle est. « À chaud » : le même appel, rejoué aussitôt. Pour
- * les modèles du catalogue, les deux sont égaux — rien ne le garde en mémoire.
+ * « À froid » : les mémoires de l'API (matériaux des prix, accès staff,
+ * instantané du catalogue) oubliées juste avant ; la mémoire du principal
+ * n'est pas un provider et reste ce qu'elle est. « À chaud » : le même appel,
+ * rejoué aussitôt. Hors de l'instantané (rayon, passation), les deux sont
+ * égaux — rien ne garde leur catalogue en mémoire.
  *
  * ⚠️ Le corpus n'a que des familles à plat : la lignée des familles
  * (`catalogCategory.findMany`, `PrismaCatalogReader.lineage`) n'est lue que
@@ -33,6 +34,7 @@ import type request from "supertest";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { CatalogueSnapshotStore } from "../src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -71,7 +73,8 @@ class ModelTracingCounter extends SchemaOpsCounter {
 }
 
 /**
- * Les modèles du catalogue servi — ceux que `CatalogueMaterials` absorberait.
+ * Les modèles du catalogue servi — ceux que l'instantané absorbe — et la
+ * table de ses numéros (`ContextVersion`).
  *
  * Le modèle Prisma des familles n'y est pas : son nom est un nom retiré que
  * `lint:no-shelf-literals` refuse dans `test/` (2026-11-05). Il valait 0 sur
@@ -85,6 +88,7 @@ const CATALOGUE_MODELS = [
   "CatalogOperation",
   "CatalogOperationItem",
   "OrderCutoff",
+  "ContextVersion",
 ] as const;
 
 const BASKET: GoldenBasket = {
@@ -147,6 +151,7 @@ function agents() {
 function chill(): void {
   ctx.app.get(PricingMaterialsCache).invalidate();
   ctx.app.get(StaffAccessResolver).forgetAll();
+  ctx.app.get(CatalogueSnapshotStore).forget();
 }
 
 /** Les lectures du catalogue d'un appel, modèle par modèle (zéros compris). */
@@ -171,96 +176,76 @@ async function coldAndWarm(run: () => Promise<request.Response>) {
   return { cold, warm };
 }
 
+/** Ce qu'un appel lit, modèle par modèle. */
+interface Reads {
+  readonly items?: number;
+  readonly operations?: number;
+  readonly cutoffs?: number;
+  readonly versions?: number;
+  readonly reservations?: number;
+}
+
 /**
- * Le relevé attendu, à froid ET à chaud — le catalogue n'a aucune mémoire
- * aujourd'hui, les deux sont donc égaux. Les modèles lus en `include`
- * (familles, dérogations, réservations, articles d'opération) ne comptent pas :
- * ils voyagent dans l'appel de leur parent.
+ * Le compte attendu. Les modèles lus en `include` (familles, dérogations,
+ * réservations, articles d'opération) ne comptent pas : ils voyagent dans
+ * l'appel de leur parent. Les réservations ne comptent que lues À PART — la
+ * liste de l'appelant, filtrée par sa société (option (a), § 2.1).
  */
-function reads(
-  items: number,
-  operations: number,
-  cutoffs: number,
-): Readonly<Record<string, number>> {
+function reads(expected: Reads): Readonly<Record<string, number>> {
   return {
-    CatalogItem: items,
+    CatalogItem: expected.items ?? 0,
     CatalogItemOverride: 0,
-    CatalogItemReservation: 0,
-    CatalogOperation: operations,
+    CatalogItemReservation: expected.reservations ?? 0,
+    CatalogOperation: expected.operations ?? 0,
     CatalogOperationItem: 0,
-    OrderCutoff: cutoffs,
+    OrderCutoff: expected.cutoffs ?? 0,
+    ContextVersion: expected.versions ?? 0,
   };
 }
 
-/** Froid et chaud, comparés au même relevé. */
+/** Froid, puis chaud. */
 async function expectReads(
   run: () => Promise<request.Response>,
-  expected: Readonly<Record<string, number>>,
+  expected: { readonly cold: Reads; readonly warm: Reads },
 ): Promise<void> {
   const { cold, warm } = await coldAndWarm(run);
-  expect(cold.catalogue).toEqual(expected);
-  expect(warm.catalogue).toEqual(expected);
+  expect(cold.catalogue).toEqual(reads(expected.cold));
+  expect(warm.catalogue).toEqual(reads(expected.warm));
 }
 
-describe("le relevé des lectures du catalogue (2026-11-05)", () => {
+/** Le relevé du 2026-11-05 : hors de l'instantané, froid = chaud. */
+function unchanged(expected: Reads): { readonly cold: Reads; readonly warm: Reads } {
+  return { cold: expected, warm: expected };
+}
+
+describe("le rayon et la passation : hors de l'instantané, le relevé du 2026-11-05", () => {
   /**
-   * Le rayon : la liste des articles en vente (`listSellable`), les SKU réservés
-   * aux opérations, les colonnes du kilo relues pour TOUS les SKU (un `IN` de
-   * tout le catalogue), les opérations avec leurs articles, l'heure limite
-   * générale. `CatalogItem` trois fois pour une même table.
+   * Le rayon (M2) : la liste des articles en vente, les SKU réservés aux
+   * opérations, les colonnes du kilo, les opérations, l'heure limite générale.
    */
   it("le rayon public : CatalogItem ×3, CatalogOperation ×1, OrderCutoff ×1", async () => {
-    await expectReads(() => agents().anonymous().get("/shop/catalogue"), reads(3, 1, 1));
+    await expectReads(
+      () => agents().anonymous().get("/shop/catalogue"),
+      unchanged({ items: 3, operations: 1, cutoffs: 1 }),
+    );
   });
 
   it("le rayon pro de base (?audience=pro) : le même relevé", async () => {
     await expectReads(
       () => agents().anonymous().get("/shop/catalogue?audience=pro"),
-      reads(3, 1, 1),
+      unchanged({ items: 3, operations: 1, cutoffs: 1 }),
     );
   });
 
   it("le rayon d'un pro connecté : le même relevé", async () => {
     await expectReads(
       () => agents().as(BUYER_SUB, scene.pro.companyId).get("/shop/catalogue/mine"),
-      reads(3, 1, 1),
+      unchanged({ items: 3, operations: 1, cutoffs: 1 }),
     );
   });
 
-  /** Les lignes du panier (`listByShopSkus`), les SKU d'opération, le classement. */
-  it("le devis anonyme : CatalogItem ×3", async () => {
-    await expectReads(
-      () => agents().anonymous().post("/shop/quote").send(shopQuoteBody(scene, BASKET)),
-      reads(3, 0, 0),
-    );
-  });
-
-  /** Le même, plus le jugement de l'heure limite, qui relit les lignes du panier. */
-  it("le devis pro : CatalogItem ×4, OrderCutoff ×1", async () => {
-    await expectReads(
-      () =>
-        agents()
-          .as(BUYER_SUB, scene.pro.companyId)
-          .post("/shop/quote/mine")
-          .send(shopQuoteBody(scene, BASKET)),
-      reads(4, 0, 1),
-    );
-  });
-
-  /** Les lignes du panier lues TROIS fois, l'heure limite deux. */
-  it("l'estimation de la saisie : CatalogItem ×5, OrderCutoff ×2", async () => {
-    await expectReads(
-      () =>
-        agents()
-          .as(E2E_STAFF_SUB)
-          .post("/admin/orders/estimate")
-          .send(staffBody(scene, BASKET, "account")),
-      reads(5, 0, 2),
-    );
-  });
-
-  /** Hors de la porte (elle relit pour ce qu'elle écrit) ; comptée pour mémoire. */
-  it("la passation d'un pro : CatalogItem ×5, OrderCutoff ×1", async () => {
+  /** Hors de la porte (elle relit pour ce qu'elle écrit, § 2.5) : inchangée. */
+  it("la passation d'un pro : CatalogItem ×5, OrderCutoff ×1, aucun numéro", async () => {
     const quoted = await agents()
       .as(BUYER_SUB, scene.pro.companyId)
       .post("/shop/quote/mine")
@@ -278,7 +263,47 @@ describe("le relevé des lectures du catalogue (2026-11-05)", () => {
             expectedTotalCents: totalCents,
             ...contentOf(scene, BASKET, "pro"),
           }),
-      reads(5, 0, 1),
+      unchanged({ items: 5, cutoffs: 1 }),
+    );
+  });
+});
+
+describe("le budget de l'instantané (M1b) : devis et estimation", () => {
+  /** À chaud : les numéros, et rien d'autre — un visiteur n'a pas de société. */
+  it("le devis anonyme : à chaud, 1 numéro ; à froid, + les articles", async () => {
+    await expectReads(
+      () => agents().anonymous().post("/shop/quote").send(shopQuoteBody(scene, BASKET)),
+      { cold: { versions: 1, items: 1 }, warm: { versions: 1 } },
+    );
+  });
+
+  /** À chaud : les numéros et les réservations de SA société. */
+  it("le devis pro : à chaud, 1 numéro + 1 réservations ; à froid, + articles et heure limite", async () => {
+    await expectReads(
+      () =>
+        agents()
+          .as(BUYER_SUB, scene.pro.companyId)
+          .post("/shop/quote/mine")
+          .send(shopQuoteBody(scene, BASKET)),
+      {
+        cold: { versions: 1, reservations: 1, items: 1, cutoffs: 1 },
+        warm: { versions: 1, reservations: 1 },
+      },
+    );
+  });
+
+  /** Les lignes lues trois fois et l'heure limite deux : une seule fois chacune, à froid. */
+  it("l'estimation de la saisie : à chaud, 1 numéro + 1 réservations", async () => {
+    await expectReads(
+      () =>
+        agents()
+          .as(E2E_STAFF_SUB)
+          .post("/admin/orders/estimate")
+          .send(staffBody(scene, BASKET, "account")),
+      {
+        cold: { versions: 1, reservations: 1, items: 1, cutoffs: 1 },
+        warm: { versions: 1, reservations: 1 },
+      },
     );
   });
 });
@@ -303,14 +328,14 @@ describe("la marque Server-Timing du catalogue", () => {
     return { durationMs: Number(duration?.[1]), reads: reads?.[1] ?? "" };
   }
 
-  it("le devis anonyme porte catalogue et catalogue-reads = 3", async () => {
+  it("le devis anonyme, à chaud, porte catalogue et catalogue-reads = 1", async () => {
     const response = await agents()
       .anonymous()
       .post("/shop/quote")
       .send(shopQuoteBody(scene, BASKET));
     expect(response.status).toBeLessThan(300);
     const marks = catalogueMarksOf(response);
-    expect(marks.reads).toBe("3");
+    expect(marks.reads).toBe("1");
     expect(marks.durationMs).toBeGreaterThan(0);
   });
 
@@ -320,12 +345,12 @@ describe("la marque Server-Timing du catalogue", () => {
     expect(catalogueMarksOf(response).reads).toBe("5");
   });
 
-  it("l'estimation de la saisie : catalogue-reads = 7", async () => {
+  it("l'estimation de la saisie, à chaud : catalogue-reads = 2", async () => {
     const response = await agents()
       .as(E2E_STAFF_SUB)
       .post("/admin/orders/estimate")
       .send(staffBody(scene, BASKET, "account"));
     expect(response.status).toBeLessThan(300);
-    expect(catalogueMarksOf(response).reads).toBe("7");
+    expect(catalogueMarksOf(response).reads).toBe("2");
   });
 });

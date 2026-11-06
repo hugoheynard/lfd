@@ -13,6 +13,7 @@ import { shopSkuOf } from "../../catalog/domain/shop-sku.js";
 import { SuggestionChoicesReader } from "../domain/ports/suggestion-choices.reader.js";
 import { SuggestionFamilyReader } from "../domain/ports/suggestion-family.reader.js";
 import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
+import { withCatalogueSnapshot } from "../../catalog/application/catalogue-snapshot-scope.js";
 
 /**
  * Le catalogue SERVI, aux deux audiences, réduit à l'unité par défaut de
@@ -21,10 +22,14 @@ import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
  * article servi aux deux n'y paraît qu'une fois.
  */
 async function servedDefaults(catalog: CatalogReader): Promise<readonly ResolvedCatalogItem[]> {
-  const [pro, publicItems] = await Promise.all([
-    catalog.listSellable(staffViewer("pro")),
-    catalog.listSellable(staffViewer("public")),
-  ]);
+  // Les deux lectures du catalogue entier, sur l'instantané (plan des
+  // matériaux du catalogue, M1b) : une seule mémoire pour les deux audiences.
+  const [pro, publicItems] = await withCatalogueSnapshot(() =>
+    Promise.all([
+      catalog.listSellable(staffViewer("pro")),
+      catalog.listSellable(staffViewer("public")),
+    ]),
+  );
   const byProduct = new Map<string, ResolvedCatalogItem>();
   for (const item of [...pro, ...publicItems]) {
     if (item.isDefault && !byProduct.has(shopSkuOf(item))) {

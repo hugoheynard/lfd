@@ -3,6 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { LoyaltyEarningPreview } from "../../domain/ports/loyalty-earning-preview.js";
 import { ShopCartQuoting } from "../services/shop-cart-quoting.service.js";
+import { withCatalogueSnapshot } from "../../../catalog/application/catalogue-snapshot-scope.js";
 
 /**
  * Le décompte du panier d'un client **connecté** — celui de la vitrine, plus
@@ -36,8 +37,10 @@ export class QuoteMyShopCartHandler implements IQueryHandler<
   ) {}
 
   async execute(query: QuoteMyShopCartQuery): Promise<MyShopQuoteView> {
-    const { view, voucherTotalEffectCents, voucherRemainderCents } =
-      await this.quoting.quote(query);
+    // Le catalogue lu dans l'instantané (plan des matériaux du catalogue, M1b).
+    const { view, voucherTotalEffectCents, voucherRemainderCents } = await withCatalogueSnapshot(
+      () => this.quoting.quote(query),
+    );
     const loyaltyPointsToEarn =
       query.companyId === null
         ? await this.earning.pointsToEarn({

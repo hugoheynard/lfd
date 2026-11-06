@@ -7,6 +7,7 @@ import { cartTriggering, STAFF_CART_PLACES } from "../../domain/services/cart-su
 import { BoughtWithShowcase } from "../services/bought-with-showcase.js";
 import { StaffSuggestionShowcase } from "../services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsQuery } from "./read-cart-suggestions.query.js";
+import { withCatalogueSnapshot } from "../../../catalog/application/catalogue-snapshot-scope.js";
 
 /**
  * Les suggestions du panier : d'abord le DÉCIDÉ — la vitrine commune
@@ -30,7 +31,12 @@ export class ReadCartSuggestionsHandler implements IQueryHandler<
     private readonly families: CartFamilyReader,
   ) {}
 
-  async execute(query: ReadCartSuggestionsQuery): Promise<readonly CartSuggestionView[]> {
+  /** Le catalogue lu dans l'instantané (plan des matériaux du catalogue, M1b). */
+  execute(query: ReadCartSuggestionsQuery): Promise<readonly CartSuggestionView[]> {
+    return withCatalogueSnapshot(() => this.suggest(query));
+  }
+
+  private async suggest(query: ReadCartSuggestionsQuery): Promise<readonly CartSuggestionView[]> {
     const staff = await this.showcase.show({
       placement: "cart",
       companyId: query.companyId,
