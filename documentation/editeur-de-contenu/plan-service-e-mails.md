@@ -101,7 +101,7 @@ flowchart LR
 ### 2. Les choix
 
 - **C1 — Un bloc `mail/`** de premier niveau de `apps/lfd-api/src/`, avec son
-  schéma Postgres `mail`. Nom à confirmer par Hugo.
+  schéma Postgres `mail` (nom tranché par Hugo le 2026-11-06).
 - **C2 — Une porte, deux gestes, déclarée par le bloc** (Hugo, 2026-11-06).
   `mail/channels/requests/` déclare `MailRequests`, **typée par modèle** :
   `request("order-placed", { … })` est vérifié par le compilateur, comme
@@ -184,7 +184,6 @@ Les questions posées ici sont répondues au § 6.
 
 - que les ~6 producteurs de `mailSent` ont tous besoin d'un résultat immédiat ;
 - le volume d'envois par jour, qui dimensionne le suivi ;
-- le nom du bloc et du schéma (`mail` proposé).
 
 ## 6. Contredit par `vitruve` le 2026-11-06 — ce qui a changé
 
