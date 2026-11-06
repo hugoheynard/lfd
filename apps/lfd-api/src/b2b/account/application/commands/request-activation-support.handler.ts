@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { SupportRequestedEvent } from "../../domain/events/support-requested.event.js";
@@ -10,6 +11,7 @@ import { SupportRequestRepository } from "../../domain/ports/support-request.rep
 import { ensureCompanyMember } from "../../domain/services/company-access.js";
 import { RequestActivationSupportCommand } from "./request-activation-support.command.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { SupportRequestedMail } from "../services/support-requested-mail.service.js";
 
 /**
  * Enregistre une demande de support à l'activation.
@@ -35,6 +37,8 @@ export class RequestActivationSupportHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly names: AccountJournalNames,
+    private readonly uow: UnitOfWork,
+    private readonly mail: SupportRequestedMail,
   ) {}
 
   async execute(command: RequestActivationSupportCommand): Promise<string> {
@@ -53,7 +57,14 @@ export class RequestActivationSupportHandler implements ICommandHandler<
     }
 
     const subjectLabel = await this.names.supportSubject(companyId, command.actorUserId);
-    const id = await this.support.record(command.actorUserId, command.payload);
+    // La demande de contact et le courriel à l'équipe tombent ensemble (S2b,
+    // `plan-service-e-mails.md`) : l'e-mail part après la validation, par le
+    // bloc `mail`, et un échec de la demande d'e-mail annule le dépôt.
+    const id = await this.uow.run(async () => {
+      const recorded = await this.support.record(command.actorUserId, command.payload);
+      await this.mail.request(recorded, subjectLabel);
+      return recorded;
+    });
     // Publié APRÈS l'écriture : le journal est une projection, jamais une
     // condition de la transaction métier.
     this.events.publish(

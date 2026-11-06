@@ -1,7 +1,9 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import type { MailReceipt } from "@lfd/mailer";
 
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.module.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { IdentitySubjectUnknownError } from "../../../../platform/shared/errors/identity-errors.js";
 import {
   AccountDisabledError,
@@ -78,6 +80,11 @@ export abstract class AccountAccessGranter {
  * Et deux refus qui valent pour les trois : le détenteur ne se rétrograde pas
  * par ce geste, et une adresse portée par plusieurs comptes n'en désigne aucun.
  *
+ * **L'e-mail part tout de suite, par le bloc `mail`** (`sendNow`, plan
+ * `plan-service-e-mails.md`, S2b) : l'écran lit `mailSent`, et ce service
+ * n'écrit dans aucune unité de travail — les écritures du dépôt sont
+ * chacune la sienne (vérifié le 2026-11-06), l'envoi vient après elles.
+ *
  * **Un e-mail qui ne part pas ne défait pas l'accès.** Le rattachement est en
  * base ; l'annuler pour un canal indisponible ferait perdre le travail du
  * commercial. On le dit (`mailSent`), on le journalise, et on continue — le
@@ -90,8 +97,9 @@ export class GrantAccountAccess extends AccountAccessGranter {
   constructor(
     private readonly members: CompanyMemberRepository,
     private readonly identity: CustomerIdentityPort,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
     private readonly config: AppConfig,
+    private readonly ids: IdGenerator,
   ) {
     super();
   }
@@ -271,11 +279,13 @@ export class GrantAccountAccess extends AccountAccessGranter {
   private async attachToActive(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
     await this.attach(known.userId, input);
     const mailSent = await this.send(input.email, () =>
-      this.mailer.send({
+      this.mails.sendNow({
+        brand: "lfc",
         to: input.email,
         template: "customer.company-attached",
         // Son prénom à ELLE, pas celui saisi par le commercial.
         data: { firstName: known.firstName, companyName: input.companyName },
+        idempotencyKey: this.keyOf("company-attached", known.userId, input.companyId),
       }),
     );
     return { userId: known.userId, outcome: "attached", mailSent };
@@ -307,9 +317,11 @@ export class GrantAccountAccess extends AccountAccessGranter {
     input: AccessToGrant,
   ): Promise<AccessGranted> {
     const mailSent = await this.send(input.email, () =>
-      this.mailer.send({
+      this.mails.sendNow({
+        brand: "lfc",
         to: input.email,
         template: "customer.access-opened",
+        idempotencyKey: this.keyOf("access-opened", userId, input.companyId),
         data: {
           firstName: input.firstName,
           companyName: input.companyName,
@@ -333,6 +345,15 @@ export class GrantAccountAccess extends AccountAccessGranter {
   }
 
   /**
+   * Une clé par GESTE, sans donnée personnelle (des identifiants opaques) :
+   * chaque clic sur « ouvrir l'accès » fabrique un lien neuf, et une clé
+   * stable par compte rendrait le reçu du premier envoi sans rien renvoyer.
+   */
+  private keyOf(mail: string, userId: string, companyId: string): string {
+    return `account.${mail}:${userId}:${companyId}:${this.ids.next()}`;
+  }
+
+  /**
    * Envoie, et rend si c'est **vraiment** parti. Ne relance jamais : l'accès est
    * déjà acquis, et l'échec du canal est une information, pas une raison de
    * défaire.
@@ -340,13 +361,14 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * Sans clé de fournisseur, le mailer tourne « à blanc » — il rend le gabarit,
    * le journalise, et n'envoie rien. Il résout donc sans erreur, et répondre
    * `true` ferait annoncer « lien envoyé » à un commercial dont le client
-   * n'attendra jamais rien. On le laisse rendre le gabarit (une erreur de
-   * gabarit doit se voir en local), et on dit la vérité sur l'envoi.
+   * n'attendra jamais rien. Le reçu le dit : à blanc, aucun identifiant de
+   * fournisseur (`providerId: null`) ; « envoyé » veut donc dire « accepté
+   * par Resend », comme avant le passage par le bloc.
    */
-  private async send(to: string, deliver: () => Promise<unknown>): Promise<boolean> {
+  private async send(to: string, deliver: () => Promise<MailReceipt>): Promise<boolean> {
     try {
-      await deliver();
-      return this.mailer.enabled;
+      const receipt = await deliver();
+      return receipt.providerId !== null;
     } catch (error) {
       this.logger.error(`E-mail d'accès non envoyé à ${to}`, error);
       return false;

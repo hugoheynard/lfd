@@ -1,25 +1,11 @@
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
-import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
+import { RecordingMailRequests } from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { LoginMethodLinkedFact } from "../../../domain/events/login-method-linked.fact.js";
 import { OneProfile } from "../../commands/__tests__/member-acts-doubles.js";
 import { SendLoginMethodLinkedMail } from "../send-login-method-linked-mail.handler.js";
 
-/** Un doublé qui garde chaque envoi, pour qu'on puisse l'ouvrir. */
-class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails, keyof B2bMails>[] = [];
-
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.sent.push(args);
-    return Promise.resolve({ providerId: "msg_1" });
-  }
-}
-
-function deliveryFor(userId: string) {
+function deliveryFor(userId: string, eventId = "evt_1") {
   return {
-    eventId: "evt_1",
+    eventId,
     ...new LoginMethodLinkedFact(userId, "google-oauth2", "lnk_1").durableFact(),
   };
 }
@@ -31,35 +17,51 @@ function deliveryFor(userId: string) {
  */
 describe("SendLoginMethodLinkedMail — l'alerte au titulaire", () => {
   it("écrit à l'adresse du compte, avec le mot de l'écran", async () => {
-    const mailer = new RecordingMailer();
+    const mails = new RecordingMailRequests();
 
-    await new SendLoginMethodLinkedMail(new OneProfile(), mailer).handle(deliveryFor("u1"));
+    await new SendLoginMethodLinkedMail(new OneProfile(), mails).handle(deliveryFor("u1"));
 
-    expect(mailer.sent).toHaveLength(1);
-    expect(mailer.sent[0]?.to).toBe("camille@pqmarais.fr");
-    expect(mailer.sent[0]?.template).toBe("customer.login-method-linked");
-    expect(mailer.sent[0]?.data).toEqual({ firstName: "Camille", methodLabel: "Google" });
-    expect(mailer.sent[0]?.idempotencyKey).toBe("login_method.linked:u1:google-oauth2");
+    expect(mails.requested).toHaveLength(1);
+    expect(mails.requested[0]?.to).toBe("camille@pqmarais.fr");
+    expect(mails.requested[0]?.template).toBe("customer.login-method-linked");
+    expect(mails.requested[0]?.data).toEqual({ firstName: "Camille", methodLabel: "Google" });
+    expect(mails.requested[0]?.idempotencyKey).toBe("login_method.linked:u1:google-oauth2:evt_1");
+    expect(mails.sentNow).toEqual([]);
+  });
+
+  /**
+   * Le bloc `mail` garde ses clés un an, et non 24 h comme Resend (S2b,
+   * 2026-11-06) : une clé par compte et par méthode tairait l'alerte d'un
+   * second rattachement des semaines plus tard.
+   */
+  it("deux rattachements de la même méthode font deux demandes distinctes", async () => {
+    const mails = new RecordingMailRequests();
+    const handler = new SendLoginMethodLinkedMail(new OneProfile(), mails);
+
+    await handler.handle(deliveryFor("u1", "evt_1"));
+    await handler.handle(deliveryFor("u1", "evt_2"));
+
+    expect(new Set(mails.requested.map((mail) => mail.idempotencyKey)).size).toBe(2);
   });
 
   it("n'écrit rien, sans lever, quand le profil a disparu", async () => {
-    const mailer = new RecordingMailer();
+    const mails = new RecordingMailRequests();
 
-    await new SendLoginMethodLinkedMail(new OneProfile(), mailer).handle(deliveryFor("u9"));
+    await new SendLoginMethodLinkedMail(new OneProfile(), mails).handle(deliveryFor("u9"));
 
-    expect(mailer.sent).toEqual([]);
+    expect(mails.requested).toEqual([]);
   });
 
   it("lève sur un fait illisible", async () => {
-    const mailer = new RecordingMailer();
+    const mails = new RecordingMailRequests();
 
     await expect(
-      new SendLoginMethodLinkedMail(new OneProfile(), mailer).handle({
+      new SendLoginMethodLinkedMail(new OneProfile(), mails).handle({
         eventId: "evt_2",
         type: "account.login_method_linked",
         payload: { userId: "u1" },
       }),
     ).rejects.toThrow("illisible");
-    expect(mailer.sent).toEqual([]);
+    expect(mails.requested).toEqual([]);
   });
 });

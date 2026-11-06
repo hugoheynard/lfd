@@ -14,6 +14,12 @@ import { SupportRequestRepository } from "../../../domain/ports/support-request.
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { RequestActivationSupportCommand } from "../request-activation-support.command.js";
 import { RequestActivationSupportHandler } from "../request-activation-support.handler.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import { SupportRequestedMail } from "../../services/support-requested-mail.service.js";
+import { OneRequest, REQUEST, Settings } from "../../services/__tests__/support-request-doubles.js";
 import { journalNames } from "./member-acts-doubles.js";
 
 const PAYLOAD: ActivationSupportPayload = {
@@ -66,6 +72,21 @@ function eventBus(published: unknown[]): DomainEventPublisher {
 
 const CLOCK = new FixedClock(new Date("2026-06-01T08:00:00.000Z"));
 
+/** L'unité de travail et le courriel, pour les cas qui ne les regardent pas. */
+function wiring(): [OpenableUnitOfWork, SupportRequestedMail] {
+  const uow = new OpenableUnitOfWork();
+  return [uow, staffMail(uow).mail];
+}
+
+/** Le courriel à l'équipe, sur la porte doublée : `request` refusé hors transaction. */
+function staffMail(uow: OpenableUnitOfWork, mails = new RecordingMailRequests(uow)) {
+  const stored = { ...REQUEST, id: "support_1" };
+  return {
+    mails,
+    mail: new SupportRequestedMail(new OneRequest(stored), mails, new Settings("equipe@lfc.fr")),
+  };
+}
+
 describe("RequestActivationSupportHandler", () => {
   it("enregistre la demande d'un membre sans demande ouverte", async () => {
     const recorder = { recorded: 0 };
@@ -76,6 +97,7 @@ describe("RequestActivationSupportHandler", () => {
       eventBus(published),
       CLOCK,
       journalNames(),
+      ...wiring(),
     );
 
     const id = await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD));
@@ -105,6 +127,7 @@ describe("RequestActivationSupportHandler", () => {
       eventBus([]),
       CLOCK,
       journalNames(),
+      ...wiring(),
     );
 
     await expect(
@@ -120,6 +143,7 @@ describe("RequestActivationSupportHandler", () => {
       eventBus([]),
       CLOCK,
       journalNames(),
+      ...wiring(),
     );
 
     await expect(
@@ -140,6 +164,7 @@ describe("RequestActivationSupportHandler", () => {
       eventBus(published),
       CLOCK,
       journalNames(),
+      ...wiring(),
     );
 
     const id = await handler.execute(
@@ -152,5 +177,51 @@ describe("RequestActivationSupportHandler", () => {
     expect(published).toEqual([
       new SupportRequestedEvent("support_1", null, "u1", "Camille Rousseau", "email", CLOCK.now()),
     ]);
+  });
+
+  /**
+   * S2b (2026-11-06) : le courriel à l'équipe est DEMANDÉ au bloc `mail` dans
+   * la transaction du dépôt — il était envoyé en fond par un abonné en
+   * mémoire, perdu à un redémarrage.
+   */
+  it("demande le courriel à l'équipe dans la transaction du dépôt", async () => {
+    const uow = new OpenableUnitOfWork();
+    const { mails, mail } = staffMail(uow);
+    const handler = new RequestActivationSupportHandler(
+      memberships("orders"),
+      supportRepo(false),
+      eventBus([]),
+      CLOCK,
+      journalNames(),
+      uow,
+      mail,
+    );
+
+    await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD));
+
+    expect(mails.requested.map((m) => [m.template, m.idempotencyKey])).toEqual([
+      ["staff.support-requested", "mail:support.requested:support_1"],
+    ]);
+  });
+
+  it("échoue, sans rien publier, quand la demande d'e-mail est refusée", async () => {
+    const uow = new OpenableUnitOfWork();
+    const mails = new RecordingMailRequests(uow);
+    mails.failWith = new Error("base indisponible");
+    const published: unknown[] = [];
+    const handler = new RequestActivationSupportHandler(
+      memberships("orders"),
+      supportRepo(false),
+      eventBus(published),
+      CLOCK,
+      journalNames(),
+      uow,
+      staffMail(uow, mails).mail,
+    );
+
+    await expect(
+      handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD)),
+    ).rejects.toThrow("base indisponible");
+    expect(published).toEqual([]);
   });
 });

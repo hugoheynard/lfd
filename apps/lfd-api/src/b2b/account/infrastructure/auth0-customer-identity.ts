@@ -1,15 +1,17 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { LinkableIdentity } from "../domain/value-objects/linkable-identity.js";
 
 import {
   Auth0IdentityGateway,
   SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS,
 } from "../../../platform/identity/auth0-identity.gateway.js";
-import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { IdentitySubjectUnknownError } from "../../../platform/shared/errors/identity-errors.js";
 import { LoginMethodsUnknownAccountError } from "../domain/errors/account-errors.js";
 import type { LinkedIdentity } from "../../../platform/identity/auth0-user-shape.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
+import { passwordResetMailKey } from "./password-reset-mail-key.js";
 import {
   CustomerIdentityPort,
   type IdentityToProvision,
@@ -33,7 +35,8 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
   constructor(
     private readonly identities: Auth0IdentityGateway,
     private readonly config: AppConfig,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
+    private readonly ids: IdGenerator,
   ) {
     super();
   }
@@ -62,6 +65,13 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
    *
    * L'envoi n'est pas rattrapé : la personne attend un e-mail, et un 204 posé
    * sur un envoi manqué lui ferait surveiller une boîte où rien n'arrivera.
+   *
+   * D'où `sendNow` et non `request` (plan `plan-service-e-mails.md`, S2b) :
+   * l'échec doit atteindre l'écran, l'appelant n'ouvre aucune unité de travail
+   * (`RequestPasswordResetHandler`, `@hors-transaction`, vérifié le
+   * 2026-11-06) — et une demande différée écrirait le lien dans le fait
+   * `mail.requested` de la boîte d'envoi, gardé 30 jours. `sendNow` ne range
+   * que le suivi, jamais les données.
    */
   async sendPasswordResetLink(subject: string, email: string): Promise<void> {
     const passwordSetupUrl = await this.identities.issuePasswordLink(
@@ -69,10 +79,12 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
       this.loginUrl(),
       SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS,
     );
-    await this.mailer.send({
+    await this.mails.sendNow({
+      brand: "lfc",
       to: email,
       template: "customer.password-reset",
       data: { passwordSetupUrl },
+      idempotencyKey: passwordResetMailKey(this.ids),
     });
   }
 

@@ -1,5 +1,12 @@
 import { IdentityWithoutLoginMethods } from "../../../domain/ports/__tests__/login-method-doubles.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.module.js";
+import {
+  type DeferrableMailTemplate,
+  type DeferredMailDemand,
+  type MailDemand,
+  MailRequests,
+} from "../../../../../mail/channels/requests/mail-requests.js";
+import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
   AccountDisabledError,
@@ -140,32 +147,49 @@ interface SentMail {
 }
 
 /**
- * Mailer doublé — capture les envois, refuse pour simuler un canal en panne, ou
- * tourne **à blanc** (`enabled: false`) comme lorsqu'aucune clé n'est configurée.
+ * La porte du bloc `mail`, doublée — capture les envois immédiats, refuse pour
+ * simuler un canal en panne, ou tourne **à blanc** (reçu sans identifiant de
+ * fournisseur) comme lorsqu'aucune clé n'est configurée. Un `request` serait
+ * une faute : l'écran lit `mailSent`, l'envoi est immédiat (S2b).
  */
+class GrantMails extends MailRequests {
+  readonly sent: SentMail[] = [];
+  readonly keys: string[] = [];
+
+  constructor(private readonly options: { readonly failing: boolean; readonly enabled: boolean }) {
+    super();
+  }
+
+  request<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+    return Promise.reject(new TypeError(`request inattendu (${demand.template})`));
+  }
+
+  sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+    if (this.options.failing) {
+      return Promise.reject(new Error("canal indisponible"));
+    }
+    const data: object = demand.data;
+    this.keys.push(demand.idempotencyKey);
+    this.sent.push({
+      to: demand.to,
+      template: demand.template,
+      carriesPasswordLink: "passwordSetupUrl" in data,
+      greeting: "firstName" in data ? String(data.firstName) : "",
+      ...("signInUrl" in data ? { signInUrl: data.signInUrl } : {}),
+    });
+    return Promise.resolve({ providerId: this.options.enabled ? "re_1" : null });
+  }
+}
+
 function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: boolean } = {}): {
-  readonly mailer: B2bMailer;
+  readonly mailer: GrantMails;
   readonly sent: SentMail[];
 } {
-  const { failing = false, enabled = true } = options;
-  const sent: SentMail[] = [];
-  const mailer: B2bMailer = {
-    enabled,
-    send: (args): Promise<MailReceipt> => {
-      if (failing) {
-        return Promise.reject(new Error("canal indisponible"));
-      }
-      sent.push({
-        to: args.to,
-        template: args.template,
-        carriesPasswordLink: "passwordSetupUrl" in args.data,
-        greeting: "firstName" in args.data ? String(args.data.firstName) : "",
-        ...("signInUrl" in args.data ? { signInUrl: args.data.signInUrl } : {}),
-      });
-      return Promise.resolve({ providerId: null });
-    },
-  };
-  return { mailer, sent };
+  const mailer = new GrantMails({
+    failing: options.failing ?? false,
+    enabled: options.enabled ?? true,
+  });
+  return { mailer, sent: mailer.sent };
 }
 
 /**
@@ -214,12 +238,18 @@ class FakeConfig extends AppConfig {
 /** Le service, monté sur des doubles — aucun réseau, aucune base. */
 function granter(
   members: FakeMembers,
-  mailer: B2bMailer,
+  mailer: MailRequests,
   identity = new FakeIdentity(),
   clientRoot: string | null = "https://boutique.lfc.test/",
 ) {
   return {
-    service: new GrantAccountAccess(members, identity, mailer, new FakeConfig(clientRoot)),
+    service: new GrantAccountAccess(
+      members,
+      identity,
+      mailer,
+      new FakeConfig(clientRoot),
+      new FixedIdGenerator("mail"),
+    ),
     identity,
   };
 }
@@ -606,5 +636,28 @@ describe("GrantAccountAccess — l'adresse passe par le value object", () => {
 
     expect(identity.provisioned[0]?.email).toBe("camille@halles.fr");
     expect(members.created[0]?.email).toBe("camille@halles.fr");
+  });
+});
+
+/**
+ * S2b (2026-11-06) : l'envoi passe par le bloc `mail`, dont la clé
+ * d'idempotence est gardée un an. Une clé stable par compte rendrait le reçu
+ * du premier envoi au second clic — sans renvoyer le lien neuf.
+ */
+describe("GrantAccountAccess — la clé d'envoi", () => {
+  it("change à chaque geste, et ne porte ni l'adresse ni le sujet", async () => {
+    const members = new FakeMembers({ account: account("invited") });
+    const { mailer } = fakeMailer();
+    const { service } = granter(members, mailer);
+
+    await service.grant(INPUT);
+    await service.grant(INPUT);
+
+    expect(new Set(mailer.keys).size).toBe(2);
+    for (const key of mailer.keys) {
+      expect(key).toMatch(/^account\.access-opened:user_known:cmp_1:/u);
+      expect(key).not.toContain(INPUT.email);
+      expect(key).not.toContain("auth0|");
+    }
   });
 });

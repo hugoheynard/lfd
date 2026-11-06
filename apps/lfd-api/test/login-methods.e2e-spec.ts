@@ -13,9 +13,10 @@
  * Le double de preuve est trivial et suit celui du harnais : **le jeton EST le
  * sujet prouvé**.
  */
-import type { MailReceipt } from "@lfd/mailer";
 
 import { AppConfig } from "../src/platform/config/app-config.js";
+import { FixedIdGenerator } from "../src/platform/id/fixed-id-generator.js";
+import { RecordingMailRequests } from "../src/mail/channels/requests/__tests__/recording-mail-requests.js";
 import { DevCustomerIdentity } from "../src/b2b/account/infrastructure/dev-customer-identity.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import {
@@ -46,10 +47,11 @@ beforeAll(async () => {
       // d'un secret M2M pour choisir ce qu'il éprouve.
       {
         token: CustomerIdentityPort,
-        value: new DevCustomerIdentity(new AppConfig(), {
-          enabled: false,
-          send: (): Promise<MailReceipt> => Promise.resolve({ providerId: null }),
-        }),
+        value: new DevCustomerIdentity(
+          new AppConfig(),
+          new RecordingMailRequests(),
+          new FixedIdGenerator("mail"),
+        ),
       },
     ],
   });
@@ -122,6 +124,25 @@ describe("POST /me/identities", () => {
       },
     ]);
     expect(JSON.stringify(facts)).not.toContain("10203040");
+  });
+
+  /**
+   * S2b (2026-11-06) : l'alerte de rattachement est DEMANDÉE au bloc `mail`
+   * par son abonné durable — une ligne de suivi, à l'adresse du compte, sous
+   * une clé qui porte des identifiants opaques et jamais l'adresse.
+   */
+  it("demande l'alerte au bloc mail, à l'adresse du compte", async () => {
+    await link(GOOGLE_SUB, 200);
+    await ctx.drain();
+
+    const mails = await ctx.prisma.mailRequest.findMany({
+      where: { template: "customer.login-method-linked" },
+      select: { recipient: true, idempotencyKey: true },
+    });
+    expect(mails).toHaveLength(1);
+    expect(mails[0]?.recipient).toBe("camille@ancienne.fr");
+    expect(mails[0]?.idempotencyKey).toMatch(/^login_method\.linked:.+:google-oauth2:.+$/u);
+    expect(mails[0]?.idempotencyKey).not.toContain("camille");
   });
 
   /**

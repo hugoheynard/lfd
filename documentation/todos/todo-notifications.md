@@ -55,6 +55,8 @@
 Port `AppointmentBookedAlert` (croissance) et son adaptateur
 `mail-appointment-booked-alert.ts` ; abonné `MailSupportRequested` (compte),
 qui relit la demande par un port de lecture neuf, `SupportRequestReader`.
+(Depuis le 2026-11-06, lot S2b du service d'e-mails : ce n'est plus un abonné
+mais `SupportRequestedMail`, appelé dans la transaction du dépôt.)
 Libellés du motif et du canal : `platform/mailer/staff-mail-labels.ts` —
 ⚠️ recopiés des libellés courts de `@lfd/b2b-ui`, que le backend ne peut pas
 importer : rien ne garde les deux copies d'accord. Reste ouvert : la demande

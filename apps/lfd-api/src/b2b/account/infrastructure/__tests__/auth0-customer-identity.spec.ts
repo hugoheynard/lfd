@@ -1,5 +1,7 @@
-import type { MailReceipt } from "@lfd/mailer";
-
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { Auth0IdentityGateway } from "../../../../platform/identity/auth0-identity.gateway.js";
 import { Auth0ManagementClient } from "../../../../platform/identity/auth0-management.client.js";
@@ -8,7 +10,7 @@ import {
   IdentityProviderUnavailableError,
   IdentitySubjectUnknownError,
 } from "../../../../platform/shared/errors/identity-errors.js";
-import type { B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { LoginMethodsUnknownAccountError } from "../../domain/errors/account-errors.js";
 import { LinkableIdentity } from "../../domain/value-objects/linkable-identity.js";
 import { Auth0CustomerIdentity } from "../auth0-customer-identity.js";
@@ -39,16 +41,71 @@ class FailingGateway extends Auth0IdentityGateway {
   }
 }
 
-/** Un mailer qui n'a rien à faire ici : aucun de ces chemins n'envoie. */
-const silentMailer: B2bMailer = {
-  enabled: false,
-  send: (): Promise<MailReceipt> =>
-    Promise.reject(new Error("aucun envoi attendu sur ces trois lectures")),
-};
-
 function adapter(fail: () => never): Auth0CustomerIdentity {
-  return new Auth0CustomerIdentity(new FailingGateway(fail), new AppConfig(), silentMailer);
+  // Aucun de ces trois chemins n'envoie : la porte doublée resterait vide.
+  return new Auth0CustomerIdentity(
+    new FailingGateway(fail),
+    new AppConfig(),
+    new RecordingMailRequests(),
+    new FixedIdGenerator("mail"),
+  );
 }
+
+/** La passerelle qui émet un lien, sans réseau. */
+class IssuingGateway extends Auth0IdentityGateway {
+  constructor() {
+    super(new Auth0ManagementClient(new AppConfig()));
+  }
+
+  override issuePasswordLink(): Promise<string> {
+    return Promise.resolve("https://tenant.test/ticket/1");
+  }
+}
+
+/**
+ * S2b (2026-11-06) : le lien demandé par la personne part par le bloc `mail`,
+ * TOUT DE SUITE (`sendNow`) — l'échec doit atteindre son écran, et une
+ * demande différée écrirait le lien dans la boîte d'envoi.
+ */
+describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", () => {
+  it("envoie tout de suite, hors transaction, sous une clé sans donnée personnelle", async () => {
+    const mails = new RecordingMailRequests(new OpenableUnitOfWork());
+    const port = new Auth0CustomerIdentity(
+      new IssuingGateway(),
+      new AppConfig(),
+      mails,
+      new FixedIdGenerator("mail"),
+    );
+
+    await port.sendPasswordResetLink(SUBJECT, "camille@halles.fr");
+
+    expect(mails.requested).toEqual([]);
+    expect(mails.sentNow).toEqual([
+      {
+        brand: "lfc",
+        to: "camille@halles.fr",
+        template: "customer.password-reset",
+        data: { passwordSetupUrl: "https://tenant.test/ticket/1" },
+        idempotencyKey: "account.password-reset:mail_000001",
+      },
+    ]);
+  });
+
+  it("laisse remonter un envoi refusé : la personne ne doit pas guetter une boîte vide", async () => {
+    const mails = new RecordingMailRequests();
+    mails.failWith = new Error("Resend indisponible");
+    const port = new Auth0CustomerIdentity(
+      new IssuingGateway(),
+      new AppConfig(),
+      mails,
+      new FixedIdGenerator("mail"),
+    );
+
+    await expect(port.sendPasswordResetLink(SUBJECT, "camille@halles.fr")).rejects.toThrow(
+      "Resend indisponible",
+    );
+  });
+});
 
 describe("Auth0CustomerIdentity — un sujet que le fournisseur ne connaît plus", () => {
   /**

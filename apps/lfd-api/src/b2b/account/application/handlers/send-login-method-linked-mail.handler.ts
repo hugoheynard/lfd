@@ -1,6 +1,6 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -46,13 +46,19 @@ export const SEND_LOGIN_METHOD_LINKED_MAIL = "account.send-login-method-linked-m
  * sécurité de ce geste. Il lit désormais `account.login_method_linked`, écrit
  * par `LinkLoginMethodHandler` dans l'unité de travail de sa trace
  * (`documentation/journalisation/plan-evenements-durables.md`, §7 quater).
+ *
+ * ## Demandé au bloc `mail` depuis le 2026-11-06 (lot S2b)
+ *
+ * Il envoyait dans la transaction de livraison ; il y DEMANDE désormais
+ * l'e-mail (`request`), qui part après la validation
+ * (`documentation/editeur-de-contenu/plan-service-e-mails.md`, § 8).
  */
 @Injectable()
 @DurableHandler({ type: ACCOUNT_LOGIN_METHOD_LINKED, subscriber: SEND_LOGIN_METHOD_LINKED_MAIL })
 export class SendLoginMethodLinkedMail implements DurableSubscriber {
   constructor(
     private readonly profiles: UserProfileRepository,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -63,19 +69,20 @@ export class SendLoginMethodLinkedMail implements DurableSubscriber {
     if (profile === null) {
       return;
     }
-    await this.mailer.send({
+    await this.mails.request({
+      brand: "lfc",
       to: profile.email,
       template: "customer.login-method-linked",
       data: {
         firstName: profile.firstName,
         methodLabel: METHOD_LABELS[event.provider] ?? event.provider,
       },
-      // Clé **déterministe** par compte et par méthode : un fait rejoué par la
-      // boîte d'envoi ne fait pas partir un second message. Rattacher à
-      // nouveau la même méthode après l'avoir retirée dans la même journée est
-      // le seul cas qu'elle dédoublonne à tort — et il n'apprend rien de neuf
-      // à qui vient de le faire.
-      idempotencyKey: `login_method.linked:${event.userId}:${event.provider}`,
+      // Clé **déterministe** par FAIT : un fait rejoué par la boîte d'envoi ne
+      // fait pas partir un second message. L'identifiant du fait y entre
+      // parce que le bloc `mail` garde ses clés un an (et non 24 h comme
+      // Resend) : sans lui, rattacher de nouveau la même méthode des semaines
+      // plus tard ne préviendrait plus personne — or c'est la seule alerte.
+      idempotencyKey: `login_method.linked:${event.userId}:${event.provider}:${delivery.eventId}`,
     });
   }
 }

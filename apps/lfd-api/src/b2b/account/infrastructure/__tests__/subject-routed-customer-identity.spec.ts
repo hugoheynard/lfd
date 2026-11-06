@@ -1,5 +1,5 @@
-import type { MailReceipt } from "@lfd/mailer";
-
+import { RecordingMailRequests } from "../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { Auth0IdentityGateway } from "../../../../platform/identity/auth0-identity.gateway.js";
 import { Auth0ManagementClient } from "../../../../platform/identity/auth0-management.client.js";
@@ -20,10 +20,12 @@ const vus: { auth0: string[]; dev: string[] } = { auth0: [], dev: [] };
 
 class Auth0Spy extends Auth0CustomerIdentity {
   constructor() {
-    super(new Auth0IdentityGateway(new Auth0ManagementClient(new AppConfig())), new AppConfig(), {
-      enabled: false,
-      send: (): Promise<MailReceipt> => Promise.reject(new Error("aucun envoi attendu ici")),
-    });
+    super(
+      new Auth0IdentityGateway(new Auth0ManagementClient(new AppConfig())),
+      new AppConfig(),
+      new RecordingMailRequests(),
+      new FixedIdGenerator("mail"),
+    );
   }
 
   override listLoginMethods(subject: string): Promise<readonly LoginMethod[]> {
@@ -49,13 +51,9 @@ class Auth0Spy extends Auth0CustomerIdentity {
 
 class DevSpy extends DevCustomerIdentity {
   constructor() {
-    // Le mailer n'est jamais appelé ici : ce fichier n'éprouve QUE l'aiguillage,
-    // et chaque méthode observée est remplacée juste en dessous. Il REJETTE
-    // plutôt que de résoudre — un envoi silencieux serait un faux vert.
-    super(new AppConfig(), {
-      enabled: false,
-      send: (): Promise<MailReceipt> => Promise.reject(new Error("aucun envoi attendu ici")),
-    });
+    // La porte n'est jamais appelée ici : ce fichier n'éprouve QUE l'aiguillage,
+    // et chaque méthode observée est remplacée juste en dessous.
+    super(new AppConfig(), new RecordingMailRequests(), new FixedIdGenerator("mail"));
   }
 
   override listLoginMethods(subject: string): Promise<readonly LoginMethod[]> {

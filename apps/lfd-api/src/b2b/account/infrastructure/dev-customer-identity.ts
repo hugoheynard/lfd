@@ -1,8 +1,10 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import type { LinkableIdentity } from "../domain/value-objects/linkable-identity.js";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
-import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
+import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
+import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { passwordResetMailKey } from "./password-reset-mail-key.js";
 import {
   CustomerIdentityPort,
   type IdentityToProvision,
@@ -46,7 +48,8 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
 
   constructor(
     private readonly config: AppConfig,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
+    private readonly ids: IdGenerator,
   ) {
     super();
   }
@@ -80,7 +83,7 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
   }
 
   /**
-   * **Le courriel passe quand même par le mailer**, et c'est le sujet.
+   * **Le courriel passe quand même par le bloc `mail`** (donc le mailer), et c'est le sujet.
    *
    * 🔴 Cette méthode se contentait de journaliser (relevé par Hugo le
    * 2026-09-22 : l'écran disait « Un lien vous a été envoyé » alors que RIEN
@@ -97,10 +100,14 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
    */
   async sendPasswordResetLink(subject: string, email: string): Promise<void> {
     const passwordSetupUrl = devPasswordUrl(subject);
-    await this.mailer.send({
+    // Même geste que l'adaptateur Auth0 (`sendNow`) : le chemin local garde
+    // la forme de la production, bloc `mail` compris.
+    await this.mails.sendNow({
+      brand: "lfc",
       to: email,
       template: "customer.password-reset",
       data: { passwordSetupUrl },
+      idempotencyKey: passwordResetMailKey(this.ids),
     });
     this.logger.warn(`[dev] lien de mot de passe factice pour ${email} : ${passwordSetupUrl}`);
   }

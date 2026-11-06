@@ -28,6 +28,9 @@
 > l'identifiant, pièces jointes par référence au stockage, `order-placed`
 > ouvert à `request`) et le bloc `b2b/orders` (11 envoyeurs) passé par la
 > porte. Dette de `lint:mail-through-block` : **20**.
+>
+> 🏗️ **S2b bâti le 2026-11-06** (§ 10) : le bloc `b2b/account` (5 envoyeurs)
+> passé par la porte. Dette : **15**.
 
 ## Partie 1 — Comprendre
 
@@ -194,7 +197,8 @@ flowchart LR
 | **P**    | ✅ bâti le 2026-11-06 (`71f95d36f`), **à blanc** : purges de l'outbox (30 j après livraison) et du suivi (1 an), catégorie RGPD `client` ; rien n'est supprimé tant que Hugo n'active pas (§ 7)                                                                                                                                                                                                                                                        | rien                                                                                                                    |
 | **S2**   | Faire passer les 31 envoyeurs par la porte, bloc par bloc : `sendNow` pour les ~6 producteurs de `mailSent`, l'essai (`specimen-mail-trial`) et la sonde (`admin-mail-check`) ; `request` pour le reste. Les PDF passent au stockage                                                                                                                                                                                                                   | les e-mails des abonnés en mémoire deviennent durables ; délai à mesurer sur « commande prête » et « livreur en route » |
 | **S2a**  | ✅ bâti le 2026-11-06 (`7d50bf007`, § 9) : les fondations (`request` rend l'identifiant de la demande, pièces jointes par référence au stockage — `pdfStored` remplace `pdfBase64` dans les données —, la porte servie par un module global) puis le bloc `b2b/orders` (11 envoyeurs) ; dette 31 → 20                                                                                                                                                  | les e-mails des commandes partent après la validation, par le bloc                                                      |
-| **S2b…** | à venir, un bloc à la fois : `b2b/account`, `b2b/contact`, `b2b/accounting` (facture), `b2b/payments` (mandat), `production` (dossier), `staff`, puis les isolés (`alerts`, `growth`, `vitrine`, `sub-account-notices`, `platform/mailer`) ; la dette de `lint:mail-through-block` descend jusqu'à 0                                                                                                                                                   | selon le bloc                                                                                                           |
+| **S2b**  | ✅ bâti le 2026-11-06 (§ 10) : le bloc `b2b/account` (5 envoyeurs) ; `sendNow` pour l'ouverture d'accès et le lien de mot de passe, `request` pour le reste ; dette 20 → 15                                                                                                                                                                                                                                                                            | la demande de rappel et l'alerte de rattachement partent après la validation, par le bloc                               |
+| **S2c…** | à venir, un bloc à la fois : `b2b/contact`, `b2b/accounting` (facture), `b2b/payments` (mandat), `production` (dossier), `staff`, puis les isolés (`alerts`, `growth`, `vitrine`, `sub-account-notices`, `platform/mailer`) ; la dette de `lint:mail-through-block` descend jusqu'à 0                                                                                                                                                                  | selon le bloc                                                                                                           |
 | **S3**   | Déménager les gabarits, le dictionnaire et les sections de `platform/mailer/` dans le bloc. **Restent dans `platform/mailer/`** : `webhook/` (lu par `ops`), `inbound/` et `journal/`, techniques. Les trois tables `public.mail_*` **restent dans `public`** : seul leur écrivain change (de `b2b/mail-copy` au bloc `mail`), dans le même déploiement que leur lecteur. Les tables neuves du bloc vont dans son schéma                               | rien                                                                                                                    |
 | **S4**   | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                                                     | rien tant que rien n'est publié                                                                                         |
 | **S5**   | L'éditeur au back-office : ajouter, retirer, ordonner, écrire, insérer une variable, aperçu, essai, publier, versions, trois langues côte à côte ; le droit dédié                                                                                                                                                                                                                                                                                      | l'équipe compose ses e-mails                                                                                            |
@@ -207,39 +211,39 @@ fichier coché est retiré de la dette, et la porte échoue s'il y reste. Le
 geste est celui **prévu** ; le bâti de chaque lot le confirme et dit
 pourquoi. Chemins sous `apps/lfd-api/src/`.
 
-| Lot | Fichier                                                                     | Geste prévu                                                           | État |
-| --- | --------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---- |
-| S2a | `b2b/orders/application/commands/resend-order-payment-link.handler.ts`      | `sendNow` — geste du staff sans écriture, l'échec s'affiche à l'agent | ✅   |
-| S2a | `b2b/orders/application/commands/warn-customer-of-delay.handler.ts`         | `request`                                                             | ✅   |
-| S2a | `b2b/orders/application/commands/write-shortfall-letter.handler.ts`         | `request`                                                             | ✅   |
-| S2a | `b2b/orders/application/handlers/send-guest-order-notice.handler.ts`        | `request` (abonné durable)                                            | ✅   |
-| S2a | `b2b/orders/application/handlers/send-order-cancelled-mail.handler.ts`      | `request` (abonné durable)                                            | ✅   |
-| S2a | `b2b/orders/application/handlers/send-order-placed-mail.handler.ts`         | `request` (abonné durable, PDF par référence)                         | ✅   |
-| S2a | `b2b/orders/application/handlers/send-payment-expired-mail.handler.ts`      | `request` (abonné durable)                                            | ✅   |
-| S2a | `b2b/orders/application/handlers/send-payment-failed-mail.handler.ts`       | `request` (abonné durable)                                            | ✅   |
-| S2a | `b2b/orders/application/services/delivery-en-route-mail.service.ts`         | `request` — délai à mesurer                                           | ✅   |
-| S2a | `b2b/orders/application/services/order-placed-mail.service.ts`              | `request` (PDF par référence)                                         | ✅   |
-| S2a | `b2b/orders/application/services/order-ready-mail.service.ts`               | `request` — délai à mesurer                                           | ✅   |
-| S2b | `b2b/account/application/handlers/mail-support-requested.handler.ts`        | `request`                                                             | ⬜   |
-| S2b | `b2b/account/application/handlers/send-login-method-linked-mail.handler.ts` | `request` (abonné durable)                                            | ⬜   |
-| S2b | `b2b/account/application/services/grant-account-access.service.ts`          | `sendNow` (l'écran lit `mailSent`)                                    | ⬜   |
-| S2b | `b2b/account/infrastructure/auth0-customer-identity.ts`                     | à trancher au bâti                                                    | ⬜   |
-| S2b | `b2b/account/infrastructure/dev-customer-identity.ts`                       | à trancher au bâti (double de dev)                                    | ⬜   |
-| S2c | `b2b/contact/application/handlers/mail-customer-request.handler.ts`         | `request` (`replyTo`)                                                 | ⬜   |
-| S2c | `b2b/contact/application/handlers/mail-order-change-applied.handler.ts`     | `request`                                                             | ⬜   |
-| S2c | `b2b/contact/application/handlers/mail-order-change-refused.handler.ts`     | `request`                                                             | ⬜   |
-| S2d | `b2b/accounting/application/services/collection-notice-sender.ts`           | `request`                                                             | ⬜   |
-| S2d | `b2b/accounting/application/services/invoice-notice-sender.ts`              | `request` (facture par référence)                                     | ⬜   |
-| S2e | `b2b/payments/application/commands/send-mandate.handler.ts`                 | `request` (mandat par référence)                                      | ⬜   |
-| S2f | `production/application/services/dossier-dispatch.service.ts`               | `request` (dossier par référence)                                     | ⬜   |
-| S2g | `staff/directory/application/set-staff-status.handler.ts`                   | à trancher au bâti                                                    | ⬜   |
-| S2g | `staff/invitations/open-staff-access.service.ts`                            | `sendNow` (l'écran lit `mailSent`)                                    | ⬜   |
-| S2h | `b2b/alerts/application/handlers/dispatch-alert-channels.service.ts`        | `request`                                                             | ⬜   |
-| S2h | `b2b/growth/infrastructure/mail-appointment-booked-alert.ts`                | `request`                                                             | ⬜   |
-| S2h | `b2b/sub-account-notices/application/services/principal-notice.sender.ts`   | `request`                                                             | ⬜   |
-| S2h | `b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`             | `sendNow` (l'écran lit `mailSent`)                                    | ⬜   |
-| S2h | `b2b/mail-copy/infrastructure/specimen-mail-trial.sender.ts`                | `sendNow` (l'essai)                                                   | ⬜   |
-| S2h | `platform/mailer/admin-mail-check.controller.ts`                            | `sendNow` (la sonde)                                                  | ⬜   |
+| Lot | Fichier                                                                                                 | Geste prévu                                                              | État |
+| --- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---- |
+| S2a | `b2b/orders/application/commands/resend-order-payment-link.handler.ts`                                  | `sendNow` — geste du staff sans écriture, l'échec s'affiche à l'agent    | ✅   |
+| S2a | `b2b/orders/application/commands/warn-customer-of-delay.handler.ts`                                     | `request`                                                                | ✅   |
+| S2a | `b2b/orders/application/commands/write-shortfall-letter.handler.ts`                                     | `request`                                                                | ✅   |
+| S2a | `b2b/orders/application/handlers/send-guest-order-notice.handler.ts`                                    | `request` (abonné durable)                                               | ✅   |
+| S2a | `b2b/orders/application/handlers/send-order-cancelled-mail.handler.ts`                                  | `request` (abonné durable)                                               | ✅   |
+| S2a | `b2b/orders/application/handlers/send-order-placed-mail.handler.ts`                                     | `request` (abonné durable, PDF par référence)                            | ✅   |
+| S2a | `b2b/orders/application/handlers/send-payment-expired-mail.handler.ts`                                  | `request` (abonné durable)                                               | ✅   |
+| S2a | `b2b/orders/application/handlers/send-payment-failed-mail.handler.ts`                                   | `request` (abonné durable)                                               | ✅   |
+| S2a | `b2b/orders/application/services/delivery-en-route-mail.service.ts`                                     | `request` — délai à mesurer                                              | ✅   |
+| S2a | `b2b/orders/application/services/order-placed-mail.service.ts`                                          | `request` (PDF par référence)                                            | ✅   |
+| S2a | `b2b/orders/application/services/order-ready-mail.service.ts`                                           | `request` — délai à mesurer                                              | ✅   |
+| S2b | `b2b/account/application/services/support-requested-mail.service.ts` (ex-abonné `MailSupportRequested`) | `request` — depuis la commande du dépôt, plus d'abonné en mémoire (§ 10) | ✅   |
+| S2b | `b2b/account/application/handlers/send-login-method-linked-mail.handler.ts`                             | `request` (abonné durable)                                               | ✅   |
+| S2b | `b2b/account/application/services/grant-account-access.service.ts`                                      | `sendNow` (l'écran lit `mailSent`)                                       | ✅   |
+| S2b | `b2b/account/infrastructure/auth0-customer-identity.ts`                                                 | `sendNow` — tranché : le lien de mot de passe (§ 10)                     | ✅   |
+| S2b | `b2b/account/infrastructure/dev-customer-identity.ts`                                                   | `sendNow` — même forme que l'adaptateur Auth0                            | ✅   |
+| S2c | `b2b/contact/application/handlers/mail-customer-request.handler.ts`                                     | `request` (`replyTo`)                                                    | ⬜   |
+| S2c | `b2b/contact/application/handlers/mail-order-change-applied.handler.ts`                                 | `request`                                                                | ⬜   |
+| S2c | `b2b/contact/application/handlers/mail-order-change-refused.handler.ts`                                 | `request`                                                                | ⬜   |
+| S2d | `b2b/accounting/application/services/collection-notice-sender.ts`                                       | `request`                                                                | ⬜   |
+| S2d | `b2b/accounting/application/services/invoice-notice-sender.ts`                                          | `request` (facture par référence)                                        | ⬜   |
+| S2e | `b2b/payments/application/commands/send-mandate.handler.ts`                                             | `request` (mandat par référence)                                         | ⬜   |
+| S2f | `production/application/services/dossier-dispatch.service.ts`                                           | `request` (dossier par référence)                                        | ⬜   |
+| S2g | `staff/directory/application/set-staff-status.handler.ts`                                               | à trancher au bâti                                                       | ⬜   |
+| S2g | `staff/invitations/open-staff-access.service.ts`                                                        | `sendNow` (l'écran lit `mailSent`)                                       | ⬜   |
+| S2h | `b2b/alerts/application/handlers/dispatch-alert-channels.service.ts`                                    | `request`                                                                | ⬜   |
+| S2h | `b2b/growth/infrastructure/mail-appointment-booked-alert.ts`                                            | `request`                                                                | ⬜   |
+| S2h | `b2b/sub-account-notices/application/services/principal-notice.sender.ts`                               | `request`                                                                | ⬜   |
+| S2h | `b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`                                         | `sendNow` (l'écran lit `mailSent`)                                       | ⬜   |
+| S2h | `b2b/mail-copy/infrastructure/specimen-mail-trial.sender.ts`                                            | `sendNow` (l'essai)                                                      | ⬜   |
+| S2h | `platform/mailer/admin-mail-check.controller.ts`                                                        | `sendNow` (la sonde)                                                     | ⬜   |
 
 ### 4. Tranché par `vitruve` (2026-11-06)
 
@@ -463,3 +467,45 @@ désormais dans sa transaction, via `OrderReadyMail`.
 
 **Non mesuré** : le délai ajouté sur « commande prête » et « livreur en
 route » (un saut de plus par la boîte d'envoi).
+
+## 10. S2b — bâti le 2026-11-06 : `b2b/account`
+
+| Fichier                                                                | Geste     | Raison                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `support-requested-mail.service` (ex-`mail-support-requested.handler`) | `request` | voir le premier écart ci-dessous                                                                                                                                                                                                                                                   |
+| `send-login-method-linked-mail.handler` (durable)                      | `request` | dans la transaction de livraison, comme S2a                                                                                                                                                                                                                                        |
+| `grant-account-access.service`                                         | `sendNow` | l'écran lit `mailSent` (ouvrir un accès, rattacher un détenteur, créer une société, inviter un membre) ; aucun des quatre appelants n'appelle `grant` sous une unité de travail (relu le 2026-11-06)                                                                               |
+| `auth0-customer-identity`                                              | `sendNow` | il envoie `customer.password-reset`, le lien que la personne demande elle-même (`RequestPasswordResetHandler`, hors transaction) ; l'échec doit atteindre son écran, et `request` écrirait le lien — un secret — dans le fait `mail.requested` de la boîte d'envoi, gardé 30 jours |
+| `dev-customer-identity`                                                | `sendNow` | le double de dev garde la forme de la production                                                                                                                                                                                                                                   |
+
+### Écarts au texte, à relire
+
+- **La demande de rappel n'a plus d'abonné.** `MailSupportRequested` écoutait
+  `SupportRequestedEvent` en mémoire ; appeler `MailRequests` depuis là est
+  refusé par `lint:durable-cross-block` (un abonné en mémoire qui appelle le
+  port d'un autre bloc). Il est devenu `SupportRequestedMail`, appelé par
+  `RequestActivationSupportHandler` dans une unité de travail ouverte autour
+  de `support.record` — la forme d'« Avertir le client » (S2a). **Changement
+  de sens** : un échec de la DEMANDE d'e-mail fait désormais échouer le dépôt
+  (la demande de contact est annulée avec lui), là où une panne d'envoi était
+  avalée ; un échec d'ENVOI se lit au suivi. Sans boîte d'équipe configurée,
+  rien n'est demandé, comme avant.
+- **`mailSent` garde son sens** : « accepté par Resend ». Il valait
+  `mailer.enabled` après un envoi réussi ; il vaut désormais
+  `receipt.providerId !== null`, que le mailer à blanc rend `null`. Seul cas
+  divergent : un envoi accepté dont Resend ne rendrait pas d'identifiant,
+  annoncé « non envoyé ».
+- **Clés d'idempotence par GESTE pour `sendNow`.** Le bloc garde une clé un an
+  et rend le reçu d'une clé déjà envoyée sans renvoyer : une clé stable par
+  compte aurait fait qu'un second « ouvrir l'accès » ou une seconde demande
+  de lien ne renvoie rien — alors que chacun fabrique un lien neuf. D'où
+  `account.access-opened:<userId>:<companyId>:<id>`,
+  `account.company-attached:…` et `account.password-reset:<id>`, l'`<id>`
+  venant de l'`IdGenerator` ; ni adresse ni `sub`.
+- **L'alerte de rattachement change de clé** :
+  `login_method.linked:<userId>:<provider>:<eventId>`. L'ancienne clé (sans
+  l'identifiant du fait) ne dédoublonnait que sur les 24 h de Resend ; gardée
+  un an par le bloc, elle aurait tu l'alerte d'un second rattachement de la
+  même méthode — la seule alerte de ce geste.
+- **Non changé** : `attach-account-holder` envoie (par `grant`) AVANT son
+  `uow.run` qui enregistre la société ; c'était déjà le cas.
