@@ -212,3 +212,14 @@ Les questions posées ici sont répondues au § 6.
 
 **Non vérifié** (reporté de `vitruve`) : la taille d'une facture en base64 ;
 les composeurs de `LayoutInput` hors de `platform/mailer`.
+
+## 7. Tranché par Hugo le 2026-11-06, après S1
+
+- **Purge de l'outbox** : une ligne livrée est supprimée **30 jours** après
+  sa livraison ; un message mort reste jusqu'à son rejeu ou son abandon. À
+  bâtir avant S2, qui en fait grossir le volume.
+- **Le destinataire d'un e-mail** entre au registre RGPD
+  (`documentation/legal/rgpd-registre.json`) dans une catégorie **client**,
+  neuve.
+- **Le suivi des envois** (`mail.mail_request`) se conserve **1 an**, puis se
+  purge.
