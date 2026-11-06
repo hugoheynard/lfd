@@ -234,7 +234,7 @@ bâti.
   réservations en mémoire, filtrées en code — est écartée : une erreur de
   filtre y serait une fuite entre sociétés.
 - **Les textes alternatifs des images d'opération** (`withLibraryAlts`,
-  médiathèque, `prisma-catalog-operations.reader.ts:58`) : un autre bloc, que
+  médiathèque, `prisma-catalog-operations.reader.ts`) : un autre bloc, que
   l'estampille ne voit pas. Ils restent lus à part, sur le chemin du rayon
   seulement, et **comptés** dans le budget.
 
