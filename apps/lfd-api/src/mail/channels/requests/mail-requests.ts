@@ -68,8 +68,8 @@ type Every<B> = [B] extends [true] ? true : false;
  *
  * `store` nomme le stockage où la pièce est rangée. Seul celui des pièces
  * attachées à un client est ouvert au 2026-11-06 (le bon de commande, la
- * facture) ; celui
- * du fournil s'ouvrira avec le dossier du jour.
+ * facture) ; le dossier du fournil n'y passe pas : il part en `sendNow`
+ * (lot S2f).
  */
 export interface StoredPdf {
   readonly store: "customer-documents";
@@ -97,7 +97,7 @@ export type ByReference<T> = T extends string | number | boolean | null | undefi
  * Les modèles à PDF ouverts à `request`, leur pièce passant par référence.
  * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a) et la
  * facture Factur-X, rangée au même stockage sous `Invoice.documentKey` (lot
- * S2d). Le dossier du fournil s'ouvrira avec son bloc. Le mandat RESTE fermé :
+ * S2d). Le dossier du fournil RESTE fermé (S2f). Le mandat RESTE fermé :
  * son seul envoyeur passe par `sendNow` (lot S2e, le fait lit le reçu).
  */
 type OpenedByReference = "customer.order-placed" | "customer.invoice-issued";
@@ -108,7 +108,7 @@ type OpenedByReference = "customer.order-placed" | "customer.invoice-issued";
  * un PDF, seulement ceux que {@link OpenedByReference} ouvre. Au 2026-11-06,
  * deux en restent exclus (`customer.mandate-to-sign`,
  * `staff.production-dossier`) : ils n'ont que
- * `sendNow` — le mandat par choix (S2e), le dossier d'ici le passage de son bloc.
+ * `sendNow` — le mandat (S2e) et le dossier (S2f) par choix : leur appelant lit le reçu.
  */
 export type DeferrableMailTemplate = {
   [K in keyof B2bMails]: Every<DefersIntact<B2bMails[K]>> extends true

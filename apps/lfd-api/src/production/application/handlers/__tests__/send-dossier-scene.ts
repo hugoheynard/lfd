@@ -2,7 +2,7 @@ import type { Buffer } from "node:buffer";
 
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { instantToLocal } from "@lfd/contracts";
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
+import type { MailReceipt } from "@lfd/mailer";
 
 import { AmbientAfterCommit } from "../../../../platform/database/after-commit.js";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../../../../platform/database/transaction.store.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
+import type { MailDemand } from "../../../../mail/channels/requests/mail-requests.js";
 import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
 import type { DurableSubscriber } from "../../../../platform/outbox/durable-handler.js";
 import type { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
@@ -32,7 +33,7 @@ import {
   DispatchTable,
   NoAdminOrigin,
   OneDay,
-  RecordingMailer,
+  RecordingDossierMails,
   Shelves,
 } from "../../__tests__/dossier-dispatch-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
@@ -122,12 +123,12 @@ export const GUARD_TX = {};
 export const settle = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
 /** Note, à chaque envoi, s'il part sous une transaction ambiante. */
-export class TransactionWitnessMailer extends RecordingMailer {
+export class TransactionWitnessMailer extends RecordingDossierMails {
   readonly underTransaction: boolean[] = [];
 
-  override send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
+  override sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
     this.underTransaction.push(currentTransaction() !== undefined);
-    return super.send(args);
+    return super.sendNow(demand);
   }
 }
 

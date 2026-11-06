@@ -9,7 +9,8 @@ import type { ByReference, DeferrableMailTemplate } from "../mail-requests.js";
  */
 const NOT_DEFERRABLE: Record<Exclude<keyof B2bMails, DeferrableMailTemplate>, string> = {
   "customer.mandate-to-sign": "le mandat joint (pdfBase64) — envoyé par `sendNow` seulement (S2e)",
-  "staff.production-dossier": "le dossier du jour joint (pdfBase64)",
+  "staff.production-dossier":
+    "le dossier du jour joint (pdfBase64) — envoyé par `sendNow` seulement (S2f)",
 };
 
 /**

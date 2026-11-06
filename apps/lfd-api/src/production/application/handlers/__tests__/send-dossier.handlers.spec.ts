@@ -56,6 +56,21 @@ describe("l'envoi du dossier à l'arrêt", () => {
     ]);
   });
 
+  /**
+   * Lot S2f : le dossier passe par le bloc `mail`, sur-le-champ — la trace,
+   * le journal et la cloche lisent l'issue de chaque envoi.
+   */
+  it("envoie par `sendNow` (jamais `request`), le PDF en octets, sous la marque de la boutique", async () => {
+    const { closed, mailer } = setup([PAUL]);
+    await closed.handle(closure());
+
+    expect(mailer.requested).toEqual([]);
+    expect(mailer.sent).toHaveLength(1);
+    expect(mailer.sent[0]?.brand).toBe("lfc");
+    expect(JSON.stringify(mailer.sent[0]?.data)).toContain('"pdfBase64":"');
+    expect(JSON.stringify(mailer.sent[0]?.data)).not.toContain("pdfStored");
+  });
+
   it.each([
     ["par qui l'a arrêté", staffSigner("staff-1", "Marie Dupont"), "par Marie Dupont"],
     ["« automatiquement »", AUTOMATIC_SIGNER, "automatiquement"],

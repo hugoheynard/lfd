@@ -1,7 +1,7 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
+import { MailRequests } from "../../../mail/channels/requests/mail-requests.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
-import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffContacts } from "../../../staff/directory/domain/staff-contacts.js";
 import { signedBy, staffSigner } from "../../domain/entities/plan-signer.js";
@@ -72,6 +72,17 @@ interface DispatchTally {
  * `settle` sont validés chacun seul, si bien qu'aucune transaction annulée
  * n'efface plus la trace d'un e-mail parti.
  *
+ * ## Par le bloc `mail`, en `sendNow` (lot S2f, 2026-11-06)
+ *
+ * L'issue de chaque envoi est lue sur-le-champ : la trace la note (`sent` et
+ * l'identifiant du fournisseur, ou `failed`), le fait du journal compte les
+ * envoyés et les refusés, et la cloche nomme ceux qui n'ont rien reçu. Une
+ * demande différée (`request`) viderait ces trois lectures de leur sens.
+ * `deliver` tourne déjà hors transaction (la file d'après validation sort du
+ * contexte), là où `sendNow` est permis ; le PDF part donc en octets, sans
+ * passer par la boîte d'envoi ni par le stockage. La clé d'idempotence est par
+ * occasion (clôture ou retirage) et par ligne de la liste, sans adresse.
+ *
  * ## Échec
  *
  * - **Le papier ne se fabrique pas** : personne ne reçoit rien, et la cloche
@@ -95,7 +106,7 @@ export class DossierDispatch {
     private readonly staff: StaffContacts,
     private readonly papers: ProductionPapers,
     private readonly log: DossierDispatchLog,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
     private readonly bell: PlanArrestBell,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -210,8 +221,9 @@ export class DossierDispatch {
     }
     const counts = dossierCountsOf(day.orders, day.resupplies);
     try {
-      const receipt = await this.mailer.send({
+      const receipt = await this.mails.sendNow({
         to: addressee.email,
+        brand: "lfc",
         template: "staff.production-dossier",
         data: {
           firstName: addressee.firstName,

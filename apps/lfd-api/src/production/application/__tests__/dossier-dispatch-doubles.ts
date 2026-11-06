@@ -1,8 +1,12 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
+import type { MailReceipt } from "@lfd/mailer";
 
+import {
+  RecordingMailRequests,
+  type RecordedMail,
+} from "../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import type { MailDemand } from "../../../mail/channels/requests/mail-requests.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
-import type { B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
 import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
 import {
   StaffNotifier,
@@ -59,18 +63,23 @@ function keyOf(slot: DossierDispatchSlot): string {
   return `${slot.serviceDay}|${slot.occasionAt.toISOString()}|${slot.recipientId}`;
 }
 
-/** Le mailer doublé : il garde ce qu'on lui confie, et refuse les adresses désignées. */
-export class RecordingMailer implements B2bMailer {
-  readonly enabled = true;
-  readonly sent: SendMailArgs<B2bMails>[] = [];
+/**
+ * La porte du bloc `mail` doublée (lot S2f) : elle garde ce qu'on lui envoie
+ * sur-le-champ, et refuse les adresses désignées comme le ferait le
+ * fournisseur.
+ */
+export class RecordingDossierMails extends RecordingMailRequests {
   readonly refused = new Set<string>();
 
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    if (this.refused.has(args.to)) {
+  get sent(): readonly RecordedMail[] {
+    return this.sentNow;
+  }
+
+  override sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+    if (this.refused.has(demand.to)) {
       return Promise.reject(new RangeError("adresse refusée par le fournisseur"));
     }
-    this.sent.push(args);
-    return Promise.resolve({ providerId: `re_${String(this.sent.length)}` });
+    return super.sendNow(demand);
   }
 }
 

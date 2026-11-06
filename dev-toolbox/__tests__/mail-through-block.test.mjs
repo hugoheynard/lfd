@@ -63,7 +63,7 @@ test("admis : le bloc mail et le module du mailer ne comptent pas", () => {
   assert.deepEqual(verdict(files, [], admitted), { failures: [], remaining: [] });
 });
 
-test("la dette compte 9 envoyeurs après S2e (31 relevés le 2026-11-06, moins les 11 de b2b/orders, les 5 de b2b/account, les 3 de b2b/contact, les 2 de b2b/accounting et le mandat de b2b/payments), sans doublon", () => {
-  assert.equal(DEBT.length, 9);
-  assert.equal(new Set(DEBT).size, 9);
+test("la dette compte 8 envoyeurs après S2f (31 relevés le 2026-11-06, moins les 11 de b2b/orders, les 5 de b2b/account, les 3 de b2b/contact, les 2 de b2b/accounting le mandat de b2b/payments et le dossier de production), sans doublon", () => {
+  assert.equal(DEBT.length, 8);
+  assert.equal(new Set(DEBT).size, 8);
 });
