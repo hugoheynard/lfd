@@ -1,5 +1,25 @@
 # Un onglet apprend qu'une nouvelle version est en ligne
 
+> 🟡 **Révisé le 2026-11-06** (Hugo : « je voudrais que mes fronts et admin
+> sachent qu'une nouvelle version a été déployée et gèrent le cas pour que le
+> client puisse naviguer sans s'en rendre compte »), non commité à l'écriture :
+>
+> - la bascule se décide à **`GuardsCheckEnd`** positif, plus à
+>   `RoutesRecognized` : un `canDeactivate` peut encore refuser ;
+> - une navigation **`skipLocationChange`** ne recharge jamais : la bascule
+>   d'espace de la boutique traverse `/changement-d-espace` sans toucher à
+>   l'adresse, et la charger en entier laissait la personne devant cet écran
+>   vide — cause probable de l'onglet « bloqué au changement d'espace ». Le
+>   filet (`stale-bundle`) recharge alors l'adresse affichée ;
+> - relecture aussi au départ d'une navigation si la dernière date de plus
+>   d'une minute ; la valeur `dev` n'arme jamais rien ;
+> - la garde anti-boucle est **par adresse** (`reloadGuardKey`) ;
+> - le **back-office recharge à la navigation** comme la boutique ; le bandeau
+>   ne s'affiche plus que sur les routes `data.newVersion: "banner"`
+>   (`/coursier`) — décision Q1 maintenue, à confirmer ;
+> - le fichier de version est servi `Cache-Control: no-store` (`public/_headers` des
+>   deux fronts).
+
 > 🟡 **Bâti le 2026-10-08, pas encore vu en production** (non commité à
 > l'écriture de ce bandeau).
 >

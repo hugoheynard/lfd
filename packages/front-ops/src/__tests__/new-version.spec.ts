@@ -1,10 +1,14 @@
 import {
   fetchServedBuild,
+  DEV_BUILD,
   isNewBuild,
+  isReadStale,
+  NEW_VERSION_NAVIGATION_READ_MS,
   NEW_VERSION_BANNER,
   newVersionModeOf,
   parseVersionFile,
   readBuildMeta,
+  shouldReloadAfterGuards,
   shouldReloadOnNavigation,
   versionFileUrl,
   type MetaReader,
@@ -114,5 +118,48 @@ describe("newVersionModeOf", () => {
   });
   it("rien de posé → undefined", () => {
     expect(newVersionModeOf(node({}, node({})))).toBeUndefined();
+  });
+});
+
+describe("la valeur de développement", () => {
+  it("une balise « dev » n'arme pas la veille", () => {
+    expect(readBuildMeta(docWith(DEV_BUILD))).toBeNull();
+  });
+  it("un fichier servi « dev » n'annonce jamais une version neuve", () => {
+    expect(isNewBuild("a", DEV_BUILD)).toBe(false);
+    expect(isNewBuild(DEV_BUILD, "a")).toBe(false);
+  });
+});
+
+describe("isReadStale", () => {
+  const NOW = 5_000_000;
+  it("jamais lu → relire", () => expect(isReadStale(null, NOW)).toBe(true));
+  it("lu à l'instant → ne pas relire", () => {
+    expect(isReadStale(NOW - NEW_VERSION_NAVIGATION_READ_MS + 1, NOW)).toBe(false);
+  });
+  it("lu il y a longtemps → relire", () => {
+    expect(isReadStale(NOW - NEW_VERSION_NAVIGATION_READ_MS, NOW)).toBe(true);
+  });
+});
+
+describe("shouldReloadAfterGuards", () => {
+  const passed = { shouldActivate: true, skipLocationChange: false, targetMode: undefined };
+
+  it("gardes passées, version neuve → recharge", () => {
+    expect(shouldReloadAfterGuards(true, passed)).toBe(true);
+  });
+  it("une garde refuse (formulaire non enregistré) → ne recharge pas", () => {
+    expect(shouldReloadAfterGuards(true, { ...passed, shouldActivate: false })).toBe(false);
+  });
+  it("même version → ne recharge pas", () => {
+    expect(shouldReloadAfterGuards(false, passed)).toBe(false);
+  });
+  it("navigation qui ne touche pas l'adresse (détour de bascule) → ne recharge pas", () => {
+    expect(shouldReloadAfterGuards(true, { ...passed, skipLocationChange: true })).toBe(false);
+  });
+  it("route à bandeau → ne recharge pas", () => {
+    expect(shouldReloadAfterGuards(true, { ...passed, targetMode: NEW_VERSION_BANNER })).toBe(
+      false,
+    );
   });
 });

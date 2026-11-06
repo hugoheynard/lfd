@@ -57,10 +57,12 @@ export const appConfig: ApplicationConfig = {
     // se recharge une fois, au lieu de laisser croire au « compte bloqué »
     // (2026-09-28, aucun journal n'en gardait trace).
     provideStaleBundleReload(),
-    // Une version neuve en ligne s'annonce par le bandeau, jamais par un
-    // rechargement à la navigation : la personne finit son opération et
-    // recharge (Hugo, 2026-10-14 ; plan-nouvelle-version-des-fronts.md, N3).
-    provideNewVersionWatch({ reloadOnNavigation: false }),
+    // Une version neuve en ligne se prend à la navigation suivante, après les
+    // gardes (un formulaire non enregistré peut encore retenir), sans bandeau
+    // (Hugo, 2026-11-06 : « naviguer sans s'en rendre compte » ; remplace le
+    // bandeau partout du 2026-10-14). Seules les routes `data.newVersion:
+    // "banner"` (`/coursier`) gardent le bandeau et ne rechargent pas.
+    provideNewVersionWatch(),
     // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
     // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
     // dans 9 fichiers), et « More information » partait en anglais au lecteur

@@ -8,3 +8,10 @@
 # sa base.
 /*
   ! Link
+
+# Le fichier de version (plan-nouvelle-version-des-fronts.md, N1) : un onglet
+# le relit pour savoir si une version neuve est en ligne. Jamais en cache, ni
+# chez le navigateur ni entre les deux — une réponse gardée ferait croire à
+# l'onglet qu'il est à jour.
+/version.json
+  Cache-Control: no-store

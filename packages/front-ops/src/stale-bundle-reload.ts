@@ -2,7 +2,13 @@ import { inject, provideEnvironmentInitializer } from "@angular/core";
 import type { EnvironmentProviders } from "@angular/core";
 import { NavigationError, Router } from "@angular/router";
 
-import { isStaleBundleError, shouldReload, type ReloadGuardStore } from "./stale-bundle.js";
+import { trackSkipLocationChange } from "./skip-location-change.js";
+import {
+  isStaleBundleError,
+  reloadTargetOf,
+  shouldReload,
+  type ReloadGuardStore,
+} from "./stale-bundle.js";
 
 /**
  * **Un onglet resté sur une version retirée se recharge une fois, tout seul.**
@@ -16,7 +22,10 @@ import { isStaleBundleError, shouldReload, type ReloadGuardStore } from "./stale
  *   traitée.
  *
  * Le rechargement vise l'adresse que la personne demandait, pas celle qu'elle
- * quittait : une navigation ratée ne l'a pas encore changée dans la barre.
+ * quittait : une navigation ratée ne l'a pas encore changée dans la barre. Sauf
+ * une navigation qui ne touche pas l'adresse (`reloadTargetOf`) : on recharge
+ * alors ce que montre la barre. La garde anti-boucle est par adresse : au
+ * second échec sur la même adresse, l'erreur suit son cours normal.
  */
 export function provideStaleBundleReload(): EnvironmentProviders {
   return provideEnvironmentInitializer(() => {
@@ -25,28 +34,34 @@ export function provideStaleBundleReload(): EnvironmentProviders {
       return;
     }
     const router = inject(Router);
+    const skippedLocation = trackSkipLocationChange(router);
     router.events.subscribe((event) => {
       if (event instanceof NavigationError && isStaleBundleError(event.error)) {
-        reload(event.url);
+        reload(reloadTargetOf(event.url, skippedLocation(event.id), shownUrl()));
       }
     });
     window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
       if (isStaleBundleError(event.reason)) {
-        reload(null);
+        reload(shownUrl());
       }
     });
   });
 }
 
-function reload(targetUrl: string | null): void {
-  if (!shouldReload(sessionStorageOrNull(), Date.now())) {
+function reload(target: string): void {
+  if (!shouldReload(sessionStorageOrNull(), Date.now(), target)) {
     return;
   }
-  if (targetUrl === null) {
+  // `assign` de l'adresse affichée, à une ancre près, ne recharge rien.
+  if (target === shownUrl()) {
     window.location.reload();
   } else {
-    window.location.assign(targetUrl);
+    window.location.assign(target);
   }
+}
+
+function shownUrl(): string {
+  return window.location.pathname + window.location.search + window.location.hash;
 }
 
 function sessionStorageOrNull(): ReloadGuardStore | null {

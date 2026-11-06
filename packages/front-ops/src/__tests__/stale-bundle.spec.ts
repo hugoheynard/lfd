@@ -1,6 +1,7 @@
 import {
   isStaleBundleError,
-  RELOAD_GUARD_KEY,
+  reloadGuardKey,
+  reloadTargetOf,
   RELOAD_GUARD_MS,
   shouldReload,
   type ReloadGuardStore,
@@ -58,32 +59,56 @@ describe("isStaleBundleError", () => {
 
 describe("shouldReload", () => {
   const NOW = 1_000_000;
+  const TARGET = "/commandes";
+  const KEY = reloadGuardKey(TARGET);
 
   it("recharge la première fois et note l'instant", () => {
     const store = memoryStore();
 
-    expect(shouldReload(store, NOW)).toBe(true);
-    expect(store.values[RELOAD_GUARD_KEY]).toBe(String(NOW));
+    expect(shouldReload(store, NOW, TARGET)).toBe(true);
+    expect(store.values[KEY]).toBe(String(NOW));
   });
 
   it("ne recharge pas une seconde fois dans l'intervalle — pas de boucle", () => {
-    const store = memoryStore({ [RELOAD_GUARD_KEY]: String(NOW) });
+    const store = memoryStore({ [KEY]: String(NOW) });
 
-    expect(shouldReload(store, NOW + RELOAD_GUARD_MS - 1)).toBe(false);
+    expect(shouldReload(store, NOW + RELOAD_GUARD_MS - 1, TARGET)).toBe(false);
   });
 
   it("recharge de nouveau une fois l'intervalle passé — un déploiement suivant", () => {
-    const store = memoryStore({ [RELOAD_GUARD_KEY]: String(NOW) });
+    const store = memoryStore({ [KEY]: String(NOW) });
 
-    expect(shouldReload(store, NOW + RELOAD_GUARD_MS)).toBe(true);
+    expect(shouldReload(store, NOW + RELOAD_GUARD_MS, TARGET)).toBe(true);
   });
 
   it("tient une valeur illisible pour « jamais rechargé »", () => {
-    expect(shouldReload(memoryStore({ [RELOAD_GUARD_KEY]: "abc" }), NOW)).toBe(true);
+    expect(shouldReload(memoryStore({ [KEY]: "abc" }), NOW, TARGET)).toBe(true);
   });
 
   it("recharge quand le stockage refuse, plutôt que laisser l'onglet mort", () => {
-    expect(shouldReload(refusingStore, NOW)).toBe(true);
-    expect(shouldReload(null, NOW)).toBe(true);
+    expect(shouldReload(refusingStore, NOW, TARGET)).toBe(true);
+    expect(shouldReload(null, NOW, TARGET)).toBe(true);
+  });
+
+  it("tient sa garde PAR ADRESSE — un autre écran se recharge encore", () => {
+    const store = memoryStore({ [KEY]: String(NOW) });
+
+    expect(shouldReload(store, NOW + 1, "/compte")).toBe(true);
+    expect(shouldReload(store, NOW + 2, TARGET)).toBe(false);
+  });
+});
+
+describe("reloadTargetOf", () => {
+  it("vise l'adresse demandée d'une navigation ordinaire", () => {
+    expect(reloadTargetOf("/commandes", false, "/accueil")).toBe("/commandes");
+  });
+
+  /**
+   * Régression : la bascule d'espace de la boutique traverse
+   * `/changement-d-espace` sans toucher à l'adresse ; le charger en entier
+   * laissait la personne devant un écran vide (2026-11-06).
+   */
+  it("recharge l'adresse affichée quand la navigation ne touche pas l'adresse", () => {
+    expect(reloadTargetOf("/changement-d-espace", true, "/catalogue?x=1")).toBe("/catalogue?x=1");
   });
 });

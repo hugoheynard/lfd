@@ -7,17 +7,19 @@ import {
   type Signal,
   type WritableSignal,
 } from "@angular/core";
-import { Router, RoutesRecognized } from "@angular/router";
+import { GuardsCheckEnd, NavigationStart, Router } from "@angular/router";
 
 import {
   fetchServedBuild,
   isNewBuild,
+  isReadStale,
   NEW_VERSION_POLL_MS,
   newVersionModeOf,
   readBuildMeta,
-  shouldReloadOnNavigation,
+  shouldReloadAfterGuards,
   type NewVersionWatchOptions,
 } from "./new-version.js";
+import { trackSkipLocationChange } from "./skip-location-change.js";
 import { shouldReload, type ReloadGuardStore } from "./stale-bundle.js";
 
 const NEW_VERSION_STATE = new InjectionToken<WritableSignal<boolean>>("lfd.new-version-state", {
@@ -37,15 +39,22 @@ export const NEW_VERSION = new InjectionToken<Signal<boolean>>("lfd.new-version"
 
 /**
  * **Un onglet apprend qu'une nouvelle version est en ligne, et la prend à la
- * navigation suivante.** Voir `new-version.ts`.
+ * navigation suivante, sans qu'on s'en rende compte.** Voir `new-version.ts`.
  *
- * On ne recharge jamais au milieu d'un écran — un formulaire en cours n'est pas
- * perdu : le rechargement attend que la personne change d'écran, et vise
- * l'adresse qu'elle demandait. La décision se prend à `RoutesRecognized`, le
- * premier événement qui connaît la route cible et donc sa `data`.
+ * On relit le fichier de version au retour de l'onglet au premier plan, toutes
+ * les 5 min onglet visible, et au départ d'une navigation si la dernière
+ * lecture date ({@link isReadStale}).
+ *
+ * On ne recharge jamais au milieu d'un écran : le rechargement attend que la
+ * personne change d'écran, et vise l'adresse qu'elle demandait. La décision se
+ * prend à `GuardsCheckEnd` (2026-11-06 ; c'était `RoutesRecognized`, AVANT les
+ * gardes) : un `canDeactivate` peut encore refuser, et une redirection d'une
+ * garde se recharge à sa propre navigation. Une navigation qui ne touche pas
+ * l'adresse ne recharge pas — la boutique en traverse une à chaque bascule
+ * d'espace, et la charger en entier laissait sur un écran vide.
  *
  * `{ reloadOnNavigation: false }` coupe ce rechargement : seul le signal
- * {@link NEW_VERSION} parle, et l'écran affiche son bandeau.
+ * {@link NEW_VERSION} parle.
  */
 export function provideNewVersionWatch(options: NewVersionWatchOptions = {}): EnvironmentProviders {
   return provideEnvironmentInitializer(() => {
@@ -59,13 +68,16 @@ export function provideNewVersionWatch(options: NewVersionWatchOptions = {}): En
     }
     const state = inject(NEW_VERSION_STATE);
     const router = inject(Router);
+    const skippedLocation = trackSkipLocationChange(router);
+    let lastReadMs: number | null = null;
 
     const check = async (): Promise<void> => {
       if (state() || document.visibilityState !== "visible") {
         return;
       }
+      lastReadMs = Date.now();
       if (
-        isNewBuild(current, await fetchServedBuild((url, init) => fetch(url, init), Date.now()))
+        isNewBuild(current, await fetchServedBuild((url, init) => fetch(url, init), lastReadMs))
       ) {
         state.set(true);
       }
@@ -74,10 +86,22 @@ export function provideNewVersionWatch(options: NewVersionWatchOptions = {}): En
     setInterval(() => void check(), NEW_VERSION_POLL_MS);
 
     router.events.subscribe((event) => {
+      if (event instanceof NavigationStart && isReadStale(lastReadMs, Date.now())) {
+        void check();
+        return;
+      }
       if (
-        event instanceof RoutesRecognized &&
-        shouldReloadOnNavigation(state(), newVersionModeOf(event.state.root), options) &&
-        shouldReload(sessionStorageOrNull(), Date.now())
+        event instanceof GuardsCheckEnd &&
+        shouldReloadAfterGuards(
+          state(),
+          {
+            shouldActivate: event.shouldActivate,
+            skipLocationChange: skippedLocation(event.id),
+            targetMode: newVersionModeOf(event.state.root),
+          },
+          options,
+        ) &&
+        shouldReload(sessionStorageOrNull(), Date.now(), event.urlAfterRedirects)
       ) {
         window.location.assign(event.urlAfterRedirects);
       }

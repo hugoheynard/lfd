@@ -21,6 +21,20 @@ export const VERSION_FILE_PATH = "/version.json";
 /** Relecture onglet visible — le même filet que `day-version-watcher.ts`. */
 export const NEW_VERSION_POLL_MS = 5 * 60_000;
 
+/**
+ * Au début d'une navigation, on relit si la dernière lecture date de plus que
+ * ça : un onglet qu'on ne quitte jamais du regard apprend la version sans
+ * attendre les 5 min, sans qu'une rafale de clics fasse une rafale de lectures.
+ */
+export const NEW_VERSION_NAVIGATION_READ_MS = 60_000;
+
+/**
+ * Le build d'un poste de développement. Il ne vaut jamais « nouvelle
+ * version » : `ng serve` recompile sous les pieds, et recharger à chaque
+ * navigation n'apprendrait rien à personne.
+ */
+export const DEV_BUILD = "dev";
+
 /** La valeur de `data.newVersion` d'une route qui affiche un bandeau au lieu de recharger. */
 export const NEW_VERSION_BANNER = "banner";
 
@@ -36,7 +50,7 @@ export interface MetaReader {
 export function readBuildMeta(doc: MetaReader): string | null {
   const content = doc.querySelector(`meta[name="${BUILD_META_NAME}"]`)?.getAttribute("content");
   const build = content?.trim() ?? "";
-  return build === "" ? null : build;
+  return build === "" || build === DEV_BUILD ? null : build;
 }
 
 /** Le build annoncé par le fichier de version, ou `null` s'il ne ressemble à rien. */
@@ -50,7 +64,12 @@ export function parseVersionFile(body: unknown): string | null {
 
 /** Une lecture ratée (`null`) ne dit rien : seul un build lu et différent compte. */
 export function isNewBuild(current: string, served: string | null): boolean {
-  return served !== null && served !== current;
+  return served !== null && served !== DEV_BUILD && current !== DEV_BUILD && served !== current;
+}
+
+/** Relire au début de cette navigation ? Jamais lu, ou lu il y a trop longtemps. */
+export function isReadStale(lastReadMs: number | null, nowMs: number): boolean {
+  return lastReadMs === null || nowMs - lastReadMs >= NEW_VERSION_NAVIGATION_READ_MS;
 }
 
 /** L'adresse relue, avec un paramètre qui traverse tout cache intermédiaire. */
@@ -82,8 +101,9 @@ export async function fetchServedBuild(
 
 /**
  * Les réglages d'un front. `reloadOnNavigation: false` : l'onglet ne se
- * recharge jamais de lui-même, seul le bandeau annonce la version (le
- * back-office, Hugo 2026-10-14 : « finissez votre opération et rechargez »).
+ * recharge jamais de lui-même, seul le signal annonce la version. Aucun front
+ * ne s'en sert depuis le 2026-11-06 (vérifié ce jour-là) : le back-office, qui
+ * l'avait pris le 2026-10-14, recharge à la navigation comme la boutique.
  */
 export interface NewVersionWatchOptions {
   readonly reloadOnNavigation?: boolean;
@@ -100,6 +120,37 @@ export function shouldReloadOnNavigation(
   options: NewVersionWatchOptions = {},
 ): boolean {
   return (options.reloadOnNavigation ?? true) && newVersion && targetMode !== NEW_VERSION_BANNER;
+}
+
+/** Ce que la bascule sait d'une navigation, une fois ses gardes passées. */
+export interface GuardedNavigation {
+  /** Vrai seulement si TOUTES les gardes ont laissé passer. */
+  readonly shouldActivate: boolean;
+  /**
+   * Une navigation qui ne touche pas l'adresse (le détour de la bascule
+   * d'espace de la boutique) : la charger en entier déposerait la personne sur
+   * un écran de passage, et c'est la navigation suivante qui recharge.
+   */
+  readonly skipLocationChange: boolean;
+  /** Le mode posé par la route cible (`newVersionModeOf`). */
+  readonly targetMode: unknown;
+}
+
+/**
+ * Recharger à cette navigation, ses gardes passées ? La décision se prend
+ * APRÈS les gardes (2026-11-06) : un `canDeactivate` qui retient un formulaire
+ * non enregistré doit pouvoir refuser, et un refus ne recharge rien.
+ */
+export function shouldReloadAfterGuards(
+  newVersion: boolean,
+  navigation: GuardedNavigation,
+  options: NewVersionWatchOptions = {},
+): boolean {
+  return (
+    navigation.shouldActivate &&
+    !navigation.skipLocationChange &&
+    shouldReloadOnNavigation(newVersion, navigation.targetMode, options)
+  );
 }
 
 /** La `data` d'un nœud de route, et son enfant principal. */

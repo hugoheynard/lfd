@@ -36,8 +36,18 @@ export function isStaleBundleError(error: unknown): boolean {
  */
 export const RELOAD_GUARD_MS = 10_000;
 
-/** La clé, en `sessionStorage`, de l'instant du dernier rechargement. */
+/**
+ * Le préfixe des clés, en `sessionStorage`, de l'instant du dernier
+ * rechargement — une clé PAR ADRESSE visée (2026-11-06) : deux écrans
+ * différents rechargés coup sur coup ne se bloquent pas l'un l'autre, une
+ * même adresse ne se recharge qu'une fois par fenêtre.
+ */
 export const RELOAD_GUARD_KEY = "lfd.stale-bundle-reload-at";
+
+/** La clé de la garde pour une adresse. */
+export function reloadGuardKey(target: string): string {
+  return `${RELOAD_GUARD_KEY}:${target}`;
+}
 
 /** Ce que la décision lit et écrit — injecté pour être testable sans navigateur. */
 export interface ReloadGuardStore {
@@ -53,25 +63,46 @@ export interface ReloadGuardStore {
  * rechargement de trop à un onglet mort. La boucle reste impossible au pire
  * cas, parce qu'une page rechargée sur la bonne version ne relève plus l'erreur.
  */
-export function shouldReload(store: ReloadGuardStore | null, nowMs: number): boolean {
-  const last = readLast(store);
+export function shouldReload(
+  store: ReloadGuardStore | null,
+  nowMs: number,
+  target: string,
+): boolean {
+  const key = reloadGuardKey(target);
+  const last = readLast(store, key);
   if (last !== null && nowMs - last < RELOAD_GUARD_MS) {
     return false;
   }
   try {
-    store?.setItem(RELOAD_GUARD_KEY, String(nowMs));
+    store?.setItem(key, String(nowMs));
   } catch {
     // Stockage refusé : on recharge quand même, voir plus haut.
   }
   return true;
 }
 
-function readLast(store: ReloadGuardStore | null): number | null {
+function readLast(store: ReloadGuardStore | null, key: string): number | null {
   try {
-    const raw = store?.getItem(RELOAD_GUARD_KEY) ?? null;
+    const raw = store?.getItem(key) ?? null;
     const value = raw === null ? Number.NaN : Number(raw);
     return Number.isFinite(value) ? value : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * L'adresse à charger quand une navigation échoue sur un morceau retiré.
+ *
+ * D'ordinaire, celle que la personne demandait. Mais une navigation
+ * `skipLocationChange` — le détour de la bascule d'espace de la boutique —
+ * vise un écran de passage : le charger en entier y laisserait la personne,
+ * devant un écran vide. On recharge alors l'adresse que montre la barre.
+ */
+export function reloadTargetOf(
+  navigationUrl: string,
+  skipLocationChange: boolean,
+  shownUrl: string,
+): string {
+  return skipLocationChange ? shownUrl : navigationUrl;
 }

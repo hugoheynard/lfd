@@ -812,8 +812,8 @@
         subtitle="Votre compte est bien connecté, mais aucun périmètre ne lui est attribué dans le back-office. Demandez à un administrateur de vous ouvrir un accès."
       />
     } @else {
-      <!-- Une version neuve en ligne s'annonce sur tout écran, en bande fine
-           sous l'en-tête : on finit son opération, puis on recharge. -->
+      <!-- Une version neuve se prend à la navigation suivante, sans rien
+           dire ; seuls les écrans de terrain (`/coursier`) l'annoncent. -->
       <app-new-version-banner />
       <router-outlet />
     }
