@@ -6,7 +6,7 @@ import type { MailSectionOrders } from "../sections/mail-layout-scope.js";
  * `documentation/contenu-ecommerce/plan-textes-des-e-mails.md`, C2).
  *
  * Port déclaré par la couche technique : le mailer ne connaît pas le contexte
- * qui tient les textes publiés (`b2b/mail-copy`), et `appBootstrap/` relie ce
+ * qui tient les textes publiés (`mail/copy`), et `appBootstrap/` relie ce
  * port à son adaptateur (CLAUDE.md §3 — `platform` ne connaît aucun contexte).
  *
  * L'adaptateur garde le publié en mémoire : il est lu à chaque envoi. Il ne

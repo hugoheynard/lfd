@@ -117,7 +117,7 @@ anglais et en italien :
 
 ## 2 ter. E2 — bâti le 2026-10-23 (non commité à l'écriture)
 
-- **Le stockage** est un contexte du commerce, `apps/lfd-api/src/b2b/mail-copy/`,
+- **Le stockage** est un contexte du commerce, `apps/lfd-api/src/mail/copy/`,
   sur le modèle de `b2b/shop-copy/` : `mail_copy_entries` (une ligne par
   e-mail, chemin, langue ; brouillon à trois états, révision) et
   `mail_copy_publication` (une ligne, la version), migration additive
@@ -201,7 +201,7 @@ traduction en retard (C4) — un avertissement, jamais un refus.
 - **L'agrégat** (`MailCopyEntry`) note le texte du code à chaque brouillon qui
   remplace, l'oublie à « Rétablir », et note le texte du code COURANT à la
   publication : publier vaut relecture.
-- **Le signal** (`apps/lfd-api/src/b2b/mail-copy/domain/mail-copy-default-drift.ts`) porte
+- **Le signal** (`apps/lfd-api/src/mail/copy/domain/mail-copy-default-drift.ts`) porte
   sur ce qui partira : le brouillon s'il remplace, sinon le publié ; rien sur
   un « rétablir », une orpheline, un inconnu.
 - **Le contrat** : `MailCopyLocaleView.defaultChangedSince:

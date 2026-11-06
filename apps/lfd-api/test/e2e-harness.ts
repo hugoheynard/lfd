@@ -46,7 +46,7 @@ import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js"
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { PublicShelfFlagMemory } from "../src/b2b/catalog/application/public-shelf-flag-memory.js";
-import { CachedPublishedMailCopyReader } from "../src/b2b/mail-copy/infrastructure/cached-published-mail-copy.reader.js";
+import { CachedPublishedMailCopyReader } from "../src/mail/copy/infrastructure/cached-published-mail-copy.reader.js";
 import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";

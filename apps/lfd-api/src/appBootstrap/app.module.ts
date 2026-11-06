@@ -21,7 +21,7 @@ import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module
 import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { VitrineModule } from "../b2b/vitrine/vitrine.module.js";
 import { ShopCopyModule } from "../b2b/shop-copy/shop-copy.module.js";
-import { MailCopyModule } from "../b2b/mail-copy/mail-copy.module.js";
+import { MailCopyModule } from "../mail/copy/mail-copy.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricerModule } from "../b2b/pricing/pricer.module.js";

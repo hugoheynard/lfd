@@ -10,8 +10,8 @@
  */
 import type { MailCopyAdminView, MailCopyLocaleView } from "@lfd/contracts";
 
-import { MailCopyManifest } from "../src/b2b/mail-copy/domain/mail-copy-manifest.js";
-import { embeddedMailCopyManifest } from "../src/b2b/mail-copy/infrastructure/embedded-mail-copy-manifest.js";
+import { MailCopyManifest } from "../src/mail/copy/domain/mail-copy-manifest.js";
+import { embeddedMailCopyManifest } from "../src/mail/copy/infrastructure/embedded-mail-copy-manifest.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN, ORDER_PLACED } from "./mail-copy-scene.js";

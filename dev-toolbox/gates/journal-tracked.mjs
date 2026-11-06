@@ -128,7 +128,7 @@ const SHOP_COPY_ZONE = "shop-copy";
  * règle que la boutique — « Publier » et l'essai se tracent, les brouillons se
  * déclarent `@sans-journal`.
  */
-const MAIL_COPY_ZONE = "mail-copy";
+const MAIL_COPY_ZONE = "copy";
 
 /**
  * La tarification, elle, est tenue par le COMPILATEUR : ses dépôts d'écriture
@@ -527,7 +527,7 @@ const ZONES = [
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
-    root: join(SRC, "b2b", MAIL_COPY_ZONE),
+    root: join(SRC, "mail", MAIL_COPY_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...SETTINGS_ZONES.map((zone) => ({
