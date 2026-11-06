@@ -97,7 +97,8 @@ export type ByReference<T> = T extends string | number | boolean | null | undefi
  * Les modèles à PDF ouverts à `request`, leur pièce passant par référence.
  * Au 2026-11-06 : le bon joint à la confirmation de commande (lot S2a) et la
  * facture Factur-X, rangée au même stockage sous `Invoice.documentKey` (lot
- * S2d). Le mandat et le dossier du fournil s'ouvriront avec leur bloc.
+ * S2d). Le dossier du fournil s'ouvrira avec son bloc. Le mandat RESTE fermé :
+ * son seul envoyeur passe par `sendNow` (lot S2e, le fait lit le reçu).
  */
 type OpenedByReference = "customer.order-placed" | "customer.invoice-issued";
 
@@ -107,7 +108,7 @@ type OpenedByReference = "customer.order-placed" | "customer.invoice-issued";
  * un PDF, seulement ceux que {@link OpenedByReference} ouvre. Au 2026-11-06,
  * deux en restent exclus (`customer.mandate-to-sign`,
  * `staff.production-dossier`) : ils n'ont que
- * `sendNow` d'ici le passage de leur bloc.
+ * `sendNow` — le mandat par choix (S2e), le dossier d'ici le passage de son bloc.
  */
 export type DeferrableMailTemplate = {
   [K in keyof B2bMails]: Every<DefersIntact<B2bMails[K]>> extends true

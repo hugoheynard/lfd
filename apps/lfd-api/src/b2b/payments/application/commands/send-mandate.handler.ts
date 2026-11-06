@@ -1,8 +1,8 @@
-import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { MailRequests } from "../../../../mail/channels/requests/mail-requests.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CreditorReader } from "../../../accounting/domain/ports/creditor.reader.js";
 import { LegalEntityLogoReader } from "../../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
@@ -39,24 +39,43 @@ import { SendMandateCommand } from "./send-mandate.command.js";
  * second exemplaire de la même RUM, et c'est celui qui revient en dernier qui
  * gagnerait — sur une autorisation qu'on oppose en contestation.
  *
+ * ## Le geste : `sendNow`, par le bloc `mail` (lot S2e)
+ *
+ * Envoi IMMÉDIAT par la porte du bloc (`MailRequests.sendNow`), pas une
+ * demande différée — relu le 2026-11-06 :
+ *
+ * - le fait `payment_mandate.sent` porte l'identifiant que le fournisseur a
+ *   rendu (décision de Hugo du 2026-09-19) : avec `request`, il n'existerait
+ *   pas encore au moment d'écrire le fait, et « envoyé » voudrait dire
+ *   « demandé » ;
+ * - c'est un clic du staff sans écriture locale ni unité de travail : un refus
+ *   de l'envoi doit s'afficher à l'agent, comme le renvoi du lien de paiement
+ *   (S2a) ou celui d'une facture (S2d).
+ *
+ * Aucun état du mandat ne dépend de l'envoi (il reste `draft` jusqu'à la
+ * preuve signée). Le PDF part donc en octets, comme avant : `sendNow` les
+ * accepte, et rien n'est rangé au stockage pour cet envoi.
+ *
  * ## L'idempotence
  *
- * La clé porte l'identifiant du mandat : deux clics rapides ne font pas partir
- * deux courriels. Elle ne porte PAS d'horodatage — un renvoi délibéré passe par
- * le refus ci-dessus, pas par une clé qui changerait toute seule.
+ * Une clé **par geste** (`mandate-to-sign:<mandat>:<id>`), l'`<id>` venant de
+ * l'`IdGenerator` : le bloc garde une clé un an et rend le reçu d'une clé déjà
+ * envoyée sans renvoyer. Une clé par mandat ferait qu'un second « Envoyer »
+ * du même brouillon — le client a perdu le courriel — ne renvoie plus rien,
+ * là où Resend ne dédoublonnait que 24 h. Ni adresse ni RUM dans la clé.
  *
  * ## Le fait « mandat envoyé »
  *
  * Décidé par Hugo le 2026-09-19 : l'envoi entre au journal d'activité
  * (`payment_mandate.sent`), avec l'identifiant rendu par le fournisseur et
- * jamais l'adresse. Il est écrit **après** `mailer.send` : s'il l'était avant,
+ * jamais l'adresse. Il est écrit **après** l'envoi : s'il l'était avant,
  * un envoi refusé laisserait au journal un papier qui n'est jamais parti.
  *
  * `@hors-transaction` le courriel part chez un tiers et ne se rattrape pas :
- * aucune transaction ne peut l'annuler, et il n'y a pas d'écriture locale à
- * lier au fait. Si le journal refuse d'écrire, la requête échoue et le
- * courriel est déjà parti ; un second clic repasse par la même clé
- * d'idempotence (transmise à Resend, vérifié le 2026-09-19) et écrit le fait.
+ * aucune transaction ne peut l'annuler, et `sendNow` est refusé sous une
+ * unité de travail. Si le journal refuse d'écrire, la requête échoue et le
+ * courriel est déjà parti ; un second clic renvoie le courriel et écrit le
+ * fait.
  */
 @CommandHandler(SendMandateCommand)
 export class SendMandateHandler implements ICommandHandler<SendMandateCommand, void> {
@@ -66,10 +85,11 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     private readonly creditors: CreditorReader,
     private readonly logos: LegalEntityLogoReader,
     private readonly store: DocumentStore,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly mails: MailRequests,
     private readonly events: DomainEventPublisher,
     private readonly debtors: MandateDebtorReader,
     private readonly clock: Clock,
+    private readonly ids: IdGenerator,
   ) {}
 
   async execute(command: SendMandateCommand): Promise<void> {
@@ -100,8 +120,9 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     );
     const snapshot = mandate.toSnapshot();
 
-    const receipt = await this.mailer.send({
+    const receipt = await this.mails.sendNow({
       to: holder.email,
+      brand: "lfc",
       template: "customer.mandate-to-sign",
       data: {
         // Le schéma DU MANDAT, figé à sa frappe : le courriel décrit le papier joint.
@@ -113,7 +134,7 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         pdfBase64: document.bytes.toString("base64"),
         fileName: document.fileName,
       },
-      idempotencyKey: `mandate-to-sign:${mandate.id}`,
+      idempotencyKey: `mandate-to-sign:${mandate.id}:${this.ids.next()}`,
     });
     await this.events.publishTraced(
       new MandateSentEvent(

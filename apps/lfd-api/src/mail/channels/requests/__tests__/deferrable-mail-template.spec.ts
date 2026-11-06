@@ -8,7 +8,7 @@ import type { ByReference, DeferrableMailTemplate } from "../mail-requests.js";
  * fichier — l'occasion de décider s'il doit passer au stockage d'abord.
  */
 const NOT_DEFERRABLE: Record<Exclude<keyof B2bMails, DeferrableMailTemplate>, string> = {
-  "customer.mandate-to-sign": "le mandat joint (pdfBase64)",
+  "customer.mandate-to-sign": "le mandat joint (pdfBase64) — envoyé par `sendNow` seulement (S2e)",
   "staff.production-dossier": "le dossier du jour joint (pdfBase64)",
 };
 
@@ -28,7 +28,7 @@ const INVOICE_DOCUMENT: ByReference<B2bMails["customer.invoice-issued"]["documen
 };
 
 describe("DeferrableMailTemplate — ce que la boîte d'envoi peut porter", () => {
-  it("exclut les deux modèles à PDF pas encore ouverts par référence (S2d, 2026-11-06)", () => {
+  it("exclut les deux modèles à PDF non ouverts par référence — le mandat reste en `sendNow` (S2e, 2026-11-06)", () => {
     expect(Object.keys(NOT_DEFERRABLE).sort()).toEqual([
       "customer.mandate-to-sign",
       "staff.production-dossier",

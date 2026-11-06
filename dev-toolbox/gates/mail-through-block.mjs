@@ -48,13 +48,13 @@ export const ADMITTED = {
  * Les envoyeurs qui injectent encore le mailer (relevés le 2026-11-06, lot S1).
  * En retirer un = l'avoir fait passer par `MailRequests` (lot S2). S2a a rayé
  * les 11 de `b2b/orders` (2026-11-06), S2b les 5 de `b2b/account`, S2c les
- * 3 de `b2b/contact`, S2d les 2 de `b2b/accounting` (2026-11-06) : 10 restent.
+ * 3 de `b2b/contact`, S2d les 2 de `b2b/accounting`, S2e le mandat de
+ * `b2b/payments` (2026-11-06) : 9 restent.
  */
 export const DEBT = [
   `${SRC}/b2b/alerts/application/handlers/dispatch-alert-channels.service.ts`,
   `${SRC}/b2b/growth/infrastructure/mail-appointment-booked-alert.ts`,
   `${SRC}/b2b/mail-copy/infrastructure/specimen-mail-trial.sender.ts`,
-  `${SRC}/b2b/payments/application/commands/send-mandate.handler.ts`,
   `${SRC}/b2b/sub-account-notices/application/services/principal-notice.sender.ts`,
   `${SRC}/b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`,
   `${SRC}/platform/mailer/admin-mail-check.controller.ts`,

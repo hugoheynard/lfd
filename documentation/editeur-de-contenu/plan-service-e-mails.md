@@ -34,6 +34,9 @@
 >
 > 🏗️ **S2c bâti le 2026-11-06** (§ 11) : le bloc `b2b/contact` (3 envoyeurs)
 > passé par la porte ; la demande porte un `replyTo`. Dette : **12**.
+>
+> 🏗️ **S2e bâti le 2026-11-06** (§ 15) : le mandat de `b2b/payments` passé
+> par la porte, en `sendNow` (corrigé : `request` prévu). Dette : **9**.
 
 ## Partie 1 — Comprendre
 
@@ -203,7 +206,8 @@ flowchart LR
 | **S2b**  | ✅ bâti le 2026-11-06 (`851cb1037`, § 10) : le bloc `b2b/account` (5 envoyeurs) ; `sendNow` pour l'ouverture d'accès et le lien de mot de passe, `request` pour le reste ; dette 20 → 15                                                                                                                                                                                                                                                               | la demande de rappel et l'alerte de rattachement partent après la validation, par le bloc                               |
 | **S2c**  | ✅ bâti le 2026-11-06 (`17ff8fb12`, § 11) : le bloc `b2b/contact` (3 envoyeurs), tous en `request` depuis la transaction du geste qui publie ; la demande gagne `replyTo` ; dette 15 → 12                                                                                                                                                                                                                                                              | la demande client et la réponse à une modification partent après la validation, par le bloc                             |
 | **S2d**  | ✅ bâti le 2026-11-06 (`a883de137`, § 12) : le bloc `b2b/accounting` (2 envoyeurs) ; `sendNow` pour l'avis de prélèvement (le dépôt du lot lit son issue), `request` pour « Votre facture » (facture par référence à la clé où le rendu Factur-X l'a rangée), `sendNow` pour son renvoi ; `customer.invoice-issued` ouvert à `request` ; dette 12 → 10                                                                                                 | « Votre facture » part après la validation, par le bloc                                                                 |
-| **S2e…** | à venir, un bloc à la fois : `b2b/payments` (mandat), `production` (dossier), `staff`, puis les isolés (`alerts`, `growth`, `vitrine`, `sub-account-notices`, `platform/mailer`) ; la dette de `lint:mail-through-block` descend jusqu'à 0                                                                                                                                                                                                             | selon le bloc                                                                                                           |
+| **S2e**  | ✅ bâti le 2026-11-06 (SHA de dev à venir, § 15) : le bloc `b2b/payments` (1 envoyeur, le mandat à signer) en **`sendNow`**, contre le plan : le fait `payment_mandate.sent` porte l'identifiant du fournisseur et le refus s'affiche au staff ; le PDF reste en octets, `customer.mandate-to-sign` reste fermé à `request` ; une clé par geste ; dette 10 → 9                                                                                         | le mandat part par le bloc, sur-le-champ (suivi au bloc)                                                                |
+| **S2f…** | à venir, un bloc à la fois : `production` (dossier), `staff`, puis les isolés (`alerts`, `growth`, `vitrine`, `sub-account-notices`, `platform/mailer`) ; la dette de `lint:mail-through-block` descend jusqu'à 0                                                                                                                                                                                                                                      | selon le bloc                                                                                                           |
 | **S3**   | Déménager les gabarits, le dictionnaire et les sections de `platform/mailer/` dans le bloc. **Restent dans `platform/mailer/`** : `webhook/` (lu par `ops`), `inbound/` et `journal/`, techniques. Les trois tables `public.mail_*` **restent dans `public`** : seul leur écrivain change (de `b2b/mail-copy` au bloc `mail`), dans le même déploiement que leur lecteur. Les tables neuves du bloc vont dans son schéma                               | rien                                                                                                                    |
 | **S4**   | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                                                     | rien tant que rien n'est publié                                                                                         |
 | **S5**   | L'éditeur au back-office : ajouter, retirer, ordonner, écrire, insérer une variable, aperçu, essai, publier, versions, trois langues côte à côte ; le droit dédié                                                                                                                                                                                                                                                                                      | l'équipe compose ses e-mails                                                                                            |
@@ -236,6 +240,8 @@ Hugo les relit ensemble à la fin de S2, avant le déploiement groupé.
 | S2d | Clés de « Votre facture » et de son renvoi : le **rang** du destinataire remplace son adresse (`invoice.notice:<facture>:<rang>`, `invoice.notice-resend:<renvoi>:<rang>`) ; un rejeu dont la liste a changé entre deux passages peut taire un destinataire décalé | adresse dans la clé, dédoublonnée 24 h par Resend                            |
 | S2d | La facture jointe est relue **au stockage** par le bloc, sans vérifier son empreinte (l'abonné l'a vérifiée juste avant, au rendu)                                                                                                                                 | octets vérifiés en mémoire, joints directement                               |
 | S2d | Avis de prélèvement : **inchangé** — `sent` reste « accepté par Resend » (`sendNow`) ; le suivi du bloc s'y ajoute                                                                                                                                                 | —                                                                            |
+| S2e | Envoi du mandat : **une clé par clic** (`mandate-to-sign:<mandat>:<id>`) ; deux clics rapides envoient deux courriels, et renvoyer le même brouillon renvoie toujours                                                                                              | clé par mandat, dédoublonnée 24 h par Resend                                 |
+| S2e | Envoi du mandat : `payment_mandate.sent` garde son sens (« accepté par Resend », `sendNow`) ; l'envoi est suivi au bloc ; un refus s'affiche toujours au staff                                                                                                     | —                                                                            |
 
 ### Les 31 envoyeurs à faire passer par la porte (S2)
 
@@ -268,7 +274,7 @@ pourquoi. Chemins sous `apps/lfd-api/src/`.
 | S2c | `b2b/contact/application/services/order-change-refused-mail.service.ts` (ex-abonné)                     | `request` — depuis la transaction de « Refuser » (§ 11)                       | ✅   |
 | S2d | `b2b/accounting/application/services/collection-notice-sender.ts`                                       | **`sendNow`** — corrigé : le dépôt du lot exige l'issue du fournisseur (§ 12) | ✅   |
 | S2d | `b2b/accounting/application/services/invoice-notice-sender.ts`                                          | `request` (facture par référence) ; `sendNow` pour le renvoi du staff (§ 12)  | ✅   |
-| S2e | `b2b/payments/application/commands/send-mandate.handler.ts`                                             | `request` (mandat par référence)                                              | ⬜   |
+| S2e | `b2b/payments/application/commands/send-mandate.handler.ts`                                             | **`sendNow`** — corrigé : le fait lit le reçu, le staff lit le refus (§ 15)   | ✅   |
 | S2f | `production/application/services/dossier-dispatch.service.ts`                                           | `request` (dossier par référence)                                             | ⬜   |
 | S2g | `staff/directory/application/set-staff-status.handler.ts`                                               | à trancher au bâti                                                            | ⬜   |
 | S2g | `staff/invitations/open-staff-access.service.ts`                                                        | `sendNow` (l'écran lit `mailSent`)                                            | ⬜   |
@@ -671,3 +677,33 @@ Ce que l'e-mail impose, à trancher au plan de S4 :
   simples, pas un autre conteneur.
 - Un bloc système (récapitulatif, QR) ne va pas dans une colonne : il reste
   sur toute la largeur.
+
+## 15. S2e — bâti le 2026-11-06 : `b2b/payments`
+
+| Fichier                | Geste                                 | Raison                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `send-mandate.handler` | `sendNow` (corrigé : `request` prévu) | le fait `payment_mandate.sent` porte l'identifiant rendu par le fournisseur (décision de Hugo du 2026-09-19) : avec `request`, il n'existerait pas au moment d'écrire le fait. C'est un clic du staff sans écriture locale ni unité de travail, dont le refus s'affiche à l'écran — la forme du renvoi du lien de paiement (S2a) et du renvoi de facture (S2d) |
+
+Relu le 2026-11-06 :
+
+- **Aucun état du mandat ne dépend de l'envoi** : il reste `draft` jusqu'à la
+  preuve signée (`attach-mandate-proof`). Seuls le fait au journal et l'écran
+  du staff (204 ou refus) lisent l'issue.
+- **Le PDF n'était pas rangé** : il est rendu en mémoire par
+  `buildCustomerMandate`, la même lecture que l'aperçu. `sendNow` accepte
+  `pdfBase64`, et rien ne passe par la boîte d'envoi : il n'est **pas** rangé
+  au stockage, `customer.mandate-to-sign` reste hors de `OpenedByReference`
+  (`DeferrableMailTemplate` inchangé, son spec figé ne change que de libellé).
+- **Pas de lien de signature** : le courriel porte le PDF à imprimer et
+  signer, la RUM et l'ICS ; aucun secret. Le PDF porte l'IBAN, mais en
+  `sendNow` il n'entre ni dans l'outbox ni au suivi.
+
+### Écarts au texte, à relire
+
+- **Geste corrigé** : `sendNow` au lieu de `request` ; donc pas de mandat par
+  référence.
+- **Clé par geste** : `mandate-to-sign:<mandat>:<id>` (`IdGenerator`). Le bloc
+  garde une clé un an et ne renvoie pas une clé déjà envoyée : la clé par
+  mandat d'avant aurait fait qu'un second « Envoyer » du même brouillon ne
+  renvoie plus rien. Prix : deux clics rapides envoient deux courriels (et
+  écrivent deux faits), comme S2b.

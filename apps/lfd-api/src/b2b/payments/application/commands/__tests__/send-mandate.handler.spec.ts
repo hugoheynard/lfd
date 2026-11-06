@@ -1,9 +1,14 @@
-import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { MailerSendError, type MailReceipt, type SendMailArgs } from "@lfd/mailer";
+import { MailerSendError, type MailReceipt } from "@lfd/mailer";
 
-import { LegalEntityLogoReader } from "../../../../accounting/domain/ports/legal-entity-logo.reader.js";
+import {
+  OpenableUnitOfWork,
+  RecordingMailRequests,
+} from "../../../../../mail/channels/requests/__tests__/recording-mail-requests.js";
+import type { MailDemand } from "../../../../../mail/channels/requests/mail-requests.js";
+import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
-import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { LegalEntityLogoReader } from "../../../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { MandateNotSendableError } from "../../../domain/errors/mandate-errors.js";
 import {
   FixedDebtors,
@@ -27,22 +32,22 @@ class NoLogo extends LegalEntityLogoReader {
   }
 }
 
-/** Le courrier : rend le reçu qu'on lui donne, ou refuse l'envoi sur demande. */
-class StepMailer implements B2bMailer {
-  readonly enabled = true;
-  failing = false;
-
+/**
+ * La porte du bloc `mail`, doublée : range l'envoi immédiat dans le journal
+ * des étapes (pour l'ordre envoi → fait), rend le reçu qu'on lui donne.
+ */
+class StepMailRequests extends RecordingMailRequests {
   constructor(
     private readonly steps: Steps,
     private readonly providerId: string | null,
-  ) {}
+  ) {
+    super(new OpenableUnitOfWork());
+  }
 
-  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
-    this.steps.log.push(`mail:${String(args.template)}`);
-    if (this.failing) {
-      return Promise.reject(new MailerSendError("envoi refusé (doublé)."));
-    }
-    return Promise.resolve({ providerId: this.providerId });
+  override async sendNow<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+    this.steps.log.push(`mail:${String(demand.template)}`);
+    await super.sendNow(demand);
+    return { providerId: this.providerId };
   }
 }
 
@@ -52,7 +57,7 @@ function harness(providerId: string | null = "re_1") {
   mandates.draft = mandate();
   const accounts = new InMemoryBankAccounts(steps);
   accounts.stored = bankAccount();
-  const mailer = new StepMailer(steps, providerId);
+  const mails = new StepMailRequests(steps, providerId);
   const events = new StepPublisher(steps);
   const handler = new SendMandateHandler(
     mandates,
@@ -60,15 +65,16 @@ function harness(providerId: string | null = "re_1") {
     new FixedCreditors(),
     new NoLogo(),
     new MemoryStore(steps),
-    mailer,
+    mails,
     events,
     new FixedDebtors(mandates),
     new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
+    new FixedIdGenerator("send"),
   );
   return {
     steps,
     mandates,
-    mailer,
+    mails,
     events,
     run: (mandateId = "mdt_1") => handler.execute(new SendMandateCommand("cmp_1", mandateId)),
   };
@@ -116,10 +122,46 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
 
   it("n'écrit aucun fait quand le fournisseur refuse l'envoi", async () => {
     const h = harness();
-    h.mailer.failing = true;
+    h.mails.failWith = new MailerSendError("envoi refusé (doublé).");
 
     await expect(h.run()).rejects.toBeInstanceOf(MailerSendError);
     expect(h.events.traced).toHaveLength(0);
+  });
+
+  /** Lot S2e : le mandat passe par le bloc `mail`, sur-le-champ et hors transaction. */
+  it("envoie par `sendNow` (jamais `request`), le PDF en pièce et la marque de la boutique", async () => {
+    const h = harness();
+
+    await h.run();
+
+    expect(h.mails.requested).toEqual([]);
+    expect(h.mails.sentNow).toHaveLength(1);
+    expect(h.mails.sentNow[0]).toMatchObject({
+      to: HOLDER.email,
+      brand: "lfc",
+      template: "customer.mandate-to-sign",
+      data: { reference: "LFC-9P2X4B-260914-K7M3QT" },
+    });
+    expect(JSON.stringify(h.mails.sentNow[0]?.data)).toContain('"pdfBase64":"');
+    expect(JSON.stringify(h.mails.sentNow[0]?.data)).not.toContain("pdfStored");
+  });
+
+  /**
+   * Le bloc garde une clé un an : une clé par mandat aurait fait qu'un second
+   * « Envoyer » du même brouillon ne renvoie plus rien.
+   */
+  it("une clé par geste : deux envois du même brouillon ont deux clés, sans adresse", async () => {
+    const h = harness();
+
+    await h.run();
+    await h.run();
+
+    const keys = h.mails.sentNow.map((mail) => mail.idempotencyKey);
+    expect(keys).toEqual([
+      "mandate-to-sign:mdt_1:send_000001",
+      "mandate-to-sign:mdt_1:send_000002",
+    ]);
+    expect(keys.join()).not.toContain(HOLDER.email);
   });
 
   it("n'envoie rien et n'écrit rien pour un mandat déjà signé", async () => {
