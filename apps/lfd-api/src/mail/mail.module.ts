@@ -1,34 +1,41 @@
 import { Module } from "@nestjs/common";
 
 import { AppConfig } from "../platform/config/app-config.js";
+import { DurableFactPayloads } from "../platform/outbox/durable-fact-payloads.js";
+import { PrismaDurableFactPayloads } from "../platform/outbox/prisma-durable-fact-payloads.js";
 import { MailRequests } from "./channels/requests/mail-requests.js";
 import { MAIL_REQUEST_PURGE_MODE } from "./requests/domain/services/mail-request-retention.js";
 import { BlockMailRequests } from "./requests/application/block-mail-requests.js";
+import { DeferredMailSender } from "./requests/application/deferred-mail-sender.service.js";
 import { DeliverRequestedMail } from "./requests/application/deliver-requested-mail.handler.js";
 import { ImmediateMailSender } from "./requests/application/immediate-mail-sender.service.js";
 import { MailRequester } from "./requests/application/mail-requester.service.js";
 import { MailSendAttempt } from "./requests/application/mail-send-attempt.js";
 import { PurgeSettledMailRequestsHandler } from "./requests/application/purge-settled-mail-requests.handler.js";
+import { SweepMailRequestsHandler } from "./requests/application/sweep-mail-requests.handler.js";
 import { MailDispatch } from "./requests/domain/ports/mail-dispatch.js";
 import { MailRequestPruner } from "./requests/domain/ports/mail-request.pruner.js";
 import { MailRequestRepository } from "./requests/domain/ports/mail-request.repository.js";
 import { MailRequestPurgeController } from "./requests/http/mail-request-purge.controller.js";
+import { StalledMailRequests } from "./requests/domain/ports/stalled-mail-requests.js";
+import { MailRequestsSweepController } from "./requests/http/mail-requests-sweep.controller.js";
 import { UnitOfWorkProbe } from "./requests/domain/ports/unit-of-work-probe.js";
 import { AmbientUnitOfWorkProbe } from "./requests/infrastructure/ambient-unit-of-work-probe.js";
 import { MailerMailDispatch } from "./requests/infrastructure/mailer-mail-dispatch.js";
 import { PrismaMailRequestPruner } from "./requests/infrastructure/prisma-mail-request.pruner.js";
 import { PrismaMailRequestRepository } from "./requests/infrastructure/prisma-mail-request.repository.js";
+import { PrismaStalledMailRequests } from "./requests/infrastructure/prisma-stalled-mail-requests.js";
 
 /**
  * **Le bloc des e-mails** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, S1) :
- * sa porte `MailRequests`, le suivi des demandes, et l'abonné durable qui
- * envoie après la validation. Le rendu reste celui de `platform/mailer`.
+ * sa porte `MailRequests`, le suivi des demandes, l'abonné durable qui
+ * engage l'envoi et le fait partir après la validation, et son balayeur (S1b). Le rendu reste celui de `platform/mailer`.
  *
  * Au 2026-11-06, aucun envoyeur ne passe encore par la porte : S2 les fera
  * migrer, bloc par bloc, et décidera comment la porte leur est servie.
  */
 @Module({
-  controllers: [MailRequestPurgeController],
+  controllers: [MailRequestPurgeController, MailRequestsSweepController],
   providers: [
     { provide: MailRequestPruner, useClass: PrismaMailRequestPruner },
     {
@@ -45,6 +52,11 @@ import { PrismaMailRequestRepository } from "./requests/infrastructure/prisma-ma
     ImmediateMailSender,
     DeliverRequestedMail,
     { provide: MailRequests, useClass: BlockMailRequests },
+    // S1b (plan § 8) : l'envoi d'après validation et son balayeur.
+    { provide: StalledMailRequests, useClass: PrismaStalledMailRequests },
+    { provide: DurableFactPayloads, useClass: PrismaDurableFactPayloads },
+    DeferredMailSender,
+    SweepMailRequestsHandler,
   ],
   exports: [MailRequests],
 })

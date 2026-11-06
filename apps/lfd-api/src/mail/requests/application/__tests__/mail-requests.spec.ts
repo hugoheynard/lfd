@@ -5,7 +5,6 @@ import {
   ImmediateMailInsideUnitOfWorkError,
   MailRefusedError,
   MailRequestAlreadySettledError,
-  MailRequestMissingError,
   MailRequestOutsideUnitOfWorkError,
 } from "../../domain/errors/mail-request.errors.js";
 import { MAIL_REQUESTED } from "../mail-requested.fact.js";
@@ -18,17 +17,6 @@ const SUSPENDED: MailDemand<"staff.access-suspended"> = {
   brand: "lfc",
   idempotencyKey: "staff.suspended:s1",
 };
-
-type Scene = ReturnType<typeof mailScene>;
-
-/** La livraison du fait écrit, telle que la boîte d'envoi la ferait. */
-async function deliverLast(scene: Scene): Promise<void> {
-  const fact = scene.facts.facts.at(-1);
-  if (fact === undefined) {
-    throw new TypeError("aucun fait à livrer");
-  }
-  await scene.subscriber.handle({ eventId: "outbox_1", type: fact.type, payload: fact.payload });
-}
 
 describe("request — la demande différée", () => {
   it("écrit le suivi ET le fait mail.requested, sans rien envoyer", async () => {
@@ -77,75 +65,7 @@ describe("request — la demande différée", () => {
   });
 });
 
-describe("l'abonné durable — l'envoi après la validation", () => {
-  it("envoie une fois, avec la clé d'idempotence, et suit l'envoi", async () => {
-    const scene = mailScene();
-    scene.probe.open = true;
-    await scene.port.request(SUSPENDED);
-
-    await deliverLast(scene);
-
-    expect(scene.dispatch.sent).toEqual([
-      {
-        template: "staff.access-suspended",
-        to: "equipe@example.test",
-        data: { firstName: "Ada" },
-        idempotencyKey: "staff.suspended:s1",
-      },
-    ]);
-    expect(scene.requests.rows.get("staff.suspended:s1")?.snapshot()).toMatchObject({
-      status: "sent",
-      providerId: "re_1",
-    });
-  });
-
-  it("un rejeu de la livraison n'envoie pas une seconde fois", async () => {
-    const scene = mailScene();
-    scene.probe.open = true;
-    await scene.port.request(SUSPENDED);
-
-    await deliverLast(scene);
-    await deliverLast(scene);
-
-    expect(scene.dispatch.sent).toHaveLength(1);
-  });
-
-  it("un échec technique fait échouer la livraison, sans rien ranger — elle sera rejouée", async () => {
-    const scene = mailScene();
-    scene.probe.open = true;
-    await scene.port.request(SUSPENDED);
-    scene.dispatch.failWith = new MailerSendError("Resend injoignable");
-
-    await expect(deliverLast(scene)).rejects.toThrow(MailerSendError);
-    expect(scene.requests.rows.get("staff.suspended:s1")?.status).toBe("requested");
-
-    await deliverLast(scene);
-    expect(scene.requests.rows.get("staff.suspended:s1")?.status).toBe("sent");
-  });
-
-  it("un refus ferme la demande sans faire échouer la livraison", async () => {
-    const scene = mailScene();
-    scene.probe.open = true;
-    await scene.port.request(SUSPENDED);
-    scene.dispatch.failWith = new MailRefusedError("adresse de réponse invalide.");
-
-    await deliverLast(scene);
-
-    expect(scene.requests.rows.get("staff.suspended:s1")?.status).toBe("refused");
-    await deliverLast(scene);
-    expect(scene.dispatch.sent).toEqual([]);
-  });
-
-  it("refuse un fait livré sans sa ligne de suivi", async () => {
-    const scene = mailScene();
-    scene.probe.open = true;
-    await scene.port.request(SUSPENDED);
-    scene.requests.rows.clear();
-
-    await expect(deliverLast(scene)).rejects.toThrow(MailRequestMissingError);
-    expect(scene.dispatch.sent).toEqual([]);
-  });
-});
+// L'abonné durable (S1b) : `deliver-requested-mail.spec.ts`.
 
 describe("sendNow — l'envoi immédiat", () => {
   it("envoie, rend le reçu, puis écrit le suivi", async () => {

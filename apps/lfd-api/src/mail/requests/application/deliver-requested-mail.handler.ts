@@ -1,42 +1,61 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
+import { AfterCommit } from "../../../platform/database/after-commit.js";
+import { BackgroundWork } from "../../../platform/events/background-work.js";
 import type { DurableDelivery } from "../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../platform/outbox/durable-handler.js";
+import { Clock } from "../../../platform/time/clock.js";
+import type { MailRequest } from "../domain/entities/mail-request.js";
 import { MailRequestMissingError } from "../domain/errors/mail-request.errors.js";
+import type { OutgoingMail } from "../domain/ports/mail-dispatch.js";
 import { MailRequestRepository } from "../domain/ports/mail-request.repository.js";
-import { MailSendAttempt } from "./mail-send-attempt.js";
+import { DeferredMailSender } from "./deferred-mail-sender.service.js";
 import { MAIL_REQUESTED, outgoingMailOf } from "./mail-requested.fact.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const DELIVER_REQUESTED_MAIL = "mail.deliver-requested-mail.on-requested";
 
 /**
- * **Envoie un e-mail demandé**, une fois la transaction de l'appelant validée.
+ * **Engage l'envoi d'un e-mail demandé**, puis l'envoie après la validation
+ * (plan `plan-service-e-mails.md`, § 8 — lot S1b).
  *
- * ## Pourquoi l'envoi se fait DANS la livraison, et pas après sa validation
+ * ## Dans la transaction de livraison : marquer, et rien d'autre
  *
- * La garde commune conseille de différer un effet réseau (`AfterCommit`), au
- * prix de toute relance. Ici la relance EST la promesse (plan C2 : « un
- * service arrêté retarde, ne perd pas ») : un échec technique fait échouer la
- * livraison, la ligne reste `requested`, et la boîte d'envoi la rejoue. C'est
- * ce que font déjà les six abonnés durables d'envoi d'e-mail du commerce
- * (`SendOrderPlacedMail`, vérifié le 2026-11-06).
+ * L'abonné tourne dans la transaction qui pose son reçu (`DurableDeliveryGuard`).
+ * Il y charge la demande et, si elle est envoyable (`requested`, ou `failed`
+ * encore reprenable), la passe en `sending` et la range. Aucun appel réseau :
+ * un appel à Resend peut durer plus que la transaction (le mailer attend
+ * jusqu'à 30 s sur un 429), et la connexion tenue manquerait au pool.
  *
- * ## L'idempotence, à deux étages
+ * ## Après la validation : l'envoi, puis une écriture courte
  *
- * Une demande close (`sent`, `refused`) n'est pas renvoyée : un rejeu de la
- * livraison est sans effet. Et la clé d'idempotence part chez le fournisseur,
- * qui dédoublonne un envoi accepté dont la validation aurait échoué ensuite.
+ * L'envoi part par `AfterCommit`, hors transaction, avec la clé d'idempotence
+ * de la demande, et son résultat est rangé par {@link DeferredMailSender}.
+ * Une livraison annulée n'envoie rien : le rappel n'est jamais exécuté.
+ *
+ * ## Différer ne veut pas dire « sans relance »
+ *
+ * Le reçu est validé quand l'envoi part : la boîte d'envoi ne rejouera pas.
+ * La relance est celle du BALAYEUR du bloc (`SweepMailRequestsHandler`) : un
+ * `sending` resté orphelin (processus tombé entre la validation et l'envoi)
+ * ou un `failed` reprenable repart avec la même clé, dans les 23 h de la
+ * fenêtre d'idempotence de Resend. Au-delà, `failed` visible, et un humain
+ * décide.
  */
 @Injectable()
 @DurableHandler({ type: MAIL_REQUESTED, subscriber: DELIVER_REQUESTED_MAIL })
 export class DeliverRequestedMail implements DurableSubscriber {
+  private readonly logger = new Logger(DeliverRequestedMail.name);
+
   constructor(
     private readonly requests: MailRequestRepository,
-    private readonly attempt: MailSendAttempt,
+    private readonly sender: DeferredMailSender,
+    private readonly afterCommit: AfterCommit,
+    private readonly work: BackgroundWork,
+    private readonly clock: Clock,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -45,15 +64,24 @@ export class DeliverRequestedMail implements DurableSubscriber {
     if (request === null) {
       throw new MailRequestMissingError(mail.idempotencyKey);
     }
-    if (request.isSettled()) {
+    // Close, déjà engagée, ou hors fenêtre : un rejeu de la livraison est sans effet.
+    if (!request.isSendable(this.clock.now())) {
       return;
     }
-    const outcome = await this.attempt.attempt(request, mail);
-    if (outcome.kind === "failed") {
-      // La livraison échoue et sera rejouée ; la transition `failed` part avec
-      // l'annulation, et la ligne reste `requested`.
-      throw outcome.error;
-    }
+    request.beginSending(this.clock.now());
     await this.requests.save(request);
+    this.afterCommit.defer(
+      () => this.work.track(this.send(request, mail), DELIVER_REQUESTED_MAIL),
+      DELIVER_REQUESTED_MAIL,
+    );
+  }
+
+  private async send(request: MailRequest, mail: OutgoingMail): Promise<void> {
+    const outcome = await this.sender.send(request, mail);
+    if (outcome.kind === "failed" || outcome.kind === "in-flight") {
+      this.logger.warn(
+        `E-mail « ${mail.template} » non parti (${outcome.kind}) : le balayeur le reprendra.`,
+      );
+    }
   }
 }

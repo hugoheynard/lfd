@@ -31,7 +31,7 @@ model MailRequest {
   recipient      String    @db.VarChar(320)
   /// La langue lue dans les données du modèle ; `null` s'il n'en déclare pas.
   locale         String?   @db.VarChar(8)
-  /// `requested` | `sent` | `failed` | `refused` (CHECK en base).
+  /// `requested` | `sending` | `sent` | `failed` | `refused` (CHECK en base).
   status         String    @db.VarChar(10)
   /// L'identifiant Resend ; `null` tant que rien n'est parti, ou en mode à blanc.
   providerId     String?   @map("provider_id")
@@ -43,8 +43,15 @@ model MailRequest {
   sentAt         DateTime? @map("sent_at") @db.Timestamptz(6)
   /// L'instant du dernier échec ou du refus.
   failedAt       DateTime? @map("failed_at") @db.Timestamptz(6)
+  /// Le premier envoi différé engagé (S1b) : la fenêtre de reprise (23 h) en part.
+  firstAttemptAt DateTime? @map("first_attempt_at") @db.Timestamptz(6)
+  /// Le dernier envoi différé engagé : un `sending` plus vieux est orphelin.
+  lastAttemptAt  DateTime? @map("last_attempt_at") @db.Timestamptz(6)
+  /// Les envois différés engagés (plafond dans l'agrégat).
+  attempts       Int       @default(0)
 
   @@index([status, requestedAt])
+  @@index([status, lastAttemptAt])
   @@map("mail_request")
   @@schema("mail")
 }

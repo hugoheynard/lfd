@@ -256,6 +256,7 @@
   "test/mail-copy-default-drift.e2e-spec.ts": 8000,
   "test/mail-copy-preview.e2e-spec.ts": 5000,
   "test/mail-copy.e2e-spec.ts": 6000,
+  "test/mail-requests-sweep.e2e-spec.ts": 8788,
   "test/mail-requests.e2e-spec.ts": 23180,
   "test/mail-section-order.e2e-spec.ts": 5000,
   "test/mandate-bank-export-abandon.e2e-spec.ts": 8164,

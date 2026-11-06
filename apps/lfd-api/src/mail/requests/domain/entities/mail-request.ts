@@ -1,6 +1,7 @@
 import {
   InvalidMailRequestError,
   MailRequestAlreadySettledError,
+  MailRequestNotResumableError,
 } from "../errors/mail-request.errors.js";
 import { MailBrand, type MailBrandCode } from "../value-objects/mail-brand.js";
 
@@ -8,6 +9,10 @@ import { MailBrand, type MailBrandCode } from "../value-objects/mail-brand.js";
  * Les états d'une demande (plan `plan-service-e-mails.md`, C7) :
  *
  * - `requested` — écrite, pas encore partie ;
+ * - `sending` — un envoi différé est engagé (S1b, plan § 8) : marqué dans la
+ *   transaction de livraison, il part après la validation. Une demande qui y
+ *   reste est un envoi orphelin (redémarrage entre les deux), que le
+ *   balayeur reprend avec la même clé ;
  * - `sent` — acceptée par le fournisseur (pas « arrivée » : `CLAUDE.md` § 0) ;
  * - `failed` — l'envoi a échoué pour une raison technique ; un nouvel essai
  *   peut réussir ;
@@ -15,7 +20,7 @@ import { MailBrand, type MailBrandCode } from "../value-objects/mail-brand.js";
  *
  * `sent` et `refused` sont terminaux.
  */
-export const MAIL_REQUEST_STATUSES = ["requested", "sent", "failed", "refused"] as const;
+export const MAIL_REQUEST_STATUSES = ["requested", "sending", "sent", "failed", "refused"] as const;
 
 export type MailRequestStatus = (typeof MAIL_REQUEST_STATUSES)[number];
 
@@ -23,6 +28,19 @@ const TEMPLATE_MAX = 80;
 const RECIPIENT_MAX = 320;
 const KEY_MAX = 200;
 const REASON_MAX = 500;
+const HOUR_MS = 3_600_000;
+
+/**
+ * Jusqu'où une reprise est permise après la PREMIÈRE tentative : 23 h. Resend
+ * garde une clé d'idempotence 24 h (documentation de Resend relue le
+ * 2026-11-06, plan § 8) ; au-delà, un renvoi de même clé ne serait plus
+ * dédoublonné, et un e-mail peut-être parti partirait deux fois. L'heure de
+ * marge couvre le décalage des horloges et la durée d'un passage.
+ */
+export const MAIL_RESUME_WINDOW_MS = 23 * HOUR_MS;
+
+/** Le plafond d'essais d'un envoi différé, le premier compris. */
+export const MAX_MAIL_ATTEMPTS = 10;
 
 /** Ce qu'il faut pour demander un e-mail. */
 export interface MailRequestDraft {
@@ -49,6 +67,12 @@ export interface MailRequestSnapshot {
   readonly requestedAt: Date;
   readonly sentAt: Date | null;
   readonly failedAt: Date | null;
+  /** L'instant du premier envoi différé engagé ; `null` sans envoi différé. */
+  readonly firstAttemptAt: Date | null;
+  /** L'instant du dernier envoi différé engagé. */
+  readonly lastAttemptAt: Date | null;
+  /** Les envois différés engagés. `sendNow` n'en compte pas : il ne passe pas par `sending`. */
+  readonly attempts: number;
 }
 
 function required(field: string, value: string, max: number): string {
@@ -66,12 +90,19 @@ function clipped(reason: string): string {
   return reason.length > REASON_MAX ? reason.slice(0, REASON_MAX) : reason;
 }
 
+const GIVE_UP_REASON =
+  "Envoi abandonné sans renvoi automatique : la première tentative date de plus de 23 h " +
+  `ou ${MAX_MAIL_ATTEMPTS} essais ont été faits. Il est peut-être parti : vérifier au suivi ` +
+  "de Resend, puis refaire une demande avec une nouvelle clé si besoin.";
+
 /**
  * **Une demande d'e-mail et son suivi** — l'agrégat du bloc `mail`.
  *
- * Il porte la seule règle qui peut refuser une écriture : une demande close
- * (`sent`, `refused`) ne repart pas. C'est ce qui rend un rejeu de la boîte
- * d'envoi sans effet chez le destinataire.
+ * Il porte les règles qui peuvent refuser une écriture : une demande close
+ * (`sent`, `refused`) ne repart pas — c'est ce qui rend un rejeu de la boîte
+ * d'envoi sans effet chez le destinataire ; et un envoi différé ne se reprend
+ * pas au-delà de {@link MAIL_RESUME_WINDOW_MS} ni de {@link MAX_MAIL_ATTEMPTS}
+ * (S1b, plan § 8).
  *
  * Il ne porte PAS les données du modèle : le suivi garde ce que C7 nomme
  * (modèle, marque, destinataire, langue, état, identifiant fournisseur,
@@ -95,6 +126,9 @@ export class MailRequest {
       requestedAt: draft.requestedAt,
       sentAt: null,
       failedAt: null,
+      firstAttemptAt: null,
+      lastAttemptAt: null,
+      attempts: 0,
     });
   }
 
@@ -118,6 +152,78 @@ export class MailRequest {
   /** Close : envoyée ou refusée. Elle ne repart plus. */
   isSettled(): boolean {
     return this.state.status === "sent" || this.state.status === "refused";
+  }
+
+  /**
+   * Peut-on engager l'envoi différé maintenant ? Une demande neuve, ou un
+   * échec encore reprenable. `sending` n'y est pas : l'envoi est déjà engagé,
+   * et seul le balayeur le reprend, passé son délai.
+   */
+  isSendable(at: Date): boolean {
+    return (
+      this.state.status === "requested" || (this.state.status === "failed" && this.canResume(at))
+    );
+  }
+
+  /**
+   * Un envoi différé déjà engagé (`sending` orphelin, `failed`) peut-il
+   * repartir, avec la même clé ? Seulement dans la fenêtre comptée depuis la
+   * première tentative, et sous le plafond d'essais. Un échec de `sendNow`
+   * (sans tentative différée) ne se reprend jamais seul : l'équipe a vu
+   * l'erreur à l'écran, et c'est à elle de refaire le geste.
+   */
+  canResume(at: Date): boolean {
+    const { status, firstAttemptAt, attempts } = this.state;
+    if ((status !== "sending" && status !== "failed") || firstAttemptAt === null) {
+      return false;
+    }
+    const elapsed = at.getTime() - firstAttemptAt.getTime();
+    return elapsed < MAIL_RESUME_WINDOW_MS && attempts < MAX_MAIL_ATTEMPTS;
+  }
+
+  /**
+   * Engage un envoi différé : `requested → sending`, ou une reprise
+   * (`failed`/`sending → sending`) tant que {@link canResume} le permet.
+   *
+   * @throws {MailRequestAlreadySettledError} la demande est close.
+   * @throws {MailRequestNotResumableError} fenêtre ou plafond dépassé.
+   */
+  beginSending(at: Date): void {
+    this.assertOpen();
+    if (this.state.status === "requested") {
+      this.state = {
+        ...this.state,
+        status: "sending",
+        firstAttemptAt: at,
+        lastAttemptAt: at,
+        attempts: 1,
+      };
+      return;
+    }
+    if (!this.canResume(at)) {
+      throw new MailRequestNotResumableError(this.state.idempotencyKey, this.state.attempts);
+    }
+    this.state = {
+      ...this.state,
+      status: "sending",
+      lastAttemptAt: at,
+      attempts: this.state.attempts + 1,
+    };
+  }
+
+  /**
+   * Le balayeur renonce à un envoi engagé qu'il ne peut plus reprendre :
+   * `failed`, visible au suivi, et un humain décide (plan § 8). Il est
+   * peut-être parti : seul le suivi de Resend le dira.
+   *
+   * @throws {MailRequestNotResumableError} la demande n'est pas un envoi
+   *   engagé, ou elle est encore reprenable — y renoncer serait une faute.
+   */
+  giveUp(at: Date): void {
+    if (this.state.status !== "sending" || this.canResume(at)) {
+      throw new MailRequestNotResumableError(this.state.idempotencyKey, this.state.attempts);
+    }
+    this.markFailed(GIVE_UP_REASON, at);
   }
 
   /** Le fournisseur a accepté. `providerId` vaut `null` en mode à blanc. */

@@ -546,6 +546,22 @@ async function triggerOutboxSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et balaie les e-mails demandés : reprend, avec la même
+ * clé d'idempotence, un envoi resté orphelin entre la validation et l'appel à
+ * Resend, ou un échec reprenable ; renonce au-delà de 23 h (plan
+ * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 8). Sur le
+ * cron de RAFRAÎCHISSEMENT, à côté de la boîte d'envoi : même porte, même
+ * jeton, idempotent.
+ */
+async function triggerMailRequestsSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/mail/requests/sweep");
+}
+
+/**
  * Réveille le container et passe le tour de l'arrêt du plan : en mode
  * automatique, arrêter le plan du lendemain passé l'heure réglée ; en manuel,
  * alerter passé l'heure d'alerte ; et prévenir si celui d'aujourd'hui n'est pas
@@ -663,6 +679,7 @@ async function refreshSweeps(env: Env): Promise<void> {
   await keepWarm(env);
   await Promise.allSettled([
     triggerOutboxSweep(env),
+    triggerMailRequestsSweep(env),
     triggerAutoClose(env),
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),

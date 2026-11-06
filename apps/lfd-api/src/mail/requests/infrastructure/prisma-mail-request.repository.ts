@@ -11,8 +11,8 @@ import { UnknownMailRequestStatusError } from "../domain/errors/mail-request.err
 import { MailRequestRepository } from "../domain/ports/mail-request.repository.js";
 import { MailBrand } from "../domain/value-objects/mail-brand.js";
 
-/** La ligne telle que Prisma la rend — confinée à ce fichier. */
-interface MailRequestRow {
+/** La ligne telle que Prisma la rend — confinée à `infrastructure/`. */
+export interface MailRequestRow {
   readonly id: string;
   readonly template: string;
   readonly brand: string;
@@ -25,6 +25,9 @@ interface MailRequestRow {
   readonly requestedAt: Date;
   readonly sentAt: Date | null;
   readonly failedAt: Date | null;
+  readonly firstAttemptAt: Date | null;
+  readonly lastAttemptAt: Date | null;
+  readonly attempts: number;
 }
 
 function statusOf(raw: string): MailRequestStatus {
@@ -37,7 +40,8 @@ function statusOf(raw: string): MailRequestStatus {
   return status;
 }
 
-function toDomain(row: MailRequestRow): MailRequest {
+/** Relit une ligne ; partagé avec la lecture du balayeur. */
+export function toDomain(row: MailRequestRow): MailRequest {
   return MailRequest.rehydrate({
     ...row,
     brand: MailBrand.of(row.brand).code,
@@ -87,6 +91,9 @@ export class PrismaMailRequestRepository extends MailRequestRepository {
         failureReason: row.failureReason,
         sentAt: row.sentAt,
         failedAt: row.failedAt,
+        firstAttemptAt: row.firstAttemptAt,
+        lastAttemptAt: row.lastAttemptAt,
+        attempts: row.attempts,
       },
     });
   }

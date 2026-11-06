@@ -22,6 +22,7 @@ export { DryRunMailer } from "./dry-run-mailer.js";
 export {
   MailerCircuitOpenError,
   MailerError,
+  MailerIdempotencyInFlightError,
   MailerInvalidReplyToError,
   MailerRateLimitedError,
   MailerReceiveError,

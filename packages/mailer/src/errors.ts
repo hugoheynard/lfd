@@ -55,6 +55,18 @@ export class MailerSendError extends MailerError {
 export class MailerRateLimitedError extends MailerSendError {}
 
 /**
+ * Resend traite encore une requête de MÊME clé d'idempotence (409
+ * `concurrent_idempotent_requests`, documentation de Resend relue le
+ * 2026-11-06). Rien n'est perdu ni doublé : le premier envoi est en cours.
+ *
+ * Pour l'appelant, une `MailerSendError` comme une autre ; elle n'existe que
+ * pour qui veut la distinguer — le bloc `mail` laisse alors sa demande
+ * `sending`, que son balayeur reprendra avec la même clé — et pour le
+ * disjoncteur, qui ne la compte pas : un fournisseur qui la rend répond.
+ */
+export class MailerIdempotencyInFlightError extends MailerSendError {}
+
+/**
  * Le disjoncteur est ouvert : on considère le fournisseur en panne et on
  * échoue **vite**, sans l'appeler. Distinct de `MailerSendError` parce que rien
  * n'a été tenté — utile pour ne pas compter deux fois un incident.

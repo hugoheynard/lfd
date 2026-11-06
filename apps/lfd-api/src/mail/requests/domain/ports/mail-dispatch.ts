@@ -11,6 +11,8 @@ export interface OutgoingMail {
  * (`platform/mailer` — plan S1 : le rendu ne change pas).
  *
  * @returns l'identifiant du fournisseur, `null` en mode à blanc.
+ * @throws {MailInFlightError} un envoi de même clé est encore en cours chez le
+ *   fournisseur : ni échec, ni refus.
  * @throws {MailRefusedError} refus que réessayer ne changera pas. Toute autre
  *   erreur est technique : un nouvel essai peut réussir.
  */

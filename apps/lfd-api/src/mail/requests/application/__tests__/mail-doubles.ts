@@ -1,16 +1,25 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { DurableFactPayloads } from "../../../../platform/outbox/durable-fact-payloads.js";
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { MailRequest } from "../../domain/entities/mail-request.js";
 import { MailDispatch, type OutgoingMail } from "../../domain/ports/mail-dispatch.js";
 import { MailRequestRepository } from "../../domain/ports/mail-request.repository.js";
+import {
+  type StalledMailCriteria,
+  StalledMailRequests,
+} from "../../domain/ports/stalled-mail-requests.js";
 import { UnitOfWorkProbe } from "../../domain/ports/unit-of-work-probe.js";
 import { BlockMailRequests } from "../block-mail-requests.js";
+import { DeferredMailSender } from "../deferred-mail-sender.service.js";
 import { DeliverRequestedMail } from "../deliver-requested-mail.handler.js";
 import { ImmediateMailSender } from "../immediate-mail-sender.service.js";
 import { MailRequester } from "../mail-requester.service.js";
 import { MailSendAttempt } from "../mail-send-attempt.js";
+import { SweepMailRequestsHandler } from "../sweep-mail-requests.handler.js";
 
 /** Le suivi en mémoire, rangé par clé d'idempotence comme en base. */
 export class InMemoryMailRequests extends MailRequestRepository {
@@ -32,6 +41,47 @@ export class InMemoryMailRequests extends MailRequestRepository {
   save(request: MailRequest): Promise<void> {
     this.rows.set(request.idempotencyKey, MailRequest.rehydrate(request.snapshot()));
     return Promise.resolve();
+  }
+}
+
+/**
+ * Les envois en retard, filtrés comme la requête de l'adaptateur Prisma : la
+ * même condition, écrite une seconde fois pour que le balayeur s'éprouve sans
+ * base. L'e2e prouve que la vraie requête dit la même chose.
+ */
+export class InMemoryStalledMailRequests extends StalledMailRequests {
+  constructor(private readonly requests: InMemoryMailRequests) {
+    super();
+  }
+
+  due(criteria: StalledMailCriteria): Promise<readonly MailRequest[]> {
+    const late = (at: Date | null): boolean =>
+      at !== null && at.getTime() < criteria.attemptedBefore.getTime();
+    const due = [...this.requests.rows.values()]
+      .map((row) => row.snapshot())
+      .filter(
+        (row) =>
+          (row.status === "sending" && late(row.lastAttemptAt)) ||
+          (row.status === "failed" &&
+            late(row.lastAttemptAt) &&
+            row.firstAttemptAt !== null &&
+            row.firstAttemptAt.getTime() >= criteria.firstAttemptSince.getTime() &&
+            row.attempts < criteria.maxAttempts),
+      )
+      .slice(0, criteria.limit)
+      .map((row) => MailRequest.rehydrate(row));
+    return Promise.resolve(due);
+  }
+}
+
+/** Les charges des faits écrits, relues par leur clé. */
+export class FactPayloadsOf extends DurableFactPayloads {
+  constructor(private readonly facts: RecordingFacts) {
+    super();
+  }
+
+  payloadOf(key: string): Promise<Readonly<Record<string, unknown>> | null> {
+    return Promise.resolve(this.facts.facts.find((fact) => fact.key === key)?.payload ?? null);
   }
 }
 
@@ -78,15 +128,33 @@ export function mailScene() {
   const probe = new SwitchableProbe();
   const clock = new FixedClock(new Date(0));
   const ids = new FixedIdGenerator("mail");
+  const afterCommit = new HeldAfterCommit();
   const attempt = new MailSendAttempt(dispatch, clock);
+  const deferred = new DeferredMailSender(requests, attempt);
   const requester = new MailRequester(requests, facts, probe, clock, ids);
   const immediate = new ImmediateMailSender(requests, attempt, probe, clock, ids);
+  const sweeper = new SweepMailRequestsHandler(
+    new InMemoryStalledMailRequests(requests),
+    requests,
+    new FactPayloadsOf(facts),
+    deferred,
+    clock,
+  );
   return {
     requests,
     dispatch,
     facts,
     probe,
+    clock,
+    afterCommit,
+    sweeper,
     port: new BlockMailRequests(requester, immediate),
-    subscriber: new DeliverRequestedMail(requests, attempt),
+    subscriber: new DeliverRequestedMail(
+      requests,
+      deferred,
+      afterCommit,
+      new BackgroundWork(),
+      clock,
+    ),
   };
 }

@@ -41,6 +41,23 @@ export class MailRequestAlreadySettledError extends BusinessError {
 }
 
 /**
+ * Un envoi différé qu'on ne reprend plus : sa première tentative date de plus
+ * de 23 h (la clé d'idempotence de Resend expire à 24 h) ou le plafond
+ * d'essais est atteint. Le renvoyer risquerait un doublon chez le destinataire.
+ */
+export class MailRequestNotResumableError extends BusinessError {
+  constructor(idempotencyKey: string, attempts: number) {
+    super(
+      "MAIL_REQUEST_NOT_RESUMABLE",
+      `La demande d'e-mail « ${idempotencyKey} » ne se reprend plus (${attempts} essai(s), ` +
+        "première tentative il y a plus de 23 h ou plafond atteint) : un renvoi de même clé " +
+        "pourrait doubler l'e-mail. Vérifier au suivi de Resend s'il est parti, puis faire " +
+        "une nouvelle demande avec une autre clé si besoin.",
+    );
+  }
+}
+
+/**
  * Le fournisseur a refusé l'envoi pour une raison que réessayer ne changera
  * pas (adresse de réponse invalide…). Porte l'erreur d'origine en `cause`.
  */
@@ -50,6 +67,23 @@ export class MailRefusedError extends BusinessError {
       "MAIL_REFUSED",
       `L'e-mail a été refusé avant de partir : ${reason} ` +
         "Corriger la donnée en cause puis refaire le geste.",
+      cause,
+    );
+  }
+}
+
+/**
+ * Le fournisseur traite encore un envoi de MÊME clé d'idempotence (409
+ * `concurrent_idempotent_requests` de Resend). Ce n'est pas un échec : le
+ * premier envoi est en cours. Une demande différée reste `sending`, et le
+ * balayeur la reprendra avec la même clé. Porte l'erreur d'origine en `cause`.
+ */
+export class MailInFlightError extends TechnicalError {
+  constructor(cause?: unknown) {
+    super(
+      "MAIL_IN_FLIGHT",
+      "Un envoi de cet e-mail, de même clé, est encore en cours chez le fournisseur : " +
+        "rien n'est doublé. Réessayer dans quelques minutes ; le balayeur des e-mails le reprend seul.",
       cause,
     );
   }

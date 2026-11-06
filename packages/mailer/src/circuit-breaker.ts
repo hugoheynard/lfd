@@ -1,4 +1,9 @@
-import { MailerCircuitOpenError, MailerError, MailerRateLimitedError } from "./errors.js";
+import {
+  MailerCircuitOpenError,
+  MailerError,
+  MailerIdempotencyInFlightError,
+  MailerRateLimitedError,
+} from "./errors.js";
 import { silentLogger } from "./types.js";
 import type { Mailer, MailerLogger, MailReceipt, SendMailArgs, TemplateMap } from "./types.js";
 
@@ -30,6 +35,8 @@ export interface CircuitBreakerOptions {
  *
  * Un refus de cadence (`MailerRateLimitedError`, 2026-10-07) ne compte pas
  * comme un échec : le fournisseur répond, il demande seulement de ralentir.
+ * Une requête de même clé encore en cours (`MailerIdempotencyInFlightError`,
+ * 2026-11-06) non plus, pour la même raison.
  */
 export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
   private failures = 0;
@@ -66,7 +73,7 @@ export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
       // ralentir. Le compter ouvrirait le disjoncteur sur une simple rafale.
       // Une donnée refusée (`business`, ex. un Reply-To invalide) non plus :
       // rien n'a été tenté chez le fournisseur.
-      if (!(error instanceof MailerRateLimitedError) && !isRefusedData(error)) {
+      if (!answered(error) && !isRefusedData(error)) {
         this.recordFailure();
       }
       throw error;
@@ -88,6 +95,11 @@ export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
       cooldownMs: this.cooldownMs,
     });
   }
+}
+
+/** Le fournisseur a répondu (cadence, requête de même clé en cours) : il n'est pas en panne. */
+function answered(error: unknown): boolean {
+  return error instanceof MailerRateLimitedError || error instanceof MailerIdempotencyInFlightError;
 }
 
 /** Un refus de la donnée par le mailer lui-même : le fournisseur n'a pas été appelé. */

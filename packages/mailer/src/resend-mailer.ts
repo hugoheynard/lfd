@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-import { MailerRateLimitedError, MailerSendError } from "./errors.js";
+import {
+  MailerIdempotencyInFlightError,
+  MailerRateLimitedError,
+  MailerSendError,
+} from "./errors.js";
 import { validReplyTo } from "./reply-to.js";
 import { silentLogger } from "./types.js";
 import type {
@@ -25,6 +29,9 @@ const QUOTA_EXHAUSTED: ReadonlySet<string> = new Set([
 ]);
 /** Essais au plus quand Resend demande de ralentir, le premier compris. */
 const MAX_ATTEMPTS_WHEN_RATE_LIMITED = 3;
+/** Le statut et le nom par lesquels Resend dit qu'une requête de même clé est en cours. */
+const CONFLICT_STATUS = 409;
+const CONCURRENT_IDEMPOTENT_REQUESTS = "concurrent_idempotent_requests";
 /** L'attente quand `Retry-After` manque ou ne se lit pas comme des secondes. */
 const DEFAULT_RETRY_AFTER_MS = 1_000;
 /** Le plafond d'une attente : un envoi ne reste pas suspendu plus longtemps. */
@@ -144,9 +151,7 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
         providerMessage: message,
       });
       const refusal = `Resend a refusé l'envoi : ${message}`;
-      throw isRateLimited(result.error)
-        ? new MailerRateLimitedError(refusal)
-        : new MailerSendError(refusal);
+      throw refusalError(result.error, refusal);
     }
     const providerId = result.data?.id ?? null;
     this.log.info("E-mail envoyé", { ...context, providerId });
@@ -231,6 +236,17 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
 
 /** Le refus de Resend tel que le SDK le rend. */
 type ResendRefusal = NonNullable<Awaited<ReturnType<ResendLike["emails"]["send"]>>["error"]>;
+
+/** L'erreur qui nomme le refus : cadence, requête de même clé en cours, ou autre. */
+function refusalError(error: ResendRefusal, refusal: string): MailerSendError {
+  if (isRateLimited(error)) {
+    return new MailerRateLimitedError(refusal);
+  }
+  if (error.statusCode === CONFLICT_STATUS && error.name === CONCURRENT_IDEMPOTENT_REQUESTS) {
+    return new MailerIdempotencyInFlightError(refusal);
+  }
+  return new MailerSendError(refusal);
+}
 
 /** Un refus de cadence : un 429 qui n'est pas un quota épuisé. */
 function isRateLimited(error: ResendRefusal | null): boolean {

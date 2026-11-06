@@ -19,6 +19,10 @@
 > champ de la demande, elle est lue dans `locale` des données. La durée de
 > conservation du destinataire a été décidée après coup (1 an, § 7) ; sa purge
 > est bâtie à blanc.
+>
+> 🏗️ **S1b bâti le 2026-11-06** (§ 8) : état `sending`, envoi après
+> validation, balayeur `POST /admin/mail/requests/sweep` sur le cron `*/5`.
+> Écarts au texte en fin de § 8.
 
 ## Partie 1 — Comprendre
 
@@ -181,7 +185,7 @@ flowchart LR
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | **S0**  | Armer les portes, le nom tranché par Hugo d'abord (un schéma créé ne se renomme pas) : le bloc `mail` dans la matrice du § 3 de `CLAUDE.md` et dans `lint:context-boundaries`, le schéma `mail` dans le `datasource` et dans `lint:prisma-schema-layout`, la colonne « → `mail` : port uniquement » et la ligne `mail` (→ `platform`, `staff` autorisation) dans la matrice et la porte, AVANT le premier fichier        | rien                                                                                                                    |
 | **S1**  | Le bloc, sa porte (`request` et `sendNow`), la table des demandes et du suivi, l'envoi par l'outbox ; le rendu reste celui de `platform/mailer`. Une porte `lint:mail-through-block` compte les injections de `MAILER` hors du bloc : la dette (31) ne peut que décroître                                                                                                                                                | rien                                                                                                                    |
-| **S1b** | L'envoi sort de la transaction de livraison : état `sending`, envoi après validation, résultat dans une écriture courte, balayeur borné par la fenêtre d'idempotence de Resend (§ 8)                                                                                                                                                                                                                                     | rien                                                                                                                    |
+| **S1b** | ✅ bâti le 2026-11-06. L'envoi sort de la transaction de livraison : état `sending`, envoi après validation, résultat dans une écriture courte, balayeur borné par la fenêtre d'idempotence de Resend (§ 8)                                                                                                                                                                                                              | rien                                                                                                                    |
 | **S2**  | Faire passer les 31 envoyeurs par la porte, bloc par bloc : `sendNow` pour les ~6 producteurs de `mailSent`, l'essai (`specimen-mail-trial`) et la sonde (`admin-mail-check`) ; `request` pour le reste. Les PDF passent au stockage                                                                                                                                                                                     | les e-mails des abonnés en mémoire deviennent durables ; délai à mesurer sur « commande prête » et « livreur en route » |
 | **S3**  | Déménager les gabarits, le dictionnaire et les sections de `platform/mailer/` dans le bloc. **Restent dans `platform/mailer/`** : `webhook/` (lu par `ops`), `inbound/` et `journal/`, techniques. Les trois tables `public.mail_*` **restent dans `public`** : seul leur écrivain change (de `b2b/mail-copy` au bloc `mail`), dans le même déploiement que leur lecteur. Les tables neuves du bloc vont dans son schéma | rien                                                                                                                    |
 | **S4**  | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                       | rien tant que rien n'est publié                                                                                         |
@@ -293,3 +297,40 @@ clé est gardée 24 h ; une requête de même clé encore en cours rend un 409
 `concurrent_idempotent_requests`, qu'on peut retenter). Le balayeur ne
 renvoie donc jamais une demande dont la première tentative date de plus de
 **23 heures** : au-delà, `failed`, visible, et un humain décide.
+
+### Bâti le 2026-11-06 — ce qui existe, et les écarts
+
+- **L'agrégat** (`mail/requests/domain/entities/mail-request.ts`) : état
+  `sending`, colonnes `first_attempt_at`, `last_attempt_at`, `attempts`
+  (migration `20261106180000_l_envoi_hors_transaction`, CHECK élargi).
+  `beginSending` : `requested → sending`, et la reprise `failed`/`sending →
+sending` tant que la première tentative a moins de **23 h** et que le
+  plafond (**10 essais**) n'est pas atteint ; sinon il refuse
+  (`MailRequestNotResumableError`). `giveUp` : un `sending` hors fenêtre
+  passe `failed`, avec une raison qui dit de vérifier chez Resend.
+- **L'abonné** (`DeliverRequestedMail`) : dans la livraison, `sending` et
+  rien d'autre ; l'envoi part par `AfterCommit` (suivi par
+  `BackgroundWork`), puis `DeferredMailSender` écrit le résultat.
+- **Le 409 `concurrent_idempotent_requests`** : `@lfd/mailer` le lève
+  désormais en `MailerIdempotencyInFlightError` (sous-classe de
+  `MailerSendError`, ignorée du disjoncteur) ; le bloc le traduit en
+  `MailInFlightError` et laisse la demande `sending`.
+- **Le balayeur** (`SweepMailRequestsHandler`, route
+  `admin/mail/requests/sweep`, `RecomputeGuard`, cron `*/5` à côté de la
+  boîte d'envoi) : lots de **20**, une tentative est en retard après
+  **10 minutes**.
+
+Écarts et choix du bâti, à relire :
+
+- **D'où le balayeur tire les données du modèle.** Le texte ne le disait pas,
+  et C7 les exclut du suivi. Elles ne vivent que dans le fait `mail.requested`
+  de la boîte d'envoi : le balayeur les relit par sa clé déterministe, par
+  un port de lecture de `platform/outbox` (`DurableFactPayloads`). La purge
+  de l'outbox (30 jours après livraison) ne gêne pas une fenêtre de 23 h ;
+  un fait introuvable n'est pas renvoyé (`missingFact` au compte rendu).
+- **Un échec de `sendNow` n'est jamais repris par le balayeur** : `sendNow`
+  ne passe pas par `sending`, et l'équipe a vu l'erreur à l'écran — c'est à
+  elle de refaire le geste. Seuls les envois différés ont une première
+  tentative datée.
+- **Les nombres** (10 essais, 10 minutes, lots de 20) sont des choix du
+  bâti, pas du plan.

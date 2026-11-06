@@ -141,6 +141,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailSend: "ops",
   WebhookEvent: "ops",
   PostDeployRun: "ops",
+  // Le bloc des e-mails (S1, 2026-11-06) : sa table était comptée sous `public`.
+  MailRequest: "mail",
   // Le référentiel, depuis B4. Il avait sa propre BASE : ses opérations
   // n'apparaissaient donc nulle part dans ce compteur, et le forfait qu'elles
   // consommaient se lisait sur une autre facture. Elles comptent ici désormais,

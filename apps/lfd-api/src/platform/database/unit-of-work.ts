@@ -16,9 +16,10 @@ import { CommitQueue, currentTransaction, runInTransaction } from "./transaction
  *
  * **Garder la transaction COURTE.** Une transaction interactive a un délai
  * maximal, et derrière le pooler mutualisé une
- * transaction tient en plus, tout le temps qu'elle dure, l'une des cinq
- * connexions du pool de l'instance (`prisma.service.ts`, vérifié le
- * 2026-09-19). On n'enveloppe donc que l'écriture et sa trace — jamais un appel
+ * transaction tient en plus, tout le temps qu'elle dure, l'une des quinze
+ * connexions du pool de l'instance (`prisma.service.ts`, `max: 15` depuis le
+ * 2026-10-30 — cinq avant ; vérifié le 2026-11-06). Le délai, lui, est celui
+ * de Prisma par défaut (5 s) : `$transaction` est ouvert sans option. On n'enveloppe donc que l'écriture et sa trace — jamais un appel
  * réseau tiers (le mailer, un canal de publication), qui tiendrait la
  * transaction ouverte le temps d'un aller-retour hors de notre contrôle.
  *

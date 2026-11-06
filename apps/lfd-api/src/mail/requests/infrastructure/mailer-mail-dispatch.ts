@@ -1,9 +1,9 @@
-import { MailerError } from "@lfd/mailer";
+import { MailerError, MailerIdempotencyInFlightError } from "@lfd/mailer";
 import { Inject, Injectable } from "@nestjs/common";
 
 import type { B2bMails } from "../../../platform/mailer/mail-templates.js";
 import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
-import { MailRefusedError } from "../domain/errors/mail-request.errors.js";
+import { MailInFlightError, MailRefusedError } from "../domain/errors/mail-request.errors.js";
 import { MailDispatch, type OutgoingMail } from "../domain/ports/mail-dispatch.js";
 
 /**
@@ -35,6 +35,10 @@ export class MailerMailDispatch extends MailDispatch {
       });
       return receipt.providerId;
     } catch (error) {
+      // Une requête de même clé en cours chez Resend : ni échec, ni refus.
+      if (error instanceof MailerIdempotencyInFlightError) {
+        throw new MailInFlightError(error);
+      }
       // Une erreur « métier » du mailer ne guérit pas d'un nouvel essai.
       if (error instanceof MailerError && error.category === "business") {
         throw new MailRefusedError(error.message, error);
