@@ -111,8 +111,9 @@ toutes les destinations.
 ### 3. Où il vit — un service d'e-mails commun (Hugo, 2026-11-06)
 
 **Le constat.** La Folie Coffee envoie des e-mails ; la future **billetterie
-d'événements** en enverra aussi. Elle vivra dans ce monorepo, avec sa propre
-API et sa propre base. Les deux produits relèvent de **la même société**, et
+d'événements** en enverra aussi. Elle sera **un bloc de `lfd-api`**, avec
+son schéma dans la base unique (Hugo, 2026-11-06 : « c'est le principe du
+modular monolith »), et non une API à part comme écrit plus tôt le même jour. Les deux produits relèvent de **la même société**, et
 **les mêmes personnes** éditent leurs e-mails (Hugo, 2026-11-06).
 
 **La décision : les apps demandent, le service d'e-mails compose et envoie**
@@ -120,8 +121,8 @@ API et sa propre base. Les deux produits relèvent de **la même société**, et
 
 ```mermaid
 flowchart LR
-  LFC["API La Folie Coffee"] -- "mail.demandé<br/>(outbox durable)" --> SVC
-  TIX["API billetterie"] -- "mail.demandé<br/>(outbox durable)" --> SVC
+  LFC["bloc commerce (et les autres)"] -- "mail.demandé<br/>(outbox durable)" --> SVC
+  TIX["bloc billetterie"] -- "mail.demandé<br/>(outbox durable)" --> SVC
   subgraph SVC["service e-mails — sa propre app, sa propre base"]
     T["modèles par blocs<br/>une charte par marque"]
     E["éditeur<br/>(une équipe, deux produits)"]
@@ -165,9 +166,8 @@ exemple `mail/`), avec **son schéma Postgres** dans la base unique, comme
 - **L'extraire plus tard** en app à part, quand la billetterie en aura besoin
   ou plus tôt si l'exploitation le demande, revient à déménager un bloc dont
   les frontières sont déjà tenues : son schéma part avec lui, les demandes
-  passent déjà par une file. La billetterie, elle, devra d'ici là joindre ce
-  bloc par une route de `lfd-api` (à concevoir au plan, avec son jeton de
-  service), puisqu'elle aura sa propre API.
+  passent déjà par une file. La billetterie, bloc de la même API, demande
+  ses e-mails par la même porte que les autres blocs.
 
 **L'éditeur vit dans le back-office `lfd-backoffice-frontend`** (Hugo,
 2026-11-06), là où l'écran des textes des e-mails est déjà, sous
