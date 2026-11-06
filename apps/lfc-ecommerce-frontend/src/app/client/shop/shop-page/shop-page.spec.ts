@@ -450,6 +450,23 @@ describe('ShopPage', () => {
     fixture.detectChanges();
     expect(el().querySelector('.shop')?.classList).toContain('under-bar');
   });
+
+  /**
+   * Régression (2026-11-06) : le lien direct `?retrait=` retient un point sans
+   * jour, la barre le dit — et le filtre restait collé sous elle jusqu'au
+   * premier ajout, la page ne réservant pas sa place.
+   */
+  it('réserve la place de la barre quand un lien direct a retenu un point, panier vide', () => {
+    const order = TestBed.inject(OrderContextStore);
+    order.choice.set(null);
+    order.draft.set(null);
+    fixture.detectChanges();
+    expect(el().querySelector('.shop')?.classList).not.toContain('under-bar');
+
+    order.draft.set({ mode: 'pickup', place: 'Val Village', pickupAddressId: 'pa_1' });
+    fixture.detectChanges();
+    expect(el().querySelector('.shop')?.classList).toContain('under-bar');
+  });
 });
 
 /**

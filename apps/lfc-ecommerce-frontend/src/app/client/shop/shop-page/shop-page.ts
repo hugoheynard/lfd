@@ -171,6 +171,21 @@ export class ShopPage {
 
   protected readonly needsService = computed(() => this.choice() === null);
 
+  /**
+   * **La barre « Ma commande » est-elle là ?** — la même règle que son gabarit
+   * (`order-bar.html`) : un service choisi, un point déjà retenu sans jour, ou
+   * une pièce au panier. La page réserve sa place (`.under-bar`) exactement
+   * dans ces cas.
+   *
+   * Régression du 2026-11-06 (Hugo) : le lien direct d'une fiche Google
+   * (`?retrait=`) retient un point sans jour ; la barre l'affichait, mais la
+   * page ne réservait la place qu'avec un service complet ou une pièce, et le
+   * filtre restait collé SOUS la barre jusqu'au premier ajout.
+   */
+  protected readonly barShown = computed(
+    () => this.choice() !== null || this.order.draft()?.place !== undefined || !this.cart.isEmpty(),
+  );
+
   protected readonly piece = computed(() => {
     const id = this.openPiece();
     return id === null ? null : this.catalogue.itemOf(id);

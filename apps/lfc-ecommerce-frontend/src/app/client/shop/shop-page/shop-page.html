@@ -39,11 +39,7 @@
   }
 </ng-template>
 
-<div
-  class="shop"
-  [class.under-bar]="!proVisit() && (!needsService() || !cart.isEmpty())"
-  [class.with-pro-visit]="proVisit()"
->
+<div class="shop" [class.under-bar]="!proVisit() && barShown()" [class.with-pro-visit]="proVisit()">
   <!-- Le titre de la page, pour la navigation par titres (RGAA 9.1) : le
        bandeau n'en porte plus (2026-09-24), et l'œil n'en a pas besoin — la
        pastille de rayon et l'onglet le disent. Absolu, il ne prend pas de case. -->
