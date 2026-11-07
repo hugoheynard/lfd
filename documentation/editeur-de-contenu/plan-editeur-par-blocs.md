@@ -721,3 +721,41 @@ avec les seules routes de S4c (§ 15) :
 **Ce qui reste.** Le panneau des phrases, le choix du cas (et le cas de
 l'aperçu fidèle) et « M'envoyer un essai » — passage suivant, sur les routes
 de S4d.
+
+## 19. S5d — le bloc image (Hugo, 2026-11-07) — à bâtir
+
+La règle est au `plan-service-e-mails.md` § 23 (« le plus découplé ») et le
+stockage au § 24 (S3d, bâti) : l'écran choisit une image dans la médiathèque
+et passe son **adresse** ; à la **publication**, le bloc `mail` en range sa
+copie par `MailImageCopier.copy` et la version publiée pointe vers la copie.
+Le bloc `mail` n'importe rien de `media`.
+
+### Ce que le lot fait (côté API et paquets)
+
+- **Contrat** (`@lfd/mail-blocks`, ajout) : un bloc libre
+  `{ id, kind: "image", src: string, alt: Localized<string>, href?: string }`.
+  Un bloc libre, donc admis en colonne (2 colonnes ; en 3 colonnes, la règle
+  des blocs courts décide — à trancher au bâti, écrit dans les écarts).
+- **Règles** : `src` en `https://` (ou boucle locale en dev, la règle de S3d) ;
+  `alt` obligatoire dans chaque langue **à la publication** (RGAA : une image
+  sans texte de remplacement est un défaut d'accessibilité ; une image
+  décorative se déclare explicitement par un `alt` vide voulu — à trancher au
+  bâti, le plus simple qui reste accessible) ; `href` en `https://` s'il existe.
+- **Publication** : `PublishMailDocumentHandler` copie, **avant** la
+  transaction (réseau hors transaction), chaque `src` qui n'est pas déjà sur
+  l'adresse publique du bloc (`mailPublicBaseUrl`), puis publie le document où
+  chaque `src` est remplacé par l'adresse de sa copie. Une copie refusée
+  (origine non admise, pas une image, trop lourde, stockage non configuré)
+  refuse la publication en nommant le bloc et la raison. Le brouillon garde
+  l'adresse d'origine.
+- **Rendu** (`@lfd/mailer`, `document-blocks.ts`) : `<img>` en tableau, largeur
+  pleine de sa cellule, `alt`, `border:0`, lien s'il y a `href` — styles tirés
+  des constantes, jamais recopiés. La garantie « mêmes octets » du document de
+  départ est inchangée (il n'a pas de bloc libre).
+- **Aperçu** : l'aperçu fidèle d'un brouillon rend l'adresse d'origine.
+
+### Côté front (passage suivant)
+
+Un bloc « Image » dans la bibliothèque ; ses réglages : choisir dans la
+médiathèque (sélecteur existant de la médiathèque, lu par l'écran), texte de
+remplacement par langue, lien.
