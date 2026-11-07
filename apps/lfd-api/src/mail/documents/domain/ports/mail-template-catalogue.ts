@@ -1,6 +1,7 @@
 import type {
   MailAudience,
   MailEditorCaseView,
+  MailEditorResources,
   MailFamily,
   MailTemplateDeclaration,
 } from "@lfd/mail-blocks";
@@ -13,6 +14,8 @@ export interface MailTemplateEntry {
   readonly declaration: MailTemplateDeclaration;
   /** Les jeux de données que l'aperçu sait rendre. */
   readonly cases: readonly MailEditorCaseView[];
+  /** R1 (§ 24) : ses valeurs, ses liens, ses blocs de données, avec leurs fiches. */
+  readonly resources: MailEditorResources;
 }
 
 /**

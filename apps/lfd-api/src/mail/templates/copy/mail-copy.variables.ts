@@ -23,7 +23,7 @@ export type MailCopyVariables = { readonly [K in keyof MailCopy]: MailSectionVar
  * `mail-copy.spec.ts` refuse un texte qui emploie une variable non déclarée
  * ici, et un chemin déclaré qui n'existe plus au dictionnaire.
  */
-export const MAIL_COPY_VARIABLES: MailCopyVariables = {
+const DECLARED_VARIABLES = {
   "customer.order-placed": {
     subject: ["ref"],
     intro: ["ref"],
@@ -170,4 +170,27 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
   },
   "ops.deploy-check": { subject: ["revision"] },
   "agency.vitrine-notice": {},
-};
+} as const satisfies MailCopyVariables;
+
+export const MAIL_COPY_VARIABLES: MailCopyVariables = DECLARED_VARIABLES;
+
+/** Les variables déclarées d'un e-mail, en noms littéraux. */
+export type MailVariableNameOf<K extends keyof MailCopy> = {
+  readonly [
+    P in keyof (typeof DECLARED_VARIABLES)[K]
+  ]: (typeof DECLARED_VARIABLES)[K][P] extends readonly (infer N)[] ? N : never;
+}[keyof (typeof DECLARED_VARIABLES)[K]];
+
+/**
+ * **Toutes les variables qu'un e-mail emploie** (les 54 noms relevés le
+ * 2026-11-07) : le catalogue des fiches (`resources/mail-value-cards.ts`) est
+ * typé par elle — une variable ajoutée ici sans sa fiche ne compile pas.
+ */
+export type MailVariableName = {
+  readonly [K in keyof MailCopy]: MailVariableNameOf<K>;
+}[keyof MailCopy];
+
+/** Les e-mails qui emploient la variable `N`. */
+export type MailsUsingVariable<N extends MailVariableName> = {
+  readonly [K in keyof MailCopy]: N extends MailVariableNameOf<K> ? K : never;
+}[keyof MailCopy];

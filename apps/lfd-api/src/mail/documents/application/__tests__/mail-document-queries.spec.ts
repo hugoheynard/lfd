@@ -40,6 +40,7 @@ import {
   InMemoryMailDocuments,
   RecordingDocumentImages,
   RecordingDocumentRenderer,
+  TEST_RESOURCES,
   entryOf,
 } from "./mail-document-doubles.js";
 
@@ -103,6 +104,7 @@ describe("ouvrir un e-mail", () => {
       published: null,
       draft: null,
       cases: [{ id: "specimen", label: "Exemple" }],
+      resources: TEST_RESOURCES,
     });
     expect(view.phrases.map((phrase) => phrase.path)).toEqual(["subject", "kicker"]);
     expect(view.phrases[0]?.locales.fr).toMatchObject({

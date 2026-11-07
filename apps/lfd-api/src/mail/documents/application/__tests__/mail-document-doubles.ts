@@ -1,4 +1,9 @@
-import type { MailDocument, MailLocale, MailTemplateDeclaration } from "@lfd/mail-blocks";
+import type {
+  MailDocument,
+  MailEditorResources,
+  MailLocale,
+  MailTemplateDeclaration,
+} from "@lfd/mail-blocks";
 
 import type { MailTextsByMail } from "../../../copy/domain/mail-copy-texts.js";
 import type { MailSpecimenRendering } from "../../../copy/domain/ports/mail-specimen.renderer.js";
@@ -145,6 +150,21 @@ export class RecordingBlockRenderer extends MailBlockPreviewRenderer {
   }
 }
 
+/** Les ressources d'une entrée de test : une valeur, un lien, un bloc de données. */
+export const TEST_RESOURCES: MailEditorResources = {
+  values: [
+    {
+      name: "ref",
+      label: "Référence de commande",
+      description: "Le numéro de la commande.",
+      example: "EXEMPLE-0001",
+      phrases: ["subject"],
+    },
+  ],
+  links: [{ slot: "cta", label: "Liste de ses commandes", description: "« Mes commandes »." }],
+  dataBlocks: [{ block: "summary", label: "Récapitulatif", description: "Le total." }],
+};
+
 /** Une entrée du registre pour les tests. */
 export function entryOf(template: string, declaration: MailTemplateDeclaration): MailTemplateEntry {
   return {
@@ -153,6 +173,7 @@ export function entryOf(template: string, declaration: MailTemplateDeclaration):
     family: "order",
     declaration,
     cases: [{ id: "specimen", label: "Exemple" }],
+    resources: TEST_RESOURCES,
   };
 }
 

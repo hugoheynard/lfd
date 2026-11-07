@@ -1638,3 +1638,162 @@ lecture pour la personne qui prépare l'e-mail, pas un nouveau format.
    distinctes (« Référence de commande » pour `ref`, « Référence de l'objet du
    geste » pour `reference`). Soumis à Hugo.
 3. **R1 lancé** le 2026-11-07.
+
+### R1 — bâti le 2026-11-07 — écarts
+
+**Ce qui existe.**
+
+- **Le contrat** (`packages/mail-blocks/src/mail-resources.ts`, ajout seul) :
+  `MailEditorResources { values, links, dataBlocks }` ; une valeur
+  `{ name, label, description, example, phrases }` (`phrases` : les chemins
+  qui ont le droit de la porter) ; un lien `{ slot: "cta" | "secondaryLink",
+label, description }` ; un bloc de données `{ block: "summary" | "image" |
+"itinerary", label, description }`. Servi dans `MailEditorView.resources`
+  (`GET /admin/mail-templates/:template`), porté par l'entrée du registre
+  (`MailTemplateEntry.resources`).
+- **Le catalogue** (`apps/lfd-api/src/mail/templates/resources/`) : les fiches
+  des valeurs en trois fichiers (`apps/lfd-api/src/mail/templates/resources/order-value-cards.ts`, `apps/lfd-api/src/mail/templates/resources/billing-value-cards.ts`, `apps/lfd-api/src/mail/templates/resources/people-value-cards.ts`),
+  typées par `MailVariableName`, dérivé de `MAIL_COPY_VARIABLES` (désormais
+  `as const satisfies`) — **une variable sans fiche ne compile pas**, et un
+  nom employé par deux e-mails porte `senses`, une entrée par e-mail qui
+  l'emploie (`SAME_SENSE` ou une fiche précisée) : un e-mail qui se met à
+  employer le nom ne compile plus tant que son sens n'est pas décidé. Les
+  liens (`apps/lfd-api/src/mail/templates/resources/mail-link-cards.ts`) et les blocs de données
+  (`apps/lfd-api/src/mail/templates/resources/mail-data-block-cards.ts`) sont des tables exhaustives par e-mail.
+  `mailResourcesOf(mail)` compose les trois.
+- **La garde** (`apps/lfd-api/src/mail/templates/resources/__tests__/mail-resources.spec.ts`) : aucun champ
+  vide ; les 54 noms et eux seuls ; un nom de deux e-mails sans sens décidé
+  pour chacun, ou un sens précisé pour un e-mail qui ne l'emploie pas, est
+  refusé ; un lien sans section `cta` / `secondaryLink`, ou l'inverse ; un bloc
+  de données hors de la déclaration, ou l'inverse ; chaque exemple est une
+  valeur que les cas de l'e-mail rendent, quand un cas la rend.
+- **Rien d'envoyé ne change** : aucun gabarit, aucun texte, aucune empreinte
+  touchés ; `{ref}` reste `{ref}`.
+
+**Écarts.**
+
+- **La description du bouton EST `ctaDestination`** (une seule source) : la
+  fiche du lien n'ajoute que le nom court.
+- **Un bloc de données n'a pas d'exemple** : il se rend dans l'e-mail ; sa
+  fiche dit ce qu'il montre dans CET e-mail.
+- **`resources` est facultatif dans le type** (`MailEditorView`) : toujours
+  servi, mais le rendre obligatoire aurait cassé les doublures du back-office,
+  hors de ce lot. À resserrer en R2.
+- **Quatre exemples ne viennent pas des cas** : aucun cas ne rend une ligne
+  au poids, une base de remise ni un taux de TVA. `name` « Saumon gravlax » et
+  `weight` « 500 g » viennent du JSDoc et des tests du gabarit
+  (`apps/lfd-api/src/mail/templates/order-mail-content.ts`), `base` « 100,00 € » du test de
+  `pickup-discount-mail-label`, `rate` « 5,5 » du taux des données d'exemple.
+- **Un même nom change de sens DANS un e-mail** : `day` dans
+  `customer.order-cancelled` (le jour de la commande, et la fin de validité du
+  bon de fidélité), `day` et `amount` dans `customer.collection-notice` (date
+  ou montant annoncés avant un rectificatif, date d'un rejet). La fiche est
+  par e-mail, pas par phrase : sa description le dit.
+- **`order` et `ref` désignent la même chose** (le numéro d'une commande) sous
+  deux noms : deux fiches, « Numéro de commande » et « Référence de
+  commande ». Pas de fusion, pour la raison de `ref` / `reference`.
+
+**Les noms qui changent de sens d'un e-mail à l'autre** : `ref` (mandat),
+`count` (pièces, heures, photos, nombre du dossier), `name` (produit au poids,
+personne qui a annulé), `site` (point de retrait, site d'une société), `day`
+(prélèvement, commande, production), `amount` (prélèvement, remboursement,
+écart), `pieces` (ce que le prélèvement règle, pièces à produire), `title`
+(titre de facture, nature de l'avis, événement d'un site), `action` (geste
+sur une commande, geste hors commande).
+
+**Les fiches, pour relecture par Hugo** (nom technique → nom lisible ; fiche
+précisée par e-mail quand le sens change) :
+
+Valeurs :
+
+- `action` → Ce que le site a fait ; précisé : customer.sub-account-gesture : « Ce que le site a fait »
+- `amount` → Montant du prélèvement ; précisé : customer.order-cancelled : « Montant remboursé », customer.order-change-applied : « Écart de total »
+- `at` → Moment de l'arrêt
+- `author` → Auteur de la demande
+- `base` → Montant éligible à la remise
+- `buyer` → Client facturé
+- `by` → Auteur de l'arrêt
+- `company` → Société
+- `contact` → Contact
+- `count` → Nombre de pièces ; précisé : customer.order-ready : « Nombre de pièces », customer.password-reset : « Nombre d'heures », staff.production-dossier : « Nombre », staff.customer-request : « Nombre de photos »
+- `creditor` → Créancier
+- `day` → Date du prélèvement ; précisé : customer.order-cancelled : « Jour de la commande », staff.production-dossier : « Jour de production »
+- `debtor` → Titulaire du compte prélevé
+- `document` → Nom du mandat
+- `email` → Adresse e-mail du destinataire
+- `end` → Fin du créneau
+- `figures` → Chiffres du plan
+- `firstName` → Prénom du destinataire
+- `form` → Formulaire
+- `head` → Commandes du plan
+- `method` → Méthode de connexion
+- `name` → Produit vendu au poids ; précisé : customer.order-cancelled : « Personne qui a annulé »
+- `number` → Numéro de facture
+- `numbers` → Numéros de facture
+- `order` → Numéro de commande
+- `orders` → Nombre de commandes
+- `period` → Période facturée
+- `pieces` → Ce que le prélèvement règle ; précisé : staff.production-dossier : « Nombre de pièces »
+- `previous` → Ancien total
+- `principal` → Compte principal
+- `product` → Produit
+- `purpose` → Motif du contact
+- `quantity` → Quantité
+- `rate` → Taux de TVA
+- `reason` → Motif de la demande
+- `ref` → Référence de commande ; précisé : customer.mandate-to-sign : « Référence du mandat (RUM) »
+- `reference` → Référence de l'objet du geste
+- `remainder` → Valeur du bon en reliquat
+- `resupplies` → Nombre de réassorts
+- `revision` → Révision déployée
+- `rule` → Règle d'alerte
+- `seller` → Vendeur
+- `share` → Pièces et réassorts
+- `site` → Site ; précisé : customer.order-ready : « Point de retrait »
+- `split` → Retraits et livraisons
+- `start` → Début du créneau
+- `statement` → Référence de l'arrêté
+- `subject` → Objet de la demande
+- `title` → Titre de l'e-mail ; précisé : customer.collection-notice : « Nature de l'avis », customer.sub-account-activity : « Ce qui s'est passé », customer.sub-account-gesture : « Ce qui s'est passé »
+- `total` → Total TTC de la facture
+- `validity` → Durée de validité du lien
+- `value` → Valeur du bon de fidélité
+- `weight` → Poids commandé
+- `when` → Jour et heure du rendez-vous
+
+Liens (bouton du modèle, lien secondaire) :
+
+- `customer.order-placed` bouton → Liste de ses commandes
+- `customer.order-placed` lien secondaire → Gérer ou annuler la commande
+- `customer.order-ready` bouton → Liste de ses commandes
+- `customer.delivery-en-route` bouton → Liste de ses commandes
+- `customer.order-delayed` bouton → Liste de ses commandes
+- `customer.payment-failed` bouton → Reprendre le règlement
+- `customer.order-payment-link` bouton → Lien de règlement
+- `customer.invoice-issued` bouton → Ses factures
+- `customer.access-opened` bouton → Connexion à la boutique
+- `customer.access-opened` lien secondaire → Choisir un mot de passe
+- `customer.password-reset` bouton → Nouveau mot de passe
+- `staff.appointment-booked` bouton → Le rendez-vous
+- `staff.account-alert` bouton → Alertes du compte
+- `staff.invited` bouton → Choisir son mot de passe
+- `staff.password-reset` bouton → Nouveau mot de passe
+- `staff.access-restored` bouton → Accueil du back-office
+- `staff.customer-request` bouton → La demande du client
+
+Blocs de données :
+
+- `customer.order-placed` : `summary` → Récapitulatif de la commande, `image` → Code de retrait (QR), `itinerary` → Itinéraire vers la boutique
+- `customer.order-ready` : `summary` → Récapitulatif de la commande, `image` → Code de retrait (QR), `itinerary` → Itinéraire vers la boutique
+- `customer.delivery-en-route` : `summary` → Récapitulatif de la livraison
+- `customer.order-delayed` : `summary` → Récapitulatif
+- `customer.payment-failed` : `summary` → Récapitulatif
+- `customer.payment-expired` : `summary` → Récapitulatif
+- `customer.order-payment-link` : `summary` → Récapitulatif
+- `customer.invoice-issued` : `summary` → Récapitulatif de la facture
+- `customer.collection-notice` : `summary` → Récapitulatif du prélèvement
+- `customer.mandate-to-sign` : `summary` → Références du mandat
+- `customer.sub-account-activity` : `summary` → Récapitulatif de la commande du site
+- `customer.sub-account-gesture` : `summary` → Récapitulatif du geste
+- `customer.order-change-applied` : `summary` → Récapitulatif
+- `customer.order-change-refused` : `summary` → Récapitulatif

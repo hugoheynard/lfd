@@ -110,6 +110,31 @@ describe("ouvrir un e-mail", () => {
     expect((await open()).revision).toBe(0);
   });
 
+  /** R1 (§ 24) : les ressources de l'e-mail, chacune avec sa fiche, servies à la lecture. */
+  it("sert les ressources de l'e-mail : valeurs, liens, blocs de données", async () => {
+    const view = await open(ORDER_PLACED);
+    expect(view.resources?.values).toContainEqual(
+      expect.objectContaining({
+        name: "ref",
+        label: "Référence de commande",
+        example: "EXEMPLE-0001",
+      }),
+    );
+    expect(view.resources?.links.map((link) => [link.slot, link.label])).toEqual([
+      ["cta", "Liste de ses commandes"],
+      ["secondaryLink", "Gérer ou annuler la commande"],
+    ]);
+    expect(view.resources?.dataBlocks.map((block) => block.block)).toEqual([
+      "summary",
+      "image",
+      "itinerary",
+    ]);
+    const mandate = await open("customer.mandate-to-sign");
+    expect(mandate.resources?.values.find((value) => value.name === "ref")?.label).toBe(
+      "Référence du mandat (RUM)",
+    );
+  });
+
   it("refuse un e-mail hors du registre (404)", async () => {
     await staff().get(`${EDITOR}/pas.un.e-mail`).expect(404);
   });

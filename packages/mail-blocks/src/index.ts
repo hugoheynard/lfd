@@ -87,3 +87,14 @@ export {
   type MailPhraseDraftState,
   type MailPhraseResetPayload,
 } from "./mail-editor-routes.js";
+export {
+  MAIL_DATA_BLOCK_IDS,
+  MAIL_LINK_SLOTS,
+  type MailDataBlockId,
+  type MailDataBlockResource,
+  type MailEditorResources,
+  type MailLinkResource,
+  type MailLinkSlot,
+  type MailResourceCard,
+  type MailValueResource,
+} from "./mail-resources.js";

@@ -69,5 +69,6 @@ export function mailEditorView(
     phrases: phrases.phrases,
     cases: entry.cases,
     orphans: phrases.orphans,
+    resources: entry.resources,
   };
 }

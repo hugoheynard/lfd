@@ -1,6 +1,7 @@
 import type { MailCharter } from "./mail-charter.js";
 import type { MailDocument, MailTemplateDeclaration } from "./mail-document.js";
 import type { MailLocale } from "./mail-locales.js";
+import type { MailEditorResources } from "./mail-resources.js";
 import type { ModelSectionId } from "./model-sections.js";
 
 /**
@@ -139,6 +140,12 @@ export interface MailEditorView {
   readonly cases: readonly MailEditorCaseView[];
   /** S5e : les phrases en base que le code ne connaît plus — lues, jamais envoyées. */
   readonly orphans: readonly MailEditorPhraseView[];
+  /**
+   * R1 (§ 24) : les ressources que l'e-mail fournit, avec leurs fiches.
+   * Toujours servi par l'API ; facultatif dans le type le temps que l'écran
+   * le lise (R2), pour ne pas casser ses doublures.
+   */
+  readonly resources?: MailEditorResources | undefined;
 }
 
 /** `PUT /admin/mail-templates/:template/draft` — enregistrer le brouillon. */
