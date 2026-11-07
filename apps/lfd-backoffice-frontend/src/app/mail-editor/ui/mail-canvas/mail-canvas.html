@@ -1,0 +1,173 @@
+<div class="canvas">
+  <div class="flow">
+    @if (documentViolations().length > 0) {
+      <fold-callout variant="alert" data-document-violations>
+        <ul class="refusals">
+          @for (violation of documentViolations(); track $index) {
+            <li>{{ violation.message }}</li>
+          }
+        </ul>
+      </fold-callout>
+    }
+
+    <ol
+      class="blocks"
+      cdkDropList
+      aria-label="Blocs de l’e-mail, dans l’ordre"
+      (cdkDropListDropped)="dropped($event)"
+    >
+      @for (block of document().blocks; track block.id; let first = $first, last = $last) {
+        <li cdkDrag class="block" [attr.data-block]="block.id">
+          <fold-card>
+            <div class="card-body">
+              <fold-element-title
+                variant="title"
+                [title]="titleOf(block)"
+                [subtitle]="block.kind === 'model' ? 'Bloc du modèle, composé par le code' : ''"
+              >
+                <div titleAction class="actions">
+                  <span cdkDragHandle class="handle" title="Glisser pour déplacer">
+                    <fold-icon name="more-vertical" size="sm" />
+                  </span>
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    intent="neutral"
+                    icon="chevron-up"
+                    type="button"
+                    [disabled]="first"
+                    [attr.aria-label]="'Monter le bloc « ' + titleOf(block) + ' »'"
+                    (click)="move(block.id, -1)"
+                    data-move-up
+                  ></button>
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    intent="neutral"
+                    icon="chevron-down"
+                    type="button"
+                    [disabled]="last"
+                    [attr.aria-label]="'Descendre le bloc « ' + titleOf(block) + ' »'"
+                    (click)="move(block.id, 1)"
+                    data-move-down
+                  ></button>
+                  @if (block.kind !== 'model') {
+                    @if (hasSettings(block)) {
+                      <button
+                        foldButton
+                        size="sm"
+                        emphasis="soft"
+                        intent="neutral"
+                        icon="sliders"
+                        type="button"
+                        [attr.aria-pressed]="selectedId() === block.id"
+                        [attr.aria-label]="'Régler le bloc « ' + titleOf(block) + ' »'"
+                        (click)="toggleSettings(block.id)"
+                        data-settings
+                      ></button>
+                    }
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="soft"
+                      intent="danger"
+                      icon="bin"
+                      type="button"
+                      [attr.aria-label]="'Retirer le bloc « ' + titleOf(block) + ' »'"
+                      (click)="remove(block.id)"
+                      data-remove
+                    ></button>
+                  }
+                </div>
+              </fold-element-title>
+
+              @switch (block.kind) {
+                @case ('model') {}
+                @case ('divider') {}
+                @case ('columns') {
+                  <div
+                    class="columns"
+                    [style.grid-template-columns]="block.widths.join('fr ') + 'fr'"
+                  >
+                    @for (cell of block.cells; track $index; let column = $index) {
+                      <div class="cell" [attr.data-cell]="column">
+                        @for (inner of cell; track inner.id) {
+                          <div class="inner" [attr.data-block]="inner.id">
+                            <div class="inner-head">
+                              <span>{{ titleOf(inner) }}</span>
+                              <button
+                                foldButton
+                                size="sm"
+                                emphasis="soft"
+                                intent="danger"
+                                icon="bin"
+                                type="button"
+                                [attr.aria-label]="
+                                  'Retirer le bloc « ' +
+                                  titleOf(inner) +
+                                  ' » de la colonne ' +
+                                  (column + 1)
+                                "
+                                (click)="remove(inner.id)"
+                                data-remove
+                              ></button>
+                            </div>
+                            <app-mail-free-block-editor
+                              [block]="inner"
+                              [locale]="locale()"
+                              (blockChange)="edited($event)"
+                            />
+                            @for (violation of violationsOf(inner.id); track $index) {
+                              <fold-callout variant="alert">{{ violation.message }}</fold-callout>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+                @default {
+                  <app-mail-free-block-editor
+                    [block]="block"
+                    [locale]="locale()"
+                    (blockChange)="edited($event)"
+                  />
+                }
+              }
+
+              @for (violation of violationsOf(block.id); track $index) {
+                <fold-callout variant="alert" data-block-violation>{{
+                  violation.message
+                }}</fold-callout>
+              }
+            </div>
+          </fold-card>
+        </li>
+      }
+    </ol>
+  </div>
+
+  <div class="side">
+    <fold-card>
+      <div class="card-body">
+        <fold-element-title variant="title" title="Bibliothèque" />
+        <app-mail-block-library (picked)="add($event)" />
+      </div>
+    </fold-card>
+    @if (selected(); as current) {
+      <fold-card data-settings-panel>
+        <div class="card-body">
+          <fold-element-title variant="title" title="Réglages" [subtitle]="titleOf(current)" />
+          <app-mail-block-settings
+            [block]="current"
+            (blockChange)="edited($event)"
+            (widthChange)="widthChosen(current.id, $event)"
+            (cellAddition)="cellAdded(current.id, $event)"
+          />
+        </div>
+      </fold-card>
+    }
+  </div>
+</div>

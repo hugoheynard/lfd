@@ -1,0 +1,14 @@
+@switch (block().kind) {
+  @case ('heading') {
+    <fold-input [label]="label()" [value]="text()" (valueChange)="write($event)" />
+  }
+  @case ('button') {
+    <fold-input [label]="label()" [value]="text()" (valueChange)="write($event)" />
+  }
+  @case ('paragraph') {
+    <fold-textarea [label]="label()" [rows]="3" [value]="text()" (valueChange)="write($event)" />
+  }
+  @case ('callout') {
+    <fold-textarea [label]="label()" [rows]="2" [value]="text()" (valueChange)="write($event)" />
+  }
+}

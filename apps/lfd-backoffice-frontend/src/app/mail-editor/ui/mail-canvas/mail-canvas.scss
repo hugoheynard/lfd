@@ -1,0 +1,59 @@
+.canvas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  gap: var(--fold-space-lg);
+  align-items: start;
+}
+
+.flow,
+.side,
+.card-body,
+.cell,
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.refusals {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.handle {
+  display: inline-flex;
+  cursor: grab;
+  color: var(--fold-color-text-muted);
+}
+
+.columns {
+  display: grid;
+  gap: var(--fold-space-md);
+}
+
+.cell {
+  padding: var(--fold-space-sm);
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+}
+
+.inner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+}

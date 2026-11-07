@@ -41,6 +41,7 @@
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
     "@lfd/front-ops": "workspace:*",
+    "@lfd/mail-blocks": "workspace:*",
     "@lfd/money": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",

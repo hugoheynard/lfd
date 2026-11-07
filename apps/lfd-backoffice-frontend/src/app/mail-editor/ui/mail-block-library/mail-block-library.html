@@ -1,0 +1,16 @@
+<div class="items">
+  @for (item of items(); track item.key) {
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="neutral"
+      icon="plus"
+      type="button"
+      [attr.data-library-item]="item.key"
+      (click)="picked.emit(item.key)"
+    >
+      {{ item.label }}
+    </button>
+  }
+</div>

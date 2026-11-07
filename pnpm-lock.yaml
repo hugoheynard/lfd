@@ -590,6 +590,9 @@ importers:
       '@lfd/front-ops':
         specifier: workspace:*
         version: link:../../packages/front-ops
+      '@lfd/mail-blocks':
+        specifier: workspace:*
+        version: link:../../packages/mail-blocks
       '@lfd/money':
         specifier: workspace:*
         version: link:../../packages/money
@@ -1087,6 +1090,9 @@ importers:
 
   packages/mailer:
     dependencies:
+      '@lfd/mail-blocks':
+        specifier: workspace:*
+        version: link:../mail-blocks
       resend:
         specifier: ^6.18.1
         version: 6.18.1

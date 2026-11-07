@@ -1,0 +1,46 @@
+@let current = block();
+<div class="settings">
+  @switch (current.kind) {
+    @case ('button') {
+      <fold-input
+        type="url"
+        label="Adresse du bouton"
+        hint="Une adresse complète, commençant par https://"
+        [value]="current.href"
+        (valueChange)="setHref($event)"
+        data-href
+      />
+    }
+    @case ('callout') {
+      <fold-listbox
+        size="sm"
+        label="Ton de l’encadré"
+        [options]="toneOptions"
+        [value]="current.tone"
+        (selectionChange)="setTone($event)"
+        data-tone
+      />
+    }
+    @case ('columns') {
+      @for (width of current.widths; track $index) {
+        <fold-listbox
+          size="sm"
+          [label]="'Largeur de la colonne ' + ($index + 1)"
+          [options]="widthOptions"
+          [value]="width"
+          (selectionChange)="setWidth($index, $event)"
+          [attr.data-width]="$index"
+        />
+      }
+      <fold-listbox
+        size="sm"
+        label="Ajouter dans"
+        [options]="cellOptions()"
+        [value]="targetCell()"
+        (selectionChange)="targetCell.set($event)"
+        data-target-cell
+      />
+      <app-mail-block-library [items]="cellItems" (picked)="addToCell($event)" />
+    }
+  }
+</div>
