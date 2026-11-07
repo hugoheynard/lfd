@@ -8,7 +8,7 @@ import type {
   MailDocumentPublicationView,
   MailDocumentPublishPayload,
   MailDocumentRevertPayload,
-  MailDocumentTrialPayload,
+  MailDocumentSourcedTrialPayload,
   MailEditorListView,
   MailEditorPhrasesView,
   MailEditorView,
@@ -43,6 +43,15 @@ export class MailEditorService {
 
   list(): Promise<MailEditorListView> {
     return firstValueFrom(this.http.get<MailEditorListView>(BASE));
+  }
+
+  /**
+   * Publie les phrases et les ordres de sections en attente de TOUS les
+   * e-mails (S5e) — pas les brouillons d'arrangement, qui se publient depuis
+   * leur e-mail. `409` : rien n'attend.
+   */
+  publishAll(): Promise<MailDocumentPublicationView> {
+    return firstValueFrom(this.http.post<MailDocumentPublicationView>(`${BASE}/publications`, {}));
   }
 
   load(template: string): Promise<MailEditorView> {
@@ -116,11 +125,12 @@ export class MailEditorService {
   /**
    * « M'envoyer un essai » : à la seule adresse de l'appelant. La clé
    * d'intention est celle de l'écran, renvoyée à chaque clic tant que le geste
-   * n'a pas abouti — un double clic n'envoie pas deux e-mails.
+   * n'a pas abouti — un double clic n'envoie pas deux e-mails. `source`
+   * choisit les phrases : brouillons (défaut) ou publiées (S5e).
    */
   async sendTrial(
     template: string,
-    payload: MailDocumentTrialPayload,
+    payload: MailDocumentSourcedTrialPayload,
     intentKey: string,
   ): Promise<void> {
     await firstValueFrom(

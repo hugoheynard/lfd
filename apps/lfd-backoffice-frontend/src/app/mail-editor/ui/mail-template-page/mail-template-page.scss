@@ -6,6 +6,7 @@
 }
 
 .tp-muted {
+  margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
@@ -19,4 +20,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
+}
+
+.tp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
 }

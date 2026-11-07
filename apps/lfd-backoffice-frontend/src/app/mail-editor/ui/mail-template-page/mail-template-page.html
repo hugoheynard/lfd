@@ -83,6 +83,21 @@
               Modifications non enregistrées : « Publier » met en service le brouillon enregistré.
             </fold-callout>
           }
+          @if (phrases.pendingCount() > 0) {
+            <fold-callout variant="neutral" data-phrases-pending>
+              {{ phrases.pendingCount() }} phrase{{ phrases.pendingCount() > 1 ? 's' : '' }} en
+              brouillon : elles partent avec « Publier ».
+            </fold-callout>
+          }
+          @if (phrases.defaultChangedCount() > 0) {
+            <fold-callout variant="warning" data-default-changed>
+              {{ phrases.defaultChangedCount() }} phrase{{
+                phrases.defaultChangedCount() > 1 ? 's' : ''
+              }}
+              : le texte d’origine a changé depuis votre modification. Relisez-les — chacune porte
+              le badge « Texte d’origine changé ».
+            </fold-callout>
+          }
           @if (canWrite() && publicationIssues().length > 0) {
             <fold-callout variant="warning" data-publication-issues>
               Cet e-mail ne peut pas encore être publié :
@@ -112,6 +127,14 @@
                 (selectionChange)="caseId.set($event)"
               />
             }
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Phrases de l’aperçu et de l’essai"
+              data-phrase-source
+              [options]="phraseSourceOptions"
+              [value]="phraseSource()"
+              (valueChange)="setPhraseSource($event)"
+            />
             <span class="tp-muted" data-source>{{ sourceLabel() }}</span>
           </div>
           <app-mail-canvas
@@ -119,25 +142,77 @@
             [declaration]="current.declaration"
             [template]="current.template"
             [locale]="locale()"
+            [(focus)]="focus"
             (documentChange)="document.set($event)"
-          />
-          @if (phrases.phrases().length > 0) {
+          >
+            @if (focus(); as place) {
+              <div focusPanel data-focus-panel>
+                <fold-card>
+                  <div class="tp-panel">
+                    <fold-element-title
+                      variant="title"
+                      [title]="focusTitle()"
+                      [subtitle]="place.kind === 'frame' ? 'Cadre de l’e-mail' : 'Bloc du modèle'"
+                    />
+                    @for (phrase of focusedPhrases(); track phrase.path) {
+                      <app-mail-phrase-editor
+                        [phrase]="phrase"
+                        [locale]="locale()"
+                        [canWrite]="canWrite()"
+                        [heading]="heading(phrase, focusedPhrases().length)"
+                      />
+                    } @empty {
+                      <fold-empty-state
+                        title="Aucune phrase"
+                        subtitle="Ce bloc est composé par le code, sans phrase à écrire."
+                      >
+                        <fold-icon empty-icon name="chat" />
+                      </fold-empty-state>
+                    }
+                  </div>
+                </fold-card>
+              </div>
+            } @else {
+              <p focusPanel class="tp-muted" data-focus-hint>
+                Sélectionnez un cadre ou un bloc du modèle (bouton crayon) pour écrire ses phrases.
+              </p>
+            }
+          </app-mail-canvas>
+          @if (unplaced().length > 0) {
             <fold-page-section
-              title="Phrases du modèle"
-              data-phrases
-              [description]="
-                phrases.pendingCount() > 0
-                  ? phrases.pendingCount() + ' en brouillon : elles partent avec « Publier ».'
-                  : 'Les phrases que le code compose, dans la langue choisie.'
-              "
+              title="Autres textes"
+              description="Des phrases de cet e-mail qu’aucun cadre ni bloc à l’écran n’affiche en clair — le texte de remplacement d’une image."
+              data-unplaced
             >
               <div class="tp-phrases">
-                @for (phrase of phrases.phrases(); track phrase.path) {
-                  <app-mail-phrase-editor
-                    [phrase]="phrase"
-                    [locale]="locale()"
-                    [canWrite]="canWrite()"
-                  />
+                @for (phrase of unplaced(); track phrase.path) {
+                  <fold-card>
+                    <app-mail-phrase-editor
+                      [phrase]="phrase"
+                      [locale]="locale()"
+                      [canWrite]="canWrite()"
+                    />
+                  </fold-card>
+                }
+              </div>
+            </fold-page-section>
+          }
+          @if (phrases.orphans().length > 0) {
+            <fold-page-section
+              title="Textes que le code ne connaît plus"
+              description="Ils ne partent plus dans aucun e-mail. « Rétablir » les efface au prochain « Publier »."
+              data-orphans
+            >
+              <div class="tp-phrases">
+                @for (phrase of phrases.orphans(); track phrase.path) {
+                  <fold-card>
+                    <app-mail-phrase-editor
+                      [phrase]="phrase"
+                      [locale]="locale()"
+                      [canWrite]="canWrite()"
+                      [orphan]="true"
+                    />
+                  </fold-card>
                 }
               </div>
             </fold-page-section>
@@ -147,6 +222,7 @@
             [locale]="locale()"
             [document]="doc"
             [caseId]="caseId()"
+            [source]="phraseSource()"
           />
           <app-mail-template-history [template]="current.template" [refresh]="historyRefresh()" />
         }

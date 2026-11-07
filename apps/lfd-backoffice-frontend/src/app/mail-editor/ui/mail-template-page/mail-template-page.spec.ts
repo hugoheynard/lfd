@@ -2,7 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
-import { modelBlockId, type MailEditorView } from '@lfd/mail-blocks';
+import {
+  modelBlockId,
+  type MailEditorPhrasePlace,
+  type MailEditorPhraseView,
+  type MailEditorView,
+} from '@lfd/mail-blocks';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -11,6 +16,30 @@ import { MailEditorService } from '../../data/mail-editor.service';
 import { MailTemplatePage } from './mail-template-page';
 
 const TEMPLATE = 'customer.order-placed';
+
+function phrase(
+  path: string,
+  place: MailEditorPhrasePlace | null,
+  variant: string | null = null,
+): MailEditorPhraseView {
+  const locale = {
+    default: `Texte ${path}`,
+    draftState: 'unchanged',
+    draftText: null,
+    publishedText: null,
+    revision: 0,
+    defaultChangedSince: null,
+  } as const;
+  return {
+    path,
+    variables: [],
+    requiredVariables: [],
+    place,
+    variant,
+    staleTranslations: [],
+    locales: { fr: locale, en: locale, it: locale },
+  };
+}
 
 function view(
   revision: number,
@@ -255,7 +284,7 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     const keys = sendTrial.mock.calls.map((call) => call[2]);
     expect(sendTrial.mock.calls[0]?.slice(0, 2)).toEqual([
       TEMPLATE,
-      { locale: 'en', caseId: 'due' },
+      { locale: 'en', source: 'draft', caseId: 'due' },
     ]);
     expect(keys[0]).toBe(keys[1]);
     expect(keys[2]).not.toBe(keys[1]);
@@ -266,5 +295,55 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     const load = vi.fn(() => Promise.resolve(view(0)));
     const { element } = await render({ load }, ['mail_templates:read']);
     expect(element.querySelector('[data-trial]')).toBeNull();
+  });
+
+  it('l’essai sur les phrases publiées le dit dans la confirmation, et l’envoie', async () => {
+    const load = vi.fn(() => Promise.resolve(view(0)));
+    const sendTrial = vi.fn(() => Promise.resolve());
+    const { fixture } = await render({ load, sendTrial });
+    const page = fixture.componentInstance;
+    page.phraseSource.set('published');
+    fixture.detectChanges();
+    await page.sendTrial();
+    expect(sendTrial.mock.calls[0]?.slice(0, 2)).toEqual([
+      TEMPLATE,
+      { locale: 'fr', source: 'published' },
+    ]);
+  });
+
+  it('range les phrases sous le bloc ou le cadre sélectionné, nommées par leur variante', async () => {
+    const load = vi.fn(() =>
+      Promise.resolve({
+        ...view(0),
+        phrases: [
+          phrase('title.paid', { kind: 'block', block: 'title' }, 'Commande payée par carte'),
+          phrase('title.due', { kind: 'block', block: 'title' }, 'Commande à régler'),
+          phrase('subject', { kind: 'frame', frame: 'subject' }),
+          phrase('image.alt', null),
+        ],
+        orphans: [phrase('gone', null)],
+      }),
+    );
+    const { fixture, element } = await render({ load });
+    expect(element.querySelector('[data-focus-panel]')).toBeNull();
+    expect(element.querySelector('[data-focus-hint]')).not.toBeNull();
+    element
+      .querySelector<HTMLButtonElement>(`[data-block="${modelBlockId('title')}"] [data-focus]`)
+      ?.click();
+    fixture.detectChanges();
+    const panel = element.querySelector('[data-focus-panel]');
+    expect(
+      [...(panel?.querySelectorAll('[data-phrase]') ?? [])].map((n) =>
+        n.getAttribute('data-phrase'),
+      ),
+    ).toEqual(['title.paid', 'title.due']);
+    expect(panel?.textContent).toContain('Commande payée par carte');
+    element.querySelector<HTMLButtonElement>('[data-frame="subject"] [data-focus]')?.click();
+    fixture.detectChanges();
+    expect(
+      element.querySelector('[data-focus-panel] [data-phrase]')?.getAttribute('data-phrase'),
+    ).toBe('subject');
+    expect(element.querySelector('[data-unplaced] [data-phrase="image.alt"]')).not.toBeNull();
+    expect(element.querySelector('[data-orphans] [data-phrase="gone"]')).not.toBeNull();
   });
 });

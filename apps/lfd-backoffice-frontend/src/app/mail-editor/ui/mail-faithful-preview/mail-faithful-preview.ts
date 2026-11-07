@@ -20,7 +20,11 @@ interface RenderedFor {
   readonly document: MailDocument;
   readonly locale: MailLocale;
   readonly caseId: string | null;
+  readonly source: MailPhraseSource;
 }
+
+/** Les phrases rendues : celles en brouillon, ou celles en service. */
+export type MailPhraseSource = 'draft' | 'published';
 
 /** La largeur du cadre : celle d'un client de messagerie, ou d'un téléphone (~375 px). */
 export type PreviewDevice = 'desktop' | 'phone';
@@ -71,6 +75,8 @@ export class MailFaithfulPreview {
   readonly document = input.required<MailDocument>();
   /** Le cas à rendre (`MailEditorView.cases`) ; `null` : l'exemple de l'e-mail. */
   readonly caseId = input<string | null>(null);
+  /** Les phrases à rendre (S5e) : brouillons, ou publiées — la page les choisit pour l'essai aussi. */
+  readonly source = input<MailPhraseSource>('draft');
 
   private readonly api = inject(MailEditorService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -99,6 +105,11 @@ export class MailFaithfulPreview {
     return preview === null ? null : this.sanitizer.bypassSecurityTrustHtml(preview.html);
   });
 
+  protected readonly description = computed(
+    () =>
+      `Le rendu du serveur, avec des données d’exemple et les phrases ${this.source() === 'draft' ? 'en brouillon' : 'publiées'}. Rien n’est envoyé.`,
+  );
+
   protected readonly attachments = computed(() =>
     (this.preview()?.attachments ?? []).filter((attachment) => !attachment.inline),
   );
@@ -110,7 +121,8 @@ export class MailFaithfulPreview {
       rendered !== null &&
       (rendered.document !== this.document() ||
         rendered.locale !== this.locale() ||
-        rendered.caseId !== this.caseId())
+        rendered.caseId !== this.caseId() ||
+        rendered.source !== this.source())
     );
   });
 
@@ -123,6 +135,7 @@ export class MailFaithfulPreview {
       document: this.document(),
       locale: this.locale(),
       caseId: this.caseId(),
+      source: this.source(),
     };
     if (this.preview() === null) {
       this.status.set('loading');
@@ -130,7 +143,7 @@ export class MailFaithfulPreview {
     try {
       const preview = await this.api.preview(this.template(), {
         locale: asked.locale,
-        source: 'draft',
+        source: asked.source,
         document: asked.document,
         ...(asked.caseId === null ? {} : { caseId: asked.caseId }),
       });

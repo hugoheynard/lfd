@@ -982,3 +982,49 @@ Routes :
 - **Champs requis ajoutés** à des vues servies : un double de test du front
   qui construit `MailEditorPhraseView`, `MailEditorView` ou
   `MailEditorListView` doit les poser.
+
+### Bâti le 2026-11-07 (front) — écarts
+
+**Ce qui existe**, dans `apps/lfd-backoffice-frontend/src/app/mail-editor/` :
+
+- **Les phrases rangées par place** : le canevas (`ui/mail-canvas/`) montre
+  l'objet et l'en-tête en deux cadres au-dessus des blocs ; un bouton
+  « crayon » sur un cadre ou un bloc du modèle le sélectionne (`focus`), et
+  la colonne de droite montre SES phrases (`place`), nommées par leur
+  variante (`variant`, règle `textHeading` de l'écran des textes). Les
+  phrases hors carte (`place: null`, ou sous un bloc du modèle que le
+  document n'a pas) sont sous le canevas en « Autres textes » ; les
+  orphelines (`orphans`) en « Textes que le code ne connaît plus », lues et
+  seulement rétablies. Rangement : `rules/mail-phrase-places.ts`.
+- **Les signaux** : sous chaque phrase, « Traduction en retard »
+  (`staleTranslations`) et « Texte d'origine changé », avant / maintenant
+  (`defaultChangedSince`) — les mots et la forme de l'écran des textes ; le
+  compte de page reprend `defaultChangedIn` (élargi à un type structurel).
+- **Publier tous les e-mails** sur la liste : le compte `copyPendingCount`,
+  confirmation sur place, refus du serveur (`409` rien n'attend) affiché tel
+  quel.
+- **La source des phrases** (brouillons / publiées) se choisit au-dessus du
+  canevas, pour l'aperçu fidèle ET l'essai ; la confirmation de l'essai dit
+  laquelle part. La clé d'intention de l'essai compte la source.
+
+**Écarts.**
+
+- **La source n'est pas DANS la confirmation** : `fold-inline-confirm` ne
+  projette que son déclencheur (`["*"]`, vérifié dans `fold-ng.d.ts` le
+  2026-11-07). Le choix vit dans la barre (langue, cas, phrases), et le
+  message de confirmation le répète.
+- **La désignation d'une phrase par un clic dans l'aperçu n'est pas faite.**
+  L'aperçu fidèle est un cadre au `sandbox=""` : origine opaque, aucun
+  script — le parent ne peut ni lire son document ni en recevoir un
+  événement. L'écran des textes le fait parce que son cadre porte
+  `allow-same-origin`. Le faire ici demanderait de relâcher le `sandbox`,
+  ce que le lot interdit.
+- **`textes-emails` n'est PAS redirigé.** Ce qui manque encore à l'éditeur :
+  1. la désignation par clic dans l'aperçu (ci-dessus) ;
+  2. les langues d'un e-mail qui part toujours en français : l'écran des
+     textes laisse préparer l'anglais et l'italien (« prêts pour le jour
+     où… ») ; l'éditeur ne montre que `declaration.locales` ;
+  3. l'ordre des sections de la coquille (monter / descendre, « Rétablir
+     l'ordre ») : l'éditeur arrange le document, mais un ordre de sections
+     en brouillon reste compté par `copyPendingCount` sans être visible ni
+     rétablissable ici.

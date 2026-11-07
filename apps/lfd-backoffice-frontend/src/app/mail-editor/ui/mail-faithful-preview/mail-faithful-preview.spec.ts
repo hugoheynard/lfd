@@ -93,6 +93,21 @@ describe('MailFaithfulPreview', () => {
     expect(element.querySelector('[data-stale]')).not.toBeNull();
   });
 
+  it('rend les phrases publiées quand la page les choisit, et le dit', async () => {
+    const { fixture, element, spy, click } = await render(() => Promise.resolve(VIEW));
+    fixture.componentRef.setInput('source', 'published');
+    await click();
+    expect(spy).toHaveBeenCalledWith(TEMPLATE, {
+      locale: 'fr',
+      source: 'published',
+      document: DOCUMENT,
+    });
+    expect(element.textContent).toContain('les phrases publiées');
+    fixture.componentRef.setInput('source', 'draft');
+    fixture.detectChanges();
+    expect(element.querySelector('[data-stale]')).not.toBeNull();
+  });
+
   it('montre l’échec du premier rendu, avec « Réessayer »', async () => {
     const { element, click } = await render(() => Promise.reject(new Error('boom')));
     await click();

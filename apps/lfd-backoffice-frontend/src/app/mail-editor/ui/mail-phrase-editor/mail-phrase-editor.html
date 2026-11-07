@@ -3,6 +3,13 @@
   [attr.data-phrase]="phrase().path"
   [attr.title]="'Chemin technique : ' + phrase().path"
 >
+  @if (title(); as heading) {
+    <fold-element-title
+      [variant]="orphan() ? 'title' : 'bar'"
+      [title]="heading"
+      [subtitle]="orphan() ? 'Le code ne connaît plus cette phrase — ' + phrase().path : undefined"
+    />
+  }
   @if (conflict()) {
     <fold-callout variant="alert" data-conflict>
       Quelqu’un a modifié cette phrase pendant que vous l’éditiez. Sa version est rechargée ;
@@ -12,7 +19,7 @@
   <fold-textarea
     [label]="label()"
     [rows]="rows()"
-    [readOnly]="!canWrite()"
+    [readOnly]="readOnly()"
     [value]="shown()"
     (valueChange)="edit($event)"
   />
@@ -24,7 +31,26 @@
   @if (refusal(); as message) {
     <fold-callout variant="alert" data-refusal>{{ message }}</fold-callout>
   }
-  @if (original(); as text) {
+  @if (stale()) {
+    <fold-callout variant="warning" data-stale>
+      Traduction en retard : le français a changé depuis.
+    </fold-callout>
+  }
+  @if (defaultChange(); as change) {
+    <div class="pe-line">
+      <fold-badge variant="warning" content="Texte d’origine changé" />
+    </div>
+    <fold-callout variant="warning" data-default-changed>
+      Le texte d’origine a changé depuis votre modification. Gardez votre version en la republiant,
+      ou « Rétablir » pour adopter le nouveau texte d’origine.
+      <div class="pe-change">
+        <span class="pe-muted"
+          >Avant : <s>{{ change.previous }}</s></span
+        >
+        <span class="pe-muted">Maintenant : {{ change.current }}</span>
+      </div>
+    </fold-callout>
+  } @else if (original(); as text) {
     <p class="pe-muted">Texte d’origine : {{ text }}</p>
   }
   @if (canReset()) {
@@ -43,11 +69,11 @@
       </button>
     </div>
   }
-  @if (chips().length > 0) {
+  @if (chips().length > 0 && !orphan()) {
     <div class="pe-line">
-      <span class="pe-muted">{{ canWrite() ? 'Insérer :' : 'Variables permises :' }}</span>
+      <span class="pe-muted">{{ readOnly() ? 'Variables permises :' : 'Insérer :' }}</span>
       @for (chip of chips(); track chip.name) {
-        @if (canWrite()) {
+        @if (!readOnly()) {
           <button
             foldButton
             size="sm"

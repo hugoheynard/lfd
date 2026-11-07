@@ -1,7 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { MailEditorListItem } from '@lfd/mail-blocks';
+import { HttpErrorResponse } from '@angular/common/http';
+import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it, vi } from 'vitest';
+
+import { PermissionsStore } from '../../../auth/permissions.store';
+import { NotifyService } from '../../../notify.service';
 
 import { MailEditorService } from '../../data/mail-editor.service';
 import { MailTemplatesPage } from './mail-templates-page';
@@ -25,20 +30,40 @@ const ALERT: MailEditorListItem = {
   hasDraft: false,
 };
 
-async function render(list: () => Promise<unknown>) {
+async function setup(
+  list: () => Promise<unknown>,
+  publishAll: () => Promise<unknown> = () => Promise.resolve({ publicationVersion: 4 }),
+  permissions: readonly StaffPermission[] = ['mail_templates:write'],
+) {
+  const calls = { list: vi.fn(list), publishAll: vi.fn(publishAll) };
+  const notify = { error: vi.fn(), success: vi.fn() };
   TestBed.configureTestingModule({
     imports: [MailTemplatesPage],
-    providers: [provideRouter([]), { provide: MailEditorService, useValue: { list: vi.fn(list) } }],
+    providers: [
+      provideRouter([]),
+      { provide: MailEditorService, useValue: calls },
+      { provide: NotifyService, useValue: notify },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (p: StaffPermission) => permissions.includes(p) },
+      },
+    ],
   });
   const fixture = TestBed.createComponent(MailTemplatesPage);
   await fixture.whenStable();
   fixture.detectChanges();
-  return fixture.nativeElement as HTMLElement;
+  return { fixture, element: fixture.nativeElement as HTMLElement, calls, notify };
+}
+
+async function render(list: () => Promise<unknown>) {
+  return (await setup(list)).element;
 }
 
 describe('MailTemplatesPage — les e-mails', () => {
   it('range les e-mails par destinataire, chacun menant à sa page', async () => {
-    const element = await render(() => Promise.resolve({ mails: [ORDER_PLACED, ALERT] }));
+    const element = await render(() =>
+      Promise.resolve({ mails: [ORDER_PLACED, ALERT], copyPendingCount: 0 }),
+    );
     expect(element.querySelectorAll('fold-page-section')).toHaveLength(2);
     const link = element.querySelector<HTMLAnchorElement>(
       '[data-template="customer.order-placed"]',
@@ -56,7 +81,47 @@ describe('MailTemplatesPage — les e-mails', () => {
   });
 
   it('dit qu’il n’y a aucun e-mail quand le serveur n’en déclare aucun', async () => {
-    const element = await render(() => Promise.resolve({ mails: [] }));
+    const element = await render(() => Promise.resolve({ mails: [], copyPendingCount: 0 }));
     expect(element.textContent).toContain('Aucun e-mail');
+  });
+
+  it('publie tous les e-mails en attente, puis relit la liste', async () => {
+    const { fixture, element, calls, notify } = await setup(() =>
+      Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 3 }),
+    );
+    expect(element.querySelector('[data-copy-pending]')?.textContent).toContain(
+      '3 modifications en attente',
+    );
+    expect(element.querySelector('[data-publish-all]')).not.toBeNull();
+    await fixture.componentInstance.publishAll();
+    expect(calls.publishAll).toHaveBeenCalledTimes(1);
+    expect(calls.list).toHaveBeenCalledTimes(2);
+    expect(notify.success).toHaveBeenCalledWith('Publié — version des textes 4.');
+  });
+
+  it('montre le refus « rien n’attend » tel que le serveur le dit', async () => {
+    const refusal = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'Aucune modification n’attend la publication.' },
+    });
+    const { fixture, element } = await setup(
+      () => Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 1 }),
+      () => Promise.reject(refusal),
+    );
+    await fixture.componentInstance.publishAll();
+    fixture.detectChanges();
+    expect(element.querySelector('[data-publish-error]')?.textContent).toContain(
+      'Aucune modification n’attend la publication.',
+    );
+  });
+
+  it('sans le droit d’écrire, le compte sans le bouton', async () => {
+    const { element } = await setup(
+      () => Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 2 }),
+      undefined,
+      ['mail_templates:read'],
+    );
+    expect(element.querySelector('[data-copy-pending]')).not.toBeNull();
+    expect(element.querySelector('[data-publish-all]')).toBeNull();
   });
 });

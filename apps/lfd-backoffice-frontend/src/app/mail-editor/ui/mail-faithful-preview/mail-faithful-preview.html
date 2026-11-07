@@ -1,7 +1,4 @@
-<fold-page-section
-  title="Aperçu fidèle"
-  description="Le rendu du serveur, avec des données d’exemple et les phrases en brouillon. Rien n’est envoyé."
->
+<fold-page-section title="Aperçu fidèle" [description]="description()">
   <div sectionActions>
     <button
       foldButton
@@ -39,7 +36,8 @@
         @if (preview(); as view) {
           @if (stale()) {
             <p class="fp-muted" data-stale>
-              L’écran ou le cas ont changé depuis cet aperçu : rendez-le à nouveau pour le voir.
+              L’écran, le cas ou les phrases ont changé depuis cet aperçu : rendez-le à nouveau pour
+              le voir.
             </p>
           }
           <p class="fp-subject"><span class="fp-muted">Objet :</span> {{ view.subject }}</p>

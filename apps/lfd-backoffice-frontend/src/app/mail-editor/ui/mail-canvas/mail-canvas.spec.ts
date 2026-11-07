@@ -112,4 +112,16 @@ describe('MailCanvas', () => {
     fixture.detectChanges();
     expect(element.querySelector('[data-settings-panel] [data-pick-image]')).not.toBeNull();
   });
+
+  it('sélectionne un bloc du modèle ou un cadre pour lire ses phrases, et le relâche', () => {
+    const { fixture, element } = render();
+    const canvas = fixture.componentInstance;
+    element.querySelector<HTMLButtonElement>('[data-block="model:title"] [data-focus]')?.click();
+    expect(canvas.focus()).toEqual({ kind: 'block', block: 'title' });
+    element.querySelector<HTMLButtonElement>('[data-frame="subject"] [data-focus]')?.click();
+    expect(canvas.focus()).toEqual({ kind: 'frame', frame: 'subject' });
+    element.querySelector<HTMLButtonElement>('[data-frame="subject"] [data-focus]')?.click();
+    expect(canvas.focus()).toBeNull();
+    expect(element.querySelector('[data-block="note"] [data-focus]')).toBeNull();
+  });
 });

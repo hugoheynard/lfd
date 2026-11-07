@@ -10,6 +10,37 @@
       </fold-callout>
     }
 
+    <ul class="blocks" aria-label="Cadres de l’e-mail, hors des blocs">
+      @for (frame of frames; track frame) {
+        <li class="block" [attr.data-frame]="frame">
+          <fold-card>
+            <div class="card-body">
+              <fold-element-title
+                variant="title"
+                [title]="frameTitle(frame)"
+                subtitle="Cadre de l’e-mail, composé par le code"
+              >
+                <div titleAction class="actions">
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    intent="neutral"
+                    icon="edit"
+                    type="button"
+                    [attr.aria-pressed]="isFocused(framePlace(frame))"
+                    [attr.aria-label]="'Phrases du cadre « ' + frameTitle(frame) + ' »'"
+                    (click)="toggleFocus(framePlace(frame))"
+                    data-focus
+                  ></button>
+                </div>
+              </fold-element-title>
+            </div>
+          </fold-card>
+        </li>
+      }
+    </ul>
+
     <ol
       class="blocks"
       cdkDropList
@@ -53,7 +84,20 @@
                     (click)="move(block.id, 1)"
                     data-move-down
                   ></button>
-                  @if (block.kind !== 'model') {
+                  @if (block.kind === 'model') {
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="soft"
+                      intent="neutral"
+                      icon="edit"
+                      type="button"
+                      [attr.aria-pressed]="isFocused(blockPlace(block.section))"
+                      [attr.aria-label]="'Phrases du bloc « ' + titleOf(block) + ' »'"
+                      (click)="toggleFocus(blockPlace(block.section))"
+                      data-focus
+                    ></button>
+                  } @else {
                     @if (hasSettings(block)) {
                       <button
                         foldButton
@@ -171,6 +215,7 @@
   </div>
 
   <div class="side">
+    <ng-content select="[focusPanel]" />
     <fold-card>
       <div class="card-body">
         <fold-element-title variant="title" title="Bibliothèque" />

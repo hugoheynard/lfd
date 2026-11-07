@@ -14,6 +14,8 @@ import {
   validateMailDocumentForPublication,
   type MailAudience,
   type MailDocument,
+  type MailEditorPhrasePlace,
+  type MailEditorPhraseView,
   type MailEditorView,
   type MailLocale,
 } from '@lfd/mail-blocks';
@@ -21,7 +23,10 @@ import {
   FoldBackLinkComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldInlineConfirmComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
@@ -38,9 +43,18 @@ import { LOCALE_LABELS } from '../../../textes-boutique/rules/copy-text';
 import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
 import { GestureIntents } from '../../../shared/gesture-intents';
 import { MailEditorService } from '../../data/mail-editor.service';
+import {
+  phraseHeading,
+  phrasesAt,
+  placeTitle,
+  unplacedPhrases,
+} from '../../rules/mail-phrase-places';
 import { MailPhrasesStore } from '../../state/mail-phrases-store';
 import { MailCanvas } from '../mail-canvas/mail-canvas';
-import { MailFaithfulPreview } from '../mail-faithful-preview/mail-faithful-preview';
+import {
+  MailFaithfulPreview,
+  type MailPhraseSource,
+} from '../mail-faithful-preview/mail-faithful-preview';
 import { MailPhraseEditor } from '../mail-phrase-editor/mail-phrase-editor';
 import { MailTemplateHistory } from '../mail-template-history/mail-template-history';
 
@@ -57,6 +71,12 @@ const SOURCE_LABELS: Readonly<Record<MailEditorView['source'], string>> = {
   published: 'Version publiée',
   starting: 'Arrangement d’origine',
 };
+
+/** Les phrases que l'aperçu et l'essai rendent. */
+const PHRASE_SOURCE_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'draft', label: 'Brouillons' },
+  { value: 'published', label: 'Publiées' },
+];
 
 /**
  * **La page d'un e-mail** (§ 6, S5a) : le canevas (S5b) monté avec le
@@ -79,6 +99,13 @@ const SOURCE_LABELS: Readonly<Record<MailEditorView['source'], string>> = {
  * fidèle ; « M'envoyer un essai » part à l'auteur seul, avec une clé
  * d'intention gardée jusqu'à l'envoi. Quitter un
  * document modifié se retient une fois (garde de sortie, seconde passe).
+ *
+ * S5e : sélectionner un bloc du modèle ou un cadre (objet, en-tête) dans le
+ * canevas montre SES phrases dans la colonne de droite, nommées par leur
+ * variante ; les phrases hors carte et celles que le code ne connaît plus
+ * ont leur section sous le canevas. Les signaux de l'écran des textes
+ * (traduction en retard, texte d'origine changé) sont repris. L'aperçu et
+ * l'essai rendent les phrases en brouillon ou publiées, au choix.
  */
 @Component({
   selector: 'app-mail-template-page',
@@ -91,6 +118,9 @@ const SOURCE_LABELS: Readonly<Record<MailEditorView['source'], string>> = {
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
     FoldCalloutComponent,
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldIconComponent,
     FoldInlineConfirmComponent,
     FoldListboxComponent,
     FoldPageSectionComponent,
@@ -127,6 +157,11 @@ export class MailTemplatePage implements HasPendingChanges {
   protected readonly sendingTrial = signal(false);
   /** Le cas affiché (`MailEditorView.cases`) : l'aperçu fidèle et l'essai le rendent. */
   readonly caseId = signal<string | null>(null);
+  /** Le bloc du modèle ou le cadre dont la colonne de droite montre les phrases. */
+  readonly focus = signal<MailEditorPhrasePlace | null>(null);
+  /** Les phrases que l'aperçu fidèle et l'essai rendent (S5e). */
+  readonly phraseSource = signal<MailPhraseSource>('draft');
+  protected readonly phraseSourceOptions = PHRASE_SOURCE_OPTIONS;
   /** Le dernier refus du serveur à « Publier » ou « Revenir », tel qu'il l'a dit. */
   protected readonly gestureError = signal<string | null>(null);
   /** Monte après chaque geste qui écrit une version : l'historique se relit. */
@@ -159,11 +194,31 @@ export class MailTemplatePage implements HasPendingChanges {
     (this.view()?.cases ?? []).map((example) => ({ value: example.id, label: example.label })),
   );
 
-  /** Ce qui part à l'essai, et à qui : dit avant de confirmer. */
+  /** Ce qui part à l'essai, et à qui : dit avant de confirmer — la source des phrases comprise. */
   protected readonly trialMessage = computed(() => {
     const example = this.view()?.cases.find((candidate) => candidate.id === this.caseId());
     const which = example === undefined ? 'l’exemple de l’e-mail' : `le cas « ${example.label} »`;
-    return `Un essai part à votre seule adresse, en ${LOCALE_LABELS[this.locale()].toLowerCase()}, avec ${which} : l’arrangement enregistré (sinon publié, sinon d’origine) et les phrases en brouillon. Rien n’est publié, aucun client ne le reçoit.`;
+    const phrases =
+      this.phraseSource() === 'draft'
+        ? 'les phrases en brouillon'
+        : 'les phrases publiées (celles qui partent aujourd’hui)';
+    return `Un essai part à votre seule adresse, en ${LOCALE_LABELS[this.locale()].toLowerCase()}, avec ${which} : l’arrangement enregistré (sinon publié, sinon d’origine) et ${phrases}. Rien n’est publié, aucun client ne le reçoit.`;
+  });
+
+  /** Les phrases de la place sélectionnée, dans l'ordre du serveur. */
+  protected readonly focusedPhrases = computed(() => {
+    const place = this.focus();
+    return place === null ? [] : phrasesAt(this.phrases.phrases(), place);
+  });
+  protected readonly focusTitle = computed(() => {
+    const place = this.focus();
+    return place === null ? '' : placeTitle(place);
+  });
+
+  /** Les phrases qu'aucun cadre ni bloc à l'écran ne montre. */
+  protected readonly unplaced = computed(() => {
+    const document = this.document();
+    return document === null ? [] : unplacedPhrases(this.phrases.phrases(), document);
   });
 
   /** Le document diffère de celui que le serveur a rendu. */
@@ -218,6 +273,14 @@ export class MailTemplatePage implements HasPendingChanges {
       this.error.set(httpErrorMessage(error, 'Cet e-mail n’a pas pu être lu.'));
       this.status.set('failed');
     }
+  }
+
+  protected heading(phrase: MailEditorPhraseView, siblings: number): string | null {
+    return phraseHeading(phrase, siblings);
+  }
+
+  protected setPhraseSource(value: string): void {
+    this.phraseSource.set(value === 'published' ? 'published' : 'draft');
   }
 
   protected setLocale(value: string): void {
@@ -296,14 +359,15 @@ export class MailTemplatePage implements HasPendingChanges {
     }
     const caseId = this.caseId();
     const locale = this.locale();
-    const subject = `${view.template}\u0000${locale}\u0000${caseId ?? ''}`;
+    const source = this.phraseSource();
+    const subject = `${view.template}\u0000${locale}\u0000${caseId ?? ''}\u0000${source}`;
     this.sendingTrial.set(true);
     this.gestureError.set(null);
     try {
       await this.phrases.flush();
       await this.api.sendTrial(
         view.template,
-        { locale, ...(caseId === null ? {} : { caseId }) },
+        { locale, source, ...(caseId === null ? {} : { caseId }) },
         this.intents.keyFor(subject),
       );
       this.intents.done(subject);
@@ -332,9 +396,12 @@ export class MailTemplatePage implements HasPendingChanges {
 
   /** Pose la vue lue ; garde la langue choisie si le modèle la parle encore. */
   private apply(view: MailEditorView): void {
+    if (this.view()?.template !== view.template) {
+      this.focus.set(null);
+    }
     this.view.set(view);
     this.document.set(view.document);
-    this.phrases.use(view.template, view.phrases);
+    this.phrases.use(view.template, view.phrases, view.orphans);
     if (!view.cases.some((candidate) => candidate.id === this.caseId())) {
       this.caseId.set(view.cases[0]?.id ?? null);
     }

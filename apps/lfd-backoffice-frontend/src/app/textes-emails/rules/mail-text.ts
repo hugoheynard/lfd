@@ -84,7 +84,13 @@ export function insertVariable(
  * votre modification » (§2 quinquies) — recompté au fil des retouches, comme
  * `pendingIn`.
  */
-export function defaultChangedIn(texts: readonly MailCopyTextView[]): number {
+export function defaultChangedIn(
+  texts: readonly {
+    readonly locales: Readonly<
+      Record<ContentLocale, { readonly defaultChangedSince: object | null }>
+    >;
+  }[],
+): number {
   return texts
     .flatMap((text) => COPY_LOCALES.map((locale) => text.locales[locale]))
     .filter((view) => view.defaultChangedSince !== null).length;

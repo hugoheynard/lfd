@@ -115,4 +115,27 @@ describe('MailPhrasesStore — les phrases du modèle en brouillon', () => {
     await store.flush();
     expect(calls.savePhraseDraft).toHaveBeenCalledTimes(1);
   });
+
+  it('une orpheline se rétablit, et compte en attente jusqu’au « Publier »', async () => {
+    const orphan = {
+      ...phrase({ draftState: 'set', draftText: 'Ancien', publishedText: 'Ancien' }),
+      path: 'gone',
+    };
+    const { store, calls } = setup();
+    store.use(TEMPLATE, [phrase()], [orphan]);
+    expect(store.pendingCount()).toBe(1);
+    await store.reset(orphan, 'fr');
+    expect(calls.resetPhrase).toHaveBeenCalledWith(TEMPLATE, {
+      path: 'gone',
+      locale: 'fr',
+      expectedRevision: 2,
+    });
+    expect(store.orphans()[0]?.locales.fr.draftState).toBe('reset');
+  });
+
+  it('compte les langues dont le texte d’origine a changé', () => {
+    const { store } = setup();
+    store.use(TEMPLATE, [phrase({ defaultChangedSince: { previousDefault: 'Avant' } })]);
+    expect(store.defaultChangedCount()).toBe(1);
+  });
 });

@@ -1,5 +1,13 @@
 import { CdkDrag, type CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
 import {
   MODEL_SECTION_LABELS,
   validateMailDocument,
@@ -8,7 +16,10 @@ import {
   type MailBlock,
   type MailDocument,
   type MailDocumentViolation,
+  type MailEditorFrame,
+  type MailEditorPhrasePlace,
   type MailLocale,
+  type ModelSectionId,
   type MailTemplateDeclaration,
 } from '@lfd/mail-blocks';
 import {
@@ -34,6 +45,7 @@ import {
   replaceFreeBlock,
   setColumnWidth,
 } from '../../rules/mail-document-edits';
+import { MAIL_FRAMES, placeTitle, samePlace } from '../../rules/mail-phrase-places';
 import { MailBlockLibrary } from '../mail-block-library/mail-block-library';
 import {
   type CellAddition,
@@ -83,6 +95,14 @@ export class MailCanvas {
   /** Fabrique l'identifiant d'un bloc neuf ; remplaçable en test. */
   readonly newId = input<() => string>(() => crypto.randomUUID());
   readonly documentChange = output<MailDocument>();
+  /**
+   * Le bloc du modèle ou le cadre (objet, en-tête) dont on lit les phrases
+   * (S5e) : la page projette leur panneau dans la colonne de droite
+   * (`[focusPanel]`). Ouvrir les réglages d'un bloc libre le referme.
+   */
+  readonly focus = model<MailEditorPhrasePlace | null>(null);
+
+  protected readonly frames = MAIL_FRAMES;
 
   protected readonly selectedId = signal<string | null>(null);
 
@@ -144,6 +164,7 @@ export class MailCanvas {
     const block = newLibraryBlock(key, this.newId()());
     this.emit(appendBlock(this.document(), block));
     this.selectedId.set(block.id);
+    this.focus.set(null);
   }
 
   protected remove(blockId: string): void {
@@ -155,6 +176,33 @@ export class MailCanvas {
 
   protected toggleSettings(blockId: string): void {
     this.selectedId.update((current) => (current === blockId ? null : blockId));
+    if (this.selectedId() !== null) {
+      this.focus.set(null);
+    }
+  }
+
+  protected isFocused(place: MailEditorPhrasePlace): boolean {
+    return samePlace(this.focus(), place);
+  }
+
+  protected frameTitle(frame: MailEditorFrame): string {
+    return placeTitle({ kind: 'frame', frame });
+  }
+
+  /** Sélectionne un bloc du modèle ou un cadre — un second clic le relâche. */
+  protected toggleFocus(place: MailEditorPhrasePlace): void {
+    this.focus.set(this.isFocused(place) ? null : place);
+    if (this.focus() !== null) {
+      this.selectedId.set(null);
+    }
+  }
+
+  protected blockPlace(section: ModelSectionId): MailEditorPhrasePlace {
+    return { kind: 'block', block: section };
+  }
+
+  protected framePlace(frame: MailEditorFrame): MailEditorPhrasePlace {
+    return { kind: 'frame', frame };
   }
 
   protected edited(block: FreeBlock): void {

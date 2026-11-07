@@ -9,7 +9,7 @@ import {
 } from '@lfd/mail-blocks';
 
 import { NotifyService } from '../../notify.service';
-import { upcomingText } from '../../textes-emails/rules/mail-text';
+import { defaultChangedIn, upcomingText } from '../../textes-emails/rules/mail-text';
 import { MailEditorService } from '../data/mail-editor.service';
 
 /** Le temps de pause dans la frappe avant d'enregistrer le brouillon — celui de l'écran des textes. */
@@ -42,6 +42,8 @@ export class MailPhrasesStore {
 
   private readonly template = signal<string | null>(null);
   readonly phrases = signal<readonly MailEditorPhraseView[]>([]);
+  /** Les phrases que le code ne connaît plus (S5e) : lues, et seulement rétablies. */
+  readonly orphans = signal<readonly MailEditorPhraseView[]>([]);
   private readonly typed = signal<ReadonlyMap<string, string>>(new Map());
   private readonly timers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly chains = new Map<string, Promise<void>>();
@@ -51,16 +53,23 @@ export class MailPhrasesStore {
   /** Les refus du serveur, par phrase et langue — son message, tel quel. */
   readonly refusals = signal<ReadonlyMap<string, string>>(new Map());
 
-  /** Combien de phrases, toutes langues, attendent « Publier ». */
+  /** Combien de phrases, toutes langues, attendent « Publier » — orphelines rétablies comprises. */
   readonly pendingCount = computed(
     () =>
-      this.phrases()
+      [...this.phrases(), ...this.orphans()]
         .flatMap((phrase) => MAIL_LOCALES.map((locale) => phrase.locales[locale]))
         .filter((view) => view.draftState !== 'unchanged').length,
   );
 
+  /** Combien de langues portent « le texte d'origine a changé » — la règle de l'écran des textes. */
+  readonly defaultChangedCount = computed(() => defaultChangedIn(this.phrases()));
+
   /** Pose les phrases lues avec l'e-mail ; oublie la frappe d'un autre e-mail. */
-  use(template: string, phrases: readonly MailEditorPhraseView[]): void {
+  use(
+    template: string,
+    phrases: readonly MailEditorPhraseView[],
+    orphans: readonly MailEditorPhraseView[] = [],
+  ): void {
     if (this.template() !== template) {
       for (const timer of this.timers.values()) {
         clearTimeout(timer);
@@ -72,6 +81,7 @@ export class MailPhrasesStore {
     }
     this.template.set(template);
     this.phrases.set(phrases);
+    this.orphans.set(orphans);
   }
 
   textOf(phrase: MailEditorPhraseView, locale: MailLocale): string {
@@ -192,14 +202,18 @@ export class MailPhrasesStore {
       return;
     }
     try {
-      this.phrases.set((await this.api.phrases(template)).phrases);
+      const view = await this.api.phrases(template);
+      this.phrases.set(view.phrases);
+      this.orphans.set(view.orphans);
     } catch (error) {
       this.notify.error(error, 'Les phrases n’ont pas pu être relues.');
     }
   }
 
   private localeView(path: string, locale: MailLocale): MailEditorPhraseLocaleView | undefined {
-    return this.phrases().find((phrase) => phrase.path === path)?.locales[locale];
+    return [...this.phrases(), ...this.orphans()].find((phrase) => phrase.path === path)?.locales[
+      locale
+    ];
   }
 
   private patch(
@@ -207,7 +221,7 @@ export class MailPhrasesStore {
     locale: MailLocale,
     change: Partial<MailEditorPhraseLocaleView>,
   ): void {
-    this.phrases.update((phrases) =>
+    const apply = (phrases: readonly MailEditorPhraseView[]): readonly MailEditorPhraseView[] =>
       phrases.map((phrase) =>
         phrase.path === path
           ? {
@@ -215,8 +229,9 @@ export class MailPhrasesStore {
               locales: { ...phrase.locales, [locale]: { ...phrase.locales[locale], ...change } },
             }
           : phrase,
-      ),
-    );
+      );
+    this.phrases.update(apply);
+    this.orphans.update(apply);
   }
 
   private queue(id: string, task: () => Promise<void>): Promise<void> {

@@ -18,6 +18,29 @@
       </fold-empty-state>
     }
     @case ('ready') {
+      @if (publishError(); as message) {
+        <fold-callout variant="alert" announce data-publish-error>{{ message }}</fold-callout>
+      }
+      @if (copyPendingCount() > 0) {
+        <fold-callout variant="warning" data-copy-pending>
+          {{ pendingLabel() }} dans les phrases — les e-mails partent avec les phrases publiées tant
+          qu’elles ne le sont pas. Les brouillons d’arrangement se publient depuis leur e-mail.
+          @if (canWrite()) {
+            <div actions>
+              <fold-inline-confirm
+                intent="primary"
+                data-publish-all
+                message="Les prochains e-mails, tous modèles confondus, partiront avec ces phrases."
+                [labels]="{ confirm: 'Publier tous les e-mails' }"
+                [loading]="publishing()"
+                (confirmed)="publishAll()"
+              >
+                <button foldButton icon="upload" type="button">Publier tous les e-mails</button>
+              </fold-inline-confirm>
+            </div>
+          }
+        </fold-callout>
+      }
       @if (groups().length === 0) {
         <fold-empty-state title="Aucun e-mail" subtitle="Le serveur n’a déclaré aucun e-mail.">
           <fold-icon empty-icon name="inbox" />

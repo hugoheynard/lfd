@@ -13,6 +13,7 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldElementTitleComponent,
   FoldTextareaComponent,
 } from 'fold-ng';
 
@@ -32,7 +33,13 @@ import { MailPhrasesStore } from '../../state/mail-phrases-store';
 @Component({
   selector: 'app-mail-phrase-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, FoldCalloutComponent, FoldTextareaComponent],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldElementTitleComponent,
+    FoldTextareaComponent,
+  ],
   templateUrl: './mail-phrase-editor.html',
   styleUrl: './mail-phrase-editor.scss',
 })
@@ -40,6 +47,13 @@ export class MailPhraseEditor {
   readonly phrase = input.required<MailEditorPhraseView>();
   readonly locale = input.required<MailLocale>();
   readonly canWrite = input(false);
+  /**
+   * Son nom sous la place qui la range (S5e) : la variante, ou rien quand elle
+   * est seule. Absent, le nom de son chemin — une phrase hors carte.
+   */
+  readonly heading = input<string | null | undefined>(undefined);
+  /** Une phrase que le code ne connaît plus : lue, et seulement rétablie. */
+  readonly orphan = input(false);
 
   protected readonly store = inject(MailPhrasesStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -48,6 +62,22 @@ export class MailPhraseEditor {
   protected readonly label = computed(
     () => `${pathLabel(this.phrase().path)} (${LOCALE_LABELS[this.locale()].toLowerCase()})`,
   );
+  protected readonly title = computed(() => {
+    const heading = this.heading();
+    return heading === undefined ? pathLabel(this.phrase().path) : heading;
+  });
+  protected readonly readOnly = computed(() => !this.canWrite() || this.orphan());
+  /** Traduction en retard : le français a changé depuis (le signal de l'écran des textes). */
+  protected readonly stale = computed(
+    () => this.locale() !== 'fr' && this.phrase().staleTranslations.includes(this.locale()),
+  );
+  /** Le texte d'origine a changé depuis la modification : l'ancien et l'actuel. */
+  protected readonly defaultChange = computed(() => {
+    const view = this.view();
+    return view.defaultChangedSince === null
+      ? null
+      : { previous: view.defaultChangedSince.previousDefault, current: view.default ?? '' };
+  });
   protected readonly shown = computed(() => this.store.textOf(this.phrase(), this.locale()));
   protected readonly rows = computed(() => rowsFor(this.shown()));
   private readonly view = computed(() => this.phrase().locales[this.locale()]);

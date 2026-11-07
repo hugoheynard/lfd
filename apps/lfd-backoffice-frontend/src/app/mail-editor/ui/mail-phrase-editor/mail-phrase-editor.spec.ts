@@ -42,7 +42,12 @@ const PHRASE: MailEditorPhraseView = {
   },
 };
 
-async function render(locale: MailLocale, canWrite: boolean) {
+async function render(
+  locale: MailLocale,
+  canWrite: boolean,
+  phrase: MailEditorPhraseView = PHRASE,
+  orphan = false,
+) {
   TestBed.configureTestingModule({
     imports: [MailPhraseEditor],
     providers: [
@@ -51,9 +56,10 @@ async function render(locale: MailLocale, canWrite: boolean) {
       { provide: NotifyService, useValue: { error: vi.fn(), success: vi.fn() } },
     ],
   });
-  TestBed.inject(MailPhrasesStore).use('customer.order-placed', [PHRASE]);
+  TestBed.inject(MailPhrasesStore).use('customer.order-placed', [phrase]);
   const fixture = TestBed.createComponent(MailPhraseEditor);
-  fixture.componentRef.setInput('phrase', PHRASE);
+  fixture.componentRef.setInput('phrase', phrase);
+  fixture.componentRef.setInput('orphan', orphan);
   fixture.componentRef.setInput('locale', locale);
   fixture.componentRef.setInput('canWrite', canWrite);
   await fixture.whenStable();
@@ -83,5 +89,35 @@ describe('MailPhraseEditor — une phrase dans la langue choisie', () => {
     expect(element.querySelector('textarea')?.readOnly).toBe(true);
     expect(element.querySelector('[data-reset]')).toBeNull();
     expect(element.textContent).toContain('Variables permises');
+  });
+
+  it('dit la traduction en retard et le texte d’origine changé, comme l’écran des textes', async () => {
+    const signalled: MailEditorPhraseView = {
+      ...PHRASE,
+      staleTranslations: ['en'],
+      locales: {
+        ...PHRASE.locales,
+        en: {
+          ...PHRASE.locales.en,
+          draftState: 'set',
+          draftText: 'Order {ref} settled',
+          defaultChangedSince: { previousDefault: 'Order {ref} done' },
+        },
+      },
+    };
+    const element = await render('en', true, signalled);
+    expect(element.querySelector('[data-stale]')?.textContent).toContain('Traduction en retard');
+    expect(element.querySelector('[data-default-changed]')?.textContent).toContain(
+      'Order {ref} done',
+    );
+    expect(element.textContent).toContain('Texte d’origine changé');
+  });
+
+  it('une orpheline : lecture seule, sans variables, et « Rétablir » reste', async () => {
+    const element = await render('fr', true, PHRASE, true);
+    expect(element.querySelector('textarea')?.readOnly).toBe(true);
+    expect(element.querySelector('[data-reset]')).not.toBeNull();
+    expect(element.querySelector('[aria-label="Insérer {name}"]')).toBeNull();
+    expect(element.textContent).toContain('Le code ne connaît plus cette phrase');
   });
 });
