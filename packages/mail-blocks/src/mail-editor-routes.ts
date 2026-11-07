@@ -1,6 +1,7 @@
 import type { MailCharter } from "./mail-charter.js";
 import type { MailDocument, MailTemplateDeclaration } from "./mail-document.js";
 import type { MailLocale } from "./mail-locales.js";
+import type { ModelSectionId } from "./model-sections.js";
 
 /**
  * **Les contrats des routes de l'éditeur d'e-mails** (plan
@@ -51,6 +52,13 @@ export interface MailEditorListItem {
 /** La liste des e-mails, dans l'ordre du registre, chacun avec son destinataire. */
 export interface MailEditorListView {
   readonly mails: readonly MailEditorListItem[];
+  /**
+   * S5e (§ 21) : combien de phrases, toutes langues, et d'ordres de sections
+   * attendent la publication de tous les e-mails
+   * (`POST /admin/mail-templates/publications`) — le compte de l'écran des
+   * textes. Les brouillons d'arrangement n'y entrent pas.
+   */
+  readonly copyPendingCount: number;
 }
 
 /** Le brouillon d'une phrase n'existe pas, remplace le texte du code, ou y revient. */
@@ -66,7 +74,29 @@ export interface MailEditorPhraseLocaleView {
   readonly publishedText: string | null;
   /** La révision lue : le verrou de l'écriture du brouillon. */
   readonly revision: number;
+  /**
+   * S5e (§ 21) : le texte du code a changé depuis que cette phrase a été
+   * modifiée — calculé comme pour l'écran des textes. `null` : rien à signaler.
+   */
+  readonly defaultChangedSince: MailEditorDefaultChangeView | null;
 }
+
+/** Le texte du code tel qu'il était quand la phrase affichée a été modifiée. */
+export interface MailEditorDefaultChangeView {
+  readonly previousDefault: string;
+}
+
+/** Les deux cadres hors des blocs (§ 2) : l'objet et l'en-tête. */
+export type MailEditorFrame = "subject" | "header";
+
+/**
+ * Où une phrase se range (S5e, § 21) : sous un bloc du modèle, ou dans un
+ * cadre. Lu dans la carte des sections de l'écran des textes, jamais déduit
+ * du chemin.
+ */
+export type MailEditorPhrasePlace =
+  | { readonly kind: "block"; readonly block: ModelSectionId }
+  | { readonly kind: "frame"; readonly frame: MailEditorFrame };
 
 /**
  * **Une phrase d'un bloc du modèle**, et ses variantes (`title.paid`…) : une
@@ -78,6 +108,12 @@ export interface MailEditorPhraseView {
   readonly variables: readonly string[];
   readonly requiredVariables: readonly string[];
   readonly locales: Readonly<Record<MailLocale, MailEditorPhraseLocaleView>>;
+  /** S5e : son bloc ou son cadre ; `null` — hors carte (ou orpheline). */
+  readonly place: MailEditorPhrasePlace | null;
+  /** S5e : QUAND elle s'affiche plutôt que ses voisines (« Commande payée par carte ») ; `null` sans alternative. */
+  readonly variant: string | null;
+  /** S5e : les traductions touchées AVANT le dernier geste sur le français. */
+  readonly staleTranslations: readonly MailLocale[];
 }
 
 /** Un cas que l'aperçu sait rendre : un jeu de données d'exemple. */
@@ -101,6 +137,8 @@ export interface MailEditorView {
   readonly draft: MailEditorStamp | null;
   readonly phrases: readonly MailEditorPhraseView[];
   readonly cases: readonly MailEditorCaseView[];
+  /** S5e : les phrases en base que le code ne connaît plus — lues, jamais envoyées. */
+  readonly orphans: readonly MailEditorPhraseView[];
 }
 
 /** `PUT /admin/mail-templates/:template/draft` — enregistrer le brouillon. */
@@ -188,6 +226,8 @@ export interface MailDocumentCasePreviewPayload extends MailDocumentPreviewPaylo
 export interface MailEditorPhrasesView {
   readonly template: string;
   readonly phrases: readonly MailEditorPhraseView[];
+  /** S5e : les phrases en base que le code ne connaît plus. */
+  readonly orphans: readonly MailEditorPhraseView[];
 }
 
 /**
@@ -223,4 +263,23 @@ export interface MailPhraseResetPayload {
 export interface MailDocumentTrialPayload {
   readonly locale: MailLocale;
   readonly caseId?: string | undefined;
+}
+
+/*
+ * Lot S5e (plan § 21) — ajouts seuls. La publication de tous les e-mails
+ * (`POST /admin/mail-templates/publications`, sans charge) rend
+ * `MailDocumentPublicationView` : la version des textes posée. Elle publie
+ * les phrases et les ordres de sections en attente de TOUS les e-mails (la
+ * publication de l'écran des textes) ; les brouillons d'arrangement ne
+ * partent pas, chacun se publie depuis son e-mail.
+ */
+
+/**
+ * `POST /admin/mail-templates/:template/trials`, avec la source des phrases :
+ * `published` envoie les phrases en service. Sans `source`, les brouillons,
+ * comme avant S5e. Le document reste celui que l'éditeur montre, comme pour
+ * l'aperçu.
+ */
+export interface MailDocumentSourcedTrialPayload extends MailDocumentTrialPayload {
+  readonly source?: "draft" | "published" | undefined;
 }

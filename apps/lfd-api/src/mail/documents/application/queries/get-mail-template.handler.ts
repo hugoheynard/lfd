@@ -6,7 +6,8 @@ import { MailCopyAdminReader } from "../../../copy/domain/ports/mail-copy-admin.
 import { UnknownMailTemplateError } from "../../domain/mail-document-errors.js";
 import { MailDocumentReader } from "../../domain/ports/mail-document.reader.js";
 import { MailTemplateCatalogue } from "../../domain/ports/mail-template-catalogue.js";
-import { mailEditorView, phrasesOfTemplate, startingDocumentOf } from "../mail-editor-view.js";
+import { phrasesOfTemplate } from "../mail-editor-phrases.js";
+import { mailEditorView, startingDocumentOf } from "../mail-editor-view.js";
 import { GetMailTemplateQuery } from "./get-mail-template.query.js";
 
 /**

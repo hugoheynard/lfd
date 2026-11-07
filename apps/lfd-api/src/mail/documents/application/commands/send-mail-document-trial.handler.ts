@@ -62,7 +62,7 @@ export class SendMailDocumentTrialHandler implements ICommandHandler<
       new SendMailCopyTrialCommand(
         command.template,
         command.locale,
-        "draft",
+        command.source,
         command.staffUserId,
         command.intentKey,
         { caseId: command.caseId, document },

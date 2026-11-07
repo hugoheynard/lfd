@@ -5,7 +5,7 @@ import { MailCopyManifest } from "../../../copy/domain/mail-copy-manifest.js";
 import { MailCopyAdminReader } from "../../../copy/domain/ports/mail-copy-admin.reader.js";
 import { UnknownMailTemplateError } from "../../domain/mail-document-errors.js";
 import { MailTemplateCatalogue } from "../../domain/ports/mail-template-catalogue.js";
-import { phrasesOfTemplate } from "../mail-editor-view.js";
+import { phrasesOfTemplate } from "../mail-editor-phrases.js";
 import { GetMailTemplatePhrasesQuery } from "./get-mail-template-phrases.query.js";
 
 /**
@@ -36,7 +36,7 @@ export class GetMailTemplatePhrasesHandler implements IQueryHandler<
     ]);
     return {
       template: query.template,
-      phrases: phrasesOfTemplate(query.template, this.manifest, entries, publication, orders),
+      ...phrasesOfTemplate(query.template, this.manifest, entries, publication, orders),
     };
   }
 }

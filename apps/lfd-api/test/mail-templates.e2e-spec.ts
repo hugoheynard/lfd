@@ -6,7 +6,8 @@
  * document publié, l'historique, l'aperçu fidèle, et « revenir au modèle
  * d'origine ». Lot S4d : les phrases sous `mail_templates`, les cas de
  * l'aperçu, et « M'envoyer un essai » de l'éditeur. Lot S5d : le bloc image,
- * copié à la publication.
+ * copié à la publication. Lot S5e : le rangement et les signaux des phrases,
+ * la publication de tous les e-mails, l'essai sur les phrases publiées.
  *
  * Les deux frontières sortantes de la copie d'image sont doublées — le
  * téléchargement (réseau) et le stockage R2 — et l'admission posée (origines
@@ -18,6 +19,7 @@ import type {
   MailDocument,
   MailDocumentHistoryView,
   MailDocumentPreviewView,
+  MailDocumentPublicationView,
   MailEditorListView,
   MailEditorPhrasesView,
   MailEditorView,
@@ -266,6 +268,84 @@ describe("les cas et l'essai de l'éditeur (S4d)", () => {
       .set(INTENT_KEY, freshIntent())
       .send({ locale: "fr", caseId: "inconnu" })
       .expect(404);
+  });
+});
+
+describe("l'éditeur couvre l'écran des textes (S5e)", () => {
+  it("range les phrases sous leur cadre ou leur bloc, avec le nom de leur variante", async () => {
+    const view = await open(ORDER_PLACED);
+    expect(view.phrases.find((phrase) => phrase.path === "subject")?.place).toEqual({
+      kind: "frame",
+      frame: "subject",
+    });
+    const variant = view.phrases.find(
+      (phrase) => phrase.place?.kind === "block" && phrase.variant !== null,
+    );
+    expect(variant?.variant).toEqual(expect.any(String));
+    expect(view.orphans).toEqual([]);
+  });
+
+  it("publie les phrases en attente de TOUS les e-mails d'un geste ; 409 quand rien n'attend", async () => {
+    const reset = await open(RESET);
+    const phrase = reset.phrases.find((candidate) => candidate.locales.fr.default !== null);
+    const resetText = `${phrase?.locales.fr.default ?? ""} !`;
+    await staff()
+      .put(`${EDITOR}/${RESET}/phrases/drafts`)
+      .send({ path: phrase?.path, locale: "fr", text: resetText, expectedRevision: 0 })
+      .expect(204);
+    await staff()
+      .put(`${EDITOR}/${ORDER_PLACED}/phrases/drafts`)
+      .send({ path: "subject", locale: "fr", text: "Commande {ref} reçue", expectedRevision: 0 })
+      .expect(204);
+    const list = jsonBody<MailEditorListView>(await staff().get(EDITOR).expect(200));
+    expect(list.copyPendingCount).toBe(2);
+
+    const published = jsonBody<MailDocumentPublicationView>(
+      await staff().post(`${EDITOR}/publications`).expect(201),
+    );
+    expect(published.publicationVersion).toBeGreaterThan(0);
+    const after = await open(RESET);
+    expect(
+      after.phrases.find((candidate) => candidate.path === phrase?.path)?.locales.fr.publishedText,
+    ).toBe(resetText);
+    expect(
+      (await open(ORDER_PLACED)).phrases.find((candidate) => candidate.path === "subject")?.locales
+        .fr.publishedText,
+    ).toBe("Commande {ref} reçue");
+    expect(
+      jsonBody<MailEditorListView>(await staff().get(EDITOR).expect(200)).copyPendingCount,
+    ).toBe(0);
+    await staff().post(`${EDITOR}/publications`).expect(409);
+  });
+
+  it("l'essai sur les phrases publiées n'envoie pas le brouillon ; l'essai par défaut, si", async () => {
+    const reset = await open(RESET);
+    const subject = reset.phrases.find((candidate) => candidate.place?.kind === "frame");
+    const drafted = `${subject?.locales.fr.default ?? ""} (brouillon)`;
+    await staff()
+      .put(`${EDITOR}/${RESET}/phrases/drafts`)
+      .send({ path: subject?.path, locale: "fr", text: drafted, expectedRevision: 0 })
+      .expect(204);
+    await staff()
+      .post(`${EDITOR}/${RESET}/trials`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ locale: "fr", source: "published" })
+      .expect(204);
+    await staff()
+      .post(`${EDITOR}/${RESET}/trials`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ locale: "fr" })
+      .expect(204);
+    const [fromPublished, fromDraft] = transport.sent;
+    expect(`${fromPublished?.subject ?? ""}${fromPublished?.html ?? ""}`).not.toContain(
+      "(brouillon)",
+    );
+    expect(`${fromDraft?.subject ?? ""}${fromDraft?.html ?? ""}`).toContain("(brouillon)");
+    await staff()
+      .post(`${EDITOR}/${RESET}/trials`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ locale: "fr", source: "ailleurs" })
+      .expect(400);
   });
 });
 

@@ -84,7 +84,7 @@ function world() {
       uow,
       new RecordingDocumentImages(),
     ),
-    list: new ListMailTemplatesHandler(catalogue, reader),
+    list: new ListMailTemplatesHandler(catalogue, reader, copy, MANIFEST),
     read: new GetMailTemplateHandler(catalogue, reader, copy, MANIFEST),
     history: new GetMailDocumentHistoryHandler(catalogue, reader),
     preview: new PreviewMailDocumentHandler(catalogue, reader, copy, MANIFEST, renderer),

@@ -155,6 +155,27 @@ describe("« M'envoyer un essai » depuis l'éditeur", () => {
     ]);
   });
 
+  /** S5e (§ 21) : l'essai sur les phrases publiées, par la même commande. */
+  it("passe la source demandée — les phrases publiées — à la commande d'essai des textes", async () => {
+    const { sent, handler } = await subject();
+    await handler.execute(
+      new SendMailDocumentTrialCommand(
+        TEMPLATE,
+        "fr",
+        "specimen",
+        "fiche-colette",
+        "cle-3",
+        "published",
+      ),
+    );
+    expect(sent).toEqual([
+      new SendMailCopyTrialCommand(TEMPLATE, "fr", "published", "fiche-colette", "cle-3", {
+        caseId: "specimen",
+        document: startingMailDocument(TEMPLATE, DECLARATION),
+      }),
+    ]);
+  });
+
   it("refuse un cas inconnu sans rien envoyer", async () => {
     const { sent, handler } = await subject();
     await expect(

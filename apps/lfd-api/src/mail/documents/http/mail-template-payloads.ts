@@ -3,7 +3,7 @@ import type {
   MailDocumentDraftPayload,
   MailDocumentPublishPayload,
   MailDocumentRevertPayload,
-  MailDocumentTrialPayload,
+  MailDocumentSourcedTrialPayload,
   MailPhraseDraftPayload,
   MailPhraseResetPayload,
 } from "@lfd/mail-blocks";
@@ -43,10 +43,13 @@ export const mailDocumentPreviewPayloadSchema: z.ZodType<MailDocumentCasePreview
     caseId: caseId.optional(),
   });
 
-export const mailDocumentTrialPayloadSchema: z.ZodType<MailDocumentTrialPayload> = z.strictObject({
-  locale: z.enum(MAIL_LOCALES),
-  caseId: caseId.optional(),
-});
+/** Sans `source`, les phrases en brouillon, comme avant S5e. */
+export const mailDocumentTrialPayloadSchema: z.ZodType<MailDocumentSourcedTrialPayload> =
+  z.strictObject({
+    locale: z.enum(MAIL_LOCALES),
+    caseId: caseId.optional(),
+    source: z.enum(["draft", "published"]).optional(),
+  });
 
 /** Le chemin d'une phrase dans son e-mail (`subject`, `title.paid`), borné comme `admin/mail-copy`. */
 const phrasePath = z.string().trim().min(1).max(200);

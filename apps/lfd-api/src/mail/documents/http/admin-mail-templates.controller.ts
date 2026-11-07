@@ -6,7 +6,7 @@ import type {
   MailDocumentPublicationView,
   MailDocumentPublishPayload,
   MailDocumentRevertPayload,
-  MailDocumentTrialPayload,
+  MailDocumentSourcedTrialPayload,
   MailEditorListView,
   MailEditorView,
 } from "@lfd/mail-blocks";
@@ -18,6 +18,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SPECIMEN_CASE_ID } from "../../templates/specimens/cases/mail-specimen-case.types.js";
+import { PublishMailCopyCommand } from "../../copy/application/commands/publish-mail-copy.command.js";
 import { PublishMailDocumentCommand } from "../application/commands/publish-mail-document.command.js";
 import { RevertMailDocumentCommand } from "../application/commands/revert-mail-document.command.js";
 import { SendMailDocumentTrialCommand } from "../application/commands/send-mail-document-trial.command.js";
@@ -56,6 +57,19 @@ export class AdminMailTemplatesController {
     return this.queries.execute<ListMailTemplatesQuery, MailEditorListView>(
       new ListMailTemplatesQuery(),
     );
+  }
+
+  /**
+   * Publie les phrases et les ordres de sections en attente de TOUS les
+   * e-mails (S5e, § 21) : la commande même de `admin/mail-copy`, seule la
+   * garde change. Les brouillons d'arrangement ne partent pas.
+   */
+  @Post("publications")
+  async publishAll(@StaffUserId() staffUserId: string): Promise<MailDocumentPublicationView> {
+    const publicationVersion = await this.commands.execute<PublishMailCopyCommand, number>(
+      new PublishMailCopyCommand(staffUserId),
+    );
+    return { publicationVersion };
   }
 
   /** Ouvre un e-mail : rien n'est écrit, le document de départ est calculé. */
@@ -145,7 +159,7 @@ export class AdminMailTemplatesController {
   @HttpCode(204)
   async trial(
     @Param("template") template: string,
-    @Body(new ZodBody(mailDocumentTrialPayloadSchema)) payload: MailDocumentTrialPayload,
+    @Body(new ZodBody(mailDocumentTrialPayloadSchema)) payload: MailDocumentSourcedTrialPayload,
     @StaffUserId() staffUserId: string,
     @IntentKey() intentKey: string,
   ): Promise<void> {
@@ -156,6 +170,7 @@ export class AdminMailTemplatesController {
         payload.caseId ?? SPECIMEN_CASE_ID,
         staffUserId,
         intentKey,
+        payload.source ?? "draft",
       ),
     );
   }
