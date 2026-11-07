@@ -217,6 +217,7 @@ flowchart LR
 | **S2g** | ✅ bâti le 2026-11-06 (`d2a80194f`, § 17) : le bloc `staff` (2 envoyeurs) ; `sendNow` pour ouvrir un accès (l'écran lit `mailSent`, le lien est un secret), `request` pour la suspension et le rétablissement, depuis leur transaction ; une clé par geste ; dette 8 → 6                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | la suspension et le rétablissement partent après la validation, par le bloc                                             |
 | **S2h** | ✅ bâti le 2026-11-06 (`2a6611246`, § 18) : les 6 isolés ; `request` pour l'alerte de compte, le rendez-vous pris (chacun dans sa propre unité de travail, best-effort gardé) et les avis aux comptes principaux (abonnés durables) ; `sendNow` pour l'annonce de la vitrine, l'essai d'un e-mail et la sonde de déploiement, **entrée dans le bloc `mail`** (même route) ; dette 6 → 0                                                                                                                                                                                                                                                                                                                                                                                                          | l'alerte de compte, le rendez-vous et les avis aux principaux partent après la validation, par le bloc                  |
 | **S3**  | ✅ bâti le 2026-11-06 (`336b46e7f`, § 19 ; S3b `7f6dfae8d`, § 20) : `b2b/mail-copy` → `mail/copy/`, puis les gabarits, le dictionnaire, le texte effectif, les sections et les spécimens → `mail/templates/` ; le contrat (`B2bMails`, la langue de repli, les libellés de l'équipe) et deux ports dans `mail/channels/templates/` ; le mailer est composé par le bloc. Déménager les gabarits, le dictionnaire et les sections de `platform/mailer/` dans le bloc. **Restent dans `platform/mailer/`** : `webhook/` (lu par `ops`), `inbound/` et `journal/`, techniques. Les trois tables `public.mail_*` **restent dans `public`** : seul leur écrivain change (de `b2b/mail-copy` au bloc `mail`), dans le même déploiement que leur lecteur. Les tables neuves du bloc vont dans son schéma | rien                                                                                                                    |
+| **S3c** | À bâtir (§ 22, Hugo, 2026-11-07). Les pièces jointes par **URL signée** : l'appelant range et signe, le bloc `mail` télécharge au moment d'envoyer et ne connaît plus aucun stockage.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Aucun : la même pièce, jointe de la même façon.                                                                         |
 | **S4**  | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                                                                                                                                                                                                                                                                                                                                                                                               | rien tant que rien n'est publié                                                                                         |
 | **S5**  | L'éditeur au back-office : ajouter, retirer, ordonner, écrire, insérer une variable, aperçu, essai, publier, versions, trois langues côte à côte ; le droit dédié                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | l'équipe compose ses e-mails                                                                                            |
 
@@ -277,7 +278,7 @@ indiquent un manque dans le flow d'origine ». Les 33 lignes regroupées en
 | ~~4~~ | ~~Des clés de doublon absentes ou limitées à 24 h~~                                          | ✅ fait le 2026-11-06 (Hugo, deux corrections et leurs portes). **1. La clé d'intention** : l'écran fabrique une clé par geste voulu (`GestureIntents`, `apps/lfd-backoffice-frontend/src/app/shared/gesture-intents.ts`) et l'envoie en en-tête `Idempotency-Key` ; le serveur s'en sert comme identifiant du geste (`OncePerIntent`, `apps/lfd-api/src/platform/intent/`, table `platform.gesture_intent`, migration `20261106190000`) : une seconde requête de même clé ne réexécute rien et rend le résultat de la première, un vrai renvoi porte une clé neuve. Dix gestes : ouvrir un compte client, rattacher le détenteur, ouvrir un accès client (et son renvoi), créer un membre de l'équipe, l'inviter ou lui renvoyer le lien, le suspendre ou le rétablir, envoyer le mandat, renvoyer une facture, renvoyer le lien de paiement, l'essai d'un e-mail. **2. La clé de la facture** porte l'identifiant stable du destinataire (`contact:<id>`, `user:<id>`) au lieu de son rang. **Portes** : `lint:intent-key-gestures` (champ `intentKey` obligatoire dans les dix commandes, lu par `@IntentKey()` dans leur contrôleur ; aucune clé d'e-mail tirée au hasard hors liste) et `lint:mail-key-no-pii` (aucune clé d'e-mail construite avec une adresse). Reste hors du cas : le « mot de passe oublié » du client garde une clé tirée au hasard (pas un geste du staff, admis et daté dans la porte) |
 | ~~5~~ | ~~Le sens de « envoyé » / « prévenu »~~                                                      | Rayé le 2026-11-06 avec Hugo. Chantier ouvert (dans l'ordre) : 1. un type par étape — `MailDemand` (rendu par `mail.send`), `MailAcceptance` (rendu par `mail.sendAndAwaitReceipt`), `MailDelivery` (remis, rebondi, spam) — et une porte `mail-status-honest` (ne jamais lire « le mailer est configuré » pour dire « envoyé » ; un champ `mailSent`/`sent` nomme son étape, anciens noms en dette décroissante) ; 2. les retours de Resend reliés au suivi des envois par l'identifiant du fournisseur ; 3. les faits `mail.delivered` / `mail.bounced` ; 4. l'API sert l'ÉTAT en code anglais (`requested`, `accepted`, `delivered`, `bounced`), chaque front le traduit dans son dictionnaire — jamais un libellé français dans une réponse. Pas encore bâti.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ~~6~~ | ~~Des adresses e-mail en clair dans les logs~~                                               | Rayé le 2026-11-06 avec Hugo. Trois journaux de production écrivaient une adresse : deux dans `grant-account-access` (ouverture d'identité, sujet périmé) et un dans `update-staff-user` (les deux adresses d'une fiche désynchronisée). Ils désignent désormais le compte ou la fiche par son id. Porte `log-no-email` : aucun journal ne reçoit une variable qui nomme une adresse ; seuls les deux adaptateurs d'identité de développement sont admis.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ~~7~~ | ~~Les pièces jointes fabriquées en mémoire à l'envoi~~                                       | Rayé le 2026-11-06 avec Hugo. Règle : tout document envoyé est l'exemplaire gardé. Bâti : le mandat à signer est rangé au stockage des pièces client sous `mandates/<société>/<mandat>/<intention>.pdf` (identifiants opaques, une place par envoi voulu, jamais écrasée) AVANT l'envoi, puis joint par `pdfStored` ; le renvoi d'une facture joint l'exemplaire rangé à l'émission (`Invoice.documentKey`), plus un rendu refait. Porte `mail-attachment-by-reference` : hors du bloc `mail`, `pdfBase64` ne s'écrit plus. **Reste, décision de Hugo** : le dossier du fournil est rangé au stockage du FOURNIL, que le bloc `mail` n'ouvre pas — ouvrir ce stockage au bloc mail, ou le laisser en octets (seule entrée de la dette). **Reste aussi** : la durée de conservation des mandats rangés, non décidée. Idée de Hugo, à vérifier côté livraison : figer un seul bon, avec son QR, dès la passation (le QR ne donne aucun droit : le scan est un geste du staff, et une commande non réglée y est refusée).                                                                                                                                                                                                                                                                                                                                                                                             |
+| ~~7~~ | ~~Les pièces jointes fabriquées en mémoire à l'envoi~~                                       | Rayé le 2026-11-06 avec Hugo. ⚠️ Le moyen est révisé le 2026-11-07 (§ 22, lot S3c) : la référence au stockage devient une URL signée. Règle : tout document envoyé est l'exemplaire gardé. Bâti : le mandat à signer est rangé au stockage des pièces client sous `mandates/<société>/<mandat>/<intention>.pdf` (identifiants opaques, une place par envoi voulu, jamais écrasée) AVANT l'envoi, puis joint par `pdfStored` ; le renvoi d'une facture joint l'exemplaire rangé à l'émission (`Invoice.documentKey`), plus un rendu refait. Porte `mail-attachment-by-reference` : hors du bloc `mail`, `pdfBase64` ne s'écrit plus. **Reste, décision de Hugo** : le dossier du fournil est rangé au stockage du FOURNIL, que le bloc `mail` n'ouvre pas — ouvrir ce stockage au bloc mail, ou le laisser en octets (seule entrée de la dette). **Reste aussi** : la durée de conservation des mandats rangés, non décidée. Idée de Hugo, à vérifier côté livraison : figer un seul bon, avec son QR, dès la passation (le QR ne donne aucun droit : le scan est un geste du staff, et une commande non réglée y est refusée).                                                                                                                                                                                                                                                                                     |
 | 8     | La sonde de déploiement ne testait que le transport                                          |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 9     | Rattacher un titulaire envoie l'e-mail avant d'enregistrer la société (pas corrigé)          |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
@@ -1075,3 +1076,106 @@ Des méthodes statiques (`Mail.send(…)`) ont été écartées : elles auraient
 caché les dépendances (base, outbox, mailer) dans un singleton, contre le § 2
 de `CLAUDE.md`, et empêché les tests d'injecter une doublure. Le renommage se
 fait dans un passage dédié, avec le rangement des portes dans `lint/`.
+
+## 22. S3c — les pièces jointes par URL signée (Hugo, 2026-11-07) — à bâtir
+
+### En simple
+
+Aujourd'hui (cas 7), une demande d'e-mail désigne sa pièce par **un nom de
+stockage et une clé** (`pdfStored: { store: "customer-documents", key }`), et
+le bloc `mail` va la relire lui-même. Il connaît donc les stockages des autres
+blocs — Hugo, le 2026-11-07 : « cette dépendance aux stockages dans le mailer,
+je trouve ça pas bien du tout ». Le dossier du fournil le montrait : pour
+l'envoyer par référence, il fallait ouvrir au bloc `mail` un stockage de plus.
+
+Demain, la demande porte **un ticket** : une adresse signée, valable un temps
+borné. L'appelant range son document chez lui, signe l'adresse de ce fichier,
+et la passe. Le bloc `mail` télécharge l'adresse au moment d'envoyer et joint
+les octets à Resend. Il ne sait plus qu'aucun stockage existe.
+
+```mermaid
+sequenceDiagram
+    participant A as Bloc appelant
+    participant S as Son stockage
+    participant M as Bloc mail
+    participant R as Resend
+    A->>S: range le document
+    A->>S: signe l'adresse (calcul local, sans réseau)
+    A->>M: mail.send, la pièce porte l'adresse signée
+    Note over M: la demande attend dans la boîte d'envoi
+    M->>S: télécharge l'adresse, hors transaction
+    M->>R: envoie, la pièce en octets
+```
+
+C'est le schéma « claim check » des files d'envoi : la file porte un ticket,
+jamais la pièce.
+
+### Les options écartées (2026-11-07)
+
+| Option                                                       | Pourquoi écartée                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Les octets dans le fait `mail.requested`                     | Le fait vit dans `OutboxMessage.payload`, table de `platform` qu'on ne réécrit pas ; la purge de l'outbox est à blanc, donc chaque bon et chaque facture y resteraient copiés sans durée, hors du registre RGPD ; le relais relit les charges à chaque passage, sur une base facturée à l'opération. |
+| Une table de transit `mail.mail_attachment`                  | Viable, mais une migration, une copie à effacer après envoi et une donnée de plus au registre, pour ce qu'une URL fait sans rien stocker.                                                                                                                                                            |
+| Un port « ouvre-moi cette pièce » implémenté par chaque bloc | Viable, mais un adaptateur par bloc qui range des pièces pour une lecture que l'URL signée fait déjà.                                                                                                                                                                                                |
+| Donner l'URL à Resend (`path`)                               | L'adresse d'un mandat (IBAN) ou d'une facture sortirait vers un tiers qui la chercherait sur Internet. Le bloc `mail` télécharge lui-même : l'URL ne quitte jamais notre système.                                                                                                                    |
+
+### Vérifié le 2026-11-07
+
+- **`@lfd/storage` ne sait pas signer.** `IStorageService` n'offre que
+  `upload`, `delete`, `deleteByPrefix`, `downloadToBuffer` ; aucun
+  `getSignedUrl` dans le dépôt. Il faut ajouter
+  `@aws-sdk/s3-request-presigner` au catalogue, à la version de
+  `@aws-sdk/client-s3` (`3.1097.0`). Signer est un **calcul local** (SigV4,
+  aucun appel réseau) : il peut se faire dans la transaction de l'appelant.
+- **Les envois avec pièce** : différés (`mail.send`) — le bon de commande à
+  la passation (`order-sheet-attachment.service.ts`), la facture à l'émission
+  (`invoice-notice-sender.ts`) ; immédiats (`mail.sendAndAwaitReceipt`) — le
+  renvoi d'une facture, le mandat (`send-mandate.handler.ts`), le dossier du
+  fournil (`dossier-dispatch.service.ts`, encore en `pdfBase64`, seule entrée
+  admise de `lint:mail-attachment-by-reference`).
+- **La fenêtre de reprise** d'un envoi différé est de 23 h (§ 8) ; un renvoi
+  plus tardif repasse par l'appelant (`resend-invoice-notice.handler`), qui
+  signera une adresse neuve.
+
+### Ce que le lot fait
+
+1. **Stockage** — `S3StorageService.signedGetUrl(key, ttlSeconds)` dans
+   `@lfd/storage` ; `signedUrl(key)` sur `CustomerDocumentStore` et
+   `ProductionDocumentStore` (enveloppe `KeptDocumentStore` comprise). Durée :
+   **48 h** (constante nommée, au-dessus des 23 h de reprise).
+2. **La porte** — `pdfStored: { store, key }` devient
+   `pdfLink: { url, fileName }`. `ByReference`, `OpenedByReference` et
+   `ImmediateMailData` se simplifient : toute pièce voyage par adresse, envoi
+   différé ou immédiat.
+3. **Le bloc `mail`** — `stored-pdfs.ts` est remplacé par un lecteur de liens (nom à fixer au bâti) ;
+   `MAIL_ATTACHMENT_STORES` et `storage-mail-attachment.store.ts` disparaissent,
+   remplacés par un téléchargeur HTTP (`fetch`, garde
+   `assertOutsideTransaction`, classé réseau). Il ne télécharge qu'une origine
+   **admise par la configuration** (`AppConfig`, le point de terminaison R2) :
+   une adresse quelconque est refusée, nommément — sans quoi la porte
+   deviendrait un client HTTP ouvert. Une adresse expirée ou absente est un
+   échec nommé (`la pièce jointe n'est plus disponible`), relancé comme les
+   autres pannes puis mis en échec.
+4. **Les cinq appelants** — bon, facture, renvoi de facture, mandat : signer la
+   clé qu'ils rangent déjà. Le dossier du fournil : signer l'archive qu'il
+   range déjà dans `production-documents` (à vérifier au bâti : est-ce bien le
+   fichier joint ?), ce qui retire la dernière entrée admise.
+5. **La porte `lint:mail-attachment-by-reference`** — garde son nom et sa
+   règle (hors du bloc `mail`, jamais `pdfBase64`), perd sa liste admise. Elle
+   ajoute : hors des adaptateurs de stockage, personne ne construit un
+   `pdfLink.url` à la main.
+6. **Réseau** — `@aws-sdk/s3-request-presigner` classé **local** dans
+   `lint/dependency-network-class.json`.
+
+Pas de migration : aucune table ne change, et les faits `mail.requested` déjà
+écrits avec `pdfStored` (dev seulement : rien n'est en production) se relisent
+une dernière fois par l'ancien chemin ou échouent nommément — à trancher au
+bâti selon ce que la boîte d'envoi de dev contient.
+
+### Ce qui n'est pas vérifié
+
+- que R2 accepte une URL signée de 48 h pour `GetObject` avec nos jetons par
+  usage (la limite SigV4 est de 7 jours) ;
+- que le dossier du fournil joint bien l'archive qu'il range ;
+- la taille réelle d'un bon et d'une facture (sans effet sur ce choix : rien
+  n'est stocké en transit).
