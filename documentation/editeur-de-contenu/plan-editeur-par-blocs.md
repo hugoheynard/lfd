@@ -1462,3 +1462,52 @@ le HTML rend l'empreinte d'avant à l'octet) :
   Le refus côté serveur d'une écriture sur un libellé système reste **non
   tranché** (Hugo : « je ne sais pas ») : aujourd'hui, la liste ne règle que
   ce que l'éditeur montre.
+
+### Les 31 autres e-mails — relevé du 2026-11-07, soumis à Hugo
+
+Relevé fait dans le dictionnaire français (`apps/lfd-api/src/mail/templates/copy/fr/`),
+les déclarations de sections (`apps/lfd-api/src/mail/templates/sections/`) et
+les cas (`apps/lfd-api/src/mail/templates/specimens/cases/`) ; gabarits ouverts
+seulement quand il le fallait, dictionnaires anglais et italien non relus.
+**Rien n'est tranché** tant que Hugo n'a pas répondu.
+
+**16 faciles** — l'accroche est déjà la même pour tous ; ce qui varie est un
+prénom ou une ligne de tableau. Déclarer les phrases éditables, un seul cas.
+
+- Clients : `customer.order-delayed`, `customer.payment-expired`,
+  `customer.order-change-refused`, `customer.order-shortfall`,
+  `customer.order-payment-link`, `customer.company-attached`,
+  `customer.order-placed-with-your-email`, `customer.login-method-linked`,
+  `customer.password-reset`.
+- Équipe : `staff.appointment-booked`, `staff.account-alert`, `staff.invited`,
+  `staff.access-suspended`, `staff.access-restored`,
+  `staff.support-requested`, et `ops.deploy-check` (proposé : le sortir de
+  l'éditeur, c'est un contrôle technique).
+
+**4 moyens** — proposition :
+
+| E-mail                          | Proposition                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `customer.invoice-issued`       | l'intro perd « pour les commandes {period} » : la période est déjà au tableau                                                                                            |
+| `customer.payment-failed`       | « Reprenez le règlement ci-dessous » est écrit même sans bouton (faux aujourd'hui, vérifié le 2026-11-07) : phrase fixe d'un côté, renvoi au bouton dans le bloc système |
+| `customer.order-change-applied` | « X € de plus / de moins à payer » porte des montants : bloc système ; accroche « Votre modification est faite. »                                                        |
+| `staff.customer-request`        | l'objet est composé de données (formulaire, motif, urgence) : il reste au gabarit ; seul le titre est éditable                                                           |
+
+**11 à discuter** — la variante dit un sens métier qu'un tableau ne dit pas :
+
+| E-mail                          | Ce qui varie                                              | Recommandation                                                                                      |
+| ------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `customer.order-ready`          | annonce / rappel / reste ; comptoir / livraison           | garder 3 accroches (annonce, rappel, reste) ; unifier comptoir et livraison dans une intro à écrire |
+| `customer.delivery-en-route`    | commande entière / reste                                  | garder les 2 : sans « le reste », le client croit à une nouvelle commande                           |
+| `customer.order-cancelled`      | qui a annulé × date ; remboursement, bon                  | titre fixe ; qui a annulé et remboursement en bloc système                                          |
+| `customer.collection-notice`    | 1er avis / rectificatif / annulation                      | garder les 3 : trois actes bancaires                                                                |
+| `customer.mandate-to-sign`      | CORE / B2B                                                | accroche commune ; les deux pieds juridiques en bloc système                                        |
+| `customer.access-opened`        | mot de passe à choisir / connexion par code               | garder les 2 : pas le même geste                                                                    |
+| `customer.sub-account-activity` | nature de l'événement                                     | titre commun « Un de vos sites a agi », l'événement au tableau                                      |
+| `customer.sub-account-gesture`  | 15 gestes (RIB, contact…)                                 | titre commun, le geste au tableau                                                                   |
+| `staff.password-reset`          | « votre mot de passe actuel reste valable », non vérifiée | décision de sécurité : vérifier dans le code avant de la garder                                     |
+| `staff.production-dossier`      | arrêté / complété                                         | hors de l'éditeur : document chiffré, pas un texte                                                  |
+| `agency.vitrine-notice`         | titre et corps écrits à chaque envoi                      | hors règle ; seuls surtitre et pied éditables                                                       |
+
+Proposé à Hugo : passer d'abord les 16 faciles et les 4 moyens, puis trancher
+les 11 ligne par ligne.
