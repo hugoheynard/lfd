@@ -528,3 +528,38 @@ B2B : commande et handler en fichiers séparés), sous le droit
 - **Un document rangé illisible** (forme d'un autre code) se refuse à
   l'ouverture (500 nommé) ; à l'envoi, l'e-mail part dans l'ordre du code.
 - Le § 1 cite `b2b/mail-copy` : l'écrivain est `mail/copy` depuis S3.
+
+## 16. S4d — les phrases sous `mail_templates`, et un exemple par cas (Hugo, 2026-11-07) — à bâtir
+
+Deux réponses de Hugo aux questions laissées par S4c (§ 15) :
+
+1. **« des routes propres sous `mail_templates` »** : l'éditeur écrit les
+   phrases du modèle par ses propres routes, gardées par `mail_templates`.
+   Personne n'a besoin de `b2b_storefront` pour éditer un e-mail. Les routes
+   `admin/mail-copy` restent pour l'écran `textes-emails` tant qu'il existe ;
+   elles et les nouvelles appellent **les mêmes commandes** du bloc `mail`
+   (`mail/copy/`) — aucune règle dupliquée, seule la garde change.
+2. **« un exemple par cas »** : chaque cas d'un modèle (payé / à régler / au
+   compte…, les axes relevés par `vitruve` au second passage, § 10) a un **jeu
+   de données d'exemple servi en production**, et l'éditeur peut afficher
+   chaque cas, en aperçu fidèle comme dans le canevas. Aujourd'hui ces jeux
+   n'existent que dans les empreintes de test
+   (`apps/lfd-api/src/mail/templates/__tests__/rendering-golden/`) ; le seul
+   exemple servi est le `specimen` (`apps/lfd-api/src/mail/templates/specimens/`).
+
+### Ce que le lot fait
+
+- **Phrases** : routes d'écriture et de lecture des phrases d'un e-mail sous
+  `admin/mail-templates/…` (même préfixe que S4c), contrats ajoutés à
+  `@lfd/mail-blocks` (ajout seul, rien de renommé : S5a les lit déjà), qui
+  passent par les commandes existantes de `mail/copy/`. Les phrases
+  enregistrées partent avec la publication unique de S4c.
+- **Cas** : une table des cas par modèle, dans le code (`mail/templates/specimens/`),
+  chacun avec un identifiant stable, un libellé français et ses données
+  d'exemple — des données **inventées et lisibles comme telles** (« Boulangerie
+  Exemple »), jamais tirées d'un client réel. Les empreintes de test les
+  réutilisent au lieu d'en porter une copie, quand c'est possible sans changer
+  un octet des empreintes. La lecture d'un e-mail sert la liste des cas ;
+  l'aperçu fidèle prend un cas.
+- **Garde** : un test vérifie que chaque modèle a au moins un cas, et que
+  chaque axe déclaré a un cas qui l'exerce.
