@@ -9,6 +9,7 @@ import { EffectiveCopyMailer, type EffectiveCopyLog } from "../effective-copy-ma
 import { composeMail } from "../mail-composition.js";
 import { PublishedMailCopyReader } from "../published-mail-copy.reader.js";
 import type { PublishedMailDocuments } from "../published-mail-documents.js";
+import type { PublishedMailCharters } from "../published-mail-charters.js";
 import { mailBlockDeclarationOf } from "../../sections/mail-block-declarations.js";
 
 /** Un transport qui relève l'objet de confirmation tel qu'il le lirait au rendu. */
@@ -30,6 +31,9 @@ class StaticPublished extends PublishedMailCopyReader {
     private readonly published: PublishedMailDocuments | Error = {},
   ) {
     super();
+  }
+  charters(): Promise<PublishedMailCharters> {
+    return Promise.resolve({});
   }
   documents(): Promise<PublishedMailDocuments> {
     return this.published instanceof Error

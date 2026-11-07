@@ -1,5 +1,6 @@
 import { startingMailDocument } from "@lfd/mail-blocks";
 
+import type { StoredPublishedMailCharter } from "../../../charters/application/servable-mail-charter.js";
 import type { StoredPublishedMailDocument } from "../../../documents/application/servable-mail-document.js";
 import { mailBlockDeclarationOf } from "../../../templates/sections/mail-block-declarations.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -58,6 +59,14 @@ class CountingStore extends PublishedMailCopyStore {
   publishedDocuments(): Promise<readonly StoredPublishedMailDocument[]> {
     this.documentReads += 1;
     return Promise.resolve([...this.documents]);
+  }
+
+  charterReads = 0;
+  charters: StoredPublishedMailCharter[] = [];
+
+  publishedCharters(): Promise<readonly StoredPublishedMailCharter[]> {
+    this.charterReads += 1;
+    return Promise.resolve([...this.charters]);
   }
 }
 
@@ -191,5 +200,48 @@ describe("les documents publiés de l'éditeur par blocs, gardés en mémoire (S
     store.documents = [{ template: TEMPLATE, version: 1, document: reversed }];
     expect(Object.keys(await cache.documents())).toEqual([TEMPLATE]);
     expect(store.documentReads).toBe(2);
+  });
+});
+
+/** C1 (plan de l'éditeur par blocs, § 25) : la charte publiée d'un espace, par la même version. */
+describe("les chartes publiées des espaces, gardées en mémoire (C1)", () => {
+  const SETTINGS = {
+    logo: null,
+    colors: {
+      page: "#fdfcfb",
+      card: "#ffffff",
+      text: "#0f172a",
+      mutedText: "#64748b",
+      primary: "#7a1f3d",
+      border: "#e2e8f0",
+    },
+    darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
+    headingFont: null,
+    footer: {},
+  };
+
+  it("rend la charte servable, et dit illisible une charte sans la forme d'une charte", async () => {
+    const { store, cache } = setup();
+    store.charters = [
+      { space: "lfd", version: 2, settings: SETTINGS },
+      { space: "lfc", version: 1, settings: { couleurs: "bleu" } },
+      { space: "internal", version: 1, settings: SETTINGS },
+    ];
+    expect(await cache.charters()).toEqual({
+      lfd: { kind: "servable", settings: SETTINGS, version: 2 },
+      lfc: { kind: "unreadable", version: 1 },
+    });
+  });
+
+  it("ne relit les chartes que quand la version a monté", async () => {
+    const { store, clock, cache } = setup();
+    await cache.charters();
+    await cache.charters();
+    expect(store.charterReads).toBe(1);
+    clock.advanceMs(MAIL_COPY_VERSION_RECHECK_MS);
+    store.current = 2;
+    store.charters = [{ space: "lfd", version: 1, settings: SETTINGS }];
+    expect(Object.keys(await cache.charters())).toEqual(["lfd"]);
+    expect(store.charterReads).toBe(2);
   });
 });

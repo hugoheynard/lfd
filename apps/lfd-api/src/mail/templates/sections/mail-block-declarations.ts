@@ -1,7 +1,9 @@
 import {
   MAIL_LOCALES,
+  mailSpaceOfCharter,
   modelSectionOfLayoutSection,
   type MailCharter,
+  type MailSpace,
   type MailLocale,
   type MailTemplateDeclaration,
   type ModelSectionId,
@@ -106,4 +108,12 @@ export function mailBlockDeclarationOf(mail: keyof B2bMails): MailTemplateDeclar
     ...(layout.editablePhrases === undefined ? {} : { editablePhrases: layout.editablePhrases }),
     ...(layout.ctaDestination === undefined ? {} : { ctaDestination: layout.ctaDestination }),
   };
+}
+
+/**
+ * **L'espace d'un e-mail** (plan `plan-editeur-par-blocs.md`, § 25) : lu de
+ * sa charte, `internal` rangé dans `lfd` — aucune valeur renommée.
+ */
+export function mailSpaceOf(mail: keyof B2bMails): MailSpace {
+  return mailSpaceOfCharter(CHARTERS[mail]);
 }

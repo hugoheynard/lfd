@@ -315,6 +315,39 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
+   * **Le brouillon de la charte d'un espace d'e-mails est enregistré**
+   * (`plan-editeur-par-blocs.md`, § 25, C1). Les réglages ne sont pas dans la
+   * charge : ils vivent dans `mail.mail_charter`.
+   *
+   * `subjectLabel` : le nom de l'espace (« La Folie Douce — équipe »).
+   */
+  "mail_copy.charter_saved": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      space: z.string().min(1),
+      revision: count(),
+    }),
+  ),
+
+  /**
+   * **La charte d'un espace est publiée** (C1) : elle vaut pour tous les
+   * e-mails de l'espace au prochain envoi. `version` désigne la version
+   * gardée en ajout seul (`mail.mail_charter_version`) ; `previousVersion` :
+   * celle qui servait avant, `null` pour la charte de départ ;
+   * `publicationVersion` : la version des textes des e-mails, montée pour
+   * que les autres instances voient la charte.
+   */
+  "mail_copy.charter_published": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      space: z.string().min(1),
+      version: count(),
+      previousVersion: count().nullable(),
+      publicationVersion: count(),
+    }),
+  ),
+
+  /**
    * Un prospect saisi à la main. L'e-mail en est sorti le 2026-09-19 (lot B) :
    * une coordonnée n'a rien à faire au journal, et le lead la garde sur sa
    * propre ligne. `subjectLabel` : son enseigne — la même que `businessName`.

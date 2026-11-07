@@ -1944,6 +1944,33 @@
       "information": false
     },
     {
+      "colonne": "mail.mail_charter.draft_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`draft_by`) sur `mail_charter`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_charter.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `mail_charter`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_charter_version.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `mail_charter_version`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.platform_content.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",

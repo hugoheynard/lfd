@@ -1,19 +1,16 @@
 import type { MailCharter } from "@lfd/mail-blocks";
 
 import type { LayoutFrameTheme } from "./html.js";
-import { brandFontFaceRule } from "./layout-header.js";
+import type { LayoutInput } from "./layout-input.js";
+import { charterFontFaceRule } from "./layout-header.js";
+import { STARTING_MAIL_CHARTER, type MailRenderCharter } from "./render-charter.js";
 
 /**
- * **Les trois chartes et leur variante sombre** (plan
- * `plan-editeur-par-blocs.md`, § 4, S4b) — émises SEULEMENT pour un document
- * réarrangé : un `<style>` dans le `<head>` changerait les octets du document
- * de départ, que la coquille rend sans `<head>` (sauf la police).
- *
- * En clair, les trois chartes partagent la palette `BRAND` : ce qui les
- * distingue aujourd'hui (l'enseigne du bandeau, le recours) est une donnée de
- * l'envoi, pas un style (vérifié le 2026-11-07 dans `b2bMailTemplates`). La
- * variante sombre est déclarée par charte pour qu'une charte (la billetterie)
- * puisse en avoir une autre sans toucher aux deux autres.
+ * **La variante sombre** (plan `plan-editeur-par-blocs.md`, § 4, S4b ; § 25,
+ * C1) — émise pour un document réarrangé, et, depuis C1, pour tout e-mail
+ * d'un espace dont la charte est publiée. Jamais pour la charte de départ
+ * hors document réarrangé : un `<style>` dans le `<head>` changerait les
+ * octets que la coquille rend sans `<head>` (sauf la police).
  */
 export interface DarkPalette {
   readonly page: string;
@@ -24,21 +21,28 @@ export interface DarkPalette {
   readonly calloutWarning: string;
 }
 
-/** La variante sombre de la suite : marine nuit, texte clair. */
-const SUITE_DARK: DarkPalette = {
-  page: "#0b1220",
-  card: "#111a2e",
-  ink: "#e5e9f2",
-  border: "#26324a",
-  calloutInfo: "#1a2747",
-  calloutWarning: "#3a2a12",
-};
+/** Les fonds sombres des encadrés : la charte ne les règle pas, ils suivent la suite. */
+const DARK_CALLOUTS = { calloutInfo: "#1a2747", calloutWarning: "#3a2a12" } as const;
 
-/** La variante sombre de chaque charte. */
+function darkPaletteOf(charter: MailRenderCharter): DarkPalette {
+  const dark = charter.dark;
+  return {
+    page: dark.page,
+    card: dark.card,
+    ink: dark.text,
+    border: dark.border,
+    ...DARK_CALLOUTS,
+  };
+}
+
+/**
+ * La variante sombre de chaque charte de modèle AU DÉPART — la même pour les
+ * trois. Gardée pour ses lecteurs ; le rendu lit la charte de l'envoi.
+ */
 export const MAIL_CHARTER_DARK: Readonly<Record<MailCharter, DarkPalette>> = {
-  lfc: SUITE_DARK,
-  lfd: SUITE_DARK,
-  internal: SUITE_DARK,
+  lfc: darkPaletteOf(STARTING_MAIL_CHARTER),
+  lfd: darkPaletteOf(STARTING_MAIL_CHARTER),
+  internal: darkPaletteOf(STARTING_MAIL_CHARTER),
 };
 
 /** Les classes que le `<head>` d'un document réarrangé vise. */
@@ -68,18 +72,18 @@ function stackRule(): string {
 }
 
 /**
- * Le cadre d'un document réarrangé : `color-scheme` déclaré, variante sombre
- * de sa charte par `prefers-color-scheme`, empilement des colonnes par
- * `@media`, et la police de l'enseigne si elle est donnée. Gmail application
- * retire ce `<head>` : tout ce qu'il porte n'est qu'un supplément, jamais une
- * condition de lisibilité.
+ * Le cadre thémé : `color-scheme` déclaré, variante sombre de la charte par
+ * `prefers-color-scheme`, empilement des colonnes par `@media`, et la police
+ * des titres de la charte (celle de l'enseigne au départ). Gmail application
+ * retire ce `<head>` : tout ce qu'il porte n'est qu'un supplément, jamais
+ * une condition de lisibilité.
  */
-export function documentFrameTheme(
-  charter: MailCharter,
+export function charterFrameTheme(
+  charter: MailRenderCharter,
   lang: string,
-  brandFontUrl: string | undefined,
+  input: Pick<LayoutInput, "brandFontUrl">,
 ): LayoutFrameTheme {
-  const style = `${brandFontFaceRule(brandFontUrl)}@media (prefers-color-scheme:dark){${darkRules(MAIL_CHARTER_DARK[charter])}}${stackRule()}`;
+  const style = `${charterFontFaceRule(charter, input.brandFontUrl)}@media (prefers-color-scheme:dark){${darkRules(darkPaletteOf(charter))}}${stackRule()}`;
   return {
     head: `
   <head><meta name="color-scheme" content="light dark" /><meta name="supported-color-schemes" content="light dark" /><style>${style}</style></head>`,

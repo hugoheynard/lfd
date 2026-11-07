@@ -1,4 +1,11 @@
+import { TEXT_FONT_STACK } from "./brand.js";
+import { headingFontStack } from "./charter-styles.js";
 import { htmlEscape } from "./escape.js";
+import {
+  STARTING_HEADING_FONT_FALLBACK,
+  STARTING_HEADING_FONT_FAMILY,
+  type MailRenderCharter,
+} from "./render-charter.js";
 
 /**
  * Le bandeau d'en-tête de la coquille : le logo sur son pavé blanc à gauche,
@@ -28,17 +35,17 @@ export interface LayoutHeaderInput {
   readonly logo?: LayoutLogo;
 }
 
-/** Les deux valeurs de la charte dont le bandeau a besoin. */
-export interface LayoutHeaderColors {
-  readonly band: string;
-  readonly radius: string;
-}
-
 /**
  * La face de l'enseigne et son repli. Le repli est écrit EN LIGNE : Gmail retire
  * le `<style>` du `<head>`, et c'est lui qu'on y verra.
  */
-const BRAND_FONT_STACK = "'Chunk','Arial Black',Impact,sans-serif";
+const BRAND_FONT_STACK = headingFontStack(
+  STARTING_HEADING_FONT_FAMILY,
+  STARTING_HEADING_FONT_FALLBACK,
+);
+
+/** La hauteur du logo d'une charte publiée : celle du logo embarqué ; sa largeur suit l'image. */
+const CHARTER_LOGO_HEIGHT_PX = 56;
 
 /** La marge du pavé blanc autour du logo, en pixels. */
 const LOGO_PAD_PX = 6;
@@ -48,10 +55,38 @@ const LOGO_PAD_PX = 6;
  * donnée — partagée par la coquille et le `<head>` d'un document réarrangé.
  */
 export function brandFontFaceRule(url: string | undefined): string {
+  return fontFaceRule(STARTING_HEADING_FONT_FAMILY, url);
+}
+
+function fontFaceRule(family: string, url: string | undefined): string {
   if (url === undefined || !url.startsWith("https://")) {
     return "";
   }
-  return `@font-face{font-family:'Chunk';font-style:normal;font-weight:400;src:url('${htmlEscape(url)}') format('woff2');}`;
+  return `@font-face{font-family:'${family}';font-style:normal;font-weight:400;src:url('${htmlEscape(url)}') format('woff2');}`;
+}
+
+/**
+ * La règle `@font-face` de la police des titres d'une charte : celle de
+ * l'enseigne à `brandFontUrl` tant que la charte n'en déclare pas (départ),
+ * aucune si la charte publiée n'a pas de police web.
+ */
+export function charterFontFaceRule(
+  charter: MailRenderCharter,
+  brandFontUrl: string | undefined,
+): string {
+  const font = charter.headingFont;
+  if (font === undefined) {
+    return brandFontFaceRule(brandFontUrl);
+  }
+  return font === null ? "" : fontFaceRule(font.family, font.url);
+}
+
+function brandNameStack(charter: MailRenderCharter): string {
+  const font = charter.headingFont;
+  if (font === undefined) {
+    return BRAND_FONT_STACK;
+  }
+  return font === null ? TEXT_FONT_STACK : headingFontStack(font.family, font.fallback);
 }
 
 /** Le `@font-face` de l'enseigne, seulement si une URL publique est donnée. */
@@ -64,15 +99,18 @@ export function renderFontHead(url: string | undefined): string {
 }
 
 /** Le bandeau, ou rien s'il n'a ni logo ni enseigne. */
-export function renderLayoutHeader(input: LayoutHeaderInput, colors: LayoutHeaderColors): string {
+export function renderLayoutHeader(input: LayoutHeaderInput, charter: MailRenderCharter): string {
+  const colors = { band: charter.band, radius: charter.radius };
   // Le logo DANS le bandeau, à gauche, sur un pavé blanc : c'est un JPEG à
   // fond blanc, sans transparence — posé nu sur le marine, il y ferait une
   // tache carrée. Deux cellules d'une table de présentation, pas de flex :
   // Outlook l'ignore et empilerait le logo et l'enseigne de travers.
   const logoCell =
-    input.logo === undefined
-      ? ""
-      : `<td width="${String(input.logo.widthPx + 2 * LOGO_PAD_PX)}" style="padding:0 16px 0 0;vertical-align:middle;">
+    charter.logo !== undefined
+      ? charterLogoCell(charter.logo, colors.radius)
+      : input.logo === undefined
+        ? ""
+        : `<td width="${String(input.logo.widthPx + 2 * LOGO_PAD_PX)}" style="padding:0 16px 0 0;vertical-align:middle;">
             <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#ffffff;padding:${String(LOGO_PAD_PX)}px;border-radius:${colors.radius};">
               <img src="cid:${htmlEscape(input.logo.contentId)}" alt="${htmlEscape(input.logo.alt)}" width="${String(input.logo.widthPx)}" height="${String(input.logo.heightPx)}" style="display:block;border:0;" />
             </td></tr></table>
@@ -84,7 +122,7 @@ export function renderLayoutHeader(input: LayoutHeaderInput, colors: LayoutHeade
   const name =
     input.brand === undefined
       ? ""
-      : `<span style="display:block;color:#ffffff;font-family:${BRAND_FONT_STACK};font-size:24px;line-height:1.1;letter-spacing:0.02em;text-transform:uppercase;">${htmlEscape(input.brand)}</span>`;
+      : `<span style="display:block;color:#ffffff;font-family:${brandNameStack(charter)};font-size:24px;line-height:1.1;letter-spacing:0.02em;text-transform:uppercase;">${htmlEscape(input.brand)}</span>`;
   const brandCell =
     name === "" && kicker === ""
       ? ""
@@ -100,4 +138,18 @@ export function renderLayoutHeader(input: LayoutHeaderInput, colors: LayoutHeade
           ${brandCell}
           </tr></table>
         </td></tr>`;
+}
+
+// Le logo d'une charte publiée, par son adresse (la copie du bloc `mail`) :
+// sa largeur n'est pas connue, la hauteur seule est en attribut et la
+// largeur suit la proportion de l'image.
+function charterLogoCell(
+  logo: { readonly src: string; readonly alt: string },
+  radius: string,
+): string {
+  return `<td style="padding:0 16px 0 0;vertical-align:middle;">
+            <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#ffffff;padding:${String(LOGO_PAD_PX)}px;border-radius:${radius};">
+              <img src="${htmlEscape(logo.src)}" alt="${htmlEscape(logo.alt)}" height="${String(CHARTER_LOGO_HEIGHT_PX)}" style="display:block;border:0;height:${String(CHARTER_LOGO_HEIGHT_PX)}px;width:auto;" />
+            </td></tr></table>
+          </td>`;
 }

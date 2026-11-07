@@ -1,3 +1,4 @@
+import type { StoredPublishedMailCharter } from "../../charters/application/servable-mail-charter.js";
 import type { StoredPublishedMailDocument } from "../../documents/application/servable-mail-document.js";
 import type { MailCopyEntryState } from "../domain/mail-copy-entry.js";
 import type { MailSectionOrderState } from "../domain/mail-section-order.js";
@@ -16,4 +17,6 @@ export abstract class PublishedMailCopyStore {
   abstract publishedSectionOrders(): Promise<readonly MailSectionOrderState[]>;
   /** Les documents d'e-mails publiés (S4c), colonne `jsonb` encore à relire. */
   abstract publishedDocuments(): Promise<readonly StoredPublishedMailDocument[]>;
+  /** Les chartes publiées des espaces (C1, § 25), colonne `jsonb` encore à relire. */
+  abstract publishedCharters(): Promise<readonly StoredPublishedMailCharter[]>;
 }

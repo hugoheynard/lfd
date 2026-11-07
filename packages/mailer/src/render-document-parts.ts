@@ -2,10 +2,10 @@ import type { MailBlock, MailDocument, MailLocale } from "@lfd/mail-blocks";
 
 import { renderColumns, renderFreeBlock } from "./document-blocks.js";
 import { renderLayoutHeader } from "./layout-header.js";
-import { layoutFragments, supportOf } from "./layout-fragments.js";
+import { charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import type { LayoutSectionId } from "./layout-sections.js";
-import { BRAND } from "./layout-styles.js";
+import type { MailRenderCharter } from "./render-charter.js";
 import { sectionsOfBlock, type MailDocumentRenderOptions } from "./render-document.js";
 
 /** Le rendu d'UN bloc du document, pour l'aperçu de l'éditeur. */
@@ -39,6 +39,7 @@ function blockHtml(
   fragments: Readonly<Record<LayoutSectionId, string>>,
   declared: readonly LayoutSectionId[],
   locale: MailLocale,
+  charter: MailRenderCharter,
 ): string {
   switch (block.kind) {
     case "model":
@@ -47,9 +48,9 @@ function blockHtml(
         .filter((html) => html !== "")
         .join(SECTION_SEPARATOR);
     case "columns":
-      return renderColumns(block, locale, true);
+      return renderColumns(block, locale, true, charter);
     default:
-      return renderFreeBlock(block, locale, true);
+      return renderFreeBlock(block, locale, true, charter);
   }
 }
 
@@ -71,11 +72,11 @@ export function renderMailDocumentParts(
 ): MailDocumentParts {
   const fragments = layoutFragments(input);
   return {
-    header: framed(renderLayoutHeader(input, { band: BRAND.navyDeep, radius: BRAND.radius })),
+    header: framed(renderLayoutHeader(input, charterOf(input))),
     footer: framed(supportOf(input)),
     blocks: document.blocks.map((block) => ({
       blockId: block.id,
-      html: blockHtml(block, fragments, options.declaredSections, options.locale),
+      html: blockHtml(block, fragments, options.declaredSections, options.locale, charterOf(input)),
     })),
   };
 }

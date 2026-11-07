@@ -1,3 +1,4 @@
+import type { StoredPublishedMailCharter } from "../../charters/application/servable-mail-charter.js";
 import type { StoredPublishedMailDocument } from "../../documents/application/servable-mail-document.js";
 import { Injectable } from "@nestjs/common";
 
@@ -46,6 +47,18 @@ export class PrismaPublishedMailCopyStore extends PublishedMailCopyStore {
       row.publishedVersion === null
         ? []
         : [{ template: row.template, version: row.publishedVersion, document: row.published }],
+    );
+  }
+
+  async publishedCharters(): Promise<readonly StoredPublishedMailCharter[]> {
+    const rows = await this.prisma.mailCharter.findMany({
+      where: { publishedVersion: { not: null } },
+      select: { space: true, publishedVersion: true, published: true },
+    });
+    return rows.flatMap((row) =>
+      row.publishedVersion === null
+        ? []
+        : [{ space: row.space, version: row.publishedVersion, settings: row.published }],
     );
   }
 }

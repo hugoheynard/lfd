@@ -54,6 +54,14 @@ export {
   WHITE,
 } from "./html.js";
 export { MAIL_CHARTER_DARK } from "./document-theme.js";
+export {
+  renderCharterOf,
+  STARTING_MAIL_CHARTER,
+  startingMailCharterSettings,
+} from "./render-charter.js";
+export type { MailRenderCharter } from "./render-charter.js";
+export { mailStylesOf } from "./charter-styles.js";
+export type { MailStyles } from "./charter-styles.js";
 export type { DarkPalette } from "./document-theme.js";
 export { isRearrangedDocument, renderMailDocument } from "./render-document.js";
 export type { MailDocumentRenderOptions } from "./render-document.js";

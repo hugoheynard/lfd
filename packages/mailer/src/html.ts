@@ -1,8 +1,9 @@
+import { charterFrameTheme } from "./document-theme.js";
 import { renderFontHead, renderLayoutHeader } from "./layout-header.js";
-import { layoutFragments, supportOf } from "./layout-fragments.js";
+import { charterFooterOf, charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import { effectiveSectionOrder, joinSections } from "./layout-sections.js";
-import { BRAND, TEXT_FONT_STACK, WHITE } from "./layout-styles.js";
+import { TEXT_FONT_STACK } from "./layout-styles.js";
 
 export { htmlEscape } from "./escape.js";
 export type { LayoutLogo } from "./layout-header.js";
@@ -84,9 +85,14 @@ export interface LayoutFrameTheme {
 export function renderLayoutFrame(
   input: LayoutInput,
   content: string,
-  theme?: LayoutFrameTheme,
+  documentTheme?: LayoutFrameTheme,
 ): string {
-  const header = renderLayoutHeader(input, { band: BRAND.navyDeep, radius: BRAND.radius });
+  const charter = charterOf(input);
+  // Une charte publiée (C1) donne à tout e-mail le `<head>` de sa variante
+  // sombre ; la charte de départ n'en pose pas — les octets d'avant.
+  const theme =
+    documentTheme ?? (charter.themed ? charterFrameTheme(charter, "fr", input) : undefined);
+  const header = renderLayoutHeader(input, charter);
   const head = theme === undefined ? renderFontHead(input.brandFontUrl) : theme.head;
   const lang = theme === undefined ? "fr" : theme.lang;
   const pageClass = theme === undefined ? "" : ` class="${theme.pageClass}"`;
@@ -94,12 +100,12 @@ export function renderLayoutFrame(
 
   return `<!doctype html>
 <html lang="${lang}">${head}
-  <body${pageClass} style="margin:0;padding:24px;font-family:${TEXT_FONT_STACK};color:${BRAND.ink};background:${BRAND.ivory};">
-    <table${cardClass} role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:${WHITE};border:1px solid ${BRAND.border};border-radius:${BRAND.radius};">
+  <body${pageClass} style="margin:0;padding:24px;font-family:${TEXT_FONT_STACK};color:${charter.colors.text};background:${charter.colors.page};">
+    <table${cardClass} role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:${charter.colors.card};border:1px solid ${charter.colors.border};border-radius:${charter.radius};">
       ${header}
       <tr><td style="padding:32px 32px 8px;">
         ${content}
-      </td></tr>
+      </td></tr>${charterFooterOf(input)}
       ${supportOf(input)}
     </table>
   </body>

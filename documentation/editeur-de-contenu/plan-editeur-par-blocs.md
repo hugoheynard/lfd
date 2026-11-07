@@ -1978,3 +1978,122 @@ Ajouter une app, c'est créer un espace — pas de déploiement, pas de variable
 **À faire par Hugo, hors code** : ajouter `lfd-backoffice.com` dans Resend et
 poser ses enregistrements DNS ; puis, dans l'éditeur, régler l'identité de
 l'espace La Folie Douce (`no-reply@lfd-backoffice.com`).
+
+### C1 — bâti le 2026-11-07 — écarts
+
+**Ce qui existe.** Le contexte `apps/lfd-api/src/mail/charters/` (style
+B2B : commande et handler en fichiers séparés), sous le droit
+`mail_templates`, et le rendu de `@lfd/mailer` qui lit une charte.
+
+- **L'espace** (`packages/mail-blocks/src/mail-spaces.ts`) : `MAIL_SPACES`
+  (`lfc`, `lfd`), `MailSpace`, `MAIL_SPACE_LABELS`, `isMailSpace`,
+  `mailSpaceOfCharter` (`internal` → `lfd`). Aucune valeur rangée renommée :
+  côté API, `mailSpaceOf(mail)`
+  (`apps/lfd-api/src/mail/templates/sections/mail-block-declarations.ts`) le
+  lit de `CHARTERS`. La liste des e-mails sert `space` sur chaque ligne
+  (`MailEditorListItem.space`, **facultatif dans le type** le temps que C2 le
+  lise, comme `resources`).
+- **Le contrat de la charte** (`packages/mail-blocks/src/charter-settings.ts`) :
+  `MailCharterSettings { logo: MailCharterLogo | null, colors:
+MailCharterColors, darkColors: MailCharterDarkColors, headingFont:
+MailCharterFont | null, footer: Localized<string> }` ; couleurs en
+  `#rrggbb`. Les règles (`packages/mail-blocks/src/validate-charter.ts`) :
+  `validateMailCharter` (forme, à l'enregistrement) et
+  `validateMailCharterForPublication(settings, locales)` ; refus
+  `MailCharterViolation { code, field, message }`, codes
+  `MAIL_CHARTER_VIOLATION_CODES`. Le contraste
+  (`packages/mail-blocks/src/contrast.ts`) : `contrastRatio`, `MIN_TEXT_CONTRAST`
+  (4,5), formule WCAG 2.x.
+- **Le stockage** (migration `20261107120000_les_chartes_des_espaces_d_e_mails`,
+  additive) : `mail.mail_charter` (espace, révision, brouillon, publiée et sa
+  version, dernière version, auteurs et dates) et `mail.mail_charter_version`
+  en ajout seul (un déclencheur refuse UPDATE et DELETE). Les trois colonnes
+  d'auteur sont au registre RGPD.
+- **L'agrégat** `MailSpaceCharter`
+  (`apps/lfd-api/src/mail/charters/domain/mail-space-charter.ts`) :
+  enregistrer, publier ; chaque geste sur la révision lue (409 sinon). Port
+  `MailSpaceCharterRepository` (`load`/`save`), lecture
+  `MailCharterReader` à part.
+- **La publication** (`PublishMailCharterHandler`) : brouillon vérifié AVANT
+  toute copie ; logo copié par `MailImageCopier` (port `MailCharterLogo`) hors
+  transaction ; puis la transaction relit, publie avec l'adresse de la copie,
+  et fait **monter la version des textes des e-mails** (`markDocumentChange`) :
+  c'est l'estampille du cache de l'envoi, sans elle les autres instances
+  garderaient l'ancienne charte.
+- **L'envoi** : `CachedPublishedMailCopyReader.charters()` (même version que
+  les textes) ; `EffectiveCopyMailer` résout la charte de l'espace de
+  l'e-mail dans la langue de l'envoi et l'ouvre par `withMailCharter`
+  (`apps/lfd-api/src/mail/templates/sections/mail-charter-scope.ts`), un
+  périmètre à part de la mise en page — un essai la reçoit aussi. Charte
+  illisible ou lecture en échec : charte de départ, et un avertissement au
+  journal de l'API.
+- **Le rendu** (`@lfd/mailer`) : `MailRenderCharter`
+  (`packages/mailer/src/render-charter.ts`) posée sur
+  `LayoutInput.charter` ; styles calculés par `mailStylesOf(charter)`
+  (`packages/mailer/src/charter-styles.ts`). Les constantes exportées
+  (`TITLE_STYLE`, `BUTTON_STYLE`…) sont désormais celles de
+  `STARTING_MAIL_CHARTER`, tirée de `BRAND` : les empreintes des 32 e-mails
+  (`mail-rendering-golden.spec.ts`, `mail-document-rendering-golden.spec.ts`)
+  sont vertes sans réécriture. `startingMailCharterSettings(brandFontUrl)`
+  rend la charte de départ telle que l'écran la montre ; `renderCharterOf(settings,
+locale)` la charte publiée telle que le rendu la lit.
+- **Le journal** : `mail_copy.charter_saved`, `mail_copy.charter_published`
+  (`packages/contracts/src/journal-facts/commerce.ts`), sujet
+  `mail_charter`, `subjectLabel` = le nom de l'espace.
+
+**Les routes que C2 branchera** (toutes sous `mail_templates`, contrôleur
+`AdminMailChartersController`) :
+
+| Verbe  | Chemin                                     | Droit   | Corps                       | Rend                                                    |
+| ------ | ------------------------------------------ | ------- | --------------------------- | ------------------------------------------------------- |
+| `GET`  | `/admin/mail-charters/:space`              | `read`  | —                           | `MailCharterView` (rien n'est écrit)                    |
+| `GET`  | `/admin/mail-charters/:space/history`      | `read`  | —                           | `MailCharterHistoryView`                                |
+| `POST` | `/admin/mail-charters/:space/previews`     | `read`  | `MailCharterPreviewPayload` | `MailCharterPreviewView` (200) ; 404 e-mail hors espace |
+| `PUT`  | `/admin/mail-charters/:space/draft`        | `write` | `MailCharterDraftPayload`   | 204 ; 400 refus, 409 révision                           |
+| `POST` | `/admin/mail-charters/:space/publications` | `write` | `MailCharterPublishPayload` | `MailCharterPublicationView` (201) ; 400 contraste, 409 |
+
+`:space` vaut `lfc` ou `lfd` ; tout autre (y compris `internal`) est un 404
+nommé. Types dans `packages/mail-blocks/src/mail-charter-routes.ts`.
+
+**Écarts au texte.**
+
+- **La variante sombre ne porte que quatre couleurs** (fond de page, carte,
+  texte, filets), pas les six : c'est ce que la variante sombre
+  d'aujourd'hui remplace (`SUITE_DARK`), et les boutons et liens ont leur
+  style en ligne, qu'une règle `<head>` ne vise pas sans classe. Les fonds
+  sombres des encadrés restent ceux de la suite.
+- **Le bandeau prend la couleur principale** d'une charte publiée : la
+  charte n'a pas de couleur de bandeau, et celle de départ est `navyDeep`, pas
+  `navy`. Publier la charte de départ sans rien changer fonce donc le
+  bandeau d'un cran (`#1a3157` → `#24448f`). À trancher : ajouter une couleur
+  de bandeau, ou l'accepter.
+- **Une charte publiée donne le `<head>` (variante sombre, police) à TOUS les
+  e-mails de l'espace**, pas seulement aux documents réarrangés : sans quoi
+  l'aperçu « en sombre » ne montrerait rien pour la plupart des e-mails. La
+  charte de départ n'en pose toujours pas.
+- **`logo: null` = le logo embarqué d'aujourd'hui** (La Folie Coffee, joint en
+  ligne) ; c'est la valeur de départ des deux espaces. Un logo choisi est
+  rendu par son adresse (la copie), hauteur 56 px en attribut, largeur
+  libre — la copie ne connaît pas les dimensions de l'image — et la pièce
+  jointe du logo embarqué n'est plus jointe.
+- **`headingFont: null` = aucune police web.** La charte de départ porte
+  Chunk à l'adresse de la boutique si elle est en `https://`, sinon `null`.
+  La police d'une charte publiée s'applique aussi aux titres (`h1`, `h2`) ;
+  au départ, seule l'enseigne du bandeau la porte.
+- **Le pied de page commun** se rend sous le corps, au-dessus du recours,
+  en texte discret ; vide, rien.
+- **Les langues d'un espace** sont l'union de celles de ses e-mails :
+  `lfc` fr/en/it, `lfd` fr. Le texte de remplacement du logo est exigé dans
+  chacune à la publication.
+- **Le contraste vérifié** : texte / carte, texte / page, texte secondaire /
+  carte, liens (principale) / carte, blanc des boutons / principale ; en
+  sombre, texte / carte et texte / page. L'aperçu applique la forme, pas le
+  contraste : on prévisualise justement pour le corriger.
+- **Pas de « revenir à la charte de départ »** : le plan ne le demande pas.
+- **L'aperçu fidèle et le canevas de l'éditeur d'un e-mail ne lisent pas
+  encore la charte publiée** (ils ouvrent leur propre périmètre de rendu) :
+  seuls l'envoi, l'essai et l'aperçu de la charte la montrent.
+- **Le back-office n'a pas de phrase pour les deux faits neufs** : la clôture
+  du moteur de phrases (`apps/lfd-backoffice-frontend/src/app/shared/journal/__tests__/closure.spec.ts`)
+  attend un mot pour la clé `space` et une phrase pour
+  `mail_copy.charter_saved` / `mail_copy.charter_published` — à poser en C2.

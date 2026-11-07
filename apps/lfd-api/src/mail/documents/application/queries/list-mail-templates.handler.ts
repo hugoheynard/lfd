@@ -1,4 +1,4 @@
-import type { MailEditorListView } from "@lfd/mail-blocks";
+import { mailSpaceOfCharter, type MailEditorListView } from "@lfd/mail-blocks";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { mailCopyAdminView } from "../../../copy/application/mail-copy-admin-view.js";
@@ -47,6 +47,7 @@ export class ListMailTemplatesHandler implements IQueryHandler<
           audience: entry.audience,
           family: entry.family,
           charter: entry.declaration.charter,
+          space: mailSpaceOfCharter(entry.declaration.charter),
           locales: entry.declaration.locales,
           published: publishedView(state),
           hasDraft: (state?.draft ?? null) !== null,

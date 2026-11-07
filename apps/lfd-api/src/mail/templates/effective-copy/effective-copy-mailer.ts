@@ -1,4 +1,11 @@
-import type { Mailer, MailReceipt, SendMailArgs, TemplateMap } from "@lfd/mailer";
+import {
+  renderCharterOf,
+  type Mailer,
+  type MailReceipt,
+  type MailRenderCharter,
+  type SendMailArgs,
+  type TemplateMap,
+} from "@lfd/mailer";
 
 import {
   activeMailCopyOverlay,
@@ -12,10 +19,18 @@ import {
   withMailLayout,
   type MailLayoutScope,
 } from "../sections/mail-layout-scope.js";
+import { activeMailCharter, withMailCharter } from "../sections/mail-charter-scope.js";
 import { documentLocaleOf } from "../sections/mail-document-locale.js";
+import { mailSpaceOf } from "../sections/mail-block-declarations.js";
+import { MAIL_LAYOUTS } from "../sections/mail-layouts.js";
+import type { B2bMails } from "../mail-templates.js";
 import { noteComposingDocument } from "./mail-composition.js";
 import type { PublishedMailCopyReader } from "./published-mail-copy.reader.js";
 import type { PublishedMailDocumentEntry } from "./published-mail-documents.js";
+
+function isRegisteredMail(mail: string): mail is keyof B2bMails {
+  return Object.hasOwn(MAIL_LAYOUTS, mail);
+}
 
 /** Ce que le mailer dit quand il se replie sur le texte du code. */
 export interface EffectiveCopyLog {
@@ -46,6 +61,13 @@ export interface EffectiveCopyLog {
  * ou une lecture qui échoue — fait partir l'e-mail dans l'ordre du CODE (§ 11),
  * et le journal le dit. La version qui compose l'envoi est notée
  * (`noteComposingDocument`) pour que la demande la garde.
+ *
+ * La charte publiée de l'espace de l'e-mail (plan `plan-editeur-par-blocs.md`,
+ * § 25, C1) s'applique au rendu, dans la langue de l'envoi ; sans charte
+ * publiée — ou si elle est illisible, ce que le journal dit —, la charte de
+ * départ, à l'octet. Un essai qui a déjà ouvert sa mise en page la reçoit
+ * aussi : seul un périmètre de charte déjà ouvert (l'aperçu de la charte)
+ * l'emporte.
  */
 export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
   constructor(
@@ -64,9 +86,45 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
       activeMailCopyOverlay() === undefined ? await this.publishedOrCode(template) : null;
     const layout =
       activeMailLayout() === undefined ? await this.layoutOrCode(template, args.data) : null;
+    const charter =
+      activeMailCharter() === undefined
+        ? await this.charterOrStarting(template, args.data)
+        : undefined;
+    const send = (): Promise<MailReceipt> =>
+      charter === undefined
+        ? this.inner.send(args)
+        : withMailCharter(charter, () => this.inner.send(args));
     const withLayout = (): Promise<MailReceipt> =>
-      layout === null ? this.inner.send(args) : withMailLayout(layout, () => this.inner.send(args));
+      layout === null ? send() : withMailLayout(layout, send);
     return overlay === null ? withLayout() : withMailCopyOverlay(overlay, withLayout);
+  }
+
+  private async charterOrStarting(
+    template: string,
+    data: unknown,
+  ): Promise<MailRenderCharter | null> {
+    if (this.published === null || !isRegisteredMail(template)) {
+      return null;
+    }
+    const space = mailSpaceOf(template);
+    try {
+      const entry = (await this.published.charters())[space];
+      if (entry === undefined) {
+        return null;
+      }
+      if (entry.kind === "unreadable") {
+        this.log.warn(
+          `Charte publiée v${String(entry.version)} de l'espace « ${space} » illisible par ce code : « ${template} » part avec la charte de départ.`,
+        );
+        return null;
+      }
+      return renderCharterOf(entry.settings, documentLocaleOf(template, data));
+    } catch (error: unknown) {
+      this.log.warn(
+        `Chartes publiées illisibles : « ${template} » part avec la charte de départ. Cause : ${String(error)}`,
+      );
+      return null;
+    }
   }
 
   private async layoutOrCode(template: string, data: unknown): Promise<MailLayoutScope> {

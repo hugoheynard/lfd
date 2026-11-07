@@ -1,5 +1,6 @@
 import type { MailCopyOverlay } from "../copy/mail-copy-overlay.js";
 import type { MailSectionOrders } from "../sections/mail-layout-scope.js";
+import type { PublishedMailCharters } from "./published-mail-charters.js";
 import type { PublishedMailDocuments } from "./published-mail-documents.js";
 
 /**
@@ -38,4 +39,13 @@ export abstract class PublishedMailCopyReader {
    * @throws ce que la base lève : c'est l'appelant qui se replie sur le code.
    */
   abstract documents(): Promise<PublishedMailDocuments>;
+
+  /**
+   * Les chartes publiées des espaces (plan `plan-editeur-par-blocs.md`,
+   * § 25, C1), par la même version que les textes : publier une charte la
+   * fait monter. Une charte illisible y est rendue `unreadable`.
+   *
+   * @throws ce que la base lève : c'est l'appelant qui se replie sur la charte de départ.
+   */
+  abstract charters(): Promise<PublishedMailCharters>;
 }

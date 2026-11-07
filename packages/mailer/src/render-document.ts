@@ -8,9 +8,9 @@ import {
 } from "@lfd/mail-blocks";
 
 import { renderColumns, renderFreeBlock } from "./document-blocks.js";
-import { documentFrameTheme } from "./document-theme.js";
+import { charterFrameTheme } from "./document-theme.js";
 import { renderLayout, renderLayoutFrame } from "./html.js";
-import { layoutFragments } from "./layout-fragments.js";
+import { charterOf, layoutFragments } from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import {
   joinParts,
@@ -21,7 +21,11 @@ import {
 
 /** Ce que le rendu d'un document lit de l'envoi, en plus des données de la coquille. */
 export interface MailDocumentRenderOptions {
-  /** La charte du modèle — sa variante sombre, pour un document réarrangé. */
+  /**
+   * La charte du modèle. Depuis C1 (§ 25), la variante sombre vient de la
+   * charte de l'espace posée sur l'entrée (`LayoutInput.charter`) ; ce champ
+   * reste lu par les appelants, plus par le rendu.
+   */
   readonly charter: MailCharter;
   /** La langue de l'envoi : celle des textes des blocs libres. */
   readonly locale: MailLocale;
@@ -100,8 +104,8 @@ function partsOf(
     }
     const html =
       block.kind === "columns"
-        ? renderColumns(block, options.locale)
-        : renderFreeBlock(block, options.locale);
+        ? renderColumns(block, options.locale, false, charterOf(input))
+        : renderFreeBlock(block, options.locale, false, charterOf(input));
     if (html !== "") {
       parts.push({ kind: "free", id: block.id, html });
     }
@@ -140,6 +144,6 @@ export function renderMailDocument(
   return renderLayoutFrame(
     input,
     content,
-    documentFrameTheme(options.charter, options.locale, input.brandFontUrl),
+    charterFrameTheme(charterOf(input), options.locale, input),
   );
 }

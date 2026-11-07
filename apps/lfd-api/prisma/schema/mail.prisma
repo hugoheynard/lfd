@@ -108,3 +108,43 @@ model MailDocumentVersion {
   @@map("mail_document_version")
   @@schema("mail")
 }
+
+/// La charte graphique d'un espace d'e-mails (plan
+/// `plan-editeur-par-blocs.md`, § 25, C1) — `lfc` ou `lfd`. Pas de ligne = la
+/// charte de départ, calculée depuis les constantes du rendu.
+model MailCharter {
+  /// L'espace (`lfc`, `lfd`) ; `internal` est rangé dans `lfd`.
+  space            String    @id @db.VarChar(16)
+  /// Monte à chaque écriture : le verrou entre deux rédacteurs.
+  revision         Int
+  /// Le brouillon (`MailCharterSettings` de `@lfd/mail-blocks`) ; `null` = aucun.
+  draft            Json?
+  draftAt          DateTime? @map("draft_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  draftBy          String?   @map("draft_by")
+  /// La charte en service, logo pointant vers sa copie ; `null` = la charte de départ.
+  published        Json?
+  publishedVersion Int?      @map("published_version")
+  publishedAt      DateTime? @map("published_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  publishedBy      String?   @map("published_by")
+  /// La dernière version posée : la suivante en part.
+  lastVersion      Int       @default(0) @map("last_version")
+
+  @@map("mail_charter")
+  @@schema("mail")
+}
+
+/// Chaque charte publiée, en ajout seul (un déclencheur refuse UPDATE et DELETE).
+model MailCharterVersion {
+  space       String   @db.VarChar(16)
+  version     Int
+  settings    Json
+  publishedAt DateTime @map("published_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  publishedBy String   @map("published_by")
+
+  @@id([space, version])
+  @@map("mail_charter_version")
+  @@schema("mail")
+}

@@ -5,6 +5,8 @@ import type { MailCopyOverlay } from "../../templates/copy/mail-copy-overlay.js"
 import { PublishedMailCopyReader } from "../../templates/effective-copy/published-mail-copy.reader.js";
 import type { MailSectionOrders } from "../../templates/sections/mail-layout-scope.js";
 import type { PublishedMailDocuments } from "../../templates/effective-copy/published-mail-documents.js";
+import type { PublishedMailCharters } from "../../templates/effective-copy/published-mail-charters.js";
+import { servableMailCharter } from "../../charters/application/servable-mail-charter.js";
 import { servableMailDocument } from "../../documents/application/servable-mail-document.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PublishedMailCopyCache } from "../domain/ports/published-mail-copy.cache.js";
@@ -63,6 +65,10 @@ export class CachedPublishedMailCopyReader
   private cachedDocuments: {
     readonly version: number;
     readonly documents: PublishedMailDocuments;
+  } | null = null;
+  private cachedCharters: {
+    readonly version: number;
+    readonly charters: PublishedMailCharters;
   } | null = null;
 
   constructor(
@@ -129,11 +135,32 @@ export class CachedPublishedMailCopyReader
     return documents;
   }
 
+  /**
+   * Les chartes publiées des espaces (C1, § 25), par la même version :
+   * publier une charte la fait monter. Gardées à part, comme les documents.
+   */
+  async charters(): Promise<PublishedMailCharters> {
+    const version = await this.currentVersion();
+    if (this.cachedCharters !== null && this.cachedCharters.version === version) {
+      return this.cachedCharters.charters;
+    }
+    const stored = await this.store.publishedCharters();
+    const charters: PublishedMailCharters = Object.fromEntries(
+      stored.flatMap((row) => {
+        const entry = servableMailCharter(row);
+        return entry === null ? [] : [entry];
+      }),
+    );
+    this.cachedCharters = { version, charters };
+    return charters;
+  }
+
   forget(): void {
     this.stamp = null;
     this.cached = null;
     this.cachedOrders = null;
     this.cachedDocuments = null;
+    this.cachedCharters = null;
   }
 
   private async currentVersion(): Promise<number> {

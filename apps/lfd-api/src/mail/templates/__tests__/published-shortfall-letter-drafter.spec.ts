@@ -1,6 +1,7 @@
 import type { OrderShortfallDraftData } from "../../channels/templates/shortfall-letter-drafter.js";
 import type { MailCopyOverlay } from "../copy/mail-copy-overlay.js";
 import type { PublishedMailDocuments } from "../effective-copy/published-mail-documents.js";
+import type { PublishedMailCharters } from "../effective-copy/published-mail-charters.js";
 import { PublishedMailCopyReader } from "../effective-copy/published-mail-copy.reader.js";
 import { PublishedShortfallLetterDrafter } from "../published-shortfall-letter-drafter.js";
 import type { MailSectionOrders } from "../sections/mail-layout-scope.js";
@@ -36,6 +37,9 @@ class Published extends PublishedMailCopyReader {
     return Promise.resolve({});
   }
 
+  charters(): Promise<PublishedMailCharters> {
+    return Promise.resolve({});
+  }
   documents(): Promise<PublishedMailDocuments> {
     return Promise.resolve({});
   }

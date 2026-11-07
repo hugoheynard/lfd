@@ -1,6 +1,7 @@
 import type { MailCharter } from "./mail-charter.js";
 import type { MailDocument, MailTemplateDeclaration } from "./mail-document.js";
 import type { MailLocale } from "./mail-locales.js";
+import type { MailSpace } from "./mail-spaces.js";
 import type { MailEditorResources } from "./mail-resources.js";
 import type { ModelSectionId } from "./model-sections.js";
 
@@ -44,6 +45,12 @@ export interface MailEditorListItem {
   readonly audience: MailAudience;
   readonly family: MailFamily;
   readonly charter: MailCharter;
+  /**
+   * C1 (§ 25) : l'espace de l'e-mail, lu de sa charte — `internal` est rangé
+   * dans `lfd`. Toujours servi par l'API ; facultatif dans le type le temps
+   * que l'écran le lise (C2), pour ne pas casser ses doublures.
+   */
+  readonly space?: MailSpace | undefined;
   readonly locales: readonly MailLocale[];
   /** `null` : l'e-mail part dans son arrangement de départ. */
   readonly published: MailEditorPublishedView | null;

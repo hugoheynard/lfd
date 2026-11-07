@@ -1,5 +1,6 @@
 import type { LayoutLogo } from "./layout-header.js";
 import type { LayoutSectionId } from "./layout-sections.js";
+import type { MailRenderCharter } from "./render-charter.js";
 
 /**
  * L'entrée de la coquille, sortie de `html.ts` le 2026-11-07 (S4b) : la
@@ -108,4 +109,10 @@ export interface LayoutInput {
    * pour l'aperçu de l'écran (S4), JAMAIS pour un e-mail envoyé.
    */
   readonly markSections?: boolean;
+  /**
+   * La charte de l'espace, quand une charte est publiée (plan
+   * `plan-editeur-par-blocs.md`, § 25, C1). Absente : la charte de départ,
+   * c'est-à-dire le rendu d'avant, à l'octet.
+   */
+  readonly charter?: MailRenderCharter;
 }
