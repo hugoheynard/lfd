@@ -824,7 +824,7 @@ branché sur `MailImageCopier` par `CopierMailDocumentImages`, et
 
 **Ce que le front doit faire.** `textOf` et `withText`
 (`mail-editor/rules/mail-document-edits.ts`) ne couvrent plus toutes les
-sortes de `FreeBlock` ; les `@switch` de `mail-free-block-editor.html`,
+sortes de `FreeBlock` ; les `@switch` de le gabarit de l’ancien éditeur de bloc libre (retiré par S5f),
 `mail-canvas.html` et `mail-block-settings.html` n'ont pas de cas `image`.
 Le bloc image de la bibliothèque part avec `src: ""` ; l'interrupteur
 « image décorative » coupe le lien ; un `alt` par langue sinon.
