@@ -2440,3 +2440,17 @@ nommé. Types dans `packages/mail-blocks/src/mail-charter-routes.ts`.
   `mail_copy.sender_changed` ; écarts : pas de mot pour le sujet `mail_sender`
   (la phrase suffit à la clôture), et la date du dernier changement
   (`changed`) n'est pas affichée.
+
+## 26. En suspens (Hugo, 2026-11-07 : « je ne sais pas, mets ça en suspens »)
+
+Questions posées le 2026-11-07, non tranchées. Rien n'est bâti pour elles ;
+le comportement d'aujourd'hui reste celui décrit à côté.
+
+| #   | Question                                                                                                                                                      | Aujourd'hui                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 1   | L'adresse de réponse de l'expéditeur d'un espace devient-elle obligatoire, et refusée si elle ressemble à une adresse qui ne reçoit rien (`no-reply`…) ?      | Facultative ; vide, les réponses vont à l'adresse d'envoi (C3) |
+| 2   | Un bouton qui ne disparaît que si l'adresse de la boutique n'est pas configurée se marque-t-il « sous condition » ?                                           | Non marqué ; `ctaDestination` le dit en texte                  |
+| 3   | Un client sans compte qui clique « Voir ma commande » arrive sur la page d'annulation (lien signé, 90 jours) : la garder, ou créer une page de consultation ? | Page d'annulation                                              |
+| 4   | Dans `customer.order-placed`, « Voir ma commande » et « Gérer ou annuler » mènent au même endroit : en retirer un ?                                           | Les deux restent                                               |
+| 5   | Le détail d'une ancienne inscription (`user.registered` d'avant le 2026-09-19) affiche encore l'e-mail au journal : le masquer ?                              | Affiché                                                        |
+| 6   | Les 11 e-mails « à discuter » du relevé du § 23                                                                                                               | Inchangés                                                      |
