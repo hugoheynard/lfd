@@ -195,6 +195,11 @@
                 }
                 <div class="tools">
                   <span class="name">{{ nameOf(block) }}</span>
+                  @if (block.kind === 'button') {
+                    <span class="name" data-button-href>
+                      {{ block.href === '' ? 'Pas encore de lien' : 'Lien : ' + block.href }}
+                    </span>
+                  }
                 </div>
 
                 @if (html === null) {
@@ -306,6 +311,17 @@
         </div>
       </fold-card>
     } @else {
+      @if (modelCtaDestination(); as destination) {
+        <fold-card data-cta-destination>
+          <div class="card-body">
+            <fold-element-title variant="title" title="Réglages" [subtitle]="modelLabels.cta" />
+            <p class="destination">Lien automatique : {{ destination }}</p>
+            <p class="muted">
+              Calculé pour chaque destinataire à l’envoi ; il ne se règle pas ici.
+            </p>
+          </div>
+        </fold-card>
+      }
       <ng-content select="[focusPanel]" />
     }
   </div>

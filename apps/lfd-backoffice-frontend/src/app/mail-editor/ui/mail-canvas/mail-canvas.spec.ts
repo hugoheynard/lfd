@@ -286,4 +286,43 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     expect(element.querySelector('fold-empty-state')?.getAttribute('tone')).toBe('alert');
     element.remove();
   });
+
+  it('le bouton du modèle sélectionné dit où mène son lien, sans champ d’adresse', () => {
+    const withCta: MailDocument = {
+      template: TEMPLATE,
+      blocks: [{ id: modelBlockId('cta'), kind: 'model', section: 'cta' }],
+    };
+    const { element, fixture } = render(withCta, { 'model:cta': '<p>Voir</p>' });
+    fixture.componentRef.setInput('declaration', {
+      ...DECLARATION,
+      ctaDestination: 'la liste de ses commandes',
+    });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-cta-destination]')).toBeNull();
+    element.querySelector<HTMLElement>('li[data-block="model:cta"]')?.click();
+    fixture.detectChanges();
+    const panel = element.querySelector('[data-cta-destination]');
+    expect(panel?.textContent).toContain('Lien automatique : la liste de ses commandes');
+    expect(panel?.textContent).toContain('ne se règle pas ici');
+    expect(panel?.querySelector('input')).toBeNull();
+    element.remove();
+  });
+
+  it('un bouton ajouté montre son adresse dans son cadre, ou qu’il n’en a pas', () => {
+    const buttons: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        { id: 'b1', kind: 'button', label: { fr: 'Voir' }, href: 'https://exemple.fr/a' },
+        { id: 'b2', kind: 'button', label: { fr: 'Voir' }, href: '' },
+      ],
+    };
+    const { element } = render(buttons, { b1: '<p>Voir</p>', b2: '<p>Voir</p>' });
+    expect(element.querySelector('[data-block="b1"] [data-button-href]')?.textContent).toContain(
+      'https://exemple.fr/a',
+    );
+    expect(element.querySelector('[data-block="b2"] [data-button-href]')?.textContent).toContain(
+      'Pas encore de lien',
+    );
+    element.remove();
+  });
 });

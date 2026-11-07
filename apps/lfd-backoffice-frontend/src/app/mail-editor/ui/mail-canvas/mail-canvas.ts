@@ -226,6 +226,16 @@ export class MailCanvas {
     const block = this.selected();
     return block?.kind === 'columns' ? block.cells : [];
   });
+  /**
+   * Où mène le bouton du modèle quand il est sélectionné (§ 23) : son lien se
+   * calcule à l'envoi, l'éditeur ne fait que le dire.
+   */
+  protected readonly modelCtaDestination = computed(() => {
+    const place = this.focus();
+    return place?.kind === 'block' && place.block === 'cta'
+      ? (this.declaration().ctaDestination ?? null)
+      : null;
+  });
   protected readonly librarySubtitle = computed(() =>
     this.anchorId() === null ? 'Ajout à la fin de l’e-mail' : 'Ajout sous le bloc sélectionné',
   );
