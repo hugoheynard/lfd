@@ -76,9 +76,7 @@ export class MailCopyRelease {
    */
   hasPublishable(manifest: MailCopyManifest, withSectionOrders = true): boolean {
     return (
-      this.pending.some(
-        (entry) => entry.snapshot().draft.state === "reset" || entry.knownBy(manifest),
-      ) ||
+      this.pending.some((entry) => entry.publishableBy(manifest)) ||
       (withSectionOrders && this.pendingOrders.some((order) => order.publishable(manifest)))
     );
   }
@@ -113,9 +111,7 @@ export class MailCopyRelease {
     options: MailCopyPublishOptions = {},
   ): MailCopyPublication {
     const withSectionOrders = options.withSectionOrders ?? true;
-    const texts = this.pending.filter(
-      (entry) => entry.snapshot().draft.state === "reset" || entry.knownBy(manifest),
-    );
+    const texts = this.pending.filter((entry) => entry.publishableBy(manifest));
     const orders = withSectionOrders
       ? this.pendingOrders.filter((order) => order.publishable(manifest))
       : [];

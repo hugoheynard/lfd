@@ -54,10 +54,18 @@ export function mailCopyAdminView(
     version: publication.version,
     publishedAt: publication.publishedAt?.toISOString() ?? null,
     publishedBy: publication.publishedBy,
-    // Hors de l'éditeur (la sonde) : ses lignes ne sont pas des changements à publier.
+    // Hors de l'éditeur (la sonde) : ses lignes ne sont pas des changements à
+    // publier. Un brouillon que la publication ne prendrait pas (libellé
+    // système, texte orphelin) ne s'annonce pas non plus — sinon « Publier »
+    // répondrait « rien à publier » sous un compte de 1 (2026-11-07).
     pendingCount:
       states.filter(
-        (state) => !manifest.isOutOfEditor(state.mail) && state.draft.state !== "unchanged",
+        (state) =>
+          !manifest.isOutOfEditor(state.mail) &&
+          state.draft.state !== "unchanged" &&
+          (state.draft.state === "reset" ||
+            (manifest.knows(state.mail, state.path) &&
+              !manifest.isSystemPhrase(state.mail, state.path))),
       ).length +
       orders.filter(
         (order) => !manifest.isOutOfEditor(order.mail) && order.draft.state !== "unchanged",

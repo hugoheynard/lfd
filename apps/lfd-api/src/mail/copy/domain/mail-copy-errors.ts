@@ -37,6 +37,20 @@ export class MailOutOfEditorError extends BusinessError {
   }
 }
 
+/**
+ * Le texte est un libellé système (plan `plan-editeur-par-blocs.md`, § 23) :
+ * l'e-mail déclare les seules phrases que le staff réécrit, et celle-ci n'en
+ * est pas. Le rétablir reste permis.
+ */
+export class MailSystemPhraseError extends BusinessError {
+  constructor(mail: string, path: string) {
+    super(
+      "MAIL_COPY_SYSTEM_PHRASE",
+      `Le texte « ${path} » de l'e-mail « ${mail} » est un libellé système : il est le même pour tous les envois et ne se réécrit pas dans l'éditeur. Rien n'a été enregistré ; pour le changer, demandez-le à l'équipe technique.`,
+    );
+  }
+}
+
 /** Le texte proposé ne respecte pas un garde-fou (C5). */
 export class InvalidMailTextError extends DomainError {
   constructor(mail: string, path: string, reason: string) {

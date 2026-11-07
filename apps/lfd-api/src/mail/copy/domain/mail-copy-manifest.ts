@@ -32,6 +32,12 @@ export interface MailDescription {
    * textes ne s'écrivent pas et ne comptent pas parmi les changements à publier.
    */
   readonly outOfEditor?: true;
+  /**
+   * Les seuls chemins que le staff peut réécrire (plan
+   * `plan-editeur-par-blocs.md`, § 23). Absente : tous ses textes s'écrivent.
+   * Hors de la liste, un chemin est un libellé système.
+   */
+  readonly editablePhrases?: readonly string[];
 }
 
 /** `customer.*` au client, `agency.*` à l'agence, le reste (`staff.*`, `ops.*`) à l'équipe. */
@@ -108,6 +114,16 @@ export class MailCopyManifest {
     return this.described.some(
       (described) => described.mail === mail && described.outOfEditor === true,
     );
+  }
+
+  /**
+   * Le texte est-il un libellé système (§ 23) ? Vrai seulement quand l'e-mail
+   * déclare ses phrases éditables et que ce chemin n'en est pas ; faux pour un
+   * e-mail inconnu ou sans liste.
+   */
+  isSystemPhrase(mail: string, path: string): boolean {
+    const editable = this.described.find((described) => described.mail === mail)?.editablePhrases;
+    return editable !== undefined && !editable.includes(path);
   }
 
   /** Les textes d'un e-mail, dans l'ordre du dictionnaire. */

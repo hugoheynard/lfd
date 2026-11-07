@@ -12,6 +12,10 @@ import { ResetMailCopyDraftCommand } from "./reset-mail-copy-draft.command.js";
  * effacement : les e-mails gardent le texte publié jusqu'au prochain
  * « Publier » (C3).
  *
+ * Permis sur un libellé système (§ 23) : rétablir ramène au texte du code,
+ * c'est-à-dire là où la règle veut ce libellé — et c'est le geste qui efface
+ * un brouillon ou un texte publié posé avant la règle.
+ *
  * @sans-journal comme le brouillon d'un texte : rien ne change dans les
  * e-mails avant « Publier », dont le fait porte la valeur retirée.
  */

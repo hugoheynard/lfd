@@ -5,7 +5,10 @@ import {
   mailFollowsLocale,
   mailKeys,
 } from "../../templates/specimens/mail-specimens.js";
-import { isInMailEditor } from "../../templates/sections/mail-block-declarations.js";
+import {
+  isInMailEditor,
+  mailBlockDeclarationOf,
+} from "../../templates/sections/mail-block-declarations.js";
 import { mailLayouts, type MailSectionText } from "../../templates/sections/mail-layouts.js";
 import type { MailCopyLocale } from "../domain/mail-copy-locale.js";
 import { MailCopyManifest, type MailCopyManifestEntry } from "../domain/mail-copy-manifest.js";
@@ -41,12 +44,16 @@ export function embeddedMailCopyManifest(
         required: [...new Set<string>(text.required)].sort(),
       })),
   );
-  const mails = mailKeys().map((mail) => ({
-    mail,
-    family: mailFamilyOf(mail),
-    followsLocale: mailFollowsLocale(mail),
-    ...(isInMailEditor(mail) ? {} : { outOfEditor: true as const }),
-  }));
+  const mails = mailKeys().map((mail) => {
+    const editable = mailBlockDeclarationOf(mail).editablePhrases;
+    return {
+      mail,
+      family: mailFamilyOf(mail),
+      followsLocale: mailFollowsLocale(mail),
+      ...(isInMailEditor(mail) ? {} : { outOfEditor: true as const }),
+      ...(editable === undefined ? {} : { editablePhrases: editable }),
+    };
+  });
   return MailCopyManifest.of(entries, mails, embeddedLayouts());
 }
 

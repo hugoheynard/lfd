@@ -141,10 +141,12 @@ export class MailCopyEntry {
    *
    * 🔴 Une orpheline en `set` n'est JAMAIS publiée : son texte n'existe plus
    * dans le code, l'appliquer ne changerait aucun e-mail. Son brouillon reste.
+   * Même règle pour un libellé système (§ 23) écrit avant que l'e-mail ne
+   * déclare ses phrases éditables : ni publié, ni effacé — « rétablir » le solde.
    */
   publish(manifest: MailCopyManifest, stamp: MailCopyStamp): MailCopyChange | null {
     const { draft, publishedText } = this.state;
-    if (draft.state === "unchanged" || (draft.state === "set" && !this.knownBy(manifest))) {
+    if (!this.publishableBy(manifest)) {
       return null;
     }
     const after = draft.state === "set" ? draft.text : null;
@@ -163,6 +165,18 @@ export class MailCopyEntry {
   }
 
   /** Le dictionnaire de ce code connaît-il encore ce texte ? */
+  /**
+   * Le brouillon peut-il partir à la publication ? Un rétablissement, toujours ;
+   * un texte, s'il est au dictionnaire et n'est pas un libellé système (§ 23).
+   */
+  publishableBy(manifest: MailCopyManifest): boolean {
+    const { draft, mail, path } = this.state;
+    if (draft.state === "reset") {
+      return true;
+    }
+    return draft.state === "set" && this.knownBy(manifest) && !manifest.isSystemPhrase(mail, path);
+  }
+
   knownBy(manifest: MailCopyManifest): boolean {
     return manifest.knows(this.state.mail, this.state.path);
   }
