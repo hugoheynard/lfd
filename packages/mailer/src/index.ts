@@ -57,6 +57,8 @@ export { MAIL_CHARTER_DARK } from "./document-theme.js";
 export type { DarkPalette } from "./document-theme.js";
 export { isRearrangedDocument, renderMailDocument } from "./render-document.js";
 export type { MailDocumentRenderOptions } from "./render-document.js";
+export { renderMailDocumentParts } from "./render-document-parts.js";
+export type { MailDocumentBlockFragment, MailDocumentParts } from "./render-document-parts.js";
 export type {
   LayoutImage,
   LayoutInput,

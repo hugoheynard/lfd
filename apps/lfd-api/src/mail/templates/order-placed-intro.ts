@@ -60,5 +60,11 @@ function nonBlank(value: string | null | undefined): string | null {
  * trou ne peut pas écrire lui-même.
  */
 function contractFrenchAt(text: string): string {
-  return text.replace(/(^|\s)à Les /gu, "$1aux ").replace(/(^|\s)à Le /gu, "$1au ");
+  // Le second groupe est le repère d'ouverture d'une variable, que seul
+  // l'aperçu de l'éditeur pose (S5f, `sections/mail-editor-markers.ts`) :
+  // l'article sort de la valeur marquée comme de la valeur nue. Hors de cet
+  // aperçu, il est vide — l'envoi est inchangé.
+  return text
+    .replace(/(^|\s)à (\uE003[^\uE004]*\uE004)?Les /gu, "$1aux $2")
+    .replace(/(^|\s)à (\uE003[^\uE004]*\uE004)?Le /gu, "$1au $2");
 }

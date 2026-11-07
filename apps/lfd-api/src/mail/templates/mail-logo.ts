@@ -8,7 +8,7 @@ import {
 } from "@lfd/mailer";
 
 import { renderDocumentOfRenderedMail } from "./sections/mail-document-rendering.js";
-import { layoutOptionsOfRenderedMail } from "./sections/mail-layout-scope.js";
+import { activeMailLayout, layoutOptionsOfRenderedMail } from "./sections/mail-layout-scope.js";
 
 /**
  * **Le logo couleur de La Folie Coffee**, en tête de tous les e-mails
@@ -67,6 +67,8 @@ export const MAIL_LOGO_ATTACHMENT: MailAttachment = {
  */
 export function renderLayoutWithLogo(input: LayoutInput): string {
   const framed: LayoutInput = { ...input, logo: MAIL_LOGO, ...layoutOptionsOfRenderedMail() };
+  // L'aperçu de l'éditeur (S5f) découpe cette entrée en blocs ; l'envoi n'ouvre jamais ce périmètre.
+  activeMailLayout()?.editor?.capture(framed);
   return renderDocumentOfRenderedMail(framed) ?? renderLayout(framed);
 }
 

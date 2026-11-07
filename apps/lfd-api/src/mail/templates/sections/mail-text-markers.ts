@@ -20,6 +20,9 @@ const START = "\uE000";
 const SEPARATOR = "\uE001";
 const END = "\uE002";
 
+/** Les trois caractères du repère d'un texte — l'aperçu de l'éditeur (S5f) les lit aussi. */
+export const TEXT_MARKER = { start: START, separator: SEPARATOR, end: END } as const;
+
 /** Un texte marqué : son e-mail, son chemin, puis lui-même. */
 export function markText(mail: string, path: string, text: string): string {
   return `${START}${mail}|${path}${SEPARATOR}${text}${END}`;

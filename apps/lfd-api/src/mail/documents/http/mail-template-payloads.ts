@@ -1,4 +1,5 @@
 import type {
+  MailDocumentBlockPreviewPayload,
   MailDocumentCasePreviewPayload,
   MailDocumentDraftPayload,
   MailDocumentPublishPayload,
@@ -40,6 +41,15 @@ export const mailDocumentPreviewPayloadSchema: z.ZodType<MailDocumentCasePreview
     locale: z.enum(MAIL_LOCALES),
     source: z.enum(["draft", "published"]),
     document: mailDocumentShape.optional(),
+    caseId: caseId.optional(),
+  });
+
+/** L'aperçu par blocs (S5f) : le document de l'écran est obligatoire, le cas facultatif. */
+export const mailDocumentBlockPreviewPayloadSchema: z.ZodType<MailDocumentBlockPreviewPayload> =
+  z.strictObject({
+    document: mailDocumentShape,
+    locale: z.enum(MAIL_LOCALES),
+    source: z.enum(["draft", "published"]),
     caseId: caseId.optional(),
   });
 

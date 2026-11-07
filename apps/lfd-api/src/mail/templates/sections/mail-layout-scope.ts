@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
 import type { MailDocument, MailLocale } from "@lfd/mail-blocks";
-import type { LayoutSectionId, RenderedMail, TemplateRegistry } from "@lfd/mailer";
+import type { LayoutInput, LayoutSectionId, RenderedMail, TemplateRegistry } from "@lfd/mailer";
 
 /** L'ordre des sections d'un e-mail, par clé du registre. */
 export type MailSectionOrders = Readonly<Record<string, readonly LayoutSectionId[]>>;
@@ -22,6 +22,24 @@ export interface MailLayoutScope {
    * document publié (vérifié le 2026-11-07 : seuls les tests le posent).
    */
   readonly documents?: Readonly<Record<string, ScopedMailDocument>>;
+  /**
+   * **L'aperçu de l'éditeur par blocs** (plan `plan-editeur-par-blocs.md`,
+   * § 22, S5f) : les phrases ET les variables du dictionnaire sont marquées
+   * (`sections/mail-editor-markers.ts`), et l'entrée de la coquille est
+   * remise à `capture` pour être découpée en blocs. Jamais posé pour un
+   * envoi, un essai ni l'aperçu fidèle.
+   */
+  readonly editor?: MailEditorCapture;
+}
+
+/** Ce que l'aperçu de l'éditeur recueille d'un rendu : l'entrée de la coquille. */
+export interface MailEditorCapture {
+  capture(input: LayoutInput): void;
+}
+
+/** Le rendu en cours est-il l'aperçu de l'éditeur (S5f) ? */
+export function isEditorRendering(): boolean {
+  return activeMailLayout()?.editor !== undefined;
 }
 
 /** Un document à rendre, et la langue de ses blocs libres. */

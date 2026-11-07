@@ -11,6 +11,10 @@ import {
   MailDocumentReader,
   type MailDocumentVersionRecord,
 } from "../../domain/ports/mail-document.reader.js";
+import {
+  MailBlockPreviewRenderer,
+  type MailBlockPreviewRendering,
+} from "../../domain/ports/mail-block-preview.renderer.js";
 import { MailDocumentImages } from "../../domain/ports/mail-document-images.js";
 import { MailDocumentPreviewRenderer } from "../../domain/ports/mail-document-preview.renderer.js";
 import {
@@ -109,6 +113,35 @@ export class RecordingDocumentRenderer extends MailDocumentPreviewRenderer {
   ): MailSpecimenRendering {
     this.calls.push({ template, caseId, locale, texts, document });
     return { subject: "Exemple", html: "<p>exemple</p>", attachments: [] };
+  }
+}
+
+/** Un aperçu par blocs (S5f) qui garde ce qu'on lui demande de rendre. */
+export class RecordingBlockRenderer extends MailBlockPreviewRenderer {
+  readonly calls: {
+    template: string;
+    caseId: string;
+    locale: MailLocale;
+    texts: MailTextsByMail;
+    document: MailDocument;
+    variants: ReadonlyMap<string, string | null>;
+  }[] = [];
+
+  render(
+    template: string,
+    caseId: string,
+    locale: MailLocale,
+    texts: MailTextsByMail,
+    document: MailDocument,
+    variants: ReadonlyMap<string, string | null>,
+  ): MailBlockPreviewRendering {
+    this.calls.push({ template, caseId, locale, texts, document, variants });
+    return {
+      subject: "Exemple",
+      header: "",
+      footer: "",
+      blocks: document.blocks.map((block) => ({ blockId: block.id, html: "<p>bloc</p>" })),
+    };
   }
 }
 

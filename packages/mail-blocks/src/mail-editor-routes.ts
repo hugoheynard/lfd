@@ -283,3 +283,56 @@ export interface MailDocumentTrialPayload {
 export interface MailDocumentSourcedTrialPayload extends MailDocumentTrialPayload {
   readonly source?: "draft" | "published" | undefined;
 }
+
+/*
+ * Lot S5f (plan § 22) — ajouts seuls : le canevas devient l'e-mail. Le
+ * serveur rend chaque bloc ; l'écran n'y recopie aucun style.
+ */
+
+/**
+ * `POST /admin/mail-templates/:template/block-previews` (`mail_templates:read`)
+ * — le document montré, rendu bloc par bloc dans la langue et sur le cas
+ * choisis, avec les phrases de la source demandée. Une lecture : un `POST`
+ * parce que le document voyage dans le corps. Sans `caseId`, l'exemple de
+ * l'e-mail. `400` document refusé ; `404` e-mail ou cas inconnu.
+ */
+export interface MailDocumentBlockPreviewPayload {
+  readonly document: MailDocument;
+  readonly locale: MailLocale;
+  readonly source: "draft" | "published";
+  readonly caseId?: string | undefined;
+}
+
+/** Le rendu d'UN bloc du document (`MailBlock.id`) ; `html` vide s'il n'a rien à montrer. */
+export interface MailBlockPreviewFragment {
+  readonly blockId: string;
+  readonly html: string;
+}
+
+/**
+ * Le document rendu en morceaux, MARQUÉS pour l'éditeur — et lui seul :
+ *
+ * - une phrase du dictionnaire : `<span data-phrase="<chemin>" data-variant="<variante>">`
+ *   autour du texte résolu ; `data-phrase` est un `MailEditorPhraseView.path`
+ *   de cet e-mail, `data-variant` sa `MailEditorPhraseView.variant` (absent
+ *   quand elle vaut `null`) ;
+ * - une variable placée : `<span data-var="<nom>">` autour de sa valeur d'exemple ;
+ * - le texte d'un bloc libre : `<span data-free-block="<id>" data-locale="<langue>">`.
+ *
+ * Toute donnée est échappée par le serveur ; aucun fragment ne porte de
+ * script, de gestionnaire d'événement ni de lien `javascript:`. Les images
+ * du corps (`cid:`) sont incrustées en `data:`, comme dans l'aperçu fidèle.
+ */
+export interface MailDocumentBlockPreviewView {
+  readonly template: string;
+  /** La langue rendue : celle demandée si l'e-mail la parle, sinon la sienne. */
+  readonly locale: MailLocale;
+  /** L'objet, en HTML échappé (texte marqué). */
+  readonly subject: string;
+  /** Le bandeau (logo, enseigne, surtitre) dans sa table ; vide sans bandeau. */
+  readonly header: string;
+  /** Le recours sous son filet, dans sa table ; vide sans recours. */
+  readonly footer: string;
+  /** Un fragment par bloc du document, dans son ordre. */
+  readonly blocks: readonly MailBlockPreviewFragment[];
+}

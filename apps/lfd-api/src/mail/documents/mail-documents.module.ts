@@ -10,8 +10,10 @@ import { GetMailDocumentHistoryHandler } from "./application/queries/get-mail-do
 import { GetMailTemplatePhrasesHandler } from "./application/queries/get-mail-template-phrases.handler.js";
 import { GetMailTemplateHandler } from "./application/queries/get-mail-template.handler.js";
 import { ListMailTemplatesHandler } from "./application/queries/list-mail-templates.handler.js";
+import { PreviewMailDocumentBlocksHandler } from "./application/queries/preview-mail-document-blocks.handler.js";
 import { PreviewMailDocumentHandler } from "./application/queries/preview-mail-document.handler.js";
 import { MailDocumentImages } from "./domain/ports/mail-document-images.js";
+import { MailBlockPreviewRenderer } from "./domain/ports/mail-block-preview.renderer.js";
 import { MailDocumentReader } from "./domain/ports/mail-document.reader.js";
 import { MailDocumentPreviewRenderer } from "./domain/ports/mail-document-preview.renderer.js";
 import { MailTemplateCatalogue } from "./domain/ports/mail-template-catalogue.js";
@@ -22,6 +24,7 @@ import { CopierMailDocumentImages } from "./infrastructure/copier-mail-document-
 import { PrismaMailDocumentReader } from "./infrastructure/prisma-mail-document.reader.js";
 import { PrismaMailTemplateDocumentRepository } from "./infrastructure/prisma-mail-template-document.repository.js";
 import { RegistryMailTemplateCatalogue } from "./infrastructure/registry-mail-template-catalogue.js";
+import { SpecimenMailBlockPreviewRenderer } from "./infrastructure/specimen-mail-block-preview.renderer.js";
 import { SpecimenMailDocumentPreviewRenderer } from "./infrastructure/specimen-mail-document-preview.renderer.js";
 
 /**
@@ -43,6 +46,8 @@ import { SpecimenMailDocumentPreviewRenderer } from "./infrastructure/specimen-m
     { provide: MailDocumentReader, useClass: PrismaMailDocumentReader },
     { provide: MailTemplateCatalogue, useClass: RegistryMailTemplateCatalogue },
     { provide: MailDocumentPreviewRenderer, useClass: SpecimenMailDocumentPreviewRenderer },
+    // S5f : le canevas, rendu bloc par bloc, phrases et variables marquées.
+    { provide: MailBlockPreviewRenderer, useClass: SpecimenMailBlockPreviewRenderer },
     // S5d : les images d'un document se copient à sa publication.
     { provide: MailDocumentImages, useClass: CopierMailDocumentImages },
     SaveMailDocumentDraftHandler,
@@ -54,6 +59,7 @@ import { SpecimenMailDocumentPreviewRenderer } from "./infrastructure/specimen-m
     GetMailTemplatePhrasesHandler,
     GetMailDocumentHistoryHandler,
     PreviewMailDocumentHandler,
+    PreviewMailDocumentBlocksHandler,
   ],
 })
 export class MailDocumentsModule {}

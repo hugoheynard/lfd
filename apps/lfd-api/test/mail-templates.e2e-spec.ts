@@ -8,6 +8,7 @@
  * l'aperçu, et « M'envoyer un essai » de l'éditeur. Lot S5d : le bloc image,
  * copié à la publication. Lot S5e : le rangement et les signaux des phrases,
  * la publication de tous les e-mails, l'essai sur les phrases publiées.
+ * Lot S5f : l'aperçu par blocs du canevas, phrases et variables marquées.
  *
  * Les deux frontières sortantes de la copie d'image sont doublées — le
  * téléchargement (réseau) et le stockage R2 — et l'admission posée (origines
@@ -17,6 +18,7 @@
  */
 import type {
   MailDocument,
+  MailDocumentBlockPreviewView,
   MailDocumentHistoryView,
   MailDocumentPreviewView,
   MailDocumentPublicationView,
@@ -442,5 +444,90 @@ describe("le bloc image (S5d)", () => {
     expect(JSON.stringify(refusal.body)).toContain("https://ailleurs.test");
     expect(downloader.urls).toEqual([]);
     expect(await open()).toMatchObject({ source: "draft", published: null, revision: 1 });
+  });
+});
+
+describe("l'aperçu par blocs du canevas (S5f)", () => {
+  async function blocks(
+    template: string,
+    document: MailDocument,
+    extra: Readonly<Record<string, string>> = {},
+  ): Promise<MailDocumentBlockPreviewView> {
+    return jsonBody<MailDocumentBlockPreviewView>(
+      await staff()
+        .post(`${EDITOR}/${template}/block-previews`)
+        .send({ document, locale: "fr", source: "draft", ...extra })
+        .expect(200),
+    );
+  }
+
+  it("rend un fragment marqué par bloc ; chaque phrase marquée est servie par GET …/phrases", async () => {
+    const view = await open(ORDER_PLACED);
+    const document = arranged(view.document);
+    const rendered = await blocks(ORDER_PLACED, document);
+    expect(rendered.blocks.map((block) => block.blockId)).toEqual(
+      document.blocks.map((block) => block.id),
+    );
+    expect(rendered.blocks[0]?.html).toContain(
+      `<span data-free-block="fermeture" data-locale="fr">${NOTICE}</span>`,
+    );
+    const all = [rendered.subject, rendered.header, ...rendered.blocks.map((block) => block.html)];
+    const served = new Map(view.phrases.map((phrase) => [phrase.path, phrase.variant] as const));
+    const marked = all.flatMap((html) => [
+      ...html.matchAll(/<span data-phrase="([^"]+)"(?: data-variant="([^"]*)")?>/gu),
+    ]);
+    expect(marked.length).toBeGreaterThan(0);
+    for (const [, path = "", variant] of marked) {
+      expect({ path, served: served.has(path) }).toEqual({ path, served: true });
+      expect({ path, variant: variant ?? null }).toEqual({
+        path,
+        variant: served.get(path) ?? null,
+      });
+    }
+    expect(all.join("")).toMatch(/<span data-var="\w+">/u);
+    expect(all.join("")).not.toMatch(/<script|\son[a-z]+\s*=|javascript:/iu);
+    expect(rendered.subject).toContain('data-phrase="subject"');
+  });
+
+  it("une phrase en brouillon se voit dans le fragment, mais jamais dans l'aperçu fidèle marqué", async () => {
+    await staff()
+      .put(`${EDITOR}/${ORDER_PLACED}/phrases/drafts`)
+      .send({ path: "subject", locale: "fr", text: "Bien reçu : {ref}", expectedRevision: 0 })
+      .expect(204);
+    const view = await open(ORDER_PLACED);
+    const rendered = await blocks(ORDER_PLACED, view.document);
+    expect(rendered.subject).toMatch(
+      /^<span data-phrase="subject">Bien reçu : <span data-var="ref">[^<]+<\/span><\/span>$/u,
+    );
+    const faithful = jsonBody<MailDocumentPreviewView>(
+      await staff()
+        .post(`${EDITOR}/${ORDER_PLACED}/previews`)
+        .send({ locale: "fr", source: "draft", document: view.document })
+        .expect(200),
+    );
+    expect(faithful.subject).toMatch(/^Bien reçu : /u);
+    expect(`${faithful.subject}${faithful.html}`).not.toMatch(
+      /data-phrase|data-var|data-free-block/u,
+    );
+  });
+
+  it("refuse un cas inconnu (404), un e-mail inconnu (404), un document invalide (400), un corps sans document (400)", async () => {
+    const view = await open(ORDER_PLACED);
+    await staff()
+      .post(`${EDITOR}/${ORDER_PLACED}/block-previews`)
+      .send({ document: view.document, locale: "fr", source: "draft", caseId: "inconnu" })
+      .expect(404);
+    await staff()
+      .post(`${EDITOR}/pas.un.e-mail/block-previews`)
+      .send({ document: view.document, locale: "fr", source: "draft" })
+      .expect(404);
+    await staff()
+      .post(`${EDITOR}/${ORDER_PLACED}/block-previews`)
+      .send({ document: { template: ORDER_PLACED, blocks: [] }, locale: "fr", source: "draft" })
+      .expect(400);
+    await staff()
+      .post(`${EDITOR}/${ORDER_PLACED}/block-previews`)
+      .send({ locale: "fr", source: "draft" })
+      .expect(400);
   });
 });

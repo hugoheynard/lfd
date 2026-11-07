@@ -33,23 +33,42 @@ function textIn(text: Localized<string>, locale: MailLocale): string | null {
   return value === undefined || value.trim() === "" ? null : value;
 }
 
-function heading(text: string): string {
-  return `<h2 style="margin:24px 0 12px;${TITLE_TEXT_STYLE}">${htmlEscape(text)}</h2>`;
+/*
+ * Les quatre rendus de texte reçoivent un HTML DÉJÀ échappé (`textHtml`) :
+ * c'est ce qui laisse l'aperçu de l'éditeur (S5f) entourer le texte de son
+ * marqueur sans toucher un octet de l'e-mail envoyé.
+ */
+
+function heading(html: string): string {
+  return `<h2 style="margin:24px 0 12px;${TITLE_TEXT_STYLE}">${html}</h2>`;
 }
 
-function paragraph(text: string): string {
-  return `<p style="margin:16px 0 0;${TEXT_STYLE}">${htmlEscape(text)}</p>`;
+function paragraph(html: string): string {
+  return `<p style="margin:16px 0 0;${TEXT_STYLE}">${html}</p>`;
 }
 
-function callout(tone: "info" | "warning", text: string): string {
+function callout(tone: "info" | "warning", html: string): string {
   const colors = CALLOUT_COLORS[tone];
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;"><tr><td class="${DOCUMENT_CLASSES.callout[tone]}" style="padding:14px 16px;background:${colors.background};border-left:4px solid ${colors.edge};border-radius:${BRAND.radius};"><p style="${CALLOUT_TEXT_STYLE}">${htmlEscape(text)}</p></td></tr></table>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;"><tr><td class="${DOCUMENT_CLASSES.callout[tone]}" style="padding:14px 16px;background:${colors.background};border-left:4px solid ${colors.edge};border-radius:${BRAND.radius};"><p style="${CALLOUT_TEXT_STYLE}">${html}</p></td></tr></table>`;
 }
 
-function button(label: string, href: string): string {
+function button(html: string, href: string): string {
   return isRenderableUrl(href)
-    ? `<p style="margin:20px 0 4px;"><a href="${htmlEscape(href)}" style="${BUTTON_STYLE}">${htmlEscape(label)}</a></p>`
+    ? `<p style="margin:20px 0 4px;"><a href="${htmlEscape(href)}" style="${BUTTON_STYLE}">${html}</a></p>`
     : "";
+}
+
+/**
+ * Le texte d'un bloc libre, échappé ; dans l'aperçu de l'éditeur (S5f,
+ * `marked`), entouré d'un `<span data-free-block="<id>" data-locale="<langue>">`
+ * pour que l'écran sache quel bloc et quelle langue il réécrit. Jamais dans un
+ * e-mail envoyé.
+ */
+function textHtml(blockId: string, text: string, locale: MailLocale, marked: boolean): string {
+  const escaped = htmlEscape(text);
+  return marked
+    ? `<span data-free-block="${htmlEscape(blockId)}" data-locale="${locale}">${escaped}</span>`
+    : escaped;
 }
 
 const DIVIDER = `<hr style="${RULE_STYLE}margin:24px 0;" />`;
@@ -73,8 +92,11 @@ function image(block: ImageBlock, locale: MailLocale): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${IMAGE_SPACING_STYLE}"><tr><td>${linked}</td></tr></table>`;
 }
 
-/** Un bloc libre hors colonnes, ou la chaîne vide s'il n'a rien à montrer. */
-export function renderFreeBlock(block: FreeBlock, locale: MailLocale): string {
+/**
+ * Un bloc libre hors colonnes, ou la chaîne vide s'il n'a rien à montrer.
+ * `marked` : l'aperçu de l'éditeur seulement (S5f) — faux par défaut.
+ */
+export function renderFreeBlock(block: FreeBlock, locale: MailLocale, marked = false): string {
   if (block.kind === "divider") {
     return DIVIDER;
   }
@@ -85,15 +107,16 @@ export function renderFreeBlock(block: FreeBlock, locale: MailLocale): string {
   if (text === null) {
     return "";
   }
+  const html = textHtml(block.id, text, locale, marked);
   switch (block.kind) {
     case "heading":
-      return heading(text);
+      return heading(html);
     case "paragraph":
-      return paragraph(text);
+      return paragraph(html);
     case "callout":
-      return callout(block.tone, text);
+      return callout(block.tone, html);
     case "button":
-      return button(text, block.href);
+      return button(html, block.href);
   }
 }
 
@@ -105,9 +128,10 @@ function column(
   widthPercent: number,
   last: boolean,
   locale: MailLocale,
+  marked: boolean,
 ): string {
   const padding = last ? "0" : `0 ${String(GUTTER_PX)}px 0 0`;
-  const content = cell.map((block) => renderFreeBlock(block, locale)).join("");
+  const content = cell.map((block) => renderFreeBlock(block, locale, marked)).join("");
   return `<td class="${DOCUMENT_CLASSES.column}" width="${String(widthPercent)}%" valign="top" style="width:${String(widthPercent)}%;vertical-align:top;padding:${padding};">${content}</td>`;
 }
 
@@ -115,9 +139,9 @@ function column(
  * Une ligne de colonnes : une cellule par largeur, côte à côte partout, et
  * empilées sur téléphone là où la règle `@media` est lue.
  */
-export function renderColumns(block: ColumnsBlock, locale: MailLocale): string {
+export function renderColumns(block: ColumnsBlock, locale: MailLocale, marked = false): string {
   const cells = block.widths.map((width, index) =>
-    column(block.cells[index] ?? [], width, index === block.widths.length - 1, locale),
+    column(block.cells[index] ?? [], width, index === block.widths.length - 1, locale, marked),
   );
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;"><tr>${cells.join("")}</tr></table>`;
 }

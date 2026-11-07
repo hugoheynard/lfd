@@ -158,3 +158,16 @@ export class MailDocumentImageNotCopiedError extends BusinessError {
     );
   }
 }
+
+/**
+ * Le gabarit d'un e-mail n'a pas posé la coquille commune : l'éditeur n'a
+ * aucun bloc à montrer (S5f). Un défaut du code, pas de l'équipe.
+ */
+export class MailTemplateWithoutLayoutError extends TechnicalError {
+  constructor(template: string) {
+    super(
+      "MAIL_TEMPLATE_WITHOUT_LAYOUT",
+      `L'e-mail « ${template} » ne passe pas par la mise en page commune : l'éditeur ne peut pas le découper en blocs. Ouvrez l'aperçu fidèle pour le voir, et signalez-le à l'équipe technique.`,
+    );
+  }
+}

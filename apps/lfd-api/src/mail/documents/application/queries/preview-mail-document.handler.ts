@@ -1,8 +1,4 @@
-import {
-  validateMailDocument,
-  type MailDocumentPreviewView,
-  type MailLocale,
-} from "@lfd/mail-blocks";
+import { validateMailDocument, type MailDocumentPreviewView } from "@lfd/mail-blocks";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { MailCopyManifest } from "../../../copy/domain/mail-copy-manifest.js";
@@ -16,19 +12,10 @@ import {
 import { MailTemplateDocument } from "../../domain/mail-template-document.js";
 import { MailDocumentReader } from "../../domain/ports/mail-document.reader.js";
 import { MailDocumentPreviewRenderer } from "../../domain/ports/mail-document-preview.renderer.js";
-import {
-  MailTemplateCatalogue,
-  type MailTemplateEntry,
-} from "../../domain/ports/mail-template-catalogue.js";
+import { MailTemplateCatalogue } from "../../domain/ports/mail-template-catalogue.js";
 import { startingDocumentOf } from "../mail-editor-view.js";
+import { renderedLocale } from "../rendered-locale.js";
 import { PreviewMailDocumentQuery } from "./preview-mail-document.query.js";
-
-/** La langue rendue : celle demandée si le modèle la parle, sinon la sienne. */
-function renderedLocale(entry: MailTemplateEntry, asked: MailLocale): MailLocale {
-  return entry.declaration.locales.includes(asked)
-    ? asked
-    : (entry.declaration.locales[0] ?? asked);
-}
 
 /**
  * **L'aperçu fidèle** (plan `plan-editeur-par-blocs.md`, § 6) : le rendu du

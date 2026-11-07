@@ -1,4 +1,5 @@
-import { renderMailDocument, type LayoutInput } from "@lfd/mailer";
+import type { MailLocale } from "@lfd/mail-blocks";
+import { renderMailDocument, type LayoutInput, type MailDocumentRenderOptions } from "@lfd/mailer";
 
 import type { B2bMails } from "../mail-templates.js";
 import { mailBlockDeclarationOf } from "./mail-block-declarations.js";
@@ -7,6 +8,21 @@ import { MAIL_LAYOUTS } from "./mail-layouts.js";
 
 function isRegisteredMail(mail: string): mail is keyof B2bMails {
   return Object.hasOwn(MAIL_LAYOUTS, mail);
+}
+
+/**
+ * Ce que le rendu d'un document lit du CODE pour un e-mail : sa charte et ses
+ * sections déclarées. Partagé par l'envoi et l'aperçu de l'éditeur (S5f).
+ */
+export function documentRenderOptionsOf(
+  mail: keyof B2bMails,
+  locale: MailLocale,
+): MailDocumentRenderOptions {
+  return {
+    charter: mailBlockDeclarationOf(mail).charter,
+    locale,
+    declaredSections: MAIL_LAYOUTS[mail].sections.map((section) => section.id),
+  };
 }
 
 /**
@@ -21,9 +37,9 @@ export function renderDocumentOfRenderedMail(input: LayoutInput): string | null 
   if (current === undefined || !isRegisteredMail(current.mail)) {
     return null;
   }
-  return renderMailDocument(input, current.scoped.document, {
-    charter: mailBlockDeclarationOf(current.mail).charter,
-    locale: current.scoped.locale,
-    declaredSections: MAIL_LAYOUTS[current.mail].sections.map((section) => section.id),
-  });
+  return renderMailDocument(
+    input,
+    current.scoped.document,
+    documentRenderOptionsOf(current.mail, current.scoped.locale),
+  );
 }

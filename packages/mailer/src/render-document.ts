@@ -44,7 +44,7 @@ export function isRearrangedDocument(document: MailDocument): boolean {
 }
 
 /** Les sections de la coquille qu'un bloc du modèle porte, déclarées seulement. */
-function sectionsOfBlock(
+export function sectionsOfBlock(
   section: ModelSectionId,
   declared: readonly LayoutSectionId[],
 ): readonly LayoutSectionId[] {

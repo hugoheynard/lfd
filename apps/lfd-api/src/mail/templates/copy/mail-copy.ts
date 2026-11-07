@@ -5,7 +5,8 @@ import { MAIL_FR } from "./mail-copy.fr.js";
 import { MAIL_IT } from "./mail-copy.it.js";
 import type { MailCopy, MailCopyBook } from "./mail-copy.model.js";
 import { activeMailCopyOverlay, overlaidMailCopy } from "./mail-copy-overlay.js";
-import { activeMailLayout } from "../sections/mail-layout-scope.js";
+import { markVariable } from "../sections/mail-editor-markers.js";
+import { activeMailLayout, isEditorRendering } from "../sections/mail-layout-scope.js";
 import { markedCopy } from "../sections/mail-text-markers.js";
 
 /**
@@ -34,7 +35,7 @@ export function mailCopyOf(locale: ContentLocale): MailCopy {
     overlay === undefined
       ? MAIL_COPY[locale]
       : overlaidMailCopy(MAIL_COPY[locale], overlay, locale);
-  return activeMailLayout()?.markers === true ? markedOnce(copy) : copy;
+  return activeMailLayout()?.markers === true || isEditorRendering() ? markedOnce(copy) : copy;
 }
 
 const marked = new WeakMap<MailCopy, MailCopy>();
@@ -57,9 +58,19 @@ function markedOnce(copy: MailCopy): MailCopy {
  * Remplace `{clé}` par sa valeur. Volontairement minimal : un gabarit d'e-mail
  * n'a pas besoin d'un moteur, et une interpolation qui accepte des expressions
  * finirait par en accepter une venue d'une saisie utilisateur.
+ *
+ * Dans l'aperçu de l'éditeur seulement (S5f), chaque valeur placée porte le
+ * repère de sa variable — l'envoi reçoit la valeur seule, à l'octet.
  */
 export function fill(template: string, values: Readonly<Record<string, string>>): string {
-  return template.replace(/\{(\w+)\}/gu, (whole, key: string) => values[key] ?? whole);
+  const marked = isEditorRendering();
+  return template.replace(/\{(\w+)\}/gu, (whole, key: string) => {
+    const value = values[key];
+    if (value === undefined) {
+      return whole;
+    }
+    return marked ? markVariable(key, value) : value;
+  });
 }
 
 /**

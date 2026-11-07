@@ -1173,3 +1173,114 @@ d'événement ; toute donnée y est échappée par le serveur comme aujourd'hui.
   le cas choisi doit rester atteignable.
 - Accessibilité (RGAA) : chaque bloc est focalisable, ses gestes ont un nom,
   le déplacement au clavier existe.
+
+### Bâti le 2026-11-07 (API) — écarts
+
+**Ce qui existe.**
+
+- **La route** `POST /admin/mail-templates/:template/block-previews`
+  (`mail_templates:read`, contrôleur en bus) →
+  `PreviewMailDocumentBlocksQuery` / `…Handler`
+  (`apps/lfd-api/src/mail/documents/application/queries/`). Le handler
+  valide le document (`validateMailDocument`), lit les phrases de la source
+  demandée (`replacementTexts`) et leurs variantes par la lecture même de
+  `GET …/phrases` (`phrasesOfTemplate`), puis appelle le port
+  `MailBlockPreviewRenderer` — distinct de l'aperçu fidèle (ISP).
+- **Le mode « éditeur » du rendu** : `MailLayoutScope.editor`
+  (`apps/lfd-api/src/mail/templates/sections/mail-layout-scope.ts`). Là où
+  une phrase est résolue (`mailCopyOf`, `copy/mail-copy.ts`), le dictionnaire
+  est repéré comme pour l'aperçu de l'écran des textes (`mail-text-markers.ts`) ;
+  là où une variable est interpolée (`fill`), sa valeur porte un repère
+  (`apps/lfd-api/src/mail/templates/sections/mail-editor-markers.ts`). La coquille (`renderLayoutWithLogo`)
+  remet son entrée au périmètre ; l'adaptateur
+  (`apps/lfd-api/src/mail/documents/infrastructure/specimen-mail-block-preview.renderer.ts`)
+  la découpe par `renderMailDocumentParts` (`packages/mailer/src/render-document-parts.ts`),
+  qui lit les MÊMES fragments que l'envoi (`layoutFragments`,
+  `renderFreeBlock`, `renderColumns`), puis change les repères en balises.
+  Aucun gabarit n'a changé de signature.
+- **Les garanties**, tenues par
+  `apps/lfd-api/src/mail/documents/infrastructure/__tests__/specimen-mail-block-preview.renderer.spec.ts`
+  (32 e-mails × chaque cas × chaque langue de départ) : rendu en mode
+  éditeur, repères ôtés = l'e-mail envoyé à l'octet (objet, HTML, noms de
+  pièces) ; ni `data-phrase`, ni `data-var`, ni `data-free-block` hors de ce
+  mode, aperçu fidèle compris ; chaque `data-phrase` est un chemin servi par
+  `GET …/phrases`, avec sa variante ; aucun `<script>`, attribut `on*` ou
+  `javascript:` ; marqueurs équilibrés, aucun `cid:`. Le test « mêmes
+  octets » des 32 modèles (`mail-document-rendering-golden.spec.ts`) est
+  inchangé et vert. E2E : `apps/lfd-api/test/mail-templates.e2e-spec.ts`.
+
+**Le contrat** (`packages/mail-blocks/src/mail-editor-routes.ts`, ajout seul) :
+
+```ts
+interface MailDocumentBlockPreviewPayload {
+  readonly document: MailDocument; // obligatoire : le document de l'écran
+  readonly locale: MailLocale;
+  readonly source: "draft" | "published";
+  readonly caseId?: string | undefined; // sans lui : "specimen"
+}
+interface MailBlockPreviewFragment {
+  readonly blockId: string;
+  readonly html: string;
+}
+interface MailDocumentBlockPreviewView {
+  readonly template: string;
+  readonly locale: MailLocale; // la langue RENDUE (repli comme l'aperçu fidèle)
+  readonly subject: string; // HTML échappé, marqué
+  readonly header: string; // <table role="presentation">…</table> ou ""
+  readonly footer: string; // le recours, dans sa table, ou ""
+  readonly blocks: readonly MailBlockPreviewFragment[]; // un par bloc, ordre du document
+}
+```
+
+`200` ; `400` corps mal formé ou document refusé ; `404` e-mail ou cas inconnu.
+
+**Les marqueurs** :
+
+- phrase : `<span data-phrase="<chemin>" data-variant="<MailEditorPhraseView.variant>">…</span>`,
+  `data-variant` absent quand la variante vaut `null` ;
+- variable : `<span data-var="<nom>">valeur</span>`, à l'intérieur de la phrase ;
+- bloc libre : `<span data-free-block="<MailBlock.id>" data-locale="<langue>">…</span>`
+  autour du texte (titre, paragraphe, encadré, libellé du bouton).
+
+Exemple réel (`customer.order-ready`, cas `specimen`, `fr`) :
+
+```html
+<!-- subject -->
+<span data-phrase="subject">Votre commande <span data-var="ref">EXEMPLE-0001</span> est prête</span>
+<!-- blockId "model:body" -->
+<p style="margin:0;line-height:1.6;white-space:pre-line;">
+  <span data-phrase="introPickup" data-variant="Commande en retrait"
+    >Votre commande vous attend au comptoir.</span
+  >
+
+  EXEMPLE-0001
+</p>
+<!-- blockId "libre-1" -->
+<p style="margin:16px 0 0;line-height:1.6;white-space:pre-line;">
+  <span data-free-block="libre-1" data-locale="fr">Bon appétit</span>
+</p>
+```
+
+**Écarts.**
+
+- **`data-variant` porte le NOM de la variante** (« Commande en retrait »),
+  celui que `GET …/phrases` sert : le plan ne disait pas sa forme. La variante
+  est déjà dans le chemin ; le nom sert à l'écran sans relecture.
+- **Seules les valeurs placées par une phrase sont des variables.** Une
+  donnée que le gabarit écrit hors du dictionnaire (« EXEMPLE-0001 » sous
+  l'intro ci-dessus, la valeur d'une ligne du récapitulatif) n'a pas de
+  `data-var` : elle n'est dans aucun texte qu'on réécrit.
+- **Une phrase d'un AUTRE e-mail** rendue par ce gabarit ne serait pas
+  marquée (aucune aujourd'hui : chaque `data-phrase` rendu est servi, test
+  à l'appui) ; une phrase dans un attribut (texte de repli d'une image) perd
+  ses repères — elle se réécrit au panneau, pas sur place.
+- **Les cadres sont des tables complètes** : la coquille les pose en `<tr>`,
+  qu'un `innerHTML` hors d'une table déferait.
+- **Le pied (`footer`) est le recours**, texte du code, sans phrase ; le
+  bloc du modèle `footer` reste un bloc.
+- **Une contraction a dû apprendre le repère** :
+  `contractFrenchAt` (`apps/lfd-api/src/mail/templates/order-placed-intro.ts`)
+  laisse passer le repère d'une variable entre « à » et « Le » ; sans repère,
+  l'expression rend exactement ce qu'elle rendait (test « à l'octet » vert).
+- **Le gabarit est rendu en entier** pour en tirer l'objet et les images :
+  un appel par rendu de bloc demandé, comme l'aperçu fidèle.

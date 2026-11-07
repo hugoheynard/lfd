@@ -1,4 +1,6 @@
 import type {
+  MailDocumentBlockPreviewPayload,
+  MailDocumentBlockPreviewView,
   MailDocumentCasePreviewPayload,
   MailDocumentDraftPayload,
   MailDocumentHistoryView,
@@ -26,8 +28,10 @@ import { SaveMailDocumentDraftCommand } from "../application/commands/save-mail-
 import { GetMailDocumentHistoryQuery } from "../application/queries/get-mail-document-history.query.js";
 import { GetMailTemplateQuery } from "../application/queries/get-mail-template.query.js";
 import { ListMailTemplatesQuery } from "../application/queries/list-mail-templates.query.js";
+import { PreviewMailDocumentBlocksQuery } from "../application/queries/preview-mail-document-blocks.query.js";
 import { PreviewMailDocumentQuery } from "../application/queries/preview-mail-document.query.js";
 import {
+  mailDocumentBlockPreviewPayloadSchema,
   mailDocumentDraftPayloadSchema,
   mailDocumentPreviewPayloadSchema,
   mailDocumentPublishPayloadSchema,
@@ -151,6 +155,29 @@ export class AdminMailTemplatesController {
         payload.locale,
         payload.source,
         payload.document ?? null,
+        payload.caseId,
+      ),
+    );
+  }
+
+  /**
+   * L'aperçu par blocs du canevas (S5f, § 22) — une lecture, un fragment
+   * marqué par bloc. `404` e-mail ou cas inconnu, `400` document refusé.
+   */
+  @Post(":template/block-previews")
+  @HttpCode(200)
+  @RequirePermission("mail_templates:read")
+  blockPreview(
+    @Param("template") template: string,
+    @Body(new ZodBody(mailDocumentBlockPreviewPayloadSchema))
+    payload: MailDocumentBlockPreviewPayload,
+  ): Promise<MailDocumentBlockPreviewView> {
+    return this.queries.execute<PreviewMailDocumentBlocksQuery, MailDocumentBlockPreviewView>(
+      new PreviewMailDocumentBlocksQuery(
+        template,
+        payload.locale,
+        payload.source,
+        payload.document,
         payload.caseId,
       ),
     );
