@@ -7,7 +7,8 @@ import type { MailSpecimenRendering } from "../../../copy/domain/ports/mail-spec
  * Port de **l'aperçu fidèle** (plan `plan-editeur-par-blocs.md`, § 6) : le
  * VRAI gabarit d'un e-mail, sur les données d'un de ses cas, avec ces phrases et CE
  * document — rendu comme l'envoi le rendrait, sans repère. N'écrit rien,
- * n'envoie rien.
+ * n'envoie rien. La charte publiée de l'espace de l'e-mail s'y applique comme
+ * à l'envoi (§ 25, C1).
  */
 export abstract class MailDocumentPreviewRenderer {
   /**
@@ -20,5 +21,5 @@ export abstract class MailDocumentPreviewRenderer {
     locale: MailLocale,
     texts: MailTextsByMail,
     document: MailDocument,
-  ): MailSpecimenRendering;
+  ): Promise<MailSpecimenRendering>;
 }

@@ -83,7 +83,7 @@ export class PreviewMailDocumentBlocksHandler implements IQueryHandler<
     );
     const locale = renderedLocale(entry, query.locale);
     const texts = replacementTexts(entries, this.manifest, locale, query.source);
-    const rendered = this.renderer.render(
+    const rendered = await this.renderer.render(
       query.template,
       query.caseId,
       locale,

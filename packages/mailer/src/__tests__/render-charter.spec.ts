@@ -8,6 +8,7 @@ import {
   startingMailCharterSettings,
 } from "../render-charter.js";
 import { renderMailDocument } from "../render-document.js";
+import { renderMailDocumentParts } from "../render-document-parts.js";
 
 const INPUT: LayoutInput = {
   title: "Titre",
@@ -134,5 +135,34 @@ describe("une charte publiée", () => {
     expect(rendered).toContain(
       'href="https://lfd.test/o" style="display:inline-block;padding:13px 22px;background:#7a1f3d;',
     );
+  });
+});
+
+/**
+ * Le canevas de l'éditeur montre le pied comme l'envoi (§ 25, C1 — d.2) :
+ * le fragment de pied portait le seul recours, sans le pied commun de la
+ * charte publiée.
+ */
+describe("le pied du document découpé", () => {
+  const document: MailDocument = {
+    template: "staff.invited",
+    blocks: [{ id: "m1", kind: "model", section: "title" }],
+  };
+  const options = { charter: "lfd", locale: "fr", declaredSections: ["title", "body"] } as const;
+
+  it("porte le pied commun de la charte publiée, au-dessus du recours", () => {
+    const { footer } = renderMailDocumentParts(
+      { ...INPUT, charter: renderCharterOf(PUBLISHED, "fr") },
+      document,
+      options,
+    );
+    expect(footer).toContain("La Folie Douce — 1 rue du Four, Lyon");
+    expect(footer.indexOf("1 rue du Four")).toBeLessThan(footer.indexOf("aide@lfd.test"));
+  });
+
+  it("sous la charte de départ, ne porte que le recours", () => {
+    const { footer } = renderMailDocumentParts(INPUT, document, options);
+    expect(footer).not.toContain("1 rue du Four");
+    expect(footer).toContain("aide@lfd.test");
   });
 });

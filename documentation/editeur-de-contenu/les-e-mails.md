@@ -292,17 +292,16 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
     § 26, n° 4.
 11. ~~Masquer l'e-mail des anciennes inscriptions au journal~~ — fait le
     2026-11-07 (décision RGPD) — Éditeur § 26, n° 5.
-12. Refuser côté serveur l'écriture d'un libellé système (aujourd'hui seul
-    l'éditeur le cache) — Éditeur § 23, écarts.
+12. ~~Refuser côté serveur l'écriture d'un libellé système (aujourd'hui seul
+    l'éditeur le cache)~~ — fait le 2026-11-07 — Éditeur § 23, écarts.
 
 ### d. Chantiers notés, non bâtis
 
 1. Passer les 31 autres e-mails à la règle de l'accroche : 16 faciles et
    4 moyens d'abord, puis les 11 « à discuter » ligne par ligne (Éditeur § 26,
    n° 6) — Éditeur § 23, relevé.
-2. L'aperçu fidèle et le canevas n'appliquent pas encore la charte publiée
-   (seuls l'envoi, l'essai et l'aperçu de la charte la montrent) — Éditeur
-   § 25, C1 écarts.
+2. ~~L'aperçu fidèle et le canevas n'appliquent pas encore la charte publiée~~
+   — fait le 2026-11-07 — Éditeur § 25, C1 écarts.
 3. Les demandes suivies entre blocs (un identifiant de suivi pour toute
    demande) — [`../todos/todo-demandes-suivies.md`](../todos/todo-demandes-suivies.md).
 4. Colonnes « hybrides » qui s'empilent sans `@media` (Gmail application,

@@ -29,6 +29,8 @@ export abstract class MailBlockPreviewRenderer {
    *   absent n'est pas marqué (§ 23, `editablePhrases`).
    * @param situation le cas passé en retrait ou en livraison (§ 24) ; `null` :
    *   le cas tel quel. Un bloc absent dans cette situation a un fragment vide.
+   * Les fragments portent la charte publiée de l'espace de l'e-mail,
+   * comme l'envoi (§ 25, C1) ; sans charte publiée, la charte de départ.
    * @throws {UnknownMailTemplateError} l'e-mail n'est pas au registre.
    * @throws {UnknownMailCaseError} l'e-mail n'a pas ce cas.
    * @throws {MailTemplateWithoutLayoutError} le gabarit n'a pas posé la coquille.
@@ -41,5 +43,5 @@ export abstract class MailBlockPreviewRenderer {
     document: MailDocument,
     variants: ReadonlyMap<string, string | null>,
     situation: MailPreviewSituation | null,
-  ): MailBlockPreviewRendering;
+  ): Promise<MailBlockPreviewRendering>;
 }

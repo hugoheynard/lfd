@@ -2,7 +2,7 @@ import type { MailBlock, MailDocument, MailLocale } from "@lfd/mail-blocks";
 
 import { renderColumns, renderFreeBlock } from "./document-blocks.js";
 import { renderLayoutHeader } from "./layout-header.js";
-import { charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
+import { charterFooterOf, charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import type { LayoutSectionId } from "./layout-sections.js";
 import type { MailRenderCharter } from "./render-charter.js";
@@ -19,7 +19,7 @@ export interface MailDocumentBlockFragment {
 export interface MailDocumentParts {
   /** Le bandeau (logo, enseigne, surtitre) dans sa table, ou vide. */
   readonly header: string;
-  /** Le recours sous son filet, dans sa table, ou vide. */
+  /** Le pied commun de la charte publiée, puis le recours sous son filet, dans leur table ; ou vide. */
   readonly footer: string;
   readonly blocks: readonly MailDocumentBlockFragment[];
 }
@@ -73,7 +73,8 @@ export function renderMailDocumentParts(
   const fragments = layoutFragments(input);
   return {
     header: framed(renderLayoutHeader(input, charterOf(input))),
-    footer: framed(supportOf(input)),
+    // Le pied commun de la charte (C1, § 25) puis le recours, comme la coquille.
+    footer: framed(`${charterFooterOf(input)}${supportOf(input)}`),
     blocks: document.blocks.map((block) => ({
       blockId: block.id,
       html: blockHtml(block, fragments, options.declaredSections, options.locale, charterOf(input)),

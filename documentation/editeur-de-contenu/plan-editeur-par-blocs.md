@@ -1548,9 +1548,15 @@ le HTML rend l'empreinte d'avant à l'octet) :
 
 - **Le surtitre et l'itinéraire sont éditables** (Hugo, 2026-11-07, « modifiable
   staff ») : `kicker` et `itinerary` rejoignent la liste de `customer.order-placed`.
-  Le refus côté serveur d'une écriture sur un libellé système reste **non
-  tranché** (Hugo : « je ne sais pas ») : aujourd'hui, la liste ne règle que
-  ce que l'éditeur montre.
+  ~~Le refus côté serveur d'une écriture sur un libellé système reste non
+  tranché~~ — **bâti le 2026-11-07** : la liste passe au manifeste des textes
+  (`MailDescription.editablePhrases`, comme `outOfEditor`), et
+  `SaveMailCopyDraftHandler` refuse un chemin hors liste
+  (`MailSystemPhraseError`, 409 `MAIL_COPY_SYSTEM_PHRASE`) — les deux routes
+  (`admin/mail-copy` et `…/phrases/drafts`) passent par lui. **Rétablir** reste
+  permis (retour au texte du code). Un brouillon posé avant la règle n'est ni
+  publié ni effacé ; « rétablir » le solde. Écart : le compte « à publier »
+  de l'écran le compte encore.
 - **La destination du bouton** (2026-11-07) : `MailTemplateDeclaration.ctaDestination`
   (`@lfd/mail-blocks`, ajout seul), déclarée dans `sections/*-mail-layouts.ts`
   pour les 15 e-mails à bouton. Écart : les liens « voir ma commande » mènent
@@ -2366,9 +2372,22 @@ nommé. Types dans `packages/mail-blocks/src/mail-charter-routes.ts`.
   sombre, texte / carte et texte / page. L'aperçu applique la forme, pas le
   contraste : on prévisualise justement pour le corriger.
 - **Pas de « revenir à la charte de départ »** : le plan ne le demande pas.
-- **L'aperçu fidèle et le canevas de l'éditeur d'un e-mail ne lisent pas
-  encore la charte publiée** (ils ouvrent leur propre périmètre de rendu) :
-  seuls l'envoi, l'essai et l'aperçu de la charte la montrent.
+- ~~**L'aperçu fidèle et le canevas de l'éditeur d'un e-mail ne lisent pas
+  encore la charte publiée**~~ — fait le 2026-11-07 : `POST …/previews` et
+  `POST …/block-previews` résolvent la charte publiée de l'espace par le
+  chemin de l'envoi (`resolvePublishedMailCharter`,
+  `apps/lfd-api/src/mail/templates/effective-copy/published-mail-charter-resolution.ts`,
+  que `EffectiveCopyMailer` appelle aussi ; lecture par
+  `CachedPublishedMailCopyReader.charters()`), puis rendent sous
+  `withMailCharter`. Les deux ports de rendu de l'éditeur
+  (`MailDocumentPreviewRenderer`, `MailBlockPreviewRenderer`) rendent
+  désormais une promesse. Écarts : le fragment de pied du canevas
+  (`renderMailDocumentParts`, `@lfd/mailer`) porte maintenant le pied commun
+  de la charte au-dessus du recours, comme la coquille — il n'avait que le
+  recours ; les fragments n'ont pas de `<head>`, donc la variante sombre ne
+  se voit que dans l'aperçu fidèle ; le fond de la coquille du canevas reste
+  celui des jetons fold (la vue des fragments ne sert pas la couleur de
+  page), le back-office n'a rien changé.
 - **Le back-office n'a pas de phrase pour les deux faits neufs** : la clôture
   du moteur de phrases (`apps/lfd-backoffice-frontend/src/app/shared/journal/__tests__/closure.spec.ts`)
   attend un mot pour la clé `space` et une phrase pour

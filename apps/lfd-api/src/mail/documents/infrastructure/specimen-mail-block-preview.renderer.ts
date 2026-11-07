@@ -6,11 +6,15 @@ import {
   type RenderedMail,
   type TemplateRegistry,
 } from "@lfd/mailer";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
 import type { MailTextsByMail } from "../../copy/domain/mail-copy-texts.js";
 import { withInlineImages } from "../../copy/infrastructure/specimen-mail-preview.renderer.js";
+import { CachedPublishedMailCopyReader } from "../../copy/infrastructure/cached-published-mail-copy.reader.js";
+import { resolvePublishedMailCharter } from "../../templates/effective-copy/published-mail-charter-resolution.js";
+import { PublishedMailCopyReader } from "../../templates/effective-copy/published-mail-copy.reader.js";
+import { withMailCharter } from "../../templates/sections/mail-charter-scope.js";
 import { mailBrandingOf } from "../../templates/mail-branding.js";
 import { b2bMailTemplates, type B2bMails } from "../../templates/mail-templates.js";
 import { documentRenderOptionsOf } from "../../templates/sections/mail-document-rendering.js";
@@ -47,18 +51,29 @@ class FirstLayoutCapture implements MailEditorCapture {
  * et variables marquées, entrée de la coquille recueillie puis découpée par
  * `renderMailDocumentParts` (les fragments mêmes de l'envoi). Le rendu
  * complet du gabarit a lieu, comme pour l'aperçu fidèle : c'est lui qui
- * produit l'objet et les images.
+ * produit l'objet et les images. La charte publiée de l'espace s'y pose
+ * comme à l'envoi (`withMailCharter`, § 25, C1) : le canevas reçoit des
+ * fragments déjà aux couleurs de la charte.
  */
 @Injectable()
 export class SpecimenMailBlockPreviewRenderer extends MailBlockPreviewRenderer {
   private readonly registry: TemplateRegistry<B2bMails>;
 
-  constructor(config: AppConfig) {
+  private readonly log = new Logger("MailEditorPreview");
+
+  /**
+   * @param published les chartes publiées, lues par le MÊME cache que
+   *   l'envoi (`CachedPublishedMailCopyReader.charters()`).
+   */
+  constructor(
+    config: AppConfig,
+    @Inject(CachedPublishedMailCopyReader) private readonly published: PublishedMailCopyReader,
+  ) {
     super();
     this.registry = b2bMailTemplates(mailBrandingOf(config));
   }
 
-  render(
+  async render(
     template: string,
     caseId: string,
     locale: MailLocale,
@@ -66,7 +81,7 @@ export class SpecimenMailBlockPreviewRenderer extends MailBlockPreviewRenderer {
     document: MailDocument,
     variants: ReadonlyMap<string, string | null>,
     situation: MailPreviewSituation | null,
-  ): MailBlockPreviewRendering {
+  ): Promise<MailBlockPreviewRendering> {
     if (!isMailKey(template)) {
       throw new UnknownMailTemplateError(template);
     }
@@ -78,18 +93,21 @@ export class SpecimenMailBlockPreviewRenderer extends MailBlockPreviewRenderer {
     // de ce qu'il pose ; un bloc qu'il ne pose pas rend un fragment vide.
     const data =
       situation === null ? found : (situatedDataOf(template, found, situation, locale) ?? found);
+    const charter = await resolvePublishedMailCharter(this.published, template, data, this.log);
     const capture = new FirstLayoutCapture();
-    const rendered = renderMailData(
-      this.registry,
-      template,
-      data,
-      { [locale]: texts },
-      {
-        orders: {},
-        markers: false,
-        documents: { [template]: { document, locale } },
-        editor: capture,
-      },
+    const rendered = withMailCharter(charter, () =>
+      renderMailData(
+        this.registry,
+        template,
+        data,
+        { [locale]: texts },
+        {
+          orders: {},
+          markers: false,
+          documents: { [template]: { document, locale } },
+          editor: capture,
+        },
+      ),
     );
     if (capture.captured === undefined) {
       throw new MailTemplateWithoutLayoutError(template);

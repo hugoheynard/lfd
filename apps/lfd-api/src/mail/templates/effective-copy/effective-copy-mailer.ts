@@ -1,12 +1,5 @@
 import { senderHeaderOf, type MailSenderIdentity } from "@lfd/mail-blocks";
-import {
-  renderCharterOf,
-  type Mailer,
-  type MailReceipt,
-  type MailRenderCharter,
-  type SendMailArgs,
-  type TemplateMap,
-} from "@lfd/mailer";
+import type { Mailer, MailReceipt, SendMailArgs, TemplateMap } from "@lfd/mailer";
 
 import {
   activeMailCopyOverlay,
@@ -26,6 +19,7 @@ import { documentLocaleOf } from "../sections/mail-document-locale.js";
 import { mailSpaceOf } from "../sections/mail-block-declarations.js";
 import { MAIL_LAYOUTS } from "../sections/mail-layouts.js";
 import type { B2bMails } from "../mail-templates.js";
+import { resolvePublishedMailCharter } from "./published-mail-charter-resolution.js";
 import { noteComposingDocument } from "./mail-composition.js";
 import type { PublishedMailCopyReader } from "./published-mail-copy.reader.js";
 import type { PublishedMailDocumentEntry } from "./published-mail-documents.js";
@@ -95,7 +89,7 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
       activeMailLayout() === undefined ? await this.layoutOrCode(template, args.data) : null;
     const charter =
       activeMailCharter() === undefined
-        ? await this.charterOrStarting(template, args.data)
+        ? await resolvePublishedMailCharter(this.published, template, args.data, this.log)
         : undefined;
     const sender = activeMailSender() ?? (await this.senderOrDefault(template));
     const sent = sender === null ? args : withSender(args, sender);
@@ -125,34 +119,6 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
     } catch (error: unknown) {
       this.log.warn(
         `Identités d'envoi illisibles : « ${template} » part sous l'identité par défaut. Cause : ${String(error)}`,
-      );
-      return null;
-    }
-  }
-
-  private async charterOrStarting(
-    template: string,
-    data: unknown,
-  ): Promise<MailRenderCharter | null> {
-    if (this.published === null || !isRegisteredMail(template)) {
-      return null;
-    }
-    const space = mailSpaceOf(template);
-    try {
-      const entry = (await this.published.charters())[space];
-      if (entry === undefined) {
-        return null;
-      }
-      if (entry.kind === "unreadable") {
-        this.log.warn(
-          `Charte publiée v${String(entry.version)} de l'espace « ${space} » illisible par ce code : « ${template} » part avec la charte de départ.`,
-        );
-        return null;
-      }
-      return renderCharterOf(entry.settings, documentLocaleOf(template, data));
-    } catch (error: unknown) {
-      this.log.warn(
-        `Chartes publiées illisibles : « ${template} » part avec la charte de départ. Cause : ${String(error)}`,
       );
       return null;
     }

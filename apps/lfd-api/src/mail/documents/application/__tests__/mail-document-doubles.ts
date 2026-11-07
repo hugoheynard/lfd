@@ -117,9 +117,9 @@ export class RecordingDocumentRenderer extends MailDocumentPreviewRenderer {
     locale: MailLocale,
     texts: MailTextsByMail,
     document: MailDocument,
-  ): MailSpecimenRendering {
+  ): Promise<MailSpecimenRendering> {
     this.calls.push({ template, caseId, locale, texts, document });
-    return { subject: "Exemple", html: "<p>exemple</p>", attachments: [] };
+    return Promise.resolve({ subject: "Exemple", html: "<p>exemple</p>", attachments: [] });
   }
 }
 
@@ -143,14 +143,14 @@ export class RecordingBlockRenderer extends MailBlockPreviewRenderer {
     document: MailDocument,
     variants: ReadonlyMap<string, string | null>,
     situation: MailPreviewSituation | null,
-  ): MailBlockPreviewRendering {
+  ): Promise<MailBlockPreviewRendering> {
     this.calls.push({ template, caseId, locale, texts, document, variants, situation });
-    return {
+    return Promise.resolve({
       subject: "Exemple",
       header: "",
       footer: "",
       blocks: document.blocks.map((block) => ({ blockId: block.id, html: "<p>bloc</p>" })),
-    };
+    });
   }
 }
 

@@ -7,6 +7,7 @@ import {
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { embeddedMailCopyManifest } from "../../../copy/infrastructure/embedded-mail-copy-manifest.js";
+import { PublishedChartersOnly } from "../../../templates/effective-copy/__tests__/published-charters.double.js";
 import { b2bMailTemplates, type B2bMails } from "../../../templates/mail-templates.js";
 import { mailBlockDeclarationOf } from "../../../templates/sections/mail-block-declarations.js";
 import { stripEditorMarkers } from "../../../templates/sections/mail-editor-markers.js";
@@ -38,8 +39,8 @@ class PreviewAppConfig extends AppConfig {
  */
 
 const CONFIG = new PreviewAppConfig();
-const BLOCKS = new SpecimenMailBlockPreviewRenderer(CONFIG);
-const FAITHFUL = new SpecimenMailDocumentPreviewRenderer(CONFIG);
+const BLOCKS = new SpecimenMailBlockPreviewRenderer(CONFIG, new PublishedChartersOnly());
+const FAITHFUL = new SpecimenMailDocumentPreviewRenderer(CONFIG, new PublishedChartersOnly());
 const MANIFEST = embeddedMailCopyManifest();
 const PUBLICATION = { version: 0, publishedAt: null, publishedBy: null };
 
@@ -85,14 +86,14 @@ interface Rendered {
 }
 
 /** Chaque e-mail, chaque cas, chaque langue qu'il parle. */
-function everyRendering(): readonly Rendered[] {
-  return mailKeys().flatMap((template) =>
+function everyRendering(): Promise<readonly Rendered[]> {
+  const pending = mailKeys().flatMap((template) =>
     mailBlockDeclarationOf(template).locales.flatMap((locale) =>
-      mailCasesOf(template).map(({ id }) => ({
+      mailCasesOf(template).map(async ({ id }) => ({
         template,
         caseId: id,
         locale,
-        parts: BLOCKS.render(
+        parts: await BLOCKS.render(
           template,
           id,
           locale,
@@ -104,13 +105,18 @@ function everyRendering(): readonly Rendered[] {
       })),
     ),
   );
+  return Promise.all(pending);
 }
 
 function fragmentsOf(parts: MailBlockPreviewRendering): readonly string[] {
   return [parts.subject, parts.header, parts.footer, ...parts.blocks.map((block) => block.html)];
 }
 
-const ALL = everyRendering();
+let ALL: readonly Rendered[] = [];
+
+beforeAll(async () => {
+  ALL = await everyRendering();
+});
 
 describe("l'aperçu par blocs : ce que les fragments portent", () => {
   it("rend les 32 e-mails", () => {
@@ -291,11 +297,14 @@ describe("le marquage n'existe que dans l'aperçu de l'éditeur", () => {
     },
   );
 
-  it.each(mailKeys())("%s : l'aperçu fidèle ne porte aucun marqueur de l'éditeur", (template) => {
-    for (const { id } of mailCasesOf(template)) {
-      const faithful = FAITHFUL.render(template, id, "fr", {}, rearrangedOf(template));
-      expect(faithful.html).not.toMatch(/data-phrase|data-var|data-free-block/u);
-      expect(faithful.subject).not.toMatch(/[\uE000-\uE005]/u);
-    }
-  });
+  it.each(mailKeys())(
+    "%s : l'aperçu fidèle ne porte aucun marqueur de l'éditeur",
+    async (template) => {
+      for (const { id } of mailCasesOf(template)) {
+        const faithful = await FAITHFUL.render(template, id, "fr", {}, rearrangedOf(template));
+        expect(faithful.html).not.toMatch(/data-phrase|data-var|data-free-block/u);
+        expect(faithful.subject).not.toMatch(/[\uE000-\uE005]/u);
+      }
+    },
+  );
 });

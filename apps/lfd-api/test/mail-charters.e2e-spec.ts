@@ -15,6 +15,9 @@ import type {
   MailCharterPublicationView,
   MailCharterSettings,
   MailCharterView,
+  MailDocumentBlockPreviewView,
+  MailDocumentPreviewView,
+  MailEditorView,
 } from "@lfd/mail-blocks";
 import type { B2bMails } from "../src/mail/templates/mail-templates.js";
 import { b2bMailTemplates } from "../src/mail/templates/mail-templates.js";
@@ -222,5 +225,67 @@ describe("l'aperçu de la charte", () => {
       .post(`${CHARTERS}/lfd/previews`)
       .send({ template: "customer.order-placed", locale: "fr" })
       .expect(404);
+  });
+});
+
+/**
+ * Point d.2 de `les-e-mails.md` (2026-11-07) : l'aperçu fidèle et le canevas
+ * de l'éditeur d'un e-mail rendaient la charte de départ sous une charte
+ * publiée.
+ */
+describe("les rendus de l'éditeur d'un e-mail suivent la charte publiée", () => {
+  const EDITOR = "/admin/mail-templates";
+
+  async function faithful(template: keyof B2bMails): Promise<string> {
+    return jsonBody<MailDocumentPreviewView>(
+      await staff()
+        .post(`${EDITOR}/${template}/previews`)
+        .send({ locale: "fr", source: "draft" })
+        .expect(200),
+    ).html;
+  }
+
+  async function fragments(template: keyof B2bMails): Promise<string> {
+    const { document } = jsonBody<MailEditorView>(
+      await staff().get(`${EDITOR}/${template}`).expect(200),
+    );
+    const parts = jsonBody<MailDocumentBlockPreviewView>(
+      await staff()
+        .post(`${EDITOR}/${template}/block-previews`)
+        .send({ document, locale: "fr", source: "draft" })
+        .expect(200),
+    );
+    return [parts.header, ...parts.blocks.map((block) => block.html), parts.footer].join("\n");
+  }
+
+  it.each(["staff.invited", "staff.account-alert"] as const)(
+    "%s : l'aperçu et les fragments prennent la charte La Folie Douce publiée",
+    async (template) => {
+      const beforeFaithful = await faithful(template);
+      const beforeFragments = await fragments(template);
+      expect(beforeFaithful).not.toContain("La Folie Douce — équipe");
+
+      const { starting } = await open();
+      await draftAndPublish(lfdCharter(starting));
+
+      const html = await faithful(template);
+      expect(html).toContain(`src="${LOGO_COPY}"`);
+      expect(html).toContain("La Folie Douce — équipe");
+      expect(html).not.toBe(beforeFaithful);
+      const parts = await fragments(template);
+      expect(parts).toContain(`src="${LOGO_COPY}"`);
+      expect(parts).toContain("La Folie Douce — équipe");
+      expect(parts).not.toBe(beforeFragments);
+    },
+  );
+
+  it("la charte La Folie Douce ne touche pas l'aperçu d'un e-mail client", async () => {
+    const template = "customer.password-reset";
+    const beforeFaithful = await faithful(template);
+    const beforeFragments = await fragments(template);
+    const { starting } = await open();
+    await draftAndPublish(lfdCharter(starting));
+    expect(await faithful(template)).toBe(beforeFaithful);
+    expect(await fragments(template)).toBe(beforeFragments);
   });
 });
