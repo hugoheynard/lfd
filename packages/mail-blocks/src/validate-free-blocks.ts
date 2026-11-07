@@ -8,20 +8,14 @@ import {
   type MailBlock,
 } from "./mail-document.js";
 import { violation, type MailDocumentViolation } from "./mail-document-violation.js";
-
-const HTTPS_PROTOCOL = "https:";
-
-/** Une adresse absolue en `https://` ? Une adresse illisible ne l'est pas. */
-export function isHttpsUrl(candidate: string): boolean {
-  try {
-    return new URL(candidate).protocol === HTTPS_PROTOCOL;
-  } catch {
-    return false;
-  }
-}
+import { isHttpsUrl } from "./urls.js";
+import { imageViolations } from "./validate-image.js";
 
 /** Les règles propres à un bloc libre (hors colonnes) : son adresse, son ton. */
 export function freeBlockViolations(block: FreeBlock): readonly MailDocumentViolation[] {
+  if (block.kind === "image") {
+    return imageViolations(block);
+  }
   if (block.kind === "button" && !isHttpsUrl(block.href)) {
     return [
       violation(
@@ -71,7 +65,7 @@ function cellBlockViolations(
       violation(
         "long-block-in-three-columns",
         block.id,
-        "En trois colonnes, seuls un titre ou un bouton tiennent : passez à deux colonnes, ou sortez ce bloc des colonnes.",
+        "En trois colonnes, seuls un titre ou un bouton tiennent (une image y serait une vignette) : passez à deux colonnes, ou sortez ce bloc des colonnes.",
       ),
     ];
   }

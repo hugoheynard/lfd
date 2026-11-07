@@ -8,6 +8,7 @@ import {
 import { violation, type MailDocumentViolation } from "./mail-document-violation.js";
 import { MODEL_SECTION_LABELS } from "./model-section-labels.js";
 import { columnsViolations, freeBlockViolations } from "./validate-free-blocks.js";
+import { imageSourceMissingViolations } from "./validate-image.js";
 import { missingTextViolations } from "./validate-texts.js";
 
 function allBlocks(document: MailDocument): readonly MailBlock[] {
@@ -134,5 +135,8 @@ export function validateMailDocumentForPublication(
   const freeBlocks: readonly FreeBlock[] = allBlocks(document).flatMap((block) =>
     block.kind === "model" || block.kind === "columns" ? [] : [block],
   );
-  return freeBlocks.flatMap((block) => missingTextViolations(block, declaration.locales));
+  return freeBlocks.flatMap((block) => [
+    ...(block.kind === "image" ? imageSourceMissingViolations(block) : []),
+    ...missingTextViolations(block, declaration.locales),
+  ]);
 }

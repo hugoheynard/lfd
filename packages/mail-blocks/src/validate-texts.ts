@@ -16,6 +16,9 @@ function textsOf(block: FreeBlock): Localized<string> | null {
       return block.text;
     case "button":
       return block.label;
+    case "image":
+      // Une image décorative a un texte de remplacement vide, voulu (RGAA 1.2).
+      return block.decorative === true ? null : block.alt;
     case "divider":
       return null;
   }
@@ -36,7 +39,7 @@ export function missingTextViolations(
       violation(
         "missing-text",
         block.id,
-        `Ce bloc n'a pas de texte en ${LOCALE_NAMES[locale]}, et l'e-mail part aussi dans cette langue : écrivez-le avant de publier.`,
+        `${block.kind === "image" ? "Cette image n'a pas de texte de remplacement" : "Ce bloc n'a pas de texte"} en ${LOCALE_NAMES[locale]}, et l'e-mail part aussi dans cette langue : écrivez-le avant de publier.`,
       ),
     );
 }

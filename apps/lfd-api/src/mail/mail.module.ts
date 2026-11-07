@@ -43,16 +43,6 @@ import { MAIL_TRANSPORT_PROVIDERS } from "./templates/mail-transport.providers.j
 import { MailTemplatePreview } from "./channels/templates/mail-template-preview.js";
 import { ShortfallLetterDrafter } from "./channels/templates/shortfall-letter-drafter.js";
 import { PublishedShortfallLetterDrafter } from "./templates/published-shortfall-letter-drafter.js";
-import { MAIL_IMAGE_ORIGINS_VARIABLE } from "../platform/config/mail-image-readers.js";
-import {
-  MAIL_IMAGE_ADMISSION,
-  type MailImageAdmission,
-} from "./images/application/mail-image-admission.js";
-import { MailImageCopier } from "./images/application/mail-image-copier.service.js";
-import { MailImageDownloader } from "./images/domain/ports/mail-image.downloader.js";
-import { MailImageStore } from "./images/domain/ports/mail-image.store.js";
-import { FetchMailImageDownloader } from "./images/infrastructure/fetch-mail-image.downloader.js";
-import { R2MailImageStore } from "./images/infrastructure/r2-mail-image.store.js";
 import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-preview.js";
 
 /**
@@ -116,19 +106,6 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
     // demandent, par le canal `mail/channels/templates/`.
     { provide: MailTemplatePreview, useClass: RegistryMailTemplatePreview },
     { provide: ShortfallLetterDrafter, useClass: PublishedShortfallLetterDrafter },
-    // S3d (plan § 24) : la copie des images des modèles dans le stockage du
-    // bloc. Personne ne l'appelle encore ; S4 la branchera à la publication.
-    {
-      provide: MAIL_IMAGE_ADMISSION,
-      useFactory: (config: AppConfig): MailImageAdmission => ({
-        origins: config.mailImageOrigins(),
-        originsVariable: MAIL_IMAGE_ORIGINS_VARIABLE,
-      }),
-      inject: [AppConfig],
-    },
-    { provide: MailImageDownloader, useClass: FetchMailImageDownloader },
-    { provide: MailImageStore, useClass: R2MailImageStore },
-    MailImageCopier,
   ],
   exports: [Mail, MailTemplatePreview, ShortfallLetterDrafter, MailBacklogSurvey],
 })

@@ -41,12 +41,21 @@ const buttonBlock = z.strictObject({
   href: z.string().max(HREF_MAX),
 });
 const dividerBlock = z.strictObject({ id: blockId, kind: z.literal("divider") });
+const imageBlock = z.strictObject({
+  id: blockId,
+  kind: z.literal("image"),
+  src: z.string().max(HREF_MAX),
+  alt: localized,
+  href: z.string().max(HREF_MAX).exactOptional(),
+  decorative: z.boolean().exactOptional(),
+});
 
 const freeBlock: z.ZodType<FreeBlock> = z.discriminatedUnion("kind", [
   textBlock,
   calloutBlock,
   buttonBlock,
   dividerBlock,
+  imageBlock,
 ]);
 
 const mailBlock: z.ZodType<MailBlock> = z.union([

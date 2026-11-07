@@ -5,7 +5,14 @@
  * service l'arrangement ET les phrases de l'e-mail, l'envoi qui suit le
  * document publié, l'historique, l'aperçu fidèle, et « revenir au modèle
  * d'origine ». Lot S4d : les phrases sous `mail_templates`, les cas de
- * l'aperçu, et « M'envoyer un essai » de l'éditeur.
+ * l'aperçu, et « M'envoyer un essai » de l'éditeur. Lot S5d : le bloc image,
+ * copié à la publication.
+ *
+ * Les deux frontières sortantes de la copie d'image sont doublées — le
+ * téléchargement (réseau) et le stockage R2 — et l'admission posée (origines
+ * admises, adresse publique du stockage), comme `AppConfig` la lirait ; le
+ * reste est le vrai chemin : admission de l'origine, reconnaissance des octets,
+ * publication, envoi.
  */
 import type {
   MailDocument,
@@ -16,11 +23,60 @@ import type {
   MailEditorView,
 } from "@lfd/mail-blocks";
 
+import {
+  MAIL_IMAGE_ADMISSION,
+  type MailImageAdmission,
+} from "../src/mail/images/application/mail-image-admission.js";
+import {
+  type DownloadLimits,
+  MailImageDownloader,
+} from "../src/mail/images/domain/ports/mail-image.downloader.js";
+import {
+  type MailImageCopy,
+  MailImageStore,
+} from "../src/mail/images/domain/ports/mail-image.store.js";
 import { E2E_STAFF_EMAIL, jsonBody } from "./e2e-harness.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { mailCopyScene, ORDER_PLACED } from "./mail-copy-scene.js";
 
-const scene = mailCopyScene();
+const MEDIA_ORIGIN = "https://media.lfc.test";
+const MAIL_IMAGES = "https://mail-images.lfc.test";
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+
+/** Le téléchargement doublé : des octets PNG, et la liste des adresses demandées. */
+class PngDownloader extends MailImageDownloader {
+  readonly urls: string[] = [];
+
+  download(url: URL, _limits: DownloadLimits): Promise<Buffer> {
+    this.urls.push(url.href);
+    return Promise.resolve(PNG);
+  }
+}
+
+/** Le stockage doublé, adressé par le contenu comme R2. */
+class MemoryMailImages extends MailImageStore {
+  readonly keys = new Set<string>();
+
+  put(bytes: Buffer, _contentType: string): Promise<MailImageCopy> {
+    const key = `templates/${bytes.toString("hex")}.png`;
+    this.keys.add(key);
+    return Promise.resolve({ url: `${MAIL_IMAGES}/${key}` });
+  }
+}
+
+const downloader = new PngDownloader();
+const mailImages = new MemoryMailImages();
+const admission: MailImageAdmission = {
+  origins: [MEDIA_ORIGIN],
+  originsVariable: "MAIL_IMAGE_ORIGINS",
+  publicBaseUrl: MAIL_IMAGES,
+};
+
+const scene = mailCopyScene([
+  { token: MailImageDownloader, value: downloader },
+  { token: MailImageStore, value: mailImages },
+  { token: MAIL_IMAGE_ADMISSION, value: admission },
+]);
 const { staff, sendPasswordReset, transport } = scene;
 const EDITOR = "/admin/mail-templates";
 const RESET = "customer.password-reset";
@@ -210,5 +266,63 @@ describe("les cas et l'essai de l'éditeur (S4d)", () => {
       .set(INTENT_KEY, freshIntent())
       .send({ locale: "fr", caseId: "inconnu" })
       .expect(404);
+  });
+});
+
+describe("le bloc image (S5d)", () => {
+  function withImage(starting: MailDocument, src: string): MailDocument {
+    return {
+      template: starting.template,
+      blocks: [
+        ...starting.blocks,
+        { id: "vitrine", kind: "image", src, alt: { fr: "La vitrine de Noël" } },
+      ],
+    };
+  }
+
+  beforeEach(() => {
+    downloader.urls.length = 0;
+    mailImages.keys.clear();
+  });
+
+  it("la publication copie l'image ; le document publié et l'envoi pointent vers la copie", async () => {
+    const source = `${MEDIA_ORIGIN}/products/vitrine.png`;
+    const view = await open();
+    await staff()
+      .put(`${EDITOR}/${RESET}/draft`)
+      .send({ document: withImage(view.document, source), expectedRevision: 0 })
+      .expect(204);
+    await staff().post(`${EDITOR}/${RESET}/publications`).send({ expectedRevision: 1 }).expect(201);
+
+    expect(downloader.urls).toEqual([source]);
+    const copy = `${MAIL_IMAGES}/${[...mailImages.keys][0] ?? ""}`;
+    const published = await open();
+    expect(published.source).toBe("published");
+    expect(published.document.blocks).toContainEqual(
+      expect.objectContaining({ id: "vitrine", src: copy }),
+    );
+    const sent = await sendPasswordReset();
+    expect(sent?.html).toContain(`src="${copy}"`);
+    expect(sent?.html).not.toContain(source);
+  });
+
+  it("une origine non admise refuse la publication en nommant l'image ; rien n'est publié", async () => {
+    const view = await open();
+    await staff()
+      .put(`${EDITOR}/${RESET}/draft`)
+      .send({
+        document: withImage(view.document, "https://ailleurs.test/vitrine.png"),
+        expectedRevision: 0,
+      })
+      .expect(204);
+    const refusal = await staff()
+      .post(`${EDITOR}/${RESET}/publications`)
+      .send({ expectedRevision: 1 })
+      .expect(400);
+
+    expect(JSON.stringify(refusal.body)).toContain("la 1ʳᵉ image (« La vitrine de Noël »)");
+    expect(JSON.stringify(refusal.body)).toContain("https://ailleurs.test");
+    expect(downloader.urls).toEqual([]);
+    expect(await open()).toMatchObject({ source: "draft", published: null, revision: 1 });
   });
 });

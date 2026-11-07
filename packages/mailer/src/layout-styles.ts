@@ -80,3 +80,16 @@ export const CALLOUT_COLORS = {
 
 /** Le texte d'un encadré : le corps, un cran plus petit. */
 export const CALLOUT_TEXT_STYLE = `${BODY_STYLE}font-size:14px;`;
+
+/**
+ * Une image libre (S5d) : pleine largeur de sa cellule, hauteur suivant la
+ * proportion, sans bordure — celle que certains clients posent autour d'une
+ * image liée.
+ */
+export const IMAGE_STYLE = "display:block;width:100%;max-width:100%;height:auto;border:0;";
+
+/** L'espace au-dessus d'une image libre, celui d'un encadré. */
+export const IMAGE_SPACING_STYLE = "margin:20px 0 0;";
+
+/** Le lien autour d'une image libre : aucun soulignement sous l'image. */
+export const IMAGE_LINK_STYLE = "text-decoration:none;";

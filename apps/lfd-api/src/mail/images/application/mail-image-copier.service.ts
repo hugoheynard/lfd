@@ -20,8 +20,9 @@ import { MAIL_IMAGE_ADMISSION, type MailImageAdmission } from "./mail-image-admi
  * l'importe pas. Après la copie, plus aucune dépendance — la médiathèque peut
  * retirer l'image, aucun e-mail ne casse.
  *
- * Rien ne l'appelle encore (vérifié le 2026-11-07) : S4 la branchera à la
- * publication d'une version.
+ * Appelée à la publication d'un document d'e-mail (S5d,
+ * `PublishMailDocumentHandler`, par le port `MailDocumentImages`), hors de
+ * toute transaction.
  */
 @Injectable()
 export class MailImageCopier {
@@ -32,11 +33,18 @@ export class MailImageCopier {
   ) {}
 
   /**
+   * Une adresse déjà sous l'adresse publique du bloc est une copie : elle est
+   * rendue telle quelle, sans réseau — republier un document ne recopie rien.
+   *
    * @throws {MailImageOriginNotAdmittedError} origine hors liste, ou pas `https`.
    * @throws {MailImageTooLargeError} au-delà de {@link MAIL_IMAGE_MAX_BYTES}.
    * @throws {MailImageNotAnImageError} les octets ne sont pas une image admise.
    */
   async copy(sourceUrl: string): Promise<MailImageCopy> {
+    const own = this.admission.publicBaseUrl;
+    if (own !== null && sourceUrl.startsWith(`${own}/`)) {
+      return { url: sourceUrl };
+    }
     const source = MailImageSource.admit(
       sourceUrl,
       this.admission.origins,

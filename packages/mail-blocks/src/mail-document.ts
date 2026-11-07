@@ -59,8 +59,30 @@ export interface DividerBlock {
   readonly kind: "divider";
 }
 
+/**
+ * Une image (plan `plan-editeur-par-blocs.md`, § 19, S5d) : son adresse, un
+ * texte de remplacement par langue, et un lien facultatif en `https://`.
+ *
+ * L'écran passe l'adresse d'une image de la médiathèque ; à la publication,
+ * le bloc `mail` en range sa copie et la version publiée pointe vers elle.
+ * Une adresse vide est admise dans un brouillon (l'image n'est pas encore
+ * choisie), jamais à la publication.
+ *
+ * `decorative` déclare une image sans information (RGAA 1.2) : elle se rend
+ * avec un `alt` vide, voulu, et ne porte pas de lien — un lien sans nom
+ * accessible ne se lit pas.
+ */
+export interface ImageBlock {
+  readonly id: string;
+  readonly kind: "image";
+  readonly src: string;
+  readonly alt: Localized<string>;
+  readonly href?: string;
+  readonly decorative?: boolean;
+}
+
 /** Ce qu'une colonne peut porter : un bloc libre, jamais des colonnes. */
-export type FreeBlock = TextBlock | CalloutBlock | ButtonBlock | DividerBlock;
+export type FreeBlock = TextBlock | CalloutBlock | ButtonBlock | DividerBlock | ImageBlock;
 
 /**
  * Une mise en page à 2 ou 3 colonnes : une largeur et une cellule par
@@ -84,10 +106,15 @@ export const FREE_BLOCK_KINDS = [
   "callout",
   "button",
   "divider",
+  "image",
   "columns",
 ] as const;
 
-/** Les seuls blocs admis dans une ligne de trois colonnes : les courts. */
+/**
+ * Les seuls blocs admis dans une ligne de trois colonnes : les courts. Une
+ * image n'en est pas (S5d) : sur 560 px, un tiers de colonne la réduit à
+ * une vignette illisible.
+ */
 export const SHORT_BLOCK_KINDS = ["heading", "button"] as const;
 
 /** Le nombre de colonnes d'une mise en page. */

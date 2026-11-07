@@ -89,3 +89,72 @@ export class UnknownMailCaseError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * Désigne une image d'un document pour l'équipe : son rang, et son texte de
+ * remplacement en français s'il en a un — l'identifiant d'un bloc ne dit rien
+ * à qui n'a pas le code sous les yeux.
+ */
+export interface MailDocumentImageRef {
+  readonly blockId: string;
+  readonly rank: number;
+  readonly label: string | null;
+}
+
+function imageNamed(image: MailDocumentImageRef): string {
+  const rank = image.rank === 1 ? "1ʳᵉ" : `${String(image.rank)}ᵉ`;
+  return image.label === null ? `la ${rank} image` : `la ${rank} image (« ${image.label} »)`;
+}
+
+/**
+ * Une image du document n'a pas pu être copiée pour une raison qui tient à
+ * l'image (origine non admise, trop lourde, pas une image) : la publication
+ * est refusée, rien n'est publié. Le message reprend celui de la copie.
+ */
+export class MailDocumentImageRefusedError extends DomainError {
+  constructor(
+    template: string,
+    readonly image: MailDocumentImageRef,
+    cause: Error,
+  ) {
+    super(
+      "MAIL_DOCUMENT_IMAGE_REFUSED",
+      `L'e-mail « ${template} » n'a pas été publié : ${imageNamed(image)} ne peut pas être copiée. ${cause.message} Remplacez-la dans le bloc, puis publiez de nouveau.`,
+      cause,
+    );
+  }
+}
+
+/**
+ * Une image du document n'a pas pu être copiée pour une raison technique
+ * (téléchargement, stockage non configuré ou indisponible) : rien n'est
+ * publié, et un nouvel essai peut réussir.
+ */
+export class MailDocumentImageUnavailableError extends TechnicalError {
+  constructor(
+    template: string,
+    readonly image: MailDocumentImageRef,
+    cause: Error,
+  ) {
+    super(
+      "MAIL_DOCUMENT_IMAGE_UNAVAILABLE",
+      `L'e-mail « ${template} » n'a pas été publié : ${imageNamed(image)} n'a pas pu être copiée. ${cause.message} Réessayez ; si l'échec persiste, prévenez l'équipe technique.`,
+      cause,
+    );
+  }
+}
+
+/**
+ * Une image du brouillon arrive à la publication sans sa copie : la version
+ * publiée pointerait vers la médiathèque, et casserait le jour où l'image y
+ * serait retirée. Ne survient que si le brouillon a changé entre la copie et
+ * la publication.
+ */
+export class MailDocumentImageNotCopiedError extends BusinessError {
+  constructor(template: string) {
+    super(
+      "MAIL_DOCUMENT_IMAGE_NOT_COPIED",
+      `L'e-mail « ${template} » n'a pas été publié : une de ses images a changé pendant la publication. Rechargez l'éditeur, puis publiez de nouveau.`,
+    );
+  }
+}

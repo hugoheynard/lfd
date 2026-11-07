@@ -760,7 +760,76 @@ Un bloc « Image » dans la bibliothèque ; ses réglages : choisir dans la
 médiathèque (sélecteur existant de la médiathèque, lu par l'écran), texte de
 remplacement par langue, lien.
 
-## 19. S5b (phrases, cas) et essai — bâti le 2026-11-07
+### Bâti le 2026-11-07 — écarts (côté API et paquets)
+
+**Ce qui existe.** `ImageBlock` dans `@lfd/mail-blocks`
+(`packages/mail-blocks/src/mail-document.ts`), ses règles
+(`packages/mail-blocks/src/validate-image.ts`, `packages/mail-blocks/src/urls.ts`) et
+`imageBlocksOf` / `withImageSources` (`packages/mail-blocks/src/image-sources.ts`) ;
+son rendu dans `packages/mailer/src/document-blocks.ts` (`IMAGE_STYLE`,
+`IMAGE_SPACING_STYLE`, `IMAGE_LINK_STYLE` dans `layout-styles.ts`) ; la
+copie à la publication par le port `MailDocumentImages`
+(`apps/lfd-api/src/mail/documents/domain/ports/mail-document-images.ts`),
+branché sur `MailImageCopier` par `CopierMailDocumentImages`, et
+`copyDocumentImages` (`apps/lfd-api/src/mail/documents/application/copy-document-images.ts`).
+
+- **Image en trois colonnes : refusée.** La règle des blocs courts décide,
+  sans exception : `SHORT_BLOCK_KINDS` reste `heading`, `button`. Sur 560 px,
+  un tiers de colonne réduit l'image à une vignette. En deux colonnes, admise.
+- **Image décorative : un drapeau explicite**, `decorative?: boolean`. Le
+  plus simple qui reste accessible : un `alt` vide seul ne distingue pas
+  l'oubli du choix. Décorative : rendue `alt=""`, aucun texte de remplacement
+  exigé, et **pas de lien** (refus `decorative-image-link` : un lien sans nom
+  accessible ne s'annonce pas). Sinon, un `alt` non vide par langue du
+  modèle à la publication (`missing-text`, message « Cette image n'a pas de
+  texte de remplacement en … »).
+- **Une adresse vide est admise dans un brouillon** (l'image n'est pas encore
+  choisie quand le bloc entre dans le canevas) et refusée à la publication
+  (`image-src-missing`). Une adresse non vide qui n'est ni `https://` ni
+  `http://` en boucle locale est refusée dès l'enregistrement
+  (`image-src-invalid`). Le lien suit la règle du bouton (`href-not-https`).
+  Codes de refus ajoutés : `image-src-invalid`, `image-src-missing`,
+  `decorative-image-link`.
+- **`href` et `decorative` sont absents plutôt que `undefined`** : la forme
+  Zod les lit en `exactOptional()`, et la colonne `jsonb` ne les écrit que
+  posés.
+- **« Déjà sur l'adresse publique » est tenu par la copie elle-même** :
+  `MailImageAdmission` porte `publicBaseUrl` (`mailPublicBaseUrl()`), et
+  `MailImageCopier.copy` rend telle quelle une adresse sous `<base>/`, sans
+  réseau. Republier ne recopie rien. Les quatre fournisseurs de la copie
+  sont sortis de `MailModule` dans `apps/lfd-api/src/mail/images/mail-images.module.ts`,
+  importé par `MailDocumentsModule`.
+- **L'ordre de la publication** : le document est lu et vérifié
+  (`MailTemplateDocument.publishableDraft`, révision comprise) AVANT toute
+  copie — un brouillon refusé ne télécharge rien ; puis les copies, hors
+  transaction, chaque adresse une fois ; puis la transaction, qui relit et
+  publie avec la table adresse → copie. L'agrégat refuse une image sans copie
+  (`MailDocumentImageNotCopiedError`, 409).
+- **Le refus nommé** : `MailDocumentImageRefusedError` (400, la cause est une
+  `DomainError` de la copie : origine, taille, octets) ou
+  `MailDocumentImageUnavailableError` (500 : téléchargement, stockage). Le
+  message désigne l'image par son rang et son texte de remplacement français
+  (« la 2ᵉ image (« Une brioche ») »), puis reprend la raison de la copie ;
+  l'identifiant du bloc reste dans l'erreur (`image.blockId`), pas dans la
+  réponse — l'enveloppe d'erreur ne sert que le message.
+- **« Le brouillon garde l'adresse d'origine »** : vrai tant qu'il vit. Une
+  publication réussie vide le brouillon (comportement de S4c) ; l'éditeur
+  rouvre alors le publié, qui porte l'adresse de la copie. Une publication
+  refusée laisse le brouillon intact.
+- Les copies faites avant un refus restent rangées : adressées par leur
+  contenu, aucun e-mail ne les lit tant que rien n'est publié.
+- **L'e2e** (`apps/lfd-api/test/mail-templates.e2e-spec.ts`) double le
+  téléchargeur et le stockage (frontières sortantes) et pose l'admission ; le
+  reste est le vrai chemin. `mailCopyScene` accepte des doublures en plus.
+
+**Ce que le front doit faire.** `textOf` et `withText`
+(`mail-editor/rules/mail-document-edits.ts`) ne couvrent plus toutes les
+sortes de `FreeBlock` ; les `@switch` de `mail-free-block-editor.html`,
+`mail-canvas.html` et `mail-block-settings.html` n'ont pas de cas `image`.
+Le bloc image de la bibliothèque part avec `src: ""` ; l'interrupteur
+« image décorative » coupe le lien ; un `alt` par langue sinon.
+
+## 20. S5b (phrases, cas) et essai — bâti le 2026-11-07
 
 **Ce qui existe.** Sur la page d'un e-mail
 (`apps/lfd-backoffice-frontend/src/app/mail-editor/ui/mail-template-page/`),

@@ -45,7 +45,11 @@ class MemoryStore extends MailImageStore {
 function copier(bytes: Buffer, store = new MemoryStore()) {
   const downloader = new StubDownloader(bytes);
   const service = new MailImageCopier(
-    { origins: ["https://media.lafoliecoffee.info"], originsVariable: "MAIL_IMAGE_ORIGINS" },
+    {
+      origins: ["https://media.lafoliecoffee.info"],
+      originsVariable: "MAIL_IMAGE_ORIGINS",
+      publicBaseUrl: "https://mail.example",
+    },
     downloader,
     store,
   );
@@ -108,5 +112,22 @@ describe("MailImageCopier — la copie d'une image de modèle", () => {
 
     expect(second.url).toBe(first.url);
     expect(store.objects.size).toBe(1);
+  });
+
+  it("une adresse déjà sous l'adresse publique du bloc est une copie : rendue telle quelle, sans réseau", async () => {
+    const { service, downloader, store } = copier(PNG);
+    const own = "https://mail.example/templates/abc.png";
+
+    await expect(service.copy(own)).resolves.toEqual({ url: own });
+    expect(downloader.calls).toHaveLength(0);
+    expect(store.objects.size).toBe(0);
+  });
+
+  it("une origine qui ne fait que commencer comme l'adresse publique n'en est pas une", async () => {
+    const { service } = copier(PNG);
+
+    await expect(service.copy("https://mail.example.evil/a.png")).rejects.toBeInstanceOf(
+      MailImageOriginNotAdmittedError,
+    );
   });
 });

@@ -21,6 +21,7 @@ export {
   type ColumnsBlock,
   type DividerBlock,
   type FreeBlock,
+  type ImageBlock,
   type MailBlock,
   type MailDocument,
   type MailTemplateDeclaration,
@@ -41,7 +42,8 @@ export {
   type ModelSectionId,
 } from "./model-sections.js";
 export { modelBlockId, startingMailDocument } from "./starting-document.js";
-export { isHttpsUrl } from "./validate-free-blocks.js";
+export { imageBlocksOf, withImageSources } from "./image-sources.js";
+export { isHttpsUrl, isImageSourceUrl } from "./urls.js";
 export {
   validateMailDocument,
   validateMailDocumentForPublication,

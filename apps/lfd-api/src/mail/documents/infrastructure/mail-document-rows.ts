@@ -92,6 +92,15 @@ function freeBlockJson(block: FreeBlock): Prisma.InputJsonValue {
       };
     case "divider":
       return { id: block.id, kind: block.kind };
+    case "image":
+      return {
+        id: block.id,
+        kind: block.kind,
+        src: block.src,
+        alt: localizedJson(block.alt),
+        ...(block.href === undefined ? {} : { href: block.href }),
+        ...(block.decorative === undefined ? {} : { decorative: block.decorative }),
+      };
   }
 }
 

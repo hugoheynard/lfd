@@ -10,7 +10,13 @@ import type { Mailer, MailReceipt, SendMailArgs } from "@lfd/mailer";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { b2bMailTemplates, type B2bMails } from "../src/mail/templates/mail-templates.js";
 import { MAIL_TRANSPORT, MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  type E2eContext,
+  type E2eOverride,
+} from "./e2e-harness.js";
 
 /** Le jeton porteur EST le `sub` — le mur se joue en base, comme en production. */
 const stubAdminVerifier = {
@@ -63,7 +69,7 @@ export interface MailCopyScene {
 }
 
 /** Monte l'application pour la suite, et la remet à zéro avant chaque test. */
-export function mailCopyScene(): MailCopyScene {
+export function mailCopyScene(extraOverrides: readonly E2eOverride[] = []): MailCopyScene {
   const transport = new RenderingTransport();
   let current: E2eContext | null = null;
   const ctx = (): E2eContext => {
@@ -78,6 +84,7 @@ export function mailCopyScene(): MailCopyScene {
       overrides: [
         { token: AdminTokenVerifier, value: stubAdminVerifier },
         { token: MAIL_TRANSPORT, value: transport },
+        ...extraOverrides,
       ],
     });
   });

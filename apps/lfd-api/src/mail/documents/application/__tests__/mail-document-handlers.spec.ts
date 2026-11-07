@@ -34,7 +34,12 @@ import { RevertMailDocumentCommand } from "../commands/revert-mail-document.comm
 import { RevertMailDocumentHandler } from "../commands/revert-mail-document.handler.js";
 import { SaveMailDocumentDraftCommand } from "../commands/save-mail-document-draft.command.js";
 import { SaveMailDocumentDraftHandler } from "../commands/save-mail-document-draft.handler.js";
-import { FixedCatalogue, InMemoryMailDocuments, entryOf } from "./mail-document-doubles.js";
+import {
+  FixedCatalogue,
+  InMemoryMailDocuments,
+  RecordingDocumentImages,
+  entryOf,
+} from "./mail-document-doubles.js";
 
 const TEMPLATE = SUBJECT.mail;
 const DECLARATION: MailTemplateDeclaration = {
@@ -56,6 +61,7 @@ function world() {
   const events = new RecordingPublisher();
   const clock = new FixedClock(AT);
   const uow = new DirectUnitOfWork();
+  const images = new RecordingDocumentImages();
   return {
     texts,
     documents,
@@ -71,6 +77,7 @@ function world() {
       events,
       clock,
       uow,
+      images,
     ),
     revert: new RevertMailDocumentHandler(
       documents,

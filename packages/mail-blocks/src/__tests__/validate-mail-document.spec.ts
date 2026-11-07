@@ -91,9 +91,10 @@ describe("validateMailDocument — les blocs du modèle", () => {
   });
 
   it("refuse une sorte de bloc inconnue", () => {
-    const image = fromJson<MailBlock>({ id: "i1", kind: "image" });
+    // « image » servait d'exemple jusqu'à S5d, où il est devenu un bloc connu.
+    const video = fromJson<MailBlock>({ id: "v1", kind: "video" });
 
-    expect(codesOf(withBlocks(image))).toEqual(["unknown-block-kind"]);
+    expect(codesOf(withBlocks(video))).toEqual(["unknown-block-kind"]);
   });
 });
 

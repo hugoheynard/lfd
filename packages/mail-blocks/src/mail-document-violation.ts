@@ -20,6 +20,9 @@ export const MAIL_DOCUMENT_VIOLATION_CODES = [
   "href-not-https",
   "unknown-callout-tone",
   "missing-text",
+  "image-src-invalid",
+  "image-src-missing",
+  "decorative-image-link",
 ] as const;
 
 export type MailDocumentViolationCode = (typeof MAIL_DOCUMENT_VIOLATION_CODES)[number];

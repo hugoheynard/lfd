@@ -13,8 +13,10 @@ import {
   UnknownMailTemplateError,
 } from "../../domain/mail-document-errors.js";
 import { MailDocumentPublishedEvent } from "../../domain/mail-document.events.js";
+import { MailDocumentImages } from "../../domain/ports/mail-document-images.js";
 import { MailTemplateCatalogue } from "../../domain/ports/mail-template-catalogue.js";
 import { MailTemplateDocumentRepository } from "../../domain/ports/mail-template-document.repository.js";
+import { copyDocumentImages } from "../copy-document-images.js";
 import { PublishMailDocumentCommand } from "./publish-mail-document.command.js";
 
 /**
@@ -23,6 +25,10 @@ import { PublishMailDocumentCommand } from "./publish-mail-document.command.js";
  * sections de CET e-mail, pas ceux des autres — partent dans la même
  * transaction, sous la même version des textes, ou rien ne part. Rend cette
  * version — un identifiant, pas un modèle de lecture.
+ *
+ * Les images du brouillon sont copiées dans le stockage du bloc AVANT la
+ * transaction (S5d, réseau hors transaction) ; la version publiée pointe
+ * vers ces copies. Un brouillon refusé l'est avant toute copie.
  *
  * Le cache du publié de CETTE instance est oublié **après** la validation,
  * pour la raison de `PublishMailCopyHandler` ; les autres instances le voient
@@ -42,6 +48,7 @@ export class PublishMailDocumentHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly images: MailDocumentImages,
   ) {}
 
   /**
@@ -50,6 +57,8 @@ export class PublishMailDocumentHandler implements ICommandHandler<
    * @throws {MailDocumentRefusedError} le brouillon enfreint une règle de publication.
    * @throws {MailDocumentChangedError} le document a été écrit depuis la lecture.
    * @throws {MailCopyPublishedMeanwhileError} une autre publication l'a précédée.
+   * @throws {MailDocumentImageRefusedError} une image ne peut pas être copiée.
+   * @throws {MailDocumentImageUnavailableError} la copie d'une image est en panne.
    */
   async execute(command: PublishMailDocumentCommand): Promise<number> {
     const entry = this.catalogue.find(command.template);
@@ -57,10 +66,23 @@ export class PublishMailDocumentHandler implements ICommandHandler<
       throw new UnknownMailTemplateError(command.template);
     }
     const stamp = { at: this.clock.now(), staffId: command.staffUserId };
+    const draft = (await this.documents.load(command.template)).publishableDraft(
+      entry.declaration,
+      command.expectedRevision,
+    );
+    const copies =
+      draft === null
+        ? new Map<string, string>()
+        : await copyDocumentImages(command.template, draft, this.images);
     const version = await this.uow.run(async () => {
       const document = await this.documents.load(command.template);
       const previous = document.publishedVersion;
-      const published = document.publish(entry.declaration, command.expectedRevision, stamp);
+      const published = document.publish(
+        entry.declaration,
+        command.expectedRevision,
+        stamp,
+        copies,
+      );
       const release = await this.releases.loadFor(command.template);
       if (published === null && !release.hasPublishable(this.manifest)) {
         throw new NothingToPublishForMailError(command.template);

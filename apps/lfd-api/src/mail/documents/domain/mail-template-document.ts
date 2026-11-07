@@ -1,12 +1,15 @@
 import {
+  imageBlocksOf,
   validateMailDocument,
   validateMailDocumentForPublication,
+  withImageSources,
   type MailDocument,
   type MailTemplateDeclaration,
 } from "@lfd/mail-blocks";
 
 import {
   MailDocumentChangedError,
+  MailDocumentImageNotCopiedError,
   MailDocumentRefusedError,
   NothingToRevertError,
 } from "./mail-document-errors.js";
@@ -131,19 +134,17 @@ export class MailTemplateDocument {
   }
 
   /**
-   * Publie le brouillon : il devient la version suivante, gardée en ajout
-   * seul. Rend `null` sans brouillon — les phrases de l'e-mail peuvent se
-   * publier seules.
+   * Le brouillon tel qu'il serait publié, vérifié sans rien changer — ce que
+   * la publication lit AVANT sa transaction pour en copier les images (S5d).
+   * `null` sans brouillon.
    *
    * @throws {MailDocumentChangedError} la révision lue est dépassée.
-   * @throws {MailDocumentRefusedError} un bloc libre n'a pas son texte dans
-   *   une langue du modèle, ou une règle de forme est enfreinte.
+   * @throws {MailDocumentRefusedError} une règle de publication est enfreinte.
    */
-  publish(
+  publishableDraft(
     declaration: MailTemplateDeclaration,
     expectedRevision: number,
-    stamp: MailDocumentStamp,
-  ): PublishedMailDocument | null {
+  ): MailDocument | null {
     this.assertRevision(expectedRevision);
     const draft = this.state.draft;
     if (draft === null) {
@@ -157,7 +158,38 @@ export class MailTemplateDocument {
     if (violations.length > 0) {
       throw new MailDocumentRefusedError(this.state.template, "publié", violations);
     }
-    const published = { document: draft.document, version: this.state.lastVersion + 1, stamp };
+    return draft.document;
+  }
+
+  /**
+   * Publie le brouillon : il devient la version suivante, gardée en ajout
+   * seul, où chaque image pointe vers sa copie (`imageCopies` : adresse
+   * d'origine → adresse de la copie). Rend `null` sans brouillon — les
+   * phrases de l'e-mail peuvent se publier seules.
+   *
+   * @throws {MailDocumentChangedError} la révision lue est dépassée.
+   * @throws {MailDocumentRefusedError} un bloc libre n'a pas son texte dans
+   *   une langue du modèle, ou une règle de forme est enfreinte.
+   * @throws {MailDocumentImageNotCopiedError} une image n'a pas de copie.
+   */
+  publish(
+    declaration: MailTemplateDeclaration,
+    expectedRevision: number,
+    stamp: MailDocumentStamp,
+    imageCopies: ReadonlyMap<string, string> = new Map(),
+  ): PublishedMailDocument | null {
+    const draft = this.publishableDraft(declaration, expectedRevision);
+    if (draft === null) {
+      return null;
+    }
+    if (imageBlocksOf(draft).some((image) => !imageCopies.has(image.src))) {
+      throw new MailDocumentImageNotCopiedError(this.state.template);
+    }
+    const published = {
+      document: withImageSources(draft, imageCopies),
+      version: this.state.lastVersion + 1,
+      stamp,
+    };
     this.state = {
       ...this.state,
       revision: this.state.revision + 1,

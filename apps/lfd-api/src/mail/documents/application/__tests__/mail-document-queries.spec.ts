@@ -38,6 +38,7 @@ import {
   FixedCatalogue,
   InMemoryMailDocumentReader,
   InMemoryMailDocuments,
+  RecordingDocumentImages,
   RecordingDocumentRenderer,
   entryOf,
 } from "./mail-document-doubles.js";
@@ -81,6 +82,7 @@ function world() {
       events,
       clock,
       uow,
+      new RecordingDocumentImages(),
     ),
     list: new ListMailTemplatesHandler(catalogue, reader),
     read: new GetMailTemplateHandler(catalogue, reader, copy, MANIFEST),

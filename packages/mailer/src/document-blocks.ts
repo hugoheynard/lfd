@@ -1,4 +1,4 @@
-import type { ColumnsBlock, FreeBlock, Localized, MailLocale } from "@lfd/mail-blocks";
+import type { ColumnsBlock, FreeBlock, ImageBlock, Localized, MailLocale } from "@lfd/mail-blocks";
 
 import { DOCUMENT_CLASSES } from "./document-theme.js";
 import { htmlEscape } from "./escape.js";
@@ -8,6 +8,9 @@ import {
   BRAND,
   CALLOUT_COLORS,
   CALLOUT_TEXT_STYLE,
+  IMAGE_LINK_STYLE,
+  IMAGE_SPACING_STYLE,
+  IMAGE_STYLE,
   RULE_STYLE,
   TEXT_STYLE,
   TITLE_TEXT_STYLE,
@@ -51,10 +54,32 @@ function button(label: string, href: string): string {
 
 const DIVIDER = `<hr style="${RULE_STYLE}margin:24px 0;" />`;
 
+/**
+ * Une image, en tableau pour qu'Outlook garde sa largeur. Une image
+ * décorative rend un `alt` vide, voulu ; une autre sans texte dans la langue
+ * de l'envoi ne rend rien, comme un texte manquant. Sans adresse (pas encore
+ * choisie) ou sur une adresse hostile : rien.
+ */
+function image(block: ImageBlock, locale: MailLocale): string {
+  const alt = block.decorative === true ? "" : textIn(block.alt, locale);
+  if (alt === null || block.src === "" || !isRenderableUrl(block.src)) {
+    return "";
+  }
+  const img = `<img src="${htmlEscape(block.src)}" alt="${htmlEscape(alt)}" width="100%" style="${IMAGE_STYLE}" />`;
+  const linked =
+    block.href !== undefined && block.decorative !== true && isRenderableUrl(block.href)
+      ? `<a href="${htmlEscape(block.href)}" style="${IMAGE_LINK_STYLE}">${img}</a>`
+      : img;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${IMAGE_SPACING_STYLE}"><tr><td>${linked}</td></tr></table>`;
+}
+
 /** Un bloc libre hors colonnes, ou la chaîne vide s'il n'a rien à montrer. */
 export function renderFreeBlock(block: FreeBlock, locale: MailLocale): string {
   if (block.kind === "divider") {
     return DIVIDER;
+  }
+  if (block.kind === "image") {
+    return image(block, locale);
   }
   const text = textIn(block.kind === "button" ? block.label : block.text, locale);
   if (text === null) {
