@@ -1857,3 +1857,76 @@ le 2026-11-07 : « non pas là » — noté, non planifié.
   qu'un par emplacement (R3).
 - **Cliquer une valeur sans curseur dans une phrase** dit « Posez d'abord le
   curseur dans une phrase de l'e-mail » (avant : rien).
+
+## 25. Les espaces et leurs chartes (Hugo, 2026-11-07) — plan, à bâtir
+
+### En simple
+
+Hugo, le 2026-11-07 : « comment je peux séparer lfd-backoffice mail et la
+folie coffee mail dans des espaces différents pour y associer des chartes
+graphiques ». Réponses du même jour : **même droit** que les e-mails
+(`mail_templates`) ; puis « Interne devrait avoir celle de lfd » : **les
+e-mails internes prennent la charte de La Folie Douce**.
+
+- **La page « E-mails » s'ouvre sur deux espaces** : « La Folie Coffee —
+  clients » et « La Folie Douce — équipe ». Les quatre e-mails internes sont
+  rangés dans l'espace La Folie Douce, sous un groupe « Interne ». Un e-mail
+  appartient à un seul espace ; chaque espace liste les siens.
+- **Chaque espace a sa charte** : logo, couleurs, police des
+  titres, variantes sombres, pied de page commun. On la règle sur une page
+  « Charte », avec un aperçu sur un e-mail de l'espace, en clair et en sombre.
+- **La charte se publie comme un e-mail** : brouillon, publier, historique.
+  Publiée, elle vaut pour tous les e-mails de l'espace au prochain envoi.
+- **Les e-mails internes** sont rendus avec la charte de La Folie Douce.
+  Aujourd'hui ils partent **sans marque** (pas d'enseigne ni de recours) :
+  tant qu'aucune charte n'est publiée, ils gardent ce rendu à l'octet ; la
+  première publication de la charte La Folie Douce leur donne ses couleurs,
+  son logo et sa police — ce qu'Hugo a demandé.
+
+```mermaid
+flowchart TD
+    A[Espace La Folie Coffee<br/>charte publiée] --> E1[e-mails clients]
+    B[Espace La Folie Douce<br/>charte publiée] --> E2[e-mails de l'équipe]
+    B --> E3[e-mails internes]
+```
+
+### L'existant (vérifié le 2026-11-07)
+
+- L'espace existe déjà sous un autre nom : la **charte** de chaque modèle,
+  `lfc` / `lfd` / `internal`, déclarée dans le code
+  (`apps/lfd-api/src/mail/templates/sections/mail-block-declarations.ts`,
+  `CHARTERS`). Quatre e-mails sont `internal` : `staff.appointment-booked`,
+  `staff.account-alert`, `ops.deploy-check`, `staff.support-requested`.
+- Mais la charte n'est qu'un mot : les trois partagent les mêmes couleurs
+  (`BRAND`, `packages/mailer/src/layout-styles.ts`) et le même sombre
+  (`MAIL_CHARTER_DARK` donne `SUITE_DARK` aux trois,
+  `packages/mailer/src/document-theme.ts`). Le logo est joint en ligne
+  (`cid:`, `packages/mailer/src/layout-header.ts`), la police se donne par
+  une adresse.
+
+### Ce que la charte porte
+
+| Réglage           | Forme                                                                                            | Règle                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| logo              | une image de la médiathèque, copiée dans le stockage du bloc `mail` à la publication (§ 19, S3d) | texte de remplacement obligatoire                              |
+| couleurs          | fond de page, carte, texte, texte secondaire, couleur principale (boutons, liens), bordure       | contraste texte / fond ≥ 4,5:1 vérifié à la publication (RGAA) |
+| variantes sombres | les mêmes couleurs, pour `prefers-color-scheme`                                                  | même contrôle de contraste                                     |
+| police des titres | une police déclarée, avec sa police de secours                                                   | la police de secours est obligatoire                           |
+| pied de page      | adresse, mentions, contact — textes par langue                                                   | écrit comme une phrase (§ 3)                                   |
+
+### La règle qui ne se négocie pas
+
+**La charte de départ de chaque espace est celle d'aujourd'hui, à l'octet.**
+Tant qu'aucune charte n'est publiée, le rendu lit les constantes actuelles,
+et le test « mêmes octets » des 32 modèles reste vert. Une charte publiée
+change le rendu de son espace, et seulement de lui.
+
+### Les lots
+
+| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **C1** | API : l'espace comme notion (le mot `charter` devient l'espace, sans renommer de valeur stockée) ; la charte (agrégat, brouillon / publication / historique en ajout seul, schéma `mail`, migration additive) ; le contrôle de contraste ; le logo copié à la publication ; `@lfd/mailer` lit une charte au lieu des constantes, la charte de départ rend les mêmes octets ; routes sous `mail_templates`. |
+| **C2** | Back-office : la page « E-mails » par espaces ; la page « Charte » d'un espace (réglages, aperçu clair / sombre sur un e-mail de l'espace, publier, historique).                                                                                                                                                                                                                                           |
+
+Pas d'argent, pas de frontière de sécurité nouvelle (même droit) : `vitruve`
+n'est pas requis ; la migration additive passera au lecteur de migrations.
