@@ -1515,3 +1515,111 @@ prénom ou une ligne de tableau. Déclarer les phrases éditables, un seul cas.
 
 Proposé à Hugo : passer d'abord les 16 faciles et les 4 moyens, puis trancher
 les 11 ligne par ligne.
+
+## 24. Un e-mail, c'est une mise en page où l'on pose des ressources (Hugo, 2026-11-07) — plan, à valider
+
+### En simple
+
+Hugo, le 2026-11-07 : « au final, préparer un mail, c'est mapper des
+ressources dans un layout ».
+
+- **La mise en page** : l'ordre des blocs, les colonnes, et les textes qu'on
+  écrit soi-même (titre, accroche, encadrés, boutons ajoutés). Elle est la
+  même pour tous les destinataires.
+- **Les ressources** : ce que l'envoi fournit pour **chaque destinataire**, et
+  que personne n'écrit. Quatre sortes :
+
+| Sorte               | Exemples                                                                   | Où on la pose                                   |
+| ------------------- | -------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Valeur**          | référence de commande, prénom, jour de retrait, créneau                    | dans un texte, en pastille                      |
+| **Lien**            | la liste de ses commandes, son lien de règlement, son lien de mot de passe | sur un bouton                                   |
+| **Bloc de données** | récapitulatif, code de retrait (QR), itinéraire                            | dans la page, comme un bloc                     |
+| **Image**           | une image de la médiathèque                                                | dans la page, comme un bloc ; la même pour tous |
+
+Préparer un e-mail, c'est **choisir la mise en page, puis poser les bonnes
+ressources aux bons endroits**. On ne fabrique jamais une ressource : on la
+prend dans la liste de ce que l'e-mail fournit.
+
+```mermaid
+flowchart LR
+    R[Ressources de l'e-mail<br/>valeurs, liens, blocs de données] --> L[Mise en page<br/>blocs, colonnes, textes écrits]
+    M[Médiathèque<br/>images] --> L
+    L --> E[E-mail envoyé<br/>une version par destinataire]
+```
+
+### Chaque ressource a sa fiche, et la fiche est imposée
+
+Une ressource se présente à la personne qui prépare l'e-mail par **un nom
+lisible, une description et un exemple** — jamais par son nom technique.
+
+| Champ       | Exemple pour `ref`                                             |
+| ----------- | -------------------------------------------------------------- |
+| nom         | Référence de commande                                          |
+| description | le numéro de la commande, celui que le client voit sur son bon |
+| exemple     | ORD-4812                                                       |
+
+**Imposé, pas espéré** : le catalogue des fiches est typé à partir des
+ressources que les e-mails emploient. Une ressource sans fiche **ne compile
+pas** ; un test refuse un nom, une description ou un exemple vides.
+
+**Un même nom technique peut avoir deux sens** selon l'e-mail. Relevé le
+2026-11-07 dans `apps/lfd-api/src/mail/templates/copy/mail-copy.variables.ts` :
+54 noms de variables, dont `name` (nom d'un produit dans un récapitulatif,
+nom d'un membre dans une annulation) et `ref` / `reference` (deux noms pour
+une référence). La fiche porte un sens par défaut et une précision par e-mail
+quand il le faut ; le test refuse un nom employé dans deux e-mails sans fiche
+précisée pour l'un d'eux.
+
+### Ce que chaque e-mail déclare
+
+Pour chaque modèle, à côté de ses blocs, de ses langues et de sa charte
+(§ 12) :
+
+- ses **valeurs** : les variables qu'il fournit (aujourd'hui
+  `MAIL_COPY_VARIABLES`, rangées par texte ; demain, la liste de l'e-mail) ;
+- ses **liens** : ce qu'il fournit à poser sur un bouton — aujourd'hui un seul
+  par e-mail au plus, décrit par `ctaDestination` (commit `1286384cd`), plus le
+  lien secondaire quand il existe ;
+- ses **blocs de données** : les blocs du modèle qui affichent de la donnée
+  (`summary`, `image` — le QR —, `itinerary`), qui se placent et ne s'écrivent
+  pas (§ 23).
+
+Les images ne sont pas déclarées par l'e-mail : elles viennent de la
+médiathèque (§ 19, et `plan-service-e-mails.md` § 23).
+
+### L'écran
+
+- **À gauche, « Ressources de cet e-mail »**, rangées par sorte : chaque
+  ressource avec son nom lisible, sa description au survol, son exemple. On
+  glisse une valeur dans un texte, un lien sur un bouton, un bloc de données
+  dans la page. Le choix du cas disparaît quand l'e-mail n'en a qu'un (§ 23).
+- **Au milieu, la mise en page** : l'e-mail (§ 22). Les valeurs y sont des
+  pastilles au nom lisible ; un bouton porte une **pastille de lien** du même
+  style (« Liste de ses commandes ») ; un bouton ajouté montre son adresse
+  dans une pastille qu'on clique pour la changer.
+- **À droite, la bibliothèque** de ce qu'on ajoute soi-même (titres,
+  paragraphes, encadrés, boutons, images, colonnes) et les réglages du bloc
+  sélectionné.
+
+### Ce qui ne change pas
+
+Ce qui part chez Resend : la mise en page et les textes s'enregistrent comme
+aujourd'hui (`{ref}` dans le dictionnaire). Les fiches sont une couche de
+lecture pour la personne qui prépare l'e-mail, pas un nouveau format.
+
+### Les lots
+
+| Lot    | Contenu                                                                                                                                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **R1** | Côté API : le catalogue des fiches (valeurs, liens, blocs de données), typé et testé ; les fiches des 54 valeurs, des liens et des blocs de données ; servi à l'éditeur par le contrat (`@lfd/mail-blocks`, ajout seul). |
+| **R2** | Côté back-office : le panneau « Ressources » à gauche, les pastilles au nom lisible, les pastilles de lien sur les boutons.                                                                                              |
+| **R3** | Plus tard, si un e-mail fournit plusieurs liens : choisir lequel poser sur un bouton.                                                                                                                                    |
+
+### Questions pour Hugo
+
+1. **Les noms des fiches** : je les écris d'après le code, en français
+   courant ; tu les relis dans l'éditeur une fois servis. D'accord ?
+2. **`ref` et `reference`** : les fusionner en une seule ressource (« Référence
+   de commande ») demande de renommer `{reference}` dans les textes — une
+   valeur de donnée, donc une migration des textes réécrits en base. Fusionner,
+   ou garder deux noms techniques sous la même fiche ?
