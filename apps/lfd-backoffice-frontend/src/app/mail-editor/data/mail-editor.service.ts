@@ -1,19 +1,24 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
+  MailDocumentCasePreviewPayload,
   MailDocumentDraftPayload,
   MailDocumentHistoryView,
-  MailDocumentPreviewPayload,
   MailDocumentPreviewView,
   MailDocumentPublicationView,
   MailDocumentPublishPayload,
   MailDocumentRevertPayload,
+  MailDocumentTrialPayload,
   MailEditorListView,
+  MailEditorPhrasesView,
   MailEditorView,
+  MailPhraseDraftPayload,
+  MailPhraseResetPayload,
 } from '@lfd/mail-blocks';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 const BASE = `${B2B_API_BASE}/admin/mail-templates`;
 
@@ -24,7 +29,8 @@ function templateUrl(template: string): string {
 
 /**
  * **L'éditeur d'e-mails** — la liste, un e-mail ouvert, son brouillon et
- * l'aperçu fidèle (`plan-editeur-par-blocs.md`, S5a ; contrats de S4c dans
+ * l'aperçu fidèle (`plan-editeur-par-blocs.md`, S5a), les phrases, les cas et
+ * l'essai (S4d ; contrats de S4c dans
  * `packages/mail-blocks/src/mail-editor-routes.ts`).
  *
  * Murés côté serveur par le droit `mail_templates` : lire et prévisualiser
@@ -48,8 +54,11 @@ export class MailEditorService {
     await firstValueFrom(this.http.put<unknown>(`${templateUrl(template)}/draft`, payload));
   }
 
-  /** Le rendu du serveur, à la demande ; rien n'est écrit. */
-  preview(template: string, payload: MailDocumentPreviewPayload): Promise<MailDocumentPreviewView> {
+  /** Le rendu du serveur, à la demande, pour un cas (S4d) ; rien n'est écrit. `404` cas inconnu. */
+  preview(
+    template: string,
+    payload: MailDocumentCasePreviewPayload,
+  ): Promise<MailDocumentPreviewView> {
     return firstValueFrom(
       this.http.post<MailDocumentPreviewView>(`${templateUrl(template)}/previews`, payload),
     );
@@ -82,6 +91,40 @@ export class MailEditorService {
   ): Promise<MailDocumentPublicationView> {
     return firstValueFrom(
       this.http.post<MailDocumentPublicationView>(`${templateUrl(template)}/reverts`, payload),
+    );
+  }
+
+  /** Les phrases du modèle, relues après une écriture (S4d). */
+  phrases(template: string): Promise<MailEditorPhrasesView> {
+    return firstValueFrom(this.http.get<MailEditorPhrasesView>(`${templateUrl(template)}/phrases`));
+  }
+
+  /** Le brouillon d'une phrase : `400` texte refusé, `409` écrite entre-temps. */
+  async savePhraseDraft(template: string, payload: MailPhraseDraftPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.put<unknown>(`${templateUrl(template)}/phrases/drafts`, payload),
+    );
+  }
+
+  /** Rétablit le texte du code au prochain « Publier » ; `409` sur une révision dépassée. */
+  async resetPhrase(template: string, payload: MailPhraseResetPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.post<unknown>(`${templateUrl(template)}/phrases/resets`, payload),
+    );
+  }
+
+  /**
+   * « M'envoyer un essai » : à la seule adresse de l'appelant. La clé
+   * d'intention est celle de l'écran, renvoyée à chaque clic tant que le geste
+   * n'a pas abouti — un double clic n'envoie pas deux e-mails.
+   */
+  async sendTrial(
+    template: string,
+    payload: MailDocumentTrialPayload,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<unknown>(`${templateUrl(template)}/trials`, payload, intentOptions(intentKey)),
     );
   }
 }

@@ -19,6 +19,7 @@ import { MailEditorService } from '../../data/mail-editor.service';
 interface RenderedFor {
   readonly document: MailDocument;
   readonly locale: MailLocale;
+  readonly caseId: string | null;
 }
 
 /** La largeur du cadre : celle d'un client de messagerie, ou d'un téléphone (~375 px). */
@@ -68,6 +69,8 @@ export class MailFaithfulPreview {
   readonly template = input.required<string>();
   readonly locale = input.required<MailLocale>();
   readonly document = input.required<MailDocument>();
+  /** Le cas à rendre (`MailEditorView.cases`) ; `null` : l'exemple de l'e-mail. */
+  readonly caseId = input<string | null>(null);
 
   private readonly api = inject(MailEditorService);
   private readonly sanitizer = inject(DomSanitizer);
@@ -100,12 +103,14 @@ export class MailFaithfulPreview {
     (this.preview()?.attachments ?? []).filter((attachment) => !attachment.inline),
   );
 
-  /** L'écran a changé depuis le dernier aperçu : document ou langue. */
+  /** L'écran a changé depuis le dernier aperçu : document, langue ou cas. */
   readonly stale = computed(() => {
     const rendered = this.renderedFor();
     return (
       rendered !== null &&
-      (rendered.document !== this.document() || rendered.locale !== this.locale())
+      (rendered.document !== this.document() ||
+        rendered.locale !== this.locale() ||
+        rendered.caseId !== this.caseId())
     );
   });
 
@@ -114,7 +119,11 @@ export class MailFaithfulPreview {
   /** Seule la dernière demande s'affiche : un aperçu lent ne recouvre pas le suivant. */
   async render(): Promise<void> {
     const request = ++this.request;
-    const asked: RenderedFor = { document: this.document(), locale: this.locale() };
+    const asked: RenderedFor = {
+      document: this.document(),
+      locale: this.locale(),
+      caseId: this.caseId(),
+    };
     if (this.preview() === null) {
       this.status.set('loading');
     }
@@ -123,6 +132,7 @@ export class MailFaithfulPreview {
         locale: asked.locale,
         source: 'draft',
         document: asked.document,
+        ...(asked.caseId === null ? {} : { caseId: asked.caseId }),
       });
       if (request === this.request) {
         this.preview.set(preview);

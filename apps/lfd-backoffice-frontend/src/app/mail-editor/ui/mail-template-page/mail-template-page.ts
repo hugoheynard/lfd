@@ -23,8 +23,10 @@ import {
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldInlineConfirmComponent,
+  FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPageSectionComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
@@ -34,9 +36,12 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { LOCALE_LABELS } from '../../../textes-boutique/rules/copy-text';
 import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
+import { GestureIntents } from '../../../shared/gesture-intents';
 import { MailEditorService } from '../../data/mail-editor.service';
+import { MailPhrasesStore } from '../../state/mail-phrases-store';
 import { MailCanvas } from '../mail-canvas/mail-canvas';
 import { MailFaithfulPreview } from '../mail-faithful-preview/mail-faithful-preview';
+import { MailPhraseEditor } from '../mail-phrase-editor/mail-phrase-editor';
 import { MailTemplateHistory } from '../mail-template-history/mail-template-history';
 
 /** Qui reçoit l'e-mail, dans la confirmation de « Publier ». */
@@ -67,7 +72,12 @@ const SOURCE_LABELS: Readonly<Record<MailEditorView['source'], string>> = {
  * attente de cet e-mail (il attend donc un document enregistré) ; les refus de
  * `validateMailDocumentForPublication` se lisent avant l'appel, ceux du
  * serveur tels qu'il les dit. « Revenir au modèle d'origine » efface le
- * brouillon et retire le publié. Les deux se confirment sur place. Quitter un
+ * brouillon et retire le publié. Les deux se confirment sur place.
+ *
+ * S5b (phrases, cas) et essai : les phrases du modèle s'écrivent en brouillon
+ * dans la langue choisie (`MailPhrasesStore`) ; le cas choisi change l'aperçu
+ * fidèle ; « M'envoyer un essai » part à l'auteur seul, avec une clé
+ * d'intention gardée jusqu'à l'envoi. Quitter un
  * document modifié se retient une fois (garde de sortie, seconde passe).
  */
 @Component({
@@ -82,12 +92,16 @@ const SOURCE_LABELS: Readonly<Record<MailEditorView['source'], string>> = {
     FoldViewToggleComponent,
     FoldCalloutComponent,
     FoldInlineConfirmComponent,
+    FoldListboxComponent,
+    FoldPageSectionComponent,
     MailCanvas,
     MailFaithfulPreview,
+    MailPhraseEditor,
     MailTemplateHistory,
   ],
   templateUrl: './mail-template-page.html',
   styleUrl: './mail-template-page.scss',
+  providers: [MailPhrasesStore],
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
 export class MailTemplatePage implements HasPendingChanges {
@@ -97,6 +111,9 @@ export class MailTemplatePage implements HasPendingChanges {
   private readonly api = inject(MailEditorService);
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
+  protected readonly phrases = inject(MailPhrasesStore);
+  /** Une clé par essai voulu (e-mail, langue, cas), renvoyée à chaque clic jusqu'à l'envoi. */
+  private readonly intents = new GestureIntents();
 
   protected readonly status = signal<'loading' | 'ready' | 'failed'>('loading');
   protected readonly error = signal<string | null>(null);
@@ -107,6 +124,9 @@ export class MailTemplatePage implements HasPendingChanges {
   protected readonly saving = signal(false);
   protected readonly publishing = signal(false);
   protected readonly reverting = signal(false);
+  protected readonly sendingTrial = signal(false);
+  /** Le cas affiché (`MailEditorView.cases`) : l'aperçu fidèle et l'essai le rendent. */
+  readonly caseId = signal<string | null>(null);
   /** Le dernier refus du serveur à « Publier » ou « Revenir », tel qu'il l'a dit. */
   protected readonly gestureError = signal<string | null>(null);
   /** Monte après chaque geste qui écrit une version : l'historique se relit. */
@@ -133,6 +153,18 @@ export class MailTemplatePage implements HasPendingChanges {
       ariaLabel: LOCALE_LABELS[locale],
     })),
   );
+
+  /** Les cas du modèle, dans l'ordre du serveur — le premier est l'exemple de l'e-mail. */
+  protected readonly caseOptions = computed(() =>
+    (this.view()?.cases ?? []).map((example) => ({ value: example.id, label: example.label })),
+  );
+
+  /** Ce qui part à l'essai, et à qui : dit avant de confirmer. */
+  protected readonly trialMessage = computed(() => {
+    const example = this.view()?.cases.find((candidate) => candidate.id === this.caseId());
+    const which = example === undefined ? 'l’exemple de l’e-mail' : `le cas « ${example.label} »`;
+    return `Un essai part à votre seule adresse, en ${LOCALE_LABELS[this.locale()].toLowerCase()}, avec ${which} : l’arrangement enregistré (sinon publié, sinon d’origine) et les phrases en brouillon. Rien n’est publié, aucun client ne le reçoit.`;
+  });
 
   /** Le document diffère de celui que le serveur a rendu. */
   readonly dirty = computed(() => {
@@ -221,6 +253,7 @@ export class MailTemplatePage implements HasPendingChanges {
     this.publishing.set(true);
     this.gestureError.set(null);
     try {
+      await this.phrases.flush();
       const { publicationVersion } = await this.api.publish(view.template, {
         expectedRevision: view.revision,
       });
@@ -255,6 +288,33 @@ export class MailTemplatePage implements HasPendingChanges {
     }
   }
 
+  /** « M'envoyer un essai » : la langue et le cas courants, à l'auteur seul. */
+  async sendTrial(): Promise<void> {
+    const view = this.view();
+    if (view === null || !this.canWrite() || this.sendingTrial()) {
+      return;
+    }
+    const caseId = this.caseId();
+    const locale = this.locale();
+    const subject = `${view.template}\u0000${locale}\u0000${caseId ?? ''}`;
+    this.sendingTrial.set(true);
+    this.gestureError.set(null);
+    try {
+      await this.phrases.flush();
+      await this.api.sendTrial(
+        view.template,
+        { locale, ...(caseId === null ? {} : { caseId }) },
+        this.intents.keyFor(subject),
+      );
+      this.intents.done(subject);
+      this.notify.success('Essai envoyé à votre adresse.');
+    } catch (error) {
+      this.gestureError.set(httpErrorMessage(error, 'L’essai n’a pas pu être envoyé.'));
+    } finally {
+      this.sendingTrial.set(false);
+    }
+  }
+
   /** Garde de sortie : un document modifié retient une fois, et le dit ; la seconde sortie passe. */
   canLeave(): boolean {
     if (!this.dirty() || !this.canWrite() || this.leaveWarned()) {
@@ -274,6 +334,10 @@ export class MailTemplatePage implements HasPendingChanges {
   private apply(view: MailEditorView): void {
     this.view.set(view);
     this.document.set(view.document);
+    this.phrases.use(view.template, view.phrases);
+    if (!view.cases.some((candidate) => candidate.id === this.caseId())) {
+      this.caseId.set(view.cases[0]?.id ?? null);
+    }
     this.error.set(null);
     const locales = view.declaration.locales;
     if (!locales.includes(this.locale())) {

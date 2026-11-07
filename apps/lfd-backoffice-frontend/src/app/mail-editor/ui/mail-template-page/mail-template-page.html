@@ -26,6 +26,18 @@
       >
         <button foldButton icon="upload" type="button" [disabled]="!canPublish()">Publier</button>
       </fold-inline-confirm>
+      <fold-inline-confirm
+        intent="primary"
+        data-trial
+        [message]="trialMessage()"
+        [labels]="{ confirm: 'Envoyer l’essai' }"
+        [loading]="sendingTrial()"
+        (confirmed)="sendTrial()"
+      >
+        <button foldButton emphasis="outline" intent="neutral" icon="mail" type="button">
+          M’envoyer un essai
+        </button>
+      </fold-inline-confirm>
       @if (canRevert()) {
         <fold-inline-confirm
           data-revert
@@ -90,6 +102,16 @@
               [value]="locale()"
               (valueChange)="setLocale($event)"
             />
+            @if (caseOptions().length > 1) {
+              <fold-listbox
+                size="sm"
+                label="Cas affiché"
+                data-cases
+                [options]="caseOptions()"
+                [value]="caseId()"
+                (selectionChange)="caseId.set($event)"
+              />
+            }
             <span class="tp-muted" data-source>{{ sourceLabel() }}</span>
           </div>
           <app-mail-canvas
@@ -99,10 +121,32 @@
             [locale]="locale()"
             (documentChange)="document.set($event)"
           />
+          @if (phrases.phrases().length > 0) {
+            <fold-page-section
+              title="Phrases du modèle"
+              data-phrases
+              [description]="
+                phrases.pendingCount() > 0
+                  ? phrases.pendingCount() + ' en brouillon : elles partent avec « Publier ».'
+                  : 'Les phrases que le code compose, dans la langue choisie.'
+              "
+            >
+              <div class="tp-phrases">
+                @for (phrase of phrases.phrases(); track phrase.path) {
+                  <app-mail-phrase-editor
+                    [phrase]="phrase"
+                    [locale]="locale()"
+                    [canWrite]="canWrite()"
+                  />
+                }
+              </div>
+            </fold-page-section>
+          }
           <app-mail-faithful-preview
             [template]="current.template"
             [locale]="locale()"
             [document]="doc"
+            [caseId]="caseId()"
           />
           <app-mail-template-history [template]="current.template" [refresh]="historyRefresh()" />
         }

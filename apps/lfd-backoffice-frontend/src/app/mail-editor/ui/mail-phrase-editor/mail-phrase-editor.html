@@ -1,0 +1,78 @@
+<div
+  class="pe-body"
+  [attr.data-phrase]="phrase().path"
+  [attr.title]="'Chemin technique : ' + phrase().path"
+>
+  @if (conflict()) {
+    <fold-callout variant="alert" data-conflict>
+      Quelqu’un a modifié cette phrase pendant que vous l’éditiez. Sa version est rechargée ;
+      refaites votre modification si elle tient toujours.
+    </fold-callout>
+  }
+  <fold-textarea
+    [label]="label()"
+    [rows]="rows()"
+    [readOnly]="!canWrite()"
+    [value]="shown()"
+    (valueChange)="edit($event)"
+  />
+  @if (state(); as current) {
+    <div class="pe-line">
+      <fold-badge [variant]="current.variant" [content]="current.label" />
+    </div>
+  }
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" data-refusal>{{ message }}</fold-callout>
+  }
+  @if (original(); as text) {
+    <p class="pe-muted">Texte d’origine : {{ text }}</p>
+  }
+  @if (canReset()) {
+    <div class="pe-line">
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        intent="neutral"
+        icon="undo"
+        type="button"
+        data-reset
+        (click)="reset()"
+      >
+        Rétablir
+      </button>
+    </div>
+  }
+  @if (chips().length > 0) {
+    <div class="pe-line">
+      <span class="pe-muted">{{ canWrite() ? 'Insérer :' : 'Variables permises :' }}</span>
+      @for (chip of chips(); track chip.name) {
+        @if (canWrite()) {
+          <button
+            foldButton
+            size="sm"
+            type="button"
+            [emphasis]="chip.required ? 'solid' : 'outline'"
+            [intent]="chip.required ? 'primary' : 'neutral'"
+            [attr.aria-label]="
+              'Insérer {' + chip.name + '}' + (chip.required ? ', obligatoire' : '')
+            "
+            (click)="insert(chip.name)"
+          >
+            {{ '{' + chip.name + '}' }}
+          </button>
+        } @else {
+          <fold-badge
+            [variant]="chip.required ? 'accent' : 'neutral'"
+            [content]="'{' + chip.name + '}'"
+          />
+        }
+      }
+    </div>
+    @if (required().length > 0) {
+      <p class="pe-muted">
+        Obligatoire{{ required().length > 1 ? 's' : '' }} : {{ required().join(', ') }}.
+      </p>
+    }
+  }
+</div>

@@ -759,3 +759,46 @@ Le bloc `mail` n'importe rien de `media`.
 Un bloc « Image » dans la bibliothèque ; ses réglages : choisir dans la
 médiathèque (sélecteur existant de la médiathèque, lu par l'écran), texte de
 remplacement par langue, lien.
+
+## 19. S5b (phrases, cas) et essai — bâti le 2026-11-07
+
+**Ce qui existe.** Sur la page d'un e-mail
+(`apps/lfd-backoffice-frontend/src/app/mail-editor/ui/mail-template-page/`),
+avec les seules routes de S4d (§ 16) :
+
+- **Les phrases du modèle** (`apps/lfd-backoffice-frontend/src/app/mail-editor/state/mail-phrases-store.ts`,
+  `ui/mail-phrase-editor/`) : chaque phrase dans la langue choisie, écrite en
+  brouillon au fil de la frappe (`PUT …/phrases/drafts`, révision lue),
+  « Rétablir » (`POST …/phrases/resets`), un `409` relit (`GET …/phrases`)
+  et le dit, un `400` reste sous le champ tel que le serveur le dit ; les
+  variables sont des boutons d'insertion, les obligatoires marquées. La
+  mécanique est celle de `MailDraftWriter` de `textes-emails` ; ses règles
+  d'état (`upcomingText`, `stateOf`, `canResetTo`) sont **partagées**, pas
+  recopiées. « Publier » et l'essai envoient d'abord la frappe en attente.
+- **Les cas** : « Cas affiché » (`fold-listbox`, au-dessus du canevas, dès
+  qu'il y en a plus d'un), le premier par défaut ; l'aperçu fidèle rend le
+  cas choisi (`caseId`) et dit quand le cas a changé depuis.
+- **« M'envoyer un essai »** (`POST …/trials`, `mail_templates:write`) :
+  confirmation sur place qui dit ce qui part (langue, cas, arrangement
+  enregistré, phrases en brouillon) et à qui (l'auteur seul) ; clé
+  d'intention `GestureIntents` par (e-mail, langue, cas), renvoyée à chaque
+  clic jusqu'à l'envoi, en en-tête `Idempotency-Key`.
+
+**Écarts au texte.**
+
+- **Les phrases ne sont pas rangées par bloc du modèle.** § 3 et § 6 les
+  veulent dans le panneau du bloc sélectionné ; `MailEditorPhraseView` ne
+  dit pas à quel bloc une phrase appartient, ni le nom de sa variante (« Commande
+  payée par carte »), ni l'objet et l'en-tête — l'écran des textes les lit
+  dans `GET /admin/mail-copy` (sous `b2b_storefront`). Les deviner du préfixe
+  du chemin serait inventer. Elles sont listées toutes, sous le canevas, en
+  « Phrases du modèle ». À trancher : ajouter au contrat la section et la
+  variante de chaque phrase.
+- **Les cas sont au-dessus, pas dans une colonne de gauche** (§ 6 dit les
+  deux) ; les variables sont sous chaque phrase.
+- **`textes-emails` n'est pas redirigé** : l'éditeur n'a pas encore la
+  publication globale (tous les e-mails), le rangement des phrases par
+  section et leurs noms de variantes, l'objet et l'en-tête comme cadres,
+  les traductions en retard, « le texte d'origine a changé », les textes
+  hors carte et orphelins, la désignation d'une phrase par un clic dans
+  l'aperçu, et l'essai sur les phrases publiées (`source`).

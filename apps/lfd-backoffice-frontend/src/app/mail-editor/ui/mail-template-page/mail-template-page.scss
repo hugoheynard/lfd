@@ -14,3 +14,9 @@
   margin: 0;
   padding-inline-start: var(--fold-space-lg);
 }
+
+.tp-phrases {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}

@@ -78,6 +78,21 @@ describe('MailFaithfulPreview', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it('rend le cas choisi, et dit qu’un autre cas a été choisi depuis', async () => {
+    const { fixture, element, spy, click } = await render(() => Promise.resolve(VIEW));
+    fixture.componentRef.setInput('caseId', 'due');
+    await click();
+    expect(spy).toHaveBeenCalledWith(TEMPLATE, {
+      locale: 'fr',
+      source: 'draft',
+      document: DOCUMENT,
+      caseId: 'due',
+    });
+    fixture.componentRef.setInput('caseId', 'account');
+    fixture.detectChanges();
+    expect(element.querySelector('[data-stale]')).not.toBeNull();
+  });
+
   it('montre l’échec du premier rendu, avec « Réessayer »', async () => {
     const { element, click } = await render(() => Promise.reject(new Error('boom')));
     await click();

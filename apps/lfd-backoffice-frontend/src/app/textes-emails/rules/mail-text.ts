@@ -13,10 +13,20 @@ export function textKey(text: Pick<MailCopyTextView, 'mail' | 'path'>): string {
 }
 
 /**
+ * Ce qu'il faut lire d'une langue d'un texte pour dire son état : la vue de
+ * cet écran comme celle de l'éditeur d'e-mails (`MailEditorPhraseLocaleView`,
+ * qui partage ces règles au lieu de les recopier).
+ */
+export type MailTextLocaleState = Pick<
+  MailCopyLocaleView,
+  'default' | 'draftState' | 'draftText' | 'publishedText'
+>;
+
+/**
  * Ce que l'e-mail dira après le prochain « Publier » : le brouillon s'il y en
  * a un, le texte du code s'il est rétabli, sinon le publié, sinon le code.
  */
-export function upcomingText(view: MailCopyLocaleView): string {
+export function upcomingText(view: MailTextLocaleState): string {
   if (view.draftState === 'set') {
     return view.draftText ?? '';
   }
@@ -40,7 +50,7 @@ export interface TextState {
 }
 
 /** « Brouillon » dès qu'il y a une frappe ou un geste en attente, « Publié » s'il remplace le code. */
-export function stateOf(view: MailCopyLocaleView, shown: string): TextState | null {
+export function stateOf(view: MailTextLocaleState, shown: string): TextState | null {
   if (view.draftState !== 'unchanged' || shown !== upcomingText(view)) {
     return { label: 'Brouillon', variant: 'warning' };
   }
@@ -48,7 +58,7 @@ export function stateOf(view: MailCopyLocaleView, shown: string): TextState | nu
 }
 
 /** Il y a quelque chose à défaire : une frappe, un brouillon, ou un remplacement publié. */
-export function canResetTo(view: MailCopyLocaleView, shown: string): boolean {
+export function canResetTo(view: MailTextLocaleState, shown: string): boolean {
   return (
     shown !== (view.default ?? '') ||
     view.draftState === 'set' ||

@@ -40,7 +40,7 @@ function view(
 async function render(
   api: Partial<
     Record<
-      'load' | 'saveDraft' | 'preview' | 'history' | 'publish' | 'revert',
+      'load' | 'saveDraft' | 'preview' | 'history' | 'publish' | 'revert' | 'sendTrial',
       ReturnType<typeof vi.fn>
     >
   >,
@@ -218,5 +218,52 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     fixture.detectChanges();
     expect(element.querySelector('[data-leave-warning]')).not.toBeNull();
     expect(page.canLeave()).toBe(true);
+  });
+
+  it('les cas du modèle : le premier choisi, l’autre se choisit', async () => {
+    const load = vi.fn(() =>
+      Promise.resolve({
+        ...view(0),
+        cases: [
+          { id: 'specimen', label: 'Payée par carte' },
+          { id: 'due', label: 'À régler' },
+        ],
+      }),
+    );
+    const { fixture, element } = await render({ load });
+    expect(fixture.componentInstance.caseId()).toBe('specimen');
+    expect(element.querySelector('[data-cases]')).not.toBeNull();
+  });
+
+  it('l’essai part dans la langue et le cas courants, avec la même clé tant qu’il n’a pas abouti', async () => {
+    const load = vi.fn(() =>
+      Promise.resolve({ ...view(0), cases: [{ id: 'due', label: 'À régler' }] }),
+    );
+    const sendTrial = vi
+      .fn()
+      .mockRejectedValueOnce(new HttpErrorResponse({ status: 500 }))
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined);
+    const { fixture, element, notify } = await render({ load, sendTrial });
+    expect(element.querySelector('[data-trial]')?.textContent).toContain('M’envoyer un essai');
+    const page = fixture.componentInstance;
+    page.locale.set('en');
+    await page.sendTrial();
+    await page.sendTrial();
+    await page.sendTrial();
+    const keys = sendTrial.mock.calls.map((call) => call[2]);
+    expect(sendTrial.mock.calls[0]?.slice(0, 2)).toEqual([
+      TEMPLATE,
+      { locale: 'en', caseId: 'due' },
+    ]);
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[2]).not.toBe(keys[1]);
+    expect(notify.success).toHaveBeenCalledWith('Essai envoyé à votre adresse.');
+  });
+
+  it('sans le droit d’écrire, pas d’essai', async () => {
+    const load = vi.fn(() => Promise.resolve(view(0)));
+    const { element } = await render({ load }, ['mail_templates:read']);
+    expect(element.querySelector('[data-trial]')).toBeNull();
   });
 });
