@@ -11,6 +11,7 @@ import { CustomerNudgeDelaysReader } from "../../domain/ports/customer-nudge-del
 import { OrderCustomerNudgesRepository } from "../../domain/ports/order-customer-nudges.repository.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
+import { OrderManageLink } from "../services/order-manage-link.js";
 import { WarnCustomerOfDelayCommand } from "./warn-customer-of-delay.command.js";
 
 /** Préfixe de la clé d'idempotence du courriel. */
@@ -50,6 +51,7 @@ export class WarnCustomerOfDelayHandler implements ICommandHandler<
     private readonly delays: CustomerNudgeDelaysReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
+    private readonly orderPage: OrderManageLink,
     private readonly mail: Mail,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
@@ -90,7 +92,7 @@ export class WarnCustomerOfDelayHandler implements ICommandHandler<
       data: {
         reference: letter.reference,
         pickupLabel: letter.pickupLabel,
-        orderUrl: client === null ? "" : `${client}/mes-commandes`,
+        orderUrl: await this.orderPage.urlFor(orderId, client),
         locale: letter.locale,
       },
     });

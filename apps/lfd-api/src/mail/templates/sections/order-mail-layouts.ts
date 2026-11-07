@@ -47,7 +47,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
 > = {
   "customer.order-placed": {
     ctaDestination:
-      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
+      "la page de CETTE commande : dans son espace client s'il a un compte, sa page sans compte (lien signé, 90 jours) s'il a commandé en invité ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -97,7 +97,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
   },
   "customer.order-ready": {
     ctaDestination:
-      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
+      "la page de CETTE commande : dans son espace client s'il a un compte, sa page sans compte (lien signé, 90 jours) s'il a commandé en invité ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: [...SUBJECT, ...variants({ subjectReminder: REMINDER, subjectRemainder: REMAINDER })],
     header: [...KICKER, ...variants({ kickerReminder: REMINDER, kickerRemainder: REMAINDER })],
     sections: [
@@ -131,7 +131,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
   },
   "customer.delivery-en-route": {
     ctaDestination:
-      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
+      "la page de CETTE commande : dans son espace client s'il a un compte, sa page sans compte (lien signé, 90 jours) s'il a commandé en invité ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: [...SUBJECT, ...variants({ subjectRemainder: REMAINDER })],
     header: KICKER,
     sections: [
@@ -149,7 +149,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
   },
   "customer.order-delayed": {
     ctaDestination:
-      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
+      "la page de CETTE commande : dans son espace client s'il a un compte, sa page sans compte (lien signé, 90 jours) s'il a commandé en invité ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: SUBJECT,
     header: KICKER,
     sections: [

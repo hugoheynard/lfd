@@ -1,5 +1,10 @@
 import type { OrderView } from "@lfd/contracts";
 
+import {
+  customerSubject,
+  orderPageLink,
+} from "../../commands/__tests__/customer-cancellation-doubles.js";
+import type { CustomerCancellationSubject } from "../../../domain/ports/customer-cancellation-subject.reader.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
@@ -197,6 +202,7 @@ function handler(options: {
   client?: string | null;
   admin?: string | null;
   remainders?: ReadonlyMap<string, RemainderShipment>;
+  subject?: CustomerCancellationSubject;
 }): {
   readonly run: SendOrderReadyMail;
   readonly mailer: LastMailRequest;
@@ -217,11 +223,18 @@ function handler(options: {
         options.client === undefined ? "https://app.lfc.test" : options.client,
         options.admin === undefined ? "https://admin.lfc.test" : options.admin,
       ),
+      orderPageLink(options.subject ?? null),
       mailer,
       remainders,
     ),
   );
   return { run, mailer, remainders };
+}
+
+function readyData(
+  subject: ReturnType<typeof handler>,
+): B2bMails["customer.order-ready"] | undefined {
+  return subject.mailer.last?.data as B2bMails["customer.order-ready"] | undefined;
 }
 
 /** Joue l'abonné comme la boîte d'envoi le livre. */
@@ -239,6 +252,29 @@ describe("le courriel « votre commande est prête »", () => {
 
     expect(subject.mailer.last?.to).toBe("camille@halles.test");
     expect(subject.mailer.last?.template).toBe("customer.order-ready");
+  });
+
+  /**
+   * Régression : « Voir ma commande » menait à la LISTE `/mes-commandes`,
+   * gardée par la connexion — un invité n'y voyait rien (Hugo, 2026-11-07).
+   */
+  it("« voir ma commande » ouvre CETTE commande — un compte dans son espace", async () => {
+    const subject = handler({});
+    await fire(subject);
+
+    expect(readyData(subject)?.orderUrl).toBe(`https://app.lfc.test/mes-commandes/${view().id}`);
+  });
+
+  it("« voir ma commande » ouvre CETTE commande — un invité par sa page signée", async () => {
+    const orderId = view().id;
+    const subject = handler({
+      subject: customerSubject({ orderId, buyer: { hasAccount: false, active: true } }),
+    });
+    await fire(subject);
+
+    expect(readyData(subject)?.orderUrl).toBe(
+      `https://app.lfc.test/annuler#${orderId}.sig-${orderId}`,
+    );
   });
 
   it("emporte la feuille PROJETÉE, et le SKU y est désormais", async () => {

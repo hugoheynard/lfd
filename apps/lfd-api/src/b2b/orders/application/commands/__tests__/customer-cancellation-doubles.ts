@@ -4,6 +4,7 @@ import {
 } from "@lfd/contracts";
 
 import { CustomerCancellationSettingsReader } from "../../../../order-opening/domain/ports/customer-cancellation-settings.reader.js";
+import { OrderManageLink } from "../../services/order-manage-link.js";
 import { CancellationLinkSigner } from "../../../domain/ports/cancellation-link-signer.js";
 import {
   CancellingMemberReader,
@@ -97,4 +98,12 @@ export class FixedCancellationSettings extends CustomerCancellationSettingsReade
     this.reads += 1;
     return Promise.resolve({ ...DEFAULT_CUSTOMER_CANCELLATION_SETTINGS, ...this.settings });
   }
+}
+
+/**
+ * Le lien « voir ma commande » des courriels (2026-11-07) : sans sujet, une
+ * commande de compte — `mes-commandes/<id>` ; un sujet invité rend `/annuler#…`.
+ */
+export function orderPageLink(subject: CustomerCancellationSubject | null = null): OrderManageLink {
+  return new OrderManageLink(new FixedCustomerSubjects(subject), new ReadableSigner());
 }

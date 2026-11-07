@@ -1,5 +1,6 @@
 import type { OrderView } from "@lfd/contracts";
 
+import { orderPageLink } from "../../commands/__tests__/customer-cancellation-doubles.js";
 import type {
   DeferrableMailTemplate,
   DeferredMailDemand,
@@ -147,6 +148,7 @@ function subscriber(
     new ManyOrdersReader(views),
     new OneRecipientReader(options.email === undefined ? "camille@halles.test" : options.email),
     new FixedOrigins(),
+    orderPageLink(),
     mailer,
     new FixedRemainders(options.remainders ?? new Map()),
   );
@@ -191,7 +193,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
       data: {
         reference: "ORD-o_1",
         addressLines: ["12 rue des Lilas", "", "73150 Val d'Isère"],
-        orderUrl: "https://app.lfc.test/mes-commandes",
+        orderUrl: "https://app.lfc.test/mes-commandes/o_1",
         locale: "fr",
       },
     });

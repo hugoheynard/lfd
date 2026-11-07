@@ -7,7 +7,7 @@
     },
     "paidPickup": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "56a1324498244daea233d9b566fe047a165a458a23fa91267a09aa63cd54266d",
+      "htmlSha256": "60ff0d6f516f898e4b4e7f8c5b151916c09227146beaa01328c04679aa6b0918",
       "attachmentsSha256": "ea20c3e64d47c52ba8964f390c3b82184978177c98c44687d80dc79ef37b724d"
     },
     "dueDelivery": {
@@ -17,7 +17,7 @@
     },
     "account": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "982524bf6cbe413ea689d5163d74c7b690b19ba5ace97cd0b4ef4977a7863b0e",
+      "htmlSha256": "41e5d65d2c2f661f30fe04eebfe050cb11cb212c29e73cd8b026b0e6fb9a74e6",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "free": {
@@ -29,7 +29,7 @@
   "customer.order-ready": {
     "pickup": {
       "subject": "Votre commande ORD-4812 est prête",
-      "htmlSha256": "054c99a3f18ed6592ca0decc90ea9f195babc80e158e81b1095c03ba2495fe9b",
+      "htmlSha256": "ce9e8df00f0b2cc3140ee7ece64aac1b894c7823eee0fcddb68027714682f884",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "delivery": {
@@ -39,17 +39,17 @@
     },
     "reminder": {
       "subject": "Votre commande ORD-4812 vous attend",
-      "htmlSha256": "96b064fd9915baeaa5150f89935949fd54572303eff936b68fa8f233f7bf9000",
+      "htmlSha256": "d2aad7ed74a57298bbce06409e04288e676cc6e82813232f477b3fe0eb195523",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "reminderWithoutSite": {
       "subject": "Votre commande ORD-4812 vous attend",
-      "htmlSha256": "e0a3434becd37e35f32f80fc896fc6c8e78b790c5a46e822046b73ac5c77a146",
+      "htmlSha256": "349981df659aac11741d03562a30868d47513887530378145892878f6c3dc105",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "remainderPickup": {
       "subject": "Le reste de votre commande ORD-4812 est prêt",
-      "htmlSha256": "9ef83f564d93f0ba60463540add489fba0ba3244e2cc5903930dc29006d41658",
+      "htmlSha256": "3db02f868e22f042b46a791f5c5af7daf979d2ca1de1abaae36c183c45bc7eff",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "remainderDelivery": {

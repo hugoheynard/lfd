@@ -11,6 +11,7 @@ import {
   FIRST_SHIPMENT_RANK,
   ShipmentRef,
 } from "../../../../production/channels/commerce/index.js";
+import { OrderManageLink } from "./order-manage-link.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
 
 /**
@@ -34,6 +35,7 @@ export class DeliveryEnRouteMail {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
+    private readonly orderPage: OrderManageLink,
     private readonly mail: Mail,
     private readonly remainders: RemainderShipmentReader,
   ) {}
@@ -69,7 +71,7 @@ export class DeliveryEnRouteMail {
             ? []
             : [address.ligne1, address.ligne2, `${address.codePostal} ${address.ville}`],
         window: sheet.fulfillment.window,
-        orderUrl: client === null ? "" : `${client}/mes-commandes`,
+        orderUrl: await this.orderPage.urlFor(orderId, client),
         locale: DEFAULT_MAIL_LOCALE,
         ...(shipment.rank === FIRST_SHIPMENT_RANK ? {} : { remainder: true }),
       },

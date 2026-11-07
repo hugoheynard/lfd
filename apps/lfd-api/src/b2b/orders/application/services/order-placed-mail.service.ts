@@ -75,6 +75,9 @@ export class OrderPlacedMail {
     }
 
     const client = this.origins.clientBaseUrl();
+    // LA commande : sa page dans l'espace pour un compte, la page à jeton
+    // pour un invité (décision de Hugo du 2026-11-07) — même lien que « gérer ».
+    const orderPage = await this.manageLink.urlFor(orderId, client);
     const admin = this.origins.adminBaseUrl();
     const token = exposedHandoverToken(owned.view);
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
@@ -90,10 +93,10 @@ export class OrderPlacedMail {
         handoverToken: token,
         // Vide quand l'origine n'est pas configurée : le gabarit omet alors le
         // bouton plutôt que de poser un lien relatif, inerte dans une boîte mail.
-        orderUrl: client === null ? "" : `${client}/mes-commandes`,
+        orderUrl: orderPage,
         // Lot C6 : « gérer ou annuler » — la page d'annulation pour un invité,
         // SA commande dans « Mes commandes » pour un compte (C6.4).
-        manageUrl: await this.manageLink.urlFor(orderId, client),
+        manageUrl: orderPage,
         // Le QR encode une URL du BACK-OFFICE : c'est l'équipe qui le scanne,
         // pas le client. Sans origine admin, pas de QR — un code qui n'ouvre
         // rien vaut moins qu'un numéro de commande lisible.

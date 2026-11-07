@@ -1466,6 +1466,24 @@ le HTML rend l'empreinte d'avant à l'octet) :
   (`@lfd/mail-blocks`, ajout seul), déclarée dans `sections/*-mail-layouts.ts`
   pour les 15 e-mails à bouton. Écart : les liens « voir ma commande » mènent
   à la liste `/mes-commandes`, pas à la commande ; le front ne l'affiche pas encore.
+  **Corrigé le 2026-11-07 (Hugo : « voir ma commande doit amener à la page de
+  la commande, au cas où on soit sur un anonyme »)** : `orderUrl` de
+  `customer.order-placed`, `order-ready`, `delivery-en-route` et
+  `order-delayed` est désormais tiré de `OrderManageLink` (le lien de
+  l'annulation par le client, C6.4) — `mes-commandes/<id>` pour un compte
+  (connexion demandée), `/annuler#<id>.<jeton>` pour un invité (jeton HMAC en
+  fragment, 90 jours, 404 neutre sinon : rien de devinable). Écarts :
+  - la seule page d'une commande sans compte est **la page d'annulation** : un
+    invité qui clique « voir ma commande » y lit sa commande (numéro, jour,
+    lignes, total, prénom seul) et le bouton d'annulation quand elle est encore
+    annulable. Pas de page de consultation distincte — à trancher si le mot
+    « annuler » dans l'adresse ou le titre gêne ;
+  - dans `customer.order-placed`, « voir ma commande » et « gérer ou annuler »
+    mènent donc à la **même adresse** ;
+  - après 90 jours, le lien d'invité rend la 404 neutre (`guestLinkIsLive`) ;
+  - le texte `qrLine` dit « qui atteste le retrait » (et non « la remise »,
+    lexique `CLAUDE.md` § 8) ; l'anglais (« handover ») et l'italien
+    (« consegna ») disaient déjà le geste.
 
 ### Les 31 autres e-mails — relevé du 2026-11-07, soumis à Hugo
 

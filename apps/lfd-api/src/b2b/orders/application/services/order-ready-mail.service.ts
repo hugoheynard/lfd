@@ -9,6 +9,7 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 import { RemainderShipmentReader } from "../../domain/ports/remainder-shipment.reader.js";
 import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import { handoverUrlOf } from "../../domain/services/handover-url.js";
+import { OrderManageLink } from "./order-manage-link.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
 
 /**
@@ -52,6 +53,7 @@ export class OrderReadyMail {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
+    private readonly orderPage: OrderManageLink,
     private readonly mail: Mail,
     private readonly remainders: RemainderShipmentReader,
   ) {}
@@ -97,7 +99,7 @@ export class OrderReadyMail {
       data: {
         sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision),
         handoverToken: token,
-        orderUrl: client === null ? "" : `${client}/mes-commandes`,
+        orderUrl: await this.orderPage.urlFor(orderId, client),
         handoverUrl: handoverUrlOf(admin, token),
         locale: DEFAULT_MAIL_LOCALE,
         ...(options.reminder === true ? { reminder: true } : {}),

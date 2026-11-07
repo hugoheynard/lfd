@@ -192,7 +192,10 @@ export interface B2bMails {
     readonly sheet: ClientSheet;
     /** Le jeton de retrait, ou `null` — une livraison n'a pas de comptoir. */
     readonly handoverToken: string | null;
-    /** L'app cliente, pour le lien « voir ma commande ». */
+    /**
+     * « Voir ma commande » : CETTE commande — `mes-commandes/<id>` pour un compte,
+     * la page à jeton (`/annuler#<id>.<jeton>`) pour un invité (2026-11-07).
+     */
     readonly orderUrl: string;
     /**
      * Lot C6 (C6.4) : « gérer ou annuler ma commande ». Pour un INVITÉ, la page

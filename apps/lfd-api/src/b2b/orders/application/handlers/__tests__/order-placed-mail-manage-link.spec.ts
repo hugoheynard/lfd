@@ -81,6 +81,10 @@ function manageUrlOf(mailer: LastMailRequest): string | undefined {
   return (mailer.last?.data as PlacedDemandData | undefined)?.manageUrl;
 }
 
+function orderUrlOf(mailer: LastMailRequest): string | undefined {
+  return (mailer.last?.data as PlacedDemandData | undefined)?.orderUrl;
+}
+
 const PLACED = { eventId: "evt_1", ...new CommerceOrderPlacedFact(ORDER_ID).durableFact() };
 
 describe.each(KINDS)("l'accusé de réception porte le lien de gestion — %s", (kind) => {
@@ -109,5 +113,19 @@ describe.each(KINDS)("l'accusé de réception porte le lien de gestion — %s", 
 
     await expect(new OrderPlacedMail(...args).send(ORDER_ID)).resolves.toBe(true);
     expect(manageUrlOf(mailer)).toBe(EXPECTED[kind]);
+  });
+
+  /**
+   * Régression : « Voir ma commande » menait à la LISTE `/mes-commandes`,
+   * gardée par la connexion — un invité n'y voyait rien (Hugo, 2026-11-07).
+   */
+  it("« voir ma commande » ouvre CETTE commande, par les deux chemins", async () => {
+    const placed = wiring(kind, orderOf(kind, { paymentStatus: "not_required" }));
+    await new SendOrderPlacedMail(...placed.args).handle(PLACED);
+    const paid = wiring(kind, orderOf(kind, { paymentStatus: "paid" }));
+    await new OrderPlacedMail(...paid.args).send(ORDER_ID);
+
+    expect(orderUrlOf(placed.mailer)).toBe(EXPECTED[kind]);
+    expect(orderUrlOf(paid.mailer)).toBe(EXPECTED[kind]);
   });
 });

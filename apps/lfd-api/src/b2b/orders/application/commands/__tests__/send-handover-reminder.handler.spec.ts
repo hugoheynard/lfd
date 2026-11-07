@@ -2,6 +2,7 @@ import {
   OpenableUnitOfWork,
   RecordingMail,
 } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
+import { orderPageLink } from "./customer-cancellation-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderCustomerNudgesSnapshot } from "../../../domain/entities/order-customer-nudges.js";
 import {
@@ -78,7 +79,14 @@ function setup(
     nudges,
     new FixedNudgeDelays({ pickupReminderMinutes: options.delay ?? 0, delayWarningMinutes: 0 }),
     recipients,
-    new OrderReadyMail(orders, recipients, new FixedOrigins(), mailer, new FixedRemainders()),
+    new OrderReadyMail(
+      orders,
+      recipients,
+      new FixedOrigins(),
+      orderPageLink(),
+      mailer,
+      new FixedRemainders(),
+    ),
     new FixedClock(options.now ?? minutesAfterEnd(20)),
     unitOfWork,
   );

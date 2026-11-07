@@ -107,6 +107,13 @@ import {
  * (« Le Labo ») au lieu de la ville. Vérifié avant de régénérer : objet et
  * pièces jointes identiques, et le HTML, ces trois changements défaits,
  * rend exactement l'empreinte d'avant. Aucun autre e-mail n'a bougé.
+ *
+ * **Régénérées le 2026-11-07 pour les SIX cas à QR** (`customer.order-placed`
+ * paidPickup, account ; `customer.order-ready` pickup, remainderPickup,
+ * reminder, reminderWithoutSite) : la ligne sous le QR dit « qui atteste le
+ * retrait » au lieu de « la remise » (lexique, `CLAUDE.md` § 8). Vérifié avant
+ * de régénérer : objet et pièces jointes identiques, et le HTML, ce mot
+ * défait, rend exactement l'empreinte d'avant. Aucun autre cas n'a bougé.
  */
 
 const REGISTRY = b2bMailTemplates({

@@ -161,7 +161,7 @@
       "qrLine": {
         "variables": [],
         "required": [],
-        "fr": "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise."
+        "fr": "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste le retrait."
       },
       "cta": {
         "variables": [],
@@ -256,7 +256,7 @@
       "qrLine": {
         "variables": [],
         "required": [],
-        "fr": "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise."
+        "fr": "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste le retrait."
       },
       "cta": {
         "variables": [],

@@ -4,8 +4,11 @@ import { CancellationLinkSigner } from "../../domain/ports/cancellation-link-sig
 import { CustomerCancellationSubjectReader } from "../../domain/ports/customer-cancellation-subject.reader.js";
 
 /**
- * **Le lien « gérer ou annuler ma commande » de l'accusé de réception** (doc
- * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4).
+ * **Le lien vers CETTE commande** — « gérer ou annuler ma commande » de
+ * l'accusé de réception (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4), et
+ * depuis le 2026-11-07 (Hugo) le « voir ma commande » de tous les courriels
+ * de commande, qui menait à la LISTE et laissait un invité sans rien.
  *
  * - commande d'INVITÉ (personnelle, fiche sans compte connectable) : la page
  *   publique d'annulation, le jeton en FRAGMENT (`/annuler#<id>.<jeton>`, S7) —
