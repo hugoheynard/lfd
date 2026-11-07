@@ -41,56 +41,56 @@
           }
         </fold-callout>
       }
-      @if (mails().length === 0) {
-        <fold-empty-state title="Aucun e-mail" subtitle="Le serveur n’a déclaré aucun e-mail.">
-          <fold-icon empty-icon name="inbox" />
-        </fold-empty-state>
+      @if (charterError()) {
+        <fold-callout variant="alert" data-charter-error>
+          Une charte n’a pas pu être lue : sa carte s’affiche sans aperçu.
+        </fold-callout>
       }
-      <div class="mt-groups">
+      <div class="mt-spaces">
         @for (space of spaces(); track space.space) {
-          <fold-page-section
-            [title]="space.title"
-            icon="mail"
-            [description]="countLabel(space.count)"
+          <fold-card
+            interactive
+            [ariaLabel]="'Ouvrir l’espace ' + space.title"
             [attr.data-space]="space.space"
+            (activated)="open(space)"
           >
-            <a
-              sectionActions
-              foldButton
-              size="sm"
-              emphasis="outline"
-              intent="neutral"
-              icon="palette"
-              [attr.data-charter]="space.space"
-              [routerLink]="['/emails', 'espaces', space.space, 'charte']"
-            >
-              Charte
-            </a>
-            @if (space.groups.length > 0) {
-              <fold-menu level="tertiary" [navLabel]="'E-mails — ' + space.title" [expanded]="true">
-                @for (group of space.groups; track group.key) {
-                  @for (family of group.families; track family.family) {
-                    <fold-menu-separator
-                      [label]="group.title + ' — ' + family.title"
-                      [attr.data-group]="group.key"
-                    />
-                    @for (mail of family.mails; track mail.template) {
-                      <a
-                        fold-menu-item
-                        icon="mail"
-                        [label]="title(mail)"
-                        [attr.title]="hint(mail)"
-                        [attr.data-template]="mail.template"
-                        [routerLink]="['/emails', mail.template]"
-                        [badge]="badge(mail)"
-                        badgeTone="warning"
-                      ></a>
-                    }
-                  }
+            <div class="mt-space">
+              <fold-element-title
+                variant="title"
+                icon="mail"
+                [title]="space.title"
+                [subtitle]="space.scope"
+              />
+              <div class="mt-counts">
+                <span data-count>{{ countLabel(space.count) }}</span>
+                @if (space.draftCount > 0) {
+                  <fold-badge
+                    variant="warning"
+                    data-drafts
+                    [content]="draftLabel(space.draftCount)"
+                  />
                 }
-              </fold-menu>
-            }
-          </fold-page-section>
+              </div>
+              @if (charterOf(space) !== null) {
+                <div class="mt-charter" data-charter-preview>
+                  @if (logoOf(space); as logo) {
+                    <img class="mt-logo" data-logo [src]="logo.src" [alt]="logo.alt" />
+                  }
+                  <ul class="mt-swatches" aria-label="Couleurs de la charte">
+                    @for (swatch of swatchesOf(space); track swatch.label) {
+                      <li
+                        class="mt-swatch"
+                        data-swatch
+                        [attr.title]="swatch.label + ' ' + swatch.color"
+                        [attr.aria-label]="swatch.label + ' ' + swatch.color"
+                        [style.background]="swatch.color"
+                      ></li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          </fold-card>
         }
       </div>
     }

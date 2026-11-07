@@ -230,6 +230,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // `/admin/mail-templates` (plan-editeur-par-blocs.md, § 6, S4c).
   emails: 'mail_templates:read',
   'emails/:template': 'mail_templates:read',
+  'emails/espaces/:space': 'mail_templates:read',
   'emails/espaces/:space/charte': 'mail_templates:read',
 
   // **Pied de page** et **Contact** — partis de l'espace E-commerce pour la

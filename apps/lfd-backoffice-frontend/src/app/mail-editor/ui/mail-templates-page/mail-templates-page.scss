@@ -1,5 +1,48 @@
-.mt-groups {
+.mt-spaces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--fold-space-lg);
+}
+
+.mt-space {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-lg);
+  gap: var(--fold-space-md);
+}
+
+.mt-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* L'aperçu de la charte : le logo réglé, puis les pastilles. */
+.mt-charter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.mt-logo {
+  max-block-size: var(--fold-space-2xl);
+  max-inline-size: 50%;
+  object-fit: contain;
+}
+
+.mt-swatches {
+  display: flex;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mt-swatch {
+  inline-size: var(--fold-space-lg);
+  block-size: var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
 }

@@ -137,6 +137,13 @@ export class MailCharterPage implements HasPendingChanges {
   protected readonly lightFields = LIGHT_COLOR_FIELDS;
   protected readonly darkFields = DARK_COLOR_FIELDS;
   protected readonly canWrite = computed(() => this.permissions.can('mail_templates:write'));
+  /** Le retour mène à l'espace ; un segment qui n'en est pas un revient à la liste. */
+  protected readonly back = computed(() => {
+    const space = this.space();
+    return isMailSpace(space)
+      ? { label: MAIL_SPACE_LABELS[space], link: ['/emails', 'espaces', space] }
+      : { label: 'Les e-mails', link: ['/emails'] };
+  });
   protected readonly spaceTitle = computed(() => {
     const space = this.space();
     return isMailSpace(space) ? MAIL_SPACE_LABELS[space] : space;

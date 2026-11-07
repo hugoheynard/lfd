@@ -1,7 +1,7 @@
 import type { MailEditorListItem } from '@lfd/mail-blocks';
 import { describe, expect, it } from 'vitest';
 
-import { groupMailSpaces } from './mail-template-spaces';
+import { groupMailSpaces, mailSpaceListing } from './mail-template-spaces';
 
 function item(
   template: string,
@@ -52,5 +52,21 @@ describe('groupMailSpaces', () => {
     const spaces = groupMailSpaces([]);
     expect(spaces.map((space) => space.space)).toEqual(['lfc', 'lfd']);
     expect(spaces.every((space) => space.groups.length === 0)).toBe(true);
+  });
+});
+
+describe('mailSpaceListing', () => {
+  it('compte les brouillons de l’espace seulement', () => {
+    const mails = [
+      { ...item('customer.order-placed', 'lfc', 'customer', 'order', 'lfc'), hasDraft: true },
+      { ...item('staff.invited', 'lfd', 'team', 'team', 'lfd'), hasDraft: true },
+      item('staff.account-alert', 'internal', 'team', 'team', 'lfd'),
+    ];
+    expect(mailSpaceListing(mails, 'lfc')?.draftCount).toBe(1);
+    expect(mailSpaceListing(mails, 'lfd')).toMatchObject({ count: 2, draftCount: 1 });
+  });
+
+  it('rend `null` pour un segment qui n’est pas un espace', () => {
+    expect(mailSpaceListing([], 'ailleurs')).toBeNull();
   });
 });

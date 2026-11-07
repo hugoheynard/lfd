@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import type { MailEditorListItem } from '@lfd/mail-blocks';
+import { provideRouter, Router } from '@angular/router';
+import type { MailCharterSettings, MailEditorListItem, MailSpace } from '@lfd/mail-blocks';
 import { HttpErrorResponse } from '@angular/common/http';
 import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 
+import { MailChartersService } from '../../data/mail-charters.service';
 import { MailEditorService } from '../../data/mail-editor.service';
 import { MailTemplatesPage } from './mail-templates-page';
 
@@ -30,10 +31,31 @@ const ALERT: MailEditorListItem = {
   hasDraft: false,
 };
 
+const SETTINGS: MailCharterSettings = {
+  logo: null,
+  colors: {
+    page: '#f4f1ec',
+    card: '#ffffff',
+    text: '#1f1f1f',
+    mutedText: '#5c5c5c',
+    primary: '#1a3157',
+    band: '#1a3157',
+    border: '#e2ddd5',
+  },
+  darkColors: { page: '#111111', card: '#1c1c1c', text: '#eeeeee', border: '#333333' },
+  headingFont: null,
+  footer: {},
+};
+
+function charterOf(space: MailSpace, settings: MailCharterSettings = SETTINGS) {
+  return Promise.resolve({ space, settings });
+}
+
 async function setup(
   list: () => Promise<unknown>,
   publishAll: () => Promise<unknown> = () => Promise.resolve({ publicationVersion: 4 }),
   permissions: readonly StaffPermission[] = ['mail_templates:write'],
+  loadCharter: (space: MailSpace) => Promise<unknown> = (space) => charterOf(space),
 ) {
   const calls = { list: vi.fn(list), publishAll: vi.fn(publishAll) };
   const notify = { error: vi.fn(), success: vi.fn() };
@@ -42,6 +64,7 @@ async function setup(
     providers: [
       provideRouter([]),
       { provide: MailEditorService, useValue: calls },
+      { provide: MailChartersService, useValue: { load: vi.fn(loadCharter) } },
       { provide: NotifyService, useValue: notify },
       {
         provide: PermissionsStore,
@@ -50,6 +73,7 @@ async function setup(
     ],
   });
   const fixture = TestBed.createComponent(MailTemplatesPage);
+  await fixture.whenStable();
   await fixture.whenStable();
   fixture.detectChanges();
   return { fixture, element: fixture.nativeElement as HTMLElement, calls, notify };
@@ -60,48 +84,75 @@ async function render(list: () => Promise<unknown>) {
 }
 
 describe('MailTemplatesPage — les e-mails', () => {
-  it('range les e-mails par espace, les internes sous « Interne », chacun menant à sa page', async () => {
+  it('montre une carte par espace : son nom, ce qu’il couvre, ses e-mails et ses brouillons', async () => {
     const element = await render(() =>
       Promise.resolve({ mails: [ORDER_PLACED, ALERT], copyPendingCount: 0 }),
     );
-    expect(element.querySelectorAll('fold-page-section')).toHaveLength(2);
-    expect(element.querySelector('[data-space="lfc"]')?.textContent).toContain(
-      'La Folie Coffee — clients',
-    );
+    expect(element.querySelectorAll('fold-card')).toHaveLength(2);
+    const lfc = element.querySelector('[data-space="lfc"]');
+    expect(lfc?.textContent).toContain('La Folie Coffee — clients');
+    expect(lfc?.textContent).toContain('clients de La Folie Coffee');
+    expect(lfc?.querySelector('[data-count]')?.textContent).toContain('1 e-mail');
+    expect(lfc?.querySelector('[data-drafts]')?.textContent).toContain('1 brouillon en attente');
     const lfd = element.querySelector('[data-space="lfd"]');
     expect(lfd?.textContent).toContain('La Folie Douce — équipe');
-    expect(lfd?.querySelector('[data-template="staff.account-alert"]')).not.toBeNull();
-    expect(lfd?.querySelector('[data-group="internal"]')).not.toBeNull();
-    const link = element.querySelector<HTMLAnchorElement>(
-      '[data-template="customer.order-placed"]',
-    );
-    expect(link?.textContent).toContain('Commande passée');
-    expect(link?.getAttribute('href')).toBe('/emails/customer.order-placed');
-    expect(element.textContent).toContain('Clients');
-    expect(element.textContent).toContain('Interne');
+    expect(lfd?.querySelector('[data-count]')?.textContent).toContain('1 e-mail');
+    expect(lfd?.querySelector('[data-drafts]')).toBeNull();
+    // Les e-mails eux-mêmes sont dans l'espace, plus sur cette page.
+    expect(element.querySelector('[data-template]')).toBeNull();
   });
 
-  it('mène chaque espace à sa charte', async () => {
-    const element = await render(() =>
-      Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 0 }),
+  it('toute la carte mène à l’espace', async () => {
+    const { fixture, element } = await setup(() =>
+      Promise.resolve({ mails: [ALERT], copyPendingCount: 0 }),
     );
-    expect(element.querySelector('[data-charter="lfd"]')?.getAttribute('href')).toBe(
-      '/emails/espaces/lfd/charte',
-    );
-    expect(element.querySelector('[data-charter="lfc"]')?.getAttribute('href')).toBe(
-      '/emails/espaces/lfc/charte',
-    );
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    element.querySelector<HTMLElement>('[data-space="lfd"]')?.click();
+    fixture.detectChanges();
+    expect(navigate).toHaveBeenCalledWith(['/emails', 'espaces', 'lfd']);
+  });
+
+  it('montre les pastilles de la charte, et le logo seulement s’il est réglé', async () => {
+    const element = (
+      await setup(
+        () => Promise.resolve({ mails: [], copyPendingCount: 0 }),
+        undefined,
+        undefined,
+        (space) =>
+          space === 'lfd'
+            ? charterOf(space, {
+                ...SETTINGS,
+                logo: { src: 'https://img/lfd.png', alt: { fr: 'LFD' } },
+              })
+            : charterOf(space),
+      )
+    ).element;
+    const lfc = element.querySelector('[data-space="lfc"]');
+    expect(lfc?.querySelectorAll('[data-swatch]')).toHaveLength(4);
+    expect(lfc?.querySelector('[data-logo]')).toBeNull();
+    const logo = element.querySelector<HTMLImageElement>('[data-space="lfd"] [data-logo]');
+    expect(logo?.getAttribute('src')).toBe('https://img/lfd.png');
+    expect(logo?.getAttribute('alt')).toBe('LFD');
+  });
+
+  it('une charte illisible ôte l’aperçu de sa carte et le dit, la carte reste', async () => {
+    const element = (
+      await setup(
+        () => Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 0 }),
+        undefined,
+        undefined,
+        (space) => (space === 'lfc' ? Promise.reject(new Error('boom')) : charterOf(space)),
+      )
+    ).element;
+    expect(element.querySelector('[data-charter-error]')).not.toBeNull();
+    expect(element.querySelector('[data-space="lfc"] [data-charter-preview]')).toBeNull();
+    expect(element.querySelector('[data-space="lfd"] [data-charter-preview]')).not.toBeNull();
   });
 
   it('dit l’échec de lecture, sans prétendre qu’il n’y a aucun e-mail', async () => {
     const element = await render(() => Promise.reject(new Error('boom')));
     expect(element.querySelector('fold-empty-state')?.getAttribute('tone')).toBe('alert');
     expect(element.textContent).not.toContain('Aucun e-mail');
-  });
-
-  it('dit qu’il n’y a aucun e-mail quand le serveur n’en déclare aucun', async () => {
-    const element = await render(() => Promise.resolve({ mails: [], copyPendingCount: 0 }));
-    expect(element.textContent).toContain('Aucun e-mail');
   });
 
   it('publie tous les e-mails en attente, puis relit la liste', async () => {

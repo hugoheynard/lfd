@@ -14,6 +14,8 @@ import {
   isEditablePhrase,
   MAIL_LOCALES,
   validateMailDocumentForPublication,
+  MAIL_SPACE_LABELS,
+  mailSpaceOfCharter,
   type MailAudience,
   type MailDocument,
   type MailDocumentBlockPreviewPayload,
@@ -157,6 +159,15 @@ export class MailTemplatePage implements HasPendingChanges {
   private readonly intents = new GestureIntents();
 
   protected readonly status = signal<'loading' | 'ready' | 'failed'>('loading');
+  /** Le retour mène à l'espace de l'e-mail (§ 25, C2) ; tant qu'il n'est pas lu, à la liste. */
+  protected readonly back = computed(() => {
+    const view = this.view();
+    if (view === null) {
+      return { label: 'Les e-mails', link: ['/emails'] };
+    }
+    const space = mailSpaceOfCharter(view.declaration.charter);
+    return { label: MAIL_SPACE_LABELS[space], link: ['/emails', 'espaces', space] };
+  });
   protected readonly error = signal<string | null>(null);
   protected readonly view = signal<MailEditorView | null>(null);
   /** Le document à l'écran : celui du serveur, puis chaque geste du canevas. */

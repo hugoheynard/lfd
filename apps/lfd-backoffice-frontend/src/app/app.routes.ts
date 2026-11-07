@@ -224,9 +224,19 @@ export const routes: Routes = [
       ),
   },
   {
+    // **Un espace d'e-mails** (plan-editeur-par-blocs.md § 25, C2, retouche
+    // du 2026-11-07) : ses e-mails et l'accès à sa charte. La page « E-mails »
+    // n'en montre que les cartes. Trois segments, hors de `emails/:template`.
+    path: 'emails/espaces/:space',
+    canActivate: [permissionGuard('mail_templates:read')],
+    title: 'Espace d’e-mails — LFC B2B admin',
+    loadComponent: () =>
+      import('./mail-editor/ui/mail-space-page/mail-space-page').then((m) => m.MailSpacePage),
+  },
+  {
     // **La charte d'un espace** (plan-editeur-par-blocs.md § 25, C2) : ses
     // réglages, l'aperçu clair / sombre, publier. Même droit que les e-mails
-    // (Hugo, 2026-11-07) ; trois segments, donc hors de portée de
+    // (Hugo, 2026-11-07) ; quatre segments, donc hors de portée de
     // `emails/:template`. Un espace inconnu est le 404 nommé du serveur.
     path: 'emails/espaces/:space/charte',
     canActivate: [permissionGuard('mail_templates:read')],
