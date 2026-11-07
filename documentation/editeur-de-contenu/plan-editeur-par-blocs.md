@@ -1931,11 +1931,12 @@ change le rendu de son espace, et seulement de lui.
 Pas d'argent, pas de frontière de sécurité nouvelle (même droit) : `vitruve`
 n'est pas requis ; la migration additive passera au lecteur de migrations.
 
-### C3 — une identité d'envoi par marque (Hugo, 2026-11-07) — à bâtir après C1
+### C3 — une identité d'envoi par espace, rangée en base (Hugo, 2026-11-07) — à bâtir après C1
 
 Hugo : « écrivons le truc scalable ; pour l'instant j'ai un seul domaine
 lafoliecoffee dans Resend, mais je voudrais passer les mails admin via un
-no-reply@lfd-backoffice.com ».
+no-reply@lfd-backoffice.com » ; puis : l'adresse d'expédition est une donnée,
+pas une variable d'environnement ; et **même droit** (`mail_templates`).
 
 **Aujourd'hui** (vérifié le 2026-11-07) : une seule identité d'envoi
 (`optionalMailerConfig`, `apps/lfd-api/src/platform/config/env-readers.ts` —
@@ -1946,28 +1947,34 @@ clé Resend, `MAILER_FROM_ADDRESS` par défaut `no-reply@lafoliecoffee.info`,
 les e-mails de l'équipe partent sous `lfc`.
 
 **La règle** : **une marque = un espace = une charte = une identité d'envoi.**
-Ajouter une app, c'est ajouter une marque à une liste — pas une branche dans le
-code.
+Ajouter une app, c'est créer un espace — pas de déploiement, pas de variable.
 
 - **La marque d'un e-mail découle de son espace** (§ 25) : `lfc` pour les
   e-mails clients, `lfd` pour l'équipe et l'interne. L'appelant ne la choisit
   plus ; « lfc » écrit en dur disparaît.
-- **L'identité d'envoi est de la configuration**, lue par `AppConfig`, une par
-  marque, sous des noms explicites (`MAILER_LFD_FROM_ADDRESS`,
-  `MAILER_LFD_FROM_NAME`, `MAILER_LFD_REPLY_TO`…) déclarés dans une table, comme
-  les usages R2. Pas un réglage du staff : une adresse fausse ou un domaine
-  non vérifié arrête tout l'envoi de la marque.
-- **Un seul compte Resend**, plusieurs domaines vérifiés (SPF, DKIM) : la clé
-  reste commune.
-- **Une marque sans identité configurée part sous l'identité `lfc`**, comme
-  aujourd'hui, et le bulletin de démarrage le dit nommément (« la marque lfd
-  n'a pas d'expéditeur : ses e-mails partent sous no-reply@lafoliecoffee.info »).
-  C'est le seul repli, écrit et visible — il permet de déployer avant que le
-  domaine `lfd-backoffice.com` soit vérifié chez Resend.
-- **La sonde de déploiement** (S8) éprouve chaque marque configurée.
+- **L'identité d'envoi est un réglage de l'espace, en base** (schéma `mail`) :
+  nom d'expéditeur, adresse d'envoi, adresse de réponse. **Seule la clé Resend
+  reste un secret de configuration**, commune à tous les espaces (un compte,
+  plusieurs domaines vérifiés).
+- **Refusée si le domaine n'est pas vérifié** : à l'enregistrement, le serveur
+  lit la liste des domaines vérifiés chez Resend (hors transaction) et refuse
+  nommément une adresse dont le domaine n'y est pas (« lfd-backoffice.com
+  n'est pas vérifié chez Resend : ajoutez-le et posez ses enregistrements
+  DNS »).
+- **Un essai part à l'enregistrement**, vers l'auteur, sous la nouvelle
+  identité ; refusé par Resend, l'identité n'est pas enregistrée.
+- **Repli unique et visible** : un espace sans identité envoie sous
+  l'identité par défaut de la configuration (`MAILER_FROM_ADDRESS`, aujourd'hui
+  `no-reply@lafoliecoffee.info`) ; la page de l'espace le dit.
+- **À l'envoi**, l'identité est lue par une mémoire versionnée (comme les
+  documents publiés), pas une lecture en base par e-mail.
+- **Journal** : chaque changement d'identité, avec son auteur. Droit :
+  `mail_templates`, comme la charte — le contrôle du domaine empêche d'écrire
+  au nom d'un domaine qui n'est pas à nous.
+- **La sonde de déploiement** (S8) éprouve l'identité de chaque espace.
 - **Base** : la contrainte sur `mail_request.brand` accepte la liste des
-  marques — migration additive.
+  marques ; tables de l'identité — migrations additives.
 
 **À faire par Hugo, hors code** : ajouter `lfd-backoffice.com` dans Resend et
-poser ses enregistrements DNS ; puis poser `MAILER_LFD_FROM_ADDRESS =
-no-reply@lfd-backoffice.com` (et le nom d'expéditeur) en dev et en production.
+poser ses enregistrements DNS ; puis, dans l'éditeur, régler l'identité de
+l'espace La Folie Douce (`no-reply@lfd-backoffice.com`).
