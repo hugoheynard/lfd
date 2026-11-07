@@ -15,7 +15,10 @@ import {
   setColumnWidth,
   textOf,
   withDecorative,
+  withImageFocal,
+  withImageFormat,
   withImageHref,
+  withImageSource,
   withText,
 } from './mail-document-edits';
 
@@ -157,6 +160,31 @@ describe('les gestes du canevas', () => {
       const linked = withImageHref(IMAGE, 'https://lafoliedouce.fr');
       expect(linked.href).toBe('https://lafoliedouce.fr');
       expect('href' in withImageHref(linked, '')).toBe(false);
+    });
+
+    it('choisit un format ; « originale » retire le champ et garde le point focal', () => {
+      const framed = withImageFormat({ ...IMAGE, focal: { x: 0.2, y: 0.8 } }, '2:1');
+      expect(framed).toEqual({ ...IMAGE, format: '2:1', focal: { x: 0.2, y: 0.8 } });
+      const original = withImageFormat(framed, 'original');
+      expect('format' in original).toBe(false);
+      expect(original.focal).toEqual({ x: 0.2, y: 0.8 });
+    });
+
+    it('pose le point focal au centième, et le retire sans laisser `undefined`', () => {
+      expect(withImageFocal(IMAGE, { x: 0.3333, y: 0.666 }).focal).toEqual({ x: 0.33, y: 0.67 });
+      const cleared = withImageFocal({ ...IMAGE, focal: { x: 0.1, y: 0.1 } }, null);
+      expect('focal' in cleared).toBe(false);
+    });
+
+    it('une autre image prend le point de la médiathèque, ou le centre', () => {
+      const framed = { ...IMAGE, format: '1:1', focal: { x: 0.1, y: 0.1 } } as const;
+      expect(withImageSource(framed, 'https://m.fr/b.webp', { x: 0.4, y: 0.6 })).toEqual({
+        ...IMAGE,
+        src: 'https://m.fr/b.webp',
+        format: '1:1',
+        focal: { x: 0.4, y: 0.6 },
+      });
+      expect('focal' in withImageSource(framed, 'https://m.fr/b.webp', null)).toBe(false);
     });
   });
 

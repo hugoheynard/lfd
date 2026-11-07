@@ -4,6 +4,8 @@ import type {
   ColumnWidthStep,
   FreeBlock,
   ImageBlock,
+  ImageFocal,
+  ImageFormat,
   MailBlock,
   MailDocument,
   MailLocale,
@@ -326,4 +328,42 @@ export function withDecorative(block: ImageBlock, decorative: boolean): ImageBlo
 export function withImageHref(block: ImageBlock, href: string): ImageBlock {
   const { href: _previous, ...rest } = block;
   return href === '' ? rest : { ...rest, href };
+}
+
+/**
+ * Choisit le format d'une image (§ 19, « Format et point focal »). `original`
+ * retire le champ — c'est le sens d'un format absent ; le point focal reste,
+ * pour qu'on le retrouve en revenant à un format qui recadre.
+ */
+export function withImageFormat(block: ImageBlock, format: ImageFormat): ImageBlock {
+  const { format: _previous, ...rest } = block;
+  return format === 'original' ? rest : { ...rest, format };
+}
+
+/**
+ * Pose le point focal d'une image, arrondi au centième ; `null` le retire (le
+ * centre par défaut). Aucune borne ici : un point hors de l'image s'écrit, et
+ * `validateMailDocument` le refuse (`image-focal-invalid`).
+ */
+export function withImageFocal(block: ImageBlock, focal: ImageFocal | null): ImageBlock {
+  const { focal: _previous, ...rest } = block;
+  return focal === null
+    ? rest
+    : { ...rest, focal: { x: hundredth(focal.x), y: hundredth(focal.y) } };
+}
+
+/**
+ * Change l'image d'un bloc : l'ancien point focal visait une autre image, il
+ * est remplacé par celui de la médiathèque, ou retiré (le centre).
+ */
+export function withImageSource(
+  block: ImageBlock,
+  src: string,
+  libraryFocal: ImageFocal | null,
+): ImageBlock {
+  return withImageFocal({ ...block, src }, libraryFocal);
+}
+
+function hundredth(value: number): number {
+  return Math.round(value * 100) / 100;
 }

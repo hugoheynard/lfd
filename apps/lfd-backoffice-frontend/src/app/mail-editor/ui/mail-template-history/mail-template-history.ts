@@ -34,9 +34,6 @@ const WHEN = new Intl.DateTimeFormat('fr-FR', {
  * d'origine. Liste seule : le contrat n'a aucune route qui rende une version
  * passée (`mail-editor-routes.ts`, vérifié le 2026-11-07) — l'aperçu fidèle
  * d'une ancienne version attend une route.
- *
- * Se relit quand `refresh` change : la page l'incrémente après publier ou
- * revenir.
  */
 @Component({
   selector: 'app-mail-template-history',
@@ -52,7 +49,6 @@ const WHEN = new Intl.DateTimeFormat('fr-FR', {
 })
 export class MailTemplateHistory {
   readonly template = input.required<string>();
-  readonly refresh = input(0);
 
   private readonly api = inject(MailEditorService);
 
@@ -77,7 +73,6 @@ export class MailTemplateHistory {
   constructor() {
     effect(() => {
       const template = this.template();
-      this.refresh();
       untracked(() => void this.load(template));
     });
   }

@@ -13,6 +13,7 @@ import { FoldCalloutComponent } from 'fold-ng';
 
 import { insertChipAt, readDictionaryText, variableChip } from '../../rules/mail-editable-text';
 import { isSafeMailFragment } from '../../rules/mail-fragments';
+import { imageFramingStyle } from '../../rules/mail-image-framing';
 import { labelValueChip, valueRefusal } from '../../rules/mail-resources';
 
 /** Le type de donnée d'une valeur glissée depuis les ressources de la colonne de gauche. */
@@ -227,6 +228,21 @@ export class MailBlockFragment {
       readonly values: ReadonlyMap<string, MailValueResource>;
     },
   ): void {
+    // Le cadrage d'une image, en CSS : l'aperçu montre la source, le serveur
+    // recadre à la publication (§ 19, « Format et point focal »).
+    for (const image of element.querySelectorAll<HTMLImageElement>('img[data-image-format]')) {
+      const framing = imageFramingStyle(
+        image.getAttribute('data-image-format'),
+        image.getAttribute('data-image-focal-x'),
+        image.getAttribute('data-image-focal-y'),
+      );
+      if (framing !== null) {
+        image.style.aspectRatio = framing.aspectRatio;
+        image.style.objectFit = 'cover';
+        image.style.objectPosition = framing.objectPosition;
+        image.style.height = 'auto';
+      }
+    }
     for (const chip of element.querySelectorAll('[data-var]')) {
       chip.setAttribute('contenteditable', 'false');
       labelValueChip(chip, options.values);

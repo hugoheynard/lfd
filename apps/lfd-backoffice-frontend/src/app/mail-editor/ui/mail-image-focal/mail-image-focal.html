@@ -1,0 +1,25 @@
+<div class="focal">
+  <span class="caption">Point focal</span>
+  <div class="stage">
+    <button
+      type="button"
+      class="target"
+      aria-label="Point focal de l’image : cliquer sur le sujet, ou flèches pour déplacer le repère"
+      [attr.aria-describedby]="positionId"
+      (click)="onClick($event)"
+      (keydown)="onKeydown($event)"
+      data-focal-target
+    >
+      <img [src]="src()" alt="" />
+      <span
+        class="reticle"
+        [style.left.%]="point().x * 100"
+        [style.top.%]="point().y * 100"
+        data-focal-reticle
+      ></span>
+    </button>
+  </div>
+  <span class="position" [id]="positionId" aria-live="polite" data-focal-position>{{
+    label()
+  }}</span>
+</div>

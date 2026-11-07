@@ -52,16 +52,6 @@ describe('MailTemplateHistory', () => {
     expect(element.querySelector('[data-retracted]')?.textContent).toContain('stf_1');
   });
 
-  it('se relit quand la page le demande', async () => {
-    const { fixture, spy } = await render(() =>
-      Promise.resolve({ template: TEMPLATE, versions: [], retracted: null }),
-    );
-    fixture.componentRef.setInput('refresh', 1);
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(spy).toHaveBeenCalledTimes(2);
-  });
-
   it('dit l’échec de lecture', async () => {
     const { element } = await render(() => Promise.reject(new Error('boom')));
     expect(element.querySelector('fold-empty-state')?.getAttribute('tone')).toBe('alert');

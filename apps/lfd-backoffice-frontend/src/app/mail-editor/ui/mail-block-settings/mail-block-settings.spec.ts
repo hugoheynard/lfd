@@ -103,6 +103,39 @@ describe('MailBlockSettings', () => {
       expect(emitted).toEqual([{ ...IMAGE, src: 'https://media.lafoliedouce.fr/a.webp' }]);
     });
 
+    it('une image choisie prend le point focal de la médiathèque', async () => {
+      const chosen = {
+        url: 'https://media.lafoliedouce.fr/b.webp',
+        name: 'Pain',
+        width: 800,
+        height: 600,
+        bytes: 1000,
+        contentType: 'image/webp',
+        focal: { x: 0.3, y: 0.7 },
+      } as PickedMedia;
+      const { element, emitted } = renderImage(IMAGE, [chosen]);
+      element.querySelector<HTMLButtonElement>('[data-pick-image]')!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(emitted).toEqual([
+        { ...IMAGE, src: 'https://media.lafoliedouce.fr/b.webp', focal: { x: 0.3, y: 0.7 } },
+      ]);
+    });
+
+    it('montre le format, et la vignette du point focal seulement une fois l’image choisie', () => {
+      const empty = renderImage(IMAGE, undefined);
+      expect(empty.element.querySelector('[data-image-format-choice]')).not.toBeNull();
+      expect(empty.element.querySelector('app-mail-image-focal')).toBeNull();
+      const chosen = render({ ...IMAGE, src: 'https://m.fr/a.webp' });
+      const emitted: FreeBlock[] = [];
+      chosen.componentInstance.blockChange.subscribe((next) => emitted.push(next));
+      const target = chosen.nativeElement.querySelector('[data-focal-target]') as HTMLElement;
+      target.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+      expect(emitted).toEqual([
+        { ...IMAGE, src: 'https://m.fr/a.webp', focal: { x: 0.5, y: 0.45 } },
+      ]);
+    });
+
     it('renoncer ne change rien', async () => {
       const { element, emitted } = renderImage(IMAGE, undefined);
       element.querySelector<HTMLButtonElement>('[data-pick-image]')!.click();

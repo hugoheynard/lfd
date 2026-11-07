@@ -37,7 +37,6 @@ import {
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
-  FoldListboxComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
@@ -81,12 +80,6 @@ import {
 } from '../mail-block-settings/mail-block-settings';
 import { MailResourcesPanel } from '../mail-resources-panel/mail-resources-panel';
 
-/** Un cas du modèle, dans la liste de la colonne de gauche. */
-export interface MailCaseOption {
-  readonly value: string;
-  readonly label: string;
-}
-
 /** Le dernier bloc retiré : « Annuler » rend le document d'avant, tant que rien d'autre n'a changé. */
 interface Removal {
   readonly title: string;
@@ -107,7 +100,7 @@ interface Removal {
  * 2026-11-07, sans boutons « monter / descendre »). Le sélectionner ouvre
  * ses réglages à droite. On écrit sur place : une phrase part en
  * brouillon (`MailPhrasesStore`, dans la langue RENDUE), le texte d'un bloc
- * libre change le document. À gauche, le cas, l'objet et les ressources de
+ * libre change le document. À gauche, l'objet et les ressources de
  * l'e-mail (§ 24, R2 : valeurs à glisser dans une phrase qui les reçoit,
  * liens et blocs de données à repérer) ; à droite, la bibliothèque (ajout
  * sous le bloc sélectionné) et les réglages. Le bouton du modèle porte ses
@@ -131,7 +124,6 @@ interface Removal {
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    FoldListboxComponent,
     FoldLoadingStateComponent,
     MailBlockFragment,
     MailBlockLibrary,
@@ -152,9 +144,6 @@ export class MailCanvas {
   readonly canWrite = input(false);
   /** Les ressources de l'e-mail (`MailEditorView.resources`, § 24). */
   readonly resources = input<MailEditorResources>(EMPTY_MAIL_RESOURCES);
-  /** Les cas du modèle ; le premier est l'exemple de l'e-mail. */
-  readonly cases = input<readonly MailCaseOption[]>([]);
-  readonly caseId = model<string | null>(null);
   /** Fabrique l'identifiant d'un bloc neuf ; remplaçable en test. */
   readonly newId = input<() => string>(() => crypto.randomUUID());
   readonly documentChange = output<MailDocument>();

@@ -23,6 +23,22 @@
       >
         {{ current.src === '' ? 'Choisir dans la médiathèque' : 'Changer d’image' }}
       </button>
+      <fold-listbox
+        size="sm"
+        label="Format"
+        hint="L’image envoyée est recadrée à ce format à la publication."
+        [options]="formatOptions"
+        [value]="current.format ?? 'original'"
+        (selectionChange)="setFormat($event)"
+        data-image-format-choice
+      />
+      @if (current.src !== '') {
+        <app-mail-image-focal
+          [src]="current.src"
+          [focal]="current.focal"
+          (focalChange)="setFocal($event)"
+        />
+      }
       <fold-checkbox
         label="Image décorative"
         hint="Elle n’apporte aucune information : pas de texte de remplacement, pas de lien."

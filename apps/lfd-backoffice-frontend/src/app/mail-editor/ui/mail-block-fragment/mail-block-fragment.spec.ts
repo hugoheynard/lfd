@@ -98,6 +98,19 @@ describe('MailBlockFragment — un fragment écrit sur place', () => {
     element.remove();
   });
 
+  it('recadre en CSS une image qui porte un format, pas l’originale', () => {
+    const { element } = render(
+      '<img src="https://m.fr/a.webp" alt="" data-image-format="2:1" data-image-focal-x="0.2" data-image-focal-y="0.8" />' +
+        '<img src="https://m.fr/b.webp" alt="" data-plain />',
+    );
+    const framed = element.querySelector<HTMLImageElement>('img[data-image-format]')!;
+    expect(framed.style.aspectRatio).toBe('2');
+    expect(framed.style.objectFit).toBe('cover');
+    expect(framed.style.objectPosition).toBe('20% 80%');
+    expect(element.querySelector<HTMLImageElement>('img[data-plain]')!.style.objectFit).toBe('');
+    element.remove();
+  });
+
   it('refuse d’injecter un fragment dangereux, et le dit', () => {
     const { element } = render('<img src="x" onerror="alert(1)">');
     expect(element.querySelector('img')).toBeNull();

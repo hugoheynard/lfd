@@ -935,6 +935,13 @@ d'après les attributs `data-image-*` (`aspect-ratio` et `object-fit: cover`,
 `withImageFocal` dans `rules/mail-document-edits.ts` (champ retiré absent,
 jamais `undefined`) ; l'affichage des deux nouveaux refus.
 
+- **Écran bâti le 2026-11-07 — écarts** : « Originale » retire `format` ;
+  le point focal s'arrondit au centième ; changer d'image remplace le point
+  par celui de la médiathèque ou le retire (`withImageSource`) ; le recadrage
+  CSS est posé en style en ligne par `MailBlockFragment` (le `style` du
+  serveur l'emporterait sur une feuille) ; les refus d'un bloc rangé dans une
+  colonne ne s'affichent toujours nulle part (constat antérieur, non traité).
+
 ## 20. S5b (phrases, cas) et essai — bâti le 2026-11-07
 
 **Ce qui existe.** Sur la page d'un e-mail

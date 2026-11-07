@@ -1,22 +1,6 @@
 @let view = previews.view();
 <div class="canvas">
   <div class="side" data-left>
-    @if (cases().length > 1) {
-      <fold-card data-case-choice>
-        <div class="card-body">
-          <fold-element-title variant="title" title="Cas affiché" />
-          <fold-listbox
-            size="sm"
-            label="Cas"
-            data-cases
-            [options]="cases()"
-            [value]="caseId()"
-            (selectionChange)="caseId.set($event)"
-          />
-        </div>
-      </fold-card>
-    }
-
     <fold-card>
       <div
         class="card-body frame"

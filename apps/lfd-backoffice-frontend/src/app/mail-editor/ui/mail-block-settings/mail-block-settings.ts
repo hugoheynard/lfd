@@ -14,6 +14,8 @@ import {
   type ColumnsBlock,
   type ColumnWidthStep,
   type FreeBlock,
+  type ImageFocal,
+  type ImageFormat,
   type MailLocale,
 } from '@lfd/mail-blocks';
 import {
@@ -31,14 +33,19 @@ import {
   textOf,
   withDecorative,
   withText,
+  withImageFocal,
+  withImageFormat,
   withImageHref,
+  withImageSource,
 } from '../../rules/mail-document-edits';
+import { IMAGE_FORMAT_OPTIONS } from '../../rules/mail-image-framing';
 import {
   LibraryPicker,
   type LibraryPickerData,
   type PickedMedia,
 } from '../../../pim/catalogue/library-picker/library-picker';
 import { MailBlockLibrary } from '../mail-block-library/mail-block-library';
+import { MailImageFocal } from '../mail-image-focal/mail-image-focal';
 
 /** Une largeur choisie pour une colonne. */
 export interface ColumnWidthChoice {
@@ -56,7 +63,7 @@ export interface CellAddition {
  * **Les réglages du bloc libre sélectionné** (plan `plan-editeur-par-blocs.md`,
  * § 6, colonne de droite) : l'adresse d'un bouton, l'image d'un bloc image
  * (choisie dans la médiathèque, § 19 — l'écran ne passe que son adresse
- * publique), « décorative » et son lien, le ton d'un encadré, les
+ * publique, son format et son point focal), « décorative » et son lien, le ton d'un encadré, les
  * largeurs d'une mise en page sur les crans et ce qu'on pose dans ses
  * colonnes. Aucune règle ici : une adresse en `http://` ou des largeurs qui
  * ne font pas 100 % s'écrivent, et le canevas affiche le refus du paquet.
@@ -70,6 +77,7 @@ export interface CellAddition {
     FoldInputComponent,
     FoldListboxComponent,
     MailBlockLibrary,
+    MailImageFocal,
   ],
   templateUrl: './mail-block-settings.html',
   styleUrl: './mail-block-settings.scss',
@@ -92,6 +100,7 @@ export class MailBlockSettings {
     value: step,
     label: `${step} %`,
   }));
+  protected readonly formatOptions = IMAGE_FORMAT_OPTIONS;
   protected readonly cellItems = CELL_LIBRARY_ITEMS;
   protected readonly targetCell = signal(0);
   protected readonly cellOptions = computed(() => {
@@ -122,9 +131,23 @@ export class MailBlockSettings {
         const chosen = picked?.[0];
         const block = this.block();
         if (chosen !== undefined && block.kind === 'image' && block.id === current.id) {
-          this.blockChange.emit({ ...block, src: chosen.url });
+          this.blockChange.emit(withImageSource(block, chosen.url, chosen.focal));
         }
       });
+  }
+
+  protected setFormat(format: ImageFormat): void {
+    const block = this.block();
+    if (block.kind === 'image') {
+      this.blockChange.emit(withImageFormat(block, format));
+    }
+  }
+
+  protected setFocal(focal: ImageFocal): void {
+    const block = this.block();
+    if (block.kind === 'image') {
+      this.blockChange.emit(withImageFocal(block, focal));
+    }
   }
 
   protected setDecorative(decorative: boolean): void {

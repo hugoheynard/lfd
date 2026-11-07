@@ -1,0 +1,62 @@
+.focal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.caption {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-medium);
+}
+
+/* La scène porte les bandes autour d'une image qui n'a pas sa forme. */
+.stage {
+  display: flex;
+  justify-content: center;
+  padding: var(--fold-space-xs);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+}
+
+/* La cible ÉPOUSE l'image : les fractions du clic sont celles de l'image. */
+.target {
+  position: relative;
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  cursor: crosshair;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 2px;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 12rem;
+    border-radius: var(--fold-radius-sm);
+  }
+}
+
+/* Lisible sur du clair comme sur du sombre : anneau clair cerclé de sombre. */
+.reticle {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--fold-color-surface-card);
+  border-radius: var(--fold-radius-round);
+  box-shadow:
+    0 0 0 1px var(--fold-color-text),
+    inset 0 0 0 1px var(--fold-color-text);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.position {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+}

@@ -202,20 +202,6 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     element.remove();
   });
 
-  it('un seul cas : le choix du cas n’est pas montré', () => {
-    const { fixture, element } = render();
-    fixture.componentRef.setInput('cases', [{ value: 'only', label: 'Exemple' }]);
-    fixture.detectChanges();
-    expect(element.querySelector('[data-case-choice]')).toBeNull();
-    fixture.componentRef.setInput('cases', [
-      { value: 'a', label: 'A' },
-      { value: 'b', label: 'B' },
-    ]);
-    fixture.detectChanges();
-    expect(element.querySelector('[data-case-choice] [data-cases]')).not.toBeNull();
-    element.remove();
-  });
-
   it('ajoute un bloc de la bibliothèque sous le bloc sélectionné, et ouvre ses réglages', () => {
     const { element, emitted, fixture } = render();
     element.querySelector<HTMLElement>('li[data-block="model:title"]')?.click();
