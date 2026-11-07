@@ -443,6 +443,23 @@
         </fold-menu-section>
       }
 
+      @if (canSeeMailEditor()) {
+        <!-- LES E-MAILS — l'éditeur par blocs (plan-editeur-par-blocs.md, § 6,
+             S5a) : entrée de premier niveau, juste au-dessus de la
+             Médiathèque, avec sa propre icône. `mail_templates:read`, le mur
+             des routes serveur `/admin/mail-templates`. -->
+        <a
+          fold-menu-item
+          icon="inbox"
+          label="E-mails"
+          routerLink="/emails"
+          routerLinkActive
+          #mailEditorRla="routerLinkActive"
+          [active]="mailEditorRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeMedia()) {
         <!-- LA MÉDIATHÈQUE — le fonds d'images, indépendamment de ce qui
              l'affiche : la bibliothèque n'appartient à aucun référentiel — les
@@ -1202,6 +1219,19 @@
             ></a>
           }
         </fold-nav-section>
+      }
+      @if (canSeeMailEditor()) {
+        <!-- La MÊME entrée qu'au rail (S5a) : posée des deux côtés. -->
+        <a
+          fold-nav-tile
+          icon="inbox"
+          label="E-mails"
+          routerLink="/emails"
+          routerLinkActive
+          #mailEditorTile="routerLinkActive"
+          [active]="mailEditorTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeMedia()) {
         <!-- La MÊME entrée qu'au rail, de premier niveau depuis le 2026-10-13

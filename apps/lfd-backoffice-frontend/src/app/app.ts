@@ -321,6 +321,12 @@ export class App {
    * 2026-09-23 ; l'entrée suivait encore `pim_catalog` jusqu'au 2026-10-02.
    */
   protected readonly canSeeMedia = computed(() => this.permissions.can('media_library:read'));
+
+  /**
+   * L'éditeur d'e-mails (S5a) — son droit, celui que les routes serveur
+   * `/admin/mail-templates` opposent. Le même `computed` tient le rail et la tuile.
+   */
+  protected readonly canSeeMailEditor = computed(() => this.permissions.can('mail_templates:read'));
   /** La teinte de la section Communication : le rose de la marque. */
   protected readonly communicationTint = BRAND_PINK_TINT;
 

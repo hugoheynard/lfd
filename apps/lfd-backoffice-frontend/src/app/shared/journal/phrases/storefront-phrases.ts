@@ -189,10 +189,70 @@ const mailCopyTrialSent: Phrase = (fact) => {
   );
 };
 
+const DOCUMENT_SAVED_KEYS = ['subjectLabel', 'mail', 'revision'];
+const DOCUMENT_PUBLISHED_KEYS = [
+  'subjectLabel',
+  'mail',
+  'version',
+  'previousVersion',
+  'publicationVersion',
+];
+const DOCUMENT_RETRACTED_KEYS = ['subjectLabel', 'mail', 'version', 'publicationVersion'];
+
+/** La clé de l'e-mail, citée comme une valeur — le seul nom qu'il porte côté serveur. */
+const mailOf = (fact: Parameters<Phrase>[0]): readonly ReturnType<typeof text>[] => {
+  const mail = typeof fact.payload['mail'] === 'string' ? fact.payload['mail'] : null;
+  return mail === null ? [] : [text(' '), value(mail)];
+};
+
+/**
+ * **Le brouillon d'un e-mail est enregistré** (`mail_copy.document_saved`,
+ * S4c) : « Colette Martin a enregistré le brouillon de l'e-mail
+ * customer.order-placed ».
+ */
+const mailDocumentSaved: Phrase = (fact) =>
+  byActor(
+    fact,
+    [text('a enregistré le brouillon de l’e-mail'), ...mailOf(fact)],
+    DOCUMENT_SAVED_KEYS,
+  );
+
+/**
+ * **Un e-mail est publié** (`mail_copy.document_published`, S4c) : « Colette
+ * Martin a publié l'e-mail customer.order-placed (version 2) ».
+ */
+const mailDocumentPublished: Phrase = (fact) => {
+  const version = typeof fact.payload['version'] === 'number' ? fact.payload['version'] : null;
+  return byActor(
+    fact,
+    [
+      text('a publié l’e-mail'),
+      ...mailOf(fact),
+      ...(version === null ? [] : [text(' (version '), value(String(version)), text(')')]),
+    ],
+    DOCUMENT_PUBLISHED_KEYS,
+  );
+};
+
+/**
+ * **Un e-mail revient au modèle d'origine** (`mail_copy.document_retracted`,
+ * S4c) : « Colette Martin a rendu l'e-mail customer.order-placed à son modèle
+ * d'origine ».
+ */
+const mailDocumentRetracted: Phrase = (fact) =>
+  byActor(
+    fact,
+    [text('a rendu l’e-mail'), ...mailOf(fact), text(' à son modèle d’origine')],
+    DOCUMENT_RETRACTED_KEYS,
+  );
+
 export const STOREFRONT_PHRASES = {
   'storefront.saved': saved,
   'storefront.allergen_display_changed': allergenDisplayChanged,
   'shop_copy.published': shopCopyPublished,
   'mail_copy.published': mailCopyPublished,
   'mail_copy.trial_sent': mailCopyTrialSent,
+  'mail_copy.document_saved': mailDocumentSaved,
+  'mail_copy.document_published': mailDocumentPublished,
+  'mail_copy.document_retracted': mailDocumentRetracted,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

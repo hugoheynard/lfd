@@ -563,3 +563,59 @@ Deux réponses de Hugo aux questions laissées par S4c (§ 15) :
   l'aperçu fidèle prend un cas.
 - **Garde** : un test vérifie que chaque modèle a au moins un cas, et que
   chaque axe déclaré a un cas qui l'exerce.
+
+## 17. S5a — bâti le 2026-11-07
+
+**Ce qui existe.** Sous `apps/lfd-backoffice-frontend/src/app/mail-editor/` :
+
+- **Le transport** (`apps/lfd-backoffice-frontend/src/app/mail-editor/data/mail-editor.service.ts`) : la liste, un
+  e-mail ouvert, le brouillon (`PUT …/draft`, 204) et l'aperçu fidèle
+  (`POST …/previews`) — les routes et les types de S4c (§ 15,
+  `packages/mail-blocks/src/mail-editor-routes.ts`), rien d'autre. La clé du
+  modèle est encodée dans le chemin.
+- **L'entrée au menu** : « E-mails », icône `inbox`, au rail **et** aux
+  tuiles du menu mobile, juste au-dessus de la Médiathèque, sous
+  `mail_templates:read` (`canSeeMailEditor`, `apps/lfd-backoffice-frontend/src/app/app.ts`).
+  Routes `/emails` et `/emails/:template`, même garde.
+- **La liste** (`ui/mail-templates-page/`) : rangée par destinataire puis
+  par moment (`apps/lfd-backoffice-frontend/src/app/mail-editor/rules/mail-template-groups.ts`, les intitulés de l'écran
+  `textes-emails`), un lien par e-mail, « Brouillon » sur ceux qui en ont un.
+- **La page d'un e-mail** (`ui/mail-template-page/`) : le canevas de S5b
+  monté avec le document ouvert et la déclaration du modèle ; au-dessus, la
+  langue (celles du modèle seulement) et d'où vient le document (brouillon,
+  version publiée, arrangement d'origine). « Enregistrer le brouillon »
+  (`mail_templates:write`, actif sur un document modifié) envoie la
+  révision lue puis relit ; un refus (400, 409) garde le document à l'écran.
+- **L'aperçu fidèle** (`ui/mail-faithful-preview/`) : à la demande (un
+  bouton), le document à l'écran dans la langue choisie, phrases en
+  brouillon ; objet, pièces jointes nommées, corps dans un `iframe`
+  `srcdoc` au `sandbox` **vide**. Quand le document ou la langue ont changé
+  depuis, il le dit au lieu de se relancer.
+
+**Écarts au texte.**
+
+- **`textes-emails` ne renvoie pas encore à l'éditeur.** § 6 le demande,
+  mais l'éditeur n'écrit pas encore les phrases du modèle (S4d, puis la
+  suite de S5b) : rediriger aujourd'hui retirerait la seule façon de les
+  réécrire et de les publier. L'écran et son entrée au menu restent tels
+  quels ; la redirection se pose quand l'éditeur les a absorbées. À
+  confirmer.
+- **L'aperçu fidèle lit toujours les phrases en brouillon** (`source:
+"draft"`), et ne choisit pas de cas : un seul est servi (§ 15), et
+  `MailDocumentPreviewPayload` n'en prend pas encore (S4d).
+- **Quitter la page avec un document non enregistré ne retient rien** :
+  pas de garde de sortie. À poser avec « annuler / rétablir » (question 4).
+- Le droit seul ne mène pas à l'éditeur depuis une page fermée : le garde
+  ne propose pas `/emails` parmi ses destinations (la Médiathèque non plus).
+
+**Ce qui reste.**
+
+- **S5c** : publier, historique, revenir au modèle d'origine, « M'envoyer un
+  essai », vue téléphone, clair / sombre.
+- **S5b, suite** (après S4d) : les phrases du modèle et leurs variantes dans
+  les réglages d'un bloc du modèle, les cas (colonne de gauche, et le cas de
+  l'aperçu fidèle), puis la redirection de `textes-emails`.
+- **Côté S4c**, vu en bâtissant : le registre des phrases du journal du
+  back-office (`apps/lfd-backoffice-frontend/src/app/shared/journal/phrases/`)
+  n'a pas encore les trois faits `mail_copy.document_*` que les contrats
+  déclarent — le typecheck et le build du back-office échouent sur lui seul.

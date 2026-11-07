@@ -1,0 +1,65 @@
+<fold-page-section
+  title="Aperçu fidèle"
+  description="Le rendu du serveur, avec des données d’exemple et les phrases en brouillon. Rien n’est envoyé."
+>
+  <div sectionActions>
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="neutral"
+      icon="eye"
+      type="button"
+      data-render
+      [loading]="status() === 'loading'"
+      (click)="render()"
+    >
+      {{ preview() === null ? 'Voir l’aperçu fidèle' : 'Rendre à nouveau' }}
+    </button>
+  </div>
+
+  <div class="fp-column">
+    @switch (status()) {
+      @case ('loading') {
+        <fold-loading message="L’aperçu se rend…" />
+      }
+      @case ('failed') {
+        <fold-empty-state
+          tone="alert"
+          title="L’aperçu n’a pas pu être rendu"
+          [subtitle]="error() ?? ''"
+        >
+          <button foldButton type="button" (click)="render()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (error(); as message) {
+          <fold-callout variant="alert">{{ message }}</fold-callout>
+        }
+        @if (preview(); as view) {
+          @if (stale()) {
+            <p class="fp-muted" data-stale>
+              L’écran a changé depuis cet aperçu : rendez-le à nouveau pour le voir.
+            </p>
+          }
+          <p class="fp-subject"><span class="fp-muted">Objet :</span> {{ view.subject }}</p>
+          @if (attachments().length > 0) {
+            <p class="fp-muted">
+              <fold-icon name="download" size="sm" />
+              Pièces jointes :
+              @for (attachment of attachments(); track attachment.filename; let last = $last) {
+                {{ attachment.filename }}{{ last ? '' : ', ' }}
+              }
+            </p>
+          }
+          <iframe
+            class="fp-frame"
+            title="Aperçu fidèle de l’e-mail"
+            sandbox=""
+            [srcdoc]="body()"
+          ></iframe>
+        }
+      }
+    }
+  </div>
+</fold-page-section>

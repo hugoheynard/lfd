@@ -1,0 +1,52 @@
+<fold-page-layout title="E-mails" icon="inbox">
+  <p description>
+    Ce que disent les e-mails, et dans quel ordre. Rien ne change pour un client tant que rien n’est
+    publié.
+  </p>
+
+  @switch (status()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des e-mails…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="La liste des e-mails n’a pas pu être lue"
+        [subtitle]="error() ?? ''"
+      >
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (groups().length === 0) {
+        <fold-empty-state title="Aucun e-mail" subtitle="Le serveur n’a déclaré aucun e-mail.">
+          <fold-icon empty-icon name="inbox" />
+        </fold-empty-state>
+      } @else {
+        <div class="mt-groups">
+          @for (group of groups(); track group.audience) {
+            <fold-page-section [title]="group.title" [icon]="icons[group.audience]">
+              <fold-menu level="tertiary" [navLabel]="'E-mails — ' + group.title" [expanded]="true">
+                @for (family of group.families; track family.family) {
+                  <fold-menu-separator [label]="family.title" />
+                  @for (mail of family.mails; track mail.template) {
+                    <a
+                      fold-menu-item
+                      icon="mail"
+                      [label]="title(mail)"
+                      [attr.title]="hint(mail)"
+                      [attr.data-template]="mail.template"
+                      [routerLink]="['/emails', mail.template]"
+                      [badge]="badge(mail)"
+                      badgeTone="warning"
+                    ></a>
+                  }
+                }
+              </fold-menu>
+            </fold-page-section>
+          }
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

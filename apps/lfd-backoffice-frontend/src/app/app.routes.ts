@@ -210,6 +210,29 @@ export const routes: Routes = [
       import('./targeted-promotions/promotion-page/promotion-page').then((m) => m.PromotionPage),
   },
   {
+    // **Les e-mails** — l'éditeur par blocs (plan-editeur-par-blocs.md, § 6,
+    // S5a) : la liste, puis la page d'un e-mail. Premier niveau, au-dessus de
+    // la Médiathèque comme au menu. `mail_templates:read` : le mur que les
+    // routes serveur `/admin/mail-templates` opposent (S4c) ; enregistrer
+    // demande `:write`, que la page lit pour ouvrir son bouton.
+    path: 'emails',
+    canActivate: [permissionGuard('mail_templates:read')],
+    title: 'E-mails — LFC B2B admin',
+    loadComponent: () =>
+      import('./mail-editor/ui/mail-templates-page/mail-templates-page').then(
+        (m) => m.MailTemplatesPage,
+      ),
+  },
+  {
+    path: 'emails/:template',
+    canActivate: [permissionGuard('mail_templates:read')],
+    title: 'E-mail — LFC B2B admin',
+    loadComponent: () =>
+      import('./mail-editor/ui/mail-template-page/mail-template-page').then(
+        (m) => m.MailTemplatePage,
+      ),
+  },
+  {
     // **Médiathèque** — le fonds d'images, indépendamment de ce qui l'affiche.
     //
     // Route de PREMIER niveau, hors de `pim/`, et c'est une affirmation sur le

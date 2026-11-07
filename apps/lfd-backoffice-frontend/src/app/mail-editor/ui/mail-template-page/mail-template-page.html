@@ -1,0 +1,65 @@
+<fold-page-layout [title]="title()" icon="inbox">
+  <fold-back-link pageEyebrow icon="arrow-back" label="Les e-mails" routerLink="/emails" />
+  @if (whoAndWhen(); as hint) {
+    <p description>{{ hint }}</p>
+  }
+  @if (status() === 'ready' && canWrite()) {
+    <div pageActions>
+      <button
+        foldButton
+        icon="save"
+        type="button"
+        data-save
+        [disabled]="!dirty()"
+        [loading]="saving()"
+        (click)="save()"
+      >
+        Enregistrer le brouillon
+      </button>
+    </div>
+  }
+
+  @switch (status()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de l’e-mail…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="Cet e-mail n’a pas pu être lu"
+        [subtitle]="error() ?? ''"
+      >
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (view(); as current) {
+        @if (document(); as doc) {
+          <div class="tp-toolbar">
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Langue"
+              data-locales
+              [options]="localeOptions()"
+              [value]="locale()"
+              (valueChange)="setLocale($event)"
+            />
+            <span class="tp-muted" data-source>{{ sourceLabel() }}</span>
+          </div>
+          <app-mail-canvas
+            [document]="doc"
+            [declaration]="current.declaration"
+            [template]="current.template"
+            [locale]="locale()"
+            (documentChange)="document.set($event)"
+          />
+          <app-mail-faithful-preview
+            [template]="current.template"
+            [locale]="locale()"
+            [document]="doc"
+          />
+        }
+      }
+    }
+  }
+</fold-page-layout>
