@@ -1364,3 +1364,41 @@ Exemple réel (`customer.order-ready`, cas `specimen`, `fr`) :
 d'une variable (`caretRangeFromPoint`), `plaintext-only` avec une pastille
 non modifiable (Chrome, Safari, Firefox), le rendu réel des fragments
 (tables, images `data:`) dans la page, et le glisser des blocs.
+
+## 23. Un e-mail pour tout le monde : le staff n'écrit que l'accroche (Hugo, 2026-11-07) — en cours
+
+Hugo, devant les cinq cas de « Commande passée » : « je pense que pour
+confirmation de commande il ne faut qu'un e-mail pour tout le monde, tous les
+cas ; le récapitulatif tableau marche assez bien » — et « plus on complexifie,
+moins le staff va le faire ».
+
+**La règle, pour tous les e-mails :**
+
+- **Le staff écrit l'accroche** : titre, message, bouton, et les blocs libres
+  qu'il ajoute. Ces textes sont **les mêmes pour toutes les commandes**.
+- **Ce qui dépend de la commande est un bloc système** : récapitulatif
+  (retrait ou livraison, jour, lieu, statut du règlement, montants HT/TTC),
+  QR, lien de paiement, itinéraire. Le staff le place ; il n'en réécrit pas
+  les libellés.
+- **Plus de cas dans l'éditeur** dès qu'un e-mail suit la règle : un seul
+  exemple ; ce qui change d'une commande à l'autre se lit dans le tableau.
+- Les e-mails envoyés changent : c'est voulu, et les empreintes de rendu
+  (`rendering-golden/`) sont réécrites en connaissance de cause, e-mail par
+  e-mail.
+
+### Premier e-mail : `customer.order-placed`
+
+- L'intro devient **une seule phrase fixe**, sans jour ni trajet, dans les
+  trois langues (FR : « Votre commande {ref} a bien été prise en compte par
+  nos services. ») ; `introWithoutDay` et les quatre `routing*` quittent le
+  dictionnaire.
+- Le **récapitulatif** dit le jour demandé et le trajet (retrait à tel lieu,
+  livraison à telle ville et sa fenêtre), s'il ne le dit pas déjà.
+- Le **QR** et le **lien de paiement** restent conditionnés par la commande,
+  comme aujourd'hui.
+- Les phrases éditables de cet e-mail : titre, intro, bouton, lien de gestion.
+  Les libellés du récapitulatif et du QR sont système.
+- Un seul cas servi à l'éditeur.
+
+Les autres e-mails suivent après le tableau soumis à Hugo (ce qui devient
+fixe, ce qui passe en bloc système), e-mail par e-mail.
