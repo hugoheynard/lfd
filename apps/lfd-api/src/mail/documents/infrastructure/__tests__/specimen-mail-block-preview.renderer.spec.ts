@@ -149,7 +149,7 @@ describe("l'aperçu par blocs : ce que les fragments portent", () => {
     }
   });
 
-  it("« Commande passée » (§ 23) : seules l'accroche et l'objet sont marqués, pas le récapitulatif ni le QR", () => {
+  it("« Commande passée » (§ 23) : l'accroche, l'objet et la ligne du QR sont marqués, pas le récapitulatif", () => {
     const paths = ALL.filter((rendered) => rendered.template === "customer.order-placed")
       .flatMap((rendered) => fragmentsOf(rendered.parts))
       .flatMap((html) => [...html.matchAll(/data-phrase="([^"]+)"/gu)].map(([, path]) => path));
@@ -159,6 +159,7 @@ describe("l'aperçu par blocs : ce que les fragments portent", () => {
       "itinerary",
       "kicker",
       "manageLink",
+      "qrLine",
       "subject",
       "title",
     ]);

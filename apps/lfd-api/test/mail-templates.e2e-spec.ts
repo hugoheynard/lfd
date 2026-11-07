@@ -525,9 +525,10 @@ describe("l'aperçu par blocs du canevas (S5f)", () => {
       "cta",
       "manageLink",
       "itinerary",
+      "qrLine",
     ]);
     expect(new Set(marked.map(([, path = ""]) => path))).toEqual(
-      new Set(["subject", "kicker", "title", "intro", "cta", "manageLink", "itinerary"]),
+      new Set(["subject", "kicker", "title", "intro", "cta", "manageLink", "itinerary", "qrLine"]),
     );
   });
 

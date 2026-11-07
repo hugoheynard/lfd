@@ -84,7 +84,16 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
     // § 23 : le staff n'écrit que l'accroche ; le récapitulatif, le QR et
     // l'itinéraire sont des blocs système, leurs libellés aussi.
-    editablePhrases: ["subject", "kicker", "title", "intro", "cta", "manageLink", "itinerary"],
+    editablePhrases: [
+      "subject",
+      "kicker",
+      "title",
+      "intro",
+      "cta",
+      "manageLink",
+      "itinerary",
+      "qrLine",
+    ],
   },
   "customer.order-ready": {
     ctaDestination:
