@@ -2,27 +2,27 @@
   "customer.order-placed": {
     "exactHt": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "1df1669cdbdbb688aed5afdd097fe9577adebbfbe10e3447a4525fb288fc8a3f",
+      "htmlSha256": "10c1ceb798b9b83deab8924f6d5728f7cd0428b4fdb8d0ca4f75d299da20e413",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "paidPickup": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "a1528dcfe145f65585b6046b2c53834736c79ec4eba21b8630e4a543484b6da9",
+      "htmlSha256": "56a1324498244daea233d9b566fe047a165a458a23fa91267a09aa63cd54266d",
       "attachmentsSha256": "ea20c3e64d47c52ba8964f390c3b82184978177c98c44687d80dc79ef37b724d"
     },
     "dueDelivery": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "2450a373c5693712b657c72d91048cef6a75f6a0b0739d3469fab974e8fc8339",
+      "htmlSha256": "e4f3ba6ffce14626fbc295b8ca57c24b9a48c3daa169d9edaa0c703288ca51df",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "account": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "43af3b047c257fc4a71e15dd148d07061a9855e4e223ed99907f36b2739950b1",
+      "htmlSha256": "982524bf6cbe413ea689d5163d74c7b690b19ba5ace97cd0b4ef4977a7863b0e",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "free": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "c28d89126c45d3db8bb6acbc2a20b72f4d8b64b00b9cf29772fe4887e47d4357",
+      "htmlSha256": "5b0178f6c0e4f61469314519623a260d5e4a7b56b829642d1654a641c57932ec",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },

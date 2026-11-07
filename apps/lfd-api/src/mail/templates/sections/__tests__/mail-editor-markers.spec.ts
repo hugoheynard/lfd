@@ -48,6 +48,23 @@ describe("les marqueurs de l'aperçu de l'éditeur (S5f)", () => {
     );
   });
 
+  it("une phrase de l'e-mail que l'éditeur n'écrit pas (§ 23) n'est pas marquée, ni ses variables", () => {
+    const text = markText(
+      "customer.order-ready",
+      "piecesLabel",
+      `${markVariable("count", "12")} pièces`,
+    );
+    expect(revealEditorMarkers(`<td>${text}</td>`, CONTEXT)).toBe("<td>12 pièces</td>");
+  });
+
+  it("une variable qui suit une phrase non marquée retrouve son repère", () => {
+    const silent = markText("customer.order-ready", "piecesLabel", "Contenu");
+    const shown = markText("customer.order-ready", "cta", `Voir ${markVariable("ref", "R")}`);
+    expect(revealEditorMarkers(`<p>${silent}${shown}</p>`, CONTEXT)).toBe(
+      '<p>Contenu<span data-phrase="cta">Voir <span data-var="ref">R</span></span></p>',
+    );
+  });
+
   it("les noms et chemins sont échappés dans l'attribut", () => {
     const context: EditorMarkerContext = {
       mail: "m",

@@ -50,24 +50,13 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     header: KICKER,
     sections: [
       { id: "title", texts: texts("title") },
-      {
-        id: "body",
-        texts: [
-          ...variants({ intro: "Jour de service connu", introWithoutDay: "Sans jour de service" }),
-          ...variants({
-            routingPickup: "En retrait",
-            routingPickupWithoutPlace: "En retrait, sans lieu",
-            routingDelivery: "En livraison",
-            routingDeliveryWithoutCity: "En livraison, sans ville",
-            windowBetween: "Créneau borné",
-            windowBefore: "Créneau « avant »",
-          }),
-        ],
-      },
+      { id: "body", texts: texts("intro") },
       {
         id: "summary",
         texts: [
+          ...texts("recapDay"),
           ...variants({ recapPickup: "En retrait", recapDelivery: "En livraison" }),
+          ...variants({ windowBetween: "Créneau borné", windowBefore: "Créneau « avant »" }),
           ...texts(
             "recapContent",
             "recapPieces",
@@ -91,6 +80,9 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       { id: "cta", texts: texts("cta") },
       { id: "secondaryLink", label: "Gérer ou annuler", texts: texts("manageLink") },
     ],
+    // § 23 : le staff n'écrit que l'accroche ; le récapitulatif, le QR et
+    // l'itinéraire sont des blocs système, leurs libellés aussi.
+    editablePhrases: ["subject", "title", "intro", "cta", "manageLink"],
   },
   "customer.order-ready": {
     subject: [...SUBJECT, ...variants({ subjectReminder: REMINDER, subjectRemainder: REMAINDER })],

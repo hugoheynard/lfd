@@ -1,4 +1,5 @@
 import { b2bMailTemplates, type B2bMails } from "../../../mail-templates.js";
+import { mailBlockDeclarationOf } from "../../../sections/mail-block-declarations.js";
 import { mailKeys, renderMailData } from "../../mail-specimens.js";
 import { SPECIMEN_MARK, SPECIMEN_URL } from "../../mail-specimen.types.js";
 import { SPECIMEN_CASE_ID, type MailCaseTable } from "../mail-specimen-case.types.js";
@@ -74,6 +75,21 @@ describe("les cas des e-mails (S4d)", () => {
       // prénom » qui ne porte plus personne.
       if (id !== "anonymous") {
         expect(JSON.stringify(data)).toMatch(new RegExp(`${SPECIMEN_MARK}|${SPECIMEN_URL}`, "u"));
+      }
+    },
+  );
+
+  it.each(mailKeys())(
+    "« %s » : un seul cas et des phrases bornées vont ensemble (§ 23)",
+    (mail) => {
+      const table = mailCaseTableOf(mail);
+      const bounded = mailBlockDeclarationOf(mail).editablePhrases !== undefined;
+      expect({ mail, bounded }).toEqual({ mail, bounded: table.axesInSystemBlocks !== undefined });
+      if (table.axesInSystemBlocks !== undefined) {
+        expect(table.cases).toHaveLength(1);
+        // Un axe ne se déclare pas des deux côtés : il exige un cas, ou il n'en exige pas.
+        const free = new Set(table.axesInSystemBlocks.map((axis) => axis.id));
+        expect(table.axes.filter((axis) => free.has(axis.id))).toEqual([]);
       }
     },
   );

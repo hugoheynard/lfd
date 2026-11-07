@@ -1,6 +1,5 @@
 import type { ClientSheet, SettlementRegime } from "@lfd/contracts";
 
-import { SPECIMEN_MARK } from "../mail-specimen.types.js";
 import {
   PRESENCE,
   presence,
@@ -16,37 +15,11 @@ import type { MailCaseAxis, MailCaseTables } from "./mail-specimen-case.types.js
 
 const SETTLEMENTS: readonly SettlementRegime[] = ["paid", "due", "account", "free"];
 
-function settled(sheet: ClientSheet, settlement: SettlementRegime): ClientSheet {
-  return { ...sheet, money: { ...sheet.money, settlement } };
-}
-
 /** Livrée plutôt que retirée : plus de site de retrait. */
 function delivered(sheet: ClientSheet): ClientSheet {
   return {
     ...sheet,
     fulfillment: { ...sheet.fulfillment, method: "delivery", pickupLabel: null },
-  };
-}
-
-/** Une commande de particulier, composée en TTC : le pied au format du ticket. */
-function publicTtc(sheet: ClientSheet): ClientSheet {
-  const money = sheet.money;
-  return {
-    ...sheet,
-    variant: "public",
-    customer: { tradeName: "", legalName: `${SPECIMEN_MARK} — Jeanne Martin` },
-    money: {
-      ...money,
-      ttcTerms: { discountCents: 152, voucherCents: 0, deliveryFeeCents: 0 },
-      ttcByRate: [
-        {
-          rate: 5.5,
-          htCents: money.pretaxCents,
-          vatCents: money.vatCents,
-          ttcCents: money.totalCents,
-        },
-      ],
-    },
   };
 }
 
@@ -81,37 +54,11 @@ export const ORDER_CASE_TABLES: Pick<
   | "customer.order-payment-link"
 > = {
   "customer.order-placed": {
-    cases: [
-      specimenCase("customer.order-placed", "Retrait, payée en ligne"),
-      variantCase("customer.order-placed", "due-delivery", "Livraison, à régler", (data) => ({
-        ...data,
-        sheet: settled(delivered(data.sheet), "due"),
-        handoverToken: null,
-        handoverUrl: "",
-        document: null,
-      })),
-      variantCase("customer.order-placed", "account", "Au compte", (data) => ({
-        ...data,
-        sheet: settled(data.sheet, "account"),
-        manageUrl: "",
-      })),
-      variantCase(
-        "customer.order-placed",
-        "free-no-day",
-        "Gratuite, sans jour demandé",
-        (data) => ({
-          ...data,
-          sheet: { ...settled(data.sheet, "free"), requestedFor: null },
-          handoverToken: null,
-          handoverUrl: "",
-        }),
-      ),
-      variantCase("customer.order-placed", "public-ttc", "Particulier, prix TTC", (data) => ({
-        ...data,
-        sheet: publicTtc(data.sheet),
-      })),
-    ],
-    axes: [
+    cases: [specimenCase("customer.order-placed", "Retrait, payée en ligne")],
+    axes: [],
+    // § 23 : un seul e-mail pour toutes les commandes ; règlement, trajet et
+    // clientèle ne changent que le récapitulatif et le QR, blocs système.
+    axesInSystemBlocks: [
       settlementAxis,
       methodAxis,
       { id: "variant", values: ["pro", "public"], of: (data) => data.sheet.variant },

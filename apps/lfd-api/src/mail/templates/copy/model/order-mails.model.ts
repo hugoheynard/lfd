@@ -26,24 +26,19 @@ export interface OrderPlacedCopy {
    */
   readonly title: string;
   /**
-   * La phrase d'ouverture. `{ref}` = le numéro, `{day}` = le jour de service
-   * en toutes lettres, `{routing}` = l'acheminement (`routing*`).
+   * La phrase d'ouverture, la même pour toutes les commandes (plan
+   * `plan-editeur-par-blocs.md`, § 23) : `{ref}` = le numéro. Le jour et le
+   * trajet sont au récapitulatif (`recapDay`, `recapPickup`, `recapDelivery`).
    */
   readonly intro: string;
-  /** La même, pour une commande sans jour de service. */
-  readonly introWithoutDay: string;
-  /** `{place}` = le point de retrait, sinon sa ville. */
-  readonly routingPickup: string;
-  readonly routingPickupWithoutPlace: string;
-  /** `{city}` = la ville de livraison. */
-  readonly routingDelivery: string;
-  readonly routingDeliveryWithoutCity: string;
-  /** Le créneau, accolé à l'acheminement. `{start}`, `{end}` en HH:mm. */
+  /** Le créneau, accolé au trajet du récapitulatif. `{start}`, `{end}` en HH:mm. */
   readonly windowBetween: string;
   /** Le créneau sans borne basse. */
   readonly windowBefore: string;
   /** Libellé de la ligne de total, selon le même régime. */
   readonly totalLabel: OrderSettlementCopy;
+  /** La ligne du jour de service demandé — absente d'une commande sans jour. */
+  readonly recapDay: string;
   readonly recapPickup: string;
   readonly recapDelivery: string;
   readonly recapContent: string;

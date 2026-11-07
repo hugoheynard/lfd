@@ -233,18 +233,21 @@ describe("les phrases d'un e-mail sous `mail_templates` (S4d)", () => {
 
 describe("les cas et l'essai de l'éditeur (S4d)", () => {
   it("liste les cas d'un e-mail, et l'aperçu rend celui demandé ; 404 sur un cas inconnu", async () => {
-    const view = await open(ORDER_PLACED);
-    expect(view.cases.map((candidate) => candidate.id)).toContain("due-delivery");
+    // « Commande passée » n'a plus qu'un cas (§ 23) : « Commande prête » en garde plusieurs.
+    const ready = "customer.order-ready";
+    const view = await open(ready);
+    expect(view.cases.map((candidate) => candidate.id)).toContain("delivery");
+    expect((await open(ORDER_PLACED)).cases.map((candidate) => candidate.id)).toEqual(["specimen"]);
     const preview = async (caseId: string) =>
       jsonBody<MailDocumentPreviewView>(
         await staff()
-          .post(`${EDITOR}/${ORDER_PLACED}/previews`)
+          .post(`${EDITOR}/${ready}/previews`)
           .send({ locale: "fr", source: "draft", caseId })
           .expect(200),
       ).html;
-    expect(await preview("due-delivery")).not.toBe(await preview("specimen"));
+    expect(await preview("delivery")).not.toBe(await preview("specimen"));
     await staff()
-      .post(`${EDITOR}/${ORDER_PLACED}/previews`)
+      .post(`${EDITOR}/${ready}/previews`)
       .send({ locale: "fr", source: "draft", caseId: "inconnu" })
       .expect(404);
   });
@@ -487,6 +490,17 @@ describe("l'aperçu par blocs du canevas (S5f)", () => {
     expect(all.join("")).toMatch(/<span data-var="\w+">/u);
     expect(all.join("")).not.toMatch(/<script|\son[a-z]+\s*=|javascript:/iu);
     expect(rendered.subject).toContain('data-phrase="subject"');
+    // § 23 : l'accroche seule s'écrit ; le récapitulatif et le QR sont système.
+    expect(view.declaration.editablePhrases).toEqual([
+      "subject",
+      "title",
+      "intro",
+      "cta",
+      "manageLink",
+    ]);
+    expect(new Set(marked.map(([, path = ""]) => path))).toEqual(
+      new Set(["subject", "title", "intro", "cta", "manageLink"]),
+    );
   });
 
   it("une phrase en brouillon se voit dans le fragment, mais jamais dans l'aperçu fidèle marqué", async () => {

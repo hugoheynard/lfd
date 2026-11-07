@@ -46,14 +46,24 @@ export function stripEditorMarkers(text: string): string {
 export interface EditorMarkerContext {
   /** La clé de l'e-mail : seules SES phrases sont marquées. */
   readonly mail: string;
-  /** La variante de chaque chemin, telle que `GET …/phrases` la sert (`null` : aucune). */
+  /**
+   * Les phrases que l'éditeur écrit, et leur variante telle que `GET …/phrases`
+   * la sert (`null` : aucune). Un chemin absent n'est pas marqué — ni lui, ni
+   * les variables qu'il place (§ 23 : un libellé système).
+   */
   readonly variants: ReadonlyMap<string, string | null>;
+}
+
+/** Un repère ouvert : sa balise a-t-elle été posée, et tait-il les variables qu'il contient ? */
+interface Opened {
+  readonly shown: boolean;
+  readonly mutes: boolean;
 }
 
 interface Scan {
   out: string;
   inTag: boolean;
-  readonly opened: boolean[];
+  readonly opened: Opened[];
 }
 
 function phraseOpening(context: EditorMarkerContext, path: string): string {
@@ -67,16 +77,19 @@ function open(scan: Scan, html: string, index: number, context: EditorMarkerCont
   const isPhrase = html.charAt(index) === PHRASE_START;
   const separator = html.indexOf(isPhrase ? PHRASE_SEPARATOR : VARIABLE_SEPARATOR, index);
   const label = html.slice(index + 1, separator);
+  const muted = scan.opened.some((entry) => entry.mutes);
   let opening = "";
+  let mutes = false;
   if (isPhrase) {
     const [mail = "", path = ""] = label.split("|");
-    opening = mail === context.mail ? phraseOpening(context, path) : "";
+    mutes = mail === context.mail && !context.variants.has(path);
+    opening = mail === context.mail && !mutes ? phraseOpening(context, path) : "";
   } else {
-    opening = `<span data-var="${htmlEscape(label)}">`;
+    opening = muted ? "" : `<span data-var="${htmlEscape(label)}">`;
   }
   const shown = !scan.inTag && opening !== "";
   scan.out += shown ? opening : "";
-  scan.opened.push(shown);
+  scan.opened.push({ shown, mutes });
   return separator + 1;
 }
 
@@ -95,7 +108,7 @@ export function revealEditorMarkers(html: string, context: EditorMarkerContext):
       continue;
     }
     if (char === PHRASE_END || char === VARIABLE_END) {
-      scan.out += scan.opened.pop() === true ? "</span>" : "";
+      scan.out += scan.opened.pop()?.shown === true ? "</span>" : "";
     } else {
       scan.inTag = char === "<" ? true : char === ">" ? false : scan.inTag;
       scan.out += char;

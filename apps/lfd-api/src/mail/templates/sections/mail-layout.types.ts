@@ -49,6 +49,13 @@ export interface MailLayoutDeclaration {
   readonly subject: readonly MailSectionText[];
   readonly header: readonly MailSectionText[];
   readonly sections: readonly MailSectionDeclaration[];
+  /**
+   * Les seuls chemins que l'éditeur par blocs laisse réécrire (plan
+   * `plan-editeur-par-blocs.md`, § 23) : l'accroche, la même pour toutes les
+   * commandes. Absente, tous ses textes restent éditables — l'état des
+   * e-mails qui ne suivent pas encore la règle.
+   */
+  readonly editablePhrases?: readonly string[];
 }
 
 /** Une déclaration par e-mail du registre — exhaustive par construction. */

@@ -1279,9 +1279,10 @@ Exemple réel (`customer.order-ready`, cas `specimen`, `fr`) :
 - **Le pied (`footer`) est le recours**, texte du code, sans phrase ; le
   bloc du modèle `footer` reste un bloc.
 - **Une contraction a dû apprendre le repère** :
-  `contractFrenchAt` (`apps/lfd-api/src/mail/templates/order-placed-intro.ts`)
-  laisse passer le repère d'une variable entre « à » et « Le » ; sans repère,
-  l'expression rend exactement ce qu'elle rendait (test « à l'octet » vert).
+  `contractFrenchAt` (alors dans order-placed-intro.ts, retiré le
+  2026-11-07 avec l'intro à trajet, § 23)
+  laissait passer le repère d'une variable entre « à » et « Le » ; sans repère,
+  l'expression rendait exactement ce qu'elle rendait (test « à l'octet » vert).
 - **Le gabarit est rendu en entier** pour en tirer l'objet et les images :
   un appel par rendu de bloc demandé, comme l'aperçu fidèle.
 
@@ -1365,7 +1366,7 @@ d'une variable (`caretRangeFromPoint`), `plaintext-only` avec une pastille
 non modifiable (Chrome, Safari, Firefox), le rendu réel des fragments
 (tables, images `data:`) dans la page, et le glisser des blocs.
 
-## 23. Un e-mail pour tout le monde : le staff n'écrit que l'accroche (Hugo, 2026-11-07) — en cours
+## 23. Un e-mail pour tout le monde : le staff n'écrit que l'accroche (Hugo, 2026-11-07) — en cours (premier e-mail bâti le 2026-11-07)
 
 Hugo, devant les cinq cas de « Commande passée » : « je pense que pour
 confirmation de commande il ne faut qu'un e-mail pour tout le monde, tous les
@@ -1402,3 +1403,55 @@ moins le staff va le faire ».
 
 Les autres e-mails suivent après le tableau soumis à Hugo (ce qui devient
 fixe, ce qui passe en bloc système), e-mail par e-mail.
+
+### Bâti le 2026-11-07 — écarts (`customer.order-placed`)
+
+**Ce qui existe.**
+
+- **L'intro fixe**, trois langues (`copy/{fr,en,it}/order-mails.*.ts`) :
+  « Votre commande {ref} a bien été prise en compte par nos services. » /
+  « Your order {ref} has been received by our team. » / « Il suo ordine {ref}
+  è stato preso in carico dai nostri servizi. ». `introWithoutDay` et les
+  quatre `routing*` ont quitté le modèle, le dictionnaire, les variables et
+  la déclaration ; order-placed-intro.ts et son test sont supprimés.
+- **Le récapitulatif** (`apps/lfd-api/src/mail/templates/order-placed-route-rows.ts`) :
+  une ligne **« Jour »** (`recapDay`, neuve ; absente sans jour), puis
+  « Retrait » / « Livraison » dont la valeur dit le **point** (sinon la
+  ville) ou la **ville** livrée, suivie du créneau (`windowBetween` /
+  `windowBefore`, rangés désormais au récapitulatif). Avant, la ligne disait
+  la ville même en retrait. QR, lien de paiement et itinéraire inchangés.
+- **Les phrases éditables** : `MailLayoutDeclaration.editablePhrases`
+  (`sections/order-mail-layouts.ts` : `subject`, `title`, `intro`, `cta`,
+  `manageLink`), servie au front dans `MailTemplateDeclaration.editablePhrases`
+  (`@lfd/mail-blocks`, ajout seul, avec `isEditablePhrase`). Absente, tout
+  reste éditable. L'aperçu par blocs ne marque que ces phrases ; une phrase
+  non éditable ne porte ni `data-phrase` ni `data-var` sur ses variables.
+- **Un seul cas** : `MailCaseTable.axesInSystemBlocks` déclare les axes
+  (règlement, trajet, clientèle) qui ne changent que les blocs système ; la
+  garde exige qu'un e-mail à `editablePhrases` déclare ces axes et n'ait
+  qu'un cas, et réciproquement.
+
+**Le rendu, avant → après** (empreintes régénérées pour les cinq cas de
+l'e-mail ; objet et pièces jointes identiques ; ces trois changements défaits,
+le HTML rend l'empreinte d'avant à l'octet) :
+
+|         | avant                                                                                                                   | après                                                                    |
+| ------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| intro   | « Votre commande ORD-4812 pour le mardi 8 septembre, en retrait au Labo, a bien été prise en compte par nos services. » | « Votre commande ORD-4812 a bien été prise en compte par nos services. » |
+| tableau | Retrait — Val d'Isère                                                                                                   | Jour — mardi 8 septembre · Retrait — Le Labo                             |
+
+**Écarts.**
+
+- **Le libellé « Jour »** (`Day`, `Giorno`) n'était pas écrit au plan.
+- **Le sur-titre (`kicker`) et le libellé de l'itinéraire** ne sont pas dans
+  la liste éditable : le plan nomme titre, intro, bouton, lien de gestion
+  (et l'objet). À trancher si le sur-titre doit s'écrire.
+- **Rien n'est refusé à l'écriture** : la liste règle l'éditeur (servie,
+  marquage), pas les routes `PUT …/phrases/drafts` ni l'écran
+  `textes-emails`, qui écrivent encore un libellé système. Le front de
+  l'éditeur (panneau, « Autres textes ») ne lit pas encore
+  `editablePhrases` — non touché dans ce lot.
+- **Les phrases réécrites en base** pour `introWithoutDay` et les `routing*`
+  deviennent des **orphelines** (lues, jamais envoyées) ; une réécriture de
+  `intro` qui portait `{day}` ou `{routing}` laisserait ces variables en
+  clair : à relire à l'écran. Rien n'est migré ni supprimé.

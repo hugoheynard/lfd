@@ -129,4 +129,16 @@ export interface MailTemplateDeclaration {
   readonly modelBlocks: readonly ModelSectionId[];
   readonly locales: readonly MailLocale[];
   readonly charter: MailCharter;
+  /**
+   * Les seules phrases (chemins du dictionnaire) que l'éditeur laisse
+   * réécrire — l'accroche d'un e-mail qui suit la règle du § 23 du plan
+   * `plan-editeur-par-blocs.md` ; les libellés de ses blocs système n'y sont
+   * pas. Absente : toutes ses phrases s'écrivent, comme avant.
+   */
+  readonly editablePhrases?: readonly string[] | undefined;
+}
+
+/** Cette phrase s'écrit-elle dans l'éditeur ? Sans liste déclarée, oui. */
+export function isEditablePhrase(declaration: MailTemplateDeclaration, path: string): boolean {
+  return declaration.editablePhrases === undefined || declaration.editablePhrases.includes(path);
 }

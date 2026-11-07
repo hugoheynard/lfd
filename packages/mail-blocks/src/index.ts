@@ -15,6 +15,7 @@ export {
   COLUMN_COUNTS,
   FREE_BLOCK_KINDS,
   SHORT_BLOCK_KINDS,
+  isEditablePhrase,
   type ButtonBlock,
   type CalloutBlock,
   type CalloutTone,

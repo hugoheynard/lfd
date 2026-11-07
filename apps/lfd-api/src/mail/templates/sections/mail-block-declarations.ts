@@ -98,9 +98,11 @@ function modelBlocksOf(layout: MailLayoutDeclaration): readonly ModelSectionId[]
  * registre sans sa charte ne compile pas. Aucune table lue.
  */
 export function mailBlockDeclarationOf(mail: keyof B2bMails): MailTemplateDeclaration {
+  const layout = MAIL_LAYOUTS[mail];
   return {
-    modelBlocks: modelBlocksOf(MAIL_LAYOUTS[mail]),
+    modelBlocks: modelBlocksOf(layout),
     locales: FOLLOWS_RECIPIENT_LOCALE.has(mail) ? MAIL_LOCALES : FRENCH_ONLY,
     charter: CHARTERS[mail],
+    ...(layout.editablePhrases === undefined ? {} : { editablePhrases: layout.editablePhrases }),
   };
 }

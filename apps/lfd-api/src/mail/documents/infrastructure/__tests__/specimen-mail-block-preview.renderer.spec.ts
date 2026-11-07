@@ -1,4 +1,9 @@
-import { startingMailDocument, type MailDocument, type MailLocale } from "@lfd/mail-blocks";
+import {
+  isEditablePhrase,
+  startingMailDocument,
+  type MailDocument,
+  type MailLocale,
+} from "@lfd/mail-blocks";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { embeddedMailCopyManifest } from "../../../copy/infrastructure/embedded-mail-copy-manifest.js";
@@ -38,10 +43,18 @@ const FAITHFUL = new SpecimenMailDocumentPreviewRenderer(CONFIG);
 const MANIFEST = embeddedMailCopyManifest();
 const PUBLICATION = { version: 0, publishedAt: null, publishedBy: null };
 
-/** Ce que `GET …/phrases` sert de cet e-mail, sans aucune réécriture : chemin → variante. */
-function servedVariants(template: string): ReadonlyMap<string, string | null> {
+/**
+ * Ce que `GET …/phrases` sert de cet e-mail, sans aucune réécriture, borné aux
+ * phrases que l'éditeur écrit (§ 23) — ce que le handler passe : chemin → variante.
+ */
+function servedVariants(template: keyof B2bMails): ReadonlyMap<string, string | null> {
   const { phrases } = phrasesOfTemplate(template, MANIFEST, [], PUBLICATION, []);
-  return new Map(phrases.map((phrase) => [phrase.path, phrase.variant] as const));
+  const declaration = mailBlockDeclarationOf(template);
+  return new Map(
+    phrases
+      .filter((phrase) => isEditablePhrase(declaration, phrase.path))
+      .map((phrase) => [phrase.path, phrase.variant] as const),
+  );
 }
 
 function startingOf(template: keyof B2bMails): MailDocument {
@@ -134,6 +147,13 @@ describe("l'aperçu par blocs : ce que les fragments portent", () => {
         }
       }
     }
+  });
+
+  it("« Commande passée » (§ 23) : seules l'accroche et l'objet sont marqués, pas le récapitulatif ni le QR", () => {
+    const paths = ALL.filter((rendered) => rendered.template === "customer.order-placed")
+      .flatMap((rendered) => fragmentsOf(rendered.parts))
+      .flatMap((html) => [...html.matchAll(/data-phrase="([^"]+)"/gu)].map(([, path]) => path));
+    expect([...new Set(paths)].sort()).toEqual(["cta", "intro", "manageLink", "subject", "title"]);
   });
 
   it("c'est le cas qui décide quelle variante se voit, et l'autre n'est pas rendue", () => {

@@ -98,6 +98,15 @@ import {
  * - `order-change-refused` : « Contactez notre service commercial. » remplace
  *   « Votre commande reste telle… » et le pied.
  * Les e-mails de l'équipe n'ont pas bougé.
+ *
+ * **Régénérées le 2026-11-07 pour les CINQ cas de `customer.order-placed`**
+ * (plan `plan-editeur-par-blocs.md`, § 23 — un e-mail pour tout le monde) :
+ * l'ouverture devient une phrase fixe (« Votre commande {ref} a bien été
+ * prise en compte par nos services. »), le jour passe au récapitulatif
+ * (ligne « Jour », absente sans jour) et la ligne « Retrait » nomme le point
+ * (« Le Labo ») au lieu de la ville. Vérifié avant de régénérer : objet et
+ * pièces jointes identiques, et le HTML, ces trois changements défaits,
+ * rend exactement l'empreinte d'avant. Aucun autre e-mail n'a bougé.
  */
 
 const REGISTRY = b2bMailTemplates({

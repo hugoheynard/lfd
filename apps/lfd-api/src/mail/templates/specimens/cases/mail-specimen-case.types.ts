@@ -33,6 +33,15 @@ export interface MailCaseAxis<K extends keyof B2bMails> {
 export interface MailCaseTable<K extends keyof B2bMails> {
   readonly cases: readonly [MailSpecimenCase<K>, ...MailSpecimenCase<K>[]];
   readonly axes: readonly MailCaseAxis<K>[];
+  /**
+   * **Un e-mail pour tout le monde** (plan `plan-editeur-par-blocs.md`, § 23) :
+   * les axes que le gabarit distingue encore, mais dans ses blocs système
+   * seulement (le récapitulatif, le QR) — ses phrases éditables sont les
+   * mêmes pour toutes les commandes. Déclarés, ils n'exigent plus de cas :
+   * l'e-mail n'en sert qu'un, et sa déclaration borne ses phrases
+   * (`editablePhrases`) — la garde tient les deux ensemble.
+   */
+  readonly axesInSystemBlocks?: readonly MailCaseAxis<K>[];
 }
 
 /** Une table par e-mail du registre — exhaustive par construction. */

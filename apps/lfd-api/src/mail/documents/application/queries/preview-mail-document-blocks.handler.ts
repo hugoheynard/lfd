@@ -1,4 +1,8 @@
-import { validateMailDocument, type MailDocumentBlockPreviewView } from "@lfd/mail-blocks";
+import {
+  isEditablePhrase,
+  validateMailDocument,
+  type MailDocumentBlockPreviewView,
+} from "@lfd/mail-blocks";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { MailCopyManifest } from "../../../copy/domain/mail-copy-manifest.js";
@@ -20,7 +24,9 @@ import { PreviewMailDocumentBlocksQuery } from "./preview-mail-document-blocks.q
  * document de l'écran, rendu par le serveur bloc par bloc. Les variantes des
  * phrases viennent de la lecture même de `GET …/phrases` (`phrasesOfTemplate`) :
  * un `data-phrase` rendu nomme un chemin que l'écran connaît, avec la
- * variante qu'il affiche. Rien n'est écrit, rien n'est envoyé.
+ * variante qu'il affiche ; une phrase que la déclaration ne laisse pas
+ * réécrire (§ 23, `editablePhrases`) n'est pas marquée. Rien n'est écrit,
+ * rien n'est envoyé.
  */
 @QueryHandler(PreviewMailDocumentBlocksQuery)
 export class PreviewMailDocumentBlocksHandler implements IQueryHandler<
@@ -63,7 +69,13 @@ export class PreviewMailDocumentBlocksHandler implements IQueryHandler<
       publication,
       orders,
     );
-    const variants = new Map(phrases.map((phrase) => [phrase.path, phrase.variant] as const));
+    // Seules les phrases que l'éditeur laisse réécrire sont marquées (§ 23) :
+    // un libellé système se lit dans le bloc, il ne s'y écrit pas.
+    const variants = new Map(
+      phrases
+        .filter((phrase) => isEditablePhrase(entry.declaration, phrase.path))
+        .map((phrase) => [phrase.path, phrase.variant] as const),
+    );
     const locale = renderedLocale(entry, query.locale);
     const texts = replacementTexts(entries, this.manifest, locale, query.source);
     const rendered = this.renderer.render(

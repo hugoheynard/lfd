@@ -11,14 +11,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     subject: "Votre commande {ref} — La Folie Coffee",
     kicker: "Confirmée",
     title: "Commande confirmée",
-    intro:
-      "Votre commande {ref} pour le {day}, {routing}, a bien été prise en compte par nos services.",
-    introWithoutDay:
-      "Votre commande {ref}, {routing}, a bien été prise en compte par nos services.",
-    routingPickup: "en retrait à {place}",
-    routingPickupWithoutPlace: "en retrait",
-    routingDelivery: "en livraison à {city}",
-    routingDeliveryWithoutCity: "en livraison",
+    intro: "Votre commande {ref} a bien été prise en compte par nos services.",
     windowBetween: "entre {start} et {end}",
     windowBefore: "avant {end}",
     totalLabel: {
@@ -26,6 +19,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
       due: "Reste à régler",
       account: "Porté à votre compte",
     },
+    recapDay: "Jour",
     recapPickup: "Retrait",
     recapDelivery: "Livraison",
     recapContent: "Contenu",

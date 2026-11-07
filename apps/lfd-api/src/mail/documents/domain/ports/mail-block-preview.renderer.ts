@@ -19,8 +19,9 @@ export interface MailBlockPreviewRendering {
  */
 export abstract class MailBlockPreviewRenderer {
   /**
-   * @param variants la variante de chaque chemin de l'e-mail, telle que
-   *   `GET …/phrases` la sert — elle devient `data-variant`.
+   * @param variants les phrases que l'éditeur écrit et leur variante, telle
+   *   que `GET …/phrases` la sert — elle devient `data-variant` ; un chemin
+   *   absent n'est pas marqué (§ 23, `editablePhrases`).
    * @throws {UnknownMailTemplateError} l'e-mail n'est pas au registre.
    * @throws {UnknownMailCaseError} l'e-mail n'a pas ce cas.
    * @throws {MailTemplateWithoutLayoutError} le gabarit n'a pas posé la coquille.

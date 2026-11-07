@@ -40,10 +40,8 @@ const NOT_SHOWN_AS_TEXT = new Set([
   "customer.sub-account-gesture|bodyByTeam",
   "staff.production-dossier|arrestedWithoutAuthor",
   "customer.order-placed|recapDiscountBase",
-  // Les replis de l'ouverture (sans lieu, sans ville) et le créneau :
-  // `order-placed-intro.spec.ts` les parcourt, aucun cas de l'empreinte.
-  "customer.order-placed|routingPickupWithoutPlace",
-  "customer.order-placed|routingDeliveryWithoutCity",
+  // Le créneau du trajet au récapitulatif (§ 23) :
+  // `order-placed-route-rows.spec.ts` le parcourt, aucun cas de l'empreinte.
   "customer.order-placed|windowBetween",
   "customer.order-placed|windowBefore",
   // Une ligne au poids (`vente-au-poids.md`, P3) : aucun cas de
@@ -117,6 +115,10 @@ describe("les sections déclarées de chaque e-mail", () => {
       expect([...declared].sort()).toEqual(known);
       const ids = layout.sections.map((section) => section.id);
       expect(ids).toEqual(LAYOUT_SECTIONS.filter((id) => ids.includes(id)));
+      // § 23 : une phrase éditable est un texte de cet e-mail, déclaré une fois.
+      const editable = new Map(Object.entries(MAIL_LAYOUTS)).get(mail)?.editablePhrases ?? [];
+      expect(editable.filter((path) => !declared.includes(path))).toEqual([]);
+      expect(new Set(editable).size).toBe(editable.length);
     },
   );
 });

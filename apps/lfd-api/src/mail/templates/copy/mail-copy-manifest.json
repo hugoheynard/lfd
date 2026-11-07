@@ -23,55 +23,12 @@
       },
       "intro": {
         "variables": [
-          "ref",
-          "day",
-          "routing"
+          "ref"
         ],
         "required": [
-          "ref",
-          "day",
-          "routing"
+          "ref"
         ],
-        "fr": "Votre commande {ref} pour le {day}, {routing}, a bien été prise en compte par nos services."
-      },
-      "introWithoutDay": {
-        "variables": [
-          "ref",
-          "routing"
-        ],
-        "required": [
-          "ref",
-          "routing"
-        ],
-        "fr": "Votre commande {ref}, {routing}, a bien été prise en compte par nos services."
-      },
-      "routingPickup": {
-        "variables": [
-          "place"
-        ],
-        "required": [
-          "place"
-        ],
-        "fr": "en retrait à {place}"
-      },
-      "routingPickupWithoutPlace": {
-        "variables": [],
-        "required": [],
-        "fr": "en retrait"
-      },
-      "routingDelivery": {
-        "variables": [
-          "city"
-        ],
-        "required": [
-          "city"
-        ],
-        "fr": "en livraison à {city}"
-      },
-      "routingDeliveryWithoutCity": {
-        "variables": [],
-        "required": [],
-        "fr": "en livraison"
+        "fr": "Votre commande {ref} a bien été prise en compte par nos services."
       },
       "windowBetween": {
         "variables": [
@@ -107,6 +64,11 @@
         "variables": [],
         "required": [],
         "fr": "Porté à votre compte"
+      },
+      "recapDay": {
+        "variables": [],
+        "required": [],
+        "fr": "Jour"
       },
       "recapPickup": {
         "variables": [],

@@ -17,8 +17,8 @@ import { renderCollectionNoticeMail } from "./collection-notice-mail.js";
 import { renderCustomerRequestMail } from "./customer-request-mail.js";
 import { renderCustomerAccessOpenedMail } from "./customer-access-opened-mail.js";
 import { renderInvoiceIssuedMail } from "./invoice-issued-mail.js";
-import { orderPlacedIntro } from "./order-placed-intro.js";
 import { renderOrderCancelledMail } from "./order-cancelled-mail.js";
+import { orderPlacedRouteRows } from "./order-placed-route-rows.js";
 import {
   renderOrderChangeAppliedMail,
   renderOrderChangeRefusedMail,
@@ -96,10 +96,7 @@ function recapRows(
   const ttc = sheet.money.ttcTerms;
   const voucherCents = ttc?.voucherCents ?? sheet.money.voucherDiscountCents;
   return [
-    {
-      label: sheet.fulfillment.method === "pickup" ? copy.recapPickup : copy.recapDelivery,
-      value: sheet.fulfillment.address?.ville ?? "—",
-    },
+    ...orderPlacedRouteRows(sheet, copy, locale),
     {
       label: copy.recapContent,
       value: contentOf(sheet.lines, { pieces: copy.recapPieces, weighed: copy.recapWeighed }),
@@ -380,7 +377,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         html: customerMail({
           kicker: copy.kicker,
           title: copy.title,
-          body: orderPlacedIntro(data.sheet, copy, data.locale),
+          body: fill(copy.intro, { ref: data.sheet.reference }),
           rows: recapRows(data.sheet, data.locale, settlement),
           // Le QR est DANS le corps, jamais en pièce jointe à ouvrir : c'est la
           // seule chose qu'on vient chercher debout devant un comptoir, et un
