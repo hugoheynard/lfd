@@ -1623,3 +1623,18 @@ lecture pour la personne qui prépare l'e-mail, pas un nouveau format.
    de commande ») demande de renommer `{reference}` dans les textes — une
    valeur de donnée, donc une migration des textes réécrits en base. Fusionner,
    ou garder deux noms techniques sous la même fiche ?
+
+### Réponses de Hugo (2026-11-07) et ce que le code a dit ensuite
+
+1. **Noms des fiches** : oui, écrits d'après le code, relus par Hugo dans
+   l'éditeur.
+2. **`ref` / `reference`** : Hugo a dit « fusionne » — **mais la fusion serait
+   fausse**, vérifié le 2026-11-07 après sa réponse. `reference` n'est employé
+   que par `customer.sub-account-gesture`
+   (`apps/lfd-api/src/mail/templates/sub-account-gesture-mail.ts`) et désigne
+   **l'objet du geste**, libellé « Référence » en général et « Commande »
+   seulement pour un problème signalé (`referenceLabelOf`). Ce n'est pas la
+   référence d'une commande. **Pas de fusion, pas de migration** : deux fiches
+   distinctes (« Référence de commande » pour `ref`, « Référence de l'objet du
+   geste » pour `reference`). Soumis à Hugo.
+3. **R1 lancé** le 2026-11-07.
