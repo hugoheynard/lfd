@@ -1456,3 +1456,9 @@ le HTML rend l'empreinte d'avant à l'octet) :
   deviennent des **orphelines** (lues, jamais envoyées) ; une réécriture de
   `intro` qui portait `{day}` ou `{routing}` laisserait ces variables en
   clair : à relire à l'écran. Rien n'est migré ni supprimé.
+
+- **Le surtitre et l'itinéraire sont éditables** (Hugo, 2026-11-07, « modifiable
+  staff ») : `kicker` et `itinerary` rejoignent la liste de `customer.order-placed`.
+  Le refus côté serveur d'une écriture sur un libellé système reste **non
+  tranché** (Hugo : « je ne sais pas ») : aujourd'hui, la liste ne règle que
+  ce que l'éditeur montre.

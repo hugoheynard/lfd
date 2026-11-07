@@ -490,16 +490,19 @@ describe("l'aperçu par blocs du canevas (S5f)", () => {
     expect(all.join("")).toMatch(/<span data-var="\w+">/u);
     expect(all.join("")).not.toMatch(/<script|\son[a-z]+\s*=|javascript:/iu);
     expect(rendered.subject).toContain('data-phrase="subject"');
-    // § 23 : l'accroche seule s'écrit ; le récapitulatif et le QR sont système.
+    // § 23 : l'accroche seule s'écrit (surtitre et itinéraire compris, Hugo
+    // le 2026-11-07) ; le récapitulatif et le QR sont système.
     expect(view.declaration.editablePhrases).toEqual([
       "subject",
+      "kicker",
       "title",
       "intro",
       "cta",
       "manageLink",
+      "itinerary",
     ]);
     expect(new Set(marked.map(([, path = ""]) => path))).toEqual(
-      new Set(["subject", "title", "intro", "cta", "manageLink"]),
+      new Set(["subject", "kicker", "title", "intro", "cta", "manageLink", "itinerary"]),
     );
   });
 

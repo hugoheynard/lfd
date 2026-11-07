@@ -153,7 +153,15 @@ describe("l'aperçu par blocs : ce que les fragments portent", () => {
     const paths = ALL.filter((rendered) => rendered.template === "customer.order-placed")
       .flatMap((rendered) => fragmentsOf(rendered.parts))
       .flatMap((html) => [...html.matchAll(/data-phrase="([^"]+)"/gu)].map(([, path]) => path));
-    expect([...new Set(paths)].sort()).toEqual(["cta", "intro", "manageLink", "subject", "title"]);
+    expect([...new Set(paths)].sort()).toEqual([
+      "cta",
+      "intro",
+      "itinerary",
+      "kicker",
+      "manageLink",
+      "subject",
+      "title",
+    ]);
   });
 
   it("c'est le cas qui décide quelle variante se voit, et l'autre n'est pas rendue", () => {
