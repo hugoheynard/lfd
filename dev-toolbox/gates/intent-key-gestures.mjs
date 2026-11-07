@@ -93,8 +93,6 @@ export const GESTURES = [
 
 /** Les clés d'e-mail tirées au hasard qui restent admises, chacune avec sa raison. */
 export const RANDOM_ADMITTED = {
-  [`${SRC}/mail/requests/application/check-mail-delivery.handler.ts`]:
-    "2026-11-06 — la sonde de déploiement : chaque appel EST un essai neuf, aucun écran ne clique",
   [`${SRC}/b2b/account/infrastructure/auth0-customer-identity.ts`]:
     "2026-11-06 — « mot de passe oublié » du CLIENT, pas un geste du staff : hors du cas 4, signalé dans son rapport",
   [`${SRC}/b2b/account/infrastructure/dev-customer-identity.ts`]:
