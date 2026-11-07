@@ -1092,3 +1092,84 @@ de menu disparaissent.
   lit plus les ordres. Conséquence visible sur l'ancien écran tant qu'il vit :
   un ordre qu'il a mis en brouillon y reste compté jusqu'à ce que lui-même le
   publie.
+
+## 22. S5f — le canevas devient l'e-mail (Hugo, 2026-11-07) — à bâtir
+
+### En simple
+
+Hugo, le 2026-11-07, devant l'éditeur bâti : « je trouve que le front est
+incompréhensible comparé à l'interface super que tu avais proposée, quelque
+chose où on manipule les blocs, on voit le texte ». La maquette du jour
+(l'e-mail « Commande prête ») a été validée : « oui c'est ça ».
+
+**Au milieu, l'e-mail lui-même**, à sa largeur, avec la charte de la marque
+et les données du cas choisi. Chaque bloc est la vraie portion d'e-mail ; au
+survol, une poignée (glisser), monter / descendre, et une corbeille pour les
+blocs libres. **On écrit en cliquant sur le texte** : une phrase du modèle ou
+le texte d'un bloc libre devient modifiable sur place ; les variables y sont
+des pastilles qu'on ne casse pas en tapant. **À gauche** : le cas, les
+variables à glisser dans un texte, l'objet. **À droite** : la bibliothèque
+de blocs, puis les réglages du bloc sélectionné (lien, ton, image et texte
+de remplacement). **En haut** : langue, téléphone / ordinateur, clair /
+sombre, essai, brouillon / publier / historique — inchangés.
+
+```mermaid
+sequenceDiagram
+    participant E as Éditeur (écran)
+    participant A as API (bloc mail)
+    E->>A: rendre les blocs (document, langue, cas, source)
+    A-->>E: un fragment HTML par bloc, phrases et variables marquées
+    Note over E: clic sur une phrase, frappe
+    E->>A: brouillon de la phrase (texte avec ses variables)
+    E->>A: rendre le bloc touché
+    A-->>E: le fragment à jour
+```
+
+### Une seule façon de dessiner un e-mail
+
+Le serveur dessine les blocs ; l'écran ne recopie aucun style. Les phrases
+et les variables sont **marquées** dans le fragment rendu, et seulement dans
+ce rendu-là :
+
+- une phrase : un élément qui porte son chemin et sa variante
+  (`data-phrase`, `data-variant`) autour du texte résolu ;
+- une variable : un élément `data-var` autour de sa valeur d'exemple ;
+- le texte d'un bloc libre : `data-free-block` + la langue.
+
+🔴 **Le rendu envoyé aux clients ne change pas d'un octet** : le marquage est
+un mode du rendu (aperçu de l'éditeur seulement), et le test « mêmes octets »
+des 32 modèles doit rester vert. Un fragment ne porte ni script ni gestionnaire
+d'événement ; toute donnée y est échappée par le serveur comme aujourd'hui.
+
+### Côté API (`mail/documents`, `@lfd/mailer`, `@lfd/mail-blocks`)
+
+- **Route** `POST /admin/mail-templates/:template/block-previews` (sous
+  `mail_templates`) : `{ document, locale, caseId?, source }` →
+  `{ subject, header, footer, blocks: [{ blockId, html }] }`, l'objet et les
+  cadres marqués eux aussi. Contrat en ajout seul.
+- **Le marquage** : là où une phrase est résolue pour le rendu, le mode
+  « éditeur » l'entoure de son marqueur ; les variables interpolées aussi.
+  Une phrase qui n'apparaît pas dans le cas choisi n'est pas rendue — c'est
+  le cas qui décide quelles variantes on voit.
+- **L'écriture** reste celle de S4d : `PUT …/phrases/drafts` avec le texte au
+  format du dictionnaire (`{ref}`), et le brouillon du document pour les
+  blocs libres.
+
+### Côté front (`apps/lfd-backoffice-frontend/src/app/mail-editor/`)
+
+- Le canevas affiche les fragments du serveur (injection d'HTML venu de notre
+  propre API, échappé par elle — l'écran n'y ajoute rien de tiers) ; les zones
+  marquées deviennent `contenteditable` ; à la frappe, le texte est relu en
+  format du dictionnaire (une pastille de variable redevient `{nom}`), écrit
+  en brouillon après une pause, et le bloc est redemandé.
+- Glisser-déposer et « monter / descendre » sur les blocs ; corbeille sur les
+  blocs libres seulement ; ajout depuis la bibliothèque sous le bloc
+  sélectionné.
+- Les variables du cas glissées dans une zone marquée s'insèrent en pastille ;
+  une variable obligatoire retirée est refusée par le serveur (S4d), refus
+  affiché sous le bloc.
+- L'ancien panneau des phrases et la liste « Autres textes / orphelins »
+  restent accessibles **sous** l'e-mail, repliés : ce qu'on ne voit pas dans
+  le cas choisi doit rester atteignable.
+- Accessibilité (RGAA) : chaque bloc est focalisable, ses gestes ont un nom,
+  le déplacement au clavier existe.
