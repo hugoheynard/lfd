@@ -1930,3 +1930,44 @@ change le rendu de son espace, et seulement de lui.
 
 Pas d'argent, pas de frontière de sécurité nouvelle (même droit) : `vitruve`
 n'est pas requis ; la migration additive passera au lecteur de migrations.
+
+### C3 — une identité d'envoi par marque (Hugo, 2026-11-07) — à bâtir après C1
+
+Hugo : « écrivons le truc scalable ; pour l'instant j'ai un seul domaine
+lafoliecoffee dans Resend, mais je voudrais passer les mails admin via un
+no-reply@lfd-backoffice.com ».
+
+**Aujourd'hui** (vérifié le 2026-11-07) : une seule identité d'envoi
+(`optionalMailerConfig`, `apps/lfd-api/src/platform/config/env-readers.ts` —
+clé Resend, `MAILER_FROM_ADDRESS` par défaut `no-reply@lafoliecoffee.info`,
+`MAILER_REPLY_TO`, `MAILER_STAFF_INBOX`) ; chaque demande porte une marque
+(`mail.mail_request.brand`), mais le type n'en connaît qu'une
+(`MailBrandName = "lfc"`, `apps/lfd-api/src/mail/channels/requests/mail.ts`) et
+les e-mails de l'équipe partent sous `lfc`.
+
+**La règle** : **une marque = un espace = une charte = une identité d'envoi.**
+Ajouter une app, c'est ajouter une marque à une liste — pas une branche dans le
+code.
+
+- **La marque d'un e-mail découle de son espace** (§ 25) : `lfc` pour les
+  e-mails clients, `lfd` pour l'équipe et l'interne. L'appelant ne la choisit
+  plus ; « lfc » écrit en dur disparaît.
+- **L'identité d'envoi est de la configuration**, lue par `AppConfig`, une par
+  marque, sous des noms explicites (`MAILER_LFD_FROM_ADDRESS`,
+  `MAILER_LFD_FROM_NAME`, `MAILER_LFD_REPLY_TO`…) déclarés dans une table, comme
+  les usages R2. Pas un réglage du staff : une adresse fausse ou un domaine
+  non vérifié arrête tout l'envoi de la marque.
+- **Un seul compte Resend**, plusieurs domaines vérifiés (SPF, DKIM) : la clé
+  reste commune.
+- **Une marque sans identité configurée part sous l'identité `lfc`**, comme
+  aujourd'hui, et le bulletin de démarrage le dit nommément (« la marque lfd
+  n'a pas d'expéditeur : ses e-mails partent sous no-reply@lafoliecoffee.info »).
+  C'est le seul repli, écrit et visible — il permet de déployer avant que le
+  domaine `lfd-backoffice.com` soit vérifié chez Resend.
+- **La sonde de déploiement** (S8) éprouve chaque marque configurée.
+- **Base** : la contrainte sur `mail_request.brand` accepte la liste des
+  marques — migration additive.
+
+**À faire par Hugo, hors code** : ajouter `lfd-backoffice.com` dans Resend et
+poser ses enregistrements DNS ; puis poser `MAILER_LFD_FROM_ADDRESS =
+no-reply@lfd-backoffice.com` (et le nom d'expéditeur) en dev et en production.
