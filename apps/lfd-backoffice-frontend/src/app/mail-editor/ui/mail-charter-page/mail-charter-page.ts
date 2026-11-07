@@ -66,6 +66,7 @@ import {
 import { MailCharterColorField } from '../mail-charter-color-field/mail-charter-color-field';
 import { MailCharterHistory } from '../mail-charter-history/mail-charter-history';
 import { MailCharterPreview } from '../mail-charter-preview/mail-charter-preview';
+import { MailSpaceTabs } from '../mail-space-tabs/mail-space-tabs';
 
 const SOURCE_LABELS: Readonly<Record<MailCharterView['source'], string>> = {
   draft: 'Brouillon en cours',
@@ -84,7 +85,9 @@ const NO_VIOLATIONS: readonly MailCharterViolation[] = [];
  *
  * Enregistrer écrit le brouillon ; « Publier » met en service le brouillon
  * ENREGISTRÉ pour tous les e-mails de l'espace, au prochain envoi. Quitter
- * une charte modifiée se retient une fois.
+ * une charte modifiée se retient une fois — un changement d'onglet de
+ * l'espace aussi : c'est l'onglet « Charte » (`/emails/espaces/:space/charte`),
+ * une route à part (retouche du 2026-11-07).
  */
 @Component({
   selector: 'app-mail-charter-page',
@@ -106,6 +109,7 @@ const NO_VIOLATIONS: readonly MailCharterViolation[] = [];
     MailCharterColorField,
     MailCharterHistory,
     MailCharterPreview,
+    MailSpaceTabs,
   ],
   templateUrl: './mail-charter-page.html',
   styleUrl: './mail-charter-page.scss',
@@ -137,12 +141,10 @@ export class MailCharterPage implements HasPendingChanges {
   protected readonly lightFields = LIGHT_COLOR_FIELDS;
   protected readonly darkFields = DARK_COLOR_FIELDS;
   protected readonly canWrite = computed(() => this.permissions.can('mail_templates:write'));
-  /** Le retour mène à l'espace ; un segment qui n'en est pas un revient à la liste. */
-  protected readonly back = computed(() => {
+  /** L'espace, s'il en est un : les onglets ne se montrent que sous un espace connu. */
+  protected readonly known = computed(() => {
     const space = this.space();
-    return isMailSpace(space)
-      ? { label: MAIL_SPACE_LABELS[space], link: ['/emails', 'espaces', space] }
-      : { label: 'Les e-mails', link: ['/emails'] };
+    return isMailSpace(space) ? space : null;
   });
   protected readonly spaceTitle = computed(() => {
     const space = this.space();

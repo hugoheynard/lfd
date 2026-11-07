@@ -25,14 +25,15 @@ import {
 import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
 import { MailEditorService } from '../../data/mail-editor.service';
 import { mailSpaceListing } from '../../rules/mail-template-spaces';
-import { MailSenderCard } from '../mail-sender-card/mail-sender-card';
+import { MailSpaceTabs } from '../mail-space-tabs/mail-space-tabs';
 
 /**
  * **Un espace d'e-mails** (plan § 25, C2 — retouche du 2026-11-07, Hugo :
  * « la première page d'e-mail peut être une card par espace […] un espace
  * détail avec la liste des mails ») : ses e-mails, rangés par destinataire
- * puis par moment, les internes sous « Interne » ; l'accès à sa charte en
- * en-tête. Un clic ouvre la page de l'e-mail ; ce qui a un brouillon le dit.
+ * puis par moment, les internes sous « Interne ». C'est l'onglet
+ * « Templates » de l'espace (`/emails/espaces/:space/templates`), à côté de
+ * « Charte » et « Expéditeur » (retouche du 2026-11-07). Un clic ouvre la page de l'e-mail ; ce qui a un brouillon le dit.
  *
  * La liste est celle de `GET /admin/mail-templates`, filtrée à l'espace : le
  * serveur ne la sert pas par espace (C1).
@@ -50,11 +51,10 @@ import { MailSenderCard } from '../mail-sender-card/mail-sender-card';
     FoldMenuItemComponent,
     FoldMenuSeparatorComponent,
     FoldPageLayoutComponent,
-    MailSenderCard,
+    MailSpaceTabs,
     RouterLink,
   ],
   templateUrl: './mail-space-page.html',
-  styleUrl: './mail-space-page.scss',
 })
 export class MailSpacePage {
   private readonly api = inject(MailEditorService);
@@ -65,6 +65,10 @@ export class MailSpacePage {
   protected readonly status = signal<'loading' | 'ready' | 'failed'>('loading');
   protected readonly error = signal<string | null>(null);
   protected readonly mails = signal<readonly MailEditorListItem[]>([]);
+  protected readonly known = computed(() => {
+    const space = this.space();
+    return isMailSpace(space) ? space : null;
+  });
   protected readonly listing = computed(() => mailSpaceListing(this.mails(), this.space()));
   protected readonly title = computed(() => {
     const space = this.space();

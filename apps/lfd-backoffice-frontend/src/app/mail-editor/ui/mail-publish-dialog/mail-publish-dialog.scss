@@ -1,0 +1,14 @@
+.pd-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.pd-said {
+  margin: 0;
+}
+
+.pd-issues {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

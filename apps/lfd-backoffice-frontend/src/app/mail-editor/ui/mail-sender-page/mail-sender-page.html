@@ -1,0 +1,13 @@
+<fold-page-layout [title]="title()" icon="mail">
+  <fold-back-link pageEyebrow icon="arrow-back" label="Les e-mails" routerLink="/emails" />
+  @if (known(); as space) {
+    <app-mail-space-tabs [space]="space" />
+    <app-mail-sender-card [space]="space" />
+  } @else {
+    <fold-empty-state
+      tone="alert"
+      title="L’expéditeur n’a pas pu être lu"
+      [subtitle]="'« ' + space() + ' » n’est pas un espace d’e-mails.'"
+    />
+  }
+</fold-page-layout>

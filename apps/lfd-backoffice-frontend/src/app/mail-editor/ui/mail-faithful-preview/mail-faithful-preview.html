@@ -1,20 +1,4 @@
 <fold-page-section title="Aperçu fidèle" [description]="description()">
-  <div sectionActions>
-    <button
-      foldButton
-      size="sm"
-      emphasis="outline"
-      intent="neutral"
-      icon="eye"
-      type="button"
-      data-render
-      [loading]="status() === 'loading'"
-      (click)="render()"
-    >
-      {{ preview() === null ? 'Voir l’aperçu fidèle' : 'Rendre à nouveau' }}
-    </button>
-  </div>
-
   <div class="fp-column">
     @switch (status()) {
       @case ('loading') {
@@ -50,24 +34,6 @@
               }
             </p>
           }
-          <div class="fp-toolbar">
-            <fold-view-toggle
-              size="sm"
-              ariaLabel="Largeur de l’aperçu"
-              data-device
-              [options]="deviceOptions"
-              [value]="device()"
-              (valueChange)="setDevice($event)"
-            />
-            <fold-view-toggle
-              size="sm"
-              ariaLabel="Thème de l’aperçu"
-              data-scheme
-              [options]="schemeOptions"
-              [value]="scheme()"
-              (valueChange)="setScheme($event)"
-            />
-          </div>
           <iframe
             class="fp-frame"
             [class.fp-frame--phone]="device() === 'phone'"

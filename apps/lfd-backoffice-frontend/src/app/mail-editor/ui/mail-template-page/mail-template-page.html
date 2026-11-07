@@ -3,53 +3,45 @@
   @if (whoAndWhen(); as hint) {
     <p description>{{ hint }}</p>
   }
-  @if (status() === 'ready' && canWrite()) {
-    <div pageActions>
-      <button
-        foldButton
-        icon="save"
-        type="button"
-        data-save
-        [disabled]="!dirty()"
-        [loading]="saving()"
-        (click)="save()"
-      >
-        Enregistrer le brouillon
-      </button>
-      <fold-inline-confirm
-        intent="primary"
-        data-publish
-        [message]="publishMessage()"
-        [labels]="{ confirm: 'Publier' }"
-        [loading]="publishing()"
-        (confirmed)="publish()"
-      >
-        <button foldButton icon="upload" type="button" [disabled]="!canPublish()">Publier</button>
-      </fold-inline-confirm>
-      <fold-inline-confirm
-        intent="primary"
-        data-trial
-        [message]="trialMessage()"
-        [labels]="{ confirm: 'Envoyer l’essai' }"
-        [loading]="sendingTrial()"
-        (confirmed)="sendTrial()"
-      >
-        <button foldButton emphasis="outline" intent="neutral" icon="mail" type="button">
-          M’envoyer un essai
-        </button>
-      </fold-inline-confirm>
-      @if (canRevert()) {
-        <fold-inline-confirm
-          data-revert
-          message="Le brouillon est effacé et la version publiée retirée : dès le prochain envoi, l’e-mail repart dans son arrangement d’origine. Les phrases ne changent pas."
-          [labels]="{ confirm: 'Revenir au modèle d’origine' }"
-          [loading]="reverting()"
-          (confirmed)="revert()"
+  @if (status() === 'ready') {
+    <div pageActions class="tp-actions">
+      <span class="tp-muted" role="status" data-save-state [attr.data-state]="saveState()">{{
+        saveLabel()
+      }}</span>
+      @if (canWrite()) {
+        <button
+          foldButton
+          icon="upload"
+          type="button"
+          data-publish
+          [loading]="publishing()"
+          (click)="openPublish()"
         >
-          <button foldButton emphasis="outline" intent="neutral" icon="reset" type="button">
+          Publier
+        </button>
+        <fold-dropdown placement="bottom-end" ariaLabel="Autres actions sur l’e-mail" data-more>
+          <button
+            foldButton
+            foldPopoverTrigger="menu"
+            emphasis="outline"
+            intent="neutral"
+            icon="more-vertical"
+            type="button"
+            aria-label="Autres actions sur l’e-mail"
+          ></button>
+          <fold-dropdown-item icon="mail" data-trial (selected)="openTrial()">
+            M’envoyer un essai
+          </fold-dropdown-item>
+          <fold-dropdown-item
+            icon="reset"
+            tone="danger"
+            data-revert
+            [disabled]="!canRevert()"
+            (selected)="openRevert()"
+          >
             Revenir au modèle d’origine
-          </button>
-        </fold-inline-confirm>
+          </fold-dropdown-item>
+        </fold-dropdown>
       }
     </div>
   }
@@ -70,23 +62,101 @@
     @case ('ready') {
       @if (view(); as current) {
         @if (document(); as doc) {
-          @if (gestureError(); as message) {
-            <fold-callout variant="alert" announce data-gesture-error>{{ message }}</fold-callout>
+          <app-mail-template-tabs [template]="current.template" active="edit" />
+          <div class="tp-toolbar" data-toolbar>
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Langue"
+              data-locales
+              [options]="localeOptions()"
+              [value]="locale()"
+              (valueChange)="setLocale($event)"
+            />
+            @if (phraseLocalesOpen()) {
+              <fold-view-toggle
+                size="sm"
+                ariaLabel="Langue des phrases"
+                data-phrase-locales
+                [options]="phraseLocaleOptions"
+                [value]="phraseLocale()"
+                (valueChange)="setPhraseLocale($event)"
+              />
+            }
+            @if (caseOptions().length > 1) {
+              <fold-listbox
+                size="sm"
+                label="Cas"
+                data-cases
+                [options]="caseOptions()"
+                [(value)]="caseId"
+              />
+            }
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Phrases de l’aperçu et de l’essai"
+              data-phrase-source
+              [options]="phraseSourceOptions"
+              [value]="phraseSource()"
+              (valueChange)="setPhraseSource($event)"
+            />
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Largeur de l’aperçu"
+              data-device
+              [options]="deviceOptions"
+              [value]="device()"
+              (valueChange)="setDevice($event)"
+            />
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Thème de l’aperçu"
+              data-scheme
+              [options]="schemeOptions"
+              [value]="scheme()"
+              (valueChange)="setScheme($event)"
+            />
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              icon="eye"
+              type="button"
+              data-render
+              [loading]="faithful()?.rendering() ?? false"
+              (click)="renderFaithful()"
+            >
+              {{ faithful()?.rendered() ? 'Rendre à nouveau' : 'Rendre l’aperçu' }}
+            </button>
+          </div>
+          @if (saveRefusal(); as refusal) {
+            <fold-callout variant="alert" announce data-save-refusal>
+              Le brouillon n’a pas été enregistré : {{ refusal }}
+              @if (saveConflict()) {
+                <button
+                  actions
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  type="button"
+                  data-reload
+                  (click)="reloadAfterConflict()"
+                >
+                  Relire la version enregistrée
+                </button>
+              }
+            </fold-callout>
           }
-          @if (leaveWarned() && dirty()) {
+          @if (leaveWarned() && saveState() !== 'saved' && saveState() !== 'idle') {
             <fold-callout variant="warning" announce data-leave-warning>
-              Des modifications ne sont pas enregistrées. Enregistrez-les, ou quittez à nouveau la
-              page pour les abandonner.
-            </fold-callout>
-          } @else if (dirty() && canWrite()) {
-            <fold-callout variant="neutral" data-unsaved>
-              Modifications non enregistrées : « Publier » met en service le brouillon enregistré.
-            </fold-callout>
-          }
-          @if (phrases.pendingCount() > 0) {
-            <fold-callout variant="neutral" data-phrases-pending>
-              {{ phrases.pendingCount() }} phrase{{ phrases.pendingCount() > 1 ? 's' : '' }} en
-              brouillon : elles partent avec « Publier ».
+              @if (saveState() === 'refused') {
+                Le brouillon a été refusé : vos modifications ne sont pas enregistrées.
+                Corrigez-les, ou quittez à nouveau la page pour les abandonner.
+              } @else {
+                Enregistrement en cours : attendez « Brouillon enregistré », ou quittez à nouveau la
+                page pour abandonner ce qui n’est pas enregistré.
+              }
             </fold-callout>
           }
           @if (phrases.defaultChangedCount() > 0) {
@@ -108,35 +178,6 @@
               </ul>
             </fold-callout>
           }
-          <div class="tp-toolbar">
-            <fold-view-toggle
-              size="sm"
-              ariaLabel="Langue"
-              data-locales
-              [options]="localeOptions()"
-              [value]="locale()"
-              (valueChange)="setLocale($event)"
-            />
-            <fold-view-toggle
-              size="sm"
-              ariaLabel="Phrases de l’aperçu et de l’essai"
-              data-phrase-source
-              [options]="phraseSourceOptions"
-              [value]="phraseSource()"
-              (valueChange)="setPhraseSource($event)"
-            />
-            @if (phraseLocalesOpen()) {
-              <fold-view-toggle
-                size="sm"
-                ariaLabel="Langue des phrases"
-                data-phrase-locales
-                [options]="phraseLocaleOptions"
-                [value]="phraseLocale()"
-                (valueChange)="setPhraseLocale($event)"
-              />
-            }
-            <span class="tp-muted" data-source>{{ sourceLabel() }}</span>
-          </div>
           @if (phraseLocaleNote(); as note) {
             <fold-callout variant="info" data-phrase-locale-note>{{ note }}</fold-callout>
           }
@@ -147,8 +188,6 @@
             [locale]="locale()"
             [canWrite]="canWrite()"
             [resources]="current.resources ?? noResources"
-            [cases]="caseOptions()"
-            [(caseId)]="caseId"
             [(focus)]="focus"
             (documentChange)="document.set($event)"
             (retry)="renderNow()"
@@ -240,8 +279,9 @@
             [document]="doc"
             [caseId]="caseId()"
             [source]="phraseSource()"
+            [device]="device()"
+            [scheme]="scheme()"
           />
-          <app-mail-template-history [template]="current.template" [refresh]="historyRefresh()" />
         }
       }
     }

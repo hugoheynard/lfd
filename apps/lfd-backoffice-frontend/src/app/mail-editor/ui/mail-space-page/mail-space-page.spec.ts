@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { MailEditorService } from '../../data/mail-editor.service';
-import { MailSendersService } from '../../data/mail-senders.service';
 import { MailSpacePage } from './mail-space-page';
 
 const ORDER_PLACED: MailEditorListItem = {
@@ -35,7 +34,6 @@ async function setup(space: string, list: () => Promise<unknown>) {
       provideRouter([]),
       { provide: MailEditorService, useValue: calls },
       { provide: PermissionsStore, useValue: { can: () => false } },
-      { provide: MailSendersService, useValue: { load: () => new Promise(() => undefined) } },
     ],
   });
   const fixture = TestBed.createComponent(MailSpacePage);
@@ -59,14 +57,18 @@ describe('MailSpacePage — un espace d’e-mails', () => {
     expect(element.querySelector('[data-group="internal"]')).not.toBeNull();
   });
 
-  it('revient à la liste des espaces et mène à sa charte', async () => {
+  it('revient à la liste des espaces et montre les trois onglets de l’espace', async () => {
     const { element } = await setup('lfc', () =>
       Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 0 }),
     );
     expect(element.querySelector('fold-back-link a')?.getAttribute('href')).toBe('/emails');
-    expect(element.querySelector('[data-charter]')?.getAttribute('href')).toBe(
+    const tabs = [...element.querySelectorAll('app-mail-space-tabs a')];
+    expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual([
+      '/emails/espaces/lfc/templates',
       '/emails/espaces/lfc/charte',
-    );
+      '/emails/espaces/lfc/expediteur',
+    ]);
+    expect(element.querySelector('app-mail-sender-card')).toBeNull();
   });
 
   it('dit qu’un espace sans e-mail n’en a aucun', async () => {
@@ -83,6 +85,7 @@ describe('MailSpacePage — un espace d’e-mails', () => {
     expect(calls.list).not.toHaveBeenCalled();
     expect(element.querySelector('fold-empty-state')?.getAttribute('tone')).toBe('alert');
     expect(element.textContent).toContain('« ailleurs » n’est pas un espace d’e-mails.');
+    expect(element.querySelector('app-mail-space-tabs')).toBeNull();
   });
 
   it('dit l’échec de lecture', async () => {

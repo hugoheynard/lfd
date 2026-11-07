@@ -3,18 +3,8 @@
   @if (listing(); as space) {
     <p description>{{ space.scope }}</p>
   }
-  @if (listing(); as space) {
-    <a
-      pageActions
-      foldButton
-      emphasis="outline"
-      intent="neutral"
-      icon="palette"
-      data-charter
-      [routerLink]="['/emails', 'espaces', space.space, 'charte']"
-    >
-      Charte
-    </a>
+  @if (known(); as space) {
+    <app-mail-space-tabs [space]="space" />
   }
 
   @switch (status()) {
@@ -32,37 +22,34 @@
     }
     @case ('ready') {
       @if (listing(); as space) {
-        <div class="sp-stack">
-          <app-mail-sender-card [space]="space.space" />
-          @if (space.groups.length === 0) {
-            <fold-empty-state title="Aucun e-mail" subtitle="Cet espace n’a encore aucun e-mail.">
-              <fold-icon empty-icon name="inbox" />
-            </fold-empty-state>
-          } @else {
-            <fold-menu level="tertiary" [navLabel]="'E-mails — ' + space.title" [expanded]="true">
-              @for (group of space.groups; track group.key) {
-                @for (family of group.families; track family.family) {
-                  <fold-menu-separator
-                    [label]="group.title + ' — ' + family.title"
-                    [attr.data-group]="group.key"
-                  />
-                  @for (mail of family.mails; track mail.template) {
-                    <a
-                      fold-menu-item
-                      icon="mail"
-                      [label]="mailTitle(mail)"
-                      [attr.title]="hint(mail)"
-                      [attr.data-template]="mail.template"
-                      [routerLink]="['/emails', mail.template]"
-                      [badge]="badge(mail)"
-                      badgeTone="warning"
-                    ></a>
-                  }
+        @if (space.groups.length === 0) {
+          <fold-empty-state title="Aucun e-mail" subtitle="Cet espace n’a encore aucun e-mail.">
+            <fold-icon empty-icon name="inbox" />
+          </fold-empty-state>
+        } @else {
+          <fold-menu level="tertiary" [navLabel]="'E-mails — ' + space.title" [expanded]="true">
+            @for (group of space.groups; track group.key) {
+              @for (family of group.families; track family.family) {
+                <fold-menu-separator
+                  [label]="group.title + ' — ' + family.title"
+                  [attr.data-group]="group.key"
+                />
+                @for (mail of family.mails; track mail.template) {
+                  <a
+                    fold-menu-item
+                    icon="mail"
+                    [label]="mailTitle(mail)"
+                    [attr.title]="hint(mail)"
+                    [attr.data-template]="mail.template"
+                    [routerLink]="['/emails', mail.template]"
+                    [badge]="badge(mail)"
+                    badgeTone="warning"
+                  ></a>
                 }
               }
-            </fold-menu>
-          }
-        </div>
+            }
+          </fold-menu>
+        }
       }
     }
   }

@@ -224,20 +224,26 @@ export const routes: Routes = [
       ),
   },
   {
-    // **Un espace d'e-mails** (plan-editeur-par-blocs.md § 25, C2, retouche
-    // du 2026-11-07) : ses e-mails et l'accès à sa charte. La page « E-mails »
-    // n'en montre que les cartes. Trois segments, hors de `emails/:template`.
+    // **Un espace d'e-mails** (plan-editeur-par-blocs.md § 25, C2/C3,
+    // retouche du 2026-11-07) : trois onglets, chacun sa route — Templates,
+    // Charte, Expéditeur. La racine de l'espace mène à Templates. Trois et
+    // quatre segments, hors de portée de `emails/:template`.
     path: 'emails/espaces/:space',
+    pathMatch: 'full',
+    redirectTo: '/emails/espaces/:space/templates',
+  },
+  {
+    path: 'emails/espaces/:space/templates',
     canActivate: [permissionGuard('mail_templates:read')],
     title: 'Espace d’e-mails — LFC B2B admin',
     loadComponent: () =>
       import('./mail-editor/ui/mail-space-page/mail-space-page').then((m) => m.MailSpacePage),
   },
   {
-    // **La charte d'un espace** (plan-editeur-par-blocs.md § 25, C2) : ses
-    // réglages, l'aperçu clair / sombre, publier. Même droit que les e-mails
-    // (Hugo, 2026-11-07) ; quatre segments, donc hors de portée de
-    // `emails/:template`. Un espace inconnu est le 404 nommé du serveur.
+    // **La charte d'un espace** (§ 25, C2) : ses réglages, l'aperçu clair /
+    // sombre, publier. Même droit que les e-mails (Hugo, 2026-11-07). Un
+    // espace inconnu est le 404 nommé du serveur. La garde retient aussi un
+    // changement d'onglet quand la charte est modifiée.
     path: 'emails/espaces/:space/charte',
     canActivate: [permissionGuard('mail_templates:read')],
     canDeactivate: [pendingChangesGuard],
@@ -246,14 +252,35 @@ export const routes: Routes = [
       import('./mail-editor/ui/mail-charter-page/mail-charter-page').then((m) => m.MailCharterPage),
   },
   {
+    // **L'expéditeur d'un espace** (§ 25, C3) : le geste, sous `:write`,
+    // est retenu par la carte elle-même.
+    path: 'emails/espaces/:space/expediteur',
+    canActivate: [permissionGuard('mail_templates:read')],
+    title: 'Expéditeur des e-mails — LFC B2B admin',
+    loadComponent: () =>
+      import('./mail-editor/ui/mail-sender-page/mail-sender-page').then((m) => m.MailSenderPage),
+  },
+  {
     path: 'emails/:template',
     canActivate: [permissionGuard('mail_templates:read')],
-    // Un document modifié et non enregistré retient la sortie une fois (S5c).
+    // Un brouillon en cours d'enregistrement ou refusé retient la sortie une
+    // fois — le passage à l'onglet Historique compris.
     canDeactivate: [pendingChangesGuard],
     title: 'E-mail — LFC B2B admin',
     loadComponent: () =>
       import('./mail-editor/ui/mail-template-page/mail-template-page').then(
         (m) => m.MailTemplatePage,
+      ),
+  },
+  {
+    // **L'onglet Historique d'un e-mail** (Hugo, 2026-11-07) : la page d'un
+    // e-mail a deux onglets, Édition (`emails/:template`) et Historique.
+    path: 'emails/:template/historique',
+    canActivate: [permissionGuard('mail_templates:read')],
+    title: 'Historique de l’e-mail — LFC B2B admin',
+    loadComponent: () =>
+      import('./mail-editor/ui/mail-template-history-page/mail-template-history-page').then(
+        (m) => m.MailTemplateHistoryPage,
       ),
   },
   {

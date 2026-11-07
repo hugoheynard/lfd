@@ -1,0 +1,15 @@
+.rd-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.rd-erased {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}
+
+.rd-said {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

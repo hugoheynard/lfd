@@ -1,0 +1,44 @@
+<fold-panel-header title="Publier cet e-mail" closeLabel="Fermer" />
+
+<fold-panel-body>
+  <div class="pd-body">
+    <p class="pd-said" data-message>{{ message() }}</p>
+    <p class="pd-said" data-pending>{{ pendingMessage() }}</p>
+
+    @if (saveRefusal(); as refusal) {
+      <fold-callout variant="alert" data-save-refusal>
+        Le brouillon n’a pas pu être enregistré, il ne peut donc pas être publié : {{ refusal }}
+      </fold-callout>
+    }
+    @if (issues().length > 0) {
+      <fold-callout variant="warning" data-issues>
+        Cet e-mail ne peut pas encore être publié :
+        <ul class="pd-issues">
+          @for (issue of issues(); track $index) {
+            <li>{{ issue }}</li>
+          }
+        </ul>
+      </fold-callout>
+    }
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce data-error>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    icon="upload"
+    type="button"
+    data-confirm
+    [disabled]="blocked()"
+    [loading]="publishing()"
+    (click)="confirm()"
+  >
+    Publier
+  </button>
+</fold-panel-footer>

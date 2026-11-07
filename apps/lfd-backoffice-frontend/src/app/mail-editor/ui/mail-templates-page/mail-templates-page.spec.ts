@@ -109,7 +109,7 @@ describe('MailTemplatesPage — les e-mails', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     element.querySelector<HTMLElement>('[data-space="lfd"]')?.click();
     fixture.detectChanges();
-    expect(navigate).toHaveBeenCalledWith(['/emails', 'espaces', 'lfd']);
+    expect(navigate).toHaveBeenCalledWith(['/emails', 'espaces', 'lfd', 'templates']);
   });
 
   it('montre les pastilles de la charte, et le logo seulement s’il est réglé', async () => {

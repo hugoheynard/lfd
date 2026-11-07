@@ -9,8 +9,6 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageSectionComponent,
-  FoldViewToggleComponent,
-  type FoldViewToggleOption,
 } from 'fold-ng';
 
 import { MailEditorService } from '../../data/mail-editor.service';
@@ -31,15 +29,6 @@ export type PreviewDevice = 'desktop' | 'phone';
 /** Le thème que le cadre annonce au message (`color-scheme`). */
 export type PreviewScheme = 'light' | 'dark';
 
-const DEVICE_OPTIONS: readonly FoldViewToggleOption[] = [
-  { value: 'desktop', label: 'Ordinateur' },
-  { value: 'phone', label: 'Téléphone' },
-];
-const SCHEME_OPTIONS: readonly FoldViewToggleOption[] = [
-  { value: 'light', label: 'Clair' },
-  { value: 'dark', label: 'Sombre' },
-];
-
 /**
  * **L'aperçu fidèle** (§ 6) : le rendu du serveur — ce qui partirait, avec
  * des données d'exemple et les phrases en brouillon — du document à l'écran,
@@ -53,6 +42,10 @@ const SCHEME_OPTIONS: readonly FoldViewToggleOption[] = [
  * « Vue téléphone » rétrécit le cadre ; « clair / sombre » pose son
  * `color-scheme`, que le message lit par `prefers-color-scheme` (S5c) — sans
  * rien relâcher du `sandbox`, ni redemander le rendu.
+ *
+ * Depuis la retouche de l'en-tête (2026-11-07), ses commandes — rendre,
+ * largeur, thème — vivent dans la barre d'outils de la page : la page
+ * appelle `render()` et passe `device` et `scheme`.
  */
 @Component({
   selector: 'app-mail-faithful-preview',
@@ -64,7 +57,6 @@ const SCHEME_OPTIONS: readonly FoldViewToggleOption[] = [
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageSectionComponent,
-    FoldViewToggleComponent,
   ],
   templateUrl: './mail-faithful-preview.html',
   styleUrl: './mail-faithful-preview.scss',
@@ -86,18 +78,12 @@ export class MailFaithfulPreview {
   protected readonly preview = signal<MailDocumentPreviewView | null>(null);
   private readonly renderedFor = signal<RenderedFor | null>(null);
 
-  protected readonly deviceOptions = DEVICE_OPTIONS;
-  protected readonly schemeOptions = SCHEME_OPTIONS;
-  readonly device = signal<PreviewDevice>('desktop');
-  readonly scheme = signal<PreviewScheme>('light');
-
-  protected setDevice(value: string): void {
-    this.device.set(value === 'phone' ? 'phone' : 'desktop');
-  }
-
-  protected setScheme(value: string): void {
-    this.scheme.set(value === 'dark' ? 'dark' : 'light');
-  }
+  readonly device = input<PreviewDevice>('desktop');
+  readonly scheme = input<PreviewScheme>('light');
+  /** Un rendu est en cours — la page en tient son bouton. */
+  readonly rendering = signal(false);
+  /** Un aperçu a déjà été rendu : le bouton de la page dit « Rendre à nouveau ». */
+  readonly rendered = computed(() => this.preview() !== null);
 
   /** Le HTML du serveur, posé tel quel : le cadre est sandboxé sans aucun drapeau. */
   protected readonly body = computed<SafeHtml | null>(() => {
@@ -105,10 +91,12 @@ export class MailFaithfulPreview {
     return preview === null ? null : this.sanitizer.bypassSecurityTrustHtml(preview.html);
   });
 
-  protected readonly description = computed(
-    () =>
-      `Le rendu du serveur, avec des données d’exemple et les phrases ${this.source() === 'draft' ? 'en brouillon' : 'publiées'}. Rien n’est envoyé.`,
-  );
+  protected readonly description = computed(() => {
+    const said = `Le rendu du serveur, avec des données d’exemple et les phrases ${this.source() === 'draft' ? 'en brouillon' : 'publiées'}. Rien n’est envoyé.`;
+    return this.preview() === null && this.status() === 'idle'
+      ? `${said} « Rendre l’aperçu », dans la barre d’outils, le montre ici.`
+      : said;
+  });
 
   protected readonly attachments = computed(() =>
     (this.preview()?.attachments ?? []).filter((attachment) => !attachment.inline),
@@ -140,6 +128,7 @@ export class MailFaithfulPreview {
     if (this.preview() === null) {
       this.status.set('loading');
     }
+    this.rendering.set(true);
     try {
       const preview = await this.api.preview(this.template(), {
         locale: asked.locale,
@@ -157,6 +146,10 @@ export class MailFaithfulPreview {
       if (request === this.request) {
         this.error.set(httpErrorMessage(error, 'L’aperçu n’a pas pu être rendu.'));
         this.status.set(this.preview() === null ? 'failed' : 'ready');
+      }
+    } finally {
+      if (request === this.request) {
+        this.rendering.set(false);
       }
     }
   }

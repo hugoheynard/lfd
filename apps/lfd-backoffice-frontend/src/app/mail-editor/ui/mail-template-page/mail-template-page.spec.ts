@@ -10,12 +10,22 @@ import {
   type MailEditorResources,
   type MailEditorView,
 } from '@lfd/mail-blocks';
+import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { MailEditorService } from '../../data/mail-editor.service';
-import { MailTemplatePage } from './mail-template-page';
+import {
+  MailPublishDialog,
+  type MailPublishDialogData,
+} from '../mail-publish-dialog/mail-publish-dialog';
+import {
+  MailRevertDialog,
+  type MailRevertDialogData,
+} from '../mail-revert-dialog/mail-revert-dialog';
+import { MailTrialDialog, type MailTrialDialogData } from '../mail-trial-dialog/mail-trial-dialog';
+import { DOCUMENT_DRAFT_DEBOUNCE_MS, MailTemplatePage } from './mail-template-page';
 
 const TEMPLATE = 'customer.order-placed';
 
@@ -126,12 +136,13 @@ async function render(
       },
     ],
   });
+  const open = vi.spyOn(TestBed.inject(FoldPanelHostService), 'open');
   const fixture = TestBed.createComponent(MailTemplatePage);
   fixture.componentRef.setInput('template', TEMPLATE);
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return { fixture, element: fixture.nativeElement as HTMLElement, notify };
+  return { fixture, element: fixture.nativeElement as HTMLElement, notify, open };
 }
 
 describe('MailTemplatePage — la page d’un e-mail', () => {
@@ -141,7 +152,9 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     expect(load).toHaveBeenCalledWith(TEMPLATE);
     expect(element.querySelector('app-mail-canvas')).not.toBeNull();
     expect(element.textContent).toContain('Commande passée');
-    expect(element.querySelector('[data-source]')?.textContent).toContain('Arrangement d’origine');
+    expect(element.querySelector('[data-save-state]')?.textContent).toContain(
+      'Arrangement d’origine',
+    );
     expect(fixture.componentInstance.locale()).toBe('fr');
     expect(element.querySelector('[data-locales]')?.textContent).toContain('EN');
     expect(element.querySelector('[data-locales]')?.textContent).not.toContain('IT');
@@ -167,40 +180,123 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     expect(element.querySelector('[data-phrase-locales]')).toBeNull();
   });
 
-  it('n’offre d’enregistrer qu’à qui écrit, et seulement un document modifié', async () => {
+  it('dit l’état d’enregistrement, et ne montre « Publier » et le menu qu’à qui écrit', async () => {
     const load = vi.fn(() => Promise.resolve(view(0)));
     const reader = await render({ load }, ['mail_templates:read']);
-    expect(reader.element.querySelector('[data-save]')).toBeNull();
+    expect(reader.element.querySelector('[data-publish]')).toBeNull();
+    expect(reader.element.querySelector('[data-more]')).toBeNull();
     TestBed.resetTestingModule();
     const writer = await render({ load });
-    expect(writer.element.querySelector<HTMLButtonElement>('[data-save]')?.disabled).toBe(true);
+    expect(writer.element.querySelector('[data-save-state]')?.textContent).toContain(
+      'Arrangement d’origine',
+    );
+    expect(writer.element.querySelector('[data-publish]')).not.toBeNull();
+    expect(writer.element.querySelector('[data-more]')).not.toBeNull();
+    expect(writer.element.querySelector('fold-inline-confirm')).toBeNull();
+    expect(writer.element.querySelector('[data-save]')).toBeNull();
   });
 
-  it('enregistre le brouillon avec la révision lue, puis relit', async () => {
-    const load = vi.fn().mockResolvedValueOnce(view(3)).mockResolvedValueOnce(view(4));
-    const saveDraft = vi.fn(() => Promise.resolve());
-    const { fixture, notify } = await render({ load, saveDraft });
-    const page = fixture.componentInstance;
-    const edited = { template: TEMPLATE, blocks: [...view(0).document.blocks].reverse() };
-    page.document.set(edited);
-    expect(page.dirty()).toBe(true);
-    await page.save();
-    expect(saveDraft).toHaveBeenCalledWith(TEMPLATE, { document: edited, expectedRevision: 3 });
-    expect(load).toHaveBeenCalledTimes(2);
-    expect(page.dirty()).toBe(false);
-    expect(notify.success).toHaveBeenCalled();
+  it('met les options de l’aperçu dans la barre d’outils, et les passe à l’aperçu', async () => {
+    const { fixture, element } = await render({ load: vi.fn(() => Promise.resolve(view(0))) });
+    const toolbar = element.querySelector('[data-toolbar]');
+    for (const marker of [
+      '[data-locales]',
+      '[data-phrase-source]',
+      '[data-device]',
+      '[data-scheme]',
+      '[data-render]',
+    ]) {
+      expect(toolbar?.querySelector(marker)).not.toBeNull();
+    }
+    expect(toolbar?.querySelector('[data-render]')?.textContent).toContain('Rendre l’aperçu');
+    expect(element.querySelector('app-mail-faithful-preview [data-device]')).toBeNull();
+    fixture.componentInstance.device.set('phone');
+    fixture.detectChanges();
+    expect(element.querySelector('app-mail-template-tabs')).not.toBeNull();
   });
 
-  it('garde le document à l’écran quand l’enregistrement est refusé', async () => {
+  it('enregistre le brouillon tout seul après la pause, sur la révision lue, sans relire', async () => {
     const load = vi.fn(() => Promise.resolve(view(3)));
-    const saveDraft = vi.fn(() => Promise.reject(new Error('409')));
-    const { fixture, notify } = await render({ load, saveDraft });
+    const saveDraft = vi.fn(() => Promise.resolve());
+    const { fixture, element } = await render({ load, saveDraft });
+    const page = fixture.componentInstance;
+    vi.useFakeTimers();
+    try {
+      const edited = { template: TEMPLATE, blocks: [...view(0).document.blocks].reverse() };
+      page.document.set(edited);
+      TestBed.tick();
+      expect(page.saveState()).toBe('pending');
+      fixture.detectChanges();
+      expect(element.querySelector('[data-save-state]')?.textContent).toContain(
+        'Modifications non enregistrées',
+      );
+      vi.advanceTimersByTime(DOCUMENT_DRAFT_DEBOUNCE_MS - 1);
+      expect(saveDraft).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(page.saveState()).toBe('saving');
+      await vi.runAllTimersAsync();
+      expect(saveDraft).toHaveBeenCalledWith(TEMPLATE, { document: edited, expectedRevision: 3 });
+      expect(load).toHaveBeenCalledTimes(1);
+      expect(page.document()).toBe(edited);
+      expect(page.saveState()).toBe('saved');
+      fixture.detectChanges();
+      expect(element.querySelector('[data-save-state]')?.textContent).toMatch(
+        /Brouillon enregistré · \d{2} h \d{2}/,
+      );
+      // La révision suivante sert l'enregistrement d'après.
+      const again = { template: TEMPLATE, blocks: [] };
+      page.document.set(again);
+      TestBed.tick();
+      await page.flushDocument();
+      expect(saveDraft).toHaveBeenLastCalledWith(TEMPLATE, {
+        document: again,
+        expectedRevision: 4,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('un refus garde le document à l’écran, se dit, et attend le geste suivant', async () => {
+    const load = vi.fn(() => Promise.resolve(view(3)));
+    const saveDraft = vi.fn(() =>
+      Promise.reject(
+        new HttpErrorResponse({ status: 400, error: { message: 'Un bloc est vide.' } }),
+      ),
+    );
+    const { fixture, element } = await render({ load, saveDraft });
     const page = fixture.componentInstance;
     const edited = { template: TEMPLATE, blocks: [] };
     page.document.set(edited);
-    await page.save();
+    TestBed.tick();
+    await page.flushDocument();
+    fixture.detectChanges();
     expect(page.document()).toBe(edited);
-    expect(notify.error).toHaveBeenCalled();
+    expect(page.saveState()).toBe('refused');
+    expect(element.querySelector('[data-save-state]')?.textContent).toContain(
+      'Refusé — voir les blocs',
+    );
+    expect(element.querySelector('[data-save-refusal]')?.textContent).toContain(
+      'Un bloc est vide.',
+    );
+    expect(element.querySelector('[data-reload]')).toBeNull();
+    await page.flushDocument();
+    expect(saveDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it('un conflit offre de relire la version enregistrée', async () => {
+    const load = vi.fn(() => Promise.resolve(view(3)));
+    const saveDraft = vi.fn(() => Promise.reject(new HttpErrorResponse({ status: 409 })));
+    const { fixture, element } = await render({ load, saveDraft });
+    const page = fixture.componentInstance;
+    page.document.set({ template: TEMPLATE, blocks: [] });
+    TestBed.tick();
+    await page.flushDocument();
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('[data-reload]')?.click();
+    await fixture.whenStable();
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(page.saveState()).toBe('idle');
   });
 
   it('dit l’échec de lecture', async () => {
@@ -209,33 +305,31 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     expect(element.querySelector('app-mail-canvas')).toBeNull();
   });
 
-  it('publie avec la révision lue, relit, et relit l’historique', async () => {
-    const load = vi.fn().mockResolvedValueOnce(view(3)).mockResolvedValueOnce(view(4));
+  it('« Publier » ouvre la fenêtre fold : ce qui part, les phrases, aucun refus ; publie après avoir enregistré', async () => {
+    const load = vi.fn().mockResolvedValueOnce(view(3)).mockResolvedValueOnce(view(5));
+    const saveDraft = vi.fn(() => Promise.resolve());
     const publish = vi.fn(() => Promise.resolve({ publicationVersion: 7 }));
-    const history = vi.fn(() =>
-      Promise.resolve({ template: TEMPLATE, versions: [], retracted: null }),
-    );
-    const { fixture, notify } = await render({ load, publish, history });
+    const { fixture, element, notify, open } = await render({ load, saveDraft, publish });
     const page = fixture.componentInstance;
-    await page.publish();
-    expect(publish).toHaveBeenCalledWith(TEMPLATE, { expectedRevision: 3 });
+    const edited = { template: TEMPLATE, blocks: [...view(0).document.blocks].reverse() };
+    page.document.set(edited);
+    TestBed.tick();
+    element.querySelector<HTMLButtonElement>('[data-publish]')?.click();
+    const [component, config] = open.mock.calls[0] ?? [];
+    expect(component).toBe(MailPublishDialog);
+    const data = (config as { data: MailPublishDialogData }).data;
+    expect(data.recipients).toBe('les clients');
+    expect(data.issues()).toEqual([]);
+    expect(data.saveRefusal()).toBeNull();
+    expect(data.pendingPhrases()).toBe(0);
+    expect(await data.publish()).toBeNull();
+    expect(saveDraft).toHaveBeenCalledWith(TEMPLATE, { document: edited, expectedRevision: 3 });
+    expect(publish).toHaveBeenCalledWith(TEMPLATE, { expectedRevision: 4 });
     expect(load).toHaveBeenCalledTimes(2);
     expect(notify.success).toHaveBeenCalled();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(history).toHaveBeenCalledTimes(2);
   });
 
-  it('ne publie pas un document modifié et non enregistré', async () => {
-    const publish = vi.fn();
-    const { fixture } = await render({ load: vi.fn(() => Promise.resolve(view(3))), publish });
-    const page = fixture.componentInstance;
-    page.document.set({ template: TEMPLATE, blocks: [...view(0).document.blocks].reverse() });
-    await page.publish();
-    expect(publish).not.toHaveBeenCalled();
-  });
-
-  it('dit les refus de publication avant tout appel', async () => {
+  it('la fenêtre de « Publier » dit les refus, et rien ne part', async () => {
     const publish = vi.fn();
     const missing = view(3);
     const withParagraph: ServedView = {
@@ -248,32 +342,31 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
         ],
       },
     };
-    const { fixture, element } = await render({
+    const { fixture, open } = await render({
       load: vi.fn(() => Promise.resolve(withParagraph)),
       publish,
     });
-    const page = fixture.componentInstance;
-    expect(page.publicationIssues().length).toBeGreaterThan(0);
-    expect(element.querySelector('[data-publication-issues]')).not.toBeNull();
-    await page.publish();
+    fixture.componentInstance.openPublish();
+    const data = (open.mock.calls[0]?.[1] as { data: MailPublishDialogData }).data;
+    expect(data.issues().length).toBeGreaterThan(0);
+    expect(await data.publish()).not.toBeNull();
     expect(publish).not.toHaveBeenCalled();
   });
 
-  it('montre le refus du serveur tel quel, et garde la vue', async () => {
+  it('rend le refus du serveur à la fenêtre, tel quel, et garde la vue', async () => {
     const load = vi.fn(() => Promise.resolve(view(3)));
     const publish = vi.fn(() =>
       Promise.reject(new HttpErrorResponse({ status: 409, error: { message: 'Rien à publier.' } })),
     );
-    const { fixture, element } = await render({ load, publish });
-    await fixture.componentInstance.publish();
-    fixture.detectChanges();
-    expect(element.querySelector('[data-gesture-error]')?.textContent).toContain('Rien à publier.');
+    const { fixture } = await render({ load, publish });
+    expect(await fixture.componentInstance.publish()).toContain('Rien à publier.');
     expect(load).toHaveBeenCalledTimes(1);
   });
 
-  it('revient au modèle d’origine avec la révision lue, seulement s’il y a quelque chose à effacer', async () => {
+  it('revenir au modèle d’origine : la fenêtre dit ce qui est effacé, puis revient sur la révision lue', async () => {
     const pristine = await render({ load: vi.fn(() => Promise.resolve(view(0))) });
-    expect(pristine.element.querySelector('[data-revert]')).toBeNull();
+    pristine.fixture.componentInstance.openRevert();
+    expect(pristine.open).toHaveBeenCalledTimes(1);
     TestBed.resetTestingModule();
     const published: ServedView = {
       ...view(5),
@@ -282,20 +375,44 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     };
     const load = vi.fn(() => Promise.resolve(published));
     const revert = vi.fn(() => Promise.resolve({ publicationVersion: 8 }));
-    const { fixture, element } = await render({ load, revert });
-    expect(element.querySelector('[data-revert]')).not.toBeNull();
-    await fixture.componentInstance.revert();
+    const { fixture, open } = await render({ load, revert });
+    fixture.componentInstance.openRevert();
+    const [component, config] = open.mock.calls[0] ?? [];
+    expect(component).toBe(MailRevertDialog);
+    const data = (config as { data: MailRevertDialogData }).data;
+    expect(data.erased.join(' ')).toContain('version publiée (n° 2) est retirée');
+    expect(await data.revert()).toBeNull();
     expect(revert).toHaveBeenCalledWith(TEMPLATE, { expectedRevision: 5 });
   });
 
-  it('retient une fois la sortie d’un document modifié, puis la laisse passer', async () => {
-    const { fixture, element } = await render({ load: vi.fn(() => Promise.resolve(view(3))) });
+  it('tout enregistré : la sortie passe ; en attente ou refusé : retenue une fois, puis passe', async () => {
+    const saveDraft = vi.fn(() => Promise.reject(new HttpErrorResponse({ status: 400 })));
+    const { fixture, element } = await render({
+      load: vi.fn(() => Promise.resolve(view(3))),
+      saveDraft,
+    });
     const page = fixture.componentInstance;
     expect(page.canLeave()).toBe(true);
     page.document.set({ template: TEMPLATE, blocks: [] });
+    TestBed.tick();
     expect(page.canLeave()).toBe(false);
+    await page.flushDocument();
     fixture.detectChanges();
-    expect(element.querySelector('[data-leave-warning]')).not.toBeNull();
+    expect(page.saveState()).toBe('refused');
+    expect(element.querySelector('[data-leave-warning]')?.textContent).toContain('refusé');
+    expect(page.canLeave()).toBe(true);
+  });
+
+  it('un brouillon enregistré ne retient pas la sortie', async () => {
+    const { fixture } = await render({
+      load: vi.fn(() => Promise.resolve(view(3))),
+      saveDraft: vi.fn(() => Promise.resolve()),
+    });
+    const page = fixture.componentInstance;
+    page.document.set({ template: TEMPLATE, blocks: [] });
+    TestBed.tick();
+    await page.flushDocument();
+    expect(page.saveState()).toBe('saved');
     expect(page.canLeave()).toBe(true);
   });
 
@@ -311,10 +428,27 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     );
     const { fixture, element } = await render({ load });
     expect(fixture.componentInstance.caseId()).toBe('specimen');
-    expect(element.querySelector('[data-cases]')).not.toBeNull();
+    expect(element.querySelector('[data-toolbar] [data-cases]')).not.toBeNull();
+    expect(element.querySelector('[data-case-choice]')).toBeNull();
   });
 
-  it('l’essai part dans la langue et le cas courants, avec la même clé tant qu’il n’a pas abouti', async () => {
+  it('le menu ouvre la fenêtre d’essai avec la langue, le cas et les phrases courants', async () => {
+    const load = vi.fn(() =>
+      Promise.resolve({ ...view(0), cases: [{ id: 'due', label: 'À régler' }] }),
+    );
+    const { fixture, open } = await render({ load });
+    const page = fixture.componentInstance;
+    page.locale.set('en');
+    page.phraseSource.set('published');
+    page.openTrial();
+    const [component, config] = open.mock.calls[0] ?? [];
+    expect(component).toBe(MailTrialDialog);
+    const data = (config as { data: MailTrialDialogData }).data;
+    expect(data).toMatchObject({ locale: 'en', caseId: 'due', source: 'published' });
+    expect(data.locales.map((option) => option.value)).toEqual(['fr', 'en']);
+  });
+
+  it('l’essai part au choix de la fenêtre, avec la même clé tant qu’il n’a pas abouti', async () => {
     const load = vi.fn(() =>
       Promise.resolve({ ...view(0), cases: [{ id: 'due', label: 'À régler' }] }),
     );
@@ -323,41 +457,25 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
       .mockRejectedValueOnce(new HttpErrorResponse({ status: 500 }))
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(undefined);
-    const { fixture, element, notify } = await render({ load, sendTrial });
-    expect(element.querySelector('[data-trial]')?.textContent).toContain('M’envoyer un essai');
+    const { fixture, notify } = await render({ load, sendTrial });
     const page = fixture.componentInstance;
-    page.locale.set('en');
-    await page.sendTrial();
-    await page.sendTrial();
-    await page.sendTrial();
+    const choice = { locale: 'en', caseId: 'due', source: 'draft' } as const;
+    expect(await page.sendTrial(choice)).not.toBeNull();
+    expect(await page.sendTrial(choice)).toBeNull();
+    expect(await page.sendTrial({ ...choice, source: 'published' })).toBeNull();
     const keys = sendTrial.mock.calls.map((call) => call[2]);
     expect(sendTrial.mock.calls[0]?.slice(0, 2)).toEqual([
       TEMPLATE,
       { locale: 'en', source: 'draft', caseId: 'due' },
     ]);
+    expect(sendTrial.mock.calls[2]?.[1]).toEqual({
+      locale: 'en',
+      source: 'published',
+      caseId: 'due',
+    });
     expect(keys[0]).toBe(keys[1]);
     expect(keys[2]).not.toBe(keys[1]);
     expect(notify.success).toHaveBeenCalledWith('Essai envoyé à votre adresse.');
-  });
-
-  it('sans le droit d’écrire, pas d’essai', async () => {
-    const load = vi.fn(() => Promise.resolve(view(0)));
-    const { element } = await render({ load }, ['mail_templates:read']);
-    expect(element.querySelector('[data-trial]')).toBeNull();
-  });
-
-  it('l’essai sur les phrases publiées le dit dans la confirmation, et l’envoie', async () => {
-    const load = vi.fn(() => Promise.resolve(view(0)));
-    const sendTrial = vi.fn(() => Promise.resolve());
-    const { fixture } = await render({ load, sendTrial });
-    const page = fixture.componentInstance;
-    page.phraseSource.set('published');
-    fixture.detectChanges();
-    await page.sendTrial();
-    expect(sendTrial.mock.calls[0]?.slice(0, 2)).toEqual([
-      TEMPLATE,
-      { locale: 'fr', source: 'published' },
-    ]);
   });
 
   it('range les phrases sous le bloc ou le cadre sélectionné, nommées par leur variante', async () => {

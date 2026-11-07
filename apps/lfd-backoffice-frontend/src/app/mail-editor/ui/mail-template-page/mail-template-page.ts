@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,6 +9,7 @@ import {
   linkedSignal,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -29,12 +31,16 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldDisclosureComponent,
   FoldIconComponent,
-  FoldInlineConfirmComponent,
+  FoldListboxComponent,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
+  FoldPopoverTriggerDirective,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldViewToggleComponent,
@@ -59,14 +65,19 @@ import {
   BLOCK_PREVIEW_DEBOUNCE_MS,
   MailBlockPreviewsStore,
 } from '../../state/mail-block-previews-store';
-import { MailPhrasesStore } from '../../state/mail-phrases-store';
+import { MailPhrasesStore, PHRASE_DRAFT_DEBOUNCE_MS } from '../../state/mail-phrases-store';
 import { MailCanvas } from '../mail-canvas/mail-canvas';
 import {
   MailFaithfulPreview,
   type MailPhraseSource,
+  type PreviewDevice,
+  type PreviewScheme,
 } from '../mail-faithful-preview/mail-faithful-preview';
 import { MailPhraseEditor } from '../mail-phrase-editor/mail-phrase-editor';
-import { MailTemplateHistory } from '../mail-template-history/mail-template-history';
+import { MailPublishDialog } from '../mail-publish-dialog/mail-publish-dialog';
+import { MailRevertDialog } from '../mail-revert-dialog/mail-revert-dialog';
+import { MailTemplateTabs } from '../mail-template-tabs/mail-template-tabs';
+import { MailTrialDialog, type MailTrialChoice } from '../mail-trial-dialog/mail-trial-dialog';
 
 /** Qui reçoit l'e-mail, dans la confirmation de « Publier ». */
 const RECIPIENTS: Readonly<Record<MailAudience, string>> = {
@@ -74,6 +85,19 @@ const RECIPIENTS: Readonly<Record<MailAudience, string>> = {
   team: 'l’équipe',
   agency: 'l’agence',
 };
+
+/** La pause après une frappe ou un geste avant d'enregistrer le brouillon — celle des phrases. */
+export const DOCUMENT_DRAFT_DEBOUNCE_MS = PHRASE_DRAFT_DEBOUNCE_MS;
+
+/** L'heure d'un enregistrement, à l'heure de la boulangerie : « 14 h 32 ». */
+const SAVED_AT = new Intl.DateTimeFormat('fr-FR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Europe/Paris',
+});
+
+/** L'état d'enregistrement du brouillon du document, dit en haut à droite. */
+export type MailDraftSaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'refused';
 
 /** D'où vient le document ouvert, dit à l'équipe. */
 const SOURCE_LABELS: Readonly<Record<MailEditorView['source'], string>> = {
@@ -88,21 +112,42 @@ const PHRASE_SOURCE_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'published', label: 'Publiées' },
 ];
 
+const DEVICE_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'desktop', label: 'Ordinateur' },
+  { value: 'phone', label: 'Téléphone' },
+];
+
+const SCHEME_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'light', label: 'Clair' },
+  { value: 'dark', label: 'Sombre' },
+];
+
+/** « 14 h 32 ». */
+function savedAtLabel(at: Date): string {
+  const parts = SAVED_AT.formatToParts(at);
+  const hour = parts.find((part) => part.type === 'hour')?.value ?? '';
+  const minute = parts.find((part) => part.type === 'minute')?.value ?? '';
+  return `${hour} h ${minute}`;
+}
+
 /**
  * **La page d'un e-mail** (§ 6, S5a) : le canevas (S5b) monté avec le
  * document que l'éditeur ouvre — le brouillon, sinon le publié, sinon le
  * document de départ — et la déclaration du modèle ; la langue au-dessus,
  * parmi celles du modèle ; l'aperçu fidèle à la demande.
  *
- * « Enregistrer le brouillon » (droit `mail_templates:write`) envoie le
- * document avec la révision lue, puis relit : un `409` dit que quelqu'un a
- * écrit entre-temps, et le document à l'écran est gardé.
+ * Le brouillon du document s'enregistre TOUT SEUL (retouche de l'en-tête,
+ * 2026-11-07), après une pause dans la frappe ou un geste — la mécanique des
+ * phrases : la révision lue, un enregistrement à la fois, un refus du serveur
+ * gardé et dit (`saveState`), le document à l'écran jamais écrasé. Un `409`
+ * dit que quelqu'un a écrit entre-temps : seul « Relire » en sort.
  *
- * S5c : « Publier » met en service le brouillon ENREGISTRÉ et les phrases en
- * attente de cet e-mail (il attend donc un document enregistré) ; les refus de
- * `validateMailDocumentForPublication` se lisent avant l'appel, ceux du
- * serveur tels qu'il les dit. « Revenir au modèle d'origine » efface le
- * brouillon et retire le publié. Les deux se confirment sur place.
+ * En haut à droite, l'état d'enregistrement, « Publier » et un menu « … ».
+ * « Publier » ouvre une fenêtre fold : ce qui part, les phrases qui partent
+ * avec, les refus de `validateMailDocumentForPublication` (bouton désactivé) ;
+ * il enregistre d'abord ce qui attend la pause. Le menu ouvre l'essai et le
+ * retour au modèle d'origine, chacun dans sa fenêtre. L'historique est un
+ * onglet, sa propre route (`/emails/:template/historique`).
  *
  * S5b (phrases, cas) et essai : les phrases du modèle s'écrivent en brouillon
  * dans la langue choisie (`MailPhrasesStore`) ; le cas choisi change l'aperçu
@@ -132,12 +177,15 @@ const PHRASE_SOURCE_OPTIONS: readonly FoldViewToggleOption[] = [
     FoldElementTitleComponent,
     FoldIconComponent,
     FoldDisclosureComponent,
-    FoldInlineConfirmComponent,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldListboxComponent,
     FoldPageSectionComponent,
+    FoldPopoverTriggerDirective,
     MailCanvas,
     MailFaithfulPreview,
     MailPhraseEditor,
-    MailTemplateHistory,
+    MailTemplateTabs,
   ],
   templateUrl: './mail-template-page.html',
   styleUrl: './mail-template-page.scss',
@@ -153,6 +201,13 @@ export class MailTemplatePage implements HasPendingChanges {
   private readonly permissions = inject(PermissionsStore);
   protected readonly phrases = inject(MailPhrasesStore);
   private readonly previews = inject(MailBlockPreviewsStore);
+  private readonly panels = inject(FoldPanelHostService);
+  /** L'aperçu fidèle : la barre d'outils le fait rendre. */
+  protected readonly faithful = viewChild(MailFaithfulPreview);
+  /** La pause en cours avant d'enregistrer le brouillon. */
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  /** L'enregistrement en vol, que « Publier » et la sortie attendent. */
+  private saveInFlight: Promise<void> | null = null;
   /** Le document du dernier rendu demandé : un geste sur lui attend la pause, le reste non. */
   private renderedDocument: MailDocument | null = null;
   /** Une clé par essai voulu (e-mail, langue, cas), renvoyée à chaque clic jusqu'à l'envoi. */
@@ -166,7 +221,7 @@ export class MailTemplatePage implements HasPendingChanges {
       return { label: 'Les e-mails', link: ['/emails'] };
     }
     const space = mailSpaceOfCharter(view.declaration.charter);
-    return { label: MAIL_SPACE_LABELS[space], link: ['/emails', 'espaces', space] };
+    return { label: MAIL_SPACE_LABELS[space], link: ['/emails', 'espaces', space, 'templates'] };
   });
   protected readonly error = signal<string | null>(null);
   protected readonly view = signal<MailEditorView | null>(null);
@@ -180,10 +235,20 @@ export class MailTemplatePage implements HasPendingChanges {
    * change pas ; les blocs libres, eux, restent dans `declaration.locales`.
    */
   readonly phraseLocale = linkedSignal<MailLocale>(() => this.locale());
-  protected readonly saving = signal(false);
+  /** Un enregistrement du brouillon est parti au serveur. */
+  readonly saving = signal(false);
+  /** Le dernier refus d'enregistrement du brouillon, tel que le serveur l'a dit. */
+  readonly saveRefusal = signal<string | null>(null);
+  /** Le refus est un conflit de révision : seul « Relire » en sort. */
+  readonly saveConflict = signal(false);
+  /** L'instant du dernier enregistrement réussi, à l'horloge du poste. */
+  readonly savedAt = signal<Date | null>(null);
   protected readonly publishing = signal(false);
-  protected readonly reverting = signal(false);
   protected readonly sendingTrial = signal(false);
+  readonly device = signal<PreviewDevice>('desktop');
+  readonly scheme = signal<PreviewScheme>('light');
+  protected readonly deviceOptions = DEVICE_OPTIONS;
+  protected readonly schemeOptions = SCHEME_OPTIONS;
   /** Le cas affiché (`MailEditorView.cases`) : l'aperçu fidèle et l'essai le rendent. */
   readonly caseId = signal<string | null>(null);
   /** Le bloc du modèle ou le cadre dont la colonne de droite montre les phrases. */
@@ -193,10 +258,6 @@ export class MailTemplatePage implements HasPendingChanges {
   protected readonly phraseSourceOptions = PHRASE_SOURCE_OPTIONS;
   /** Un e-mail servi sans ressources (le contrat les laisse facultatives) : rien à poser. */
   protected readonly noResources = EMPTY_MAIL_RESOURCES;
-  /** Le dernier refus du serveur à « Publier » ou « Revenir », tel qu'il l'a dit. */
-  protected readonly gestureError = signal<string | null>(null);
-  /** Monte après chaque geste qui écrit une version : l'historique se relit. */
-  protected readonly historyRefresh = signal(0);
   /** Une sortie a été retenue ; remise à `false` à chaque e-mail relu. */
   protected readonly leaveWarned = linkedSignal(() => {
     this.view();
@@ -247,17 +308,6 @@ export class MailTemplatePage implements HasPendingChanges {
     (this.view()?.cases ?? []).map((example) => ({ value: example.id, label: example.label })),
   );
 
-  /** Ce qui part à l'essai, et à qui : dit avant de confirmer — la source des phrases comprise. */
-  protected readonly trialMessage = computed(() => {
-    const example = this.view()?.cases.find((candidate) => candidate.id === this.caseId());
-    const which = example === undefined ? 'l’exemple de l’e-mail' : `le cas « ${example.label} »`;
-    const phrases =
-      this.phraseSource() === 'draft'
-        ? 'les phrases en brouillon'
-        : 'les phrases publiées (celles qui partent aujourd’hui)';
-    return `Un essai part à votre seule adresse, en ${LOCALE_LABELS[this.locale()].toLowerCase()}, avec ${which} : l’arrangement enregistré (sinon publié, sinon d’origine) et ${phrases}. Rien n’est publié, aucun client ne le reçoit.`;
-  });
-
   /** Les phrases de la place sélectionnée, dans l'ordre du serveur. */
   protected readonly focusedPhrases = computed(() => {
     const place = this.focus();
@@ -303,31 +353,66 @@ export class MailTemplatePage implements HasPendingChanges {
       : validateMailDocumentForPublication(document, view.declaration, view.template);
   });
 
-  protected readonly canPublish = computed(
-    () =>
-      !this.dirty() &&
-      this.publicationIssues().length === 0 &&
-      !this.publishing() &&
-      !this.reverting(),
+  /** Les refus de publication, dits dans la fenêtre de « Publier ». */
+  private readonly publicationIssueMessages = computed(() =>
+    this.publicationIssues().map((issue) => issue.message),
   );
 
-  /** Ce qui partira, dit avant de confirmer. */
-  protected readonly publishMessage = computed(() => {
-    const view = this.view();
-    const who = view === null ? 'les destinataires' : RECIPIENTS[view.audience];
-    return `Dès le prochain envoi, ${who} recevront cet e-mail tel qu’il est enregistré, avec les phrases en attente de cet e-mail.`;
+  /** Où en est le brouillon du document — `pending` : modifié, la pause court. */
+  readonly saveState = computed<MailDraftSaveState>(() => {
+    if (this.saving()) {
+      return 'saving';
+    }
+    if (this.saveRefusal() !== null) {
+      return 'refused';
+    }
+    if (this.dirty()) {
+      return 'pending';
+    }
+    return this.savedAt() === null ? 'idle' : 'saved';
   });
 
-  /** Il y a quelque chose à effacer : un brouillon ou une version publiée. */
+  /** L'état d'enregistrement en mots ; au repos, d'où vient le document ouvert. */
+  protected readonly saveLabel = computed(() => {
+    switch (this.saveState()) {
+      case 'pending':
+        return 'Modifications non enregistrées';
+      case 'saving':
+        return 'Enregistrement…';
+      case 'refused':
+        return 'Refusé — voir les blocs';
+      case 'saved': {
+        const at = this.savedAt();
+        return at === null ? 'Brouillon enregistré' : `Brouillon enregistré · ${savedAtLabel(at)}`;
+      }
+      case 'idle':
+        return this.sourceLabel();
+    }
+  });
+
+  /**
+   * Il y a quelque chose à effacer : un brouillon (lu, ou enregistré depuis)
+   * ou une version publiée.
+   */
   protected readonly canRevert = computed(() => {
     const view = this.view();
-    return view !== null && (view.draft !== null || view.published !== null);
+    return view !== null && (view.source !== 'starting' || view.published !== null);
   });
 
   constructor() {
     effect(() => {
       const template = this.template();
       untracked(() => void this.load(template));
+    });
+    // Le brouillon s'enregistre tout seul : chaque geste ou frappe sur le
+    // document relance la pause ; un refus attend le geste suivant.
+    effect(() => {
+      const document = this.document();
+      const dirty = this.dirty();
+      if (document === null || !dirty || !this.canWrite()) {
+        return;
+      }
+      untracked(() => this.scheduleSave());
     });
     // Le canevas (S5f) : le document, la langue, le cas, et chaque phrase
     // écrite en brouillon redemandent le rendu — un geste sur le document
@@ -407,80 +492,218 @@ export class MailTemplatePage implements HasPendingChanges {
     }
   }
 
-  async save(): Promise<void> {
-    const view = this.view();
-    const document = this.document();
-    if (view === null || document === null || !this.canWrite() || this.saving()) {
+  /** Relance la pause avant d'enregistrer ; un refus s'efface au geste suivant. */
+  private scheduleSave(): void {
+    this.saveRefusal.set(null);
+    this.saveConflict.set(false);
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+    }
+    this.saveTimer = setTimeout(() => {
+      this.saveTimer = null;
+      void this.saveNow();
+    }, DOCUMENT_DRAFT_DEBOUNCE_MS);
+  }
+
+  /**
+   * Enregistre ce qui attend la pause, tout de suite, et attend l'enregistrement
+   * en vol — avant « Publier », un essai, ou la sortie.
+   */
+  async flushDocument(): Promise<void> {
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+      await this.saveNow();
       return;
     }
+    await this.saveInFlight;
+  }
+
+  /** Un enregistrement à la fois : le suivant part quand le précédent a répondu. */
+  private async saveNow(): Promise<void> {
+    if (this.saveInFlight !== null) {
+      await this.saveInFlight;
+    }
+    const view = this.view();
+    const document = this.document();
+    if (view === null || document === null || !this.canWrite() || document === view.document) {
+      return;
+    }
+    const run = this.writeDraft(view, document);
+    this.saveInFlight = run;
+    try {
+      await run;
+    } finally {
+      if (this.saveInFlight === run) {
+        this.saveInFlight = null;
+      }
+    }
+  }
+
+  /**
+   * Écrit le brouillon sur la révision lue, sans relire : la vue prend le
+   * document enregistré et la révision suivante — `MailTemplateDocument`
+   * l'incrémente d'un à chaque écriture du brouillon (vérifié le 2026-11-07,
+   * `apps/lfd-api/src/mail/documents/domain/mail-template-document.ts`). Une
+   * relecture écraserait ce qui s'est tapé pendant l'appel.
+   */
+  private async writeDraft(view: MailEditorView, document: MailDocument): Promise<void> {
     this.saving.set(true);
     try {
       await this.api.saveDraft(view.template, { document, expectedRevision: view.revision });
-      this.apply(await this.api.load(view.template));
-      this.notify.success('Brouillon enregistré.');
+      this.view.set({ ...view, document, source: 'draft', revision: view.revision + 1 });
+      this.savedAt.set(new Date());
     } catch (error) {
-      this.notify.error(error, 'Le brouillon n’a pas pu être enregistré.');
+      this.saveConflict.set(error instanceof HttpErrorResponse && error.status === 409);
+      this.saveRefusal.set(httpErrorMessage(error, 'Le brouillon n’a pas pu être enregistré.'));
     } finally {
       this.saving.set(false);
     }
   }
 
-  async publish(): Promise<void> {
+  /** « Rendre l'aperçu » de la barre d'outils. */
+  protected renderFaithful(): void {
+    void this.faithful()?.render();
+  }
+
+  protected setDevice(value: string): void {
+    this.device.set(value === 'phone' ? 'phone' : 'desktop');
+  }
+
+  protected setScheme(value: string): void {
+    this.scheme.set(value === 'dark' ? 'dark' : 'light');
+  }
+
+  /** « Publier » : la fenêtre qui dit ce qui part, et les refus. */
+  openPublish(): void {
     const view = this.view();
-    if (view === null || !this.canWrite() || !this.canPublish()) {
+    if (view === null || !this.canWrite()) {
       return;
     }
+    this.panels.open(MailPublishDialog, {
+      data: {
+        recipients: RECIPIENTS[view.audience],
+        issues: this.publicationIssueMessages,
+        pendingPhrases: this.phrases.pendingCount,
+        saveRefusal: this.saveRefusal.asReadonly(),
+        publish: () => this.publish(),
+      },
+    });
+  }
+
+  /**
+   * Met en service le brouillon et les phrases en attente : enregistre
+   * d'abord ce qui attend la pause. Rend le refus tel quel, ou `null`.
+   */
+  async publish(): Promise<string | null> {
+    if (!this.canWrite() || this.publishing()) {
+      return null;
+    }
     this.publishing.set(true);
-    this.gestureError.set(null);
     try {
+      await this.flushDocument();
+      const refused = this.saveRefusal();
+      if (refused !== null) {
+        return refused;
+      }
+      if (this.publicationIssues().length > 0) {
+        return 'Cet e-mail ne peut pas encore être publié.';
+      }
+      const view = this.view();
+      if (view === null) {
+        return null;
+      }
       await this.phrases.flush();
       const { publicationVersion } = await this.api.publish(view.template, {
         expectedRevision: view.revision,
       });
       this.apply(await this.api.load(view.template));
-      this.historyRefresh.update((n) => n + 1);
       this.notify.success(`Publié — version des textes ${publicationVersion}.`);
+      return null;
     } catch (error) {
-      this.gestureError.set(httpErrorMessage(error, 'Cet e-mail n’a pas pu être publié.'));
+      return httpErrorMessage(error, 'Cet e-mail n’a pas pu être publié.');
     } finally {
       this.publishing.set(false);
     }
   }
 
-  async revert(): Promise<void> {
+  /** « Revenir au modèle d'origine » : la fenêtre qui dit ce qui est effacé. */
+  openRevert(): void {
     const view = this.view();
-    if (view === null || !this.canWrite() || this.publishing() || this.reverting()) {
+    if (view === null || !this.canWrite()) {
       return;
     }
-    this.reverting.set(true);
-    this.gestureError.set(null);
+    const erased: string[] = [];
+    if (view.source === 'draft' || this.dirty()) {
+      erased.push('Le brouillon de l’arrangement est effacé, modifications en cours comprises.');
+    }
+    if (view.published !== null) {
+      erased.push(
+        `La version publiée (n° ${view.published.version}) est retirée — elle reste dans l’historique.`,
+      );
+    }
+    this.panels.open(MailRevertDialog, { data: { erased, revert: () => this.revert() } });
+  }
+
+  /** Efface le brouillon et retire le publié ; rend le refus tel quel, ou `null`. */
+  async revert(): Promise<string | null> {
+    if (!this.canWrite() || this.publishing()) {
+      return null;
+    }
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    await this.saveInFlight;
+    const view = this.view();
+    if (view === null) {
+      return null;
+    }
     try {
       await this.api.revert(view.template, { expectedRevision: view.revision });
       this.apply(await this.api.load(view.template));
-      this.historyRefresh.update((n) => n + 1);
       this.notify.success('Cet e-mail repart dans son arrangement d’origine.');
+      return null;
     } catch (error) {
-      this.gestureError.set(
-        httpErrorMessage(error, 'Cet e-mail n’a pas pu revenir au modèle d’origine.'),
-      );
-    } finally {
-      this.reverting.set(false);
+      return httpErrorMessage(error, 'Cet e-mail n’a pas pu revenir au modèle d’origine.');
     }
   }
 
-  /** « M'envoyer un essai » : la langue et le cas courants, à l'auteur seul. */
-  async sendTrial(): Promise<void> {
+  /** « M'envoyer un essai » : la fenêtre, avec la langue, le cas et les phrases courants. */
+  openTrial(): void {
     const view = this.view();
-    if (view === null || !this.canWrite() || this.sendingTrial()) {
+    if (view === null || !this.canWrite()) {
       return;
     }
-    const caseId = this.caseId();
-    const locale = this.locale();
-    const source = this.phraseSource();
+    this.panels.open(MailTrialDialog, {
+      data: {
+        locale: this.locale(),
+        caseId: this.caseId(),
+        source: this.phraseSource(),
+        locales: view.declaration.locales.map((locale) => ({
+          value: locale,
+          label: LOCALE_LABELS[locale],
+        })),
+        cases: this.caseOptions(),
+        send: (choice: MailTrialChoice) => this.sendTrial(choice),
+      },
+    });
+  }
+
+  /**
+   * Envoie l'essai à l'auteur seul ; la clé d'intention vaut pour ce choix
+   * (e-mail, langue, cas, phrases) jusqu'à l'envoi. Rend le refus, ou `null`.
+   */
+  async sendTrial(choice: MailTrialChoice): Promise<string | null> {
+    const view = this.view();
+    if (view === null || !this.canWrite() || this.sendingTrial()) {
+      return null;
+    }
+    const { locale, caseId, source } = choice;
     const subject = `${view.template}\u0000${locale}\u0000${caseId ?? ''}\u0000${source}`;
     this.sendingTrial.set(true);
-    this.gestureError.set(null);
     try {
+      await this.flushDocument();
       await this.phrases.flush();
       await this.api.sendTrial(
         view.template,
@@ -489,31 +712,58 @@ export class MailTemplatePage implements HasPendingChanges {
       );
       this.intents.done(subject);
       this.notify.success('Essai envoyé à votre adresse.');
+      return null;
     } catch (error) {
-      this.gestureError.set(httpErrorMessage(error, 'L’essai n’a pas pu être envoyé.'));
+      return httpErrorMessage(error, 'L’essai n’a pas pu être envoyé.');
     } finally {
       this.sendingTrial.set(false);
     }
   }
 
-  /** Garde de sortie : un document modifié retient une fois, et le dit ; la seconde sortie passe. */
+  /** « Relire » après un conflit : la version enregistrée remplace celle à l'écran. */
+  protected async reloadAfterConflict(): Promise<void> {
+    this.saveRefusal.set(null);
+    this.saveConflict.set(false);
+    await this.load();
+  }
+
+  /**
+   * Garde de sortie — vers l'historique compris. Tout est enregistré : rien à
+   * garder. Un enregistrement en attente ou en cours (qu'on lance tout de
+   * suite), ou refusé : la sortie est retenue une fois, et le dit ; la
+   * seconde passe.
+   */
   canLeave(): boolean {
-    if (!this.dirty() || !this.canWrite() || this.leaveWarned()) {
+    if (!this.canWrite() || this.leaveWarned() || this.saveState() === 'idle') {
       return true;
+    }
+    if (this.saveState() === 'saved') {
+      return true;
+    }
+    if (this.saveState() === 'pending') {
+      void this.flushDocument();
     }
     this.leaveWarned.set(true);
     return false;
   }
 
   protected onBeforeUnload(event: BeforeUnloadEvent): void {
-    if (this.dirty() && this.canWrite()) {
+    const state = this.saveState();
+    if (this.canWrite() && (state === 'pending' || state === 'saving' || state === 'refused')) {
       event.preventDefault();
     }
   }
 
   /** Pose la vue lue ; garde la langue choisie si le modèle la parle encore. */
   private apply(view: MailEditorView): void {
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    this.saveRefusal.set(null);
+    this.saveConflict.set(false);
     if (this.view()?.template !== view.template) {
+      this.savedAt.set(null);
       this.focus.set(null);
       this.previews.clear();
       this.renderedDocument = null;

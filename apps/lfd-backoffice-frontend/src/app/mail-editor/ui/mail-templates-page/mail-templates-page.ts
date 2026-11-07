@@ -141,7 +141,7 @@ export class MailTemplatesPage {
   }
 
   protected open(space: MailSpaceListing): void {
-    void this.router.navigate(['/emails', 'espaces', space.space]);
+    void this.router.navigate(['/emails', 'espaces', space.space, 'templates']);
   }
 
   protected charterOf(space: MailSpaceListing): MailCharterSettings | null {

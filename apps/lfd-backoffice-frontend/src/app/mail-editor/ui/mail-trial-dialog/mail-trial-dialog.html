@@ -1,0 +1,40 @@
+<fold-panel-header title="M’envoyer un essai" closeLabel="Fermer" />
+
+<fold-panel-body>
+  <div class="td-body">
+    <fold-listbox label="Langue" data-trial-locale [options]="data().locales" [(value)]="locale" />
+    @if (data().cases.length > 1) {
+      <fold-listbox label="Cas" data-trial-case [options]="data().cases" [(value)]="caseId" />
+    }
+    <fold-listbox
+      label="Phrases"
+      data-trial-source
+      [hint]="sourceNote()"
+      [options]="sourceOptions"
+      [(value)]="source"
+    />
+    <p class="td-said" data-recipient>
+      Destinataire : votre adresse seulement. L’arrangement enregistré (sinon publié, sinon
+      d’origine) ; rien n’est publié, aucun client ne le reçoit.
+    </p>
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce data-error>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    icon="mail"
+    type="button"
+    data-confirm
+    [loading]="sending()"
+    (click)="confirm()"
+  >
+    Envoyer l’essai
+  </button>
+</fold-panel-footer>

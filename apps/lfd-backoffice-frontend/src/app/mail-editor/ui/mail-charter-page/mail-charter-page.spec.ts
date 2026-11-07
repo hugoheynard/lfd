@@ -86,6 +86,15 @@ describe('MailCharterPage — la charte d’un espace', () => {
     expect(element.querySelector('[data-color="darkColors.card"]')).not.toBeNull();
   });
 
+  it('est l’onglet « Charte » de l’espace, et revient à la liste des espaces', async () => {
+    const { element } = await setup();
+    expect(element.querySelector('fold-back-link a')?.getAttribute('href')).toBe('/emails');
+    const active = element.querySelector(
+      'app-mail-space-tabs a[href="/emails/espaces/lfd/charte"]',
+    );
+    expect(active?.textContent).toContain('Charte');
+  });
+
   it('refuse un espace inconnu sans rien demander au serveur', async () => {
     const { element, api } = await setup('internal');
     expect(api.load).not.toHaveBeenCalled();

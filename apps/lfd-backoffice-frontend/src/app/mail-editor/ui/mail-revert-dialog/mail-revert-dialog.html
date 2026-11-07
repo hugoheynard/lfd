@@ -1,0 +1,35 @@
+<fold-panel-header title="Revenir au modèle d’origine" closeLabel="Fermer" />
+
+<fold-panel-body>
+  <div class="rd-body">
+    <ul class="rd-erased" data-erased>
+      @for (line of data().erased; track $index) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+    <p class="rd-said">
+      Dès le prochain envoi, l’e-mail repart dans son arrangement d’origine. Les phrases ne changent
+      pas.
+    </p>
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce data-error>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    intent="danger"
+    icon="reset"
+    type="button"
+    data-confirm
+    [loading]="reverting()"
+    (click)="confirm()"
+  >
+    Revenir au modèle d’origine
+  </button>
+</fold-panel-footer>

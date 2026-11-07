@@ -1,0 +1,10 @@
+<fold-page-layout [title]="title()" icon="inbox">
+  <fold-back-link pageEyebrow icon="arrow-back" label="Les e-mails" routerLink="/emails" />
+  @if (whoAndWhen(); as hint) {
+    <p description>{{ hint }}</p>
+  }
+  <div class="hp-column">
+    <app-mail-template-tabs [template]="template()" active="history" />
+    <app-mail-template-history [template]="template()" />
+  </div>
+</fold-page-layout>

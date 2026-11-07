@@ -39,7 +39,7 @@ async function render(preview: (payload: MailDocumentPreviewPayload) => Promise<
   fixture.detectChanges();
   const element: HTMLElement = fixture.nativeElement;
   const click = async () => {
-    element.querySelector<HTMLButtonElement>('[data-render]')?.click();
+    await fixture.componentInstance.render();
     await fixture.whenStable();
     fixture.detectChanges();
   };
@@ -47,9 +47,10 @@ async function render(preview: (payload: MailDocumentPreviewPayload) => Promise<
 }
 
 describe('MailFaithfulPreview', () => {
-  it('ne demande rien au serveur avant le clic', async () => {
+  it('ne demande rien au serveur avant que la page le demande, et dit où le demander', async () => {
     const { element, spy } = await render(() => Promise.resolve(VIEW));
     expect(spy).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('« Rendre l’aperçu », dans la barre d’outils');
     expect(element.querySelector('iframe')).toBeNull();
   });
 
@@ -119,9 +120,9 @@ describe('MailFaithfulPreview', () => {
   it('passe en vue téléphone et en sombre sans redemander le rendu, cadre toujours sans drapeau', async () => {
     const { fixture, element, spy, click } = await render(() => Promise.resolve(VIEW));
     await click();
-    const preview = fixture.componentInstance;
-    preview.device.set('phone');
-    preview.scheme.set('dark');
+    expect(fixture.componentInstance.rendered()).toBe(true);
+    fixture.componentRef.setInput('device', 'phone');
+    fixture.componentRef.setInput('scheme', 'dark');
     fixture.detectChanges();
     const frame = element.querySelector<HTMLIFrameElement>('iframe');
     expect(frame?.classList.contains('fp-frame--phone')).toBe(true);

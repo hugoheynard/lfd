@@ -230,8 +230,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // `/admin/mail-templates` (plan-editeur-par-blocs.md, § 6, S4c).
   emails: 'mail_templates:read',
   'emails/:template': 'mail_templates:read',
-  'emails/espaces/:space': 'mail_templates:read',
+  'emails/:template/historique': 'mail_templates:read',
+  // Les trois onglets d'un espace (§ 25, retouche du 2026-11-07) ; la racine
+  // de l'espace redirige vers Templates.
+  'emails/espaces/:space/templates': 'mail_templates:read',
   'emails/espaces/:space/charte': 'mail_templates:read',
+  'emails/espaces/:space/expediteur': 'mail_templates:read',
 
   // **Pied de page** et **Contact** — partis de l'espace E-commerce pour la
   // section Communication le 2026-10-15 (Hugo), chacun sous le droit qu'il y
@@ -581,6 +585,15 @@ describe("l'arbre de routes du back-office", () => {
     expect(children.find((child) => child.path === 'contact/messages')?.redirectTo).toBe(
       '/commercial/demandes',
     );
+  });
+
+  it('ouvre un espace d’e-mails sur son onglet Templates, et garde la charte modifiée', () => {
+    // Plan-editeur-par-blocs.md, § 25 (2026-11-07) : trois onglets, trois routes.
+    const root = routes.find((route) => route.path === 'emails/espaces/:space');
+    expect(root?.redirectTo).toBe('/emails/espaces/:space/templates');
+    expect(root?.pathMatch).toBe('full');
+    const charter = routes.find((route) => route.path === 'emails/espaces/:space/charte');
+    expect(charter?.canDeactivate).toHaveLength(1);
   });
 
   it('renvoie l’ancienne adresse des textes des e-mails vers l’éditeur', () => {
