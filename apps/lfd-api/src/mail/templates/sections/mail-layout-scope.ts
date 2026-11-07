@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
+import type { MailDocument, MailLocale } from "@lfd/mail-blocks";
 import type { LayoutSectionId, RenderedMail, TemplateRegistry } from "@lfd/mailer";
 
 /** L'ordre des sections d'un e-mail, par clé du registre. */
@@ -14,6 +15,19 @@ export type MailSectionOrders = Readonly<Record<string, readonly LayoutSectionId
 export interface MailLayoutScope {
   readonly orders: MailSectionOrders;
   readonly markers: boolean;
+  /**
+   * Le document de chaque e-mail qui en a un, et la langue de l'envoi (plan
+   * `plan-editeur-par-blocs.md`, S4b). Il prime sur l'ordre des sections du
+   * même e-mail. Aucun envoi ne le pose encore : c'est S4c qui le lira du
+   * document publié (vérifié le 2026-11-07 : seuls les tests le posent).
+   */
+  readonly documents?: Readonly<Record<string, ScopedMailDocument>>;
+}
+
+/** Un document à rendre, et la langue de ses blocs libres. */
+export interface ScopedMailDocument {
+  readonly document: MailDocument;
+  readonly locale: MailLocale;
 }
 
 /** Aucun ordre, aucun repère : le rendu d'avant les sections, octet pour octet. */
@@ -50,6 +64,14 @@ export function withRenderedMailKey<M extends object>(
     wrapped[key] = (data: M[typeof key]): RenderedMail => renderedMail.run(key, () => render(data));
   }
   return wrapped as TemplateRegistry<M>;
+}
+
+/** Le document de l'e-mail en cours de rendu, s'il en a un : sa clé et lui. */
+export function documentOfRenderedMail():
+  { readonly mail: string; readonly scoped: ScopedMailDocument } | undefined {
+  const mail = renderedMail.getStore();
+  const scoped = mail === undefined ? undefined : activeMailLayout()?.documents?.[mail];
+  return mail === undefined || scoped === undefined ? undefined : { mail, scoped };
 }
 
 /**

@@ -7,6 +7,7 @@ import {
   type TemplateRegistry,
 } from "@lfd/mailer";
 
+import { renderDocumentOfRenderedMail } from "./sections/mail-document-rendering.js";
 import { layoutOptionsOfRenderedMail } from "./sections/mail-layout-scope.js";
 
 /**
@@ -62,9 +63,11 @@ export const MAIL_LOGO_ATTACHMENT: MailAttachment = {
  * divergent pas —, avec l'ordre des sections et les repères de l'aperçu de
  * l'e-mail en cours de rendu (plan `plan-textes-des-e-mails.md`, E4). Sans
  * ordre ni aperçu, l'entrée de la coquille est celle d'avant les sections.
+ * Un document posé pour cet e-mail (S4b) prime sur son ordre.
  */
 export function renderLayoutWithLogo(input: LayoutInput): string {
-  return renderLayout({ ...input, logo: MAIL_LOGO, ...layoutOptionsOfRenderedMail() });
+  const framed: LayoutInput = { ...input, logo: MAIL_LOGO, ...layoutOptionsOfRenderedMail() };
+  return renderDocumentOfRenderedMail(framed) ?? renderLayout(framed);
 }
 
 /**

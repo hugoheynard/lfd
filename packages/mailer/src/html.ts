@@ -1,15 +1,19 @@
-import { htmlEscape } from "./escape.js";
-import { renderFontHead, renderLayoutHeader, type LayoutLogo } from "./layout-header.js";
-import { effectiveSectionOrder, joinSections, type LayoutSectionId } from "./layout-sections.js";
+import { renderFontHead, renderLayoutHeader } from "./layout-header.js";
+import { layoutFragments, supportOf } from "./layout-fragments.js";
+import type { LayoutInput } from "./layout-input.js";
+import { effectiveSectionOrder, joinSections } from "./layout-sections.js";
+import { BRAND, TEXT_FONT_STACK, WHITE } from "./layout-styles.js";
 
 export { htmlEscape } from "./escape.js";
 export type { LayoutLogo } from "./layout-header.js";
+export type { LayoutImage, LayoutInput, LayoutRow, MailCta } from "./layout-input.js";
 export {
   effectiveSectionOrder,
   isLayoutSectionId,
   LAYOUT_SECTIONS,
   type LayoutSectionId,
 } from "./layout-sections.js";
+export * from "./layout-styles.js";
 
 /**
  * Les primitives de rendu partagées par tous les gabarits : échapper, assainir
@@ -40,138 +44,6 @@ export function sanitiseSubject(value: string): string {
 }
 
 /**
- * N'affiche un bouton que pour un lien `http(s)` ou une racine — jamais
- * `javascript:`, `data:` ou un autre schéma. Défense en profondeur : ces liens
- * sont inertes dans un client mail, mais on n'émet pas de lien hostile.
- */
-function isRenderableUrl(url: string): boolean {
-  return url.startsWith("https://") || url.startsWith("http://") || url.startsWith("/");
-}
-
-/** L'appel à l'action d'un e-mail : un libellé, un lien. */
-export interface MailCta {
-  readonly label: string;
-  readonly url: string;
-}
-
-/**
- * Une ligne de récapitulatif : un libellé à gauche, une valeur à droite.
- *
- * Structurée plutôt que passée en HTML : c'est la coquille qui échappe, et
- * l'appelant n'a donc **aucune** façon d'injecter une balise, pas même par
- * inadvertance. Un `body` en HTML brut aurait été plus souple et aurait rouvert
- * exactement le trou que `htmlEscape` existe pour fermer.
- */
-export interface LayoutRow {
-  readonly label: string;
-  readonly value: string;
-  /** La ligne de total : filet au-dessus, valeur en gras. Une seule par bloc. */
-  readonly strong?: boolean;
-}
-
-/**
- * Une **image en ligne**, référencée par son `cid:` — la pièce jointe que le
- * message transporte.
- *
- * Ni `data:` URI (Gmail les supprime) ni URL distante (bloquée par défaut, et
- * récupérée par le proxy de Google, qui verrait passer ce que l'URL contient).
- *
- * `alt` n'est pas une politesse : c'est ce qui reste quand un client bloque les
- * images, et il doit donc dire ce que l'image dit — pas « QR code ».
- */
-export interface LayoutImage {
-  readonly contentId: string;
-  readonly alt: string;
-  /** Côté en pixels. Les clients mail ignorent le CSS de dimension, pas l'attribut. */
-  readonly sizePx: number;
-  /** La ligne sous l'image — souvent le repli lisible quand elle ne s'affiche pas. */
-  readonly caption?: string;
-}
-
-export interface LayoutInput {
-  readonly title: string;
-  /** Le corps, en texte brut. Les retours à la ligne sont préservés. */
-  readonly body: string;
-  readonly cta?: MailCta;
-  /**
-   * Un second chemin, en lien discret sous le bouton — « ou choisissez un mot
-   * de passe » (2026-10-09, l'invitation qui passe au code e-mail). Rendu
-   * seulement s'il y a un bouton : seul, il deviendrait l'action principale
-   * sans en avoir la forme.
-   */
-  readonly secondaryLink?: MailCta;
-  /** La ligne de pied — mentions, désinscription. Texte brut. */
-  readonly footer?: string;
-  /**
-   * L'adresse de recours, affichée en bas : « un problème ? écrivez ici ».
-   *
-   * Elle n'a de valeur que si elle ne peut pas devenir fausse — d'où l'usage de
-   * l'**admin racine**, la seule adresse que le domaine protège de toute
-   * suppression, rétrogradation ou renommage. Une adresse de support qui
-   * disparaît est pire que pas d'adresse : elle envoie quelqu'un attendre.
-   */
-  readonly supportEmail?: string;
-  /**
-   * Le bandeau de marque. Absent, l'e-mail garde la coquille sans en-tête —
-   * utile pour les messages purement techniques, qui n'ont personne à rassurer.
-   */
-  readonly brand?: string;
-  /**
-   * Le sous-titre du bandeau, sous l'enseigne (« Commande confirmée ») — en
-   * capitales par le style, pour que le dictionnaire garde une casse normale.
-   */
-  readonly kicker?: string;
-  /**
-   * L'URL PUBLIQUE et stable du woff2 de la face de l'enseigne (Chunk). Posée
-   * ⇒ un `@font-face` dans le `<head>`. Gmail ignore `<style>` et les
-   * polices web : il affiche le repli système gras, écrit aussi en ligne.
-   */
-  readonly brandFontUrl?: string;
-  /** Le logo, à gauche DANS le bandeau, sur un pavé blanc. Absent ⇒ pas de logo. */
-  readonly logo?: LayoutLogo;
-  /** Le récapitulatif, sous le corps. Vide ou absent ⇒ aucun bloc rendu. */
-  readonly rows?: readonly LayoutRow[];
-  /** L'image en ligne, sous le récapitulatif. */
-  readonly image?: LayoutImage;
-  /**
-   * L'itinéraire vers le point de retrait (plan `plan-textes-des-e-mails.md`,
-   * S7) : un bouton secondaire, encadré plutôt que plein, pour ne pas
-   * disputer sa place à l'action principale.
-   */
-  readonly itinerary?: MailCta;
-  /**
-   * L'ordre des sections du corps (S2). Absent : l'ordre par défaut, celui
-   * d'avant les sections, à l'octet près. Une section qu'il ne nomme pas
-   * suit, dans l'ordre par défaut (`effectiveSectionOrder`).
-   */
-  readonly sections?: readonly LayoutSectionId[];
-  /**
-   * Un `<div data-mail-section="…">` neutre autour de chaque section rendue —
-   * pour l'aperçu de l'écran (S4), JAMAIS pour un e-mail envoyé.
-   */
-  readonly markSections?: boolean;
-}
-
-/**
- * La charte de la suite, telle qu'elle est **déjà** à l'écran : le thème `navi`
- * du back-office — marine corporate, page ivoire, angles quasi carrés.
- *
- * Les valeurs sont écrites en dur, et c'est voulu : un e-mail n'a pas de
- * feuille de styles, pas de variables CSS, pas de thème à l'exécution. Les
- * reprendre ici est la seule façon d'avoir la même identité des deux côtés —
- * au prix d'un rappel à faire si la marque change, ce que ce commentaire porte.
- */
-const BRAND = {
-  navy: "#24448f",
-  navyDeep: "#1a3157",
-  ivory: "#fdfcfb",
-  ink: "#0f172a",
-  muted: "#64748b",
-  border: "#e2e8f0",
-  radius: "4px",
-} as const;
-
-/**
  * La **coquille commune** : un seul gabarit visuel pour toute la suite, pour
  * qu'un e-mail transactionnel n'ait à décider que de ses mots.
  *
@@ -183,91 +55,52 @@ const BRAND = {
  * **Tout est échappé ici** : un gabarit appelant n'a jamais à y penser.
  */
 export function renderLayout(input: LayoutInput): string {
-  const cta =
-    input.cta !== undefined && isRenderableUrl(input.cta.url)
-      ? `<p style="margin:28px 0 4px;"><a href="${htmlEscape(input.cta.url)}" style="display:inline-block;padding:13px 22px;background:${BRAND.navy};color:#ffffff;text-decoration:none;border-radius:${BRAND.radius};font-weight:600;font-size:15px;">${htmlEscape(input.cta.label)}</a></p>`
-      : "";
-  const secondary =
-    cta !== "" && input.secondaryLink !== undefined && isRenderableUrl(input.secondaryLink.url)
-      ? `<p style="margin:12px 0 0;font-size:14px;"><a href="${htmlEscape(input.secondaryLink.url)}" style="color:${BRAND.navy};text-decoration:underline;">${htmlEscape(input.secondaryLink.label)}</a></p>`
-      : "";
-  // Le récapitulatif : un tableau de présentation, pas une grille. Outlook
-  // ignore flex et grid, et un récapitulatif qui s'effondre en une colonne
-  // rend les montants illisibles au moment précis où on les cherche.
-  const rows =
-    input.rows === undefined || input.rows.length === 0
-      ? ""
-      : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;font-size:14px;">
-          ${input.rows
-            .map(
-              (row) =>
-                `<tr>
-                  <td style="padding:7px 0;${row.strong === true ? `border-top:1px solid ${BRAND.border};font-weight:700;` : `color:${BRAND.muted};`}">${htmlEscape(row.label)}</td>
-                  <td align="right" style="padding:7px 0;${row.strong === true ? `border-top:1px solid ${BRAND.border};font-weight:700;` : ""}">${htmlEscape(row.value)}</td>
-                </tr>`,
-            )
-            .join("")}
-        </table>`;
+  return renderLayoutFrame(
+    input,
+    joinSections(
+      layoutFragments(input),
+      effectiveSectionOrder(input.sections),
+      input.markSections === true,
+    ),
+  );
+}
 
-  // L'image en ligne. `width`/`height` en ATTRIBUTS et non en CSS : plusieurs
-  // clients ignorent le style de dimension et afficheraient l'image à sa taille
-  // native, c'est-à-dire de travers.
-  const image =
-    input.image === undefined
-      ? ""
-      : `<p style="margin:24px 0 0;text-align:center;">
-          <img src="cid:${htmlEscape(input.image.contentId)}" alt="${htmlEscape(input.image.alt)}" width="${String(input.image.sizePx)}" height="${String(input.image.sizePx)}" style="display:block;margin:0 auto;background:#ffffff;" />
-          ${input.image.caption === undefined ? "" : `<span style="display:block;margin:10px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">${htmlEscape(input.image.caption)}</span>`}
-        </p>`;
+/**
+ * Ce qu'un document réarrangé ajoute au cadre (S4b) : son `<head>` (variante
+ * sombre, empilement des colonnes), la langue de l'envoi, et les classes que
+ * ce `<head>` vise. Absent, le cadre est celui de la coquille, à l'octet.
+ */
+export interface LayoutFrameTheme {
+  readonly head: string;
+  readonly lang: string;
+  readonly pageClass: string;
+  readonly cardClass: string;
+}
 
-  const itinerary =
-    input.itinerary !== undefined && isRenderableUrl(input.itinerary.url)
-      ? `<p style="margin:20px 0 4px;"><a href="${htmlEscape(input.itinerary.url)}" style="display:inline-block;padding:11px 20px;border:1px solid ${BRAND.navy};color:${BRAND.navy};text-decoration:none;border-radius:${BRAND.radius};font-weight:600;font-size:14px;">${htmlEscape(input.itinerary.label)}</a></p>`
-      : "";
-
-  const footer =
-    input.footer === undefined
-      ? ""
-      : `<p style="margin:24px 0 0;line-height:1.5;font-size:13px;color:${BRAND.muted};">${htmlEscape(input.footer)}</p>`;
-
-  // Le recours est SOUS un filet, séparé du message : il ne se lit pas au même
-  // moment. On ne le cherche qu'une fois que quelque chose a mal tourné, et il
-  // doit alors se trouver sans relire l'e-mail.
-  const support =
-    input.supportEmail === undefined || input.supportEmail.trim() === ""
-      ? ""
-      : `<tr><td style="padding:0 32px 28px;">
-          <hr style="border:0;border-top:1px solid ${BRAND.border};margin:0 0 16px;" />
-          <p style="margin:0;line-height:1.5;font-size:13px;color:${BRAND.muted};">
-            Un problème, ou vous n'attendiez pas ce message&nbsp;? Contactez votre administrateur&nbsp;:
-            <a href="mailto:${htmlEscape(input.supportEmail)}" style="color:${BRAND.navy};font-weight:600;text-decoration:none;">${htmlEscape(input.supportEmail)}</a>
-          </p>
-        </td></tr>`;
-
+/**
+ * Le cadre de l'e-mail autour d'un corps déjà assemblé : page, carte,
+ * bandeau, recours. Partagé par la coquille et le rendu d'un document.
+ */
+export function renderLayoutFrame(
+  input: LayoutInput,
+  content: string,
+  theme?: LayoutFrameTheme,
+): string {
   const header = renderLayoutHeader(input, { band: BRAND.navyDeep, radius: BRAND.radius });
+  const head = theme === undefined ? renderFontHead(input.brandFontUrl) : theme.head;
+  const lang = theme === undefined ? "fr" : theme.lang;
+  const pageClass = theme === undefined ? "" : ` class="${theme.pageClass}"`;
+  const cardClass = theme === undefined ? "" : ` class="${theme.cardClass}"`;
 
   return `<!doctype html>
-<html lang="fr">${renderFontHead(input.brandFontUrl)}
-  <body style="margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${BRAND.ink};background:${BRAND.ivory};">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid ${BRAND.border};border-radius:${BRAND.radius};">
+<html lang="${lang}">${head}
+  <body${pageClass} style="margin:0;padding:24px;font-family:${TEXT_FONT_STACK};color:${BRAND.ink};background:${BRAND.ivory};">
+    <table${cardClass} role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:${WHITE};border:1px solid ${BRAND.border};border-radius:${BRAND.radius};">
       ${header}
       <tr><td style="padding:32px 32px 8px;">
-        ${joinSections(
-          {
-            title: `<h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:${BRAND.ink};">${htmlEscape(input.title)}</h1>`,
-            body: `<p style="margin:0;line-height:1.6;white-space:pre-line;">${htmlEscape(input.body)}</p>`,
-            summary: rows,
-            image,
-            itinerary,
-            cta,
-            secondaryLink: secondary,
-            footer,
-          },
-          effectiveSectionOrder(input.sections),
-          input.markSections === true,
-        )}
+        ${content}
       </td></tr>
-      ${support}
+      ${supportOf(input)}
     </table>
   </body>
 </html>`;

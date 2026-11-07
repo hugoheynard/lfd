@@ -343,3 +343,106 @@ publishedLayoutOrder?)` — l'ordre publié de l'ancienne table, passé par
 `validateMailDocumentForPublication`, `isHttpsUrl`, `widthsFillTheRow`,
 `isColumnWidthStep`, `startingMailDocument`, `modelBlockId`. La déclaration
 d'un modèle, elle, lui viendra de l'API (S5a) : elle vit côté serveur.
+
+## 13. S5b (canevas) — bâti le 2026-11-07
+
+**Ce qui existe.** Le back-office importe `@lfd/mail-blocks`
+(`workspace:*`). Sous `apps/lfd-backoffice-frontend/src/app/mail-editor/`,
+des composants **purs**, sans appel HTTP, sans route ni entrée au menu :
+
+- **Les gestes** (`apps/lfd-backoffice-frontend/src/app/mail-editor/rules/mail-document-edits.ts`) : déplacer (rang à rang,
+  ou d'un cran), ajouter un bloc de la bibliothèque au fil ou dans une
+  cellule, retirer un bloc libre, écrire un texte dans une langue, régler
+  une largeur. Fonctions pures : chaque geste rend un nouveau document, et
+  aucune n'applique une règle du serveur — sauf qu'un bloc du modèle ne se
+  retire pas (le document est rendu tel quel).
+- **Le canevas** (`ui/mail-canvas/`) : entrées `document`, `declaration`,
+  `template`, `locale` (et `newId`, l'identifiant d'un bloc neuf,
+  `crypto.randomUUID` par défaut) ; sortie `documentChange`. Les blocs en
+  `fold-card`, déplacés par glisser-déposer (`cdk/drag-drop`, poignée) et par
+  « Monter / Descendre » ; ceux du modèle sous leur nom
+  (`MODEL_SECTION_LABELS`), sans bouton pour les retirer. Les refus sont
+  ceux de `validateMailDocument` : sur la carte du bloc en cause, ou en tête
+  quand ils ne visent aucun bloc.
+- **La bibliothèque** (`ui/mail-block-library/`), **le texte sur place**
+  (`ui/mail-free-block-editor/`) et **les réglages** du bloc sélectionné
+  (`ui/mail-block-settings/` : adresse du bouton, ton de l'encadré,
+  largeurs sur les crans, ajout dans une colonne).
+
+**Écarts au texte.**
+
+- La **langue** est une entrée du canevas, pas un sélecteur à lui : § 6 la
+  met au-dessus, avec la page.
+- Le canevas prend aussi la **clé du modèle** (`template`) : sans elle, la
+  règle « ce document est celui d'un autre e-mail » ne pourrait rien refuser.
+- Dans une colonne, un bloc se retire et s'écrit, mais **ne se déplace
+  pas** (ni entre cellules, ni dans la sienne) ; un bloc du fil n'entre pas
+  dans une colonne par glisser-déposer. Seul l'ajout par les réglages y pose
+  un bloc.
+- Un bouton naît **sans adresse** et un bloc **sans texte** : aucune donnée
+  inventée, la règle refuse l'adresse vide tant qu'elle n'est pas saisie.
+- Les **phrases du modèle et leurs variantes** (colonne de gauche, écran
+  `textes-emails` absorbé) et les **cas** ne sont pas dans ce passage.
+
+**Ce qui reste.** La page qui branche le canevas (S5a) : lecture de la
+déclaration et du document depuis l'API, choix de la langue, enregistrement
+du brouillon ; puis les phrases du modèle dans les réglages d'un bloc du
+modèle, et les cas (S5b, suite).
+
+## 14. S4b — bâti le 2026-11-07
+
+**Ce qui existe.** `@lfd/mailer` rend un document (`renderMailDocument`,
+`packages/mailer/src/render-document.ts`) ; il dépend désormais de
+`@lfd/mail-blocks` (le contrat, et `modelSectionOfLayoutSection` pour ranger
+le lien secondaire sous son bouton).
+
+- **Les styles** sortent de `html.ts` dans `packages/mailer/src/layout-styles.ts` (`BRAND`,
+  `TITLE_STYLE`, `BODY_STYLE`, `BUTTON_STYLE`, `RULE_STYLE`…), réexportés par
+  `html.ts` et par le paquet ; les fragments de la coquille dans
+  `packages/mailer/src/layout-fragments.ts`, son entrée dans `packages/mailer/src/layout-input.ts`, son cadre dans
+  `renderLayoutFrame`. La coquille et les blocs libres
+  (`packages/mailer/src/document-blocks.ts`) lisent les mêmes constantes.
+- **Un document sans bloc libre** est rendu PAR la coquille : l'ordre du code
+  la rend sans ordre, tout autre ordre comme un ordre publié de sections.
+  Aucun `<head>` neuf.
+- **Un document réarrangé** (au moins un bloc libre) : blocs du modèle par
+  les fragments de la coquille, blocs libres (titre `h2`, paragraphe,
+  encadré `info` / `warning`, bouton, séparateur), colonnes en tableaux
+  (`td.lfd-col`, largeur en %), et un `<head>` : `color-scheme`, la variante
+  sombre de la charte (`MAIL_CHARTER_DARK`, `packages/mailer/src/document-theme.ts`) sous
+  `prefers-color-scheme`, l'empilement sous 600 px, la police de l'enseigne.
+  Les sections que le modèle ne déclare pas gardent leur ligne vide, après
+  le document.
+- **Côté API** : le périmètre de mise en page porte un document par e-mail
+  (`MailLayoutScope.documents`, `apps/lfd-api/src/mail/templates/sections/mail-layout-scope.ts`), lu par
+  `renderLayoutWithLogo` via `apps/lfd-api/src/mail/templates/sections/mail-document-rendering.ts` (charte
+  et sections déclarées tirées du code). **Aucun envoi ne le pose** : seuls
+  les tests.
+- **La garantie** : `apps/lfd-api/src/mail/templates/__tests__/mail-document-rendering-golden.spec.ts`
+  — le document de départ rend l'empreinte (objet, HTML, pièces jointes) des
+  32 modèles sur tous les cas, et, sous un ordre publié renversé, les mêmes
+  octets que la coquille sous cet ordre (192 tests).
+
+**Écarts au texte.**
+
+- **« Réarrangé » veut dire « porte un bloc libre »** : un document qui ne
+  fait que déplacer des blocs du modèle dit un ordre de sections, que la
+  coquille rend déjà — sans variante sombre. À confirmer.
+- **Les trois chartes partagent la palette claire** `BRAND` : ce qui les
+  distingue aujourd'hui (enseigne, recours) est une donnée de l'envoi. Elles
+  ne diffèrent que par leur variante sombre, identique pour l'instant.
+- **Deux ordres publiés ne se reproduisent pas** : un ordre qui sépare le
+  bouton de son lien secondaire (§ 12), et un ordre publié **égal à l'ordre
+  du code** — la coquille le rend avec les sections non déclarées à la fin,
+  le document de départ, qui ne le distingue pas de « aucun ordre », les
+  rend à leur place par défaut. Les deux ne touchent que l'aperçu d'un
+  document de départ : sans document publié, l'envoi garde l'ordre publié.
+- Un texte libre manquant dans la langue de l'envoi ne rend **rien** (pas de
+  repli sur le français) ; la publication le refuse déjà.
+- Le QR n'a pas gagné de cellule `bgcolor` : il est un bloc du modèle, rendu
+  à l'octet ; son `<img>` porte déjà `background:#ffffff`.
+
+**Ce que S4c branchera.** Lire le document publié, le poser dans
+`MailLayoutScope.documents` avec la langue de l'envoi (sinon l'ordre publié,
+sinon l'ordre du code ; un document illisible se replie sur l'ordre du code,
+journalisé), et garder sa version dans `mail_request`.

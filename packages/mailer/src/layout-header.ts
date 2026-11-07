@@ -43,13 +43,24 @@ const BRAND_FONT_STACK = "'Chunk','Arial Black',Impact,sans-serif";
 /** La marge du pavé blanc autour du logo, en pixels. */
 const LOGO_PAD_PX = 6;
 
-/** Le `@font-face` de l'enseigne, seulement si une URL publique est donnée. */
-export function renderFontHead(url: string | undefined): string {
+/**
+ * La règle `@font-face` de l'enseigne, seulement si une URL publique est
+ * donnée — partagée par la coquille et le `<head>` d'un document réarrangé.
+ */
+export function brandFontFaceRule(url: string | undefined): string {
   if (url === undefined || !url.startsWith("https://")) {
     return "";
   }
-  return `
-  <head><style>@font-face{font-family:'Chunk';font-style:normal;font-weight:400;src:url('${htmlEscape(url)}') format('woff2');}</style></head>`;
+  return `@font-face{font-family:'Chunk';font-style:normal;font-weight:400;src:url('${htmlEscape(url)}') format('woff2');}`;
+}
+
+/** Le `@font-face` de l'enseigne, seulement si une URL publique est donnée. */
+export function renderFontHead(url: string | undefined): string {
+  const rule = brandFontFaceRule(url);
+  return rule === ""
+    ? ""
+    : `
+  <head><style>${rule}</style></head>`;
 }
 
 /** Le bandeau, ou rien s'il n'a ni logo ni enseigne. */

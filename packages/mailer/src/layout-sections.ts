@@ -1,3 +1,5 @@
+import { htmlEscape } from "./escape.js";
+
 /**
  * **Les sections du corps d'un e-mail** — ce qui, dans la coquille, se place
  * entre le bandeau d'en-tête et le recours (plan
@@ -65,21 +67,47 @@ export function effectiveSectionOrder(
 }
 
 /**
- * Assemble le corps dans l'ordre effectif. `markSections` (l'aperçu de
- * l'écran, S4) enveloppe chaque section rendue d'un `<div>` neutre qui la
- * nomme — jamais dans un e-mail envoyé.
+ * Un morceau du corps : une section de la coquille, ou un bloc libre d'un
+ * document réarrangé (S4b), qui n'est jamais vide quand il est là.
  */
+export type LayoutPart =
+  | { readonly kind: "section"; readonly id: LayoutSectionId; readonly html: string }
+  | { readonly kind: "free"; readonly id: string; readonly html: string };
+
+function kept(part: LayoutPart): boolean {
+  return part.kind === "free" || part.html !== "" || BLANK_LINE_WHEN_ABSENT.has(part.id);
+}
+
+function marked(part: LayoutPart): string {
+  if (part.html === "") {
+    return part.html;
+  }
+  return part.kind === "section"
+    ? `<div data-mail-section="${part.id}">${part.html}</div>`
+    : `<div data-mail-block="${htmlEscape(part.id)}">${part.html}</div>`;
+}
+
+/**
+ * Assemble des morceaux dans l'ordre donné, avec la règle des lignes vides de
+ * la coquille. `markSections` (l'aperçu de l'écran, S4) enveloppe chaque
+ * morceau rendu d'un `<div>` neutre qui le nomme — jamais dans un e-mail
+ * envoyé.
+ */
+export function joinParts(parts: readonly LayoutPart[], markSections: boolean): string {
+  return parts
+    .filter(kept)
+    .map((part) => (markSections ? marked(part) : part.html))
+    .join("\n        ");
+}
+
+/** Assemble le corps de la coquille dans l'ordre effectif. */
 export function joinSections(
   fragments: Readonly<Record<LayoutSectionId, string>>,
   order: readonly LayoutSectionId[],
   markSections: boolean,
 ): string {
-  return order
-    .filter((id) => fragments[id] !== "" || BLANK_LINE_WHEN_ABSENT.has(id))
-    .map((id) =>
-      markSections && fragments[id] !== ""
-        ? `<div data-mail-section="${id}">${fragments[id]}</div>`
-        : fragments[id],
-    )
-    .join("\n        ");
+  return joinParts(
+    order.map((id) => ({ kind: "section", id, html: fragments[id] })),
+    markSections,
+  );
 }

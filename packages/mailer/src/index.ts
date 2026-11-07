@@ -34,9 +34,29 @@ export {
   htmlEscape,
   isLayoutSectionId,
   LAYOUT_SECTIONS,
+  BODY_STYLE,
+  BRAND,
+  BUTTON_STYLE,
+  CALLOUT_COLORS,
+  CALLOUT_TEXT_STYLE,
+  CTA_SPACING_STYLE,
+  FOOTER_STYLE,
+  MUTED_TEXT_STYLE,
+  OUTLINE_BUTTON_STYLE,
   renderLayout,
+  RULE_STYLE,
   sanitiseSubject,
+  SECONDARY_LINK_STYLE,
+  TEXT_FONT_STACK,
+  TEXT_STYLE,
+  TITLE_STYLE,
+  TITLE_TEXT_STYLE,
+  WHITE,
 } from "./html.js";
+export { MAIL_CHARTER_DARK } from "./document-theme.js";
+export type { DarkPalette } from "./document-theme.js";
+export { isRearrangedDocument, renderMailDocument } from "./render-document.js";
+export type { MailDocumentRenderOptions } from "./render-document.js";
 export type {
   LayoutImage,
   LayoutInput,
