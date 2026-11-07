@@ -348,6 +348,28 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
+   * **L'identité d'envoi d'un espace d'e-mails est changée**
+   * (`plan-editeur-par-blocs.md`, § 25, C3) : son domaine était vérifié chez
+   * Resend et un essai est parti vers l'auteur sous elle. Les adresses ne
+   * sont pas dans la charge — elles vivent dans `mail.mail_sender_identity` ;
+   * le domaine d'envoi suffit à dire au nom de qui l'espace écrit.
+   * `publicationVersion` : la version des textes des e-mails, montée pour que
+   * les autres instances voient l'identité.
+   *
+   * `subjectLabel` : le nom de l'espace (« La Folie Douce — équipe »).
+   */
+  "mail_copy.sender_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      space: z.string().min(1),
+      revision: count(),
+      senderName: z.string().min(1),
+      fromDomain: z.string().min(1),
+      publicationVersion: count(),
+    }),
+  ),
+
+  /**
    * Un prospect saisi à la main. L'e-mail en est sorti le 2026-09-19 (lot B) :
    * une coordonnée n'a rien à faire au journal, et le lead la garde sur sa
    * propre ligne. `subjectLabel` : son enseigne — la même que `businessName`.

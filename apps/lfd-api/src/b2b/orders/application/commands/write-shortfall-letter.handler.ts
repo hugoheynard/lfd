@@ -62,7 +62,6 @@ export class WriteShortfallLetterHandler implements ICommandHandler<
         throw new ShortfallLetterNoRecipientError(notice.reference);
       }
       await this.mail.send({
-        brand: "lfc",
         to: recipient.email,
         template: "customer.order-shortfall",
         idempotencyKey: notice.letterKey,

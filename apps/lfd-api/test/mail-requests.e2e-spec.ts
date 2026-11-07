@@ -47,7 +47,6 @@ const RESTORED: MailDemand<"staff.access-restored"> = {
   template: "staff.access-restored",
   to: "equipe@example.test",
   data: { firstName: "Ada", backOfficeUrl: "https://admin.example.test" },
-  brand: "lfc",
   idempotencyKey: "staff.restored:e2e",
 };
 
@@ -92,7 +91,7 @@ describe("request — la demande écrite avec la transaction de l'appelant", () 
     });
     expect(row).toMatchObject({
       template: "staff.access-restored",
-      brand: "lfc",
+      brand: "lfd",
       recipient: "equipe@example.test",
       locale: null,
       status: "sent",

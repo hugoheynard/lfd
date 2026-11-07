@@ -17,7 +17,6 @@ function demand(key: string): MailDemand<"staff.access-suspended"> {
     template: "staff.access-suspended",
     to: "equipe@example.test",
     data: { firstName: "Ada" },
-    brand: "lfc",
     idempotencyKey: key,
   };
 }

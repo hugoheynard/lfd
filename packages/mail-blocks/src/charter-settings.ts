@@ -18,8 +18,14 @@ export interface MailCharterColors {
   readonly text: string;
   /** Le texte discret : pied, légendes, recours. */
   readonly mutedText: string;
-  /** La couleur principale : boutons, liens, bandeau. Le texte d'un bouton y est blanc. */
+  /** La couleur principale : boutons, liens. Le texte d'un bouton y est blanc. */
   readonly primary: string;
+  /**
+   * Le fond du bandeau d'en-tête, où l'enseigne s'écrit en blanc (Hugo,
+   * 2026-11-07) : à part de la couleur principale, pour que la charte de
+   * départ publiée telle quelle garde le bandeau d'aujourd'hui (`#1a3157`).
+   */
+  readonly band: string;
   /** Les filets et le contour de la carte. */
   readonly border: string;
 }

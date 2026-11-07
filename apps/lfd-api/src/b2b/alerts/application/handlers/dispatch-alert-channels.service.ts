@@ -103,7 +103,6 @@ export class DispatchAlertChannels extends AlertChannels {
     context: AlertContext,
   ): Promise<void> {
     await this.mail.send({
-      brand: "lfc",
       to: inbox,
       template: "staff.account-alert",
       data: {

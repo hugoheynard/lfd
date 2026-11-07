@@ -100,7 +100,7 @@ describe("ResendOrderPaymentLinkHandler", () => {
     const subject = handler();
     await subject.run.execute(RESEND);
     expect(subject.mailer.queued).toEqual([]);
-    expect(subject.mailer.awaitedReceipt[0]?.brand).toBe("lfc");
+    expect(subject.mailer.awaitedReceipt).toHaveLength(1);
   });
 
   it("un envoi qui échoue remonte à l'agent", async () => {

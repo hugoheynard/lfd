@@ -23,6 +23,7 @@ import { VitrineModule } from "../b2b/vitrine/vitrine.module.js";
 import { ShopCopyModule } from "../b2b/shop-copy/shop-copy.module.js";
 import { MailCopyModule } from "../mail/copy/mail-copy.module.js";
 import { MailChartersModule } from "../mail/charters/mail-charters.module.js";
+import { MailSendersModule } from "../mail/senders/mail-senders.module.js";
 import { MailDocumentsModule } from "../mail/documents/mail-documents.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
@@ -179,6 +180,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     MailDocumentsModule,
     // C1 (même plan, § 25) : les chartes des espaces d'e-mails.
     MailChartersModule,
+    // C3 (même plan, § 25) : l'identité d'envoi de chaque espace.
+    MailSendersModule,
     InboundMailSinkModule,
     VitrineModule,
     // Annuaire back-office (isolé, source de vérité locale).

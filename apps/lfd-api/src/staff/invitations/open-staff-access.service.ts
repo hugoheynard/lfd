@@ -112,7 +112,6 @@ export class OpenStaffAccess {
   ): Promise<boolean> {
     try {
       const receipt = await this.mail.sendAndAwaitReceipt({
-        brand: "lfc",
         to: target.email,
         template,
         idempotencyKey: `${template}:${target.id}:${intentKey}`,

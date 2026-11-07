@@ -11,6 +11,7 @@ const SETTINGS: MailCharterSettings = {
     text: "#0f172a",
     mutedText: "#64748b",
     primary: "#24448f",
+    band: "#1a3157",
     border: "#e2e8f0",
   },
   darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
@@ -117,6 +118,22 @@ describe("validateMailCharterForPublication", () => {
       ["fr"],
     ).map((v) => v.field);
     expect(fields).toEqual(["colors.primary", "colors.primary"]);
+  });
+
+  it("refuse un bandeau trop clair sous l'enseigne blanche", () => {
+    const fields = validateMailCharterForPublication(
+      { ...SETTINGS, colors: { ...SETTINGS.colors, band: "#9db4e6" } },
+      ["fr"],
+    ).map((v) => v.field);
+    expect(fields).toEqual(["colors.band"]);
+  });
+
+  it("refuse une couleur de bandeau mal écrite", () => {
+    expect(
+      validateMailCharter({ ...SETTINGS, colors: { ...SETTINGS.colors, band: "navy" } }).map(
+        (v) => v.field,
+      ),
+    ).toEqual(["colors.band"]);
   });
 
   it("vérifie aussi la variante sombre", () => {

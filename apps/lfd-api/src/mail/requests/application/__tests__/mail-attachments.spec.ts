@@ -37,7 +37,6 @@ const PLACED: DeferredMailDemand<"customer.order-placed"> = {
     },
     locale: "fr",
   },
-  brand: "lfc",
   idempotencyKey: "order.placed:o-1",
 };
 
@@ -120,7 +119,6 @@ describe("la pièce jointe par référence", () => {
       template: "staff.access-suspended",
       to: "equipe@example.test",
       data: { firstName: "Ada" },
-      brand: "lfc",
       idempotencyKey: "staff.suspended:no-pdf",
     });
 

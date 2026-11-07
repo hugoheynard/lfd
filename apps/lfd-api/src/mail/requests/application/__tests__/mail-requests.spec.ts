@@ -14,7 +14,6 @@ const SUSPENDED: MailDemand<"staff.access-suspended"> = {
   template: "staff.access-suspended",
   to: "equipe@example.test",
   data: { firstName: "Ada" },
-  brand: "lfc",
   idempotencyKey: "staff.suspended:s1",
 };
 
@@ -42,6 +41,8 @@ describe("request — la demande différée", () => {
       status: "requested",
       recipient: "equipe@example.test",
       locale: null,
+      // C3 : la marque est l'espace du modèle, jamais l'appelant.
+      brand: "lfd",
     });
   });
 

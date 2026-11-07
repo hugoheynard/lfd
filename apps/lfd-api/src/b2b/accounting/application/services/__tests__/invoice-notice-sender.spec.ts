@@ -123,19 +123,11 @@ describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () =
 
     expect(recipients?.map((r) => r.email)).toEqual(["compta@port.test", "compta@chalet.test"]);
     expect(h.sites.asked).toEqual([{ orderIds: ["o_1", "o_2"], payer: "c_port" }]);
-    expect(
-      h.mails.queued.map((mail) => [mail.to, mail.template, mail.brand, mail.idempotencyKey]),
-    ).toEqual([
-      [
-        "compta@port.test",
-        "customer.invoice-issued",
-        "lfc",
-        `invoice.notice:${h.invoice.id}:contact:1`,
-      ],
+    expect(h.mails.queued.map((mail) => [mail.to, mail.template, mail.idempotencyKey])).toEqual([
+      ["compta@port.test", "customer.invoice-issued", `invoice.notice:${h.invoice.id}:contact:1`],
       [
         "compta@chalet.test",
         "customer.invoice-issued",
-        "lfc",
         `invoice.notice:${h.invoice.id}:contact:chalet`,
       ],
     ]);

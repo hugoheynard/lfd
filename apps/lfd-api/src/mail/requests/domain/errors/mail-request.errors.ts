@@ -15,13 +15,13 @@ export class InvalidMailRequestError extends DomainError {
   }
 }
 
-/** Une marque que le service d'e-mails ne connaît pas (aujourd'hui : `lfc` seule). */
+/** Une marque que le service d'e-mails ne connaît pas : les marques sont les espaces (`lfc`, `lfd`). */
 export class UnknownMailBrandError extends DomainError {
   constructor(brand: string) {
     super(
       "MAIL_BRAND_UNKNOWN",
       `La marque « ${brand} » n'est pas connue du service d'e-mails : rien n'a été envoyé. ` +
-        "Les marques admises sont déclarées dans `mail-brand.ts`.",
+        "Les marques admises sont les espaces d'e-mails (`lfc`, `lfd`), déclarés dans `@lfd/mail-blocks`.",
     );
   }
 }

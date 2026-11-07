@@ -1931,7 +1931,7 @@ change le rendu de son espace, et seulement de lui.
 Pas d'argent, pas de frontière de sécurité nouvelle (même droit) : `vitruve`
 n'est pas requis ; la migration additive passera au lecteur de migrations.
 
-### C3 — une identité d'envoi par espace, rangée en base (Hugo, 2026-11-07) — à bâtir après C1
+### C3 — une identité d'envoi par espace, rangée en base (Hugo, 2026-11-07) — bâti le 2026-11-07
 
 Hugo : « écrivons le truc scalable ; pour l'instant j'ai un seul domaine
 lafoliecoffee dans Resend, mais je voudrais passer les mails admin via un
@@ -1978,6 +1978,94 @@ Ajouter une app, c'est créer un espace — pas de déploiement, pas de variable
 **À faire par Hugo, hors code** : ajouter `lfd-backoffice.com` dans Resend et
 poser ses enregistrements DNS ; puis, dans l'éditeur, régler l'identité de
 l'espace La Folie Douce (`no-reply@lfd-backoffice.com`).
+
+### C3 — bâti le 2026-11-07 — écarts
+
+**Ce qui existe.** Le contexte `apps/lfd-api/src/mail/senders/` (style
+B2B), sous le droit `mail_templates`.
+
+- **La marque découle de l'espace.** `MailDemand.brand` a disparu : le bloc
+  la lit du modèle (`mailSpaceOf`, dans `BlockMail`). `MailBrandName =
+MailSpace`, `MAIL_BRANDS = MAIL_SPACES`. Les 37 `brand: "lfc"` des
+  appelants (sonde et essai compris) sont retirés. Les e-mails de l'équipe
+  et les internes sont désormais rangés `lfd`.
+- **Le stockage** (migration `20261107140000_l_identite_d_envoi_des_espaces`,
+  additive) : `mail.mail_sender_identity` (espace, révision, nom
+  d'expéditeur, adresse d'envoi, adresse de réponse facultative, auteur et
+  date) ; `mail_request_brand_check` élargie à `('lfc', 'lfd')`. `changed_by`
+  est au registre RGPD.
+- **Le contrat** (`packages/mail-blocks/src/mail-sender-identity.ts`) :
+  `MailSenderIdentity { senderName, fromAddress, replyToAddress: string |
+null }`, `validateMailSenderIdentity` (codes
+  `MAIL_SENDER_VIOLATION_CODES`), `senderDomainOf`, `senderHeaderOf`
+  (`"Nom" <adresse>`), `MailSenderView`, `MailSenderPayload`,
+  `MailSenderDefaultView`.
+- **L'agrégat** `MailSpaceSender` : `change(identity, verifiedDomains,
+expectedRevision, stamp)` refuse une forme fausse, un domaine absent de
+  la liste vérifiée (égalité exacte, sans casse — un sous-domaine n'hérite
+  pas), une révision dépassée.
+- **Le geste** (`ChangeMailSenderHandler`, une fois par intention) :
+  révision → domaines lus chez Resend hors transaction
+  (`ResendVerifiedSendingDomains`, `GET https://api.resend.com/domains`,
+  statut `verified`, garde `assertOutsideTransaction`) → essai envoyé à
+  l'adresse de la fiche de l'auteur par `mail.sendAndAwaitReceipt` sous
+  `withMailSender` (`MailPortSenderTrial`, clé
+  `mail-sender.trial:<intention>`) → transaction : relit, change, fait
+  monter la version des textes (`markDocumentChange`), journalise
+  `mail_copy.sender_changed` (`space`, `revision`, `senderName`,
+  `fromDomain`, `publicationVersion` — aucune adresse). Essai refusé :
+  rien n'est enregistré.
+- **L'envoi** : `CachedPublishedMailCopyReader.senders()` (même version que
+  les textes) ; `EffectiveCopyMailer` pose `from` et `replyTo`
+  (`SendMailArgs.from`, ajouté à `@lfd/mailer`) depuis l'identité de
+  l'espace du modèle ; un périmètre `withMailSender` ouvert l'emporte. Sans
+  identité, illisible, ou lecture en échec : l'identité par défaut du
+  mailer, et un avertissement au journal pour les deux derniers cas.
+- **Le repli dit** : au démarrage (`MailSenderBootReport`), une ligne par
+  espace sans identité, avec le domaine par défaut (aucune adresse) ; la
+  route de lecture porte `fallback`.
+- **La sonde** (`CheckMailDeliveryHandler`) : l'immédiat et le différé
+  partent sous l'identité de l'espace de `ops.deploy-check` (`lfd`), puis
+  un immédiat de plus sous celle de chaque autre espace qui en a une (clé
+  `<appel>:<espace>`). `MailCheckResult.senderSpaces` dit lesquels.
+
+**Les routes que l'écran branchera** (contrôleur `AdminMailSendersController`) :
+
+| Verbe | Chemin                       | Droit   | Corps / en-tête                                     | Rend                                                                                          |
+| ----- | ---------------------------- | ------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `GET` | `/admin/mail-senders/:space` | `read`  | —                                                   | `MailSenderView` (`identity` `null` = repli ; `verifiedDomains` `null` = liste illisible)     |
+| `PUT` | `/admin/mail-senders/:space` | `write` | `MailSenderPayload` + `Idempotency-Key` obligatoire | 204 ; 400 forme ou clé absente ; 404 espace ; 409 domaine non vérifié, essai refusé, révision |
+
+**Écarts au texte.**
+
+- **L'essai est un `ops.deploy-check`** (« le courrier sortant fonctionne »,
+  révision et expéditeur) : un modèle de plus aurait demandé textes,
+  manifeste et empreintes. Il porte la charte `lfd` et son pied dit « envoyé
+  à chaque déploiement », même pour l'essai d'une identité `lfc`.
+- **`lint:mail-receipt-admitted` n'a pas d'entrée pour l'essai** : la porte
+  exclut le bloc `mail` par construction (la sonde et les essais y vivent) ;
+  inscrire un fichier du bloc la ferait échouer (« admis mais n'appelle
+  plus »). Le geste est inscrit dans `intent-key-gestures` (GESTURES).
+- **Pas de retour à l'identité par défaut** : le plan ne le demande pas.
+- **Sans adresse de réponse, les réponses vont à l'adresse d'envoi**, pas à
+  `MAILER_REPLY_TO` (celle d'une autre identité).
+- **La clé Resend doit pouvoir lire les domaines** : une clé « envoi
+  seulement » répond 401/403, et l'enregistrement le refuse nommément
+  (`MAIL_SENDING_DOMAINS_UNAVAILABLE`). À vérifier par Hugo avant le premier
+  réglage.
+- **Une identité dont Resend refuse ensuite le domaine** fait échouer les
+  envois de l'espace en erreur technique, que le disjoncteur compte : la
+  sonde de déploiement le dit au déploiement suivant, pas avant.
+- **Le back-office n'a pas de phrase pour `mail_copy.sender_changed`** ni de
+  mot pour le sujet `mail_sender` (moteur de phrases, comme en C1).
+- **La couleur du bandeau** (Hugo, 2026-11-07, ajoutée à ce lot) :
+  `MailCharterColors.band`, **obligatoire** dans le contrat — le formulaire
+  de C2 doit l'ajouter. Contrôlée comme une couleur (`#rrggbb`) et en
+  contraste avec le blanc de l'enseigne (`colors.band`). La charte de départ
+  la porte à `#1a3157` (`BRAND.navyDeep`) : publiée sans rien changer, elle
+  ne fonce plus le bandeau (test `render-charter.spec.ts`). Une charte rangée
+  avant ce champ est relue avec son bandeau = sa couleur principale, ce
+  qu'elle rendait.
 
 ### C1 — bâti le 2026-11-07 — écarts
 
@@ -2062,11 +2150,9 @@ nommé. Types dans `packages/mail-blocks/src/mail-charter-routes.ts`.
   d'aujourd'hui remplace (`SUITE_DARK`), et les boutons et liens ont leur
   style en ligne, qu'une règle `<head>` ne vise pas sans classe. Les fonds
   sombres des encadrés restent ceux de la suite.
-- **Le bandeau prend la couleur principale** d'une charte publiée : la
-  charte n'a pas de couleur de bandeau, et celle de départ est `navyDeep`, pas
-  `navy`. Publier la charte de départ sans rien changer fonce donc le
-  bandeau d'un cran (`#1a3157` → `#24448f`). À trancher : ajouter une couleur
-  de bandeau, ou l'accepter.
+- ~~**Le bandeau prend la couleur principale**~~ — tranché par Hugo le
+  2026-11-07 : la charte porte une couleur de bandeau à part
+  (`colors.band`), bâtie avec C3 (voir ses écarts).
 - **Une charte publiée donne le `<head>` (variante sombre, police) à TOUS les
   e-mails de l'espace**, pas seulement aux documents réarrangés : sans quoi
   l'aperçu « en sombre » ne montrerait rien pour la plupart des e-mails. La
@@ -2097,3 +2183,65 @@ nommé. Types dans `packages/mail-blocks/src/mail-charter-routes.ts`.
   du moteur de phrases (`apps/lfd-backoffice-frontend/src/app/shared/journal/__tests__/closure.spec.ts`)
   attend un mot pour la clé `space` et une phrase pour
   `mail_copy.charter_saved` / `mail_copy.charter_published` — à poser en C2.
+
+### C2 — bâti le 2026-11-07 — écarts
+
+**Ce qui existe** (`apps/lfd-backoffice-frontend/src/app/mail-editor/`) :
+
+- **La page « E-mails » par espaces** (`ui/mail-templates-page/`, rangement
+  dans `apps/lfd-backoffice-frontend/src/app/mail-editor/rules/mail-template-spaces.ts`) : une section par espace, toujours
+  les deux et dans l'ordre de `MAIL_SPACES`, titrée par `MAIL_SPACE_LABELS`,
+  avec son nombre d'e-mails et un bouton « Charte ». Dans chacune, le
+  rangement d'avant (destinataire, puis moment) ; les e-mails de charte
+  `internal` sous « Interne », en fin de l'espace La Folie Douce. L'espace
+  se lit de `space` ; tant que le champ reste facultatif dans le type, à
+  défaut, de `mailSpaceOfCharter(charter)` — la règle même du serveur.
+- **La page « Charte »** (`ui/mail-charter-page/`), route
+  `emails/espaces/:space/charte` sous `mail_templates:read`, garde de
+  sortie : logo (sélecteur de la médiathèque du bloc image, texte de
+  remplacement dans la langue choisie, « Revenir au logo d'origine » =
+  `null`) ; six couleurs claires et quatre sombres
+  (`ui/mail-charter-color-field/` : pastille, sélecteur natif, valeur
+  hexadécimale) ; police des titres (une case l'ouvre, trois champs) ; pied
+  de page par langue de l'espace. Les refus de
+  `validateMailCharterForPublication` sont calculés sur la charte À
+  L'ÉCRAN et posés sous leur réglage (`field`), plus une liste en tête ;
+  une carte « Contraste » donne le rapport de chacune des sept paires,
+  qu'elle passe ou non. Enregistrer (`PUT …/draft`), Publier (confirmation :
+  « tous les e-mails de l'espace « … » (N e-mails) »), ouvert seulement sur
+  un brouillon enregistré, intact et sans refus. Historique
+  (`ui/mail-charter-history/`), aperçu (`ui/mail-charter-preview/` :
+  l'e-mail de l'espace au choix, clair / sombre, cadre `sandbox=""`, à la
+  demande, « périmé » quand la charte bouge).
+- **Journal** : `mail_copy.charter_saved` et `mail_copy.charter_published`
+  ont leur phrase (`shared/journal/phrases/storefront-phrases.ts`) ; elles
+  consomment `space` et `subjectLabel`, la clé `space` n'a donc pas eu
+  besoin d'un mot.
+
+**Écarts.**
+
+- **Le sélecteur de couleur est le natif** : fold n'en a pas
+  (`FoldInputComponent.type` n'admet pas `color`, `node_modules/fold-ng/types/fold-ng.d.ts` relu le
+  2026-11-07). Même figure que `reglages/sites/.../site-color-fields`. Un
+  `fold-color-input` serait un chantier fold.
+- **La liste des paires de contraste est recopiée** dans
+  `apps/lfd-backoffice-frontend/src/app/mail-editor/rules/mail-charter-edits.ts` (`contrastReport`) : le paquet n'exporte que
+  les refus, pas les rapports qui passent. Les refus affichés restent ceux
+  du paquet ; si la liste du paquet change, la carte « Contraste » ment
+  jusqu'à ce qu'on la recopie. Exporter la liste depuis `@lfd/mail-blocks`
+  la fermerait.
+- **Pas d'aperçu d'une version passée** ni de « revenir à la charte de
+  départ » : le contrat ne les a pas (C1).
+- **Pas d'entrée de menu** : la charte s'ouvre depuis la page « E-mails »,
+  qui a déjà la sienne.
+- **Retouche du 2026-11-07** (Hugo : « une card par espace […] un espace
+  détail avec la liste des mails ») : `/emails` montre une `fold-card` par
+  espace (nom, ce qu'il couvre, nombre d'e-mails, brouillons d'arrangement
+  en attente, logo s'il est réglé et pastilles bandeau / principale / fond /
+  texte lues de `GET /admin/mail-charters/:space`) ; toute la carte mène à
+  `/emails/espaces/:space` (`ui/mail-space-page/` : ses e-mails rangés comme
+  avant, « Charte » en en-tête) ; la charte et un e-mail reviennent à leur
+  espace. « Publier tous les e-mails » reste sur `/emails` : il publie les
+  phrases de tous les espaces, et le compte n'est pas servi par espace. « Ce
+  que l'espace couvre » est un libellé de l'écran (`MAIL_SPACE_SCOPES`), pas
+  du paquet.

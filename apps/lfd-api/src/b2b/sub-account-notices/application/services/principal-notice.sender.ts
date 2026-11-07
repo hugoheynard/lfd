@@ -83,7 +83,6 @@ export class PrincipalNoticeSender {
         continue;
       }
       await this.mail.send({
-        brand: "lfc",
         to: recipient.email,
         template,
         data,

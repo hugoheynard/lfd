@@ -130,7 +130,6 @@ describe("« Écrire au client » (E6d)", () => {
     expect(notices.saved).toEqual([{ ...BLANK, notifiedAt: NOW, notifiedBy: "staff_1" }]);
     expect(mailer.queued).toEqual([
       {
-        brand: "lfc",
         to: "jean@exemple.fr",
         template: "customer.order-shortfall",
         idempotencyKey: "order-shortfall:dec_1",

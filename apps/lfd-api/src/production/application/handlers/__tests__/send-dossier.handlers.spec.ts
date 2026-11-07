@@ -66,7 +66,6 @@ describe("l'envoi du dossier à l'arrêt", () => {
 
     expect(mailer.queued).toEqual([]);
     expect(mailer.sent).toHaveLength(1);
-    expect(mailer.sent[0]?.brand).toBe("lfc");
     expect(JSON.stringify(mailer.sent[0]?.data)).toContain('"pdfBase64":"');
     expect(JSON.stringify(mailer.sent[0]?.data)).not.toContain("pdfStored");
   });

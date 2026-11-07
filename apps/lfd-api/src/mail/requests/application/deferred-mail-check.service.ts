@@ -61,7 +61,6 @@ export class DeferredMailCheck {
   async run(demand: DeferredMailCheckDemand): Promise<void> {
     await this.unitOfWork.run(() =>
       this.mail.send({
-        brand: "lfc",
         to: demand.to,
         template: "ops.deploy-check",
         data: { revision: demand.revision, fromAddress: demand.from },

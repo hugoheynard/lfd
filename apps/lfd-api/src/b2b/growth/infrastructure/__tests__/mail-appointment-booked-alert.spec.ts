@@ -67,7 +67,6 @@ describe("MailAppointmentBookedAlert", () => {
     expect(mails.awaitedReceipt).toEqual([]);
     expect(mails.queued).toEqual([
       {
-        brand: "lfc",
         to: "equipe@lfc.fr",
         template: "staff.appointment-booked",
         data: {

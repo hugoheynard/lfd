@@ -6,7 +6,11 @@ describe("MailBrand", () => {
     expect(MailBrand.of("lfc").code).toBe("lfc");
   });
 
-  it.each(["", "LFC", "billetterie"])("refuse « %s »", (code) => {
+  it("connaît La Folie Douce : la marque est l'espace (C3)", () => {
+    expect(MailBrand.of("lfd").code).toBe("lfd");
+  });
+
+  it.each(["", "LFC", "billetterie", "internal"])("refuse « %s »", (code) => {
     expect(() => MailBrand.of(code)).toThrow(UnknownMailBrandError);
   });
 });

@@ -30,6 +30,7 @@ const PUBLISHED: MailCharterSettings = {
     text: "#1b1b1b",
     mutedText: "#5a5a5a",
     primary: "#7a1f3d",
+    band: "#1a3157",
     border: "#ded6c8",
   },
   darkColors: { page: "#101010", card: "#1c1c1c", text: "#f0f0f0", border: "#333333" },
@@ -59,6 +60,21 @@ describe("la charte de départ", () => {
     });
     expect(startingMailCharterSettings("http://localhost:4200/x.woff2").headingFont).toBeNull();
     expect(startingMailCharterSettings(undefined).logo).toBeNull();
+  });
+});
+
+describe("la charte de départ publiée sans rien changer", () => {
+  /**
+   * Régression : le bandeau prenait la couleur principale d'une charte
+   * publiée, et publier la charte de départ telle quelle le fonçait d'un cran
+   * (`#1a3157` → `#24448f`). Il a sa propre couleur depuis le 2026-11-07.
+   */
+  it("garde le bandeau d'aujourd'hui", () => {
+    const published = renderCharterOf(startingMailCharterSettings(undefined), "fr");
+    expect(published.band).toBe(STARTING_MAIL_CHARTER.band);
+    expect(published.band).toBe(BRAND.navyDeep);
+    const html = renderLayout({ ...INPUT, charter: published });
+    expect(html).toContain(`background:${BRAND.navyDeep}`);
   });
 });
 

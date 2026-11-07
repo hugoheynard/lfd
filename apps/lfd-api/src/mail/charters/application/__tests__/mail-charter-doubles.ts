@@ -24,6 +24,7 @@ export const STARTING_SETTINGS: MailCharterSettings = {
     text: "#0f172a",
     mutedText: "#64748b",
     primary: "#24448f",
+    band: "#1a3157",
     border: "#e2e8f0",
   },
   darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },

@@ -103,7 +103,6 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
     // Même geste que l'adaptateur Auth0 (`sendAndAwaitReceipt`) : le chemin local garde
     // la forme de la production, bloc `mail` compris.
     await this.mail.sendAndAwaitReceipt({
-      brand: "lfc",
       to: email,
       template: "customer.password-reset",
       data: { passwordSetupUrl },

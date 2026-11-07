@@ -223,7 +223,6 @@ export class DossierDispatch {
     try {
       const receipt = await this.mail.sendAndAwaitReceipt({
         to: addressee.email,
-        brand: "lfc",
         template: "staff.production-dossier",
         data: {
           firstName: addressee.firstName,

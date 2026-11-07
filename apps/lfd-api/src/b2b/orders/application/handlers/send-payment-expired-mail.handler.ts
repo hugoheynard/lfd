@@ -66,7 +66,6 @@ export class SendPaymentExpiredMail implements DurableSubscriber {
       return;
     }
     await this.mail.send({
-      brand: "lfc",
       to: recipient.email,
       template: "customer.payment-expired",
       data: {

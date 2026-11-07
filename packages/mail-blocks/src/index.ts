@@ -132,3 +132,18 @@ export {
   type MailResourceCard,
   type MailValueResource,
 } from "./mail-resources.js";
+export {
+  MAIL_SENDER_VIOLATION_CODES,
+  MAX_SENDER_ADDRESS_LENGTH,
+  MAX_SENDER_NAME_LENGTH,
+  senderDomainOf,
+  senderHeaderOf,
+  validateMailSenderIdentity,
+  type MailSenderDefaultView,
+  type MailSenderField,
+  type MailSenderIdentity,
+  type MailSenderPayload,
+  type MailSenderView,
+  type MailSenderViolation,
+  type MailSenderViolationCode,
+} from "./mail-sender-identity.js";

@@ -55,10 +55,11 @@ const COLOR_NAMES: Readonly<Record<keyof MailCharterColors, string>> = {
   text: "le texte",
   mutedText: "le texte secondaire",
   primary: "la couleur principale",
+  band: "le bandeau",
   border: "les filets",
 };
 
-const LIGHT_KEYS = ["page", "card", "text", "mutedText", "primary", "border"] as const;
+const LIGHT_KEYS = ["page", "card", "text", "mutedText", "primary", "band", "border"] as const;
 const DARK_KEYS = ["page", "card", "text", "border"] as const;
 
 function colorViolation(field: string, value: string, name: string): MailCharterViolation[] {
@@ -187,6 +188,12 @@ function contrastViolations(settings: MailCharterSettings): MailCharterViolation
       BUTTON_TEXT,
       c.primary,
       "le texte blanc des boutons et la couleur principale",
+    ),
+    ...contrastViolation(
+      "colors.band",
+      BUTTON_TEXT,
+      c.band,
+      "le texte blanc du bandeau et sa couleur",
     ),
     ...contrastViolation(
       "darkColors.text",

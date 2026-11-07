@@ -1,3 +1,9 @@
+import type { MailCopyOverlay } from "../../../templates/copy/mail-copy-overlay.js";
+import { PublishedMailCopyReader } from "../../../templates/effective-copy/published-mail-copy.reader.js";
+import type { PublishedMailCharters } from "../../../templates/effective-copy/published-mail-charters.js";
+import type { PublishedMailDocuments } from "../../../templates/effective-copy/published-mail-documents.js";
+import type { PublishedMailSenders } from "../../../templates/effective-copy/published-mail-senders.js";
+import type { MailSectionOrders } from "../../../templates/sections/mail-layout-scope.js";
 import { AppConfig, type MailerConfig } from "../../../../platform/config/app-config.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import {
@@ -69,7 +75,7 @@ class RelayingPause extends Pause {
     const request = MailRequest.request({
       id: "mail_1",
       template: demand.template,
-      brand: demand.brand,
+      brand: "lfd",
       recipient: demand.to,
       locale: null,
       idempotencyKey: demand.idempotencyKey,
@@ -93,14 +99,42 @@ class RelayingPause extends Pause {
   }
 }
 
-function setup(settings: Settings, relay: Relay = "sends") {
+/** Les identités d'envoi rangées, telles que l'envoi les lit (C3) ; le reste est vide. */
+class PublishedSenders extends PublishedMailCopyReader {
+  constructor(private readonly identities: PublishedMailSenders) {
+    super();
+  }
+  senders(): Promise<PublishedMailSenders> {
+    return Promise.resolve(this.identities);
+  }
+  read(): Promise<MailCopyOverlay> {
+    return Promise.resolve({});
+  }
+  sectionOrders(): Promise<MailSectionOrders> {
+    return Promise.resolve({});
+  }
+  documents(): Promise<PublishedMailDocuments> {
+    return Promise.resolve({});
+  }
+  charters(): Promise<PublishedMailCharters> {
+    return Promise.resolve({});
+  }
+}
+
+function setup(settings: Settings, relay: Relay = "sends", identities?: PublishedMailSenders) {
   const unitOfWork = new OpenableUnitOfWork();
   const mails = new RecordingMail(unitOfWork);
   const requests = new InMemoryMailRequests();
   const wall = new FixedWallClock(WALL_START);
   const pause = new RelayingPause(wall, requests, mails, relay);
   const deferred = new DeferredMailCheck(mails, unitOfWork, requests, wall, pause);
-  const handler = new CheckMailDeliveryHandler(mails, settings, new FixedIdGenerator(), deferred);
+  const handler = new CheckMailDeliveryHandler(
+    mails,
+    settings,
+    new FixedIdGenerator(),
+    deferred,
+    identities === undefined ? undefined : new PublishedSenders(identities),
+  );
   return { mails, handler, pause };
 }
 
@@ -124,15 +158,53 @@ describe("le contrôle de mise en service du courrier", () => {
       from: "no-reply@exemple.test",
       to: "admin@exemple.test",
       revision: "abc1234",
+      senderSpaces: [],
     });
     expect(mails.awaitedReceipt).toEqual([
       {
-        brand: "lfc",
         to: "admin@exemple.test",
         template: "ops.deploy-check",
         data: { revision: "abc1234", fromAddress: "no-reply@exemple.test" },
         idempotencyKey: "ops.deploy-check:abc1234:id_000001",
       },
+    ]);
+  });
+
+  it("éprouve l'identité de chaque espace qui en a une (C3)", async () => {
+    const lfd = {
+      senderName: "La Folie Douce",
+      fromAddress: "no-reply@lfd.test",
+      replyToAddress: null,
+    };
+    const lfc = {
+      senderName: "La Folie Coffee",
+      fromAddress: "bonjour@lfc.test",
+      replyToAddress: null,
+    };
+    const { mails, handler } = setup(
+      new Settings("no-reply@exemple.test", "admin@exemple.test"),
+      "sends",
+      {
+        lfd: { kind: "servable", identity: lfd },
+        lfc: { kind: "servable", identity: lfc },
+      },
+    );
+
+    const result = await handler.execute();
+
+    expect(result).toMatchObject({
+      from: '"La Folie Douce" <no-reply@lfd.test>',
+      senderSpaces: ["lfc", "lfd"],
+    });
+    expect(mails.awaitedReceipt.map((mail) => [mail.idempotencyKey, mail.data])).toEqual([
+      [
+        "ops.deploy-check:abc1234:id_000001",
+        { revision: "abc1234", fromAddress: '"La Folie Douce" <no-reply@lfd.test>' },
+      ],
+      [
+        "ops.deploy-check:abc1234:id_000001:lfc",
+        { revision: "abc1234", fromAddress: '"La Folie Coffee" <bonjour@lfc.test>' },
+      ],
     ]);
   });
 
@@ -180,7 +252,6 @@ describe("le contrôle de mise en service du courrier", () => {
 
       expect(mails.queued).toEqual([
         {
-          brand: "lfc",
           to: "dev@exemple.test",
           template: "ops.deploy-check",
           data: { revision: "abc1234", fromAddress: "no-reply@exemple.test" },

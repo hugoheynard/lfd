@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { MailReceipt } from "@lfd/mailer";
 
 import type { B2bMails } from "../../templates/mail-templates.js";
+import { mailSpaceOf } from "../../templates/sections/mail-block-declarations.js";
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
@@ -13,20 +14,23 @@ import { type CheckedMailDemand, MailRequester } from "./mail-requester.service.
 
 /** Ce que les deux formes de demande ont en commun, une fois le type vérifié. */
 interface TypedDemand {
-  readonly template: string;
+  readonly template: keyof B2bMails;
   readonly to: string;
   readonly data: unknown;
-  readonly brand: string;
   readonly idempotencyKey: string;
   readonly replyTo?: string;
 }
 
+/**
+ * La marque est l'espace du modèle (plan `plan-editeur-par-blocs.md`, § 25,
+ * C3) : lue ici, une fois, et jamais fournie par l'appelant.
+ */
 function checked(demand: TypedDemand): CheckedMailDemand {
   return {
     template: demand.template,
     to: demand.to,
     data: demand.data,
-    brand: demand.brand,
+    brand: mailSpaceOf(demand.template),
     idempotencyKey: demand.idempotencyKey,
     ...(demand.replyTo === undefined ? {} : { replyTo: demand.replyTo }),
   };

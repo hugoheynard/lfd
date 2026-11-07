@@ -1,11 +1,14 @@
+import { MAIL_SPACES } from "@lfd/mail-blocks";
+
 import { UnknownMailBrandError } from "../errors/mail-request.errors.js";
 
 /**
- * Les marques au nom desquelles le service envoie. La Folie Coffee seule
- * aujourd'hui (plan `plan-service-e-mails.md`, C2) ; la billetterie viendra
- * s'ajouter ici.
+ * Les marques au nom desquelles le service envoie : **les espaces** (plan
+ * `plan-editeur-par-blocs.md`, § 25, C3 — une marque = un espace). Ajouter
+ * une app, c'est ajouter un espace ; la contrainte
+ * `mail.mail_request.brand` suit la même liste.
  */
-export const MAIL_BRANDS = ["lfc"] as const;
+export const MAIL_BRANDS = MAIL_SPACES;
 
 export type MailBrandCode = (typeof MAIL_BRANDS)[number];
 

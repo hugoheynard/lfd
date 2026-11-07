@@ -76,7 +76,6 @@ export class ResendOrderPaymentLinkHandler implements ICommandHandler<
       );
     }
     await this.mail.sendAndAwaitReceipt({
-      brand: "lfc",
       to: recipient.email,
       template: "customer.order-payment-link",
       data: { reference: standing.reference, totalCents: standing.totalCents, settleUrl },

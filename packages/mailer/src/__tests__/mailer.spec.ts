@@ -361,3 +361,20 @@ describe("l'adresse de réponse par message", () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+describe("l'expéditeur par message (identité d'envoi d'un espace)", () => {
+  it("l'emporte sur celui du mailer", async () => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    await new ResendMailer<TestMails>({ client, registry, fromAddress: "a@b.fr" }).send({
+      ...HELLO,
+      from: '"La Folie Douce" <no-reply@lfd.test>',
+    });
+    expect(calls[0]?.[0]).toMatchObject({ from: '"La Folie Douce" <no-reply@lfd.test>' });
+  });
+
+  it("garde celui du mailer quand le message n'en donne pas", async () => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    await new ResendMailer<TestMails>({ client, registry, fromAddress: "a@b.fr" }).send(HELLO);
+    expect(calls[0]?.[0]).toMatchObject({ from: "a@b.fr" });
+  });
+});

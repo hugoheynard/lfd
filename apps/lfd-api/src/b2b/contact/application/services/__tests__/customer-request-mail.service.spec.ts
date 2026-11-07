@@ -36,7 +36,6 @@ describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc
     const mails = await requestOf(CONTACT);
     expect(mails.queued).toEqual([
       {
-        brand: "lfc",
         to: "commercial@lfc.fr",
         replyTo: "jean@exemple.fr",
         template: "staff.customer-request",

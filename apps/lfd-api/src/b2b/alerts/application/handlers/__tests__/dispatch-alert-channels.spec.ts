@@ -95,7 +95,6 @@ describe("DispatchAlertChannels — le canal e-mail", () => {
     expect(mails.awaitedReceipt).toEqual([]);
     expect(mails.queued).toEqual([
       {
-        brand: "lfc",
         to: "equipe@lfc.fr",
         template: "staff.account-alert",
         data: {

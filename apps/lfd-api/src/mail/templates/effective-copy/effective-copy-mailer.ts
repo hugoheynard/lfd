@@ -1,3 +1,4 @@
+import { senderHeaderOf, type MailSenderIdentity } from "@lfd/mail-blocks";
 import {
   renderCharterOf,
   type Mailer,
@@ -20,6 +21,7 @@ import {
   type MailLayoutScope,
 } from "../sections/mail-layout-scope.js";
 import { activeMailCharter, withMailCharter } from "../sections/mail-charter-scope.js";
+import { activeMailSender } from "../sections/mail-sender-scope.js";
 import { documentLocaleOf } from "../sections/mail-document-locale.js";
 import { mailSpaceOf } from "../sections/mail-block-declarations.js";
 import { MAIL_LAYOUTS } from "../sections/mail-layouts.js";
@@ -68,6 +70,11 @@ export interface EffectiveCopyLog {
  * départ, à l'octet. Un essai qui a déjà ouvert sa mise en page la reçoit
  * aussi : seul un périmètre de charte déjà ouvert (l'aperçu de la charte)
  * l'emporte.
+ *
+ * L'identité d'envoi de l'espace (C3) donne l'expéditeur et l'adresse de
+ * réponse — celle du message l'emporte ; sans identité rangée, ou si elle
+ * est illisible (le journal le dit), l'identité par défaut du mailer. Un
+ * périmètre d'identité ouvert (l'essai, la sonde) l'emporte sur l'espace.
  */
 export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
   constructor(
@@ -90,13 +97,37 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
       activeMailCharter() === undefined
         ? await this.charterOrStarting(template, args.data)
         : undefined;
+    const sender = activeMailSender() ?? (await this.senderOrDefault(template));
+    const sent = sender === null ? args : withSender(args, sender);
     const send = (): Promise<MailReceipt> =>
       charter === undefined
-        ? this.inner.send(args)
-        : withMailCharter(charter, () => this.inner.send(args));
+        ? this.inner.send(sent)
+        : withMailCharter(charter, () => this.inner.send(sent));
     const withLayout = (): Promise<MailReceipt> =>
       layout === null ? send() : withMailLayout(layout, send);
     return overlay === null ? withLayout() : withMailCopyOverlay(overlay, withLayout);
+  }
+
+  private async senderOrDefault(template: string): Promise<MailSenderIdentity | null> {
+    if (this.published === null || !isRegisteredMail(template)) {
+      return null;
+    }
+    const space = mailSpaceOf(template);
+    try {
+      const entry = (await this.published.senders())[space];
+      if (entry?.kind === "unreadable") {
+        this.log.warn(
+          `Identité d'envoi de l'espace « ${space} » illisible par ce code : « ${template} » part sous l'identité par défaut.`,
+        );
+        return null;
+      }
+      return entry?.identity ?? null;
+    } catch (error: unknown) {
+      this.log.warn(
+        `Identités d'envoi illisibles : « ${template} » part sous l'identité par défaut. Cause : ${String(error)}`,
+      );
+      return null;
+    }
   }
 
   private async charterOrStarting(
@@ -174,4 +205,21 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
       return NO_MAIL_COPY_OVERLAY;
     }
   }
+}
+
+/**
+ * L'envoi sous une identité : son en-tête `From:`, et sa réponse — celle du
+ * message d'abord, sinon celle de l'identité, sinon l'adresse d'envoi
+ * elle-même (jamais l'adresse de réponse de la configuration, qui est celle
+ * d'une autre identité).
+ */
+function withSender<M extends TemplateMap, K extends keyof M>(
+  args: SendMailArgs<M, K>,
+  sender: MailSenderIdentity,
+): SendMailArgs<M, K> {
+  return {
+    ...args,
+    from: senderHeaderOf(sender),
+    replyTo: args.replyTo ?? sender.replyToAddress ?? sender.fromAddress,
+  };
 }

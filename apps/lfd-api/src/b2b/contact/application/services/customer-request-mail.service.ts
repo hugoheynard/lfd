@@ -43,7 +43,6 @@ export class CustomerRequestMail {
       );
     }
     await this.mail.send({
-      brand: "lfc",
       to: event.recipientEmail,
       ...(replyable ? { replyTo: request.author.email } : {}),
       template: "staff.customer-request",

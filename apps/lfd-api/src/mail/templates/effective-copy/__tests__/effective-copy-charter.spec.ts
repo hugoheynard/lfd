@@ -1,3 +1,4 @@
+import type { PublishedMailSenders } from "../published-mail-senders.js";
 import type { MailCharterSettings } from "@lfd/mail-blocks";
 import type { Mailer, MailReceipt, SendMailArgs } from "@lfd/mailer";
 
@@ -22,6 +23,9 @@ class PublishedCharters extends PublishedMailCopyReader {
     return Promise.resolve({});
   }
   documents(): Promise<PublishedMailDocuments> {
+    return Promise.resolve({});
+  }
+  senders(): Promise<PublishedMailSenders> {
     return Promise.resolve({});
   }
   charters(): Promise<PublishedMailCharters> {
@@ -67,6 +71,7 @@ const LFD_CHARTER: MailCharterSettings = {
     text: "#1b1b1b",
     mutedText: "#5a5a5a",
     primary: "#7a1f3d",
+    band: "#1a3157",
     border: "#ded6c8",
   },
   darkColors: { page: "#101010", card: "#1c1c1c", text: "#f0f0f0", border: "#333333" },

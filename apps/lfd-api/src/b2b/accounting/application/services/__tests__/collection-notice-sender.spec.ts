@@ -62,7 +62,6 @@ describe("l'envoi d'un avis de prélèvement", () => {
     expect(mails.awaitedReceipt).toEqual([
       {
         to: "compta@port.test",
-        brand: "lfc",
         template: "customer.collection-notice",
         idempotencyKey: "collection.notice:n1",
         data: {

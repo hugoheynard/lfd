@@ -74,7 +74,6 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
     expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);
     expect(h.mails.queued).toEqual([
       {
-        brand: "lfc",
         to: CECILE.email,
         template: "staff.access-suspended",
         idempotencyKey: `staff.access-suspended:s1:${FIRST}`,
@@ -95,7 +94,6 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
     expect(h.journal.types()).toEqual([STAFF_FACTS.reinstated]);
     expect(h.mails.queued).toEqual([
       {
-        brand: "lfc",
         to: CECILE.email,
         template: "staff.access-restored",
         idempotencyKey: `staff.access-restored:s1:${FIRST}`,

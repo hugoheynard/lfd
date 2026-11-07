@@ -26,7 +26,6 @@ describe("SupportRequestedMail — la demande de rappel, à la boîte de l'équi
     expect(mails.awaitedReceipt).toEqual([]);
     expect(mails.queued).toEqual([
       {
-        brand: "lfc",
         to: "equipe@lfc.fr",
         template: "staff.support-requested",
         data: {

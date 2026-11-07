@@ -172,7 +172,7 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
     const replyTo =
       args.replyTo !== undefined ? validReplyTo(args.replyTo) : (this.deps.replyTo ?? null);
     return {
-      from: this.deps.fromAddress,
+      from: args.from ?? this.deps.fromAddress,
       to: args.to,
       subject,
       html,

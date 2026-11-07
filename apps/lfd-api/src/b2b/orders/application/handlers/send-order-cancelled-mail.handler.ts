@@ -57,7 +57,6 @@ export class SendOrderCancelledMail implements DurableSubscriber {
       return;
     }
     await this.mail.send({
-      brand: "lfc",
       to: recipient.email,
       template: "customer.order-cancelled",
       data: {

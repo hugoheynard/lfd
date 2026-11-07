@@ -59,11 +59,9 @@ describe("SpecimenMailTrialSender", () => {
     await sender.send("staff@lfc.fr", "customer.access-opened", "fr", TEXTS, null, SECOND);
 
     expect(mails.queued).toEqual([]);
-    expect(
-      mails.awaitedReceipt.map(({ to, template, brand }) => ({ to, template, brand })),
-    ).toEqual([
-      { to: "staff@lfc.fr", template: "customer.access-opened", brand: "lfc" },
-      { to: "staff@lfc.fr", template: "customer.access-opened", brand: "lfc" },
+    expect(mails.awaitedReceipt.map(({ to, template }) => ({ to, template }))).toEqual([
+      { to: "staff@lfc.fr", template: "customer.access-opened" },
+      { to: "staff@lfc.fr", template: "customer.access-opened" },
     ]);
     expect(mails.awaitedReceipt.map((mail) => mail.idempotencyKey)).toEqual([
       `mail-copy.trial:${FIRST}`,

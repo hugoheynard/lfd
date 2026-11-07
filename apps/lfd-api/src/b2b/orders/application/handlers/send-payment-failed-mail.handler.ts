@@ -92,7 +92,6 @@ export class SendPaymentFailedMail implements DurableSubscriber {
 
     const client = this.origins.clientBaseUrl();
     await this.mail.send({
-      brand: "lfc",
       to: recipient.email,
       template: "customer.payment-failed",
       data: {

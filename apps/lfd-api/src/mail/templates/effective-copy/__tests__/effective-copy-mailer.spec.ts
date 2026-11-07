@@ -10,6 +10,8 @@ import { composeMail } from "../mail-composition.js";
 import { PublishedMailCopyReader } from "../published-mail-copy.reader.js";
 import type { PublishedMailDocuments } from "../published-mail-documents.js";
 import type { PublishedMailCharters } from "../published-mail-charters.js";
+import type { PublishedMailSenders } from "../published-mail-senders.js";
+import { withMailSender } from "../../sections/mail-sender-scope.js";
 import { mailBlockDeclarationOf } from "../../sections/mail-block-declarations.js";
 
 /** Un transport qui relève l'objet de confirmation tel qu'il le lirait au rendu. */
@@ -29,8 +31,14 @@ class StaticPublished extends PublishedMailCopyReader {
     private readonly overlay: MailCopyOverlay | Error,
     private readonly orders: MailSectionOrders | Error = {},
     private readonly published: PublishedMailDocuments | Error = {},
+    private readonly identities: PublishedMailSenders | Error = {},
   ) {
     super();
+  }
+  senders(): Promise<PublishedMailSenders> {
+    return this.identities instanceof Error
+      ? Promise.reject(this.identities)
+      : Promise.resolve(this.identities);
   }
   charters(): Promise<PublishedMailCharters> {
     return Promise.resolve({});
@@ -247,5 +255,79 @@ describe("le document publié de l'éditeur par blocs (S4c)", () => {
     expect(log.warnings).toEqual([
       expect.stringContaining("« customer.password-reset » part dans l'ordre du code"),
     ]);
+  });
+});
+
+/** Un transport qui relève l'expéditeur et la réponse de chaque envoi. */
+class HeaderRecordingTransport implements Mailer<B2bMails> {
+  readonly enabled = false;
+  readonly sent: { from: string | undefined; replyTo: string | undefined }[] = [];
+
+  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
+    this.sent.push({ from: args.from, replyTo: args.replyTo });
+    return Promise.resolve({ providerId: null });
+  }
+}
+
+describe("EffectiveCopyMailer — l'identité d'envoi de l'espace (C3)", () => {
+  const LFD = {
+    senderName: "La Folie Douce",
+    fromAddress: "no-reply@lfd-backoffice.test",
+    replyToAddress: "equipe@lfd.test",
+  };
+  const RESTORED = {
+    to: "ada@lfd.test",
+    template: "staff.access-restored",
+    data: { firstName: "Ada", backOfficeUrl: "https://bo.lfd.test" },
+  } as const;
+
+  function mailer(identities: PublishedMailSenders | Error) {
+    const transport = new HeaderRecordingTransport();
+    const log = new RecordingLog();
+    const subject = new EffectiveCopyMailer(
+      transport,
+      new StaticPublished({}, {}, {}, identities),
+      log,
+    );
+    return { transport, log, subject };
+  }
+
+  it("un e-mail de l'équipe part sous l'identité de l'espace lfd", async () => {
+    const { transport, subject } = mailer({ lfd: { kind: "servable", identity: LFD } });
+    await subject.send(RESTORED);
+    expect(transport.sent).toEqual([
+      { from: '"La Folie Douce" <no-reply@lfd-backoffice.test>', replyTo: "equipe@lfd.test" },
+    ]);
+  });
+
+  it("un espace sans identité part sous l'identité par défaut du mailer", async () => {
+    const { transport, subject } = mailer({ lfc: { kind: "servable", identity: LFD } });
+    await subject.send(RESTORED);
+    expect(transport.sent).toEqual([{ from: undefined, replyTo: undefined }]);
+  });
+
+  it("sans adresse de réponse, les réponses vont à l'adresse d'envoi — jamais à celle de la configuration", async () => {
+    const { transport, subject } = mailer({
+      lfd: { kind: "servable", identity: { ...LFD, replyToAddress: null } },
+    });
+    await subject.send(RESTORED);
+    expect(transport.sent[0]?.replyTo).toBe("no-reply@lfd-backoffice.test");
+  });
+
+  it("une identité illisible, ou une lecture en échec, part sous l'identité par défaut et le dit", async () => {
+    const unreadable = mailer({ lfd: { kind: "unreadable" } });
+    await unreadable.subject.send(RESTORED);
+    expect(unreadable.transport.sent).toEqual([{ from: undefined, replyTo: undefined }]);
+    expect(unreadable.log.warnings).toHaveLength(1);
+    const failing = mailer(new Error("base injoignable"));
+    await failing.subject.send(RESTORED);
+    expect(failing.transport.sent).toEqual([{ from: undefined, replyTo: undefined }]);
+    expect(failing.log.warnings[0]).toContain("identité par défaut");
+  });
+
+  it("un périmètre d'identité ouvert (l'essai) l'emporte sur celle de l'espace", async () => {
+    const { transport, subject } = mailer({ lfd: { kind: "servable", identity: LFD } });
+    await withMailSender({ ...LFD, senderName: "Essai" }, () => subject.send(RESTORED));
+    expect(transport.sent[0]?.from).toBe('"Essai" <no-reply@lfd-backoffice.test>');
   });
 });

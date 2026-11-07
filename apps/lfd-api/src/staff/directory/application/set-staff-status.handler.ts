@@ -86,7 +86,6 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
   ): Promise<void> {
     if (status === "suspended") {
       await this.mail.send({
-        brand: "lfc",
         to: target.email,
         template: "staff.access-suspended",
         idempotencyKey: `staff.access-suspended:${staffUserId}:${intentKey}`,
@@ -95,7 +94,6 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
       return;
     }
     await this.mail.send({
-      brand: "lfc",
       to: target.email,
       template: "staff.access-restored",
       idempotencyKey: `staff.access-restored:${staffUserId}:${intentKey}`,

@@ -80,7 +80,6 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
       SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS,
     );
     await this.mail.sendAndAwaitReceipt({
-      brand: "lfc",
       to: email,
       template: "customer.password-reset",
       data: { passwordSetupUrl },

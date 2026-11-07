@@ -1,18 +1,21 @@
+import type { MailSpace } from "@lfd/mail-blocks";
 import type { MailReceipt } from "@lfd/mailer";
 
 import type { B2bMails } from "../templates/b2b-mails.js";
 
 /**
- * La marque au nom de laquelle un e-mail part. La Folie Coffee seule
- * aujourd'hui ; le bloc refuse une marque qu'il ne connaît pas.
+ * La marque au nom de laquelle un e-mail part : **l'espace de son modèle**
+ * (plan `plan-editeur-par-blocs.md`, § 25, C3 — « une marque = un espace =
+ * une charte = une identité d'envoi »). L'appelant ne la choisit pas : le
+ * bloc la lit du modèle (`mailSpaceOf`).
  */
-export type MailBrandName = "lfc";
+export type MailBrandName = MailSpace;
 
 /**
  * **Une demande d'e-mail** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, C2) :
  * le modèle (clé du registre `B2bMails`), ses données — vérifiées par le
- * compilateur, comme `mailer.send()` —, le destinataire, la marque et une clé
- * d'idempotence.
+ * compilateur, comme `mailer.send()` —, le destinataire et une clé
+ * d'idempotence. La marque n'en est plus (C3) : elle découle du modèle.
  *
  * La langue n'est pas un second champ : elle est lue dans les données du
  * modèle (`locale`), là où le gabarit la lit déjà.
@@ -21,7 +24,6 @@ export interface MailDemand<K extends keyof B2bMails> {
   readonly template: K;
   readonly to: string;
   readonly data: ImmediateMailData<K>;
-  readonly brand: MailBrandName;
   /**
    * Déterministe chez l'appelant (`order.placed:<orderId>`) : une seconde
    * demande de même clé ne fait rien, et un rejeu de la boîte d'envoi ne

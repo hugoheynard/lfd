@@ -18,7 +18,6 @@ describe("DevCustomerIdentity — le lien de mot de passe, par le bloc mail", ()
     expect(mails.queued).toEqual([]);
     expect(mails.awaitedReceipt).toHaveLength(1);
     expect(mails.awaitedReceipt[0]).toMatchObject({
-      brand: "lfc",
       to: "camille@halles.fr",
       template: "customer.password-reset",
       idempotencyKey: "account.password-reset:mail_000001",

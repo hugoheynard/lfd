@@ -92,7 +92,6 @@ export class OrderReadyMail {
     const token = exposedHandoverToken(owned.view);
 
     await this.mail.send({
-      brand: "lfc",
       to: recipient.email,
       template: "customer.order-ready",
       data: {

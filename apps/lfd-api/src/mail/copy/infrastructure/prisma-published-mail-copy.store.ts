@@ -1,3 +1,4 @@
+import type { StoredMailSender } from "../../senders/application/servable-mail-sender.js";
 import type { StoredPublishedMailCharter } from "../../charters/application/servable-mail-charter.js";
 import type { StoredPublishedMailDocument } from "../../documents/application/servable-mail-document.js";
 import { Injectable } from "@nestjs/common";
@@ -60,5 +61,11 @@ export class PrismaPublishedMailCopyStore extends PublishedMailCopyStore {
         ? []
         : [{ space: row.space, version: row.publishedVersion, settings: row.published }],
     );
+  }
+
+  async senders(): Promise<readonly StoredMailSender[]> {
+    return this.prisma.mailSenderIdentity.findMany({
+      select: { space: true, senderName: true, fromAddress: true, replyToAddress: true },
+    });
   }
 }

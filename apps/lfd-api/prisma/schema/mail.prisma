@@ -25,7 +25,7 @@ model MailRequest {
   id              String    @id
   /// La clé du registre `B2bMails` (`customer.order-ready`).
   template        String    @db.VarChar(80)
-  /// `lfc` aujourd'hui (CHECK en base).
+  /// L'espace du modèle, `lfc` ou `lfd` (CHECK en base, C3).
   brand           String    @db.VarChar(16)
   /// L'adresse du destinataire.
   recipient       String    @db.VarChar(320)
@@ -146,5 +146,30 @@ model MailCharterVersion {
 
   @@id([space, version])
   @@map("mail_charter_version")
+  @@schema("mail")
+}
+
+/// **L'identité d'envoi d'un espace** (plan `plan-editeur-par-blocs.md`,
+/// § 25, C3) : le nom d'expéditeur, l'adresse d'envoi, l'adresse de réponse.
+/// Pas de ligne = l'identité par défaut de la configuration
+/// (`MAILER_FROM_ADDRESS`, `MAILER_REPLY_TO`). Enregistrée seulement si le
+/// domaine de l'adresse d'envoi est vérifié chez Resend et qu'un essai est
+/// parti sous elle.
+model MailSenderIdentity {
+  /// L'espace (`lfc`, `lfd`) ; `internal` est rangé dans `lfd`.
+  space          String   @id @db.VarChar(16)
+  /// Monte à chaque écriture : le verrou entre deux rédacteurs.
+  revision       Int
+  /// Le nom affiché devant l'adresse (« La Folie Douce »).
+  senderName     String   @map("sender_name") @db.VarChar(80)
+  /// L'adresse d'envoi, sur un domaine vérifié chez Resend.
+  fromAddress    String   @map("from_address") @db.VarChar(254)
+  /// L'adresse de réponse ; `null` = les réponses vont à l'adresse d'envoi.
+  replyToAddress String?  @map("reply_to_address") @db.VarChar(254)
+  changedAt      DateTime @map("changed_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  changedBy      String   @map("changed_by")
+
+  @@map("mail_sender_identity")
   @@schema("mail")
 }

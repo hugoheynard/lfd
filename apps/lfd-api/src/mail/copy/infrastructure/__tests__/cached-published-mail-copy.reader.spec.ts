@@ -1,3 +1,4 @@
+import type { StoredMailSender } from "../../../senders/application/servable-mail-sender.js";
 import { startingMailDocument } from "@lfd/mail-blocks";
 
 import type { StoredPublishedMailCharter } from "../../../charters/application/servable-mail-charter.js";
@@ -63,6 +64,14 @@ class CountingStore extends PublishedMailCopyStore {
 
   charterReads = 0;
   charters: StoredPublishedMailCharter[] = [];
+
+  senderReads = 0;
+  senderRows: StoredMailSender[] = [];
+
+  senders(): Promise<readonly StoredMailSender[]> {
+    this.senderReads += 1;
+    return Promise.resolve([...this.senderRows]);
+  }
 
   publishedCharters(): Promise<readonly StoredPublishedMailCharter[]> {
     this.charterReads += 1;
@@ -213,6 +222,7 @@ describe("les chartes publiées des espaces, gardées en mémoire (C1)", () => {
       text: "#0f172a",
       mutedText: "#64748b",
       primary: "#7a1f3d",
+      band: "#1a3157",
       border: "#e2e8f0",
     },
     darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
@@ -231,6 +241,35 @@ describe("les chartes publiées des espaces, gardées en mémoire (C1)", () => {
       lfd: { kind: "servable", settings: SETTINGS, version: 2 },
       lfc: { kind: "unreadable", version: 1 },
     });
+  });
+
+  it("rend l'identité d'envoi servable, et dit illisible une identité mal formée (C3)", async () => {
+    const { store, cache } = setup();
+    const lfd = {
+      senderName: "La Folie Douce",
+      fromAddress: "no-reply@lfd.test",
+      replyToAddress: null,
+    };
+    store.senderRows = [
+      { space: "lfd", ...lfd },
+      { space: "lfc", senderName: "LFC", fromAddress: "pas-une-adresse", replyToAddress: null },
+      { space: "internal", ...lfd },
+    ];
+    expect(await cache.senders()).toEqual({
+      lfd: { kind: "servable", identity: lfd },
+      lfc: { kind: "unreadable" },
+    });
+  });
+
+  it("ne relit les identités d'envoi que quand la version a monté (C3)", async () => {
+    const { store, clock, cache } = setup();
+    await cache.senders();
+    await cache.senders();
+    expect(store.senderReads).toBe(1);
+    clock.advanceMs(MAIL_COPY_VERSION_RECHECK_MS);
+    store.current = 2;
+    await cache.senders();
+    expect(store.senderReads).toBe(2);
   });
 
   it("ne relit les chartes que quand la version a monté", async () => {

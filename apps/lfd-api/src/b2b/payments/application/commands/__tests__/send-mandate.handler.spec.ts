@@ -166,7 +166,6 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
     expect(h.mails.awaitedReceipt).toHaveLength(1);
     expect(h.mails.awaitedReceipt[0]).toMatchObject({
       to: HOLDER.email,
-      brand: "lfc",
       template: "customer.mandate-to-sign",
       data: { reference: "LFC-9P2X4B-260914-K7M3QT" },
     });

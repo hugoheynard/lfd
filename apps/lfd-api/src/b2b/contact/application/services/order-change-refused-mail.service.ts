@@ -19,7 +19,6 @@ export class OrderChangeRefusedMail {
   async request(event: OrderChangeRefusedEvent): Promise<void> {
     const { requestId, order } = event.subject;
     await this.mail.send({
-      brand: "lfc",
       to: event.request.author.email,
       template: "customer.order-change-refused",
       idempotencyKey: `order-change-refused:${requestId}`,

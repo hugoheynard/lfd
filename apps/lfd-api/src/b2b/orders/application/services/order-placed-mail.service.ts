@@ -80,7 +80,6 @@ export class OrderPlacedMail {
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
 
     await this.mail.send({
-      brand: "lfc",
       to: recipient.email,
       template: "customer.order-placed",
       data: {

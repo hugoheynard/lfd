@@ -24,6 +24,7 @@ export const mailCharterSettingsShape: z.ZodType<MailCharterSettings> = z.strict
     text: color,
     mutedText: color,
     primary: color,
+    band: color,
     border: color,
   }),
   darkColors: z.strictObject({ page: color, card: color, text: color, border: color }),
@@ -37,8 +38,28 @@ export const mailCharterSettingsShape: z.ZodType<MailCharterSettings> = z.strict
   footer: localized,
 });
 
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Une charte rangée avant la couleur du bandeau (2026-11-07) rendait son
+ * bandeau dans la couleur principale : relue, elle la garde comme bandeau —
+ * le rendu ne change pas.
+ */
+function withStoredBand(raw: unknown): unknown {
+  if (!isRecord(raw)) {
+    return raw;
+  }
+  const colors = raw["colors"];
+  if (!isRecord(colors) || "band" in colors) {
+    return raw;
+  }
+  return { ...raw, colors: { ...colors, band: colors["primary"] } };
+}
+
 /** Relit une charte rangée ; `null` si elle n'en a plus la forme. */
 export function parseMailCharterSettings(raw: unknown): MailCharterSettings | null {
-  const parsed = mailCharterSettingsShape.safeParse(raw);
+  const parsed = mailCharterSettingsShape.safeParse(withStoredBand(raw));
   return parsed.success ? parsed.data : null;
 }

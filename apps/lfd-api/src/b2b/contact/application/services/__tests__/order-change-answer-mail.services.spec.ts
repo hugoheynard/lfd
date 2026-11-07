@@ -29,7 +29,6 @@ describe("les courriels de réponse à une demande de modification", () => {
     );
     expect(mails.queued).toEqual([
       {
-        brand: "lfc",
         to: "jean@exemple.fr",
         template: "customer.order-change-applied",
         idempotencyKey: "order-change-applied:q1",
@@ -47,7 +46,6 @@ describe("les courriels de réponse à une demande de modification", () => {
     );
     expect(mails.queued).toEqual([
       {
-        brand: "lfc",
         to: "jean@exemple.fr",
         template: "customer.order-change-refused",
         idempotencyKey: "order-change-refused:q1",

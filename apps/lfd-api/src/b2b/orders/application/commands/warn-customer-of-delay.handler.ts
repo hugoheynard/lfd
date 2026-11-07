@@ -84,7 +84,6 @@ export class WarnCustomerOfDelayHandler implements ICommandHandler<
   private async request(orderId: string, letter: DelayLetter): Promise<void> {
     const client = this.origins.clientBaseUrl();
     await this.mail.send({
-      brand: "lfc",
       to: letter.to,
       template: "customer.order-delayed",
       idempotencyKey: `${DELAY_WARNING}:${orderId}`,

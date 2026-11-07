@@ -1962,6 +1962,15 @@
       "information": false
     },
     {
+      "colonne": "mail.mail_sender_identity.changed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`changed_by`) sur `mail_sender_identity`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "mail.mail_charter_version.published_by",
       "personne": "staff",
       "categorie": "auteur-geste",

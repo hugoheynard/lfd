@@ -55,6 +55,7 @@ export const STARTING_MAIL_CHARTER: MailRenderCharter = {
     text: BRAND.ink,
     mutedText: BRAND.muted,
     primary: BRAND.navy,
+    band: BRAND.navyDeep,
     border: BRAND.border,
   },
   band: BRAND.navyDeep,
@@ -94,8 +95,8 @@ export function startingMailCharterSettings(brandFontUrl: string | undefined): M
 
 /**
  * La charte que le rendu lit, depuis des réglages publiés et la langue de
- * l'envoi. Le bandeau prend la couleur principale (la charte n'en déclare
- * pas d'autre) ; un texte manquant dans cette langue se lit en français,
+ * l'envoi. Le bandeau prend sa propre couleur (`colors.band`, ajoutée le
+ * 2026-11-07 : la couleur principale le fonçait d'un cran) ; un texte manquant dans cette langue se lit en français,
  * la langue que chaque espace porte.
  */
 export function renderCharterOf(
@@ -105,7 +106,7 @@ export function renderCharterOf(
   const footer = (settings.footer[locale] ?? settings.footer.fr ?? "").trim();
   return {
     colors: settings.colors,
-    band: settings.colors.primary,
+    band: settings.colors.band,
     radius: BRAND.radius,
     dark: settings.darkColors,
     ...(settings.logo === null || settings.logo.src === ""

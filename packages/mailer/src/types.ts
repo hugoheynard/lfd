@@ -140,6 +140,13 @@ export interface SendMailArgs<M extends TemplateMap, K extends keyof M = keyof M
    * et rien ne part.
    */
   readonly replyTo?: string;
+  /**
+   * L'expéditeur **de ce message** (`"Nom" <adresse>` ou une adresse nue),
+   * qui l'emporte sur celui du mailer. Sert quand l'app tient plusieurs
+   * identités d'envoi — une par espace d'e-mails — sur un seul compte du
+   * fournisseur. L'app l'a validé avant : il ne vient jamais d'un visiteur.
+   */
+  readonly from?: string;
 }
 
 /**

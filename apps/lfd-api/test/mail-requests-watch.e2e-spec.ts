@@ -41,7 +41,6 @@ const RESTORED: MailDemand<"staff.access-restored"> = {
   template: "staff.access-restored",
   to: "equipe@example.test",
   data: { firstName: "Ada", backOfficeUrl: "https://admin.example.test" },
-  brand: "lfc",
   idempotencyKey: KEY,
 };
 

@@ -82,7 +82,6 @@ describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", 
     expect(mails.queued).toEqual([]);
     expect(mails.awaitedReceipt).toEqual([
       {
-        brand: "lfc",
         to: "camille@halles.fr",
         template: "customer.password-reset",
         data: { passwordSetupUrl: "https://tenant.test/ticket/1" },

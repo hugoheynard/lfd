@@ -117,7 +117,6 @@ export class InvoiceNoticeSender {
         await this.mail.send({
           template: TEMPLATE,
           to: recipient.email,
-          brand: "lfc",
           data,
           idempotencyKey: `invoice.notice:${invoice.id}:${recipient.id}`,
         });
@@ -237,7 +236,6 @@ export class InvoiceNoticeSender {
         await this.mail.sendAndAwaitReceipt({
           template: TEMPLATE,
           to: recipient.email,
-          brand: "lfc",
           data,
           idempotencyKey: `invoice.notice-resend:${resendId}:${recipient.id}`,
         });

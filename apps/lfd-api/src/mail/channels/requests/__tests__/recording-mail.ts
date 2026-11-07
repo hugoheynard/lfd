@@ -14,7 +14,6 @@ export interface RecordedMail {
   readonly template: string;
   readonly to: string;
   readonly data: unknown;
-  readonly brand: string;
   readonly idempotencyKey: string;
 }
 

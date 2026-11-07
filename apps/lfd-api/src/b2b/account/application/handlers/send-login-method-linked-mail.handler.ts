@@ -70,7 +70,6 @@ export class SendLoginMethodLinkedMail implements DurableSubscriber {
       return;
     }
     await this.mail.send({
-      brand: "lfc",
       to: profile.email,
       template: "customer.login-method-linked",
       data: {

@@ -49,7 +49,6 @@ export class VitrineNoticeDispatcher {
   private async deliver(notice: VitrineNotice, subscriberId: string, to: string): Promise<boolean> {
     try {
       const receipt = await this.mail.sendAndAwaitReceipt({
-        brand: "lfc",
         to,
         template: "agency.vitrine-notice",
         data: { subject: notice.text.subject, message: notice.text.message },

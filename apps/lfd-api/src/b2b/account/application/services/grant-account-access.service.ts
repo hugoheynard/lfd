@@ -299,7 +299,6 @@ export class GrantAccountAccess extends AccountAccessGranter implements AccountA
     const announce = (): Promise<boolean> =>
       this.send(known.userId, () =>
         this.mail.sendAndAwaitReceipt({
-          brand: "lfc",
           to: input.email,
           template: "customer.company-attached",
           // Son prénom à ELLE, pas celui saisi par le commercial.
@@ -338,7 +337,6 @@ export class GrantAccountAccess extends AccountAccessGranter implements AccountA
     const announce = (): Promise<boolean> =>
       this.send(userId, () =>
         this.mail.sendAndAwaitReceipt({
-          brand: "lfc",
           to: input.email,
           template: "customer.access-opened",
           idempotencyKey: this.keyOf("access-opened", userId, input),

@@ -87,7 +87,6 @@ export class CollectionNoticeSender {
     try {
       await this.mail.sendAndAwaitReceipt({
         to: state.recipient.email,
-        brand: "lfc",
         template: "customer.collection-notice",
         data: content,
         idempotencyKey: `collection.notice:${state.id}`,

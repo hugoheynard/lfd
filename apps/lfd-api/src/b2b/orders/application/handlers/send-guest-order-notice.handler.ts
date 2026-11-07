@@ -123,7 +123,6 @@ export class SendGuestOrderNotice implements DurableSubscriber {
     }
 
     await this.mail.send({
-      brand: "lfc",
       to: notice.email,
       template: "customer.order-placed-with-your-email",
       // Le prénom du COMPTE, jamais celui tapé au panier : on salue la personne

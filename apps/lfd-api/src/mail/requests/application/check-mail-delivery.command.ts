@@ -10,6 +10,8 @@ export interface MailCheckResult {
   readonly from: string;
   readonly to: string;
   readonly revision: string;
+  /** Les espaces dont l'identité d'envoi rangée a été éprouvée (C3) ; vide : la configuration seule. */
+  readonly senderSpaces: readonly string[];
 }
 
 /**

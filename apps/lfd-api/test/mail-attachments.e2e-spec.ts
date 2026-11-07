@@ -48,7 +48,6 @@ function placedDemand(key: string): DeferredMailDemand<"customer.order-placed"> 
   return {
     template: "customer.order-placed",
     to: "client@example.test",
-    brand: "lfc",
     idempotencyKey: `order.placed:${key}`,
     data: {
       sheet: sheet(),

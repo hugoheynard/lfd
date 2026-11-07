@@ -24,7 +24,6 @@ export class OrderChangeAppliedMail {
   async request(event: OrderChangeAppliedEvent): Promise<void> {
     const { requestId, order } = event.subject;
     await this.mail.send({
-      brand: "lfc",
       to: event.request.author.email,
       template: "customer.order-change-applied",
       idempotencyKey: `order-change-applied:${requestId}`,

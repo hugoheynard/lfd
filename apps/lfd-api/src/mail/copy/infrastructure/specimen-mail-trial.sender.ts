@@ -71,7 +71,6 @@ export class SpecimenMailTrialSender extends MailTrialSender {
     intentKey: string,
   ): Promise<void> {
     await this.mail.sendAndAwaitReceipt({
-      brand: "lfc",
       to,
       template: mail,
       data,

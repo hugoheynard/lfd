@@ -79,7 +79,6 @@ export class MailAppointmentBookedAlert extends AppointmentBookedAlert {
     appointment: Appointment,
   ): Promise<void> {
     await this.mail.send({
-      brand: "lfc",
       to: inbox,
       template: "staff.appointment-booked",
       data: {

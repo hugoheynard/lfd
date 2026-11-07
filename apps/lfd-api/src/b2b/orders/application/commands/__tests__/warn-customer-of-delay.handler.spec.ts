@@ -77,7 +77,6 @@ describe("« Avertir le client »", () => {
     ]);
     expect(subject.mailer.queued).toEqual([
       {
-        brand: "lfc",
         to: "camille@halles.test",
         template: "customer.order-delayed",
         idempotencyKey: "order.delay-warning:order_1",

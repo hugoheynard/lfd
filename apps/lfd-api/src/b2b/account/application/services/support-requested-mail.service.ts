@@ -75,7 +75,6 @@ export class SupportRequestedMail {
       return;
     }
     await this.mail.send({
-      brand: "lfc",
       to: inbox,
       template: "staff.support-requested",
       data: {

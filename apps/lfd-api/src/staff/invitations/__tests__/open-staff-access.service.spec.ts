@@ -318,7 +318,6 @@ describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
     expect(h.requests.insideTransaction).toEqual([false]);
     expect(h.requests.awaitedReceipt).toEqual([
       {
-        brand: "lfc",
         to: "sophie@lfc.test",
         template: "staff.invited",
         idempotencyKey: `staff.invited:s1:${FIRST}`,

@@ -21,7 +21,6 @@ const SUSPENDED: MailDemand<"staff.access-suspended"> = {
   template: "staff.access-suspended",
   to: "equipe@example.test",
   data: { firstName: "Ada" },
-  brand: "lfc",
   idempotencyKey: "staff.suspended:s1b",
 };
 
