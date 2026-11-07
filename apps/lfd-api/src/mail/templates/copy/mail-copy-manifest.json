@@ -168,11 +168,6 @@
         "required": [],
         "fr": "Voir ma commande"
       },
-      "manageLink": {
-        "variables": [],
-        "required": [],
-        "fr": "Gérer ou annuler ma commande"
-      },
       "qrAlt": {
         "variables": [
           "ref"
