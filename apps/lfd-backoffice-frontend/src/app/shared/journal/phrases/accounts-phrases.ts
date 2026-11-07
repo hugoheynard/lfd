@@ -1,5 +1,6 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
+import { clientNumber } from '../client-number';
 import { journalLevelLabel } from '../../feature-levels';
 import { entries, optional, recordOf, strings, type Payload } from '../payload-read';
 import {
@@ -201,7 +202,7 @@ const companyDeclared: Phrase = (fact) => {
   const label = subjectLabelOf(fact);
   const own = label === null ? [] : [text(' « '), subject(fact, label), text(' »')];
   const head = self
-    ? [text('a déclaré sa société'), ...own]
+    ? [text('a créé son compte pro : société'), ...own]
     : [text('a ouvert le compte '), ...client(fact, 'of')];
   const owner = p['owner'] ?? p['ownerUserId'];
   const cited = owner === null || owner === undefined ? null : citePerson(owner);
@@ -212,6 +213,20 @@ const companyDeclared: Phrase = (fact) => {
         ? []
         : [text(', détenteur : '), ...cited];
   return byActor(fact, [...head, ...holder], ['subjectLabel', 'via', 'owner', 'ownerUserId']);
+};
+
+/**
+ * « Client X9F3K2 a créé son compte particulier » — la personne est le sujet,
+ * pas « Le système » (l'abonné qui écrit le fait tourne en arrière-plan). Le
+ * fait naît à la première connexion, quand le compte n'a encore aucune
+ * société : c'est un compte particulier à cet instant. Ni nom ni adresse —
+ * le numéro court suffit à désigner (RGPD). Un sujet `user` n'a pas de fiche
+ * (`subject-routes.ts`, vérifié le 2026-11-07) : le numéro est en gras, sans lien.
+ */
+const userRegistered: Phrase = (fact) => {
+  const number = clientNumber(fact.subjectId);
+  const who = number === null ? [text('Un client')] : [subject(fact, `Client ${number}`)];
+  return said([...who, text(' a créé son compte particulier')], ['subjectLabel']);
 };
 
 /** « … a retiré la certification du KBIS du client « X », ce qui a suspendu son compte ». */
@@ -802,7 +817,7 @@ export const ACCOUNTS_PHRASES = {
   'company.bank_account_changed': bankAccountChanged,
   'company.client_note_edited_by_staff': clientNoteEdited,
 
-  'user.registered': (fact) => byActor(fact, [text('a créé son compte')], selfLabel(fact)),
+  'user.registered': userRegistered,
   'user.profile_updated': profileUpdated,
   'user.identity_linked': loginMethod('a ajouté'),
   'user.identity_revoked': loginMethod('a retiré'),

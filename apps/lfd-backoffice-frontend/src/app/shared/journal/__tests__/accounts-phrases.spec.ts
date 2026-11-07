@@ -62,7 +62,7 @@ describe('la déclaration et l’activation d’un client', () => {
       'Colette Martin a ouvert le compte du client « Café des Halles », sans détenteur',
     );
     expect(sentence(self)).toBe(
-      'Colette Martin a déclaré sa société « Café des Halles », détenteur : Jean Dupont',
+      'Colette Martin a créé son compte pro : société « Café des Halles », détenteur : Jean Dupont',
     );
     expect(renderFact(self).segments).toContainEqual({
       kind: 'subject',
@@ -87,7 +87,7 @@ describe('la déclaration et l’activation d’un client', () => {
       actorType: 'customer',
     });
 
-    expect(own.sentence).toBe('Jean Dupont a déclaré sa société « Café des Halles »');
+    expect(own.sentence).toBe('Jean Dupont a créé son compte pro : société « Café des Halles »');
     expect(own.detail).toEqual([]);
   });
 
@@ -466,17 +466,40 @@ describe('les notes du commercial', () => {
 });
 
 describe('la personne', () => {
-  it('ne répète pas le nom de la personne qui agit sur son propre compte', () => {
-    expect(sentence(person('user.registered', { subjectLabel: 'Jean Dupont' }))).toBe(
-      'Jean Dupont a créé son compte',
+  /**
+   * Régression : « Le système a créé son compte » (2026-11-07) — l'abonné qui
+   * écrit le fait tourne en arrière-plan, et la ligne ne disait ni qui, ni
+   * quel genre de compte.
+   */
+  it('dit le compte particulier par son numéro court, jamais par « Le système »', () => {
+    const registered = renderFact({
+      type: 'user.registered',
+      payload: { subjectLabel: 'Jean Dupont' },
+      subjectType: 'user',
+      subjectId: 'cmhd2k7xq0000abcdx9f3k2',
+      actorName: '',
+      actorType: 'system',
+    });
+
+    expect(registered.sentence).toBe('Client X9F3K2 a créé son compte particulier');
+    expect(registered.segments).toContainEqual({
+      kind: 'subject',
+      text: 'Client X9F3K2',
+      route: null,
+    });
+    expect(registered.detail).toEqual([]);
+  });
+
+  it('tourne sans identifiant', () => {
+    expect(sentence({ ...person('user.registered', {}, ''), subjectId: '' })).toBe(
+      'Un client a créé son compte particulier',
     );
-    expect(sentence(person('user.registered', {}, ''))).toBe('Un client a créé son compte');
   });
 
   it('garde l’adresse d’une inscription ancienne au détail, hors de la phrase', () => {
     const old = renderFact(person('user.registered', { email: 'jean@exemple.fr' }, ''));
 
-    expect(old.sentence).toBe('Un client a créé son compte');
+    expect(old.sentence).toBe('Client USR_1 a créé son compte particulier');
     expect(old.detail).toEqual([{ label: 'Adresse e-mail', value: 'jean@exemple.fr' }]);
   });
 
