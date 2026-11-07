@@ -124,7 +124,6 @@ describe("ouvrir un e-mail", () => {
     );
     expect(view.resources?.links.map((link) => [link.slot, link.label])).toEqual([
       ["cta", "Liste de ses commandes"],
-      ["secondaryLink", "Gérer ou annuler la commande"],
     ]);
     expect(view.resources?.dataBlocks.map((block) => block.block)).toEqual([
       "summary",
@@ -531,12 +530,11 @@ describe("l'aperçu par blocs du canevas (S5f)", () => {
       "title",
       "intro",
       "cta",
-      "manageLink",
       "itinerary",
       "qrLine",
     ]);
     expect(new Set(marked.map(([, path = ""]) => path))).toEqual(
-      new Set(["subject", "kicker", "title", "intro", "cta", "manageLink", "itinerary", "qrLine"]),
+      new Set(["subject", "kicker", "title", "intro", "cta", "itinerary", "qrLine"]),
     );
   });
 

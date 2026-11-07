@@ -3,13 +3,14 @@ import {
   senderDomainOf,
   senderHeaderOf,
   validateMailSenderIdentity,
+  validateStoredMailSenderIdentity,
   type MailSenderIdentity,
 } from "../mail-sender-identity.js";
 
 const IDENTITY: MailSenderIdentity = {
   senderName: "La Folie Douce",
   fromAddress: "no-reply@lfd-backoffice.com",
-  replyToAddress: null,
+  replyToAddress: "support@lfd-backoffice.com",
 };
 
 function codesOf(identity: MailSenderIdentity): readonly string[] {
@@ -17,11 +18,38 @@ function codesOf(identity: MailSenderIdentity): readonly string[] {
 }
 
 describe("validateMailSenderIdentity", () => {
-  it("admet une identité bien formée, avec ou sans adresse de réponse", () => {
+  it("admet une identité bien formée, avec une adresse de réponse lue", () => {
     expect(validateMailSenderIdentity(IDENTITY)).toEqual([]);
-    expect(
-      validateMailSenderIdentity({ ...IDENTITY, replyToAddress: "equipe@lafoliedouce.fr" }),
-    ).toEqual([]);
+  });
+
+  /** Décision du 2026-11-07 : une identité sans adresse de réponse perdait les réponses. */
+  it("refuse nommément une identité sans adresse de réponse", () => {
+    expect(validateMailSenderIdentity({ ...IDENTITY, replyToAddress: null })).toEqual([
+      {
+        code: "reply_to_missing",
+        field: "replyToAddress",
+        message:
+          "Les réponses à vos e-mails seraient perdues : choisissez une adresse que quelqu'un lit (par exemple support@…).",
+      },
+    ]);
+  });
+
+  it.each([
+    "no-reply@lfd.fr",
+    "NoReply@lfd.fr",
+    "no_reply@lfd.fr",
+    "no.reply@lfd.fr",
+    "DoNotReply@lfd.fr",
+    "do-not-reply@lfd.fr",
+    "ne-pas-repondre@lfd.fr",
+    "nepasrepondre@lfd.fr",
+  ])("refuse une adresse de réponse que personne ne lit (%j)", (replyToAddress) => {
+    expect(codesOf({ ...IDENTITY, replyToAddress })).toEqual(["reply_to_unattended"]);
+  });
+
+  it("admet une partie locale qui contient seulement « reply »", () => {
+    expect(codesOf({ ...IDENTITY, replyToAddress: "reply@lfd.fr" })).toEqual([]);
+    expect(codesOf({ ...IDENTITY, replyToAddress: "noreply-support@lfd.fr" })).toEqual([]);
   });
 
   it.each(["", "   "])("refuse un nom vide (%j)", (senderName) => {
@@ -54,6 +82,19 @@ describe("validateMailSenderIdentity", () => {
     expect(validateMailSenderIdentity({ ...IDENTITY, replyToAddress: "equipe" })).toEqual([
       expect.objectContaining({ code: "address_invalid", field: "replyToAddress" }),
     ]);
+  });
+});
+
+describe("validateStoredMailSenderIdentity", () => {
+  it("relit une identité d'avant le 2026-11-07 : sans réponse, ou en no-reply", () => {
+    expect(validateStoredMailSenderIdentity({ ...IDENTITY, replyToAddress: null })).toEqual([]);
+    expect(
+      validateStoredMailSenderIdentity({ ...IDENTITY, replyToAddress: "no-reply@lfd.fr" }),
+    ).toEqual([]);
+  });
+
+  it("refuse toujours une forme fausse", () => {
+    expect(validateStoredMailSenderIdentity({ ...IDENTITY, fromAddress: "x" })).toHaveLength(1);
   });
 });
 

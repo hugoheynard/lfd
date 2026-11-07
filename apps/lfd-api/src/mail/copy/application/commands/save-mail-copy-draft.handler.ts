@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MailCopyRepository } from "../../domain/ports/mail-copy.repository.js";
+import { MailOutOfEditorError } from "../../domain/mail-copy-errors.js";
 import { MailCopyManifest } from "../../domain/mail-copy-manifest.js";
 import { SaveMailCopyDraftCommand } from "./save-mail-copy-draft.command.js";
 
@@ -26,8 +27,12 @@ export class SaveMailCopyDraftHandler implements ICommandHandler<SaveMailCopyDra
    * @throws {MailCopyChangedError} quelqu'un a écrit ce texte depuis la lecture.
    * @throws {UnknownMailTextError} le texte n'est pas au dictionnaire.
    * @throws {InvalidMailTextError} vide, variable obligatoire perdue ou inconnue.
+   * @throws {MailOutOfEditorError} l'e-mail ne se rédige pas à l'éditeur (la sonde).
    */
   async execute(command: SaveMailCopyDraftCommand): Promise<void> {
+    if (this.manifest.isOutOfEditor(command.mail)) {
+      throw new MailOutOfEditorError(command.mail);
+    }
     await this.uow.run(async () => {
       const entry = await this.texts.load(command.mail, command.path, command.locale);
       entry.draft(command.text, this.manifest, command.expectedRevision, {

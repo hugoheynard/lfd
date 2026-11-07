@@ -1,6 +1,7 @@
 import {
   senderDomainOf,
   validateMailSenderIdentity,
+  validateStoredMailSenderIdentity,
   type MailSenderIdentity,
   type MailSpace,
 } from "@lfd/mail-blocks";
@@ -55,7 +56,8 @@ export function assertSendable(
  * `plan-editeur-par-blocs.md`, § 25, C3) : « une marque = un espace = une
  * charte = une identité d'envoi ».
  *
- * Elle refuse : une identité mal formée ; une adresse d'envoi dont le domaine
+ * Elle refuse : une identité mal formée, ou sans adresse de réponse que
+ * quelqu'un lit (décision du 2026-11-07) ; une adresse d'envoi dont le domaine
  * n'est pas dans la liste des domaines vérifiés que l'appelant a lue chez
  * Resend ; toute écriture faite sur une révision que quelqu'un a dépassée.
  * L'essai d'envoi qui précède le changement est le travail de l'appelant :
@@ -74,12 +76,15 @@ export class MailSpaceSender {
 
   /**
    * Relit une identité rangée : sa forme est revérifiée — une ligne touchée à
-   * la main ne passe pas pour une identité valide.
+   * la main ne passe pas pour une identité valide. La forme seule : une
+   * identité rangée avant le 2026-11-07 sans adresse de réponse (ou en
+   * `no-reply`) reste lisible ; `change` la refusera au prochain
+   * enregistrement.
    *
    * @throws {StoredMailSenderUnreadableError} l'identité rangée ne tient plus.
    */
   static reconstitute(state: MailSpaceSenderState): MailSpaceSender {
-    if (state.identity !== null && validateMailSenderIdentity(state.identity).length > 0) {
+    if (state.identity !== null && validateStoredMailSenderIdentity(state.identity).length > 0) {
       throw new StoredMailSenderUnreadableError(state.space);
     }
     return new MailSpaceSender(state, state.revision);

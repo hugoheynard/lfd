@@ -36,7 +36,6 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     qrTitle: "Votre code de retrait",
     qrLine: "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste le retrait.",
     cta: "Voir ma commande",
-    manageLink: "Gérer ou annuler ma commande",
     qrAlt: "Votre code de retrait — {ref}",
     itinerary: "Itinéraire vers la boutique",
   },

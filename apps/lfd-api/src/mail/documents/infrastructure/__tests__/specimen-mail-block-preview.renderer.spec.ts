@@ -159,7 +159,6 @@ describe("l'aperçu par blocs : ce que les fragments portent", () => {
       "intro",
       "itinerary",
       "kicker",
-      "manageLink",
       "qrLine",
       "subject",
       "title",

@@ -85,9 +85,11 @@ export interface OrderPlacedCopy {
    * le point GPS du site, sinon son adresse figée dans la commande.
    */
   readonly itinerary: string;
+  /**
+   * Le seul bouton (décision du 2026-11-07) : il mène à CETTE commande, d'où
+   * on la gère ou l'annule — le lien « gérer ou annuler » qui le doublait est retiré.
+   */
   readonly cta: string;
-  /** Lot C6 : le lien « gérer ou annuler ma commande » (invité : la page d'annulation). */
-  readonly manageLink: string;
 }
 
 /**

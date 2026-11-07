@@ -97,6 +97,19 @@ describe('MailSenderCard — l’expéditeur d’un espace', () => {
     expect(api.change).not.toHaveBeenCalled();
   });
 
+  /** Décision du 2026-11-07 : l'adresse de réponse est obligatoire, un no-reply est refusé. */
+  it('refuse avant l’envoi une adresse de réponse absente ou en no-reply', async () => {
+    const { component, element, type, api } = await setup({});
+    await type('[data-sender-name]', 'La Folie Douce');
+    await type('[data-from-address]', 'no-reply@lfd-backoffice.com');
+    const lost = 'Les réponses à vos e-mails seraient perdues';
+    expect(element.querySelector('[data-violation]')?.textContent).toContain(lost);
+    await type('[data-reply-to]', 'ne-pas-repondre@lfd-backoffice.com');
+    expect(element.querySelector('[data-violation]')?.textContent).toContain(lost);
+    await component.save();
+    expect(api.change).not.toHaveBeenCalled();
+  });
+
   it('enregistre avec la révision lue, et renvoie la même clé d’intention au réessai', async () => {
     let attempt = 0;
     const { component, element, type, api, settle } = await setup({
@@ -114,6 +127,7 @@ describe('MailSenderCard — l’expéditeur d’un espace', () => {
     });
     await type('[data-sender-name]', 'La Folie Douce');
     await type('[data-from-address]', 'no-reply@lfd-backoffice.com');
+    await type('[data-reply-to]', 'support@lfd-backoffice.com');
     await component.save();
     await settle();
     expect(element.querySelector('[data-gesture-error]')?.textContent).toContain(
@@ -127,7 +141,7 @@ describe('MailSenderCard — l’expéditeur d’un espace', () => {
       identity: {
         senderName: 'La Folie Douce',
         fromAddress: 'no-reply@lfd-backoffice.com',
-        replyToAddress: null,
+        replyToAddress: 'support@lfd-backoffice.com',
       },
       expectedRevision: 0,
     });

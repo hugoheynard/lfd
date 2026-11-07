@@ -95,7 +95,6 @@ export const ORDER_SPECIMENS: Pick<
       sheet: SHEET,
       handoverToken: HANDOVER_TOKEN,
       orderUrl: ORDER_URL,
-      manageUrl: `${SPECIMEN_URL}/gerer`,
       handoverUrl: HANDOVER_URL,
       document: { fileName: `bon-${REFERENCE}.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
       locale,

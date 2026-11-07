@@ -496,11 +496,13 @@ describe('la personne', () => {
     );
   });
 
-  it('garde l’adresse d’une inscription ancienne au détail, hors de la phrase', () => {
+  /** Décision RGPD du 2026-11-07 : le journal montrait l'adresse des inscriptions anciennes. */
+  it('ne montre pas l’adresse d’une inscription ancienne, ni dans la phrase ni au détail (RGPD)', () => {
     const old = renderFact(person('user.registered', { email: 'jean@exemple.fr' }, ''));
 
     expect(old.sentence).toBe('Client USR_1 a créé son compte particulier');
-    expect(old.detail).toEqual([{ label: 'Adresse e-mail', value: 'jean@exemple.fr' }]);
+    expect(old.detail).toEqual([]);
+    expect(JSON.stringify(old)).not.toContain('jean@exemple.fr');
   });
 
   it('nomme les champs d’un profil, jamais leurs valeurs', () => {

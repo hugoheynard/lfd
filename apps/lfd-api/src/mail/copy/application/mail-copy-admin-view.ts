@@ -54,9 +54,14 @@ export function mailCopyAdminView(
     version: publication.version,
     publishedAt: publication.publishedAt?.toISOString() ?? null,
     publishedBy: publication.publishedBy,
+    // Hors de l'éditeur (la sonde) : ses lignes ne sont pas des changements à publier.
     pendingCount:
-      states.filter((state) => state.draft.state !== "unchanged").length +
-      orders.filter((order) => order.draft.state !== "unchanged").length,
+      states.filter(
+        (state) => !manifest.isOutOfEditor(state.mail) && state.draft.state !== "unchanged",
+      ).length +
+      orders.filter(
+        (order) => !manifest.isOutOfEditor(order.mail) && order.draft.state !== "unchanged",
+      ).length,
     defaultChangedCount: countDefaultChanges(mails),
     mails,
     orphans,

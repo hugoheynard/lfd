@@ -94,7 +94,7 @@ const SENDERS = "/admin/mail-senders";
 const LFD = {
   senderName: "La Folie Douce",
   fromAddress: "no-reply@lfd-backoffice.test",
-  replyToAddress: null,
+  replyToAddress: "support@lfd-backoffice.test",
 };
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
@@ -146,6 +146,22 @@ describe("l'identité d'envoi d'un espace (C3)", () => {
     expect(await ctx.prisma.mailSenderIdentity.count()).toBe(0);
   });
 
+  /** Décision du 2026-11-07 : les réponses à une identité sans adresse lue étaient perdues. */
+  it("refuse nommément une identité sans adresse de réponse, ou en no-reply (400) : rien d'enregistré", async () => {
+    for (const replyToAddress of [null, "no-reply@lfd-backoffice.test"]) {
+      const response = await staff()
+        .put(`${SENDERS}/lfd`)
+        .set(INTENT_KEY, freshIntent())
+        .send({ identity: { ...LFD, replyToAddress }, expectedRevision: 0 });
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(response.body)).toContain(
+        "Les réponses à vos e-mails seraient perdues",
+      );
+    }
+    expect(transport.sent).toEqual([]);
+    expect(await ctx.prisma.mailSenderIdentity.count()).toBe(0);
+  });
+
   it("un essai refusé par Resend n'enregistre rien (409)", async () => {
     transport.refuse = true;
     expect((await change("lfd")).status).toBe(409);
@@ -160,7 +176,7 @@ describe("l'identité d'envoi d'un espace (C3)", () => {
         template: "ops.deploy-check",
         to: E2E_STAFF_EMAIL,
         from: '"La Folie Douce" <no-reply@lfd-backoffice.test>',
-        replyTo: "no-reply@lfd-backoffice.test",
+        replyTo: "support@lfd-backoffice.test",
       },
     ]);
     const view = jsonBody<MailSenderView>(await staff().get(`${SENDERS}/lfd`).expect(200));

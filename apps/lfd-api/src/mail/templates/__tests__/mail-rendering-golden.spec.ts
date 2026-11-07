@@ -114,6 +114,13 @@ import {
  * retrait » au lieu de « la remise » (lexique, `CLAUDE.md` § 8). Vérifié avant
  * de régénérer : objet et pièces jointes identiques, et le HTML, ce mot
  * défait, rend exactement l'empreinte d'avant. Aucun autre cas n'a bougé.
+ *
+ * **Régénérée le 2026-11-07 pour le SEUL cas `paidPickup` de
+ * `customer.order-placed`** (décision de Hugo : un seul bouton) : le
+ * paragraphe « Gérer ou annuler ma commande » disparaît sous le bouton.
+ * Vérifié avant de régénérer : le HTML d'avant rendait l'empreinte rangée, et
+ * la seule différence est ce paragraphe ; objet et pièces jointes identiques.
+ * Les quatre autres cas ne portaient pas d'URL de gestion et n'ont pas bougé.
  */
 
 const REGISTRY = b2bMailTemplates({

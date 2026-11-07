@@ -57,7 +57,7 @@ function world() {
         ),
       ),
     reset: (revision: number) =>
-      new ResetMailCopyDraftHandler(texts, clock, uow).execute(
+      new ResetMailCopyDraftHandler(texts, MANIFEST, clock, uow).execute(
         new ResetMailCopyDraftCommand(SUBJECT.mail, SUBJECT.path, "fr", revision, STAFF),
       ),
     publish: (manifest: MailCopyManifest) =>

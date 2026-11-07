@@ -429,19 +429,19 @@ describe("le courriel « votre commande est prête »", () => {
   });
 });
 
-/** Lot C6 (C6.4) : « gérer ou annuler » — présent quand l'appelant le donne, absent sinon. */
-describe("customer.order-placed — le lien de gestion (lot C6)", () => {
-  it("pose le lien sous le bouton principal", () => {
+/**
+ * Décision du 2026-11-07 : « Commande passée » n'a qu'un bouton. Le lien « Gérer
+ * ou annuler ma commande » (lot C6) menait à la même page que lui.
+ */
+describe("customer.order-placed — un seul bouton", () => {
+  it("ne pose plus le lien de gestion, même quand l'appelant donne son URL", () => {
     const html = render({ manageUrl: "https://app.lfc.test/annuler#order_1.sig" }).html;
-    expect(html).toContain("Gérer ou annuler ma commande");
-    expect(html).toContain("https://app.lfc.test/annuler#order_1.sig");
+    expect(html).not.toContain("Gérer ou annuler");
+    expect(html).not.toContain("https://app.lfc.test/annuler#order_1.sig");
   });
+});
 
-  it("n'en pose aucun sans URL", () => {
-    expect(render({ manageUrl: "" }).html).not.toContain("Gérer ou annuler");
-    expect(render().html).not.toContain("Gérer ou annuler");
-  });
-
+describe("customer.order-placed — la vente au poids", () => {
   /** La vente au poids (`vente-au-poids.md`, P3) : un poids n'est pas un compte de pièces. */
   it("dit une ligne au poids par son poids dans le contenu, jamais en pièces", () => {
     const base = sheet();

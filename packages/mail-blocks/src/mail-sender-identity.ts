@@ -5,8 +5,12 @@ import type { MailSpace } from "./mail-spaces.js";
  * **L'identité d'envoi d'un espace** (plan `plan-editeur-par-blocs.md`,
  * § 25, C3) — « une marque = un espace = une charte = une identité
  * d'envoi ». Le nom affiché, l'adresse d'envoi (sur un domaine vérifié chez
- * Resend), l'adresse de réponse (`null` : les réponses vont à l'adresse
- * d'envoi).
+ * Resend), l'adresse de réponse.
+ *
+ * `replyToAddress` reste `null` À LA LECTURE : une identité enregistrée avant
+ * la décision du 2026-11-07 (adresse de réponse obligatoire) n'en a pas, et
+ * elle envoie comme avant — ses réponses vont à l'adresse d'envoi. Un nouvel
+ * enregistrement, lui, la refuse (`validateMailSenderIdentity`).
  */
 export interface MailSenderIdentity {
   readonly senderName: string;
@@ -29,6 +33,8 @@ export const MAIL_SENDER_VIOLATION_CODES = [
   "sender_name_too_long",
   "sender_name_forbidden_character",
   "address_invalid",
+  "reply_to_missing",
+  "reply_to_unattended",
 ] as const;
 
 export type MailSenderViolationCode = (typeof MAIL_SENDER_VIOLATION_CODES)[number];
@@ -38,6 +44,21 @@ export interface MailSenderViolation {
   readonly code: MailSenderViolationCode;
   readonly field: MailSenderField;
   readonly message: string;
+}
+
+/**
+ * Les parties locales d'une adresse que personne ne lit (décision du
+ * 2026-11-07) : une réponse qui y part est perdue. Comparées sans casse ni
+ * séparateur (`.`, `-`, `_`, `+`), d'où une écriture sans séparateur ici.
+ */
+export const UNATTENDED_LOCAL_PARTS: readonly string[] = ["noreply", "donotreply", "nepasrepondre"];
+
+const SEPARATORS = /[.\-_+]/g;
+
+/** `No_Reply@lfd.fr` → vrai : la partie locale désigne une adresse qui ne reçoit rien. */
+export function isUnattendedAddress(address: string): boolean {
+  const local = address.slice(0, address.lastIndexOf("@")).toLowerCase().replace(SEPARATORS, "");
+  return UNATTENDED_LOCAL_PARTS.includes(local);
 }
 
 /*
@@ -102,20 +123,60 @@ function nameViolation(name: string): MailSenderViolation | null {
   return null;
 }
 
+const REPLY_TO_LOST =
+  "Les réponses à vos e-mails seraient perdues : choisissez une adresse que quelqu'un lit (par exemple support@…).";
+
+function replyToViolation(replyTo: string | null): MailSenderViolation | null {
+  if (replyTo === null) {
+    return { code: "reply_to_missing", field: "replyToAddress", message: REPLY_TO_LOST };
+  }
+  const malformed = addressViolation("replyToAddress", replyTo);
+  if (malformed !== null) {
+    return malformed;
+  }
+  return isUnattendedAddress(replyTo)
+    ? { code: "reply_to_unattended", field: "replyToAddress", message: REPLY_TO_LOST }
+    : null;
+}
+
+function presentOnly(
+  violations: readonly (MailSenderViolation | null)[],
+): readonly MailSenderViolation[] {
+  return violations.filter((violation): violation is MailSenderViolation => violation !== null);
+}
+
 /**
- * Les règles de forme d'une identité d'envoi. Le domaine vérifié chez Resend
- * n'en est pas : il se lit chez le fournisseur, par le serveur seul.
+ * Les règles d'une identité qu'on ENREGISTRE : forme, et une adresse de
+ * réponse obligatoire que quelqu'un lit (décision du 2026-11-07). Le domaine
+ * vérifié chez Resend n'en est pas : il se lit chez le fournisseur, par le
+ * serveur seul.
  */
 export function validateMailSenderIdentity(
   identity: MailSenderIdentity,
 ): readonly MailSenderViolation[] {
-  return [
+  return presentOnly([
+    nameViolation(identity.senderName),
+    addressViolation("fromAddress", identity.fromAddress),
+    replyToViolation(identity.replyToAddress),
+  ]);
+}
+
+/**
+ * Les règles d'une identité qu'on RELIT : la forme seule. Une identité rangée
+ * avant le 2026-11-07, sans adresse de réponse ou avec un `no-reply`, reste
+ * lisible et envoie comme avant ; elle n'est refusée qu'au prochain
+ * enregistrement.
+ */
+export function validateStoredMailSenderIdentity(
+  identity: MailSenderIdentity,
+): readonly MailSenderViolation[] {
+  return presentOnly([
     nameViolation(identity.senderName),
     addressViolation("fromAddress", identity.fromAddress),
     identity.replyToAddress === null
       ? null
       : addressViolation("replyToAddress", identity.replyToAddress),
-  ].filter((violation): violation is MailSenderViolation => violation !== null);
+  ]);
 }
 
 /** Le domaine d'une adresse, en minuscules (`no-reply@LFD.fr` → `lfd.fr`). */

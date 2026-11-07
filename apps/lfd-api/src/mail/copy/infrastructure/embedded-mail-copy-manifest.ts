@@ -5,6 +5,7 @@ import {
   mailFollowsLocale,
   mailKeys,
 } from "../../templates/specimens/mail-specimens.js";
+import { isInMailEditor } from "../../templates/sections/mail-block-declarations.js";
 import { mailLayouts, type MailSectionText } from "../../templates/sections/mail-layouts.js";
 import type { MailCopyLocale } from "../domain/mail-copy-locale.js";
 import { MailCopyManifest, type MailCopyManifestEntry } from "../domain/mail-copy-manifest.js";
@@ -44,6 +45,7 @@ export function embeddedMailCopyManifest(
     mail,
     family: mailFamilyOf(mail),
     followsLocale: mailFollowsLocale(mail),
+    ...(isInMailEditor(mail) ? {} : { outOfEditor: true as const }),
   }));
   return MailCopyManifest.of(entries, mails, embeddedLayouts());
 }

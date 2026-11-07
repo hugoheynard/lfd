@@ -308,8 +308,9 @@ export const routes: Routes = [
           import('./client/commande/reglement-page/reglement-page').then((m) => m.ReglementPage),
       },
       {
-        // UNE COMMANDE, tiroir ouvert : le lien « Gérer ou annuler ma
-        // commande » du courriel de confirmation d'un compte (doc
+        // UNE COMMANDE, tiroir ouvert : le bouton « Voir ma commande » du
+        // courriel de confirmation d'un compte (avant le 2026-11-07, le lien
+        // « Gérer ou annuler ma commande ») (doc
         // `annulation-par-le-client.md`, décision du 2026-10-13). Gardée : la
         // connexion est demandée, et `returnTo` ramène ici après elle.
         path: 'mes-commandes/:orderId',

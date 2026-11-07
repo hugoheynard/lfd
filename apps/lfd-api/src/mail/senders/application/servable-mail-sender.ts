@@ -1,4 +1,4 @@
-import { isMailSpace, validateMailSenderIdentity, type MailSpace } from "@lfd/mail-blocks";
+import { isMailSpace, validateStoredMailSenderIdentity, type MailSpace } from "@lfd/mail-blocks";
 
 import type { PublishedMailSenderEntry } from "../../templates/effective-copy/published-mail-senders.js";
 
@@ -28,7 +28,7 @@ export function servableMailSender(
   };
   return [
     row.space,
-    validateMailSenderIdentity(identity).length > 0
+    validateStoredMailSenderIdentity(identity).length > 0
       ? { kind: "unreadable" }
       : { kind: "servable", identity },
   ];

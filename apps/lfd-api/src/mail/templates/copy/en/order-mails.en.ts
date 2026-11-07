@@ -31,7 +31,6 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     qrTitle: "Your pickup code",
     qrLine: "Show this code at the counter. The team's scan is what records the handover.",
     cta: "View my order",
-    manageLink: "Manage or cancel my order",
     qrAlt: "Your pickup code — {ref}",
     itinerary: "Directions to the shop",
   },

@@ -2445,14 +2445,15 @@ nommé. Types dans `packages/mail-blocks/src/mail-charter-routes.ts`.
 
 ## 26. En suspens (Hugo, 2026-11-07 : « je ne sais pas, mets ça en suspens »)
 
-Questions posées le 2026-11-07, non tranchées. Rien n'est bâti pour elles ;
-le comportement d'aujourd'hui reste celui décrit à côté.
+Questions posées le 2026-11-07. Les n° 1, 2, 4 et 5 ont été tranchées le
+même jour (rayées) ; pour les autres, rien n'est bâti et le comportement
+d'aujourd'hui reste celui décrit à côté.
 
-| #   | Question                                                                                                                                                      | Aujourd'hui                                                    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 1   | L'adresse de réponse de l'expéditeur d'un espace devient-elle obligatoire, et refusée si elle ressemble à une adresse qui ne reçoit rien (`no-reply`…) ?      | Facultative ; vide, les réponses vont à l'adresse d'envoi (C3) |
-| 2   | Un bouton qui ne disparaît que si l'adresse de la boutique n'est pas configurée se marque-t-il « sous condition » ?                                           | Non marqué ; `ctaDestination` le dit en texte                  |
-| 3   | Un client sans compte qui clique « Voir ma commande » arrive sur la page d'annulation (lien signé, 90 jours) : la garder, ou créer une page de consultation ? | Page d'annulation                                              |
-| 4   | Dans `customer.order-placed`, « Voir ma commande » et « Gérer ou annuler » mènent au même endroit : en retirer un ?                                           | Les deux restent                                               |
-| 5   | Le détail d'une ancienne inscription (`user.registered` d'avant le 2026-09-19) affiche encore l'e-mail au journal : le masquer ?                              | Affiché                                                        |
-| 6   | Les 11 e-mails « à discuter » du relevé du § 23                                                                                                               | Inchangés                                                      |
+| #   | Question                                                                                                                                                      | Aujourd'hui                                                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | ~~L'adresse de réponse de l'expéditeur d'un espace devient-elle obligatoire, et refusée si elle ressemble à une adresse qui ne reçoit rien (`no-reply`…) ?~~  | **Tranché le 2026-11-07 : oui** — obligatoire, `no-reply` & co refusés ; une identité déjà rangée sans elle reste lisible (`validateStoredMailSenderIdentity`) |
+| 2   | ~~Un bouton qui ne disparaît que si l'adresse de la boutique n'est pas configurée se marque-t-il « sous condition » ?~~                                       | **Tranché le 2026-11-07 : non**                                                                                                                                |
+| 3   | Un client sans compte qui clique « Voir ma commande » arrive sur la page d'annulation (lien signé, 90 jours) : la garder, ou créer une page de consultation ? | Page d'annulation                                                                                                                                              |
+| 4   | ~~Dans `customer.order-placed`, « Voir ma commande » et « Gérer ou annuler » mènent au même endroit : en retirer un ?~~                                       | **Tranché le 2026-11-07 : un seul bouton** — le lien `manageLink` est retiré du gabarit, des dictionnaires et des ressources                                   |
+| 5   | ~~Le détail d'une ancienne inscription (`user.registered` d'avant le 2026-09-19) affiche encore l'e-mail au journal : le masquer ?~~                          | **Tranché le 2026-11-07 : masquée** — la clé `email` est dite (`consumed`), jamais affichée                                                                    |
+| 6   | Les 11 e-mails « à discuter » du relevé du § 23                                                                                                               | Inchangés                                                                                                                                                      |

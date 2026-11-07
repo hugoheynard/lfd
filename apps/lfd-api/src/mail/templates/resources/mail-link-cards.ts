@@ -22,14 +22,7 @@ const ORDER_LIST = { label: "Liste de ses commandes" };
  * sections (`cta`, `secondaryLink`).
  */
 export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } = {
-  "customer.order-placed": {
-    cta: ORDER_LIST,
-    secondaryLink: {
-      label: "Gérer ou annuler la commande",
-      description:
-        "Cette commande dans « Mes commandes », connexion demandée ; pour une commande d'invité, la page d'annulation par lien signé. Absent sans adresse de la boutique.",
-    },
-  },
+  "customer.order-placed": { cta: ORDER_LIST },
   "customer.order-ready": { cta: ORDER_LIST },
   "customer.delivery-en-route": { cta: ORDER_LIST },
   "customer.order-delayed": { cta: ORDER_LIST },

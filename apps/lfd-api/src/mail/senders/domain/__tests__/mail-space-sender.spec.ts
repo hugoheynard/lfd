@@ -9,7 +9,7 @@ import { MailSpaceSender } from "../mail-space-sender.js";
 const IDENTITY = {
   senderName: "  La Folie Douce ",
   fromAddress: "no-reply@lfd-backoffice.com",
-  replyToAddress: null,
+  replyToAddress: "support@lfd-backoffice.com",
 };
 const VERIFIED = ["lafoliecoffee.info", "lfd-backoffice.com"];
 const STAMP = { at: new Date(0), staffId: "fiche-colette" };
@@ -78,5 +78,30 @@ describe("MailSpaceSender", () => {
         changed: STAMP,
       }),
     ).toThrow(StoredMailSenderUnreadableError);
+  });
+
+  /** Décision du 2026-11-07 : les réponses à un `no-reply` étaient perdues. */
+  it("refuse un nouvel enregistrement sans adresse de réponse, ou en no-reply", () => {
+    const sender = MailSpaceSender.unset("lfd");
+    expect(() => sender.change({ ...IDENTITY, replyToAddress: null }, VERIFIED, 0, STAMP)).toThrow(
+      /Les réponses à vos e-mails seraient perdues/,
+    );
+    expect(() =>
+      sender.change({ ...IDENTITY, replyToAddress: "No_Reply@lfd.fr" }, VERIFIED, 0, STAMP),
+    ).toThrow(MailSenderRefusedError);
+    expect(sender.snapshot().identity).toBeNull();
+  });
+
+  it("relit une identité rangée avant la règle, sans adresse de réponse", () => {
+    const sender = MailSpaceSender.reconstitute({
+      space: "lfc",
+      revision: 2,
+      identity: { ...IDENTITY, replyToAddress: null },
+      changed: STAMP,
+    });
+    expect(sender.snapshot().identity?.replyToAddress).toBeNull();
+    expect(() => sender.change({ ...IDENTITY, replyToAddress: null }, VERIFIED, 2, STAMP)).toThrow(
+      MailSenderRefusedError,
+    );
   });
 });

@@ -222,11 +222,15 @@ const companyDeclared: Phrase = (fact) => {
  * société : c'est un compte particulier à cet instant. Ni nom ni adresse —
  * le numéro court suffit à désigner (RGPD). Un sujet `user` n'a pas de fiche
  * (`subject-routes.ts`, vérifié le 2026-11-07) : le numéro est en gras, sans lien.
+ *
+ * Les inscriptions anciennes portent encore `email` dans leur charge : la clé
+ * est déclarée dite (`consumed`) pour que le détail ne l'affiche pas — le
+ * journal ne montre plus l'adresse (décision RGPD de Hugo, 2026-11-07).
  */
 const userRegistered: Phrase = (fact) => {
   const number = clientNumber(fact.subjectId);
   const who = number === null ? [text('Un client')] : [subject(fact, `Client ${number}`)];
-  return said([...who, text(' a créé son compte particulier')], ['subjectLabel']);
+  return said([...who, text(' a créé son compte particulier')], ['subjectLabel', 'email']);
 };
 
 /** « … a retiré la certification du KBIS du client « X », ce qui a suspendu son compte ». */

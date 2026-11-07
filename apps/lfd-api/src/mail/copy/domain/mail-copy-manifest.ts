@@ -27,6 +27,11 @@ export interface MailDescription {
   readonly family: MailFamily;
   /** Part-il dans la langue du destinataire, ou toujours en français ? */
   readonly followsLocale: boolean;
+  /**
+   * Hors de l'éditeur (la sonde de déploiement, Hugo le 2026-11-07) : ses
+   * textes ne s'écrivent pas et ne comptent pas parmi les changements à publier.
+   */
+  readonly outOfEditor?: true;
 }
 
 /** `customer.*` au client, `agency.*` à l'agence, le reste (`staff.*`, `ops.*`) à l'équipe. */
@@ -96,6 +101,13 @@ export class MailCopyManifest {
   /** L'e-mail est-il au registre ? */
   hasMail(mail: string): boolean {
     return this.described.some((described) => described.mail === mail);
+  }
+
+  /** L'e-mail est-il au registre ET hors de l'éditeur ? Faux pour un e-mail inconnu. */
+  isOutOfEditor(mail: string): boolean {
+    return this.described.some(
+      (described) => described.mail === mail && described.outOfEditor === true,
+    );
   }
 
   /** Les textes d'un e-mail, dans l'ordre du dictionnaire. */

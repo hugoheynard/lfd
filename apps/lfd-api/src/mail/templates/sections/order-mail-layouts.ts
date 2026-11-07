@@ -80,20 +80,10 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       QR,
       ITINERARY,
       { id: "cta", texts: texts("cta") },
-      { id: "secondaryLink", label: "Gérer ou annuler", texts: texts("manageLink") },
     ],
     // § 23 : le staff n'écrit que l'accroche ; le récapitulatif, le QR et
     // l'itinéraire sont des blocs système, leurs libellés aussi.
-    editablePhrases: [
-      "subject",
-      "kicker",
-      "title",
-      "intro",
-      "cta",
-      "manageLink",
-      "itinerary",
-      "qrLine",
-    ],
+    editablePhrases: ["subject", "kicker", "title", "intro", "cta", "itinerary", "qrLine"],
   },
   "customer.order-ready": {
     ctaDestination:

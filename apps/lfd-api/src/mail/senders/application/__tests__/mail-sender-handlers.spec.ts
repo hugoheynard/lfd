@@ -38,7 +38,7 @@ const COLETTE = {
 const IDENTITY = {
   senderName: "La Folie Douce",
   fromAddress: "no-reply@lfd-backoffice.com",
-  replyToAddress: null,
+  replyToAddress: "support@lfd-backoffice.com",
 };
 const VERIFIED = ["lafoliecoffee.info", "lfd-backoffice.com"];
 

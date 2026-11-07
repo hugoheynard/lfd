@@ -203,6 +203,10 @@ export interface B2bMails {
      * un compte, CETTE commande dans `mes-commandes/<id>`, sans secret — la session décide.
      * Vide sans origine connue : pas de lien plutôt qu'un lien inerte. Absent
      * des envois d'avant C6.
+     *
+     * Plus rendu depuis le 2026-11-07 (« un seul bouton ») : il valait déjà
+     * `orderUrl`, que le bouton porte. Le champ reste admis pour les demandes
+     * déjà en file.
      */
     readonly manageUrl?: string;
     /** L'URL que le QR encode — vide quand il n'y a pas de jeton. */

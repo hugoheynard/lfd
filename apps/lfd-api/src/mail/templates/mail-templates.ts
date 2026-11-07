@@ -400,9 +400,6 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           // un lien relatif est inerte dans une boîte mail, et un bouton qui ne
           // mène nulle part coûte plus qu'une absence de bouton.
           ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
-          ...(data.manageUrl === undefined || data.manageUrl === ""
-            ? {}
-            : { secondaryLink: { label: copy.manageLink, url: data.manageUrl } }),
         }),
         ...withAttachments([
           ...(showQr

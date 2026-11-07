@@ -61,7 +61,9 @@ e-mail : c'est ce qui serait en panne.
 L'e-mail de la sonde (`ops.deploy-check`) est un contrôle technique : il
 part, mais il n'est **pas dans l'éditeur** (ni dans la liste, ni dans un
 espace ; l'ouvrir rend un 404 nommé) — Hugo, 2026-11-07. Il porte
-`outOfEditor` dans sa déclaration (`team-mail-layouts.ts`).
+`outOfEditor` dans sa déclaration (`team-mail-layouts.ts`). Les routes
+d'écriture des textes refusent ses textes (`MAIL_COPY_OUT_OF_EDITOR`, 409), et
+le compte des changements à publier (`copyPendingCount`) ne les compte pas.
 
 ### Les espaces
 
@@ -276,14 +278,20 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
    au destinataire ; la porte `log-no-email` lit aussi `packages/*/src`.
 6. Le sens de « envoyé » : un type par étape, retours Resend reliés au suivi,
    faits `mail.delivered` / `mail.bounced` — décidé, pas bâti — Service, revue cas 5.
-7. Adresse de réponse d'un espace obligatoire, refus de `no-reply` — Éditeur § 26, n° 1.
-8. Marquer « sous condition » un bouton qui ne disparaît que sans adresse de
-   boutique — Éditeur § 26, n° 2.
+7. ~~Adresse de réponse d'un espace obligatoire, refus de `no-reply`~~ —
+   tranché oui et fait le 2026-11-07 : `validateMailSenderIdentity` refuse une
+   adresse absente ou qui ne reçoit rien ; une identité déjà rangée sans elle
+   reste lisible et envoie comme avant — Éditeur § 26, n° 1.
+8. ~~Marquer « sous condition » un bouton qui ne disparaît que sans adresse de
+   boutique~~ — tranché non le 2026-11-07 — Éditeur § 26, n° 2.
 9. « Voir ma commande » d'un invité mène à la page d'annulation : la garder ou
    créer une page de consultation — Éditeur § 26, n° 3.
-10. « Voir ma commande » et « Gérer ou annuler » mènent au même endroit dans
-    « Commande passée » : en retirer un — Éditeur § 26, n° 4.
-11. Masquer l'e-mail des anciennes inscriptions au journal — Éditeur § 26, n° 5.
+10. ~~« Voir ma commande » et « Gérer ou annuler » mènent au même endroit dans
+    « Commande passée » : en retirer un~~ — fait le 2026-11-07 : un seul
+    bouton, le lien « Gérer ou annuler ma commande » est retiré — Éditeur
+    § 26, n° 4.
+11. ~~Masquer l'e-mail des anciennes inscriptions au journal~~ — fait le
+    2026-11-07 (décision RGPD) — Éditeur § 26, n° 5.
 12. Refuser côté serveur l'écriture d'un libellé système (aujourd'hui seul
     l'éditeur le cache) — Éditeur § 23, écarts.
 

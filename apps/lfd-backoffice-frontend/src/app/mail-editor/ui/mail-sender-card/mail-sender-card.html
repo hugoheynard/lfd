@@ -53,8 +53,7 @@
             data-reply-to
             type="email"
             label="Adresse de réponse"
-            optional
-            hint="Vide : les réponses vont à l’adresse d’envoi."
+            hint="Une adresse que quelqu’un lit : c’est là qu’arrivent les réponses des destinataires."
             [value]="form().replyToAddress"
             (valueChange)="setField('replyToAddress', $event)"
           />

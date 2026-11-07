@@ -24,6 +24,19 @@ export class UnknownMailError extends ResourceNotFoundError {
   }
 }
 
+/**
+ * L'e-mail n'est pas à l'éditeur (la sonde de déploiement, Hugo le
+ * 2026-11-07) : il part tel que le code l'écrit, ses textes ne se rédigent pas.
+ */
+export class MailOutOfEditorError extends BusinessError {
+  constructor(mail: string) {
+    super(
+      "MAIL_COPY_OUT_OF_EDITOR",
+      `L'e-mail « ${mail} » ne se rédige pas dans l'éditeur : c'est un e-mail technique, envoyé tel que le code l'écrit. Rien n'a été enregistré ; pour changer son texte, demandez-le à l'équipe technique.`,
+    );
+  }
+}
+
 /** Le texte proposé ne respecte pas un garde-fou (C5). */
 export class InvalidMailTextError extends DomainError {
   constructor(mail: string, path: string, reason: string) {

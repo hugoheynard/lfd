@@ -1,6 +1,8 @@
 import {
   KICKER,
   MANIFEST,
+  MANIFEST_WITH_PROBE,
+  PROBE_SUBJECT,
   SUBJECT,
   TITLE,
   stamp,
@@ -109,5 +111,22 @@ describe("l'écran des textes des e-mails", () => {
     expect(locales?.it.defaultChangedSince).toBeNull();
     expect(view.orphans[0]?.locales.fr.defaultChangedSince).toBeNull();
     expect(view.defaultChangedCount).toBe(1);
+  });
+
+  /** Hugo, 2026-11-07 : un brouillon de la sonde ne compte pas parmi les changements à publier. */
+  it("ne compte pas un brouillon d'un e-mail hors de l'éditeur", () => {
+    const view = mailCopyAdminView(
+      MANIFEST_WITH_PROBE,
+      [
+        state({ draft: { state: "set", text: "Merci {ref}" } }),
+        state({
+          mail: PROBE_SUBJECT.mail,
+          path: PROBE_SUBJECT.path,
+          draft: { state: "set", text: "x" },
+        }),
+      ],
+      NONE,
+    );
+    expect(view.pendingCount).toBe(1);
   });
 });

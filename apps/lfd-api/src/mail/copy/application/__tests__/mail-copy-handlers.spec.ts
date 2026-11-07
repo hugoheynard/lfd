@@ -1,11 +1,18 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { KICKER, MANIFEST, SUBJECT } from "../../domain/__tests__/mail-copy-fixtures.js";
+import {
+  KICKER,
+  MANIFEST,
+  MANIFEST_WITH_PROBE,
+  PROBE_SUBJECT,
+  SUBJECT,
+} from "../../domain/__tests__/mail-copy-fixtures.js";
 import {
   InvalidMailTextError,
   MailCopyChangedError,
   MailCopyPublishedMeanwhileError,
+  MailOutOfEditorError,
   NothingToPublishError,
   UnknownMailTextError,
 } from "../../domain/mail-copy-errors.js";
@@ -34,7 +41,7 @@ function world() {
     cache,
     events,
     draft: new SaveMailCopyDraftHandler(texts, MANIFEST, clock, uow),
-    reset: new ResetMailCopyDraftHandler(texts, clock, uow),
+    reset: new ResetMailCopyDraftHandler(texts, MANIFEST, clock, uow),
     publish: new PublishMailCopyHandler(releases, MANIFEST, cache, events, clock, uow),
   };
 }
@@ -73,6 +80,38 @@ describe("écrire le brouillon d'un texte d'e-mail", () => {
       InvalidMailTextError,
     );
     expect(w.texts.rows.size).toBe(0);
+  });
+});
+
+/** Hugo, 2026-11-07 : la sonde de déploiement ne se rédige pas, même par la route d'écriture. */
+describe("un e-mail hors de l'éditeur (la sonde)", () => {
+  function probeWorld() {
+    const texts = new InMemoryMailCopy();
+    const clock = new FixedClock(AT);
+    const uow = new DirectUnitOfWork();
+    return {
+      texts,
+      draft: new SaveMailCopyDraftHandler(texts, MANIFEST_WITH_PROBE, clock, uow),
+      reset: new ResetMailCopyDraftHandler(texts, MANIFEST_WITH_PROBE, clock, uow),
+    };
+  }
+
+  it("refuse nommément d'écrire ou de rétablir ses textes, sans rien écrire", async () => {
+    const w = probeWorld();
+    const { mail, path } = PROBE_SUBJECT;
+    await expect(
+      w.draft.execute(new SaveMailCopyDraftCommand(mail, path, "fr", "Autre", 0, STAFF)),
+    ).rejects.toThrow(MailOutOfEditorError);
+    await expect(
+      w.reset.execute(new ResetMailCopyDraftCommand(mail, path, "fr", 0, STAFF)),
+    ).rejects.toThrow(/ne se rédige pas dans l'éditeur/);
+    expect(w.texts.rows.size).toBe(0);
+  });
+
+  it("écrit toujours les textes d'un e-mail de l'éditeur", async () => {
+    const w = probeWorld();
+    await w.draft.execute(draftOf("Merci {ref}"));
+    expect(w.texts.rows.size).toBe(1);
   });
 });
 

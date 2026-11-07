@@ -30,7 +30,10 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { GestureIntents } from '../../../shared/gesture-intents';
 import { MailSendersService } from '../../data/mail-senders.service';
 
-/** Le formulaire tel qu'à l'écran : l'adresse de réponse vide vaut « aucune ». */
+/**
+ * Le formulaire tel qu'à l'écran. L'adresse de réponse vide vaut « aucune »,
+ * que le paquet refuse depuis le 2026-11-07 : le refus s'affiche avant l'envoi.
+ */
 interface SenderForm {
   readonly senderName: string;
   readonly fromAddress: string;
@@ -49,7 +52,7 @@ function formOf(identity: MailSenderIdentity | null): SenderForm {
       };
 }
 
-/** L'identité que le formulaire décrit ; une adresse de réponse vide est `null`. */
+/** L'identité que le formulaire décrit ; une adresse de réponse vide est `null` (refusée). */
 export function identityOf(form: SenderForm): MailSenderIdentity {
   const replyTo = form.replyToAddress.trim();
   return {

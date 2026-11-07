@@ -70,3 +70,23 @@ export const MANIFEST = MailCopyManifest.of(
 export function stamp(at: Date, staffId = "fiche-colette"): MailCopyStamp {
   return { at, staffId };
 }
+
+/** Un texte de la sonde de déploiement, e-mail hors de l'éditeur. */
+export const PROBE_SUBJECT: MailCopyManifestEntry = {
+  mail: "ops.deploy-check",
+  path: "subject",
+  defaults: { fr: "Sonde", en: "Probe", it: "Sonda" },
+  allowed: [],
+  required: [],
+};
+
+/** Le manifeste de `MANIFEST`, plus la sonde hors de l'éditeur. */
+export const MANIFEST_WITH_PROBE = MailCopyManifest.of(
+  [SUBJECT, KICKER, TITLE, PROBE_SUBJECT],
+  [
+    { mail: "customer.order-placed", family: "order", followsLocale: true },
+    { mail: "customer.company-attached", family: "account", followsLocale: false },
+    { mail: "ops.deploy-check", family: "team", followsLocale: false, outOfEditor: true },
+  ],
+  [ORDER_PLACED_LAYOUT],
+);

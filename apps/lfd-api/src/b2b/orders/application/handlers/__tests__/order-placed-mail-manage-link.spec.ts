@@ -22,9 +22,10 @@ import {
 } from "./order-placed-mail-doubles.js";
 
 /**
- * **Le lien « Gérer ou annuler ma commande » est dans TOUS les accusés de
- * réception** (doc `annulation-par-le-client.md`, règle de Hugo du
- * 2026-10-13) : les deux chemins d'envoi — l'abonné de passation pour ce qui
+ * **Le lien de la commande est posé dans TOUS les accusés de réception**
+ * (doc `annulation-par-le-client.md`, règle de Hugo du 2026-10-13 ; depuis le
+ * 2026-11-07, l'e-mail ne rend plus que le bouton « Voir ma commande », qui
+ * mène à la même page — le lien « Gérer ou annuler » n'est plus rendu) : les deux chemins d'envoi — l'abonné de passation pour ce qui
  * n'a rien à encaisser (au compte, total nul), le service appelé sur
  * `order.paid` pour une carte — et chaque client : pro, particulier, invité,
  * commande saisie par l'équipe. Un invité reçoit la page `/annuler` et son
