@@ -65,6 +65,18 @@ describe("MailRequest — la demande et son suivi", () => {
     expect(request.isSettled()).toBe(true);
   });
 
+  /** Plan de l'éditeur par blocs, § 5 : sans la version, on saurait le modèle, pas le texte parti. */
+  it("envoyée : garde la version du document qui l'a composée, null pour le document de départ", () => {
+    const composed = MailRequest.request(DRAFT);
+    composed.markSent("re_7", LATER, 3);
+    expect(composed.snapshot().documentVersion).toBe(3);
+
+    const starting = MailRequest.request(DRAFT);
+    expect(starting.snapshot().documentVersion).toBeNull();
+    starting.markSent("re_8", LATER);
+    expect(starting.snapshot().documentVersion).toBeNull();
+  });
+
   it("en échec technique : reste ouverte, et peut encore partir", () => {
     const request = MailRequest.request(DRAFT);
     request.markFailed("Resend injoignable", LATER);

@@ -73,6 +73,12 @@ export interface MailRequestSnapshot {
   readonly lastAttemptAt: Date | null;
   /** Les envois différés engagés. `sendAndAwaitReceipt` n'en compte pas : il ne passe pas par `sending`. */
   readonly attempts: number;
+  /**
+   * La version publiée du document qui a composé l'envoi (plan
+   * `plan-editeur-par-blocs.md`, § 5, S4c) ; `null` : le document de départ,
+   * ou rien d'envoyé encore. Avec `template`, elle dit QUEL texte est parti.
+   */
+  readonly documentVersion: number | null;
 }
 
 function required(field: string, value: string, max: number): string {
@@ -129,6 +135,7 @@ export class MailRequest {
       firstAttemptAt: null,
       lastAttemptAt: null,
       attempts: 0,
+      documentVersion: null,
     });
   }
 
@@ -230,10 +237,21 @@ export class MailRequest {
     this.markFailed(GIVE_UP_REASON, at);
   }
 
-  /** Le fournisseur a accepté. `providerId` vaut `null` en mode à blanc. */
-  markSent(providerId: string | null, at: Date): void {
+  /**
+   * Le fournisseur a accepté. `providerId` vaut `null` en mode à blanc ;
+   * `documentVersion`, la version du document qui a composé l'e-mail (S4c),
+   * `null` pour le document de départ.
+   */
+  markSent(providerId: string | null, at: Date, documentVersion: number | null = null): void {
     this.assertOpen();
-    this.state = { ...this.state, status: "sent", providerId, sentAt: at, failureReason: null };
+    this.state = {
+      ...this.state,
+      status: "sent",
+      providerId,
+      sentAt: at,
+      failureReason: null,
+      documentVersion,
+    };
   }
 
   /** Échec technique : un nouvel essai reste permis. */

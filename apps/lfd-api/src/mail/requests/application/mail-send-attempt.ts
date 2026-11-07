@@ -57,8 +57,8 @@ export class MailSendAttempt {
   async attempt(request: MailRequest, mail: OutgoingMail): Promise<MailAttemptOutcome> {
     try {
       // Les pièces sont relues à CHAQUE essai : la demande n'en porte que la place.
-      const providerId = await this.dispatch.dispatch(await this.attachments.resolve(mail));
-      request.markSent(providerId, this.clock.now());
+      const receipt = await this.dispatch.dispatch(await this.attachments.resolve(mail));
+      request.markSent(receipt.providerId, this.clock.now(), receipt.documentVersion);
       return { kind: "sent" };
     } catch (error) {
       if (error instanceof MailInFlightError) {

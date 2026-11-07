@@ -646,6 +646,17 @@ export const staffResourceSchema = z.enum([
    */
   "staff_notifications",
 
+  // ── `mail.` — LES E-MAILS ───────────────────────────────────────────────
+  /**
+   * **Les modèles d'e-mails** — l'éditeur par blocs : lire un e-mail, son
+   * document et son aperçu (`read`) ; enregistrer, publier, revenir au modèle
+   * d'origine (`write`) (`documentation/editeur-de-contenu/plan-editeur-par-blocs.md`,
+   * § 5, lot S4c, 2026-11-07). Le même droit écrit et publie (§ 9, question 3,
+   * défaut). Ajoutée sans être accordée : elle s'accorde à l'écran ; la
+   * graine ne la donne qu'à l'administrateur.
+   */
+  "mail_templates",
+
   // ── `ops.` — L'EXPLOITATION ─────────────────────────────────────────────
   /** La carte de santé de l'écosystème : topologie, trafic. Staff only. */
   "ops_health",
@@ -828,6 +839,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   lfd_webhooks: "Webhooks",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
+  mail_templates: "Modèles d'e-mails",
   ops_health: "Santé de l'écosystème",
   ops_post_deploy: "Opérations après déploiement",
   activity: "Journal d'activité",
@@ -1005,6 +1017,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     delivery_doorstep: "write",
     staff_access: "write",
     staff_notifications: "write",
+    // L'administrateur seul (2026-11-07, plan de l'éditeur par blocs, S4c) :
+    // en production, accordée à l'écran.
+    mail_templates: "write",
     ops_health: "write",
     // Graine seulement (dev, e2e) : en production, accordée à l'écran
     // (plan des opérations après déploiement, § 7.9).

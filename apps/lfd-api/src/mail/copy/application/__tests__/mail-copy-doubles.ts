@@ -71,11 +71,19 @@ export class InMemoryReleases extends MailCopyReleaseRepository {
   }
 
   load(): Promise<MailCopyRelease> {
+    return this.loadWhere(() => true);
+  }
+
+  loadFor(mail: string): Promise<MailCopyRelease> {
+    return this.loadWhere((candidate) => candidate === mail);
+  }
+
+  private loadWhere(inScope: (mail: string) => boolean): Promise<MailCopyRelease> {
     const pending = [...this.texts.rows.values()]
-      .filter((state) => state.draft.state !== "unchanged")
+      .filter((state) => state.draft.state !== "unchanged" && inScope(state.mail))
       .map((state) => MailCopyEntry.reconstitute(state));
     const orders = [...this.texts.orders.values()]
-      .filter((state) => state.draft.state !== "unchanged")
+      .filter((state) => state.draft.state !== "unchanged" && inScope(state.mail))
       .map((state) => MailSectionOrder.reconstitute(state));
     return Promise.resolve(MailCopyRelease.of(this.texts.version, pending, orders));
   }

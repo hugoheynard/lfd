@@ -22,36 +22,89 @@
 /// (`MAIL_REQUEST_PURGE`, `dry-run` par défaut) : elle compte, elle ne
 /// supprime rien tant que Hugo ne l'a pas activée.
 model MailRequest {
-  id             String    @id
+  id              String    @id
   /// La clé du registre `B2bMails` (`customer.order-ready`).
-  template       String    @db.VarChar(80)
+  template        String    @db.VarChar(80)
   /// `lfc` aujourd'hui (CHECK en base).
-  brand          String    @db.VarChar(16)
+  brand           String    @db.VarChar(16)
   /// L'adresse du destinataire.
-  recipient      String    @db.VarChar(320)
+  recipient       String    @db.VarChar(320)
   /// La langue lue dans les données du modèle ; `null` s'il n'en déclare pas.
-  locale         String?   @db.VarChar(8)
+  locale          String?   @db.VarChar(8)
   /// `requested` | `sending` | `sent` | `failed` | `refused` (CHECK en base).
-  status         String    @db.VarChar(10)
+  status          String    @db.VarChar(10)
   /// L'identifiant Resend ; `null` tant que rien n'est parti, ou en mode à blanc.
-  providerId     String?   @map("provider_id")
+  providerId      String?   @map("provider_id")
   /// Unique : un rejeu ne crée pas une seconde demande.
-  idempotencyKey String    @unique @map("idempotency_key") @db.VarChar(200)
+  idempotencyKey  String    @unique @map("idempotency_key") @db.VarChar(200)
   /// La raison d'un échec ou d'un refus, tronquée à 500 caractères.
-  failureReason  String?   @map("failure_reason") @db.VarChar(500)
-  requestedAt    DateTime  @map("requested_at") @db.Timestamptz(6)
-  sentAt         DateTime? @map("sent_at") @db.Timestamptz(6)
+  failureReason   String?   @map("failure_reason") @db.VarChar(500)
+  requestedAt     DateTime  @map("requested_at") @db.Timestamptz(6)
+  sentAt          DateTime? @map("sent_at") @db.Timestamptz(6)
   /// L'instant du dernier échec ou du refus.
-  failedAt       DateTime? @map("failed_at") @db.Timestamptz(6)
+  failedAt        DateTime? @map("failed_at") @db.Timestamptz(6)
   /// Le premier envoi différé engagé (S1b) : la fenêtre de reprise (23 h) en part.
-  firstAttemptAt DateTime? @map("first_attempt_at") @db.Timestamptz(6)
+  firstAttemptAt  DateTime? @map("first_attempt_at") @db.Timestamptz(6)
   /// Le dernier envoi différé engagé : un `sending` plus vieux est orphelin.
-  lastAttemptAt  DateTime? @map("last_attempt_at") @db.Timestamptz(6)
+  lastAttemptAt   DateTime? @map("last_attempt_at") @db.Timestamptz(6)
   /// Les envois différés engagés (plafond dans l'agrégat).
-  attempts       Int       @default(0)
+  attempts        Int       @default(0)
+  /// La version publiée du document qui a composé l'envoi (plan
+  /// `plan-editeur-par-blocs.md`, § 5, S4c) ; `null` = le document de départ,
+  /// ou rien d'envoyé encore.
+  documentVersion Int?      @map("document_version")
 
   @@index([status, requestedAt])
   @@index([status, lastAttemptAt])
   @@map("mail_request")
+  @@schema("mail")
+}
+
+/// **Le document d'un e-mail** (plan `plan-editeur-par-blocs.md`, § 5, S4c) :
+/// l'arrangement de ses blocs, en brouillon et publié. Les phrases n'y sont
+/// JAMAIS : elles restent au dictionnaire (`public.mail_copy_entries`).
+///
+/// Pas de ligne = le document de départ, calculé à la lecture. Jamais
+/// supprimé : « revenir au modèle d'origine » vide `published` et `draft`, la
+/// ligne reste, avec son auteur.
+model MailDocument {
+  /// La clé du registre (`customer.order-ready`).
+  template         String    @id @db.VarChar(80)
+  /// Monte à chaque écriture : le verrou entre deux rédacteurs.
+  revision         Int
+  /// Le brouillon (`MailDocument` de `@lfd/mail-blocks`) ; `null` = aucun.
+  draft            Json?
+  draftAt          DateTime? @map("draft_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  draftBy          String?   @map("draft_by")
+  /// Le document envoyé ; `null` = le document de départ.
+  published        Json?
+  publishedVersion Int?      @map("published_version")
+  publishedAt      DateTime? @map("published_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  publishedBy      String?   @map("published_by")
+  /// La dernière version posée, publiée ou retirée depuis : la suivante en part.
+  lastVersion      Int       @default(0) @map("last_version")
+  retractedAt      DateTime? @map("retracted_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  retractedBy      String?   @map("retracted_by")
+
+  @@map("mail_document")
+  @@schema("mail")
+}
+
+/// **Une version publiée d'un document d'e-mail**, en AJOUT SEUL (un
+/// déclencheur refuse UPDATE et DELETE) : `mail_request.document_version` la
+/// désigne, et dit quel texte a composé un envoi.
+model MailDocumentVersion {
+  template    String   @db.VarChar(80)
+  version     Int
+  document    Json
+  publishedAt DateTime @map("published_at") @db.Timestamptz(6)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  publishedBy String   @map("published_by")
+
+  @@id([template, version])
+  @@map("mail_document_version")
   @@schema("mail")
 }

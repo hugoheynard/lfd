@@ -81,6 +81,18 @@ describe("sendAndAwaitReceipt — l'envoi immédiat", () => {
     });
   });
 
+  /** Plan de l'éditeur par blocs, § 5 : la demande dit quel texte est parti, pas seulement quel modèle. */
+  it("garde sur la demande la version du document publié qui a composé l'envoi", async () => {
+    const scene = mailScene();
+    scene.dispatch.documentVersion = 5;
+
+    await scene.port.sendAndAwaitReceipt(SUSPENDED);
+    expect(scene.requests.rows.get("staff.suspended:s1")?.snapshot()).toMatchObject({
+      status: "sent",
+      documentVersion: 5,
+    });
+  });
+
   it("refuse sous une unité de travail, sans rien envoyer ni écrire", async () => {
     const scene = mailScene();
     scene.probe.open = true;

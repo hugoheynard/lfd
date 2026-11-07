@@ -1908,6 +1908,42 @@
       "information": false
     },
     {
+      "colonne": "mail.mail_document.draft_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`draft_by`) sur `mail_document`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_document.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `mail_document`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_document.retracted_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`retracted_by`) sur `mail_document`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_document_version.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `mail_document_version`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.platform_content.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",
@@ -2709,6 +2745,10 @@
     {
       "colonne": "mail.mail_request.last_attempt_at",
       "raison": "Horodatage de la dernière tentative d'envoi du système (S1b) ; part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.document_version",
+      "raison": "La version publiée du document qui a composé l'e-mail (plan-editeur-par-blocs.md, S4c) : la même pour tous les destinataires de cette version, sans rien de la personne ; part avec la ligne."
     },
     {
       "colonne": "platform.outbox.id",

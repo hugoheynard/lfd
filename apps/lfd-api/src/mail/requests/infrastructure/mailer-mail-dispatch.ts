@@ -4,7 +4,12 @@ import { Inject, Injectable } from "@nestjs/common";
 import type { B2bMails } from "../../templates/mail-templates.js";
 import { MAILER, type B2bMailer } from "../../templates/mailer.tokens.js";
 import { MailInFlightError, MailRefusedError } from "../domain/errors/mail-request.errors.js";
-import { MailDispatch, type OutgoingMail } from "../domain/ports/mail-dispatch.js";
+import {
+  MailDispatch,
+  type MailDispatchReceipt,
+  type OutgoingMail,
+} from "../domain/ports/mail-dispatch.js";
+import { composeMail } from "../../templates/effective-copy/mail-composition.js";
 
 /**
  * L'envoi par le mailer d'aujourd'hui — texte effectif, journal, disjoncteur,
@@ -25,16 +30,20 @@ export class MailerMailDispatch extends MailDispatch {
     super();
   }
 
-  async dispatch(mail: OutgoingMail): Promise<string | null> {
+  async dispatch(mail: OutgoingMail): Promise<MailDispatchReceipt> {
     try {
-      const receipt = await this.mailer.send({
-        to: mail.to,
-        template: mail.template as keyof B2bMails,
-        data: mail.data as B2bMails[keyof B2bMails],
-        idempotencyKey: mail.idempotencyKey,
-        ...(mail.replyTo === undefined ? {} : { replyTo: mail.replyTo }),
-      });
-      return receipt.providerId;
+      // La version du document qui compose l'e-mail, notée par le mailer
+      // (S4c) : la demande la garde.
+      const { result, documentVersion } = await composeMail(() =>
+        this.mailer.send({
+          to: mail.to,
+          template: mail.template as keyof B2bMails,
+          data: mail.data as B2bMails[keyof B2bMails],
+          idempotencyKey: mail.idempotencyKey,
+          ...(mail.replyTo === undefined ? {} : { replyTo: mail.replyTo }),
+        }),
+      );
+      return { providerId: result.providerId, documentVersion };
     } catch (error) {
       // Une requête de même clé en cours chez Resend : ni échec, ni refus.
       if (error instanceof MailerIdempotencyInFlightError) {

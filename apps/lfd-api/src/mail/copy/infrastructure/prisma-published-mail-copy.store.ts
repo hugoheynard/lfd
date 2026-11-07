@@ -1,3 +1,4 @@
+import type { StoredPublishedMailDocument } from "../../documents/application/servable-mail-document.js";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -34,5 +35,17 @@ export class PrismaPublishedMailCopyStore extends PublishedMailCopyStore {
       where: { NOT: { publishedOrder: { isEmpty: true } } },
     });
     return rows.map(toOrderState);
+  }
+
+  async publishedDocuments(): Promise<readonly StoredPublishedMailDocument[]> {
+    const rows = await this.prisma.mailDocument.findMany({
+      where: { publishedVersion: { not: null } },
+      select: { template: true, publishedVersion: true, published: true },
+    });
+    return rows.flatMap((row) =>
+      row.publishedVersion === null
+        ? []
+        : [{ template: row.template, version: row.publishedVersion, document: row.published }],
+    );
   }
 }

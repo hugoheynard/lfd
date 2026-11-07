@@ -218,6 +218,11 @@ enum StaffResource {
   staff_access
   staff_notifications
 
+  /// LES MODÈLES D'E-MAILS — l'éditeur par blocs : lire, enregistrer, publier,
+  /// revenir au modèle d'origine (2026-11-07,
+  /// `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, S4c).
+  /// Accordée à l'écran.
+  mail_templates
   ops_health
   /// LES OPÉRATIONS APRÈS DÉPLOIEMENT — simuler (lecture), appliquer
   /// (écriture) une reprise de données (2026-11-01,

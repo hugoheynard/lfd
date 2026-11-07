@@ -12,7 +12,10 @@ import {
   withMailLayout,
   type MailLayoutScope,
 } from "../sections/mail-layout-scope.js";
+import { documentLocaleOf } from "../sections/mail-document-locale.js";
+import { noteComposingDocument } from "./mail-composition.js";
 import type { PublishedMailCopyReader } from "./published-mail-copy.reader.js";
+import type { PublishedMailDocumentEntry } from "./published-mail-documents.js";
 
 /** Ce que le mailer dit quand il se replie sur le texte du code. */
 export interface EffectiveCopyLog {
@@ -36,6 +39,13 @@ export interface EffectiveCopyLog {
  *
  * L'ordre des sections (E4, S3) suit la même règle, lu à part : un ordre
  * illisible fait partir l'e-mail dans l'ordre du code, avec ses textes publiés.
+ *
+ * Le document publié de l'éditeur par blocs (plan `plan-editeur-par-blocs.md`,
+ * S4c) prime sur l'ordre publié du même e-mail : document publié, sinon ordre
+ * publié de l'ancienne table, sinon ordre du code. Un document illisible —
+ * ou une lecture qui échoue — fait partir l'e-mail dans l'ordre du CODE (§ 11),
+ * et le journal le dit. La version qui compose l'envoi est notée
+ * (`noteComposingDocument`) pour que la demande la garde.
  */
 export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
   constructor(
@@ -52,24 +62,45 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
     const template = String(args.template);
     const overlay =
       activeMailCopyOverlay() === undefined ? await this.publishedOrCode(template) : null;
-    const layout = activeMailLayout() === undefined ? await this.layoutOrCode(template) : null;
+    const layout =
+      activeMailLayout() === undefined ? await this.layoutOrCode(template, args.data) : null;
     const withLayout = (): Promise<MailReceipt> =>
       layout === null ? this.inner.send(args) : withMailLayout(layout, () => this.inner.send(args));
     return overlay === null ? withLayout() : withMailCopyOverlay(overlay, withLayout);
   }
 
-  private async layoutOrCode(template: string): Promise<MailLayoutScope> {
+  private async layoutOrCode(template: string, data: unknown): Promise<MailLayoutScope> {
     if (this.published === null) {
       return NO_MAIL_LAYOUT;
     }
+    let orders: MailLayoutScope["orders"];
+    let entry: PublishedMailDocumentEntry | undefined;
     try {
-      return { orders: await this.published.sectionOrders(), markers: false };
+      orders = await this.published.sectionOrders();
+      entry = (await this.published.documents())[template];
     } catch (error: unknown) {
       this.log.warn(
-        `Ordre des sections d'e-mails publié illisible : « ${template} » part dans l'ordre du code. Cause : ${String(error)}`,
+        `Ordre des sections ou document d'e-mail publié illisible : « ${template} » part dans l'ordre du code. Cause : ${String(error)}`,
       );
       return NO_MAIL_LAYOUT;
     }
+    if (entry === undefined) {
+      return { orders, markers: false };
+    }
+    if (entry.kind === "unreadable") {
+      this.log.warn(
+        `Document publié v${entry.version} de « ${template} » illisible par ce code (${entry.reason}) : l'e-mail part dans l'ordre du code.`,
+      );
+      return NO_MAIL_LAYOUT;
+    }
+    noteComposingDocument(entry.version);
+    return {
+      orders,
+      markers: false,
+      documents: {
+        [template]: { document: entry.document, locale: documentLocaleOf(template, data) },
+      },
+    };
   }
 
   private async publishedOrCode(template: string): Promise<MailCopyOverlay> {

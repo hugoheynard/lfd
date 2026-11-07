@@ -266,6 +266,55 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
+   * **Le brouillon de l'arrangement d'un e-mail est enregistré**
+   * (`plan-editeur-par-blocs.md`, § 5, S4c). Le document lui-même n'est pas
+   * dans la charge : il vit dans `mail.mail_document`, et le fait dit qui l'a
+   * écrit, quand, et à quelle révision.
+   *
+   * `subjectLabel` : la clé de l'e-mail au registre.
+   */
+  "mail_copy.document_saved": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mail: z.string().min(1),
+      revision: count(),
+    }),
+  ),
+
+  /**
+   * **L'arrangement d'un e-mail est publié** (S4c) — avec ses phrases, dans
+   * la même publication : `publicationVersion` est celle des textes des
+   * e-mails (`mail_copy.published` l'accompagne quand une phrase change).
+   * `version` désigne la version gardée en ajout seul
+   * (`mail.mail_document_version`) ; `previousVersion` : celle qui partait
+   * avant, `null` pour le document de départ.
+   */
+  "mail_copy.document_published": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mail: z.string().min(1),
+      version: count(),
+      previousVersion: count().nullable(),
+      publicationVersion: count(),
+    }),
+  ),
+
+  /**
+   * **Un e-mail revient au modèle d'origine** (S4c) : son document publié est
+   * retiré (`version`, `null` s'il n'y en avait pas) et son brouillon
+   * effacé ; il repart dans l'arrangement de départ. Ses phrases n'ont jamais
+   * quitté le dictionnaire.
+   */
+  "mail_copy.document_retracted": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mail: z.string().min(1),
+      version: count().nullable(),
+      publicationVersion: count(),
+    }),
+  ),
+
+  /**
    * Un prospect saisi à la main. L'e-mail en est sorti le 2026-09-19 (lot B) :
    * une coordonnée n'a rien à faire au journal, et le lead la garde sur sa
    * propre ligne. `subjectLabel` : son enseigne — la même que `businessName`.

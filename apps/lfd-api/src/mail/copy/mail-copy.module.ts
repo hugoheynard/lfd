@@ -59,6 +59,14 @@ import { SpecimenMailTrialSender } from "./infrastructure/specimen-mail-trial.se
     GetMailCopyAdminHandler,
     GetMailCopyPreviewHandler,
   ],
-  exports: [CachedPublishedMailCopyReader],
+  // S4c : les documents des e-mails publient avec les phrases (même version,
+  // même cache) et lisent leurs brouillons pour l'éditeur et l'aperçu.
+  exports: [
+    CachedPublishedMailCopyReader,
+    MailCopyReleaseRepository,
+    MailCopyManifest,
+    PublishedMailCopyCache,
+    MailCopyAdminReader,
+  ],
 })
 export class MailCopyModule {}

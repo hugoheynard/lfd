@@ -1,3 +1,7 @@
+import { startingMailDocument } from "@lfd/mail-blocks";
+
+import type { StoredPublishedMailDocument } from "../../../documents/application/servable-mail-document.js";
+import { mailBlockDeclarationOf } from "../../../templates/sections/mail-block-declarations.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { MANIFEST, QR_FIRST, SUBJECT, stamp } from "../../domain/__tests__/mail-copy-fixtures.js";
 import type { MailCopyEntryState } from "../../domain/mail-copy-entry.js";
@@ -46,6 +50,14 @@ class CountingStore extends PublishedMailCopyStore {
   publishedSectionOrders(): Promise<readonly MailSectionOrderState[]> {
     this.orderReads += 1;
     return Promise.resolve([...this.orders]);
+  }
+
+  documentReads = 0;
+  documents: StoredPublishedMailDocument[] = [];
+
+  publishedDocuments(): Promise<readonly StoredPublishedMailDocument[]> {
+    this.documentReads += 1;
+    return Promise.resolve([...this.documents]);
   }
 }
 
@@ -130,5 +142,54 @@ describe("l'ordre publié des sections, gardé en mémoire (E4)", () => {
     const { store, cache } = setup();
     store.orders = [publishedOrder(SUBJECT.mail, ["image", "title", "footer"])];
     expect(await cache.sectionOrders()).toEqual({});
+  });
+});
+
+describe("les documents publiés de l'éditeur par blocs, gardés en mémoire (S4c)", () => {
+  const TEMPLATE = "customer.order-placed";
+  const starting = startingMailDocument(TEMPLATE, mailBlockDeclarationOf(TEMPLATE));
+  const reversed = { template: TEMPLATE, blocks: [...starting.blocks].reverse() };
+
+  it("rend un document qui tient contre le code, par la même version que les textes", async () => {
+    const { store, cache } = setup();
+    store.documents = [{ template: TEMPLATE, version: 3, document: reversed }];
+    const first = await cache.documents();
+    expect(first).toEqual({ [TEMPLATE]: { kind: "servable", document: reversed, version: 3 } });
+    expect(await cache.documents()).toBe(first);
+    expect([store.versionReads, store.documentReads]).toEqual([1, 1]);
+  });
+
+  /** Un document écrit par un autre code : l'e-mail part dans l'ordre du code, l'échec dit. */
+  it("dit illisible un document sans la forme d'un document, ou qui a perdu un bloc du modèle", async () => {
+    const { store, cache } = setup();
+    store.documents = [
+      { template: TEMPLATE, version: 2, document: { blocks: "pas un tableau" } },
+      {
+        template: "customer.order-ready",
+        version: 1,
+        document: { template: "customer.order-ready", blocks: [] },
+      },
+    ];
+    const documents = await cache.documents();
+    expect(documents[TEMPLATE]).toMatchObject({ kind: "unreadable", version: 2 });
+    const lost = documents["customer.order-ready"];
+    expect(lost?.kind).toBe("unreadable");
+    expect(lost?.kind === "unreadable" ? lost.reason : "").toContain("model-block-missing");
+  });
+
+  it("ignore un e-mail qui n'est plus au registre", async () => {
+    const { store, cache } = setup();
+    store.documents = [{ template: "retire.du.registre", version: 1, document: reversed }];
+    expect(await cache.documents()).toEqual({});
+  });
+
+  it("relit les documents quand la version a monté", async () => {
+    const { store, clock, cache } = setup();
+    await cache.documents();
+    clock.advanceMs(MAIL_COPY_VERSION_RECHECK_MS);
+    store.current = 2;
+    store.documents = [{ template: TEMPLATE, version: 1, document: reversed }];
+    expect(Object.keys(await cache.documents())).toEqual([TEMPLATE]);
+    expect(store.documentReads).toBe(2);
   });
 });

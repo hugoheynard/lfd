@@ -67,7 +67,7 @@ export class SpecimenMailPreviewRenderer extends MailSpecimenRenderer {
 }
 
 /** Le HTML, chaque `cid:` remplacé par l'image elle-même. */
-function withInlineImages(rendered: RenderedMail): string {
+export function withInlineImages(rendered: RenderedMail): string {
   return (rendered.attachments ?? []).reduce((html, attachment) => {
     if (attachment.contentId === undefined) {
       return html;

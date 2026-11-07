@@ -345,6 +345,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Marquer une notification traitée, pour toute l'équipe — et, depuis l'écran actuel, activer la poussée sur son appareil.",
   },
+  mail_templates: {
+    read: "Ouvrir l'éditeur d'e-mails : la liste des e-mails, l'arrangement de chacun, ses phrases, son historique et son aperçu.",
+    write:
+      "Enregistrer l'arrangement d'un e-mail, le publier avec ses phrases — il part ainsi aux clients ou à l'équipe — et revenir au modèle d'origine.",
+  },
   ops_health: {
     read: "Voir la carte de santé de l'écosystème et son trafic.",
     write: "N'ajoute rien : la carte de santé se lit seulement.",

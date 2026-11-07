@@ -10,6 +10,14 @@ export abstract class MailCopyReleaseRepository {
   abstract load(): Promise<MailCopyRelease>;
 
   /**
+   * La version et les brouillons d'UN e-mail seulement (plan
+   * `plan-editeur-par-blocs.md`, S4c) : « Publier » dans l'éditeur met en
+   * service ce que l'éditeur a montré — cet e-mail, pas les brouillons des
+   * autres.
+   */
+  abstract loadFor(mail: string): Promise<MailCopyRelease>;
+
+  /**
    * Pose la version et réécrit les textes et les ordres touchés.
    *
    * @throws {MailCopyPublishedMeanwhileError} la version a bougé depuis le chargement.

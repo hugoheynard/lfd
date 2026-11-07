@@ -1,3 +1,4 @@
+import { startingMailDocument, type MailDocument } from "@lfd/mail-blocks";
 import type { Mailer, MailReceipt, SendMailArgs } from "@lfd/mailer";
 
 import { mailCopyOf } from "../../copy/mail-copy.js";
@@ -5,7 +6,10 @@ import { withMailCopyOverlay, type MailCopyOverlay } from "../../copy/mail-copy-
 import { b2bMailTemplates, type B2bMails } from "../../mail-templates.js";
 import type { MailSectionOrders } from "../../sections/mail-layout-scope.js";
 import { EffectiveCopyMailer, type EffectiveCopyLog } from "../effective-copy-mailer.js";
+import { composeMail } from "../mail-composition.js";
 import { PublishedMailCopyReader } from "../published-mail-copy.reader.js";
+import type { PublishedMailDocuments } from "../published-mail-documents.js";
+import { mailBlockDeclarationOf } from "../../sections/mail-block-declarations.js";
 
 /** Un transport qui relève l'objet de confirmation tel qu'il le lirait au rendu. */
 class SubjectReadingTransport implements Mailer<B2bMails> {
@@ -23,8 +27,14 @@ class StaticPublished extends PublishedMailCopyReader {
   constructor(
     private readonly overlay: MailCopyOverlay | Error,
     private readonly orders: MailSectionOrders | Error = {},
+    private readonly published: PublishedMailDocuments | Error = {},
   ) {
     super();
+  }
+  documents(): Promise<PublishedMailDocuments> {
+    return this.published instanceof Error
+      ? Promise.reject(this.published)
+      : Promise.resolve(this.published);
   }
   read(): Promise<MailCopyOverlay> {
     this.reads += 1;
@@ -141,6 +151,91 @@ describe("le mailer du texte effectif (C2)", () => {
     await new EffectiveCopyMailer(
       transport,
       new StaticPublished({}, new Error("base injoignable")),
+      log,
+    ).send(ARGS);
+    const html = transport.html[0] ?? "";
+    expect(html.indexOf("<h1")).toBeLessThan(html.indexOf("font-size:13px;color"));
+    expect(log.warnings).toEqual([
+      expect.stringContaining("« customer.password-reset » part dans l'ordre du code"),
+    ]);
+  });
+});
+
+describe("le document publié de l'éditeur par blocs (S4c)", () => {
+  const starting = startingMailDocument(
+    "customer.password-reset",
+    mailBlockDeclarationOf("customer.password-reset"),
+  );
+  const ARRANGED: MailDocument = {
+    template: "customer.password-reset",
+    blocks: [
+      ...starting.blocks,
+      {
+        id: "fermeture",
+        kind: "paragraph",
+        text: { fr: "Fermé le 1er mai", en: "Closed", it: "Chiuso" },
+      },
+    ],
+  };
+  const SERVABLE: PublishedMailDocuments = {
+    "customer.password-reset": { kind: "servable", document: ARRANGED, version: 4 },
+  };
+
+  it("rend le document publié, et dit la version qui a composé l'envoi", async () => {
+    const transport = new RenderingTransport();
+    const mailer = new EffectiveCopyMailer(
+      transport,
+      new StaticPublished({}, FOOTER_FIRST, SERVABLE),
+      new RecordingLog(),
+    );
+    const { documentVersion } = await composeMail(() => mailer.send(ARGS));
+    expect(transport.html[0]).toContain("Fermé le 1er mai");
+    expect(documentVersion).toBe(4);
+  });
+
+  it("sans document publié : l'ordre publié de l'ancienne table, et aucune version", async () => {
+    const transport = new RenderingTransport();
+    const mailer = new EffectiveCopyMailer(
+      transport,
+      new StaticPublished({}, FOOTER_FIRST),
+      new RecordingLog(),
+    );
+    const { documentVersion } = await composeMail(() => mailer.send(ARGS));
+    const html = transport.html[0] ?? "";
+    expect(html.indexOf('<p style="margin:24px 0 0;line-height:1.5;font-size:13px')).toBeLessThan(
+      html.indexOf("<h1"),
+    );
+    expect(documentVersion).toBeNull();
+  });
+
+  /** Un document qui ne tient plus contre le code : l'ordre du CODE, pas celui de l'ancienne table. */
+  it("un document illisible fait partir l'e-mail dans l'ordre du code, et le dit", async () => {
+    const transport = new RenderingTransport();
+    const log = new RecordingLog();
+    const mailer = new EffectiveCopyMailer(
+      transport,
+      new StaticPublished({}, FOOTER_FIRST, {
+        "customer.password-reset": {
+          kind: "unreadable",
+          version: 2,
+          reason: "model-block-missing",
+        },
+      }),
+      log,
+    );
+    const { documentVersion } = await composeMail(() => mailer.send(ARGS));
+    const html = transport.html[0] ?? "";
+    expect(html.indexOf("<h1")).toBeLessThan(html.indexOf("font-size:13px;color"));
+    expect(documentVersion).toBeNull();
+    expect(log.warnings).toEqual([expect.stringContaining("v2 de « customer.password-reset »")]);
+  });
+
+  it("une lecture des documents qui échoue fait partir l'e-mail dans l'ordre du code, et le dit", async () => {
+    const transport = new RenderingTransport();
+    const log = new RecordingLog();
+    await new EffectiveCopyMailer(
+      transport,
+      new StaticPublished({}, FOOTER_FIRST, new Error("base injoignable")),
       log,
     ).send(ARGS);
     const html = transport.html[0] ?? "";

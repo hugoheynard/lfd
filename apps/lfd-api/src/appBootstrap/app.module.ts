@@ -22,6 +22,7 @@ import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { VitrineModule } from "../b2b/vitrine/vitrine.module.js";
 import { ShopCopyModule } from "../b2b/shop-copy/shop-copy.module.js";
 import { MailCopyModule } from "../mail/copy/mail-copy.module.js";
+import { MailDocumentsModule } from "../mail/documents/mail-documents.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricerModule } from "../b2b/pricing/pricer.module.js";
@@ -173,6 +174,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // des e-mails, E2) : le port est au mailer, le cache au contexte.
     MailCopyModule,
     MailCopySourceModule,
+    // S4c (plan de l'éditeur par blocs) : les documents des e-mails.
+    MailDocumentsModule,
     InboundMailSinkModule,
     VitrineModule,
     // Annuaire back-office (isolé, source de vérité locale).

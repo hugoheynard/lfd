@@ -4,6 +4,8 @@ import { Injectable } from "@nestjs/common";
 import type { MailCopyOverlay } from "../../templates/copy/mail-copy-overlay.js";
 import { PublishedMailCopyReader } from "../../templates/effective-copy/published-mail-copy.reader.js";
 import type { MailSectionOrders } from "../../templates/sections/mail-layout-scope.js";
+import type { PublishedMailDocuments } from "../../templates/effective-copy/published-mail-documents.js";
+import { servableMailDocument } from "../../documents/application/servable-mail-document.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PublishedMailCopyCache } from "../domain/ports/published-mail-copy.cache.js";
 import { MAIL_COPY_LOCALES } from "../domain/mail-copy-locale.js";
@@ -58,6 +60,10 @@ export class CachedPublishedMailCopyReader
   private cached: { readonly version: number; readonly overlay: MailCopyOverlay } | null = null;
   private cachedOrders: { readonly version: number; readonly orders: MailSectionOrders } | null =
     null;
+  private cachedDocuments: {
+    readonly version: number;
+    readonly documents: PublishedMailDocuments;
+  } | null = null;
 
   constructor(
     private readonly store: PublishedMailCopyStore,
@@ -102,10 +108,32 @@ export class CachedPublishedMailCopyReader
     return orders;
   }
 
+  /**
+   * Les documents publiés de l'éditeur par blocs (S4c), par la même version :
+   * « Publier » et « Revenir au modèle d'origine » la font monter. Gardés à
+   * part, comme l'ordre : une table illisible ne doit pas emporter les autres.
+   */
+  async documents(): Promise<PublishedMailDocuments> {
+    const version = await this.currentVersion();
+    if (this.cachedDocuments !== null && this.cachedDocuments.version === version) {
+      return this.cachedDocuments.documents;
+    }
+    const stored = await this.store.publishedDocuments();
+    const documents: PublishedMailDocuments = Object.fromEntries(
+      stored.flatMap((row) => {
+        const entry = servableMailDocument(row);
+        return entry === null ? [] : [[row.template, entry]];
+      }),
+    );
+    this.cachedDocuments = { version, documents };
+    return documents;
+  }
+
   forget(): void {
     this.stamp = null;
     this.cached = null;
     this.cachedOrders = null;
+    this.cachedDocuments = null;
   }
 
   private async currentVersion(): Promise<number> {

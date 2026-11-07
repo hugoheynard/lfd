@@ -7,7 +7,11 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { MailRequest } from "../../domain/entities/mail-request.js";
 import { MailAttachmentStore } from "../../domain/ports/mail-attachment.store.js";
-import { MailDispatch, type OutgoingMail } from "../../domain/ports/mail-dispatch.js";
+import {
+  MailDispatch,
+  type MailDispatchReceipt,
+  type OutgoingMail,
+} from "../../domain/ports/mail-dispatch.js";
 import type { StoredPdfRef } from "../../domain/services/stored-pdfs.js";
 import { MailRequestRepository } from "../../domain/ports/mail-request.repository.js";
 import {
@@ -93,14 +97,20 @@ export class RecordingDispatch extends MailDispatch {
   readonly sent: OutgoingMail[] = [];
   failWith: Error | null = null;
 
-  dispatch(mail: OutgoingMail): Promise<string | null> {
+  /** La version du document que le prochain envoi dira l'avoir composé (S4c). */
+  documentVersion: number | null = null;
+
+  dispatch(mail: OutgoingMail): Promise<MailDispatchReceipt> {
     if (this.failWith !== null) {
       const error = this.failWith;
       this.failWith = null;
       return Promise.reject(error);
     }
     this.sent.push(mail);
-    return Promise.resolve(`re_${this.sent.length}`);
+    return Promise.resolve({
+      providerId: `re_${this.sent.length}`,
+      documentVersion: this.documentVersion,
+    });
   }
 }
 

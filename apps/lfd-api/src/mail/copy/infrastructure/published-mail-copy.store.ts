@@ -1,3 +1,4 @@
+import type { StoredPublishedMailDocument } from "../../documents/application/servable-mail-document.js";
 import type { MailCopyEntryState } from "../domain/mail-copy-entry.js";
 import type { MailSectionOrderState } from "../domain/mail-section-order.js";
 
@@ -13,4 +14,6 @@ export abstract class PublishedMailCopyStore {
   abstract published(): Promise<readonly MailCopyEntryState[]>;
   /** Les ordres de sections qui portent un ordre publié (E4). */
   abstract publishedSectionOrders(): Promise<readonly MailSectionOrderState[]>;
+  /** Les documents d'e-mails publiés (S4c), colonne `jsonb` encore à relire. */
+  abstract publishedDocuments(): Promise<readonly StoredPublishedMailDocument[]>;
 }

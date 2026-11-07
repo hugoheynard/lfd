@@ -28,6 +28,7 @@ export interface MailRequestRow {
   readonly firstAttemptAt: Date | null;
   readonly lastAttemptAt: Date | null;
   readonly attempts: number;
+  readonly documentVersion: number | null;
 }
 
 function statusOf(raw: string): MailRequestStatus {
@@ -94,6 +95,7 @@ export class PrismaMailRequestRepository extends MailRequestRepository {
         firstAttemptAt: row.firstAttemptAt,
         lastAttemptAt: row.lastAttemptAt,
         attempts: row.attempts,
+        documentVersion: row.documentVersion,
       },
     });
   }

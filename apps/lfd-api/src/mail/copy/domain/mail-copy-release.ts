@@ -21,6 +21,8 @@ export interface MailCopyPublication {
  */
 export class MailCopyRelease {
   private published = false;
+  /** Faux quand seule la version monte, pour un document d'e-mail (S4c). */
+  private phrasesPublished = false;
 
   private constructor(
     private readonly loadedVersion: number,
@@ -47,14 +49,33 @@ export class MailCopyRelease {
     return this.published ? this.loadedVersion + 1 : this.loadedVersion;
   }
 
-  /** Les textes touchés, à réécrire. */
+  /** Les textes touchés, à réécrire — aucun si les phrases n'ont pas été publiées. */
   get entries(): readonly MailCopyEntry[] {
-    return this.pending;
+    return this.phrasesPublished ? this.pending : [];
   }
 
-  /** Les ordres touchés, à réécrire. */
+  /** Les ordres touchés, à réécrire — aucun si les phrases n'ont pas été publiées. */
   get sectionOrders(): readonly MailSectionOrder[] {
-    return this.pendingOrders;
+    return this.phrasesPublished ? this.pendingOrders : [];
+  }
+
+  /** Vrai si un texte ou un ordre de sections publiable attend. */
+  hasPublishable(manifest: MailCopyManifest): boolean {
+    return (
+      this.pending.some(
+        (entry) => entry.snapshot().draft.state === "reset" || entry.knownBy(manifest),
+      ) || this.pendingOrders.some((order) => order.publishable(manifest))
+    );
+  }
+
+  /**
+   * Fait monter la version sans publier de phrase : le document d'un e-mail a
+   * été retiré (plan `plan-editeur-par-blocs.md`, S4c). La version est
+   * l'estampille du cache du publié — sans elle, les autres instances
+   * enverraient encore le document retiré.
+   */
+  markDocumentChange(): void {
+    this.published = true;
   }
 
   /**
@@ -62,17 +83,25 @@ export class MailCopyRelease {
    * ce qui était déjà publié ; la version monte quand même : les brouillons
    * sont soldés.
    *
+   * `withDocument` (S4c) : le document d'un e-mail se publie dans la même
+   * publication — elle a donc lieu même sans phrase en attente.
+   *
    * @throws {NothingToPublishError} aucun brouillon publiable n'attend.
    */
-  publish(manifest: MailCopyManifest, stamp: MailCopyStamp): MailCopyPublication {
+  publish(
+    manifest: MailCopyManifest,
+    stamp: MailCopyStamp,
+    options: { readonly withDocument: boolean } = { withDocument: false },
+  ): MailCopyPublication {
     const texts = this.pending.filter(
       (entry) => entry.snapshot().draft.state === "reset" || entry.knownBy(manifest),
     );
     const orders = this.pendingOrders.filter((order) => order.publishable(manifest));
-    if (texts.length + orders.length === 0) {
+    if (texts.length + orders.length === 0 && !options.withDocument) {
       throw new NothingToPublishError();
     }
     this.published = true;
+    this.phrasesPublished = true;
     return {
       texts: texts.flatMap((entry) => {
         const change = entry.publish(manifest, stamp);

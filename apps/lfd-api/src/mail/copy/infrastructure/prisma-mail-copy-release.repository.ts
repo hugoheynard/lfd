@@ -28,15 +28,23 @@ export class PrismaMailCopyReleaseRepository extends MailCopyReleaseRepository {
     super();
   }
 
-  async load(): Promise<MailCopyRelease> {
+  load(): Promise<MailCopyRelease> {
+    return this.loadWhere({});
+  }
+
+  loadFor(mail: string): Promise<MailCopyRelease> {
+    return this.loadWhere({ mail });
+  }
+
+  private async loadWhere(scope: { readonly mail?: string }): Promise<MailCopyRelease> {
     const [publication, rows, orderRows] = await Promise.all([
       this.prisma.mailCopyPublication.findUnique({ where: { key: MAIL_COPY_PUBLICATION_KEY } }),
       this.prisma.mailCopyEntry.findMany({
-        where: { draftState: { not: "unchanged" } },
+        where: { ...scope, draftState: { not: "unchanged" } },
         orderBy: [{ mail: "asc" }, { path: "asc" }, { locale: "asc" }],
       }),
       this.prisma.mailSectionOrderEntry.findMany({
-        where: { draftState: { not: "unchanged" } },
+        where: { ...scope, draftState: { not: "unchanged" } },
         orderBy: { mail: "asc" },
       }),
     ]);

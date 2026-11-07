@@ -446,3 +446,85 @@ le lien secondaire sous son bouton).
 `MailLayoutScope.documents` avec la langue de l'envoi (sinon l'ordre publié,
 sinon l'ordre du code ; un document illisible se replie sur l'ordre du code,
 journalisé), et garder sa version dans `mail_request`.
+
+## 15. S4c — bâti le 2026-11-07
+
+**Ce qui existe.** Le contexte `apps/lfd-api/src/mail/documents/` (style
+B2B : commande et handler en fichiers séparés), sous le droit
+`mail_templates`.
+
+- **Le stockage** (migrations `20261107100000_le_droit_des_modeles_d_e_mails`
+  et `20261107100100_les_documents_d_e_mails`, additives) :
+  `mail.mail_document` (modèle, révision, brouillon, publié et sa version,
+  dernière version posée, retrait, auteurs et dates) et
+  `mail.mail_document_version` en ajout seul (un déclencheur refuse UPDATE
+  et DELETE). `mail.mail_request.document_version`, nullable : la version
+  publiée qui a composé l'envoi, `null` pour le document de départ.
+- **L'agrégat** `MailTemplateDocument`
+  (`apps/lfd-api/src/mail/documents/domain/mail-template-document.ts`) :
+  enregistrer (`validateMailDocument`), publier
+  (`validateMailDocumentForPublication`), revenir au modèle d'origine ;
+  chaque geste sur la révision lue (409 sinon). Port `load`/`save`.
+- **Une seule publication** (`PublishMailDocumentHandler`) : dans une
+  transaction, le brouillon du document devient la version suivante, et les
+  phrases en attente de **cet e-mail** (textes et ordre des sections) se
+  publient avec lui, sous la même version des textes
+  (`public.mail_copy_publication`). Sans brouillon de document, les phrases
+  seules ; sans rien, 409.
+- **Revenir au modèle d'origine** (`RevertMailDocumentHandler`) : retire le
+  publié et le brouillon ; les phrases ne bougent pas. La version des textes
+  monte quand même : c'est l'estampille du cache, sans elle les autres
+  instances enverraient le document retiré.
+- **Le journal** : `mail_copy.document_saved`, `mail_copy.document_published`,
+  `mail_copy.document_retracted` (préfixe `mail_copy.`, déjà rangé côté
+  serveur ; `mail_copy.published` accompagne une publication qui change une
+  phrase).
+- **L'envoi** : `CachedPublishedMailCopyReader.documents()` (même version
+  que les textes) ; `EffectiveCopyMailer` pose le document dans
+  `MailLayoutScope.documents`, avec la langue de l'envoi
+  (`apps/lfd-api/src/mail/templates/sections/mail-document-locale.ts`) ;
+  sinon l'ordre publié de l'ancienne table, sinon l'ordre du code. Un
+  document qui ne tient plus contre le code, ou une lecture qui échoue :
+  ordre du code, et un avertissement au journal de l'API. La version qui a
+  composé l'envoi remonte par `composeMail`
+  (`apps/lfd-api/src/mail/templates/effective-copy/mail-composition.ts`) jusqu'à
+  `MailRequest.markSent`.
+- **La permission** : `mail_templates` (`StaffResource`), graine à
+  l'administrateur seul, aucune migration ne l'accorde.
+- **Les contrats des routes** : `packages/mail-blocks/src/mail-editor-routes.ts`
+  (types seulement : le paquet reste une feuille ; la forme est vérifiée
+  par Zod dans `http/`).
+
+**Les routes que S5a branchera** (toutes sous `mail_templates`) :
+
+| Verbe  | Chemin                                         | Droit   | Rend                                |
+| ------ | ---------------------------------------------- | ------- | ----------------------------------- |
+| `GET`  | `/admin/mail-templates`                        | `read`  | `MailEditorListView`                |
+| `GET`  | `/admin/mail-templates/:template`              | `read`  | `MailEditorView` (rien n'est écrit) |
+| `GET`  | `/admin/mail-templates/:template/history`      | `read`  | `MailDocumentHistoryView`           |
+| `POST` | `/admin/mail-templates/:template/previews`     | `read`  | `MailDocumentPreviewView` (200)     |
+| `PUT`  | `/admin/mail-templates/:template/draft`        | `write` | 204 ; 400 refus, 409 révision       |
+| `POST` | `/admin/mail-templates/:template/publications` | `write` | `MailDocumentPublicationView` (201) |
+| `POST` | `/admin/mail-templates/:template/reverts`      | `write` | `MailDocumentPublicationView` (201) |
+
+**Écarts au texte.**
+
+- **« Publier » ne publie que l'e-mail ouvert.** La publication des textes
+  d'aujourd'hui (`POST /admin/mail-copy/publications`) publie les brouillons
+  de TOUS les e-mails ; celle de l'éditeur ne prend que ceux de l'e-mail
+  qu'il montre, pour la raison même de `MailCopyRelease` : on met en service
+  ce qu'on a vu. La version des textes reste une seule, commune.
+- **Les phrases s'écrivent encore par `admin/mail-copy`**, sous
+  `b2b_storefront` : aucune route d'écriture de phrase sous
+  `mail_templates`. S5 en a besoin, ou d'un droit double. À trancher.
+- **Les cas** : un seul est servi, l'exemple de l'e-mail
+  (`mail/templates/specimens/`). Les autres jeux de données (payé, à
+  régler…) ne vivent que dans les tests des empreintes
+  (`mail/templates/__tests__/rendering-golden/`) ; les servir demande de les
+  sortir des tests.
+- **Une demande garde la version de l'envoi qui a réussi** : posée par
+  `markSent`, pas à la demande. Une demande différée composée par un document
+  publié entre-temps garde celui qui l'a vraiment rendue.
+- **Un document rangé illisible** (forme d'un autre code) se refuse à
+  l'ouverture (500 nommé) ; à l'envoi, l'e-mail part dans l'ordre du code.
+- Le § 1 cite `b2b/mail-copy` : l'écrivain est `mail/copy` depuis S3.

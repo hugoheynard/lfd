@@ -1,5 +1,6 @@
 import type { MailCopyOverlay } from "../copy/mail-copy-overlay.js";
 import type { MailSectionOrders } from "../sections/mail-layout-scope.js";
+import type { PublishedMailDocuments } from "./published-mail-documents.js";
 
 /**
  * **Les textes d'e-mails publiés**, tels que le mailer les applique (plan
@@ -27,4 +28,14 @@ export abstract class PublishedMailCopyReader {
    * @throws ce que la base lève : c'est l'appelant qui se replie sur le code.
    */
   abstract sectionOrders(): Promise<MailSectionOrders>;
+
+  /**
+   * Les documents publiés de l'éditeur par blocs (plan
+   * `plan-editeur-par-blocs.md`, S4c), par la même version que les textes : un
+   * seul « Publier » les met en service. Un document qui ne tient plus contre
+   * le code y est rendu `unreadable`, jamais servi.
+   *
+   * @throws ce que la base lève : c'est l'appelant qui se replie sur le code.
+   */
+  abstract documents(): Promise<PublishedMailDocuments>;
 }
