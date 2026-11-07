@@ -280,7 +280,7 @@ indiquent un manque dans le flow d'origine ». Les 33 lignes regroupées en
 | ~~5~~ | ~~Le sens de « envoyé » / « prévenu »~~                                                      | Rayé le 2026-11-06 avec Hugo. Chantier ouvert (dans l'ordre) : 1. un type par étape — `MailDemand` (rendu par `mail.send`), `MailAcceptance` (rendu par `mail.sendAndAwaitReceipt`), `MailDelivery` (remis, rebondi, spam) — et une porte `mail-status-honest` (ne jamais lire « le mailer est configuré » pour dire « envoyé » ; un champ `mailSent`/`sent` nomme son étape, anciens noms en dette décroissante) ; 2. les retours de Resend reliés au suivi des envois par l'identifiant du fournisseur ; 3. les faits `mail.delivered` / `mail.bounced` ; 4. l'API sert l'ÉTAT en code anglais (`requested`, `accepted`, `delivered`, `bounced`), chaque front le traduit dans son dictionnaire — jamais un libellé français dans une réponse. Pas encore bâti.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ~~6~~ | ~~Des adresses e-mail en clair dans les logs~~                                               | Rayé le 2026-11-06 avec Hugo. Trois journaux de production écrivaient une adresse : deux dans `grant-account-access` (ouverture d'identité, sujet périmé) et un dans `update-staff-user` (les deux adresses d'une fiche désynchronisée). Ils désignent désormais le compte ou la fiche par son id. Porte `log-no-email` : aucun journal ne reçoit une variable qui nomme une adresse ; seuls les deux adaptateurs d'identité de développement sont admis.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ~~7~~ | ~~Les pièces jointes fabriquées en mémoire à l'envoi~~                                       | Rayé le 2026-11-06 avec Hugo. ⚠️ Le moyen est révisé le 2026-11-07 (§ 22, lot S3c) : la référence au stockage devient une URL signée. Règle : tout document envoyé est l'exemplaire gardé. Bâti : le mandat à signer est rangé au stockage des pièces client sous `mandates/<société>/<mandat>/<intention>.pdf` (identifiants opaques, une place par envoi voulu, jamais écrasée) AVANT l'envoi, puis joint par `pdfStored` ; le renvoi d'une facture joint l'exemplaire rangé à l'émission (`Invoice.documentKey`), plus un rendu refait. Porte `mail-attachment-by-reference` : hors du bloc `mail`, `pdfBase64` ne s'écrit plus. **Reste, décision de Hugo** : le dossier du fournil est rangé au stockage du FOURNIL, que le bloc `mail` n'ouvre pas — ouvrir ce stockage au bloc mail, ou le laisser en octets (seule entrée de la dette). **Reste aussi** : la durée de conservation des mandats rangés, non décidée. Idée de Hugo, à vérifier côté livraison : figer un seul bon, avec son QR, dès la passation (le QR ne donne aucun droit : le scan est un geste du staff, et une commande non réglée y est refusée).                                                                                                                                                                                                                                                                                     |
-| 8     | La sonde de déploiement ne testait que le transport                                          |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ~~8~~ | ~~La sonde de déploiement ne testait que le transport~~                                      | Rayé le 2026-11-07 avec Hugo (« je veux le mieux de tout ») : lot S8, § 25 — la sonde éprouve aussi l'envoi différé, et une veille sonne la cloche quand des demandes restent coincées.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 9     | Rattacher un titulaire envoie l'e-mail avant d'enregistrer la société (pas corrigé)          |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### Les 31 envoyeurs à faire passer par la porte (S2)
@@ -1309,3 +1309,78 @@ contentType): Promise<{ url }>`. Adressé par le contenu (le hash des octets,
 - **Pas fait, hors du texte** : le bulletin de démarrage
   (`startup-report.service.ts`) ne nomme pas un `R2_MAIL_*` à moitié posé ;
   seule la copie le dit, au premier appel.
+
+## 25. S8 — le courrier différé éprouvé et veillé (cas 8, Hugo, 2026-11-07) — à bâtir
+
+### En simple
+
+La sonde de déploiement n'envoie qu'un e-mail **immédiat**. Presque tous nos
+e-mails partent en **différé** : demande écrite dans la transaction, fait dans
+la boîte d'envoi, relais, abonné, Resend. Un déploiement peut donc être vert
+alors que les e-mails des clients restent « demandés » sans que personne le
+sache. Hugo a choisi les deux parties :
+
+1. **Au déploiement**, la sonde envoie aussi un e-mail différé et attend qu'il
+   soit parti ; sinon le déploiement est rouge.
+2. **En continu**, une veille regarde toutes les 5 minutes s'il reste des
+   demandes coincées ou des échecs définitifs, et **sonne la cloche** du
+   back-office (et les téléphones abonnés). La carte de santé le montre aussi.
+
+L'alerte ne part **jamais par e-mail** et **jamais par la boîte d'envoi** :
+c'est ce qui serait en panne.
+
+### Vérifié le 2026-11-07
+
+- La sonde : `POST /admin/ops/mail-check` → `CheckMailDeliveryCommand`
+  (`apps/lfd-api/src/mail/requests/application/check-mail-delivery.handler.ts`),
+  en `sendAndAwaitReceipt`, vers `BOOTSTRAP_ADMIN_EMAIL`. Le workflow
+  `.github/workflows/deploy_lfd_api.yml` l'appelle une fois, `--max-time 90`.
+- Le relais part après validation (`platform/outbox/outbox-relay-trigger.ts`)
+  et le cron `*/5` du Worker relance `admin/outbox/sweep` et
+  `admin/mail/requests/sweep` (`apps/lfd-api/container/worker.ts`).
+- La cloche : `StaffNotifier.notify` (`staff/notifications/domain/ports/staff-notifier.ts`),
+  synchrone, anti-doublon par `idempotencyKey`, adressée par droit
+  (`audience`) et poussée aux téléphones.
+- La carte de santé a un nœud courrier (`ops/health/mail-readings.reader.ts`)
+  qui compte les rebonds de `mail_send`, pas les demandes du bloc `mail`.
+
+### Ce que le lot fait
+
+1. **La sonde éprouve les deux chemins.** `CheckMailDeliveryCommand` envoie,
+   en plus de l'immédiat, un `ops.deploy-check` **différé** (`mail.send` dans
+   une unité de travail, clé `ops.deploy-check:<révision>:<id>:deferred`),
+   puis relit l'état de cette demande par une requête du bloc jusqu'à
+   « envoyée », avec un délai borné (constante nommée, 120 s, relecture
+   espacée). Pas envoyée à temps : erreur nommée (« l'e-mail différé de
+   contrôle est resté <état> après 120 s : la boîte d'envoi, le relais ou
+   l'abonné ne tourne pas »), l'étape échoue. Le workflow passe à
+   `--max-time 180`. La réponse dit les deux résultats.
+2. **La veille.** Une commande du bloc `mail`, `WatchMailRequestsCommand`,
+   appelée par une route machine (`POST /admin/mail/requests/watch`, même
+   garde et même jeton que les autres balayages) que le cron `*/5` du Worker
+   appelle après `admin/mail/requests/sweep`. Elle lit :
+   - l'âge de la plus vieille demande encore `requested` ou `sending` ;
+   - le nombre de demandes passées `failed` sur les dernières 24 h.
+     Au-delà des seuils (constantes nommées : 15 min ; au moins un échec), elle
+     sonne la cloche par `StaffNotifier`, une ligne qui dit le cas réel et le
+     geste (« 7 e-mails attendent depuis 42 min — la boîte d'envoi ne part
+     plus » ; « 2 e-mails ont échoué définitivement depuis hier — voir le
+     suivi »), lien vers l'écran du suivi. Anti-doublon : une clé par cas et
+     par heure, pour ne pas sonner toutes les 5 minutes.
+     **Audience** : le droit qui lit la carte de santé (à vérifier au bâti ; si
+     aucun droit n'y correspond, le fil partagé, et l'écart est noté).
+3. **La carte de santé** affiche ces deux relevés sur le nœud courrier.
+   `ops` n'importe que `platform` : il **déclare un port**
+   (`MailBacklogReadings`) que `appBootstrap` relie à une requête du canal du
+   bloc `mail`. Le bloc ne connaît pas `ops`.
+4. **Tests** : domaine des seuils (sous, au seuil, au-dessus ; aucune demande),
+   handler de la veille (sonne une fois, clé par heure, ne sonne pas sous le
+   seuil), sonde (envoyée à temps ; restée `requested` → erreur nommée ;
+   `failed` → erreur nommée sans attendre la fin du délai), e2e de la veille
+   sur la vraie base.
+
+### Hors du lot
+
+- Aucune alerte par e-mail ni par la boîte d'envoi, par construction.
+- Pas de migration : tout se lit dans `mail.mail_request`.
+- `container/worker.ts` change : il se déploie avec le Worker.
