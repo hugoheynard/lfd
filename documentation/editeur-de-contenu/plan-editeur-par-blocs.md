@@ -1797,3 +1797,11 @@ Blocs de données :
 - `customer.sub-account-gesture` : `summary` → Récapitulatif du geste
 - `customer.order-change-applied` : `summary` → Récapitulatif
 - `customer.order-change-refused` : `summary` → Récapitulatif
+
+### Piste, pas décidée — des colonnes qui s'empilent partout (2026-11-07)
+
+Les colonnes ne s'empilent sur téléphone que là où la règle `@media` est lue
+(`packages/mailer/src/document-theme.ts`, la règle `stackRule`) ; Gmail application avec un compte
+non Gmail et une partie des Outlook l'ignorent. Un rendu « hybride »
+(colonnes en `inline-block` à largeur minimale) s'empilerait sans elle. Hugo,
+le 2026-11-07 : « non pas là » — noté, non planifié.
