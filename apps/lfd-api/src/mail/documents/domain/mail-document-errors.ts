@@ -91,6 +91,19 @@ export class UnknownMailCaseError extends ResourceNotFoundError {
 }
 
 /**
+ * Une situation (retrait ou livraison) demandée pour un e-mail dont aucun
+ * bloc ne dépend du mode de retrait (§ 24, 2026-11-07).
+ */
+export class MailSituationNotSettableError extends DomainError {
+  constructor(template: string) {
+    super(
+      "MAIL_SITUATION_NOT_SETTABLE",
+      `L'e-mail « ${template} » s'affiche de la même façon pour un retrait et pour une livraison : son aperçu ne se règle pas sur une situation. Rechargez l'éditeur, qui ne propose ce réglage que pour les e-mails concernés.`,
+    );
+  }
+}
+
+/**
  * Désigne une image d'un document pour l'équipe : son rang, et son texte de
  * remplacement en français s'il en a un — l'identifiant d'un bloc ne dit rien
  * à qui n'a pas le code sous les yeux.

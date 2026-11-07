@@ -99,6 +99,7 @@ function everyRendering(): readonly Rendered[] {
           {},
           rearrangedOf(template),
           servedVariants(template),
+          null,
         ),
       })),
     ),

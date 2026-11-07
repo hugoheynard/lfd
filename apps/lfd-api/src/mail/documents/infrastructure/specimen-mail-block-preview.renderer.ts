@@ -1,4 +1,4 @@
-import type { MailDocument, MailLocale } from "@lfd/mail-blocks";
+import type { MailDocument, MailLocale, MailPreviewSituation } from "@lfd/mail-blocks";
 import {
   htmlEscape,
   renderMailDocumentParts,
@@ -19,6 +19,7 @@ import {
   type EditorMarkerContext,
 } from "../../templates/sections/mail-editor-markers.js";
 import type { MailEditorCapture } from "../../templates/sections/mail-layout-scope.js";
+import { situatedDataOf } from "../../templates/specimens/cases/mail-situations.js";
 import { mailCaseDataOf } from "../../templates/specimens/cases/mail-specimen-cases.js";
 import { isMailKey, renderMailData } from "../../templates/specimens/mail-specimens.js";
 import {
@@ -64,14 +65,19 @@ export class SpecimenMailBlockPreviewRenderer extends MailBlockPreviewRenderer {
     texts: MailTextsByMail,
     document: MailDocument,
     variants: ReadonlyMap<string, string | null>,
+    situation: MailPreviewSituation | null,
   ): MailBlockPreviewRendering {
     if (!isMailKey(template)) {
       throw new UnknownMailTemplateError(template);
     }
-    const data = mailCaseDataOf(template, caseId, locale);
-    if (data === null) {
+    const found = mailCaseDataOf(template, caseId, locale);
+    if (found === null) {
       throw new UnknownMailCaseError(template, caseId);
     }
+    // § 24 : le cas passé en retrait ou en livraison. Le gabarit décide seul
+    // de ce qu'il pose ; un bloc qu'il ne pose pas rend un fragment vide.
+    const data =
+      situation === null ? found : (situatedDataOf(template, found, situation, locale) ?? found);
     const capture = new FirstLayoutCapture();
     const rendered = renderMailData(
       this.registry,

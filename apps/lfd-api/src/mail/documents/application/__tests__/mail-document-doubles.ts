@@ -3,6 +3,7 @@ import type {
   MailDocument,
   MailEditorResources,
   MailLocale,
+  MailPreviewSituation,
   MailTemplateDeclaration,
 } from "@lfd/mail-blocks";
 
@@ -131,6 +132,7 @@ export class RecordingBlockRenderer extends MailBlockPreviewRenderer {
     texts: MailTextsByMail;
     document: MailDocument;
     variants: ReadonlyMap<string, string | null>;
+    situation: MailPreviewSituation | null;
   }[] = [];
 
   render(
@@ -140,8 +142,9 @@ export class RecordingBlockRenderer extends MailBlockPreviewRenderer {
     texts: MailTextsByMail,
     document: MailDocument,
     variants: ReadonlyMap<string, string | null>,
+    situation: MailPreviewSituation | null,
   ): MailBlockPreviewRendering {
-    this.calls.push({ template, caseId, locale, texts, document, variants });
+    this.calls.push({ template, caseId, locale, texts, document, variants, situation });
     return {
       subject: "Exemple",
       header: "",
@@ -175,6 +178,7 @@ export function entryOf(template: string, declaration: MailTemplateDeclaration):
     declaration,
     cases: [{ id: "specimen", label: "Exemple" }],
     resources: TEST_RESOURCES,
+    situations: [],
   };
 }
 

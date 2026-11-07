@@ -2,7 +2,7 @@ import type { MailCharter } from "./mail-charter.js";
 import type { MailDocument, MailTemplateDeclaration } from "./mail-document.js";
 import type { MailLocale } from "./mail-locales.js";
 import type { MailSpace } from "./mail-spaces.js";
-import type { MailEditorResources } from "./mail-resources.js";
+import type { MailEditorResources, MailPreviewSituation } from "./mail-resources.js";
 import type { ModelSectionId } from "./model-sections.js";
 
 /**
@@ -153,6 +153,13 @@ export interface MailEditorView {
    * le lise (R2), pour ne pas casser ses doublures.
    */
   readonly resources?: MailEditorResources | undefined;
+  /**
+   * § 24 (conditions d'affichage, 2026-11-07) : les situations que l'aperçu
+   * par blocs sait rendre pour cet e-mail (`["pickup", "delivery"]`), vide
+   * quand aucun de ses blocs ne dépend du mode de retrait. Toujours servi ;
+   * facultatif dans le type pour ne pas casser les doublures de l'écran.
+   */
+  readonly situations?: readonly MailPreviewSituation[] | undefined;
 }
 
 /** `PUT /admin/mail-templates/:template/draft` — enregistrer le brouillon. */
@@ -315,6 +322,13 @@ export interface MailDocumentBlockPreviewPayload {
   readonly locale: MailLocale;
   readonly source: "draft" | "published";
   readonly caseId?: string | undefined;
+  /**
+   * § 24 (2026-11-07) : le cas rendu en retrait ou en livraison — seulement
+   * pour un e-mail dont `MailEditorView.situations` n'est pas vide (`400`
+   * sinon). Absent : le cas tel quel. Un bloc absent dans cette situation a
+   * un fragment `html` vide.
+   */
+  readonly situation?: MailPreviewSituation | undefined;
 }
 
 /** Le rendu d'UN bloc du document (`MailBlock.id`) ; `html` vide s'il n'a rien à montrer. */
@@ -349,4 +363,6 @@ export interface MailDocumentBlockPreviewView {
   readonly footer: string;
   /** Un fragment par bloc du document, dans son ordre. */
   readonly blocks: readonly MailBlockPreviewFragment[];
+  /** § 24 : la situation rendue ; `null` (ou absent) : le cas tel quel. */
+  readonly situation?: MailPreviewSituation | null | undefined;
 }

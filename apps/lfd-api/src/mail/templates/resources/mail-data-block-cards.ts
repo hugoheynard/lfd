@@ -1,25 +1,46 @@
-import type { MailDataBlockId, MailResourceCard } from "@lfd/mail-blocks";
+import type { MailDataBlockId, MailDataBlockResource } from "@lfd/mail-blocks";
 
 import type { B2bMails } from "../mail-templates.js";
 
-/** Les blocs de données d'un e-mail, et ce que chacun montre dans CET e-mail. */
-export type MailDataBlockCards = { readonly [B in MailDataBlockId]?: MailResourceCard };
+/** La fiche d'un bloc de données : ce qu'il montre, et quand il s'affiche. */
+export type MailDataBlockCard = Omit<MailDataBlockResource, "block">;
 
-/** Le QR de retrait, le même dans les deux e-mails qui le portent. */
-const PICKUP_QR: MailResourceCard = {
+/** Les blocs de données d'un e-mail, et ce que chacun montre dans CET e-mail. */
+export type MailDataBlockCards = { readonly [B in MailDataBlockId]?: MailDataBlockCard };
+
+/**
+ * Le QR de retrait. Il encode le jeton de retrait que la commande expose
+ * (`exposedHandoverToken`) : une livraison en a un aussi, le livreur le
+ * scanne (`issuesHandoverToken`, vérifié le 2026-11-07).
+ */
+const PICKUP_QR: MailDataBlockCard = {
   label: "Code de retrait (QR)",
   description:
-    "Le QR que l'équipe scanne au comptoir, avec sa légende ; absent pour une livraison ou sans lien de retrait.",
+    "Le QR que l'équipe scanne au comptoir, ou le livreur à la porte, avec le numéro de commande en légende.",
 };
 
-/** L'itinéraire vers le point de retrait. */
-const ITINERARY: MailResourceCard = {
+/**
+ * La commande « prête » peut partir avant son règlement par carte : sans
+ * jeton exposé, pas de QR (`exposedHandoverToken`, vérifié le 2026-11-07).
+ * L'accusé, lui, ne part qu'une commande au compte ou payée
+ * (`settlementDecidedAtPlacement`, puis `order.paid`) : il a toujours son QR.
+ */
+const SETTLED_PICKUP_QR: MailDataBlockCard = {
+  ...PICKUP_QR,
+  condition:
+    "Seulement pour une commande réglée — payée par carte, portée au compte ou gratuite ; absent tant que le règlement par carte est attendu.",
+};
+
+/** L'itinéraire vers le point de retrait (`pickupItinerary`). */
+const ITINERARY: MailDataBlockCard = {
   label: "Itinéraire vers la boutique",
-  description: "Le lien d'itinéraire vers le point de retrait ; absent pour une livraison.",
+  description: "Le lien d'itinéraire vers le point de retrait.",
+  condition:
+    "Seulement pour un retrait dont on connaît l'adresse du point de retrait ; absent pour une livraison.",
 };
 
 /** Un récapitulatif d'une seule ligne. */
-const ONE_LINE_SUMMARY = (label: string): MailResourceCard => ({
+const ONE_LINE_SUMMARY = (label: string): MailDataBlockCard => ({
   label: "Récapitulatif",
   description: `Une ligne : ${label}.`,
 });
@@ -28,7 +49,9 @@ const ONE_LINE_SUMMARY = (label: string): MailResourceCard => ({
  * **Les blocs de données de chaque e-mail** (plan `plan-editeur-par-blocs.md`,
  * § 24, R1) : ce que le récapitulatif, le QR et l'itinéraire montrent, lu
  * dans les libellés de leurs sections le 2026-11-07. Ils se placent, ils ne
- * s'écrivent pas. Le test tient l'accord avec les blocs déclarés.
+ * s'écrivent pas. Le test tient l'accord avec les blocs déclarés, et la
+ * condition d'affichage avec les rendus : un bloc absent d'un cas ou d'une
+ * situation la déclare, un bloc toujours rendu n'en déclare pas.
  */
 export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBlockCards } = {
   "customer.order-placed": {
@@ -45,7 +68,7 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
       label: "Récapitulatif de la commande",
       description: "Où retirer la commande et son contenu.",
     },
-    image: PICKUP_QR,
+    image: SETTLED_PICKUP_QR,
     itinerary: ITINERARY,
   },
   "customer.delivery-en-route": {

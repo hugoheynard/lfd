@@ -1,4 +1,4 @@
-import type { MailDocument, MailLocale } from "@lfd/mail-blocks";
+import type { MailDocument, MailLocale, MailPreviewSituation } from "@lfd/mail-blocks";
 
 import type { MailCopySource } from "../../../copy/domain/mail-copy-locale.js";
 import { SPECIMEN_CASE_ID } from "../../../templates/specimens/cases/mail-specimen-case.types.js";
@@ -16,5 +16,7 @@ export class PreviewMailDocumentBlocksQuery {
     readonly source: MailCopySource,
     readonly document: MailDocument,
     readonly caseId: string = SPECIMEN_CASE_ID,
+    /** § 24 : le cas passé en retrait ou en livraison ; `null` : tel quel. */
+    readonly situation: MailPreviewSituation | null = null,
   ) {}
 }

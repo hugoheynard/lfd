@@ -3,6 +3,7 @@ import type {
   MailEditorCaseView,
   MailEditorResources,
   MailFamily,
+  MailPreviewSituation,
   MailTemplateDeclaration,
 } from "@lfd/mail-blocks";
 
@@ -16,6 +17,8 @@ export interface MailTemplateEntry {
   readonly cases: readonly MailEditorCaseView[];
   /** R1 (§ 24) : ses valeurs, ses liens, ses blocs de données, avec leurs fiches. */
   readonly resources: MailEditorResources;
+  /** § 24 : les situations que l'aperçu par blocs sait rendre ; vide s'il n'en dépend pas. */
+  readonly situations: readonly MailPreviewSituation[];
 }
 
 /**

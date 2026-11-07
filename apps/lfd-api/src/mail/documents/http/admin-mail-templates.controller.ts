@@ -179,6 +179,7 @@ export class AdminMailTemplatesController {
         payload.source,
         payload.document,
         payload.caseId,
+        payload.situation ?? null,
       ),
     );
   }

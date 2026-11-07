@@ -10,6 +10,7 @@ import { replacementTexts } from "../../../copy/domain/mail-copy-texts.js";
 import { MailCopyAdminReader } from "../../../copy/domain/ports/mail-copy-admin.reader.js";
 import {
   MailDocumentRefusedError,
+  MailSituationNotSettableError,
   UnknownMailCaseError,
   UnknownMailTemplateError,
 } from "../../domain/mail-document-errors.js";
@@ -44,6 +45,7 @@ export class PreviewMailDocumentBlocksHandler implements IQueryHandler<
    * @throws {UnknownMailTemplateError} l'e-mail n'est pas au registre.
    * @throws {UnknownMailCaseError} l'e-mail n'a pas ce cas.
    * @throws {MailDocumentRefusedError} le document enfreint une règle de forme.
+   * @throws {MailSituationNotSettableError} une situation pour un e-mail qui n'en a pas.
    */
   async execute(query: PreviewMailDocumentBlocksQuery): Promise<MailDocumentBlockPreviewView> {
     const entry = this.catalogue.find(query.template);
@@ -52,6 +54,9 @@ export class PreviewMailDocumentBlocksHandler implements IQueryHandler<
     }
     if (!entry.cases.some((candidate) => candidate.id === query.caseId)) {
       throw new UnknownMailCaseError(query.template, query.caseId);
+    }
+    if (query.situation !== null && !entry.situations.includes(query.situation)) {
+      throw new MailSituationNotSettableError(query.template);
     }
     const violations = validateMailDocument(query.document, entry.declaration, query.template);
     if (violations.length > 0) {
@@ -85,7 +90,8 @@ export class PreviewMailDocumentBlocksHandler implements IQueryHandler<
       texts,
       query.document,
       variants,
+      query.situation,
     );
-    return { template: query.template, locale, ...rendered };
+    return { template: query.template, locale, ...rendered, situation: query.situation };
   }
 }

@@ -1436,6 +1436,7 @@ Exemple réel (`customer.order-ready`, cas `specimen`, `fr`) :
   back-office.
 - **Téléphone / ordinateur et clair / sombre** restent sur l'aperçu fidèle,
   inchangés : le canevas est à la largeur d'ordinateur.
+- **Retouche de l'en-tête (Hugo, 2026-11-07)** : une barre d'outils sous les onglets Édition / Historique (`/emails/:template/historique`) porte langue, cas, phrases, ordinateur / téléphone, clair / sombre et « Rendre l'aperçu » ; le brouillon du document s'enregistre seul après 800 ms (révision +1 sans relire, refus gardé, `409` → « Relire ») ; en haut à droite l'état d'enregistrement, « Publier » (fenêtre fold `side: 'center'`, refus et phrases en attente) et un menu fold (`fold-dropdown`) pour l'essai et le retour au modèle d'origine, chacun dans sa fenêtre — plus aucun `fold-inline-confirm` ; les onglets sont des boutons qui naviguent (`fold-view-nav` sans `exact`), et l'onglet Historique revient à « Les e-mails », pas à l'espace (il ne lit que l'historique).
 - **Les espaces tapées** : les zones modifiables sont en `pre-wrap`, pour que
   le navigateur n'écrive pas d'insécables que le dictionnaire garderait ;
   les insécables écrites exprès sont gardées telles quelles.
@@ -1954,6 +1955,75 @@ le 2026-11-07 : « non pas là » — noté, non planifié.
   qu'un par emplacement (R3).
 - **Cliquer une valeur sans curseur dans une phrase** dit « Posez d'abord le
   curseur dans une phrase de l'e-mail » (avant : rien).
+
+### Conditions d'affichage — bâti le 2026-11-07 — écarts
+
+Hugo, le 2026-11-07 : un bloc qui ne s'affiche que dans certaines situations
+le dit dans l'éditeur, sans autre page d'e-mail.
+
+**Ce qui existe.**
+
+- **La condition dans la fiche** : `MailDataBlockResource.condition?: string`
+  (`packages/mail-blocks/src/mail-resources.ts`, ajout seul) — une phrase lue
+  dans le code qui décide ; absente, le bloc s'affiche toujours. Écrite dans
+  `apps/lfd-api/src/mail/templates/resources/mail-data-block-cards.ts`.
+- **La garde** (`apps/lfd-api/src/mail/templates/resources/__tests__/mail-data-block-conditions.spec.ts`) :
+  e-mail par e-mail, chaque cas est rendu tel quel puis dans chacune de ses
+  situations, et la présence d'un bloc se lit sur l'entrée de la coquille que
+  le vrai gabarit pose. Un bloc absent d'un rendu sans condition, ou toujours
+  rendu avec une condition, échoue ; un e-mail qui propose des situations
+  sans qu'un bloc en dépende, ou l'inverse, aussi.
+- **La situation de l'aperçu** : `MailPreviewSituation = "pickup" | "delivery"`
+  (`MAIL_PREVIEW_SITUATIONS`). La table est
+  `apps/lfd-api/src/mail/templates/specimens/cases/mail-situations.ts` : le cas
+  courant passe en livraison (`delivered`, la transformation du cas « Prête à
+  livrer ») ou au point de retrait de l'exemple de l'e-mail ; rien d'autre ne
+  bouge, aucun cas n'est ajouté.
+
+**Les conditions** (bloc → condition ; les autres blocs de données n'en ont pas) :
+
+- `customer.order-placed` `itinerary` → « Seulement pour un retrait dont on
+  connaît l'adresse du point de retrait ; absent pour une livraison. »
+- `customer.order-ready` `itinerary` → la même.
+- `customer.order-ready` `image` (QR) → « Seulement pour une commande réglée —
+  payée par carte, portée au compte ou gratuite ; absent tant que le règlement
+  par carte est attendu. »
+- Tous les `summary` : toujours affichés, aucune condition.
+
+**Le contrat pour le front.**
+
+- `GET /admin/mail-templates/:template` : `MailEditorView.situations?:
+readonly MailPreviewSituation[]` — toujours servi, `["pickup", "delivery"]`
+  pour `customer.order-placed` et `customer.order-ready`, `[]` ailleurs ;
+  `resources.dataBlocks[].condition?: string`.
+- `POST /admin/mail-templates/:template/block-previews` :
+  `MailDocumentBlockPreviewPayload.situation?: "pickup" | "delivery"`. Absent :
+  le cas tel quel. `400` (`MAIL_SITUATION_NOT_SETTABLE`) pour un e-mail dont
+  `situations` est vide, `400` pour une valeur inconnue. Un bloc absent dans la
+  situation rend un fragment `html: ""`. La réponse porte
+  `situation?: MailPreviewSituation | null` (`null` sans situation).
+
+**Écarts.**
+
+- **Le QR n'est PAS réservé au retrait** : une livraison a son jeton, le
+  livreur le scanne (`issuesHandoverToken`, `exposedHandoverToken`, lus le
+  2026-11-07). Sa condition réelle est le règlement, et seulement pour
+  `customer.order-ready` : l'accusé ne part qu'une commande au compte ou payée
+  (`settlementDecidedAtPlacement`, puis `order.paid`), il porte toujours son
+  QR. La description du QR, qui disait « absent pour une livraison », est
+  corrigée. Dans la situation « livraison », le QR reste donc rendu.
+- **Le cas « Prête à livrer » de `customer.order-ready` met le jeton à
+  `null`** : il montre une commande livrée SANS QR, ce que la production ne
+  fait que pour une commande non réglée. Non touché (données d'exemple, hors du
+  lot) ; c'est lui qui prouve l'absence du QR à la garde.
+- **Aucun lien ne porte de condition** : les boutons absents d'un cas
+  (`customer.payment-failed`, `customer.invoice-issued`, le lien secondaire de
+  `customer.access-opened`) ne le sont que faute d'origine de la boutique
+  configurée — une panne de configuration, pas une situation. Le champ n'a pas
+  été ajouté aux liens.
+- **`situations` et `situation` sont facultatifs dans le type** (toujours
+  servis) : les rendre obligatoires aurait cassé les doublures du
+  back-office, hors de ce lot.
 
 ## 25. Les espaces et leurs chartes (Hugo, 2026-11-07) — plan, à bâtir
 

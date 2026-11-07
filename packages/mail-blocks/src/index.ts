@@ -137,11 +137,13 @@ export {
 export {
   MAIL_DATA_BLOCK_IDS,
   MAIL_LINK_SLOTS,
+  MAIL_PREVIEW_SITUATIONS,
   type MailDataBlockId,
   type MailDataBlockResource,
   type MailEditorResources,
   type MailLinkResource,
   type MailLinkSlot,
+  type MailPreviewSituation,
   type MailResourceCard,
   type MailValueResource,
 } from "./mail-resources.js";

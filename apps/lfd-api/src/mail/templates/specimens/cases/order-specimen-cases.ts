@@ -16,7 +16,7 @@ import type { MailCaseAxis, MailCaseTables } from "./mail-specimen-case.types.js
 const SETTLEMENTS: readonly SettlementRegime[] = ["paid", "due", "account", "free"];
 
 /** Livrée plutôt que retirée : plus de site de retrait. */
-function delivered(sheet: ClientSheet): ClientSheet {
+export function delivered(sheet: ClientSheet): ClientSheet {
   return {
     ...sheet,
     fulfillment: { ...sheet.fulfillment, method: "delivery", pickupLabel: null },

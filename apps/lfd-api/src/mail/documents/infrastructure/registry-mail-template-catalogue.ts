@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { audienceOf } from "../../copy/domain/mail-copy-manifest.js";
 import { mailResourcesOf } from "../../templates/resources/mail-resources.js";
 import { mailBlockDeclarationOf } from "../../templates/sections/mail-block-declarations.js";
+import { mailSituationsOf } from "../../templates/specimens/cases/mail-situations.js";
 import { mailCasesOf } from "../../templates/specimens/cases/mail-specimen-cases.js";
 import { isMailKey, mailFamilyOf, mailKeys } from "../../templates/specimens/mail-specimens.js";
 import type { B2bMails } from "../../templates/mail-templates.js";
@@ -19,6 +20,7 @@ function entryOf(template: keyof B2bMails): MailTemplateEntry {
     declaration: mailBlockDeclarationOf(template),
     cases: mailCasesOf(template),
     resources: mailResourcesOf(template),
+    situations: mailSituationsOf(template),
   };
 }
 

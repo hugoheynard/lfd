@@ -49,7 +49,22 @@ export const MAIL_DATA_BLOCK_IDS: readonly MailDataBlockId[] = ["summary", "imag
 /** Un bloc de données de l'e-mail, et ce qu'il montre dans CET e-mail. */
 export interface MailDataBlockResource extends MailResourceCard {
   readonly block: MailDataBlockId;
+  /**
+   * **Quand le bloc s'affiche** (§ 24, conditions d'affichage, 2026-11-07) :
+   * une phrase lue dans le code qui en décide (« Seulement pour un
+   * retrait… »). Absent : le bloc s'affiche toujours. L'écran grise un bloc
+   * absent de l'aperçu d'après cette phrase.
+   */
+  readonly condition?: string | undefined;
 }
+
+/**
+ * **La situation de l'aperçu** (§ 24, 2026-11-07) : l'exemple rendu en
+ * retrait ou en livraison, pour un e-mail dont un bloc en dépend
+ * (`MailEditorView.situations`).
+ */
+export const MAIL_PREVIEW_SITUATIONS = ["pickup", "delivery"] as const;
+export type MailPreviewSituation = (typeof MAIL_PREVIEW_SITUATIONS)[number];
 
 /** Les ressources d'un e-mail, rangées par sorte. */
 export interface MailEditorResources {

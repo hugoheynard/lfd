@@ -16,6 +16,7 @@ import {
 import { MailCopyManifest } from "../../../copy/domain/mail-copy-manifest.js";
 import {
   MailDocumentRefusedError,
+  MailSituationNotSettableError,
   UnknownMailCaseError,
   UnknownMailTemplateError,
 } from "../../domain/mail-document-errors.js";
@@ -66,7 +67,7 @@ function world() {
   const texts = new InMemoryMailCopy();
   const renderer = new RecordingBlockRenderer();
   const catalogue = new FixedCatalogue([
-    entryOf(TEMPLATE, DECLARATION),
+    { ...entryOf(TEMPLATE, DECLARATION), situations: ["pickup", "delivery"] },
     entryOf(FRENCH_ONLY, FRENCH),
   ]);
   return {
@@ -153,6 +154,37 @@ describe("l'aperçu par blocs", () => {
         }),
       ),
     ).rejects.toBeInstanceOf(MailDocumentRefusedError);
+    expect(w.renderer.calls).toEqual([]);
+  });
+
+  it("rend le cas tel quel sans situation, et dit laquelle il a rendue", async () => {
+    const w = world();
+    const plain = await w.blocks.execute(
+      new PreviewMailDocumentBlocksQuery(TEMPLATE, "fr", "draft", STARTING),
+    );
+    const delivered = await w.blocks.execute(
+      new PreviewMailDocumentBlocksQuery(TEMPLATE, "fr", "draft", STARTING, "specimen", "delivery"),
+    );
+    expect(w.renderer.calls.map((call) => call.situation)).toEqual([null, "delivery"]);
+    expect(plain.situation).toBeNull();
+    expect(delivered.situation).toBe("delivery");
+  });
+
+  /** § 24 : une situation n'a de sens que pour un e-mail dont un bloc dépend du mode de retrait. */
+  it("refuse une situation pour un e-mail qui n'en a pas, sans rien rendre", async () => {
+    const w = world();
+    await expect(
+      w.blocks.execute(
+        new PreviewMailDocumentBlocksQuery(
+          FRENCH_ONLY,
+          "fr",
+          "draft",
+          startingMailDocument(FRENCH_ONLY, FRENCH),
+          "specimen",
+          "pickup",
+        ),
+      ),
+    ).rejects.toBeInstanceOf(MailSituationNotSettableError);
     expect(w.renderer.calls).toEqual([]);
   });
 });

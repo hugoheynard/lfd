@@ -573,4 +573,44 @@ describe("l'aperçu par blocs du canevas (S5f)", () => {
       .send({ locale: "fr", source: "draft" })
       .expect(400);
   });
+
+  /** § 24 (2026-11-07) : un bloc qui dépend du mode de retrait le dit, et l'aperçu se règle dessus. */
+  it("sert la condition de l'itinéraire, et le rend absent dans la situation « livraison »", async () => {
+    const view = await open(ORDER_PLACED);
+    expect(view.situations).toEqual(["pickup", "delivery"]);
+    expect((await open()).situations).toEqual([]);
+    const conditions = new Map(
+      (view.resources?.dataBlocks ?? []).map((block) => [block.block, block.condition] as const),
+    );
+    expect(conditions.get("itinerary")).toMatch(/^Seulement pour un retrait/u);
+    expect(conditions.get("summary")).toBeUndefined();
+    expect(conditions.get("image")).toBeUndefined();
+
+    const sectionOf = new Map(
+      view.document.blocks.flatMap((block) =>
+        block.kind === "model" ? [[block.id, block.section] as const] : [],
+      ),
+    );
+    const itineraryIn = async (situation: string): Promise<string | undefined> => {
+      const rendered = await blocks(ORDER_PLACED, view.document, { situation });
+      expect(rendered.situation).toBe(situation);
+      return rendered.blocks.find((block) => sectionOf.get(block.blockId) === "itinerary")?.html;
+    };
+    expect(await itineraryIn("delivery")).toBe("");
+    expect(await itineraryIn("pickup")).toContain("google.com/maps");
+    expect((await blocks(ORDER_PLACED, view.document)).situation).toBeNull();
+  });
+
+  it("refuse une situation pour un e-mail qui n'en a pas (400), et une situation inconnue (400)", async () => {
+    const reset = await open();
+    await staff()
+      .post(`${EDITOR}/${RESET}/block-previews`)
+      .send({ document: reset.document, locale: "fr", source: "draft", situation: "delivery" })
+      .expect(400);
+    const view = await open(ORDER_PLACED);
+    await staff()
+      .post(`${EDITOR}/${ORDER_PLACED}/block-previews`)
+      .send({ document: view.document, locale: "fr", source: "draft", situation: "sur-place" })
+      .expect(400);
+  });
 });

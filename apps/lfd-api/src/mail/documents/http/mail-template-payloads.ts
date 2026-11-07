@@ -8,7 +8,7 @@ import type {
   MailPhraseDraftPayload,
   MailPhraseResetPayload,
 } from "@lfd/mail-blocks";
-import { MAIL_LOCALES } from "@lfd/mail-blocks";
+import { MAIL_LOCALES, MAIL_PREVIEW_SITUATIONS } from "@lfd/mail-blocks";
 import { z } from "zod";
 
 import { mailDocumentShape } from "../application/mail-document-shape.js";
@@ -44,13 +44,17 @@ export const mailDocumentPreviewPayloadSchema: z.ZodType<MailDocumentCasePreview
     caseId: caseId.optional(),
   });
 
-/** L'aperçu par blocs (S5f) : le document de l'écran est obligatoire, le cas facultatif. */
+/**
+ * L'aperçu par blocs (S5f) : le document de l'écran est obligatoire, le cas
+ * et la situation (§ 24) facultatifs.
+ */
 export const mailDocumentBlockPreviewPayloadSchema: z.ZodType<MailDocumentBlockPreviewPayload> =
   z.strictObject({
     document: mailDocumentShape,
     locale: z.enum(MAIL_LOCALES),
     source: z.enum(["draft", "published"]),
     caseId: caseId.optional(),
+    situation: z.enum(MAIL_PREVIEW_SITUATIONS).optional(),
   });
 
 /** Sans `source`, les phrases en brouillon, comme avant S5e. */

@@ -1,4 +1,9 @@
-import type { MailBlockPreviewFragment, MailDocument, MailLocale } from "@lfd/mail-blocks";
+import type {
+  MailBlockPreviewFragment,
+  MailDocument,
+  MailLocale,
+  MailPreviewSituation,
+} from "@lfd/mail-blocks";
 
 import type { MailTextsByMail } from "../../../copy/domain/mail-copy-texts.js";
 
@@ -22,6 +27,8 @@ export abstract class MailBlockPreviewRenderer {
    * @param variants les phrases que l'éditeur écrit et leur variante, telle
    *   que `GET …/phrases` la sert — elle devient `data-variant` ; un chemin
    *   absent n'est pas marqué (§ 23, `editablePhrases`).
+   * @param situation le cas passé en retrait ou en livraison (§ 24) ; `null` :
+   *   le cas tel quel. Un bloc absent dans cette situation a un fragment vide.
    * @throws {UnknownMailTemplateError} l'e-mail n'est pas au registre.
    * @throws {UnknownMailCaseError} l'e-mail n'a pas ce cas.
    * @throws {MailTemplateWithoutLayoutError} le gabarit n'a pas posé la coquille.
@@ -33,5 +40,6 @@ export abstract class MailBlockPreviewRenderer {
     texts: MailTextsByMail,
     document: MailDocument,
     variants: ReadonlyMap<string, string | null>,
+    situation: MailPreviewSituation | null,
   ): MailBlockPreviewRendering;
 }
