@@ -135,8 +135,21 @@
               [value]="phraseSource()"
               (valueChange)="setPhraseSource($event)"
             />
+            @if (phraseLocalesOpen()) {
+              <fold-view-toggle
+                size="sm"
+                ariaLabel="Langue des phrases"
+                data-phrase-locales
+                [options]="phraseLocaleOptions"
+                [value]="phraseLocale()"
+                (valueChange)="setPhraseLocale($event)"
+              />
+            }
             <span class="tp-muted" data-source>{{ sourceLabel() }}</span>
           </div>
+          @if (phraseLocaleNote(); as note) {
+            <fold-callout variant="info" data-phrase-locale-note>{{ note }}</fold-callout>
+          }
           <app-mail-canvas
             [document]="doc"
             [declaration]="current.declaration"
@@ -157,7 +170,7 @@
                     @for (phrase of focusedPhrases(); track phrase.path) {
                       <app-mail-phrase-editor
                         [phrase]="phrase"
-                        [locale]="locale()"
+                        [locale]="phraseLocale()"
                         [canWrite]="canWrite()"
                         [heading]="heading(phrase, focusedPhrases().length)"
                       />
@@ -189,7 +202,7 @@
                   <fold-card>
                     <app-mail-phrase-editor
                       [phrase]="phrase"
-                      [locale]="locale()"
+                      [locale]="phraseLocale()"
                       [canWrite]="canWrite()"
                     />
                   </fold-card>
@@ -208,7 +221,7 @@
                   <fold-card>
                     <app-mail-phrase-editor
                       [phrase]="phrase"
-                      [locale]="locale()"
+                      [locale]="phraseLocale()"
                       [canWrite]="canWrite()"
                       [orphan]="true"
                     />

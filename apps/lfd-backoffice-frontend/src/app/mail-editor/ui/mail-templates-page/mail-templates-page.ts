@@ -34,9 +34,9 @@ const AUDIENCE_ICONS: Readonly<Record<MailAudience, FoldIconName>> = {
  * destinataire puis par moment. Un clic ouvre la page de l'e-mail ; ce qui a
  * un brouillon en cours le dit.
  *
- * S5e : « Publier tous les e-mails » met en service les phrases et les
- * ordres de sections en attente de TOUS les e-mails — la publication de
- * l'écran des textes, comptée par `copyPendingCount`. Les brouillons
+ * S5e : « Publier tous les e-mails » met en service les phrases en attente
+ * de TOUS les e-mails, comptées par `copyPendingCount` (le document fait foi
+ * pour l'ordre, plan § 21 : l'ordre des sections n'est plus un geste). Les brouillons
  * d'arrangement n'en sont pas : chacun se publie depuis son e-mail. Le refus
  * du serveur (`409` : rien n'attend) s'affiche tel qu'il le dit.
  */
@@ -70,7 +70,7 @@ export class MailTemplatesPage {
   protected readonly error = signal<string | null>(null);
   private readonly mails = signal<readonly MailEditorListItem[]>([]);
   protected readonly groups = computed(() => groupMailTemplates(this.mails()));
-  /** Phrases (toutes langues) et ordres de sections qui attendent « Publier tous les e-mails ». */
+  /** Phrases (toutes langues) qui attendent « Publier tous les e-mails ». */
   protected readonly copyPendingCount = signal(0);
   protected readonly publishing = signal(false);
   /** Le dernier refus de la publication de tous les e-mails, tel que le serveur l'a dit. */
@@ -99,7 +99,7 @@ export class MailTemplatesPage {
     }
   }
 
-  /** Publie les phrases et ordres en attente de tous les e-mails, puis relit la liste. */
+  /** Publie les phrases en attente de tous les e-mails, puis relit la liste. */
   async publishAll(): Promise<void> {
     if (!this.canWrite() || this.publishing()) {
       return;

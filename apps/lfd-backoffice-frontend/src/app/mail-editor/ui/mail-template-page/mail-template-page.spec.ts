@@ -118,6 +118,26 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     expect(element.querySelector('[data-locales]')?.textContent).not.toContain('IT');
   });
 
+  it('ouvre toutes les langues aux phrases d’un e-mail en français seul, et le dit', async () => {
+    const load = vi.fn(() => Promise.resolve(view(0, ['fr'])));
+    const { element, fixture } = await render({ load });
+    const page = fixture.componentInstance;
+    expect(element.querySelector('[data-phrase-locales]')?.textContent).toContain('IT');
+    expect(element.querySelector('[data-phrase-locale-note]')).toBeNull();
+    page.phraseLocale.set('it');
+    fixture.detectChanges();
+    expect(page.locale()).toBe('fr');
+    expect(element.querySelector('[data-phrase-locale-note]')?.textContent).toContain(
+      'part aujourd’hui en français seulement : les phrases en italien se préparent',
+    );
+  });
+
+  it('ne double pas le choix de langue quand l’e-mail part dans toutes', async () => {
+    const load = vi.fn(() => Promise.resolve(view(0, ['fr', 'en', 'it'])));
+    const { element } = await render({ load });
+    expect(element.querySelector('[data-phrase-locales]')).toBeNull();
+  });
+
   it('n’offre d’enregistrer qu’à qui écrit, et seulement un document modifié', async () => {
     const load = vi.fn(() => Promise.resolve(view(0)));
     const reader = await render({ load }, ['mail_templates:read']);

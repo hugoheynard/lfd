@@ -529,7 +529,7 @@ B2B : commande et handler en fichiers séparés), sous le droit
   l'ouverture (500 nommé) ; à l'envoi, l'e-mail part dans l'ordre du code.
 - Le § 1 cite `b2b/mail-copy` : l'écrivain est `mail/copy` depuis S3.
 
-## 16. S4d — les phrases sous `mail_templates`, et un exemple par cas (Hugo, 2026-11-07) — à bâtir
+## 16. S4d — les phrases sous `mail_templates`, et un exemple par cas (Hugo, 2026-11-07) — bâti le 2026-11-07
 
 Deux réponses de Hugo aux questions laissées par S4c (§ 15) :
 
@@ -1010,7 +1010,7 @@ Routes :
 **Écarts.**
 
 - **La source n'est pas DANS la confirmation** : `fold-inline-confirm` ne
-  projette que son déclencheur (`["*"]`, vérifié dans `fold-ng.d.ts` le
+  projette que son déclencheur (`["*"]`, vérifié dans les types publiés de fold-ng le
   2026-11-07). Le choix vit dans la barre (langue, cas, phrases), et le
   message de confirmation le répète.
 - **La désignation d'une phrase par un clic dans l'aperçu n'est pas faite.**
@@ -1050,3 +1050,45 @@ l'ordre ».
 
 Avec ces trois points, `textes-emails` redirige vers `/emails` et ses entrées
 de menu disparaissent.
+
+### Bâti le 2026-11-07 (front, après la décision) — écarts
+
+- **Les langues des phrases** : quand le modèle ne part pas dans les trois
+  langues, la barre porte un second choix, « Langue des phrases » (FR, EN,
+  IT), qui suit la langue du document tant qu'on ne le change pas. Il règle
+  le panneau du bloc sélectionné, les « Autres textes » et les orphelines ;
+  le canevas (blocs libres), l'aperçu et l'essai restent dans
+  `declaration.locales`. Une langue où l'e-mail ne part pas est dite au-dessus
+  du canevas : « Cet e-mail part aujourd'hui en français seulement : les
+  phrases en italien se préparent, aucun client ne les reçoit. » Le contrat
+  servait déjà les trois langues (`MailEditorPhraseView.locales` est un
+  `Record` sur `MailLocale`) et les écritures de phrases ne filtrent pas la
+  langue côté API : rien n'attend l'API.
+- **L'ordre des sections** n'avait aucun geste dans l'éditeur ; seuls trois
+  commentaires (liste, service) disaient que « Publier tous les e-mails » le
+  publiait — retirés.
+- **La redirection** : `/textes-emails` → `/emails` (`redirectTo`, sans
+  garde), entrées retirées du rail et des tuiles. Le code de l'écran reste,
+  sans route qui le charge. Aucun lien interne n'y menait hors du menu
+  (`router-links` vert). La table des écrans du test des routes a gagné
+  `emails` et `emails/:template`, qui y manquaient depuis S5a.
+- ⚠️ Le commit `e3212d33d` (2026-11-01) avait retiré les redirections
+  d'adresses renommées en pré-release ; celle-ci est posée parce que ce plan
+  la demande.
+
+**Bâti côté API le 2026-11-07 (non commité à l'écriture), et ses écarts :**
+
+- Point 2 : rien à bâtir. Les phrases servies sous `mail_templates` portaient
+  déjà `fr`, `en` et `it` pour tout e-mail (lues par `mailCopyAdminView`,
+  comme `admin/mail-copy`) ; un e2e le tient désormais. `@lfd/mail-blocks`
+  n'a pas changé.
+- Point 3 : `MailCopyRelease.publish` prend `withSectionOrders` (vrai par
+  défaut). `PublishMailCopyCommand` le porte ; `admin/mail-copy` garde le
+  défaut — **son comportement ne change pas**, il publie encore les ordres.
+  `POST admin/mail-templates/publications` et la publication d'UN e-mail
+  (`POST …/:template/publications`, qui publiait aussi l'ordre de l'e-mail en
+  attente) passent `false` : l'ordre en brouillon reste en brouillon, et un
+  ordre seul en attente ne suffit plus à publier (409). `copyPendingCount` ne
+  lit plus les ordres. Conséquence visible sur l'ancien écran tant qu'il vit :
+  un ordre qu'il a mis en brouillon y reste compté jusqu'à ce que lui-même le
+  publie.

@@ -46,7 +46,7 @@ export class MailEditorService {
   }
 
   /**
-   * Publie les phrases et les ordres de sections en attente de TOUS les
+   * Publie les phrases en attente de TOUS les
    * e-mails (S5e) — pas les brouillons d'arrangement, qui se publient depuis
    * leur e-mail. `409` : rien n'attend.
    */

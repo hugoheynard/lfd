@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
+  MAIL_LOCALES,
   validateMailDocumentForPublication,
   type MailAudience,
   type MailDocument,
@@ -151,6 +152,13 @@ export class MailTemplatePage implements HasPendingChanges {
   /** Le document à l'écran : celui du serveur, puis chaque geste du canevas. */
   readonly document = signal<MailDocument | null>(null);
   readonly locale = signal<MailLocale>('fr');
+  /**
+   * La langue des PHRASES (plan § 21, tranché le 2026-11-07) : toutes les
+   * langues, même celles où l'e-mail ne part pas encore — on les prépare,
+   * comme l'écran des textes. Suit la langue du document tant qu'on ne la
+   * change pas ; les blocs libres, eux, restent dans `declaration.locales`.
+   */
+  readonly phraseLocale = linkedSignal<MailLocale>(() => this.locale());
   protected readonly saving = signal(false);
   protected readonly publishing = signal(false);
   protected readonly reverting = signal(false);
@@ -188,6 +196,28 @@ export class MailTemplatePage implements HasPendingChanges {
       ariaLabel: LOCALE_LABELS[locale],
     })),
   );
+
+  /** Toutes les langues : une phrase se prépare même dans une langue où l'e-mail ne part pas. */
+  protected readonly phraseLocaleOptions: readonly FoldViewToggleOption[] = MAIL_LOCALES.map(
+    (locale) => ({ value: locale, label: locale.toUpperCase(), ariaLabel: LOCALE_LABELS[locale] }),
+  );
+
+  /** Le modèle ne part pas dans toutes les langues : le choix des phrases s'ouvre. */
+  protected readonly phraseLocalesOpen = computed(() => {
+    const locales = this.view()?.declaration.locales ?? [];
+    return MAIL_LOCALES.some((locale) => !locales.includes(locale));
+  });
+
+  /** Dit, sans rien promettre de plus, que la langue choisie se prépare sans partir. */
+  protected readonly phraseLocaleNote = computed(() => {
+    const locales = this.view()?.declaration.locales ?? [];
+    const chosen = this.phraseLocale();
+    if (locales.includes(chosen)) {
+      return null;
+    }
+    const sent = locales.map((locale) => LOCALE_LABELS[locale].toLowerCase()).join(', ');
+    return `Cet e-mail part aujourd’hui en ${sent} seulement : les phrases en ${LOCALE_LABELS[chosen].toLowerCase()} se préparent, aucun client ne les reçoit.`;
+  });
 
   /** Les cas du modèle, dans l'ordre du serveur — le premier est l'exemple de l'e-mail. */
   protected readonly caseOptions = computed(() =>
@@ -287,6 +317,13 @@ export class MailTemplatePage implements HasPendingChanges {
     const locale = this.view()?.declaration.locales.find((candidate) => candidate === value);
     if (locale !== undefined) {
       this.locale.set(locale);
+    }
+  }
+
+  protected setPhraseLocale(value: string): void {
+    const locale = MAIL_LOCALES.find((candidate) => candidate === value);
+    if (locale !== undefined) {
+      this.phraseLocale.set(locale);
     }
   }
 

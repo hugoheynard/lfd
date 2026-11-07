@@ -225,9 +225,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // **Textes de la boutique** — même métier et même mur que la vitrine
   // (`@AdminSurface("b2b_storefront")`, plan-textes-de-la-boutique.md, §7).
   'textes-boutique': 'b2b_storefront:read',
-  // **Textes des e-mails** — même métier et même mur
-  // (`@AdminSurface("b2b_storefront")`, plan-textes-des-e-mails.md, C7).
-  'textes-emails': 'b2b_storefront:read',
+
+  // **Les e-mails** — l'éditeur par blocs, derrière le mur des routes
+  // `/admin/mail-templates` (plan-editeur-par-blocs.md, § 6, S4c).
+  emails: 'mail_templates:read',
+  'emails/:template': 'mail_templates:read',
 
   // **Pied de page** et **Contact** — partis de l'espace E-commerce pour la
   // section Communication le 2026-10-15 (Hugo), chacun sous le droit qu'il y
@@ -577,6 +579,14 @@ describe("l'arbre de routes du back-office", () => {
     expect(children.find((child) => child.path === 'contact/messages')?.redirectTo).toBe(
       '/commercial/demandes',
     );
+  });
+
+  it('renvoie l’ancienne adresse des textes des e-mails vers l’éditeur', () => {
+    // Plan-editeur-par-blocs.md, § 21 (2026-11-07) : l'éditeur fait tout ce
+    // que l'écran des textes faisait.
+    const old = routes.find((route) => route.path === 'textes-emails');
+    expect(old?.redirectTo).toBe('/emails');
+    expect(old?.loadComponent).toBeUndefined();
   });
 
   it('renvoie l’ancienne adresse du pied de page vers la section Communication', () => {
