@@ -61,4 +61,13 @@ describe("MailImageSource — seules les origines déclarées se copient", () =>
       MailImageSource.admit("https://media.lafoliecoffee.info/abc.png", [], VARIABLE),
     ).toThrow(MailImageOriginNotAdmittedError);
   });
+  it("admet la boucle locale en clair quand le réglage la déclare (MinIO de dev)", () => {
+    const source = MailImageSource.admit(
+      "http://localhost:9100/media/abc.png",
+      ["http://localhost:9100"],
+      VARIABLE,
+    );
+
+    expect(source.url.href).toBe("http://localhost:9100/media/abc.png");
+  });
 });

@@ -32,9 +32,11 @@ export function optionalMailPublicBaseUrl(): string | null {
  * ouvert : le bloc `mail` ne télécharge que là. Le nom ne dit pas « médiathèque »
  * (§ 23) : le seul contrat est une adresse web.
  *
- * `https` SEULEMENT, sans exception locale : une origine en clair laisserait un
- * intermédiaire substituer l'image qu'on publie. Une entrée illisible ou en
- * clair est ignorée — la liste ne peut que se resserrer, jamais s'ouvrir par
+ * `https`, sauf en boucle locale (MinIO de dev, `http://localhost:9100`) —
+ * la règle de {@link isServableBaseUrl}, décidée par Hugo le 2026-11-07 : sans
+ * elle, la copie était impossible en dev. Une origine publique en clair
+ * laisserait un intermédiaire substituer l'image qu'on publie : elle reste
+ * refusée. Une entrée illisible ou en clair hors boucle locale est ignorée — la liste ne peut que se resserrer, jamais s'ouvrir par
  * une faute de frappe. Chaque entrée est réduite à son origine (schéma, hôte,
  * port) : un chemin écrit par mégarde n'élargit ni ne restreint rien.
  */
@@ -45,19 +47,14 @@ export function optionalMailImageOrigins(): readonly string[] {
   }
   const origins = raw
     .split(",")
-    .map((entry) => httpsOrigin(entry.trim()))
+    .map((entry) => servableOrigin(entry.trim()))
     .filter((origin): origin is string => origin !== null);
   return [...new Set(origins)];
 }
 
-function httpsOrigin(entry: string): string | null {
-  if (entry === "") {
+function servableOrigin(entry: string): string | null {
+  if (entry === "" || !isServableBaseUrl(entry)) {
     return null;
   }
-  try {
-    const parsed = new URL(entry);
-    return parsed.protocol === "https:" ? parsed.origin : null;
-  } catch {
-    return null;
-  }
+  return new URL(entry).origin;
 }

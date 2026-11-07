@@ -27,7 +27,9 @@ export const MAIL_IMAGE_TYPES: readonly string[] = [
 
 /**
  * Une adresse d'image **admise à la copie** (plan du service d'e-mails, § 23) :
- * `https`, et d'une origine déclarée. Rien d'autre ne se télécharge.
+ * d'une origine déclarée — `https`, ou la boucle locale en dev, que le
+ * réglage seul peut admettre (`optionalMailImageOrigins`). Rien d'autre ne se
+ * télécharge.
  *
  * `originsVariable` est le nom du réglage, pour que le refus dise quoi régler.
  */
@@ -45,9 +47,9 @@ export class MailImageSource {
     } catch {
       throw new InvalidMailImageUrlError(raw);
     }
-    // `URL.origin` vaut "null" hors http(s) : comparé à une liste d'origines
-    // https, il ne passe jamais — `http://` non plus.
-    if (url.protocol !== "https:" || !admittedOrigins.includes(url.origin)) {
+    // `URL.origin` vaut "null" hors http(s) : il ne figure jamais dans la liste.
+    // Le clair ne passe que si son origine exacte y est — en boucle locale.
+    if (!admittedOrigins.includes(url.origin)) {
       throw new MailImageOriginNotAdmittedError(
         url.protocol === "https:" || url.protocol === "http:" ? url.origin : url.protocol,
         originsVariable,

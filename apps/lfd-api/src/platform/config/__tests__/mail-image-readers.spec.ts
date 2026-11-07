@@ -76,9 +76,9 @@ describe("les réglages des images d'e-mail (plan du service d'e-mails, § 24)",
     expect(optionalMailImageOrigins()).toEqual(["https://media.lafoliecoffee.info"]);
   });
 
-  it("aucune exception locale pour les origines : `http://localhost` reste refusé", () => {
-    set({ MAIL_IMAGE_ORIGINS: "http://localhost:9100" });
+  it("admet la boucle locale en clair (MinIO de dev), jamais une origine publique en clair", () => {
+    set({ MAIL_IMAGE_ORIGINS: "http://localhost:9100, http://localhost.exemple.fr" });
 
-    expect(optionalMailImageOrigins()).toEqual([]);
+    expect(optionalMailImageOrigins()).toEqual(["http://localhost:9100"]);
   });
 });
