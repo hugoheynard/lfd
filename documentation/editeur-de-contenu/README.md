@@ -1,5 +1,7 @@
 # L'éditeur de contenu — un document par blocs, plusieurs rendus
 
+> 🧭 **Bandeau du 2026-11-07.** Ce document est la **note doc-first d'origine** (2026-11-06), gardée telle quelle : presque tout ce qu'elle propose a été bâti depuis, sous une autre forme parfois. Pour l'état réel et ce qui reste à faire, lire [`les-e-mails.md`](les-e-mails.md). Le corps n'est pas réécrit.
+
 > 📋 **Doc-first, 2026-11-06.** Hugo : « je voudrais me rapprocher d'un éditeur
 > d'envoi de mail professionnel pour la mise en page […] ça risque de devenir
 > une feature cross app assez vite car je vais avoir d'autres besoins en app

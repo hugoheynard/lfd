@@ -1,5 +1,7 @@
 # Plan — l'éditeur d'e-mails par blocs (S4 et S5)
 
+> 🧭 **Bandeau du 2026-11-07.** Ce document est le **journal de chantier** de l'éditeur (S4, S5, R1–R2, conditions, C1–C3), écrit au fil des lots. Pour l'état réel et ce qui reste à faire, lire [`les-e-mails.md`](les-e-mails.md). Le corps n'est pas réécrit.
+
 > 📋 **Doc-first, 2026-11-06, réécrit le même jour après deux passages de
 > `vitruve`.** Suite de [`plan-service-e-mails.md`](plan-service-e-mails.md) :
 > S4 (le modèle par blocs et son rendu) et S5 (l'éditeur au back-office).
