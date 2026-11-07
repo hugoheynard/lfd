@@ -160,6 +160,11 @@ type Block =
 - **Permission** : une ressource `mail_templates` (`StaffResource`, migration
   additive), le droit s'accorde à l'écran des rôles.
 - Le bloc `mail` lit le document publié au rendu, par une mémoire versionnée.
+- **Chaque envoi garde la version qui l'a composé** (Hugo, 2026-11-07, sur la
+  question « comment dit-on tel e-mail, tel modèle ») : `mail_request` porte la
+  clé du modèle (`template`, déjà là) et la version publiée du document,
+  `null` pour le document de départ. Sans elle, on saurait qu'un client a reçu
+  `customer.order-ready`, pas quel texte.
 
 ### 6. L'éditeur (S5)
 
@@ -193,7 +198,7 @@ fold-ng d'abord (`apps/lfd-backoffice-frontend/CLAUDE.md`).
 | **S5a** | L'entrée au menu, la liste, l'aperçu fidèle en lecture seule                                                                                                                                                                                                           | rien                            |
 | **S5b** | Le canevas : glisser-déposer, blocs libres, colonnes, réglages, phrases du modèle et leurs variantes (l'écran `textes-emails` absorbé), langues, cas                                                                                                                   | rien tant que rien n'est publié |
 | **S5c** | Vue téléphone, clair / sombre, essai, publier, historique, revenir au modèle d'origine                                                                                                                                                                                 | l'équipe publie ses e-mails     |
-| **S5d** | Le bloc image, par un canal `mail/channels/images/` que `media` implémente, selon la réponse à la question 1                                                                                                                                                           | des images dans les e-mails     |
+| **S5d** | Le bloc image : l'écran choisit dans la médiathèque et passe l'**adresse** ; à la publication, le bloc `mail` en range sa copie (lot S3d). Aucun canal vers `media` — révisé le 2026-11-07, `plan-service-e-mails.md` § 23                                             | des images dans les e-mails     |
 
 S3 (déménager gabarits, dictionnaire et sections dans le bloc `mail`) reste
 le préalable de S4b et S4c.
@@ -208,7 +213,10 @@ le préalable de S4b et S4c.
 
 ### 9. Questions pour Hugo (notées pendant son absence)
 
-1. **Images de la Médiathèque** : la médiathèque ne sert aucune variante
+1. ✅ **Tranché le 2026-11-07** (Hugo, « je veux le plus découplé ») : ni
+   `cid:`, ni adresse de la médiathèque — une copie dans le stockage public du
+   bloc `mail`, faite à la publication (`plan-service-e-mails.md` § 23, lot S3d).
+   La question d'origine : la médiathèque ne sert aucune variante
    réduite. (a) jointes (`cid:`) à leur taille d'origine, (b) jointes après
    réduction par le bloc `mail`, (c) distantes depuis le domaine public de la
    médiathèque. Le bloc image attend ta réponse (S5d).
