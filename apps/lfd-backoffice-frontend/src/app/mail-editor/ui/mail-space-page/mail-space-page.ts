@@ -25,6 +25,7 @@ import {
 import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
 import { MailEditorService } from '../../data/mail-editor.service';
 import { mailSpaceListing } from '../../rules/mail-template-spaces';
+import { MailSenderCard } from '../mail-sender-card/mail-sender-card';
 
 /**
  * **Un espace d'e-mails** (plan § 25, C2 — retouche du 2026-11-07, Hugo :
@@ -49,9 +50,11 @@ import { mailSpaceListing } from '../../rules/mail-template-spaces';
     FoldMenuItemComponent,
     FoldMenuSeparatorComponent,
     FoldPageLayoutComponent,
+    MailSenderCard,
     RouterLink,
   ],
   templateUrl: './mail-space-page.html',
+  styleUrl: './mail-space-page.scss',
 })
 export class MailSpacePage {
   private readonly api = inject(MailEditorService);

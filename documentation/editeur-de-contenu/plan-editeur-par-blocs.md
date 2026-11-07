@@ -2245,3 +2245,10 @@ nommé. Types dans `packages/mail-blocks/src/mail-charter-routes.ts`.
   phrases de tous les espaces, et le compte n'est pas servi par espace. « Ce
   que l'espace couvre » est un libellé de l'écran (`MAIL_SPACE_SCOPES`), pas
   du paquet.
+- **C3 à l'écran, 2026-11-07** : carte « Expéditeur » en tête de
+  `/emails/espaces/:space` (`ui/mail-sender-card/`, essai puis enregistrement
+  sous une clé `GestureIntents`), champ « Bandeau » et paire « Texte blanc du
+  bandeau » dans la carte « Contraste » (huit paires), phrase de
+  `mail_copy.sender_changed` ; écarts : pas de mot pour le sujet `mail_sender`
+  (la phrase suffit à la clôture), et la date du dernier changement
+  (`changed`) n'est pas affichée.

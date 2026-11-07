@@ -1,0 +1,12 @@
+.sc-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.sc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

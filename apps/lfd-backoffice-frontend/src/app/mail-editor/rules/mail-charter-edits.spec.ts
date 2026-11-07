@@ -22,6 +22,7 @@ const SETTINGS: MailCharterSettings = {
     text: '#1a1a1a',
     mutedText: '#555555',
     primary: '#24448f',
+    band: '#1a3157',
     border: '#dddddd',
   },
   darkColors: { page: '#111111', card: '#1c1c1c', text: '#f0f0f0', border: '#333333' },
@@ -74,9 +75,10 @@ describe('les gestes de la charte', () => {
     const report = contrastReport(
       withColor(SETTINGS, { palette: 'colors', key: 'text' }, '#cccccc'),
     );
-    expect(report).toHaveLength(7);
+    expect(report).toHaveLength(8);
     expect(report[0]?.passes).toBe(false);
     expect(report[5]?.passes).toBe(true);
+    expect(report[5]?.label).toBe('Texte blanc du bandeau');
     expect(ratioLabel(21)).toBe('21,00:1');
     const broken = contrastReport(withColor(SETTINGS, { palette: 'colors', key: 'card' }, 'bleu'));
     expect(broken[0]).toEqual({ label: 'Texte sur la carte', ratio: null, passes: false });

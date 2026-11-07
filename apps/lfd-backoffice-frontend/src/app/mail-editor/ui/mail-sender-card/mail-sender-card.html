@@ -1,0 +1,84 @@
+<fold-card>
+  <div class="sc-card">
+    <fold-element-title
+      variant="title"
+      title="Expéditeur"
+      subtitle="Le nom et l’adresse sous lesquels partent les e-mails de l’espace"
+    />
+    @switch (status()) {
+      @case ('loading') {
+        <fold-loading message="Chargement de l’expéditeur…" />
+      }
+      @case ('failed') {
+        <fold-empty-state
+          tone="alert"
+          title="L’expéditeur n’a pas pu être lu"
+          [subtitle]="error() ?? ''"
+        >
+          <button foldButton type="button" (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        <p data-current>{{ current() }}</p>
+        @if (saved()) {
+          <fold-callout variant="success" announce data-saved>
+            Essai envoyé à votre adresse et expéditeur enregistré.
+          </fold-callout>
+        }
+        @if (gestureError(); as message) {
+          <fold-callout variant="alert" announce data-gesture-error>{{ message }}</fold-callout>
+        }
+        @if (canWrite()) {
+          <fold-input
+            data-sender-name
+            label="Nom d’expéditeur"
+            [value]="form().senderName"
+            (valueChange)="setField('senderName', $event)"
+          />
+          @for (message of issuesOf('senderName'); track $index) {
+            <fold-callout variant="warning" data-violation>{{ message }}</fold-callout>
+          }
+          <fold-input
+            data-from-address
+            type="email"
+            label="Adresse d’envoi"
+            [hint]="domainsHint()"
+            [value]="form().fromAddress"
+            (valueChange)="setField('fromAddress', $event)"
+          />
+          @for (message of issuesOf('fromAddress'); track $index) {
+            <fold-callout variant="warning" data-violation>{{ message }}</fold-callout>
+          }
+          <fold-input
+            data-reply-to
+            type="email"
+            label="Adresse de réponse"
+            optional
+            hint="Vide : les réponses vont à l’adresse d’envoi."
+            [value]="form().replyToAddress"
+            (valueChange)="setField('replyToAddress', $event)"
+          />
+          @for (message of issuesOf('replyToAddress'); track $index) {
+            <fold-callout variant="warning" data-violation>{{ message }}</fold-callout>
+          }
+          <div class="sc-actions">
+            <fold-inline-confirm
+              intent="primary"
+              data-save
+              [message]="confirmMessage()"
+              [labels]="{ confirm: 'Envoyer l’essai et enregistrer' }"
+              [loading]="saving()"
+              (confirmed)="save()"
+            >
+              <button foldButton icon="save" type="button" [disabled]="!canSave()">
+                Enregistrer
+              </button>
+            </fold-inline-confirm>
+          </div>
+        } @else if (domainsHint(); as hint) {
+          <p data-domains>{{ hint }}</p>
+        }
+      }
+    }
+  </div>
+</fold-card>

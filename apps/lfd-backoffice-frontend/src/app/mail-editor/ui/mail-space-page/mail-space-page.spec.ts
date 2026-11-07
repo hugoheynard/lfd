@@ -3,7 +3,9 @@ import { provideRouter } from '@angular/router';
 import type { MailEditorListItem } from '@lfd/mail-blocks';
 import { describe, expect, it, vi } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { MailEditorService } from '../../data/mail-editor.service';
+import { MailSendersService } from '../../data/mail-senders.service';
 import { MailSpacePage } from './mail-space-page';
 
 const ORDER_PLACED: MailEditorListItem = {
@@ -29,7 +31,12 @@ async function setup(space: string, list: () => Promise<unknown>) {
   const calls = { list: vi.fn(list) };
   TestBed.configureTestingModule({
     imports: [MailSpacePage],
-    providers: [provideRouter([]), { provide: MailEditorService, useValue: calls }],
+    providers: [
+      provideRouter([]),
+      { provide: MailEditorService, useValue: calls },
+      { provide: PermissionsStore, useValue: { can: () => false } },
+      { provide: MailSendersService, useValue: { load: () => new Promise(() => undefined) } },
+    ],
   });
   const fixture = TestBed.createComponent(MailSpacePage);
   fixture.componentRef.setInput('space', space);

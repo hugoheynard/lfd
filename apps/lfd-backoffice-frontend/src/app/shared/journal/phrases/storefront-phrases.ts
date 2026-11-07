@@ -298,6 +298,38 @@ const mailCharterPublished: Phrase = (fact) => {
   );
 };
 
+const SENDER_CHANGED_KEYS = [
+  'subjectLabel',
+  'space',
+  'revision',
+  'senderName',
+  'fromDomain',
+  'publicationVersion',
+];
+
+/**
+ * **L'expéditeur d'un espace change** (`mail_copy.sender_changed`, § 25, C3) :
+ * « Colette Martin a changé l'expéditeur de l'espace La Folie Douce — équipe :
+ * La Folie Douce, sur le domaine lfd-backoffice.com ». Le fait ne porte aucune
+ * adresse, seulement le domaine.
+ */
+const mailSenderChanged: Phrase = (fact) => {
+  const name = fact.payload['senderName'];
+  const domain = fact.payload['fromDomain'];
+  return byActor(
+    fact,
+    [
+      text('a changé l’expéditeur de l’espace'),
+      ...spaceOf(fact),
+      ...(typeof name === 'string' && name.trim() !== '' ? [text(' : '), value(name)] : []),
+      ...(typeof domain === 'string' && domain !== ''
+        ? [text(', sur le domaine '), value(domain)]
+        : []),
+    ],
+    SENDER_CHANGED_KEYS,
+  );
+};
+
 export const STOREFRONT_PHRASES = {
   'storefront.saved': saved,
   'storefront.allergen_display_changed': allergenDisplayChanged,
@@ -309,4 +341,5 @@ export const STOREFRONT_PHRASES = {
   'mail_copy.document_retracted': mailDocumentRetracted,
   'mail_copy.charter_saved': mailCharterSaved,
   'mail_copy.charter_published': mailCharterPublished,
+  'mail_copy.sender_changed': mailSenderChanged,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

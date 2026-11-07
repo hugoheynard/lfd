@@ -249,3 +249,25 @@ describe('la charte d’un espace d’e-mails', () => {
     expect(rendered.detail).toEqual([]);
   });
 });
+
+/** **L'expéditeur d'un espace** (`mail_copy.sender_changed`, plan-editeur-par-blocs.md § 25, C3). */
+describe('l’expéditeur d’un espace d’e-mails', () => {
+  it('nomme l’espace, le nom d’expéditeur et le domaine, sans détail restant', () => {
+    const rendered = renderFact({
+      ...mailFact('mail_copy.sender_changed', 'lfd', {
+        subjectLabel: 'La Folie Douce — équipe',
+        space: 'lfd',
+        revision: 1,
+        senderName: 'La Folie Douce',
+        fromDomain: 'lfd-backoffice.com',
+        publicationVersion: 12,
+      }),
+      subjectType: 'mail_sender',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a changé l’expéditeur de l’espace La Folie Douce — équipe : La Folie Douce, sur le domaine lfd-backoffice.com',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+});

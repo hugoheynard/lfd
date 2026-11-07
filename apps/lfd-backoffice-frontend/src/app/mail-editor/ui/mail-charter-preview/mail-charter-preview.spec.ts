@@ -13,6 +13,7 @@ const SETTINGS: MailCharterSettings = {
     text: '#1a1a1a',
     mutedText: '#555555',
     primary: '#24448f',
+    band: '#1a3157',
     border: '#dddddd',
   },
   darkColors: { page: '#111111', card: '#1c1c1c', text: '#f0f0f0', border: '#333333' },

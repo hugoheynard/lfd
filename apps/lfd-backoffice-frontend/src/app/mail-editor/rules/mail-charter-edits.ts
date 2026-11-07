@@ -36,7 +36,8 @@ const LIGHT_LABELS: Readonly<Record<keyof MailCharterColors, string>> = {
   card: 'Fond de la carte',
   text: 'Texte',
   mutedText: 'Texte secondaire',
-  primary: 'Couleur principale (boutons, liens, bandeau)',
+  primary: 'Couleur principale (boutons, liens)',
+  band: 'Bandeau (en-tête, enseigne en blanc)',
   border: 'Filets',
 };
 
@@ -48,7 +49,7 @@ const DARK_LABELS: Readonly<Record<keyof MailCharterDarkColors, string>> = {
 };
 
 export const LIGHT_COLOR_FIELDS: readonly CharterColorField[] = (
-  ['page', 'card', 'text', 'mutedText', 'primary', 'border'] as const
+  ['page', 'card', 'text', 'mutedText', 'primary', 'band', 'border'] as const
 ).map((key) => ({
   slot: { palette: 'colors', key },
   field: `colors.${key}`,
@@ -160,6 +161,7 @@ export function contrastReport(settings: MailCharterSettings): readonly Contrast
     ['Texte secondaire sur la carte', c.mutedText, c.card],
     ['Liens sur la carte', c.primary, c.card],
     ['Texte blanc des boutons', BUTTON_TEXT, c.primary],
+    ['Texte blanc du bandeau', BUTTON_TEXT, c.band],
     ['Sombre — texte sur la carte', d.text, d.card],
     ['Sombre — texte sur le fond de page', d.text, d.page],
   ];
