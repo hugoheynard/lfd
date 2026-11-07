@@ -94,3 +94,42 @@ test("refuse : une entrée admise qui ne tire plus au hasard", () => {
   });
   assert.match(failures[0], /a\.ts .*retire-le de RANDOM_ADMITTED/);
 });
+
+/**
+ * Régression : la sonde de S8 a disparu de la porte en passant sa clé par une
+ * variable (`callKey`) ; le hasard se suit maintenant de variable en variable.
+ */
+test("refuse : le hasard caché dans une variable, même de proche en proche", () => {
+  const through = (decls, key) =>
+    [...decls, "await this.mail.send({", `  idempotencyKey: ${key},`, "});"].join("\n");
+  assert.deepEqual(randomKeys(through(["const k = `x:${this.ids.next()}`;"], "k")), [3]);
+  assert.deepEqual(
+    randomKeys(through(["const id = this.ids.next();", "const k = `x:${id}`;"], "`${k}:deferred`")),
+    [4],
+  );
+  assert.deepEqual(
+    randomKeys(through(["const stamp: string = this.clock.now().toISOString();"], "`x:${stamp}`")),
+    [3],
+  );
+});
+
+test("admet : une variable déterministe, et un nom qui n'est qu'un préfixe ou une propriété", () => {
+  const through = (decls, key) =>
+    [...decls, "await this.mail.send({", `  idempotencyKey: ${key},`, "});"].join("\n");
+  assert.deepEqual(randomKeys(through(["const k = `x:${command.intentKey}`;"], "k")), []);
+  assert.deepEqual(
+    randomKeys(through(["const id = this.ids.next();"], "`x:${idem}:${order.id}`")),
+    [],
+  );
+});
+
+test("admet : une variable déterministe suivie, plus loin, d'un tirage qui ne la touche pas", () => {
+  const source = [
+    "const state = load(id);",
+    "const at = this.clock.now();",
+    "await this.mail.send({",
+    "  idempotencyKey: `collection.notice:${state.id}`,",
+    "});",
+  ].join("\n");
+  assert.deepEqual(randomKeys(source), []);
+});

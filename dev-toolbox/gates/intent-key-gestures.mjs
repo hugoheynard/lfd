@@ -19,7 +19,12 @@
  * 2. Partout : une clé d'e-mail (`idempotencyKey:` d'un fichier qui appelle
  *    `mail.send(` ou `mail.sendAndAwaitReceipt(`) tirée au hasard ou datée
  *    (`ids`, `.next()`, `clock`, `now()`, `randomUUID`, `Math.random`), hors
- *    RANDOM_ADMITTED — c'est la forme exacte du doublon d'origine.
+ *    RANDOM_ADMITTED — c'est la forme exacte du doublon d'origine. Le hasard
+ *    se suit à travers les variables locales du fichier (`const k =
+ *    \`x:${ids.next()}\``, puis `idempotencyKey: k`), de proche en proche :
+ *    sans quoi un intermédiaire suffisait à le cacher (Hugo, 2026-11-07, après
+ *    que la sonde de S8 a disparu de la porte en passant par `callKey`). Le
+ *    suivi s'arrête au fichier : une clé reçue en paramètre n'est pas suivie.
  *
  * Usage : `pnpm gate intent-key-gestures`. Tests :
  * `node --test dev-toolbox/__tests__/intent-key-gestures.test.mjs`.
@@ -93,6 +98,8 @@ export const GESTURES = [
 
 /** Les clés d'e-mail tirées au hasard qui restent admises, chacune avec sa raison. */
 export const RANDOM_ADMITTED = {
+  [`${SRC}/mail/requests/application/check-mail-delivery.handler.ts`]:
+    "2026-11-06 — la sonde de déploiement : chaque appel EST un essai neuf, aucun écran ne clique (la clé passe par `callKey`, suivie depuis le 2026-11-07)",
   [`${SRC}/b2b/account/infrastructure/auth0-customer-identity.ts`]:
     "2026-11-06 — « mot de passe oublié » du CLIENT, pas un geste du staff : hors du cas 4, signalé dans son rapport",
   [`${SRC}/b2b/account/infrastructure/dev-customer-identity.ts`]:
@@ -171,14 +178,75 @@ export function gestureFailures(gesture, commandSource, controllerSource) {
   return failures;
 }
 
+const DECLARATION = /\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*(?::[^=;]+)?=(?!=)/g;
+const identifier = (name) => new RegExp(`(?<![\\w$.])${name.replace(/\$/g, "\\$")}(?![\\w$])`);
+
+/**
+ * Le texte d'un initialiseur : jusqu'au `;` de même profondeur, ou à la
+ * parenthèse qui ferme l'englobante. Les chaînes sont sautées, le code des
+ * `${…}` gardé — c'est lui qui peut tirer au hasard.
+ */
+export function initializerOf(source, start) {
+  const out = [];
+  const stack = [];
+  for (let i = start; i < source.length; i += 1) {
+    const c = source[i];
+    const top = stack[stack.length - 1];
+    if (top === "`" || top === '"' || top === "'") {
+      if (c === "\\") i += 1;
+      else if (c === top) stack.pop();
+      else if (top === "`" && c === "$" && source[i + 1] === "{") {
+        stack.push("${");
+        i += 1;
+      }
+      continue;
+    }
+    if (c === "`" || c === '"' || c === "'") stack.push(c);
+    else if (c === "(" || c === "[" || c === "{") stack.push(c);
+    else if (c === ")" || c === "]" || c === "}") {
+      if (stack.length === 0) break;
+      stack.pop();
+    } else if (c === ";" && stack.length === 0) break;
+    out.push(c);
+  }
+  return out.join("");
+}
+
+/**
+ * Les variables locales dont la valeur est tirée au hasard ou datée, de proche
+ * en proche : une variable initialisée depuis une variable tirée l'est aussi.
+ */
+export function randomVariables(source) {
+  const declarations = [...source.matchAll(DECLARATION)].map((m) => ({
+    name: m[1],
+    code: initializerOf(source, m.index + m[0].length),
+  }));
+  const tainted = new Set();
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const { name, code } of declarations) {
+      if (tainted.has(name)) continue;
+      if (RANDOM.test(code) || [...tainted].some((t) => identifier(t).test(code))) {
+        tainted.add(name);
+        grew = true;
+      }
+    }
+  }
+  return tainted;
+}
+
 /** Les clés d'e-mail tirées au hasard ou datées d'une source : lignes. */
 export function randomKeys(raw) {
   const source = withoutComments(raw);
   if (!MAIL_CALL.test(source)) return [];
+  const tainted = [...randomVariables(source)];
   const out = [];
   for (const match of source.matchAll(KEY)) {
     const { code } = keyExpression(source, match.index + match[0].length);
-    if (RANDOM.test(code)) out.push(lineOf(source, match.index));
+    if (RANDOM.test(code) || tainted.some((t) => identifier(t).test(code))) {
+      out.push(lineOf(source, match.index));
+    }
   }
   return out;
 }
