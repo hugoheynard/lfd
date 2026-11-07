@@ -1,0 +1,66 @@
+import {
+  InvalidMailImageUrlError,
+  MailImageOriginNotAdmittedError,
+} from "../errors/mail-image.errors.js";
+
+/**
+ * Les bornes d'une copie d'image. Un logo ou une bannière d'e-mail pèse
+ * quelques centaines de Kio ; 5 Mio laisse la marge sans laisser télécharger
+ * n'importe quoi.
+ */
+export const MAIL_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Au-delà, la source est en panne : on n'attend pas plus longtemps. */
+export const MAIL_IMAGE_DOWNLOAD_TIMEOUT_MS = 10_000;
+
+/**
+ * Les types admis, reconnus par les OCTETS : ceux que les messageries
+ * affichent et que la médiathèque range. Pas de SVG : la plupart des
+ * messageries ne l'affichent pas, et il porte du script.
+ */
+export const MAIL_IMAGE_TYPES: readonly string[] = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+];
+
+/**
+ * Une adresse d'image **admise à la copie** (plan du service d'e-mails, § 23) :
+ * `https`, et d'une origine déclarée. Rien d'autre ne se télécharge.
+ *
+ * `originsVariable` est le nom du réglage, pour que le refus dise quoi régler.
+ */
+export class MailImageSource {
+  private constructor(readonly url: URL) {}
+
+  static admit(
+    raw: string,
+    admittedOrigins: readonly string[],
+    originsVariable: string,
+  ): MailImageSource {
+    let url: URL;
+    try {
+      url = new URL(raw);
+    } catch {
+      throw new InvalidMailImageUrlError(raw);
+    }
+    // `URL.origin` vaut "null" hors http(s) : comparé à une liste d'origines
+    // https, il ne passe jamais — `http://` non plus.
+    if (url.protocol !== "https:" || !admittedOrigins.includes(url.origin)) {
+      throw new MailImageOriginNotAdmittedError(
+        url.protocol === "https:" || url.protocol === "http:" ? url.origin : url.protocol,
+        originsVariable,
+      );
+    }
+    if (url.username !== "" || url.password !== "") {
+      // Jamais l'adresse brute dans le message : elle porte un secret.
+      throw new InvalidMailImageUrlError(`${url.origin}${url.pathname}`);
+    }
+    return new MailImageSource(url);
+  }
+
+  get origin(): string {
+    return this.url.origin;
+  }
+}

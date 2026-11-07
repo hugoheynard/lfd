@@ -1288,3 +1288,24 @@ contentType): Promise<{ url }>`. Adressé par le contenu (le hash des octets,
   et la copie refuse en nommant ce qui manque.
 - Aucune route HTTP, aucun écran : c'est S4/S5.
 - Aucune migration.
+
+### Bâti le 2026-11-07 — écarts
+
+- **Le téléchargeur n'est pas celui de S3c** : S3c est « à revoir » et pas
+  bâti. Il vit dans le lot, derrière un port (`MailImageDownloader`,
+  `apps/lfd-api/src/mail/images/infrastructure/fetch-mail-image.downloader.ts`), garde posée.
+  Il ne suit **aucune redirection** : elle mènerait hors de l'origine admise
+  sans repasser par la liste. Le jour où S3c est bâti, les deux se comparent.
+- **Les noms des réglages** : `R2_MAIL_BUCKET`, `R2_MAIL_ACCESS_KEY_ID`,
+  `R2_MAIL_SECRET_ACCESS_KEY`, `R2_MAIL_ENDPOINT`, `R2_MAIL_PUBLIC_BASE_URL`,
+  et `MAIL_IMAGE_ORIGINS` (liste séparée par des virgules ; une entrée
+  illisible ou en clair est ignorée, la liste ne peut que se resserrer).
+- **Les bornes** : 5 Mio, 10 s ; types admis PNG, JPEG, GIF, WebP (pas de
+  SVG). Clés sous `templates/<sha256>.<ext>`.
+- **Non tranché, laissé tel que le texte le dit** : « `https://` seulement »
+  rend la copie impossible depuis le MinIO de dev (`http://localhost:9100`),
+  alors que l'adresse publique du bucket, elle, admet la boucle locale comme
+  `media`. Une copie en local demande donc une origine https.
+- **Pas fait, hors du texte** : le bulletin de démarrage
+  (`startup-report.service.ts`) ne nomme pas un `R2_MAIL_*` à moitié posé ;
+  seule la copie le dit, au premier appel.
