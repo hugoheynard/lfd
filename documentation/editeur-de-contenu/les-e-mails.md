@@ -229,11 +229,18 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
 2. Vérifier que la clé Resend de prod peut **lire les domaines** (une clé
    « envoi seulement » fait refuser tout réglage d'expéditeur) — Éditeur § 25,
    C3 écarts.
-3. Ajouter `lfd-backoffice.com` chez Resend avec ses DNS, puis régler
-   l'expéditeur de l'espace La Folie Douce — Éditeur § 25, C3.
-4. Donner le droit « Modèles d'e-mails » aux rôles qui éditent, à l'écran des
+3. ~~Ajouter `lfd-backoffice.com` chez Resend avec ses DNS~~ — fait le
+   2026-11-07 (DKIM, `send`, `rsend`, `_dmarc` et le MX de réception posés
+   dans Cloudflare ; vérification Resend en attente). Reste : régler
+   l'expéditeur de l'espace La Folie Douce après le déploiement de C3 —
+   Éditeur § 25, C3.
+4. Réception activée chez Resend sur `lfd-backoffice.com` et
+   `lafoliecoffee.info` le 2026-11-07 (MX posés, vérification en attente) : les
+   e-mails reçus restent dans Resend (« Inboxes ») tant que le chantier
+   « Support » n'existe pas.
+5. Donner le droit « Modèles d'e-mails » aux rôles qui éditent, à l'écran des
    rôles — Éditeur § 15.
-5. Activer la purge du suivi (`MAIL_REQUEST_PURGE`) le moment venu — Service § 7.
+6. Activer la purge du suivi (`MAIL_REQUEST_PURGE`) le moment venu — Service § 7.
 
 ### b. Avant le prochain push ou déploiement
 
@@ -298,3 +305,14 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
    avec pastilles dans Safari et Firefox — Éditeur § 22.
 9. Non vérifié en vrai : le QR et l'empilement des colonnes en mode sombre de
    Gmail et Outlook — Éditeur § 8.
+10. **Le chantier « Support »** (Hugo, 2026-11-07) : traiter dans le
+    back-office les e-mails reçus (`support@lfd-backoffice.com`, puis une
+    adresse client sur `lafoliecoffee.info`). Le webhook Resend `email.received`
+    signé vers l'API, le message rangé et relié à sa commande ou à son compte,
+    la cloche, un écran « Support » (entrée de menu et droit à part) pour lire
+    et répondre ; la réponse part par le bloc `mail`. Et dans Email Templates,
+    l'onglet « Expéditeur » devient « Réglages », l'adresse de réponse choisie
+    parmi les adresses que le Support reçoit. Route publique et données
+    personnelles : plan contredit par `vitruve` avant Hugo. Non écrit.
+11. L'e-mail de vérification d'Auth0 (« Verify your email ») part en anglais et
+    hors du suivi du bloc `mail` (constaté le 2026-11-07 sur un rebond).
