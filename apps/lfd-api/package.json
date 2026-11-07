@@ -56,6 +56,7 @@
     "@lfd/catalog-sync": "workspace:*",
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
+    "@lfd/mail-blocks": "workspace:*",
     "@lfd/mailer": "workspace:*",
     "@lfd/money": "workspace:*",
     "@lfd/ops-contract": "workspace:*",

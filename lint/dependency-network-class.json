@@ -29,6 +29,10 @@
         "CircuitBreakerMailer"
       ]
     },
+    "@lfd/mail-blocks": {
+      "class": "local",
+      "reason": "Le contrat de l'éditeur d'e-mails par blocs : types et règles pures."
+    },
     "@lfd/money": { "class": "local", "reason": "Arithmétique des montants en entiers." },
     "@lfd/ops-contract": { "class": "local", "reason": "Types et schémas de la carte de santé." },
     "@lfd/pim-contracts": { "class": "local", "reason": "Schémas et constantes du référentiel." },

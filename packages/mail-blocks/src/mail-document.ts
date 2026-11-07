@@ -1,0 +1,105 @@
+import type { ColumnWidthStep } from "./column-widths.js";
+import type { MailCharter } from "./mail-charter.js";
+import type { Localized, MailLocale } from "./mail-locales.js";
+import type { ModelSectionId } from "./model-sections.js";
+
+/**
+ * **Le document d'un e-mail** (plan `plan-editeur-par-blocs.md`, § 2) : la
+ * suite de ses blocs, dans l'ordre de l'e-mail. Il ne stocke que
+ * l'ARRANGEMENT et les blocs libres — jamais une phrase du modèle, qui n'a
+ * qu'une source, le dictionnaire (§ 3).
+ */
+export interface MailDocument {
+  /** La clé du modèle au registre (`customer.order-placed`…). */
+  readonly template: string;
+  readonly blocks: readonly MailBlock[];
+}
+
+/** Un bloc du modèle : le code le compose, l'équipe le place. */
+export interface ModelBlock {
+  readonly id: string;
+  readonly kind: "model";
+  readonly section: ModelSectionId;
+}
+
+/**
+ * Un bloc libre de texte. Un texte FIXE par langue — ni variable, ni variante
+ * (§ 2, question 7) : ce qui dépend des données reste dans les blocs du modèle.
+ * Texte brut : la forme d'un texte enrichi n'est pas encore fixée (S5b).
+ */
+export interface TextBlock {
+  readonly id: string;
+  readonly kind: "heading" | "paragraph";
+  readonly text: Localized<string>;
+}
+
+/** Les tons d'un encadré. */
+export const CALLOUT_TONES = ["info", "warning"] as const;
+export type CalloutTone = (typeof CALLOUT_TONES)[number];
+
+/** Un encadré (« Fermé le 1ᵉʳ mai »). */
+export interface CalloutBlock {
+  readonly id: string;
+  readonly kind: "callout";
+  readonly tone: CalloutTone;
+  readonly text: Localized<string>;
+}
+
+/** Un bouton vers une adresse fixe, en `https://`. */
+export interface ButtonBlock {
+  readonly id: string;
+  readonly kind: "button";
+  readonly label: Localized<string>;
+  readonly href: string;
+}
+
+/** Un séparateur. */
+export interface DividerBlock {
+  readonly id: string;
+  readonly kind: "divider";
+}
+
+/** Ce qu'une colonne peut porter : un bloc libre, jamais des colonnes. */
+export type FreeBlock = TextBlock | CalloutBlock | ButtonBlock | DividerBlock;
+
+/**
+ * Une mise en page à 2 ou 3 colonnes : une largeur et une cellule par
+ * colonne. Jamais de bloc du modèle dedans, jamais de colonnes dans une
+ * colonne.
+ */
+export interface ColumnsBlock {
+  readonly id: string;
+  readonly kind: "columns";
+  readonly widths: readonly ColumnWidthStep[];
+  readonly cells: readonly (readonly FreeBlock[])[];
+}
+
+/** Un bloc d'un e-mail. */
+export type MailBlock = ModelBlock | FreeBlock | ColumnsBlock;
+
+/** Les sortes de blocs libres admises hors colonnes. */
+export const FREE_BLOCK_KINDS = [
+  "heading",
+  "paragraph",
+  "callout",
+  "button",
+  "divider",
+  "columns",
+] as const;
+
+/** Les seuls blocs admis dans une ligne de trois colonnes : les courts. */
+export const SHORT_BLOCK_KINDS = ["heading", "button"] as const;
+
+/** Le nombre de colonnes d'une mise en page. */
+export const COLUMN_COUNTS = [2, 3] as const;
+
+/**
+ * **La déclaration d'un modèle** : ce que le code en sait, et que l'écran ne
+ * règle pas — ses blocs du modèle dans l'ordre de la coquille, les langues
+ * dans lesquelles il part, sa charte.
+ */
+export interface MailTemplateDeclaration {
+  readonly modelBlocks: readonly ModelSectionId[];
+  readonly locales: readonly MailLocale[];
+  readonly charter: MailCharter;
+}

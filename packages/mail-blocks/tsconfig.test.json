@@ -1,0 +1,19 @@
+{
+  // Les specs tournent en ESM, comme le paquet lui-même (`"type": "module"`) et
+  // comme `lfd-api` : plus de pont CommonJS. TypeScript 6.0 a déprécié
+  // `moduleResolution: "node10"` — seule résolution possible avec un `module`
+  // CommonJS — et 7.0 la refusera. On aligne au lieu de silencer.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node"],
+    "noEmit": true
+  },
+  "include": ["src", "src/__tests__"]
+}

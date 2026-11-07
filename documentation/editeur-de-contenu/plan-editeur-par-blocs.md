@@ -283,3 +283,63 @@ passage restent valables : ce sont les cas que le panneau de gauche montre
 **Non vérifié** (reporté de `vitruve`) : une version texte (`text`) des
 e-mails, à ordonner aussi si elle existe ; le contenu exact des empreintes de
 rendu.
+
+## 12. S4a — bâti le 2026-11-07
+
+**Ce qui existe.** Le paquet `packages/mail-blocks` (`@lfd/mail-blocks`, ESM,
+sans dépendance), importé par `lfd-api` seulement à ce jour — le back-office
+l'ajoutera en S5. Aucune table lue, aucun rendu changé.
+
+- **Le contrat** (`packages/mail-blocks/src/mail-document.ts`) : `MailDocument { template, blocks }`,
+  `ModelBlock`, les blocs libres `heading` / `paragraph` / `callout` /
+  `button` / `divider`, `ColumnsBlock { widths, cells }`,
+  `MailTemplateDeclaration { modelBlocks, locales, charter }`.
+- **Les blocs du modèle** (`packages/mail-blocks/src/model-sections.ts`) : `title`, `body`, `summary`,
+  `image`, `itinerary`, `cta`, `footer` — les sections de la coquille, le
+  lien secondaire rangé dans `cta` (`modelSectionOfLayoutSection`).
+- **Les règles du serveur**, en fonctions pures qui rendent une liste de
+  refus (code, bloc, message pour l'équipe), sans rien lever :
+  `validateMailDocument` (forme, à chaque enregistrement) et
+  `validateMailDocumentForPublication` (plus un texte par langue du modèle
+  dans chaque bloc libre — question 2, défaut).
+- **Le document de départ** : `startingMailDocument(template, declaration,
+publishedLayoutOrder?)` — l'ordre publié de l'ancienne table, passé par
+  l'appelant, sinon l'ordre de la déclaration.
+- **Les déclarations des 32 modèles**, côté API :
+  `apps/lfd-api/src/mail/templates/sections/mail-block-declarations.ts`
+  (`mailBlockDeclarationOf`) — blocs tirés de `MAIL_LAYOUTS` (une seule
+  source), langues, charte ; le test revérifie langues
+  (`mailFollowsLocale`) et charte (en rendant chaque exemple).
+
+**Écarts au texte.**
+
+- **21 modèles** partent en français seul, pas 14 (§ 1) : 14 est le nombre
+  de ceux qui appellent `local()` dans `mail-templates.ts` ; sept autres
+  (`collection-notice`, `sub-account-activity`, `sub-account-gesture`,
+  `access-opened`, `production-dossier`, `customer-request`,
+  `vitrine-notice`) lisent `DEFAULT_MAIL_LOCALE` dans leur propre fichier.
+  Onze suivent la langue du destinataire.
+- **Les crans se comptent en douzièmes** : 33 et 67 sont des tiers. En pour
+  cent, `33 + 33 + 33` ferait 99, et aucune ligne de trois colonnes égales
+  ne serait admise.
+- **`RichText`** n'est pas fixé : les textes libres sont du texte brut
+  (`Localized<string>`) jusqu'à S5b.
+- **Le lien secondaire suit son bouton** : un ordre publié qui les séparait
+  (possible avec `public.mail_section_orders`) ne se reproduit pas dans un
+  document — le bloc prend la place du premier des deux. À éprouver par le
+  test « mêmes octets » de S4b sur un ordre publié, pas seulement sur
+  l'ordre par défaut.
+- Les quatre e-mails sans marque sont bien `ops.deploy-check`,
+  `staff.account-alert`, `staff.appointment-booked`, `staff.support-requested`.
+
+**Ce que S5 importe** de `@lfd/mail-blocks` : les types `MailDocument`,
+`MailBlock`, `ModelBlock`, `FreeBlock`, `TextBlock`, `CalloutBlock`,
+`ButtonBlock`, `DividerBlock`, `ColumnsBlock`, `MailTemplateDeclaration`,
+`ModelSectionId`, `MailLocale`, `Localized`, `MailCharter`, `ColumnWidthStep`,
+`CalloutTone`, `MailDocumentViolation(Code)` ; les constantes
+`MODEL_SECTIONS`, `MODEL_SECTION_LABELS`, `FREE_BLOCK_KINDS`,
+`SHORT_BLOCK_KINDS`, `COLUMN_COUNTS`, `COLUMN_WIDTH_STEPS`, `CALLOUT_TONES`,
+`MAIL_LOCALES`, `MAIL_CHARTERS` ; les fonctions `validateMailDocument`,
+`validateMailDocumentForPublication`, `isHttpsUrl`, `widthsFillTheRow`,
+`isColumnWidthStep`, `startingMailDocument`, `modelBlockId`. La déclaration
+d'un modèle, elle, lui viendra de l'API (S5a) : elle vit côté serveur.
