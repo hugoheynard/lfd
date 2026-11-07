@@ -23,10 +23,6 @@
   font-size: var(--fold-text-sm);
 }
 
-.destination {
-  margin: 0;
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -89,6 +85,23 @@
 
 .frame {
   cursor: pointer;
+}
+
+// Le bloc qu'une ressource survolée à gauche désigne.
+.block.lit {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.link-chip {
+  display: inline-flex;
+  cursor: help;
 }
 
 .tools {

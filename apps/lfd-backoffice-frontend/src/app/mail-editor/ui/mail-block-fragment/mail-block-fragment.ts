@@ -8,12 +8,14 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+import type { MailValueResource } from '@lfd/mail-blocks';
 import { FoldCalloutComponent } from 'fold-ng';
 
 import { insertChipAt, readDictionaryText, variableChip } from '../../rules/mail-editable-text';
 import { isSafeMailFragment } from '../../rules/mail-fragments';
+import { labelValueChip, valueRefusal } from '../../rules/mail-resources';
 
-/** Le type de donnée d'une variable glissée depuis la colonne de gauche. */
+/** Le type de donnée d'une valeur glissée depuis les ressources de la colonne de gauche. */
 export const VARIABLE_DRAG_TYPE = 'application/x-lfd-mail-variable';
 
 /** Le texte d'une phrase, relu au format du dictionnaire. */
@@ -65,9 +67,16 @@ export class MailBlockFragment {
   readonly freeBlockIds = input<ReadonlySet<string>>(new Set());
   /** Le nom des zones modifiables, pour les lecteurs d'écran. */
   readonly zoneLabel = input('Texte de l’e-mail');
+  /**
+   * Les fiches des valeurs de l'e-mail (§ 24) : une pastille montre le nom
+   * lisible, et une valeur ne se pose que dans une phrase qui la reçoit.
+   */
+  readonly values = input<ReadonlyMap<string, MailValueResource>>(new Map());
 
   readonly phraseInput = output<PhraseInput>();
   readonly freeBlockInput = output<FreeBlockInput>();
+  /** Une valeur déposée dans une phrase qui ne la reçoit pas : le mot du refus. */
+  readonly valueRefused = output<string>();
 
   protected readonly safe = computed(() => isSafeMailFragment(this.html()));
 
@@ -84,6 +93,7 @@ export class MailBlockFragment {
       const phrases = this.phrasePaths();
       const freeBlocks = this.freeBlockIds();
       const label = this.zoneLabel();
+      const values = this.values();
       if (html !== this.applied) {
         if (this.holdsFocus(element)) {
           this.pending = html;
@@ -91,7 +101,7 @@ export class MailBlockFragment {
         }
         this.replace(element, html);
       }
-      this.decorate(element, { canWrite, phrases, freeBlocks, label });
+      this.decorate(element, { canWrite, phrases, freeBlocks, label, values });
     });
   }
 
@@ -122,6 +132,7 @@ export class MailBlockFragment {
         phrases: this.phrasePaths(),
         freeBlocks: this.freeBlockIds(),
         label: this.zoneLabel(),
+        values: this.values(),
       });
     }
   }
@@ -135,7 +146,11 @@ export class MailBlockFragment {
     }
   }
 
-  /** Une variable glissée sur une phrase s'y pose en pastille, au point de dépôt. */
+  /**
+   * Une valeur glissée sur une phrase qui la reçoit s'y pose en pastille, au
+   * point de dépôt ; sur une autre, le dépôt est refusé et le mot du refus
+   * remonte.
+   */
   protected onDrop(event: DragEvent): void {
     const zone = this.variableZoneAt(event);
     const name = event.dataTransfer?.getData(VARIABLE_DRAG_TYPE) ?? '';
@@ -143,8 +158,15 @@ export class MailBlockFragment {
       return;
     }
     event.preventDefault();
+    const refusal = valueRefusal(this.values(), name, zone.getAttribute('data-phrase') ?? '');
+    if (refusal !== null) {
+      this.valueRefused.emit(refusal);
+      return;
+    }
     const range = this.rangeAt(event.clientX, event.clientY, zone);
-    insertChipAt(range, variableChip(zone.ownerDocument, name));
+    const chip = variableChip(zone.ownerDocument, name);
+    insertChipAt(range, chip);
+    labelValueChip(chip, this.values());
     this.emitZone(zone);
   }
 
@@ -202,10 +224,12 @@ export class MailBlockFragment {
       readonly phrases: ReadonlySet<string>;
       readonly freeBlocks: ReadonlySet<string>;
       readonly label: string;
+      readonly values: ReadonlyMap<string, MailValueResource>;
     },
   ): void {
     for (const chip of element.querySelectorAll('[data-var]')) {
       chip.setAttribute('contenteditable', 'false');
+      labelValueChip(chip, options.values);
     }
     for (const zone of element.querySelectorAll('[data-phrase], [data-free-block]')) {
       const phrase = zone.getAttribute('data-phrase');

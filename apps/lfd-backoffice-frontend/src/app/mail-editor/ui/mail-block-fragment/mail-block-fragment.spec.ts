@@ -1,7 +1,44 @@
 import { TestBed } from '@angular/core/testing';
+import type { MailValueResource } from '@lfd/mail-blocks';
 import { describe, expect, it } from 'vitest';
 
-import { type FreeBlockInput, MailBlockFragment, type PhraseInput } from './mail-block-fragment';
+import {
+  type FreeBlockInput,
+  MailBlockFragment,
+  type PhraseInput,
+  VARIABLE_DRAG_TYPE,
+} from './mail-block-fragment';
+
+const REF: MailValueResource = {
+  name: 'ref',
+  label: 'Référence de commande',
+  description: 'le numéro de la commande',
+  example: 'ORD-4812',
+  phrases: ['subject'],
+};
+const FIRST_NAME: MailValueResource = {
+  name: 'firstName',
+  label: 'Prénom du destinataire',
+  description: 'le prénom de la personne',
+  example: 'Camille',
+  phrases: ['greeting'],
+};
+const VALUES = new Map([
+  ['ref', REF],
+  ['firstName', FIRST_NAME],
+]);
+
+/** Un dépôt de valeur glissée : l'environnement de test n'a pas de `DragEvent` avec données. */
+function dropOf(name: string): Event {
+  const event = new Event('drop', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'dataTransfer', {
+    value: {
+      types: [VARIABLE_DRAG_TYPE],
+      getData: (type: string) => (type === VARIABLE_DRAG_TYPE ? name : ''),
+    },
+  });
+  return event;
+}
 
 const BODY =
   '<p><span data-phrase="subject">Votre commande <span data-var="ref">EXEMPLE-0001</span> est prête</span> <span data-phrase="inconnue">x</span></p><p><span data-free-block="libre-1" data-locale="fr">Bon appétit</span></p><a href="https://exemple.invalid">lien</a>';
@@ -12,14 +49,17 @@ function render(html: string, canWrite = true) {
   fixture.componentRef.setInput('canWrite', canWrite);
   fixture.componentRef.setInput('phrasePaths', new Set(['subject']));
   fixture.componentRef.setInput('freeBlockIds', new Set(['libre-1']));
+  fixture.componentRef.setInput('values', VALUES);
   fixture.detectChanges();
   const phrases: PhraseInput[] = [];
   const freeBlocks: FreeBlockInput[] = [];
+  const refusals: string[] = [];
   fixture.componentInstance.phraseInput.subscribe((value) => phrases.push(value));
   fixture.componentInstance.freeBlockInput.subscribe((value) => freeBlocks.push(value));
+  fixture.componentInstance.valueRefused.subscribe((value) => refusals.push(value));
   const element: HTMLElement = fixture.nativeElement;
   document.body.append(element);
-  return { fixture, element, phrases, freeBlocks };
+  return { fixture, element, phrases, freeBlocks, refusals };
 }
 
 describe('MailBlockFragment — un fragment écrit sur place', () => {
@@ -85,6 +125,47 @@ describe('MailBlockFragment — un fragment écrit sur place', () => {
     const click = new MouseEvent('click', { bubbles: true, cancelable: true });
     element.querySelector('a')?.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(true);
+    element.remove();
+  });
+
+  it('une pastille montre le nom lisible de sa fiche, la valeur du cas au survol', () => {
+    const { element } = render(BODY);
+    const chip = element.querySelector('[data-var="ref"]');
+    expect(chip?.textContent).toBe('Référence de commande');
+    expect(chip?.getAttribute('title')).toContain('EXEMPLE-0001');
+    expect(chip?.getAttribute('title')).toContain('le numéro de la commande');
+    element.remove();
+  });
+
+  it('relit toujours {ref}, quel que soit le nom que la pastille affiche', () => {
+    const { element, phrases } = render(BODY);
+    element
+      .querySelector('[data-phrase="subject"]')
+      ?.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(phrases).toEqual([{ path: 'subject', text: 'Votre commande {ref} est prête' }]);
+    element.remove();
+  });
+
+  it('pose une valeur déposée dans une phrase qui la reçoit, en pastille lisible', () => {
+    const { element, phrases, refusals } = render(BODY);
+    const zone = element.querySelector('[data-phrase="subject"]');
+    zone?.dispatchEvent(dropOf('ref'));
+    expect(refusals).toEqual([]);
+    expect(phrases.at(-1)?.text).toBe('Votre commande {ref} est prête{ref}');
+    expect(zone?.lastElementChild?.textContent).toBe('Référence de commande');
+    element.remove();
+  });
+
+  it('refuse une valeur déposée dans une phrase qui ne la reçoit pas, et le dit', () => {
+    const { element, phrases, refusals } = render(BODY);
+    const zone = element.querySelector('[data-phrase="subject"]');
+    const drop = dropOf('firstName');
+    zone?.dispatchEvent(drop);
+    expect(drop.defaultPrevented).toBe(true);
+    expect(phrases).toEqual([]);
+    expect(zone?.querySelector('[data-var="firstName"]')).toBeNull();
+    expect(refusals).toHaveLength(1);
+    expect(refusals[0]).toContain('« Prénom du destinataire » ne peut pas aller dans cette phrase');
     element.remove();
   });
 });

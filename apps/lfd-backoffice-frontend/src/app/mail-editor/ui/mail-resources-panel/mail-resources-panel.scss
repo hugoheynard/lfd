@@ -1,0 +1,41 @@
+.body,
+.kind,
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resource {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+}
+
+// Un lien ou un bloc de données : on le survole pour le repérer dans l'e-mail.
+.lightable {
+  padding: var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  outline: none;
+}
+
+.lightable:hover,
+.lightable:focus-visible {
+  background: var(--fold-color-primary-surface);
+}
+
+.label {
+  font-weight: var(--fold-weight-medium);
+}
+
+.hint {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}

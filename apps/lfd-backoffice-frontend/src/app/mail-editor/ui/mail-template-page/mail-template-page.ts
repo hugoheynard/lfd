@@ -52,6 +52,7 @@ import {
   placeTitle,
   unplacedPhrases,
 } from '../../rules/mail-phrase-places';
+import { EMPTY_MAIL_RESOURCES } from '../../rules/mail-resources';
 import {
   BLOCK_PREVIEW_DEBOUNCE_MS,
   MailBlockPreviewsStore,
@@ -179,6 +180,8 @@ export class MailTemplatePage implements HasPendingChanges {
   /** Les phrases que l'aperçu fidèle et l'essai rendent (S5e). */
   readonly phraseSource = signal<MailPhraseSource>('draft');
   protected readonly phraseSourceOptions = PHRASE_SOURCE_OPTIONS;
+  /** Un e-mail servi sans ressources (le contrat les laisse facultatives) : rien à poser. */
+  protected readonly noResources = EMPTY_MAIL_RESOURCES;
   /** Le dernier refus du serveur à « Publier » ou « Revenir », tel qu'il l'a dit. */
   protected readonly gestureError = signal<string | null>(null);
   /** Monte après chaque geste qui écrit une version : l'historique se relit. */

@@ -146,6 +146,7 @@
             [template]="current.template"
             [locale]="locale()"
             [canWrite]="canWrite()"
+            [resources]="current.resources ?? noResources"
             [cases]="caseOptions()"
             [(caseId)]="caseId"
             [(focus)]="focus"

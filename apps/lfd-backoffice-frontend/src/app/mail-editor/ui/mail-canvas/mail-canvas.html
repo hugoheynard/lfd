@@ -34,7 +34,9 @@
             [html]="view.subject"
             [canWrite]="canWrite()"
             [phrasePaths]="phrasePaths()"
+            [values]="valueCards()"
             (phraseInput)="onPhraseInput($event)"
+            (valueRefused)="onValueRefused($event)"
           />
           @for (refusal of phraseRefusalsOf(view.subject); track $index) {
             <fold-callout variant="alert" data-phrase-refusal>{{ refusal }}</fold-callout>
@@ -43,39 +45,17 @@
       </div>
     </fold-card>
 
-    @if (variables().length > 0) {
-      <fold-card data-variables>
-        <div class="card-body">
-          <fold-element-title
-            variant="title"
-            title="Variables"
-            subtitle="À glisser dans une phrase, ou à choisir avec le curseur dans une phrase"
-          />
-          <div class="chips">
-            @for (variable of variables(); track variable.name) {
-              <button
-                foldButton
-                size="sm"
-                type="button"
-                draggable="true"
-                [emphasis]="variable.required ? 'solid' : 'outline'"
-                [intent]="variable.required ? 'primary' : 'neutral'"
-                [disabled]="!canWrite()"
-                [attr.data-variable]="variable.name"
-                [attr.aria-label]="
-                  'Insérer {' + variable.name + '}' + (variable.required ? ', obligatoire' : '')
-                "
-                (mousedown)="$event.preventDefault()"
-                (dragstart)="onVariableDragStart($event, variable.name)"
-                (click)="insertVariable(variable.name)"
-              >
-                {{ '{' + variable.name + '}' }}
-              </button>
-            }
-          </div>
-        </div>
-      </fold-card>
+    @if (valueRefusal(); as refusal) {
+      <fold-callout variant="alert" announce data-value-refusal>{{ refusal }}</fold-callout>
     }
+    <app-mail-resources-panel
+      [resources]="resources()"
+      [canWrite]="canWrite()"
+      [placeable]="placeableValues()"
+      [required]="requiredValues()"
+      (valuePicked)="insertVariable($event)"
+      (lit)="litSection.set($event)"
+    />
   </div>
 
   <div class="flow">
@@ -141,7 +121,9 @@
                 [html]="view.header"
                 [canWrite]="canWrite()"
                 [phrasePaths]="phrasePaths()"
+                [values]="valueCards()"
                 (phraseInput)="onPhraseInput($event)"
+                (valueRefused)="onValueRefused($event)"
               />
               @for (refusal of phraseRefusalsOf(view.header); track $index) {
                 <fold-callout variant="alert" data-phrase-refusal>{{ refusal }}</fold-callout>
@@ -162,6 +144,7 @@
                 class="block"
                 tabindex="0"
                 [class.selected]="isSelected(block)"
+                [class.lit]="isLit(block)"
                 [attr.data-block]="block.id"
                 [attr.aria-label]="nameOf(block)"
                 [attr.aria-current]="isSelected(block) ? 'true' : null"
@@ -195,11 +178,6 @@
                 }
                 <div class="tools">
                   <span class="name">{{ nameOf(block) }}</span>
-                  @if (block.kind === 'button') {
-                    <span class="name" data-button-href>
-                      {{ block.href === '' ? 'Pas encore de lien' : 'Lien : ' + block.href }}
-                    </span>
-                  }
                 </div>
 
                 @if (html === null) {
@@ -219,7 +197,9 @@
                     [canWrite]="canWrite()"
                     [phrasePaths]="phrasePaths()"
                     [freeBlockIds]="freeBlockIds()"
+                    [values]="valueCards()"
                     (phraseInput)="onPhraseInput($event)"
+                    (valueRefused)="onValueRefused($event)"
                     (freeBlockInput)="onFreeBlockInput($event)"
                   />
                 }
@@ -228,6 +208,36 @@
                     Quelqu’un a modifié une phrase de ce bloc pendant que vous l’écriviez. Sa
                     version est rechargée ; refaites votre modification si elle tient toujours.
                   </fold-callout>
+                }
+                @if (block.kind === 'model' && block.section === 'cta' && modelLinks().length > 0) {
+                  <div class="links" data-model-links>
+                    @for (link of modelLinks(); track link.slot) {
+                      <span
+                        class="link-chip"
+                        [attr.data-link-chip]="link.slot"
+                        [attr.title]="link.description"
+                      >
+                        <fold-badge [content]="'Lien · ' + link.label" />
+                      </span>
+                    }
+                  </div>
+                } @else if (block.kind === 'button') {
+                  <div class="links">
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="soft"
+                      intent="primary"
+                      type="button"
+                      data-button-href
+                      [attr.title]="'Modifier l’adresse de ce bouton'"
+                      (click)="$event.stopPropagation(); openButtonSettings(block)"
+                    >
+                      {{
+                        block.href === '' ? 'Lien · pas encore d’adresse' : 'Lien · ' + block.href
+                      }}
+                    </button>
+                  </div>
                 }
                 @for (refusal of phraseRefusalsOf(html); track $index) {
                   <fold-callout variant="alert" data-phrase-refusal>{{ refusal }}</fold-callout>
@@ -311,17 +321,6 @@
         </div>
       </fold-card>
     } @else {
-      @if (modelCtaDestination(); as destination) {
-        <fold-card data-cta-destination>
-          <div class="card-body">
-            <fold-element-title variant="title" title="Réglages" [subtitle]="modelLabels.cta" />
-            <p class="destination">Lien automatique : {{ destination }}</p>
-            <p class="muted">
-              Calculé pour chaque destinataire à l’envoi ; il ne se règle pas ici.
-            </p>
-          </div>
-        </fold-card>
-      }
       <ng-content select="[focusPanel]" />
     }
   </div>

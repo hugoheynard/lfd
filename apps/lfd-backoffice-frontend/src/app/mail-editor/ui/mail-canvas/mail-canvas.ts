@@ -22,12 +22,15 @@ import {
   type MailBlock,
   type MailDocument,
   type MailDocumentViolation,
+  type MailEditorResources,
   type MailEditorFrame,
   type MailEditorPhrasePlace,
   type MailLocale,
   type MailTemplateDeclaration,
+  type ModelSectionId,
 } from '@lfd/mail-blocks';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -57,13 +60,18 @@ import {
 import { insertChipAt, variableChip } from '../../rules/mail-editable-text';
 import { freeBlockFallback, phrasePathsIn } from '../../rules/mail-fragments';
 import { samePlace } from '../../rules/mail-phrase-places';
+import {
+  EMPTY_MAIL_RESOURCES,
+  labelValueChip,
+  valueCardsByName,
+  valueRefusal,
+} from '../../rules/mail-resources';
 import { MailBlockPreviewsStore } from '../../state/mail-block-previews-store';
 import { MailPhrasesStore } from '../../state/mail-phrases-store';
 import {
   type FreeBlockInput,
   MailBlockFragment,
   type PhraseInput,
-  VARIABLE_DRAG_TYPE,
 } from '../mail-block-fragment/mail-block-fragment';
 import { MailBlockLibrary } from '../mail-block-library/mail-block-library';
 import {
@@ -71,6 +79,7 @@ import {
   type ColumnWidthChoice,
   MailBlockSettings,
 } from '../mail-block-settings/mail-block-settings';
+import { MailResourcesPanel } from '../mail-resources-panel/mail-resources-panel';
 
 /** Un cas du modèle, dans la liste de la colonne de gauche. */
 export interface MailCaseOption {
@@ -83,12 +92,6 @@ interface Removal {
   readonly title: string;
   readonly before: MailDocument;
   readonly after: MailDocument;
-}
-
-/** Une variable du modèle, à glisser dans une phrase. */
-interface VariableChip {
-  readonly name: string;
-  readonly required: boolean;
 }
 
 /**
@@ -104,9 +107,12 @@ interface VariableChip {
  * 2026-11-07, sans boutons « monter / descendre »). Le sélectionner ouvre
  * ses réglages à droite. On écrit sur place : une phrase part en
  * brouillon (`MailPhrasesStore`, dans la langue RENDUE), le texte d'un bloc
- * libre change le document. À gauche, le cas, l'objet et les variables à
- * glisser ; à droite, la bibliothèque (ajout sous le bloc sélectionné) et
- * les réglages.
+ * libre change le document. À gauche, le cas, l'objet et les ressources de
+ * l'e-mail (§ 24, R2 : valeurs à glisser dans une phrase qui les reçoit,
+ * liens et blocs de données à repérer) ; à droite, la bibliothèque (ajout
+ * sous le bloc sélectionné) et les réglages. Le bouton du modèle porte ses
+ * pastilles de lien ; un bouton ajouté, son adresse dans une pastille qui
+ * ouvre ses réglages.
  *
  * Les refus du document sont ceux de `validateMailDocument`, ceux d'une
  * phrase ceux du serveur — aucune règle n'est recopiée ici.
@@ -118,6 +124,7 @@ interface VariableChip {
     CdkDrag,
     CdkDragHandle,
     CdkDropList,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -129,6 +136,7 @@ interface VariableChip {
     MailBlockFragment,
     MailBlockLibrary,
     MailBlockSettings,
+    MailResourcesPanel,
   ],
   templateUrl: './mail-canvas.html',
   styleUrl: './mail-canvas.scss',
@@ -142,6 +150,8 @@ export class MailCanvas {
   /** La langue de l'e-mail affiché ; la page la choisit parmi celles du modèle. */
   readonly locale = input.required<MailLocale>();
   readonly canWrite = input(false);
+  /** Les ressources de l'e-mail (`MailEditorView.resources`, § 24). */
+  readonly resources = input<MailEditorResources>(EMPTY_MAIL_RESOURCES);
   /** Les cas du modèle ; le premier est l'exemple de l'e-mail. */
   readonly cases = input<readonly MailCaseOption[]>([]);
   readonly caseId = model<string | null>(null);
@@ -196,13 +206,25 @@ export class MailCanvas {
     return ids;
   });
 
-  /** Les variables du modèle : celles de ses phrases, obligatoires si une phrase l'exige. */
-  protected readonly variables = computed<readonly VariableChip[]>(() => {
-    const editable = this.editablePhrases();
-    const required = new Set(editable.flatMap((phrase) => phrase.requiredVariables));
-    const names = [...new Set(editable.flatMap((phrase) => phrase.variables))];
-    return names.map((name) => ({ name, required: required.has(name) }));
+  /** Les fiches des valeurs, par nom technique. */
+  protected readonly valueCards = computed(() => valueCardsByName(this.resources()));
+  /** Les valeurs qu'au moins une phrase modifiable reçoit. */
+  protected readonly placeableValues = computed(() => {
+    const editable = this.phrasePaths();
+    return new Set(
+      this.resources()
+        .values.filter((value) => value.phrases.some((path) => editable.has(path)))
+        .map((value) => value.name),
+    );
   });
+  /** Les valeurs qu'une phrase modifiable exige. */
+  protected readonly requiredValues = computed(
+    () => new Set(this.editablePhrases().flatMap((phrase) => phrase.requiredVariables)),
+  );
+  /** Le dernier dépôt de valeur refusé, dit sous les ressources. */
+  protected readonly valueRefusal = signal<string | null>(null);
+  /** Le bloc du modèle qu'une ressource survolée éclaire. */
+  protected readonly litSection = signal<ModelSectionId | null>(null);
 
   protected readonly violations = computed<readonly MailDocumentViolation[]>(() =>
     validateMailDocument(this.document(), this.declaration(), this.template()),
@@ -226,16 +248,8 @@ export class MailCanvas {
     const block = this.selected();
     return block?.kind === 'columns' ? block.cells : [];
   });
-  /**
-   * Où mène le bouton du modèle quand il est sélectionné (§ 23) : son lien se
-   * calcule à l'envoi, l'éditeur ne fait que le dire.
-   */
-  protected readonly modelCtaDestination = computed(() => {
-    const place = this.focus();
-    return place?.kind === 'block' && place.block === 'cta'
-      ? (this.declaration().ctaDestination ?? null)
-      : null;
-  });
+  /** Les pastilles de lien du bouton du modèle : il se calcule à l'envoi, l'éditeur le nomme. */
+  protected readonly modelLinks = computed(() => this.resources().links);
   protected readonly librarySubtitle = computed(() =>
     this.anchorId() === null ? 'Ajout à la fin de l’e-mail' : 'Ajout sous le bloc sélectionné',
   );
@@ -333,6 +347,10 @@ export class MailCanvas {
       : this.selectedId() === block.id;
   }
 
+  protected isLit(block: MailBlock): boolean {
+    return block.kind === 'model' && block.section === this.litSection();
+  }
+
   protected isFrameSelected(frame: MailEditorFrame): boolean {
     return samePlace(this.focus(), { kind: 'frame', frame });
   }
@@ -418,6 +436,7 @@ export class MailCanvas {
   protected onPhraseInput(input: PhraseInput): void {
     const phrase = this.phrases.phrases().find((candidate) => candidate.path === input.path);
     if (phrase !== undefined && this.canWrite()) {
+      this.valueRefusal.set(null);
       this.phrases.edit(phrase, this.renderedLocale(), input.text);
     }
   }
@@ -427,13 +446,6 @@ export class MailCanvas {
     const locale = MAIL_LOCALES.find((candidate) => candidate === input.locale);
     if (block !== null && block.kind !== 'columns' && locale !== undefined && this.canWrite()) {
       this.edited(withText(block, locale, input.text));
-    }
-  }
-
-  protected onVariableDragStart(event: DragEvent, name: string): void {
-    event.dataTransfer?.setData(VARIABLE_DRAG_TYPE, name);
-    if (event.dataTransfer !== null) {
-      event.dataTransfer.effectAllowed = 'copy';
     }
   }
 
@@ -447,17 +459,35 @@ export class MailCanvas {
   }
 
   /**
-   * Le geste clavier du glisser : une variable choisie s'insère en pastille
-   * au dernier curseur posé dans une phrase, et la phrase est relue.
+   * Le geste clavier du glisser : une valeur choisie s'insère en pastille au
+   * dernier curseur posé dans une phrase — si cette phrase la reçoit —, et la
+   * phrase est relue. Sinon, le refus est dit.
    */
   protected insertVariable(name: string): void {
     const range = this.caret;
     const zone = range === null ? null : this.phraseZoneOf(range.startContainer);
     if (range === null || zone === null) {
+      this.valueRefusal.set('Posez d’abord le curseur dans une phrase de l’e-mail.');
       return;
     }
-    insertChipAt(range, variableChip(zone.ownerDocument, name));
+    const refusal = valueRefusal(this.valueCards(), name, zone.getAttribute('data-phrase') ?? '');
+    this.valueRefusal.set(refusal);
+    if (refusal !== null) {
+      return;
+    }
+    const chip = variableChip(zone.ownerDocument, name);
+    insertChipAt(range, chip);
+    labelValueChip(chip, this.valueCards());
     zone.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  protected onValueRefused(refusal: string): void {
+    this.valueRefusal.set(refusal);
+  }
+
+  /** La pastille d'adresse d'un bouton ajouté ouvre ses réglages. */
+  protected openButtonSettings(block: MailBlock): void {
+    this.select(block);
   }
 
   protected edited(block: FreeBlock): void {

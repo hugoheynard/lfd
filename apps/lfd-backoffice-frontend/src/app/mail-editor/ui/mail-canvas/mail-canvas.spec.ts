@@ -3,6 +3,7 @@ import {
   modelBlockId,
   type MailDocument,
   type MailDocumentBlockPreviewView,
+  type MailEditorResources,
   type MailEditorPhraseView,
   type MailTemplateDeclaration,
 } from '@lfd/mail-blocks';
@@ -26,6 +27,35 @@ const DOCUMENT: MailDocument = {
     { id: modelBlockId('title'), kind: 'model', section: 'title' },
     { id: 'note', kind: 'paragraph', text: { fr: 'Fermé le 1er mai' } },
     { id: modelBlockId('footer'), kind: 'model', section: 'footer' },
+  ],
+};
+
+const RESOURCES: MailEditorResources = {
+  values: [
+    {
+      name: 'ref',
+      label: 'Référence de commande',
+      description: 'le numéro de la commande',
+      example: 'ORD-4812',
+      phrases: ['subject', 'title.ready'],
+    },
+    {
+      name: 'day',
+      label: 'Jour de retrait',
+      description: 'le jour où la commande attend',
+      example: 'vendredi 8 mai',
+      phrases: ['subject'],
+    },
+  ],
+  links: [
+    {
+      slot: 'cta',
+      label: 'Liste de ses commandes',
+      description: 'la liste de ses commandes, sur la boutique',
+    },
+  ],
+  dataBlocks: [
+    { block: 'summary', label: 'Récapitulatif de la commande', description: 'les lignes' },
   ],
 };
 
@@ -85,6 +115,7 @@ function render(document: MailDocument = DOCUMENT, fragments: Record<string, str
   fixture.componentRef.setInput('template', TEMPLATE);
   fixture.componentRef.setInput('locale', 'fr');
   fixture.componentRef.setInput('canWrite', true);
+  fixture.componentRef.setInput('resources', RESOURCES);
   fixture.componentRef.setInput('newId', () => 'neuf');
   fixture.detectChanges();
   const emitted: MailDocument[] = [];
@@ -267,7 +298,7 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     document.getSelection()?.addRange(range);
     document.dispatchEvent(new Event('selectionchange'));
     fixture.detectChanges();
-    element.querySelector<HTMLButtonElement>('[data-variable="ref"]')?.click();
+    element.querySelector<HTMLButtonElement>('[data-value="ref"]')?.click();
     expect(edit).toHaveBeenCalledWith(
       expect.objectContaining({ path: 'title.ready' }),
       'en',
@@ -287,28 +318,65 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     element.remove();
   });
 
-  it('le bouton du modèle sélectionné dit où mène son lien, sans champ d’adresse', () => {
+  it('le bouton du modèle porte sa pastille de lien, et plus de carte « Lien automatique »', () => {
     const withCta: MailDocument = {
       template: TEMPLATE,
       blocks: [{ id: modelBlockId('cta'), kind: 'model', section: 'cta' }],
     };
     const { element, fixture } = render(withCta, { 'model:cta': '<p>Voir</p>' });
-    fixture.componentRef.setInput('declaration', {
-      ...DECLARATION,
-      ctaDestination: 'la liste de ses commandes',
-    });
-    fixture.detectChanges();
-    expect(element.querySelector('[data-cta-destination]')).toBeNull();
+    const chip = element.querySelector('[data-block="model:cta"] [data-link-chip="cta"]');
+    expect(chip?.textContent).toContain('Liste de ses commandes');
+    expect(chip?.getAttribute('title')).toBe('la liste de ses commandes, sur la boutique');
     element.querySelector<HTMLElement>('li[data-block="model:cta"]')?.click();
     fixture.detectChanges();
-    const panel = element.querySelector('[data-cta-destination]');
-    expect(panel?.textContent).toContain('Lien automatique : la liste de ses commandes');
-    expect(panel?.textContent).toContain('ne se règle pas ici');
-    expect(panel?.querySelector('input')).toBeNull();
+    expect(element.querySelector('[data-cta-destination]')).toBeNull();
+    expect(element.querySelector('[data-right]')?.textContent).not.toContain('Lien automatique');
     element.remove();
   });
 
-  it('un bouton ajouté montre son adresse dans son cadre, ou qu’il n’en a pas', () => {
+  it('une valeur choisie pour une phrase qui ne la reçoit pas est refusée, et le refus est dit', () => {
+    const { element, phrases, fixture } = render();
+    const edit = vi.spyOn(phrases, 'edit');
+    const text = element.querySelector('[data-phrase="title.ready"]')?.firstChild;
+    if (text === null || text === undefined) {
+      throw new Error('zone sans texte');
+    }
+    const range = document.createRange();
+    range.setStart(text, 0);
+    range.collapse(true);
+    document.getSelection()?.removeAllRanges();
+    document.getSelection()?.addRange(range);
+    document.dispatchEvent(new Event('selectionchange'));
+    element.querySelector<HTMLButtonElement>('[data-value="day"]')?.click();
+    fixture.detectChanges();
+    expect(edit).not.toHaveBeenCalled();
+    expect(element.querySelector('[data-value-refusal]')?.textContent).toContain(
+      '« Jour de retrait » ne peut pas aller dans cette phrase',
+    );
+    element.remove();
+  });
+
+  it('l’objet montre ses pastilles au nom lisible de leur fiche', () => {
+    const { element } = render();
+    const chip = element.querySelector('[data-left] [data-var="ref"]');
+    expect(chip?.textContent).toBe('Référence de commande');
+    expect(chip?.getAttribute('title')).toContain('EX-1');
+    element.remove();
+  });
+
+  it('survoler un bloc de données à gauche éclaire le bloc dans l’e-mail', () => {
+    const withSummary: MailDocument = {
+      template: TEMPLATE,
+      blocks: [{ id: modelBlockId('summary'), kind: 'model', section: 'summary' }],
+    };
+    const { element, fixture } = render(withSummary, { 'model:summary': '<p>Lignes</p>' });
+    element.querySelector('[data-data-block="summary"]')?.dispatchEvent(new Event('mouseenter'));
+    fixture.detectChanges();
+    expect(element.querySelector('li[data-block="model:summary"]')?.classList).toContain('lit');
+    element.remove();
+  });
+
+  it('un bouton ajouté montre son adresse dans une pastille de lien qui ouvre ses réglages', () => {
     const buttons: MailDocument = {
       template: TEMPLATE,
       blocks: [
@@ -316,13 +384,17 @@ describe('MailCanvas — l’e-mail lui-même', () => {
         { id: 'b2', kind: 'button', label: { fr: 'Voir' }, href: '' },
       ],
     };
-    const { element } = render(buttons, { b1: '<p>Voir</p>', b2: '<p>Voir</p>' });
+    const { element, fixture } = render(buttons, { b1: '<p>Voir</p>', b2: '<p>Voir</p>' });
     expect(element.querySelector('[data-block="b1"] [data-button-href]')?.textContent).toContain(
       'https://exemple.fr/a',
     );
     expect(element.querySelector('[data-block="b2"] [data-button-href]')?.textContent).toContain(
-      'Pas encore de lien',
+      'pas encore d’adresse',
     );
+    expect(element.querySelector('[data-settings-panel]')).toBeNull();
+    element.querySelector<HTMLButtonElement>('[data-block="b2"] [data-button-href]')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('[data-settings-panel]')).not.toBeNull();
     element.remove();
   });
 });

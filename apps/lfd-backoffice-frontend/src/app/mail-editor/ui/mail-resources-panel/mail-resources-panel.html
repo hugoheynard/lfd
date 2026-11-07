@@ -1,0 +1,101 @@
+@let all = resources();
+<fold-card data-resources>
+  <div class="body">
+    <fold-element-title
+      variant="title"
+      title="Ressources de cet e-mail"
+      subtitle="Fournies à l’envoi, pour chaque destinataire"
+    />
+
+    @if (all.values.length > 0) {
+      <section class="kind" data-resource-kind="values">
+        <fold-element-title
+          variant="caps"
+          title="Valeurs"
+          subtitle="À glisser dans une phrase, ou à cliquer après y avoir posé le curseur"
+        />
+        <ul class="list">
+          @for (value of all.values; track value.name) {
+            <li class="resource">
+              <button
+                foldButton
+                size="sm"
+                type="button"
+                draggable="true"
+                [emphasis]="required().has(value.name) ? 'solid' : 'outline'"
+                [intent]="required().has(value.name) ? 'primary' : 'neutral'"
+                [disabled]="!canWrite() || !placeable().has(value.name)"
+                [attr.data-value]="value.name"
+                [attr.title]="value.description"
+                [attr.aria-label]="
+                  'Insérer « ' +
+                  value.label +
+                  ' »' +
+                  (required().has(value.name) ? ', obligatoire' : '')
+                "
+                (mousedown)="$event.preventDefault()"
+                (dragstart)="onDragStart($event, value.name)"
+                (click)="valuePicked.emit(value.name)"
+              >
+                {{ value.label }}
+              </button>
+              <span class="hint">{{ value.description }} · Exemple : {{ value.example }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (all.links.length > 0) {
+      <section class="kind" data-resource-kind="links">
+        <fold-element-title
+          variant="caps"
+          title="Liens"
+          subtitle="Calculés à l’envoi, posés sur le bouton de l’e-mail"
+        />
+        <ul class="list">
+          @for (link of all.links; track link.slot) {
+            <li
+              class="resource lightable"
+              tabindex="0"
+              [attr.data-link]="link.slot"
+              (mouseenter)="lit.emit('cta')"
+              (mouseleave)="lit.emit(null)"
+              (focus)="lit.emit('cta')"
+              (blur)="lit.emit(null)"
+            >
+              <span class="label">{{ link.label }}</span>
+              <span class="hint">{{ link.description }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (all.dataBlocks.length > 0) {
+      <section class="kind" data-resource-kind="data-blocks">
+        <fold-element-title
+          variant="caps"
+          title="Blocs de données"
+          subtitle="Déjà dans la page : survolez pour le repérer, déplacez-le dans l’e-mail"
+        />
+        <ul class="list">
+          @for (data of all.dataBlocks; track data.block) {
+            <li
+              class="resource lightable"
+              tabindex="0"
+              [attr.data-data-block]="data.block"
+              (mouseenter)="lit.emit(data.block)"
+              (mouseleave)="lit.emit(null)"
+              (focus)="lit.emit(data.block)"
+              (blur)="lit.emit(null)"
+            >
+              <span class="label">{{ data.label }}</span>
+              <span class="hint">{{ data.description }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</fold-card>

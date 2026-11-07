@@ -1805,3 +1805,55 @@ Les colonnes ne s'empilent sur téléphone que là où la règle `@media` est lu
 non Gmail et une partie des Outlook l'ignorent. Un rendu « hybride »
 (colonnes en `inline-block` à largeur minimale) s'empilerait sans elle. Hugo,
 le 2026-11-07 : « non pas là » — noté, non planifié.
+
+### R2 — bâti le 2026-11-07 — écarts
+
+**Ce qui existe** (`apps/lfd-backoffice-frontend/src/app/mail-editor/`).
+
+- **« Ressources de cet e-mail »**, à gauche sous l'objet
+  (`apps/lfd-backoffice-frontend/src/app/mail-editor/ui/mail-resources-panel/`) : Valeurs, Liens, Blocs de données, chacune
+  par sa fiche — nom lisible, description et exemple **écrits dessous, en
+  petit** (lisibles au toucher ; la description est aussi au survol). Remplace
+  la liste des variables. Le choix du cas reste au-dessus quand il y en a
+  plusieurs.
+- **Une valeur ne se pose que dans une phrase qui la reçoit** (`phrases` de
+  la fiche), glissée ou cliquée au curseur : sinon le dépôt est refusé et
+  le refus est dit sous les ressources (« « Jour de retrait » ne peut pas
+  aller dans cette phrase : à l'envoi, elle n'y est pas fournie… »). Une
+  valeur qu'aucune phrase modifiable ne reçoit est grisée ; une valeur exigée
+  par une phrase reste pleine (comme avant). Règle :
+  `apps/lfd-backoffice-frontend/src/app/mail-editor/rules/mail-resources.ts`.
+- **Pastilles lisibles** : une pastille `data-var` **affiche le nom lisible**
+  (« Référence de commande ») et, au survol, sa description et la valeur du
+  cas affiché (gardée dans `data-example`). Choisi parce que la valeur
+  d'exemple brute (« EX-1 ») ne dit pas ce qu'elle est, alors que le nom le
+  dit ; la valeur reste à un survol, et l'aperçu fidèle la montre. Le
+  relecteur (`readDictionaryText`) ne lit que `data-var` : `{ref}` reste
+  `{ref}`, ses tests sont inchangés et un test le reprouve sur une pastille
+  nommée.
+- **Pastilles de lien** : le bouton du modèle porte une pastille par lien de
+  l'e-mail (« Lien · Liste de ses commandes », description au survol) ; la
+  carte « Lien automatique » a disparu des réglages. Un bouton ajouté montre
+  son adresse dans une pastille (« Lien · https://… » ou « pas encore
+  d'adresse ») qui ouvre ses réglages.
+- **Blocs de données et liens** : survolés ou focalisés à gauche, ils
+  éclairent le bloc du modèle qui les porte (un lien éclaire le bouton). Ils
+  ne s'ajoutent pas ; ils se déplacent dans l'e-mail comme avant.
+- Les doublures de `mail-template-page.spec.ts` servent `resources`
+  obligatoirement (`ServedView`) ; le contrat reste facultatif côté paquet,
+  et la page passe des ressources vides quand l'API n'en sert pas.
+
+**Écarts.**
+
+- **Les deux pastilles de lien n'ont pas exactement le même dessin** : celle
+  du bouton du modèle est un `fold-badge` (rien à cliquer), celle d'un bouton
+  ajouté un `foldButton` doux (elle se clique). fold n'a pas de pastille
+  cliquable ; à demander à fold si l'écart gêne à l'écran.
+- **Les pastilles de lien vivent sous le bloc**, pas dans le bouton rendu : le
+  HTML du bouton vient du serveur, sans marqueur de lien.
+- **Un bouton ajouté DANS une colonne** n'a pas de pastille dans l'e-mail :
+  il se règle par la liste des blocs de la colonne, comme avant.
+- **Glisser un lien sur un bouton** n'existe pas : un e-mail n'en fournit
+  qu'un par emplacement (R3).
+- **Cliquer une valeur sans curseur dans une phrase** dit « Posez d'abord le
+  curseur dans une phrase de l'e-mail » (avant : rien).

@@ -7,6 +7,7 @@ import {
   type MailDocumentBlockPreviewPayload,
   type MailEditorPhrasePlace,
   type MailEditorPhraseView,
+  type MailEditorResources,
   type MailEditorView,
 } from '@lfd/mail-blocks';
 import { describe, expect, it, vi } from 'vitest';
@@ -42,10 +43,16 @@ function phrase(
   };
 }
 
+/**
+ * La vue servie : `resources` y est obligatoire (§ 24, R2) — l'API la sert
+ * toujours ; le contrat ne la laisse facultative que pour le paquet.
+ */
+type ServedView = MailEditorView & { readonly resources: MailEditorResources };
+
 function view(
   revision: number,
   locales: MailEditorView['declaration']['locales'] = ['fr', 'en'],
-): MailEditorView {
+): ServedView {
   return {
     template: TEMPLATE,
     audience: 'customer',
@@ -65,6 +72,7 @@ function view(
     phrases: [],
     orphans: [],
     cases: [],
+    resources: { values: [], links: [], dataBlocks: [] },
   };
 }
 
@@ -230,7 +238,7 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
   it('dit les refus de publication avant tout appel', async () => {
     const publish = vi.fn();
     const missing = view(3);
-    const withParagraph: MailEditorView = {
+    const withParagraph: ServedView = {
       ...missing,
       document: {
         template: TEMPLATE,
@@ -267,7 +275,7 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     const pristine = await render({ load: vi.fn(() => Promise.resolve(view(0))) });
     expect(pristine.element.querySelector('[data-revert]')).toBeNull();
     TestBed.resetTestingModule();
-    const published: MailEditorView = {
+    const published: ServedView = {
       ...view(5),
       source: 'published',
       published: { version: 2, at: '2026-11-07T10:00:00.000Z', staffId: 'stf_1' },
