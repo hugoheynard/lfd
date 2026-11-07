@@ -136,6 +136,12 @@ export interface MailTemplateDeclaration {
    * pas. Absente : toutes ses phrases s'écrivent, comme avant.
    */
   readonly editablePhrases?: readonly string[] | undefined;
+  /**
+   * Où mène le bouton du modèle, dit au staff du point de vue du
+   * destinataire (§ 23) : le lien se calcule à l'envoi et ne s'écrit pas
+   * dans l'éditeur. Absente : le modèle n'a pas de bouton.
+   */
+  readonly ctaDestination?: string | undefined;
 }
 
 /** Cette phrase s'écrit-elle dans l'éditeur ? Sans liste déclarée, oui. */

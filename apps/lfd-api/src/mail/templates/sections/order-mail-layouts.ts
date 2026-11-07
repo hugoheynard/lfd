@@ -46,6 +46,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
   >
 > = {
   "customer.order-placed": {
+    ctaDestination:
+      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -85,6 +87,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     editablePhrases: ["subject", "kicker", "title", "intro", "cta", "manageLink", "itinerary"],
   },
   "customer.order-ready": {
+    ctaDestination:
+      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: [...SUBJECT, ...variants({ subjectReminder: REMINDER, subjectRemainder: REMAINDER })],
     header: [...KICKER, ...variants({ kickerReminder: REMINDER, kickerRemainder: REMAINDER })],
     sections: [
@@ -117,6 +121,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.delivery-en-route": {
+    ctaDestination:
+      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: [...SUBJECT, ...variants({ subjectRemainder: REMAINDER })],
     header: KICKER,
     sections: [
@@ -133,6 +139,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.order-delayed": {
+    ctaDestination:
+      "la liste de ses commandes dans son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -152,6 +160,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.payment-failed": {
+    ctaDestination:
+      "son lien pour reprendre le règlement de la commande ; absent quand la commande n'a pas de lien de règlement",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -201,6 +211,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.order-payment-link": {
+    ctaDestination: "son lien de règlement de la commande",
     subject: SUBJECT,
     header: KICKER,
     sections: [

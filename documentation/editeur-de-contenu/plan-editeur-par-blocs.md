@@ -1462,6 +1462,10 @@ le HTML rend l'empreinte d'avant à l'octet) :
   Le refus côté serveur d'une écriture sur un libellé système reste **non
   tranché** (Hugo : « je ne sais pas ») : aujourd'hui, la liste ne règle que
   ce que l'éditeur montre.
+- **La destination du bouton** (2026-11-07) : `MailTemplateDeclaration.ctaDestination`
+  (`@lfd/mail-blocks`, ajout seul), déclarée dans `sections/*-mail-layouts.ts`
+  pour les 15 e-mails à bouton. Écart : les liens « voir ma commande » mènent
+  à la liste `/mes-commandes`, pas à la commande ; le front ne l'affiche pas encore.
 
 ### Les 31 autres e-mails — relevé du 2026-11-07, soumis à Hugo
 

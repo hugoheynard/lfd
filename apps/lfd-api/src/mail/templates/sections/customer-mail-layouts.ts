@@ -102,6 +102,8 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.invoice-issued": {
+    ctaDestination:
+      "la page « Mes factures » de son espace client ; absent quand l'adresse de la boutique n'est pas configurée",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -156,6 +158,8 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.access-opened": {
+    ctaDestination:
+      "sa page de connexion par code à la boutique ; quand l'adresse de la boutique n'est pas configurée, son lien à usage unique pour choisir un mot de passe",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -200,6 +204,8 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.password-reset": {
+    ctaDestination:
+      "son lien à usage unique pour choisir un nouveau mot de passe, valable une heure",
     subject: SUBJECT,
     header: KICKER,
     sections: [

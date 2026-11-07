@@ -56,6 +56,12 @@ export interface MailLayoutDeclaration {
    * e-mails qui ne suivent pas encore la règle.
    */
   readonly editablePhrases?: readonly string[];
+  /**
+   * Où mène le bouton du modèle, en français, du point de vue du
+   * destinataire, avec sa condition d'absence (§ 23). Déclarée si et
+   * seulement si l'e-mail a une section `cta`.
+   */
+  readonly ctaDestination?: string;
 }
 
 /** Une déclaration par e-mail du registre — exhaustive par construction. */

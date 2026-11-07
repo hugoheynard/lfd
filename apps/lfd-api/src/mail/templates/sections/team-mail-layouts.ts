@@ -25,6 +25,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
   >
 > = {
   "staff.appointment-booked": {
+    ctaDestination: "la page du rendez-vous dans le back-office",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -38,6 +39,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     ],
   },
   "staff.account-alert": {
+    ctaDestination: "l'onglet Alertes du compte dans le back-office",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -47,6 +49,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     ],
   },
   "staff.invited": {
+    ctaDestination: "son lien à usage unique pour choisir son mot de passe du back-office",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -66,6 +69,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     ],
   },
   "staff.password-reset": {
+    ctaDestination: "son lien à usage unique pour choisir un nouveau mot de passe du back-office",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -84,6 +88,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     ],
   },
   "staff.access-restored": {
+    ctaDestination: "la page d’accueil du back-office, pour se reconnecter avec son mot de passe",
     subject: SUBJECT,
     header: KICKER,
     sections: [
@@ -150,6 +155,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     ],
   },
   "staff.customer-request": {
+    ctaDestination: "la demande du client dans le back-office (Commercial, Demandes)",
     subject: variants({
       subject: "Sans commande",
       subjectWithOrder: "Avec une commande",

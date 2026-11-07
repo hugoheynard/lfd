@@ -104,5 +104,6 @@ export function mailBlockDeclarationOf(mail: keyof B2bMails): MailTemplateDeclar
     locales: FOLLOWS_RECIPIENT_LOCALE.has(mail) ? MAIL_LOCALES : FRENCH_ONLY,
     charter: CHARTERS[mail],
     ...(layout.editablePhrases === undefined ? {} : { editablePhrases: layout.editablePhrases }),
+    ...(layout.ctaDestination === undefined ? {} : { ctaDestination: layout.ctaDestination }),
   };
 }

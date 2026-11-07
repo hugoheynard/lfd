@@ -95,4 +95,23 @@ describe("les déclarations de l'éditeur par blocs (S4a)", () => {
 
     expect(orphans).toEqual([]);
   });
+
+  it.each(MAILS)("%s : déclare où mène son bouton si et seulement s'il en a un (§ 23)", (mail) => {
+    const hasButton = MAIL_LAYOUTS[mail].sections.some((section) => section.id === "cta");
+    const destination = mailBlockDeclarationOf(mail).ctaDestination;
+
+    if (hasButton) {
+      expect(destination?.trim()).toBeTruthy();
+    } else {
+      expect(destination).toBeUndefined();
+    }
+  });
+
+  it("quinze e-mails ont un bouton du modèle", () => {
+    const withButton = MAILS.filter(
+      (mail) => mailBlockDeclarationOf(mail).ctaDestination !== undefined,
+    );
+
+    expect(withButton).toHaveLength(15);
+  });
 });
