@@ -1,0 +1,33 @@
+<fold-fieldset [legend]="label()">
+  <div class="cf-row">
+    <span
+      class="cf-swatch"
+      role="img"
+      [attr.aria-label]="swatch() ? 'Aperçu ' + swatch() : 'Couleur mal formée'"
+      [style.background]="swatch()"
+    ></span>
+    @if (!readOnly()) {
+      <input
+        #picker
+        type="color"
+        class="cf-picker"
+        data-picker
+        [attr.aria-label]="'Choisir : ' + label()"
+        [value]="swatch() ?? ''"
+        (input)="change(picker.value)"
+      />
+    }
+    <fold-input
+      class="cf-hex"
+      data-hex
+      placeholder="#rrggbb"
+      [ariaLabel]="label() + ', code hexadécimal'"
+      [readOnly]="readOnly()"
+      [value]="value()"
+      (valueChange)="change($event)"
+    />
+  </div>
+  @for (violation of violations(); track $index) {
+    <fold-callout variant="warning" data-violation>{{ violation.message }}</fold-callout>
+  }
+</fold-fieldset>

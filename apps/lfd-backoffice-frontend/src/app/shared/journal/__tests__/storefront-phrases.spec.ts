@@ -212,3 +212,40 @@ describe('la place des allergènes en boutique (2026-10-27)', () => {
     expect(rendered.detail).toEqual([]);
   });
 });
+
+/** **La charte d'un espace d'e-mails** (`mail_copy.charter_*`, plan-editeur-par-blocs.md § 25, C2). */
+describe('la charte d’un espace d’e-mails', () => {
+  it('le brouillon : nomme l’espace, sans détail restant', () => {
+    const rendered = renderFact({
+      ...mailFact('mail_copy.charter_saved', 'lfd', {
+        subjectLabel: 'La Folie Douce — équipe',
+        space: 'lfd',
+        revision: 3,
+      }),
+      subjectType: 'mail_charter',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a enregistré le brouillon de la charte de l’espace La Folie Douce — équipe',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+
+  it('la publication : l’espace et la version', () => {
+    const rendered = renderFact({
+      ...mailFact('mail_copy.charter_published', 'lfc', {
+        subjectLabel: 'La Folie Coffee — clients',
+        space: 'lfc',
+        version: 2,
+        previousVersion: 1,
+        publicationVersion: 9,
+      }),
+      subjectType: 'mail_charter',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a publié la charte de l’espace La Folie Coffee — clients (version 2)',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+});

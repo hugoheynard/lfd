@@ -60,18 +60,37 @@ async function render(list: () => Promise<unknown>) {
 }
 
 describe('MailTemplatesPage — les e-mails', () => {
-  it('range les e-mails par destinataire, chacun menant à sa page', async () => {
+  it('range les e-mails par espace, les internes sous « Interne », chacun menant à sa page', async () => {
     const element = await render(() =>
       Promise.resolve({ mails: [ORDER_PLACED, ALERT], copyPendingCount: 0 }),
     );
     expect(element.querySelectorAll('fold-page-section')).toHaveLength(2);
+    expect(element.querySelector('[data-space="lfc"]')?.textContent).toContain(
+      'La Folie Coffee — clients',
+    );
+    const lfd = element.querySelector('[data-space="lfd"]');
+    expect(lfd?.textContent).toContain('La Folie Douce — équipe');
+    expect(lfd?.querySelector('[data-template="staff.account-alert"]')).not.toBeNull();
+    expect(lfd?.querySelector('[data-group="internal"]')).not.toBeNull();
     const link = element.querySelector<HTMLAnchorElement>(
       '[data-template="customer.order-placed"]',
     );
     expect(link?.textContent).toContain('Commande passée');
     expect(link?.getAttribute('href')).toBe('/emails/customer.order-placed');
     expect(element.textContent).toContain('Clients');
-    expect(element.textContent).toContain('Équipe');
+    expect(element.textContent).toContain('Interne');
+  });
+
+  it('mène chaque espace à sa charte', async () => {
+    const element = await render(() =>
+      Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 0 }),
+    );
+    expect(element.querySelector('[data-charter="lfd"]')?.getAttribute('href')).toBe(
+      '/emails/espaces/lfd/charte',
+    );
+    expect(element.querySelector('[data-charter="lfc"]')?.getAttribute('href')).toBe(
+      '/emails/espaces/lfc/charte',
+    );
   });
 
   it('dit l’échec de lecture, sans prétendre qu’il n’y a aucun e-mail', async () => {

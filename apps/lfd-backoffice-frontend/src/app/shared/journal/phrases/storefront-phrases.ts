@@ -246,6 +246,58 @@ const mailDocumentRetracted: Phrase = (fact) =>
     DOCUMENT_RETRACTED_KEYS,
   );
 
+const CHARTER_SAVED_KEYS = ['subjectLabel', 'space', 'revision'];
+const CHARTER_PUBLISHED_KEYS = [
+  'subjectLabel',
+  'space',
+  'version',
+  'previousVersion',
+  'publicationVersion',
+];
+
+/**
+ * L'espace de la charte : son nom (`subjectLabel`, « La Folie Douce —
+ * équipe »), sinon sa clé (`lfd`) citée comme une valeur.
+ */
+const spaceOf = (fact: Parameters<Phrase>[0]): readonly Segment[] => {
+  const label = fact.payload['subjectLabel'];
+  const space = fact.payload['space'];
+  const named = typeof label === 'string' && label.trim() !== '' ? label : null;
+  const key = typeof space === 'string' ? space : null;
+  const said = named ?? key;
+  return said === null ? [] : [text(' '), value(said)];
+};
+
+/**
+ * **Le brouillon d'une charte est enregistré** (`mail_copy.charter_saved`,
+ * plan-editeur-par-blocs.md § 25) : « Colette Martin a enregistré le
+ * brouillon de la charte de l'espace La Folie Douce — équipe ».
+ */
+const mailCharterSaved: Phrase = (fact) =>
+  byActor(
+    fact,
+    [text('a enregistré le brouillon de la charte de l’espace'), ...spaceOf(fact)],
+    CHARTER_SAVED_KEYS,
+  );
+
+/**
+ * **Une charte est publiée** (`mail_copy.charter_published`, § 25) :
+ * « Colette Martin a publié la charte de l'espace La Folie Coffee — clients
+ * (version 2) » — elle vaut pour tous les e-mails de l'espace.
+ */
+const mailCharterPublished: Phrase = (fact) => {
+  const version = typeof fact.payload['version'] === 'number' ? fact.payload['version'] : null;
+  return byActor(
+    fact,
+    [
+      text('a publié la charte de l’espace'),
+      ...spaceOf(fact),
+      ...(version === null ? [] : [text(' (version '), value(String(version)), text(')')]),
+    ],
+    CHARTER_PUBLISHED_KEYS,
+  );
+};
+
 export const STOREFRONT_PHRASES = {
   'storefront.saved': saved,
   'storefront.allergen_display_changed': allergenDisplayChanged,
@@ -255,4 +307,6 @@ export const STOREFRONT_PHRASES = {
   'mail_copy.document_saved': mailDocumentSaved,
   'mail_copy.document_published': mailDocumentPublished,
   'mail_copy.document_retracted': mailDocumentRetracted,
+  'mail_copy.charter_saved': mailCharterSaved,
+  'mail_copy.charter_published': mailCharterPublished,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

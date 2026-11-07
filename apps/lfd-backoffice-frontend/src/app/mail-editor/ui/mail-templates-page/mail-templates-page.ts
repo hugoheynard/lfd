@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { httpErrorMessage } from '@lfd/endpoints';
-import type { MailAudience, MailEditorListItem } from '@lfd/mail-blocks';
+import type { MailEditorListItem } from '@lfd/mail-blocks';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -14,24 +14,19 @@ import {
   FoldMenuSeparatorComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
-  type FoldIconName,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
 import { MailEditorService } from '../../data/mail-editor.service';
-import { groupMailTemplates } from '../../rules/mail-template-groups';
-
-const AUDIENCE_ICONS: Readonly<Record<MailAudience, FoldIconName>> = {
-  customer: 'user',
-  team: 'team',
-  agency: 'company',
-};
+import { groupMailSpaces } from '../../rules/mail-template-spaces';
 
 /**
- * **Les e-mails** (§ 6, S5a) : la liste de l'éditeur, rangée par
- * destinataire puis par moment. Un clic ouvre la page de l'e-mail ; ce qui a
+ * **Les e-mails** (§ 6, S5a) : la liste de l'éditeur. Depuis C2 (§ 25), elle
+ * s'ouvre sur les deux espaces — La Folie Coffee, La Folie Douce — chacun
+ * avec ses e-mails (par destinataire puis par moment, les internes sous
+ * « Interne ») et l'accès à sa charte. Un clic ouvre la page de l'e-mail ; ce qui a
  * un brouillon en cours le dit.
  *
  * S5e : « Publier tous les e-mails » met en service les phrases en attente
@@ -65,11 +60,10 @@ export class MailTemplatesPage {
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
-  protected readonly icons = AUDIENCE_ICONS;
   protected readonly status = signal<'loading' | 'ready' | 'failed'>('loading');
   protected readonly error = signal<string | null>(null);
-  private readonly mails = signal<readonly MailEditorListItem[]>([]);
-  protected readonly groups = computed(() => groupMailTemplates(this.mails()));
+  protected readonly mails = signal<readonly MailEditorListItem[]>([]);
+  protected readonly spaces = computed(() => groupMailSpaces(this.mails()));
   /** Phrases (toutes langues) qui attendent « Publier tous les e-mails ». */
   protected readonly copyPendingCount = signal(0);
   protected readonly publishing = signal(false);
@@ -124,6 +118,10 @@ export class MailTemplatesPage {
   protected hint(mail: MailEditorListItem): string {
     const whoAndWhen = mailWhoAndWhen(mail.template);
     return whoAndWhen === '' ? mail.template : `${whoAndWhen} — ${mail.template}`;
+  }
+
+  protected countLabel(count: number): string {
+    return count === 1 ? '1 e-mail' : `${count} e-mails`;
   }
 
   protected badge(mail: MailEditorListItem): string | undefined {

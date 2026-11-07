@@ -1,0 +1,32 @@
+/* Pastille, sélecteur et code sur une ligne ; ils passent dessous quand la
+   place manque. */
+.cf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+/* La pastille : la couleur posée par le gabarit. Mal formée, le cadre seul. */
+.cf-swatch {
+  flex: none;
+  inline-size: var(--fold-space-xl);
+  block-size: var(--fold-space-xl);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+}
+
+.cf-picker {
+  flex: none;
+  inline-size: var(--fold-space-2xl);
+  block-size: var(--fold-space-xl);
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.cf-hex {
+  flex: 1 1 auto;
+}

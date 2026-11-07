@@ -1,0 +1,31 @@
+<fold-page-section
+  title="Historique"
+  description="Les versions publiées de cette charte, de la plus récente à la plus ancienne."
+>
+  @switch (status()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l’historique…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="L’historique n’a pas pu être lu"
+        [subtitle]="error() ?? ''"
+      >
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (nodes().length === 0) {
+        <fold-empty-state
+          title="Jamais publiée"
+          subtitle="Les e-mails de l’espace partent avec la charte de départ."
+        >
+          <fold-icon empty-icon name="palette" />
+        </fold-empty-state>
+      } @else {
+        <fold-timeline ariaLabel="Versions publiées" data-versions [nodes]="nodes()" />
+      }
+    }
+  }
+</fold-page-section>

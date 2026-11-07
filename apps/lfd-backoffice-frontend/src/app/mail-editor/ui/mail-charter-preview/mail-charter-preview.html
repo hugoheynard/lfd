@@ -1,0 +1,78 @@
+<fold-page-section
+  title="Aperçu"
+  description="Un e-mail de l’espace, rendu par le serveur avec la charte à l’écran — même non enregistrée. Rien n’est envoyé."
+>
+  <div sectionActions>
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="neutral"
+      icon="eye"
+      type="button"
+      data-render
+      [loading]="status() === 'loading'"
+      (click)="render()"
+    >
+      {{ preview() === null ? 'Voir l’aperçu' : 'Rendre à nouveau' }}
+    </button>
+  </div>
+
+  <div class="cp-column">
+    <div class="cp-toolbar">
+      @if (templateOptions().length > 0) {
+        <fold-listbox
+          size="sm"
+          label="E-mail de l’espace"
+          data-template
+          [options]="templateOptions()"
+          [value]="template() ?? templates()[0] ?? null"
+          (selectionChange)="setTemplate($event)"
+        />
+      }
+      <fold-view-toggle
+        size="sm"
+        ariaLabel="Thème de l’aperçu"
+        data-scheme
+        [options]="schemeOptions"
+        [value]="scheme()"
+        (valueChange)="setScheme($event)"
+      />
+    </div>
+    @switch (status()) {
+      @case ('loading') {
+        <fold-loading message="L’aperçu se rend…" />
+      }
+      @case ('failed') {
+        <fold-empty-state
+          tone="alert"
+          title="L’aperçu n’a pas pu être rendu"
+          [subtitle]="error() ?? ''"
+        >
+          <button foldButton type="button" (click)="render()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (error(); as message) {
+          <fold-callout variant="alert">{{ message }}</fold-callout>
+        }
+        @if (preview(); as view) {
+          @if (stale()) {
+            <p class="cp-muted" data-stale>
+              La charte, la langue ou l’e-mail ont changé depuis cet aperçu : rendez-le à nouveau
+              pour le voir.
+            </p>
+          }
+          <p class="cp-subject"><span class="cp-muted">Objet :</span> {{ view.subject }}</p>
+          <iframe
+            class="cp-frame"
+            [style.color-scheme]="scheme()"
+            title="Aperçu de la charte sur un e-mail de l’espace"
+            sandbox=""
+            [srcdoc]="body()"
+          ></iframe>
+        }
+      }
+    }
+  </div>
+</fold-page-section>

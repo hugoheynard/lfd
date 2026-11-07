@@ -1,0 +1,37 @@
+.cp-stack,
+.cp-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.cp-toolbar,
+.cp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+// Les couleurs côte à côte quand la place le permet.
+.cp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.cp-muted {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.cp-list {
+  margin: 0;
+}
+
+// Le logo à la hauteur où l'e-mail le rend (56 px, `@lfd/mailer`).
+.cp-logo {
+  align-self: flex-start;
+  block-size: 56px;
+  inline-size: auto;
+}
