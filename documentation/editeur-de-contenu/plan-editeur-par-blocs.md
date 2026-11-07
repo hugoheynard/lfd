@@ -1028,3 +1028,25 @@ Routes :
      l'ordre ») : l'éditeur arrange le document, mais un ordre de sections
      en brouillon reste compté par `copyPendingCount` sans être visible ni
      rétablissable ici.
+
+### Tranché par Hugo le 2026-11-07 — ce qui restait avant la redirection
+
+Hugo : « renonce au clic, ouvre les langues, le document fait foi pour
+l'ordre ».
+
+1. **Le clic dans l'aperçu est abandonné.** L'aperçu fidèle garde son
+   `sandbox=""` ; une phrase se désigne par son bloc dans le canevas.
+2. **Les langues sont ouvertes dans le panneau des phrases** : on prépare
+   l'anglais et l'italien d'un e-mail qui part aujourd'hui en français seul,
+   comme `textes-emails` le permettait. Les **blocs libres**, eux, restent
+   écrits dans les langues de départ du modèle (`declaration.locales`) : ce
+   sont elles que la publication exige.
+3. **Le document fait foi pour l'ordre.** L'ordre des sections en brouillon
+   (`public.mail_section_orders`) n'est plus un geste : il ne compte plus
+   dans `copyPendingCount`, « Publier tous les e-mails » ne le publie plus, et
+   les routes `mail_templates` ne l'écrivent pas. L'ordre **déjà publié**
+   reste lu, comme document de départ et en repli à l'envoi (§ 11) — rien
+   n'est supprimé en base.
+
+Avec ces trois points, `textes-emails` redirige vers `/emails` et ses entrées
+de menu disparaissent.
