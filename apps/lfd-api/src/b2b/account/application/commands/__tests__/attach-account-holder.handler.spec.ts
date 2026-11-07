@@ -9,11 +9,8 @@ import {
 } from "../../../domain/errors/account-errors.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
-import {
-  AccountAccessGranter,
-  type AccessGranted,
-  type AccessToGrant,
-} from "../../services/grant-account-access.service.js";
+import { AccountAccessOpener, type AccessOpening } from "../../services/account-access-opener.js";
+import type { AccessToGrant } from "../../services/grant-account-access.service.js";
 import { AttachAccountHolderCommand } from "../attach-account-holder.command.js";
 import { AttachAccountHolderHandler } from "../attach-account-holder.handler.js";
 
@@ -25,18 +22,32 @@ const HOLDER = {
   phone: "06 11 22 33 44",
 };
 
-/** Accès doublé : capture la demande, ou échoue pour simuler un canal absent. */
-class FakeAccess extends AccountAccessGranter {
+/** Ce que l'accès doublé rend : l'issue de l'e-mail, ou l'échec de l'ouverture. */
+type Outcome = { readonly mailSent: boolean } | Error;
+
+/** Accès doublé : capture la demande et les annonces, ou échoue pour simuler un canal absent. */
+class FakeAccess extends AccountAccessOpener {
   readonly granted: AccessToGrant[] = [];
-  constructor(private readonly outcome: AccessGranted | Error) {
+  /** Combien d'e-mails d'ouverture sont réellement partis. */
+  announced = 0;
+  constructor(private readonly outcome: Outcome) {
     super();
   }
 
-  grant(input: AccessToGrant): Promise<AccessGranted> {
+  open(input: AccessToGrant): Promise<AccessOpening> {
     this.granted.push(input);
-    return this.outcome instanceof Error
-      ? Promise.reject(this.outcome)
-      : Promise.resolve(this.outcome);
+    const outcome = this.outcome;
+    if (outcome instanceof Error) {
+      return Promise.reject(outcome);
+    }
+    return Promise.resolve({
+      userId: "user_1",
+      outcome: "identity_created",
+      announce: () => {
+        this.announced += 1;
+        return Promise.resolve(outcome.mailSent);
+      },
+    });
   }
 }
 
@@ -68,7 +79,7 @@ interface Doubles {
 }
 
 function doubles(
-  options: { company?: Company | null; access?: AccessGranted | Error } = {},
+  options: { company?: Company | null; access?: Outcome; saveFails?: Error } = {},
 ): Doubles {
   const saved: Company[] = [];
   // Une société relue à chaque chargement, comme le dépôt réel : un essai raté
@@ -76,6 +87,9 @@ function doubles(
   const companies: CompanyRepository = {
     load: () => Promise.resolve(options.company === undefined ? withoutHolder() : options.company),
     save: (written: Company) => {
+      if (options.saveFails !== undefined) {
+        return Promise.reject(options.saveFails);
+      }
       saved.push(written);
       return Promise.resolve();
     },
@@ -85,9 +99,7 @@ function doubles(
     kbisLocation: () => Promise.resolve(null),
   };
 
-  const access = new FakeAccess(
-    options.access ?? { userId: "user_1", outcome: "identity_created", mailSent: true },
-  );
+  const access = new FakeAccess(options.access ?? { mailSent: true });
   return {
     handler: new AttachAccountHolderHandler(
       companies,
@@ -147,7 +159,7 @@ describe("AttachAccountHolderHandler", () => {
 
   it("dit quand l'e-mail n'est pas parti, sans défaire le rattachement", async () => {
     const { handler, saved } = doubles({
-      access: { userId: "user_1", outcome: "identity_created", mailSent: false },
+      access: { mailSent: false },
     });
 
     await expect(handler.execute(command())).resolves.toEqual({ mailSent: false });
@@ -188,6 +200,25 @@ describe("AttachAccountHolderHandler", () => {
     await expect(handler.execute(command())).rejects.toThrow("canal indisponible");
     await expect(handler.execute(command())).rejects.toThrow("canal indisponible");
     expect(access.granted).toHaveLength(2);
+  });
+
+  /**
+   * Régression (revue du service d'e-mails, cas 9) : l'e-mail d'ouverture
+   * partait avant l'enregistrement de la société, et un refus l'avait déjà envoyé.
+   */
+  it("un refus à l'enregistrement n'envoie aucun e-mail", async () => {
+    const { handler, access } = doubles({ saveFails: new Error("enregistrement refusé") });
+
+    await expect(handler.execute(command())).rejects.toThrow("enregistrement refusé");
+    expect(access.announced).toBe(0);
+  });
+
+  it("annonce l'accès une seule fois, après l'enregistrement", async () => {
+    const { handler, access, saved } = doubles();
+
+    await handler.execute(command());
+    expect(saved).toHaveLength(1);
+    expect(access.announced).toBe(1);
   });
 
   it("404 sur une société inconnue", async () => {

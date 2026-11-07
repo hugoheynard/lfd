@@ -22,6 +22,7 @@ import {
   AccountAccessGranter,
   type AccessGranted,
 } from "../../services/grant-account-access.service.js";
+import { AccountAccessOpener, type AccessOpening } from "../../services/account-access-opener.js";
 import { AttachAccountHolderCommand } from "../attach-account-holder.command.js";
 import { AttachAccountHolderHandler } from "../attach-account-holder.handler.js";
 import { InviteCompanyMemberCommand } from "../invite-company-member.command.js";
@@ -99,6 +100,17 @@ class Access extends AccountAccessGranter {
 }
 
 const OPENED: AccessGranted = { userId: "user_9", outcome: "identity_created", mailSent: true };
+
+/** L'ouverture en deux temps du détenteur (revue, cas 9), sur la même issue. */
+class Opener extends AccountAccessOpener {
+  open(): Promise<AccessOpening> {
+    return Promise.resolve({
+      userId: OPENED.userId,
+      outcome: OPENED.outcome,
+      announce: () => Promise.resolve(OPENED.mailSent),
+    });
+  }
+}
 
 class OneMember extends CompanyMemberReader {
   listOf(): Promise<readonly CompanyMemberRecord[]> {
@@ -289,7 +301,7 @@ describe("l'accès à une société", () => {
     const companies = new CompaniesWithoutHolder();
     const handler = new AttachAccountHolderHandler(
       companies,
-      new Access(OPENED),
+      new Opener(),
       events,
       new DirectUnitOfWork(),
       inMemoryIntents(),

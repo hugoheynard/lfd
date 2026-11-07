@@ -23,6 +23,7 @@ import {
 import type { AccessOutcome } from "../../domain/value-objects/access-outcome.js";
 import { EmailAddress } from "../../domain/value-objects/email-address.js";
 import type { CompanyRole } from "../../domain/value-objects/company-role.js";
+import type { AccessOpening, AccountAccessOpener } from "./account-access-opener.js";
 
 /** Qui rattacher, à quelle société, avec quel rôle. */
 export interface AccessToGrant {
@@ -97,7 +98,7 @@ export abstract class AccountAccessGranter {
  * renvoi est un clic, et il renvoie vraiment quelque chose.
  */
 @Injectable()
-export class GrantAccountAccess extends AccountAccessGranter {
+export class GrantAccountAccess extends AccountAccessGranter implements AccountAccessOpener {
   private readonly logger = new Logger(GrantAccountAccess.name);
 
   constructor(
@@ -110,6 +111,15 @@ export class GrantAccountAccess extends AccountAccessGranter {
   }
 
   async grant(raw: AccessToGrant): Promise<AccessGranted> {
+    const opening = await this.open(raw);
+    return { userId: opening.userId, outcome: opening.outcome, mailSent: await opening.announce() };
+  }
+
+  /**
+   * Ouvre l'accès sans écrire l'e-mail : l'annonce est rendue, à envoyer
+   * quand l'appelant a validé ce qui la rend vraie (revue, cas 9).
+   */
+  async open(raw: AccessToGrant): Promise<AccessOpening> {
     // L'adresse passe par le VALUE OBJECT, ici et pour tous les chemins : c'est
     // le seul goulot par lequel un accès s'ouvre.
     //
@@ -165,7 +175,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
   }
 
   /** Personne inconnue : identité neuve + lien de mot de passe. */
-  private async openNewAccess(input: AccessToGrant): Promise<AccessGranted> {
+  private async openNewAccess(input: AccessToGrant): Promise<AccessOpening> {
     const provisioned = await this.identity.provision({
       email: input.email,
       firstName: input.firstName,
@@ -188,7 +198,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * nouveau lien. Un lien est à usage unique et daté — on n'en retrouve pas un,
    * on en fabrique un.
    */
-  private async reissueLink(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
+  private async reissueLink(known: KnownAccount, input: AccessToGrant): Promise<AccessOpening> {
     // Le rôle se vérifie AVANT d'émettre le lien : un refus découvert après
     // aurait déjà fabriqué un ticket chez le fournisseur.
     await this.ensureRoleFits(known.userId, input);
@@ -284,19 +294,20 @@ export class GrantAccountAccess extends AccountAccessGranter {
   }
 
   /** Cliente active : une société de plus dans son espace, pas un second compte. */
-  private async attachToActive(known: KnownAccount, input: AccessToGrant): Promise<AccessGranted> {
+  private async attachToActive(known: KnownAccount, input: AccessToGrant): Promise<AccessOpening> {
     await this.attach(known.userId, input);
-    const mailSent = await this.send(known.userId, () =>
-      this.mail.sendAndAwaitReceipt({
-        brand: "lfc",
-        to: input.email,
-        template: "customer.company-attached",
-        // Son prénom à ELLE, pas celui saisi par le commercial.
-        data: { firstName: known.firstName, companyName: input.companyName },
-        idempotencyKey: this.keyOf("company-attached", known.userId, input),
-      }),
-    );
-    return { userId: known.userId, outcome: "attached", mailSent };
+    const announce = (): Promise<boolean> =>
+      this.send(known.userId, () =>
+        this.mail.sendAndAwaitReceipt({
+          brand: "lfc",
+          to: input.email,
+          template: "customer.company-attached",
+          // Son prénom à ELLE, pas celui saisi par le commercial.
+          data: { firstName: known.firstName, companyName: input.companyName },
+          idempotencyKey: this.keyOf("company-attached", known.userId, input),
+        }),
+      );
+    return { userId: known.userId, outcome: "attached", announce };
   }
 
   /** Rattache (ou aligne le rôle), après avoir vérifié que le rôle tient. */
@@ -317,29 +328,30 @@ export class GrantAccountAccess extends AccountAccessGranter {
     ensureHolderKeepsOwnership(input.companyId, input.role, ownerId, userId);
   }
 
-  /** Envoie le lien de mot de passe, et rend l'issue telle qu'elle est. */
-  private async deliverLink(
+  /** Prépare l'envoi du lien de mot de passe, et rend l'issue telle qu'elle est. */
+  private deliverLink(
     userId: string,
     outcome: AccessOutcome,
     passwordSetupUrl: string,
     input: AccessToGrant,
-  ): Promise<AccessGranted> {
-    const mailSent = await this.send(userId, () =>
-      this.mail.sendAndAwaitReceipt({
-        brand: "lfc",
-        to: input.email,
-        template: "customer.access-opened",
-        idempotencyKey: this.keyOf("access-opened", userId, input),
-        data: {
-          firstName: input.firstName,
-          companyName: input.companyName,
-          email: input.email,
-          signInUrl: this.emailCodeSignInUrl(),
-          passwordSetupUrl,
-        },
-      }),
-    );
-    return { userId, outcome, mailSent };
+  ): AccessOpening {
+    const announce = (): Promise<boolean> =>
+      this.send(userId, () =>
+        this.mail.sendAndAwaitReceipt({
+          brand: "lfc",
+          to: input.email,
+          template: "customer.access-opened",
+          idempotencyKey: this.keyOf("access-opened", userId, input),
+          data: {
+            firstName: input.firstName,
+            companyName: input.companyName,
+            email: input.email,
+            signInUrl: this.emailCodeSignInUrl(),
+            passwordSetupUrl,
+          },
+        }),
+      );
+    return { userId, outcome, announce };
   }
 
   /**

@@ -101,6 +101,7 @@ import {
   CompanyMemberReader,
   CompanyMemberRepository,
 } from "./domain/ports/company-member.repository.js";
+import { AccountAccessOpener } from "./application/services/account-access-opener.js";
 import {
   AccountAccessGranter,
   GrantAccountAccess,
@@ -301,6 +302,8 @@ import {
     UpdateContactByStaffHandler,
     RemoveContactByStaffHandler,
     { provide: AccountAccessGranter, useClass: GrantAccountAccess },
+    // La même instance, vue par le geste qui envoie après sa transaction (cas 9).
+    { provide: AccountAccessOpener, useExisting: AccountAccessGranter },
     // Le carnet d'interlocuteurs : ses deux règles (une adresse, un rôle) valent
     // pour les deux portes, elles ne vivent donc pas dans les handlers.
     CompanyContactBook,
