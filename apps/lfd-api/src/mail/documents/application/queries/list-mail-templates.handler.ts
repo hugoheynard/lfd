@@ -15,7 +15,9 @@ import { ListMailTemplatesQuery } from "./list-mail-templates.query.js";
  * par là — et ce qu'il en est de son document. Lecture pure.
  *
  * `copyPendingCount` (S5e, § 21) est le compte de l'écran des textes
- * (`mailCopyAdminView`), lu par les mêmes lectures : jamais recompté ici.
+ * (`mailCopyAdminView`), lu par les mêmes lectures : jamais recompté ici —
+ * mais sans les ordres de sections, que l'éditeur ne publie plus (§ 21,
+ * 2026-11-07 : le document fait foi pour l'ordre).
  */
 @QueryHandler(ListMailTemplatesQuery)
 export class ListMailTemplatesHandler implements IQueryHandler<
@@ -30,15 +32,14 @@ export class ListMailTemplatesHandler implements IQueryHandler<
   ) {}
 
   async execute(): Promise<MailEditorListView> {
-    const [all, entries, publication, orders] = await Promise.all([
+    const [all, entries, publication] = await Promise.all([
       this.reader.all(),
       this.copy.entries(),
       this.copy.publication(),
-      this.copy.sectionOrders(),
     ]);
     const states = new Map(all.map((state) => [state.template, state]));
     return {
-      copyPendingCount: mailCopyAdminView(this.manifest, entries, publication, orders).pendingCount,
+      copyPendingCount: mailCopyAdminView(this.manifest, entries, publication).pendingCount,
       mails: this.catalogue.list().map((entry) => {
         const state = states.get(entry.template) ?? null;
         return {

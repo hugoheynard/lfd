@@ -318,6 +318,44 @@ describe("l'éditeur couvre l'écran des textes (S5e)", () => {
     await staff().post(`${EDITOR}/publications`).expect(409);
   });
 
+  /**
+   * § 21, tranché le 2026-11-07 : le document fait foi pour l'ordre. Un ordre
+   * de sections en brouillon (posé par l'ancien écran) ne compte plus, ne part
+   * plus avec « Publier tous les e-mails », et reste en brouillon.
+   */
+  it("laisse l'ordre des sections en brouillon : ni compté, ni publié", async () => {
+    await staff()
+      .put("/admin/mail-copy/section-orders")
+      .send({ mail: RESET, order: ["footer", "title", "body", "cta"], expectedRevision: 0 })
+      .expect(204);
+    const pending = (): Promise<number> =>
+      staff()
+        .get(EDITOR)
+        .expect(200)
+        .then((response) => jsonBody<MailEditorListView>(response).copyPendingCount);
+    expect(await pending()).toBe(0);
+    await staff().post(`${EDITOR}/publications`).expect(409);
+
+    await staff()
+      .put(`${EDITOR}/${ORDER_PLACED}/phrases/drafts`)
+      .send({ path: "subject", locale: "fr", text: "Commande {ref} notée", expectedRevision: 0 })
+      .expect(204);
+    expect(await pending()).toBe(1);
+    await staff().post(`${EDITOR}/publications`).expect(201);
+    const copy = jsonBody<{ readonly pendingCount: number }>(
+      await staff().get("/admin/mail-copy").expect(200),
+    );
+    expect(copy.pendingCount).toBe(1);
+  });
+
+  it("sert chaque phrase en trois langues, quelles que soient les langues de départ du modèle", async () => {
+    const view = await open(RESET);
+    expect(view.phrases.length).toBeGreaterThan(0);
+    for (const phrase of view.phrases) {
+      expect(Object.keys(phrase.locales).sort()).toEqual(["en", "fr", "it"]);
+    }
+  });
+
   it("l'essai sur les phrases publiées n'envoie pas le brouillon ; l'essai par défaut, si", async () => {
     const reset = await open(RESET);
     const subject = reset.phrases.find((candidate) => candidate.place?.kind === "frame");

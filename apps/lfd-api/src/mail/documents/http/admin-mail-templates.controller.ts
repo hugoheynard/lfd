@@ -61,13 +61,15 @@ export class AdminMailTemplatesController {
 
   /**
    * Publie les phrases et les ordres de sections en attente de TOUS les
-   * e-mails (S5e, § 21) : la commande même de `admin/mail-copy`, seule la
-   * garde change. Les brouillons d'arrangement ne partent pas.
+   * Publie les phrases en attente de TOUS les e-mails (S5e, § 21) : la
+   * commande même de `admin/mail-copy`, sans les ordres de sections — le
+   * document fait foi pour l'ordre (§ 21, 2026-11-07). Les brouillons
+   * d'arrangement ne partent pas.
    */
   @Post("publications")
   async publishAll(@StaffUserId() staffUserId: string): Promise<MailDocumentPublicationView> {
     const publicationVersion = await this.commands.execute<PublishMailCopyCommand, number>(
-      new PublishMailCopyCommand(staffUserId),
+      new PublishMailCopyCommand(staffUserId, false),
     );
     return { publicationVersion };
   }

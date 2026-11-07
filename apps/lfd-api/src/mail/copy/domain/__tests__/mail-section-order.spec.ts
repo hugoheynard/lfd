@@ -111,6 +111,24 @@ describe("la publication commune des textes et des ordres (E4, S3)", () => {
     expect(publication.sectionOrders).toHaveLength(1);
   });
 
+  /** § 21, 2026-11-07 : sous l'éditeur par blocs, le document fait foi pour l'ordre. */
+  it("sans les ordres : l'ordre en brouillon ne compte pas, ne part pas, et reste", () => {
+    const order = drafted(QR_FIRST);
+    const alone = MailCopyRelease.of(0, [], [order]);
+    expect(alone.hasPublishable(MANIFEST, false)).toBe(false);
+    expect(() => alone.publish(MANIFEST, stamp(AT), { withSectionOrders: false })).toThrow(
+      NothingToPublishError,
+    );
+    const subject = MailCopyEntry.untouched(SUBJECT.mail, SUBJECT.path, "fr");
+    subject.draft("Merci {ref}", MANIFEST, 0, stamp(AT));
+    const release = MailCopyRelease.of(0, [subject], [order]);
+    const publication = release.publish(MANIFEST, stamp(AT), { withSectionOrders: false });
+    expect(publication.texts).toHaveLength(1);
+    expect(publication.sectionOrders).toEqual([]);
+    expect(release.sectionOrders).toEqual([]);
+    expect(order.snapshot().draft.state).toBe("set");
+  });
+
   /** Une section retirée du code depuis le brouillon : il n'est pas publiable, il reste. */
   it("ne publie pas un ordre que les sections du code ne permettent plus", () => {
     const stale = MailSectionOrder.reconstitute({

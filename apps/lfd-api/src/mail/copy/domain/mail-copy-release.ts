@@ -9,6 +9,14 @@ export interface MailCopyPublication {
   readonly sectionOrders: readonly MailSectionOrderChange[];
 }
 
+/** Ce qu'une publication emporte en plus des textes. */
+export interface MailCopyPublishOptions {
+  /** Le document d'un e-mail se publie avec (S4c) : la publication a lieu sans phrase. */
+  readonly withDocument?: boolean;
+  /** Les ordres de sections en brouillon partent aussi — vrai par défaut. */
+  readonly withSectionOrders?: boolean;
+}
+
 /**
  * **Une publication des textes des e-mails** — tous les brouillons en attente,
  * textes ET ordres de sections, et la version courante (C3 : « un seul geste
@@ -23,6 +31,8 @@ export class MailCopyRelease {
   private published = false;
   /** Faux quand seule la version monte, pour un document d'e-mail (S4c). */
   private phrasesPublished = false;
+  /** Faux quand la publication laisse les ordres de sections (éditeur par blocs, § 21). */
+  private ordersPublished = false;
 
   private constructor(
     private readonly loadedVersion: number,
@@ -56,15 +66,20 @@ export class MailCopyRelease {
 
   /** Les ordres touchés, à réécrire — aucun si les phrases n'ont pas été publiées. */
   get sectionOrders(): readonly MailSectionOrder[] {
-    return this.phrasesPublished ? this.pendingOrders : [];
+    return this.ordersPublished ? this.pendingOrders : [];
   }
 
-  /** Vrai si un texte ou un ordre de sections publiable attend. */
-  hasPublishable(manifest: MailCopyManifest): boolean {
+  /**
+   * Vrai si un texte ou un ordre de sections publiable attend. Sans
+   * `withSectionOrders`, un ordre en attente ne compte pas : l'éditeur par
+   * blocs ne le publie plus (plan `plan-editeur-par-blocs.md`, § 21).
+   */
+  hasPublishable(manifest: MailCopyManifest, withSectionOrders = true): boolean {
     return (
       this.pending.some(
         (entry) => entry.snapshot().draft.state === "reset" || entry.knownBy(manifest),
-      ) || this.pendingOrders.some((order) => order.publishable(manifest))
+      ) ||
+      (withSectionOrders && this.pendingOrders.some((order) => order.publishable(manifest)))
     );
   }
 
@@ -86,22 +101,30 @@ export class MailCopyRelease {
    * `withDocument` (S4c) : le document d'un e-mail se publie dans la même
    * publication — elle a donc lieu même sans phrase en attente.
    *
+   * `withSectionOrders` (vrai par défaut) : faux sous l'éditeur par blocs, où
+   * le document fait foi pour l'ordre (§ 21, tranché le 2026-11-07) — les
+   * ordres en brouillon restent en brouillon, ni publiés ni effacés.
+   *
    * @throws {NothingToPublishError} aucun brouillon publiable n'attend.
    */
   publish(
     manifest: MailCopyManifest,
     stamp: MailCopyStamp,
-    options: { readonly withDocument: boolean } = { withDocument: false },
+    options: MailCopyPublishOptions = {},
   ): MailCopyPublication {
+    const withSectionOrders = options.withSectionOrders ?? true;
     const texts = this.pending.filter(
       (entry) => entry.snapshot().draft.state === "reset" || entry.knownBy(manifest),
     );
-    const orders = this.pendingOrders.filter((order) => order.publishable(manifest));
-    if (texts.length + orders.length === 0 && !options.withDocument) {
+    const orders = withSectionOrders
+      ? this.pendingOrders.filter((order) => order.publishable(manifest))
+      : [];
+    if (texts.length + orders.length === 0 && options.withDocument !== true) {
       throw new NothingToPublishError();
     }
     this.published = true;
     this.phrasesPublished = true;
+    this.ordersPublished = withSectionOrders;
     return {
       texts: texts.flatMap((entry) => {
         const change = entry.publish(manifest, stamp);

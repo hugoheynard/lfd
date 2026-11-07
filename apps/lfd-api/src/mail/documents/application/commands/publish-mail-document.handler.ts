@@ -84,10 +84,13 @@ export class PublishMailDocumentHandler implements ICommandHandler<
         copies,
       );
       const release = await this.releases.loadFor(command.template);
-      if (published === null && !release.hasPublishable(this.manifest)) {
+      if (published === null && !release.hasPublishable(this.manifest, false)) {
         throw new NothingToPublishForMailError(command.template);
       }
-      const phrases = release.publish(this.manifest, stamp, { withDocument: published !== null });
+      const phrases = release.publish(this.manifest, stamp, {
+        withDocument: published !== null,
+        withSectionOrders: false,
+      });
       await this.releases.save(release, stamp);
       const facts: JournaledEvent[] = [];
       if (phrases.texts.length + phrases.sectionOrders.length > 0) {

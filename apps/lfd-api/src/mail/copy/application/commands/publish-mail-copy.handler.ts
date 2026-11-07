@@ -39,7 +39,9 @@ export class PublishMailCopyHandler implements ICommandHandler<PublishMailCopyCo
     const stamp = { at: this.clock.now(), staffId: command.staffUserId };
     const version = await this.uow.run(async () => {
       const release = await this.releases.load();
-      const publication = release.publish(this.manifest, stamp);
+      const publication = release.publish(this.manifest, stamp, {
+        withSectionOrders: command.withSectionOrders,
+      });
       await this.releases.save(release, stamp);
       await this.events.publishTraced(
         new MailCopyPublishedEvent(release.version, publication.texts, publication.sectionOrders),
