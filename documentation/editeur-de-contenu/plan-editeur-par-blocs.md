@@ -871,3 +871,37 @@ avec les seules routes de S4d (§ 16) :
   les traductions en retard, « le texte d'origine a changé », les textes
   hors carte et orphelins, la désignation d'une phrase par un clic dans
   l'aperçu, et l'essai sur les phrases publiées (`source`).
+
+## 21. S5e — l'éditeur couvre tout l'écran `textes-emails` (Hugo, 2026-11-07) — à bâtir
+
+Hugo, 2026-11-07 : « enchaîne les trois ». L'ancien écran `textes-emails`
+ne peut être redirigé vers l'éditeur que quand l'éditeur fait tout ce qu'il
+fait. Le bâti de S5b (§ 20) a relevé ce qui manque ; ce lot le comble.
+
+### Côté API et contrat (`@lfd/mail-blocks`, ajout seul)
+
+Pour chaque phrase servie sous `mail_templates` :
+
+- son **bloc du modèle** (`ModelSectionId`) ou son **cadre** (objet, en-tête —
+  hors des blocs, § 2), lus là où l'écran `textes-emails` les lit déjà
+  (`GET /admin/mail-copy`) : une seule source, jamais déduits du chemin ;
+- le **nom de sa variante** en français (« Commande payée par carte ») ;
+- les signaux **traduction en retard** et **texte d'origine changé depuis**,
+  calculés comme pour `textes-emails` ;
+- les **textes orphelins** et **hors carte** d'un e-mail.
+
+Et deux gestes sous `mail_templates`, par les commandes existantes :
+
+- **publier tous les e-mails en attente** d'un coup (la publication globale de
+  `textes-emails`) ;
+- **l'essai sur les phrases publiées** (`source`), à côté de l'essai sur les
+  brouillons.
+
+### Côté front
+
+Le bloc image (§ 19 : bibliothèque, réglages, choix dans la médiathèque,
+texte de remplacement par langue, décorative, lien ; refus affichés) ; les
+phrases rangées sous le bloc sélectionné et les cadres objet / en-tête ; les
+signaux ; les orphelins ; la publication globale ; le choix de la source de
+l'essai ; puis, si plus rien ne manque, `textes-emails` redirige vers
+`/emails` et ses entrées de menu (rail et tuiles) disparaissent.
