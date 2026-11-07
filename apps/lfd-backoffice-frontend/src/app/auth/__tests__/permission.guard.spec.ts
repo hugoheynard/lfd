@@ -74,6 +74,9 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
     ['lfc_order_opening:read', '/reglages/commandes/ouverture'],
     // Réglages › Légal (plan des CGV, C0′).
     ['lfc_legal:read', '/reglages/legal/cgv'],
+    // L'éditeur d'e-mails et la médiathèque (2026-11-07).
+    ['mail_templates:read', '/emails'],
+    ['media_library:read', '/mediatheque'],
   ] as const)('renvoie qui ne tient que %s vers %s', async (permission, path) => {
     const result = await guardWith([permission]);
 

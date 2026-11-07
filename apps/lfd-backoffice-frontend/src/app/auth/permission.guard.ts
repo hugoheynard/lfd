@@ -42,6 +42,10 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // Réglages › Légal (plan des CGV, C0′) : qui ne tient que `lfc_legal`
   // atterrit sur les CGV plutôt que de rebondir de refus en refus.
   { permission: 'lfc_legal:read', path: '/reglages/legal/cgv' },
+  // L'éditeur d'e-mails et la médiathèque (2026-11-07, relevé au bâti de S5a) :
+  // qui ne tient que l'un de ces droits rebondissait de refus en refus.
+  { permission: 'mail_templates:read', path: '/emails' },
+  { permission: 'media_library:read', path: '/mediatheque' },
 ];
 
 /**
