@@ -3,6 +3,7 @@ import type {
   ColumnsBlock,
   ColumnWidthStep,
   FreeBlock,
+  ImageBlock,
   MailBlock,
   MailDocument,
   MailLocale,
@@ -25,6 +26,7 @@ export type LibraryItemKey =
   | 'callout-info'
   | 'callout-warning'
   | 'button'
+  | 'image'
   | 'divider'
   | 'columns-2'
   | 'columns-3';
@@ -41,6 +43,7 @@ export const LIBRARY_ITEMS: readonly LibraryItem[] = [
   { key: 'callout-info', label: 'Encadré information' },
   { key: 'callout-warning', label: 'Encadré attention' },
   { key: 'button', label: 'Bouton' },
+  { key: 'image', label: 'Image' },
   { key: 'divider', label: 'Séparateur' },
   { key: 'columns-2', label: 'Deux colonnes' },
   { key: 'columns-3', label: 'Trois colonnes' },
@@ -58,6 +61,7 @@ export const FREE_BLOCK_LABELS: Readonly<Record<MailBlock['kind'], string>> = {
   paragraph: 'Paragraphe',
   callout: 'Encadré',
   button: 'Bouton',
+  image: 'Image',
   divider: 'Séparateur',
   columns: 'Colonnes',
 };
@@ -90,6 +94,10 @@ export function newLibraryBlock(key: LibraryItemKey, id: string): FreeBlock | Co
       return { id, kind: 'callout', tone: 'warning', text: {} };
     case 'button':
       return { id, kind: 'button', label: {}, href: '' };
+    case 'image':
+      // Pas encore choisie : une adresse vide est admise dans un brouillon,
+      // refusée à la publication (`image-src-missing`).
+      return { id, kind: 'image', src: '', alt: {} };
     case 'divider':
       return { id, kind: 'divider' };
     case 'columns-2':
@@ -199,7 +207,10 @@ export function replaceFreeBlock(document: MailDocument, next: FreeBlock): MailD
   );
 }
 
-/** Le texte d'un bloc libre dans une langue — le titre d'un bouton compris. */
+/**
+ * Le texte d'un bloc libre dans une langue — le titre d'un bouton et le texte
+ * de remplacement d'une image compris.
+ */
 export function textOf(block: FreeBlock, locale: MailLocale): string {
   switch (block.kind) {
     case 'heading':
@@ -208,6 +219,8 @@ export function textOf(block: FreeBlock, locale: MailLocale): string {
       return block.text[locale] ?? '';
     case 'button':
       return block.label[locale] ?? '';
+    case 'image':
+      return block.alt[locale] ?? '';
     case 'divider':
       return '';
   }
@@ -222,6 +235,8 @@ export function withText(block: FreeBlock, locale: MailLocale, text: string): Fr
       return { ...block, text: { ...block.text, [locale]: text } };
     case 'button':
       return { ...block, label: { ...block.label, [locale]: text } };
+    case 'image':
+      return { ...block, alt: { ...block.alt, [locale]: text } };
     case 'divider':
       return block;
   }
@@ -264,4 +279,24 @@ export function findEditableBlock(
     }
   }
   return null;
+}
+
+/**
+ * Déclare une image décorative, ou la rend informative. Décorative, elle perd
+ * son lien : un lien sans nom accessible ne s'annonce pas (`decorative-image-link`).
+ * Les deux champs sont ABSENTS plutôt que `undefined` — la forme du contrat
+ * les lit en `exactOptional()`.
+ */
+export function withDecorative(block: ImageBlock, decorative: boolean): ImageBlock {
+  const { decorative: _flag, href, ...rest } = block;
+  if (decorative) {
+    return { ...rest, decorative: true };
+  }
+  return href === undefined ? rest : { ...rest, href };
+}
+
+/** Pose le lien d'une image ; un champ vidé retire le lien. */
+export function withImageHref(block: ImageBlock, href: string): ImageBlock {
+  const { href: _previous, ...rest } = block;
+  return href === '' ? rest : { ...rest, href };
 }

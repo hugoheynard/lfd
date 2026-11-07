@@ -124,7 +124,12 @@ export class MailCanvas {
   }
 
   protected hasSettings(block: FreeBlock | ColumnsBlock): boolean {
-    return block.kind === 'button' || block.kind === 'callout' || block.kind === 'columns';
+    return (
+      block.kind === 'button' ||
+      block.kind === 'image' ||
+      block.kind === 'callout' ||
+      block.kind === 'columns'
+    );
   }
 
   protected dropped(event: CdkDragDrop<unknown>): void {

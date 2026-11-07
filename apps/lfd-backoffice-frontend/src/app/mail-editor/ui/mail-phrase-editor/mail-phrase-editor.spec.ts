@@ -11,6 +11,9 @@ const PHRASE: MailEditorPhraseView = {
   path: 'title.paid',
   variables: ['ref', 'name'],
   requiredVariables: ['ref'],
+  place: null,
+  variant: null,
+  staleTranslations: [],
   locales: {
     fr: {
       default: 'Commande {ref} payée',
@@ -18,6 +21,7 @@ const PHRASE: MailEditorPhraseView = {
       draftText: 'Commande {ref} réglée',
       publishedText: null,
       revision: 1,
+      defaultChangedSince: null,
     },
     en: {
       default: 'Order {ref} paid',
@@ -25,6 +29,7 @@ const PHRASE: MailEditorPhraseView = {
       draftText: null,
       publishedText: null,
       revision: 0,
+      defaultChangedSince: null,
     },
     it: {
       default: null,
@@ -32,6 +37,7 @@ const PHRASE: MailEditorPhraseView = {
       draftText: null,
       publishedText: null,
       revision: 0,
+      defaultChangedSince: null,
     },
   },
 };

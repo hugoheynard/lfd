@@ -829,6 +829,33 @@ sortes de `FreeBlock` ; les `@switch` de `mail-free-block-editor.html`,
 Le bloc image de la bibliothèque part avec `src: ""` ; l'interrupteur
 « image décorative » coupe le lien ; un `alt` par langue sinon.
 
+### Bâti le 2026-11-07 (front) — écarts
+
+**Ce qui existe** (`apps/lfd-backoffice-frontend/src/app/mail-editor/`) :
+l'entrée « Image » de la bibliothèque (`{ kind: "image", src: "", alt: {} }`,
+aussi dans la bibliothèque d'une colonne) ; dans le canevas, la vignette de
+l'image choisie et son texte de remplacement dans la langue affichée
+(`ui/mail-free-block-editor/`) ; dans les réglages (`ui/mail-block-settings/`),
+« Choisir dans la médiathèque » — le panneau `LibraryPicker` des fiches
+(`pim/catalogue/library-picker/`), en choix unique, dont l'écran ne garde que
+l'adresse publique —, l'interrupteur « Image décorative » (qui retire le
+lien et le champ du texte de remplacement) et le lien en https. Les gestes
+purs sont `withDecorative` et `withImageHref` (`rules/mail-document-edits.ts`) :
+un champ retiré est absent, jamais `undefined`. Les refus sont ceux du paquet,
+sous le bloc ; les deux erreurs de publication s'affichent par
+`httpErrorMessage`, qui rend déjà le message du serveur, 400 comme 500.
+
+- **Un bloc posé dans une colonne a désormais son bouton de réglages.** Sans
+  lui, une image en colonne n'aurait pas pu être choisie ; le bouton d'une
+  colonne gagne du même coup son adresse, qu'aucun écran ne permettait de
+  saisir jusqu'ici.
+- **L'interrupteur est une `fold-checkbox`** : fold n'a pas de composant
+  interrupteur.
+- **La vignette porte `alt=""`** : dans l'éditeur, elle double le champ du
+  texte de remplacement juste dessous.
+- Une image pas encore choisie n'a pas de vignette ; le refus
+  `image-src-missing` le dit à la publication, rien n'est inventé avant.
+
 ## 20. S5b (phrases, cas) et essai — bâti le 2026-11-07
 
 **Ce qui existe.** Sur la page d'un e-mail
@@ -905,3 +932,53 @@ phrases rangées sous le bloc sélectionné et les cadres objet / en-tête ; les
 signaux ; les orphelins ; la publication globale ; le choix de la source de
 l'essai ; puis, si plus rien ne manque, `textes-emails` redirige vers
 `/emails` et ses entrées de menu (rail et tuiles) disparaissent.
+
+### Bâti le 2026-11-07 (API) — écarts
+
+**Ce qui existe.** Toutes les informations viennent de la vue de l'écran des
+textes (`mailCopyAdminView`, `apps/lfd-api/src/mail/copy/application/`), lue
+par les mêmes lectures ; le rangement est fait dans
+`apps/lfd-api/src/mail/documents/application/mail-editor-phrases.ts`, sans
+rien recalculer.
+
+Types ajoutés à `@lfd/mail-blocks` (`packages/mail-blocks/src/mail-editor-routes.ts`) :
+
+- `MailEditorDefaultChangeView` (`previousDefault`) ;
+- `MailEditorFrame` (`"subject" | "header"`) ;
+- `MailEditorPhrasePlace` (`{ kind: "block", block: ModelSectionId }` ou
+  `{ kind: "frame", frame }`) ;
+- `MailDocumentSourcedTrialPayload` (`MailDocumentTrialPayload` + `source?`).
+
+Champs ajoutés à des types existants (rien de renommé ni de retiré) :
+
+- `MailEditorPhraseLocaleView.defaultChangedSince` ;
+- `MailEditorPhraseView.place` (`null` : hors carte, ou orpheline),
+  `.variant`, `.staleTranslations` ;
+- `MailEditorView.orphans` et `MailEditorPhrasesView.orphans` (même forme
+  que les phrases, `place` et `variant` à `null`) ;
+- `MailEditorListView.copyPendingCount`.
+
+Routes :
+
+| Verbe  | Chemin                                   | Droit   | Rend                                                                               |
+| ------ | ---------------------------------------- | ------- | ---------------------------------------------------------------------------------- |
+| `POST` | `/admin/mail-templates/publications`     | `write` | `MailDocumentPublicationView` (201) ; 409 rien n'attend — `PublishMailCopyCommand` |
+| `POST` | `/admin/mail-templates/:template/trials` | `write` | inchangée, accepte `source` (`draft` par défaut) ; clé d'intention inchangée       |
+
+**Écarts.**
+
+- **Les textes hors carte ne sont pas une liste à part** : ce sont les
+  phrases dont `place` vaut `null` (l'écran des textes les calcule pareil,
+  côté front, par `unplacedTexts`). Une section de la coquille qu'aucun bloc
+  du modèle ne porte (`modelSectionOfLayoutSection` rend `null`) laisse ses
+  phrases hors carte plutôt que d'inventer un bloc.
+- **La publication de tous les e-mails ne publie pas les arrangements** :
+  c'est la commande de `admin/mail-copy` (phrases et ordres de sections).
+  Un brouillon de document se publie depuis son e-mail. D'où
+  `copyPendingCount`, qui ne compte pas `hasDraft`.
+- **L'essai sur les phrases publiées garde le document que l'éditeur
+  montre** (le brouillon s'il y en a un), comme l'aperçu avec
+  `source: "published"` depuis S4d.
+- **Champs requis ajoutés** à des vues servies : un double de test du front
+  qui construit `MailEditorPhraseView`, `MailEditorView` ou
+  `MailEditorListView` doit les poser.

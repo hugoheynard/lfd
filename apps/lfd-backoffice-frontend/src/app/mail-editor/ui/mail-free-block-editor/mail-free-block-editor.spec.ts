@@ -35,4 +35,32 @@ describe('MailFreeBlockEditor', () => {
     const { fixture } = render({ id: 'd', kind: 'divider' });
     expect(fixture.nativeElement.querySelector('input, textarea')).toBeNull();
   });
+
+  it('montre la vignette d’une image et écrit son texte de remplacement', () => {
+    const { fixture, emitted } = render({
+      id: 'i',
+      kind: 'image',
+      src: 'https://m.fr/a.webp',
+      alt: {},
+    });
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('[data-thumbnail]')?.getAttribute('src')).toBe(
+      'https://m.fr/a.webp',
+    );
+    expect(element.textContent).toContain('Texte de remplacement (EN)');
+    const field: HTMLInputElement = element.querySelector('input')!;
+    field.value = 'A brioche';
+    field.dispatchEvent(new Event('input'));
+    expect(emitted).toEqual([
+      { id: 'i', kind: 'image', src: 'https://m.fr/a.webp', alt: { en: 'A brioche' } },
+    ]);
+  });
+
+  it('ne demande aucun texte à une image décorative, ni de vignette avant le choix', () => {
+    const { fixture } = render({ id: 'i', kind: 'image', src: '', alt: {}, decorative: true });
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('input')).toBeNull();
+    expect(element.querySelector('[data-thumbnail]')).toBeNull();
+    expect(element.querySelector('[data-decorative-note]')).not.toBeNull();
+  });
 });

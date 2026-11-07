@@ -11,6 +11,36 @@
         data-href
       />
     }
+    @case ('image') {
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        icon="image"
+        type="button"
+        (click)="pickImage()"
+        data-pick-image
+      >
+        {{ current.src === '' ? 'Choisir dans la médiathèque' : 'Changer d’image' }}
+      </button>
+      <fold-checkbox
+        label="Image décorative"
+        hint="Elle n’apporte aucune information : pas de texte de remplacement, pas de lien."
+        [checked]="current.decorative === true"
+        (checkedChange)="setDecorative($event)"
+        data-decorative
+      />
+      @if (current.decorative !== true) {
+        <fold-input
+          type="url"
+          label="Lien de l’image (facultatif)"
+          hint="Une adresse complète, commençant par https://"
+          [value]="current.href ?? ''"
+          (valueChange)="setImageHref($event)"
+          data-image-href
+        />
+      }
+    }
     @case ('callout') {
       <fold-listbox
         size="sm"

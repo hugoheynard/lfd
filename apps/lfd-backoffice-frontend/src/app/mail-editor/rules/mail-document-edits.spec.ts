@@ -13,6 +13,8 @@ import {
   replaceFreeBlock,
   setColumnWidth,
   textOf,
+  withDecorative,
+  withImageHref,
   withText,
 } from './mail-document-edits';
 
@@ -117,5 +119,43 @@ describe('les gestes du canevas', () => {
 
   it('ne rend pas un bloc du modèle comme bloc à régler', () => {
     expect(findEditableBlock(DOCUMENT, 'model:title')).toBeNull();
+  });
+
+  describe('le bloc image (§ 19)', () => {
+    const IMAGE = {
+      id: 'i',
+      kind: 'image',
+      src: 'https://m.fr/a.webp',
+      alt: { fr: 'Une brioche' },
+    } as const;
+
+    it('naît sans image ni texte, et entre dans une colonne', () => {
+      expect(newLibraryBlock('image', 'i')).toEqual({ id: 'i', kind: 'image', src: '', alt: {} });
+      expect(newCellBlock('image', 'i')).toEqual({ id: 'i', kind: 'image', src: '', alt: {} });
+    });
+
+    it('son texte est le texte de remplacement, par langue', () => {
+      expect(textOf(IMAGE, 'fr')).toBe('Une brioche');
+      expect(withText(IMAGE, 'en', 'A brioche')).toEqual({
+        ...IMAGE,
+        alt: { fr: 'Une brioche', en: 'A brioche' },
+      });
+    });
+
+    it('décorative, elle perd son lien ; les champs retirés sont absents', () => {
+      const linked = { ...IMAGE, href: 'https://lafoliedouce.fr' };
+      const decorative = withDecorative(linked, true);
+      expect(decorative).toEqual({ ...IMAGE, decorative: true });
+      expect('href' in decorative).toBe(false);
+      const back = withDecorative(decorative, false);
+      expect(back).toEqual(IMAGE);
+      expect('decorative' in back).toBe(false);
+    });
+
+    it('un lien vidé disparaît', () => {
+      const linked = withImageHref(IMAGE, 'https://lafoliedouce.fr');
+      expect(linked.href).toBe('https://lafoliedouce.fr');
+      expect('href' in withImageHref(linked, '')).toBe(false);
+    });
   });
 });

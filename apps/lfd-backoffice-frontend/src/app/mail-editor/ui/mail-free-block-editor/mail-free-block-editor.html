@@ -11,4 +11,21 @@
   @case ('callout') {
     <fold-textarea [label]="label()" [rows]="2" [value]="text()" (valueChange)="write($event)" />
   }
+  @case ('image') {
+    @let image = imageBlock();
+    @if (image !== null) {
+      <div class="image">
+        @if (image.src !== '') {
+          <img class="thumbnail" [src]="image.src" alt="" data-thumbnail />
+        }
+        @if (image.decorative === true) {
+          <p class="decorative" data-decorative-note>
+            Image décorative : aucun texte de remplacement, aucun lien.
+          </p>
+        } @else {
+          <fold-input [label]="label()" [value]="text()" (valueChange)="write($event)" />
+        }
+      </div>
+    }
+  }
 }

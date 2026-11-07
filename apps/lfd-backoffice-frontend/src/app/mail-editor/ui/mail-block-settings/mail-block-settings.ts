@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import {
   CALLOUT_TONES,
   COLUMN_WIDTH_STEPS,
@@ -7,13 +15,26 @@ import {
   type ColumnWidthStep,
   type FreeBlock,
 } from '@lfd/mail-blocks';
-import { FoldInputComponent, FoldListboxComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCheckboxComponent,
+  FoldInputComponent,
+  FoldListboxComponent,
+  FoldPanelHostService,
+} from 'fold-ng';
 
 import {
   CALLOUT_TONE_LABELS,
   CELL_LIBRARY_ITEMS,
   type LibraryItemKey,
+  withDecorative,
+  withImageHref,
 } from '../../rules/mail-document-edits';
+import {
+  LibraryPicker,
+  type LibraryPickerData,
+  type PickedMedia,
+} from '../../../pim/catalogue/library-picker/library-picker';
 import { MailBlockLibrary } from '../mail-block-library/mail-block-library';
 
 /** Une largeur choisie pour une colonne. */
@@ -30,7 +51,9 @@ export interface CellAddition {
 
 /**
  * **Les réglages du bloc libre sélectionné** (plan `plan-editeur-par-blocs.md`,
- * § 6, colonne de droite) : l'adresse d'un bouton, le ton d'un encadré, les
+ * § 6, colonne de droite) : l'adresse d'un bouton, l'image d'un bloc image
+ * (choisie dans la médiathèque, § 19 — l'écran ne passe que son adresse
+ * publique), « décorative » et son lien, le ton d'un encadré, les
  * largeurs d'une mise en page sur les crans et ce qu'on pose dans ses
  * colonnes. Aucune règle ici : une adresse en `http://` ou des largeurs qui
  * ne font pas 100 % s'écrivent, et le canevas affiche le refus du paquet.
@@ -38,7 +61,13 @@ export interface CellAddition {
 @Component({
   selector: 'app-mail-block-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldInputComponent, FoldListboxComponent, MailBlockLibrary],
+  imports: [
+    FoldButtonComponent,
+    FoldCheckboxComponent,
+    FoldInputComponent,
+    FoldListboxComponent,
+    MailBlockLibrary,
+  ],
   templateUrl: './mail-block-settings.html',
   styleUrl: './mail-block-settings.scss',
 })
@@ -47,6 +76,8 @@ export class MailBlockSettings {
   readonly blockChange = output<FreeBlock>();
   readonly widthChange = output<ColumnWidthChoice>();
   readonly cellAddition = output<CellAddition>();
+
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly toneOptions = CALLOUT_TONES.map((tone) => ({
     value: tone,
@@ -69,6 +100,39 @@ export class MailBlockSettings {
     const block = this.block();
     if (block.kind === 'button') {
       this.blockChange.emit({ ...block, href });
+    }
+  }
+
+  /** Le sélecteur de la médiathèque, en choix unique ; renoncer ne change rien. */
+  protected pickImage(): void {
+    const current = this.block();
+    if (current.kind !== 'image') {
+      return;
+    }
+    void this.panels
+      .open<LibraryPickerData, readonly PickedMedia[]>(LibraryPicker, {
+        data: { already: [], single: true },
+      })
+      .closed.then((picked) => {
+        const chosen = picked?.[0];
+        const block = this.block();
+        if (chosen !== undefined && block.kind === 'image' && block.id === current.id) {
+          this.blockChange.emit({ ...block, src: chosen.url });
+        }
+      });
+  }
+
+  protected setDecorative(decorative: boolean): void {
+    const block = this.block();
+    if (block.kind === 'image') {
+      this.blockChange.emit(withDecorative(block, decorative));
+    }
+  }
+
+  protected setImageHref(href: string): void {
+    const block = this.block();
+    if (block.kind === 'image') {
+      this.blockChange.emit(withImageHref(block, href));
     }
   }
 

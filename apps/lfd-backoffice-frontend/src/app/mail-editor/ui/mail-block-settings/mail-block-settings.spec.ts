@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import type { ColumnsBlock, FreeBlock } from '@lfd/mail-blocks';
+import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
+
+import type { PickedMedia } from '../../../pim/catalogue/library-picker/library-picker';
 
 import { type CellAddition, MailBlockSettings } from './mail-block-settings';
 
@@ -41,5 +44,77 @@ describe('MailBlockSettings', () => {
     expect(fixture.nativeElement.querySelector('[data-library-item="columns-2"]')).toBeNull();
     fixture.nativeElement.querySelector('[data-library-item="heading"]').click();
     expect(added).toEqual([{ cellIndex: 0, key: 'heading' }]);
+  });
+
+  describe('une image', () => {
+    const IMAGE = { id: 'i', kind: 'image', src: '', alt: { fr: 'Une brioche' } } as const;
+
+    function renderImage(block: FreeBlock, picked: readonly PickedMedia[] | undefined) {
+      const opened: unknown[] = [];
+      TestBed.configureTestingModule({
+        providers: [
+          {
+            provide: FoldPanelHostService,
+            useValue: {
+              open: (_component: unknown, options: { data: unknown }) => {
+                opened.push(options.data);
+                return { closed: Promise.resolve(picked) };
+              },
+            },
+          },
+        ],
+      });
+      const fixture = render(block);
+      const emitted: FreeBlock[] = [];
+      fixture.componentInstance.blockChange.subscribe((next) => emitted.push(next));
+      return { fixture, emitted, opened, element: fixture.nativeElement as HTMLElement };
+    }
+
+    it('choisit dans la médiathèque, une seule image, et n’en garde que l’adresse', async () => {
+      const chosen = {
+        url: 'https://media.lafoliedouce.fr/a.webp',
+        name: 'Brioche',
+        width: 800,
+        height: 600,
+        bytes: 1000,
+        contentType: 'image/webp',
+        focal: null,
+      } as PickedMedia;
+      const { element, emitted, opened } = renderImage(IMAGE, [chosen]);
+      element.querySelector<HTMLButtonElement>('[data-pick-image]')!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(opened).toEqual([{ already: [], single: true }]);
+      expect(emitted).toEqual([{ ...IMAGE, src: 'https://media.lafoliedouce.fr/a.webp' }]);
+    });
+
+    it('renoncer ne change rien', async () => {
+      const { element, emitted } = renderImage(IMAGE, undefined);
+      element.querySelector<HTMLButtonElement>('[data-pick-image]')!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(emitted).toEqual([]);
+    });
+
+    it('déclarée décorative, elle perd son lien et n’en propose plus', () => {
+      const linked = { ...IMAGE, href: 'https://lafoliedouce.fr' };
+      const { element, emitted } = renderImage(linked, undefined);
+      expect(element.querySelector('[data-image-href]')).not.toBeNull();
+      element.querySelector<HTMLInputElement>('[data-decorative] input')!.click();
+      expect(emitted).toEqual([{ ...IMAGE, decorative: true }]);
+    });
+
+    it('décorative, ne propose pas de lien', () => {
+      const { element } = renderImage({ ...IMAGE, decorative: true }, undefined);
+      expect(element.querySelector('[data-image-href]')).toBeNull();
+    });
+
+    it('pose un lien, et un champ vidé le retire', () => {
+      const { element, emitted } = renderImage(IMAGE, undefined);
+      const field = element.querySelector<HTMLInputElement>('[data-image-href] input')!;
+      field.value = 'https://lafoliedouce.fr';
+      field.dispatchEvent(new Event('input'));
+      expect(emitted).toEqual([{ ...IMAGE, href: 'https://lafoliedouce.fr' }]);
+    });
   });
 });

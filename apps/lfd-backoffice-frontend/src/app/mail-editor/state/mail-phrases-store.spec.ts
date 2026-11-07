@@ -16,6 +16,7 @@ function locale(change: Partial<MailEditorPhraseLocaleView> = {}): MailEditorPhr
     draftText: null,
     publishedText: null,
     revision: 2,
+    defaultChangedSince: null,
     ...change,
   };
 }
@@ -25,6 +26,9 @@ function phrase(change: Partial<MailEditorPhraseLocaleView> = {}): MailEditorPhr
     path: 'title.paid',
     variables: ['ref'],
     requiredVariables: ['ref'],
+    place: null,
+    variant: null,
+    staleTranslations: [],
     locales: { fr: locale(change), en: locale(), it: locale() },
   };
 }
@@ -34,7 +38,7 @@ function setup(api: Partial<Record<keyof MailEditorService, ReturnType<typeof vi
     savePhraseDraft: vi.fn(() => Promise.resolve()),
     resetPhrase: vi.fn(() => Promise.resolve()),
     phrases: vi.fn(() =>
-      Promise.resolve({ template: TEMPLATE, phrases: [phrase({ revision: 7 })] }),
+      Promise.resolve({ template: TEMPLATE, phrases: [phrase({ revision: 7 })], orphans: [] }),
     ),
     ...api,
   };

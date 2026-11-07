@@ -93,4 +93,23 @@ describe('MailCanvas', () => {
     const { element } = render();
     expect(element.querySelector('[data-document-violations], [data-block-violation]')).toBeNull();
   });
+
+  it('ouvre les réglages d’une image posée dans une colonne', () => {
+    const { fixture, element } = render({
+      template: TEMPLATE,
+      blocks: [
+        { id: modelBlockId('title'), kind: 'model', section: 'title' },
+        {
+          id: 'k',
+          kind: 'columns',
+          widths: [50, 50],
+          cells: [[{ id: 'img', kind: 'image', src: '', alt: {} }], []],
+        },
+        { id: modelBlockId('footer'), kind: 'model', section: 'footer' },
+      ],
+    });
+    element.querySelector<HTMLButtonElement>('[data-block="img"] [data-settings]')!.click();
+    fixture.detectChanges();
+    expect(element.querySelector('[data-settings-panel] [data-pick-image]')).not.toBeNull();
+  });
 });

@@ -97,22 +97,43 @@
                           <div class="inner" [attr.data-block]="inner.id">
                             <div class="inner-head">
                               <span>{{ titleOf(inner) }}</span>
-                              <button
-                                foldButton
-                                size="sm"
-                                emphasis="soft"
-                                intent="danger"
-                                icon="bin"
-                                type="button"
-                                [attr.aria-label]="
-                                  'Retirer le bloc « ' +
-                                  titleOf(inner) +
-                                  ' » de la colonne ' +
-                                  (column + 1)
-                                "
-                                (click)="remove(inner.id)"
-                                data-remove
-                              ></button>
+                              <div class="actions">
+                                @if (hasSettings(inner)) {
+                                  <button
+                                    foldButton
+                                    size="sm"
+                                    emphasis="soft"
+                                    intent="neutral"
+                                    icon="sliders"
+                                    type="button"
+                                    [attr.aria-pressed]="selectedId() === inner.id"
+                                    [attr.aria-label]="
+                                      'Régler le bloc « ' +
+                                      titleOf(inner) +
+                                      ' » de la colonne ' +
+                                      (column + 1)
+                                    "
+                                    (click)="toggleSettings(inner.id)"
+                                    data-settings
+                                  ></button>
+                                }
+                                <button
+                                  foldButton
+                                  size="sm"
+                                  emphasis="soft"
+                                  intent="danger"
+                                  icon="bin"
+                                  type="button"
+                                  [attr.aria-label]="
+                                    'Retirer le bloc « ' +
+                                    titleOf(inner) +
+                                    ' » de la colonne ' +
+                                    (column + 1)
+                                  "
+                                  (click)="remove(inner.id)"
+                                  data-remove
+                                ></button>
+                              </div>
                             </div>
                             <app-mail-free-block-editor
                               [block]="inner"

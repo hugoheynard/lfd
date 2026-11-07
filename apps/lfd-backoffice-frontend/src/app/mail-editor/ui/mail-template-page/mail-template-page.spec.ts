@@ -33,6 +33,7 @@ function view(
     published: null,
     draft: null,
     phrases: [],
+    orphans: [],
     cases: [],
   };
 }
