@@ -217,7 +217,8 @@ flowchart LR
 | **S2g** | ✅ bâti le 2026-11-06 (`d2a80194f`, § 17) : le bloc `staff` (2 envoyeurs) ; `sendNow` pour ouvrir un accès (l'écran lit `mailSent`, le lien est un secret), `request` pour la suspension et le rétablissement, depuis leur transaction ; une clé par geste ; dette 8 → 6                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | la suspension et le rétablissement partent après la validation, par le bloc                                             |
 | **S2h** | ✅ bâti le 2026-11-06 (`2a6611246`, § 18) : les 6 isolés ; `request` pour l'alerte de compte, le rendez-vous pris (chacun dans sa propre unité de travail, best-effort gardé) et les avis aux comptes principaux (abonnés durables) ; `sendNow` pour l'annonce de la vitrine, l'essai d'un e-mail et la sonde de déploiement, **entrée dans le bloc `mail`** (même route) ; dette 6 → 0                                                                                                                                                                                                                                                                                                                                                                                                          | l'alerte de compte, le rendez-vous et les avis aux principaux partent après la validation, par le bloc                  |
 | **S3**  | ✅ bâti le 2026-11-06 (`336b46e7f`, § 19 ; S3b `7f6dfae8d`, § 20) : `b2b/mail-copy` → `mail/copy/`, puis les gabarits, le dictionnaire, le texte effectif, les sections et les spécimens → `mail/templates/` ; le contrat (`B2bMails`, la langue de repli, les libellés de l'équipe) et deux ports dans `mail/channels/templates/` ; le mailer est composé par le bloc. Déménager les gabarits, le dictionnaire et les sections de `platform/mailer/` dans le bloc. **Restent dans `platform/mailer/`** : `webhook/` (lu par `ops`), `inbound/` et `journal/`, techniques. Les trois tables `public.mail_*` **restent dans `public`** : seul leur écrivain change (de `b2b/mail-copy` au bloc `mail`), dans le même déploiement que leur lecteur. Les tables neuves du bloc vont dans son schéma | rien                                                                                                                    |
-| **S3c** | À bâtir (§ 22, Hugo, 2026-11-07). Les pièces jointes par **URL signée** : l'appelant range et signe, le bloc `mail` télécharge au moment d'envoyer et ne connaît plus aucun stockage.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Aucun : la même pièce, jointe de la même façon.                                                                         |
+| **S3c** | ⏸️ **À revoir** (Hugo, 2026-11-07 : « note le sujet des pdf comme à revoir ») — pas bâti. § 22, Hugo, 2026-11-07. Les pièces jointes par **URL signée** : l'appelant range et signe, le bloc `mail` télécharge au moment d'envoyer et ne connaît plus aucun stockage.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Aucun : la même pièce, jointe de la même façon.                                                                         |
+| **S3d** | À bâtir (§ 24, Hugo, 2026-11-07). Le stockage public du bloc `mail` pour les images de ses modèles : port, adaptateur R2, copie depuis une origine admise. Rien ne l'appelle encore — S4 le branchera à la publication.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Aucun.                                                                                                                  |
 | **S4**  | Les modèles par blocs : catalogue de blocs, documents en brouillon / publié / versions, conversion des réécritures existantes en documents, rendu par liste de blocs. Les empreintes (`mail-rendering.golden.json`) couvrent le HTML et l'objet, **pas les octets des PDF et PNG**. `@lfd/mailer` change : `pnpm test` à la racine                                                                                                                                                                                                                                                                                                                                                                                                                                                               | rien tant que rien n'est publié                                                                                         |
 | **S5**  | L'éditeur au back-office : ajouter, retirer, ordonner, écrire, insérer une variable, aperçu, essai, publier, versions, trois langues côte à côte ; le droit dédié                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | l'équipe compose ses e-mails                                                                                            |
 
@@ -1077,7 +1078,12 @@ caché les dépendances (base, outbox, mailer) dans un singleton, contre le § 2
 de `CLAUDE.md`, et empêché les tests d'injecter une doublure. Le renommage se
 fait dans un passage dédié, avec le rangement des portes dans `lint/`.
 
-## 22. S3c — les pièces jointes par URL signée (Hugo, 2026-11-07) — à bâtir
+## 22. S3c — les pièces jointes par URL signée (Hugo, 2026-11-07) — ⏸️ à revoir
+
+> ⏸️ **À revoir, pas à bâtir** (Hugo, 2026-11-07). La référence au stockage
+> du cas 7 (`pdfStored`) reste en place d'ici là, avec sa dépendance du bloc
+> `mail` à `customer-documents`. Ce qui suit est la proposition du jour, pas
+> une décision.
 
 ### En simple
 
@@ -1232,3 +1238,53 @@ Hugo, le 2026-11-07 : « je veux le plus découplé ».
   republie.
 - Le bloc `mail` a un stockage public à lui, pour ses images seulement. Il ne
   lit jamais le stockage d'un autre bloc.
+
+## 24. S3d — le stockage des images du bloc `mail` (Hugo, 2026-11-07) — à bâtir
+
+La règle est au § 23. Ce lot bâtit le stockage et la copie ; **rien ne les
+appelle encore** : S4 les branchera à la publication d'une version.
+
+### Ce que le lot fait
+
+1. **Configuration** (`platform/config/`) — un usage R2 de plus, `mail`, dans
+   `R2StorageUsage` et sa table de variables explicites (le patron de
+   `media`), plus `mailPublicBaseUrl()` (adresse publique du bucket, sans barre
+   finale, ou `null`) et `mailImageOrigins()` (liste d'origines d'images
+   admises, `https://` seulement, vide par défaut). L'app démarre sans : seule la
+   copie d'image est indisponible, avec une erreur qui nomme les variables
+   manquantes (le patron de `missingMediaReason`).
+2. **Le port** (`mail/images/domain/ports/`) — `MailImageStore.put(bytes,
+contentType): Promise<{ url }>`. Adressé par le contenu (le hash des octets,
+   `content-address.ts` de `@lfd/storage`), servi
+   `public, max-age=31536000, immutable` : sous une même adresse, l'image ne
+   change jamais, et deux publications de la même image ne la rangent qu'une
+   fois. **Pas de `delete`** : une image publiée peut être lue par un e-mail
+   envoyé il y a des mois ; le verbe n'existe pas (le patron de
+   `KeptDocumentStore`).
+3. **L'adaptateur** (`mail/images/infrastructure/`) — R2, sur l'usage `mail`,
+   garde `assertOutsideTransaction`.
+4. **La copie** (`mail/images/application/`) — un service
+   `MailImageCopier.copy(sourceUrl): Promise<{ url }>` :
+   - refuse une adresse dont l'origine n'est pas admise (`DomainError` qui
+     nomme l'origine refusée et la variable à régler) — sans quoi le bloc
+     deviendrait un client HTTP ouvert ;
+   - télécharge hors transaction (garde), avec un délai borné et une taille
+     maximale (constantes nommées) ;
+   - refuse ce qui n'est pas une image reconnue par ses octets
+     (`content-type.ts` de `@lfd/storage`, pas l'en-tête annoncé) ;
+   - range par `MailImageStore.put` et rend l'adresse de la copie.
+5. **Réseau** — le téléchargeur est classé et gardé pour
+   `network-outside-transaction`.
+6. **Registre RGPD** — rien : une image de modèle n'est pas une donnée
+   personnelle.
+7. **Tests** — domaine et service (origine refusée, origine admise, `http://`
+   refusé, taille dépassée, octets qui ne sont pas une image, même image deux
+   fois → même adresse), adaptateur avec le double S3 du paquet.
+
+### Hors du lot
+
+- Le provisionnement : un bucket R2 et son domaine public, à créer par Hugo,
+  et les variables à poser en dev et en production. Sans elles, l'app démarre
+  et la copie refuse en nommant ce qui manque.
+- Aucune route HTTP, aucun écran : c'est S4/S5.
+- Aucune migration.
