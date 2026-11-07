@@ -38,7 +38,6 @@ describe("l'ordre des sections, en brouillon", () => {
       ["image", "system"],
       ["itinerary", "system"],
       ["cta", "system"],
-      ["secondaryLink", "system"],
     ]);
     expect(placed?.sections[0]?.texts).toContainEqual({ path: "title", variant: null });
     expect(placed?.sectionOrder).toMatchObject({ draftState: "unchanged", revision: 0 });

@@ -119,9 +119,13 @@ export class MailCopyManifest {
   /**
    * Le texte est-il un libellé système (§ 23) ? Vrai seulement quand l'e-mail
    * déclare ses phrases éditables et que ce chemin n'en est pas ; faux pour un
-   * e-mail inconnu ou sans liste.
+   * e-mail inconnu ou sans liste, et pour un texte que le dictionnaire ne
+   * connaît pas — celui-là est un 404, pas un libellé système.
    */
   isSystemPhrase(mail: string, path: string): boolean {
+    if (!this.knows(mail, path)) {
+      return false;
+    }
     const editable = this.described.find((described) => described.mail === mail)?.editablePhrases;
     return editable !== undefined && !editable.includes(path);
   }
