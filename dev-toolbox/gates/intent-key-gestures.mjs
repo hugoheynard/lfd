@@ -90,6 +90,11 @@ export const GESTURES = [
     "SendMailCopyTrialCommand",
     "mail/copy/http/admin-mail-copy.controller.ts",
   ],
+  [
+    "mail/documents/application/commands/send-mail-document-trial.command.ts",
+    "SendMailDocumentTrialCommand",
+    "mail/documents/http/admin-mail-templates.controller.ts",
+  ],
 ].map(([command, className, controller]) => ({
   command: `${SRC}/${command}`,
   className,

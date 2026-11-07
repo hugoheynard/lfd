@@ -10,6 +10,7 @@ import { replacementTexts } from "../../../copy/domain/mail-copy-texts.js";
 import { MailCopyAdminReader } from "../../../copy/domain/ports/mail-copy-admin.reader.js";
 import {
   MailDocumentRefusedError,
+  UnknownMailCaseError,
   UnknownMailTemplateError,
 } from "../../domain/mail-document-errors.js";
 import { MailTemplateDocument } from "../../domain/mail-template-document.js";
@@ -32,7 +33,7 @@ function renderedLocale(entry: MailTemplateEntry, asked: MailLocale): MailLocale
 /**
  * **L'aperçu fidèle** (plan `plan-editeur-par-blocs.md`, § 6) : le rendu du
  * serveur, à la demande — le document posé comme l'envoi le pose, les phrases
- * de la source demandée. Rien n'est écrit, rien n'est envoyé.
+ * de la source demandée, les données du cas demandé. Rien n'est écrit, rien n'est envoyé.
  */
 @QueryHandler(PreviewMailDocumentQuery)
 export class PreviewMailDocumentHandler implements IQueryHandler<
@@ -49,12 +50,16 @@ export class PreviewMailDocumentHandler implements IQueryHandler<
 
   /**
    * @throws {UnknownMailTemplateError} l'e-mail n'est pas au registre.
+   * @throws {UnknownMailCaseError} l'e-mail n'a pas ce cas.
    * @throws {MailDocumentRefusedError} le document enfreint une règle de forme.
    */
   async execute(query: PreviewMailDocumentQuery): Promise<MailDocumentPreviewView> {
     const entry = this.catalogue.find(query.template);
     if (entry === null) {
       throw new UnknownMailTemplateError(query.template);
+    }
+    if (!entry.cases.some((candidate) => candidate.id === query.caseId)) {
+      throw new UnknownMailCaseError(query.template, query.caseId);
     }
     const [state, entries, orders] = await Promise.all([
       this.reader.stateOf(query.template),
@@ -73,7 +78,7 @@ export class PreviewMailDocumentHandler implements IQueryHandler<
     }
     const locale = renderedLocale(entry, query.locale);
     const texts = replacementTexts(entries, this.manifest, locale, query.source);
-    const rendered = this.renderer.render(query.template, locale, texts, document);
+    const rendered = this.renderer.render(query.template, query.caseId, locale, texts, document);
     return { template: query.template, locale, ...rendered };
   }
 }

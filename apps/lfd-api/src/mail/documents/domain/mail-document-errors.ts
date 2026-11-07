@@ -79,3 +79,13 @@ export class StoredMailDocumentUnreadableError extends TechnicalError {
     );
   }
 }
+
+/** Le cas demandé à l'aperçu n'est pas un cas de cet e-mail. */
+export class UnknownMailCaseError extends ResourceNotFoundError {
+  constructor(template: string, caseId: string) {
+    super(
+      "MAIL_CASE_UNKNOWN",
+      `L'e-mail « ${template} » n'a pas de cas « ${caseId} » dans cette version. Rechargez l'éditeur et choisissez un cas dans sa liste.`,
+    );
+  }
+}

@@ -619,3 +619,105 @@ Deux réponses de Hugo aux questions laissées par S4c (§ 15) :
   back-office (`apps/lfd-backoffice-frontend/src/app/shared/journal/phrases/`)
   n'a pas encore les trois faits `mail_copy.document_*` que les contrats
   déclarent — le typecheck et le build du back-office échouent sur lui seul.
+
+### Bâti le 2026-11-07 — écarts
+
+**Ce qui existe.**
+
+- **Les phrases** : `apps/lfd-api/src/mail/documents/http/admin-mail-template-phrases.controller.ts`,
+  sous `mail_templates`, envoie `SaveMailCopyDraftCommand` et
+  `ResetMailCopyDraftCommand` (`mail/copy/`), l'e-mail tiré du chemin.
+  Aucune règle recopiée ; la lecture (`GetMailTemplatePhrasesQuery`) partage
+  `phrasesOfTemplate` avec l'ouverture de l'éditeur.
+- **Les cas** : `apps/lfd-api/src/mail/templates/specimens/cases/` — une table
+  par e-mail (`MAIL_CASE_TABLES`, exhaustive par le type), le premier cas est
+  l'exemple (`specimen`), les autres en dérivent par une donnée changée
+  (marque `EXEMPLE`, domaine `exemple.invalid`). Chaque table déclare ses
+  **axes**, dont la valeur est LUE sur les données d'un cas ; la garde
+  (`apps/lfd-api/src/mail/templates/specimens/cases/__tests__/mail-specimen-cases.spec.ts`) vérifie que chaque e-mail a
+  un cas, que chaque valeur d'axe en a un qui l'exerce, et qu'aucun cas ne
+  porte une donnée des empreintes.
+- **L'aperçu** prend un cas ; **l'essai** de l'éditeur
+  (`SendMailDocumentTrialCommand`) résout le document montré (brouillon,
+  sinon publié, sinon départ) et passe par `SendMailCopyTrialCommand`,
+  étendue d'un choix facultatif `{ caseId, document }` : même destinataire,
+  même « une fois par intention », même fait `mail_copy.trial_sent`. Le
+  geste est inscrit à `intent-key-gestures`.
+
+**Routes ajoutées** (toutes sous `mail_templates`) :
+
+| Verbe  | Chemin                                           | Droit   | Corps / rend                                                                               |
+| ------ | ------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------ |
+| `GET`  | `/admin/mail-templates/:template/phrases`        | `read`  | `MailEditorPhrasesView`                                                                    |
+| `PUT`  | `/admin/mail-templates/:template/phrases/drafts` | `write` | `MailPhraseDraftPayload` → 204 ; 400, 409                                                  |
+| `POST` | `/admin/mail-templates/:template/phrases/resets` | `write` | `MailPhraseResetPayload` → 204 ; 409                                                       |
+| `POST` | `/admin/mail-templates/:template/trials`         | `write` | `MailDocumentTrialPayload` + `Idempotency-Key` → 204 ; 400 sans clé, 404 cas               |
+| `POST` | `/admin/mail-templates/:template/previews`       | `read`  | accepte désormais `MailDocumentCasePreviewPayload` (`caseId` facultatif) ; 404 cas inconnu |
+
+**Types ajoutés** à `@lfd/mail-blocks` (aucun renommé ni changé) :
+`MailDocumentCasePreviewPayload` (étend `MailDocumentPreviewPayload` de
+`caseId?`), `MailEditorPhrasesView`, `MailPhraseDraftPayload`,
+`MailPhraseResetPayload`, `MailDocumentTrialPayload`. Les cas restent servis
+par `MailEditorView.cases` (`MailEditorCaseView`, inchangé).
+
+**Écarts au texte.**
+
+- **Les empreintes ne réutilisent pas les cas.** Leurs données ne sont pas
+  marquées (`ORD-4812`, `shop.lfc.test`, « Jeanne M. ») : les remplacer par
+  des cas lisibles comme inventés changerait chaque empreinte. Elles gardent
+  leur copie, et la garde refuse qu'un cas servi porte une de leurs données.
+- **Les axes ne sont nulle part dans ce plan** : le § 10 renvoie aux listes
+  de `vitruve` sans les recopier. Ils sont déclarés dans le code, tirés des
+  branches des gabarits et des cas des empreintes (régime, mode, auteur,
+  bon, prénom présent…). À relire contre la liste de `vitruve` si elle
+  existe encore.
+- **L'essai de l'éditeur part toujours sur les brouillons** (phrases et
+  document) : l'écran des textes garde son choix `source`.
+- Une phrase rétablie (`resets`) sur un chemin inconnu n'est pas refusée :
+  c'est la commande de `mail/copy`, inchangée, qui ne le vérifie pas.
+
+## 18. S5c (gestes) — bâti le 2026-11-07
+
+**Ce qui existe.** Sur la page d'un e-mail
+(`apps/lfd-backoffice-frontend/src/app/mail-editor/ui/mail-template-page/`),
+avec les seules routes de S4c (§ 15) :
+
+- **Publier** (`POST …/publications`, révision lue, `mail_templates:write`) :
+  confirmation sur place (`fold-inline-confirm`) qui dit ce qui partira —
+  « dès le prochain envoi, les clients (l'équipe, l'agence) recevront cet
+  e-mail tel qu'il est enregistré, avec les phrases en attente de cet
+  e-mail ». Le bouton attend un document **enregistré** : « Publier » met en
+  service le brouillon du serveur, pas l'écran. Les refus de
+  `validateMailDocumentForPublication` (texte manquant dans une langue…)
+  s'affichent avant l'appel et ferment le bouton ; un refus du serveur
+  (409 révision, rien à publier) s'affiche tel qu'il le dit, en encadré.
+- **Revenir au modèle d'origine** (`POST …/reverts`) : offert seulement s'il
+  y a un brouillon ou une version publiée ; la confirmation dit que le
+  brouillon est effacé, le publié retiré, et que les phrases ne changent pas.
+- **L'historique** (`ui/mail-template-history/`, `GET …/history`) : les
+  versions en `fold-timeline`, la plus récente en tête, celle en service
+  nommée, qui et quand ; le dernier retour au modèle d'origine ; relu après
+  chaque publication ou retour.
+- **L'aperçu fidèle** (`ui/mail-faithful-preview/`) : « Ordinateur /
+  Téléphone » (cadre à 375 px) et « Clair / Sombre » (`color-scheme` posé sur
+  l'`iframe`, que le message lit par `prefers-color-scheme`) ; l'`iframe`
+  reste `sandbox=""`, et basculer ne redemande pas le rendu.
+- **La garde de sortie** : la route `emails/:template` porte
+  `pendingChangesGuard` ; un document modifié retient la première sortie et
+  le dit (encadré), la seconde passe — la forme de la vitrine. Fermer
+  l'onglet passe par `beforeunload`.
+
+**Écarts au texte.**
+
+- **Une version passée ne s'ouvre pas en aperçu** : le contrat n'a aucune
+  route qui rende le document d'une version (`MailDocumentPreviewPayload`
+  prend un document ou celui que l'éditeur ouvrirait). Liste seule.
+- **L'auteur s'affiche par son identifiant de fiche staff** (`staffId`) : le
+  contrat ne porte pas de nom, et l'écran n'a pas d'annuaire à lire. À
+  trancher : un nom dans `MailEditorStamp`, ou une lecture de l'annuaire.
+- Le sombre ne change l'aperçu que d'un document **réarrangé** : la variante
+  sombre n'est émise que pour lui (S4b, § 7).
+
+**Ce qui reste.** Le panneau des phrases, le choix du cas (et le cas de
+l'aperçu fidèle) et « M'envoyer un essai » — passage suivant, sur les routes
+de S4d.

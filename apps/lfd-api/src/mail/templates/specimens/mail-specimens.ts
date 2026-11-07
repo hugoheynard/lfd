@@ -79,7 +79,20 @@ export function renderMailSpecimen<K extends keyof B2bMails>(
   overlay: MailCopyOverlay,
   layout: MailLayoutScope = NO_MAIL_LAYOUT,
 ): RenderedMail {
+  return renderMailData(registry, mail, specimenDataOf(mail, locale), overlay, layout);
+}
+
+/**
+ * Rend CES données d'un e-mail par son VRAI gabarit — un cas de l'éditeur
+ * (`cases/`), ou l'exemple. Rien n'est écrit, rien n'est envoyé.
+ */
+export function renderMailData<K extends keyof B2bMails>(
+  registry: TemplateRegistry<B2bMails>,
+  mail: K,
+  data: B2bMails[K],
+  overlay: MailCopyOverlay,
+  layout: MailLayoutScope = NO_MAIL_LAYOUT,
+): RenderedMail {
   const render: TemplateRegistry<B2bMails>[K] = registry[mail];
-  const data = specimenDataOf(mail, locale);
   return withMailCopyOverlay(overlay, () => withMailLayout(layout, () => render(data)));
 }

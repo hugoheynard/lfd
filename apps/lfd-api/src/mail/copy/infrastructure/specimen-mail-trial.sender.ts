@@ -6,7 +6,11 @@ import { withMailCopyOverlay } from "../../templates/copy/mail-copy-overlay.js";
 import type { B2bMails } from "../../templates/mail-templates.js";
 import { withMailLayout } from "../../templates/sections/mail-layout-scope.js";
 import { isMailKey, specimenDataOf } from "../../templates/specimens/mail-specimens.js";
-import { MailTrialSender } from "../domain/ports/mail-specimen.renderer.js";
+import { mailCaseDataOf } from "../../templates/specimens/cases/mail-specimen-cases.js";
+import {
+  MailTrialSender,
+  type MailTrialEditorChoice,
+} from "../domain/ports/mail-specimen.renderer.js";
 import { UnknownMailError } from "../domain/mail-copy-errors.js";
 import type { MailCopyLocale } from "../domain/mail-copy-locale.js";
 import type { MailTextsByMail } from "../domain/mail-copy-texts.js";
@@ -39,31 +43,38 @@ export class SpecimenMailTrialSender extends MailTrialSender {
     texts: MailTextsByMail,
     order: readonly string[] | null,
     intentKey: string,
+    editor: MailTrialEditorChoice | null = null,
   ): Promise<void> {
     if (!isMailKey(mail)) {
       throw new UnknownMailError(mail);
     }
-    // L'ordre choisi, SANS repères : l'essai est un vrai courriel.
+    const data =
+      editor === null ? specimenDataOf(mail, locale) : mailCaseDataOf(mail, editor.caseId, locale);
+    if (data === null) {
+      throw new UnknownMailError(mail);
+    }
+    // L'ordre choisi et le document de l'éditeur, SANS repères : l'essai est un vrai courriel.
     const layout = {
       orders: order === null ? {} : { [mail]: order.filter(isLayoutSectionId) },
       markers: false,
+      ...(editor === null ? {} : { documents: { [mail]: { document: editor.document, locale } } }),
     };
     await withMailCopyOverlay({ [locale]: texts }, () =>
-      withMailLayout(layout, () => this.sendSpecimen(to, mail, locale, intentKey)),
+      withMailLayout(layout, () => this.sendData(to, mail, data, intentKey)),
     );
   }
 
-  private async sendSpecimen<K extends keyof B2bMails>(
+  private async sendData<K extends keyof B2bMails>(
     to: string,
     mail: K,
-    locale: MailCopyLocale,
+    data: B2bMails[K],
     intentKey: string,
   ): Promise<void> {
     await this.mail.sendAndAwaitReceipt({
       brand: "lfc",
       to,
       template: mail,
-      data: specimenDataOf(mail, locale),
+      data,
       idempotencyKey: `mail-copy.trial:${intentKey}`,
     });
   }

@@ -93,6 +93,7 @@ export class FixedCatalogue extends MailTemplateCatalogue {
 export class RecordingDocumentRenderer extends MailDocumentPreviewRenderer {
   readonly calls: {
     template: string;
+    caseId: string;
     locale: MailLocale;
     texts: MailTextsByMail;
     document: MailDocument;
@@ -100,11 +101,12 @@ export class RecordingDocumentRenderer extends MailDocumentPreviewRenderer {
 
   render(
     template: string,
+    caseId: string,
     locale: MailLocale,
     texts: MailTextsByMail,
     document: MailDocument,
   ): MailSpecimenRendering {
-    this.calls.push({ template, locale, texts, document });
+    this.calls.push({ template, caseId, locale, texts, document });
     return { subject: "Exemple", html: "<p>exemple</p>", attachments: [] };
   }
 }

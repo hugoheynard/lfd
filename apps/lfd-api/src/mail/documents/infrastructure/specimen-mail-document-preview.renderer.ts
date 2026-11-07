@@ -8,13 +8,14 @@ import type { MailSpecimenRendering } from "../../copy/domain/ports/mail-specime
 import { withInlineImages } from "../../copy/infrastructure/specimen-mail-preview.renderer.js";
 import { mailBrandingOf } from "../../templates/mail-branding.js";
 import { b2bMailTemplates, type B2bMails } from "../../templates/mail-templates.js";
-import { isMailKey, renderMailSpecimen } from "../../templates/specimens/mail-specimens.js";
-import { UnknownMailTemplateError } from "../domain/mail-document-errors.js";
+import { mailCaseDataOf } from "../../templates/specimens/cases/mail-specimen-cases.js";
+import { isMailKey, renderMailData } from "../../templates/specimens/mail-specimens.js";
+import { UnknownMailCaseError, UnknownMailTemplateError } from "../domain/mail-document-errors.js";
 import { MailDocumentPreviewRenderer } from "../domain/ports/mail-document-preview.renderer.js";
 
 /**
  * Adaptateur de l'aperçu fidèle : le registre RÉEL des e-mails, la même
- * marque que le mailer, les données d'exemple, et le document posé dans le
+ * marque que le mailer, les données du cas demandé, et le document posé dans le
  * périmètre de mise en page exactement comme l'envoi le pose
  * (`MailLayoutScope.documents`). Sans repère : c'est ce qui partirait.
  */
@@ -29,6 +30,7 @@ export class SpecimenMailDocumentPreviewRenderer extends MailDocumentPreviewRend
 
   render(
     template: string,
+    caseId: string,
     locale: MailLocale,
     texts: MailTextsByMail,
     document: MailDocument,
@@ -36,10 +38,14 @@ export class SpecimenMailDocumentPreviewRenderer extends MailDocumentPreviewRend
     if (!isMailKey(template)) {
       throw new UnknownMailTemplateError(template);
     }
-    const rendered = renderMailSpecimen(
+    const data = mailCaseDataOf(template, caseId, locale);
+    if (data === null) {
+      throw new UnknownMailCaseError(template, caseId);
+    }
+    const rendered = renderMailData(
       this.registry,
       template,
-      locale,
+      data,
       { [locale]: texts },
       { orders: {}, markers: false, documents: { [template]: { document, locale } } },
     );

@@ -1,3 +1,4 @@
+import type { MailDocument } from "@lfd/mail-blocks";
 import type { MailCopyLocale } from "../mail-copy-locale.js";
 import type { MailTextsByMail } from "../mail-copy-texts.js";
 
@@ -41,10 +42,21 @@ export abstract class MailSpecimenRenderer {
  * textes et cet ordre de sections (`null` : celui du code), à UNE adresse. Un port distinct de l'aperçu (ISP) : rendre et
  * envoyer sont deux gestes, et le second seul a un effet hors de l'API.
  */
+/**
+ * Ce que l'éditeur d'e-mails ajoute à un essai (plan `plan-editeur-par-blocs.md`,
+ * § 16, S4d) : le cas rendu et le document posé. Absent : l'exemple de
+ * l'e-mail dans son ordre de sections, comme l'écran des textes.
+ */
+export interface MailTrialEditorChoice {
+  readonly caseId: string;
+  readonly document: MailDocument;
+}
+
 export abstract class MailTrialSender {
   /**
    * @param intentKey la clé d'intention de l'essai (revue, cas 4) : elle fait
    *   la clé de l'e-mail.
+   * @param editor le cas et le document de l'éditeur, `null` hors de lui.
    * @throws {UnknownMailError} l'e-mail n'est pas au registre.
    */
   abstract send(
@@ -54,5 +66,6 @@ export abstract class MailTrialSender {
     texts: MailTextsByMail,
     order: readonly string[] | null,
     intentKey: string,
+    editor?: MailTrialEditorChoice | null,
   ): Promise<void>;
 }

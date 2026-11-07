@@ -1,3 +1,4 @@
+import type { MailTrialEditorChoice } from "../../domain/ports/mail-specimen.renderer.js";
 import type { MailCopyLocale, MailCopySource } from "../../domain/mail-copy-locale.js";
 
 /** Command : « M'envoyer un essai » — l'aperçu d'un e-mail, à la seule adresse de l'appelant (C6). */
@@ -13,5 +14,7 @@ export class SendMailCopyTrialCommand {
      * clé ne réexécute rien ; un vrai renvoi en porte une neuve.
      */
     readonly intentKey: string,
+    /** Le cas et le document de l'éditeur (S4d) ; `null` depuis l'écran des textes. */
+    readonly editor: MailTrialEditorChoice | null = null,
   ) {}
 }

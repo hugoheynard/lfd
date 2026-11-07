@@ -70,8 +70,8 @@ export interface MailEditorPhraseLocaleView {
 
 /**
  * **Une phrase d'un bloc du modèle**, et ses variantes (`title.paid`…) : une
- * entrée par chemin du dictionnaire. Elle s'écrit aujourd'hui par
- * `PUT /admin/mail-copy/drafts` (voir le plan, S4c).
+ * entrée par chemin du dictionnaire. Elle s'écrit par
+ * `PUT /admin/mail-templates/:template/phrases/drafts` (S4d).
  */
 export interface MailEditorPhraseView {
   readonly path: string;
@@ -168,4 +168,59 @@ export interface MailDocumentPreviewView {
   readonly subject: string;
   readonly html: string;
   readonly attachments: readonly MailDocumentPreviewAttachment[];
+}
+
+/*
+ * Lot S4d (plan § 16) — ajouts seuls : les phrases d'un e-mail sous
+ * `mail_templates`, et le cas que l'aperçu rend.
+ */
+
+/**
+ * `POST /admin/mail-templates/:template/previews`, avec le cas à rendre : un
+ * des `MailEditorView.cases` (`id`). Sans `caseId`, l'exemple de l'e-mail
+ * (`"specimen"`), comme avant S4d.
+ */
+export interface MailDocumentCasePreviewPayload extends MailDocumentPreviewPayload {
+  readonly caseId?: string | undefined;
+}
+
+/** `GET /admin/mail-templates/:template/phrases` — les phrases du modèle, relues après une écriture. */
+export interface MailEditorPhrasesView {
+  readonly template: string;
+  readonly phrases: readonly MailEditorPhraseView[];
+}
+
+/**
+ * `PUT /admin/mail-templates/:template/phrases/drafts` — écrire le brouillon
+ * d'une phrase, sur la révision lue (`MailEditorPhraseLocaleView.revision`).
+ * `204` ; `400` texte refusé (vide, variable obligatoire perdue ou inconnue),
+ * `409` quelqu'un l'a écrite entre-temps. Elle part avec « Publier ».
+ */
+export interface MailPhraseDraftPayload {
+  readonly path: string;
+  readonly locale: MailLocale;
+  readonly text: string;
+  readonly expectedRevision: number;
+}
+
+/**
+ * `POST /admin/mail-templates/:template/phrases/resets` — rétablir le texte du
+ * code au prochain « Publier ». `204` ; `409` sur une révision dépassée.
+ */
+export interface MailPhraseResetPayload {
+  readonly path: string;
+  readonly locale: MailLocale;
+  readonly expectedRevision: number;
+}
+
+/**
+ * `POST /admin/mail-templates/:template/trials` — « M'envoyer un essai » :
+ * l'e-mail rendu avec le document que l'éditeur montre (le brouillon, sinon
+ * le publié, sinon celui de départ) et les phrases en brouillon, à la seule
+ * adresse de l'appelant. En-tête `Idempotency-Key` obligatoire. Sans
+ * `caseId`, l'exemple de l'e-mail. `204` ; `404` e-mail ou cas inconnu.
+ */
+export interface MailDocumentTrialPayload {
+  readonly locale: MailLocale;
+  readonly caseId?: string | undefined;
 }

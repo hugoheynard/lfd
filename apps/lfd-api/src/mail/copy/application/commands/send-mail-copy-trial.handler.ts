@@ -49,7 +49,9 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "mail.trial",
-        subject: `${command.mail}:${command.locale}:${command.source}`,
+        subject: `${command.mail}:${command.locale}:${command.source}${
+          command.editor === null ? "" : `:${command.editor.caseId}`
+        }`,
       },
       NOTHING_TO_REPLAY,
       () => this.trial(command),
@@ -68,7 +70,15 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
     const texts = replacementTexts(states, this.manifest, command.locale, command.source);
     const order =
       replacementSectionOrders(orders, this.manifest, command.source)[command.mail] ?? null;
-    await this.sender.send(to, command.mail, command.locale, texts, order, command.intentKey);
+    await this.sender.send(
+      to,
+      command.mail,
+      command.locale,
+      texts,
+      order,
+      command.intentKey,
+      command.editor,
+    );
     await this.uow.run(() =>
       this.events.publishTraced(
         new MailCopyTrialSentEvent(command.mail, command.locale, command.source),

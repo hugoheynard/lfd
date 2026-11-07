@@ -1,3 +1,4 @@
+import { startingMailDocument } from "@lfd/mail-blocks";
 import type { MailReceipt } from "@lfd/mailer";
 
 import type { MailDemand } from "../../../channels/requests/mail.js";
@@ -14,6 +15,8 @@ import {
   activeMailLayout,
   type MailLayoutScope,
 } from "../../../templates/sections/mail-layout-scope.js";
+import { mailBlockDeclarationOf } from "../../../templates/sections/mail-block-declarations.js";
+import { mailCaseDataOf } from "../../../templates/specimens/cases/mail-specimen-cases.js";
 import { UnknownMailError } from "../../domain/mail-copy-errors.js";
 import { SpecimenMailTrialSender } from "../specimen-mail-trial.sender.js";
 
@@ -103,5 +106,26 @@ describe("SpecimenMailTrialSender", () => {
     await expect(
       sender.send("staff@lfc.fr", "customer.access-opened", "fr", TEXTS, null, FIRST),
     ).rejects.toThrow("Resend a refusé l'envoi");
+  });
+
+  it("rend le cas et pose le document de l'éditeur pendant l'envoi (S4d)", async () => {
+    const mails = new ScopeWitnessMails();
+    const sender = new SpecimenMailTrialSender(mails);
+    const document = startingMailDocument(
+      "customer.access-opened",
+      mailBlockDeclarationOf("customer.access-opened"),
+    );
+
+    await sender.send("staff@lfc.fr", "customer.access-opened", "fr", TEXTS, null, FIRST, {
+      caseId: "password-only",
+      document,
+    });
+
+    expect(mails.layout?.documents).toEqual({
+      "customer.access-opened": { document, locale: "fr" },
+    });
+    expect(mails.awaitedReceipt[0]?.data).toEqual(
+      mailCaseDataOf("customer.access-opened", "password-only", "fr"),
+    );
   });
 });

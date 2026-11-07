@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { audienceOf } from "../../copy/domain/mail-copy-manifest.js";
 import { mailBlockDeclarationOf } from "../../templates/sections/mail-block-declarations.js";
+import { mailCasesOf } from "../../templates/specimens/cases/mail-specimen-cases.js";
 import { isMailKey, mailFamilyOf, mailKeys } from "../../templates/specimens/mail-specimens.js";
 import type { B2bMails } from "../../templates/mail-templates.js";
 import {
@@ -9,22 +10,13 @@ import {
   type MailTemplateEntry,
 } from "../domain/ports/mail-template-catalogue.js";
 
-/**
- * Le seul cas que l'aperçu sait rendre aujourd'hui : l'exemple de l'e-mail
- * (`mail/templates/specimens/`). Les autres jeux de données (payé, à régler,
- * au compte…) ne vivent que dans les tests des empreintes
- * (`templates/__tests__/rendering-golden/`), vérifié le 2026-11-07 : les
- * servir demandera de les sortir des tests (plan, S4c, écarts).
- */
-const SPECIMEN_CASE = { id: "specimen", label: "Exemple" } as const;
-
 function entryOf(template: keyof B2bMails): MailTemplateEntry {
   return {
     template,
     audience: audienceOf(template),
     family: mailFamilyOf(template),
     declaration: mailBlockDeclarationOf(template),
-    cases: [SPECIMEN_CASE],
+    cases: mailCasesOf(template),
   };
 }
 

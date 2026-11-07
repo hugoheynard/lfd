@@ -8,6 +8,10 @@ import {
 } from "@lfd/mail-blocks";
 import type { MailCopyLocaleView, MailCopyMailView } from "@lfd/contracts";
 
+import { mailCopyAdminView } from "../../copy/application/mail-copy-admin-view.js";
+import type { MailCopyEntryState } from "../../copy/domain/mail-copy-entry.js";
+import type { MailCopyPublicationState } from "../../copy/domain/ports/mail-copy-admin.reader.js";
+
 import type { MailCopyManifest } from "../../copy/domain/mail-copy-manifest.js";
 import type { MailSectionOrderState } from "../../copy/domain/mail-section-order.js";
 import { replacementSectionOrders } from "../../copy/domain/mail-section-orders.js";
@@ -67,6 +71,23 @@ export function phraseViews(mail: MailCopyMailView | undefined): readonly MailEd
       it: phraseLocale(text.locales.it),
     },
   }));
+}
+
+/**
+ * Les phrases d'UN e-mail, tirées de la vue de l'écran des textes : une seule
+ * source, la même que `admin/mail-copy` (§ 3).
+ */
+export function phrasesOfTemplate(
+  template: string,
+  manifest: MailCopyManifest,
+  entries: readonly MailCopyEntryState[],
+  publication: MailCopyPublicationState,
+  orders: readonly MailSectionOrderState[],
+): readonly MailEditorPhraseView[] {
+  const texts = mailCopyAdminView(manifest, entries, publication, orders).mails.find(
+    (mail) => mail.mail === template,
+  );
+  return phraseViews(texts);
 }
 
 /** Ce que l'éditeur ouvre pour un e-mail : rien n'est écrit pour l'ouvrir. */

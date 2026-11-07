@@ -1,11 +1,12 @@
 import type {
+  MailDocumentCasePreviewPayload,
   MailDocumentDraftPayload,
   MailDocumentHistoryView,
-  MailDocumentPreviewPayload,
   MailDocumentPreviewView,
   MailDocumentPublicationView,
   MailDocumentPublishPayload,
   MailDocumentRevertPayload,
+  MailDocumentTrialPayload,
   MailEditorListView,
   MailEditorView,
 } from "@lfd/mail-blocks";
@@ -14,9 +15,12 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { SPECIMEN_CASE_ID } from "../../templates/specimens/cases/mail-specimen-case.types.js";
 import { PublishMailDocumentCommand } from "../application/commands/publish-mail-document.command.js";
 import { RevertMailDocumentCommand } from "../application/commands/revert-mail-document.command.js";
+import { SendMailDocumentTrialCommand } from "../application/commands/send-mail-document-trial.command.js";
 import { SaveMailDocumentDraftCommand } from "../application/commands/save-mail-document-draft.command.js";
 import { GetMailDocumentHistoryQuery } from "../application/queries/get-mail-document-history.query.js";
 import { GetMailTemplateQuery } from "../application/queries/get-mail-template.query.js";
@@ -27,6 +31,7 @@ import {
   mailDocumentPreviewPayloadSchema,
   mailDocumentPublishPayloadSchema,
   mailDocumentRevertPayloadSchema,
+  mailDocumentTrialPayloadSchema,
 } from "./mail-template-payloads.js";
 
 /**
@@ -112,13 +117,17 @@ export class AdminMailTemplatesController {
     return { publicationVersion };
   }
 
-  /** L'aperçu fidèle — une lecture : un `POST` parce que le document voyage dans le corps. */
+  /**
+   * L'aperçu fidèle — une lecture : un `POST` parce que le document voyage
+   * dans le corps. `caseId` choisit le jeu de données (S4d) ; `404` s'il n'est
+   * pas un cas de cet e-mail.
+   */
   @Post(":template/previews")
   @HttpCode(200)
   @RequirePermission("mail_templates:read")
   preview(
     @Param("template") template: string,
-    @Body(new ZodBody(mailDocumentPreviewPayloadSchema)) payload: MailDocumentPreviewPayload,
+    @Body(new ZodBody(mailDocumentPreviewPayloadSchema)) payload: MailDocumentCasePreviewPayload,
   ): Promise<MailDocumentPreviewView> {
     return this.queries.execute<PreviewMailDocumentQuery, MailDocumentPreviewView>(
       new PreviewMailDocumentQuery(
@@ -126,6 +135,27 @@ export class AdminMailTemplatesController {
         payload.locale,
         payload.source,
         payload.document ?? null,
+        payload.caseId,
+      ),
+    );
+  }
+
+  /** « M'envoyer un essai » (S4d) — à l'adresse de la fiche de l'appelant, et à elle seule. */
+  @Post(":template/trials")
+  @HttpCode(204)
+  async trial(
+    @Param("template") template: string,
+    @Body(new ZodBody(mailDocumentTrialPayloadSchema)) payload: MailDocumentTrialPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<SendMailDocumentTrialCommand, void>(
+      new SendMailDocumentTrialCommand(
+        template,
+        payload.locale,
+        payload.caseId ?? SPECIMEN_CASE_ID,
+        staffUserId,
+        intentKey,
       ),
     );
   }

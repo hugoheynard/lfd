@@ -3,8 +3,10 @@ import { Module } from "@nestjs/common";
 import { MailCopyModule } from "../copy/mail-copy.module.js";
 import { PublishMailDocumentHandler } from "./application/commands/publish-mail-document.handler.js";
 import { RevertMailDocumentHandler } from "./application/commands/revert-mail-document.handler.js";
+import { SendMailDocumentTrialHandler } from "./application/commands/send-mail-document-trial.handler.js";
 import { SaveMailDocumentDraftHandler } from "./application/commands/save-mail-document-draft.handler.js";
 import { GetMailDocumentHistoryHandler } from "./application/queries/get-mail-document-history.handler.js";
+import { GetMailTemplatePhrasesHandler } from "./application/queries/get-mail-template-phrases.handler.js";
 import { GetMailTemplateHandler } from "./application/queries/get-mail-template.handler.js";
 import { ListMailTemplatesHandler } from "./application/queries/list-mail-templates.handler.js";
 import { PreviewMailDocumentHandler } from "./application/queries/preview-mail-document.handler.js";
@@ -12,6 +14,7 @@ import { MailDocumentReader } from "./domain/ports/mail-document.reader.js";
 import { MailDocumentPreviewRenderer } from "./domain/ports/mail-document-preview.renderer.js";
 import { MailTemplateCatalogue } from "./domain/ports/mail-template-catalogue.js";
 import { MailTemplateDocumentRepository } from "./domain/ports/mail-template-document.repository.js";
+import { AdminMailTemplatePhrasesController } from "./http/admin-mail-template-phrases.controller.js";
 import { AdminMailTemplatesController } from "./http/admin-mail-templates.controller.js";
 import { PrismaMailDocumentReader } from "./infrastructure/prisma-mail-document.reader.js";
 import { PrismaMailTemplateDocumentRepository } from "./infrastructure/prisma-mail-template-document.repository.js";
@@ -30,7 +33,7 @@ import { SpecimenMailDocumentPreviewRenderer } from "./infrastructure/specimen-m
  */
 @Module({
   imports: [MailCopyModule],
-  controllers: [AdminMailTemplatesController],
+  controllers: [AdminMailTemplatesController, AdminMailTemplatePhrasesController],
   providers: [
     { provide: MailTemplateDocumentRepository, useClass: PrismaMailTemplateDocumentRepository },
     { provide: MailDocumentReader, useClass: PrismaMailDocumentReader },
@@ -39,8 +42,10 @@ import { SpecimenMailDocumentPreviewRenderer } from "./infrastructure/specimen-m
     SaveMailDocumentDraftHandler,
     PublishMailDocumentHandler,
     RevertMailDocumentHandler,
+    SendMailDocumentTrialHandler,
     ListMailTemplatesHandler,
     GetMailTemplateHandler,
+    GetMailTemplatePhrasesHandler,
     GetMailDocumentHistoryHandler,
     PreviewMailDocumentHandler,
   ],
