@@ -437,12 +437,15 @@ jobs:
           # Un seul appel : l'étape précédente a établi que la bonne image sert.
           # Reprendre ici masquerait un vrai échec d'envoi derrière une attente.
           # --fail-with-body : échoue sur 4xx/5xx SANS masquer le corps, qui
-          # porte la raison (jeton refusé, envoi refusé par Resend…).
-          curl --fail-with-body --silent --show-error --max-time 90 \
+          # porte la raison (jeton refusé, envoi refusé par Resend, e-mail
+          # différé resté en attente…).
+          # 120 s : l'envoi immédiat, puis l'attente bornée (75 s, sous la coupure de 100 s de Cloudflare) de l'envoi
+          # DIFFÉRÉ par la boîte d'envoi (plan-service-e-mails.md, § 25).
+          curl --fail-with-body --silent --show-error --max-time 120 \
                -X POST "${API_BASE_URL}/admin/ops/mail-check" \
                -H "x-lfc-recompute-token: ${RECOMPUTE_TOKEN}"
           echo
-          echo "E-mail de contrôle expédié — vérifiez la boîte de l'admin de secours."
+          echo "Deux e-mails de contrôle partis — l'immédiat et le différé (boîte d'envoi, relais, abonné) : vérifiez la boîte de l'admin de secours."
 
       # 6) LE CANAL D'IDENTITÉ — jumeau du contrôle du courrier.
       #

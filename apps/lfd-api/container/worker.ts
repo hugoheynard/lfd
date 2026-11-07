@@ -558,6 +558,11 @@ async function triggerOutboxSweep(env: Env): Promise<void> {
  * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 8). Sur le
  * cron de RAFRAÎCHISSEMENT, à côté de la boîte d'envoi : même porte, même
  * jeton, idempotent.
+ *
+ * Puis la VEILLE (plan § 25) : demandes coincées au-delà de 15 min, échecs
+ * définitifs du jour — la cloche du back-office sonne, jamais un e-mail.
+ * APRÈS le balayage, pour ne pas sonner sur ce qu'il vient de reprendre ;
+ * `postSweep` n'échoue jamais, la veille passe donc même si le balayage a raté.
  */
 async function triggerMailRequestsSweep(env: Env): Promise<void> {
   const token = env.RECOMPUTE_TOKEN;
@@ -565,6 +570,7 @@ async function triggerMailRequestsSweep(env: Env): Promise<void> {
     return;
   }
   await postSweep(env, token, "admin/mail/requests/sweep");
+  await postSweep(env, token, "admin/mail/requests/watch");
 }
 
 /**

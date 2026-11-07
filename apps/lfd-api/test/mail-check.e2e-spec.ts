@@ -33,6 +33,8 @@ class ScriptedMailer implements B2bMailer {
 
 interface MailCheckBody {
   readonly sent: boolean;
+  readonly immediate: string;
+  readonly deferred: string;
   readonly revision: string;
 }
 
@@ -61,20 +63,22 @@ function check() {
 }
 
 describe("POST /admin/ops/mail-check — la sonde, par le bloc mail", () => {
-  it("part sur-le-champ, est suivie au bloc, et deux appels font deux e-mails", async () => {
+  // Depuis S8 (plan § 25), chaque appel envoie DEUX e-mails : l'immédiat, et
+  // un différé par la boîte d'envoi, attendu jusqu'à « envoyée ».
+  it("part sur-le-champ ET en différé, est suivie au bloc, et deux appels font quatre e-mails", async () => {
     const first = jsonBody<MailCheckBody>(await check().expect(200));
     await check().expect(200);
 
-    expect(first.sent).toBe(true);
+    expect(first).toMatchObject({ sent: true, immediate: "sent", deferred: "sent" });
     expect(mailer.accepted.map((mail) => mail.template)).toEqual([
+      "ops.deploy-check",
+      "ops.deploy-check",
       "ops.deploy-check",
       "ops.deploy-check",
     ]);
     const rows = await ctx.prisma.mailRequest.findMany({ orderBy: { requestedAt: "asc" } });
-    expect(rows.map((row) => [row.template, row.status])).toEqual([
-      ["ops.deploy-check", "sent"],
-      ["ops.deploy-check", "sent"],
-    ]);
+    expect(rows.map((row) => row.status)).toEqual(["sent", "sent", "sent", "sent"]);
+    expect(rows.filter((row) => row.idempotencyKey.endsWith(":deferred"))).toHaveLength(2);
     expect(
       rows.every((row) => row.idempotencyKey.startsWith(`ops.deploy-check:${first.revision}:`)),
     ).toBe(true);

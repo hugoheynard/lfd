@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import type {
   EcosystemHealth,
   HealthReason,
@@ -17,6 +17,8 @@ import { TOPOLOGY } from "../topology/topology.js";
 import { Auth0ReadingsReader } from "./auth0-readings.reader.js";
 import { DatabaseReadingsReader } from "./database-readings.reader.js";
 import { MailReadingsReader } from "./mail-readings.reader.js";
+import { MailBacklogReadings } from "./mail-backlog-readings.port.js";
+import { mailBacklogReadings } from "./mail-backlog-readings.js";
 import { vitalsReadings } from "./vitals-readings.js";
 import { cacheReports } from "./cache-readings.js";
 import {
@@ -72,6 +74,7 @@ export class OpsHealthService {
    * était l'information.
    */
   private previous: ReadonlyMap<string, NodeHealth> = new Map();
+  private readonly logger = new Logger(OpsHealthService.name);
   private hydrated = false;
 
   constructor(
@@ -79,6 +82,7 @@ export class OpsHealthService {
     private readonly database: DatabaseReadingsReader,
     private readonly auth0: Auth0ReadingsReader,
     private readonly mail: MailReadingsReader,
+    private readonly mailBacklog: MailBacklogReadings,
     private readonly probes: ProbeRunner,
     private readonly journal: StatusJournal,
     private readonly vitals: VitalsStore,
@@ -91,17 +95,25 @@ export class OpsHealthService {
   async read(): Promise<EcosystemHealth> {
     const now = this.clock.now();
     await this.hydrate();
-    const [report, databaseReadings, mailReadings, auth0Readings, probes, container] =
-      await Promise.all([
-        this.traffic.read(HEALTH_WINDOW_MINUTES),
-        this.database.read(),
-        this.mail.read(),
-        this.cachedAuth0.read(now.getTime()),
-        this.cachedProbes.read(now.getTime()),
-        // La même fenêtre que le trafic : un CPU et une latence lus sur deux
-        // durées différentes ne se comparent pas.
-        this.container.read(now, HEALTH_WINDOW_MINUTES),
-      ]);
+    const [
+      report,
+      databaseReadings,
+      mailReadings,
+      backlogReadings,
+      auth0Readings,
+      probes,
+      container,
+    ] = await Promise.all([
+      this.traffic.read(HEALTH_WINDOW_MINUTES),
+      this.database.read(),
+      this.mail.read(),
+      this.readMailBacklog(),
+      this.cachedAuth0.read(now.getTime()),
+      this.cachedProbes.read(now.getTime()),
+      // La même fenêtre que le trafic : un CPU et une latence lus sur deux
+      // durées différentes ne se comparent pas.
+      this.container.read(now, HEALTH_WINDOW_MINUTES),
+    ]);
 
     const evidence = new Map<string, NodeEvidence>(
       // Chaque service porte SA charge par module : c'est ce qui transforme
@@ -126,7 +138,9 @@ export class OpsHealthService {
     // La sonde dit que Resend RÉPOND ; ces relevés disent que nos e-mails
     // ARRIVENT. Ce n'est pas la même question, et c'est la seconde qui coûte
     // cher quand la réponse est non.
-    evidence.set("resend", { readings: mailReadings });
+    // Et la veille du courrier différé (plan des e-mails, § 25) : s'ils PARTENT.
+    // Après les autres : la carte n'en montre que trois, le tableau tout.
+    evidence.set("resend", { readings: [...mailReadings, ...backlogReadings] });
 
     // Les fronts étaient les seuls nœuds sans aucune mesure : leur sonde dit
     // « servi », elle ne compte rien. Ces relevés-là viennent des navigateurs —
@@ -190,6 +204,19 @@ export class OpsHealthService {
         this.timings.windowMinutes,
       ),
     };
+  }
+
+  /**
+   * La veille du courrier différé. Une carte de santé ne tombe pas avec ce
+   * qu'elle observe : un échec de lecture s'abstient et se journalise.
+   */
+  private async readMailBacklog(): Promise<readonly NodeReading[]> {
+    try {
+      return mailBacklogReadings(await this.mailBacklog.read());
+    } catch (error) {
+      this.logger.warn("Veille du courrier indisponible", error);
+      return [];
+    }
   }
 
   /**

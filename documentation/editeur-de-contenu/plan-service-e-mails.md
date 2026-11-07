@@ -1310,7 +1310,7 @@ contentType): Promise<{ url }>`. Adressé par le contenu (le hash des octets,
   (`startup-report.service.ts`) ne nomme pas un `R2_MAIL_*` à moitié posé ;
   seule la copie le dit, au premier appel.
 
-## 25. S8 — le courrier différé éprouvé et veillé (cas 8, Hugo, 2026-11-07) — à bâtir
+## 25. S8 — le courrier différé éprouvé et veillé (cas 8, Hugo, 2026-11-07) — bâti le 2026-11-07, non commité
 
 ### En simple
 
@@ -1350,11 +1350,11 @@ c'est ce qui serait en panne.
    en plus de l'immédiat, un `ops.deploy-check` **différé** (`mail.send` dans
    une unité de travail, clé `ops.deploy-check:<révision>:<id>:deferred`),
    puis relit l'état de cette demande par une requête du bloc jusqu'à
-   « envoyée », avec un délai borné (constante nommée, 120 s, relecture
+   « envoyée », avec un délai borné (constante nommée, 75 s, relecture
    espacée). Pas envoyée à temps : erreur nommée (« l'e-mail différé de
-   contrôle est resté <état> après 120 s : la boîte d'envoi, le relais ou
+   contrôle est resté <état> après 75 s : la boîte d'envoi, le relais ou
    l'abonné ne tourne pas »), l'étape échoue. Le workflow passe à
-   `--max-time 180`. La réponse dit les deux résultats.
+   `--max-time 120`. La réponse dit les deux résultats.
 2. **La veille.** Une commande du bloc `mail`, `WatchMailRequestsCommand`,
    appelée par une route machine (`POST /admin/mail/requests/watch`, même
    garde et même jeton que les autres balayages) que le cron `*/5` du Worker
@@ -1384,3 +1384,52 @@ c'est ce qui serait en panne.
 - Aucune alerte par e-mail ni par la boîte d'envoi, par construction.
 - Pas de migration : tout se lit dans `mail.mail_request`.
 - `container/worker.ts` change : il se déploie avec le Worker.
+
+### Bâti le 2026-11-07 — écarts
+
+Ce qui est bâti suit les quatre points ; voici où le code s'écarte du texte,
+et pourquoi.
+
+- **L'attente se mesure au `WallClock`, pas au `Clock`.** Le `Clock` est gelé
+  à l'ingress pour toute la requête (`platform/time/wall-clock.ts`) : une
+  échéance de 75 s calculée dessus ne passerait jamais. L'espacement des
+  relectures (1 s) passe par un port du bloc, `Pause`
+  (`apps/lfd-api/src/mail/requests/domain/ports/pause.ts`, adaptateur `TimerPause`), que les
+  tests avancent avec un `FixedWallClock`.
+- **La relecture de l'état** passe par `MailRequestRepository.findByIdempotencyKey`,
+  pas par une requête CQRS : elle vit dans le bloc, dans un service applicatif
+  (`DeferredMailCheck`) que la sonde appelle. `failed` et `refused` lèvent
+  sans attendre (`DeferredMailCheckFailedError`) ; le délai épuisé lève
+  `DeferredMailCheckTimeoutError` (« est resté « requested » après 75 s… »).
+  La réponse porte `immediate: "sent"` et `deferred: "sent"`, `sent` est gardé
+  pour le workflow.
+- **« Échec définitif »** se lit comme la négation de `MailRequest.canResume` :
+  `failed` depuis 24 h ET (sans tentative différée, OU hors fenêtre de 23 h,
+  OU au plafond d'essais). Un `failed` que le balayeur reprendra ne sonne pas.
+  Le plan disait « passées `failed` sur les dernières 24 h » : un échec
+  passager aurait sonné toutes les heures jusqu'à sa reprise.
+- **Coincée** = `requested` ou `sending` demandée depuis plus de 15 min
+  (`requested_at`), pas « la plus vieille demande en attente » sans seuil.
+- **Audience** : `ops_health:read` — la carte de santé est gardée par
+  `@AdminSurface("ops_health")`. **Lien** : `/sante` (la carte), pas l'écran
+  du suivi : il n'existe pas encore dans le back-office (vérifié le
+  2026-11-07 dans `app.routes.ts`).
+- **Clé anti-doublon** : `mail.backlog.<stalled|failed>:<AAAA-MM-JJTHH>` (heure
+  UTC).
+- **La carte de santé** : `ops` déclare `MailBacklogReadings`
+  (`apps/lfd-api/src/ops/health/mail-backlog-readings.port.ts`) ; le bloc publie
+  `MailBacklogSurvey` (`apps/lfd-api/src/mail/channels/requests/mail-backlog-survey.ts`) ;
+  `apps/lfd-api/src/appBootstrap/mail-backlog-readings.module.ts` relie les deux. Les deux
+  relevés (« En attente », « Échecs définitifs ») passent APRÈS ceux du
+  courrier : la carte n'en montre que trois, le tableau tous.
+- **Le Worker** appelle la veille dans la même fonction que le balayeur,
+  après lui (`triggerMailRequestsSweep`) : pas de sonnerie sur ce qu'il vient
+  de reprendre.
+- **`mail → staff/notifications`** : `pnpm gate context-boundaries` passe
+  (`mail` a `staff` dans sa ligne, sans surface imposée), comme les
+  émetteurs de `b2b` et `production`.
+- **Ramené à 75 s** (2026-11-07, relu après le bâti) : le proxy de Cloudflare
+  coupe une réponse au-delà de 100 s (erreur 524), et l'étape aurait alors
+  échoué sans l'erreur nommée. 75 s laissent la marge de l'envoi immédiat ;
+  `--max-time 120` côté workflow. Non vérifié en vrai : qu'aucun autre maillon
+  (passerelle, Worker) ne coupe plus tôt.

@@ -4,6 +4,7 @@ import { AppConfig } from "../../../platform/config/app-config.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Mail } from "../../channels/requests/mail.js";
 import { CheckMailDeliveryCommand, type MailCheckResult } from "./check-mail-delivery.command.js";
+import { DeferredMailCheck } from "./deferred-mail-check.service.js";
 
 /**
  * **La sonde de déploiement du courrier**, par la porte du bloc, en `sendAndAwaitReceipt`.
@@ -27,6 +28,11 @@ import { CheckMailDeliveryCommand, type MailCheckResult } from "./check-mail-del
  * juste (le cas du 2026-08-16). **Le destinataire est l'admin de secours**
  * (`BOOTSTRAP_ADMIN_EMAIL`), déjà configuré et déjà transmis au container.
  *
+ * **Les deux chemins** (lot S8, § 25) : l'immédiat éprouve la configuration,
+ * le différé ({@link DeferredMailCheck}) la chaîne que suivent presque tous
+ * nos e-mails — boîte d'envoi, relais, abonné. Un déploiement qui n'éprouvait
+ * que le premier pouvait être vert avec un courrier client resté « demandé ».
+ *
  * L'échec **remonte**, donc l'étape de déploiement échoue : un contrôle qui
  * journalise sans rien casser est ignoré en trois semaines.
  *
@@ -41,6 +47,7 @@ export class CheckMailDeliveryHandler implements ICommandHandler<
     private readonly mail: Mail,
     private readonly config: AppConfig,
     private readonly ids: IdGenerator,
+    private readonly deferred: DeferredMailCheck,
   ) {}
 
   async execute(): Promise<MailCheckResult> {
@@ -50,6 +57,7 @@ export class CheckMailDeliveryHandler implements ICommandHandler<
     const revision = this.config.revision();
     const from = this.config.mailerConfig().fromAddress;
     const to = this.config.bootstrapAdminEmail();
+    const callKey = `ops.deploy-check:${revision}:${this.ids.next()}`;
 
     await this.mail.sendAndAwaitReceipt({
       brand: "lfc",
@@ -59,9 +67,10 @@ export class CheckMailDeliveryHandler implements ICommandHandler<
       // Une clé par APPEL : deux déploiements de la même révision doivent
       // produire deux e-mails. Une clé par révision rendrait le reçu du
       // premier, et ferait passer pour un succès un courrier tombé depuis.
-      idempotencyKey: `ops.deploy-check:${revision}:${this.ids.next()}`,
+      idempotencyKey: callKey,
     });
+    await this.deferred.run({ revision, from, to, idempotencyKey: `${callKey}:deferred` });
 
-    return { sent: true, from, to, revision };
+    return { sent: true, immediate: "sent", deferred: "sent", from, to, revision };
   }
 }

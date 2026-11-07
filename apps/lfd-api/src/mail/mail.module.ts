@@ -23,6 +23,15 @@ import { MailCheckController } from "./requests/http/mail-check.controller.js";
 import { MailRequestPurgeController } from "./requests/http/mail-request-purge.controller.js";
 import { StalledMailRequests } from "./requests/domain/ports/stalled-mail-requests.js";
 import { MailRequestsSweepController } from "./requests/http/mail-requests-sweep.controller.js";
+import { MailRequestsWatchController } from "./requests/http/mail-requests-watch.controller.js";
+import { WatchMailRequestsHandler } from "./requests/application/watch-mail-requests.handler.js";
+import { BlockMailBacklogSurvey } from "./requests/application/block-mail-backlog-survey.js";
+import { DeferredMailCheck } from "./requests/application/deferred-mail-check.service.js";
+import { MailBacklogReader } from "./requests/domain/ports/mail-backlog.reader.js";
+import { Pause } from "./requests/domain/ports/pause.js";
+import { PrismaMailBacklogReader } from "./requests/infrastructure/prisma-mail-backlog.reader.js";
+import { TimerPause } from "./requests/infrastructure/timer-pause.js";
+import { MailBacklogSurvey } from "./channels/requests/mail-backlog-survey.js";
 import { UnitOfWorkProbe } from "./requests/domain/ports/unit-of-work-probe.js";
 import { AmbientUnitOfWorkProbe } from "./requests/infrastructure/ambient-unit-of-work-probe.js";
 import { MailerMailDispatch } from "./requests/infrastructure/mailer-mail-dispatch.js";
@@ -61,7 +70,12 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
  */
 @Global()
 @Module({
-  controllers: [MailRequestPurgeController, MailRequestsSweepController, MailCheckController],
+  controllers: [
+    MailRequestPurgeController,
+    MailRequestsSweepController,
+    MailRequestsWatchController,
+    MailCheckController,
+  ],
   providers: [
     // S3b : le mailer (transport, texte effectif, journal), sorti de
     // `platform/mailer/` avec les gabarits qu'il charge.
@@ -91,6 +105,13 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
     SweepMailRequestsHandler,
     // S2h : la sonde de déploiement, sortie de `platform/mailer/`.
     CheckMailDeliveryHandler,
+    // S8 (plan § 25) : la sonde éprouve aussi l'envoi différé ; la veille
+    // sonne la cloche ; la carte de santé lit ses relevés par le canal.
+    { provide: Pause, useClass: TimerPause },
+    DeferredMailCheck,
+    { provide: MailBacklogReader, useClass: PrismaMailBacklogReader },
+    WatchMailRequestsHandler,
+    { provide: MailBacklogSurvey, useClass: BlockMailBacklogSurvey },
     // S3b : les deux comportements des gabarits que des blocs métier
     // demandent, par le canal `mail/channels/templates/`.
     { provide: MailTemplatePreview, useClass: RegistryMailTemplatePreview },
@@ -109,6 +130,6 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
     { provide: MailImageStore, useClass: R2MailImageStore },
     MailImageCopier,
   ],
-  exports: [Mail, MailTemplatePreview, ShortfallLetterDrafter],
+  exports: [Mail, MailTemplatePreview, ShortfallLetterDrafter, MailBacklogSurvey],
 })
 export class MailModule {}

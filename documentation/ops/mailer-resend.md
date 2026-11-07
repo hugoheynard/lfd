@@ -251,6 +251,14 @@ container expédie alors, depuis l'adresse configurée, un `ops.deploy-check` ve
 `BOOTSTRAP_ADMIN_EMAIL` — l'admin de secours, déjà réglé, déjà transmis. Aucune
 configuration de plus.
 
+**Depuis le 2026-11-07 (lot S8, [`plan-service-e-mails.md`](../editeur-de-contenu/plan-service-e-mails.md) § 25)**,
+deux e-mails partent : l'immédiat (`sendAndAwaitReceipt`), puis un **différé**
+(`mail.send` → boîte d'envoi → relais → abonné), que la sonde attend jusqu'à
+« envoyée » pendant 75 s au plus (sous la coupure de 100 s de Cloudflare). Resté en attente, ou passé en échec : la
+route rend une erreur nommée, et l'étape (`--max-time 120`) échoue. Hors
+déploiement, la veille du courrier (cron `*/5`, `admin/mail/requests/watch`)
+sonne la cloche du back-office — jamais un e-mail.
+
 Trois choix qui font la différence entre un contrôle utile et un décor :
 
 1. **L'envoi part du container, pas du workflow.** Un `curl` vers Resend depuis

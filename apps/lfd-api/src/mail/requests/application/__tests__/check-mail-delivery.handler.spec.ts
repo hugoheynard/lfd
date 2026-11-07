@@ -4,7 +4,20 @@ import {
   OpenableUnitOfWork,
   RecordingMail,
 } from "../../../channels/requests/__tests__/recording-mail.js";
+import { FixedWallClock } from "../../../../platform/time/fixed-wall-clock.js";
+import { MailRequest } from "../../domain/entities/mail-request.js";
+import {
+  DeferredMailCheckFailedError,
+  DeferredMailCheckTimeoutError,
+} from "../../domain/errors/deferred-mail-check.errors.js";
+import { Pause } from "../../domain/ports/pause.js";
 import { CheckMailDeliveryHandler } from "../check-mail-delivery.handler.js";
+import {
+  DEFERRED_CHECK_POLL_MS,
+  DEFERRED_CHECK_TIMEOUT_MS,
+  DeferredMailCheck,
+} from "../deferred-mail-check.service.js";
+import { InMemoryMailRequests } from "./mail-doubles.js";
 
 /** La vraie configuration, dont seuls les trois réglages lus sont fixés. */
 class Settings extends AppConfig {
@@ -26,10 +39,69 @@ class Settings extends AppConfig {
   }
 }
 
-function setup(settings: Settings) {
-  const mails = new RecordingMail(new OpenableUnitOfWork());
-  const handler = new CheckMailDeliveryHandler(mails, settings, new FixedIdGenerator());
-  return { mails, handler };
+const WALL_START = new Date("2026-11-07T10:00:00.000Z");
+
+/** Ce que la boîte d'envoi fait de la demande différée, attente après attente. */
+type Relay = "sends" | "stalls" | "fails";
+
+/**
+ * L'attente, doublée : elle avance l'horloge du mur au lieu d'attendre, et
+ * joue le relais — la demande différée passe `sent`, échoue, ou reste.
+ */
+class RelayingPause extends Pause {
+  waits = 0;
+  constructor(
+    private readonly wall: FixedWallClock,
+    private readonly requests: InMemoryMailRequests,
+    private readonly mails: RecordingMail,
+    private readonly relay: Relay,
+  ) {
+    super();
+  }
+
+  async wait(ms: number): Promise<void> {
+    this.waits += 1;
+    this.wall.advanceMs(ms);
+    const demand = this.mails.queued.at(-1);
+    if (demand === undefined || (await this.requests.findByIdempotencyKey(demand.idempotencyKey))) {
+      return this.settle(demand?.idempotencyKey);
+    }
+    const request = MailRequest.request({
+      id: "mail_1",
+      template: demand.template,
+      brand: demand.brand,
+      recipient: demand.to,
+      locale: null,
+      idempotencyKey: demand.idempotencyKey,
+      requestedAt: WALL_START,
+    });
+    await this.requests.save(request);
+    return this.settle(demand.idempotencyKey);
+  }
+
+  private async settle(key: string | undefined): Promise<void> {
+    const request = key === undefined ? null : await this.requests.findByIdempotencyKey(key);
+    if (request === null || this.relay === "stalls") {
+      return;
+    }
+    if (this.relay === "sends") {
+      request.markSent("re_deferred", this.wall.elapsedNow());
+    } else {
+      request.markFailed("Resend : clé refusée", this.wall.elapsedNow());
+    }
+    await this.requests.save(request);
+  }
+}
+
+function setup(settings: Settings, relay: Relay = "sends") {
+  const unitOfWork = new OpenableUnitOfWork();
+  const mails = new RecordingMail(unitOfWork);
+  const requests = new InMemoryMailRequests();
+  const wall = new FixedWallClock(WALL_START);
+  const pause = new RelayingPause(wall, requests, mails, relay);
+  const deferred = new DeferredMailCheck(mails, unitOfWork, requests, wall, pause);
+  const handler = new CheckMailDeliveryHandler(mails, settings, new FixedIdGenerator(), deferred);
+  return { mails, handler, pause };
 }
 
 /*
@@ -47,11 +119,12 @@ describe("le contrôle de mise en service du courrier", () => {
 
     expect(result).toEqual({
       sent: true,
+      immediate: "sent",
+      deferred: "sent",
       from: "no-reply@exemple.test",
       to: "admin@exemple.test",
       revision: "abc1234",
     });
-    expect(mails.queued).toEqual([]);
     expect(mails.awaitedReceipt).toEqual([
       {
         brand: "lfc",
@@ -92,5 +165,54 @@ describe("le contrôle de mise en service du courrier", () => {
     mails.failWith = new Error("Resend a refusé l'envoi");
 
     await expect(handler.execute()).rejects.toThrow("Resend a refusé l'envoi");
+  });
+
+  /*
+   * Lot S8 (plan § 25) : la sonde éprouve aussi l'envoi DIFFÉRÉ — demande dans
+   * une unité de travail, boîte d'envoi, relais, abonné. Un déploiement vert
+   * avec un courrier client resté « demandé » était possible avant.
+   */
+  describe("l'envoi différé", () => {
+    it("demande par `send`, DANS une unité de travail, avec une clé dérivée de l'appel", async () => {
+      const { mails, handler } = setup(new Settings("no-reply@exemple.test", "dev@exemple.test"));
+
+      await handler.execute();
+
+      expect(mails.queued).toEqual([
+        {
+          brand: "lfc",
+          to: "dev@exemple.test",
+          template: "ops.deploy-check",
+          data: { revision: "abc1234", fromAddress: "no-reply@exemple.test" },
+          idempotencyKey: "ops.deploy-check:abc1234:id_000001:deferred",
+        },
+      ]);
+    });
+
+    it("envoyé à temps : le contrôle passe, après une relecture", async () => {
+      const { handler, pause } = setup(new Settings("a@exemple.test", "b@exemple.test"), "sends");
+
+      await expect(handler.execute()).resolves.toMatchObject({ deferred: "sent" });
+      expect(pause.waits).toBe(1);
+    });
+
+    it("resté `requested` : erreur nommée au bout du délai, pas avant", async () => {
+      const { handler, pause } = setup(new Settings("a@exemple.test", "b@exemple.test"), "stalls");
+
+      const failure = handler.execute();
+
+      await expect(failure).rejects.toBeInstanceOf(DeferredMailCheckTimeoutError);
+      await expect(failure).rejects.toThrow(
+        "L'e-mail différé de contrôle est resté « requested » après 75 s",
+      );
+      expect(pause.waits).toBe(DEFERRED_CHECK_TIMEOUT_MS / DEFERRED_CHECK_POLL_MS);
+    });
+
+    it("passé `failed` : erreur nommée SANS attendre la fin du délai", async () => {
+      const { handler, pause } = setup(new Settings("a@exemple.test", "b@exemple.test"), "fails");
+
+      await expect(handler.execute()).rejects.toBeInstanceOf(DeferredMailCheckFailedError);
+      expect(pause.waits).toBe(1);
+    });
   });
 });
