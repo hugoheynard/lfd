@@ -114,7 +114,11 @@ describe("ouvrir la charte d'un espace", () => {
   it("rend la charte de départ et les e-mails de l'espace, internes compris, sans rien écrire", async () => {
     const view = await open();
     expect(view).toMatchObject({ space: "lfd", source: "starting", revision: 0, published: null });
-    expect(view.templates).toEqual(expect.arrayContaining(["staff.invited", "ops.deploy-check"]));
+    expect(view.templates).toEqual(
+      expect.arrayContaining(["staff.invited", "staff.account-alert"]),
+    );
+    // La sonde de déploiement part sous cette charte, mais n'est pas à l'éditeur (2026-11-07).
+    expect(view.templates).not.toContain("ops.deploy-check");
     expect(view.templates).not.toContain("customer.order-placed");
     expect(view.settings).toEqual(view.starting);
     expect((await open()).revision).toBe(0);

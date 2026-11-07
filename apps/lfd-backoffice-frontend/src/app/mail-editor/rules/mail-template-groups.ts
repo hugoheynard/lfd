@@ -1,11 +1,6 @@
 import type { MailAudience, MailEditorListItem, MailFamily } from '@lfd/mail-blocks';
 
-import {
-  AUDIENCE_ORDER,
-  AUDIENCE_TITLES,
-  FAMILY_ORDER,
-  FAMILY_TITLES,
-} from '../../textes-emails/rules/mail-labels';
+import { AUDIENCE_ORDER, AUDIENCE_TITLES, FAMILY_ORDER, FAMILY_TITLES } from './mail-labels';
 
 export interface MailTemplateFamilyGroup {
   readonly family: MailFamily;
@@ -21,7 +16,7 @@ export interface MailTemplateAudienceGroup {
 
 /**
  * Le rangement de la liste de l'éditeur (§ 6) : par destinataire, puis par
- * moment — les intitulés de l'écran `textes-emails`, que l'éditeur absorbera.
+ * moment — les intitulés de `mail-labels`, venus de l’ancien écran des textes.
  * L'ordre du serveur (celui du registre) est gardé dans chaque moment ; un
  * groupe vide n'apparaît pas.
  */

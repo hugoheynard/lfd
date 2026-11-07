@@ -58,6 +58,11 @@ s'il reste des e-mails coincés depuis plus de 15 minutes ou en échec
 définitif, et **sonne la cloche** du back-office. Elle ne prévient jamais par
 e-mail : c'est ce qui serait en panne.
 
+L'e-mail de la sonde (`ops.deploy-check`) est un contrôle technique : il
+part, mais il n'est **pas dans l'éditeur** (ni dans la liste, ni dans un
+espace ; l'ouvrir rend un 404 nommé) — Hugo, 2026-11-07. Il porte
+`outOfEditor` dans sa déclaration (`team-mail-layouts.ts`).
+
 ### Les espaces
 
 Les e-mails sont rangés en **deux espaces** :
@@ -119,7 +124,7 @@ flowchart LR
 ```
 
 L'ancien écran **« Textes des e-mails »** (`/textes-emails`) renvoie
-désormais vers `/emails`. Le droit qui ouvre l'éditeur s'appelle
+désormais vers `/emails` ; son code est retiré depuis le 2026-11-07. Le droit qui ouvre l'éditeur s'appelle
 **« Modèles d'e-mails »**.
 
 ### La règle : le staff n'écrit que l'accroche
@@ -265,9 +270,10 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
 3. Le dossier du fournil part encore en octets : ouvrir son stockage au bloc
    `mail`, ou le laisser — Service, revue cas 7.
 4. Durée de conservation des mandats rangés au stockage — Service, revue cas 7.
-5. `@lfd/mailer` journalise l'adresse du destinataire (`to` dans le contexte
-   de log de `packages/mailer/src/resend-mailer.ts`), hors de portée de la
-   porte `log-no-email` — constaté le 2026-11-07, non tracé dans les journaux.
+5. ~~`@lfd/mailer` journalise l'adresse du destinataire~~ — fait le
+   2026-11-07 : le contexte des journaux du paquet porte la clé d'idempotence
+   (et l'identifiant Resend une fois accepté), que `mail.mail_request` relie
+   au destinataire ; la porte `log-no-email` lit aussi `packages/*/src`.
 6. Le sens de « envoyé » : un type par étape, retours Resend reliés au suivi,
    faits `mail.delivered` / `mail.bounced` — décidé, pas bâti — Service, revue cas 5.
 7. Adresse de réponse d'un espace obligatoire, refus de `no-reply` — Éditeur § 26, n° 1.
@@ -297,10 +303,12 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
    `@lfd/mailer` ; à envisager si on fait des colonnes hybrides, si un rendu
    cassé est constaté dans Outlook ou Gmail application, ou pour des blocs
    complexes — Service § 2, C6.
-6. Retirer le code de l'ancien écran `textes-emails` (redirigé, pas supprimé)
-   — Éditeur § 21.
-7. Liste des paires de contraste recopiée au back-office : l'exporter de
-   `@lfd/mail-blocks` — Éditeur § 25, C2 écarts.
+6. ~~Retirer le code de l'ancien écran `textes-emails`~~ — fait le
+   2026-11-07 : la redirection reste ; les libellés et les règles de texte
+   que l'éditeur lisait sont dans `mail-editor/rules/`.
+7. ~~Liste des paires de contraste recopiée au back-office~~ — fait le
+   2026-11-07 : `CHARTER_CONTRAST_PAIRS` (`@lfd/mail-blocks`), lue par le
+   refus et par la carte « Contraste ».
 8. Non vérifié à l'écran : glisser-déposer des variables et des blocs, saisie
    avec pastilles dans Safari et Firefox — Éditeur § 22.
 9. Non vérifié en vrai : le QR et l'empilement des colonnes en mode sombre de

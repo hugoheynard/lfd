@@ -4,6 +4,7 @@ import type {
   MailCharterFont,
   MailCharterSettings,
 } from "./charter-settings.js";
+import { CHARTER_CONTRAST_PAIRS } from "./charter-contrast-pairs.js";
 import { contrastRatio, isHexColor, MIN_TEXT_CONTRAST } from "./contrast.js";
 import type { MailLocale } from "./mail-locales.js";
 import { isHttpsUrl, isImageSourceUrl } from "./urls.js";
@@ -32,9 +33,6 @@ export interface MailCharterViolation {
   readonly field: string;
   readonly message: string;
 }
-
-/** Le blanc du texte d'un bouton, posé sur la couleur principale. */
-const BUTTON_TEXT = "#ffffff";
 
 /**
  * Un nom de police, ou une pile de secours : lettres, chiffres, espaces,
@@ -166,48 +164,9 @@ function contrastViolation(
 
 /** Les paires texte / fond qu'un e-mail affiche réellement. */
 function contrastViolations(settings: MailCharterSettings): MailCharterViolation[] {
-  const c = settings.colors;
-  const d = settings.darkColors;
-  return [
-    ...contrastViolation("colors.text", c.text, c.card, "le texte et le fond de la carte"),
-    ...contrastViolation("colors.text", c.text, c.page, "le texte et le fond de page"),
-    ...contrastViolation(
-      "colors.mutedText",
-      c.mutedText,
-      c.card,
-      "le texte secondaire et le fond de la carte",
-    ),
-    ...contrastViolation(
-      "colors.primary",
-      c.primary,
-      c.card,
-      "les liens (couleur principale) et le fond de la carte",
-    ),
-    ...contrastViolation(
-      "colors.primary",
-      BUTTON_TEXT,
-      c.primary,
-      "le texte blanc des boutons et la couleur principale",
-    ),
-    ...contrastViolation(
-      "colors.band",
-      BUTTON_TEXT,
-      c.band,
-      "le texte blanc du bandeau et sa couleur",
-    ),
-    ...contrastViolation(
-      "darkColors.text",
-      d.text,
-      d.card,
-      "le texte et le fond de la carte, en sombre",
-    ),
-    ...contrastViolation(
-      "darkColors.text",
-      d.text,
-      d.page,
-      "le texte et le fond de page, en sombre",
-    ),
-  ];
+  return CHARTER_CONTRAST_PAIRS.flatMap((pair) =>
+    contrastViolation(pair.field, pair.foreground(settings), pair.background(settings), pair.what),
+  );
 }
 
 function logoPublicationViolations(

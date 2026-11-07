@@ -10,6 +10,7 @@ import { Injectable } from "@nestjs/common";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { mailBrandingOf } from "../../templates/mail-branding.js";
 import {
+  editorMails,
   mailBlockDeclarationOf,
   mailSpaceOf,
 } from "../../templates/sections/mail-block-declarations.js";
@@ -36,12 +37,12 @@ export class RegistryMailSpaceDirectory extends MailSpaceDirectory {
   }
 
   templatesOf(space: MailSpace): readonly string[] {
-    return mailKeys().filter((mail) => mailSpaceOf(mail) === space);
+    return editorMails(mailKeys()).filter((mail) => mailSpaceOf(mail) === space);
   }
 
   localesOf(space: MailSpace): readonly MailLocale[] {
     const used = new Set(
-      mailKeys()
+      editorMails(mailKeys())
         .filter((mail) => mailSpaceOf(mail) === space)
         .flatMap((mail) => mailBlockDeclarationOf(mail).locales),
     );

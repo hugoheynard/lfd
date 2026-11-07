@@ -22,7 +22,7 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
-import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
+import { mailLabel, mailWhoAndWhen } from '../../rules/mail-labels';
 import { MailEditorService } from '../../data/mail-editor.service';
 import { mailSpaceListing } from '../../rules/mail-template-spaces';
 import { MailSpaceTabs } from '../mail-space-tabs/mail-space-tabs';

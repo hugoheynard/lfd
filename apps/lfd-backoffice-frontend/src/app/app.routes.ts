@@ -359,7 +359,7 @@ export const routes: Routes = [
     // **Textes des e-mails** — l'éditeur des e-mails (`/emails`) fait tout ce
     // que l'écran faisait (plan-editeur-par-blocs.md, § 21, bâti le
     // 2026-11-07) : l'ancienne adresse y renvoie, pour les favoris. Le code
-    // de l'écran reste, il sera retiré à part.
+    // de l'écran est retiré le même jour.
     path: 'textes-emails',
     pathMatch: 'full',
     redirectTo: '/emails',

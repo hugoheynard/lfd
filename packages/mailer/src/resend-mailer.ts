@@ -135,7 +135,13 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
 
   async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
     const rendered = this.deps.registry[args.template](args.data);
-    const context = { template: String(args.template), to: args.to };
+    // Jamais l'adresse : un journal est gardé hors du registre RGPD. La clé
+    // d'idempotence, sans donnée personnelle (porte `mail-key-no-pii`), relie
+    // le log à son destinataire par la table de suivi `mail.mail_request`.
+    const context = {
+      template: String(args.template),
+      idempotencyKey: args.idempotencyKey ?? null,
+    };
     const result = await this.dispatchPaced(
       this.payloadOf(args, rendered),
       args.idempotencyKey,

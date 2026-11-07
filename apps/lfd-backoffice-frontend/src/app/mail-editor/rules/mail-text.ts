@@ -1,21 +1,11 @@
-import type { ContentLocale, MailCopyLocaleView, MailCopyTextView } from '@lfd/contracts';
+import type { ContentLocale, MailCopyLocaleView } from '@lfd/contracts';
 
 import { COPY_LOCALES } from '../../textes-boutique/rules/copy-text';
 
-/** Un texte, identifié dans tout l'écran : e-mail, chemin, langue. */
-export function textId(mail: string, path: string, locale: ContentLocale): string {
-  return `${mail}\u0000${path}\u0000${locale}`;
-}
-
-/** Un texte sans sa langue : e-mail et chemin. */
-export function textKey(text: Pick<MailCopyTextView, 'mail' | 'path'>): string {
-  return `${text.mail}\u0000${text.path}`;
-}
-
 /**
- * Ce qu'il faut lire d'une langue d'un texte pour dire son état : la vue de
- * cet écran comme celle de l'éditeur d'e-mails (`MailEditorPhraseLocaleView`,
- * qui partage ces règles au lieu de les recopier).
+ * Ce qu'il faut lire d'une langue d'un texte pour dire son état : la vue
+ * d'une phrase de l'éditeur (`MailEditorPhraseLocaleView`). Venues de
+ * l'ancien écran « Textes des e-mails », retiré le 2026-11-07.
  */
 export type MailTextLocaleState = Pick<
   MailCopyLocaleView,
@@ -34,13 +24,6 @@ export function upcomingText(view: MailTextLocaleState): string {
     return view.default ?? '';
   }
   return view.publishedText ?? view.default ?? '';
-}
-
-/** Combien de langues de ces textes attendent « Publier ». */
-export function pendingIn(texts: readonly MailCopyTextView[]): number {
-  return texts
-    .flatMap((text) => COPY_LOCALES.map((locale) => text.locales[locale]))
-    .filter((view) => view.draftState !== 'unchanged').length;
 }
 
 /** Ce que l'écran dit de l'état d'un texte dans une langue. */
@@ -81,8 +64,7 @@ export function insertVariable(
 
 /**
  * Combien de langues portent le signal « le texte d'origine a changé depuis
- * votre modification » (§2 quinquies) — recompté au fil des retouches, comme
- * `pendingIn`.
+ * votre modification » (§2 quinquies) — recompté au fil des retouches.
  */
 export function defaultChangedIn(
   texts: readonly {

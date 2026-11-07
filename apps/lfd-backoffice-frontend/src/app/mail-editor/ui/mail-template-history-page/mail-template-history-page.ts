@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { FoldBackLinkComponent, FoldPageLayoutComponent } from 'fold-ng';
 
-import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
+import { mailLabel, mailWhoAndWhen } from '../../rules/mail-labels';
 import { MailTemplateHistory } from '../mail-template-history/mail-template-history';
 import { MailTemplateTabs } from '../mail-template-tabs/mail-template-tabs';
 

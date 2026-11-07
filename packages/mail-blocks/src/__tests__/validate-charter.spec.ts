@@ -1,3 +1,4 @@
+import { CHARTER_CONTRAST_PAIRS } from "../charter-contrast-pairs.js";
 import type { MailCharterSettings } from "../charter-settings.js";
 import { contrastRatio, isHexColor } from "../contrast.js";
 import { isMailSpace, mailSpaceOfCharter, MAIL_SPACES } from "../mail-spaces.js";
@@ -154,5 +155,36 @@ describe("validateMailCharterForPublication", () => {
       validateMailCharterForPublication({ ...SETTINGS, logo: { src: "", alt: {} } }, ["fr"]),
     ).toEqual([expect.objectContaining({ code: "charter-logo-src-missing" })]);
     expect(validateMailCharterForPublication({ ...SETTINGS, logo: null }, ["fr"])).toEqual([]);
+  });
+});
+
+describe("les paires de contraste de la charte", () => {
+  it("sont les huit paires que l'écran montre, chacune avec son libellé", () => {
+    expect(CHARTER_CONTRAST_PAIRS.map((pair) => pair.label)).toEqual([
+      "Texte sur la carte",
+      "Texte sur le fond de page",
+      "Texte secondaire sur la carte",
+      "Liens sur la carte",
+      "Texte blanc des boutons",
+      "Texte blanc du bandeau",
+      "Sombre — texte sur la carte",
+      "Sombre — texte sur le fond de page",
+    ]);
+  });
+
+  it("chaque paire refusée par la publication est une paire de la liste", () => {
+    const grey = "#bbbbbb";
+    const washed: MailCharterSettings = {
+      ...SETTINGS,
+      colors: { ...SETTINGS.colors, text: grey, mutedText: grey, primary: grey, band: grey },
+      darkColors: { ...SETTINGS.darkColors, text: "#1a2238" },
+    };
+    const refused = validateMailCharterForPublication(washed, ["fr"]).filter(
+      (violation) => violation.code === "charter-contrast-too-low",
+    );
+    expect(refused).toHaveLength(CHARTER_CONTRAST_PAIRS.length);
+    expect(refused.map((violation) => violation.field)).toEqual(
+      CHARTER_CONTRAST_PAIRS.map((pair) => pair.field),
+    );
   });
 });

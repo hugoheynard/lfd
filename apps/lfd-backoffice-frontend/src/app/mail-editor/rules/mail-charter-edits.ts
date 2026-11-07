@@ -1,4 +1,5 @@
 import {
+  CHARTER_CONTRAST_PAIRS,
   contrastRatio,
   isHexColor,
   MIN_TEXT_CONTRAST,
@@ -144,33 +145,20 @@ export interface ContrastLine {
   readonly passes: boolean;
 }
 
-const BUTTON_TEXT = '#ffffff';
-
 /**
- * Le rapport de chaque paire que la publication contrôle — la liste de
- * `contrastViolations` (`packages/mail-blocks/src/validate-charter.ts`,
- * relue le 2026-11-07), que le paquet n'exporte pas : la page montre aussi
- * les rapports qui PASSENT, les refus restent ceux du paquet.
+ * Le rapport de chaque paire que la publication contrôle — la liste du
+ * paquet (`CHARTER_CONTRAST_PAIRS`), la même que lisent les refus : la page
+ * montre aussi les rapports qui PASSENT.
  */
 export function contrastReport(settings: MailCharterSettings): readonly ContrastLine[] {
-  const c = settings.colors;
-  const d = settings.darkColors;
-  const pairs: readonly (readonly [string, string, string])[] = [
-    ['Texte sur la carte', c.text, c.card],
-    ['Texte sur le fond de page', c.text, c.page],
-    ['Texte secondaire sur la carte', c.mutedText, c.card],
-    ['Liens sur la carte', c.primary, c.card],
-    ['Texte blanc des boutons', BUTTON_TEXT, c.primary],
-    ['Texte blanc du bandeau', BUTTON_TEXT, c.band],
-    ['Sombre — texte sur la carte', d.text, d.card],
-    ['Sombre — texte sur le fond de page', d.text, d.page],
-  ];
-  return pairs.map(([label, foreground, background]) => {
+  return CHARTER_CONTRAST_PAIRS.map((pair) => {
+    const foreground = pair.foreground(settings);
+    const background = pair.background(settings);
     const ratio =
       isHexColor(foreground) && isHexColor(background)
         ? contrastRatio(foreground, background)
         : null;
-    return { label, ratio, passes: ratio !== null && ratio >= MIN_TEXT_CONTRAST };
+    return { label: pair.label, ratio, passes: ratio !== null && ratio >= MIN_TEXT_CONTRAST };
   });
 }
 

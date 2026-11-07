@@ -5,7 +5,7 @@ import {
   type MailEditorPhraseView,
 } from '@lfd/mail-blocks';
 
-import { FRAME_LABELS, textHeading } from '../../textes-emails/rules/mail-sections';
+import { FRAME_LABELS, textHeading } from './mail-sections';
 
 /** Les deux cadres, dans l'ordre où l'e-mail les montre — avant les blocs. */
 export const MAIL_FRAMES = ['subject', 'header'] as const;

@@ -103,7 +103,9 @@ function arranged(starting: MailDocument): MailDocument {
 describe("ouvrir un e-mail", () => {
   it("liste les e-mails du registre et ouvre le document de départ sans rien écrire", async () => {
     const list = jsonBody<MailEditorListView>(await staff().get(EDITOR).expect(200));
-    expect(list.mails).toHaveLength(32);
+    // 32 au registre, moins la sonde de déploiement, hors de l'éditeur (2026-11-07).
+    expect(list.mails).toHaveLength(31);
+    expect(list.mails.map((mail) => mail.template)).not.toContain("ops.deploy-check");
     const view = await open();
     expect(view).toMatchObject({ source: "starting", revision: 0, published: null });
     expect(view.phrases.length).toBeGreaterThan(0);
@@ -137,6 +139,12 @@ describe("ouvrir un e-mail", () => {
 
   it("refuse un e-mail hors du registre (404)", async () => {
     await staff().get(`${EDITOR}/pas.un.e-mail`).expect(404);
+  });
+
+  it("refuse d'ouvrir la sonde de déploiement : un contrôle technique, pas un e-mail à rédiger (404)", async () => {
+    const refused = await staff().get(`${EDITOR}/ops.deploy-check`).expect(404);
+    expect(JSON.stringify(refused.body)).toContain("MAIL_TEMPLATE_UNKNOWN");
+    await staff().get(`${EDITOR}/ops.deploy-check/phrases`).expect(404);
   });
 });
 

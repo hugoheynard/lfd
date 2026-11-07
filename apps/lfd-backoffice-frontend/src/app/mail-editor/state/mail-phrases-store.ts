@@ -9,7 +9,7 @@ import {
 } from '@lfd/mail-blocks';
 
 import { NotifyService } from '../../notify.service';
-import { defaultChangedIn, upcomingText } from '../../textes-emails/rules/mail-text';
+import { defaultChangedIn, upcomingText } from '../rules/mail-text';
 import { MailEditorService } from '../data/mail-editor.service';
 
 /** Le temps de pause dans la frappe avant d'enregistrer le brouillon — celui de l'écran des textes. */

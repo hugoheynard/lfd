@@ -40,7 +40,8 @@ export class DryRunMailer<M extends TemplateMap> implements Mailer<M> {
     const { subject, attachments } = this.registry[args.template](args.data);
     this.log.info("E-mail à blanc", {
       template: String(args.template),
-      to: args.to,
+      // Jamais l'adresse (registre RGPD) : la clé relie le log au suivi.
+      idempotencyKey: args.idempotencyKey ?? null,
       subject,
       // Le NOMBRE, pas le contenu : une image en base64 dans un journal le rend
       // illisible, et c'est sa présence qu'on veut pouvoir vérifier — un

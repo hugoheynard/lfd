@@ -52,7 +52,7 @@ import type { HasPendingChanges } from '../../../pim/catalogue/product-form/pend
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { LOCALE_LABELS } from '../../../textes-boutique/rules/copy-text';
-import { mailLabel, mailWhoAndWhen } from '../../../textes-emails/rules/mail-labels';
+import { mailLabel, mailWhoAndWhen } from '../../rules/mail-labels';
 import { GestureIntents } from '../../../shared/gesture-intents';
 import { MailEditorService } from '../../data/mail-editor.service';
 import {

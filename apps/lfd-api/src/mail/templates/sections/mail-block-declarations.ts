@@ -117,3 +117,17 @@ export function mailBlockDeclarationOf(mail: keyof B2bMails): MailTemplateDeclar
 export function mailSpaceOf(mail: keyof B2bMails): MailSpace {
   return mailSpaceOfCharter(CHARTERS[mail]);
 }
+
+/**
+ * **L'e-mail est-il à l'éditeur ?** Lu de sa déclaration (`outOfEditor`) :
+ * la sonde de déploiement n'y est pas (Hugo, 2026-11-07) — elle part, elle ne
+ * se rédige pas.
+ */
+export function isInMailEditor(mail: keyof B2bMails): boolean {
+  return MAIL_LAYOUTS[mail].outOfEditor !== true;
+}
+
+/** Les e-mails du registre que l'éditeur connaît, dans l'ordre donné. */
+export function editorMails(mails: readonly (keyof B2bMails)[]): readonly (keyof B2bMails)[] {
+  return mails.filter(isInMailEditor);
+}

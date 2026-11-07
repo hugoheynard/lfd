@@ -18,13 +18,13 @@ import {
 } from 'fold-ng';
 
 import { LOCALE_LABELS, rowsFor } from '../../../textes-boutique/rules/copy-text';
-import { pathLabel } from '../../../textes-emails/rules/mail-labels';
-import { canResetTo, insertVariable, stateOf } from '../../../textes-emails/rules/mail-text';
+import { pathLabel } from '../../rules/mail-labels';
+import { canResetTo, insertVariable, stateOf } from '../../rules/mail-text';
 import { MailPhrasesStore } from '../../state/mail-phrases-store';
 
 /**
  * **Une phrase du modèle, dans la langue choisie** (plan § 3, S5b) — la
- * colonne d'une langue de l'éditeur de `textes-emails`, sur les routes
+ * colonne d’une langue de l’ancien écran des textes des e-mails, sur les routes
  * `mail_templates` : le champ part en brouillon au fil de la frappe ; dessous,
  * l'état, le refus du serveur tel quel, le texte du code et « Rétablir ».
  * Les variables restent visibles : un clic insère `{nom}` au curseur, les

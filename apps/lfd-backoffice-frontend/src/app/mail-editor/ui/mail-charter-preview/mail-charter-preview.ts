@@ -18,7 +18,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
-import { mailLabel } from '../../../textes-emails/rules/mail-labels';
+import { mailLabel } from '../../rules/mail-labels';
 import { MailChartersService } from '../../data/mail-charters.service';
 
 /** Ce qu'un aperçu a rendu : la charte, la langue et l'e-mail de la demande. */

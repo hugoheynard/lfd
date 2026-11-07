@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { mailLocaleView, mailTextView } from '../mail-copy.testing';
-import {
-  canResetTo,
-  defaultChangedIn,
-  insertVariable,
-  pendingIn,
-  stateOf,
-  upcomingText,
-} from './mail-text';
+import { mailLocaleView, mailTextView } from '../mail-text.testing';
+import { canResetTo, defaultChangedIn, insertVariable, stateOf, upcomingText } from './mail-text';
 
 describe('upcomingText — ce que l’e-mail dira après « Publier »', () => {
   it('le brouillon, le code s’il est rétabli, sinon le publié, sinon le code', () => {
@@ -32,15 +25,6 @@ describe('stateOf et canResetTo', () => {
     expect(canResetTo(mailLocaleView('A'), 'A')).toBe(false);
     expect(canResetTo(mailLocaleView('A'), 'B')).toBe(true);
     expect(canResetTo(mailLocaleView('A', { publishedText: 'C' }), 'C')).toBe(true);
-  });
-});
-
-describe('pendingIn', () => {
-  it('compte les langues qui attendent « Publier »', () => {
-    const text = mailTextView('m', 'subject', 'A', {
-      locales: { fr: { draftState: 'set', draftText: 'B' }, it: { draftState: 'reset' } },
-    });
-    expect(pendingIn([text, mailTextView('m', 'title', 'T')])).toBe(2);
   });
 });
 

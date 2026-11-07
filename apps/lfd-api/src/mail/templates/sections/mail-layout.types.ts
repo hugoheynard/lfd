@@ -62,6 +62,13 @@ export interface MailLayoutDeclaration {
    * seulement si l'e-mail a une section `cta`.
    */
   readonly ctaDestination?: string;
+  /**
+   * L'e-mail est un contrôle TECHNIQUE, pas un message à rédiger (Hugo,
+   * 2026-11-07 : la sonde de déploiement) : il part comme les autres, mais
+   * l'éditeur ne le liste pas, ne l'ouvre pas et ne le range dans aucun
+   * espace. Absent : l'e-mail est à l'éditeur.
+   */
+  readonly outOfEditor?: true;
 }
 
 /** Une déclaration par e-mail du registre — exhaustive par construction. */

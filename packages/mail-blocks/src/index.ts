@@ -25,6 +25,7 @@ export type {
   MailCharterSettings,
 } from "./charter-settings.js";
 export { MIN_TEXT_CONTRAST, contrastRatio, isHexColor } from "./contrast.js";
+export { CHARTER_CONTRAST_PAIRS, type CharterContrastPair } from "./charter-contrast-pairs.js";
 export {
   MAIL_CHARTER_VIOLATION_CODES,
   validateMailCharter,

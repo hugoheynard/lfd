@@ -60,6 +60,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     ],
   },
   "ops.deploy-check": {
+    outOfEditor: true,
     subject: SUBJECT,
     header: KICKER,
     sections: [

@@ -11,7 +11,8 @@
  *
  * ## Ce que la porte refuse
  *
- * Un appel `logger.log|warn|error|debug|verbose(` ou `console.*(` dont les
+ * Un appel `logger.log|warn|error|debug|verbose(`, `console.*(` ou `log.*(`
+ * (le journal injecté des paquets, `this.log.info(…)`) dont les
  * arguments interpolent ou passent un identifiant qui nomme une adresse :
  * dernier segment `email`, `to`, `recipient(s)`, `address(es)`, ou finissant
  * par `Email` (`input.email`, `${ownerEmail}`). `account.id` passe.
@@ -23,8 +24,9 @@
  * de passe factice s'y lit). Une entrée qui ne
  * journalise plus d'adresse échoue.
  *
- * Portée : `apps/lfd-api/src/**.ts`, hors `__tests__/` et `*.spec.ts`,
- * commentaires blanchis.
+ * Portée : `apps/lfd-api/src/**.ts` et `packages/<paquet>/src/**.ts` (depuis le
+ * 2026-11-07 : `@lfd/mailer` journalisait l'adresse du destinataire, hors de
+ * portée), hors `__tests__/` et `*.spec.ts`, commentaires blanchis.
  *
  * Usage : `pnpm gate log-no-email`. Tests :
  * `node --test dev-toolbox/__tests__/log-no-email.test.mjs`.
@@ -35,7 +37,22 @@ import { fileURLToPath } from "node:url";
 
 import { withoutComments } from "./mail-through-block.mjs";
 
-const SRC = "apps/lfd-api/src";
+const API_SRC = "apps/lfd-api/src";
+const PACKAGES = "packages";
+
+/** Les racines lues : l'API, et le `src/` de chaque paquet. */
+export function sourceRoots(root) {
+  const roots = [join(root, API_SRC)];
+  for (const name of readdirSync(join(root, PACKAGES))) {
+    const src = join(root, PACKAGES, name, "src");
+    try {
+      if (statSync(src).isDirectory()) roots.push(src);
+    } catch {
+      // un paquet sans `src/` n'a rien à lire
+    }
+  }
+  return roots;
+}
 
 /** Fichiers admis, chacun avec sa raison (vérifié le 2026-11-06). */
 export const ADMITTED = new Map([
@@ -49,7 +66,7 @@ export const ADMITTED = new Map([
   ],
 ]);
 
-const LOG_CALL = /\b(?:logger|console)\s*\.\s*(?:log|warn|error|debug|verbose|info)\s*\(/g;
+const LOG_CALL = /\b(?:logger|console|log)\s*\.\s*(?:log|warn|error|debug|verbose|info)\s*\(/g;
 const ADDRESS =
   /\b(?:[A-Za-z_$][\w$]*\.)*(?:email|to|recipients?|address(?:es)?|[a-z][\w$]*Email)\b(?!\s*\()/;
 const lineOf = (source, index) => source.slice(0, index).split("\n").length;
@@ -100,7 +117,7 @@ function* tsFiles(dir) {
 function main() {
   const root = fileURLToPath(new URL("../..", import.meta.url));
   const failures = [];
-  for (const path of tsFiles(join(root, SRC))) {
+  for (const path of sourceRoots(root).flatMap((dir) => [...tsFiles(dir)])) {
     const file = relative(root, path);
     const hits = violationsIn(readFileSync(path, "utf8"));
     if (ADMITTED.has(file)) {
