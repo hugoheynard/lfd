@@ -117,16 +117,6 @@
               [value]="locale()"
               (valueChange)="setLocale($event)"
             />
-            @if (caseOptions().length > 1) {
-              <fold-listbox
-                size="sm"
-                label="Cas affiché"
-                data-cases
-                [options]="caseOptions()"
-                [value]="caseId()"
-                (selectionChange)="caseId.set($event)"
-              />
-            }
             <fold-view-toggle
               size="sm"
               ariaLabel="Phrases de l’aperçu et de l’essai"
@@ -155,8 +145,12 @@
             [declaration]="current.declaration"
             [template]="current.template"
             [locale]="locale()"
+            [canWrite]="canWrite()"
+            [cases]="caseOptions()"
+            [(caseId)]="caseId"
             [(focus)]="focus"
             (documentChange)="document.set($event)"
+            (retry)="renderNow()"
           >
             @if (focus(); as place) {
               <div focusPanel data-focus-panel>
@@ -187,48 +181,57 @@
               </div>
             } @else {
               <p focusPanel class="tp-muted" data-focus-hint>
-                Sélectionnez un cadre ou un bloc du modèle (bouton crayon) pour écrire ses phrases.
+                Écrivez directement dans l’e-mail. Sélectionnez un bloc pour le régler — un bloc du
+                modèle ou l’objet montre ici toutes ses phrases, variantes que ce cas ne montre pas
+                comprises.
               </p>
             }
           </app-mail-canvas>
-          @if (unplaced().length > 0) {
-            <fold-page-section
-              title="Autres textes"
-              description="Des phrases de cet e-mail qu’aucun cadre ni bloc à l’écran n’affiche en clair — le texte de remplacement d’une image."
-              data-unplaced
-            >
+          @if (unplaced().length > 0 || phrases.orphans().length > 0) {
+            <fold-disclosure data-other-texts>
+              <span summary>Textes que l’e-mail ne montre pas dans ce cas</span>
               <div class="tp-phrases">
-                @for (phrase of unplaced(); track phrase.path) {
-                  <fold-card>
-                    <app-mail-phrase-editor
-                      [phrase]="phrase"
-                      [locale]="phraseLocale()"
-                      [canWrite]="canWrite()"
-                    />
-                  </fold-card>
+                @if (unplaced().length > 0) {
+                  <fold-page-section
+                    title="Autres textes"
+                    description="Des phrases de cet e-mail qu’aucun cadre ni bloc à l’écran n’affiche en clair — le texte de remplacement d’une image."
+                    data-unplaced
+                  >
+                    <div class="tp-phrases">
+                      @for (phrase of unplaced(); track phrase.path) {
+                        <fold-card>
+                          <app-mail-phrase-editor
+                            [phrase]="phrase"
+                            [locale]="phraseLocale()"
+                            [canWrite]="canWrite()"
+                          />
+                        </fold-card>
+                      }
+                    </div>
+                  </fold-page-section>
+                }
+                @if (phrases.orphans().length > 0) {
+                  <fold-page-section
+                    title="Textes que le code ne connaît plus"
+                    description="Ils ne partent plus dans aucun e-mail. « Rétablir » les efface au prochain « Publier »."
+                    data-orphans
+                  >
+                    <div class="tp-phrases">
+                      @for (phrase of phrases.orphans(); track phrase.path) {
+                        <fold-card>
+                          <app-mail-phrase-editor
+                            [phrase]="phrase"
+                            [locale]="phraseLocale()"
+                            [canWrite]="canWrite()"
+                            [orphan]="true"
+                          />
+                        </fold-card>
+                      }
+                    </div>
+                  </fold-page-section>
                 }
               </div>
-            </fold-page-section>
-          }
-          @if (phrases.orphans().length > 0) {
-            <fold-page-section
-              title="Textes que le code ne connaît plus"
-              description="Ils ne partent plus dans aucun e-mail. « Rétablir » les efface au prochain « Publier »."
-              data-orphans
-            >
-              <div class="tp-phrases">
-                @for (phrase of phrases.orphans(); track phrase.path) {
-                  <fold-card>
-                    <app-mail-phrase-editor
-                      [phrase]="phrase"
-                      [locale]="phraseLocale()"
-                      [canWrite]="canWrite()"
-                      [orphan]="true"
-                    />
-                  </fold-card>
-                }
-              </div>
-            </fold-page-section>
+            </fold-disclosure>
           }
           <app-mail-faithful-preview
             [template]="current.template"

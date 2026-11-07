@@ -32,6 +32,13 @@
       />
       @if (current.decorative !== true) {
         <fold-input
+          [label]="'Texte de remplacement (' + locale().toUpperCase() + ')'"
+          hint="Ce que l’image dit, pour qui ne la voit pas."
+          [value]="altText()"
+          (valueChange)="setAlt($event)"
+          data-alt
+        />
+        <fold-input
           type="url"
           label="Lien de l’image (facultatif)"
           hint="Une adresse complète, commençant par https://"

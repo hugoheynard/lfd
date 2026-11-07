@@ -71,6 +71,7 @@ describe('MailPhrasesStore — les phrases du modèle en brouillon', () => {
     });
     expect(store.pendingCount()).toBe(1);
     expect(store.textOf(store.phrases()[0] ?? phrase(), 'fr')).toBe('Commande {ref} réglée');
+    expect(store.written()).toBe(1);
   });
 
   it('un refus (400) reste sous le champ, tel que le serveur le dit, et la frappe est gardée', async () => {
@@ -83,6 +84,7 @@ describe('MailPhrasesStore — les phrases du modèle en brouillon', () => {
     await vi.advanceTimersByTimeAsync(PHRASE_DRAFT_DEBOUNCE_MS);
     expect(store.refusalOf(phrase(), 'fr')).toContain('{ref} est obligatoire');
     expect(store.textOf(phrase(), 'fr')).toBe('Commande réglée');
+    expect(store.written()).toBe(0);
   });
 
   it('un conflit (409) abandonne la frappe, relit les phrases et le signale', async () => {

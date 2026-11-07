@@ -1,4 +1,85 @@
+@let view = previews.view();
 <div class="canvas">
+  <div class="side" data-left>
+    <fold-card>
+      <div class="card-body">
+        <fold-element-title variant="title" title="Cas affiché" />
+        @if (cases().length > 1) {
+          <fold-listbox
+            size="sm"
+            label="Cas"
+            data-cases
+            [options]="cases()"
+            [value]="caseId()"
+            (selectionChange)="caseId.set($event)"
+          />
+        } @else {
+          <p class="muted">{{ cases()[0]?.label ?? 'L’exemple de l’e-mail' }}</p>
+        }
+      </div>
+    </fold-card>
+
+    <fold-card>
+      <div
+        class="card-body frame"
+        tabindex="0"
+        data-frame="subject"
+        aria-label="Objet de l’e-mail — sélectionner pour voir toutes ses variantes"
+        [class.selected]="isFrameSelected('subject')"
+        (click)="selectFrame('subject')"
+        (keydown)="onFrameKeydown($event, 'subject')"
+      >
+        <fold-element-title variant="title" title="Objet" />
+        @if (view !== null) {
+          <app-mail-block-fragment
+            zoneLabel="Objet de l’e-mail"
+            [html]="view.subject"
+            [canWrite]="canWrite()"
+            [phrasePaths]="phrasePaths()"
+            (phraseInput)="onPhraseInput($event)"
+          />
+          @for (refusal of phraseRefusalsOf(view.subject); track $index) {
+            <fold-callout variant="alert" data-phrase-refusal>{{ refusal }}</fold-callout>
+          }
+        }
+      </div>
+    </fold-card>
+
+    @if (variables().length > 0) {
+      <fold-card data-variables>
+        <div class="card-body">
+          <fold-element-title
+            variant="title"
+            title="Variables"
+            subtitle="À glisser dans une phrase, ou à choisir avec le curseur dans une phrase"
+          />
+          <div class="chips">
+            @for (variable of variables(); track variable.name) {
+              <button
+                foldButton
+                size="sm"
+                type="button"
+                draggable="true"
+                [emphasis]="variable.required ? 'solid' : 'outline'"
+                [intent]="variable.required ? 'primary' : 'neutral'"
+                [disabled]="!canWrite()"
+                [attr.data-variable]="variable.name"
+                [attr.aria-label]="
+                  'Insérer {' + variable.name + '}' + (variable.required ? ', obligatoire' : '')
+                "
+                (mousedown)="$event.preventDefault()"
+                (dragstart)="onVariableDragStart($event, variable.name)"
+                (click)="insertVariable(variable.name)"
+              >
+                {{ '{' + variable.name + '}' }}
+              </button>
+            }
+          </div>
+        </div>
+      </fold-card>
+    }
+  </div>
+
   <div class="flow">
     @if (documentViolations().length > 0) {
       <fold-callout variant="alert" data-document-violations>
@@ -9,55 +90,76 @@
         </ul>
       </fold-callout>
     }
+    @if (view !== null && previews.error(); as message) {
+      <fold-callout variant="alert" data-render-error>
+        L’e-mail montré n’est plus à jour : {{ message }}
+      </fold-callout>
+    }
 
-    <ul class="blocks" aria-label="Cadres de l’e-mail, hors des blocs">
-      @for (frame of frames; track frame) {
-        <li class="block" [attr.data-frame]="frame">
-          <fold-card>
-            <div class="card-body">
-              <fold-element-title
-                variant="title"
-                [title]="frameTitle(frame)"
-                subtitle="Cadre de l’e-mail, composé par le code"
-              >
-                <div titleAction class="actions">
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="soft"
-                    intent="neutral"
-                    icon="edit"
-                    type="button"
-                    [attr.aria-pressed]="isFocused(framePlace(frame))"
-                    [attr.aria-label]="'Phrases du cadre « ' + frameTitle(frame) + ' »'"
-                    (click)="toggleFocus(framePlace(frame))"
-                    data-focus
-                  ></button>
-                </div>
-              </fold-element-title>
-            </div>
-          </fold-card>
-        </li>
+    @if (view === null) {
+      @if (previews.error(); as message) {
+        <fold-empty-state tone="alert" title="L’e-mail n’a pas pu être rendu" [subtitle]="message">
+          <button foldButton type="button" (click)="retry.emit()">Réessayer</button>
+        </fold-empty-state>
+      } @else {
+        <fold-loading message="L’e-mail se rend…" />
       }
-    </ul>
+    } @else {
+      <div class="shell">
+        <div class="mail" data-mail>
+          @if (view.header !== '') {
+            <div
+              class="block frame"
+              tabindex="0"
+              data-frame="header"
+              aria-label="En-tête · cadre de l’e-mail"
+              [class.selected]="isFrameSelected('header')"
+              (click)="selectFrame('header')"
+              (keydown)="onFrameKeydown($event, 'header')"
+            >
+              <div class="tools">
+                <span class="name">En-tête · cadre de l’e-mail</span>
+              </div>
+              <app-mail-block-fragment
+                zoneLabel="En-tête de l’e-mail"
+                [html]="view.header"
+                [canWrite]="canWrite()"
+                [phrasePaths]="phrasePaths()"
+                (phraseInput)="onPhraseInput($event)"
+              />
+              @for (refusal of phraseRefusalsOf(view.header); track $index) {
+                <fold-callout variant="alert" data-phrase-refusal>{{ refusal }}</fold-callout>
+              }
+            </div>
+          }
 
-    <ol
-      class="blocks"
-      cdkDropList
-      aria-label="Blocs de l’e-mail, dans l’ordre"
-      (cdkDropListDropped)="dropped($event)"
-    >
-      @for (block of document().blocks; track block.id; let first = $first, last = $last) {
-        <li cdkDrag class="block" [attr.data-block]="block.id">
-          <fold-card>
-            <div class="card-body">
-              <fold-element-title
-                variant="title"
-                [title]="titleOf(block)"
-                [subtitle]="block.kind === 'model' ? 'Bloc du modèle, composé par le code' : ''"
+          <ol
+            class="blocks"
+            cdkDropList
+            aria-label="Blocs de l’e-mail, dans l’ordre — Alt + flèche pour déplacer"
+            (cdkDropListDropped)="dropped($event)"
+          >
+            @for (block of document().blocks; track block.id; let first = $first, last = $last) {
+              @let html = fragmentOf(block);
+              <li
+                cdkDrag
+                class="block"
+                tabindex="0"
+                [class.selected]="isSelected(block)"
+                [attr.data-block]="block.id"
+                [attr.aria-label]="nameOf(block)"
+                [attr.aria-current]="isSelected(block) ? 'true' : null"
+                (click)="select(block)"
+                (keydown)="onBlockKeydown($event, block)"
               >
-                <div titleAction class="actions">
-                  <span cdkDragHandle class="handle" title="Glisser pour déplacer">
+                <div class="tools">
+                  <span class="name">{{ nameOf(block) }}</span>
+                  <span
+                    cdkDragHandle
+                    class="handle"
+                    title="Glisser pour déplacer"
+                    aria-hidden="true"
+                  >
                     <fold-icon name="more-vertical" size="sm" />
                   </span>
                   <button
@@ -84,34 +186,7 @@
                     (click)="move(block.id, 1)"
                     data-move-down
                   ></button>
-                  @if (block.kind === 'model') {
-                    <button
-                      foldButton
-                      size="sm"
-                      emphasis="soft"
-                      intent="neutral"
-                      icon="edit"
-                      type="button"
-                      [attr.aria-pressed]="isFocused(blockPlace(block.section))"
-                      [attr.aria-label]="'Phrases du bloc « ' + titleOf(block) + ' »'"
-                      (click)="toggleFocus(blockPlace(block.section))"
-                      data-focus
-                    ></button>
-                  } @else {
-                    @if (hasSettings(block)) {
-                      <button
-                        foldButton
-                        size="sm"
-                        emphasis="soft"
-                        intent="neutral"
-                        icon="sliders"
-                        type="button"
-                        [attr.aria-pressed]="selectedId() === block.id"
-                        [attr.aria-label]="'Régler le bloc « ' + titleOf(block) + ' »'"
-                        (click)="toggleSettings(block.id)"
-                        data-settings
-                      ></button>
-                    }
+                  @if (block.kind !== 'model') {
                     <button
                       foldButton
                       size="sm"
@@ -120,105 +195,63 @@
                       icon="bin"
                       type="button"
                       [attr.aria-label]="'Retirer le bloc « ' + titleOf(block) + ' »'"
-                      (click)="remove(block.id)"
+                      (click)="$event.stopPropagation(); remove(block.id)"
                       data-remove
                     ></button>
                   }
                 </div>
-              </fold-element-title>
 
-              @switch (block.kind) {
-                @case ('model') {}
-                @case ('divider') {}
-                @case ('columns') {
-                  <div
-                    class="columns"
-                    [style.grid-template-columns]="block.widths.join('fr ') + 'fr'"
-                  >
-                    @for (cell of block.cells; track $index; let column = $index) {
-                      <div class="cell" [attr.data-cell]="column">
-                        @for (inner of cell; track inner.id) {
-                          <div class="inner" [attr.data-block]="inner.id">
-                            <div class="inner-head">
-                              <span>{{ titleOf(inner) }}</span>
-                              <div class="actions">
-                                @if (hasSettings(inner)) {
-                                  <button
-                                    foldButton
-                                    size="sm"
-                                    emphasis="soft"
-                                    intent="neutral"
-                                    icon="sliders"
-                                    type="button"
-                                    [attr.aria-pressed]="selectedId() === inner.id"
-                                    [attr.aria-label]="
-                                      'Régler le bloc « ' +
-                                      titleOf(inner) +
-                                      ' » de la colonne ' +
-                                      (column + 1)
-                                    "
-                                    (click)="toggleSettings(inner.id)"
-                                    data-settings
-                                  ></button>
-                                }
-                                <button
-                                  foldButton
-                                  size="sm"
-                                  emphasis="soft"
-                                  intent="danger"
-                                  icon="bin"
-                                  type="button"
-                                  [attr.aria-label]="
-                                    'Retirer le bloc « ' +
-                                    titleOf(inner) +
-                                    ' » de la colonne ' +
-                                    (column + 1)
-                                  "
-                                  (click)="remove(inner.id)"
-                                  data-remove
-                                ></button>
-                              </div>
-                            </div>
-                            <app-mail-free-block-editor
-                              [block]="inner"
-                              [locale]="locale()"
-                              (blockChange)="edited($event)"
-                            />
-                            @for (violation of violationsOf(inner.id); track $index) {
-                              <fold-callout variant="alert">{{ violation.message }}</fold-callout>
-                            }
-                          </div>
-                        }
-                      </div>
+                @if (html === null) {
+                  <fold-loading size="sm" message="Rendu du bloc…" />
+                } @else if (html === '') {
+                  <p class="muted" data-nothing-shown>
+                    @if (block.kind === 'image') {
+                      Image pas encore choisie : choisissez-la dans les réglages.
+                    } @else {
+                      Rien à montrer dans ce cas.
                     }
-                  </div>
-                }
-                @default {
-                  <app-mail-free-block-editor
-                    [block]="block"
-                    [locale]="locale()"
-                    (blockChange)="edited($event)"
+                  </p>
+                } @else {
+                  <app-mail-block-fragment
+                    [zoneLabel]="nameOf(block)"
+                    [html]="html"
+                    [canWrite]="canWrite()"
+                    [phrasePaths]="phrasePaths()"
+                    [freeBlockIds]="freeBlockIds()"
+                    (phraseInput)="onPhraseInput($event)"
+                    (freeBlockInput)="onFreeBlockInput($event)"
                   />
                 }
-              }
+                @if (hasConflict(html)) {
+                  <fold-callout variant="alert" data-conflict>
+                    Quelqu’un a modifié une phrase de ce bloc pendant que vous l’écriviez. Sa
+                    version est rechargée ; refaites votre modification si elle tient toujours.
+                  </fold-callout>
+                }
+                @for (refusal of phraseRefusalsOf(html); track $index) {
+                  <fold-callout variant="alert" data-phrase-refusal>{{ refusal }}</fold-callout>
+                }
+                @for (violation of violationsOf(block.id); track $index) {
+                  <fold-callout variant="alert" data-block-violation>{{
+                    violation.message
+                  }}</fold-callout>
+                }
+              </li>
+            }
+          </ol>
 
-              @for (violation of violationsOf(block.id); track $index) {
-                <fold-callout variant="alert" data-block-violation>{{
-                  violation.message
-                }}</fold-callout>
-              }
-            </div>
-          </fold-card>
-        </li>
-      }
-    </ol>
+          @if (view.footer !== '') {
+            <app-mail-block-fragment [html]="view.footer" />
+          }
+        </div>
+      </div>
+    }
   </div>
 
-  <div class="side">
-    <ng-content select="[focusPanel]" />
+  <div class="side" data-right>
     <fold-card>
       <div class="card-body">
-        <fold-element-title variant="title" title="Bibliothèque" />
+        <fold-element-title variant="title" title="Bibliothèque" [subtitle]="librarySubtitle()" />
         <app-mail-block-library (picked)="add($event)" />
       </div>
     </fold-card>
@@ -226,14 +259,58 @@
       <fold-card data-settings-panel>
         <div class="card-body">
           <fold-element-title variant="title" title="Réglages" [subtitle]="titleOf(current)" />
-          <app-mail-block-settings
-            [block]="current"
-            (blockChange)="edited($event)"
-            (widthChange)="widthChosen(current.id, $event)"
-            (cellAddition)="cellAdded(current.id, $event)"
-          />
+          @if (hasSettings(current)) {
+            <app-mail-block-settings
+              [block]="current"
+              [locale]="locale()"
+              (blockChange)="edited($event)"
+              (widthChange)="widthChosen(current.id, $event)"
+              (cellAddition)="cellAdded(current.id, $event)"
+            />
+          } @else {
+            <p class="muted">Ce bloc s’écrit directement dans l’e-mail.</p>
+          }
+          @for (cell of selectedCells(); track $index; let column = $index) {
+            @for (inner of cell; track inner.id) {
+              <div class="inner" [attr.data-inner]="inner.id">
+                <span>Colonne {{ column + 1 }} · {{ titleOf(inner) }}</span>
+                <div class="chips">
+                  @if (hasSettings(inner)) {
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="soft"
+                      intent="neutral"
+                      icon="sliders"
+                      type="button"
+                      [attr.aria-label]="
+                        'Régler le bloc « ' + titleOf(inner) + ' » de la colonne ' + (column + 1)
+                      "
+                      (click)="selectInner(inner.id)"
+                      data-settings
+                    ></button>
+                  }
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    intent="danger"
+                    icon="bin"
+                    type="button"
+                    [attr.aria-label]="
+                      'Retirer le bloc « ' + titleOf(inner) + ' » de la colonne ' + (column + 1)
+                    "
+                    (click)="remove(inner.id)"
+                    data-remove
+                  ></button>
+                </div>
+              </div>
+            }
+          }
         </div>
       </fold-card>
+    } @else {
+      <ng-content select="[focusPanel]" />
     }
   </div>
 </div>

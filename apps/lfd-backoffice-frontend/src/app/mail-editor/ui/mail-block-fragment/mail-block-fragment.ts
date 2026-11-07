@@ -1,0 +1,227 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  type ElementRef,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
+import { FoldCalloutComponent } from 'fold-ng';
+
+import { insertChipAt, readDictionaryText, variableChip } from '../../rules/mail-editable-text';
+import { isSafeMailFragment } from '../../rules/mail-fragments';
+
+/** Le type de donnée d'une variable glissée depuis la colonne de gauche. */
+export const VARIABLE_DRAG_TYPE = 'application/x-lfd-mail-variable';
+
+/** Le texte d'une phrase, relu au format du dictionnaire. */
+export interface PhraseInput {
+  readonly path: string;
+  readonly text: string;
+}
+
+/** Le texte d'un bloc libre dans une langue. */
+export interface FreeBlockInput {
+  readonly blockId: string;
+  readonly locale: string;
+  readonly text: string;
+}
+
+const PHRASE_ZONE = '[data-phrase][contenteditable]';
+const EDITABLE_ZONE = '[data-phrase][contenteditable], [data-free-block][contenteditable]';
+
+/**
+ * **Un fragment d'e-mail rendu par le serveur, écrit sur place** (plan
+ * `plan-editeur-par-blocs.md`, § 22, S5f).
+ *
+ * Le HTML vient de notre API, qui échappe les données ; il est injecté tel
+ * quel, sans rien de tiers — et refusé s'il porte un script, un gestionnaire
+ * ou une adresse `javascript:` (`isSafeMailFragment`). Les zones marquées que
+ * l'écran sait réécrire deviennent modifiables : une phrase connue
+ * (`phrasePaths`) et le texte d'un bloc libre du document (`freeBlockIds`) ;
+ * les variables y sont des pastilles non modifiables.
+ *
+ * 🔴 Un fragment qui contient le focus n'est PAS remplacé : le rendu suivant
+ * attend que le focus le quitte. Remplacer le HTML sous les doigts perdrait la
+ * frappe en cours et le curseur.
+ *
+ * Les liens ne s'ouvrent pas : on écrit l'e-mail, on ne le lit pas.
+ */
+@Component({
+  selector: 'app-mail-block-fragment',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldCalloutComponent],
+  templateUrl: './mail-block-fragment.html',
+  styleUrl: './mail-block-fragment.scss',
+})
+export class MailBlockFragment {
+  readonly html = input.required<string>();
+  readonly canWrite = input(false);
+  /** Les phrases que l'écran sait réécrire (`MailEditorPhraseView.path`). */
+  readonly phrasePaths = input<ReadonlySet<string>>(new Set());
+  /** Les blocs libres du document à l'écran. */
+  readonly freeBlockIds = input<ReadonlySet<string>>(new Set());
+  /** Le nom des zones modifiables, pour les lecteurs d'écran. */
+  readonly zoneLabel = input('Texte de l’e-mail');
+
+  readonly phraseInput = output<PhraseInput>();
+  readonly freeBlockInput = output<FreeBlockInput>();
+
+  protected readonly safe = computed(() => isSafeMailFragment(this.html()));
+
+  private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
+  /** Le HTML posé dans le DOM, et celui qui attend que le focus parte. */
+  private applied: string | null = null;
+  private pending: string | null = null;
+
+  constructor() {
+    effect(() => {
+      const element = this.host().nativeElement;
+      const html = this.safe() ? this.html() : '';
+      const canWrite = this.canWrite();
+      const phrases = this.phrasePaths();
+      const freeBlocks = this.freeBlockIds();
+      const label = this.zoneLabel();
+      if (html !== this.applied) {
+        if (this.holdsFocus(element)) {
+          this.pending = html;
+          return;
+        }
+        this.replace(element, html);
+      }
+      this.decorate(element, { canWrite, phrases, freeBlocks, label });
+    });
+  }
+
+  protected onInput(event: Event): void {
+    const zone = event.target instanceof Element ? event.target.closest(EDITABLE_ZONE) : null;
+    if (zone !== null) {
+      this.emitZone(zone);
+    }
+  }
+
+  protected onClick(event: MouseEvent): void {
+    if (event.target instanceof Element && event.target.closest('a') !== null) {
+      event.preventDefault();
+    }
+  }
+
+  protected onFocusOut(event: FocusEvent): void {
+    const element = this.host().nativeElement;
+    if (event.relatedTarget instanceof Node && element.contains(event.relatedTarget)) {
+      return;
+    }
+    if (this.pending !== null) {
+      const html = this.pending;
+      this.pending = null;
+      this.replace(element, html);
+      this.decorate(element, {
+        canWrite: this.canWrite(),
+        phrases: this.phrasePaths(),
+        freeBlocks: this.freeBlockIds(),
+        label: this.zoneLabel(),
+      });
+    }
+  }
+
+  protected onDragOver(event: DragEvent): void {
+    if (this.variableZoneAt(event) !== null) {
+      event.preventDefault();
+      if (event.dataTransfer !== null) {
+        event.dataTransfer.dropEffect = 'copy';
+      }
+    }
+  }
+
+  /** Une variable glissée sur une phrase s'y pose en pastille, au point de dépôt. */
+  protected onDrop(event: DragEvent): void {
+    const zone = this.variableZoneAt(event);
+    const name = event.dataTransfer?.getData(VARIABLE_DRAG_TYPE) ?? '';
+    if (zone === null || name === '') {
+      return;
+    }
+    event.preventDefault();
+    const range = this.rangeAt(event.clientX, event.clientY, zone);
+    insertChipAt(range, variableChip(zone.ownerDocument, name));
+    this.emitZone(zone);
+  }
+
+  private variableZoneAt(event: DragEvent): Element | null {
+    const types = event.dataTransfer?.types ?? [];
+    if (![...types].includes(VARIABLE_DRAG_TYPE) || !(event.target instanceof Element)) {
+      return null;
+    }
+    return event.target.closest(PHRASE_ZONE);
+  }
+
+  /** Le point de dépôt dans la zone ; hors d'elle, sa fin. */
+  private rangeAt(x: number, y: number, zone: Element): Range {
+    const document = zone.ownerDocument;
+    const range = document.caretRangeFromPoint?.(x, y) ?? null;
+    if (range !== null && zone.contains(range.startContainer)) {
+      return range;
+    }
+    const end = document.createRange();
+    end.selectNodeContents(zone);
+    end.collapse(false);
+    return end;
+  }
+
+  private emitZone(zone: Element): void {
+    const text = readDictionaryText(zone);
+    const path = zone.getAttribute('data-phrase');
+    if (path !== null) {
+      this.phraseInput.emit({ path, text });
+      return;
+    }
+    const blockId = zone.getAttribute('data-free-block');
+    const locale = zone.getAttribute('data-locale');
+    if (blockId !== null && locale !== null) {
+      this.freeBlockInput.emit({ blockId, locale, text });
+    }
+  }
+
+  private holdsFocus(element: HTMLElement): boolean {
+    const active = element.ownerDocument.activeElement;
+    return active !== null && active !== element && element.contains(active);
+  }
+
+  private replace(element: HTMLElement, html: string): void {
+    // Le HTML vient de NOTRE API, échappé par elle, et vient de passer
+    // `isSafeMailFragment` : rien de tiers n'y est ajouté (§ 22).
+    element.innerHTML = html;
+    this.applied = html;
+  }
+
+  private decorate(
+    element: HTMLElement,
+    options: {
+      readonly canWrite: boolean;
+      readonly phrases: ReadonlySet<string>;
+      readonly freeBlocks: ReadonlySet<string>;
+      readonly label: string;
+    },
+  ): void {
+    for (const chip of element.querySelectorAll('[data-var]')) {
+      chip.setAttribute('contenteditable', 'false');
+    }
+    for (const zone of element.querySelectorAll('[data-phrase], [data-free-block]')) {
+      const phrase = zone.getAttribute('data-phrase');
+      const block = zone.getAttribute('data-free-block');
+      const known =
+        (phrase !== null && options.phrases.has(phrase)) ||
+        (block !== null && options.freeBlocks.has(block));
+      if (options.canWrite && known) {
+        zone.setAttribute('contenteditable', 'plaintext-only');
+        zone.setAttribute('role', 'textbox');
+        zone.setAttribute('aria-label', zone.getAttribute('data-variant') ?? options.label);
+      } else {
+        zone.removeAttribute('contenteditable');
+        zone.removeAttribute('role');
+        zone.removeAttribute('aria-label');
+      }
+    }
+  }
+}

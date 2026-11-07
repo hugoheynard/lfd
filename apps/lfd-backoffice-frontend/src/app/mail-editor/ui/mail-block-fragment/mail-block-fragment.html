@@ -1,0 +1,14 @@
+@if (!safe()) {
+  <fold-callout variant="alert" data-unsafe-fragment>
+    Ce morceau de l’e-mail n’est pas affiché : son rendu contient un élément que l’écran refuse
+    (script, gestionnaire d’événement ou adresse « javascript: »).
+  </fold-callout>
+}
+<div
+  #host
+  (input)="onInput($event)"
+  (click)="onClick($event)"
+  (focusout)="onFocusOut($event)"
+  (dragover)="onDragOver($event)"
+  (drop)="onDrop($event)"
+></div>

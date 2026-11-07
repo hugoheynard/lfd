@@ -14,6 +14,7 @@ import {
   type ColumnsBlock,
   type ColumnWidthStep,
   type FreeBlock,
+  type MailLocale,
 } from '@lfd/mail-blocks';
 import {
   FoldButtonComponent,
@@ -27,7 +28,9 @@ import {
   CALLOUT_TONE_LABELS,
   CELL_LIBRARY_ITEMS,
   type LibraryItemKey,
+  textOf,
   withDecorative,
+  withText,
   withImageHref,
 } from '../../rules/mail-document-edits';
 import {
@@ -73,6 +76,8 @@ export interface CellAddition {
 })
 export class MailBlockSettings {
   readonly block = input.required<FreeBlock | ColumnsBlock>();
+  /** La langue de l'e-mail affiché : celle du texte de remplacement d'une image. */
+  readonly locale = input.required<MailLocale>();
   readonly blockChange = output<FreeBlock>();
   readonly widthChange = output<ColumnWidthChoice>();
   readonly cellAddition = output<CellAddition>();
@@ -133,6 +138,19 @@ export class MailBlockSettings {
     const block = this.block();
     if (block.kind === 'image') {
       this.blockChange.emit(withImageHref(block, href));
+    }
+  }
+
+  /** Le texte de remplacement d'une image dans la langue affichée (S5f : réglage, plus sur place). */
+  protected readonly altText = computed(() => {
+    const block = this.block();
+    return block.kind === 'image' ? textOf(block, this.locale()) : '';
+  });
+
+  protected setAlt(text: string): void {
+    const block = this.block();
+    if (block.kind === 'image') {
+      this.blockChange.emit(withText(block, this.locale(), text));
     }
   }
 

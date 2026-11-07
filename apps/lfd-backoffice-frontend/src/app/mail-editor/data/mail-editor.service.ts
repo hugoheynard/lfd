@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
+  MailDocumentBlockPreviewPayload,
+  MailDocumentBlockPreviewView,
   MailDocumentCasePreviewPayload,
   MailDocumentDraftPayload,
   MailDocumentHistoryView,
@@ -70,6 +72,22 @@ export class MailEditorService {
   ): Promise<MailDocumentPreviewView> {
     return firstValueFrom(
       this.http.post<MailDocumentPreviewView>(`${templateUrl(template)}/previews`, payload),
+    );
+  }
+
+  /**
+   * Le document rendu bloc par bloc, phrases et variables marquées, pour le
+   * canevas (S5f) ; rien n'est écrit. `400` document refusé, `404` cas inconnu.
+   */
+  blockPreviews(
+    template: string,
+    payload: MailDocumentBlockPreviewPayload,
+  ): Promise<MailDocumentBlockPreviewView> {
+    return firstValueFrom(
+      this.http.post<MailDocumentBlockPreviewView>(
+        `${templateUrl(template)}/block-previews`,
+        payload,
+      ),
     );
   }
 

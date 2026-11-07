@@ -143,6 +143,33 @@ export function appendBlock(document: MailDocument, block: FreeBlock | ColumnsBl
   return withBlocks(document, [...document.blocks, block]);
 }
 
+/**
+ * Ajoute un bloc SOUS celui qui est sélectionné (S5f) — sous sa mise en page
+ * s'il est dans une colonne ; à la fin du fil sans sélection, ou si le bloc
+ * n'est plus là.
+ */
+export function insertBlockAfter(
+  document: MailDocument,
+  afterId: string | null,
+  block: FreeBlock | ColumnsBlock,
+): MailDocument {
+  const index =
+    afterId === null
+      ? -1
+      : document.blocks.findIndex(
+          (candidate) =>
+            candidate.id === afterId ||
+            (candidate.kind === 'columns' &&
+              candidate.cells.some((cell) => cell.some((inner) => inner.id === afterId))),
+        );
+  if (index < 0) {
+    return appendBlock(document, block);
+  }
+  const blocks = [...document.blocks];
+  blocks.splice(index + 1, 0, block);
+  return withBlocks(document, blocks);
+}
+
 /** Ajoute un bloc libre au bas d'une cellule d'une mise en page. */
 export function appendToCell(
   document: MailDocument,

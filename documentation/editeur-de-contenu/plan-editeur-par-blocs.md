@@ -1093,7 +1093,7 @@ de menu disparaissent.
   un ordre qu'il a mis en brouillon y reste compté jusqu'à ce que lui-même le
   publie.
 
-## 22. S5f — le canevas devient l'e-mail (Hugo, 2026-11-07) — à bâtir
+## 22. S5f — le canevas devient l'e-mail (Hugo, 2026-11-07) — bâti le 2026-11-07
 
 ### En simple
 
@@ -1284,3 +1284,83 @@ Exemple réel (`customer.order-ready`, cas `specimen`, `fr`) :
   l'expression rend exactement ce qu'elle rendait (test « à l'octet » vert).
 - **Le gabarit est rendu en entier** pour en tirer l'objet et les images :
   un appel par rendu de bloc demandé, comme l'aperçu fidèle.
+
+### Bâti le 2026-11-07 (front) — écarts
+
+**Ce qui existe**, dans `apps/lfd-backoffice-frontend/src/app/mail-editor/` :
+
+- **Le canevas** (`ui/mail-canvas/`) : au milieu, l'e-mail sur le fond de la
+  coquille, à 600 px au plus — bandeau (`header`), un élément par bloc dans
+  l'ordre du document, recours (`footer`). Chaque bloc est focalisable ; au
+  survol, au focus ou sélectionné, son cadre, son nom (« Titre · du modèle »,
+  « Paragraphe · bloc libre »), la poignée, monter / descendre et, bloc libre
+  seulement, la corbeille. Entrée ou Espace sélectionne, Alt + flèche déplace
+  (le bloc garde le focus). À gauche : le cas (`fold-listbox`), l'objet (écrit
+  sur place), les variables. À droite : la bibliothèque, qui ajoute sous le
+  bloc sélectionné (`insertBlockAfter`), puis les réglages du bloc libre ou de
+  la mise en page sélectionnés ; un bloc du modèle ou un cadre sélectionné
+  y montre ses phrases, toutes variantes — c'est ainsi qu'une variante que
+  le cas ne montre pas reste atteignable.
+- **Un fragment** (`ui/mail-block-fragment/`) : le HTML du serveur injecté
+  après `isSafeMailFragment` (`rules/mail-fragments.ts` : `<script`, attribut
+  `on…=` dans une balise, `javascript:` même masqué par des entités ou des
+  caractères de contrôle — refusé, et le bloc le dit). Les zones `data-phrase`
+  connues et `data-free-block` du document deviennent modifiables
+  (`contenteditable="plaintext-only"`, `role="textbox"`, nom = la variante),
+  les `data-var` des pastilles `contenteditable="false"`. Un fragment qui a le
+  focus n'est pas remplacé : le rendu suivant attend la sortie du focus. Les
+  liens ne s'ouvrent pas.
+- **La relecture** (`rules/mail-editable-text.ts`) : une pastille redevient
+  `{nom}`, `<br>` et les lignes en `<div>` redeviennent `\n`.
+- **Le rendu** (`state/mail-block-previews-store.ts`) : `POST …/block-previews`
+  sur le document à l'écran, la langue et le cas, le dernier demandé
+  l'emporte ; un geste sur le document attend 800 ms, une langue, un cas ou
+  une phrase acceptée (`MailPhrasesStore.written`) relancent tout de suite.
+  Un échec sans rien à l'écran : `fold-empty-state` + « Réessayer » ; avec un
+  rendu à l'écran : encadré, l'ancien rendu reste.
+- **Sous l'e-mail, replié** (`fold-disclosure`) : « Autres textes » et les
+  orphelines.
+- **Retiré** : la liste de cartes de l'ancien canevas et
+  `ui/mail-free-block-editor/` (le texte d'un bloc s'écrit sur place, le texte
+  de remplacement d'une image passe aux réglages).
+
+**Écarts.**
+
+- **Le texte d'un bloc libre change le document à l'écran**, pas
+  `PUT …/draft` : il s'enregistre avec « Enregistrer le brouillon », comme
+  tout geste du canevas (garde de sortie, révision). Enregistrer le document à
+  chaque pause aurait changé la mécanique de S5a sans que le plan le dise. À
+  trancher si Hugo veut l'enregistrement automatique.
+- **Le canevas rend toujours les phrases en brouillon** (`source: "draft"`) :
+  c'est ce qu'on écrit. Le choix « Brouillons / Publiées » de la barre reste
+  celui de l'aperçu fidèle et de l'essai.
+- **On écrit dans la langue RENDUE** (`MailDocumentBlockPreviewView.locale`) :
+  si le serveur se replie, c'est le texte affiché qu'on réécrit. Le choix
+  « Langue des phrases » (S5e) ne règle que le panneau de droite et la
+  section repliée.
+- **Les variables ne se posent que dans une phrase.** Le texte d'un bloc
+  libre n'est pas interpolé (`renderFreeBlock`, lu le 2026-11-07) : une
+  pastille y partirait en `{nom}` littéral. Au clavier, une variable choisie
+  s'insère au dernier curseur posé dans une phrase.
+- **Un bloc libre que le serveur ne rend pas** (texte vide dans la langue,
+  bouton sans adresse valable) garde une zone d'écriture posée par l'écran
+  (`freeBlockFallback`), sans les styles de l'e-mail ; une image pas choisie,
+  ou un bloc du modèle vide dans le cas, le disent en une ligne.
+- **Les blocs posés dans une colonne** n'ont pas de cadre propre : le
+  fragment de la mise en page est un seul tableau. Leur texte s'écrit sur
+  place ; leurs réglages et leur retrait sont listés dans les réglages de la
+  mise en page.
+- **Le fond de la coquille et la feuille** sont des jetons fold
+  (`surface-sunken`, `surface-card`) : le contrat ne sert pas les couleurs de
+  la charte, et l'écran n'en recopie aucune. Le texte hérite de la police du
+  back-office.
+- **Téléphone / ordinateur et clair / sombre** restent sur l'aperçu fidèle,
+  inchangés : le canevas est à la largeur d'ordinateur.
+- **Les espaces tapées** : les zones modifiables sont en `pre-wrap`, pour que
+  le navigateur n'écrive pas d'insécables que le dictionnaire garderait ;
+  les insécables écrites exprès sont gardées telles quelles.
+
+**Non vérifié à l'écran** (tests jsdom seulement) : le glisser-déposer natif
+d'une variable (`caretRangeFromPoint`), `plaintext-only` avec une pastille
+non modifiable (Chrome, Safari, Firefox), le rendu réel des fragments
+(tables, images `data:`) dans la page, et le glisser des blocs.

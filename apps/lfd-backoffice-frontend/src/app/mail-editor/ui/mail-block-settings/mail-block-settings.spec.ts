@@ -10,6 +10,7 @@ import { type CellAddition, MailBlockSettings } from './mail-block-settings';
 function render(block: FreeBlock | ColumnsBlock) {
   const fixture = TestBed.createComponent(MailBlockSettings);
   fixture.componentRef.setInput('block', block);
+  fixture.componentRef.setInput('locale', 'fr');
   fixture.detectChanges();
   return fixture;
 }
@@ -25,6 +26,20 @@ describe('MailBlockSettings', () => {
     expect(emitted).toEqual([
       { id: 'b', kind: 'button', label: { fr: 'Voir' }, href: 'https://lafoliedouce.fr' },
     ]);
+  });
+
+  it('écrit le texte de remplacement d’une image dans la langue affichée, pas pour une décorative', () => {
+    const fixture = render({ id: 'i', kind: 'image', src: '', alt: { en: 'A brioche' } });
+    const emitted: FreeBlock[] = [];
+    fixture.componentInstance.blockChange.subscribe((next) => emitted.push(next));
+    const field: HTMLInputElement = fixture.nativeElement.querySelector('[data-alt] input');
+    field.value = 'Une brioche';
+    field.dispatchEvent(new Event('input'));
+    expect(emitted).toEqual([
+      { id: 'i', kind: 'image', src: '', alt: { en: 'A brioche', fr: 'Une brioche' } },
+    ]);
+    const decorative = render({ id: 'd', kind: 'image', src: '', alt: {}, decorative: true });
+    expect(decorative.nativeElement.querySelector('[data-alt]')).toBeNull();
   });
 
   it('montre le ton d’un encadré, une largeur par colonne', () => {

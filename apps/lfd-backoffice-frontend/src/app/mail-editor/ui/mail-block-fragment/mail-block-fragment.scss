@@ -1,0 +1,36 @@
+// Le HTML du fragment est injecté : il ne porte pas l'attribut de portée du
+// composant. D'où `::ng-deep`, borné à cet hôte et aux seuls marqueurs que
+// l'éditeur rend modifiables (S5f).
+:host ::ng-deep [contenteditable='plaintext-only'] {
+  // `pre-wrap` : le navigateur garde les espaces tapées en espaces simples, au
+  // lieu d'insécables que le dictionnaire garderait.
+  white-space: pre-wrap;
+  border-radius: var(--fold-radius-sm);
+  outline: 1px dashed transparent;
+  cursor: text;
+}
+
+:host ::ng-deep [contenteditable='plaintext-only']:hover {
+  outline-color: var(--fold-color-border);
+}
+
+:host ::ng-deep [contenteditable='plaintext-only']:focus {
+  outline: 2px solid var(--fold-color-primary);
+}
+
+:host ::ng-deep [data-free-block][contenteditable='plaintext-only']:empty {
+  display: inline-block;
+  min-inline-size: 8ch;
+}
+
+:host ::ng-deep [data-free-block][contenteditable='plaintext-only']:empty::before {
+  content: 'Écrire ici…';
+  color: var(--fold-color-text-muted);
+}
+
+:host ::ng-deep [data-var] {
+  padding-inline: var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
+}

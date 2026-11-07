@@ -5,6 +5,7 @@ import {
   appendBlock,
   appendToCell,
   findEditableBlock,
+  insertBlockAfter,
   moveBlock,
   moveBlockBy,
   newCellBlock,
@@ -157,5 +158,31 @@ describe('les gestes du canevas', () => {
       expect(linked.href).toBe('https://lafoliedouce.fr');
       expect('href' in withImageHref(linked, '')).toBe(false);
     });
+  });
+
+  it('ajoute sous le bloc sélectionné, sous sa mise en page s’il est en colonne, sinon à la fin', () => {
+    const added: FreeBlock = { id: 'neuf', kind: 'divider' };
+    expect(insertBlockAfter(DOCUMENT, 'model:title', added).blocks.map((b) => b.id)).toEqual([
+      'model:title',
+      'neuf',
+      'note',
+      'model:footer',
+    ]);
+    expect(insertBlockAfter(DOCUMENT, null, added).blocks.at(-1)?.id).toBe('neuf');
+    expect(insertBlockAfter(DOCUMENT, 'parti', added).blocks.at(-1)?.id).toBe('neuf');
+    const withColumns: MailDocument = {
+      ...DOCUMENT,
+      blocks: [
+        TITLE,
+        { id: 'cols', kind: 'columns', widths: [50, 50], cells: [[NOTE], []] },
+        FOOTER,
+      ],
+    };
+    expect(insertBlockAfter(withColumns, 'note', added).blocks.map((b) => b.id)).toEqual([
+      'model:title',
+      'cols',
+      'neuf',
+      'model:footer',
+    ]);
   });
 });

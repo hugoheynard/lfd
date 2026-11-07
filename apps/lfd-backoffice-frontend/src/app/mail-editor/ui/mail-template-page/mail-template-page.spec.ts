@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
 import {
   modelBlockId,
+  type MailDocumentBlockPreviewPayload,
   type MailEditorPhrasePlace,
   type MailEditorPhraseView,
   type MailEditorView,
@@ -70,7 +71,14 @@ function view(
 async function render(
   api: Partial<
     Record<
-      'load' | 'saveDraft' | 'preview' | 'history' | 'publish' | 'revert' | 'sendTrial',
+      | 'load'
+      | 'saveDraft'
+      | 'preview'
+      | 'history'
+      | 'publish'
+      | 'revert'
+      | 'sendTrial'
+      | 'blockPreviews',
       ReturnType<typeof vi.fn>
     >
   >,
@@ -86,6 +94,19 @@ async function render(
         useValue: {
           history: vi.fn(() =>
             Promise.resolve({ template: TEMPLATE, versions: [], retracted: null }),
+          ),
+          blockPreviews: vi.fn((_template: string, payload: MailDocumentBlockPreviewPayload) =>
+            Promise.resolve({
+              template: TEMPLATE,
+              locale: payload.locale,
+              subject: 'Objet',
+              header: '',
+              footer: '',
+              blocks: payload.document.blocks.map((block) => ({
+                blockId: block.id,
+                html: `<p>${block.id}</p>`,
+              })),
+            }),
           ),
           ...api,
         },
@@ -345,11 +366,11 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
       }),
     );
     const { fixture, element } = await render({ load });
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
     expect(element.querySelector('[data-focus-panel]')).toBeNull();
     expect(element.querySelector('[data-focus-hint]')).not.toBeNull();
-    element
-      .querySelector<HTMLButtonElement>(`[data-block="${modelBlockId('title')}"] [data-focus]`)
-      ?.click();
+    element.querySelector<HTMLElement>(`li[data-block="${modelBlockId('title')}"]`)?.click();
     fixture.detectChanges();
     const panel = element.querySelector('[data-focus-panel]');
     expect(
@@ -358,12 +379,39 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
       ),
     ).toEqual(['title.paid', 'title.due']);
     expect(panel?.textContent).toContain('Commande payée par carte');
-    element.querySelector<HTMLButtonElement>('[data-frame="subject"] [data-focus]')?.click();
+    element.querySelector<HTMLElement>('[data-frame="subject"]')?.click();
     fixture.detectChanges();
     expect(
       element.querySelector('[data-focus-panel] [data-phrase]')?.getAttribute('data-phrase'),
     ).toBe('subject');
     expect(element.querySelector('[data-unplaced] [data-phrase="image.alt"]')).not.toBeNull();
     expect(element.querySelector('[data-orphans] [data-phrase="gone"]')).not.toBeNull();
+    expect(element.querySelector('[data-other-texts] [data-unplaced]')).not.toBeNull();
+  });
+
+  it('demande le rendu du canevas : document à l’écran, langue, cas, phrases en brouillon', async () => {
+    const load = vi.fn(() =>
+      Promise.resolve({ ...view(0), cases: [{ id: 'due', label: 'À régler' }] }),
+    );
+    const blockPreviews = vi.fn(() =>
+      Promise.resolve({
+        template: TEMPLATE,
+        locale: 'fr',
+        subject: '',
+        header: '',
+        footer: '',
+        blocks: [{ blockId: modelBlockId('title'), html: '<p>Rendu du serveur</p>' }],
+      }),
+    );
+    const { fixture, element } = await render({ load, blockPreviews });
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    expect(blockPreviews).toHaveBeenCalledWith(TEMPLATE, {
+      document: view(0).document,
+      locale: 'fr',
+      source: 'draft',
+      caseId: 'due',
+    });
+    expect(element.querySelector('[data-mail]')?.textContent).toContain('Rendu du serveur');
   });
 });

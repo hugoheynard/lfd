@@ -53,6 +53,12 @@ export class MailPhrasesStore {
   /** Les refus du serveur, par phrase et langue — son message, tel quel. */
   readonly refusals = signal<ReadonlyMap<string, string>>(new Map());
 
+  /**
+   * Monte à chaque brouillon de phrase accepté par le serveur (écrit ou
+   * rétabli) : le canevas redemande alors le rendu de l'e-mail (S5f).
+   */
+  readonly written = signal(0);
+
   /** Combien de phrases, toutes langues, attendent « Publier » — orphelines rétablies comprises. */
   readonly pendingCount = computed(
     () =>
@@ -131,6 +137,7 @@ export class MailPhrasesStore {
         draftText: null,
         revision: view.revision + 1,
       });
+      this.written.update((count) => count + 1);
     });
   }
 
@@ -169,6 +176,7 @@ export class MailPhrasesStore {
       }),
     );
     this.patch(path, locale, { draftState: 'set', draftText: value, revision: view.revision + 1 });
+    this.written.update((count) => count + 1);
     if (this.typed().get(id) === value) {
       this.drop(id);
     }

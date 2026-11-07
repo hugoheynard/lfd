@@ -15,6 +15,7 @@ import {
   validateMailDocumentForPublication,
   type MailAudience,
   type MailDocument,
+  type MailDocumentBlockPreviewPayload,
   type MailEditorPhrasePlace,
   type MailEditorPhraseView,
   type MailEditorView,
@@ -27,9 +28,9 @@ import {
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldDisclosureComponent,
   FoldIconComponent,
   FoldInlineConfirmComponent,
-  FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
@@ -50,6 +51,10 @@ import {
   placeTitle,
   unplacedPhrases,
 } from '../../rules/mail-phrase-places';
+import {
+  BLOCK_PREVIEW_DEBOUNCE_MS,
+  MailBlockPreviewsStore,
+} from '../../state/mail-block-previews-store';
 import { MailPhrasesStore } from '../../state/mail-phrases-store';
 import { MailCanvas } from '../mail-canvas/mail-canvas';
 import {
@@ -122,8 +127,8 @@ const PHRASE_SOURCE_OPTIONS: readonly FoldViewToggleOption[] = [
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldIconComponent,
+    FoldDisclosureComponent,
     FoldInlineConfirmComponent,
-    FoldListboxComponent,
     FoldPageSectionComponent,
     MailCanvas,
     MailFaithfulPreview,
@@ -132,7 +137,7 @@ const PHRASE_SOURCE_OPTIONS: readonly FoldViewToggleOption[] = [
   ],
   templateUrl: './mail-template-page.html',
   styleUrl: './mail-template-page.scss',
-  providers: [MailPhrasesStore],
+  providers: [MailPhrasesStore, MailBlockPreviewsStore],
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
 export class MailTemplatePage implements HasPendingChanges {
@@ -143,6 +148,9 @@ export class MailTemplatePage implements HasPendingChanges {
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
   protected readonly phrases = inject(MailPhrasesStore);
+  private readonly previews = inject(MailBlockPreviewsStore);
+  /** Le document du dernier rendu demandé : un geste sur lui attend la pause, le reste non. */
+  private renderedDocument: MailDocument | null = null;
   /** Une clé par essai voulu (e-mail, langue, cas), renvoyée à chaque clic jusqu'à l'envoi. */
   private readonly intents = new GestureIntents();
 
@@ -292,6 +300,49 @@ export class MailTemplatePage implements HasPendingChanges {
       const template = this.template();
       untracked(() => void this.load(template));
     });
+    // Le canevas (S5f) : le document, la langue, le cas, et chaque phrase
+    // écrite en brouillon redemandent le rendu — un geste sur le document
+    // après une pause, le reste tout de suite.
+    effect(() => {
+      const payload = this.renderPayload();
+      this.phrases.written();
+      const view = this.view();
+      if (payload === null || view === null) {
+        return;
+      }
+      untracked(() => {
+        const delay =
+          this.renderedDocument === null || this.renderedDocument === payload.document
+            ? 0
+            : BLOCK_PREVIEW_DEBOUNCE_MS;
+        this.renderedDocument = payload.document;
+        this.previews.request(view.template, payload, delay);
+      });
+    });
+  }
+
+  /** Ce que le canevas rend : le document à l'écran, sur les phrases en brouillon. */
+  private readonly renderPayload = computed<MailDocumentBlockPreviewPayload | null>(() => {
+    const document = this.document();
+    if (document === null) {
+      return null;
+    }
+    const caseId = this.caseId();
+    return {
+      document,
+      locale: this.locale(),
+      source: 'draft',
+      ...(caseId === null ? {} : { caseId }),
+    };
+  });
+
+  /** « Réessayer » du canevas : le rendu, sans attendre. */
+  protected renderNow(): void {
+    const view = this.view();
+    const payload = this.renderPayload();
+    if (view !== null && payload !== null) {
+      void this.previews.render(view.template, payload);
+    }
   }
 
   protected async load(template: string = this.template()): Promise<void> {
@@ -435,6 +486,8 @@ export class MailTemplatePage implements HasPendingChanges {
   private apply(view: MailEditorView): void {
     if (this.view()?.template !== view.template) {
       this.focus.set(null);
+      this.previews.clear();
+      this.renderedDocument = null;
     }
     this.view.set(view);
     this.document.set(view.document);
