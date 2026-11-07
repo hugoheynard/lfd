@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
@@ -37,7 +38,12 @@ function view(
 }
 
 async function render(
-  api: Partial<Record<'load' | 'saveDraft' | 'preview', ReturnType<typeof vi.fn>>>,
+  api: Partial<
+    Record<
+      'load' | 'saveDraft' | 'preview' | 'history' | 'publish' | 'revert',
+      ReturnType<typeof vi.fn>
+    >
+  >,
   permissions: readonly StaffPermission[] = ['mail_templates:write'],
 ) {
   const notify = { error: vi.fn(), success: vi.fn() };
@@ -45,7 +51,15 @@ async function render(
     imports: [MailTemplatePage],
     providers: [
       provideRouter([]),
-      { provide: MailEditorService, useValue: api },
+      {
+        provide: MailEditorService,
+        useValue: {
+          history: vi.fn(() =>
+            Promise.resolve({ template: TEMPLATE, versions: [], retracted: null }),
+          ),
+          ...api,
+        },
+      },
       { provide: NotifyService, useValue: notify },
       {
         provide: PermissionsStore,
@@ -114,5 +128,95 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     const { element } = await render({ load: vi.fn(() => Promise.reject(new Error('boom'))) });
     expect(element.querySelector('fold-empty-state')?.getAttribute('tone')).toBe('alert');
     expect(element.querySelector('app-mail-canvas')).toBeNull();
+  });
+
+  it('publie avec la révision lue, relit, et relit l’historique', async () => {
+    const load = vi.fn().mockResolvedValueOnce(view(3)).mockResolvedValueOnce(view(4));
+    const publish = vi.fn(() => Promise.resolve({ publicationVersion: 7 }));
+    const history = vi.fn(() =>
+      Promise.resolve({ template: TEMPLATE, versions: [], retracted: null }),
+    );
+    const { fixture, notify } = await render({ load, publish, history });
+    const page = fixture.componentInstance;
+    await page.publish();
+    expect(publish).toHaveBeenCalledWith(TEMPLATE, { expectedRevision: 3 });
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(notify.success).toHaveBeenCalled();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(history).toHaveBeenCalledTimes(2);
+  });
+
+  it('ne publie pas un document modifié et non enregistré', async () => {
+    const publish = vi.fn();
+    const { fixture } = await render({ load: vi.fn(() => Promise.resolve(view(3))), publish });
+    const page = fixture.componentInstance;
+    page.document.set({ template: TEMPLATE, blocks: [...view(0).document.blocks].reverse() });
+    await page.publish();
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it('dit les refus de publication avant tout appel', async () => {
+    const publish = vi.fn();
+    const missing = view(3);
+    const withParagraph: MailEditorView = {
+      ...missing,
+      document: {
+        template: TEMPLATE,
+        blocks: [
+          ...missing.document.blocks,
+          { id: 'free-1', kind: 'paragraph', text: { fr: 'Bonjour' } },
+        ],
+      },
+    };
+    const { fixture, element } = await render({
+      load: vi.fn(() => Promise.resolve(withParagraph)),
+      publish,
+    });
+    const page = fixture.componentInstance;
+    expect(page.publicationIssues().length).toBeGreaterThan(0);
+    expect(element.querySelector('[data-publication-issues]')).not.toBeNull();
+    await page.publish();
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it('montre le refus du serveur tel quel, et garde la vue', async () => {
+    const load = vi.fn(() => Promise.resolve(view(3)));
+    const publish = vi.fn(() =>
+      Promise.reject(new HttpErrorResponse({ status: 409, error: { message: 'Rien à publier.' } })),
+    );
+    const { fixture, element } = await render({ load, publish });
+    await fixture.componentInstance.publish();
+    fixture.detectChanges();
+    expect(element.querySelector('[data-gesture-error]')?.textContent).toContain('Rien à publier.');
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('revient au modèle d’origine avec la révision lue, seulement s’il y a quelque chose à effacer', async () => {
+    const pristine = await render({ load: vi.fn(() => Promise.resolve(view(0))) });
+    expect(pristine.element.querySelector('[data-revert]')).toBeNull();
+    TestBed.resetTestingModule();
+    const published: MailEditorView = {
+      ...view(5),
+      source: 'published',
+      published: { version: 2, at: '2026-11-07T10:00:00.000Z', staffId: 'stf_1' },
+    };
+    const load = vi.fn(() => Promise.resolve(published));
+    const revert = vi.fn(() => Promise.resolve({ publicationVersion: 8 }));
+    const { fixture, element } = await render({ load, revert });
+    expect(element.querySelector('[data-revert]')).not.toBeNull();
+    await fixture.componentInstance.revert();
+    expect(revert).toHaveBeenCalledWith(TEMPLATE, { expectedRevision: 5 });
+  });
+
+  it('retient une fois la sortie d’un document modifié, puis la laisse passer', async () => {
+    const { fixture, element } = await render({ load: vi.fn(() => Promise.resolve(view(3))) });
+    const page = fixture.componentInstance;
+    expect(page.canLeave()).toBe(true);
+    page.document.set({ template: TEMPLATE, blocks: [] });
+    expect(page.canLeave()).toBe(false);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-leave-warning]')).not.toBeNull();
+    expect(page.canLeave()).toBe(true);
   });
 });

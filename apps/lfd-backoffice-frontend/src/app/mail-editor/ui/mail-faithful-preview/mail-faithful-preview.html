@@ -52,8 +52,28 @@
               }
             </p>
           }
+          <div class="fp-toolbar">
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Largeur de l’aperçu"
+              data-device
+              [options]="deviceOptions"
+              [value]="device()"
+              (valueChange)="setDevice($event)"
+            />
+            <fold-view-toggle
+              size="sm"
+              ariaLabel="Thème de l’aperçu"
+              data-scheme
+              [options]="schemeOptions"
+              [value]="scheme()"
+              (valueChange)="setScheme($event)"
+            />
+          </div>
           <iframe
             class="fp-frame"
+            [class.fp-frame--phone]="device() === 'phone'"
+            [style.color-scheme]="scheme()"
             title="Aperçu fidèle de l’e-mail"
             sandbox=""
             [srcdoc]="body()"

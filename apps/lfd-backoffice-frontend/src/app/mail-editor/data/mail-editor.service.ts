@@ -2,8 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   MailDocumentDraftPayload,
+  MailDocumentHistoryView,
   MailDocumentPreviewPayload,
   MailDocumentPreviewView,
+  MailDocumentPublicationView,
+  MailDocumentPublishPayload,
+  MailDocumentRevertPayload,
   MailEditorListView,
   MailEditorView,
 } from '@lfd/mail-blocks';
@@ -24,7 +28,8 @@ function templateUrl(template: string): string {
  * `packages/mail-blocks/src/mail-editor-routes.ts`).
  *
  * Murés côté serveur par le droit `mail_templates` : lire et prévisualiser
- * demandent `read`, écrire le brouillon demande `write`.
+ * demandent `read`, écrire le brouillon, publier et revenir au modèle
+ * d'origine demandent `write` (S5c).
  */
 @Injectable({ providedIn: 'root' })
 export class MailEditorService {
@@ -47,6 +52,36 @@ export class MailEditorService {
   preview(template: string, payload: MailDocumentPreviewPayload): Promise<MailDocumentPreviewView> {
     return firstValueFrom(
       this.http.post<MailDocumentPreviewView>(`${templateUrl(template)}/previews`, payload),
+    );
+  }
+
+  /** Versions publiées, de la plus récente à la plus ancienne (S5c). */
+  history(template: string): Promise<MailDocumentHistoryView> {
+    return firstValueFrom(
+      this.http.get<MailDocumentHistoryView>(`${templateUrl(template)}/history`),
+    );
+  }
+
+  /**
+   * Publie le brouillon enregistré ET les phrases en attente de cet e-mail ;
+   * `409` sur une révision dépassée ou s'il n'y a rien à publier.
+   */
+  publish(
+    template: string,
+    payload: MailDocumentPublishPayload,
+  ): Promise<MailDocumentPublicationView> {
+    return firstValueFrom(
+      this.http.post<MailDocumentPublicationView>(`${templateUrl(template)}/publications`, payload),
+    );
+  }
+
+  /** Retire le publié et le brouillon : l'e-mail repart dans son arrangement d'origine. */
+  revert(
+    template: string,
+    payload: MailDocumentRevertPayload,
+  ): Promise<MailDocumentPublicationView> {
+    return firstValueFrom(
+      this.http.post<MailDocumentPublicationView>(`${templateUrl(template)}/reverts`, payload),
     );
   }
 }

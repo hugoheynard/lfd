@@ -9,6 +9,8 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageSectionComponent,
+  FoldViewToggleComponent,
+  type FoldViewToggleOption,
 } from 'fold-ng';
 
 import { MailEditorService } from '../../data/mail-editor.service';
@@ -19,6 +21,20 @@ interface RenderedFor {
   readonly locale: MailLocale;
 }
 
+/** La largeur du cadre : celle d'un client de messagerie, ou d'un téléphone (~375 px). */
+export type PreviewDevice = 'desktop' | 'phone';
+/** Le thème que le cadre annonce au message (`color-scheme`). */
+export type PreviewScheme = 'light' | 'dark';
+
+const DEVICE_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'desktop', label: 'Ordinateur' },
+  { value: 'phone', label: 'Téléphone' },
+];
+const SCHEME_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'light', label: 'Clair' },
+  { value: 'dark', label: 'Sombre' },
+];
+
 /**
  * **L'aperçu fidèle** (§ 6) : le rendu du serveur — ce qui partirait, avec
  * des données d'exemple et les phrases en brouillon — du document à l'écran,
@@ -28,6 +44,10 @@ interface RenderedFor {
  *
  * Le HTML est posé dans un cadre au `sandbox` VIDE : ni script, ni même
  * origine, ni formulaire, ni navigation — il reste inerte. Lecture seule.
+ *
+ * « Vue téléphone » rétrécit le cadre ; « clair / sombre » pose son
+ * `color-scheme`, que le message lit par `prefers-color-scheme` (S5c) — sans
+ * rien relâcher du `sandbox`, ni redemander le rendu.
  */
 @Component({
   selector: 'app-mail-faithful-preview',
@@ -39,6 +59,7 @@ interface RenderedFor {
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageSectionComponent,
+    FoldViewToggleComponent,
   ],
   templateUrl: './mail-faithful-preview.html',
   styleUrl: './mail-faithful-preview.scss',
@@ -55,6 +76,19 @@ export class MailFaithfulPreview {
   protected readonly error = signal<string | null>(null);
   protected readonly preview = signal<MailDocumentPreviewView | null>(null);
   private readonly renderedFor = signal<RenderedFor | null>(null);
+
+  protected readonly deviceOptions = DEVICE_OPTIONS;
+  protected readonly schemeOptions = SCHEME_OPTIONS;
+  readonly device = signal<PreviewDevice>('desktop');
+  readonly scheme = signal<PreviewScheme>('light');
+
+  protected setDevice(value: string): void {
+    this.device.set(value === 'phone' ? 'phone' : 'desktop');
+  }
+
+  protected setScheme(value: string): void {
+    this.scheme.set(value === 'dark' ? 'dark' : 'light');
+  }
 
   /** Le HTML du serveur, posé tel quel : le cadre est sandboxé sans aucun drapeau. */
   protected readonly body = computed<SafeHtml | null>(() => {

@@ -23,3 +23,16 @@
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-bg-page);
 }
+
+.fp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+// Vue téléphone : la largeur d'un écran courant, centrée.
+.fp-frame--phone {
+  width: 375px;
+  max-width: 100%;
+  margin: 0 auto;
+}

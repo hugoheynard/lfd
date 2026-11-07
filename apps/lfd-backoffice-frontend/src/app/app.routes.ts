@@ -226,6 +226,8 @@ export const routes: Routes = [
   {
     path: 'emails/:template',
     canActivate: [permissionGuard('mail_templates:read')],
+    // Un document modifié et non enregistré retient la sortie une fois (S5c).
+    canDeactivate: [pendingChangesGuard],
     title: 'E-mail — LFC B2B admin',
     loadComponent: () =>
       import('./mail-editor/ui/mail-template-page/mail-template-page').then(

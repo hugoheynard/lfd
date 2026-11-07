@@ -16,6 +16,29 @@
       >
         Enregistrer le brouillon
       </button>
+      <fold-inline-confirm
+        intent="primary"
+        data-publish
+        [message]="publishMessage()"
+        [labels]="{ confirm: 'Publier' }"
+        [loading]="publishing()"
+        (confirmed)="publish()"
+      >
+        <button foldButton icon="upload" type="button" [disabled]="!canPublish()">Publier</button>
+      </fold-inline-confirm>
+      @if (canRevert()) {
+        <fold-inline-confirm
+          data-revert
+          message="Le brouillon est effacé et la version publiée retirée : dès le prochain envoi, l’e-mail repart dans son arrangement d’origine. Les phrases ne changent pas."
+          [labels]="{ confirm: 'Revenir au modèle d’origine' }"
+          [loading]="reverting()"
+          (confirmed)="revert()"
+        >
+          <button foldButton emphasis="outline" intent="neutral" icon="reset" type="button">
+            Revenir au modèle d’origine
+          </button>
+        </fold-inline-confirm>
+      }
     </div>
   }
 
@@ -35,6 +58,29 @@
     @case ('ready') {
       @if (view(); as current) {
         @if (document(); as doc) {
+          @if (gestureError(); as message) {
+            <fold-callout variant="alert" announce data-gesture-error>{{ message }}</fold-callout>
+          }
+          @if (leaveWarned() && dirty()) {
+            <fold-callout variant="warning" announce data-leave-warning>
+              Des modifications ne sont pas enregistrées. Enregistrez-les, ou quittez à nouveau la
+              page pour les abandonner.
+            </fold-callout>
+          } @else if (dirty() && canWrite()) {
+            <fold-callout variant="neutral" data-unsaved>
+              Modifications non enregistrées : « Publier » met en service le brouillon enregistré.
+            </fold-callout>
+          }
+          @if (canWrite() && publicationIssues().length > 0) {
+            <fold-callout variant="warning" data-publication-issues>
+              Cet e-mail ne peut pas encore être publié :
+              <ul class="tp-issues">
+                @for (issue of publicationIssues(); track $index) {
+                  <li>{{ issue.message }}</li>
+                }
+              </ul>
+            </fold-callout>
+          }
           <div class="tp-toolbar">
             <fold-view-toggle
               size="sm"
@@ -58,6 +104,7 @@
             [locale]="locale()"
             [document]="doc"
           />
+          <app-mail-template-history [template]="current.template" [refresh]="historyRefresh()" />
         }
       }
     }

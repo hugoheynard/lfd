@@ -1,0 +1,37 @@
+<fold-page-section
+  title="Historique"
+  description="Les versions publiées de cet e-mail, de la plus récente à la plus ancienne."
+>
+  @switch (status()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l’historique…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="L’historique n’a pas pu être lu"
+        [subtitle]="error() ?? ''"
+      >
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (history(); as current) {
+        @if (current.retracted; as retracted) {
+          <p data-retracted>
+            Revenu au modèle d’origine le {{ when(retracted.at) }} par {{ retracted.staffId }}.
+          </p>
+        }
+        @if (nodes().length === 0) {
+          <fold-empty-state
+            title="Jamais publié"
+            subtitle="Cet e-mail part dans son arrangement d’origine."
+            icon="inbox"
+          />
+        } @else {
+          <fold-timeline ariaLabel="Versions publiées" data-versions [nodes]="nodes()" />
+        }
+      }
+    }
+  }
+</fold-page-section>

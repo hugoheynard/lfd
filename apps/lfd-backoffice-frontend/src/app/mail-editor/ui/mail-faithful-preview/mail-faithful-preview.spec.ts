@@ -85,4 +85,18 @@ describe('MailFaithfulPreview', () => {
     expect(empty?.getAttribute('tone')).toBe('alert');
     expect(element.querySelector('iframe')).toBeNull();
   });
+
+  it('passe en vue téléphone et en sombre sans redemander le rendu, cadre toujours sans drapeau', async () => {
+    const { fixture, element, spy, click } = await render(() => Promise.resolve(VIEW));
+    await click();
+    const preview = fixture.componentInstance;
+    preview.device.set('phone');
+    preview.scheme.set('dark');
+    fixture.detectChanges();
+    const frame = element.querySelector<HTMLIFrameElement>('iframe');
+    expect(frame?.classList.contains('fp-frame--phone')).toBe(true);
+    expect(frame?.style.colorScheme).toBe('dark');
+    expect(frame?.getAttribute('sandbox')).toBe('');
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 });
