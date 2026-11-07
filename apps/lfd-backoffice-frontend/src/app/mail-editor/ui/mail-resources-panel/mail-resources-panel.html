@@ -92,6 +92,12 @@
             >
               <span class="label">{{ data.label }}</span>
               <span class="hint">{{ data.description }}</span>
+              @if (data.condition) {
+                <span class="condition" data-condition [attr.title]="data.condition">
+                  <fold-badge variant="warning" [content]="conditionBadge" />
+                  <span class="hint">{{ data.condition }}</span>
+                </span>
+              }
             </li>
           }
         </ul>

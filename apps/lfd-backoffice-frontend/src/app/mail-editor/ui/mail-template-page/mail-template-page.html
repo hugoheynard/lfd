@@ -91,6 +91,15 @@
                 [(value)]="caseId"
               />
             }
+            @if (situationOptions().length > 0) {
+              <fold-listbox
+                size="sm"
+                label="Retrait / Livraison"
+                data-situations
+                [options]="situationOptions()"
+                [(value)]="situation"
+              />
+            }
             <fold-view-toggle
               size="sm"
               ariaLabel="Phrases de l’aperçu et de l’essai"

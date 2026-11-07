@@ -123,12 +123,15 @@
           >
             @for (block of document().blocks; track block.id) {
               @let html = fragmentOf(block);
+              @let condition = conditionOf(block);
+              @let absence = absenceOf(block, html);
               <li
                 cdkDrag
                 class="block"
                 tabindex="0"
                 [class.selected]="isSelected(block)"
                 [class.lit]="isLit(block)"
+                [class.absent]="absence !== null"
                 [attr.data-block]="block.id"
                 [attr.aria-label]="nameOf(block)"
                 [attr.aria-current]="isSelected(block) ? 'true' : null"
@@ -162,10 +165,20 @@
                 }
                 <div class="tools">
                   <span class="name">{{ nameOf(block) }}</span>
+                  @if (condition !== null) {
+                    <span class="name" data-condition-text>{{ condition }}</span>
+                  }
                 </div>
+                @if (condition !== null) {
+                  <span class="condition-chip" data-condition [attr.title]="condition">
+                    <fold-badge variant="warning" [content]="conditionBadge" />
+                  </span>
+                }
 
                 @if (html === null) {
                   <fold-loading size="sm" message="Rendu du bloc…" />
+                } @else if (absence !== null) {
+                  <p class="muted" data-absent>{{ absence }}</p>
                 } @else if (html === '') {
                   <p class="muted" data-nothing-shown>
                     @if (block.kind === 'image') {
@@ -226,10 +239,8 @@
                 @for (refusal of phraseRefusalsOf(html); track $index) {
                   <fold-callout variant="alert" data-phrase-refusal>{{ refusal }}</fold-callout>
                 }
-                @for (violation of violationsOf(block.id); track $index) {
-                  <fold-callout variant="alert" data-block-violation>{{
-                    violation.message
-                  }}</fold-callout>
+                @for (message of violationsOf(block); track $index) {
+                  <fold-callout variant="alert" data-block-violation>{{ message }}</fold-callout>
                 }
               </li>
             }

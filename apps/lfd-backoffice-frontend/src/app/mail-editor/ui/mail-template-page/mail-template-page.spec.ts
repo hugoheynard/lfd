@@ -567,4 +567,33 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     });
     expect(element.querySelector('[data-mail]')?.textContent).toContain('Rendu du serveur');
   });
+  it('sans situations, pas de sélecteur ; avec, « Retrait / Livraison » passe la situation au rendu', async () => {
+    const plain = await render({});
+    expect(plain.element.querySelector('[data-situations]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const blockPreviews = vi.fn((_template: string, payload: MailDocumentBlockPreviewPayload) =>
+      Promise.resolve({
+        template: TEMPLATE,
+        locale: payload.locale,
+        subject: '',
+        header: '',
+        footer: '',
+        blocks: [],
+      }),
+    );
+    const load = vi.fn(() =>
+      Promise.resolve({ ...view(0), situations: ['pickup', 'delivery'] as const }),
+    );
+    const { fixture, element } = await render({ load, blockPreviews });
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    expect(element.querySelector('[data-toolbar] [data-situations]')).not.toBeNull();
+    expect(blockPreviews.mock.calls.at(-1)?.[1]).not.toHaveProperty('situation');
+
+    fixture.componentInstance.situation.set('delivery');
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(blockPreviews.mock.calls.at(-1)?.[1]).toMatchObject({ situation: 'delivery' });
+  });
 });

@@ -99,7 +99,8 @@
   gap: var(--fold-space-xs);
 }
 
-.link-chip {
+.link-chip,
+.condition-chip {
   display: inline-flex;
   cursor: help;
 }
@@ -160,4 +161,9 @@
 .selected.frame:not(.block) {
   outline: 2px solid var(--fold-color-primary);
   border-radius: var(--fold-radius-sm);
+}
+
+// Un bloc que la situation de l'aperçu écarte : grisé, toujours déplaçable.
+.block.absent {
+  opacity: 0.6;
 }

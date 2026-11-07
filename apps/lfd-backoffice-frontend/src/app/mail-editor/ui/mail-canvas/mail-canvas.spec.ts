@@ -383,4 +383,103 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     expect(element.querySelector('[data-settings-panel]')).not.toBeNull();
     element.remove();
   });
+  describe('conditions d’affichage (§ 24)', () => {
+    const CONDITION = 'Seulement pour un retrait ; absent pour une livraison.';
+    const WITH_ITINERARY: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        { id: modelBlockId('summary'), kind: 'model', section: 'summary' },
+        { id: modelBlockId('itinerary'), kind: 'model', section: 'itinerary' },
+      ],
+    };
+    const CONDITIONED: MailEditorResources = {
+      ...RESOURCES,
+      dataBlocks: [
+        ...RESOURCES.dataBlocks,
+        { block: 'itinerary', label: 'Itinéraire', description: 'le point', condition: CONDITION },
+      ],
+    };
+
+    it('un bloc sous condition porte son badge et sa condition entière, sur le bloc et sa fiche', () => {
+      const { element, fixture } = render(WITH_ITINERARY, {
+        'model:summary': '<p>Lignes</p>',
+        'model:itinerary': '<p>Rue</p>',
+      });
+      fixture.componentRef.setInput('resources', CONDITIONED);
+      fixture.detectChanges();
+      const chip = element.querySelector('li[data-block="model:itinerary"] [data-condition]');
+      expect(chip?.textContent).toContain('Sous condition');
+      expect(chip?.getAttribute('title')).toBe(CONDITION);
+      expect(
+        element.querySelector('li[data-block="model:itinerary"] [data-condition-text]')
+          ?.textContent,
+      ).toContain(CONDITION);
+      expect(element.querySelector('li[data-block="model:summary"] [data-condition]')).toBeNull();
+      expect(
+        element.querySelector('[data-data-block="itinerary"] [data-condition]')?.textContent,
+      ).toContain(CONDITION);
+      element.remove();
+    });
+
+    it('un bloc absent dans la situation rendue reste là, grisé, et dit pourquoi', () => {
+      const { element, fixture, previews } = render(WITH_ITINERARY, {
+        'model:summary': '<p>Lignes</p>',
+        'model:itinerary': '',
+      });
+      fixture.componentRef.setInput('resources', CONDITIONED);
+      previews.view.set({
+        ...rendered({ 'model:summary': '<p>Lignes</p>', 'model:itinerary': '' }),
+        situation: 'delivery',
+      });
+      fixture.detectChanges();
+      const block = element.querySelector('li[data-block="model:itinerary"]');
+      expect(block?.classList).toContain('absent');
+      expect(block?.querySelector('[data-absent]')?.textContent).toContain(
+        'Absent pour une livraison',
+      );
+      expect(block?.querySelector('[data-handle]')).not.toBeNull();
+      expect(element.querySelector('li[data-block="model:summary"]')?.classList).not.toContain(
+        'absent',
+      );
+      element.remove();
+    });
+
+    it('sans situation, un fragment vide n’est pas une absence', () => {
+      const { element, fixture } = render(WITH_ITINERARY, {
+        'model:summary': '<p>Lignes</p>',
+        'model:itinerary': '',
+      });
+      fixture.componentRef.setInput('resources', CONDITIONED);
+      fixture.detectChanges();
+      expect(element.querySelector('[data-absent]')).toBeNull();
+      expect(element.querySelector('[data-nothing-shown]')).not.toBeNull();
+      element.remove();
+    });
+  });
+
+  /**
+   * Régression : `violationsOf` ne lisait que le niveau du dessus — le refus
+   * d'un bloc rangé dans une colonne ne s'affichait nulle part (2026-11-07).
+   */
+  it('le refus d’un bloc en colonne s’affiche sous sa mise en page, colonne et bloc nommés', () => {
+    const columns: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        {
+          id: 'cols',
+          kind: 'columns',
+          widths: [50, 50],
+          cells: [[], [{ id: 'btn', kind: 'button', label: { fr: 'Voir' }, href: 'http://x.fr' }]],
+        },
+      ],
+    };
+    const { element } = render(columns, { cols: '<table></table>' });
+    const refusal = element.querySelector('li[data-block="cols"] [data-block-violation]');
+    expect(refusal?.textContent).toContain('Colonne 2 · Bouton');
+    expect(refusal?.textContent).toContain('https://');
+    expect(element.querySelector('[data-document-violations]')?.textContent ?? '').not.toContain(
+      'https://',
+    );
+    element.remove();
+  });
 });

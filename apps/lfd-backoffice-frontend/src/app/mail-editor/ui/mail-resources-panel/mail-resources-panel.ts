@@ -1,7 +1,13 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { MailEditorResources, ModelSectionId } from '@lfd/mail-blocks';
-import { FoldButtonComponent, FoldCardComponent, FoldElementTitleComponent } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  FoldButtonComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
+} from 'fold-ng';
 
+import { CONDITION_BADGE } from '../../rules/mail-block-conditions';
 import { VARIABLE_DRAG_TYPE } from '../mail-block-fragment/mail-block-fragment';
 
 /**
@@ -19,13 +25,15 @@ import { VARIABLE_DRAG_TYPE } from '../mail-block-fragment/mail-block-fragment';
 @Component({
   selector: 'app-mail-resources-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCardComponent, FoldElementTitleComponent],
+  imports: [FoldBadgeComponent, FoldButtonComponent, FoldCardComponent, FoldElementTitleComponent],
   templateUrl: './mail-resources-panel.html',
   styleUrl: './mail-resources-panel.scss',
 })
 export class MailResourcesPanel {
   readonly resources = input.required<MailEditorResources>();
   readonly canWrite = input(false);
+  /** Le badge d'un bloc de données qui ne s'affiche pas toujours (§ 24). */
+  protected readonly conditionBadge = CONDITION_BADGE;
   /** Les valeurs qu'au moins une phrase modifiable de l'e-mail reçoit. */
   readonly placeable = input<ReadonlySet<string>>(new Set());
   /** Les valeurs qu'une phrase modifiable exige. */

@@ -57,6 +57,11 @@ import {
   withText,
 } from '../../rules/mail-document-edits';
 import { insertChipAt, variableChip } from '../../rules/mail-editable-text';
+import {
+  absenceLabel,
+  CONDITION_BADGE,
+  conditionsByBlock,
+} from '../../rules/mail-block-conditions';
 import { freeBlockFallback, phrasePathsIn } from '../../rules/mail-fragments';
 import { samePlace } from '../../rules/mail-phrase-places';
 import {
@@ -260,8 +265,50 @@ export class MailCanvas {
     );
   });
 
-  protected violationsOf(blockId: string): readonly MailDocumentViolation[] {
-    return this.violations().filter((violation) => violation.blockId === blockId);
+  protected readonly conditionBadge = CONDITION_BADGE;
+  /** Les conditions d'affichage des blocs de données (§ 24), par bloc du modèle. */
+  private readonly conditions = computed(() => conditionsByBlock(this.resources()));
+
+  /** La condition d'affichage d'un bloc du modèle ; `null` s'il s'affiche toujours. */
+  protected conditionOf(block: MailBlock): string | null {
+    return block.kind === 'model' ? (this.conditions().get(block.section) ?? null) : null;
+  }
+
+  /**
+   * « Absent pour une livraison » : un bloc sous condition que la situation
+   * rendue écarte (fragment vide) ; `null` sinon. Le bloc reste à l'écran,
+   * grisé, pour qu'on puisse encore le déplacer.
+   */
+  protected absenceOf(block: MailBlock, html: string | null): string | null {
+    const situation = this.previews.view()?.situation ?? null;
+    return situation !== null && html === '' && this.conditionOf(block) !== null
+      ? absenceLabel(situation)
+      : null;
+  }
+
+  /**
+   * Les refus d'un bloc ; pour une mise en page, aussi ceux des blocs rangés
+   * dans ses colonnes, chacun nommé par sa colonne et son bloc — sans quoi ils
+   * ne s'affichaient nulle part.
+   */
+  protected violationsOf(block: MailBlock): readonly string[] {
+    const own = this.violations()
+      .filter((violation) => violation.blockId === block.id)
+      .map((violation) => violation.message);
+    if (block.kind !== 'columns') {
+      return own;
+    }
+    const inner = block.cells.flatMap((cell, column) =>
+      cell.flatMap((cellBlock) =>
+        this.violations()
+          .filter((violation) => violation.blockId === cellBlock.id)
+          .map(
+            (violation) =>
+              `Colonne ${column + 1} · ${this.titleOf(cellBlock)} : ${violation.message}`,
+          ),
+      ),
+    );
+    return [...own, ...inner];
   }
 
   /** Les refus du serveur sur les phrases que ce fragment montre, dans la langue rendue. */

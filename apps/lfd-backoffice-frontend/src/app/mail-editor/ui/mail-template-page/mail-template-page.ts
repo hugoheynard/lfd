@@ -25,6 +25,7 @@ import {
   type MailEditorPhraseView,
   type MailEditorView,
   type MailLocale,
+  type MailPreviewSituation,
 } from '@lfd/mail-blocks';
 import {
   FoldBackLinkComponent,
@@ -60,6 +61,7 @@ import {
   placeTitle,
   unplacedPhrases,
 } from '../../rules/mail-phrase-places';
+import { SITUATION_LABELS } from '../../rules/mail-block-conditions';
 import { EMPTY_MAIL_RESOURCES } from '../../rules/mail-resources';
 import {
   BLOCK_PREVIEW_DEBOUNCE_MS,
@@ -251,6 +253,20 @@ export class MailTemplatePage implements HasPendingChanges {
   protected readonly schemeOptions = SCHEME_OPTIONS;
   /** Le cas affiché (`MailEditorView.cases`) : l'aperçu fidèle et l'essai le rendent. */
   readonly caseId = signal<string | null>(null);
+  /**
+   * La situation de l'aperçu (§ 24) : `example` rend le cas tel quel ; sinon
+   * le canevas le rend en retrait ou en livraison, et grise ce qui en est absent.
+   */
+  readonly situation = signal<MailPreviewSituation | 'example'>('example');
+  protected readonly situationOptions = computed(() => {
+    const situations = this.view()?.situations ?? [];
+    return situations.length === 0
+      ? []
+      : [
+          { value: 'example' as const, label: 'Tel quel' },
+          ...situations.map((value) => ({ value, label: SITUATION_LABELS[value] })),
+        ];
+  });
   /** Le bloc du modèle ou le cadre dont la colonne de droite montre les phrases. */
   readonly focus = signal<MailEditorPhrasePlace | null>(null);
   /** Les phrases que l'aperçu fidèle et l'essai rendent (S5e). */
@@ -442,11 +458,13 @@ export class MailTemplatePage implements HasPendingChanges {
       return null;
     }
     const caseId = this.caseId();
+    const situation = this.situation();
     return {
       document,
       locale: this.locale(),
       source: 'draft',
       ...(caseId === null ? {} : { caseId }),
+      ...(situation === 'example' ? {} : { situation }),
     };
   });
 
@@ -771,6 +789,10 @@ export class MailTemplatePage implements HasPendingChanges {
     this.view.set(view);
     this.document.set(view.document);
     this.phrases.use(view.template, view.phrases, view.orphans);
+    const situation = this.situation();
+    if (situation !== 'example' && !(view.situations ?? []).includes(situation)) {
+      this.situation.set('example');
+    }
     if (!view.cases.some((candidate) => candidate.id === this.caseId())) {
       this.caseId.set(view.cases[0]?.id ?? null);
     }

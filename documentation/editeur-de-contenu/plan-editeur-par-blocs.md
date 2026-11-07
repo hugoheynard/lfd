@@ -2031,6 +2031,14 @@ readonly MailPreviewSituation[]` — toujours servi, `["pickup", "delivery"]`
 - **`situations` et `situation` sont facultatifs dans le type** (toujours
   servis) : les rendre obligatoires aurait cassé les doublures du
   back-office, hors de ce lot.
+- **L'écran (2026-11-07)** : le badge dit « Sous condition » sans résumé —
+  la condition est une phrase libre, en tirer un mot serait deviner ; la
+  phrase entière l'accompagne (survol, focus du bloc, fiche des ressources).
+  Le sélecteur « Retrait / Livraison » propose aussi « Tel quel » (le défaut,
+  sans `situation`). Un bloc est grisé quand le rendu porte une situation, que
+  sa fiche a une condition et que son fragment est vide. Au passage, les
+  refus d'un bloc en colonne s'affichent sous sa mise en page (« Colonne 2 ·
+  Bouton : … ») : `violationsOf` ne lisait que le niveau du dessus.
 
 ## 25. Les espaces et leurs chartes (Hugo, 2026-11-07) — plan, à bâtir
 
