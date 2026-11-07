@@ -1,3 +1,4 @@
+import type { ImageFocal, ImageFormat } from "./image-framing.js";
 import type { ColumnWidthStep } from "./column-widths.js";
 import type { MailCharter } from "./mail-charter.js";
 import type { Localized, MailLocale } from "./mail-locales.js";
@@ -71,6 +72,10 @@ export interface DividerBlock {
  * `decorative` déclare une image sans information (RGAA 1.2) : elle se rend
  * avec un `alt` vide, voulu, et ne porte pas de lien — un lien sans nom
  * accessible ne se lit pas.
+ *
+ * `format` et `focal` (« Format et point focal », § 19) : la publication
+ * recadre la copie au format autour du point focal ; absent ou `original`,
+ * l'image est copiée telle quelle.
  */
 export interface ImageBlock {
   readonly id: string;
@@ -79,6 +84,16 @@ export interface ImageBlock {
   readonly alt: Localized<string>;
   readonly href?: string;
   readonly decorative?: boolean;
+  readonly format?: ImageFormat;
+  readonly focal?: ImageFocal;
+  /**
+   * L'adresse de la copie que la publication a rangée (recadrée s'il y a un
+   * format), posée seulement dans une version publiée. `src` reste TOUJOURS
+   * la source : changer le cadrage puis republier recopie depuis elle.
+   * L'envoi lit `copySrc ?? src` — une version publiée avant ce champ
+   * portait la copie dans `src`, et s'envoie comme avant.
+   */
+  readonly copySrc?: string;
 }
 
 /** Ce qu'une colonne peut porter : un bloc libre, jamais des colonnes. */

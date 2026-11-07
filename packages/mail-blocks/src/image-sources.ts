@@ -1,3 +1,4 @@
+import { imageCopyKey } from "./image-framing.js";
 import type { FreeBlock, ImageBlock, MailBlock, MailDocument } from "./mail-document.js";
 
 /** Les images d'un document, hors colonnes et dans les colonnes, dans l'ordre. */
@@ -13,7 +14,20 @@ export function imageBlocksOf(document: MailDocument): readonly ImageBlock[] {
 }
 
 function rewriteFree(block: FreeBlock, sources: ReadonlyMap<string, string>): FreeBlock {
-  return block.kind === "image" ? { ...block, src: sources.get(block.src) ?? block.src } : block;
+  if (block.kind !== "image") {
+    return block;
+  }
+  const copy = sources.get(imageCopyKey(block));
+  return copy === undefined ? block : { ...block, copySrc: copy };
+}
+
+/** Les copies d'un document publié : clé de copie → adresse de la copie. */
+export function imageCopiesOf(document: MailDocument): ReadonlyMap<string, string> {
+  return new Map(
+    imageBlocksOf(document).flatMap((image): readonly (readonly [string, string])[] =>
+      image.copySrc === undefined ? [] : [[imageCopyKey(image), image.copySrc]],
+    ),
+  );
 }
 
 function rewrite(block: MailBlock, sources: ReadonlyMap<string, string>): MailBlock {
@@ -27,8 +41,9 @@ function rewrite(block: MailBlock, sources: ReadonlyMap<string, string>): MailBl
 }
 
 /**
- * Le document où chaque adresse d'image présente dans `sources` est remplacée
- * par celle qui lui correspond — à la publication, l'adresse de sa copie
+ * Le document où chaque image dont la clé de copie (`imageCopyKey` : adresse,
+ * et cadrage s'il y en a un) est dans `sources` reçoit en `copySrc` l'adresse
+ * qui lui correspond — `src` garde la source — à la publication, l'adresse de sa copie
  * (plan `plan-editeur-par-blocs.md`, § 19). Les autres blocs ne bougent pas.
  */
 export function withImageSources(

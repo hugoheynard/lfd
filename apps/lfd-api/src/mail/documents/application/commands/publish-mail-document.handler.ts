@@ -66,14 +66,17 @@ export class PublishMailDocumentHandler implements ICommandHandler<
       throw new UnknownMailTemplateError(command.template);
     }
     const stamp = { at: this.clock.now(), staffId: command.staffUserId };
-    const draft = (await this.documents.load(command.template)).publishableDraft(
-      entry.declaration,
-      command.expectedRevision,
-    );
+    const current = await this.documents.load(command.template);
+    const draft = current.publishableDraft(entry.declaration, command.expectedRevision);
     const copies =
       draft === null
         ? new Map<string, string>()
-        : await copyDocumentImages(command.template, draft, this.images);
+        : await copyDocumentImages(
+            command.template,
+            draft,
+            this.images,
+            current.publishedImageCopies,
+          );
     const version = await this.uow.run(async () => {
       const document = await this.documents.load(command.template);
       const previous = document.publishedVersion;

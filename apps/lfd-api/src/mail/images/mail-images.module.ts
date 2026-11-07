@@ -8,9 +8,11 @@ import {
 } from "./application/mail-image-admission.js";
 import { MailImageCopier } from "./application/mail-image-copier.service.js";
 import { MailImageDownloader } from "./domain/ports/mail-image.downloader.js";
+import { MailImageReframer } from "./domain/ports/mail-image.reframer.js";
 import { MailImageStore } from "./domain/ports/mail-image.store.js";
 import { FetchMailImageDownloader } from "./infrastructure/fetch-mail-image.downloader.js";
 import { R2MailImageStore } from "./infrastructure/r2-mail-image.store.js";
+import { SharpMailImageReframer } from "./infrastructure/sharp-mail-image.reframer.js";
 
 /**
  * **Les images des modèles d'e-mail** (plan du service d'e-mails, §§ 23–24) :
@@ -31,6 +33,7 @@ import { R2MailImageStore } from "./infrastructure/r2-mail-image.store.js";
     },
     { provide: MailImageDownloader, useClass: FetchMailImageDownloader },
     { provide: MailImageStore, useClass: R2MailImageStore },
+    { provide: MailImageReframer, useClass: SharpMailImageReframer },
     MailImageCopier,
   ],
   exports: [MailImageCopier],

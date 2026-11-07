@@ -77,7 +77,20 @@ export {
   type ModelSectionId,
 } from "./model-sections.js";
 export { modelBlockId, startingMailDocument } from "./starting-document.js";
-export { imageBlocksOf, withImageSources } from "./image-sources.js";
+export { imageBlocksOf, imageCopiesOf, withImageSources } from "./image-sources.js";
+export {
+  DEFAULT_IMAGE_FOCAL,
+  IMAGE_FORMAT_RATIOS,
+  IMAGE_FORMATS,
+  framingOf,
+  imageCopyKey,
+  isImageFocal,
+  isImageFormat,
+  type ImageCropFormat,
+  type ImageFocal,
+  type ImageFormat,
+  type ImageFraming,
+} from "./image-framing.js";
 export { isHttpsUrl, isImageSourceUrl } from "./urls.js";
 export {
   validateMailDocument,

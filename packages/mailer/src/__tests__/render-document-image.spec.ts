@@ -2,6 +2,7 @@ import type { ImageBlock, MailBlock, MailDocument } from "@lfd/mail-blocks";
 
 import type { LayoutInput } from "../html.js";
 import { IMAGE_LINK_STYLE, IMAGE_STYLE } from "../layout-styles.js";
+import { renderFreeBlock } from "../document-blocks.js";
 import { renderMailDocument, type MailDocumentRenderOptions } from "../render-document.js";
 
 /** Le bloc image (plan `plan-editeur-par-blocs.md`, § 19, S5d). */
@@ -59,5 +60,50 @@ describe("le bloc image", () => {
   it("se rend dans une colonne", () => {
     const html = rendered({ id: "c", kind: "columns", widths: [50, 50], cells: [[IMAGE], []] });
     expect(html).toMatch(/<td class="lfd-col"[^>]*><table role="presentation"[^>]*><tr><td><img/);
+  });
+});
+
+describe("le cadrage d'une image (§ 19, « Format et point focal »)", () => {
+  const FRAMED: ImageBlock = { ...IMAGE, format: "3:2", focal: { x: 0.2, y: 0.8 } };
+
+  it("un e-mail envoyé n'en porte rien : l'image publiée est déjà au format", () => {
+    expect(rendered(FRAMED)).toContain(
+      `<img src="${SRC}" alt="Un pain « maison »" width="100%" style="${IMAGE_STYLE}" />`,
+    );
+    expect(rendered(FRAMED)).not.toContain("data-image");
+  });
+
+  it("l'aperçu de l'éditeur le signale pour que l'écran recadre la source", () => {
+    expect(renderFreeBlock(FRAMED, "fr", true)).toContain(
+      'width="100%" data-image-format="3:2" data-image-focal-x="0.2" data-image-focal-y="0.8" style=',
+    );
+  });
+
+  it("l'aperçu d'un format sans point focal signale le centre ; l'original, rien", () => {
+    expect(renderFreeBlock({ ...IMAGE, format: "1:1" }, "fr", true)).toContain(
+      'data-image-format="1:1" data-image-focal-x="0.5" data-image-focal-y="0.5"',
+    );
+    expect(
+      renderFreeBlock({ ...IMAGE, format: "original", focal: { x: 0, y: 0 } }, "fr", true),
+    ).not.toContain("data-image");
+  });
+});
+
+describe("la copie publiée et la source (copySrc)", () => {
+  const COPY = "https://mail.lfc.test/templates/carree.png";
+  const SOURCE = "https://media.lfc.test/products/vitrine.png";
+  const PUBLISHED: ImageBlock = { ...IMAGE, src: SOURCE, format: "1:1", copySrc: COPY };
+
+  it("l'envoi lit la copie, jamais la source", () => {
+    expect(rendered(PUBLISHED)).toContain(`<img src="${COPY}"`);
+    expect(rendered(PUBLISHED)).not.toContain(SOURCE);
+  });
+
+  it("l'aperçu de l'éditeur lit la source, que l'écran recadre", () => {
+    expect(renderFreeBlock(PUBLISHED, "fr", true)).toContain(`<img src="${SOURCE}"`);
+  });
+
+  it("une version publiée avant copySrc (la copie dans src) s'envoie comme avant", () => {
+    expect(rendered(IMAGE)).toContain(`<img src="${SRC}"`);
   });
 });

@@ -1,4 +1,5 @@
 import type {
+  ImageFraming,
   MailDocument,
   MailEditorResources,
   MailLocale,
@@ -179,24 +180,27 @@ export function entryOf(template: string, declaration: MailTemplateDeclaration):
 
 /**
  * La copie des images, doublée : chaque adresse rend une copie sous
- * `COPY_BASE`, une adresse de `refused` rejette l'erreur donnée. Les appels
- * sont gardés, dans l'ordre.
+ * `COPY_BASE` (suffixée du format quand elle est recadrée), une adresse de
+ * `refused` rejette l'erreur donnée. Les appels sont gardés, dans l'ordre.
  */
 export class RecordingDocumentImages extends MailDocumentImages {
   static readonly COPY_BASE = "https://mail.lfc.test/templates/";
   readonly calls: string[] = [];
+  readonly framings: (ImageFraming | null)[] = [];
 
   constructor(private readonly refused: ReadonlyMap<string, Error> = new Map()) {
     super();
   }
 
-  copy(sourceUrl: string): Promise<string> {
+  copy(sourceUrl: string, framing: ImageFraming | null): Promise<string> {
     this.calls.push(sourceUrl);
+    this.framings.push(framing);
     const refusal = this.refused.get(sourceUrl);
     if (refusal !== undefined) {
       return Promise.reject(refusal);
     }
     const name = sourceUrl.split("/").at(-1) ?? "image";
-    return Promise.resolve(`${RecordingDocumentImages.COPY_BASE}${name}`);
+    const suffix = framing === null ? "" : `-${framing.format.replace(":", "x")}`;
+    return Promise.resolve(`${RecordingDocumentImages.COPY_BASE}${name}${suffix}`);
   }
 }

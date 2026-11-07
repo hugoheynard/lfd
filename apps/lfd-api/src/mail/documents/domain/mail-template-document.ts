@@ -1,5 +1,7 @@
 import {
   imageBlocksOf,
+  imageCopiesOf,
+  imageCopyKey,
   validateMailDocument,
   validateMailDocumentForPublication,
   withImageSources,
@@ -163,8 +165,9 @@ export class MailTemplateDocument {
 
   /**
    * Publie le brouillon : il devient la version suivante, gardée en ajout
-   * seul, où chaque image pointe vers sa copie (`imageCopies` : adresse
-   * d'origine → adresse de la copie). Rend `null` sans brouillon — les
+   * seul, où chaque image pointe vers sa copie (`imageCopies` : clé de copie
+   * `imageCopyKey` — l'adresse d'origine, et le cadrage s'il y en a un →
+   * adresse de la copie). Rend `null` sans brouillon — les
    * phrases de l'e-mail peuvent se publier seules.
    *
    * @throws {MailDocumentChangedError} la révision lue est dépassée.
@@ -182,7 +185,7 @@ export class MailTemplateDocument {
     if (draft === null) {
       return null;
     }
-    if (imageBlocksOf(draft).some((image) => !imageCopies.has(image.src))) {
+    if (imageBlocksOf(draft).some((image) => !imageCopies.has(imageCopyKey(image)))) {
       throw new MailDocumentImageNotCopiedError(this.state.template);
     }
     const published = {
@@ -202,6 +205,14 @@ export class MailTemplateDocument {
   }
 
   /** La version publiée qui part aujourd'hui ; `null` : le document de départ. */
+  /**
+   * Les copies de la version publiée (clé `imageCopyKey` → adresse) : une
+   * image republiée sans changer de source ni de cadrage ne se recopie pas.
+   */
+  get publishedImageCopies(): ReadonlyMap<string, string> {
+    return this.state.published === null ? new Map() : imageCopiesOf(this.state.published.document);
+  }
+
   get publishedVersion(): number | null {
     return this.state.published?.version ?? null;
   }

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { ImageFraming } from "@lfd/mail-blocks";
 
 import { MailImageCopier } from "../../images/application/mail-image-copier.service.js";
 import { MailDocumentImages } from "../domain/ports/mail-document-images.js";
@@ -14,7 +15,7 @@ export class CopierMailDocumentImages extends MailDocumentImages {
     super();
   }
 
-  async copy(sourceUrl: string): Promise<string> {
-    return (await this.copier.copy(sourceUrl)).url;
+  async copy(sourceUrl: string, framing: ImageFraming | null): Promise<string> {
+    return (await this.copier.copy(sourceUrl, framing)).url;
   }
 }

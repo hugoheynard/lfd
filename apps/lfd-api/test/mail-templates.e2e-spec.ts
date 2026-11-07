@@ -447,7 +447,7 @@ describe("le bloc image (S5d)", () => {
     const published = await open();
     expect(published.source).toBe("published");
     expect(published.document.blocks).toContainEqual(
-      expect.objectContaining({ id: "vitrine", src: copy }),
+      expect.objectContaining({ id: "vitrine", src: source, copySrc: copy }),
     );
     const sent = await sendPasswordReset();
     expect(sent?.html).toContain(`src="${copy}"`);

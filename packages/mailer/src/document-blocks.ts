@@ -1,4 +1,11 @@
-import type { ColumnsBlock, FreeBlock, ImageBlock, Localized, MailLocale } from "@lfd/mail-blocks";
+import {
+  framingOf,
+  type ColumnsBlock,
+  type FreeBlock,
+  type ImageBlock,
+  type Localized,
+  type MailLocale,
+} from "@lfd/mail-blocks";
 
 import { DOCUMENT_CLASSES } from "./document-theme.js";
 import { htmlEscape } from "./escape.js";
@@ -77,17 +84,36 @@ function divider(styles: MailStyles): string {
 }
 
 /**
+ * Le cadrage d'une image, dans l'aperçu de l'éditeur seulement (S5f,
+ * `marked`) : un brouillon montre l'image SOURCE, et c'est l'écran qui la
+ * recadre en CSS d'après `data-image-format` et `data-image-focal-x|y`
+ * (fractions de 0 à 1). Rien sans cadrage, et jamais dans un e-mail envoyé.
+ */
+function framingAttributes(block: ImageBlock): string {
+  const framing = framingOf(block);
+  return framing === null
+    ? ""
+    : ` data-image-format="${framing.format}" data-image-focal-x="${framing.focal.x}" data-image-focal-y="${framing.focal.y}"`;
+}
+
+/**
  * Une image, en tableau pour qu'Outlook garde sa largeur. Une image
  * décorative rend un `alt` vide, voulu ; une autre sans texte dans la langue
  * de l'envoi ne rend rien, comme un texte manquant. Sans adresse (pas encore
  * choisie) ou sur une adresse hostile : rien.
+ *
+ * L'image publiée est déjà au format (la publication l'a recadrée, § 19) :
+ * l'e-mail ne fait rien de plus que la largeur.
  */
-function image(block: ImageBlock, locale: MailLocale): string {
+function image(block: ImageBlock, locale: MailLocale, marked: boolean): string {
   const alt = block.decorative === true ? "" : textIn(block.alt, locale);
-  if (alt === null || block.src === "" || !isRenderableUrl(block.src)) {
+  // L'aperçu de l'éditeur montre la SOURCE (recadrée en CSS par l'écran) ;
+  // l'envoi, la copie publiée — ou `src` pour une version d'avant `copySrc`.
+  const src = marked ? block.src : (block.copySrc ?? block.src);
+  if (alt === null || src === "" || !isRenderableUrl(src)) {
     return "";
   }
-  const img = `<img src="${htmlEscape(block.src)}" alt="${htmlEscape(alt)}" width="100%" style="${IMAGE_STYLE}" />`;
+  const img = `<img src="${htmlEscape(src)}" alt="${htmlEscape(alt)}" width="100%"${marked ? framingAttributes(block) : ""} style="${IMAGE_STYLE}" />`;
   const linked =
     block.href !== undefined && block.decorative !== true && isRenderableUrl(block.href)
       ? `<a href="${htmlEscape(block.href)}" style="${IMAGE_LINK_STYLE}">${img}</a>`
@@ -111,7 +137,7 @@ export function renderFreeBlock(
     return divider(styles);
   }
   if (block.kind === "image") {
-    return image(block, locale);
+    return image(block, locale, marked);
   }
   const text = textIn(block.kind === "button" ? block.label : block.text, locale);
   if (text === null) {

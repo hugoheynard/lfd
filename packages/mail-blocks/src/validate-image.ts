@@ -1,13 +1,52 @@
 import type { ImageBlock } from "./mail-document.js";
 import { violation, type MailDocumentViolation } from "./mail-document-violation.js";
+import { isImageFocal, isImageFormat } from "./image-framing.js";
 import { isHttpsUrl, isImageSourceUrl } from "./urls.js";
 
 /**
- * Les règles de forme d'une image, à chaque enregistrement : une adresse
+ * Les règles de forme d'une image, à chaque enregistrement : un format connu
+ * et un point focal dans l'image (§ 19, « Format et point focal »), une adresse
  * admise (ou vide, l'image n'étant pas encore choisie), un lien en
  * `https://` s'il existe, et pas de lien sur une image décorative.
  */
 export function imageViolations(block: ImageBlock): readonly MailDocumentViolation[] {
+  return [...framingViolations(block), ...sourceAndLinkViolations(block)];
+}
+
+/** Un format connu, et un point focal dans l'image. */
+function framingViolations(block: ImageBlock): readonly MailDocumentViolation[] {
+  const violations: MailDocumentViolation[] = [];
+  if (block.format !== undefined && !isImageFormat(block.format)) {
+    violations.push(
+      violation(
+        "image-format-invalid",
+        block.id,
+        `Le format « ${String(block.format)} » n'existe pas : choisissez Original, 3:2, 2:1 ou 1:1.`,
+      ),
+    );
+  }
+  if (block.focal !== undefined && !isImageFocal(block.focal)) {
+    violations.push(
+      violation(
+        "image-focal-invalid",
+        block.id,
+        "Le point focal de l'image est en dehors de l'image : posez-le de nouveau sur l'image.",
+      ),
+    );
+  }
+  return violations;
+}
+
+function sourceAndLinkViolations(block: ImageBlock): readonly MailDocumentViolation[] {
+  if (block.copySrc !== undefined && !isImageSourceUrl(block.copySrc)) {
+    return [
+      violation(
+        "image-src-invalid",
+        block.id,
+        `La copie publiée de l'image a pour adresse « ${block.copySrc} », qui n'est pas en https:// : choisissez l'image de nouveau dans la médiathèque, puis republiez.`,
+      ),
+    ];
+  }
   if (block.src !== "" && !isImageSourceUrl(block.src)) {
     return [
       violation(

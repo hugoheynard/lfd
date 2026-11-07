@@ -47,6 +47,22 @@ export class MailImageNotAnImageError extends DomainError {
   }
 }
 
+/**
+ * Les octets ont la signature d'une image, mais elle ne se décode pas
+ * (tronquée, abîmée) : on ne peut pas la recadrer (§ 19, « Format et point
+ * focal »).
+ */
+export class MailImageUnreadableError extends DomainError {
+  constructor(cause?: unknown) {
+    super(
+      "MAIL_IMAGE_UNREADABLE",
+      "L'image téléchargée est abîmée et ne se lit pas : elle n'a pas pu être recadrée, rien n'a été copié. " +
+        "Choisir une autre image dans la médiathèque, ou la remplacer par une version saine.",
+      cause,
+    );
+  }
+}
+
 /** Le téléchargement a échoué côté réseau ou côté source : un nouvel essai peut réussir. */
 export class MailImageDownloadFailedError extends TechnicalError {
   constructor(origin: string, reason: string, cause?: unknown) {

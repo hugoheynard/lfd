@@ -1,8 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
+import type { ImageFraming } from "@lfd/mail-blocks";
 import { sniffContentType } from "@lfd/storage";
 
 import { MailImageNotAnImageError } from "../domain/errors/mail-image.errors.js";
 import { MailImageDownloader } from "../domain/ports/mail-image.downloader.js";
+import { MailImageReframer } from "../domain/ports/mail-image.reframer.js";
 import { type MailImageCopy, MailImageStore } from "../domain/ports/mail-image.store.js";
 import {
   MAIL_IMAGE_DOWNLOAD_TIMEOUT_MS,
@@ -30,17 +32,24 @@ export class MailImageCopier {
     @Inject(MAIL_IMAGE_ADMISSION) private readonly admission: MailImageAdmission,
     private readonly downloader: MailImageDownloader,
     private readonly store: MailImageStore,
+    private readonly reframer: MailImageReframer,
   ) {}
 
   /**
    * Une adresse déjà sous l'adresse publique du bloc est une copie : elle est
    * rendue telle quelle, sans réseau — republier un document ne recopie rien.
    *
+   * `framing` (§ 19, « Format et point focal ») : la copie est recadrée au
+   * format autour du point focal, 1200 px de large au plus, réencodée dans le
+   * même type. Le stockage étant adressé par le contenu, deux cadrages font
+   * deux copies. `null` (format `original`) : les octets d'origine, tels quels.
+   *
    * @throws {MailImageOriginNotAdmittedError} origine hors liste, ou pas `https`.
    * @throws {MailImageTooLargeError} au-delà de {@link MAIL_IMAGE_MAX_BYTES}.
    * @throws {MailImageNotAnImageError} les octets ne sont pas une image admise.
+   * @throws {MailImageUnreadableError} l'image à recadrer ne se décode pas.
    */
-  async copy(sourceUrl: string): Promise<MailImageCopy> {
+  async copy(sourceUrl: string, framing: ImageFraming | null = null): Promise<MailImageCopy> {
     const own = this.admission.publicBaseUrl;
     if (own !== null && sourceUrl.startsWith(`${own}/`)) {
       return { url: sourceUrl };
@@ -59,6 +68,8 @@ export class MailImageCopier {
     if (contentType === null || !MAIL_IMAGE_TYPES.includes(contentType)) {
       throw new MailImageNotAnImageError(MAIL_IMAGE_TYPES);
     }
-    return this.store.put(bytes, contentType);
+    const copied =
+      framing === null ? bytes : await this.reframer.reframe(bytes, contentType, framing);
+    return this.store.put(copied, contentType);
   }
 }

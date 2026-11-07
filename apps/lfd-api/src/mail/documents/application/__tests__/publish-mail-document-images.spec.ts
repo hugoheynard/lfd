@@ -1,7 +1,9 @@
 import {
   imageBlocksOf,
   startingMailDocument,
+  imageCopyKey,
   type ImageBlock,
+  type ImageFraming,
   type MailDocument,
   type MailTemplateDeclaration,
 } from "@lfd/mail-blocks";
@@ -84,9 +86,9 @@ class WatchedImages extends RecordingDocumentImages {
     super(refused);
   }
 
-  override copy(sourceUrl: string): Promise<string> {
+  override copy(sourceUrl: string, framing: ImageFraming | null): Promise<string> {
     this.insideAtCopy.push(this.uow.inside);
-    return super.copy(sourceUrl);
+    return super.copy(sourceUrl, framing);
   }
 }
 
@@ -131,7 +133,7 @@ describe("publier un document qui porte des images", () => {
 
     expect(w.images.calls).toEqual([SRC, OTHER]);
     const published = publishedOf(w);
-    expect(published === null ? [] : imageBlocksOf(published).map((i) => i.src)).toEqual([
+    expect(published === null ? [] : imageBlocksOf(published).map((i) => i.copySrc)).toEqual([
       COPY,
       COPY,
       `${RecordingDocumentImages.COPY_BASE}brioche.png`,
@@ -183,7 +185,50 @@ describe("publier un document qui porte des images", () => {
   });
 });
 
+describe("publier une image cadrée (§ 19, « Format et point focal »)", () => {
+  it("deux formats de la même image font deux copies, chacune à son bloc, cadrage gardé", async () => {
+    const w = world();
+    const square: ImageBlock = { ...image("i2", SRC), format: "1:1", focal: { x: 0.2, y: 0.4 } };
+    const original: ImageBlock = { ...image("i3", SRC), format: "original" };
+    await w.draft(documentWith(image("i1", SRC), square, original));
+
+    await w.publish();
+
+    expect(w.images.calls).toEqual([SRC, SRC]);
+    expect(w.images.framings).toEqual([null, { format: "1:1", focal: { x: 0.2, y: 0.4 } }]);
+    const published = publishedOf(w);
+    expect(published === null ? [] : imageBlocksOf(published)).toEqual([
+      { ...image("i1", SRC), copySrc: COPY },
+      { ...square, copySrc: `${COPY}-1x1` },
+      { ...original, copySrc: COPY },
+    ]);
+  });
+
+  it("un format sans point focal se recadre au centre", async () => {
+    const w = world();
+    await w.draft(documentWith({ ...image("i1", SRC), format: "2:1" }));
+
+    await w.publish();
+
+    expect(w.images.framings).toEqual([{ format: "2:1", focal: { x: 0.5, y: 0.5 } }]);
+  });
+});
+
 describe("MailTemplateDocument.publish — l'invariant des copies", () => {
+  it("refuse une image cadrée dont seule la version d'origine est copiée", () => {
+    const document = MailTemplateDocument.untouched(TEMPLATE);
+    const stamp = { at: new Date(0), staffId: STAFF };
+    const square: ImageBlock = { ...image("i1", SRC), format: "1:1" };
+    document.saveDraft(documentWith(square), DECLARATION, 0, stamp);
+
+    expect(() => document.publish(DECLARATION, 1, stamp, new Map([[SRC, COPY]]))).toThrow(
+      MailDocumentImageNotCopiedError,
+    );
+    expect(
+      document.publish(DECLARATION, 1, stamp, new Map([[imageCopyKey(square), COPY]]))?.document,
+    ).toEqual(documentWith({ ...square, copySrc: COPY }));
+  });
+
   it("refuse de publier une image sans sa copie", () => {
     const document = MailTemplateDocument.untouched(TEMPLATE);
     const stamp = { at: new Date(0), staffId: STAFF };
@@ -193,7 +238,7 @@ describe("MailTemplateDocument.publish — l'invariant des copies", () => {
       MailDocumentImageNotCopiedError,
     );
     expect(document.publish(DECLARATION, 1, stamp, new Map([[SRC, COPY]]))?.document).toEqual(
-      documentWith(image("i1", COPY)),
+      documentWith({ ...image("i1", SRC), copySrc: COPY }),
     );
   });
 });

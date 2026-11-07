@@ -856,6 +856,85 @@ sous le bloc ; les deux erreurs de publication s'affichent par
 - Une image pas encore choisie n'a pas de vignette ; le refus
   `image-src-missing` le dit à la publication, rien n'est inventé avant.
 
+### Format et point focal — bâti le 2026-11-07 — écarts
+
+Hugo, 2026-11-07 : les messageries ne recadrent pas de façon fiable, donc
+**le serveur recadre à la publication**.
+
+**Ce qui existe.**
+
+- **Contrat** (`packages/mail-blocks/src/image-framing.ts`) :
+  `ImageBlock.format?: "original" | "3:2" | "2:1" | "1:1"` et
+  `focal?: { x, y }` (fractions de 0 à 1, le centre par défaut) ;
+  `framingOf` (le cadrage d'un bloc, `null` sans format ou en `original`) et
+  `imageCopyKey` (adresse, plus le cadrage s'il y en a un). Refus ajoutés :
+  `image-format-invalid`, `image-focal-invalid` (à chaque enregistrement).
+  La forme Zod de l'API (`mail-document-shape.ts`) lit les deux champs en
+  `exactOptional()` ; la plage 0–1 reste la règle du paquet.
+- **Copie** : `MailImageCopier.copy(sourceUrl, framing)` recadre par le port
+  `MailImageReframer` (`apps/lfd-api/src/mail/images/domain/ports/mail-image.reframer.ts`),
+  implémenté par `SharpMailImageReframer` (`sharp` 0.35.5, dépendance de
+  `lfd-api` seule, classée `local`). Le rectangle est calculé en pur
+  (`cropRectangle`, `apps/lfd-api/src/mail/images/domain/value-objects/mail-image-crop.ts`) : le plus grand
+  au rapport du format, centré sur le point focal, glissé vers l'intérieur
+  plutôt que de sortir de l'image. Puis 1200 px de large au plus
+  (`MAIL_IMAGE_FRAMED_WIDTH_PX`, jamais d'agrandissement), réencodé dans le
+  même type (`MAIL_IMAGE_LOSSY_QUALITY` = 82 pour JPEG et WebP). L'orientation
+  EXIF est appliquée avant ; un GIF animé garde toutes ses images. Une image
+  qui ne se décode pas : `MailImageUnreadableError` (400). Sans cadrage, les
+  octets d'origine sont rangés tels quels, comme avant.
+- **Publication** : `copyDocumentImages` copie une fois par clé
+  `imageCopyKey` ; `withImageSources` (qui pose `copySrc`) et l'invariant de
+  `MailTemplateDocument.publish` lisent la même clé. Deux formats de la même
+  image font deux copies ; la version publiée garde `format` et `focal`.
+- **Rendu** : l'e-mail envoyé lit `copySrc ?? src` et ne porte aucun attribut de cadrage (l'image est déjà au format).
+  L'aperçu par blocs (`marked`) ajoute à `<img>` `data-image-format`,
+  `data-image-focal-x`, `data-image-focal-y` quand un cadrage existe.
+
+**Écarts.**
+
+- **L'adresse de la copie dépend des paramètres par ses octets**, pas par une
+  clé qui les nommerait : le stockage reste adressé par le contenu (le hash
+  des octets recadrés). Deux cadrages différents donnent deux octets, donc
+  deux adresses ; une clé « source + paramètres » aurait laissé une même
+  adresse changer d'octets à une montée de version de `sharp`, contre la
+  promesse `immutable` du § 24.
+- **Un point focal est admis avec `original`** (sans effet) : l'écran peut le
+  garder en passant d'un format à l'autre.
+- **Vérifié dans le container le 2026-11-07** : `sharp` 0.35.5 s'installe sans
+  script (binaires `@img/sharp-linux-*` avec libvips) et recadre dans
+  `node:22-slim`, en `linux/amd64` et `linux/arm64`. Pas vérifié : un
+  `docker build` complet du `Dockerfile` (seul l'essai isolé a tourné).
+
+**Tranché le 2026-11-07 : le document garde toujours la SOURCE.**
+`ImageBlock.src` est l'adresse de la médiathèque, jamais la copie ; la
+publication pose à côté `copySrc` (champ d'ajout, rempli seulement dans la
+version publiée). Un champ sur le bloc plutôt qu'une table des copies de la
+version : la copie voyage avec son bloc (colonnes comprises), l'invariant de
+`publish` et l'écriture `jsonb` champ à champ (`mail-document-rows.ts`) n'ont
+rien d'autre à tenir. L'envoi lit `copySrc ?? src` ; l'aperçu par blocs lit
+`src` et recadre en CSS d'après `data-image-*`. La publication reprend les
+copies de la version publiée (`publishedImageCopies`, clé `imageCopyKey`) :
+republier sans changer de source ni de cadrage ne télécharge rien ; changer
+le format ou le point focal recopie depuis la source. Une version publiée
+avant `copySrc` (la copie dans `src`) s'envoie comme avant, et se republie
+sans téléchargement (la copie rend telle quelle une adresse du bloc).
+`copySrc` est vérifié comme `src` (`image-src-invalid`).
+
+- **Trouvé au passage** : l'écriture `jsonb` champ à champ ne rangeait ni
+  `format` ni `focal` ; corrigé avec `copySrc`, test de régression dans
+  `mail-document-rows.spec.ts`.
+- L'aperçu fidèle (non marqué) d'un BROUILLON rend la source non recadrée :
+  il n'a pas encore de copie.
+
+**Ce qui reste côté écran** (`apps/lfd-backoffice-frontend`, non touché) : le
+choix du format dans les réglages du bloc (Original, 3:2, 2:1, 1:1) ; la pose
+du point focal par un clic sur la vignette ; le recadrage CSS de l'aperçu
+d'après les attributs `data-image-*` (`aspect-ratio` et `object-fit: cover`,
+`object-position` aux pourcentages du point focal) ; `withImageFormat` /
+`withImageFocal` dans `rules/mail-document-edits.ts` (champ retiré absent,
+jamais `undefined`) ; l'affichage des deux nouveaux refus.
+
 ## 20. S5b (phrases, cas) et essai — bâti le 2026-11-07
 
 **Ce qui existe.** Sur la page d'un e-mail
@@ -2084,6 +2163,12 @@ expectedRevision, stamp)` refuse une forme fausse, un domaine absent de
   ne fonce plus le bandeau (test `render-charter.spec.ts`). Une charte rangée
   avant ce champ est relue avec son bandeau = sa couleur principale, ce
   qu'elle rendait.
+- **La page d'un espace a trois onglets** (Hugo, 2026-11-07 : « expéditeur
+  devrait être dans un onglet ») : Templates, Charte, Expéditeur, chacun sa
+  route (`/emails/espaces/:space/templates`, `…/charte`, `…/expediteur` ; la
+  racine de l'espace redirige vers Templates), barre `fold-view-nav` en liens.
+  Templates a son segment parce que `fold-view-nav` n'allume pas un lien en
+  `exact` : la racine serait restée active sous les deux autres onglets.
 
 ### C1 — bâti le 2026-11-07 — écarts
 

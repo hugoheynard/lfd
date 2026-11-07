@@ -122,10 +122,13 @@ describe("imageBlocksOf et withImageSources", () => {
     expect(imageBlocksOf(document).map((image) => image.id)).toEqual(["i1", "i2"]);
   });
 
-  it("remplace chaque adresse connue, et ne touche ni les autres blocs ni l'original", () => {
+  it("pose la copie à côté de la source, et ne touche ni les autres blocs ni l'original", () => {
     const rewritten = withImageSources(document, new Map([[SRC, COPY]]));
-    expect(imageBlocksOf(rewritten).map((image) => image.src)).toEqual([COPY, COPY]);
-    expect(imageBlocksOf(document).map((image) => image.src)).toEqual([SRC, SRC]);
+    expect(imageBlocksOf(rewritten).map((image) => [image.src, image.copySrc])).toEqual([
+      [SRC, COPY],
+      [SRC, COPY],
+    ]);
+    expect(imageBlocksOf(document).map((image) => image.copySrc)).toEqual([undefined, undefined]);
     expect(rewritten.blocks.slice(0, START.blocks.length)).toEqual(START.blocks);
   });
 });

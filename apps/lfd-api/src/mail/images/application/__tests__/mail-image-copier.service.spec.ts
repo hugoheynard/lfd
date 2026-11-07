@@ -7,6 +7,9 @@ import {
   type DownloadLimits,
   MailImageDownloader,
 } from "../../domain/ports/mail-image.downloader.js";
+import type { ImageFraming } from "@lfd/mail-blocks";
+
+import { MailImageReframer } from "../../domain/ports/mail-image.reframer.js";
 import { type MailImageCopy, MailImageStore } from "../../domain/ports/mail-image.store.js";
 import { MAIL_IMAGE_MAX_BYTES } from "../../domain/value-objects/mail-image-source.js";
 import { MailImageCopier } from "../mail-image-copier.service.js";
@@ -42,7 +45,18 @@ class MemoryStore extends MailImageStore {
   }
 }
 
-function copier(bytes: Buffer, store = new MemoryStore()) {
+/** Un recadreur qui marque les octets de son cadrage : deux cadrages, deux sorties. */
+class TaggingReframer extends MailImageReframer {
+  readonly calls: { contentType: string; framing: ImageFraming }[] = [];
+
+  reframe(bytes: Buffer, contentType: string, framing: ImageFraming): Promise<Buffer> {
+    this.calls.push({ contentType, framing });
+    const tag = `${framing.format}@${framing.focal.x},${framing.focal.y}`;
+    return Promise.resolve(Buffer.concat([bytes, Buffer.from(tag)]));
+  }
+}
+
+function copier(bytes: Buffer, store = new MemoryStore(), reframer = new TaggingReframer()) {
   const downloader = new StubDownloader(bytes);
   const service = new MailImageCopier(
     {
@@ -52,8 +66,9 @@ function copier(bytes: Buffer, store = new MemoryStore()) {
     },
     downloader,
     store,
+    reframer,
   );
-  return { service, downloader, store };
+  return { service, downloader, store, reframer };
 }
 
 describe("MailImageCopier — la copie d'une image de modèle", () => {
@@ -129,5 +144,41 @@ describe("MailImageCopier — la copie d'une image de modèle", () => {
     await expect(service.copy("https://mail.example.evil/a.png")).rejects.toBeInstanceOf(
       MailImageOriginNotAdmittedError,
     );
+  });
+});
+
+describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", () => {
+  const SQUARE: ImageFraming = { format: "1:1", focal: { x: 0.5, y: 0.5 } };
+
+  it("sans cadrage, range les octets d'origine, tels quels, sans recadrer", async () => {
+    const { service, reframer } = copier(PNG);
+    const copy = await service.copy(SOURCE);
+    expect(copy.url).toBe(`https://mail.example/templates/${PNG.toString("hex")}`);
+    expect(reframer.calls).toEqual([]);
+  });
+
+  it("avec un cadrage, range la version recadrée, dans le type lu sur les octets", async () => {
+    const { service, reframer, store } = copier(PNG);
+    const copy = await service.copy(SOURCE, SQUARE);
+    expect(reframer.calls).toEqual([{ contentType: "image/png", framing: SQUARE }]);
+    expect(copy.url).not.toBe(`https://mail.example/templates/${PNG.toString("hex")}`);
+    expect(store.objects.get(copy.url)).toBe("image/png");
+  });
+
+  it("deux formats, ou deux points focaux, font deux copies", async () => {
+    const { service } = copier(PNG);
+    const urls = new Set([
+      (await service.copy(SOURCE)).url,
+      (await service.copy(SOURCE, SQUARE)).url,
+      (await service.copy(SOURCE, { ...SQUARE, format: "3:2" })).url,
+      (await service.copy(SOURCE, { ...SQUARE, focal: { x: 0, y: 0 } })).url,
+    ]);
+    expect(urls.size).toBe(4);
+  });
+
+  it("ne recadre pas ce qui n'est pas une image", async () => {
+    const { service, reframer } = copier(Buffer.from("<html>"));
+    await expect(service.copy(SOURCE, SQUARE)).rejects.toBeInstanceOf(MailImageNotAnImageError);
+    expect(reframer.calls).toEqual([]);
   });
 });

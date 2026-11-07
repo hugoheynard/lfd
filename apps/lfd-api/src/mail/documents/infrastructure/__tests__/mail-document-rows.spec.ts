@@ -83,3 +83,31 @@ describe("les colonnes du document d'un e-mail", () => {
     );
   });
 });
+
+/**
+ * Régression (2026-11-07) : l'écriture champ à champ ne rangeait ni `format`,
+ * ni `focal`, ni `copySrc` — le cadrage disparaissait à l'enregistrement, et
+ * l'envoi retombait sur la source non recadrée.
+ */
+describe("une image cadrée, rangée puis relue", () => {
+  it("garde son format, son point focal et sa copie", () => {
+    const framed: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        {
+          id: "i",
+          kind: "image",
+          src: "https://media.lfc.test/p.png",
+          alt: { fr: "Un pain" },
+          format: "3:2",
+          focal: { x: 0.2, y: 0.7 },
+          copySrc: "https://mail.lfc.test/templates/abc.png",
+        },
+      ],
+    };
+    const json = JSON.parse(JSON.stringify(mailDocumentJson(framed))) as MailDocumentRow["draft"];
+    expect(
+      toDocumentState(row({ draft: json, draftAt: AT, draftBy: "x" })).draft?.document,
+    ).toEqual(framed);
+  });
+});

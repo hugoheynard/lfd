@@ -1,5 +1,6 @@
 import {
   CALLOUT_TONES,
+  IMAGE_FORMATS,
   isColumnWidthStep,
   MAIL_LOCALES,
   MODEL_SECTIONS,
@@ -48,6 +49,10 @@ const imageBlock = z.strictObject({
   alt: localized,
   href: z.string().max(HREF_MAX).exactOptional(),
   decorative: z.boolean().exactOptional(),
+  format: z.enum(IMAGE_FORMATS).exactOptional(),
+  // La forme seulement : « entre 0 et 1 » est la règle du paquet (`image-focal-invalid`).
+  focal: z.strictObject({ x: z.number(), y: z.number() }).exactOptional(),
+  copySrc: z.string().max(HREF_MAX).exactOptional(),
 });
 
 const freeBlock: z.ZodType<FreeBlock> = z.discriminatedUnion("kind", [

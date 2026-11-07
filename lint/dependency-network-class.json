@@ -84,6 +84,10 @@
     "pdfkit": { "class": "local", "reason": "Rendu de PDF en mémoire." },
     "qrcode-generator": { "class": "local", "reason": "Calcul d'un QR code en mémoire." },
     "rxjs": { "class": "local", "reason": "Flux en mémoire (bus, intercepteurs)." },
+    "sharp": {
+      "class": "local",
+      "reason": "Recadrage et réencodage d'images en mémoire (libvips), aucun appel."
+    },
     "stripe": { "class": "network", "reason": "Le SDK Stripe appelle l'API Stripe." },
     "ulid": { "class": "local", "reason": "Fabrique d'identifiants." },
     "uuid": { "class": "local", "reason": "Fabrique d'identifiants." },

@@ -1,4 +1,10 @@
-import { imageBlocksOf, type ImageBlock, type MailDocument } from "@lfd/mail-blocks";
+import {
+  framingOf,
+  imageBlocksOf,
+  imageCopyKey,
+  type ImageBlock,
+  type MailDocument,
+} from "@lfd/mail-blocks";
 
 import { DomainError } from "../../../platform/shared/errors/app-error.js";
 import {
@@ -25,8 +31,11 @@ function attributed(template: string, image: MailDocumentImageRef, cause: unknow
 /**
  * **Copie les images d'un document** avant sa publication (plan
  * `plan-editeur-par-blocs.md`, § 19, S5d), une à une, dans l'ordre de
- * l'e-mail, chaque adresse une seule fois. Rend la table adresse d'origine →
- * adresse de la copie que `MailTemplateDocument.publish` applique.
+ * l'e-mail, chaque adresse une seule fois PAR CADRAGE (format et point focal,
+ * § 19 : deux formats de la même image font deux copies). Rend la table clé
+ * de copie (`imageCopyKey`) → adresse de la copie que
+ * `MailTemplateDocument.publish` applique. `alreadyCopied` : les copies de
+ * la version publiée — même source et même cadrage, rien n'est recopié.
  *
  * Réseau : à appeler HORS de toute transaction. Le premier refus arrête tout
  * et désigne l'image en cause ; les copies déjà faites restent rangées — une
@@ -40,15 +49,17 @@ export async function copyDocumentImages(
   template: string,
   document: MailDocument,
   images: MailDocumentImages,
+  alreadyCopied: ReadonlyMap<string, string> = new Map(),
 ): Promise<ReadonlyMap<string, string>> {
-  const copies = new Map<string, string>();
+  const copies = new Map<string, string>(alreadyCopied);
   const blocks = imageBlocksOf(document);
   for (const [index, image] of blocks.entries()) {
-    if (copies.has(image.src)) {
+    const key = imageCopyKey(image);
+    if (copies.has(key)) {
       continue;
     }
     try {
-      copies.set(image.src, await images.copy(image.src));
+      copies.set(key, await images.copy(image.src, framingOf(image)));
     } catch (cause) {
       throw attributed(template, refOf(image, index), cause);
     }
