@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
+  isEditablePhrase,
   MAIL_LOCALES,
   validateMailDocumentForPublication,
   type MailAudience,
@@ -246,7 +247,7 @@ export class MailTemplatePage implements HasPendingChanges {
   /** Les phrases de la place sélectionnée, dans l'ordre du serveur. */
   protected readonly focusedPhrases = computed(() => {
     const place = this.focus();
-    return place === null ? [] : phrasesAt(this.phrases.phrases(), place);
+    return place === null ? [] : phrasesAt(this.editablePhrases(), place);
   });
   protected readonly focusTitle = computed(() => {
     const place = this.focus();
@@ -256,7 +257,21 @@ export class MailTemplatePage implements HasPendingChanges {
   /** Les phrases qu'aucun cadre ni bloc à l'écran ne montre. */
   protected readonly unplaced = computed(() => {
     const document = this.document();
-    return document === null ? [] : unplacedPhrases(this.phrases.phrases(), document);
+    return document === null ? [] : unplacedPhrases(this.editablePhrases(), document);
+  });
+
+  /**
+   * Les phrases que l'éditeur laisse écrire : celles de
+   * `declaration.editablePhrases` quand le modèle la déclare (§ 23), toutes
+   * sinon. Les libellés des blocs système n'apparaissent ni au panneau ni
+   * dans « Autres textes ».
+   */
+  private readonly editablePhrases = computed(() => {
+    const declaration = this.view()?.declaration;
+    const all = this.phrases.phrases();
+    return declaration === undefined
+      ? all
+      : all.filter((phrase) => isEditablePhrase(declaration, phrase.path));
   });
 
   /** Le document diffère de celui que le serveur a rendu. */

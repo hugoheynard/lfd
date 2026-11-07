@@ -1360,6 +1360,7 @@ Exemple réel (`customer.order-ready`, cas `specimen`, `fr`) :
 - **Les espaces tapées** : les zones modifiables sont en `pre-wrap`, pour que
   le navigateur n'écrive pas d'insécables que le dictionnaire garderait ;
   les insécables écrites exprès sont gardées telles quelles.
+- **Retouche du 2026-11-07 (Hugo, à l'essai)** : cadre pointillé toujours visible (marqué au survol, plein à la sélection), poignée `grip` toujours visible et nommée avec le geste clavier (Alt + flèche, gardé), croix sur les seuls blocs libres avec « Annuler » dans un `fold-callout` (fold n'a pas de toast à action), boutons monter / descendre retirés ; `editablePhrases` lue par le canevas (zones et variables), le panneau et « Autres textes » ; un seul cas : la carte « Cas affiché » disparaît.
 
 **Non vérifié à l'écran** (tests jsdom seulement) : le glisser-déposer natif
 d'une variable (`caretRangeFromPoint`), `plaintext-only` avec une pastille

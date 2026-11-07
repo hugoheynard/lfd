@@ -121,16 +121,67 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     element.remove();
   });
 
-  it('monte un bloc au bouton, et le descend au clavier (Alt + flèche)', () => {
+  it('poignée toujours nommée avec le geste clavier, et plus de boutons monter / descendre', () => {
+    const { element } = render();
+    const handle = element.querySelector('[data-block="note"] [data-handle]');
+    expect(handle?.getAttribute('aria-label')).toContain('Alt + flèche');
+    expect(element.querySelector('[data-block="model:title"] [data-handle]')).not.toBeNull();
+    expect(element.querySelector('[data-move-up], [data-move-down]')).toBeNull();
+    element.remove();
+  });
+
+  it('Alt + flèche déplace le bloc focalisé', () => {
     const { element, emitted } = render();
-    element.querySelector<HTMLButtonElement>('[data-block="note"] [data-move-up]')?.click();
+    const note = element.querySelector('li[data-block="note"]');
+    note?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }),
+    );
     expect(ids(emitted[0])).toEqual(['note', 'model:title', 'model:footer']);
-    element
-      .querySelector('li[data-block="note"]')
-      ?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }),
-      );
+    note?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }),
+    );
     expect(ids(emitted[1])).toEqual(['model:title', 'model:footer', 'note']);
+    element.remove();
+  });
+
+  it('la croix retire un bloc libre, et « Annuler » le remet', () => {
+    const { fixture, element, emitted } = render();
+    element.querySelector<HTMLButtonElement>('[data-block="note"] [data-remove]')?.click();
+    expect(ids(emitted[0])).toEqual(['model:title', 'model:footer']);
+    fixture.componentRef.setInput('document', emitted[0]);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-removal]')?.textContent).toContain('Paragraphe');
+    element.querySelector<HTMLButtonElement>('[data-undo-removal]')?.click();
+    expect(emitted[1]).toBe(DOCUMENT);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-removal]')).toBeNull();
+    element.remove();
+  });
+
+  it('sans liste de phrases éditables, tout s’écrit ; avec, seules les siennes', () => {
+    const { fixture, element } = render();
+    fixture.componentRef.setInput('declaration', { ...DECLARATION, editablePhrases: ['subject'] });
+    fixture.detectChanges();
+    expect(
+      element.querySelector('[data-phrase="title.ready"]')?.hasAttribute('contenteditable'),
+    ).toBe(false);
+    expect(
+      element.querySelector('[data-left] [data-phrase="subject"]')?.getAttribute('contenteditable'),
+    ).toBe('plaintext-only');
+    element.remove();
+  });
+
+  it('un seul cas : le choix du cas n’est pas montré', () => {
+    const { fixture, element } = render();
+    fixture.componentRef.setInput('cases', [{ value: 'only', label: 'Exemple' }]);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-case-choice]')).toBeNull();
+    fixture.componentRef.setInput('cases', [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' },
+    ]);
+    fixture.detectChanges();
+    expect(element.querySelector('[data-case-choice] [data-cases]')).not.toBeNull();
     element.remove();
   });
 

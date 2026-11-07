@@ -389,6 +389,33 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     expect(element.querySelector('[data-other-texts] [data-unplaced]')).not.toBeNull();
   });
 
+  it('avec une liste de phrases éditables, le panneau et « Autres textes » ne montrent qu’elles', async () => {
+    const base = view(0);
+    const load = vi.fn(() =>
+      Promise.resolve({
+        ...base,
+        declaration: { ...base.declaration, editablePhrases: ['title.paid', 'subject'] },
+        phrases: [
+          phrase('title.paid', { kind: 'block', block: 'title' }),
+          phrase('title.recapLabel', { kind: 'block', block: 'title' }),
+          phrase('subject', { kind: 'frame', frame: 'subject' }),
+          phrase('image.alt', null),
+        ],
+      }),
+    );
+    const { fixture, element } = await render({ load });
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    element.querySelector<HTMLElement>(`li[data-block="${modelBlockId('title')}"]`)?.click();
+    fixture.detectChanges();
+    expect(
+      [...element.querySelectorAll('[data-focus-panel] [data-phrase]')].map((n) =>
+        n.getAttribute('data-phrase'),
+      ),
+    ).toEqual(['title.paid']);
+    expect(element.querySelector('[data-other-texts]')).toBeNull();
+  });
+
   it('demande le rendu du canevas : document à l’écran, langue, cas, phrases en brouillon', async () => {
     const load = vi.fn(() =>
       Promise.resolve({ ...view(0), cases: [{ id: 'due', label: 'À régler' }] }),

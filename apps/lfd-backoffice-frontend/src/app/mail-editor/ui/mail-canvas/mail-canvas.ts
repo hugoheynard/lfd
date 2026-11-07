@@ -13,6 +13,7 @@ import {
   signal,
 } from '@angular/core';
 import {
+  isEditablePhrase,
   MAIL_LOCALES,
   MODEL_SECTION_LABELS,
   validateMailDocument,
@@ -77,6 +78,13 @@ export interface MailCaseOption {
   readonly label: string;
 }
 
+/** Le dernier bloc retiré : « Annuler » rend le document d'avant, tant que rien d'autre n'a changé. */
+interface Removal {
+  readonly title: string;
+  readonly before: MailDocument;
+  readonly after: MailDocument;
+}
+
 /** Une variable du modèle, à glisser dans une phrase. */
 interface VariableChip {
   readonly name: string;
@@ -89,10 +97,12 @@ interface VariableChip {
  * le 2026-11-07).
  *
  * Au milieu, l'e-mail à sa largeur, composé des fragments du serveur
- * (`MailBlockPreviewsStore`) : en-tête, blocs, pied. Chaque bloc, au survol
- * ou au focus, montre son cadre, son nom, une poignée, « monter /
- * descendre » et — bloc libre seulement — une corbeille ; le sélectionner
- * ouvre ses réglages à droite. On écrit sur place : une phrase part en
+ * (`MailBlockPreviewsStore`) : en-tête, blocs, pied. Chaque bloc montre
+ * toujours son cadre (pointillé, marqué au survol et à la sélection), une
+ * poignée à glisser et — bloc libre seulement — une croix qui le retire,
+ * annulable ; au clavier, Alt + flèche le déplace (retouche de Hugo du
+ * 2026-11-07, sans boutons « monter / descendre »). Le sélectionner ouvre
+ * ses réglages à droite. On écrit sur place : une phrase part en
  * brouillon (`MailPhrasesStore`, dans la langue RENDUE), le texte d'un bloc
  * libre change le document. À gauche, le cas, l'objet et les variables à
  * glisser ; à droite, la bibliothèque (ajout sous le bloc sélectionné) et
@@ -162,9 +172,17 @@ export class MailCanvas {
   /** La langue dans laquelle le serveur a rendu (repli compris) : c'est celle qu'on réécrit. */
   protected readonly renderedLocale = computed(() => this.previews.view()?.locale ?? this.locale());
 
-  protected readonly phrasePaths = computed(
-    () => new Set(this.phrases.phrases().map((phrase) => phrase.path)),
+  /** Les phrases que l'éditeur laisse écrire (`declaration.editablePhrases`, § 23 ; toutes sans liste). */
+  private readonly editablePhrases = computed(() =>
+    this.phrases.phrases().filter((phrase) => isEditablePhrase(this.declaration(), phrase.path)),
   );
+
+  protected readonly phrasePaths = computed(
+    () => new Set(this.editablePhrases().map((phrase) => phrase.path)),
+  );
+
+  /** Le dernier retrait, que « Annuler » défait. */
+  protected readonly removal = signal<Removal | null>(null);
 
   protected readonly freeBlockIds = computed(() => {
     const ids = new Set<string>();
@@ -180,8 +198,9 @@ export class MailCanvas {
 
   /** Les variables du modèle : celles de ses phrases, obligatoires si une phrase l'exige. */
   protected readonly variables = computed<readonly VariableChip[]>(() => {
-    const required = new Set(this.phrases.phrases().flatMap((phrase) => phrase.requiredVariables));
-    const names = [...new Set(this.phrases.phrases().flatMap((phrase) => phrase.variables))];
+    const editable = this.editablePhrases();
+    const required = new Set(editable.flatMap((phrase) => phrase.requiredVariables));
+    const names = [...new Set(editable.flatMap((phrase) => phrase.variables))];
     return names.map((name) => ({ name, required: required.has(name) }));
   });
 
@@ -284,6 +303,11 @@ export class MailCanvas {
     return `${this.titleOf(block)} · ${block.kind === 'model' ? 'du modèle' : 'bloc libre'}`;
   }
 
+  /** Le nom de la poignée : le geste à la souris et celui du clavier. */
+  protected handleLabelOf(block: MailBlock): string {
+    return `Déplacer le bloc « ${this.titleOf(block)} » : glisser la poignée, ou Alt + flèche haut / bas sur le bloc`;
+  }
+
   protected hasSettings(block: FreeBlock | ColumnsBlock): boolean {
     return (
       block.kind === 'button' ||
@@ -349,7 +373,7 @@ export class MailCanvas {
     this.emit(moveBlock(this.document(), event.previousIndex, event.currentIndex));
   }
 
-  protected move(blockId: string, delta: -1 | 1): void {
+  private move(blockId: string, delta: -1 | 1): void {
     this.emit(moveBlockBy(this.document(), blockId, delta));
   }
 
@@ -360,11 +384,25 @@ export class MailCanvas {
     this.focus.set(null);
   }
 
-  protected remove(blockId: string): void {
-    if (this.selectedId() === blockId) {
+  protected remove(block: MailBlock): void {
+    if (this.selectedId() === block.id) {
       this.selectedId.set(null);
     }
-    this.emit(removeBlock(this.document(), blockId));
+    const before = this.document();
+    const after = removeBlock(before, block.id);
+    this.emit(after);
+    if (after !== before) {
+      this.removal.set({ title: this.titleOf(block), before, after });
+    }
+  }
+
+  /** Remet le bloc retiré — seulement si le document n'a pas bougé depuis. */
+  protected undoRemoval(): void {
+    const removal = this.removal();
+    this.removal.set(null);
+    if (removal !== null && removal.after === this.document()) {
+      this.documentChange.emit(removal.before);
+    }
   }
 
   protected onPhraseInput(input: PhraseInput): void {
@@ -445,6 +483,7 @@ export class MailCanvas {
 
   private emit(next: MailDocument): void {
     if (next !== this.document()) {
+      this.removal.set(null);
       this.documentChange.emit(next);
     }
   }

@@ -1,10 +1,10 @@
 @let view = previews.view();
 <div class="canvas">
   <div class="side" data-left>
-    <fold-card>
-      <div class="card-body">
-        <fold-element-title variant="title" title="Cas affiché" />
-        @if (cases().length > 1) {
+    @if (cases().length > 1) {
+      <fold-card data-case-choice>
+        <div class="card-body">
+          <fold-element-title variant="title" title="Cas affiché" />
           <fold-listbox
             size="sm"
             label="Cas"
@@ -13,11 +13,9 @@
             [value]="caseId()"
             (selectionChange)="caseId.set($event)"
           />
-        } @else {
-          <p class="muted">{{ cases()[0]?.label ?? 'L’exemple de l’e-mail' }}</p>
-        }
-      </div>
-    </fold-card>
+        </div>
+      </fold-card>
+    }
 
     <fold-card>
       <div
@@ -90,6 +88,24 @@
         </ul>
       </fold-callout>
     }
+    @if (removal(); as removed) {
+      <fold-callout variant="info" data-removal>
+        <div class="removal">
+          <span>Bloc « {{ removed.title }} » retiré.</span>
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            intent="neutral"
+            type="button"
+            (click)="undoRemoval()"
+            data-undo-removal
+          >
+            Annuler
+          </button>
+        </div>
+      </fold-callout>
+    }
     @if (view !== null && previews.error(); as message) {
       <fold-callout variant="alert" data-render-error>
         L’e-mail montré n’est plus à jour : {{ message }}
@@ -139,7 +155,7 @@
             aria-label="Blocs de l’e-mail, dans l’ordre — Alt + flèche pour déplacer"
             (cdkDropListDropped)="dropped($event)"
           >
-            @for (block of document().blocks; track block.id; let first = $first, last = $last) {
+            @for (block of document().blocks; track block.id) {
               @let html = fragmentOf(block);
               <li
                 cdkDrag
@@ -149,56 +165,36 @@
                 [attr.data-block]="block.id"
                 [attr.aria-label]="nameOf(block)"
                 [attr.aria-current]="isSelected(block) ? 'true' : null"
+                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
                 (click)="select(block)"
                 (keydown)="onBlockKeydown($event, block)"
               >
+                <span
+                  cdkDragHandle
+                  class="handle"
+                  role="img"
+                  title="Glisser pour déplacer"
+                  [attr.aria-label]="handleLabelOf(block)"
+                  data-handle
+                >
+                  <fold-icon name="grip" size="sm" />
+                </span>
+                @if (block.kind !== 'model') {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    intent="neutral"
+                    icon="close"
+                    type="button"
+                    class="remove"
+                    [attr.aria-label]="'Retirer le bloc « ' + titleOf(block) + ' »'"
+                    (click)="$event.stopPropagation(); remove(block)"
+                    data-remove
+                  ></button>
+                }
                 <div class="tools">
                   <span class="name">{{ nameOf(block) }}</span>
-                  <span
-                    cdkDragHandle
-                    class="handle"
-                    title="Glisser pour déplacer"
-                    aria-hidden="true"
-                  >
-                    <fold-icon name="more-vertical" size="sm" />
-                  </span>
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="soft"
-                    intent="neutral"
-                    icon="chevron-up"
-                    type="button"
-                    [disabled]="first"
-                    [attr.aria-label]="'Monter le bloc « ' + titleOf(block) + ' »'"
-                    (click)="move(block.id, -1)"
-                    data-move-up
-                  ></button>
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="soft"
-                    intent="neutral"
-                    icon="chevron-down"
-                    type="button"
-                    [disabled]="last"
-                    [attr.aria-label]="'Descendre le bloc « ' + titleOf(block) + ' »'"
-                    (click)="move(block.id, 1)"
-                    data-move-down
-                  ></button>
-                  @if (block.kind !== 'model') {
-                    <button
-                      foldButton
-                      size="sm"
-                      emphasis="soft"
-                      intent="danger"
-                      icon="bin"
-                      type="button"
-                      [attr.aria-label]="'Retirer le bloc « ' + titleOf(block) + ' »'"
-                      (click)="$event.stopPropagation(); remove(block.id)"
-                      data-remove
-                    ></button>
-                  }
                 </div>
 
                 @if (html === null) {
@@ -300,7 +296,7 @@
                     [attr.aria-label]="
                       'Retirer le bloc « ' + titleOf(inner) + ' » de la colonne ' + (column + 1)
                     "
-                    (click)="remove(inner.id)"
+                    (click)="remove(inner)"
                     data-remove
                   ></button>
                 </div>

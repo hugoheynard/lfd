@@ -58,32 +58,29 @@
   list-style: none;
 }
 
-// Le cadre d'un bloc : invisible au repos, au survol et au focus son nom et
-// ses gestes ; sélectionné, il reste.
+// Le cadre d'un bloc : toujours là, pointillé discret ; marqué au survol,
+// plein à la sélection. La poignée vit dans la marge gauche du bloc, la croix
+// dans son coin ; le nom n'apparaît qu'au survol et au focus.
 .block {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
-  padding: var(--fold-space-xs);
-  border: 1px dashed transparent;
+  padding: var(--fold-space-xs) var(--fold-space-lg);
+  border: 1px dashed var(--fold-color-border-subtle);
   border-radius: var(--fold-radius-sm);
   outline: none;
 }
 
 .block:hover,
-.block:focus-within,
-.block.selected {
+.block:focus-within {
   border-color: var(--fold-color-border);
 }
 
-.block:focus-visible {
-  border-color: var(--fold-color-primary);
-  border-style: solid;
-}
-
+.block:focus-visible,
 .block.selected {
   border-color: var(--fold-color-primary);
+  border-style: solid;
 }
 
 .frame {
@@ -104,15 +101,36 @@
 }
 
 .name {
-  margin-inline-end: auto;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
 }
 
 .handle {
+  position: absolute;
+  inset-block-start: var(--fold-space-xs);
+  inset-inline-start: 0;
   display: inline-flex;
   cursor: grab;
   color: var(--fold-color-text-muted);
+}
+
+.block:hover .handle,
+.block.selected .handle {
+  color: var(--fold-color-text);
+}
+
+.remove {
+  position: absolute;
+  inset-block-start: var(--fold-space-xs);
+  inset-inline-end: var(--fold-space-xs);
+}
+
+.removal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
 }
 
 .inner {
