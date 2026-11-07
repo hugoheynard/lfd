@@ -1179,3 +1179,56 @@ bâti selon ce que la boîte d'envoi de dev contient.
 - que le dossier du fournil joint bien l'archive qu'il range ;
 - la taille réelle d'un bon et d'une facture (sans effet sur ce choix : rien
   n'est stocké en transit).
+
+## 23. Les images des modèles — le plus découplé (Hugo, 2026-11-07) — règle pour S4
+
+### En simple
+
+Une image dans un e-mail n'est pas une pièce jointe : c'est une adresse que la
+messagerie du client relit à chaque ouverture, parfois des mois plus tard. Elle
+doit donc être **publique et permanente**.
+
+On choisit l'image dans la médiathèque, à l'écran. À la **publication** d'une
+version du modèle, le bloc `mail` télécharge l'image à son adresse publique et
+en range **sa propre copie**, dans son propre stockage public. La version
+publiée pointe vers cette copie. Ensuite, la médiathèque peut retirer ou
+remplacer l'image : aucun e-mail ne casse.
+
+Hugo, le 2026-11-07 : « je veux le plus découplé ».
+
+### Ce que « découplé » veut dire ici
+
+- **Aucun import** : `mail → media` reste ✗ dans la matrice du § 3. Le bloc
+  `mail` ne connaît ni les tables, ni les identifiants, ni le canal
+  `media/channels/carriers/` de la médiathèque.
+- **Le seul contrat est une adresse web.** C'est l'écran du back-office qui lit
+  la médiathèque et passe l'adresse au bloc `mail`.
+- **Le bloc `mail` n'accepte que des origines déclarées** dans sa configuration
+  (`AppConfig`), sous un nom qui ne dit pas « médiathèque » : une liste
+  d'origines d'images admises. Sinon, la publication deviendrait un client HTTP
+  ouvert. Le téléchargeur est celui du lot S3c (§ 22).
+- **Après la publication, aucune dépendance** : la copie suffit.
+- **Les documents d'une personne** ne suivent pas cette règle. Ils restent chez
+  leur bloc et sont lus par URL signée (§ 22) : ils sont déjà gardés,
+  opposables et immuables, et une copie de plus ajouterait une durée de
+  conservation à décider.
+
+### Vérifié le 2026-11-07
+
+- La médiathèque sert ses images à une **adresse publique** :
+  `R2MediaStore.put` rend `${mediaPublicBaseUrl}/${storageKey}`
+  (`platform/storage/r2-media-store.ts`).
+- Ces adresses sont **adressées par leur contenu** et servies
+  `public, max-age=31536000, immutable` : sous une même adresse, les octets ne
+  changent jamais.
+- L'URL est l'identité d'une image pour la médiathèque elle-même : une image,
+  une ligne, une URL depuis le 2026-09-23 (`media-library.controller.ts`).
+
+### Le coût, assumé
+
+- Une copie par image et par version publiée.
+- Remplacer une image dans la médiathèque ne met pas à jour le modèle : il faut
+  republier. C'est voulu, une version publiée ne change pas sans qu'on la
+  republie.
+- Le bloc `mail` a un stockage public à lui, pour ses images seulement. Il ne
+  lit jamais le stockage d'un autre bloc.
