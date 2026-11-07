@@ -220,7 +220,7 @@ export class MailTemplatePage implements HasPendingChanges {
   protected readonly back = computed(() => {
     const view = this.view();
     if (view === null) {
-      return { label: 'Les e-mails', link: ['/emails'] };
+      return { label: 'Email Templates', link: ['/emails'] };
     }
     const space = mailSpaceOfCharter(view.declaration.charter);
     return { label: MAIL_SPACE_LABELS[space], link: ['/emails', 'espaces', space, 'templates'] };
