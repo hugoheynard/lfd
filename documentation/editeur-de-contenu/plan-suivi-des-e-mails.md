@@ -162,7 +162,10 @@ reçu avant le `save` de l'envoi, puis appliqué ; un webhook rejoué ; un
 **T2 — le droit et les lectures (API, migration additive).**
 Ressource `mail_sends`, tables `mail_recipient_reveal` et
 `mail_recipient_search`, faits `mail.recipient_revealed` et
-`mail.recipient_searched` au contrat du journal. `GET /admin/mail/sends`
+`mail.recipient_searched` au contrat du journal — gardés pour la
+lisibilité (Hugo, 2026-11-08 : la consultation se lit dans l'écran Journal,
+parmi les autres gestes). Les deux tables, qui décident de l'accès, sont
+purgées à 1 an sous le même cran que le suivi. `GET /admin/mail/sends`
 (filtres, curseur, problèmes d'abord, sonde à part), `GET
 /admin/mail/sends/:id` (étapes, genre du retour, version du document,
 tentatives — adresse masquée, sans `failure_reason`), `POST
