@@ -101,6 +101,61 @@ model MailDeliveryEvent {
   @@schema("mail")
 }
 
+/// **Une adresse révélée** dans le suivi des e-mails (plan
+/// `plan-suivi-des-e-mails.md`, décision 7, T2) : qui, quel envoi, quand —
+/// jamais l'adresse. La lecture de l'adresse n'est permise qu'à ce membre du
+/// staff, pour cet envoi, dans les 5 minutes ; la ligne compte aussi dans le
+/// plafond de 30 consultations par heure et par personne.
+///
+/// Pas de clé étrangère vers `mail_request` : la demande se purge à 1 an, la
+/// trace aussi, chacune de son côté. Purgée à 1 an sous `MAIL_REQUEST_PURGE`.
+model MailRecipientReveal {
+  id            String   @id
+  /// La demande d'e-mail dont l'adresse a été révélée.
+  mailRequestId String   @map("mail_request_id")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  revealedBy    String   @map("revealed_by")
+  revealedAt    DateTime @map("revealed_at") @db.Timestamptz(6)
+
+  @@index([revealedBy, revealedAt])
+  @@index([revealedBy, mailRequestId, revealedAt])
+  @@index([revealedAt])
+  @@map("mail_recipient_reveal")
+  @@schema("mail")
+}
+
+/// **Un envoi trouvé par une recherche**, figé à l'instant de la recherche
+/// (T2) : la lecture des résultats ne recherche pas de nouveau — elle n'a pas
+/// l'adresse. Supprimé avec sa recherche (cascade, purge à 1 an).
+model MailRecipientSearchHit {
+  searchId      String              @map("search_id")
+  mailRequestId String              @map("mail_request_id")
+  search        MailRecipientSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  @@id([searchId, mailRequestId])
+  @@map("mail_recipient_search_hit")
+  @@schema("mail")
+}
+
+/// **Une recherche des envois d'une adresse** (décision 8, T2) : qui, quand,
+/// et l'EMPREINTE de l'adresse cherchée (`HMAC-SHA256` sous
+/// `AppConfig.mailRecipientSearchKey`) — jamais l'adresse. Compte dans le même
+/// plafond horaire que les révélations. Purgée à 1 an sous `MAIL_REQUEST_PURGE`.
+model MailRecipientSearch {
+  id                   String   @id
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  searchedBy           String   @map("searched_by")
+  /// `HMAC-SHA256` de l'adresse normalisée, en hexadécimal (64 caractères).
+  recipientFingerprint String   @map("recipient_fingerprint") @db.VarChar(64)
+  searchedAt           DateTime @map("searched_at") @db.Timestamptz(6)
+  hits                 MailRecipientSearchHit[]
+
+  @@index([searchedBy, searchedAt])
+  @@index([searchedAt])
+  @@map("mail_recipient_search")
+  @@schema("mail")
+}
+
 /// **Le document d'un e-mail** (plan `plan-editeur-par-blocs.md`, § 5, S4c) :
 /// l'arrangement de ses blocs, en brouillon et publié. Les phrases n'y sont
 /// JAMAIS : elles restent au dictionnaire (`public.mail_copy_entries`).

@@ -145,6 +145,10 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailRequest: "mail",
   // Les retours de Resend rangés avant d'être appliqués (suivi, T1, 2026-11-08).
   MailDeliveryEvent: "mail",
+  // Les consultations du suivi (plan `plan-suivi-des-e-mails.md`, T2).
+  MailRecipientReveal: "mail",
+  MailRecipientSearch: "mail",
+  MailRecipientSearchHit: "mail",
   // L'éditeur (S4, S5, C1, C3 — 2026-11-07) : documents, chartes, identité d'envoi.
   MailDocument: "mail",
   MailDocumentVersion: "mail",

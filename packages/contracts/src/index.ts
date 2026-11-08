@@ -2626,6 +2626,25 @@ export type {
 } from "./delivery-address-suggestions.js";
 export type { DeadLetterView, DeadLettersView } from "./outbox-dead-letters.js";
 export {
+  MAIL_SEND_DELIVERIES,
+  MAIL_SEND_SCOPES,
+  MAIL_SEND_SPACES,
+  MAIL_SEND_STATES,
+  MAIL_SEND_STEPS,
+  type MailRecipientSearchCreatedView,
+  type MailRecipientSearchView,
+  type MailRecipientView,
+  type MailSendDelivery,
+  type MailSendDetailView,
+  type MailSendListItemView,
+  type MailSendListView,
+  type MailSendScope,
+  type MailSendSpace,
+  type MailSendState,
+  type MailSendStepKind,
+  type MailSendStepView,
+} from "./mail-sends.js";
+export {
   SHOP_COPY_DRAFT_STATES,
   shopCopyLocaleQuerySchema,
   shopCopyDraftPayloadSchema,

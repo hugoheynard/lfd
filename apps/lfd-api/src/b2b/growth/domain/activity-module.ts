@@ -91,6 +91,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les textes des e-mails publiés et leurs essais (2026-10-23, plan des
     // textes des e-mails, E2) : le même métier — ce que la maison écrit.
     "mail_copy.",
+    // La consultation du suivi des e-mails — une adresse révélée (plan du
+    // suivi, T2, 2026-11-08) : rangée avec les textes des e-mails, sous le
+    // même menu. ⚠️ `mail.` ne tombe PAS sous `mail_copy.` — le point fait
+    // partie du préfixe.
+    "mail.",
     // Les suggestions décidées par le staff et leur ordre (2026-10-18, RS1) :
     // le même métier que la mise en avant — ce que la boutique conseille.
     // ⚠️ `staff_suggestion_order.` ne tombe PAS sous `staff_suggestion.`.

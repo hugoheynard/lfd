@@ -350,6 +350,10 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Enregistrer l'arrangement d'un e-mail, le publier avec ses phrases — il part ainsi aux clients ou à l'équipe — et revenir au modèle d'origine.",
   },
+  mail_sends: {
+    read: "Voir le suivi des e-mails : chaque envoi, son état et le retour du fournisseur, l'adresse masquée. Afficher une adresse en clair, ou chercher les envois d'une adresse, est inscrit au journal et limité à 30 par heure.",
+    write: "N'ajoute rien : le suivi des e-mails se lit seulement.",
+  },
   ops_health: {
     read: "Voir la carte de santé de l'écosystème et son trafic.",
     write: "N'ajoute rien : la carte de santé se lit seulement.",

@@ -152,6 +152,13 @@ re-sceller les IBAN) rend tous ces liens « introuvables » : les invités passe
 alors par la boutique, rien d'autre ne casse. Changer l'étiquette a le même
 effet. Ne la tourner que sur fuite.
 
+Elle dérive aussi, sous l'étiquette `lfd/mail-recipient-search/v1`
+(`AppConfig.mailRecipientSearchKey`, 2026-11-08), la clé des **empreintes
+d'adresses** que le suivi des e-mails range quand le staff cherche les envois
+d'une adresse ([`plan-suivi-des-e-mails.md`](../mail/plan-suivi-des-e-mails.md),
+décision 8). Une rotation rend les empreintes déjà rangées incomparables aux
+nouvelles ; aucun accès n'en dépend.
+
 **Elle scelle aussi le secret de signature des abonnés de la vitrine**
 (2026-10-18, [`vitrine.md`](../webhooks/vitrine.md)) :
 une rotation le rend illisible, et chaque abonné doit être régénéré à l'écran

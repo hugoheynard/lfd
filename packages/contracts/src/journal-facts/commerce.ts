@@ -370,6 +370,32 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
+   * **L'adresse du destinataire d'un envoi est révélée** dans le suivi des
+   * e-mails (`plan-suivi-des-e-mails.md`, décision 7, T2). L'acteur est celui
+   * de la ligne ; le sujet, la demande d'e-mail (`mail_send`). L'adresse n'est
+   * JAMAIS dans la charge : la trace dit « révélé », pas « ce qui a été lu ».
+   * Pendant 5 minutes, relire l'adresse ne trace rien de plus.
+   *
+   * `subjectLabel` : la clé de l'e-mail (`customer.order-ready`), comme les
+   * faits du document.
+   */
+  "mail.recipient_revealed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mail: z.string().min(1),
+      space: z.string().min(1),
+    }),
+  ),
+
+  /**
+   * **Les envois d'une adresse sont cherchés** dans le suivi des e-mails
+   * (`plan-suivi-des-e-mails.md`, décision 8, T2). Le sujet est la recherche
+   * (`mail_recipient_search`) ; l'adresse n'est JAMAIS dans la charge — la
+   * table n'en garde que l'empreinte. `found` : combien d'envois trouvés.
+   */
+  "mail.recipient_searched": fact(payload({ found: count() })),
+
+  /**
    * Un prospect saisi à la main. L'e-mail en est sorti le 2026-09-19 (lot B) :
    * une coordonnée n'a rien à faire au journal, et le lead la garde sur sa
    * propre ligne. `subjectLabel` : son enseigne — la même que `businessName`.

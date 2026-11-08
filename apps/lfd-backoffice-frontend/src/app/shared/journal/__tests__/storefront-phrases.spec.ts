@@ -271,3 +271,44 @@ describe('l’expéditeur d’un espace d’e-mails', () => {
     expect(rendered.detail).toEqual([]);
   });
 });
+
+/** **Une adresse révélée** (`mail.recipient_revealed`, plan-suivi-des-e-mails.md, décision 7). */
+describe('l’adresse d’un envoi révélée', () => {
+  it('nomme l’e-mail, jamais l’adresse, sans détail restant', () => {
+    const rendered = renderFact({
+      ...mailFact('mail.recipient_revealed', 'send_1', {
+        subjectLabel: 'customer.order-ready',
+        mail: 'customer.order-ready',
+        space: 'lfc',
+      }),
+      subjectType: 'mail_send',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a affiché l’adresse du destinataire d’un envoi de l’e-mail customer.order-ready',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+});
+
+/** **Une recherche par adresse** (`mail.recipient_searched`, plan-suivi-des-e-mails.md, décision 8). */
+describe('la recherche des envois d’une adresse', () => {
+  it('compte les envois trouvés, sans adresse, sans détail restant', () => {
+    const rendered = renderFact({
+      ...mailFact('mail.recipient_searched', 'srch_1', { found: 2 }),
+      subjectType: 'mail_recipient_search',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a cherché les envois d’une adresse : 2 envois trouvés',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+
+  it('dit quand rien n’a été trouvé', () => {
+    const rendered = renderFact(mailFact('mail.recipient_searched', 'srch_1', { found: 0 }));
+    expect(rendered.sentence).toBe(
+      'Colette Martin a cherché les envois d’une adresse : aucun envoi trouvé',
+    );
+  });
+});

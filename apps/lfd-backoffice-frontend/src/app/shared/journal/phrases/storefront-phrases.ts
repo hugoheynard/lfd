@@ -330,6 +330,39 @@ const mailSenderChanged: Phrase = (fact) => {
   );
 };
 
+const RECIPIENT_REVEALED_KEYS = ['subjectLabel', 'mail', 'space'];
+
+/**
+ * **L'adresse d'un envoi est révélée** (`mail.recipient_revealed`,
+ * plan-suivi-des-e-mails.md, décision 7) : « Colette Martin a affiché
+ * l'adresse du destinataire d'un envoi de l'e-mail customer.order-ready ». Le
+ * fait ne porte jamais l'adresse ; le sujet est l'envoi.
+ */
+const mailRecipientRevealed: Phrase = (fact) =>
+  byActor(
+    fact,
+    [text('a affiché l’adresse du destinataire d’un envoi de l’e-mail'), ...mailOf(fact)],
+    RECIPIENT_REVEALED_KEYS,
+  );
+
+/**
+ * **Les envois d'une adresse sont cherchés** (`mail.recipient_searched`,
+ * décision 8) : « Colette Martin a cherché les envois d'une adresse :
+ * 2 envois trouvés ». Ni l'adresse ni son empreinte ne sont au journal.
+ */
+const mailRecipientSearched: Phrase = (fact) => {
+  const found = typeof fact.payload['found'] === 'number' ? fact.payload['found'] : 0;
+  return byActor(
+    fact,
+    [
+      text('a cherché les envois d’une adresse : '),
+      (found === 0 ? null : countOf(found, 'envoi trouvé', 'envois trouvés')) ??
+        text('aucun envoi trouvé'),
+    ],
+    ['found'],
+  );
+};
+
 export const STOREFRONT_PHRASES = {
   'storefront.saved': saved,
   'storefront.allergen_display_changed': allergenDisplayChanged,
@@ -342,4 +375,6 @@ export const STOREFRONT_PHRASES = {
   'mail_copy.charter_saved': mailCharterSaved,
   'mail_copy.charter_published': mailCharterPublished,
   'mail_copy.sender_changed': mailSenderChanged,
+  'mail.recipient_revealed': mailRecipientRevealed,
+  'mail.recipient_searched': mailRecipientSearched,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

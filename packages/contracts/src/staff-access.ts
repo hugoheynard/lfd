@@ -656,6 +656,15 @@ export const staffResourceSchema = z.enum([
    * graine ne la donne qu'à l'administrateur.
    */
   "mail_templates",
+  /**
+   * **Le suivi des e-mails** — lecture seule : la liste des envois, leur
+   * détail, et l'adresse révélée sur demande, tracée au journal
+   * (`documentation/mail/plan-suivi-des-e-mails.md`, décision 11, lot T2,
+   * 2026-11-08). Un droit à part de `mail_templates` : rédiger un e-mail ne
+   * donne pas à voir à qui il est parti. Ajoutée sans être accordée : elle
+   * s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.
+   */
+  "mail_sends",
 
   // ── `ops.` — L'EXPLOITATION ─────────────────────────────────────────────
   /** La carte de santé de l'écosystème : topologie, trafic. Staff only. */
@@ -840,6 +849,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   mail_templates: "Modèles d'e-mails",
+  mail_sends: "Suivi des e-mails",
   ops_health: "Santé de l'écosystème",
   ops_post_deploy: "Opérations après déploiement",
   activity: "Journal d'activité",
@@ -1020,6 +1030,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-11-07, plan de l'éditeur par blocs, S4c) :
     // en production, accordée à l'écran.
     mail_templates: "write",
+    // L'administrateur seul (2026-11-08, plan du suivi des e-mails, T2) : en
+    // production, accordée à l'écran. `write` sur une lecture seule :
+    // l'administrateur couvre tout, sans trou.
+    mail_sends: "write",
     ops_health: "write",
     // Graine seulement (dev, e2e) : en production, accordée à l'écran
     // (plan des opérations après déploiement, § 7.9).

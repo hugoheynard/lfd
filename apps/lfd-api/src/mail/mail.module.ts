@@ -52,6 +52,8 @@ import { PrismaMailDeliveryEventLog } from "./deliveries/infrastructure/prisma-m
 import { PrismaOrphanMailDeliveryPruner } from "./deliveries/infrastructure/prisma-orphan-mail-delivery.pruner.js";
 import { PrismaRecordedMailDeliveries } from "./deliveries/infrastructure/prisma-recorded-mail-deliveries.js";
 import { PrismaUnappliedMailDeliveries } from "./deliveries/infrastructure/prisma-unapplied-mail-deliveries.js";
+import { MailConsultationPruner } from "./sends/domain/ports/mail-consultation.pruner.js";
+import { PrismaMailConsultationPruner } from "./sends/infrastructure/prisma-mail-consultation.pruner.js";
 import { MailDeliveryApplier } from "./requests/application/mail-delivery-applier.js";
 import { MailOutcomeRecorder } from "./requests/application/mail-outcome-recorder.js";
 import { RecordedMailDeliveries } from "./requests/domain/ports/recorded-mail-deliveries.js";
@@ -127,6 +129,8 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     { provide: RecordedMailDeliveries, useClass: PrismaRecordedMailDeliveries },
     { provide: UnappliedMailDeliveries, useClass: PrismaUnappliedMailDeliveries },
     { provide: OrphanMailDeliveryPruner, useClass: PrismaOrphanMailDeliveryPruner },
+    // T2 : les consultations du suivi, purgées sous le même cran.
+    { provide: MailConsultationPruner, useClass: PrismaMailConsultationPruner },
     MailOutcomeRecorder,
     MailDeliveryApplier,
     ReceiveResendEventHandler,

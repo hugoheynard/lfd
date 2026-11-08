@@ -23,6 +23,8 @@ import type { JournalValueMeta } from "../fact.js";
 const UNNAMED_SUBJECTS: Readonly<Record<string, string>> = {
   "product.ingredients_saved":
     "écrit par le contexte des ingrédients, qui ne lit pas les fiches, par construction",
+  "mail.recipient_searched":
+    "une recherche par adresse n'a d'autre nom que l'adresse, qui ne va jamais au journal (plan-suivi-des-e-mails.md, décision 8)",
   "subscription.status_changed": "un panier récurrent n'a pas de nom",
   "subscription.occurrence_overridden": "un panier récurrent n'a pas de nom",
   "subscription.deleted": "un panier récurrent n'a pas de nom",

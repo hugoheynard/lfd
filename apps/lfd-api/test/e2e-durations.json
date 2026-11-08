@@ -264,6 +264,7 @@
   "test/mail-requests.e2e-spec.ts": 9455,
   "test/mail-section-order.e2e-spec.ts": 9064,
   "test/mail-senders.e2e-spec.ts": 14615,
+  "test/mail-sends.e2e-spec.ts": 26722,
   "test/mail-template-images.e2e-spec.ts": 7676,
   "test/mail-templates.e2e-spec.ts": 24110,
   "test/mandate-bank-export-abandon.e2e-spec.ts": 7841,

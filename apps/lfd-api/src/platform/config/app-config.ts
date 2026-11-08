@@ -178,6 +178,23 @@ export class AppConfig {
   }
 
   /**
+   * **La clé des empreintes d'adresses recherchées dans le suivi des e-mails**
+   * (`documentation/mail/plan-suivi-des-e-mails.md`, décision 8, T2).
+   *
+   * Une recherche par adresse se trace sans garder l'adresse : la trace porte
+   * `HMAC-SHA256(adresse normalisée)` sous cette clé. DÉRIVÉE de la clé du
+   * coffre par HKDF-SHA256, sous son étiquette, comme les liens d'annulation :
+   * pas de variable de plus, deux usages ne partagent pas une clé. Une rotation
+   * de `FIELD_ENCRYPTION_KEY` rend les empreintes déjà rangées incomparables
+   * aux nouvelles — sans effet sur l'accès, qui ne compare jamais deux empreintes.
+   */
+  mailRecipientSearchKey(): Buffer {
+    return Buffer.from(
+      hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), MAIL_RECIPIENT_SEARCH_KEY_INFO, 32),
+    );
+  }
+
+  /**
    * La clé du coffre vient-elle de l'environnement, ou du repli de développement ?
    *
    * Lu par le bulletin de démarrage. La distinction compte parce qu'elle est
@@ -644,6 +661,9 @@ export interface StripeConfig {
 
 /** L'étiquette HKDF des liens d'annulation : la changer tue tous les liens envoyés. */
 const CANCELLATION_LINK_KEY_INFO = "lfd/order-cancellation-link/v1";
+
+/** L'étiquette HKDF des empreintes d'adresses recherchées (suivi des e-mails, T2). */
+const MAIL_RECIPIENT_SEARCH_KEY_INFO = "lfd/mail-recipient-search/v1";
 
 /**
  * 🔴 **Une clé absente ne doit jamais équivaloir à « pas de chiffrement ».**

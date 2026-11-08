@@ -2621,6 +2621,50 @@
       "information": false
     },
     {
+      "colonne": "mail.mail_recipient_reveal.revealed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Quel membre du staff a révélé l'adresse d'un envoi dans le suivi des e-mails : la lecture de l'adresse n'est permise qu'à lui, 5 minutes, et la ligne compte dans son plafond de 30 consultations par heure (plan-suivi-des-e-mails.md, décision 7). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_revealed`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_recipient_reveal.revealed_at",
+      "personne": "staff",
+      "categorie": "horodatage-geste",
+      "finalite": "L'instant de la révélation : il ouvre la lecture 5 minutes et compte dans le plafond horaire de son auteur (décision 7). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_revealed`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_recipient_search.searched_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Quel membre du staff a cherché les envois d'une adresse dans le suivi des e-mails : la recherche compte dans son plafond de 30 consultations par heure (plan-suivi-des-e-mails.md, décision 8). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_searched`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_recipient_search.recipient_fingerprint",
+      "personne": "client",
+      "categorie": "donnees-email",
+      "finalite": "L'EMPREINTE de l'adresse cherchée (HMAC-SHA256 sous une clé dérivée de FIELD_ENCRYPTION_KEY, `AppConfig.mailRecipientSearchKey`), jamais l'adresse : elle permet de dire, sur demande d'une personne, si son adresse a été cherchée, sans garder l'adresse elle-même (décision 8). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
+      "information": false
+    },
+    {
       "colonne": "platform.outbox.payload",
       "personne": "client",
       "categorie": "donnees-email",
@@ -2860,6 +2904,10 @@
     {
       "colonne": "platform.outbox.deliveries",
       "raison": "Pas une colonne : le champ de relation Prisma vers `outbox_delivery`, qui ne porte que des noms d'abonnés, des compteurs et des instants techniques (la porte lit le schéma Prisma ligne à ligne, relu le 2026-11-06)."
+    },
+    {
+      "colonne": "mail.mail_recipient_search_hit.mail_request_id",
+      "raison": "L'identifiant opaque d'une demande d'e-mail trouvée par une recherche (plan-suivi-des-e-mails.md, T2) : ni adresse ni nom — l'adresse reste dans `mail.mail_request.recipient`, au registre. Supprimé avec sa recherche (ON DELETE CASCADE), donc à 1 an sous `MAIL_REQUEST_PURGE`."
     }
   ]
 }

@@ -101,6 +101,8 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   lead: 'le prospect',
   legal_entity: 'l’entité juridique',
   mail_copy: 'les textes des e-mails',
+  mail_send: 'l’envoi d’e-mail',
+  mail_recipient_search: 'la recherche d’envois par adresse',
   mercuriale: 'la mercuriale',
   operation: 'l’opération',
   order_cutoff: 'l’heure limite',

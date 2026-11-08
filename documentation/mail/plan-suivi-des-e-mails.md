@@ -174,7 +174,20 @@ même durée que `recipient`). Tests aux trois niveaux, dont : un `bounced`
 reçu avant le `save` de l'envoi, puis appliqué ; un webhook rejoué ; un
 `delivered` arrivé après un `bounced`.
 
-**T2 — le droit et les lectures (API, migration additive).**
+**T2 — le droit et les lectures (API, migrations additives).** ✅ Bâti le
+2026-11-08 (migrations `20261108120000_le_droit_du_suivi_des_e_mails`,
+`20261108120100_les_consultations_du_suivi_des_e_mails` ; contexte
+`apps/lfd-api/src/mail/sends/`). Écarts au texte, retenus : la recherche
+range, en plus de l'empreinte, **les identifiants des envois trouvés**
+(`mail_recipient_search_hit`) — avec l'empreinte seule, la lecture n'avait
+plus de quoi retrouver les envois (faille du plan vue au bâti) ; le
+résultat est donc figé à l'instant de la recherche, et c'est voulu. La clé
+HMAC est dérivée de `FIELD_ENCRYPTION_KEY` (HKDF, pas de variable de plus).
+Le fait `mail.recipient_searched` n'a pas de libellé de sujet (le seul nom
+d'une recherche serait l'adresse). Le plafond répond 409. Les faits `mail.`
+sont rangés sous le module `commercial` du journal, à côté de `mail_copy.`.
+
+Le texte d'origine du lot :
 Ressource `mail_sends`, tables `mail_recipient_reveal` et
 `mail_recipient_search`, faits `mail.recipient_revealed` et
 `mail.recipient_searched` au contrat du journal — gardés pour la

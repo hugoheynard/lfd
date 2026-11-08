@@ -1,6 +1,7 @@
 import type { PurgeCensus, PurgeMode } from "../../../../platform/retention/purge-mode.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { OrphanMailDeliveryPruner } from "../../../deliveries/domain/ports/orphan-mail-delivery.pruner.js";
+import { MailConsultationPruner } from "../../../sends/domain/ports/mail-consultation.pruner.js";
 import { MailRequestPruner } from "../../domain/ports/mail-request.pruner.js";
 import {
   isMailRequestPurgeable,
@@ -53,6 +54,23 @@ class InMemoryOrphanPruner extends OrphanMailDeliveryPruner {
   }
 }
 
+/** Les consultations du suivi (T2), par instant. */
+class InMemoryConsultationPruner extends MailConsultationPruner {
+  readonly cutoffs: Date[] = [];
+  constructor(public at: Date[]) {
+    super();
+  }
+  census(cutoff: Date): Promise<PurgeCensus> {
+    this.cutoffs.push(cutoff);
+    return Promise.resolve({ count: this.at.filter((one) => one < cutoff).length, oldest: null });
+  }
+  pruneBatch(cutoff: Date, limit: number): Promise<number> {
+    const doomed = this.at.filter((one) => one < cutoff).slice(0, limit);
+    this.at = this.at.filter((one) => !doomed.includes(one));
+    return Promise.resolve(doomed.length);
+  }
+}
+
 const OLD_SENT: MailRequestRetentionFacts = {
   status: "sent",
   sentAt: daysAgo(400),
@@ -73,8 +91,9 @@ function handler(
   pruner: MailRequestPruner,
   mode: PurgeMode,
   orphans: OrphanMailDeliveryPruner = new InMemoryOrphanPruner([]),
+  consultations: MailConsultationPruner = new InMemoryConsultationPruner([]),
 ): PurgeSettledMailRequestsHandler {
-  return new PurgeSettledMailRequestsHandler(pruner, orphans, clock, mode);
+  return new PurgeSettledMailRequestsHandler(pruner, orphans, consultations, clock, mode);
 }
 
 describe("PurgeSettledMailRequestsHandler", () => {
@@ -144,6 +163,37 @@ describe("PurgeSettledMailRequestsHandler", () => {
 
       expect(report.orphanDeliveries).toMatchObject({ eligible: null, purged: 0 });
       expect(orphans.cutoffs).toEqual([]);
+    });
+  });
+
+  describe("les consultations du suivi (révélations et recherches, T2)", () => {
+    it("dry-run : compte celles de plus d'un an, sans rien supprimer", async () => {
+      const consultations = new InMemoryConsultationPruner([daysAgo(366), daysAgo(364)]);
+
+      const report = await handler(
+        new InMemoryMailRequestPruner([]),
+        "dry-run",
+        undefined,
+        consultations,
+      ).execute();
+
+      expect(report.consultations).toMatchObject({ mode: "dry-run", eligible: 1, purged: 0 });
+      expect(consultations.at).toHaveLength(2);
+      expect(consultations.cutoffs).toEqual([daysAgo(365)]);
+    });
+
+    it("on : supprime celles de plus d'un an, sous le même cran", async () => {
+      const consultations = new InMemoryConsultationPruner([daysAgo(366), daysAgo(364)]);
+
+      const report = await handler(
+        new InMemoryMailRequestPruner([]),
+        "on",
+        undefined,
+        consultations,
+      ).execute();
+
+      expect(report.consultations).toMatchObject({ mode: "on", purged: 1 });
+      expect(consultations.at).toEqual([daysAgo(364)]);
     });
   });
 });
