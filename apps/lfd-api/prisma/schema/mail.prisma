@@ -22,47 +22,49 @@
 /// (`MAIL_REQUEST_PURGE`, `dry-run` par défaut) : elle compte, elle ne
 /// supprime rien tant que Hugo ne l'a pas activée.
 model MailRequest {
-  id              String    @id
+  id              String               @id
   /// La clé du registre `B2bMails` (`customer.order-ready`).
-  template        String    @db.VarChar(80)
+  template        String               @db.VarChar(80)
   /// L'espace du modèle, `lfc` ou `lfd` (CHECK en base, C3).
-  brand           String    @db.VarChar(16)
+  brand           String               @db.VarChar(16)
   /// L'adresse du destinataire.
-  recipient       String    @db.VarChar(320)
+  recipient       String               @db.VarChar(320)
   /// La langue lue dans les données du modèle ; `null` s'il n'en déclare pas.
-  locale          String?   @db.VarChar(8)
+  locale          String?              @db.VarChar(8)
   /// `requested` | `sending` | `sent` | `failed` | `refused` (CHECK en base).
-  status          String    @db.VarChar(10)
+  status          String               @db.VarChar(10)
   /// L'identifiant Resend ; `null` tant que rien n'est parti, ou en mode à blanc.
-  providerId      String?   @map("provider_id")
+  providerId      String?              @map("provider_id")
   /// Unique : un rejeu ne crée pas une seconde demande.
-  idempotencyKey  String    @unique @map("idempotency_key") @db.VarChar(200)
+  idempotencyKey  String               @unique @map("idempotency_key") @db.VarChar(200)
   /// La raison d'un échec ou d'un refus, tronquée à 500 caractères.
-  failureReason   String?   @map("failure_reason") @db.VarChar(500)
-  requestedAt     DateTime  @map("requested_at") @db.Timestamptz(6)
-  sentAt          DateTime? @map("sent_at") @db.Timestamptz(6)
+  failureReason   String?              @map("failure_reason") @db.VarChar(500)
+  requestedAt     DateTime             @map("requested_at") @db.Timestamptz(6)
+  sentAt          DateTime?            @map("sent_at") @db.Timestamptz(6)
   /// L'instant du dernier échec ou du refus.
-  failedAt        DateTime? @map("failed_at") @db.Timestamptz(6)
+  failedAt        DateTime?            @map("failed_at") @db.Timestamptz(6)
   /// Le premier envoi différé engagé (S1b) : la fenêtre de reprise (23 h) en part.
-  firstAttemptAt  DateTime? @map("first_attempt_at") @db.Timestamptz(6)
+  firstAttemptAt  DateTime?            @map("first_attempt_at") @db.Timestamptz(6)
   /// Le dernier envoi différé engagé : un `sending` plus vieux est orphelin.
-  lastAttemptAt   DateTime? @map("last_attempt_at") @db.Timestamptz(6)
+  lastAttemptAt   DateTime?            @map("last_attempt_at") @db.Timestamptz(6)
   /// Les envois différés engagés (plafond dans l'agrégat).
-  attempts        Int       @default(0)
+  attempts        Int                  @default(0)
   /// La version publiée du document qui a composé l'envoi (plan
   /// `plan-editeur-par-blocs.md`, § 5, S4c) ; `null` = le document de départ,
   /// ou rien d'envoyé encore.
-  documentVersion Int?      @map("document_version")
+  documentVersion Int?                 @map("document_version")
   /// L'adresse en minuscules, écrite par l'agrégat (plan
   /// `le-suivi-des-e-mails.md`, décision 9) ; la recherche y compare.
   /// Nullable : une demande écrite par un binaire d'avant T1 n'en porte pas.
-  recipientKey    String?   @map("recipient_key") @db.VarChar(320)
+  recipientKey    String?              @map("recipient_key") @db.VarChar(320)
   /// Le retour du fournisseur (décision 1) : `delayed` | `delivered` |
   /// `complained` | `bounced` (CHECK en base) ; `null` = rien reçu.
-  delivery        String?   @db.VarChar(12)
-  deliveryAt      DateTime? @map("delivery_at") @db.Timestamptz(6)
+  delivery        String?              @db.VarChar(12)
+  deliveryAt      DateTime?            @map("delivery_at") @db.Timestamptz(6)
   /// Le GENRE du retour (`Permanent/Suppressed`), jamais son texte (décision 4).
-  deliveryKind    String?   @map("delivery_kind") @db.VarChar(64)
+  deliveryKind    String?              @map("delivery_kind") @db.VarChar(64)
+  /// Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règle 2).
+  subjects        MailRequestSubject[]
 
   @@index([status, requestedAt])
   @@index([status, lastAttemptAt])
@@ -70,6 +72,27 @@ model MailRequest {
   @@index([recipientKey])
   @@index([delivery, deliveryAt])
   @@map("mail_request")
+  @@schema("mail")
+}
+
+/// **Un sujet d'une demande d'e-mail** (plan `plan-sujet-des-e-mails.md`,
+/// règles 1 et 2) : un type de la liste fermée du canal (`order`,
+/// `account`…) et un identifiant OPAQUE — le bloc `mail` ne lit jamais
+/// l'objet désigné. Plusieurs par demande (une facture nomme chacune de ses
+/// commandes). Écrit avec la demande, jamais changé ; emporté par sa purge
+/// (ON DELETE CASCADE). L'index `(subject_type, subject_id)` sert la fiche
+/// d'une commande, qui lit ses e-mails.
+model MailRequestSubject {
+  requestId   String      @map("request_id")
+  /// Le type fermé (`order`) — la liste est dans le canal, pas en base.
+  subjectType String      @map("subject_type") @db.VarChar(32)
+  /// L'identifiant opaque de l'objet, 120 caractères au plus.
+  subjectId   String      @map("subject_id") @db.VarChar(120)
+  request     MailRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@id([requestId, subjectType, subjectId])
+  @@index([subjectType, subjectId])
+  @@map("mail_request_subject")
   @@schema("mail")
 }
 
@@ -142,12 +165,12 @@ model MailRecipientSearchHit {
 /// `AppConfig.mailRecipientSearchKey`) — jamais l'adresse. Compte dans le même
 /// plafond horaire que les révélations. Purgée à 1 an sous `MAIL_REQUEST_PURGE`.
 model MailRecipientSearch {
-  id                   String   @id
+  id                   String                   @id
   /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
-  searchedBy           String   @map("searched_by")
+  searchedBy           String                   @map("searched_by")
   /// `HMAC-SHA256` de l'adresse normalisée, en hexadécimal (64 caractères).
-  recipientFingerprint String   @map("recipient_fingerprint") @db.VarChar(64)
-  searchedAt           DateTime @map("searched_at") @db.Timestamptz(6)
+  recipientFingerprint String                   @map("recipient_fingerprint") @db.VarChar(64)
+  searchedAt           DateTime                 @map("searched_at") @db.Timestamptz(6)
   hits                 MailRecipientSearchHit[]
 
   @@index([searchedBy, searchedAt])

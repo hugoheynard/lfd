@@ -32,6 +32,7 @@ describe("les courriels de réponse à une demande de modification", () => {
         to: "jean@exemple.fr",
         template: "customer.order-change-applied",
         idempotencyKey: "order-change-applied:q1",
+        subjects: [{ type: "order", id: ORDER.id }],
         data: { reference: "ORD-0001", totalCents: 4250, previousTotalCents: 3800, locale: "fr" },
       },
     ]);
@@ -49,6 +50,7 @@ describe("les courriels de réponse à une demande de modification", () => {
         to: "jean@exemple.fr",
         template: "customer.order-change-refused",
         idempotencyKey: "order-change-refused:q1",
+        subjects: [{ type: "order", id: ORDER.id }],
         data: { reference: "ORD-0001", reason: "La fournée est lancée.", locale: "fr" },
       },
     ]);

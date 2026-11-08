@@ -324,6 +324,7 @@ describe("le courriel « votre commande est prête »", () => {
     await fire(subject);
 
     expect(subject.mailer.last?.idempotencyKey).toBe("order.ready:order_1");
+    expect(subject.mailer.last?.subjects).toEqual([{ type: "order", id: "order_1" }]);
   });
 
   /** Plan E7 reliquat, choix 17 : une clé oubliée avale le courriel du second envoi. */

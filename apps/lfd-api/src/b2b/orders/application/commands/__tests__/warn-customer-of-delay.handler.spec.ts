@@ -82,6 +82,7 @@ describe("« Avertir le client »", () => {
         to: "camille@halles.test",
         template: "customer.order-delayed",
         idempotencyKey: "order.delay-warning:order_1",
+        subjects: [{ type: "order", id: "order_1" }],
         data: {
           reference: "ORD-4812",
           pickupLabel: "Le Labo",

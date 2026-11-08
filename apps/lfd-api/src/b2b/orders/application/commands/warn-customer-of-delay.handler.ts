@@ -89,6 +89,7 @@ export class WarnCustomerOfDelayHandler implements ICommandHandler<
       to: letter.to,
       template: "customer.order-delayed",
       idempotencyKey: `${DELAY_WARNING}:${orderId}`,
+      subjects: [{ type: "order", id: orderId }],
       data: {
         reference: letter.reference,
         pickupLabel: letter.pickupLabel,

@@ -1,6 +1,10 @@
 import type { MailSpace } from "@lfd/mail-blocks";
 
 import type { B2bMails } from "../templates/b2b-mails.js";
+import type { MailSubject } from "./mail-subject.js";
+
+export type { MailSubject, MailSubjectType } from "./mail-subject.js";
+export { MAIL_SUBJECT_ID_MAX, MAIL_SUBJECT_TYPES } from "./mail-subject.js";
 
 /**
  * La marque au nom de laquelle un e-mail part : **l'espace de son modèle**
@@ -36,6 +40,14 @@ export interface MailDemand<K extends keyof B2bMails> {
    * refuse l'envoi — à l'appelant de l'écarter avant (`isValidReplyTo`).
    */
   readonly replyTo?: string;
+  /**
+   * **Ce pour quoi l'e-mail part** (plan `plan-sujet-des-e-mails.md`, règles
+   * 1 et 2) : « commande `cmd_123` », plusieurs pour une facture. Rangés au
+   * suivi, ils permettent à la fiche d'une commande de lire ses e-mails.
+   * Hors du bloc, `lint:mail-subject-declared` exige la clé à chaque appel,
+   * sauf liste admise ; une liste vide se dit `[]`.
+   */
+  readonly subjects?: readonly MailSubject[];
 }
 
 /**

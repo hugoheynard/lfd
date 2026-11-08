@@ -29,6 +29,7 @@ export function newMailRequest(demand: CheckedMailDemand, id: string, at: Date):
     locale: mailLocaleOf(demand.data),
     idempotencyKey: demand.idempotencyKey,
     requestedAt: at,
+    ...(demand.subjects === undefined ? {} : { subjects: demand.subjects }),
   });
 }
 

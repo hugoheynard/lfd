@@ -189,6 +189,13 @@
       "watch": ["apps/lfd-api/src/**", "packages/contracts/src/**"]
     },
     {
+      "name": "mail-subject-declared",
+      "script": "dev-toolbox/gates/mail-subject-declared.mjs",
+      "holds": "Hors du bloc mail, chaque demande d'e-mail passée à la porte `Mail` est un littéral qui dit son sujet (`subjects`) ; ni objet étalé, ni variable ; envoyeurs pas encore migrés en dette décroissante.",
+      "since": "2026-11-08",
+      "watch": ["apps/lfd-api/src/**"]
+    },
+    {
       "name": "intent-key-gestures",
       "script": "dev-toolbox/gates/intent-key-gestures.mjs",
       "holds": "Un geste du staff qui envoie un e-mail porte la clé d'intention de l'écran (commande et contrôleur), et aucune clé d'e-mail n'est tirée au hasard hors liste.",

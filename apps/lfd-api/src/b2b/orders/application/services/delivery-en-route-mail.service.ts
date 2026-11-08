@@ -76,6 +76,7 @@ export class DeliveryEnRouteMail {
         ...(shipment.rank === FIRST_SHIPMENT_RANK ? {} : { remainder: true }),
       },
       idempotencyKey: `delivery.en_route:${orderId}:${roundId}${shipment.keySuffix()}`,
+      subjects: [{ type: "order", id: orderId }],
     });
     return true;
   }

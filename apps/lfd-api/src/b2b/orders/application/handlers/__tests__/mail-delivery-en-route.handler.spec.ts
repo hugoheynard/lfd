@@ -193,6 +193,7 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     expect(mailer.queued[0]).toMatchObject({
       to: "camille@halles.test",
       template: "customer.delivery-en-route",
+      subjects: [{ type: "order", id: "o_1" }],
       data: {
         reference: "ORD-o_1",
         addressLines: ["12 rue des Lilas", "", "73150 Val d'Isère"],

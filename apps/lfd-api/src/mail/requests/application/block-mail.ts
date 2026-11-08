@@ -9,6 +9,7 @@ import {
   type MailDemand,
   type MailRequested,
   Mail,
+  type MailSubject,
 } from "../../channels/requests/mail.js";
 import { ImmediateMailSender } from "./immediate-mail-sender.service.js";
 import { type CheckedMailDemand, MailRequester } from "./mail-requester.service.js";
@@ -20,6 +21,7 @@ interface TypedDemand {
   readonly data: unknown;
   readonly idempotencyKey: string;
   readonly replyTo?: string;
+  readonly subjects?: readonly MailSubject[];
 }
 
 /**
@@ -34,6 +36,7 @@ function checked(demand: TypedDemand): CheckedMailDemand {
     brand: mailSpaceOf(demand.template),
     idempotencyKey: demand.idempotencyKey,
     ...(demand.replyTo === undefined ? {} : { replyTo: demand.replyTo }),
+    ...(demand.subjects === undefined ? {} : { subjects: demand.subjects }),
   };
 }
 

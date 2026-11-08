@@ -3,11 +3,12 @@ import { MailerInvalidReplyToError, MailerSendError } from "@lfd/mailer";
 import type { MailDemand } from "../../../channels/requests/mail.js";
 import {
   ImmediateMailInsideUnitOfWorkError,
+  InvalidMailRequestError,
   MailRefusedError,
   MailRequestAlreadySettledError,
   MailRequestOutsideUnitOfWorkError,
 } from "../../domain/errors/mail-request.errors.js";
-import { MAIL_REQUESTED } from "../mail-requested.fact.js";
+import { MAIL_REQUESTED, outgoingMailOf } from "../mail-requested.fact.js";
 import { mailScene } from "./mail-doubles.js";
 
 const SUSPENDED: MailDemand<"staff.access-suspended"> = {
@@ -141,5 +142,55 @@ describe("sendAndAwaitReceipt — l'envoi immédiat", () => {
       MailRequestAlreadySettledError,
     );
     expect(scene.dispatch.sent).toEqual([]);
+  });
+});
+
+/** Le sujet des e-mails (`plan-sujet-des-e-mails.md`, E1) : rangé à la demande, porté par le fait. */
+describe("les sujets d'une demande", () => {
+  const ORDER = { type: "order", id: "ord_1" } as const;
+  const WITH_SUBJECT: MailDemand<"staff.access-suspended"> = { ...SUSPENDED, subjects: [ORDER] };
+
+  it("send : la fiche les range, et le fait différé les porte à travers la boîte d'envoi", async () => {
+    const scene = mailScene();
+    scene.probe.open = true;
+
+    await scene.port.send(WITH_SUBJECT);
+
+    expect(scene.requests.rows.get("staff.suspended:s1")?.subjects).toEqual([ORDER]);
+    const fact = scene.facts.facts[0];
+    expect(fact?.payload).toMatchObject({ subjects: [ORDER] });
+    expect(outgoingMailOf(fact?.payload ?? {}).subjects).toEqual([ORDER]);
+  });
+
+  it("send sans sujet : ni fiche ni fait n'en inventent", async () => {
+    const scene = mailScene();
+    scene.probe.open = true;
+
+    await scene.port.send(SUSPENDED);
+
+    expect(scene.requests.rows.get("staff.suspended:s1")?.subjects).toEqual([]);
+    expect(scene.facts.facts[0]?.payload).not.toHaveProperty("subjects");
+  });
+
+  it("sendAndAwaitReceipt : la fiche écrite après l'envoi les range", async () => {
+    const scene = mailScene();
+
+    await scene.port.sendAndAwaitReceipt(WITH_SUBJECT);
+
+    expect(scene.requests.rows.get("staff.suspended:s1")?.subjects).toEqual([ORDER]);
+  });
+
+  it("refuse un fait rejoué dont un sujet est mal formé", () => {
+    const payload = {
+      template: "staff.access-suspended",
+      to: "equipe@example.test",
+      data: {},
+      idempotencyKey: "k",
+      subjects: [{ type: "order", id: "" }],
+    };
+    expect(() => outgoingMailOf(payload)).toThrow(InvalidMailRequestError);
+    expect(() => outgoingMailOf({ ...payload, subjects: "order" })).toThrow(
+      InvalidMailRequestError,
+    );
   });
 });

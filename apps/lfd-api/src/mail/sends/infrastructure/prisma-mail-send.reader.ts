@@ -2,7 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { MailRequestRow } from "../../requests/infrastructure/prisma-mail-request.repository.js";
+import {
+  type MailRequestRow,
+  type MailRequestSubjectRow,
+  WITH_SUBJECTS,
+} from "../../requests/infrastructure/prisma-mail-request.repository.js";
 import {
   type MailSendFilter,
   type MailSendPosition,
@@ -85,7 +89,7 @@ export class PrismaMailSendReader extends MailSendReader {
        WHERE ${Prisma.join(where, " AND ")}
        ORDER BY ${RANK} ASC, r."requested_at" DESC, r."id" DESC
        LIMIT ${limit}`;
-    return rows.map(toMailSendRecord);
+    return this.withSubjects(rows);
   }
 
   async byIds(ids: readonly string[]): Promise<readonly MailSendRecord[]> {
@@ -96,11 +100,32 @@ export class PrismaMailSendReader extends MailSendReader {
       SELECT ${COLUMNS} FROM "mail"."mail_request" r
        WHERE r."id" IN (${Prisma.join([...ids])})
        ORDER BY ${RANK} ASC, r."requested_at" DESC, r."id" DESC`;
-    return rows.map(toMailSendRecord);
+    return this.withSubjects(rows);
   }
 
   async detail(id: string): Promise<MailSendRecord | null> {
-    const row = await this.prisma.mailRequest.findUnique({ where: { id } });
+    const row = await this.prisma.mailRequest.findUnique({ where: { id }, include: WITH_SUBJECTS });
     return row === null ? null : toMailSendRecord(row);
+  }
+
+  /**
+   * Les sujets des lignes lues, en UNE lecture par lot (`plan-sujet-des-e-mails.md`,
+   * règle 9) : la liste est en SQL écrit, qui ne joint pas la table enfant.
+   */
+  private async withSubjects(rows: readonly MailRequestRow[]): Promise<readonly MailSendRecord[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+    const subjects = await this.prisma.mailRequestSubject.findMany({
+      where: { requestId: { in: rows.map((row) => row.id) } },
+      select: { requestId: true, subjectType: true, subjectId: true },
+    });
+    const byRequest = new Map<string, MailRequestSubjectRow[]>();
+    for (const subject of subjects) {
+      const list = byRequest.get(subject.requestId) ?? [];
+      list.push({ subjectType: subject.subjectType, subjectId: subject.subjectId });
+      byRequest.set(subject.requestId, list);
+    }
+    return rows.map((row) => toMailSendRecord({ ...row, subjects: byRequest.get(row.id) ?? [] }));
   }
 }

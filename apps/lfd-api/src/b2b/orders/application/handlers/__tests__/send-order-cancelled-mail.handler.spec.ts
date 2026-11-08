@@ -58,6 +58,7 @@ describe("SendOrderCancelledMail", () => {
       to: "camille@example.test",
       template: "customer.order-cancelled",
       idempotencyKey: "order.cancelled:order_1",
+      subjects: [{ type: "order", id: "order_1" }],
       data: {
         regime: "due",
         voucher: {

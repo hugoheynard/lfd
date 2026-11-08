@@ -104,6 +104,7 @@ describe("l'accusé de réception d'une commande", () => {
     await fire(subject);
 
     expect(subject.mailer.last?.idempotencyKey).toBe("order.placed:order_1");
+    expect(subject.mailer.last?.subjects).toEqual([{ type: "order", id: "order_1" }]);
   });
 
   it("compose l'URL du QR sur le BACK-OFFICE : c'est l'équipe qui scanne", async () => {

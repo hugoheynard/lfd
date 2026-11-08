@@ -121,3 +121,49 @@ describe("MailRequest — la demande et son suivi", () => {
     expect(() => reread.markSent("re_10", LATER)).toThrow(MailRequestAlreadySettledError);
   });
 });
+
+describe("MailRequest — ses sujets (plan-sujet-des-e-mails.md, règles 1 et 2)", () => {
+  const ORDER = { type: "order", id: "ord_1" } as const;
+  const INVOICE = { type: "invoice", id: "inv_1" } as const;
+
+  it("naît sans sujet quand la demande n'en dit pas", () => {
+    expect(MailRequest.request(DRAFT).subjects).toEqual([]);
+  });
+
+  it("porte plusieurs sujets, dans l'ordre, sans doublon", () => {
+    const request = MailRequest.request({ ...DRAFT, subjects: [ORDER, INVOICE, ORDER] });
+
+    expect(request.subjects).toEqual([ORDER, INVOICE]);
+  });
+
+  it("les garde à la relecture, et à travers les transitions", () => {
+    const request = MailRequest.request({ ...DRAFT, subjects: [ORDER] });
+    request.beginSending(LATER);
+    request.markSent("re_1", LATER);
+
+    expect(MailRequest.rehydrate(request.snapshot()).subjects).toEqual([ORDER]);
+  });
+
+  it("refuse un type de sujet inconnu", () => {
+    expect(() =>
+      MailRequest.request({ ...DRAFT, subjects: [{ type: "pas_un_type", id: "x_1" }] }),
+    ).toThrow(InvalidMailRequestError);
+  });
+
+  it.each([
+    ["vide", ""],
+    ["blanc", "   "],
+    ["de 121 caractères", "x".repeat(121)],
+  ])("refuse un identifiant de sujet %s", (_case, id) => {
+    expect(() => MailRequest.request({ ...DRAFT, subjects: [{ type: "order", id }] })).toThrow(
+      InvalidMailRequestError,
+    );
+  });
+
+  it("admet un identifiant de 120 caractères, rangé tel quel", () => {
+    const id = "x".repeat(120);
+    expect(MailRequest.request({ ...DRAFT, subjects: [{ type: "order", id }] }).subjects).toEqual([
+      { type: "order", id },
+    ]);
+  });
+});

@@ -119,6 +119,7 @@ describe("« Rappel au client »", () => {
     await subject.run();
 
     expect(subject.mailer.queued[0]?.idempotencyKey).toBe("order.pickup-reminder:order_1");
+    expect(subject.mailer.queued[0]?.subjects).toEqual([{ type: "order", id: "order_1" }]);
   });
 
   it("🔴 refuse un second rappel, sans rien envoyer", async () => {

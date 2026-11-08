@@ -59,6 +59,8 @@ import { PrismaRecordedMailDeliveries } from "./deliveries/infrastructure/prisma
 import { PrismaUnappliedMailDeliveries } from "./deliveries/infrastructure/prisma-unapplied-mail-deliveries.js";
 import { MailConsultationPruner } from "./sends/domain/ports/mail-consultation.pruner.js";
 import { PrismaMailConsultationPruner } from "./sends/infrastructure/prisma-mail-consultation.pruner.js";
+import { MailSubjectDeliveries } from "./channels/deliveries/mail-subject-deliveries.js";
+import { PrismaMailSubjectDeliveries } from "./sends/infrastructure/prisma-mail-subject-deliveries.js";
 import { MailDeliveryApplier } from "./requests/application/mail-delivery-applier.js";
 import { MailOutcomeRecorder } from "./requests/application/mail-outcome-recorder.js";
 import { RecordedMailDeliveries } from "./requests/domain/ports/recorded-mail-deliveries.js";
@@ -144,8 +146,12 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     MailOutcomeRecorder,
     MailDeliveryApplier,
     ReceiveResendEventHandler,
+    // Le sujet des e-mails (`plan-sujet-des-e-mails.md`, E2) : les e-mails
+    // d'un objet, lus par les blocs métier par le canal.
+    { provide: MailSubjectDeliveries, useClass: PrismaMailSubjectDeliveries },
   ],
   exports: [
+    MailSubjectDeliveries,
     Mail,
     MailTemplatePreview,
     ShortfallLetterDrafter,

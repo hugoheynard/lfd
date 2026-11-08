@@ -17,6 +17,7 @@ const DETAIL: MailSendDetailView = {
   delivery: 'bounced',
   requestedAt: AT,
   problem: true,
+  subjects: [],
   locale: 'fr',
   deliveryKind: 'Permanent/Suppressed',
   documentVersion: 3,

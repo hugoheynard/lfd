@@ -71,6 +71,7 @@ export class SendOrderCancelledMail implements DurableSubscriber {
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `${ORDER_CANCELLED}:${event.orderId}`,
+      subjects: [{ type: "order", id: event.orderId }],
     });
   }
 

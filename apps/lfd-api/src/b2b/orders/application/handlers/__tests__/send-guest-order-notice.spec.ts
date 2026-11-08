@@ -148,6 +148,7 @@ describe("SendGuestOrderNotice — qui l'on prévient", () => {
     expect(world.sent).toHaveLength(1);
     expect(world.sent[0]?.to).toBe("camille@exemple.fr");
     expect(world.sent[0]?.template).toBe("customer.order-placed-with-your-email");
+    expect(world.sent[0]?.subjects?.map((subject) => subject.type)).toEqual(["order"]);
   });
 
   /**

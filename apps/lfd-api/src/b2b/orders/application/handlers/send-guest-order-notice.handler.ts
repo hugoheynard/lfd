@@ -132,6 +132,7 @@ export class SendGuestOrderNotice implements DurableSubscriber {
       // Une par commande : le registre ci-dessus borne déjà à une par adresse
       // et par jour. L'adresse n'entre pas dans la clé, qui est rangée au suivi.
       idempotencyKey: `order.guest-notice:${orderId}`,
+      subjects: [{ type: "order", id: orderId }],
     });
   }
 }

@@ -22,6 +22,7 @@ export class OrderChangeRefusedMail {
       to: event.request.author.email,
       template: "customer.order-change-refused",
       idempotencyKey: `order-change-refused:${requestId}`,
+      subjects: [{ type: "order", id: order.id }],
       data: { reference: order.number, reason: event.reason, locale: DEFAULT_MAIL_LOCALE },
     });
   }

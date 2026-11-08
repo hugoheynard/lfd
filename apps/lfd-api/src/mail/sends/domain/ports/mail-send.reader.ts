@@ -1,3 +1,4 @@
+import type { MailSubject } from "../../../channels/requests/mail-subject.js";
 import type { MailBrandCode } from "../../../requests/domain/value-objects/mail-brand.js";
 import type { StoredMailDelivery, StoredMailStatus } from "../services/mail-send-state.js";
 
@@ -44,6 +45,8 @@ export interface MailSendRecord {
   readonly delivery: StoredMailDelivery | null;
   readonly deliveryAt: Date | null;
   readonly deliveryKind: string | null;
+  /** Ce pour quoi il part (`plan-sujet-des-e-mails.md`, règle 9). */
+  readonly subjects: readonly MailSubject[];
 }
 
 /**

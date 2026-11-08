@@ -1,3 +1,5 @@
+import type { MailSubject } from "../../../channels/requests/mail-subject.js";
+
 /** Un e-mail prêt à partir, sans type de modèle : le canal l'a déjà vérifié. */
 export interface OutgoingMail {
   readonly template: string;
@@ -6,6 +8,11 @@ export interface OutgoingMail {
   readonly idempotencyKey: string;
   /** L'adresse de réponse de ce message, s'il en a une (`MailDemand.replyTo`). */
   readonly replyTo?: string;
+  /**
+   * Ce pour quoi il part (`plan-sujet-des-e-mails.md`, règle 2) : rangé au
+   * suivi, porté par le fait différé ; le transport ne le lit pas.
+   */
+  readonly subjects?: readonly MailSubject[];
 }
 
 /** Ce qu'un envoi accepté rend. */

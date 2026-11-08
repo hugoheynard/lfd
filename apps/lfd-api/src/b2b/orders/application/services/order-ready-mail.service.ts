@@ -106,6 +106,7 @@ export class OrderReadyMail {
         ...(remainder === FIRST_SHIPMENT ? {} : { remainder: { pieces: remainder.pieces } }),
       },
       idempotencyKey,
+      subjects: [{ type: "order", id: orderId }],
     });
     return true;
   }

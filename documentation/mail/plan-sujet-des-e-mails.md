@@ -75,7 +75,8 @@ flowchart LR
 1. **Un sujet = un type fermé et un identifiant opaque.** `MailSubject {
 type, id }` ; les types, décidés ici : `order`, `account`, `company`,
    `invoice`, `collection_batch`, `mandate`, `customer_request`,
-   `staff_member`, `production_day`. La liste est fermée et déclarée par le
+   `staff_member`, `production_day`, et `appointment` (ajouté au bâti, le
+   2026-11-08 : le rendez-vous pris a un objet). La liste est fermée et déclarée par le
    canal du bloc ; un type neuf s'ajoute par une ligne. `id` : chaîne non
    vide, 120 caractères au plus. Le bloc `mail` ne lit jamais l'objet :
    `mail → b2b` reste interdit.
@@ -95,7 +96,8 @@ type, id }` ; les types, décidés ici : `order`, `account`, `company`,
    passer un littéral objet qui porte la clé `subjects` ; un objet étalé
    (`...demand`) ou passé par variable est refusé, sauf liste admise datée.
    Les fichiers pas encore migrés sont une dette comptée — le chiffre de
-   départ est celui que la porte relève à E1, écrit ici au bâti. Admis sans
+   départ est celui que la porte relève à E1, écrit ici au bâti : **16
+   fichiers** au 2026-11-08 (`DEBT` de `dev-toolbox/gates/mail-subject-declared.mjs`). Admis sans
    sujet, avec leur raison : l'essai, la sonde, les alertes d'équipe sans
    objet.
 4. **Un seul point d'émission du fait d'échec** (bloquant 1). C'est

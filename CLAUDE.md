@@ -167,7 +167,12 @@
 >   demandée (`mail.send`), acceptée (`mail.sendAndAwaitReceipt`), remise
 >   (le suivi) — et n'est jamais tiré du réglage du mailer ni d'une simple
 >   demande ; les `mailSent` / `sent` servis sont une dette comptée qui ne
->   peut que décroître. C'est la
+>   peut que décroître. Et **69** le même jour avec
+>   `lint:mail-subject-declared` (plan du sujet des e-mails, E1) : hors du
+>   bloc `mail`, un fichier qui injecte la porte `Mail` passe à chaque
+>   `send` / `sendAndAwaitReceipt` un littéral qui porte `subjects` — ni
+>   objet étalé, ni variable ; les envoyeurs pas encore migrés sont une dette
+>   comptée qui ne peut que décroître. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1365,7 +1370,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 68 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 69 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

@@ -27,6 +27,7 @@ export class OrderChangeAppliedMail {
       to: event.request.author.email,
       template: "customer.order-change-applied",
       idempotencyKey: `order-change-applied:${requestId}`,
+      subjects: [{ type: "order", id: order.id }],
       data: {
         reference: order.number,
         totalCents: event.applied.totalCents,

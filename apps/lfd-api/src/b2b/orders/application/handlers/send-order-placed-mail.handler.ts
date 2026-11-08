@@ -155,6 +155,7 @@ export class SendOrderPlacedMail implements DurableSubscriber {
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `order.placed:${orderId}`,
+      subjects: [{ type: "order", id: orderId }],
     });
   }
 }

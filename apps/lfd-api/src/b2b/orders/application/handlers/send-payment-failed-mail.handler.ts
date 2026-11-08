@@ -103,6 +103,7 @@ export class SendPaymentFailedMail implements DurableSubscriber {
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `order.payment-failed:${event.orderId}`,
+      subjects: [{ type: "order", id: event.orderId }],
     });
   }
 }

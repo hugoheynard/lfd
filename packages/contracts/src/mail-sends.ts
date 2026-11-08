@@ -44,6 +44,18 @@ export type MailSendSpace = (typeof MAIL_SEND_SPACES)[number];
 export const MAIL_SEND_SCOPES = ["regular", "probes"] as const;
 export type MailSendScope = (typeof MAIL_SEND_SCOPES)[number];
 
+/**
+ * **Ce pour quoi un e-mail est parti** (`plan-sujet-des-e-mails.md`, règles
+ * 1 et 9) : un type de la liste fermée du bloc `mail` (`order`, `account`,
+ * `company`, `invoice`, `collection_batch`, `mandate`, `customer_request`,
+ * `staff_member`, `production_day`) et un identifiant opaque. Le back-office
+ * fait d'un sujet `order` un lien vers la commande.
+ */
+export interface MailSendSubjectView {
+  readonly type: string;
+  readonly id: string;
+}
+
 /** Une ligne de `GET /admin/mail/sends`. */
 export interface MailSendListItemView {
   readonly id: string;
@@ -59,6 +71,8 @@ export interface MailSendListItemView {
   readonly requestedAt: string;
   /** Vrai pour un échec, un refus, un rebond, un spam ou un retard : en tête de liste. */
   readonly problem: boolean;
+  /** Ses sujets ; vide pour un e-mail qui n'en déclare pas, et pour ceux d'avant les sujets. */
+  readonly subjects: readonly MailSendSubjectView[];
 }
 
 /**
@@ -134,4 +148,31 @@ export interface MailRecipientSearchView {
   /** ISO 8601 : au-delà, il faut chercher de nouveau. */
   readonly readableUntil: string;
   readonly items: readonly MailSendListItemView[];
+}
+
+/**
+ * Un e-mail d'une commande, tel que son suivi le dit
+ * (`plan-sujet-des-e-mails.md`, règle 7) — sans adresse ni raison d'échec.
+ */
+export interface OrderMailView {
+  /** L'identifiant de la fiche du suivi des envois. */
+  readonly id: string;
+  /** La clé du registre (`customer.order-ready`). */
+  readonly template: string;
+  /** ISO 8601. */
+  readonly requestedAt: string;
+  readonly state: MailSendState;
+  /** `null` : rien reçu du fournisseur ; `dry_run` : accepté à blanc. */
+  readonly delivery: MailSendDelivery | null;
+  /** ISO 8601 ; `null` sans retour. */
+  readonly deliveryAt: string | null;
+}
+
+/**
+ * `GET /admin/orders/:orderId/mails` — les e-mails demandés pour cette
+ * commande, les plus récents d'abord. Vide pour une commande dont les
+ * e-mails sont partis avant les sujets.
+ */
+export interface OrderMailsView {
+  readonly items: readonly OrderMailView[];
 }

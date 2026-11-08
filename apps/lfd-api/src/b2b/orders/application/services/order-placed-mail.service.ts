@@ -106,6 +106,7 @@ export class OrderPlacedMail {
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `order.placed:${orderId}`,
+      subjects: [{ type: "order", id: orderId }],
     });
     return true;
   }

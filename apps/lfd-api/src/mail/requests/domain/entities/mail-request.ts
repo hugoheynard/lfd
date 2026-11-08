@@ -3,7 +3,9 @@ import {
   MailRequestAlreadySettledError,
   MailRequestNotResumableError,
 } from "../errors/mail-request.errors.js";
+import type { MailSubject } from "../../../channels/requests/mail-subject.js";
 import { MailBrand, type MailBrandCode } from "../value-objects/mail-brand.js";
+import { mailRequestSubjectsOf } from "../value-objects/mail-request-subject.js";
 import {
   deliveryOutranks,
   type MailDelivery,
@@ -56,6 +58,8 @@ export interface MailRequestDraft {
   readonly locale: string | null;
   readonly idempotencyKey: string;
   readonly requestedAt: Date;
+  /** Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règle 2) ; absent = aucun. */
+  readonly subjects?: readonly { readonly type: string; readonly id: string }[];
 }
 
 /** L'état complet, tel que l'adaptateur le range et le relit. */
@@ -95,6 +99,12 @@ export interface MailRequestSnapshot {
   readonly deliveryAt: Date | null;
   /** Le genre du retour (`Permanent/Suppressed`), jamais son texte. */
   readonly deliveryKind: string | null;
+  /**
+   * Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règles 1 et 2),
+   * fixé à la demande et jamais changé ensuite. Vide pour une demande sans
+   * sujet, et pour toutes celles d'avant la table : rien n'est déduit.
+   */
+  readonly subjects: readonly MailSubject[];
 }
 
 /** La clé de comparaison d'une adresse : la même règle à la création et en migration (`lower`). */
@@ -162,12 +172,17 @@ export class MailRequest {
       delivery: null,
       deliveryAt: null,
       deliveryKind: null,
+      subjects: mailRequestSubjectsOf(draft.subjects ?? []),
     });
   }
 
-  /** Relit une demande rangée ; la marque se revalide. */
+  /** Relit une demande rangée ; la marque et les sujets se revalident. */
   static rehydrate(snapshot: MailRequestSnapshot): MailRequest {
-    return new MailRequest({ ...snapshot, brand: MailBrand.of(snapshot.brand).code });
+    return new MailRequest({
+      ...snapshot,
+      brand: MailBrand.of(snapshot.brand).code,
+      subjects: mailRequestSubjectsOf(snapshot.subjects),
+    });
   }
 
   get id(): string {
@@ -184,6 +199,10 @@ export class MailRequest {
 
   get providerId(): string | null {
     return this.state.providerId;
+  }
+
+  get subjects(): readonly MailSubject[] {
+    return this.state.subjects;
   }
 
   /** Close : envoyée ou refusée. Elle ne repart plus. */

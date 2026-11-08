@@ -8,6 +8,7 @@ import {
   type MailRequested,
   type MailDemand,
   Mail,
+  type MailSubject,
 } from "../mail.js";
 
 /** Une demande telle que le double l'a reçue. */
@@ -16,6 +17,7 @@ export interface RecordedMail {
   readonly to: string;
   readonly data: unknown;
   readonly idempotencyKey: string;
+  readonly subjects?: readonly MailSubject[];
 }
 
 /**

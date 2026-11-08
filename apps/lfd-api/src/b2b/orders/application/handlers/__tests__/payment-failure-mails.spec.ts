@@ -67,6 +67,7 @@ describe("les courriels d'un règlement mort", () => {
 
     expect(mailer.queued.map((mail) => mail.template)).toEqual(["customer.payment-failed"]);
     expect(mailer.queued[0]?.idempotencyKey).toBe("order.payment-failed:order_1");
+    expect(mailer.queued[0]?.subjects).toEqual([{ type: "order", id: "order_1" }]);
   });
 
   it("la clôture envoie « pas à temps », sans lien de reprise", async () => {

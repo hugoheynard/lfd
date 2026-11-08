@@ -163,3 +163,63 @@ function payloadOf(message: { readonly payload: unknown }): Readonly<Record<stri
   }
   return Object.fromEntries(Object.entries(payload));
 }
+
+/** Le sujet des e-mails (`plan-sujet-des-e-mails.md`, E1) : rangé, relu, et gardé à travers l'outbox. */
+describe("les sujets d'une demande, dans `mail.mail_request_subject`", () => {
+  const SUBJECTS = [
+    { type: "order", id: "ord_e2e_1" },
+    { type: "invoice", id: "inv_e2e_1" },
+  ] as const;
+
+  async function subjectsOf(idempotencyKey: string): Promise<readonly unknown[]> {
+    const row = await ctx.prisma.mailRequest.findUniqueOrThrow({
+      where: { idempotencyKey },
+      select: { subjects: { select: { subjectType: true, subjectId: true } } },
+    });
+    return row.subjects;
+  }
+
+  it("différée : rangés avec la demande, portés par le fait, et intacts après l'envoi par la boîte d'envoi", async () => {
+    await unitOfWork.run(() => mail.send({ ...RESTORED, subjects: SUBJECTS }));
+    const message = await ctx.prisma.outboxMessage.findFirstOrThrow();
+    expect(payloadOf(message)).toMatchObject({ subjects: SUBJECTS });
+
+    await ctx.drain();
+
+    expect(mailer.sent).toHaveLength(1);
+    const row = await ctx.prisma.mailRequest.findUniqueOrThrow({
+      where: { idempotencyKey: RESTORED.idempotencyKey },
+    });
+    expect(row.status).toBe("sent");
+    expect(await subjectsOf(RESTORED.idempotencyKey)).toEqual(
+      expect.arrayContaining([
+        { subjectType: "order", subjectId: "ord_e2e_1" },
+        { subjectType: "invoice", subjectId: "inv_e2e_1" },
+      ]),
+    );
+  });
+
+  it("immédiate : rangés à l'écriture du suivi, après l'envoi", async () => {
+    await mail.sendAndAwaitReceipt({ ...RESTORED, subjects: [SUBJECTS[0]] });
+
+    expect(await subjectsOf(RESTORED.idempotencyKey)).toEqual([
+      { subjectType: "order", subjectId: "ord_e2e_1" },
+    ]);
+  });
+
+  it("une seconde demande de même clé garde les sujets de la première", async () => {
+    await unitOfWork.run(() => mail.send({ ...RESTORED, subjects: [SUBJECTS[0]] }));
+    await unitOfWork.run(() => mail.send({ ...RESTORED, subjects: [SUBJECTS[1]] }));
+
+    expect(await subjectsOf(RESTORED.idempotencyKey)).toEqual([
+      { subjectType: "order", subjectId: "ord_e2e_1" },
+    ]);
+  });
+
+  it("la purge d'une demande emporte ses sujets (ON DELETE CASCADE)", async () => {
+    await unitOfWork.run(() => mail.send({ ...RESTORED, subjects: SUBJECTS }));
+    await ctx.prisma.mailRequest.deleteMany({});
+
+    expect(await ctx.prisma.mailRequestSubject.count()).toBe(0);
+  });
+});

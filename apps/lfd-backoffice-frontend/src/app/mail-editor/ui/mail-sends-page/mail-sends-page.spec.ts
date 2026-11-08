@@ -18,6 +18,7 @@ const row = (id: string, template = 'customer.order-placed'): MailSendListItemVi
   delivery: null,
   requestedAt: new Date().toISOString(),
   problem: false,
+  subjects: [],
 });
 
 async function setup(

@@ -65,6 +65,7 @@ export class WriteShortfallLetterHandler implements ICommandHandler<
         to: recipient.email,
         template: "customer.order-shortfall",
         idempotencyKey: notice.letterKey,
+        subjects: [{ type: "order", id: command.orderId }],
         data: {
           reference: notice.reference,
           message: letter.text,

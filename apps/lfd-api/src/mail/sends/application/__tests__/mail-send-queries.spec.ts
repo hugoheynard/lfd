@@ -132,6 +132,32 @@ describe("ListMailSendsHandler", () => {
   });
 });
 
+describe("les sujets dans le suivi (plan-sujet-des-e-mails.md, règle 9)", () => {
+  const ORDER = { type: "order", id: "ord_1" } as const;
+
+  it("la liste sert les sujets de chaque ligne, vide pour une demande sans sujet", async () => {
+    const reader = new FixedMailSendReader([
+      record({ id: "a", subjects: [ORDER] }),
+      record({ id: "b" }),
+    ]);
+    const handler = new ListMailSendsHandler(reader, new FixedProbeTemplates([PROBE]));
+
+    const view = await handler.execute(new ListMailSendsQuery(criteria()));
+
+    expect(view.items.map((item) => item.subjects)).toEqual([[ORDER], []]);
+  });
+
+  it("le détail les sert aussi", async () => {
+    const handler = new GetMailSendHandler(
+      new FixedMailSendReader([record({ subjects: [ORDER] })]),
+    );
+
+    await expect(handler.execute(new GetMailSendQuery("send_1"))).resolves.toMatchObject({
+      subjects: [ORDER],
+    });
+  });
+});
+
 describe("GetMailSendHandler", () => {
   it("rend le détail masqué, ses étapes, sans raison d'échec", async () => {
     const handler = new GetMailSendHandler(

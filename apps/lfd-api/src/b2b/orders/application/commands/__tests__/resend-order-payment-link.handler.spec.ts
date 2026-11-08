@@ -117,6 +117,7 @@ describe("ResendOrderPaymentLinkHandler", () => {
     expect(subject.mailer.awaitedReceipt[0]).toMatchObject({
       to: "camille@halles.test",
       template: "customer.order-payment-link",
+      subjects: [{ type: "order", id: RESEND.orderId }],
       data: {
         reference: "ORD-4812",
         totalCents: 14_400,

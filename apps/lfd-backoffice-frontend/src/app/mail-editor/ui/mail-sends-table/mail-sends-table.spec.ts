@@ -13,6 +13,7 @@ const BOUNCED: MailSendListItemView = {
   delivery: 'bounced',
   requestedAt: new Date().toISOString(),
   problem: true,
+  subjects: [],
 };
 
 function setup(rows: readonly MailSendListItemView[]) {

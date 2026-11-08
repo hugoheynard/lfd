@@ -73,6 +73,7 @@ export class SendPaymentExpiredMail implements DurableSubscriber {
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `order.payment-expired:${event.orderId}`,
+      subjects: [{ type: "order", id: event.orderId }],
     });
   }
 }

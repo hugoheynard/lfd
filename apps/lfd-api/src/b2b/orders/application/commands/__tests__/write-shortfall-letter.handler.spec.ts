@@ -136,6 +136,7 @@ describe("« Écrire au client » (E6d)", () => {
         to: "jean@exemple.fr",
         template: "customer.order-shortfall",
         idempotencyKey: "order-shortfall:dec_1",
+        subjects: [{ type: "order", id: "ord_1" }],
         data: { reference: "ORD-0001", message: "Il manque deux croissants.", locale: "it" },
       },
     ]);

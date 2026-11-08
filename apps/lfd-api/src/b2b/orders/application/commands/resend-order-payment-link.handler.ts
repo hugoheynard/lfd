@@ -80,6 +80,7 @@ export class ResendOrderPaymentLinkHandler implements ICommandHandler<
       template: "customer.order-payment-link",
       data: { reference: standing.reference, totalCents: standing.totalCents, settleUrl },
       idempotencyKey: `order.payment-link:${standing.orderId}:${command.intentKey}`,
+      subjects: [{ type: "order", id: standing.orderId }],
     });
   }
 }

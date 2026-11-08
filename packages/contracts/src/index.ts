@@ -2643,6 +2643,9 @@ export {
   type MailSendState,
   type MailSendStepKind,
   type MailSendStepView,
+  type MailSendSubjectView,
+  type OrderMailsView,
+  type OrderMailView,
 } from "./mail-sends.js";
 export {
   SHOP_COPY_DRAFT_STATES,

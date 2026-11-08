@@ -41,6 +41,7 @@ export function record(overrides: Partial<MailSendRecord> = {}): MailSendRecord 
     delivery: null,
     deliveryAt: null,
     deliveryKind: null,
+    subjects: [],
     ...overrides,
   };
 }

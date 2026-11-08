@@ -2906,6 +2906,22 @@
       "raison": "Pas une colonne : le champ de relation Prisma vers `outbox_delivery`, qui ne porte que des noms d'abonnés, des compteurs et des instants techniques (la porte lit le schéma Prisma ligne à ligne, relu le 2026-11-06)."
     },
     {
+      "colonne": "mail.mail_request.subjects",
+      "raison": "Pas une colonne : le champ de relation Prisma vers `mail_request_subject` (plan-sujet-des-e-mails.md, E1), dont chaque colonne est exclue ci-dessous avec sa raison (la porte lit le schéma Prisma ligne à ligne, relu le 2026-11-08)."
+    },
+    {
+      "colonne": "mail.mail_request_subject.request_id",
+      "raison": "L'identifiant opaque de la demande d'e-mail à laquelle le sujet appartient (plan-sujet-des-e-mails.md, E1) : ni adresse ni nom — l'adresse reste dans `mail.mail_request.recipient`, au registre. Supprimé avec sa demande (ON DELETE CASCADE), donc sous `MAIL_REQUEST_PURGE`."
+    },
+    {
+      "colonne": "mail.mail_request_subject.subject_type",
+      "raison": "Le type du sujet, pris dans une liste fermée (`order`, `invoice`…), le même pour tous ; part avec sa demande (ON DELETE CASCADE)."
+    },
+    {
+      "colonne": "mail.mail_request_subject.subject_id",
+      "raison": "L'identifiant OPAQUE de l'objet pour lequel l'e-mail part (une commande, une facture…), jamais une adresse ni un nom (plan-sujet-des-e-mails.md, règle 1) ; part avec sa demande (ON DELETE CASCADE), donc sous `MAIL_REQUEST_PURGE`."
+    },
+    {
       "colonne": "mail.mail_recipient_search_hit.mail_request_id",
       "raison": "L'identifiant opaque d'une demande d'e-mail trouvée par une recherche (le-suivi-des-e-mails.md, T2) : ni adresse ni nom — l'adresse reste dans `mail.mail_request.recipient`, au registre. Supprimé avec sa recherche (ON DELETE CASCADE), donc à 1 an sous `MAIL_REQUEST_PURGE`."
     }
