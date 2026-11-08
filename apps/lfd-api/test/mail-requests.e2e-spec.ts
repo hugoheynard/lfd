@@ -164,7 +164,7 @@ function payloadOf(message: { readonly payload: unknown }): Readonly<Record<stri
   return Object.fromEntries(Object.entries(payload));
 }
 
-/** Le sujet des e-mails (`plan-sujet-des-e-mails.md`, E1) : rangé, relu, et gardé à travers l'outbox. */
+/** Le sujet des e-mails (`le-sujet-des-e-mails.md`, E1) : rangé, relu, et gardé à travers l'outbox. */
 describe("les sujets d'une demande, dans `mail.mail_request_subject`", () => {
   const SUBJECTS = [
     { type: "order", id: "ord_e2e_1" },

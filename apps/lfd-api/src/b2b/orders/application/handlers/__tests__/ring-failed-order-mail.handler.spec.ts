@@ -71,7 +71,7 @@ function scene() {
   return { notifier, ring };
 }
 
-describe("RingFailedOrderMail (plan-sujet-des-e-mails, E4)", () => {
+describe("RingFailedOrderMail (le-sujet-des-e-mails, E4)", () => {
   it("sonne une cloche vers la commande, adressée au droit des commandes, sans adresse", async () => {
     const { notifier, ring } = scene();
 

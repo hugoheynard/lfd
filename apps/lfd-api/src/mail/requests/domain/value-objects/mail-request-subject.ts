@@ -7,7 +7,7 @@ import {
 import { InvalidMailRequestError } from "../errors/mail-request.errors.js";
 
 /**
- * **Un sujet de demande, revalidé** (plan `plan-sujet-des-e-mails.md`,
+ * **Un sujet de demande, revalidé** (`le-sujet-des-e-mails.md`,
  * règle 1) : un type de la liste fermée du canal, un identifiant non vide
  * d'au plus {@link MAIL_SUBJECT_ID_MAX} caractères. Le type arrive en chaîne
  * brute quand il est relu (base, boîte d'envoi) : c'est ici qu'il redevient

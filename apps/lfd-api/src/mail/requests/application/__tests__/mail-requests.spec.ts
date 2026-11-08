@@ -145,7 +145,7 @@ describe("sendAndAwaitReceipt — l'envoi immédiat", () => {
   });
 });
 
-/** Le sujet des e-mails (`plan-sujet-des-e-mails.md`, E1) : rangé à la demande, porté par le fait. */
+/** Le sujet des e-mails (`le-sujet-des-e-mails.md`, E1) : rangé à la demande, porté par le fait. */
 describe("les sujets d'une demande", () => {
   const ORDER = { type: "order", id: "ord_1" } as const;
   const WITH_SUBJECT: MailDemand<"staff.access-suspended"> = { ...SUSPENDED, subjects: [ORDER] };

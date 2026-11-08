@@ -48,7 +48,7 @@ const NOTHING_FOUND: FoldTableEmpty = {
  *
  * `?envoi=<id>` ouvre d'emblée le détail de cet envoi : c'est l'adresse
  * qu'une fiche commande donne à chacun de ses e-mails
- * (`plan-sujet-des-e-mails.md`, lot E3).
+ * (`le-sujet-des-e-mails.md`, lot E3).
  */
 @Component({
   selector: 'app-mail-sends-page',

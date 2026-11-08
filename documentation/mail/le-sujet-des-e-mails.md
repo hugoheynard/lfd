@@ -1,12 +1,14 @@
-# L'e-mail connaît son sujet — plan
+# L'e-mail connaît son sujet
 
-> 📝 **Doc-first**, écrit le 2026-11-08 à la demande de Hugo (« et si le mail
-> connaît sa commande avec le suivi ? », puis « fais ce plan et code-le en
-> entier »). Suite directe du suivi des envois
-> ([`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md)), qui le notait « non
-> bâti, à décider ». Il tranche aussi le cas 1 de la liste « À valider par
-> Hugo » du service ([`plan-service-e-mails.md`](plan-service-e-mails.md)) :
-> « client prévenu » affichera l'état réel de l'e-mail.
+> 🟢 **Bâti le 2026-11-08, vérifié dans le code** (lots E1 à E5, voir « Les
+> lots »). Ce document remplace le plan du même chantier ; ses numéros de
+> règles et de lots sont gardés, parce que le code les cite. Demande de
+> Hugo (« et si le mail connaît sa commande avec le suivi ? », puis « fais ce
+> plan et code-le en entier »). Il prolonge le suivi des envois
+> ([`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md)) et tranche le cas 1
+> de la liste « À valider par Hugo » du service
+> ([`plan-service-e-mails.md`](plan-service-e-mails.md)) : « client
+> prévenu » montre l'état réel de l'e-mail.
 
 ## Partie 1 — En simple
 
@@ -15,7 +17,7 @@ Resend en a fait, mais pas **pour quoi** il est parti. Sur la fiche d'une
 commande, rien ne dit si le client a vraiment reçu sa confirmation, ni si
 l'e-mail « commande prête » a rebondi.
 
-Après ce chantier, chaque demande d'e-mail porte **ses sujets** — « commande
+Chaque demande d'e-mail porte **ses sujets** — « commande
 `cmd_123` », « compte `acc_45` »… ; une facture en porte plusieurs, une par
 commande —, que le bloc `mail` range sans savoir ce
 qu'est une commande. Alors :
@@ -39,7 +41,7 @@ flowchart LR
 
 ## Partie 2 — Technique
 
-### Ce qui existe (lu le 2026-11-08)
+### Ce qui existait avant le chantier (lu le 2026-11-08)
 
 - `MailDemand` (`apps/lfd-api/src/mail/channels/requests/mail.ts`) : modèle,
   destinataire, données, clé d'idempotence, `replyTo?`. Aucun sujet.
@@ -141,23 +143,31 @@ at }`, sans adresse. `b2b/orders` s'y abonne en `@DurableHandler` et, pour
 9. **Le suivi des envois relie.** Liste et détail servent les sujets ; le
    back-office fait d'un sujet `order` un lien vers `/commandes/:id`.
 
-### Les lots
+### Les lots, et où les retrouver
 
-- **E1 — le sujet rangé** : `MailSubject`, ses types, `subjects?` dans les
-  deux formes de demande, la table enfant (migration additive), l'agrégat et
-  le dépôt qui la rangent, le registre RGPD (identifiants opaques, non
-  personnels), la porte et sa dette de départ ; les envoyeurs de
-  `b2b/orders` et les deux modifications de commande de `b2b/contact`
-  passent `subjects: [{ type: "order", id }]`.
-- **E2 — la lecture** : le lecteur du canal, la requête et la route de la
-  commande (404 d'abord), les sujets dans les réponses du suivi.
-- **E3 — l'écran** : la carte « E-mails » de la fiche commande, la lettre de
-  manque et le retard (libellé et état réel), le lien depuis le suivi.
-- **E4 — la cloche** : l'événement de l'agrégat, son écriture à l'outbox, le
-  fait déclaré par le canal, l'abonné durable des commandes, la cloche.
-- **E5 — les autres sujets** : factures et prélèvements (une liste de
-  commandes), comptes, sociétés, mandats, demandes client… au fil de la
-  dette.
+| Lot | Ce qu'il a bâti                                                                                                                                                          | Commit      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| E1  | les sujets rangés (`mail.mail_request_subject`, migration `20261108130000_le_sujet_des_e_mails`), la 69ᵉ porte `lint:mail-subject-declared`, les envoyeurs des commandes | `da20ff7d0` |
+| E2  | `MailSubjectDeliveries` (canal `mail/channels/deliveries/`), `GET /admin/orders/:orderId/mails`, les sujets dans le suivi                                                | `da20ff7d0` |
+| E3  | la carte « E-mails » de la fiche commande, « E-mail demandé le … » et l'état réel, les liens depuis le suivi                                                             | `0dc0178c9` |
+| E4  | `mail.delivery_failed` né dans la fiche et publié par son dépôt, la cloche des commandes                                                                                 | `8f0fc8972` |
+| —   | les libellés des 32 e-mails dans `@lfd/mail-blocks`, lus par les cloches                                                                                                 | `54c46982f` |
+| E5  | les 16 derniers envoyeurs nomment leurs sujets (type neuf `vitrine_subscriber`) ; dette de la porte à 0                                                                  | `91553e84d` |
+
+**Écarts au texte, retenus** : le type `appointment` (rendez-vous) et
+`vitrine_subscriber` (agence abonnée) ajoutés à la liste fermée ;
+`production_day` identifié par sa date de service ; le port d'identité
+client reçoit l'identifiant du compte pour la réinitialisation du mot de
+passe ; à la Supervision, le retard dit « E-mail de retard demandé le … »
+sans l'état (une lecture par ligne serait nécessaire — l'état est sur la
+fiche de la commande).
+
+**Ce qui reste** : trois sujets connus seulement par une lecture de plus, non
+posés — les commandes et les factures d'un avis de prélèvement, le site et
+la commande d'un avis au compte principal ; et ce qui se vérifie après le
+déploiement : une commande passée affiche ses e-mails, une commande d'avant
+n'en affiche aucun (voulu), aucune attente de verrou sur `mail_request` au
+`migrate deploy`.
 
 ### La contradiction de `vitruve` (2026-11-08), et ce qu'elle a changé
 
@@ -173,7 +183,7 @@ at }`, sans adresse. `b2b/orders` s'y abonne en `@DurableHandler` et, pour
 | S8 — un identifiant arbitraire lisait des e-mails                                          | règle 7 : 404 venu de la commande avant la lecture                                   |
 | Mineurs — types non décidés, `DeferredMailDemand`, compte des portes                       | règles 1, 2, 3                                                                       |
 
-### Ce qui reste hors du plan
+### Hors du chantier
 
 - Une carte « E-mails » sur la fiche d'un compte client : même lecteur,
   quand les sujets `account` seront posés (E5).

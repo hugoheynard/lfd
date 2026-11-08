@@ -30,7 +30,7 @@ export function mailRequestedFact(mail: OutgoingMail): DurableFact {
       idempotencyKey: mail.idempotencyKey,
       // Rejouée par le balayeur, qui ne relit que ce fait ; jamais rangée au suivi.
       ...(mail.replyTo === undefined ? {} : { replyTo: mail.replyTo }),
-      // Les sujets traversent la boîte d'envoi (`plan-sujet-des-e-mails.md`,
+      // Les sujets traversent la boîte d'envoi (`le-sujet-des-e-mails.md`,
       // règle 2) : le fait différé dit pour quoi il part, comme la fiche.
       ...(mail.subjects === undefined ? {} : { subjects: mail.subjects }),
     },

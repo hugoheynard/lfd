@@ -247,7 +247,7 @@ export class MailRequest {
    *
    * Une demande qui porte au moins un sujet et ENTRE dans l'échec (de rien,
    * `delayed` ou `delivered` vers `complained` ou `bounced`) note une
-   * {@link MailDeliveryFailure} (`plan-sujet-des-e-mails.md`, règle 4) ;
+   * {@link MailDeliveryFailure} (`le-sujet-des-e-mails.md`, règle 4) ;
    * `complained` puis `bounced` n'en note qu'une : l'échelle monte, la
    * personne à prévenir est la même.
    *

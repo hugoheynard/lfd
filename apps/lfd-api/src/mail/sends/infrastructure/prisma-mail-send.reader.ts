@@ -109,7 +109,7 @@ export class PrismaMailSendReader extends MailSendReader {
   }
 
   /**
-   * Les sujets des lignes lues, en UNE lecture par lot (`plan-sujet-des-e-mails.md`,
+   * Les sujets des lignes lues, en UNE lecture par lot (`le-sujet-des-e-mails.md`,
    * règle 9) : la liste est en SQL écrit, qui ne joint pas la table enfant.
    */
   private async withSubjects(rows: readonly MailRequestRow[]): Promise<readonly MailSendRecord[]> {

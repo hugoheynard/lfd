@@ -579,7 +579,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les CGV figées sur une commande, pour son détail (plan des CGV, C4).
     { provide: OrderSalesTermsRecordReader, useClass: PrismaOrderSalesTermsRecordReader },
     GetOrderSalesTermsHandler,
-    // Les e-mails d'une commande (`plan-sujet-des-e-mails.md`, E2) : la
+    // Les e-mails d'une commande (`le-sujet-des-e-mails.md`, E2) : la
     // commande prouvée, puis le canal du bloc `mail`.
     { provide: OrderExistenceReader, useClass: PrismaOrderExistenceReader },
     ListOrderMailsHandler,

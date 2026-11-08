@@ -38,7 +38,7 @@ export function failedOrderMailKey(requestId: string, orderId: string): string {
 
 /**
  * **« L'e-mail d'une commande n'a pas été reçu »**
- * (`documentation/mail/plan-sujet-des-e-mails.md`, E4, règle 5) — le staff
+ * (`documentation/mail/le-sujet-des-e-mails.md`, E4, règle 5) — le staff
  * peut appeler le client à temps, au lieu de le découvrir au comptoir.
  *
  * Abonné durable du fait `mail.delivery_failed`, déclaré par le canal du

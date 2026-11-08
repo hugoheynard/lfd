@@ -19,7 +19,7 @@ export function deliveryOutranks(next: MailDelivery, current: MailDelivery | nul
 }
 
 /**
- * Les retours qui disent « non reçu » (`plan-sujet-des-e-mails.md`, règle 4) :
+ * Les retours qui disent « non reçu » (`le-sujet-des-e-mails.md`, règle 4) :
  * personne n'a lu l'e-mail, et quelqu'un doit agir.
  */
 export const MAIL_DELIVERY_FAILURES = ["complained", "bounced"] as const;

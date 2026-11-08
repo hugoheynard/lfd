@@ -43,7 +43,7 @@ export interface MailDemand<K extends keyof B2bMails> {
    */
   readonly replyTo?: string | undefined;
   /**
-   * **Ce pour quoi l'e-mail part** (plan `plan-sujet-des-e-mails.md`, règles
+   * **Ce pour quoi l'e-mail part** (`le-sujet-des-e-mails.md`, règles
    * 1 et 2) : « commande `cmd_123` », plusieurs pour une facture. Rangés au
    * suivi, ils permettent à la fiche d'une commande de lire ses e-mails.
    * Hors du bloc, `lint:mail-subject-declared` exige la clé à chaque appel,

@@ -37,7 +37,7 @@ export class PrismaStalledMailRequests extends StalledMailRequests {
       take: criteria.limit,
       // Les sujets avec la demande : relancée, elle peut relire un rebond déjà
       // rangé (`MailOutcomeRecorder`), et le fait d'échec doit les porter
-      // (`plan-sujet-des-e-mails.md`, E4).
+      // (`le-sujet-des-e-mails.md`, E4).
       include: WITH_SUBJECTS,
     });
     return rows.map(toDomain);

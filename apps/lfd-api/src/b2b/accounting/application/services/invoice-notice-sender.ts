@@ -260,7 +260,7 @@ export class InvoiceNoticeSender {
 /**
  * Les sujets d'un avis de facture : la facture, sa société payeuse et CHACUNE
  * de ses commandes — la fiche d'une commande retrouve ainsi sa facture (plan
- * `plan-sujet-des-e-mails.md`, règle 2).
+ * `le-sujet-des-e-mails.md`, règle 2).
  */
 export function invoiceMailSubjects(invoice: Invoice): readonly MailSubject[] {
   const state = invoice.toState();

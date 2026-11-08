@@ -146,7 +146,7 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     MailOutcomeRecorder,
     MailDeliveryApplier,
     ReceiveResendEventHandler,
-    // Le sujet des e-mails (`plan-sujet-des-e-mails.md`, E2) : les e-mails
+    // Le sujet des e-mails (`le-sujet-des-e-mails.md`, E2) : les e-mails
     // d'un objet, lus par les blocs métier par le canal.
     { provide: MailSubjectDeliveries, useClass: PrismaMailSubjectDeliveries },
   ],

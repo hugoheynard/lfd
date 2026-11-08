@@ -1,6 +1,6 @@
 /**
  * E2E de **la cloche d'un e-mail de commande non reçu**
- * (`documentation/mail/plan-sujet-des-e-mails.md`, lot E4), contre le vrai
+ * (`documentation/mail/le-sujet-des-e-mails.md`, lot E4), contre le vrai
  * Postgres.
  *
  * Ce que seule cette suite prouve :

@@ -6,7 +6,7 @@ import { AdminOrdersService } from './orders.service';
 export type OrderMailsState = 'loading' | 'ready' | 'error';
 
 /**
- * **Les e-mails de la commande ouverte** (`plan-sujet-des-e-mails.md`,
+ * **Les e-mails de la commande ouverte** (`le-sujet-des-e-mails.md`,
  * règles 7 et 8) — une lecture par fiche, partagée par la carte « E-mails »
  * et par la lettre de manque, qui y lit l'état réel de son e-mail.
  *

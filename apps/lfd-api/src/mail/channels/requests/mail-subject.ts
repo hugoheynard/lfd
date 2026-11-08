@@ -1,6 +1,6 @@
 /**
  * **Les types de sujet d'un e-mail** (plan
- * `documentation/mail/plan-sujet-des-e-mails.md`, règle 1) — liste FERMÉE,
+ * `documentation/mail/le-sujet-des-e-mails.md`, règle 1) — liste FERMÉE,
  * déclarée par le canal du bloc `mail` : un type neuf s'ajoute par une ligne.
  *
  * Le bloc ne lit jamais l'objet qu'un sujet désigne (`mail → b2b` reste

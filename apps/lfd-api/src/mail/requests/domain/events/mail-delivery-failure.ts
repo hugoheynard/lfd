@@ -4,7 +4,7 @@ import type { MailDeliveryFailureKind } from "../value-objects/mail-delivery.js"
 /**
  * **Une demande est entrée dans l'échec** — ce que `MailRequest.recordDelivery`
  * note quand un retour la fait passer de « rien », `delayed` ou `delivered` à
- * `complained` ou `bounced` (`documentation/mail/plan-sujet-des-e-mails.md`,
+ * `complained` ou `bounced` (`documentation/mail/le-sujet-des-e-mails.md`,
  * règle 4). Jamais l'adresse : le fait qui en naît part vers d'autres blocs.
  *
  * Le dépôt l'écrit à la boîte d'envoi dans la même unité de travail que la

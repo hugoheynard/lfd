@@ -30,7 +30,7 @@ export interface MailDeliveryFailedFields {
 
 /**
  * **Un e-mail n'a pas été reçu** — sa demande est ENTRÉE dans l'échec
- * (`documentation/mail/plan-sujet-des-e-mails.md`, règles 4 et 5) : rebond
+ * (`documentation/mail/le-sujet-des-e-mails.md`, règles 4 et 5) : rebond
  * ou plainte, une fois par demande. C'est l'agrégat `MailRequest` qui le
  * décide, et le dépôt qui l'écrit à la boîte d'envoi avec la demande.
  *

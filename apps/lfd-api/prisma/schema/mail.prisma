@@ -63,7 +63,7 @@ model MailRequest {
   deliveryAt      DateTime?            @map("delivery_at") @db.Timestamptz(6)
   /// Le GENRE du retour (`Permanent/Suppressed`), jamais son texte (décision 4).
   deliveryKind    String?              @map("delivery_kind") @db.VarChar(64)
-  /// Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règle 2).
+  /// Ce pour quoi l'e-mail part (`le-sujet-des-e-mails.md`, règle 2).
   subjects        MailRequestSubject[]
 
   @@index([status, requestedAt])
@@ -75,7 +75,7 @@ model MailRequest {
   @@schema("mail")
 }
 
-/// **Un sujet d'une demande d'e-mail** (plan `plan-sujet-des-e-mails.md`,
+/// **Un sujet d'une demande d'e-mail** (`le-sujet-des-e-mails.md`,
 /// règles 1 et 2) : un type de la liste fermée du canal (`order`,
 /// `account`…) et un identifiant OPAQUE — le bloc `mail` ne lit jamais
 /// l'objet désigné. Plusieurs par demande (une facture nomme chacune de ses

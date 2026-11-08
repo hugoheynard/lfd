@@ -19,7 +19,7 @@ import { mailSubjectDisplay, type MailSubjectDisplay } from '../../rules/mail-su
  * intitulé, espace, adresse masquée telle que servie, date. L'ordre est
  * celui du serveur — les problèmes d'abord ; une ligne à problème est
  * teintée en plus de sa pastille, jamais à sa place. Un clic ouvre l'envoi.
- * Ses sujets (`plan-sujet-des-e-mails.md`, règle 9) : une commande mène à
+ * Ses sujets (`le-sujet-des-e-mails.md`, règle 9) : une commande mène à
  * sa fiche — le clic sur le lien n'ouvre pas l'envoi —, le reste se lit.
  */
 @Component({

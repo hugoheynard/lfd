@@ -8,7 +8,7 @@ import { ListOrderMailsQuery } from "../application/queries/list-order-mails.que
 /**
  * **Les e-mails d'une commande**, vus du staff — modèle, demandé à, état de
  * la demande et retour de Resend, jamais l'adresse (plan
- * `documentation/mail/plan-sujet-des-e-mails.md`, règle 7).
+ * `documentation/mail/le-sujet-des-e-mails.md`, règle 7).
  *
  * Même surface que le détail de commande (`b2b_orders`, lecture par le
  * verbe) ; un contrôleur à part pour ne pas grossir `AdminOrdersController`.

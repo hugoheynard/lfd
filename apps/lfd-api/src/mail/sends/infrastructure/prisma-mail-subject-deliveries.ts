@@ -36,7 +36,7 @@ function toSubjectMail(row: SubjectMailRow): SubjectMail {
 }
 
 /**
- * Les e-mails de ces sujets (`plan-sujet-des-e-mails.md`, règle 6), en UNE
+ * Les e-mails de ces sujets (`le-sujet-des-e-mails.md`, règle 6), en UNE
  * lecture par l'index `(subject_type, subject_id)` : la table des sujets et
  * sa demande, sans `recipient` ni `failure_reason` dans le `select`.
  */

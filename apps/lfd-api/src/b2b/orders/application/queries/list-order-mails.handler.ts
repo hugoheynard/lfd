@@ -21,7 +21,7 @@ function toOrderMailView(mail: SubjectMail): OrderMailView {
 }
 
 /**
- * **Les e-mails d'une commande** (plan `plan-sujet-des-e-mails.md`, règle 7) :
+ * **Les e-mails d'une commande** (`le-sujet-des-e-mails.md`, règle 7) :
  * ceux dont la demande nomme cette commande pour sujet, avec leur état réel.
  *
  * La commande se prouve D'ABORD (objection S8 de vitruve) : sans elle, un

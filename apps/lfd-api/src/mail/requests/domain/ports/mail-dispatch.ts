@@ -9,7 +9,7 @@ export interface OutgoingMail {
   /** L'adresse de réponse de ce message, s'il en a une (`MailDemand.replyTo`). */
   readonly replyTo?: string;
   /**
-   * Ce pour quoi il part (`plan-sujet-des-e-mails.md`, règle 2) : rangé au
+   * Ce pour quoi il part (`le-sujet-des-e-mails.md`, règle 2) : rangé au
    * suivi, porté par le fait différé ; le transport ne le lit pas.
    */
   readonly subjects?: readonly MailSubject[];

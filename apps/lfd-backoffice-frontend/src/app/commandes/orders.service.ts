@@ -110,7 +110,7 @@ export class AdminOrdersService {
   }
 
   /**
-   * **Les e-mails d'une commande** (`plan-sujet-des-e-mails.md`, règle 7) :
+   * **Les e-mails d'une commande** (`le-sujet-des-e-mails.md`, règle 7) :
    * ce que le suivi dit de chacun, les plus récents d'abord, sans adresse.
    */
   async mails(id: string): Promise<OrderMailsView> {

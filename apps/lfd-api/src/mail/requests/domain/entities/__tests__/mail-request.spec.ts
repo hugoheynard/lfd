@@ -122,7 +122,7 @@ describe("MailRequest — la demande et son suivi", () => {
   });
 });
 
-describe("MailRequest — ses sujets (plan-sujet-des-e-mails.md, règles 1 et 2)", () => {
+describe("MailRequest — ses sujets (le-sujet-des-e-mails.md, règles 1 et 2)", () => {
   const ORDER = { type: "order", id: "ord_1" } as const;
   const INVOICE = { type: "invoice", id: "inv_1" } as const;
 

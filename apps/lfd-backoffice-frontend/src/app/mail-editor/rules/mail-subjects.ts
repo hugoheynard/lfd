@@ -1,7 +1,7 @@
 import type { MailSendSubjectView } from '@lfd/contracts';
 
 /**
- * **Les types de sujet, dits en français** (`plan-sujet-des-e-mails.md`,
+ * **Les types de sujet, dits en français** (`le-sujet-des-e-mails.md`,
  * règle 1 : la liste fermée du bloc `mail`, relue dans le contrat le
  * 2026-11-08). Un type que l'écran ne connaît pas s'affiche tel quel.
  */

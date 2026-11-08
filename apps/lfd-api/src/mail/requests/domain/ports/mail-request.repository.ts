@@ -23,7 +23,7 @@ export abstract class MailRequestRepository {
    * Range une demande, neuve ou chargée (par sa clé d'idempotence), et écrit
    * à la boîte d'envoi, dans la même unité de travail, chaque entrée dans
    * l'échec qu'elle a notée (`pullDeliveryFailures`, fait
-   * `mail.delivery_failed` — `plan-sujet-des-e-mails.md`, règle 4).
+   * `mail.delivery_failed` — `le-sujet-des-e-mails.md`, règle 4).
    */
   abstract save(request: MailRequest): Promise<void>;
 }

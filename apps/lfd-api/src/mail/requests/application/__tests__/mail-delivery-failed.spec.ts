@@ -9,7 +9,7 @@ import { MAIL_STALE_AFTER_MS } from "../sweep-mail-requests.handler.js";
 import { mailScene } from "./mail-doubles.js";
 
 /*
- * Le fait `mail.delivery_failed` (`plan-sujet-des-e-mails.md`, E4, règle 4) :
+ * Le fait `mail.delivery_failed` (`le-sujet-des-e-mails.md`, E4, règle 4) :
  * un seul point d'émission — l'agrégat décide, le dépôt l'écrit avec la
  * demande —, quel que soit le chemin qui applique le retour. Les instants
  * ne sont comparés qu'entre eux.

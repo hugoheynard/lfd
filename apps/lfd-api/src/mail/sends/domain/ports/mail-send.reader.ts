@@ -45,7 +45,7 @@ export interface MailSendRecord {
   readonly delivery: StoredMailDelivery | null;
   readonly deliveryAt: Date | null;
   readonly deliveryKind: string | null;
-  /** Ce pour quoi il part (`plan-sujet-des-e-mails.md`, règle 9). */
+  /** Ce pour quoi il part (`le-sujet-des-e-mails.md`, règle 9). */
   readonly subjects: readonly MailSubject[];
 }
 

@@ -40,7 +40,7 @@
   destinataire (`*/ContentRejected`, `*/AttachmentRejected`) → alerte à
   l'équipe (délivrabilité), jamais au client. Le suivi affiche la famille
   en clair. À bâtir après l'e-mail qui connaît son sujet
-  ([`plan-sujet-des-e-mails.md`](plan-sujet-des-e-mails.md)), dont il lit
+  ([`le-sujet-des-e-mails.md`](le-sujet-des-e-mails.md)), dont il lit
   les sujets `account`.
 - **La santé de l'envoi** (Hugo, 2026-11-08 : « besoin d'une page de suivi
   dans mails ») : un onglet du suivi des envois avec les taux de remise, de

@@ -32,7 +32,7 @@ export interface SubjectMail {
 }
 
 /**
- * **Les e-mails de ces sujets** (plan `plan-sujet-des-e-mails.md`, règle 6) —
+ * **Les e-mails de ces sujets** (`le-sujet-des-e-mails.md`, règle 6) —
  * déclaré ET implémenté par le bloc `mail`, lu par les blocs métier : la
  * figure d'`OrderHandoverHistoryReader`. Le bloc ne sait pas ce qu'est une
  * commande ; il rend les fiches qui portent ce couple `(type, id)`.

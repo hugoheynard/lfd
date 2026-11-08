@@ -132,7 +132,7 @@ describe("ListMailSendsHandler", () => {
   });
 });
 
-describe("les sujets dans le suivi (plan-sujet-des-e-mails.md, règle 9)", () => {
+describe("les sujets dans le suivi (le-sujet-des-e-mails.md, règle 9)", () => {
   const ORDER = { type: "order", id: "ord_1" } as const;
 
   it("la liste sert les sujets de chaque ligne, vide pour une demande sans sujet", async () => {

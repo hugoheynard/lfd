@@ -100,7 +100,7 @@ describe("MailRequest.recordDelivery — vers le haut seulement (décision 3)", 
   });
 });
 
-describe("MailRequest.recordDelivery — l'entrée dans l'échec (plan-sujet-des-e-mails, règle 4)", () => {
+describe("MailRequest.recordDelivery — l'entrée dans l'échec (le-sujet-des-e-mails, règle 4)", () => {
   const ORDER = { type: "order", id: "ord_1" } as const;
 
   function sentFor(subjects: MailRequestDraft["subjects"] = [ORDER]): MailRequest {

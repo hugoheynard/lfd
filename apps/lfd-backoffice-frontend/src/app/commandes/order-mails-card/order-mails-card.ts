@@ -46,7 +46,7 @@ interface OrderMailLine {
 }
 
 /**
- * **« E-mails »** sur la fiche d'une commande (`plan-sujet-des-e-mails.md`,
+ * **« E-mails »** sur la fiche d'une commande (`le-sujet-des-e-mails.md`,
  * lot E3) : chaque e-mail demandé pour elle, du plus récent au plus ancien,
  * avec l'état que le suivi en connaît — les mots du suivi des envois, pas
  * d'autres. Un rebond ou une plainte se dit en phrase : il faut joindre le

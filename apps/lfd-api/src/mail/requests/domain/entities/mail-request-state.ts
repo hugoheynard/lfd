@@ -30,7 +30,7 @@ export interface MailRequestDraft {
   readonly locale: string | null;
   readonly idempotencyKey: string;
   readonly requestedAt: Date;
-  /** Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règle 2) ; absent = aucun. */
+  /** Ce pour quoi l'e-mail part (`le-sujet-des-e-mails.md`, règle 2) ; absent = aucun. */
   readonly subjects?: readonly { readonly type: string; readonly id: string }[];
 }
 
@@ -72,7 +72,7 @@ export interface MailRequestSnapshot {
   /** Le genre du retour (`Permanent/Suppressed`), jamais son texte. */
   readonly deliveryKind: string | null;
   /**
-   * Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règles 1 et 2),
+   * Ce pour quoi l'e-mail part (`le-sujet-des-e-mails.md`, règles 1 et 2),
    * fixé à la demande et jamais changé ensuite. Vide pour une demande sans
    * sujet, et pour toutes celles d'avant la table : rien n'est déduit.
    */

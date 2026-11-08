@@ -1,5 +1,5 @@
 /**
- * E2E du **sujet des e-mails** (`documentation/mail/plan-sujet-des-e-mails.md`,
+ * E2E du **sujet des e-mails** (`documentation/mail/le-sujet-des-e-mails.md`,
  * lots E1 et E2), contre le vrai Postgres : une commande passée par le vrai
  * chemin demande ses e-mails avec son sujet, la table enfant les range, et la
  * fiche commande les lit par `GET /admin/orders/:orderId/mails` — après avoir

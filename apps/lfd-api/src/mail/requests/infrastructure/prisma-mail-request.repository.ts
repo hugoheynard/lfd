@@ -39,7 +39,7 @@ export interface MailRequestRow {
   readonly deliveryAt: Date | null;
   readonly deliveryKind: string | null;
   /**
-   * Les sujets, quand la lecture les a joints (`plan-sujet-des-e-mails.md`,
+   * Les sujets, quand la lecture les a joints (`le-sujet-des-e-mails.md`,
    * E1). Absents d'une lecture qui ne les demande pas (la liste du suivi en
    * SQL écrit) : la demande relue n'en porte alors aucun, et `save` ne les
    * touche jamais — ils sont fixés à la demande. 🔴 Toute lecture qui peut
@@ -221,7 +221,7 @@ export class PrismaMailRequestRepository extends MailRequestRepository {
   }
 
   /**
-   * Les entrées dans l'échec que l'agrégat a notées (`plan-sujet-des-e-mails.md`,
+   * Les entrées dans l'échec que l'agrégat a notées (`le-sujet-des-e-mails.md`,
    * règle 4), écrites à la boîte d'envoi APRÈS la demande, dans la même
    * transaction : quel que soit le chemin qui a appliqué le retour.
    */
