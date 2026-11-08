@@ -1,4 +1,4 @@
-import type { MailCharterSettings } from "./charter-settings.js";
+import type { MailCharterFont, MailCharterSettings } from "./charter-settings.js";
 import type { MailEditorStamp } from "./mail-editor-routes.js";
 import type { MailLocale } from "./mail-locales.js";
 import type { MailSpace } from "./mail-spaces.js";
@@ -18,6 +18,16 @@ export interface MailCharterPublishedView extends MailEditorStamp {
   readonly settings: MailCharterSettings;
 }
 
+/**
+ * Les polices de la boutique, servies par elle sous des adresses stables
+ * (`/brand/fonts/`) : ce que le geste « Utiliser les polices de la boutique »
+ * pose dans le brouillon. Rien n'est écrit tant que l'équipe ne publie pas.
+ */
+export interface MailCharterShopFonts {
+  readonly heading: MailCharterFont;
+  readonly text: MailCharterFont;
+}
+
 /** `GET /admin/mail-charters/:space` — rien n'est écrit. */
 export interface MailCharterView {
   readonly space: MailSpace;
@@ -30,6 +40,11 @@ export interface MailCharterView {
   readonly source: MailCharterSource;
   /** La charte de départ : celle d'aujourd'hui, tirée des constantes du rendu. */
   readonly starting: MailCharterSettings;
+  /**
+   * Les polices de la boutique proposées à l'espace ; `null` : l'espace n'en
+   * a pas (La Folie Douce), ou la boutique n'a pas d'adresse configurée.
+   */
+  readonly shopFonts: MailCharterShopFonts | null;
   /** La révision lue (0 : rien n'a jamais été écrit) — le verrou des écritures. */
   readonly revision: number;
   readonly published: MailCharterPublishedView | null;

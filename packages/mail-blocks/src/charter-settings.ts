@@ -55,15 +55,28 @@ export interface MailCharterLogo {
 }
 
 /**
- * La police des titres : une police déclarée par son adresse (`woff2` en
- * `https://`) et son nom, avec sa police de secours, obligatoire — Gmail
- * ignore les polices web et n'affiche que le secours.
+ * Une police web — celle des titres ou celle du texte : déclarée par son
+ * adresse (`woff2` en `https://`) et son nom, avec sa police de secours,
+ * obligatoire — Gmail ignore les polices web et n'affiche que le secours.
  */
 export interface MailCharterFont {
   readonly family: string;
+  /** Le fichier de la graisse normale (400). */
   readonly url: string;
   readonly fallback: string;
+  /**
+   * Les fichiers des graisses 600 et 700, quand la police en a (2026-11-08) :
+   * un `@font-face` par graisse déclarée, pour qu'aucune messagerie ne
+   * fabrique un faux gras. Absent : la seule graisse 400, comme avant. Une
+   * police à une graisse (Chunk) y déclare son unique fichier.
+   */
+  readonly weights?: Readonly<Partial<Record<MailCharterFontWeight, string>>> | undefined;
 }
+
+/** Les graisses que les e-mails emploient au-delà de la normale (boutons, totaux). */
+export const MAIL_CHARTER_FONT_WEIGHTS = ["600", "700"] as const;
+
+export type MailCharterFontWeight = (typeof MAIL_CHARTER_FONT_WEIGHTS)[number];
 
 /** Les réglages d'une charte. */
 export interface MailCharterSettings {
@@ -73,6 +86,12 @@ export interface MailCharterSettings {
   readonly darkColors: MailCharterDarkColors;
   /** `null` : aucune police web, la pile du texte courant. */
   readonly headingFont: MailCharterFont | null;
+  /**
+   * `null` : aucune police web, la pile système du texte courant — celle des
+   * e-mails d'avant le 2026-11-08. Une police déclarée ici habille le corps,
+   * les blocs libres et le pied ; son secours est écrit en ligne.
+   */
+  readonly textFont: MailCharterFont | null;
   /** Le pied de page commun (adresse, mentions, contact), par langue. Vide : aucun. */
   readonly footer: Localized<string>;
 }

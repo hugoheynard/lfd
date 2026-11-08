@@ -37,6 +37,7 @@ export class GetMailCharterHandler implements IQueryHandler<GetMailCharterQuery,
       settings: current.settings,
       source: current.source,
       starting,
+      shopFonts: this.directory.shopFontsOf(space),
       revision: charter.loadedRevision,
       published:
         published === null

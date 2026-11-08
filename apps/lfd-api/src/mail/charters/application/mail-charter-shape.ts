@@ -1,4 +1,8 @@
-import { MAIL_LOCALES, type MailCharterSettings } from "@lfd/mail-blocks";
+import {
+  MAIL_CHARTER_FONT_WEIGHTS,
+  MAIL_LOCALES,
+  type MailCharterSettings,
+} from "@lfd/mail-blocks";
 import { z } from "zod";
 
 /*
@@ -16,6 +20,18 @@ const TEXT_MAX = 2_000;
 const color = z.string().max(COLOR_MAX);
 const localized = z.partialRecord(z.enum(MAIL_LOCALES), z.string().max(TEXT_MAX));
 
+const font = z.strictObject({
+  family: z.string().max(NAME_MAX),
+  url: z.string().max(URL_MAX),
+  fallback: z.string().max(NAME_MAX),
+  // Les graisses 600 et 700 (2026-11-08) : absentes d'une police rangée avant.
+  weights: z.partialRecord(z.enum(MAIL_CHARTER_FONT_WEIGHTS), z.string().max(URL_MAX)).optional(),
+});
+
+/**
+ * La police du texte est arrivée le 2026-11-08 : une charte rangée avant, ou
+ * une charge qui ne la porte pas, se lit sans — la pile système d'avant.
+ */
 export const mailCharterSettingsShape: z.ZodType<MailCharterSettings> = z.strictObject({
   logo: z.strictObject({ src: z.string().max(URL_MAX), alt: localized }).nullable(),
   colors: z.strictObject({
@@ -28,13 +44,8 @@ export const mailCharterSettingsShape: z.ZodType<MailCharterSettings> = z.strict
     border: color,
   }),
   darkColors: z.strictObject({ page: color, card: color, text: color, border: color }),
-  headingFont: z
-    .strictObject({
-      family: z.string().max(NAME_MAX),
-      url: z.string().max(URL_MAX),
-      fallback: z.string().max(NAME_MAX),
-    })
-    .nullable(),
+  headingFont: font.nullable(),
+  textFont: font.nullable().default(null),
   footer: localized,
 });
 

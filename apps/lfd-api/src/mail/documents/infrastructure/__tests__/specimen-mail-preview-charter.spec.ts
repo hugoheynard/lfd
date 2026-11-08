@@ -40,6 +40,7 @@ const LFD_CHARTER: MailCharterSettings = {
   },
   darkColors: { page: "#101010", card: "#1c1c1c", text: "#f0f0f0", border: "#333333" },
   headingFont: null,
+  textFont: null,
   footer: { fr: "La Folie Douce — équipe" },
 };
 
@@ -105,6 +106,19 @@ describe("les rendus de l'éditeur sous la charte publiée de l'espace", () => {
       expect(html).toContain("#101010");
     },
   );
+
+  it("l'aperçu fidèle montre la police du texte de la charte, son secours en ligne", async () => {
+    const textFont = {
+      family: "Pogonia",
+      url: "https://lfc.test/brand/fonts/pogonia-400.woff2",
+      fallback: "Arial, sans-serif",
+    };
+    const html = await faithful("staff.invited", {
+      lfd: { kind: "servable", settings: { ...LFD_CHARTER, textFont }, version: 2 },
+    });
+    expect(html).toContain("@font-face{font-family:'Pogonia'");
+    expect(html).toContain("font-family:'Pogonia',Arial, sans-serif;");
+  });
 
   it.each(["staff.invited", "staff.account-alert"] as const)(
     "%s : les fragments du canevas portent la couleur principale, le logo et le pied",

@@ -9,6 +9,10 @@
 > d'origine). **Ce document-ci dit l'état et le reste à faire** ; quand il
 > contredit un journal, c'est lui qui a été relu dans le code.
 
+> Ajout du 2026-11-08 : la police du texte de la charte (vérifiée dans le
+> code ce jour-là, `@lfd/mail-blocks` `charter-settings.ts`, `@lfd/mailer`
+> `charter-styles.ts`).
+
 ## Partie 1 — En simple
 
 ### Le service d'envoi
@@ -81,10 +85,20 @@ Les e-mails sont rangés en **deux espaces** :
 Chaque espace a :
 
 - **sa charte** : logo, couleurs (claires et sombres), couleur du bandeau,
-  police des titres, pied de page. Elle se publie comme un e-mail
-  (brouillon, publier, historique), et le contraste est contrôlé avant
+  police des titres, police du texte, pied de page. Elle se publie comme un
+  e-mail (brouillon, publier, historique), et le contraste est contrôlé avant
   publication. Tant qu'aucune charte n'est publiée, les e-mails partent
   exactement comme avant ;
+- **ses polices** (2026-11-08) : une police web pour les titres, une pour
+  le texte, chacune avec sa **police de secours**, obligatoire. Gmail — la
+  messagerie la plus répandue — et certaines applications n'affichent pas
+  les polices web et montrent le secours ; Apple Mail, l'iPhone et Outlook
+  pour Mac affichent la police. Le secours doit donc être proche et toujours
+  lisible : l'aperçu montre la police, un essai reçu dans Gmail montre le
+  secours. Sur la page Charte de La Folie Coffee, **« Utiliser les polices
+  de la boutique »** remplit les deux (Chunk pour les titres, Pogonia pour
+  le texte) dans le brouillon ; rien ne part avant la publication. Sans
+  police du texte, le texte garde la police du système, comme avant ;
 - **son expéditeur** : nom, adresse d'envoi, adresse de réponse. C'est une
   donnée réglée à l'écran, pas une variable de déploiement. Une adresse dont
   le domaine n'est pas vérifié chez Resend est refusée, et un essai part à
@@ -275,6 +289,28 @@ Conséquences à connaître :
   ses octets. Avant cette date, seule une image cadrée était réduite (à
   1200 px) ; une `original` était copiée telle quelle. Le logo d'une charte
   n'est pas concerné (copié tel quel).
+- **La police du texte** (2026-11-08) : `MailCharterSettings.textFont`
+  (`MailCharterFont | null`, `@lfd/mail-blocks`), validée comme
+  `headingFont` (`https://`, nom et secours sans `"`, `;` ni accolade ;
+  refus sous `textFont.*`). Une charte rangée avant, ou une charge qui ne la
+  porte pas, se relit à `null` (`mail-charter-shape.ts`, `.default(null)`).
+  Le rendu (`@lfd/mailer`) n'y touche que si elle est posée :
+  `charterTextFontFaceRule` ajoute au `<head>` thémé un `@font-face` par
+  graisse déclarée (400 à `url`, 600 et 700 dans `weights`, facultatif), et `textFontStack` écrit `'<famille>',<secours>` en ligne
+  sur le `<body>` (et sur l'enseigne quand la charte n'a pas de police des
+  titres) ; à `null`, la pile système `TEXT_FONT_STACK`, à l'octet — le
+  doré des 32 e-mails n'a pas bougé. Pas de faux gras : une police à une
+  seule graisse (Chunk) déclare 600 et 700 vers son unique fichier ; une
+  police rangée sans `weights` ne déclare que la 400, comme avant.
+- **Les polices de la boutique** : servies sous des noms NON hachés,
+  `apps/lfc-ecommerce-frontend/public/brand/fonts/chunk-400.woff2` et
+  `pogonia-400/600/700.woff2` (copies de `src/styles/fonts/`), sans en-tête
+  particulier (Cloudflare Pages, comme le reste de `public/`). Leurs
+  adresses se construisent depuis la racine de la boutique
+  (`mail-branding.ts`, `shopFontsOf`), et `GET /admin/mail-charters/lfc` les
+  rend sous `shopFonts` ; l'espace `lfd` n'en reçoit pas. La licence web
+  des deux polices pour l'envoi en e-mail reste à vérifier
+  ([`todo-e-mails.md`](todo-e-mails.md)).
 - **La clé de copie** (`imageCopyKey`) porte la largeur depuis le
   2026-11-08 : `<src>[#<format>@<x>,<y>]~<largeur>w`. Une version publiée
   avant n'a plus de clé correspondante : la republier recopie l'image, une

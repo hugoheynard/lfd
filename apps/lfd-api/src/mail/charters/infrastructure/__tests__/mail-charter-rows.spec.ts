@@ -16,6 +16,26 @@ const SETTINGS: MailCharterSettings = {
   },
   darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
   headingFont: { family: "Chunk", url: "https://lfc.test/chunk.woff2", fallback: "serif" },
+  // La ligne rangée ci-dessous ne porte pas de police du texte (rangée avant
+  // le 2026-11-08) : relue, elle n'en a pas.
+  textFont: null,
+  footer: { fr: "Lyon" },
+};
+
+/** Une charte rangée avant la police du texte (2026-11-08). */
+const STORED = {
+  logo: { src: "https://mail.lfd.test/images/logo.png", alt: { fr: "La Folie Douce" } },
+  colors: {
+    page: "#fdfcfb",
+    card: "#ffffff",
+    text: "#0f172a",
+    mutedText: "#64748b",
+    primary: "#24448f",
+    band: "#1a3157",
+    border: "#e2e8f0",
+  },
+  darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
+  headingFont: { family: "Chunk", url: "https://lfc.test/chunk.woff2", fallback: "serif" },
   footer: { fr: "Lyon" },
 };
 
@@ -25,21 +45,7 @@ const ROW: MailCharterRow = {
   draft: null,
   draftAt: null,
   draftBy: null,
-  published: {
-    logo: { src: "https://mail.lfd.test/images/logo.png", alt: { fr: "La Folie Douce" } },
-    colors: {
-      page: "#fdfcfb",
-      card: "#ffffff",
-      text: "#0f172a",
-      mutedText: "#64748b",
-      primary: "#24448f",
-      band: "#1a3157",
-      border: "#e2e8f0",
-    },
-    darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
-    headingFont: { family: "Chunk", url: "https://lfc.test/chunk.woff2", fallback: "serif" },
-    footer: { fr: "Lyon" },
-  },
+  published: STORED,
   publishedVersion: 1,
   publishedAt: new Date(0),
   publishedBy: "fiche-colette",
@@ -62,7 +68,7 @@ describe("les lignes de la charte", () => {
   });
 
   it("écrivent ce qu'elles relisent, sans langue absente", () => {
-    expect(charterSettingsJson(SETTINGS)).toEqual(ROW.published);
+    expect(charterSettingsJson(SETTINGS)).toEqual({ ...STORED, textFont: null });
     expect(charterSettingsJson({ ...SETTINGS, footer: {} })).toMatchObject({ footer: {} });
   });
 

@@ -21,6 +21,7 @@ const SETTINGS: MailCharterSettings = {
     url: "https://boutique.example/brand/fonts/chunk-400.woff2",
     fallback: "'Arial Black',Impact,sans-serif",
   },
+  textFont: null,
   footer: { fr: "La Folie Douce — Lyon" },
 };
 
@@ -94,6 +95,41 @@ describe("validateMailCharter (enregistrement)", () => {
     const font = { family: 'Chunk";x', url: "http://x.example/chunk.woff2", fallback: "serif" };
     const codes = validateMailCharter({ ...SETTINGS, headingFont: font }).map((v) => v.code);
     expect(codes).toEqual(["charter-font-url-invalid", "charter-font-family-invalid"]);
+  });
+
+  it("admet les polices de la boutique, avec les secours proposés à l'écran", () => {
+    const settings: MailCharterSettings = {
+      ...SETTINGS,
+      headingFont: {
+        family: "Chunk",
+        url: "https://boutique.example/brand/fonts/chunk-400.woff2",
+        fallback: "'Arial Black', Impact, sans-serif",
+      },
+      textFont: {
+        family: "Pogonia",
+        url: "https://boutique.example/brand/fonts/pogonia-400.woff2",
+        fallback: "-apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+      },
+    };
+    expect(validateMailCharterForPublication(settings, ["fr"])).toEqual([]);
+  });
+
+  it("refuse une police du texte sans secours, sous son propre réglage", () => {
+    const font = { family: "Pogonia", url: "https://x.example/pogonia.woff2", fallback: "" };
+    const violations = validateMailCharter({ ...SETTINGS, textFont: font });
+    expect(violations).toEqual([
+      expect.objectContaining({
+        code: "charter-font-fallback-invalid",
+        field: "textFont.fallback",
+      }),
+    ]);
+    expect(violations[0]?.message).toContain("La police de secours du texte est obligatoire");
+  });
+
+  it("refuse une police du texte hors https ou au nom qui sortirait du style", () => {
+    const font = { family: "Pogonia;", url: "http://x.example/p.woff2", fallback: "serif" };
+    const fields = validateMailCharter({ ...SETTINGS, textFont: font }).map((v) => v.field);
+    expect(fields).toEqual(["textFont.url", "textFont.family"]);
   });
 });
 
@@ -186,5 +222,17 @@ describe("les paires de contraste de la charte", () => {
     expect(refused.map((violation) => violation.field)).toEqual(
       CHARTER_CONTRAST_PAIRS.map((pair) => pair.field),
     );
+  });
+
+  it("admet les fichiers des graisses 600 et 700, et refuse ceux hors https", () => {
+    const font = {
+      family: "Pogonia",
+      url: "https://x.example/pogonia-400.woff2",
+      fallback: "Arial, sans-serif",
+      weights: { "600": "https://x.example/pogonia-600.woff2", "700": "http://x.example/p.woff2" },
+    };
+    const violations = validateMailCharter({ ...SETTINGS, textFont: font });
+    expect(violations.map((v) => v.field)).toEqual(["textFont.weights.700"]);
+    expect(violations[0]?.code).toBe("charter-font-url-invalid");
   });
 });

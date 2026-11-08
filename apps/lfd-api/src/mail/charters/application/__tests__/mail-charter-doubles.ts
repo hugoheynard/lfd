@@ -1,4 +1,9 @@
-import type { MailCharterSettings, MailLocale, MailSpace } from "@lfd/mail-blocks";
+import type {
+  MailCharterSettings,
+  MailCharterShopFonts,
+  MailLocale,
+  MailSpace,
+} from "@lfd/mail-blocks";
 
 import { MailCharterChangedError } from "../../domain/mail-charter-errors.js";
 import {
@@ -29,7 +34,22 @@ export const STARTING_SETTINGS: MailCharterSettings = {
   },
   darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
   headingFont: null,
+  textFont: null,
   footer: {},
+};
+
+/** Les polices de la boutique, telles que l'adresse de la boutique les donne. */
+export const SHOP_FONTS: MailCharterShopFonts = {
+  heading: {
+    family: "Chunk",
+    url: "https://lfc.test/brand/fonts/chunk-400.woff2",
+    fallback: "'Arial Black', Impact, sans-serif",
+  },
+  text: {
+    family: "Pogonia",
+    url: "https://lfc.test/brand/fonts/pogonia-400.woff2",
+    fallback: "-apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+  },
 };
 
 /** Une charte réglée, logo choisi dans la médiathèque. */
@@ -99,6 +119,10 @@ export class FixedSpaceDirectory extends MailSpaceDirectory {
 
   startingSettings(): MailCharterSettings {
     return STARTING_SETTINGS;
+  }
+
+  shopFontsOf(space: MailSpace): MailCharterShopFonts | null {
+    return space === "lfc" ? SHOP_FONTS : null;
   }
 }
 

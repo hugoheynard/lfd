@@ -1,7 +1,7 @@
 <fold-page-layout [title]="spaceTitle()" icon="mail">
   <fold-back-link pageEyebrow icon="arrow-back" label="Email Templates" routerLink="/emails" />
   <p description>
-    Le logo, les couleurs, la police et le pied de page de tous les e-mails de l’espace. Rien ne
+    Le logo, les couleurs, les polices et le pied de page de tous les e-mails de l’espace. Rien ne
     change à l’envoi tant que la charte n’est pas publiée.
   </p>
   @if (status() === 'ready' && canWrite()) {
@@ -219,56 +219,53 @@
               </div>
             </fold-card>
 
-            <fold-card>
-              <div class="cp-card">
-                <fold-element-title
-                  variant="title"
-                  title="Police des titres"
-                  subtitle="Gmail n’affiche que la police de secours"
-                />
-                <fold-checkbox
-                  data-font-toggle
-                  label="Une police web pour les titres"
-                  [disabled]="!canWrite()"
-                  [checked]="charter.headingFont !== null"
-                  (checkedChange)="toggleFont($event)"
-                />
-                @if (charter.headingFont; as font) {
-                  <fold-input
-                    data-font-family
-                    label="Nom de la police"
-                    [readOnly]="!canWrite()"
-                    [value]="font.family"
-                    (valueChange)="setFont('family', $event)"
-                  />
-                  @for (violation of issuesOf('headingFont.family'); track $index) {
-                    <fold-callout variant="warning">{{ violation.message }}</fold-callout>
-                  }
-                  <fold-input
-                    data-font-url
-                    type="url"
-                    label="Adresse du fichier (woff2, https://)"
-                    [readOnly]="!canWrite()"
-                    [value]="font.url"
-                    (valueChange)="setFont('url', $event)"
-                  />
-                  @for (violation of issuesOf('headingFont.url'); track $index) {
-                    <fold-callout variant="warning">{{ violation.message }}</fold-callout>
-                  }
-                  <fold-input
-                    data-font-fallback
-                    label="Police de secours"
-                    placeholder="Arial Black, sans-serif"
-                    [readOnly]="!canWrite()"
-                    [value]="font.fallback"
-                    (valueChange)="setFont('fallback', $event)"
-                  />
-                  @for (violation of issuesOf('headingFont.fallback'); track $index) {
-                    <fold-callout variant="warning">{{ violation.message }}</fold-callout>
-                  }
-                }
+            <fold-callout variant="info" data-font-fallback-note>
+              Gmail, la messagerie la plus répandue, et certaines applications n’affichent pas les
+              polices web : elles montrent la police de secours. Apple Mail, l’iPhone et Outlook
+              pour Mac affichent la police choisie. Choisissez donc un secours proche et toujours
+              lisible. L’aperçu ci-dessous montre la police ; un essai envoyé dans Gmail montre le
+              secours.
+            </fold-callout>
+            @if (canWrite() && current.shopFonts; as shop) {
+              <div class="cp-actions">
+                <button
+                  foldButton
+                  emphasis="outline"
+                  intent="neutral"
+                  type="button"
+                  data-shop-fonts
+                  (click)="useShopFonts(shop)"
+                >
+                  Utiliser les polices de la boutique
+                </button>
               </div>
-            </fold-card>
+            }
+            <div class="cp-grid">
+              <app-mail-charter-font-card
+                data-font="headingFont"
+                slot="headingFont"
+                heading="Police des titres"
+                subtitle="Le titre de chaque e-mail et l’enseigne du bandeau"
+                toggleLabel="Une police web pour les titres"
+                fallbackPlaceholder="Arial Black, sans-serif"
+                [font]="charter.headingFont"
+                [violations]="violations()"
+                [readOnly]="!canWrite()"
+                (fontChange)="setFont('headingFont', $event)"
+              />
+              <app-mail-charter-font-card
+                data-font="textFont"
+                slot="textFont"
+                heading="Police du texte"
+                subtitle="Le corps, les blocs libres et le pied de page"
+                toggleLabel="Une police web pour le texte"
+                fallbackPlaceholder="Arial, sans-serif"
+                [font]="charter.textFont"
+                [violations]="violations()"
+                [readOnly]="!canWrite()"
+                (fontChange)="setFont('textFont', $event)"
+              />
+            </div>
 
             <fold-card>
               <div class="cp-card">

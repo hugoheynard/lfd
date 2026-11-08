@@ -44,6 +44,7 @@ const SETTINGS: MailCharterSettings = {
   },
   darkColors: { page: '#111111', card: '#1c1c1c', text: '#eeeeee', border: '#333333' },
   headingFont: null,
+  textFont: null,
   footer: {},
 };
 

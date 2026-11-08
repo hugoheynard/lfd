@@ -1,7 +1,7 @@
 import type { MailCharterSettings, MailDocument } from "@lfd/mail-blocks";
 
 import { renderLayout, type LayoutInput } from "../html.js";
-import { BRAND, BUTTON_STYLE, TITLE_STYLE } from "../layout-styles.js";
+import { BRAND, BUTTON_STYLE, TEXT_FONT_STACK, TITLE_STYLE } from "../layout-styles.js";
 import {
   renderCharterOf,
   STARTING_MAIL_CHARTER,
@@ -40,6 +40,7 @@ const PUBLISHED: MailCharterSettings = {
     url: "https://fonts.lfd.test/fraunces.woff2",
     fallback: "Georgia, serif",
   },
+  textFont: null,
   footer: { fr: "La Folie Douce — 1 rue du Four, Lyon" },
 };
 
@@ -164,5 +165,106 @@ describe("le pied du document découpé", () => {
     const { footer } = renderMailDocumentParts(INPUT, document, options);
     expect(footer).not.toContain("1 rue du Four");
     expect(footer).toContain("aide@lfd.test");
+  });
+});
+
+describe("la police du texte", () => {
+  const POGONIA = {
+    family: "Pogonia",
+    url: "https://lfc.test/brand/fonts/pogonia-400.woff2",
+    fallback: "-apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+  };
+
+  it("n'existe pas dans la charte de départ : la pile système, à l'octet", () => {
+    expect(startingMailCharterSettings(INPUT.brandFontUrl).textFont).toBeNull();
+    expect(renderLayout(INPUT)).toContain(`font-family:${TEXT_FONT_STACK};`);
+  });
+
+  it("absente d'une charte publiée, ne change ni le corps ni le <head>", () => {
+    const html = renderLayout({ ...INPUT, charter: renderCharterOf(PUBLISHED, "fr") });
+    expect(html).toContain(
+      `<body class="lfd-page" style="margin:0;padding:24px;font-family:${TEXT_FONT_STACK};`,
+    );
+    expect(html).not.toContain("Pogonia");
+    expect(html.match(/@font-face/gu)).toHaveLength(1);
+  });
+
+  it("déclarée, pose son @font-face et habille le corps, secours écrit en ligne", () => {
+    const charter = renderCharterOf({ ...PUBLISHED, textFont: POGONIA }, "fr");
+    const html = renderLayout({ ...INPUT, charter });
+    expect(html).toContain(
+      "@font-face{font-family:'Pogonia';font-style:normal;font-weight:400;src:url('https://lfc.test/brand/fonts/pogonia-400.woff2') format('woff2');}",
+    );
+    expect(html).toContain(
+      "font-family:'Pogonia',-apple-system, 'Segoe UI', Roboto, Arial, sans-serif;color:#1b1b1b;",
+    );
+    expect(html).toContain("@font-face{font-family:'Fraunces'");
+  });
+
+  it("habille aussi l'enseigne quand la charte n'a pas de police des titres", () => {
+    const charter = renderCharterOf({ ...PUBLISHED, headingFont: null, textFont: POGONIA }, "fr");
+    const html = renderLayout({ ...INPUT, charter });
+    expect(html).toContain("color:#ffffff;font-family:'Pogonia',-apple-system");
+  });
+
+  it("habille un document réarrangé de la même façon", () => {
+    const document: MailDocument = {
+      template: "staff.invited",
+      blocks: [
+        { id: "m1", kind: "model", section: "title" },
+        { id: "b1", kind: "button", label: { fr: "Ouvrir" }, href: "https://lfd.test/o" },
+      ],
+    };
+    const html = renderMailDocument(
+      { ...INPUT, charter: renderCharterOf({ ...PUBLISHED, textFont: POGONIA }, "fr") },
+      document,
+      { charter: "lfd", locale: "fr", declaredSections: ["title", "body"] },
+    );
+    expect(html).toContain("@font-face{font-family:'Pogonia'");
+    expect(html).toContain("font-family:'Pogonia',-apple-system");
+  });
+
+  it("déclare un @font-face par graisse, la même famille", () => {
+    const weighted = {
+      ...POGONIA,
+      weights: {
+        "600": "https://lfc.test/brand/fonts/pogonia-600.woff2",
+        "700": "https://lfc.test/brand/fonts/pogonia-700.woff2",
+      },
+    };
+    const html = renderLayout({
+      ...INPUT,
+      charter: renderCharterOf({ ...PUBLISHED, textFont: weighted }, "fr"),
+    });
+    for (const [weight, file] of [
+      ["400", "pogonia-400"],
+      ["600", "pogonia-600"],
+      ["700", "pogonia-700"],
+    ]) {
+      expect(html).toContain(
+        `@font-face{font-family:'Pogonia';font-style:normal;font-weight:${weight};src:url('https://lfc.test/brand/fonts/${file}.woff2')`,
+      );
+    }
+  });
+
+  it("une police à une graisse déclare 600 et 700 vers son seul fichier : pas de faux gras", () => {
+    const chunk = "https://lfc.test/brand/fonts/chunk-400.woff2";
+    const headingFont = {
+      family: "Chunk",
+      url: chunk,
+      fallback: "'Arial Black', Impact, sans-serif",
+      weights: { "600": chunk, "700": chunk },
+    };
+    const html = renderLayout({
+      ...INPUT,
+      charter: renderCharterOf({ ...PUBLISHED, headingFont }, "fr"),
+    });
+    expect(html.match(/@font-face\{font-family:'Chunk'/gu)).toHaveLength(3);
+    expect(html).toContain(`font-weight:700;src:url('${chunk}')`);
+  });
+
+  it("une police rangée sans graisses ne déclare que la 400, comme avant", () => {
+    const html = renderLayout({ ...INPUT, charter: renderCharterOf(PUBLISHED, "fr") });
+    expect(html.match(/@font-face\{font-family:'Fraunces'/gu)).toHaveLength(1);
   });
 });

@@ -7,8 +7,8 @@ import {
   violationsByField,
   withColor,
   withFooter,
-  withHeadingFont,
-  withHeadingFontField,
+  withFont,
+  withShopFonts,
   withLogoAlt,
   withLogoSource,
   withOriginalLogo,
@@ -27,6 +27,7 @@ const SETTINGS: MailCharterSettings = {
   },
   darkColors: { page: '#111111', card: '#1c1c1c', text: '#f0f0f0', border: '#333333' },
   headingFont: null,
+  textFont: null,
   footer: { fr: 'La Folie Douce' },
 };
 
@@ -53,13 +54,39 @@ describe('les gestes de la charte', () => {
       fr: 'La Folie Douce',
       en: 'Hello',
     });
-    const font = withHeadingFontField(
-      withHeadingFont(SETTINGS, { family: '', url: '', fallback: '' }),
-      'family',
-      'Chunk',
-    );
+    const font = withFont(SETTINGS, 'headingFont', { family: 'Chunk', url: '', fallback: '' });
     expect(font.headingFont?.family).toBe('Chunk');
-    expect(withHeadingFontField(SETTINGS, 'family', 'x')).toBe(SETTINGS);
+    expect(font.textFont).toBeNull();
+  });
+
+  it('règle la police du texte sans toucher celle des titres', () => {
+    const text = withFont(SETTINGS, 'textFont', {
+      family: 'Pogonia',
+      url: '',
+      fallback: 'Arial, sans-serif',
+    });
+    expect(text.textFont?.fallback).toBe('Arial, sans-serif');
+    expect(text.headingFont).toBeNull();
+    expect(withFont(text, 'textFont', null).textFont).toBeNull();
+  });
+
+  it('pose les polices de la boutique dans les deux réglages, que la charte admet', () => {
+    const shop = withShopFonts(SETTINGS, {
+      heading: {
+        family: 'Chunk',
+        url: 'https://lfc.test/brand/fonts/chunk-400.woff2',
+        fallback: "'Arial Black', Impact, sans-serif",
+      },
+      text: {
+        family: 'Pogonia',
+        url: 'https://lfc.test/brand/fonts/pogonia-400.woff2',
+        fallback: "-apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+      },
+    });
+    expect(shop.headingFont?.family).toBe('Chunk');
+    expect(shop.textFont?.family).toBe('Pogonia');
+    expect(shop.colors).toBe(SETTINGS.colors);
+    expect(validateMailCharterForPublication(shop, ['fr'])).toEqual([]);
   });
 
   it('range les refus du paquet par réglage', () => {

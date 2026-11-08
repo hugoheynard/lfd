@@ -16,6 +16,7 @@ import {
   validateMailCharterForPublication,
   type MailCharterFont,
   type MailCharterSettings,
+  type MailCharterShopFonts,
   type MailCharterView,
   type MailCharterViolation,
   type MailLocale,
@@ -25,7 +26,6 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldCheckboxComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldInlineConfirmComponent,
@@ -56,14 +56,16 @@ import {
   violationsByField,
   withColor,
   withFooter,
-  withHeadingFont,
-  withHeadingFontField,
+  withFont,
   withLogoAlt,
   withLogoSource,
   withOriginalLogo,
+  withShopFonts,
   type CharterColorField,
+  type CharterFontSlot,
 } from '../../rules/mail-charter-edits';
 import { MailCharterColorField } from '../mail-charter-color-field/mail-charter-color-field';
+import { MailCharterFontCard } from '../mail-charter-font-card/mail-charter-font-card';
 import { MailCharterHistory } from '../mail-charter-history/mail-charter-history';
 import { MailCharterPreview } from '../mail-charter-preview/mail-charter-preview';
 import { MailSpaceTabs } from '../mail-space-tabs/mail-space-tabs';
@@ -78,7 +80,7 @@ const NO_VIOLATIONS: readonly MailCharterViolation[] = [];
 
 /**
  * **La charte d'un espace d'e-mails** (`plan-editeur-par-blocs.md`, § 25,
- * C2) : logo, couleurs claires et sombres, police des titres, pied de page
+ * C2) : logo, couleurs claires et sombres, polices des titres et du texte, pied de page
  * par langue. Les refus de `validateMailCharterForPublication` sont montrés
  * sous chaque réglage AVANT de publier — contraste compris, avec le rapport
  * calculé ; l'aperçu rend un e-mail de l'espace avec la charte à l'écran.
@@ -97,7 +99,6 @@ const NO_VIOLATIONS: readonly MailCharterViolation[] = [];
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldCheckboxComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldInlineConfirmComponent,
@@ -107,6 +108,7 @@ const NO_VIOLATIONS: readonly MailCharterViolation[] = [];
     FoldTextareaComponent,
     FoldViewToggleComponent,
     MailCharterColorField,
+    MailCharterFontCard,
     MailCharterHistory,
     MailCharterPreview,
     MailSpaceTabs,
@@ -279,13 +281,13 @@ export class MailCharterPage implements HasPendingChanges {
     this.edit((settings) => withFooter(settings, this.locale(), footer));
   }
 
-  protected toggleFont(on: boolean): void {
-    const empty: MailCharterFont = { family: '', url: '', fallback: '' };
-    this.edit((settings) => withHeadingFont(settings, on ? empty : null));
+  protected setFont(slot: CharterFontSlot, font: MailCharterFont | null): void {
+    this.edit((settings) => withFont(settings, slot, font));
   }
 
-  protected setFont(key: keyof MailCharterFont, value: string): void {
-    this.edit((settings) => withHeadingFontField(settings, key, value));
+  /** Chunk pour les titres, Pogonia pour le texte : dans le brouillon à l'écran, rien n'est publié. */
+  useShopFonts(fonts: MailCharterShopFonts): void {
+    this.edit((settings) => withShopFonts(settings, fonts));
   }
 
   async save(): Promise<void> {

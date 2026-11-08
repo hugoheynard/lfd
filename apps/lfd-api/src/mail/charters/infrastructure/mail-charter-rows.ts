@@ -2,6 +2,7 @@ import {
   isMailSpace,
   MAIL_LOCALES,
   type Localized,
+  type MailCharterFont,
   type MailCharterSettings,
 } from "@lfd/mail-blocks";
 
@@ -98,6 +99,15 @@ function localizedJson(text: Localized<string>): Prisma.InputJsonObject {
   );
 }
 
+/** Une police en `jsonb` : sans graisses déclarées, la forme d'avant le 2026-11-08. */
+function fontJson(font: MailCharterFont | null): Prisma.InputJsonObject | null {
+  if (font === null) {
+    return null;
+  }
+  const { weights, ...rest } = font;
+  return weights === undefined ? { ...rest } : { ...rest, weights: { ...weights } };
+}
+
 /** Les réglages en `jsonb` : une langue absente n'est pas écrite. */
 export function charterSettingsJson(settings: MailCharterSettings): Prisma.InputJsonObject {
   return {
@@ -107,7 +117,8 @@ export function charterSettingsJson(settings: MailCharterSettings): Prisma.Input
         : { src: settings.logo.src, alt: localizedJson(settings.logo.alt) },
     colors: { ...settings.colors },
     darkColors: { ...settings.darkColors },
-    headingFont: settings.headingFont === null ? null : { ...settings.headingFont },
+    headingFont: fontJson(settings.headingFont),
+    textFont: fontJson(settings.textFont),
     footer: localizedJson(settings.footer),
   };
 }

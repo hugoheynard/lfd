@@ -2,7 +2,7 @@ import type { MailCharter } from "@lfd/mail-blocks";
 
 import type { LayoutFrameTheme } from "./html.js";
 import type { LayoutInput } from "./layout-input.js";
-import { charterFontFaceRule } from "./layout-header.js";
+import { charterFontFaceRule, charterTextFontFaceRule } from "./layout-header.js";
 import { STARTING_MAIL_CHARTER, type MailRenderCharter } from "./render-charter.js";
 
 /**
@@ -75,7 +75,7 @@ function stackRule(): string {
 /**
  * Le cadre thémé : `color-scheme` déclaré, variante sombre de la charte par
  * `prefers-color-scheme`, empilement des colonnes par `@media`, et la police
- * des titres de la charte (celle de l'enseigne au départ). Gmail application
+ * des titres de la charte (celle de l'enseigne au départ) et celle du texte. Gmail application
  * retire ce `<head>` : tout ce qu'il porte n'est qu'un supplément, jamais
  * une condition de lisibilité.
  */
@@ -84,7 +84,7 @@ export function charterFrameTheme(
   lang: string,
   input: Pick<LayoutInput, "brandFontUrl">,
 ): LayoutFrameTheme {
-  const style = `${charterFontFaceRule(charter, input.brandFontUrl)}@media (prefers-color-scheme:dark){${darkRules(darkPaletteOf(charter))}}${stackRule()}`;
+  const style = `${charterFontFaceRule(charter, input.brandFontUrl)}${charterTextFontFaceRule(charter)}@media (prefers-color-scheme:dark){${darkRules(darkPaletteOf(charter))}}${stackRule()}`;
   return {
     head: `
   <head><meta name="color-scheme" content="light dark" /><meta name="supported-color-schemes" content="light dark" /><style>${style}</style></head>`,

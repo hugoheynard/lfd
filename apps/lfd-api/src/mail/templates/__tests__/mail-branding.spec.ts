@@ -1,5 +1,5 @@
 import { AppConfig } from "../../../platform/config/app-config.js";
-import { mailBrandingOf } from "../mail-branding.js";
+import { mailBrandingOf, shopFontsOf } from "../mail-branding.js";
 import { b2bMailTemplates } from "../mail-templates.js";
 
 /**
@@ -124,5 +124,34 @@ describe("la face de l'enseigne", () => {
 
   it("sans racine de boutique, pas d'URL inventée : le repli système", () => {
     expect(mailBrandingOf(new ShopConfig(null))).not.toHaveProperty("brandFontUrl");
+  });
+});
+
+describe("les polices de la boutique proposées à la charte", () => {
+  it("pointent vers les copies NON hachées, avec un secours que la charte admet", () => {
+    expect(shopFontsOf(new ShopConfig("https://shop.test/"))).toEqual({
+      heading: {
+        family: "Chunk",
+        url: "https://shop.test/brand/fonts/chunk-400.woff2",
+        fallback: "'Arial Black', Impact, sans-serif",
+        weights: {
+          "600": "https://shop.test/brand/fonts/chunk-400.woff2",
+          "700": "https://shop.test/brand/fonts/chunk-400.woff2",
+        },
+      },
+      text: {
+        family: "Pogonia",
+        url: "https://shop.test/brand/fonts/pogonia-400.woff2",
+        fallback: "-apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+        weights: {
+          "600": "https://shop.test/brand/fonts/pogonia-600.woff2",
+          "700": "https://shop.test/brand/fonts/pogonia-700.woff2",
+        },
+      },
+    });
+  });
+
+  it("sans racine de boutique, aucune proposition", () => {
+    expect(shopFontsOf(new ShopConfig(null))).toBeNull();
   });
 });

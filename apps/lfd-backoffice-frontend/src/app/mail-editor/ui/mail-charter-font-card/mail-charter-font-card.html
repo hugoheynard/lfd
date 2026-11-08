@@ -1,0 +1,46 @@
+<fold-card>
+  <div class="fc-card">
+    <fold-element-title variant="title" [title]="heading()" [subtitle]="subtitle()" />
+    <fold-checkbox
+      data-font-toggle
+      [label]="toggleLabel()"
+      [disabled]="readOnly()"
+      [checked]="font() !== null"
+      (checkedChange)="toggle($event)"
+    />
+    @if (font(); as current) {
+      <fold-input
+        data-font-family
+        label="Nom de la police"
+        [readOnly]="readOnly()"
+        [value]="current.family"
+        (valueChange)="set('family', $event)"
+      />
+      @for (violation of issuesOf('family'); track $index) {
+        <fold-callout variant="warning" data-violation>{{ violation.message }}</fold-callout>
+      }
+      <fold-input
+        data-font-url
+        type="url"
+        label="Adresse du fichier (woff2, https://)"
+        [readOnly]="readOnly()"
+        [value]="current.url"
+        (valueChange)="set('url', $event)"
+      />
+      @for (violation of issuesOf('url'); track $index) {
+        <fold-callout variant="warning" data-violation>{{ violation.message }}</fold-callout>
+      }
+      <fold-input
+        data-font-fallback
+        label="Police de secours"
+        [placeholder]="fallbackPlaceholder()"
+        [readOnly]="readOnly()"
+        [value]="current.fallback"
+        (valueChange)="set('fallback', $event)"
+      />
+      @for (violation of issuesOf('fallback'); track $index) {
+        <fold-callout variant="warning" data-violation>{{ violation.message }}</fold-callout>
+      }
+    }
+  </div>
+</fold-card>

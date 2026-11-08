@@ -16,6 +16,7 @@ import {
   InMemoryMailCharters,
   LFD_SETTINGS,
   RecordingCharterPreview,
+  SHOP_FONTS,
   STARTING_SETTINGS,
 } from "./mail-charter-doubles.js";
 
@@ -56,6 +57,7 @@ describe("lire la charte d'un espace", () => {
       settings: STARTING_SETTINGS,
       source: "starting",
       starting: STARTING_SETTINGS,
+      shopFonts: null,
       revision: 0,
       published: null,
       draft: null,
@@ -74,6 +76,14 @@ describe("lire la charte d'un espace", () => {
       at: new Date(0).toISOString(),
       staffId: "fiche-colette",
     });
+  });
+
+  it("propose à La Folie Coffee les polices de la boutique, sans les écrire", async () => {
+    const w = world();
+    const view = await w.read("lfc");
+    expect(view.shopFonts).toEqual(SHOP_FONTS);
+    expect(view.settings.textFont).toBeNull();
+    expect(w.charters.rows.size).toBe(0);
   });
 
   it("refuse un espace inconnu", async () => {

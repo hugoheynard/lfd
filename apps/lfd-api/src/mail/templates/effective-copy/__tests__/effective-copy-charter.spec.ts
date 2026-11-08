@@ -76,6 +76,7 @@ const LFD_CHARTER: MailCharterSettings = {
   },
   darkColors: { page: "#101010", card: "#1c1c1c", text: "#f0f0f0", border: "#333333" },
   headingFont: null,
+  textFont: null,
   footer: { fr: "La Folie Douce — équipe" },
 };
 

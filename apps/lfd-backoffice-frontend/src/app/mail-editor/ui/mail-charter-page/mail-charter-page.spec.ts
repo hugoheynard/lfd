@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
-import type { MailCharterSettings, MailCharterView } from '@lfd/mail-blocks';
+import type { MailCharterSettings, MailCharterShopFonts, MailCharterView } from '@lfd/mail-blocks';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -23,7 +23,25 @@ const SETTINGS: MailCharterSettings = {
   },
   darkColors: { page: '#111111', card: '#1c1c1c', text: '#f0f0f0', border: '#333333' },
   headingFont: null,
+  textFont: null,
   footer: {},
+};
+
+const SHOP_FONTS: MailCharterShopFonts = {
+  heading: {
+    family: 'Chunk',
+    url: 'https://lfc.test/brand/fonts/chunk-400.woff2',
+    fallback: "'Arial Black', Impact, sans-serif",
+  },
+  text: {
+    family: 'Pogonia',
+    url: 'https://lfc.test/brand/fonts/pogonia-400.woff2',
+    fallback: "-apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+    weights: {
+      '600': 'https://lfc.test/brand/fonts/pogonia-600.woff2',
+      '700': 'https://lfc.test/brand/fonts/pogonia-700.woff2',
+    },
+  },
 };
 
 const VIEW: MailCharterView = {
@@ -33,6 +51,7 @@ const VIEW: MailCharterView = {
   settings: SETTINGS,
   source: 'draft',
   starting: SETTINGS,
+  shopFonts: null,
   revision: 4,
   published: null,
   draft: { at: '2026-11-07T08:00:00.000Z', staffId: 's1' },
@@ -41,9 +60,10 @@ const VIEW: MailCharterView = {
 async function setup(
   space = 'lfd',
   permissions: readonly StaffPermission[] = ['mail_templates:write'],
+  view: MailCharterView = VIEW,
 ) {
   const api = {
-    load: vi.fn(() => Promise.resolve(VIEW)),
+    load: vi.fn(() => Promise.resolve(view)),
     history: vi.fn(() => Promise.resolve({ space: 'lfd', versions: [] })),
     preview: vi.fn(),
     saveDraft: vi.fn(() => Promise.resolve()),
@@ -161,5 +181,49 @@ describe('MailCharterPage — la charte d’un espace', () => {
     expect(element.querySelector('[data-save]')).toBeNull();
     expect(element.querySelector('[data-publish]')).toBeNull();
     expect(element.querySelector('[data-pick-logo]')).toBeNull();
+  });
+
+  it('montre la police des titres et celle du texte, et explique le secours', async () => {
+    const { element } = await setup();
+    expect(element.querySelector('[data-font="headingFont"]')?.textContent).toContain(
+      'Police des titres',
+    );
+    expect(element.querySelector('[data-font="textFont"]')?.textContent).toContain(
+      'Police du texte',
+    );
+    const note = element.querySelector('fold-callout[data-font-fallback-note]');
+    expect(note?.getAttribute('variant')).toBe('info');
+    expect(note?.textContent).toContain('Gmail');
+    expect(note?.textContent).toContain('police de secours');
+  });
+
+  it('remplit les deux polices avec celles de la boutique, dans le brouillon seulement', async () => {
+    const view: MailCharterView = { ...VIEW, space: 'lfc', shopFonts: SHOP_FONTS };
+    const { fixture, page, element, api } = await setup('lfc', ['mail_templates:write'], view);
+    element.querySelector<HTMLButtonElement>('[data-shop-fonts]')?.click();
+    fixture.detectChanges();
+    expect(page.settings()?.headingFont).toEqual(SHOP_FONTS.heading);
+    expect(page.settings()?.textFont).toEqual(SHOP_FONTS.text);
+    expect(page.dirty()).toBe(true);
+    expect(page.violations()).toEqual([]);
+    expect(api.saveDraft).not.toHaveBeenCalled();
+    expect(api.publish).not.toHaveBeenCalled();
+  });
+
+  it('sans polices de la boutique proposées, ni sans droit d’écrire, pas de bouton', async () => {
+    expect((await setup()).element.querySelector('[data-shop-fonts]')).toBeNull();
+  });
+
+  it('montre le refus d’une police du texte sous sa carte', async () => {
+    const { fixture, page, element } = await setup();
+    page.settings.set({
+      ...SETTINGS,
+      textFont: { family: 'Pogonia', url: 'https://x.test/p.woff2', fallback: '' },
+    });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-font="textFont"] [data-violation]')?.textContent).toContain(
+      'police de secours du texte',
+    );
+    expect(element.querySelector('[data-font="headingFont"] [data-violation]')).toBeNull();
   });
 });

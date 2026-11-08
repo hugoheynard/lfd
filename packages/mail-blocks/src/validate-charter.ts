@@ -1,8 +1,9 @@
-import type {
-  MailCharterColors,
-  MailCharterDarkColors,
-  MailCharterFont,
-  MailCharterSettings,
+import {
+  MAIL_CHARTER_FONT_WEIGHTS,
+  type MailCharterColors,
+  type MailCharterDarkColors,
+  type MailCharterFont,
+  type MailCharterSettings,
 } from "./charter-settings.js";
 import { CHARTER_CONTRAST_PAIRS } from "./charter-contrast-pairs.js";
 import { contrastRatio, isHexColor, MIN_TEXT_CONTRAST } from "./contrast.js";
@@ -84,32 +85,63 @@ function colorViolations(
   ];
 }
 
-function fontViolations(font: MailCharterFont | null): MailCharterViolation[] {
+/** Ce que les messages disent d'une police, selon le réglage en cause. */
+interface FontSlot {
+  readonly field: "headingFont" | "textFont";
+  readonly name: string;
+  readonly fallbackOf: string;
+  readonly fallbackExample: string;
+}
+
+const HEADING_FONT: FontSlot = {
+  field: "headingFont",
+  name: "la police des titres",
+  fallbackOf: "des titres",
+  fallbackExample: "Arial Black, sans-serif",
+};
+
+const TEXT_FONT: FontSlot = {
+  field: "textFont",
+  name: "la police du texte",
+  fallbackOf: "du texte",
+  fallbackExample: "Arial, sans-serif",
+};
+
+function fontViolations(font: MailCharterFont | null, slot: FontSlot): MailCharterViolation[] {
   if (font === null) {
     return [];
   }
   const found: MailCharterViolation[] = [];
+  const name = slot.name.charAt(0).toUpperCase() + slot.name.slice(1);
   if (!isHttpsUrl(font.url)) {
     found.push({
       code: "charter-font-url-invalid",
-      field: "headingFont.url",
-      message: `La police des titres doit être servie en https:// (un fichier woff2 public), pas « ${font.url} ».`,
+      field: `${slot.field}.url`,
+      message: `${name} doit être servie en https:// (un fichier woff2 public), pas « ${font.url} ».`,
     });
+  }
+  for (const weight of MAIL_CHARTER_FONT_WEIGHTS) {
+    const url = font.weights?.[weight];
+    if (url !== undefined && !isHttpsUrl(url)) {
+      found.push({
+        code: "charter-font-url-invalid",
+        field: `${slot.field}.weights.${weight}`,
+        message: `${name}, graisse ${weight}, doit être servie en https:// (un fichier woff2 public), pas « ${url} ».`,
+      });
+    }
   }
   if (!FONT_NAME.test(font.family.trim())) {
     found.push({
       code: "charter-font-family-invalid",
-      field: "headingFont.family",
-      message:
-        "Le nom de la police des titres est vide ou porte un caractère refusé : lettres, chiffres, espaces, tirets et apostrophes seulement.",
+      field: `${slot.field}.family`,
+      message: `Le nom de ${slot.name} est vide ou porte un caractère refusé : lettres, chiffres, espaces, tirets et apostrophes seulement.`,
     });
   }
   if (!FONT_NAME.test(font.fallback.trim())) {
     found.push({
       code: "charter-font-fallback-invalid",
-      field: "headingFont.fallback",
-      message:
-        "La police de secours des titres est obligatoire (par exemple « Arial Black, sans-serif ») : c'est elle que Gmail affiche. Lettres, chiffres, espaces, virgules, tirets et apostrophes seulement.",
+      field: `${slot.field}.fallback`,
+      message: `La police de secours ${slot.fallbackOf} est obligatoire (par exemple « ${slot.fallbackExample} ») : c'est elle que Gmail affiche. Lettres, chiffres, espaces, virgules, tirets et apostrophes seulement.`,
     });
   }
   return found;
@@ -118,7 +150,7 @@ function fontViolations(font: MailCharterFont | null): MailCharterViolation[] {
 /**
  * **Les règles de forme**, à chaque enregistrement du brouillon : couleurs en
  * `#rrggbb`, adresse du logo admise (vide tant qu'il n'est pas choisi),
- * police des titres en `https://` avec sa police de secours.
+ * polices des titres et du texte en `https://` avec leur police de secours.
  */
 export function validateMailCharter(
   settings: MailCharterSettings,
@@ -137,7 +169,8 @@ export function validateMailCharter(
   return [
     ...colorViolations(settings.colors, settings.darkColors),
     ...logoSource,
-    ...fontViolations(settings.headingFont),
+    ...fontViolations(settings.headingFont, HEADING_FONT),
+    ...fontViolations(settings.textFont, TEXT_FONT),
   ];
 }
 

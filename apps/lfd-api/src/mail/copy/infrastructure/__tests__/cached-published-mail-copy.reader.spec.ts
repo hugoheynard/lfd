@@ -227,6 +227,7 @@ describe("les chartes publiées des espaces, gardées en mémoire (C1)", () => {
     },
     darkColors: { page: "#0b1220", card: "#111a2e", text: "#e5e9f2", border: "#26324a" },
     headingFont: null,
+    textFont: null,
     footer: {},
   };
 

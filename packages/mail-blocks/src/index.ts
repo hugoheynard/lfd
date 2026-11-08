@@ -19,12 +19,14 @@ export {
   mailSpaceOfCharter,
   type MailSpace,
 } from "./mail-spaces.js";
-export type {
-  MailCharterColors,
-  MailCharterDarkColors,
-  MailCharterFont,
-  MailCharterLogo,
-  MailCharterSettings,
+export {
+  MAIL_CHARTER_FONT_WEIGHTS,
+  type MailCharterColors,
+  type MailCharterDarkColors,
+  type MailCharterFont,
+  type MailCharterFontWeight,
+  type MailCharterLogo,
+  type MailCharterSettings,
 } from "./charter-settings.js";
 export { MIN_TEXT_CONTRAST, contrastRatio, isHexColor } from "./contrast.js";
 export { CHARTER_CONTRAST_PAIRS, type CharterContrastPair } from "./charter-contrast-pairs.js";
@@ -43,6 +45,7 @@ export type {
   MailCharterPublicationView,
   MailCharterPublishPayload,
   MailCharterPublishedView,
+  MailCharterShopFonts,
   MailCharterSource,
   MailCharterVersionView,
   MailCharterView,

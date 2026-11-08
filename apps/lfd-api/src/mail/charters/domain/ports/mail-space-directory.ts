@@ -1,4 +1,9 @@
-import type { MailCharterSettings, MailLocale, MailSpace } from "@lfd/mail-blocks";
+import type {
+  MailCharterSettings,
+  MailCharterShopFonts,
+  MailLocale,
+  MailSpace,
+} from "@lfd/mail-blocks";
 
 /**
  * Port de **ce que le code dit d'un espace** (plan
@@ -14,4 +19,6 @@ export abstract class MailSpaceDirectory {
   abstract localesOf(space: MailSpace): readonly MailLocale[];
   /** La charte de départ : celle que les e-mails rendent tant qu'aucune n'est publiée. */
   abstract startingSettings(space: MailSpace): MailCharterSettings;
+  /** Les polices de la boutique proposées à l'espace ; `null` : aucune. */
+  abstract shopFontsOf(space: MailSpace): MailCharterShopFonts | null;
 }

@@ -7,6 +7,7 @@ import {
   type MailCharterDarkColors,
   type MailCharterFont,
   type MailCharterSettings,
+  type MailCharterShopFonts,
   type MailCharterViolation,
   type MailLocale,
 } from '@lfd/mail-blocks';
@@ -108,22 +109,28 @@ export function withFooter(
   return { ...settings, footer: { ...settings.footer, [locale]: footer } };
 }
 
-/** Une police des titres, vide à remplir ; `null` : aucune police web. */
-export function withHeadingFont(
+/** Une police de la charte : celle des titres ou celle du texte courant. */
+export type CharterFontSlot = 'headingFont' | 'textFont';
+
+/** Une police, vide à remplir ; `null` : aucune police web. */
+export function withFont(
   settings: MailCharterSettings,
+  slot: CharterFontSlot,
   font: MailCharterFont | null,
 ): MailCharterSettings {
-  return { ...settings, headingFont: font };
+  return { ...settings, [slot]: font };
 }
 
-export function withHeadingFontField(
+/**
+ * « Utiliser les polices de la boutique » : Chunk pour les titres, Pogonia
+ * pour le texte, aux adresses que le serveur propose — dans le brouillon
+ * seulement, l'équipe publie.
+ */
+export function withShopFonts(
   settings: MailCharterSettings,
-  key: keyof MailCharterFont,
-  value: string,
+  fonts: MailCharterShopFonts,
 ): MailCharterSettings {
-  return settings.headingFont === null
-    ? settings
-    : { ...settings, headingFont: { ...settings.headingFont, [key]: value } };
+  return { ...settings, headingFont: fonts.heading, textFont: fonts.text };
 }
 
 /** Les refus rangés par réglage (`colors.text` → ses refus), dans l'ordre du paquet. */

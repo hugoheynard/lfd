@@ -133,6 +133,28 @@ describe("ouvrir la charte d'un espace", () => {
 });
 
 describe("enregistrer et publier", () => {
+  it("admet une charte sans police du texte (charge d'avant le 2026-11-08), relue sans", async () => {
+    const { starting } = await open();
+    const { textFont: _textFont, ...before } = starting;
+    await staff()
+      .put(`${CHARTERS}/lfd/draft`)
+      .send({ settings: before, expectedRevision: 0 })
+      .expect(204);
+    const reopened = await open();
+    expect(reopened.source).toBe("draft");
+    expect(reopened.settings.textFont).toBeNull();
+  });
+
+  it("refuse une police du texte sans secours (400), sous son propre réglage", async () => {
+    const { starting } = await open();
+    const textFont = { family: "Pogonia", url: "https://lfc.test/p.woff2", fallback: "" };
+    const refused = await staff()
+      .put(`${CHARTERS}/lfd/draft`)
+      .send({ settings: { ...starting, textFont }, expectedRevision: 0 })
+      .expect(400);
+    expect(JSON.stringify(refused.body)).toContain("police de secours du texte");
+  });
+
   it("refuse une couleur mal formée (400) et une révision dépassée (409)", async () => {
     const { starting } = await open();
     const bad = { ...starting, colors: { ...starting.colors, text: "noir" } };

@@ -1,4 +1,4 @@
-import { WHITE } from "./brand.js";
+import { TEXT_FONT_STACK, WHITE } from "./brand.js";
 import type { MailRenderCharter } from "./render-charter.js";
 
 /**
@@ -33,6 +33,17 @@ export const BODY_STYLE = `margin:0;${TEXT_STYLE}`;
 /** La pile d'une police des titres : la police déclarée, puis son secours. */
 export function headingFontStack(family: string, fallback: string): string {
   return `'${family}',${fallback}`;
+}
+
+/**
+ * La pile du texte courant : la police du texte de la charte, puis son
+ * secours ; sans police du texte, la pile système d'avant, à l'octet.
+ */
+export function textFontStack(charter: MailRenderCharter): string {
+  const font = charter.textFont;
+  return font === undefined || font === null
+    ? TEXT_FONT_STACK
+    : headingFontStack(font.family, font.fallback);
 }
 
 function titleFont(charter: MailRenderCharter): string {

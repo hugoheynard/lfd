@@ -29,6 +29,11 @@ export interface MailRenderCharter {
   readonly logo?: { readonly src: string; readonly alt: string };
   /** `null` : aucune police web ; absente : l'enseigne à `brandFontUrl`, comme avant. */
   readonly headingFont?: MailCharterFont | null;
+  /**
+   * La police du texte courant. Absente ou `null` : la pile système
+   * (`TEXT_FONT_STACK`), à l'octet — la charte de départ n'en a pas.
+   */
+  readonly textFont?: MailCharterFont | null;
   /** Le pied de page commun, déjà dans la langue de l'envoi. */
   readonly footer?: string;
   /**
@@ -89,6 +94,7 @@ export function startingMailCharterSettings(brandFontUrl: string | undefined): M
             url: brandFontUrl,
             fallback: STARTING_HEADING_FONT_FALLBACK,
           },
+    textFont: null,
     footer: {},
   };
 }
@@ -118,6 +124,7 @@ export function renderCharterOf(
           },
         }),
     headingFont: settings.headingFont,
+    ...(settings.textFont === null ? {} : { textFont: settings.textFont }),
     ...(footer === "" ? {} : { footer }),
     themed: true,
   };

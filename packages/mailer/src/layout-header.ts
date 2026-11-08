@@ -1,5 +1,6 @@
-import { TEXT_FONT_STACK } from "./brand.js";
-import { headingFontStack } from "./charter-styles.js";
+import { MAIL_CHARTER_FONT_WEIGHTS, type MailCharterFont } from "@lfd/mail-blocks";
+
+import { headingFontStack, textFontStack } from "./charter-styles.js";
 import { htmlEscape } from "./escape.js";
 import {
   STARTING_HEADING_FONT_FALLBACK,
@@ -58,11 +59,25 @@ export function brandFontFaceRule(url: string | undefined): string {
   return fontFaceRule(STARTING_HEADING_FONT_FAMILY, url);
 }
 
-function fontFaceRule(family: string, url: string | undefined): string {
+function fontFaceRule(family: string, url: string | undefined, weight = "400"): string {
   if (url === undefined || !url.startsWith("https://")) {
     return "";
   }
-  return `@font-face{font-family:'${family}';font-style:normal;font-weight:400;src:url('${htmlEscape(url)}') format('woff2');}`;
+  return `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};src:url('${htmlEscape(url)}') format('woff2');}`;
+}
+
+/**
+ * Les règles d'une police de charte : la 400 à `url`, puis une par graisse
+ * déclarée (`weights`) — la même famille. Une graisse non déclarée est
+ * laissée à la messagerie, comme avant.
+ */
+function charterFontRules(font: MailCharterFont): string {
+  return [
+    fontFaceRule(font.family, font.url),
+    ...MAIL_CHARTER_FONT_WEIGHTS.map((weight) =>
+      fontFaceRule(font.family, font.weights?.[weight], weight),
+    ),
+  ].join("");
 }
 
 /**
@@ -78,7 +93,7 @@ export function charterFontFaceRule(
   if (font === undefined) {
     return brandFontFaceRule(brandFontUrl);
   }
-  return font === null ? "" : fontFaceRule(font.family, font.url);
+  return font === null ? "" : charterFontRules(font);
 }
 
 function brandNameStack(charter: MailRenderCharter): string {
@@ -86,7 +101,18 @@ function brandNameStack(charter: MailRenderCharter): string {
   if (font === undefined) {
     return BRAND_FONT_STACK;
   }
-  return font === null ? TEXT_FONT_STACK : headingFontStack(font.family, font.fallback);
+  return font === null ? textFontStack(charter) : headingFontStack(font.family, font.fallback);
+}
+
+/**
+ * Les règles `@font-face` de la police du texte d'une charte, ou rien : une
+ * par graisse déclarée — les fichiers de la boutique sont statiques, un par
+ * graisse, et les passages en 600 ou 700 (boutons, totaux) ne doivent pas
+ * être épaissis par la messagerie.
+ */
+export function charterTextFontFaceRule(charter: MailRenderCharter): string {
+  const font = charter.textFont;
+  return font === undefined || font === null ? "" : charterFontRules(font);
 }
 
 /** Le `@font-face` de l'enseigne, seulement si une URL publique est donnée. */

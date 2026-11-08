@@ -1,6 +1,7 @@
 import {
   MAIL_LOCALES,
   type MailCharterSettings,
+  type MailCharterShopFonts,
   type MailLocale,
   type MailSpace,
 } from "@lfd/mail-blocks";
@@ -8,7 +9,7 @@ import { startingMailCharterSettings } from "@lfd/mailer";
 import { Injectable } from "@nestjs/common";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
-import { mailBrandingOf } from "../../templates/mail-branding.js";
+import { mailBrandingOf, shopFontsOf } from "../../templates/mail-branding.js";
 import {
   editorMails,
   mailBlockDeclarationOf,
@@ -26,6 +27,7 @@ import { MailSpaceDirectory } from "../domain/ports/mail-space-directory.js";
 @Injectable()
 export class RegistryMailSpaceDirectory extends MailSpaceDirectory {
   private readonly starting: Readonly<Record<MailSpace, MailCharterSettings>>;
+  private readonly shopFonts: MailCharterShopFonts | null;
 
   constructor(config: AppConfig) {
     super();
@@ -34,6 +36,7 @@ export class RegistryMailSpaceDirectory extends MailSpaceDirectory {
     // `@lfd/mailer`, `layout-styles.ts` et `document-theme.ts`).
     const settings = startingMailCharterSettings(mailBrandingOf(config).brandFontUrl);
     this.starting = { lfc: settings, lfd: settings };
+    this.shopFonts = shopFontsOf(config);
   }
 
   templatesOf(space: MailSpace): readonly string[] {
@@ -51,5 +54,10 @@ export class RegistryMailSpaceDirectory extends MailSpaceDirectory {
 
   startingSettings(space: MailSpace): MailCharterSettings {
     return this.starting[space];
+  }
+
+  /** Les polices de la boutique sont celles de La Folie Coffee : l'espace de la maison n'en a pas. */
+  shopFontsOf(space: MailSpace): MailCharterShopFonts | null {
+    return space === "lfc" ? this.shopFonts : null;
   }
 }
