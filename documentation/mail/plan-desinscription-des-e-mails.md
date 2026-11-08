@@ -215,6 +215,20 @@ Ces décisions **remplacent** ce que les règles 2 à 8 disaient autrement.
 
 ### Décisions de Hugo avant le premier e-mail marketing
 
+- **Où se recueille le consentement** (Hugo, 2026-11-08) : **à
+  l'inscription** (une case par société, non précochée), sur une page
+  **« Mes préférences »** de l'espace client, et **à chaque passation de
+  commande** — invité compris — tant que la personne n'a **jamais** été
+  inscrite à la société qui vend. Une personne qui s'est **désinscrite**
+  n'est plus jamais sollicitée (ni à la commande, ni ailleurs) : seul son
+  geste volontaire sur « Mes préférences » la réinscrit. Ce que le registre
+  garde par (société, adresse) : `jamais demandé` / `accepté` (date, texte de
+  la case, lieu : inscription, préférences, commande) / `désinscrit` (date,
+  source). Une case laissée vide à la commande n'est pas un refus : la
+  question revient à la commande suivante. À noter : la CNIL admet aussi
+  l'« exception client » (des offres pour des produits analogues à un client
+  existant, informé à la collecte et libre de refuser à chaque envoi) ; le
+  choix de Hugo, plus strict, s'en passe.
 - **Le consentement, par marque, et les « partenaires » internes** (Hugo,
   2026-11-08). L'accord se recueille et se range **par espace** (une case
   par marque, avec la date et le texte accepté pour la preuve) : un accord
