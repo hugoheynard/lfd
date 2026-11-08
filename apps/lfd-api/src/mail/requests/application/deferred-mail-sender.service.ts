@@ -2,8 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import type { MailRequest } from "../domain/entities/mail-request.js";
 import type { OutgoingMail } from "../domain/ports/mail-dispatch.js";
-import { MailRequestRepository } from "../domain/ports/mail-request.repository.js";
 import { type MailAttemptOutcome, MailSendAttempt } from "./mail-send-attempt.js";
+import { MailOutcomeRecorder } from "./mail-outcome-recorder.js";
 
 /**
  * **L'envoi d'une demande déjà passée en `sending`**, HORS de toute
@@ -23,14 +23,15 @@ import { type MailAttemptOutcome, MailSendAttempt } from "./mail-send-attempt.js
 @Injectable()
 export class DeferredMailSender {
   constructor(
-    private readonly requests: MailRequestRepository,
+    private readonly outcomes: MailOutcomeRecorder,
     private readonly attempt: MailSendAttempt,
   ) {}
 
   async send(request: MailRequest, mail: OutgoingMail): Promise<MailAttemptOutcome> {
     const outcome = await this.attempt.attempt(request, mail);
     if (outcome.kind !== "in-flight") {
-      await this.requests.save(request);
+      // Avec les retours déjà rangés pour son identifiant (suivi des e-mails, T1).
+      await this.outcomes.save(request);
     }
     return outcome;
   }

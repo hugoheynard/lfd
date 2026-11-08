@@ -11,11 +11,11 @@ import {
 import { CommandBus } from "@nestjs/cqrs";
 import type { Request } from "express";
 
-import { Public } from "../../auth/public.decorator.js";
+import { Public } from "../../../platform/auth/public.decorator.js";
 import {
   ReceiveResendEventCommand,
   type ResendEventReceipt,
-} from "./receive-resend-event.command.js";
+} from "../application/receive-resend-event.command.js";
 
 /**
  * Réception des **webhooks Resend** — ce que devient un e-mail après son envoi.

@@ -11,6 +11,7 @@ import {
 import { MailRequestRepository } from "../domain/ports/mail-request.repository.js";
 import { StalledMailRequests } from "../domain/ports/stalled-mail-requests.js";
 import { DeferredMailSender } from "./deferred-mail-sender.service.js";
+import { MailDeliveryApplier } from "./mail-delivery-applier.js";
 import { mailRequestedKey, outgoingMailOf } from "./mail-requested.fact.js";
 import { type MailSweepReport, SweepMailRequestsCommand } from "./sweep-mail-requests.command.js";
 
@@ -35,6 +36,7 @@ const EMPTY: MailSweepReport = {
   inFlight: 0,
   abandoned: 0,
   missingFact: 0,
+  deliveriesApplied: 0,
 };
 
 /**
@@ -52,6 +54,10 @@ const EMPTY: MailSweepReport = {
  * peuvent prendre la même demande ; ils envoient alors avec la même clé, et
  * Resend n'en garde qu'un (ou rend un 409, qui laisse la demande `sending`).
  *
+ * Il applique aussi les retours du fournisseur rangés mais manqués (plan
+ * `plan-suivi-des-e-mails.md`, décision 2) : un rebond arrivé pendant
+ * l'écriture de l'envoi, ou dont l'application a échoué.
+ *
  * @sans-journal geste machine, idempotent ; le compte rendu, rendu et
  * journalisé au log, est sa trace, et le suivi porte chaque transition.
  */
@@ -67,6 +73,7 @@ export class SweepMailRequestsHandler implements ICommandHandler<
     private readonly requests: MailRequestRepository,
     private readonly payloads: DurableFactPayloads,
     private readonly sender: DeferredMailSender,
+    private readonly deliveries: MailDeliveryApplier,
     private readonly clock: Clock,
   ) {}
 
@@ -83,7 +90,8 @@ export class SweepMailRequestsHandler implements ICommandHandler<
       const issue = await this.sweepOne(request, now);
       report = { ...report, [issue]: report[issue] + 1 };
     }
-    if (report.examined > 0) {
+    report = { ...report, deliveriesApplied: await this.deliveries.applyUnapplied() };
+    if (report.examined > 0 || report.deliveriesApplied > 0) {
       this.logger.log(`Balayage des e-mails : ${JSON.stringify(report)}`);
     }
     return report;

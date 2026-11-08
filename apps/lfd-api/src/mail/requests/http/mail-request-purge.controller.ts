@@ -3,8 +3,10 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
-import type { PurgeReport } from "../../../platform/retention/purge-mode.js";
-import { PurgeSettledMailRequestsCommand } from "../application/purge-settled-mail-requests.command.js";
+import {
+  type MailPurgeReport,
+  PurgeSettledMailRequestsCommand,
+} from "../application/purge-settled-mail-requests.command.js";
 
 /**
  * Endpoint **batch** de la purge du suivi des envois (`plan-service-e-mails.md`,
@@ -21,8 +23,8 @@ export class MailRequestPurgeController {
 
   @Post()
   @HttpCode(200)
-  purge(): Promise<PurgeReport> {
-    return this.commands.execute<PurgeSettledMailRequestsCommand, PurgeReport>(
+  purge(): Promise<MailPurgeReport> {
+    return this.commands.execute<PurgeSettledMailRequestsCommand, MailPurgeReport>(
       new PurgeSettledMailRequestsCommand(),
     );
   }

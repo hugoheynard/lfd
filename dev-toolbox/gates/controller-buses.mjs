@@ -94,7 +94,8 @@ const SCOPE = [
   "apps/lfd-api/src/b2b/pricing/http/admin-price-floors.controller.ts",
   "apps/lfd-api/src/ops/traffic/admin-traffic.controller.ts",
   "apps/lfd-api/src/pim/sales-contexts/http/sales-context.controller.ts",
-  "apps/lfd-api/src/platform/mailer/webhook/resend-webhook.controller.ts",
+  // Déménagé le 2026-11-08 (suivi des e-mails, T1) depuis `platform/mailer/webhook/`.
+  "apps/lfd-api/src/mail/deliveries/http/resend-webhook.controller.ts",
   "apps/lfd-api/src/staff/notifications/http/admin-staff-push.controller.ts",
 ];
 

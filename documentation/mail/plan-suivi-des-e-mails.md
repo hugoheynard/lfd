@@ -50,7 +50,7 @@ flowchart LR
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Le suivi des demandes  | `mail.mail_request` (`apps/lfd-api/prisma/schema/mail.prisma`)                                                                         | une ligne par e-mail demandé : modèle, espace, destinataire, `status` (`requested` / `sending` / `sent` / `failed` / `refused`), `provider_id`, raison, tentatives, version du document. Tous les envois y passent : `lint:mail-through-block` compte 0 envoyeur hors du bloc. |
 | Le journal du courrier | `ops.mail_send` (`apps/lfd-api/prisma/schema/ops.prisma`), écrit par `PrismaMailJournal` (`apps/lfd-api/src/platform/mailer/journal/`) | une ligne par e-mail accepté (`recordSend`, depuis `JournalingMailer`), relevée vers le haut par les retours (`recordOutcome` : `sent` < `delayed` < `delivered` < `complained` < `bounced`). Sans lien avec `mail_request`.                                                   |
-| Le webhook             | `apps/lfd-api/src/platform/mailer/webhook/`                                                                                            | vérifie la signature Svix, dédoublonne par `svix-id` (`ops.webhook_event`), écarte `opened`/`clicked` exprès, range l'issue dans `ops.mail_send` ; remet `email.received` au port `InboundMailSink`, que `b2b/contact` implémente.                                             |
+| Le webhook (avant T1)  | `apps/lfd-api/src/platform/mailer/webhook/` — depuis T1 : `apps/lfd-api/src/mail/deliveries/`                                          | vérifie la signature Svix, dédoublonne par `svix-id` (`ops.webhook_event`), écarte `opened`/`clicked` exprès, range l'issue dans `ops.mail_send` ; remet `email.received` au port `InboundMailSink`, que `b2b/contact` implémente.                                             |
 | La carte de santé      | `apps/lfd-api/src/ops/health/mail-readings.reader.ts`                                                                                  | compte `ops.mail_send` par état sur 7 jours (`MAIL_WINDOW_DAYS`) et nomme le modèle le plus rejeté.                                                                                                                                                                            |
 | La veille              | `watch-mail-requests.handler.ts`                                                                                                       | sonne la cloche pour les demandes coincées ou en échec définitif — pas pour un rebond.                                                                                                                                                                                         |
 | La purge               | `purge-settled-mail-requests.handler.ts`                                                                                               | supprime les demandes closes depuis 1 an, sous `MAIL_REQUEST_PURGE` (`dry-run` par défaut).                                                                                                                                                                                    |
@@ -146,7 +146,22 @@ flowchart LR
 
 ### Les lots
 
-**T1 — les retours rangés et appliqués (API, migration additive).**
+**T1 — les retours rangés et appliqués (API, migration additive).** ✅ Bâti
+le 2026-11-08 (migration `20261108100000_le_suivi_des_retours_d_e_mails`).
+Écarts au texte, retenus : le genre (`delivery_kind`) a un CHECK de **forme**
+(lettres, `type/subType`), pas de liste fermée — les `subType` de Resend ne
+le sont pas ; `recipient_key` reste **nullable** (le binaire d'avant écrit
+encore pendant la fenêtre de déploiement) : la lecture la calcule si elle
+manque, et T2 la remplit ou la resserre ; `ops.mail_send.detail` reçoit
+désormais le genre, plus le texte du rebond (les lignes déjà en base ne
+changent pas) ; `MailJournal` n'a pas eu besoin d'être coupé — le webhook
+n'appelle plus `rememberEvent`, que seul `send-guest-order-notice` lit.
+Course résiduelle : un retour rangé entre la relecture et le commit de
+l'envoi est rattrapé par le balayeur `*/5`. Forme de `bounce` lue dans le
+SDK `resend@6.18.1` : `{ message, type, subType }` — seul `type/subType` est
+rangé.
+
+Le texte d'origine du lot :
 Tables `mail.mail_delivery_event` et colonnes `delivery`, `delivery_at`,
 `delivery_kind`, `recipient_key` (remplie), index `provider_id`,
 `recipient_key`, `(delivery, delivery_at)`. Le webhook passe dans
@@ -214,6 +229,5 @@ ne porte pas. Lot suivant, à décider.
 | Mineurs — `email.sent`, doublons de `provider_id`, `accepted` | décisions 1, 3, 12                                                               |
 
 **Non vérifié** : le délai réel de Resend avant le premier webhook ; le texte
-exact d'un `bounce.message`, et les noms des champs `bounce.type` /
-`subType` (lus dans le code actuel pour `type` seulement) ; d'éventuels doublons de `provider_id` en prod
+exact d'un `bounce.message` (jamais lu) ; d'éventuels doublons de `provider_id` en prod
 (à lire avant la migration, au `lecteur-de-migrations`).

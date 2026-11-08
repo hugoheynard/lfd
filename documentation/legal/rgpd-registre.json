@@ -2588,6 +2588,17 @@
       "information": false
     },
     {
+      "colonne": "mail.mail_request.recipient_key",
+      "personne": "client",
+      "categorie": "identite",
+      "finalite": "L'adresse du destinataire en minuscules, écrite par l'agrégat à la création (plan-suivi-des-e-mails.md, décision 9) : la recherche d'un envoi par adresse y compare. Même durée que `recipient`, et part avec la ligne. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/requests/infrastructure/prisma-mail-request.pruner.ts",
+      "information": false
+    },
+    {
       "colonne": "mail.mail_request.locale",
       "personne": "client",
       "categorie": "preference",
@@ -2753,6 +2764,46 @@
     {
       "colonne": "mail.mail_request.provider_id",
       "raison": "L'identifiant opaque du message chez Resend : il ne désigne la personne qu'à travers `recipient`, déjà au registre, et part avec la ligne."
+    },
+    {
+      "colonne": "mail.mail_request.delivery",
+      "raison": "Le retour du fournisseur sur l'e-mail (`delayed` | `delivered` | `complained` | `bounced`, contrainte en base) : un état, sans rien de la personne (plan-suivi-des-e-mails.md, décision 1)."
+    },
+    {
+      "colonne": "mail.mail_request.delivery_at",
+      "raison": "L'instant du retour du fournisseur : une date d'événement technique, sans rien de la personne."
+    },
+    {
+      "colonne": "mail.mail_request.delivery_kind",
+      "raison": "Le GENRE du retour (`Permanent`, `Permanent/General`…), jamais le texte du fournisseur, qui cite l'adresse : une contrainte en base n'admet que des lettres (plan-suivi-des-e-mails.md, décision 4)."
+    },
+    {
+      "colonne": "mail.mail_delivery_event.id",
+      "raison": "Identifiant technique (ULID) du retour rangé."
+    },
+    {
+      "colonne": "mail.mail_delivery_event.svix_id",
+      "raison": "L'identifiant du message de webhook chez Svix : il dédoublonne un rejeu, sans rien de la personne."
+    },
+    {
+      "colonne": "mail.mail_delivery_event.provider_id",
+      "raison": "L'identifiant opaque du message chez Resend : il ne désigne la personne qu'à travers `mail_request.recipient`, déjà au registre. Un retour sans demande est purgé à 30 jours (`MAIL_REQUEST_PURGE`)."
+    },
+    {
+      "colonne": "mail.mail_delivery_event.delivery",
+      "raison": "Le retour du fournisseur (`delayed` | `delivered` | `complained` | `bounced`) : un état, sans rien de la personne."
+    },
+    {
+      "colonne": "mail.mail_delivery_event.kind",
+      "raison": "Le GENRE du retour (`Permanent/General`), jamais le texte du fournisseur (`bounce.message`, qui cite l'adresse, n'est pas lu) ; contrainte en base : des lettres seulement (plan-suivi-des-e-mails.md, décision 4)."
+    },
+    {
+      "colonne": "mail.mail_delivery_event.occurred_at",
+      "raison": "L'instant du retour chez le fournisseur : une date technique."
+    },
+    {
+      "colonne": "mail.mail_delivery_event.received_at",
+      "raison": "L'instant où le webhook a été reçu : une date technique, d'où part la purge des orphelins."
     },
     {
       "colonne": "mail.mail_request.idempotency_key",

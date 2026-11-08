@@ -1,5 +1,6 @@
 import type { PurgeCensus, PurgeMode } from "../../../../platform/retention/purge-mode.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { OrphanMailDeliveryPruner } from "../../../deliveries/domain/ports/orphan-mail-delivery.pruner.js";
 import { MailRequestPruner } from "../../domain/ports/mail-request.pruner.js";
 import {
   isMailRequestPurgeable,
@@ -32,6 +33,26 @@ class InMemoryMailRequestPruner extends MailRequestPruner {
   }
 }
 
+/** Les retours orphelins, par instant de réception ; la règle « sans demande » est du SQL (e2e). */
+class InMemoryOrphanPruner extends OrphanMailDeliveryPruner {
+  readonly cutoffs: Date[] = [];
+  constructor(public receivedAt: Date[]) {
+    super();
+  }
+  census(at: Date): Promise<PurgeCensus> {
+    this.cutoffs.push(at);
+    return Promise.resolve({
+      count: this.receivedAt.filter((one) => one < at).length,
+      oldest: null,
+    });
+  }
+  pruneBatch(at: Date, limit: number): Promise<number> {
+    const doomed = this.receivedAt.filter((one) => one < at).slice(0, limit);
+    this.receivedAt = this.receivedAt.filter((one) => !doomed.includes(one));
+    return Promise.resolve(doomed.length);
+  }
+}
+
 const OLD_SENT: MailRequestRetentionFacts = {
   status: "sent",
   sentAt: daysAgo(400),
@@ -48,8 +69,12 @@ const RECENT_FAILED: MailRequestRetentionFacts = {
   failedAt: daysAgo(3),
 };
 
-function handler(pruner: MailRequestPruner, mode: PurgeMode): PurgeSettledMailRequestsHandler {
-  return new PurgeSettledMailRequestsHandler(pruner, clock, mode);
+function handler(
+  pruner: MailRequestPruner,
+  mode: PurgeMode,
+  orphans: OrphanMailDeliveryPruner = new InMemoryOrphanPruner([]),
+): PurgeSettledMailRequestsHandler {
+  return new PurgeSettledMailRequestsHandler(pruner, orphans, clock, mode);
 }
 
 describe("PurgeSettledMailRequestsHandler", () => {
@@ -90,5 +115,35 @@ describe("PurgeSettledMailRequestsHandler", () => {
 
     await expect(handler(pruner, "on").execute()).resolves.toMatchObject({ purged: total });
     expect(pruner.limits).toEqual([MAIL_REQUEST_PURGE_BATCH_SIZE, MAIL_REQUEST_PURGE_BATCH_SIZE]);
+  });
+
+  describe("les retours orphelins (suivi des e-mails, T1)", () => {
+    it("dry-run : compte ceux de plus de 30 jours, sans rien supprimer", async () => {
+      const orphans = new InMemoryOrphanPruner([daysAgo(31), daysAgo(29)]);
+
+      const report = await handler(new InMemoryMailRequestPruner([]), "dry-run", orphans).execute();
+
+      expect(report.orphanDeliveries).toMatchObject({ mode: "dry-run", eligible: 1, purged: 0 });
+      expect(orphans.receivedAt).toHaveLength(2);
+      expect(orphans.cutoffs).toEqual([daysAgo(30)]);
+    });
+
+    it("on : supprime ceux de plus de 30 jours, sous le même cran que les demandes", async () => {
+      const orphans = new InMemoryOrphanPruner([daysAgo(31), daysAgo(29)]);
+
+      const report = await handler(new InMemoryMailRequestPruner([]), "on", orphans).execute();
+
+      expect(report.orphanDeliveries).toMatchObject({ mode: "on", purged: 1 });
+      expect(orphans.receivedAt).toEqual([daysAgo(29)]);
+    });
+
+    it("off : n'y touche pas", async () => {
+      const orphans = new InMemoryOrphanPruner([daysAgo(40)]);
+
+      const report = await handler(new InMemoryMailRequestPruner([]), "off", orphans).execute();
+
+      expect(report.orphanDeliveries).toMatchObject({ eligible: null, purged: 0 });
+      expect(orphans.cutoffs).toEqual([]);
+    });
   });
 });

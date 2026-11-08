@@ -16,6 +16,8 @@
  * L'ancienneté est relative à maintenant (`daysAgo`) : le `Clock` de l'API lit
  * le même mur.
  */
+import { MailDeliveryEvent } from "../src/mail/deliveries/domain/entities/mail-delivery-event.js";
+import { MailDeliveryEventLog } from "../src/mail/deliveries/domain/ports/mail-delivery-event.log.js";
 import { MAIL_REQUEST_PURGE_MODE } from "../src/mail/requests/domain/services/mail-request-retention.js";
 import { OUTBOX_PURGE_MODE } from "../src/platform/outbox/outbox-retention.js";
 import type { PurgeMode } from "../src/platform/retention/purge-mode.js";
@@ -111,6 +113,21 @@ async function seedMail(): Promise<void> {
   await seedMailRequest("late_sent", "sent", daysAgo(400), daysAgo(30));
 }
 
+/** Un retour de Resend rangé par le vrai adaptateur, reçu à `receivedAt`, pour `providerId`. */
+async function seedDeliveryEvent(id: string, providerId: string, receivedAt: string) {
+  await ctx.app.get(MailDeliveryEventLog).addIfAbsent(
+    MailDeliveryEvent.receive({
+      id,
+      svixId: `msg_${id}`,
+      providerId,
+      delivery: "delivered",
+      kind: null,
+      occurredAt: new Date(receivedAt),
+      receivedAt: new Date(receivedAt),
+    }),
+  );
+}
+
 async function post(route: string): Promise<Record<string, unknown>> {
   const response = await ctx
     .http()
@@ -169,6 +186,26 @@ describe("les purges, activées (on)", () => {
     expect(await post(MAIL_ROUTE)).toMatchObject({ mode: "on", eligible: 3, purged: 3 });
 
     expect(await mailIds()).toEqual(["late_sent", "old_requested", "recent_sent"]);
+  });
+
+  it("retours d'e-mails : supprime l'orphelin de plus de 30 jours, jamais celui qu'une demande porte", async () => {
+    await seedMailRequest("with_events", "sent", daysAgo(40), daysAgo(40));
+    await ctx.prisma.mailRequest.update({
+      where: { id: "with_events" },
+      data: { providerId: "re_known" },
+    });
+    await seedDeliveryEvent("old_orphan", "re_lost", daysAgo(31));
+    await seedDeliveryEvent("old_known", "re_known", daysAgo(31));
+    await seedDeliveryEvent("recent_orphan", "re_lost_too", daysAgo(29));
+
+    const report = await post(MAIL_ROUTE);
+
+    expect(report["orphanDeliveries"]).toMatchObject({ mode: "on", eligible: 1, purged: 1 });
+    const left = await ctx.prisma.mailDeliveryEvent.findMany({
+      select: { id: true },
+      orderBy: { id: "asc" },
+    });
+    expect(left.map((row) => row.id)).toEqual(["old_known", "recent_orphan"]);
   });
 
   it("refuse sans jeton machine", async () => {

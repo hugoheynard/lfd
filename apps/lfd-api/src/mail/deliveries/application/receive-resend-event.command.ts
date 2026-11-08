@@ -1,4 +1,4 @@
-import type { SvixHeaders } from "./svix-signature.js";
+import type { SvixHeaders } from "../../../platform/mailer/webhook/svix-signature.js";
 
 /**
  * Commande **publique, authentifiée par signature** : un webhook Resend arrive.

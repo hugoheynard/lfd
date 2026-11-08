@@ -44,6 +44,18 @@ import { MailTemplatePreview } from "./channels/templates/mail-template-preview.
 import { ShortfallLetterDrafter } from "./channels/templates/shortfall-letter-drafter.js";
 import { PublishedShortfallLetterDrafter } from "./templates/published-shortfall-letter-drafter.js";
 import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-preview.js";
+import { ReceiveResendEventHandler } from "./deliveries/application/receive-resend-event.handler.js";
+import { MailDeliveryEventLog } from "./deliveries/domain/ports/mail-delivery-event.log.js";
+import { OrphanMailDeliveryPruner } from "./deliveries/domain/ports/orphan-mail-delivery.pruner.js";
+import { ResendWebhookController } from "./deliveries/http/resend-webhook.controller.js";
+import { PrismaMailDeliveryEventLog } from "./deliveries/infrastructure/prisma-mail-delivery-event.log.js";
+import { PrismaOrphanMailDeliveryPruner } from "./deliveries/infrastructure/prisma-orphan-mail-delivery.pruner.js";
+import { PrismaRecordedMailDeliveries } from "./deliveries/infrastructure/prisma-recorded-mail-deliveries.js";
+import { PrismaUnappliedMailDeliveries } from "./deliveries/infrastructure/prisma-unapplied-mail-deliveries.js";
+import { MailDeliveryApplier } from "./requests/application/mail-delivery-applier.js";
+import { MailOutcomeRecorder } from "./requests/application/mail-outcome-recorder.js";
+import { RecordedMailDeliveries } from "./requests/domain/ports/recorded-mail-deliveries.js";
+import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-deliveries.js";
 
 /**
  * **Le bloc des e-mails** (plan `documentation/mail/plan-service-e-mails.md`, S1) :
@@ -65,6 +77,9 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
     MailRequestsSweepController,
     MailRequestsWatchController,
     MailCheckController,
+    // T1 du suivi (plan `plan-suivi-des-e-mails.md`) : le webhook Resend,
+    // sorti de `platform/mailer/`, range et applique les retours.
+    ResendWebhookController,
   ],
   providers: [
     // S3b : le mailer (transport, texte effectif, journal), sorti de
@@ -106,6 +121,15 @@ import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-
     // demandent, par le canal `mail/channels/templates/`.
     { provide: MailTemplatePreview, useClass: RegistryMailTemplatePreview },
     { provide: ShortfallLetterDrafter, useClass: PublishedShortfallLetterDrafter },
+    // T1 du suivi des e-mails : les retours de Resend rangés, puis appliqués
+    // à la pose de l'identifiant, par le webhook ou par le balayeur.
+    { provide: MailDeliveryEventLog, useClass: PrismaMailDeliveryEventLog },
+    { provide: RecordedMailDeliveries, useClass: PrismaRecordedMailDeliveries },
+    { provide: UnappliedMailDeliveries, useClass: PrismaUnappliedMailDeliveries },
+    { provide: OrphanMailDeliveryPruner, useClass: PrismaOrphanMailDeliveryPruner },
+    MailOutcomeRecorder,
+    MailDeliveryApplier,
+    ReceiveResendEventHandler,
   ],
   exports: [Mail, MailTemplatePreview, ShortfallLetterDrafter, MailBacklogSurvey],
 })

@@ -11,6 +11,12 @@ import type { MailRequest } from "../entities/mail-request.js";
 export abstract class MailRequestRepository {
   /** La demande de cette clé d'idempotence, ou `null`. */
   abstract findByIdempotencyKey(key: string): Promise<MailRequest | null>;
+  /**
+   * Les demandes qui portent cet identifiant fournisseur — plusieurs si la
+   * base en a en double (index non unique, plan `plan-suivi-des-e-mails.md`,
+   * décision 3). Sert à appliquer un retour.
+   */
+  abstract findByProviderId(providerId: string): Promise<readonly MailRequest[]>;
   /** @returns `false` si une demande de même clé existait déjà (rien n'est écrit). */
   abstract addIfAbsent(request: MailRequest): Promise<boolean>;
   /** Range une demande, neuve ou chargée (par sa clé d'idempotence). */

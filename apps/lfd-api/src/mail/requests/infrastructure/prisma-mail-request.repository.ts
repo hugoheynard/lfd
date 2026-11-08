@@ -6,10 +6,12 @@ import {
   MailRequest,
   type MailRequestSnapshot,
   type MailRequestStatus,
+  recipientKeyOf,
 } from "../domain/entities/mail-request.js";
 import { UnknownMailRequestStatusError } from "../domain/errors/mail-request.errors.js";
 import { MailRequestRepository } from "../domain/ports/mail-request.repository.js";
 import { MailBrand } from "../domain/value-objects/mail-brand.js";
+import { type MailDelivery, mailDeliveryOf } from "../domain/value-objects/mail-delivery.js";
 
 /** La ligne telle que Prisma la rend — confinée à `infrastructure/`. */
 export interface MailRequestRow {
@@ -29,6 +31,10 @@ export interface MailRequestRow {
   readonly lastAttemptAt: Date | null;
   readonly attempts: number;
   readonly documentVersion: number | null;
+  readonly recipientKey: string | null;
+  readonly delivery: string | null;
+  readonly deliveryAt: Date | null;
+  readonly deliveryKind: string | null;
 }
 
 function statusOf(raw: string): MailRequestStatus {
@@ -41,12 +47,28 @@ function statusOf(raw: string): MailRequestStatus {
   return status;
 }
 
+function deliveryOf(raw: string | null): MailDelivery | null {
+  if (raw === null) {
+    return null;
+  }
+  const delivery = mailDeliveryOf(raw);
+  if (delivery === null) {
+    // Même raison que pour `status` : le CHECK en base l'interdit.
+    throw new UnknownMailRequestStatusError(raw);
+  }
+  return delivery;
+}
+
 /** Relit une ligne ; partagé avec la lecture du balayeur. */
 export function toDomain(row: MailRequestRow): MailRequest {
   return MailRequest.rehydrate({
     ...row,
     brand: MailBrand.of(row.brand).code,
     status: statusOf(row.status),
+    // Une demande écrite par un binaire d'avant T1 n'a pas de clé : elle se
+    // calcule par la même règle, et le prochain `save` l'écrit.
+    recipientKey: row.recipientKey ?? recipientKeyOf(row.recipient),
+    delivery: deliveryOf(row.delivery),
   });
 }
 
@@ -81,6 +103,12 @@ export class PrismaMailRequestRepository extends MailRequestRepository {
     return count === 1;
   }
 
+  /** Toutes les demandes de cet identifiant : l'index n'est pas unique (décision 3). */
+  async findByProviderId(providerId: string): Promise<readonly MailRequest[]> {
+    const rows = await this.prisma.mailRequest.findMany({ where: { providerId } });
+    return rows.map(toDomain);
+  }
+
   async save(request: MailRequest): Promise<void> {
     const row = toPersistence(request);
     await this.prisma.mailRequest.upsert({
@@ -96,6 +124,10 @@ export class PrismaMailRequestRepository extends MailRequestRepository {
         lastAttemptAt: row.lastAttemptAt,
         attempts: row.attempts,
         documentVersion: row.documentVersion,
+        recipientKey: row.recipientKey,
+        delivery: row.delivery,
+        deliveryAt: row.deliveryAt,
+        deliveryKind: row.deliveryKind,
       },
     });
   }

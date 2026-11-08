@@ -18,10 +18,10 @@ la boutique — jamais un prix pro, un client ou un article réservé aux pros.
 
 ## Entrants — ce que nous recevons déjà
 
-| Webhook              | De qui | Route                    | Code                                                                    | Doc                                                                                                                                    |
-| -------------------- | ------ | ------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Paiements            | Stripe | `POST /payments/webhook` | `apps/lfd-api/src/b2b/payments/http/payments-webhook.controller.ts`     | [`../ops/secrets-et-variables.md`](../ops/secrets-et-variables.md) (`STRIPE_WEBHOOK_SECRET`), [`../ops/runbook.md`](../ops/runbook.md) |
-| Courriels (rebonds…) | Resend | `POST /webhooks/resend`  | `apps/lfd-api/src/platform/mailer/webhook/resend-webhook.controller.ts` | [`../ops/runbook.md`](../ops/runbook.md)                                                                                               |
+| Webhook              | De qui | Route                    | Code                                                                 | Doc                                                                                                                                    |
+| -------------------- | ------ | ------------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Paiements            | Stripe | `POST /payments/webhook` | `apps/lfd-api/src/b2b/payments/http/payments-webhook.controller.ts`  | [`../ops/secrets-et-variables.md`](../ops/secrets-et-variables.md) (`STRIPE_WEBHOOK_SECRET`), [`../ops/runbook.md`](../ops/runbook.md) |
+| Courriels (rebonds…) | Resend | `POST /webhooks/resend`  | `apps/lfd-api/src/mail/deliveries/http/resend-webhook.controller.ts` | [`../ops/runbook.md`](../ops/runbook.md)                                                                                               |
 
 Ils ne bougent pas : ils sont listés ici pour qu'un webhook sortant ne
 réinvente pas ce qu'ils savent déjà faire (vérifier une signature, refuser un

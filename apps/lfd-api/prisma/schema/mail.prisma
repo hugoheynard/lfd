@@ -53,10 +53,51 @@ model MailRequest {
   /// `plan-editeur-par-blocs.md`, § 5, S4c) ; `null` = le document de départ,
   /// ou rien d'envoyé encore.
   documentVersion Int?      @map("document_version")
+  /// L'adresse en minuscules, écrite par l'agrégat (plan
+  /// `plan-suivi-des-e-mails.md`, décision 9) ; la recherche y compare.
+  /// Nullable : une demande écrite par un binaire d'avant T1 n'en porte pas.
+  recipientKey    String?   @map("recipient_key") @db.VarChar(320)
+  /// Le retour du fournisseur (décision 1) : `delayed` | `delivered` |
+  /// `complained` | `bounced` (CHECK en base) ; `null` = rien reçu.
+  delivery        String?   @db.VarChar(12)
+  deliveryAt      DateTime? @map("delivery_at") @db.Timestamptz(6)
+  /// Le GENRE du retour (`Permanent/Suppressed`), jamais son texte (décision 4).
+  deliveryKind    String?   @map("delivery_kind") @db.VarChar(64)
 
   @@index([status, requestedAt])
   @@index([status, lastAttemptAt])
+  @@index([providerId])
+  @@index([recipientKey])
+  @@index([delivery, deliveryAt])
   @@map("mail_request")
+  @@schema("mail")
+}
+
+/// **Un retour du fournisseur, rangé avant d'être appliqué** (plan
+/// `plan-suivi-des-e-mails.md`, décision 2) : un rebond peut arriver avant
+/// que la demande n'ait reçu son `provider_id`. Le webhook range d'abord ici —
+/// `svix_id` unique, c'est lui qui dédoublonne un rejeu — puis applique aux
+/// demandes connues ; la demande relit ses retours à la pose de son
+/// identifiant, et le balayeur applique le reste. Aucun texte du fournisseur :
+/// le genre seulement. Un retour sans demande au bout de 30 jours est purgé.
+model MailDeliveryEvent {
+  id         String   @id
+  /// L'identifiant du message Svix : un rejeu ne range pas deux fois.
+  svixId     String   @unique @map("svix_id") @db.VarChar(200)
+  /// L'identifiant Resend de l'e-mail (`data.email_id`).
+  providerId String   @map("provider_id")
+  /// `delayed` | `delivered` | `complained` | `bounced` (CHECK en base).
+  delivery   String   @db.VarChar(12)
+  /// Le genre du retour (`Permanent/Suppressed`), jamais son texte.
+  kind       String?  @db.VarChar(64)
+  /// L'instant du retour chez le fournisseur (`created_at` de l'événement).
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz(6)
+  /// L'instant où nous l'avons reçu : la purge des orphelins en part.
+  receivedAt DateTime @map("received_at") @db.Timestamptz(6)
+
+  @@index([providerId])
+  @@index([receivedAt])
+  @@map("mail_delivery_event")
   @@schema("mail")
 }
 

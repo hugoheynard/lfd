@@ -12,6 +12,8 @@ export interface MailSweepReport {
   readonly abandoned: number;
   /** Le fait d'origine introuvable : rien n'est renvoyé, la demande reste en l'état. */
   readonly missingFact: number;
+  /** Les demandes auxquelles un retour du fournisseur manqué a été appliqué (suivi, T1). */
+  readonly deliveriesApplied: number;
 }
 
 /**

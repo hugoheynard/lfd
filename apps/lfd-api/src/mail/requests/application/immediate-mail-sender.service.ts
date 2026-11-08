@@ -10,6 +10,7 @@ import {
 import { MailRequestRepository } from "../domain/ports/mail-request.repository.js";
 import { UnitOfWorkProbe } from "../domain/ports/unit-of-work-probe.js";
 import { MailSendAttempt } from "./mail-send-attempt.js";
+import { MailOutcomeRecorder } from "./mail-outcome-recorder.js";
 import { type CheckedMailDemand, newMailRequest } from "./mail-requester.service.js";
 
 /**
@@ -28,6 +29,7 @@ export class ImmediateMailSender {
   constructor(
     private readonly requests: MailRequestRepository,
     private readonly attempt: MailSendAttempt,
+    private readonly outcomes: MailOutcomeRecorder,
     private readonly unitOfWork: UnitOfWorkProbe,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
@@ -46,7 +48,8 @@ export class ImmediateMailSender {
     }
     const request = known ?? newMailRequest(demand, this.ids.next(), this.clock.now());
     const outcome = await this.attempt.attempt(request, demand);
-    await this.requests.save(request);
+    // Avec les retours déjà rangés pour son identifiant (suivi des e-mails, T1).
+    await this.outcomes.save(request);
     if (outcome.kind !== "sent") {
       throw outcome.error;
     }

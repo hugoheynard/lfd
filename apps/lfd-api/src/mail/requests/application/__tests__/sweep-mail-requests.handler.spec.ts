@@ -147,3 +147,38 @@ describe("le balayeur des e-mails", () => {
     expect(await scene.sweeper.execute()).toMatchObject({ examined: 0 });
   });
 });
+
+describe("le balayeur applique les retours manqués (suivi des e-mails, T1)", () => {
+  const BOUNCED = { delivery: "bounced", kind: "Permanent", at: new Date(5_000) } as const;
+
+  it("applique un retour rangé que la demande ne porte pas encore", async () => {
+    const scene = mailScene();
+    await scene.port.sendAndAwaitReceipt(demand("k:missed"));
+    // Rangé sans avoir été appliqué : le webhook a échoué après le rangement.
+    scene.deliveries.record("re_1", BOUNCED);
+
+    const report = await scene.sweeper.execute();
+
+    expect(report).toMatchObject({ examined: 0, deliveriesApplied: 1 });
+    expect(scene.requests.rows.get("k:missed")?.snapshot()).toMatchObject({
+      delivery: "bounced",
+      deliveryKind: "Permanent",
+    });
+  });
+
+  it("un second passage n'applique plus rien", async () => {
+    const scene = mailScene();
+    await scene.port.sendAndAwaitReceipt(demand("k:once"));
+    scene.deliveries.record("re_1", BOUNCED);
+    await scene.sweeper.execute();
+
+    expect(await scene.sweeper.execute()).toMatchObject({ deliveriesApplied: 0 });
+  });
+
+  it("laisse un retour sans demande : il attend sa demande, puis la purge", async () => {
+    const scene = mailScene();
+    scene.deliveries.record("re_inconnu", BOUNCED);
+
+    expect(await scene.sweeper.execute()).toMatchObject({ deliveriesApplied: 0 });
+  });
+});

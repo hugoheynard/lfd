@@ -4,6 +4,11 @@ import {
   MailRequestNotResumableError,
 } from "../errors/mail-request.errors.js";
 import { MailBrand, type MailBrandCode } from "../value-objects/mail-brand.js";
+import {
+  deliveryOutranks,
+  type MailDelivery,
+  type MailDeliveryReport,
+} from "../value-objects/mail-delivery.js";
 
 /**
  * Les états d'une demande (plan `plan-service-e-mails.md`, C7) :
@@ -59,6 +64,12 @@ export interface MailRequestSnapshot {
   readonly template: string;
   readonly brand: MailBrandCode;
   readonly recipient: string;
+  /**
+   * L'adresse normalisée (minuscules) à laquelle une recherche compare (plan
+   * `plan-suivi-des-e-mails.md`, décision 9). Écrite par l'agrégat, jamais
+   * par l'appelant.
+   */
+  readonly recipientKey: string;
   readonly locale: string | null;
   readonly idempotencyKey: string;
   readonly status: MailRequestStatus;
@@ -79,6 +90,16 @@ export interface MailRequestSnapshot {
    * ou rien d'envoyé encore. Avec `template`, elle dit QUEL texte est parti.
    */
   readonly documentVersion: number | null;
+  /** Le retour du fournisseur (décision 1) ; `null` : rien reçu. */
+  readonly delivery: MailDelivery | null;
+  readonly deliveryAt: Date | null;
+  /** Le genre du retour (`Permanent/Suppressed`), jamais son texte. */
+  readonly deliveryKind: string | null;
+}
+
+/** La clé de comparaison d'une adresse : la même règle à la création et en migration (`lower`). */
+export function recipientKeyOf(recipient: string): string {
+  return recipient.toLowerCase();
 }
 
 function required(field: string, value: string, max: number): string {
@@ -119,11 +140,13 @@ export class MailRequest {
 
   /** La demande neuve, refusée si elle est mal formée. */
   static request(draft: MailRequestDraft): MailRequest {
+    const recipient = required("le destinataire", draft.recipient, RECIPIENT_MAX);
     return new MailRequest({
       id: required("l'identifiant", draft.id, KEY_MAX),
       template: required("le modèle", draft.template, TEMPLATE_MAX),
       brand: MailBrand.of(draft.brand).code,
-      recipient: required("le destinataire", draft.recipient, RECIPIENT_MAX),
+      recipient,
+      recipientKey: recipientKeyOf(recipient),
       locale: draft.locale,
       idempotencyKey: required("la clé d'idempotence", draft.idempotencyKey, KEY_MAX),
       status: "requested",
@@ -136,6 +159,9 @@ export class MailRequest {
       lastAttemptAt: null,
       attempts: 0,
       documentVersion: null,
+      delivery: null,
+      deliveryAt: null,
+      deliveryKind: null,
     });
   }
 
@@ -252,6 +278,28 @@ export class MailRequest {
       failureReason: null,
       documentVersion,
     };
+  }
+
+  /**
+   * Applique un retour du fournisseur, **vers le haut seulement** (décision
+   * 3) : un retour moins grave que celui qu'elle porte, ou égal, ne change
+   * rien — c'est ce qui rend un webhook rejoué ou arrivé dans le désordre
+   * sans effet. Indépendant de `status` : une demande acceptée puis rebondie
+   * n'a pas échoué de notre côté, et la reprise ne la relance pas.
+   *
+   * @returns `true` si la demande a changé (à ranger), `false` sinon.
+   */
+  recordDelivery(report: MailDeliveryReport): boolean {
+    if (!deliveryOutranks(report.delivery, this.state.delivery)) {
+      return false;
+    }
+    this.state = {
+      ...this.state,
+      delivery: report.delivery,
+      deliveryAt: report.at,
+      deliveryKind: report.kind,
+    };
+    return true;
   }
 
   /** Échec technique : un nouvel essai reste permis. */
