@@ -68,6 +68,18 @@
 
 ## Architecture, à mesurer avant de décider
 
+- **Réduire l'envoi immédiat** (Hugo, 2026-11-08) : 10 appelants admis de
+  `mail.sendAndAwaitReceipt` (`dev-toolbox/gates/mail-receipt-admitted.mjs`,
+  relevé du 2026-11-06). Ceux qui écrivent leur issue à partir de l'accusé
+  (avis de prélèvement, mandat SEPA, dossier du fournil, avis de la vitrine)
+  pourraient repasser par `mail.send` et lire l'issue dans le suivi des
+  envois ([`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md)) : moins de
+  réseau pendant un geste, reprise automatique si Resend est en panne. Les
+  gestes où le staff attend la réponse à l'écran, et la réinitialisation du
+  mot de passe, gardent l'immédiat. Deux raisons de la liste citent encore
+  « PDF en octets » (mandat, dossier du fournil) : celle du mandat est
+  périmée depuis qu'il est joint par référence — à corriger au passage.
+
 - **Les demandes suivies entre blocs** : toute demande d'un bloc à un autre
   rend un identifiant de suivi, et son état se lit plus tard ; une porte qui
   fait déclarer à chaque port de canal sa sorte (lecture, fait, demande). Le
