@@ -227,10 +227,20 @@ Ces décisions **remplacent** ce que les règles 2 à 8 disaient autrement.
   personnes déjà inscrites. La désinscription suit la même maille : le lien
   d'un e-mail désinscrit de la marque qui l'envoie (et retire l'accord
   « partenaires » qui l'aurait permis), et la page propose en plus « Ne plus
-  rien recevoir de nos marques ». Le statut juridique (deux sociétés, ou une
-  société et deux marques) reste à préciser par Hugo : avec deux sociétés,
-  la case « partenaires » est obligatoire pour qu'une marque écrive au
-  client de l'autre.
+  rien recevoir de nos marques ». Statut juridique précisé par Hugo le 2026-11-08 : **une marque, La Folie
+  Douce, portée par plusieurs sociétés** (la boulangerie — La Folie Coffee
+  —, le textile, les concerts). Ce sont plusieurs responsables de
+  traitement : chaque société recueille SON consentement ; la case
+  « partenaires » est obligatoire pour qu'une société écrive aux clients
+  d'une autre, et elle nomme les sociétés du groupe (ou renvoie à leur
+  liste) ; partager l'adresse d'un client avec une autre société du groupe
+  est une transmission à un tiers, annoncée dans l'information RGPD au
+  moment où l'adresse est recueillie. La désinscription désinscrit de la
+  société qui envoie (et retire l'accord « partenaires » qui l'a permis) ; la
+  page propose « Ne plus rien recevoir du groupe La Folie Douce ». Dans le
+  code, l'**espace** d'e-mail correspond à la société émettrice : `lfc` est
+  la boulangerie ; une société du groupe qui enverra du marketing aura son
+  espace, sa charte et son identité d'envoi.
 - **Le consentement des particuliers** : où se recueille l'accord (case à
   l'inscription, page « Mes préférences »), comment il se prouve (date,
   texte accepté), et qu'un e-mail marketing vers un particulier sans accord
