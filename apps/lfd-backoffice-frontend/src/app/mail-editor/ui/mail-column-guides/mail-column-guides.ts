@@ -16,27 +16,31 @@ import {
   boundaryAtFraction,
   boundaryPositions,
   boundaryRange,
+  columnSpanCss,
+  COLUMN_GUTTER_CSS,
   equalWidths,
   moveBoundary,
   placeBoundary,
+  rowOffsetCss,
   sameWidths,
   twelfthsPercent,
+  usableFraction,
   widthsSpoken,
 } from '../../rules/mail-column-boundaries';
 
-const ROW_TWELFTHS = 12;
-
 /** Une colonne dessinée : où elle commence et sa largeur, en pour cent de la ligne. */
 interface GuideColumn {
-  readonly start: number;
-  readonly span: number;
+  /** Son bord gauche, en CSS : gouttières comprises. */
+  readonly start: string;
+  readonly span: string;
   readonly step: ColumnWidthStep;
 }
 
 /** Une frontière dessinée, avec ce que sa poignée dit au lecteur d'écran. */
 interface GuideBoundary {
   readonly index: number;
-  readonly percent: number;
+  /** Au milieu de la gouttière, en CSS. */
+  readonly offset: string;
   /** La position dite au lecteur d'écran, en pour cent arrondi. */
   readonly now: number;
   readonly min: number;
@@ -89,10 +93,11 @@ export class MailColumnGuides {
 
   protected readonly columns = computed<readonly GuideColumn[]>(() => {
     let start = 0;
-    return this.shown().map((step) => {
+    const count = this.shown().length;
+    return this.shown().map((step, index) => {
       const column = {
-        start: (start / ROW_TWELFTHS) * 100,
-        span: (twelfthsOf(step) / ROW_TWELFTHS) * 100,
+        start: rowOffsetCss(count, start, index),
+        span: columnSpanCss(count, twelfthsOf(step)),
         step,
       };
       start += twelfthsOf(step);
@@ -106,7 +111,7 @@ export class MailColumnGuides {
       const range = boundaryRange(widths, index);
       return {
         index,
-        percent: (position / ROW_TWELFTHS) * 100,
+        offset: rowOffsetCss(widths.length, position, index + 0.5),
         now: twelfthsPercent(position),
         min: twelfthsPercent(range.min),
         max: twelfthsPercent(range.max),
@@ -148,7 +153,14 @@ export class MailColumnGuides {
     if (box.width <= 0) {
       return;
     }
-    this.draft.set(boundaryAtFraction(draft, index, (event.clientX - box.left) / box.width));
+    const fraction = usableFraction(
+      event.clientX - box.left,
+      box.width,
+      draft.length,
+      index,
+      this.gutterPx(),
+    );
+    this.draft.set(boundaryAtFraction(draft, index, fraction));
   }
 
   protected onPointerUp(index: number): void {
@@ -196,6 +208,15 @@ export class MailColumnGuides {
     if (this.canWrite() && equal !== null) {
       this.commit(equal);
     }
+  }
+
+  /** La gouttière telle que le navigateur la calcule ; 0 s'il ne la résout pas. */
+  private gutterPx(): number {
+    const probe = getComputedStyle(this.host.nativeElement).getPropertyValue(
+      COLUMN_GUTTER_CSS.slice('var('.length, -1),
+    );
+    const px = Number.parseFloat(probe);
+    return Number.isFinite(px) ? px : 0;
   }
 
   private endGesture(): void {

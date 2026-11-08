@@ -2,8 +2,8 @@
   <div
     class="column"
     aria-hidden="true"
-    [style.inset-inline-start.%]="column.start"
-    [style.inline-size.%]="column.span"
+    [style.inset-inline-start]="column.start"
+    [style.inline-size]="column.span"
     data-guide-column
   >
     @if (dragged() !== null) {
@@ -18,7 +18,7 @@
     class="line"
     aria-hidden="true"
     [class.active]="dragged() === boundary.index"
-    [style.inset-inline-start.%]="boundary.percent"
+    [style.inset-inline-start]="boundary.offset"
     data-guide-line
   ></div>
   @if (canWrite()) {
@@ -30,7 +30,7 @@
       aria-keyshortcuts="ArrowLeft ArrowRight Home End"
       title="Tirer pour changer les largeurs — double-clic : colonnes égales"
       [class.active]="dragged() === boundary.index"
-      [style.inset-inline-start.%]="boundary.percent"
+      [style.inset-inline-start]="boundary.offset"
       [attr.aria-label]="labelOf(boundary.index)"
       [attr.aria-valuenow]="boundary.now"
       [attr.aria-valuemin]="boundary.min"

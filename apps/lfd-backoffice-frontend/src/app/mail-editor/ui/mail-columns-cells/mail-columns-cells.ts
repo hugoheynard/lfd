@@ -7,7 +7,13 @@ import {
   CdkDropList,
 } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import type { ColumnsBlock, FreeBlock, MailLocale, MailValueResource } from '@lfd/mail-blocks';
+import {
+  type ColumnsBlock,
+  type FreeBlock,
+  type MailLocale,
+  type MailValueResource,
+  twelfthsOf,
+} from '@lfd/mail-blocks';
 import {
   FoldButtonComponent,
   FoldCardComponent,
@@ -16,7 +22,7 @@ import {
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
-import { type BlockContainer, cellListId, cellPercent } from '../../rules/mail-block-moves';
+import { type BlockContainer, cellListId } from '../../rules/mail-block-moves';
 import { CALLOUT_TONE_LABELS, FREE_BLOCK_LABELS } from '../../rules/mail-document-edits';
 import { freeBlockFallback } from '../../rules/mail-fragments';
 import {
@@ -106,8 +112,13 @@ export class MailColumnsCells {
     return { kind: 'cell', columnsId: this.block().id, cell };
   }
 
-  protected percentOf(cell: number): number {
-    return cellPercent(this.block().widths, cell);
+  /**
+   * Sa part de la ligne, en douzièmes : la place utile (la ligne moins ses
+   * gouttières) se partage au prorata, comme dans l'e-mail.
+   */
+  protected twelfthsOf(cell: number): number {
+    const step = this.block().widths[cell];
+    return step === undefined ? 0 : twelfthsOf(step);
   }
 
   /** Le rendu d'un bloc ; sa zone d'écriture s'il est vide ; `null` tant qu'aucun rendu ne l'a vu. */

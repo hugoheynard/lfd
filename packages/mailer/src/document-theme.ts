@@ -50,6 +50,7 @@ export const DOCUMENT_CLASSES = {
   page: "lfd-page",
   card: "lfd-card",
   column: "lfd-col",
+  gutter: "lfd-gut",
   callout: { info: "lfd-callout-info", warning: "lfd-callout-warning" },
 } as const;
 
@@ -68,7 +69,7 @@ function darkRules(dark: DarkPalette): string {
 }
 
 function stackRule(): string {
-  return `@media only screen and (max-width:${String(STACK_BELOW_PX)}px){.${DOCUMENT_CLASSES.column}{display:block!important;width:100%!important;padding:0 0 12px!important;}}`;
+  return `@media only screen and (max-width:${String(STACK_BELOW_PX)}px){.${DOCUMENT_CLASSES.column}{display:block!important;width:100%!important;padding:0 0 12px!important;}.${DOCUMENT_CLASSES.gutter}{display:none!important;width:0!important;}}`;
 }
 
 /**

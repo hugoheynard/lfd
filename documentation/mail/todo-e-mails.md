@@ -48,6 +48,19 @@
   anglais et hors du suivi du bloc `mail` (constaté le 2026-11-07 sur un
   rebond).
 
+- **Un bloc « Image et texte »** (Hugo, 2026-11-08) : un titre, un texte et
+  un bouton posés SUR une image, en vrais textes (éditables, traduits, lus
+  par un lecteur d'écran — jamais écrits dans l'image). L'image en fond de
+  cellule, avec sa version VML pour Outlook pour Windows (commentaires
+  conditionnels `<!--[if mso]>`, que les autres messageries ignorent) ; une
+  couleur de repli de la charte si l'image ne s'affiche pas ; un voile
+  réglable avec la vérification de contraste ; texte en haut, au centre ou
+  en bas ; format et pleine largeur comme une image. Proposé : pleine
+  largeur et dans le texte, pas dans les colonnes ; un seul bouton.
+- **Une poignée de hauteur** (Hugo, 2026-11-08, en attente de sa réponse) :
+  sur une image (rapport libre recadré par le serveur, de 3:1 à 1:2) et un
+  bloc « espace » réglable ; jamais sur un texte, dont la hauteur dépend de
+  la messagerie.
 - **Découper le canevas de l'éditeur** : `mail-canvas.ts` et son spec
   dépassent 900 lignes chacun (relevé le 2026-11-08, pour une règle à 300) —
   le glisser, les colonnes et la pleine largeur s'y sont ajoutés. À couper

@@ -1,15 +1,17 @@
-// Les colonnes côte à côte, à la largeur que le serveur leur écrit ; la
-// gouttière est portée par la colonne de gauche, comme dans l'e-mail.
+// Les colonnes côte à côte : la place utile (la ligne moins ses gouttières)
+// se partage au prorata des douzièmes, et la gouttière est un espace égal
+// ENTRE deux colonnes, jamais portée par l'une d'elles — comme dans l'e-mail.
 .cells {
   display: flex;
   align-items: stretch;
+  gap: var(--fold-space-md);
 }
 
 .cell {
   display: flex;
   flex-direction: column;
-  flex-grow: 0;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  flex-basis: 0;
   box-sizing: border-box;
   min-inline-size: 0;
   margin: 0;
@@ -18,10 +20,6 @@
   // La place de dépôt grandit vers le bas, jamais en largeur : la frontière
   // entre colonnes ne bouge pas sous le pointeur pendant un glisser.
   overflow-x: clip;
-}
-
-.cell:not(:last-child) {
-  padding-inline-end: var(--fold-space-sm);
 }
 
 // Un bloc de colonne : son cadre ne se montre qu'au survol, au focus et à la

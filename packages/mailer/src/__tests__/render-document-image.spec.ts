@@ -61,6 +61,36 @@ describe("le bloc image", () => {
     const html = rendered({ id: "c", kind: "columns", widths: [50, 50], cells: [[IMAGE], []] });
     expect(html).toMatch(/<td class="lfd-col"[^>]*><table role="presentation"[^>]*><tr><td><img/);
   });
+
+  /**
+   * Régression : « deux photos en 50/50 n'ont pas la même hauteur » (2026-11-08).
+   * Une image 3:2 prend toute la largeur de sa colonne : même largeur de
+   * colonne, même hauteur d'image — à 6/6, 4/4/4 et 3/3/6 douzièmes.
+   */
+  it.each([
+    [[50, 50], [[0, 1]]],
+    [[33, 33, 33], [[0, 1, 2]]],
+    [[25, 25, 50], [[0, 1]]],
+  ] as const)(
+    "des images 3:2 dans des colonnes de même cran ont la même largeur (%j)",
+    (widths, groups) => {
+      const html = rendered({
+        id: "c",
+        kind: "columns",
+        widths: [...widths],
+        cells: widths.map(() => [{ ...IMAGE, format: "3:2" as const }]),
+      });
+      const cells = [
+        ...html.matchAll(
+          /<td class="lfd-col" width="([\d.]+)%"[^>]*><table[^>]*><tr><td><img[^>]*width="100%"/gu,
+        ),
+      ].map((match) => match[1]);
+      expect(cells).toHaveLength(widths.length);
+      for (const group of groups) {
+        expect(new Set(group.map((index) => cells[index])).size).toBe(1);
+      }
+    },
+  );
 });
 
 describe("le cadrage d'une image (§ 19, « Format et point focal »)", () => {

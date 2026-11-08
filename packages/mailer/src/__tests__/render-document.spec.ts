@@ -223,27 +223,52 @@ describe("les colonnes", () => {
     ],
   };
 
-  it("se rendent en tableau, une cellule par largeur, la gouttière à gauche de la dernière", () => {
-    const html = renderMailDocument(INPUT, documentOf(...STARTING.blocks, columns), OPTIONS);
-    const cells = html.match(/<td class="lfd-col" width="(\d+)%" valign="top"/gu);
+  const widthsIn = (html: string): number[] =>
+    [...html.matchAll(/<td class="lfd-col" width="([\d.]+)%"/gu)].map((match) => Number(match[1]));
+  const guttersIn = (html: string): number[] =>
+    [...html.matchAll(/<td class="lfd-gut" width="([\d.]+)%"/gu)].map((match) => Number(match[1]));
+  const render = (block: MailBlock): string =>
+    renderMailDocument(INPUT, documentOf(...STARTING.blocks, block), OPTIONS);
 
-    expect(cells).toHaveLength(3);
-    expect(html).toContain("padding:0 12px 0 0;");
+  it("se rendent en tableau, une cellule par largeur, une gouttière ENTRE deux colonnes seulement", () => {
+    const html = render(columns);
+    const row = html.slice(html.indexOf('<td class="lfd-col"'), html.lastIndexOf("</tr>"));
+
+    expect(widthsIn(html)).toHaveLength(3);
+    expect(guttersIn(html)).toHaveLength(2);
+    expect(row.startsWith('<td class="lfd-col"')).toBe(true);
+    expect(row.endsWith("</td>")).toBe(true);
+    expect(row.lastIndexOf("lfd-gut")).toBeLessThan(row.lastIndexOf("lfd-col"));
+    expect(html).not.toContain("padding:0 12px 0 0;");
     expect(html.indexOf("Un")).toBeLessThan(html.indexOf("Deux"));
     expect(html.indexOf("Deux")).toBeLessThan(html.indexOf("Trois"));
   });
 
-  /** Les crans sont des douzièmes arrondis : la dernière colonne prend le reste (2026-11-08). */
-  it("une ligne fait toujours 100 % : 33 + 33 + 34, 17 + 17 + 66", () => {
-    const widthsIn = (html: string): number[] =>
-      [...html.matchAll(/<td class="lfd-col" width="(\d+)%"/gu)].map((match) => Number(match[1]));
+  /**
+   * Régression : « deux photos en 50/50 n'ont pas la même hauteur » — la
+   * gouttière était portée par la colonne de gauche, 12 px plus étroite
+   * (2026-11-08).
+   */
+  it("deux photos en 50/50 ont la même hauteur : les deux colonnes ont la même largeur", () => {
+    const half: MailBlock = { ...columns, widths: [50, 50], cells: [[], []] };
+    const [left, right] = widthsIn(render(half));
 
-    expect(
-      widthsIn(renderMailDocument(INPUT, documentOf(...STARTING.blocks, columns), OPTIONS)),
-    ).toEqual([33, 33, 34]);
-    const narrow: MailBlock = { ...columns, widths: [17, 17, 67] };
-    expect(
-      widthsIn(renderMailDocument(INPUT, documentOf(...STARTING.blocks, narrow), OPTIONS)),
-    ).toEqual([17, 17, 66]);
+    expect(left).toBe(right);
+  });
+
+  it("trois colonnes égales ont la même largeur, et une ligne fait toujours 100 %", () => {
+    const html = render(columns);
+    const widths = widthsIn(html);
+
+    expect(new Set(widths).size).toBe(1);
+    const total = [...widths, ...guttersIn(html)].reduce((sum, width) => sum + width, 0);
+    expect(total).toBeCloseTo(100, 6);
+  });
+
+  it("à l'empilement, la gouttière disparaît et chaque colonne prend toute la largeur", () => {
+    const html = render(columns);
+
+    expect(html).toMatch(/@media[^{]*\{\.lfd-col\{display:block!important;width:100%!important;/u);
+    expect(html).toContain(".lfd-gut{display:none!important;width:0!important;}");
   });
 });

@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   cellListIds,
-  cellPercent,
   draggedBlockId,
   FLOW,
   moveBlock,
@@ -147,10 +146,6 @@ describe('les outils du glisser', () => {
       'p-cell-other-1',
       'p-cell-other-2',
     ]);
-  });
-
-  it('la dernière colonne prend le reste, comme l’écrit le serveur', () => {
-    expect([0, 1, 2].map((index) => cellPercent([33, 33, 33], index))).toEqual([33, 33, 34]);
   });
 
   it('lit l’identifiant d’un bloc glissé, pas une clé de bibliothèque', () => {

@@ -179,17 +179,6 @@ export function cellListIds(document: MailDocument, prefix: string): readonly st
   );
 }
 
-/**
- * La largeur affichée d'une colonne, en pour cent : la sienne, la dernière
- * prenant le reste — comme le serveur l'écrit (`rowWidthOf`, `@lfd/mailer`).
- */
-export function cellPercent(widths: readonly number[], index: number): number {
-  if (index < widths.length - 1) {
-    return widths[index] ?? 0;
-  }
-  return 100 - widths.slice(0, -1).reduce((sum, width) => sum + width, 0);
-}
-
 /** Ce qu'un bloc glissé porte en donnée CDK — une carte de la bibliothèque porte sa clé. */
 export interface DraggedBlock {
   readonly blockId: string;

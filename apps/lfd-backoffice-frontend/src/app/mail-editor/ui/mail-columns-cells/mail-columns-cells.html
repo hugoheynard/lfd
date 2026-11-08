@@ -8,7 +8,7 @@
       [cdkDropListConnectedTo]="connectedTo()"
       [cdkDropListEnterPredicate]="enterPredicate()"
       [cdkDropListDisabled]="!canWrite()"
-      [style.flex-basis.%]="percentOf(column)"
+      [style.flex-grow]="twelfthsOf(column)"
       [attr.aria-label]="'Colonne ' + (column + 1) + ' — Alt + flèche pour déplacer'"
       [attr.data-cell]="column"
       (cdkDropListDropped)="dropped.emit($event)"

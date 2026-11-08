@@ -42,7 +42,12 @@ describe('MailColumnsCells', () => {
       'p-cell-cols-1',
       'p-cell-cols-2',
     ]);
-    expect(cells.map((cell) => cell.style.flexBasis)).toEqual(['33%', '33%', '34%']);
+    // Régression : « deux photos en 50/50 n'ont pas la même hauteur » — la
+    // gouttière était la marge de la colonne de gauche (2026-11-08). La place
+    // utile se partage au prorata des douzièmes ; aucune colonne ne porte la
+    // gouttière, que le `gap` de la ligne pose ENTRE elles.
+    expect(cells.map((cell) => cell.style.flexGrow)).toEqual(['4', '4', '4']);
+    expect(cells.map((cell) => cell.style.paddingInlineEnd)).toEqual(['', '', '']);
     expect(element.querySelector('[data-cell-block="h"]')?.textContent).toContain('Titre');
     expect(element.querySelector('[data-cell-block="d"] hr')).not.toBeNull();
   });

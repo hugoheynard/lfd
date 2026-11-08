@@ -1,5 +1,6 @@
 import type { ColumnsBlock, FreeBlock, MailLocale } from "@lfd/mail-blocks";
 
+import { columnRowGeometry } from "./column-geometry.js";
 import { DOCUMENT_CLASSES } from "./document-theme.js";
 import { htmlEscape } from "./escape.js";
 import { isRenderableUrl } from "./layout-fragments.js";
@@ -103,37 +104,33 @@ export function renderFreeBlock(
   }
 }
 
-/** L'espace entre deux colonnes, en pixels, porté par la colonne de gauche. */
-const GUTTER_PX = 12;
-
 function column(
   cell: readonly FreeBlock[],
   widthPercent: number,
-  last: boolean,
   locale: MailLocale,
   audience: FreeBlockAudience,
   charter: MailRenderCharter,
 ): string {
-  const padding = last ? "0" : `0 ${String(GUTTER_PX)}px 0 0`;
+  const width = `${String(widthPercent)}%`;
   const content = cell.map((block) => renderFreeBlock(block, locale, audience, charter)).join("");
-  return `<td class="${DOCUMENT_CLASSES.column}" width="${String(widthPercent)}%" valign="top" style="width:${String(widthPercent)}%;vertical-align:top;padding:${padding};">${content}</td>`;
+  return `<td class="${DOCUMENT_CLASSES.column}" width="${width}" valign="top" style="width:${width};vertical-align:top;padding:0;">${content}</td>`;
 }
 
 /**
- * La largeur écrite d'une colonne, en pour cent : la sienne, sauf la
- * dernière, qui prend le reste — les crans sont des douzièmes arrondis, et
- * 33 + 33 + 33 ferait 99 %, 17 + 17 + 67 ferait 101 % (une ligne qui déborde).
+ * La gouttière entre deux colonnes : une cellule vide à part, pour que les
+ * colonnes de même cran aient le même contenu. Elle disparaît une fois les
+ * colonnes empilées (règle `@media` de `DOCUMENT_CLASSES.gutter`).
  */
-function rowWidthOf(widths: readonly number[], index: number): number {
-  if (index < widths.length - 1) {
-    return widths[index] ?? 0;
-  }
-  return 100 - widths.slice(0, -1).reduce((sum, width) => sum + width, 0);
+function gutter(widthPercent: number): string {
+  const width = `${String(widthPercent)}%`;
+  return `<td class="${DOCUMENT_CLASSES.gutter}" width="${width}" style="width:${width};font-size:0;line-height:0;mso-line-height-rule:exactly;">&nbsp;</td>`;
 }
 
 /**
- * Une ligne de colonnes : une cellule par largeur, côte à côte partout, et
- * empilées sur téléphone là où la règle `@media` est lue.
+ * Une ligne de colonnes : une cellule par largeur, une gouttière ENTRE deux
+ * colonnes, côte à côte partout, et empilées sur téléphone là où la règle
+ * `@media` est lue. `table-layout:fixed` fait tenir les largeurs écrites
+ * quel que soit le contenu.
  */
 export function renderColumns(
   block: ColumnsBlock,
@@ -141,15 +138,11 @@ export function renderColumns(
   audience: FreeBlockAudience = "sent",
   charter: MailRenderCharter = STARTING_MAIL_CHARTER,
 ): string {
-  const cells = block.widths.map((_width, index) =>
-    column(
-      block.cells[index] ?? [],
-      rowWidthOf(block.widths, index),
-      index === block.widths.length - 1,
-      locale,
-      audience,
-      charter,
-    ),
-  );
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;"><tr>${cells.join("")}</tr></table>`;
+  const geometry = columnRowGeometry(block.widths);
+  const cells = geometry.columns.flatMap((widthPercent, index) => {
+    const cell = column(block.cells[index] ?? [], widthPercent, locale, audience, charter);
+    const after = geometry.gutters[index];
+    return after === undefined ? [cell] : [cell, gutter(after)];
+  });
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;table-layout:fixed;"><tr>${cells.join("")}</tr></table>`;
 }

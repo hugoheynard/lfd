@@ -4,11 +4,14 @@ import {
   boundaryAtFraction,
   boundaryPositions,
   boundaryRange,
+  columnSpanCss,
   equalWidths,
   moveBoundary,
   placeBoundary,
+  rowOffsetCss,
   sameWidths,
   twelfthsPercent,
+  usableFraction,
   widthsSpoken,
 } from './mail-column-boundaries';
 
@@ -60,5 +63,30 @@ describe('les frontières entre colonnes', () => {
     expect(widthsSpoken([58, 42])).toBe('colonne 1 à 58 %, colonne 2 à 42 %');
     expect(sameWidths([50, 50], [50, 50])).toBe(true);
     expect(sameWidths([50, 50], [58, 42])).toBe(false);
+  });
+});
+
+describe('la géométrie de la ligne, gouttières comprises', () => {
+  it('une frontière tombe au milieu de sa gouttière', () => {
+    expect(rowOffsetCss(2, 6, 0.5)).toBe(
+      'calc((100% - 1 * var(--fold-space-md)) * 6 / 12 + 0.5 * var(--fold-space-md))',
+    );
+  });
+
+  it('deux colonnes de même cran ont la même largeur, à 2 comme à 3 colonnes', () => {
+    expect(columnSpanCss(3, 4)).toBe(
+      'calc((100% - 2 * var(--fold-space-md)) * 4 / 12 + 0 * var(--fold-space-md))',
+    );
+    expect(columnSpanCss(2, 6)).toBe(columnSpanCss(2, 6));
+  });
+
+  it('le pointeur au milieu de la gouttière vise la frontière, aux deux et trois colonnes', () => {
+    // 600 px, gouttières de 12 : place utile 588 (2 col.) ou 576 (3 col.).
+    expect(usableFraction(294 + 6, 600, 2, 0, 12)).toBeCloseTo(0.5, 9);
+    expect(usableFraction(192 + 12 + 192 + 6, 576 + 24, 3, 1, 12)).toBeCloseTo(8 / 12, 9);
+  });
+
+  it('sans gouttière résolue, rend la fraction de la ligne', () => {
+    expect(usableFraction(150, 600, 2, 0, 0)).toBe(0.25);
   });
 });

@@ -137,4 +137,13 @@ describe('MailColumnGuides', () => {
     grips(even.host)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(even.emitted).toEqual([]);
   });
+
+  it('pose le trait au milieu de la gouttière, et les colonnes entre les gouttières', () => {
+    const { host } = render([25, 25, 50]);
+    const line = host.querySelector<HTMLElement>('[data-guide-line]')!;
+    expect(line.style.insetInlineStart).toContain('* 3 / 12 + 0.5 * var(--fold-space-md)');
+    const [first, second] = Array.from(host.querySelectorAll<HTMLElement>('[data-guide-column]'));
+    expect(first?.style.inlineSize).toBe(second?.style.inlineSize);
+    expect(second?.style.insetInlineStart).toContain('* 3 / 12 + 1 * var(--fold-space-md)');
+  });
 });
