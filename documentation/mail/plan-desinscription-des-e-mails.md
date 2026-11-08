@@ -239,6 +239,18 @@ est tranché, et qui l'emporte sur les règles 10 à 16 :**
   validation, `moveAddress`.
 - **C3 — « Mes préférences »** : la page de l'espace client, la case
   partenaires.
+- **C5 — la newsletter en pied de page** (Hugo, 2026-11-08 : « en footer,
+  s'inscrire à la newsletter en plus ») : un champ adresse et un bouton
+  « S'inscrire » dans le pied de page de la boutique, pour la société qui
+  la sert (`lfc`), avec la phrase d'information et le lien vers la mention.
+  C'est un quatrième lieu de recueil, public et sans compte : toujours la
+  double confirmation (règle 18), et **toujours la même réponse**, quelle que
+  soit l'adresse (« Si cette adresse peut recevoir nos nouvelles, un e-mail
+  de confirmation vient de partir ») — pas d'oracle (règle 17) ; une
+  adresse désinscrite ne reçoit pas de confirmation et n'est pas réinscrite
+  par ce champ (seul « Mes préférences », connecté, réinscrit). Limite de
+  débit par IP et par adresse, comme les autres routes publiques ; un champ
+  piège invisible contre les robots.
 - **C4 — le back-office** : l'onglet du suivi montre, par adresse (masquée,
   révélation tracée), l'état de préférence par société et son historique.
 
@@ -373,4 +385,4 @@ Ces décisions **remplacent** ce que les règles 2 à 8 disaient autrement.
   Hugo ; U5 bâtit l'identité d'envoi par nature, à régler à l'écran.
 - ~~Bâtir U1 maintenant, ou tout ensemble~~ — tranché le 2026-11-08 :
   « je veux tout le plan ». Ordre : U1, U2 (le registre directement), U3,
-  C1, C2, C3, U4 et C4, U5.
+  C1, C2, C3, C5, U4 et C4, U5.
