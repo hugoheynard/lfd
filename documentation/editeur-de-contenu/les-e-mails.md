@@ -307,13 +307,13 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
 
 ### b. Avant le prochain push ou déploiement
 
-1. `dev` a 69 commits non poussés et `main` 128 de retard (relevé le
-   2026-11-07) : lancer la batterie racine (`pnpm test`, lint, portes, build
-   AOT) — `CLAUDE.md` § 9 bis.
-2. `pnpm --filter lfd-api e2e:rebalance` : des suites e2e ont été ajoutées
-   par les lots du jour — [`../ci-cd/pipelines.md`](../ci-cd/pipelines.md).
+1. ~~Batterie racine (`pnpm test`, lint, portes, build AOT)~~ — faite le
+   2026-11-07 ; ses rouges corrigés (`fd10ad0a9`, `c3a51bb54`), CI de dev
+   verte sur `c3a51bb54` — `CLAUDE.md` § 9 bis.
+2. ~~`e2e:rebalance`~~ — fait le 2026-11-07, durées commitées (`fd10ad0a9`).
 3. Un `docker build` complet de l'API pour `sharp` (seul l'essai isolé a
-   tourné) — Éditeur § 19, format et point focal.
+   tourné ; tenté le 2026-11-07, arrêté par le disque plein de Docker) —
+   Éditeur § 19, format et point focal.
 4. Repasser les migrations du jour (documents, chartes, identité d'envoi) au
    `lecteur-de-migrations` avant `main` : chacune a été relue au commit, la
    règle demande une relecture d'ensemble avant la production — `CLAUDE.md`
