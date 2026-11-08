@@ -93,6 +93,11 @@
   background: var(--fold-color-primary-surface);
 }
 
+// Le rendu d'une mise en page, sous ses repères (trait, colonnes, poignées).
+.columns-stage {
+  position: relative;
+}
+
 .links {
   display: flex;
   flex-wrap: wrap;

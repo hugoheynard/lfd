@@ -15,6 +15,7 @@ import {
   removeBlock,
   replaceFreeBlock,
   setColumnWidth,
+  setColumnWidths,
   textOf,
   withDecorative,
   withImageFocal,
@@ -123,6 +124,15 @@ describe('les gestes du canevas', () => {
       75,
     );
     expect(findEditableBlock(next, 'cols')).toMatchObject({ widths: [75, 50] });
+  });
+
+  it('pose deux largeurs d’un seul geste, et refuse un compte qui ne suit pas les colonnes', () => {
+    const start = appendBlock(DOCUMENT, newLibraryBlock('columns-2', 'cols'));
+    expect(findEditableBlock(setColumnWidths(start, 'cols', [58, 42]), 'cols')).toMatchObject({
+      widths: [58, 42],
+    });
+    expect(setColumnWidths(start, 'cols', [33, 33, 33])).toBe(start);
+    expect(setColumnWidths(start, 'inconnu', [58, 42])).toBe(start);
   });
 
   it('ne rend pas un bloc du modèle comme bloc à régler', () => {

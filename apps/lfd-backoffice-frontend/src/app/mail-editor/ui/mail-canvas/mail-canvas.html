@@ -199,6 +199,26 @@
                       Rien à montrer dans ce cas.
                     }
                   </p>
+                } @else if (block.kind === 'columns') {
+                  <div class="columns-stage" data-columns-stage>
+                    <app-mail-block-fragment
+                      [zoneLabel]="nameOf(block)"
+                      [html]="html"
+                      [canWrite]="canWrite()"
+                      [phrasePaths]="phrasePaths()"
+                      [freeBlockIds]="freeBlockIds()"
+                      [values]="valueCards()"
+                      (phraseInput)="onPhraseInput($event)"
+                      (valueRefused)="onValueRefused($event)"
+                      (freeBlockInput)="onFreeBlockInput($event)"
+                    />
+                    <app-mail-column-guides
+                      [widths]="block.widths"
+                      [canWrite]="canWrite()"
+                      [emphasized]="isSelected(block)"
+                      (widthsChange)="widthsDragged(block.id, $event)"
+                    />
+                  </div>
                 } @else {
                   <app-mail-block-fragment
                     [zoneLabel]="nameOf(block)"

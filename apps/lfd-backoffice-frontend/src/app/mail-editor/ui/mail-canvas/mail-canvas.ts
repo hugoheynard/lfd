@@ -26,6 +26,7 @@ import {
   MODEL_SECTION_LABELS,
   validateMailDocument,
   type ColumnsBlock,
+  type ColumnWidthStep,
   type FreeBlock,
   type MailBlock,
   type MailDocument,
@@ -65,6 +66,7 @@ import {
   removeBlock,
   replaceFreeBlock,
   setColumnWidth,
+  setColumnWidths,
   withText,
 } from '../../rules/mail-document-edits';
 import { insertChipAt, variableChip } from '../../rules/mail-editable-text';
@@ -94,6 +96,7 @@ import {
   type ColumnWidthChoice,
   MailBlockSettings,
 } from '../mail-block-settings/mail-block-settings';
+import { MailColumnGuides } from '../mail-column-guides/mail-column-guides';
 import { MailInsertBar } from '../mail-insert-bar/mail-insert-bar';
 import { MailResourcesPanel } from '../mail-resources-panel/mail-resources-panel';
 
@@ -149,6 +152,7 @@ interface Removal {
     MailBlockFragment,
     MailBlockLibrary,
     MailBlockSettings,
+    MailColumnGuides,
     MailInsertBar,
     MailResourcesPanel,
   ],
@@ -603,6 +607,11 @@ export class MailCanvas {
 
   protected widthChosen(columnsId: string, choice: ColumnWidthChoice): void {
     this.emit(setColumnWidth(this.document(), columnsId, choice.columnIndex, choice.width));
+  }
+
+  /** Le lâcher d'une poignée (ou une touche) : toutes les largeurs, en une seule édition. */
+  protected widthsDragged(columnsId: string, widths: readonly ColumnWidthStep[]): void {
+    this.emit(setColumnWidths(this.document(), columnsId, widths));
   }
 
   protected cellAdded(columnsId: string, addition: CellAddition): void {

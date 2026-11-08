@@ -1,0 +1,48 @@
+@for (column of columns(); track $index) {
+  <div
+    class="column"
+    aria-hidden="true"
+    [style.inset-inline-start.%]="column.start"
+    [style.inline-size.%]="column.span"
+    data-guide-column
+  >
+    @if (dragged() !== null) {
+      <span class="percent" data-guide-percent>
+        <fold-badge variant="info" [content]="column.step + ' %'" />
+      </span>
+    }
+  </div>
+}
+@for (boundary of boundaries(); track boundary.index) {
+  <div
+    class="line"
+    aria-hidden="true"
+    [class.active]="dragged() === boundary.index"
+    [style.inset-inline-start.%]="boundary.percent"
+    data-guide-line
+  ></div>
+  @if (canWrite()) {
+    <div
+      class="grip"
+      role="separator"
+      tabindex="0"
+      aria-orientation="vertical"
+      aria-keyshortcuts="ArrowLeft ArrowRight Home End"
+      title="Tirer pour changer les largeurs — double-clic : colonnes égales"
+      [class.active]="dragged() === boundary.index"
+      [style.inset-inline-start.%]="boundary.percent"
+      [attr.aria-label]="labelOf(boundary.index)"
+      [attr.aria-valuenow]="boundary.now"
+      [attr.aria-valuemin]="boundary.min"
+      [attr.aria-valuemax]="boundary.max"
+      [attr.aria-valuetext]="valueTextOf(boundary.index)"
+      [attr.data-boundary]="boundary.index"
+      (pointerdown)="onPointerDown($event, boundary.index)"
+      (pointermove)="onPointerMove($event, boundary.index)"
+      (pointerup)="onPointerUp(boundary.index)"
+      (pointercancel)="onPointerCancel()"
+      (keydown)="onKeydown($event, boundary.index)"
+      (dblclick)="onDoubleClick($event)"
+    ></div>
+  }
+}

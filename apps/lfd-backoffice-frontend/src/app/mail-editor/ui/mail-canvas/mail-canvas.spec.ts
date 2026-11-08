@@ -548,6 +548,21 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     element.remove();
   });
 
+  it('une poignée de colonnes change les deux largeurs voisines en une seule édition', () => {
+    const columns: MailDocument = {
+      template: TEMPLATE,
+      blocks: [{ id: 'cols', kind: 'columns', widths: [33, 33, 33], cells: [[], [], []] }],
+    };
+    const { emitted, element } = render(columns, { cols: '<table></table>' });
+    const grip = element.querySelector<HTMLElement>(
+      'li[data-block="cols"] [data-columns-stage] [role="separator"][data-boundary="1"]',
+    );
+    grip?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]?.blocks[0]).toMatchObject({ widths: [33, 42, 25] });
+    element.remove();
+  });
+
   describe('une image pleine largeur', () => {
     const WIDE: MailDocument = {
       template: TEMPLATE,

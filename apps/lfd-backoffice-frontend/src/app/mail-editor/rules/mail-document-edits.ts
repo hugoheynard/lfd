@@ -358,6 +358,28 @@ export function setColumnWidth(
   );
 }
 
+/**
+ * Pose toutes les largeurs d'une mise en page d'un coup : la poignée entre
+ * deux colonnes en change deux, et un seul geste doit faire une seule édition.
+ * Un nombre de largeurs qui ne suit pas celui des colonnes laisse le document.
+ */
+export function setColumnWidths(
+  document: MailDocument,
+  columnsId: string,
+  widths: readonly ColumnWidthStep[],
+): MailDocument {
+  const target = document.blocks.find(
+    (block) => block.kind === 'columns' && block.id === columnsId,
+  );
+  if (target?.kind !== 'columns' || target.widths.length !== widths.length) {
+    return document;
+  }
+  return withBlocks(
+    document,
+    document.blocks.map((block) => (block === target ? { ...target, widths: [...widths] } : block)),
+  );
+}
+
 /** Le bloc libre ou la mise en page d'identifiant donné, où qu'il soit. */
 export function findEditableBlock(
   document: MailDocument,

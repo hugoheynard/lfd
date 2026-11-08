@@ -1,0 +1,91 @@
+// Posés sur le rendu du serveur, sans prendre de place ni de clic : seules
+// les poignées reçoivent le pointeur, le texte des colonnes reste écrivable.
+:host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+// Chaque colonne, délimitée juste assez pour qu'on voie où déposer.
+.column {
+  position: absolute;
+  inset-block: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  border-radius: var(--fold-radius-sm);
+  outline: 1px dashed var(--fold-color-border-subtle);
+  outline-offset: -1px;
+  transition: outline-color var(--fold-motion-base);
+}
+
+.percent {
+  display: inline-flex;
+  padding-block-start: var(--fold-space-xs);
+}
+
+// Le trait de la frontière : pointillé discret, marqué au survol du bloc,
+// à sa sélection et pendant le geste.
+.line {
+  position: absolute;
+  inset-block: 0;
+  border-inline-start: 1px dashed var(--fold-color-border);
+  transform: translateX(-50%);
+  transition: border-color var(--fold-motion-base);
+}
+
+:host-context(.block:hover) .line,
+:host(.emphasized) .line {
+  border-inline-start-color: var(--fold-color-text-muted);
+}
+
+:host-context(.block:hover) .column,
+:host(.emphasized) .column {
+  outline-color: var(--fold-color-border);
+}
+
+.line.active {
+  border-inline-start-style: solid;
+  border-inline-start-color: var(--fold-color-primary);
+}
+
+// La poignée : une pastille verticale centrée sur le trait.
+.grip {
+  position: absolute;
+  inset-block-start: 50%;
+  block-size: var(--fold-space-xl);
+  inline-size: var(--fold-space-xs);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  cursor: col-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transform: translate(-50%, -50%);
+  transition:
+    background var(--fold-motion-base),
+    border-color var(--fold-motion-base);
+}
+
+.grip:hover,
+.grip.active,
+:host(.emphasized) .grip {
+  border-color: var(--fold-color-primary);
+}
+
+.grip.active {
+  background: var(--fold-color-primary);
+}
+
+.grip:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .column,
+  .line,
+  .grip {
+    transition: none;
+  }
+}
