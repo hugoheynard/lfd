@@ -158,7 +158,7 @@ describe("publier la charte d'un espace", () => {
   });
 
   it("un logo refusé par la copie refuse la publication, et rien n'est publié", async () => {
-    const w = world(new MailImageOriginNotAdmittedError("https://media.lfd.test", "X"));
+    const w = world(new MailImageOriginNotAdmittedError("https://media.lfd.test"));
     await w.draft(LFD_SETTINGS);
     await expect(w.publish()).rejects.toBeInstanceOf(MailCharterLogoRefusedError);
     expect(w.charters.rows.get("lfd")?.published).toBeNull();
@@ -166,7 +166,7 @@ describe("publier la charte d'un espace", () => {
   });
 
   it("un stockage en panne est une erreur technique", async () => {
-    const w = world(new MailImageStorageUnavailableError("R2_MAIL_* manquants"));
+    const w = world(new MailImageStorageUnavailableError("R2_MEDIA_* manquants"));
     await w.draft(LFD_SETTINGS);
     await expect(w.publish()).rejects.toBeInstanceOf(MailCharterLogoUnavailableError);
   });

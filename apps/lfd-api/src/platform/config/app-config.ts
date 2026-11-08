@@ -6,7 +6,6 @@ import type { S3StorageConfig } from "@lfd/storage";
 import type { NetworkCallMode } from "../database/network-call-mode.js";
 import type { PurgeMode } from "../retention/purge-mode.js";
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
-import { optionalMailPublicBaseUrl } from "./mail-image-readers.js";
 import {
   type RoutePlannerEndpoint,
   resolveRoutePlannerEndpoint,
@@ -380,15 +379,6 @@ export class AppConfig {
    */
   mediaPublicBaseUrl(): string | null {
     return optionalMediaPublicBaseUrl();
-  }
-
-  /**
-   * L'adresse publique du bucket des images d'e-mail, sans barre finale, ou
-   * `null` — la moitié de l'usage `mail` qui ne passe pas par nous (§ 24 du
-   * plan du service d'e-mails).
-   */
-  mailPublicBaseUrl(): string | null {
-    return optionalMailPublicBaseUrl();
   }
 
   /**

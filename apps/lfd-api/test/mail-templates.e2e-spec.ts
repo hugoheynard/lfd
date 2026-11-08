@@ -44,7 +44,8 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { mailCopyScene, ORDER_PLACED } from "./mail-copy-scene.js";
 
 const MEDIA_ORIGIN = "https://media.lfc.test";
-const MAIL_IMAGES = "https://mail-images.lfc.test";
+/** Les copies du bloc : le dossier `mail/` du bucket des médias. */
+const MAIL_IMAGES = `${MEDIA_ORIGIN}/mail`;
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
 
 /** Le téléchargement doublé : des octets PNG, et la liste des adresses demandées. */
@@ -62,7 +63,7 @@ class MemoryMailImages extends MailImageStore {
   readonly keys = new Set<string>();
 
   put(bytes: Buffer, _contentType: string): Promise<MailImageCopy> {
-    const key = `mail/templates/${bytes.toString("hex")}.png`;
+    const key = `templates/${bytes.toString("hex")}.png`;
     this.keys.add(key);
     return Promise.resolve({ url: `${MAIL_IMAGES}/${key}` });
   }
@@ -72,7 +73,7 @@ const downloader = new PngDownloader();
 const mailImages = new MemoryMailImages();
 const admission: MailImageAdmission = {
   origins: [MEDIA_ORIGIN],
-  publicBaseUrl: MAIL_IMAGES,
+  copiesBaseUrl: MAIL_IMAGES,
 };
 
 const scene = mailCopyScene([

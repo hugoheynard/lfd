@@ -2,7 +2,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import { contentAddressedKey, type S3StorageConfig, S3StorageService } from "@lfd/storage";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
-import { MAIL_PUBLIC_BASE_URL_VARIABLE } from "../../../platform/config/mail-image-readers.js";
 import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
 import { MailImageStorageUnavailableError } from "../domain/errors/mail-image.errors.js";
 import { type MailImageCopy, MailImageStore } from "../domain/ports/mail-image.store.js";
@@ -10,34 +9,45 @@ import { type MailImageCopy, MailImageStore } from "../domain/ports/mail-image.s
 /** Une image adressée par son contenu ne change jamais sous sa clé. */
 const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
 
-/** Le préfixe des clés : l'usage, pas un propriétaire (adressage par contenu). */
-const KEY_PREFIX = "mail/templates";
+/**
+ * Le dossier du bloc dans le bucket des médias : tout ce que le mailer écrit
+ * est dessous, et seulement là (Hugo, 2026-11-08).
+ */
+export const MAIL_COPIES_ROOT = "mail";
+
+/** Le préfixe des clés : le dossier du bloc, puis l'usage (adressage par contenu). */
+const KEY_PREFIX = `${MAIL_COPIES_ROOT}/templates`;
 
 /** Ce que l'adaptateur demande au bucket — l'écriture, rien d'autre. */
 export interface MailImageBucket {
   upload(key: string, body: Buffer, contentType: string, cacheControl: string): Promise<void>;
 }
 
+/** Les variables du bucket des médias, dans l'ordre où on les pose. */
+const MEDIA_VARIABLES =
+  "R2_MEDIA_BUCKET / R2_MEDIA_ACCESS_KEY_ID / R2_MEDIA_SECRET_ACCESS_KEY / R2_MEDIA_PUBLIC_BASE_URL";
+
 /**
  * Le refus, dit avec ce qui manque vraiment. « Rien de posé » et « à moitié
  * posé » sont deux cas : le premier est un provisionnement à faire, le second
  * presque toujours une faute de frappe.
  */
-function missingMailReason(
+function missingMediaReason(
   state: { readonly config: unknown; readonly missing: readonly string[] },
   baseUrl: string | null,
 ): string {
   const nothingPosed = state.config === null && state.missing.length === 0 && baseUrl === null;
-  const names = [...state.missing, ...(baseUrl === null ? [MAIL_PUBLIC_BASE_URL_VARIABLE] : [])];
+  const names = [...state.missing, ...(baseUrl === null ? ["R2_MEDIA_PUBLIC_BASE_URL"] : [])];
   if (nothingPosed || names.length === 0) {
-    return `Le stockage des images d'e-mail n'est pas configuré (R2_MAIL_BUCKET / R2_MAIL_ACCESS_KEY_ID / R2_MAIL_SECRET_ACCESS_KEY / ${MAIL_PUBLIC_BASE_URL_VARIABLE}).`;
+    return `Les images d'e-mail se rangent dans le bucket des médias, qui n'est pas configuré (${MEDIA_VARIABLES}).`;
   }
-  return `Le stockage des images d'e-mail est configuré à moitié — il manque ${names.join(", ")}.`;
+  return `Les images d'e-mail se rangent dans le bucket des médias, configuré à moitié — il manque ${names.join(", ")}.`;
 }
 
 /**
- * Adaptateur **R2** du stockage public des images d'e-mail, sur l'usage `mail`
- * (§ 24 du plan du service d'e-mails ; modèle : `R2MediaStore`).
+ * Adaptateur **R2** du stockage public des images d'e-mail : le bucket des
+ * médias, sous `mail/` — par construction, comme la source (Hugo, 2026-11-08 ;
+ * § 24 du plan du service d'e-mails ; modèle : `R2MediaStore`).
  *
  * Construit à la première copie, et seulement si le bucket ET son adresse
  * publique sont posés : sans l'adresse, on rangerait des images que personne
@@ -70,7 +80,7 @@ export class R2MailImageStore extends MailImageStore {
       const cause = error instanceof Error ? error.name : String(error);
       this.logger.error(`Stockage des images d'e-mail — dépôt de « ${key} » refusé : ${cause}`);
       throw new MailImageStorageUnavailableError(
-        "Le stockage des images d'e-mail a refusé le dépôt : réessayer, puis vérifier le bucket R2_MAIL_BUCKET.",
+        "Le stockage des images d'e-mail a refusé le dépôt : réessayer, puis vérifier le bucket R2_MEDIA_BUCKET.",
         error,
       );
     }
@@ -86,10 +96,10 @@ export class R2MailImageStore extends MailImageStore {
     if (this.cached !== null) {
       return this.cached;
     }
-    const state = this.config.r2StorageState("mail");
-    const baseUrl = this.config.mailPublicBaseUrl();
+    const state = this.config.r2StorageState("media");
+    const baseUrl = this.config.mediaPublicBaseUrl();
     if (state.config === null || baseUrl === null) {
-      throw new MailImageStorageUnavailableError(missingMailReason(state, baseUrl));
+      throw new MailImageStorageUnavailableError(missingMediaReason(state, baseUrl));
     }
     this.cached = { bucket: this.openBucket(state.config), baseUrl };
     return this.cached;

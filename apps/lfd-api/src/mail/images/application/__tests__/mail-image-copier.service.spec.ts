@@ -39,7 +39,7 @@ class MemoryStore extends MailImageStore {
   readonly objects = new Map<string, string>();
 
   put(bytes: Buffer, contentType: string): Promise<MailImageCopy> {
-    const url = `https://mail.example/mail/templates/${bytes.toString("hex")}`;
+    const url = `https://media.lafoliecoffee.info/mail/templates/${bytes.toString("hex")}`;
     this.objects.set(url, contentType);
     return Promise.resolve({ url });
   }
@@ -61,7 +61,7 @@ function copier(bytes: Buffer, store = new MemoryStore(), reframer = new Tagging
   const service = new MailImageCopier(
     {
       origins: ["https://media.lafoliecoffee.info"],
-      publicBaseUrl: "https://mail.example",
+      copiesBaseUrl: "https://media.lafoliecoffee.info/mail",
     },
     downloader,
     store,
@@ -128,9 +128,9 @@ describe("MailImageCopier — la copie d'une image de modèle", () => {
     expect(store.objects.size).toBe(1);
   });
 
-  it("une adresse déjà sous l'adresse publique du bloc est une copie : rendue telle quelle, sans réseau", async () => {
+  it("une adresse déjà sous `mail/` des médias est une copie : rendue telle quelle, sans réseau", async () => {
     const { service, downloader, store } = copier(PNG);
-    const own = "https://mail.example/mail/templates/abc.png";
+    const own = "https://media.lafoliecoffee.info/mail/templates/abc.png";
 
     await expect(service.copy(own)).resolves.toEqual({ url: own });
     expect(downloader.calls).toHaveLength(0);
@@ -140,9 +140,23 @@ describe("MailImageCopier — la copie d'une image de modèle", () => {
   it("une origine qui ne fait que commencer comme l'adresse publique n'en est pas une", async () => {
     const { service } = copier(PNG);
 
-    await expect(service.copy("https://mail.example.evil/a.png")).rejects.toBeInstanceOf(
-      MailImageOriginNotAdmittedError,
-    );
+    await expect(
+      service.copy("https://media.lafoliecoffee.info.evil/mail/a.png"),
+    ).rejects.toBeInstanceOf(MailImageOriginNotAdmittedError);
+  });
+
+  /**
+   * Régression évitée (2026-11-08) : copies et sources partagent le bucket des
+   * médias ; « déjà chez nous » ne vaut que pour `mail/`, sinon une image de la
+   * médiathèque passerait pour une copie et son cadrage serait sauté.
+   */
+  it("une image de la médiathèque, hors de `mail/`, se copie bien", async () => {
+    const { service, downloader, store } = copier(PNG);
+
+    await service.copy("https://media.lafoliecoffee.info/mailbox/a.png");
+
+    expect(downloader.calls).toHaveLength(1);
+    expect(store.objects.size).toBe(1);
   });
 });
 
@@ -152,7 +166,7 @@ describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", 
   it("sans cadrage, range les octets d'origine, tels quels, sans recadrer", async () => {
     const { service, reframer } = copier(PNG);
     const copy = await service.copy(SOURCE);
-    expect(copy.url).toBe(`https://mail.example/mail/templates/${PNG.toString("hex")}`);
+    expect(copy.url).toBe(`https://media.lafoliecoffee.info/mail/templates/${PNG.toString("hex")}`);
     expect(reframer.calls).toEqual([]);
   });
 
@@ -160,7 +174,9 @@ describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", 
     const { service, reframer, store } = copier(PNG);
     const copy = await service.copy(SOURCE, SQUARE);
     expect(reframer.calls).toEqual([{ contentType: "image/png", framing: SQUARE }]);
-    expect(copy.url).not.toBe(`https://mail.example/mail/templates/${PNG.toString("hex")}`);
+    expect(copy.url).not.toBe(
+      `https://media.lafoliecoffee.info/mail/templates/${PNG.toString("hex")}`,
+    );
     expect(store.objects.get(copy.url)).toBe("image/png");
   });
 

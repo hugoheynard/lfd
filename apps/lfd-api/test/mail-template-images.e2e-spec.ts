@@ -34,7 +34,8 @@ import { jsonBody } from "./e2e-harness.js";
 import { mailCopyScene } from "./mail-copy-scene.js";
 
 const MEDIA_ORIGIN = "https://media.lfc.test";
-const MAIL_IMAGES = "https://mail-images.lfc.test";
+/** Les copies du bloc : le dossier `mail/` du bucket des médias. */
+const MAIL_IMAGES = `${MEDIA_ORIGIN}/mail`;
 const SOURCE = `${MEDIA_ORIGIN}/products/vitrine.png`;
 
 /** Le téléchargement doublé : une vraie image PNG de 400 × 100, fabriquée une fois. */
@@ -58,7 +59,7 @@ class MemoryMailImages extends MailImageStore {
   readonly objects = new Map<string, Buffer>();
 
   put(bytes: Buffer, _contentType: string): Promise<MailImageCopy> {
-    const url = `${MAIL_IMAGES}/mail/templates/${bytes.toString("hex").slice(0, 64)}.png`;
+    const url = `${MAIL_IMAGES}/templates/${bytes.toString("hex").slice(0, 64)}.png`;
     this.objects.set(url, bytes);
     return Promise.resolve({ url });
   }
@@ -68,7 +69,7 @@ const downloader = new RealPngDownloader();
 const mailImages = new MemoryMailImages();
 const admission: MailImageAdmission = {
   origins: [MEDIA_ORIGIN],
-  publicBaseUrl: MAIL_IMAGES,
+  copiesBaseUrl: MAIL_IMAGES,
 };
 
 const { staff } = mailCopyScene([

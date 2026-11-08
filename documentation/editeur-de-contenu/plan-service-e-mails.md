@@ -1300,21 +1300,23 @@ contentType): Promise<{ url }>`. Adressé par le contenu (le hash des octets,
   `apps/lfd-api/src/mail/images/infrastructure/fetch-mail-image.downloader.ts`), garde posée.
   Il ne suit **aucune redirection** : elle mènerait hors de l'origine admise
   sans repasser par la liste. Le jour où S3c est bâti, les deux se comparent.
-- **Les noms des réglages** : `R2_MAIL_BUCKET`, `R2_MAIL_ACCESS_KEY_ID`,
-  `R2_MAIL_SECRET_ACCESS_KEY`, `R2_MAIL_ENDPOINT`, `R2_MAIL_PUBLIC_BASE_URL`,
-  et, à l'origine, `MAIL_IMAGE_ORIGINS`. **Retirée le 2026-11-08 (Hugo :
-  « toujours » de la médiathèque)** : la seule origine admise est celle de
-  `R2_MEDIA_PUBLIC_BASE_URL`, par construction (`AppConfig.mailImageOrigins`).
+- **Les noms des réglages** : à l'origine `R2_MAIL_*` (bucket, clés,
+  adresse publique) et `MAIL_IMAGE_ORIGINS`. **Tous retirés le 2026-11-08
+  (Hugo : la médiathèque « toujours », et le même bucket)** : la seule
+  origine admise est celle de `R2_MEDIA_PUBLIC_BASE_URL`
+  (`AppConfig.mailImageOrigins`), et les copies vont dans le bucket des
+  médias, sous `mail/`. Le jeton `media` écrit donc aussi les copies : un
+  bucket à part ne se justifiait que par là, et Hugo l'a écarté.
 - **Les bornes** : 5 Mio, 10 s ; types admis PNG, JPEG, GIF, WebP (pas de
-  SVG). Clés sous `mail/templates/<sha256>.<ext>` (préfixe `mail/` depuis le
-  2026-11-08 : le bucket peut être celui des médias).
+  SVG). Clés sous `mail/templates/<sha256>.<ext>` dans le bucket des médias
+  (depuis le 2026-11-08).
 - **Non tranché, laissé tel que le texte le dit** : « `https://` seulement »
   rend la copie impossible depuis le MinIO de dev (`http://localhost:9100`),
   alors que l'adresse publique du bucket, elle, admet la boucle locale comme
   `media`. Une copie en local demande donc une origine https.
-- **Pas fait, hors du texte** : le bulletin de démarrage
-  (`startup-report.service.ts`) ne nomme pas un `R2_MAIL_*` à moitié posé ;
-  seule la copie le dit, au premier appel.
+- **Sans objet depuis le 2026-11-08** : le bulletin de démarrage nommait
+  mal un `R2_MAIL_*` à moitié posé ; ces variables n'existent plus, et
+  `R2_MEDIA_*` a déjà sa ligne au bulletin.
 
 ## 25. S8 — le courrier différé éprouvé et veillé (cas 8, Hugo, 2026-11-07) — bâti le 2026-11-07 (`bb74a028a`)
 

@@ -10,8 +10,13 @@ import { MailImageDownloader } from "./domain/ports/mail-image.downloader.js";
 import { MailImageReframer } from "./domain/ports/mail-image.reframer.js";
 import { MailImageStore } from "./domain/ports/mail-image.store.js";
 import { FetchMailImageDownloader } from "./infrastructure/fetch-mail-image.downloader.js";
-import { R2MailImageStore } from "./infrastructure/r2-mail-image.store.js";
+import { MAIL_COPIES_ROOT, R2MailImageStore } from "./infrastructure/r2-mail-image.store.js";
 import { SharpMailImageReframer } from "./infrastructure/sharp-mail-image.reframer.js";
+
+/** Où vivent les copies du bloc : le dossier `mail/` du bucket des médias. */
+function copiesBaseUrlOf(mediaBaseUrl: string | null): string | null {
+  return mediaBaseUrl === null ? null : `${mediaBaseUrl}/${MAIL_COPIES_ROOT}`;
+}
 
 /**
  * **Les images des modèles d'e-mail** (plan du service d'e-mails, §§ 23–24) :
@@ -25,7 +30,7 @@ import { SharpMailImageReframer } from "./infrastructure/sharp-mail-image.refram
       provide: MAIL_IMAGE_ADMISSION,
       useFactory: (config: AppConfig): MailImageAdmission => ({
         origins: config.mailImageOrigins(),
-        publicBaseUrl: config.mailPublicBaseUrl(),
+        copiesBaseUrl: copiesBaseUrlOf(config.mediaPublicBaseUrl()),
       }),
       inject: [AppConfig],
     },

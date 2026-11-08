@@ -50,7 +50,7 @@ export class MailImageCopier {
    * @throws {MailImageUnreadableError} l'image à recadrer ne se décode pas.
    */
   async copy(sourceUrl: string, framing: ImageFraming | null = null): Promise<MailImageCopy> {
-    const own = this.admission.publicBaseUrl;
+    const own = this.admission.copiesBaseUrl;
     if (own !== null && sourceUrl.startsWith(`${own}/`)) {
       return { url: sourceUrl };
     }

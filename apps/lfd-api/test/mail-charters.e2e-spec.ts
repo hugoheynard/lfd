@@ -39,7 +39,8 @@ import { jsonBody } from "./e2e-harness.js";
 import { mailCopyScene } from "./mail-copy-scene.js";
 
 const MEDIA_ORIGIN = "https://media.lfc.test";
-const MAIL_IMAGES = "https://mail-images.lfc.test";
+/** Les copies du bloc : le dossier `mail/` du bucket des médias. */
+const MAIL_IMAGES = `${MEDIA_ORIGIN}/mail`;
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 4, 5, 6]);
 
 /** Le téléchargement doublé : des octets PNG, et la liste des adresses demandées. */
@@ -55,14 +56,14 @@ class PngDownloader extends MailImageDownloader {
 /** Le stockage doublé, adressé par le contenu comme R2. */
 class MemoryMailImages extends MailImageStore {
   put(bytes: Buffer, _contentType: string): Promise<MailImageCopy> {
-    return Promise.resolve({ url: `${MAIL_IMAGES}/mail/templates/${bytes.toString("hex")}.png` });
+    return Promise.resolve({ url: `${MAIL_IMAGES}/templates/${bytes.toString("hex")}.png` });
   }
 }
 
 const downloader = new PngDownloader();
 const admission: MailImageAdmission = {
   origins: [MEDIA_ORIGIN],
-  publicBaseUrl: MAIL_IMAGES,
+  copiesBaseUrl: MAIL_IMAGES,
 };
 const scene = mailCopyScene([
   { token: MailImageDownloader, value: downloader },
@@ -73,7 +74,7 @@ const { staff, ctx, transport } = scene;
 
 const CHARTERS = "/admin/mail-charters";
 const LOGO = `${MEDIA_ORIGIN}/brand/logo-lfd.png`;
-const LOGO_COPY = `${MAIL_IMAGES}/mail/templates/${PNG.toString("hex")}.png`;
+const LOGO_COPY = `${MAIL_IMAGES}/templates/${PNG.toString("hex")}.png`;
 const PRIMARY = "#7a1f3d";
 const REGISTRY = b2bMailTemplates({
   supportEmail: "admin@lfc.test",

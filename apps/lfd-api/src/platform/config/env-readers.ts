@@ -182,11 +182,10 @@ export interface R2StorageState {
  * 2026-10-06) : un `R2_PRODUCTION_*` à moitié posé se voit au démarrage, et non
  * au premier tirage devant un four.
  *
- * - `mail` — les copies des images des modèles d'e-mail, servies par un domaine
- *   **public** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
- *   § 23–24). Séparé de `media` parce que le bloc `mail` ne lit jamais le
- *   stockage d'un autre bloc : une image publiée doit survivre à son retrait de
- *   la médiathèque, et un jeton `media` ouvrirait tout le catalogue.
+ * Les copies des images des modèles d'e-mail n'ont PAS d'usage à elles : elles
+ * vont dans le bucket `media`, sous `mail/` (Hugo, 2026-11-08 — la source est
+ * la médiathèque par construction, le bucket aussi). Le bloc `mail` n'y lit
+ * jamais : il y écrit des copies qu'aucun retrait de la médiathèque ne touche.
  *
  * Ce qui protège un client d'un autre n'est jamais le bucket : c'est le préfixe
  * de clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.
@@ -199,7 +198,7 @@ export interface R2StorageState {
  * ligne de partage qui reste vraie est celle du SENS : `kbis` porte ce que le
  * client nous donne, `customers` ce qu'on lui rend.
  */
-export type R2StorageUsage = "kbis" | "media" | "customers" | "production" | "mail";
+export type R2StorageUsage = "kbis" | "media" | "customers" | "production";
 
 /**
  * Les variables d'environnement de chaque usage.
@@ -237,12 +236,6 @@ const R2_SETTINGS: Readonly<
     accessKeyId: "R2_PRODUCTION_ACCESS_KEY_ID",
     secretAccessKey: "R2_PRODUCTION_SECRET_ACCESS_KEY",
     endpoint: "R2_PRODUCTION_ENDPOINT",
-  },
-  mail: {
-    bucket: "R2_MAIL_BUCKET",
-    accessKeyId: "R2_MAIL_ACCESS_KEY_ID",
-    secretAccessKey: "R2_MAIL_SECRET_ACCESS_KEY",
-    endpoint: "R2_MAIL_ENDPOINT",
   },
 };
 

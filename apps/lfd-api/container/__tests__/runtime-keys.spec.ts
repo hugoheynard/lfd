@@ -75,13 +75,12 @@ function forwardedKeys(): string[] {
  * Les noms que la configuration lit réellement.
  *
  * Lus dans la SOURCE et non importés : `env-readers.ts` est le seul endroit du
- * backend autorisé à toucher `process.env` (règle ESLint `no-restricted-properties`) ;
- * `mail-image-readers.ts` (2026-11-07, lot S3d) y lit par ses fonctions et
- * nomme ses variables en constantes. Ces trois fichiers sont donc exhaustifs — et une constante ajoutée dans une
+ * backend autorisé à toucher `process.env` (règle ESLint `no-restricted-properties`).
+ * Ces deux fichiers sont donc exhaustifs — et une constante ajoutée dans une
  * table (`R2_SETTINGS`) compte autant qu'un appel direct.
  */
 function configuredKeys(): string[] {
-  const sources = ["env-readers.ts", "app-config.ts", "mail-image-readers.ts"].map((file) =>
+  const sources = ["env-readers.ts", "app-config.ts"].map((file) =>
     readFileSync(join(CONFIG, file), "utf8"),
   );
   const names = sources.flatMap((source) =>

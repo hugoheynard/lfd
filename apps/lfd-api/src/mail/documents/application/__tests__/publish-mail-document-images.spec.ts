@@ -159,7 +159,7 @@ describe("publier un document qui porte des images", () => {
 
   it("une image refusée par la copie refuse la publication en la désignant, et rien n'est publié", async () => {
     const w = world(
-      new Map([[OTHER, new MailImageOriginNotAdmittedError("https://media.lfc.test", "X")]]),
+      new Map([[OTHER, new MailImageOriginNotAdmittedError("https://media.lfc.test")]]),
     );
     await w.draft(documentWith(image("i1", SRC), image("i2", OTHER, "Une brioche")));
 
@@ -177,7 +177,7 @@ describe("publier un document qui porte des images", () => {
   });
 
   it("un stockage en panne est une erreur technique qui désigne l'image", async () => {
-    const w = world(new Map([[SRC, new MailImageStorageUnavailableError("R2_MAIL_* manquants")]]));
+    const w = world(new Map([[SRC, new MailImageStorageUnavailableError("R2_MEDIA_* manquants")]]));
     await w.draft(documentWith(image("i1", SRC)));
 
     await expect(w.publish()).rejects.toBeInstanceOf(MailDocumentImageUnavailableError);

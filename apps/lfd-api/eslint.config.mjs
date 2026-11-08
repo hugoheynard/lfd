@@ -23,7 +23,6 @@ const ENV_ALLOWLIST = [
   // Même raison : ils vérifient le LECTEUR qui a le monopole de `process.env`.
   "src/platform/config/__tests__/env-readers-r2.spec.ts",
   "src/platform/config/__tests__/env-readers-media-url.spec.ts",
-  "src/platform/config/__tests__/mail-image-readers.spec.ts",
   "test/setup-env.ts",
 ];
 

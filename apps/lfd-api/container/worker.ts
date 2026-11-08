@@ -129,11 +129,6 @@ const RUNTIME_KEYS = [
   // Stockage public des images des modèles d'e-mail (lot S3d) — son propre
   // bucket et son propre jeton, comme les médias ; l'adresse publique va avec,
   // et la liste des origines d'où le bloc `mail` accepte de copier une image.
-  "R2_MAIL_ENDPOINT",
-  "R2_MAIL_BUCKET",
-  "R2_MAIL_ACCESS_KEY_ID",
-  "R2_MAIL_SECRET_ACCESS_KEY",
-  "R2_MAIL_PUBLIC_BASE_URL",
   // Stockage des pièces attachées à un client (bons de commande, feuilles
   // d'atelier, et bientôt les factures du comptable) — troisième usage R2, avec
   // son propre bucket et son propre jeton. Aucune adresse publique ici, et c'est

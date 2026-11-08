@@ -6,15 +6,17 @@ import { MailImageStorageUnavailableError } from "../../domain/errors/mail-image
 import { type MailImageBucket, R2MailImageStore } from "../r2-mail-image.store.js";
 
 const CONFIGURED: S3StorageConfig = {
-  bucket: "lfc-mail",
+  bucket: "lfc-media",
   accessKeyId: "clé",
   secretAccessKey: "secret",
   endpoint: "https://compte.r2.cloudflarestorage.com",
   region: "auto",
 };
 
-/** Un `AppConfig` doublé par sous-classe : seuls l'usage `mail` et son adresse comptent. */
+/** Un `AppConfig` doublé par sous-classe : seuls le bucket des médias et son adresse comptent. */
 class FakeConfig extends AppConfig {
+  readonly usages: string[] = [];
+
   constructor(
     private readonly state: R2StorageState,
     private readonly baseUrl: string | null,
@@ -22,11 +24,12 @@ class FakeConfig extends AppConfig {
     super();
   }
 
-  override r2StorageState(): R2StorageState {
+  override r2StorageState(usage: string): R2StorageState {
+    this.usages.push(usage);
     return this.state;
   }
 
-  override mailPublicBaseUrl(): string | null {
+  override mediaPublicBaseUrl(): string | null {
     return this.baseUrl;
   }
 }
@@ -59,9 +62,10 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 7]);
 
 function store(
   state: R2StorageState = { config: CONFIGURED, missing: [] },
-  baseUrl: string | null = "https://mail-images.lafoliecoffee.info",
+  baseUrl: string | null = "https://media.lafoliecoffee.info",
+  config = new FakeConfig(state, baseUrl),
 ): RecordingStore {
-  return new RecordingStore(new FakeConfig(state, baseUrl));
+  return new RecordingStore(config);
 }
 
 describe("R2MailImageStore — le stockage public des images d'e-mail", () => {
@@ -71,12 +75,23 @@ describe("R2MailImageStore — le stockage public des images d'e-mail", () => {
     const { url } = await subject.put(PNG, "image/png");
 
     expect(url).toMatch(
-      /^https:\/\/mail-images\.lafoliecoffee\.info\/mail\/templates\/[0-9a-f]{64}\.png$/,
+      /^https:\/\/media\.lafoliecoffee\.info\/mail\/templates\/[0-9a-f]{64}\.png$/,
     );
     expect(subject.uploads[0]).toMatchObject({
       contentType: "image/png",
       cacheControl: "public, max-age=31536000, immutable",
     });
+  });
+
+  it("écrit dans le bucket des médias, et nulle part ailleurs (2026-11-08)", async () => {
+    const config = new FakeConfig(
+      { config: CONFIGURED, missing: [] },
+      "https://media.lafoliecoffee.info",
+    );
+
+    await store(undefined, undefined, config).put(PNG, "image/png");
+
+    expect(config.usages).toEqual(["media"]);
   });
 
   it("la même image rangée deux fois a la même adresse", async () => {
@@ -95,20 +110,20 @@ describe("R2MailImageStore — le stockage public des images d'e-mail", () => {
 
   it("rien de configuré : refuse en nommant les variables", async () => {
     await expect(store({ config: null, missing: [] }, null).put(PNG, "image/png")).rejects.toThrow(
-      /R2_MAIL_BUCKET.*R2_MAIL_PUBLIC_BASE_URL/,
+      /bucket des médias.*R2_MEDIA_BUCKET.*R2_MEDIA_PUBLIC_BASE_URL/,
     );
   });
 
   it("bucket posé sans adresse publique : refuse en nommant l'adresse manquante", async () => {
     await expect(store(undefined, null).put(PNG, "image/png")).rejects.toThrow(
-      /il manque R2_MAIL_PUBLIC_BASE_URL/,
+      /il manque R2_MEDIA_PUBLIC_BASE_URL/,
     );
   });
 
   it("à moitié posé : nomme ce qui manque", async () => {
     await expect(
-      store({ config: null, missing: ["R2_MAIL_SECRET_ACCESS_KEY"] }).put(PNG, "image/png"),
-    ).rejects.toThrow(/il manque R2_MAIL_SECRET_ACCESS_KEY/);
+      store({ config: null, missing: ["R2_MEDIA_SECRET_ACCESS_KEY"] }).put(PNG, "image/png"),
+    ).rejects.toThrow(/il manque R2_MEDIA_SECRET_ACCESS_KEY/);
   });
 
   it("un refus du bucket est une panne de stockage, pas une erreur inattendue", async () => {

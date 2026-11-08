@@ -5,10 +5,11 @@
 export interface MailImageAdmission {
   readonly origins: readonly string[];
   /**
-   * L'adresse publique du stockage du bloc, sans barre finale, ou `null` :
-   * une image qui y est déjà est une copie, elle ne se recopie pas (S5d).
+   * L'adresse publique du dossier des copies (`<médias>/mail`), sans barre
+   * finale, ou `null` : une image qui y est déjà est une copie, elle ne se
+   * recopie pas (S5d). Pas l'adresse des médias entière — ce sont les sources.
    */
-  readonly publicBaseUrl: string | null;
+  readonly copiesBaseUrl: string | null;
 }
 
 /** Jeton d'injection de {@link MailImageAdmission}, lu une fois dans `AppConfig`. */
