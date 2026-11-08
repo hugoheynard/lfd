@@ -27,20 +27,13 @@ export const MAIL_IMAGE_TYPES: readonly string[] = [
 
 /**
  * Une adresse d'image **admise à la copie** (plan du service d'e-mails, § 23) :
- * d'une origine déclarée — `https`, ou la boucle locale en dev, que le
- * réglage seul peut admettre (`optionalMailImageOrigins`). Rien d'autre ne se
- * télécharge.
- *
- * `originsVariable` est le nom du réglage, pour que le refus dise quoi régler.
+ * de l'origine de la médiathèque — `https`, ou la boucle locale en dev
+ * (`AppConfig.mailImageOrigins`). Rien d'autre ne se télécharge.
  */
 export class MailImageSource {
   private constructor(readonly url: URL) {}
 
-  static admit(
-    raw: string,
-    admittedOrigins: readonly string[],
-    originsVariable: string,
-  ): MailImageSource {
+  static admit(raw: string, admittedOrigins: readonly string[]): MailImageSource {
     let url: URL;
     try {
       url = new URL(raw);
@@ -52,7 +45,6 @@ export class MailImageSource {
     if (!admittedOrigins.includes(url.origin)) {
       throw new MailImageOriginNotAdmittedError(
         url.protocol === "https:" || url.protocol === "http:" ? url.origin : url.protocol,
-        originsVariable,
       );
     }
     if (url.username !== "" || url.password !== "") {

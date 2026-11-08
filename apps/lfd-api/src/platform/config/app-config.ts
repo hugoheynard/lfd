@@ -6,7 +6,7 @@ import type { S3StorageConfig } from "@lfd/storage";
 import type { NetworkCallMode } from "../database/network-call-mode.js";
 import type { PurgeMode } from "../retention/purge-mode.js";
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
-import { optionalMailImageOrigins, optionalMailPublicBaseUrl } from "./mail-image-readers.js";
+import { optionalMailPublicBaseUrl } from "./mail-image-readers.js";
 import {
   type RoutePlannerEndpoint,
   resolveRoutePlannerEndpoint,
@@ -392,11 +392,13 @@ export class AppConfig {
   }
 
   /**
-   * Les origines d'où le bloc `mail` accepte de copier une image, `https`
-   * seulement, vide par défaut : sans elles, toute copie est refusée.
+   * Les origines d'où le bloc `mail` accepte de copier une image : celle de
+   * la médiathèque, et elle seule — par construction, sans réglage (Hugo,
+   * 2026-11-08). Sans adresse de médias, aucune : toute copie est refusée.
    */
   mailImageOrigins(): readonly string[] {
-    return optionalMailImageOrigins();
+    const media = this.mediaPublicBaseUrl();
+    return media === null ? [] : [new URL(media).origin];
   }
 
   /**

@@ -71,7 +71,7 @@ describe("R2MailImageStore — le stockage public des images d'e-mail", () => {
     const { url } = await subject.put(PNG, "image/png");
 
     expect(url).toMatch(
-      /^https:\/\/mail-images\.lafoliecoffee\.info\/templates\/[0-9a-f]{64}\.png$/,
+      /^https:\/\/mail-images\.lafoliecoffee\.info\/mail\/templates\/[0-9a-f]{64}\.png$/,
     );
     expect(subject.uploads[0]).toMatchObject({
       contentType: "image/png",

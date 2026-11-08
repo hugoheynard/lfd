@@ -178,8 +178,10 @@ Vérifié dans le code le 2026-11-07 sauf mention contraire.
   `sharp` dans `apps/lfd-api/src/mail/images/infrastructure/sharp-mail-image.reframer.ts`,
   stockage R2 dans `apps/lfd-api/src/mail/images/infrastructure/r2-mail-image.store.ts`,
   téléchargement borné dans `apps/lfd-api/src/mail/images/infrastructure/fetch-mail-image.downloader.ts`.
-  Réglages `R2_MAIL_*` et `MAIL_IMAGE_ORIGINS`
-  (`apps/lfd-api/src/platform/config/mail-image-readers.ts`).
+  Réglages `R2_MAIL_*` (`apps/lfd-api/src/platform/config/mail-image-readers.ts`),
+  copies rangées sous `mail/templates/`. Une image ne se copie **que** depuis la
+  médiathèque : l'origine admise est celle de `R2_MEDIA_PUBLIC_BASE_URL`, sans
+  réglage (`AppConfig.mailImageOrigins`, décidé le 2026-11-08).
 
 ### Les tables
 
@@ -230,9 +232,9 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
 
 ### a. À faire par Hugo, hors code
 
-1. Créer le bucket R2 des images d'e-mail et son domaine public, poser
-   `R2_MAIL_*` et `MAIL_IMAGE_ORIGINS` en dev et en prod ; sans eux, publier
-   un e-mail avec image est refusé — Service § 24.
+1. Poser `R2_MAIL_*` en dev et en prod — le bucket peut être celui des
+   médias (les copies vont sous `mail/`) ; sans eux, publier un e-mail avec
+   image est refusé — Service § 24.
 2. Vérifier que la clé Resend de prod peut **lire les domaines** (une clé
    « envoi seulement » fait refuser tout réglage d'expéditeur) — Éditeur § 25,
    C3 écarts.

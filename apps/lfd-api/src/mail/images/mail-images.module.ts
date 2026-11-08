@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { AppConfig } from "../../platform/config/app-config.js";
-import { MAIL_IMAGE_ORIGINS_VARIABLE } from "../../platform/config/mail-image-readers.js";
 import {
   MAIL_IMAGE_ADMISSION,
   type MailImageAdmission,
@@ -26,7 +25,6 @@ import { SharpMailImageReframer } from "./infrastructure/sharp-mail-image.refram
       provide: MAIL_IMAGE_ADMISSION,
       useFactory: (config: AppConfig): MailImageAdmission => ({
         origins: config.mailImageOrigins(),
-        originsVariable: MAIL_IMAGE_ORIGINS_VARIABLE,
         publicBaseUrl: config.mailPublicBaseUrl(),
       }),
       inject: [AppConfig],

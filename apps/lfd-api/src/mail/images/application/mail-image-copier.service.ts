@@ -54,11 +54,7 @@ export class MailImageCopier {
     if (own !== null && sourceUrl.startsWith(`${own}/`)) {
       return { url: sourceUrl };
     }
-    const source = MailImageSource.admit(
-      sourceUrl,
-      this.admission.origins,
-      this.admission.originsVariable,
-    );
+    const source = MailImageSource.admit(sourceUrl, this.admission.origins);
     const bytes = await this.downloader.download(source.url, {
       maxBytes: MAIL_IMAGE_MAX_BYTES,
       timeoutMs: MAIL_IMAGE_DOWNLOAD_TIMEOUT_MS,

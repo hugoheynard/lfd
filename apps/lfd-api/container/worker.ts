@@ -134,7 +134,6 @@ const RUNTIME_KEYS = [
   "R2_MAIL_ACCESS_KEY_ID",
   "R2_MAIL_SECRET_ACCESS_KEY",
   "R2_MAIL_PUBLIC_BASE_URL",
-  "MAIL_IMAGE_ORIGINS",
   // Stockage des pièces attachées à un client (bons de commande, feuilles
   // d'atelier, et bientôt les factures du comptable) — troisième usage R2, avec
   // son propre bucket et son propre jeton. Aucune adresse publique ici, et c'est

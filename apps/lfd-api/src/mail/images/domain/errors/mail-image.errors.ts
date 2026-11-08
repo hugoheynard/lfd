@@ -12,15 +12,15 @@ export class InvalidMailImageUrlError extends DomainError {
 }
 
 /**
- * L'origine n'est pas dans la liste admise : sans ce refus, publier un modèle
+ * L'image ne vient pas de la médiathèque : sans ce refus, publier un modèle
  * ferait du bloc `mail` un client HTTP ouvert (§ 23 du plan).
  */
 export class MailImageOriginNotAdmittedError extends DomainError {
-  constructor(origin: string, variable: string) {
+  constructor(origin: string) {
     super(
       "MAIL_IMAGE_ORIGIN_NOT_ADMITTED",
-      `Les images d'e-mail ne se copient pas depuis « ${origin} » : cette origine n'est pas admise. ` +
-        `Choisir une image de la médiathèque, ou ajouter l'origine (en https) à la variable ${variable}.`,
+      `Les images d'e-mail viennent de la médiathèque seulement, pas de « ${origin} ». ` +
+        "Choisir une image de la médiathèque.",
     );
   }
 }

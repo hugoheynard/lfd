@@ -62,7 +62,7 @@ class MemoryMailImages extends MailImageStore {
   readonly keys = new Set<string>();
 
   put(bytes: Buffer, _contentType: string): Promise<MailImageCopy> {
-    const key = `templates/${bytes.toString("hex")}.png`;
+    const key = `mail/templates/${bytes.toString("hex")}.png`;
     this.keys.add(key);
     return Promise.resolve({ url: `${MAIL_IMAGES}/${key}` });
   }
@@ -72,7 +72,6 @@ const downloader = new PngDownloader();
 const mailImages = new MemoryMailImages();
 const admission: MailImageAdmission = {
   origins: [MEDIA_ORIGIN],
-  originsVariable: "MAIL_IMAGE_ORIGINS",
   publicBaseUrl: MAIL_IMAGES,
 };
 

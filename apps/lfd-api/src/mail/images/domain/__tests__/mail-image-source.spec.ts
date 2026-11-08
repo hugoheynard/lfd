@@ -5,10 +5,9 @@ import {
 import { MailImageSource } from "../value-objects/mail-image-source.js";
 
 const ADMITTED = ["https://media.lafoliecoffee.info"];
-const VARIABLE = "MAIL_IMAGE_ORIGINS";
 
 function admit(raw: string): MailImageSource {
-  return MailImageSource.admit(raw, ADMITTED, VARIABLE);
+  return MailImageSource.admit(raw, ADMITTED);
 }
 
 describe("MailImageSource — seules les origines déclarées se copient", () => {
@@ -22,7 +21,7 @@ describe("MailImageSource — seules les origines déclarées se copient", () =>
   it("refuse une autre origine, en la nommant avec la variable à régler", () => {
     expect(() => admit("https://ailleurs.example/x.png")).toThrow(MailImageOriginNotAdmittedError);
     expect(() => admit("https://ailleurs.example/x.png")).toThrow(
-      /https:\/\/ailleurs\.example.*MAIL_IMAGE_ORIGINS/,
+      /médiathèque seulement, pas de « https:\/\/ailleurs\.example »/,
     );
   });
 
@@ -56,17 +55,15 @@ describe("MailImageSource — seules les origines déclarées se copient", () =>
     expect(attempt).not.toThrow(/secret/);
   });
 
-  it("une liste vide (le défaut) refuse tout", () => {
-    expect(() =>
-      MailImageSource.admit("https://media.lafoliecoffee.info/abc.png", [], VARIABLE),
-    ).toThrow(MailImageOriginNotAdmittedError);
-  });
-  it("admet la boucle locale en clair quand le réglage la déclare (MinIO de dev)", () => {
-    const source = MailImageSource.admit(
-      "http://localhost:9100/media/abc.png",
-      ["http://localhost:9100"],
-      VARIABLE,
+  it("sans adresse de médias, tout est refusé", () => {
+    expect(() => MailImageSource.admit("https://media.lafoliecoffee.info/abc.png", [])).toThrow(
+      MailImageOriginNotAdmittedError,
     );
+  });
+  it("admet la boucle locale en clair quand la médiathèque y est servie (MinIO de dev)", () => {
+    const source = MailImageSource.admit("http://localhost:9100/media/abc.png", [
+      "http://localhost:9100",
+    ]);
 
     expect(source.url.href).toBe("http://localhost:9100/media/abc.png");
   });

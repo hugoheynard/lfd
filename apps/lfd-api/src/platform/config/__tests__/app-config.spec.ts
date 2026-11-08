@@ -200,3 +200,29 @@ describe("AppConfig — OUTBOX_PURGE et MAIL_REQUEST_PURGE", () => {
     expect(() => new AppConfig()).toThrow(/MAIL_REQUEST_PURGE vaut « true »/);
   });
 });
+
+describe("AppConfig — d'où une image d'e-mail se copie", () => {
+  let saved: string | undefined;
+
+  beforeEach(() => {
+    saved = process.env["R2_MEDIA_PUBLIC_BASE_URL"];
+  });
+
+  afterEach(() => {
+    if (saved === undefined) {
+      delete process.env["R2_MEDIA_PUBLIC_BASE_URL"];
+    } else {
+      process.env["R2_MEDIA_PUBLIC_BASE_URL"] = saved;
+    }
+  });
+
+  it("de la médiathèque seule, par construction : son origine, sans chemin", () => {
+    process.env["R2_MEDIA_PUBLIC_BASE_URL"] = "https://media.lafoliecoffee.info/";
+    expect(new AppConfig().mailImageOrigins()).toEqual(["https://media.lafoliecoffee.info"]);
+  });
+
+  it("sans adresse de médias, d'aucune origine", () => {
+    delete process.env["R2_MEDIA_PUBLIC_BASE_URL"];
+    expect(new AppConfig().mailImageOrigins()).toEqual([]);
+  });
+});

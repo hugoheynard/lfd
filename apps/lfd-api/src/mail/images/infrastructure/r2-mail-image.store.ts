@@ -11,7 +11,7 @@ import { type MailImageCopy, MailImageStore } from "../domain/ports/mail-image.s
 const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
 
 /** Le préfixe des clés : l'usage, pas un propriétaire (adressage par contenu). */
-const KEY_PREFIX = "templates";
+const KEY_PREFIX = "mail/templates";
 
 /** Ce que l'adaptateur demande au bucket — l'écriture, rien d'autre. */
 export interface MailImageBucket {

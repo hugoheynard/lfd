@@ -39,7 +39,7 @@ class MemoryStore extends MailImageStore {
   readonly objects = new Map<string, string>();
 
   put(bytes: Buffer, contentType: string): Promise<MailImageCopy> {
-    const url = `https://mail.example/templates/${bytes.toString("hex")}`;
+    const url = `https://mail.example/mail/templates/${bytes.toString("hex")}`;
     this.objects.set(url, contentType);
     return Promise.resolve({ url });
   }
@@ -61,7 +61,6 @@ function copier(bytes: Buffer, store = new MemoryStore(), reframer = new Tagging
   const service = new MailImageCopier(
     {
       origins: ["https://media.lafoliecoffee.info"],
-      originsVariable: "MAIL_IMAGE_ORIGINS",
       publicBaseUrl: "https://mail.example",
     },
     downloader,
@@ -131,7 +130,7 @@ describe("MailImageCopier — la copie d'une image de modèle", () => {
 
   it("une adresse déjà sous l'adresse publique du bloc est une copie : rendue telle quelle, sans réseau", async () => {
     const { service, downloader, store } = copier(PNG);
-    const own = "https://mail.example/templates/abc.png";
+    const own = "https://mail.example/mail/templates/abc.png";
 
     await expect(service.copy(own)).resolves.toEqual({ url: own });
     expect(downloader.calls).toHaveLength(0);
@@ -153,7 +152,7 @@ describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", 
   it("sans cadrage, range les octets d'origine, tels quels, sans recadrer", async () => {
     const { service, reframer } = copier(PNG);
     const copy = await service.copy(SOURCE);
-    expect(copy.url).toBe(`https://mail.example/templates/${PNG.toString("hex")}`);
+    expect(copy.url).toBe(`https://mail.example/mail/templates/${PNG.toString("hex")}`);
     expect(reframer.calls).toEqual([]);
   });
 
@@ -161,7 +160,7 @@ describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", 
     const { service, reframer, store } = copier(PNG);
     const copy = await service.copy(SOURCE, SQUARE);
     expect(reframer.calls).toEqual([{ contentType: "image/png", framing: SQUARE }]);
-    expect(copy.url).not.toBe(`https://mail.example/templates/${PNG.toString("hex")}`);
+    expect(copy.url).not.toBe(`https://mail.example/mail/templates/${PNG.toString("hex")}`);
     expect(store.objects.get(copy.url)).toBe("image/png");
   });
 

@@ -210,7 +210,6 @@ jobs:
           R2_MAIL_ACCESS_KEY_ID: ${{ secrets.R2_MAIL_ACCESS_KEY_ID }}
           R2_MAIL_SECRET_ACCESS_KEY: ${{ secrets.R2_MAIL_SECRET_ACCESS_KEY }}
           R2_MAIL_PUBLIC_BASE_URL: ${{ vars.R2_MAIL_PUBLIC_BASE_URL }}
-          MAIL_IMAGE_ORIGINS: ${{ vars.MAIL_IMAGE_ORIGINS }}
           # Troisième usage : les pièces attachées à un client — bons de
           # commande, feuilles d'atelier, et bientôt les factures du comptable.
           # Bucket et jeton distincts des KBIS : les KBIS sont ce que le client
@@ -305,7 +304,7 @@ jobs:
                       R2_MEDIA_BUCKET R2_MEDIA_ACCESS_KEY_ID R2_MEDIA_SECRET_ACCESS_KEY \
                       R2_MEDIA_PUBLIC_BASE_URL \
                       R2_MAIL_ENDPOINT R2_MAIL_BUCKET R2_MAIL_ACCESS_KEY_ID \
-                      R2_MAIL_SECRET_ACCESS_KEY R2_MAIL_PUBLIC_BASE_URL MAIL_IMAGE_ORIGINS \
+                      R2_MAIL_SECRET_ACCESS_KEY R2_MAIL_PUBLIC_BASE_URL \
                       R2_CUSTOMERS_EU_ENDPOINT R2_CUSTOMERS_EU_BUCKET \
                       R2_CUSTOMERS_EU_ACCESS_KEY_ID R2_CUSTOMERS_EU_SECRET_ACCESS_KEY \
                       R2_PRODUCTION_ENDPOINT R2_PRODUCTION_BUCKET \

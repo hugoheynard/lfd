@@ -55,14 +55,13 @@ class PngDownloader extends MailImageDownloader {
 /** Le stockage doublé, adressé par le contenu comme R2. */
 class MemoryMailImages extends MailImageStore {
   put(bytes: Buffer, _contentType: string): Promise<MailImageCopy> {
-    return Promise.resolve({ url: `${MAIL_IMAGES}/templates/${bytes.toString("hex")}.png` });
+    return Promise.resolve({ url: `${MAIL_IMAGES}/mail/templates/${bytes.toString("hex")}.png` });
   }
 }
 
 const downloader = new PngDownloader();
 const admission: MailImageAdmission = {
   origins: [MEDIA_ORIGIN],
-  originsVariable: "MAIL_IMAGE_ORIGINS",
   publicBaseUrl: MAIL_IMAGES,
 };
 const scene = mailCopyScene([
@@ -74,7 +73,7 @@ const { staff, ctx, transport } = scene;
 
 const CHARTERS = "/admin/mail-charters";
 const LOGO = `${MEDIA_ORIGIN}/brand/logo-lfd.png`;
-const LOGO_COPY = `${MAIL_IMAGES}/templates/${PNG.toString("hex")}.png`;
+const LOGO_COPY = `${MAIL_IMAGES}/mail/templates/${PNG.toString("hex")}.png`;
 const PRIMARY = "#7a1f3d";
 const REGISTRY = b2bMailTemplates({
   supportEmail: "admin@lfc.test",
