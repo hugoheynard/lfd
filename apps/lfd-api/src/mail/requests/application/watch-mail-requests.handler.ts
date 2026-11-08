@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { staffPermission } from "@lfd/contracts";
+import { mailLabel } from "@lfd/mail-blocks";
 
 import { Clock } from "../../../platform/time/clock.js";
 import {
@@ -120,7 +121,7 @@ function rejectionNoticeOf(rejection: MailRejection, now: Date): StaffNotice {
   return {
     kind: MAIL_ALARM_KIND,
     subject: "Courrier non reçu",
-    body: `${rejected} depuis hier sur « ${rejection.template} » — personne ne les a reçus : voir le suivi des e-mails, filtre « rebondi ».`,
+    body: `${rejected} depuis hier sur « ${mailLabel(rejection.template).title} » — personne ne les a reçus : voir le suivi des e-mails, filtre « rebondi ».`,
     link: MAIL_SENDS_LINK,
     idempotencyKey: mailRejectionAlarmKey(rejection),
     occurredAt: now,

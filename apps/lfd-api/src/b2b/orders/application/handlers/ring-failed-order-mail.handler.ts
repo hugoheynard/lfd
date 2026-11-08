@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { staffPermission } from "@lfd/contracts";
+import { mailLabel } from "@lfd/mail-blocks";
 
 import {
   type FailedMailDelivery,
@@ -46,9 +47,9 @@ export function failedOrderMailKey(requestId: string, orderId: string): string {
  * commande : le rappel de retrait et l'e-mail « prête » d'origine sont deux
  * fiches, donc deux cloches ; un rejeu du fait ne resonne pas.
  *
- * Le modèle est nommé par sa clé du registre (`customer.order-ready`) :
- * l'API n'a pas de libellé humain des modèles (vérifié le 2026-11-08 — le
- * seul tableau est au back-office, `mail-editor/rules/mail-labels.ts`).
+ * Le modèle est nommé par son intitulé (« Commande prête »), lu dans la
+ * table partagée avec l'éditeur (`@lfd/mail-blocks`, `mailLabel`) ; un test
+ * du bloc `mail` refuse une clé du registre qui n'en aurait pas.
  */
 @Injectable()
 @DurableHandler({ type: MAIL_DELIVERY_FAILED, subscriber: RING_FAILED_ORDER_MAIL })
@@ -98,7 +99,7 @@ export class RingFailedOrderMail implements DurableSubscriber {
     return {
       kind: FAILED_ORDER_MAIL_BELL,
       subject: `E-mail non reçu — ${number}`,
-      body: `L'e-mail « ${template} » de la commande ${number} n'a pas été reçu : ${WORDS[failure]}`,
+      body: `L'e-mail « ${mailLabel(template).title} » de la commande ${number} n'a pas été reçu : ${WORDS[failure]}`,
       link: `/commandes/${orderId}`,
       idempotencyKey: failedOrderMailKey(requestId, orderId),
       occurredAt: this.clock.now(),

@@ -82,7 +82,7 @@ describe("RingFailedOrderMail (plan-sujet-des-e-mails, E4)", () => {
         kind: FAILED_ORDER_MAIL_BELL,
         subject: "E-mail non reçu — ORD-4812",
         body:
-          "L'e-mail « customer.order-ready » de la commande ORD-4812 n'a pas été reçu : " +
+          "L'e-mail « Commande prête » de la commande ORD-4812 n'a pas été reçu : " +
           "adresse rejetée. Vérifiez l'adresse du client.",
         link: "/commandes/o1",
         idempotencyKey: "mail.failed:mail_1:o1",

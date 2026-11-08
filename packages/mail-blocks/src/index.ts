@@ -187,3 +187,4 @@ export {
   type MailSenderViolation,
   type MailSenderViolationCode,
 } from "./mail-sender-identity.js";
+export { labeledMailTemplates, mailLabel, mailWhoAndWhen, type MailLabel } from "./mail-labels.js";

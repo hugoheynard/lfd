@@ -205,7 +205,7 @@ describe("WatchMailRequestsHandler — les rebonds et plaintes (T1b)", () => {
       subject: "Courrier non reçu",
     });
     expect(bell.rung[0]?.body).toContain("3 e-mails ont rebondi ou été signalés");
-    expect(bell.rung[0]?.body).toContain("« customer.access-opened »");
+    expect(bell.rung[0]?.body).toContain("« Accès ouvert »");
     expect(bell.rung[1]?.body).toContain("1 e-mail a rebondi ou été signalé depuis hier");
   });
 
