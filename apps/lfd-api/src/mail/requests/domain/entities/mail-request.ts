@@ -6,6 +6,7 @@ import {
 import type { MailSubject } from "../../../channels/requests/mail-subject.js";
 import type { MailDeliveryFailure } from "../events/mail-delivery-failure.js";
 import { MailBrand } from "../value-objects/mail-brand.js";
+import { MAIL_REFUSAL_REASONS, type MailRefusalCode } from "../value-objects/mail-refusal-code.js";
 import { mailRequestSubjectsOf } from "../value-objects/mail-request-subject.js";
 import {
   deliveryOutranks,
@@ -101,6 +102,7 @@ export class MailRequest {
       status: "requested",
       providerId: null,
       failureReason: null,
+      refusalCode: null,
       requestedAt: draft.requestedAt,
       sentAt: null,
       failedAt: null,
@@ -290,6 +292,21 @@ export class MailRequest {
   markRefused(reason: string, at: Date): void {
     this.assertOpen();
     this.state = { ...this.state, status: "refused", failureReason: clipped(reason), failedAt: at };
+  }
+
+  /**
+   * Refus pour préférence marketing (plan de désinscription, règle 11) : la
+   * demande est close avec sa raison FERMÉE, que le suivi affiche.
+   */
+  markRefusedFor(code: MailRefusalCode, at: Date): void {
+    this.assertOpen();
+    this.state = {
+      ...this.state,
+      status: "refused",
+      failureReason: MAIL_REFUSAL_REASONS[code],
+      refusalCode: code,
+      failedAt: at,
+    };
   }
 
   /**

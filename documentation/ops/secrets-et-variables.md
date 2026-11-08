@@ -159,6 +159,19 @@ d'une adresse ([`le-suivi-des-e-mails.md`](../mail/le-suivi-des-e-mails.md),
 décision 8). Une rotation rend les empreintes déjà rangées incomparables aux
 nouvelles ; aucun accès n'en dépend.
 
+**🔴 Elle dérive enfin les deux clés de la désinscription des e-mails**
+(2026-11-08, [`plan-desinscription-des-e-mails.md`](../mail/plan-desinscription-des-e-mails.md),
+U2) : `lfd/mail-unsubscribe/v1` (`AppConfig.mailUnsubscribeTokenKey`) chiffre
+le jeton des liens « Se désinscrire », qui n'expirent pas ; et
+`lfd/mail-unsubscribe-print/v1` (`AppConfig.mailMarketingPrintKey`) calcule
+l'empreinte des adresses du registre de préférence marketing. Une rotation —
+ou un changement d'étiquette — **tue tous les liens de désinscription déjà
+partis** (la page répond, rien n'est désinscrit), et rend les empreintes
+rangées incomparables : une adresse **effacée** et désinscrite, qui n'a plus
+que son empreinte, cesserait d'être protégée. Décision irréversible pour les
+e-mails déjà envoyés ; avant toute rotation, recalculer les empreintes des
+lignes qui ont encore leur clé, et accepter la perte des lignes effacées.
+
 **Elle scelle aussi le secret de signature des abonnés de la vitrine**
 (2026-10-18, [`vitrine.md`](../webhooks/vitrine.md)) :
 une rotation le rend illisible, et chaque abonné doit être régénéré à l'écran

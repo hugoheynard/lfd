@@ -2627,6 +2627,7 @@ export type {
 export type { DeadLetterView, DeadLettersView } from "./outbox-dead-letters.js";
 export {
   MAIL_SEND_DELIVERIES,
+  MAIL_SEND_REFUSAL_CODES,
   MAIL_SEND_SCOPES,
   MAIL_SEND_SPACES,
   MAIL_SEND_STATES,
@@ -2638,6 +2639,7 @@ export {
   type MailSendDetailView,
   type MailSendListItemView,
   type MailSendListView,
+  type MailSendRefusalCode,
   type MailSendScope,
   type MailSendSpace,
   type MailSendState,

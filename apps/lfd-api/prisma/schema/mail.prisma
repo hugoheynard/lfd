@@ -63,6 +63,10 @@ model MailRequest {
   deliveryAt      DateTime?            @map("delivery_at") @db.Timestamptz(6)
   /// Le GENRE du retour (`Permanent/Suppressed`), jamais son texte (décision 4).
   deliveryKind    String?              @map("delivery_kind") @db.VarChar(64)
+  /// La raison FERMÉE d'un refus (plan `plan-desinscription-des-e-mails.md`,
+  /// U2) : `unsubscribed` | `no_consent` (CHECK en base) ; `null` hors de ces
+  /// refus. Le suivi l'affiche sans lire `failure_reason`.
+  refusalCode     String?              @map("refusal_code") @db.VarChar(16)
   /// Ce pour quoi l'e-mail part (`le-sujet-des-e-mails.md`, règle 2).
   subjects        MailRequestSubject[]
 
@@ -290,5 +294,49 @@ model MailSenderIdentity {
   changedBy      String   @map("changed_by")
 
   @@map("mail_sender_identity")
+  @@schema("mail")
+}
+
+/// **La préférence marketing d'une adresse pour un espace** (plan
+/// `documentation/mail/plan-desinscription-des-e-mails.md`, règles 10, 20,
+/// 22, 23 ; lot U2) : le registre unique de l'accord et du retrait. Pas de
+/// ligne = jamais demandé. L'espace est la société émettrice (`lfc`).
+///
+/// ⚠️ `recipient_key` est une donnée personnelle de client, au registre RGPD,
+/// gardée tant que l'accord ou la désinscription vaut. À l'effacement, une
+/// ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed`
+/// perd sa clé et garde son EMPREINTE (`print`, HMAC à clé, pseudonyme) — la
+/// supprimer reviendrait à réécrire à quelqu'un qui a dit non.
+model MailMarketingPreference {
+  id                  String    @id
+  /// L'espace qui écrit (`lfc` | `lfd`, CHECK en base).
+  space               String    @db.VarChar(16)
+  /// L'adresse en minuscules ; `null` une fois effacée (seulement `unsubscribed`).
+  recipientKey        String?   @map("recipient_key") @db.VarChar(320)
+  /// `HMAC-SHA256(recipient_key)` sous `AppConfig.mailMarketingPrintKey`, 64 hexadécimaux.
+  print               String    @db.VarChar(64)
+  /// `pending` | `accepted` | `unsubscribed` (CHECK en base).
+  status              String    @db.VarChar(12)
+  /// `direct` | `partners` ; `null` : aucun accord n'a été recueilli.
+  origin              String?   @db.VarChar(8)
+  /// La version du texte de la case acceptée.
+  acceptedTextVersion String?   @map("accepted_text_version") @db.VarChar(64)
+  /// La langue du texte accepté.
+  acceptedLocale      String?   @map("accepted_locale") @db.VarChar(8)
+  /// `signup` | `preferences` | `order` | `newsletter` | `staff` (CHECK en base).
+  acceptedWhere       String?   @map("accepted_where") @db.VarChar(12)
+  /// La référence opaque de l'acte (commande, compte).
+  acceptedRef         String?   @map("accepted_ref") @db.VarChar(120)
+  requestedAt         DateTime? @map("requested_at") @db.Timestamptz(6)
+  confirmedAt         DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  unsubscribedAt      DateTime? @map("unsubscribed_at") @db.Timestamptz(6)
+  /// `link` | `one_click` | `staff` | `group` (CHECK en base).
+  unsubscribedSource  String?   @map("unsubscribed_source") @db.VarChar(10)
+
+  /// Postgres tient deux NULL pour distincts : l'unicité ne vaut que tant que la clé existe.
+  @@unique([space, recipientKey])
+  @@unique([space, print])
+  @@index([print])
+  @@map("mail_marketing_preference")
   @@schema("mail")
 }

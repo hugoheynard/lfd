@@ -29,6 +29,7 @@ export function toMailSendRecord(row: MailRequestRow): MailSendRecord {
     delivery: state.delivery,
     deliveryAt: state.deliveryAt,
     deliveryKind: state.deliveryKind,
+    refusalCode: state.refusalCode,
     subjects: state.subjects,
   };
 }

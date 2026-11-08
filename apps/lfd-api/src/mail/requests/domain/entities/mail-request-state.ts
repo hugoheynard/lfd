@@ -1,6 +1,7 @@
 import type { MailSubject } from "../../../channels/requests/mail-subject.js";
 import type { MailBrandCode } from "../value-objects/mail-brand.js";
 import type { MailDelivery } from "../value-objects/mail-delivery.js";
+import type { MailRefusalCode } from "../value-objects/mail-refusal-code.js";
 
 /**
  * Les états d'une demande (plan `plan-service-e-mails.md`, C7) :
@@ -51,6 +52,11 @@ export interface MailRequestSnapshot {
   readonly status: MailRequestStatus;
   readonly providerId: string | null;
   readonly failureReason: string | null;
+  /**
+   * La raison fermée d'un refus pour préférence marketing (plan de
+   * désinscription, U2) ; `null` pour tout autre état et tout autre refus.
+   */
+  readonly refusalCode: MailRefusalCode | null;
   readonly requestedAt: Date;
   readonly sentAt: Date | null;
   readonly failedAt: Date | null;

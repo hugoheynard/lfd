@@ -15,6 +15,10 @@ import { MailRequestRepository } from "../domain/ports/mail-request.repository.j
 import { MailBrand } from "../domain/value-objects/mail-brand.js";
 import { mailRequestSubjectsOf } from "../domain/value-objects/mail-request-subject.js";
 import { type MailDelivery, mailDeliveryOf } from "../domain/value-objects/mail-delivery.js";
+import {
+  type MailRefusalCode,
+  mailRefusalCodeOf,
+} from "../domain/value-objects/mail-refusal-code.js";
 
 /** La ligne telle que Prisma la rend — confinée à `infrastructure/`. */
 export interface MailRequestRow {
@@ -38,6 +42,8 @@ export interface MailRequestRow {
   readonly delivery: string | null;
   readonly deliveryAt: Date | null;
   readonly deliveryKind: string | null;
+  /** `unsubscribed` | `no_consent` | `null` (CHECK en base, plan de désinscription U2). */
+  readonly refusalCode: string | null;
   /**
    * Les sujets, quand la lecture les a joints (`le-sujet-des-e-mails.md`,
    * E1). Absents d'une lecture qui ne les demande pas (la liste du suivi en
@@ -82,6 +88,18 @@ export function deliveryOf(raw: string | null): MailDelivery | null {
   return delivery;
 }
 
+export function refusalCodeOf(raw: string | null): MailRefusalCode | null {
+  if (raw === null) {
+    return null;
+  }
+  const code = mailRefusalCodeOf(raw);
+  if (code === null) {
+    // Même raison que pour `status` : le CHECK en base l'interdit.
+    throw new UnknownMailRequestStatusError(raw);
+  }
+  return code;
+}
+
 /** Relit une ligne ; partagé avec la lecture du balayeur. */
 export function toDomain(row: MailRequestRow): MailRequest {
   return MailRequest.rehydrate({
@@ -92,6 +110,7 @@ export function toDomain(row: MailRequestRow): MailRequest {
     // calcule par la même règle, et le prochain `save` l'écrit.
     recipientKey: row.recipientKey ?? recipientKeyOf(row.recipient),
     delivery: deliveryOf(row.delivery),
+    refusalCode: refusalCodeOf(row.refusalCode),
     subjects: mailRequestSubjectsOf(
       (row.subjects ?? []).map((subject) => ({ type: subject.subjectType, id: subject.subjectId })),
     ),
@@ -112,6 +131,7 @@ function toPersistence(request: MailRequest): Omit<MailRequestSnapshot, "subject
     status: state.status,
     providerId: state.providerId,
     failureReason: state.failureReason,
+    refusalCode: state.refusalCode,
     requestedAt: state.requestedAt,
     sentAt: state.sentAt,
     failedAt: state.failedAt,
@@ -205,6 +225,7 @@ export class PrismaMailRequestRepository extends MailRequestRepository {
         status: row.status,
         providerId: row.providerId,
         failureReason: row.failureReason,
+        refusalCode: row.refusalCode,
         sentAt: row.sentAt,
         failedAt: row.failedAt,
         firstAttemptAt: row.firstAttemptAt,

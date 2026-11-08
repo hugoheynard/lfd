@@ -56,6 +56,14 @@ export interface MailSendSubjectView {
   readonly id: string;
 }
 
+/**
+ * **La raison FERMÉE d'un refus** (plan `plan-desinscription-des-e-mails.md`,
+ * U2) : « Non envoyé : désinscrit » (`unsubscribed`) ou « Non envoyé : sans
+ * consentement » (`no_consent`). Un e-mail marketing seulement.
+ */
+export const MAIL_SEND_REFUSAL_CODES = ["unsubscribed", "no_consent"] as const;
+export type MailSendRefusalCode = (typeof MAIL_SEND_REFUSAL_CODES)[number];
+
 /** Une ligne de `GET /admin/mail/sends`. */
 export interface MailSendListItemView {
   readonly id: string;
@@ -71,6 +79,11 @@ export interface MailSendListItemView {
   readonly requestedAt: string;
   /** Vrai pour un échec, un refus, un rebond, un spam ou un retard : en tête de liste. */
   readonly problem: boolean;
+  /**
+   * Pourquoi un envoi `refused` n'est pas parti, quand c'est une préférence
+   * marketing ; `null` pour tout autre envoi et tout autre refus.
+   */
+  readonly refusalCode: MailSendRefusalCode | null;
   /** Ses sujets ; vide pour un e-mail qui n'en déclare pas, et pour ceux d'avant les sujets. */
   readonly subjects: readonly MailSendSubjectView[];
 }

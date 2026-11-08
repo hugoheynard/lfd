@@ -1,5 +1,6 @@
 import type { MailSubject } from "../../../channels/requests/mail-subject.js";
 import type { MailBrandCode } from "../../../requests/domain/value-objects/mail-brand.js";
+import type { MailRefusalCode } from "../../../requests/domain/value-objects/mail-refusal-code.js";
 import type { StoredMailDelivery, StoredMailStatus } from "../services/mail-send-state.js";
 
 /** Les filtres de la liste, en valeurs de la base. */
@@ -45,6 +46,8 @@ export interface MailSendRecord {
   readonly delivery: StoredMailDelivery | null;
   readonly deliveryAt: Date | null;
   readonly deliveryKind: string | null;
+  /** La raison fermée d'un refus (plan de désinscription, U2) ; `null` sinon. */
+  readonly refusalCode: MailRefusalCode | null;
   /** Ce pour quoi il part (`le-sujet-des-e-mails.md`, règle 9). */
   readonly subjects: readonly MailSubject[];
 }

@@ -33,7 +33,7 @@ const COLUMNS = Prisma.sql`r."id", r."template", r."brand", r."recipient", r."lo
   r."first_attempt_at" AS "firstAttemptAt", r."last_attempt_at" AS "lastAttemptAt",
   r."attempts", r."document_version" AS "documentVersion",
   r."recipient_key" AS "recipientKey", r."delivery", r."delivery_at" AS "deliveryAt",
-  r."delivery_kind" AS "deliveryKind"`;
+  r."delivery_kind" AS "deliveryKind", r."refusal_code" AS "refusalCode"`;
 
 function conditionsOf(filter: MailSendFilter): Prisma.Sql[] {
   const where: Prisma.Sql[] = [Prisma.sql`TRUE`];

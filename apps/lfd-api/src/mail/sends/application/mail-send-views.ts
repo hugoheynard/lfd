@@ -22,6 +22,7 @@ export function toMailSendListItem(record: MailSendRecord): MailSendListItemView
     delivery: mailSendDeliveryOf(record.status, record.providerId, record.delivery),
     requestedAt: record.requestedAt.toISOString(),
     problem: problemRankOf(record.status, record.delivery) < NO_PROBLEM,
+    refusalCode: record.refusalCode,
     subjects: record.subjects.map((subject) => ({ type: subject.type, id: subject.id })),
   };
 }

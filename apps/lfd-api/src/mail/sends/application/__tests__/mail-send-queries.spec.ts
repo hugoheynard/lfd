@@ -206,6 +206,27 @@ describe("GetMailSendHandler", () => {
     });
   });
 
+  it("sert la raison fermée d'un refus (U2) : « non envoyé : désinscrit / sans consentement »", async () => {
+    const handler = new GetMailSendHandler(
+      new FixedMailSendReader([
+        record({ id: "send_unsub", status: "refused", refusalCode: "unsubscribed" }),
+        record({ id: "send_noconsent", status: "refused", refusalCode: "no_consent" }),
+        record({ id: "send_sent" }),
+      ]),
+    );
+
+    await expect(handler.execute(new GetMailSendQuery("send_unsub"))).resolves.toMatchObject({
+      state: "refused",
+      refusalCode: "unsubscribed",
+    });
+    await expect(handler.execute(new GetMailSendQuery("send_noconsent"))).resolves.toMatchObject({
+      refusalCode: "no_consent",
+    });
+    await expect(handler.execute(new GetMailSendQuery("send_sent"))).resolves.toMatchObject({
+      refusalCode: null,
+    });
+  });
+
   it("404 nommé pour un envoi inconnu", async () => {
     const handler = new GetMailSendHandler(new FixedMailSendReader([]));
     await expect(handler.execute(new GetMailSendQuery("absent"))).rejects.toThrow(

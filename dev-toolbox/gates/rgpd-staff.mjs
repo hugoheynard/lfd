@@ -91,6 +91,10 @@ const ALL_PERSONAL_TABLES = new Set([
   // Le suivi des e-mails (2026-11-06) : à qui, en quelle langue, et ce que le
   // fournisseur a répondu — une colonne neuve y est présumée personnelle.
   "mail.mail_request",
+  // Le registre de préférence marketing (2026-11-08, plan
+  // `plan-desinscription-des-e-mails.md`, U2) : l'accord, sa preuve et le
+  // retrait d'une adresse — une colonne neuve y est présumée personnelle.
+  "mail.mail_marketing_preference",
   // La boîte d'envoi (2026-11-06) : sa `payload` portera les données des
   // e-mails demandés dès S2 ; une colonne neuve y est présumée personnelle.
   "platform.outbox",

@@ -64,6 +64,21 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
     expect(resolveTarget("gw.example", `${API_PREFIXES.lfd}xyz/products`)).toBeUndefined();
   });
 
+  /**
+   * Le lien de désinscription des e-mails (plan
+   * `plan-desinscription-des-e-mails.md`, U2) est bâti par l'API sur
+   * l'origine de la boutique : il doit atteindre l'API sur la ZONE, le jeton
+   * intact, et ne jamais être servi par le front.
+   */
+  it("route la désinscription d'un e-mail, sur la zone, vers l'API, jeton intact", () => {
+    const token = "v1.a1b2c3d4.aXY.dGFn.Y2lwaGVy";
+    expect(resolveTarget(ZONE_HOSTNAME, `${API_PREFIXES.lfd}/mail/unsubscribe/${token}`)).toEqual({
+      kind: "backend",
+      backend: "lfd",
+      path: `/mail/unsubscribe/${token}`,
+    });
+  });
+
   it("rend undefined sur un chemin hors périmètre", () => {
     expect(resolveTarget("gw.example", "/favicon.ico")).toBeUndefined();
   });

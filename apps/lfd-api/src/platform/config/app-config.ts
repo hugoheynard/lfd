@@ -195,6 +195,35 @@ export class AppConfig {
   }
 
   /**
+   * **La clé des jetons de désinscription** (plan
+   * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 4, U2).
+   *
+   * DÉRIVÉE de la clé du coffre par HKDF-SHA256 sous son étiquette, comme les
+   * liens d'annulation. Les liens n'expirent pas : ils meurent à la rotation
+   * de `FIELD_ENCRYPTION_KEY` ou à un changement d'étiquette — décision
+   * irréversible pour les e-mails déjà partis.
+   */
+  mailUnsubscribeTokenKey(): Buffer {
+    return Buffer.from(
+      hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), MAIL_UNSUBSCRIBE_TOKEN_KEY_INFO, 32),
+    );
+  }
+
+  /**
+   * **La clé de l'empreinte des adresses du registre de préférence** (plan
+   * `plan-desinscription-des-e-mails.md`, contradiction : « l'effacement ne
+   * rouvre pas la porte »). L'empreinte survit à l'effacement de l'adresse ;
+   * une clé, jamais un hachage nu qui se renverse par dictionnaire. Une
+   * rotation de `FIELD_ENCRYPTION_KEY` rend les empreintes rangées
+   * incomparables : les désinscriptions effacées cesseraient de protéger.
+   */
+  mailMarketingPrintKey(): Buffer {
+    return Buffer.from(
+      hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), MAIL_MARKETING_PRINT_KEY_INFO, 32),
+    );
+  }
+
+  /**
    * La clé du coffre vient-elle de l'environnement, ou du repli de développement ?
    *
    * Lu par le bulletin de démarrage. La distinction compte parce qu'elle est
@@ -664,6 +693,12 @@ const CANCELLATION_LINK_KEY_INFO = "lfd/order-cancellation-link/v1";
 
 /** L'étiquette HKDF des empreintes d'adresses recherchées (suivi des e-mails, T2). */
 const MAIL_RECIPIENT_SEARCH_KEY_INFO = "lfd/mail-recipient-search/v1";
+
+/** L'étiquette HKDF des jetons de désinscription (plan de désinscription, règle 4). */
+const MAIL_UNSUBSCRIBE_TOKEN_KEY_INFO = "lfd/mail-unsubscribe/v1";
+
+/** L'étiquette HKDF des empreintes du registre de préférence marketing. */
+const MAIL_MARKETING_PRINT_KEY_INFO = "lfd/mail-unsubscribe-print/v1";
 
 /**
  * 🔴 **Une clé absente ne doit jamais équivaloir à « pas de chiffrement ».**
