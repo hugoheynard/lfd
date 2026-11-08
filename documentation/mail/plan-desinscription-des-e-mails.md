@@ -130,6 +130,118 @@ reste interdit, même avec la désinscription.
    tomber les confirmations de commande en spam. Le réglage existe déjà par
    espace ; il s'étend à la nature. DNS par Hugo.
 
+### Le consentement — tout le plan est à bâtir (Hugo, 2026-11-08)
+
+Hugo : « je veux tout le plan » — désinscription ET consentement. Ce qui
+suit complète les règles et **remplace la table des désinscrits de la règle
+6** par un registre unique.
+
+10. **Un registre de préférence marketing** : `mail.mail_marketing_preference
+(space, recipient_key, status, accepted_at, accepted_text_version,
+accepted_where, unsubscribed_at, unsubscribed_source, print)`, clé
+    primaire `(space, recipient_key)`. `status` : `accepted` ou
+    `unsubscribed` ; pas de ligne = jamais demandé. `print` est l'empreinte
+    HMAC à clé qui survit à l'effacement. L'espace est la société émettrice
+    (`lfc` = la boulangerie). Le texte exact de chaque case est versionné
+    (dictionnaire de la boutique), et la version acceptée est rangée — c'est
+    la preuve que la CNIL demande.
+11. **Règle d'envoi stricte.** Un e-mail `marketing` ne part qu'à une adresse
+    `accepted` pour SON espace (au même point de contrôle que la règle B3,
+    sur les trois chemins). Sinon : `refused`, `refusal_code` =
+    `unsubscribed` ou `no_consent`, et le suivi l'affiche.
+12. **Le registre vit dans `mail`, le recueil chez ceux qui parlent au
+    client.** Le bloc `mail` déclare et implémente dans son canal
+    `MarketingConsent` : `accept(space, address, textVersion, where)`,
+    `unsubscribe(space, address, source)`, et `askable(space, addresses)`
+    (« faut-il proposer la case ? » : vrai seulement sans ligne). `b2b`
+    (compte, commande) l'appelle par ce port — la case de la matrice
+    `b2b → mail` est déjà « port uniquement ».
+13. **Les trois lieux de recueil.** À l'**inscription** (une case par
+    société, non précochée) ; sur une page **« Mes préférences »** de
+    l'espace client (chaque société : inscrit / non inscrit / désinscrit,
+    et le geste de s'inscrire ou de se désinscrire) ; à la **passation de
+    commande**, invité compris, une case par société qui vend, affichée
+    seulement si `askable` — une case vide n'est pas un refus, une
+    désinscription éteint la question pour toujours. Le geste de commande
+    porte la réponse ; elle est rangée dans la même unité que la commande.
+14. **« Partenaires » = les autres sociétés du groupe.** Une case facultative
+    à l'inscription et sur « Mes préférences » (pas à la commande, pour ne
+    pas alourdir le paiement) : « J'accepte de recevoir les offres des
+    autres sociétés La Folie Douce », qui nomme les sociétés (liste dans la
+    configuration des espaces). L'accepter crée l'accord pour chacune des
+    sociétés listées À CE MOMENT ; une société ajoutée plus tard ne
+    l'hérite pas.
+15. **La désinscription retire l'accord** de la société qui envoie
+    (`unsubscribed`), et la page publique propose aussi « Ne plus rien
+    recevoir du groupe » (toutes les sociétés du groupe d'un coup).
+16. **L'information RGPD** : la case d'inscription et la page de commande
+    renvoient à une mention qui dit qui écrit, pourquoi, comment se
+    désinscrire, et, pour la case partenaires, que l'adresse est transmise
+    aux sociétés nommées. Registre RGPD : le registre de préférence est une
+    donnée personnelle de client, gardée tant que l'accord ou la
+    désinscription vaut.
+
+**Contredit par `vitruve` le 2026-11-08 (4 bloquants, 7 sérieux) — ce qui
+est tranché, et qui l'emporte sur les règles 10 à 16 :**
+
+17. **Pas d'oracle à la commande.** Un invité voit TOUJOURS la case
+    (non cochée) ; le serveur ignore sa réponse si une ligne existe déjà
+    (désinscrit : jamais réinscrit par une case ; accepté : rien à faire).
+    `askable` n'est calculé que pour un client connecté, et seulement sur
+    SES adresses.
+18. **Double confirmation.** Un accord recueilli sur une adresse non
+    vérifiée (invité ; compte dont l'adresse n'est pas vérifiée) crée une
+    ligne `pending` et déclenche un e-mail **transactionnel** « Confirmez
+    votre inscription » (lien signé, valable 7 jours, une seule fois) ; la
+    ligne ne passe `accepted` qu'au clic. Une adresse vérifiée (compte
+    confirmé) passe `accepted` directement. La preuve rangée : texte, version
+    ET langue de la case, lieu, instant, référence de l'acte (commande ou
+    compte), et l'instant de confirmation.
+19. **« Partenaires » n'existe que quand il y a des partenaires.** Les
+    sociétés du groupe qui envoient du marketing sont les espaces DÉCLARÉS
+    `marketing` dans la configuration des espaces (aujourd'hui : aucun ;
+    `lfd` est l'espace de l'équipe et n'en sera jamais). La case
+    « partenaires » et « Ne plus rien recevoir du groupe » ne s'affichent
+    qu'à partir de deux espaces marketing ; le mécanisme est bâti, éteint.
+20. **L'origine d'un accord est rangée** (`origin` : `direct` ou
+    `partners`). Une désinscription agit sur la ligne de la société qui
+    envoie, quelle que soit son origine ; « Ne plus rien recevoir du groupe »
+    sur toutes les lignes du groupe — le jeton de la page en porte le droit
+    pour l'adresse qu'il chiffre, pas pour l'espace seul.
+21. **La commande ne porte pas l'accord dans sa transaction.** La réponse à
+    la case ne change pas l'empreinte d'idempotence (au rejeu, la première
+    réponse fait foi) ; après la validation de la commande
+    (`AfterCommit`), le commerce appelle `MarketingConsent.request(...)` —
+    une écriture du bloc `mail` dans SA transaction. Comme l'accord passe
+    par la double confirmation, une commande abandonnée laisse au plus une
+    ligne `pending` qui expire.
+22. **U2 bâtit directement le registre** (pas de `mail_unsubscription`
+    éphémère) : C1 l'enrichit, il ne le remplace pas.
+23. **L'effacement** : une ligne `accepted` ou `pending` est SUPPRIMÉE ; une
+    ligne `unsubscribed` perd sa clé en clair et garde seulement son
+    empreinte.
+24. **Changement d'adresse d'un compte** : le compte appelle
+    `MarketingConsent.moveAddress(old, new)` ; l'état suit (une
+    désinscription protège la nouvelle adresse, un accord reste accordé).
+25. **Garde** : un test d'intégration prouve qu'un envoi `transactional` ne
+    lit jamais le registre (le port de lecture n'est appelé que par le
+    contrôle marketing), et le registre RGPD inscrit les colonnes du
+    registre de préférence (relu au lot, aucune porte ne l'impose aux
+    données client).
+
+**Les lots du consentement** (après U1–U3, qui les servent) :
+
+- **C1 — le consentement au registre** (la table vient de U2) : `pending`, la double confirmation et son e-mail transactionnel, `origin`, la preuve complète, le port
+  `MarketingConsent`, la règle d'envoi stricte (`no_consent`), les textes
+  versionnés.
+- **C2 — l'inscription et la commande** : les cases (boutique, API du
+  compte et de la commande), `askable` (connecté seulement), l'appel après
+  validation, `moveAddress`.
+- **C3 — « Mes préférences »** : la page de l'espace client, la case
+  partenaires.
+- **C4 — le back-office** : l'onglet du suivi montre, par adresse (masquée,
+  révélation tracée), l'état de préférence par société et son historique.
+
 ### La contradiction de `vitruve` (2026-11-08), et ce qu'elle tranche
 
 Ces décisions **remplacent** ce que les règles 2 à 8 disaient autrement.
@@ -255,9 +367,10 @@ Ces décisions **remplacent** ce que les règles 2 à 8 disaient autrement.
   code, l'**espace** d'e-mail correspond à la société émettrice : `lfc` est
   la boulangerie ; une société du groupe qui enverra du marketing aura son
   espace, sa charte et son identité d'envoi.
-- **Le consentement des particuliers** : où se recueille l'accord (case à
-  l'inscription, page « Mes préférences »), comment il se prouve (date,
-  texte accepté), et qu'un e-mail marketing vers un particulier sans accord
-  est refusé comme une désinscription. À planifier à part.
-- **Le sous-domaine marketing** et ses DNS (SPF, DKIM, DMARC).
-- **Bâtir U1 maintenant, ou tout ensemble** au premier e-mail marketing.
+- ~~Le consentement des particuliers~~ — tranché le 2026-11-08 : règles 10
+  à 25 et lots C1 à C4 (tout est dans ce plan).
+- **Le sous-domaine marketing** et ses DNS (SPF, DKIM, DMARC) — geste DNS de
+  Hugo ; U5 bâtit l'identité d'envoi par nature, à régler à l'écran.
+- ~~Bâtir U1 maintenant, ou tout ensemble~~ — tranché le 2026-11-08 :
+  « je veux tout le plan ». Ordre : U1, U2 (le registre directement), U3,
+  C1, C2, C3, U4 et C4, U5.
