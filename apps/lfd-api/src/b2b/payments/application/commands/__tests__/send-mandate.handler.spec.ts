@@ -168,6 +168,10 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
       to: HOLDER.email,
       template: "customer.mandate-to-sign",
       data: { reference: "LFC-9P2X4B-260914-K7M3QT" },
+      subjects: [
+        { type: "mandate", id: "mdt_1" },
+        { type: "company", id: "cmp_1" },
+      ],
     });
     expect(JSON.stringify(h.mails.awaitedReceipt[0]?.data)).not.toContain("pdfBase64");
   });

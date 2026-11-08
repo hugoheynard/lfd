@@ -6,6 +6,8 @@ import type { AlertDraft } from "../evaluate-order.js";
 export interface AlertContext {
   readonly companyId: string;
   readonly companyName: string;
+  /** La commande évaluée : le sujet de l'e-mail d'alerte, avec la société. */
+  readonly orderId: string;
   readonly orderNumber: string;
   readonly occurredAt: Date;
 }

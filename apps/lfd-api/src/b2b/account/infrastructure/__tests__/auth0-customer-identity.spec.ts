@@ -77,7 +77,7 @@ describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", 
       new FixedIdGenerator("mail"),
     );
 
-    await port.sendPasswordResetLink(SUBJECT, "camille@halles.fr");
+    await port.sendPasswordResetLink(SUBJECT, "camille@halles.fr", "user_1");
 
     expect(mails.queued).toEqual([]);
     expect(mails.awaitedReceipt).toEqual([
@@ -85,6 +85,7 @@ describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", 
         to: "camille@halles.fr",
         template: "customer.password-reset",
         data: { passwordSetupUrl: "https://tenant.test/ticket/1" },
+        subjects: [{ type: "account", id: "user_1" }],
         idempotencyKey: "account.password-reset:mail_000001",
       },
     ]);
@@ -100,9 +101,9 @@ describe("Auth0CustomerIdentity — le lien de mot de passe, par le bloc mail", 
       new FixedIdGenerator("mail"),
     );
 
-    await expect(port.sendPasswordResetLink(SUBJECT, "camille@halles.fr")).rejects.toThrow(
-      "Resend indisponible",
-    );
+    await expect(
+      port.sendPasswordResetLink(SUBJECT, "camille@halles.fr", "user_1"),
+    ).rejects.toThrow("Resend indisponible");
   });
 });
 

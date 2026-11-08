@@ -18,6 +18,7 @@ export interface RecordedMail {
   readonly data: unknown;
   readonly idempotencyKey: string;
   readonly subjects?: readonly MailSubject[];
+  readonly replyTo?: string | undefined;
 }
 
 /**

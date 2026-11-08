@@ -49,7 +49,7 @@ class Config extends AppConfig {
  * tomber en panne à l'envoi.
  */
 class Identity extends CustomerIdentityPort {
-  readonly sent: { subject: string; email: string }[] = [];
+  readonly sent: { subject: string; email: string; userId: string }[] = [];
 
   constructor(
     private readonly methods: readonly LoginMethod[] = [passwordMethod],
@@ -75,11 +75,11 @@ class Identity extends CustomerIdentityPort {
   unlinkLoginMethod(): Promise<readonly LoginMethod[]> {
     return Promise.resolve(this.methods);
   }
-  sendPasswordResetLink(subject: string, email: string): Promise<void> {
+  sendPasswordResetLink(subject: string, email: string, userId: string): Promise<void> {
     if (this.failing) {
       return Promise.reject(new Error("canal indisponible"));
     }
-    this.sent.push({ subject, email });
+    this.sent.push({ subject, email, userId });
     return Promise.resolve();
   }
 }
@@ -103,7 +103,8 @@ describe("RequestPasswordResetHandler", () => {
 
     await run();
 
-    expect(identity.sent).toEqual([{ subject: SUBJECT, email: EMAIL }]);
+    // Le compte (pas le `sub`) devient le sujet de l'e-mail (lot E5).
+    expect(identity.sent).toEqual([{ subject: SUBJECT, email: EMAIL, userId: USER_ID }]);
     expect(events.factTypes()).toEqual(["user.password_reset_requested"]);
   });
 

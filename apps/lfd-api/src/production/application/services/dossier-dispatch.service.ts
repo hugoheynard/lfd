@@ -239,6 +239,8 @@ export class DossierDispatch {
           pdfBase64: paper.bytes.toString("base64"),
           fileName: paper.fileName,
         },
+        // Une journée du fournil se nomme par son jour de service (`AAAA-MM-JJ`).
+        subjects: [{ type: "production_day", id: slot.serviceDay }],
         idempotencyKey: `production-dossier:${slot.serviceDay}:${occasion.at.toISOString()}:${slot.recipientId}`,
       });
       await this.log.settle(

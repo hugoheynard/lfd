@@ -63,6 +63,7 @@ export class EvaluateOrderAlerts {
     await this.channels.dispatch(drafts, rules, {
       companyId,
       companyName: order.companyName,
+      orderId: order.id,
       orderNumber: order.orderNumber,
       occurredAt: now,
     });

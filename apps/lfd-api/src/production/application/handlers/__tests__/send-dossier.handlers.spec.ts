@@ -51,6 +51,7 @@ describe("l'envoi du dossier à l'arrêt", () => {
       fileName: `dossier-du-jour-${DAY}.pdf`,
     });
     expect(first?.idempotencyKey).toBe(`production-dossier:${DAY}:${CLOSED.toISOString()}:r-paul`);
+    expect(first?.subjects).toEqual([{ type: "production_day", id: DAY }]);
     expect(events.traced.map((event) => event.journalFact().payload)).toEqual([
       { subjectLabel: DAY, serviceDay: DAY, sent: 2, failed: 0, completed: false },
     ]);

@@ -40,6 +40,11 @@ describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc
         replyTo: "jean@exemple.fr",
         template: "staff.customer-request",
         idempotencyKey: "customer-request:q1",
+        subjects: [
+          { type: "customer_request", id: "q1" },
+          { type: "company", id: "c1" },
+          { type: "account", id: "u1" },
+        ],
         data: {
           requestId: "q1",
           formLabel: "Nous écrire",
@@ -76,7 +81,9 @@ describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc
     });
     const mails = await requestOf(new CustomerRequestReceivedEvent(odd, "commercial@lfc.fr"));
     expect(mails.queued).toHaveLength(1);
-    expect(mails.queued[0]).not.toHaveProperty("replyTo");
+    // La clé est écrite à l'appel (porte `mail-subject-declared`), sans valeur :
+    // le bloc `mail` ne pose pas d'en-tête.
+    expect(mails.queued[0]?.replyTo).toBeUndefined();
   });
 
   it("hors d'une unité de travail, la porte refuse : l'e-mail ne partirait pas avec la demande", async () => {

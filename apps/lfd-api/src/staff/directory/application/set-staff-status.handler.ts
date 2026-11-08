@@ -90,6 +90,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
         template: "staff.access-suspended",
         idempotencyKey: `staff.access-suspended:${staffUserId}:${intentKey}`,
         data: { firstName: target.firstName },
+        subjects: [{ type: "staff_member", id: staffUserId }],
       });
       return;
     }
@@ -98,6 +99,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
       template: "staff.access-restored",
       idempotencyKey: `staff.access-restored:${staffUserId}:${intentKey}`,
       data: { firstName: target.firstName, backOfficeUrl: this.config.adminBaseUrl() ?? "" },
+      subjects: [{ type: "staff_member", id: staffUserId }],
     });
   }
 }

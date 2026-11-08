@@ -86,6 +86,8 @@ export class PrincipalNoticeSender {
         to: recipient.email,
         template,
         data,
+        // Le compte principal prévenu ; le site et son geste ne sont pas dans la cible.
+        subjects: [{ type: "company", id: target.principalId }],
         // Seconde ligne, au bloc : le journal est annulé avec la transaction
         // de la livraison si une demande suivante lève (cf. le plan, N2 bâti).
         idempotencyKey: `sub-account-notice:${target.eventId}:${recipient.userId}`,

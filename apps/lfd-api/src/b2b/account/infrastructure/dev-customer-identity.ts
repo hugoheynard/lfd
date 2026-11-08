@@ -98,7 +98,7 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
    * suivre le parcours en local. Il ne mène nulle part (`dev.invalid`) — c'est
    * ce qui rend l'exception à « le lien ne sort que par la boîte » acceptable.
    */
-  async sendPasswordResetLink(subject: string, email: string): Promise<void> {
+  async sendPasswordResetLink(subject: string, email: string, userId: string): Promise<void> {
     const passwordSetupUrl = devPasswordUrl(subject);
     // Même geste que l'adaptateur Auth0 (`sendAndAwaitReceipt`) : le chemin local garde
     // la forme de la production, bloc `mail` compris.
@@ -106,6 +106,7 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
       to: email,
       template: "customer.password-reset",
       data: { passwordSetupUrl },
+      subjects: [{ type: "account", id: userId }],
       idempotencyKey: passwordResetMailKey(this.ids),
     });
     this.logger.warn(`[dev] lien de mot de passe factice pour ${email} : ${passwordSetupUrl}`);

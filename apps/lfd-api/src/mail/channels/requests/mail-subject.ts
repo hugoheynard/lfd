@@ -19,6 +19,10 @@ export const MAIL_SUBJECT_TYPES = [
   // Le rendez-vous pris (`staff.appointment-booked`) — ajouté le 2026-11-08 :
   // l'alerte a un objet, elle ne s'admet pas sans sujet.
   "appointment",
+  // L'abonné du webhook de la vitrine (une agence) à qui part une annonce —
+  // ajouté le 2026-11-08 (lot E5) : l'annonce a un objet, ce n'est ni un
+  // compte ni une société.
+  "vitrine_subscriber",
 ] as const;
 
 export type MailSubjectType = (typeof MAIL_SUBJECT_TYPES)[number];

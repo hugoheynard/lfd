@@ -80,7 +80,7 @@ export class RequestPasswordResetHandler implements ICommandHandler<
     await this.events.publishTraced(
       new PasswordResetRequestedEvent(command.userId, await this.names.person(command.userId)),
     );
-    await this.identity.sendPasswordResetLink(command.subject, command.email);
+    await this.identity.sendPasswordResetLink(command.subject, command.email, command.userId);
   }
 
   /**

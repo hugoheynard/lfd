@@ -7,6 +7,7 @@ import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-lo
 import type { ByReference } from "../../../../mail/channels/requests/mail.js";
 import type { InvoiceIssuedMailData } from "../../../../mail/channels/templates/b2b-mails.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import type { MailSubject } from "../../../../mail/channels/requests/mail-subject.js";
 import type { Invoice } from "../../domain/entities/invoice.js";
 import { InvoiceNoticeEvent } from "../../domain/events/invoice.events.js";
 import { InvoiceMailOrigins } from "../../domain/ports/invoice-mail-origins.js";
@@ -118,6 +119,7 @@ export class InvoiceNoticeSender {
           template: TEMPLATE,
           to: recipient.email,
           data,
+          subjects: invoiceMailSubjects(invoice),
           idempotencyKey: `invoice.notice:${invoice.id}:${recipient.id}`,
         });
       }
@@ -163,7 +165,7 @@ export class InvoiceNoticeSender {
               pdfStored: { store: "customer-documents" as const, key },
             },
     };
-    const failure = await this.sendEach(data, recipients, resendId);
+    const failure = await this.sendEach(data, recipients, resendId, invoiceMailSubjects(invoice));
     await this.uow.run(() => this.journal(invoice, recipients, failure, true));
     return { recipients, failure };
   }
@@ -229,6 +231,7 @@ export class InvoiceNoticeSender {
     data: ByReference<InvoiceIssuedMailData>,
     recipients: readonly InvoiceRecipient[],
     resendId: string,
+    subjects: readonly MailSubject[],
   ): Promise<string | null> {
     const refusals: string[] = [];
     for (const recipient of recipients) {
@@ -237,6 +240,7 @@ export class InvoiceNoticeSender {
           template: TEMPLATE,
           to: recipient.email,
           data,
+          subjects,
           idempotencyKey: `invoice.notice-resend:${resendId}:${recipient.id}`,
         });
       } catch (cause: unknown) {
@@ -251,4 +255,18 @@ export class InvoiceNoticeSender {
       MAX_FAILURE_LENGTH,
     );
   }
+}
+
+/**
+ * Les sujets d'un avis de facture : la facture, sa société payeuse et CHACUNE
+ * de ses commandes — la fiche d'une commande retrouve ainsi sa facture (plan
+ * `plan-sujet-des-e-mails.md`, règle 2).
+ */
+export function invoiceMailSubjects(invoice: Invoice): readonly MailSubject[] {
+  const state = invoice.toState();
+  return [
+    { type: "invoice", id: state.id },
+    { type: "company", id: state.buyer.companyId },
+    ...state.orders.map((order) => ({ type: "order" as const, id: order.orderId })),
+  ];
 }

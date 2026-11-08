@@ -112,6 +112,7 @@ describe("NotifyPrincipalOnOrderPlaced", () => {
         enteredByTeam: false,
       },
       idempotencyKey: "sub-account-notice:evt_1:owner",
+      subjects: [{ type: "company", id: "alpes" }],
     });
   });
 

@@ -13,7 +13,7 @@ describe("DevCustomerIdentity — le lien de mot de passe, par le bloc mail", ()
     const mails = new RecordingMail();
     const port = new DevCustomerIdentity(new AppConfig(), mails, new FixedIdGenerator("mail"));
 
-    await port.sendPasswordResetLink("dev|camille@halles.fr", "camille@halles.fr");
+    await port.sendPasswordResetLink("dev|camille@halles.fr", "camille@halles.fr", "user_1");
 
     expect(mails.queued).toEqual([]);
     expect(mails.awaitedReceipt).toHaveLength(1);
@@ -21,6 +21,7 @@ describe("DevCustomerIdentity — le lien de mot de passe, par le bloc mail", ()
       to: "camille@halles.fr",
       template: "customer.password-reset",
       idempotencyKey: "account.password-reset:mail_000001",
+      subjects: [{ type: "account", id: "user_1" }],
     });
     expect(mails.awaitedReceipt[0]?.idempotencyKey).not.toContain("camille");
   });

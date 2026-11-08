@@ -81,6 +81,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
         template: "staff.access-suspended",
         idempotencyKey: `staff.access-suspended:s1:${FIRST}`,
         data: { firstName: "Cécile" },
+        subjects: [{ type: "staff_member", id: "s1" }],
       },
     ]);
     expect(h.mails.inside).toEqual([true]);
@@ -101,6 +102,7 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
         template: "staff.access-restored",
         idempotencyKey: `staff.access-restored:s1:${FIRST}`,
         data: { firstName: "Cécile", backOfficeUrl: "https://admin.test" },
+        subjects: [{ type: "staff_member", id: "s1" }],
       },
     ]);
   });

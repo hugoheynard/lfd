@@ -170,6 +170,10 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         pdfStored: { store: "customer-documents", key },
         fileName: document.fileName,
       },
+      subjects: [
+        { type: "mandate", id: mandate.id },
+        { type: "company", id: command.companyId },
+      ],
       idempotencyKey: `mandate-to-sign:${mandate.id}:${command.intentKey}`,
     });
     await this.events.publishTraced(

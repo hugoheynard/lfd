@@ -52,6 +52,7 @@ export class VitrineNoticeDispatcher {
         to,
         template: "agency.vitrine-notice",
         data: { subject: notice.text.subject, message: notice.text.message },
+        subjects: [{ type: "vitrine_subscriber", id: subscriberId }],
         idempotencyKey: `vitrine-notice:${notice.id}:${subscriberId}`,
       });
       return isMailAccepted(receipt);

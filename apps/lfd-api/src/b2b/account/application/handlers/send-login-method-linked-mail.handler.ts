@@ -76,6 +76,7 @@ export class SendLoginMethodLinkedMail implements DurableSubscriber {
         firstName: profile.firstName,
         methodLabel: METHOD_LABELS[event.provider] ?? event.provider,
       },
+      subjects: [{ type: "account", id: event.userId }],
       // Clé **déterministe** par FAIT : un fait rejoué par la boîte d'envoi ne
       // fait pas partir un second message. L'identifiant du fait y entre
       // parce que le bloc `mail` garde ses clés un an (et non 24 h comme

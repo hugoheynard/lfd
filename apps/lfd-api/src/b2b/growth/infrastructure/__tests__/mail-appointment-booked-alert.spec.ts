@@ -78,6 +78,7 @@ describe("MailAppointmentBookedAlert", () => {
           appointmentUrl: "https://bo.lfc.fr/rendez-vous/appt_1",
         },
         idempotencyKey: "mail:appointment.booked:appt_1",
+        subjects: [{ type: "appointment", id: "appt_1" }],
       },
     ]);
   });

@@ -116,6 +116,7 @@ export class OpenStaffAccess {
         template,
         idempotencyKey: `${template}:${target.id}:${intentKey}`,
         data: { firstName: target.firstName, passwordSetupUrl },
+        subjects: [{ type: "staff_member", id: target.id }],
       });
       return isMailAccepted(receipt);
     } catch (error) {

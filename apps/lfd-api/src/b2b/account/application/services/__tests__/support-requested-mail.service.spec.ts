@@ -35,6 +35,10 @@ describe("SupportRequestedMail — la demande de rappel, à la boîte de l'équi
           phoneNumber: "06 12 34 56 78",
           message: "Une facture en double",
         },
+        subjects: [
+          { type: "account", id: "user_1" },
+          { type: "company", id: "c1" },
+        ],
         idempotencyKey: "mail:support.requested:sr_1",
       },
     ]);

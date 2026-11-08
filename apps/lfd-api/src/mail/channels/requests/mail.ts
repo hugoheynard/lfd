@@ -38,8 +38,10 @@ export interface MailDemand<K extends keyof B2bMails> {
    * d'une demande client, pour que l'équipe lui réponde d'un clic (lot S2c).
    * Le mailer la revalide avant d'en faire un en-tête ; une adresse refusée
    * refuse l'envoi — à l'appelant de l'écarter avant (`isValidReplyTo`).
+   * `undefined` admis (2026-11-08, lot E5) : la porte `mail-subject-declared`
+   * refuse un objet étalé, et un appelant écrit donc la clé même sans adresse.
    */
-  readonly replyTo?: string;
+  readonly replyTo?: string | undefined;
   /**
    * **Ce pour quoi l'e-mail part** (plan `plan-sujet-des-e-mails.md`, règles
    * 1 et 2) : « commande `cmd_123` », plusieurs pour une facture. Rangés au

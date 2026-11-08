@@ -132,6 +132,14 @@ describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () =
       ],
     ]);
     expect(h.mails.awaitedReceipt).toEqual([]);
+    // Règle 2 du plan des sujets : la fiche de chaque commande retrouve sa facture.
+    const subjects = [
+      { type: "invoice", id: h.invoice.id },
+      { type: "company", id: "c_port" },
+      { type: "order", id: "o_1" },
+      { type: "order", id: "o_2" },
+    ];
+    expect(h.mails.queued.map((mail) => mail.subjects)).toEqual([subjects, subjects]);
     expect(h.mails.queued[0]?.data).toMatchObject({
       invoiceNumber: "FA-LFD-2026-000001",
       period: "du 1er au 30 septembre 2026",
@@ -276,6 +284,12 @@ describe("le renvoi de « Votre facture » (E6, suite (b)) — envoyé sur-le-ch
     expect(h.mails.queued).toEqual([]);
     expect(h.mails.awaitedReceipt.map((mail) => mail.idempotencyKey)).toEqual([
       "invoice.notice-resend:rs_1:contact:1",
+    ]);
+    expect(h.mails.awaitedReceipt[0]?.subjects).toEqual([
+      { type: "invoice", id: h.invoice.id },
+      { type: "company", id: "c_port" },
+      { type: "order", id: "o_1" },
+      { type: "order", id: "o_2" },
     ]);
     const facts = h.events.traced.map((event) => event.journalFact());
     expect(facts.map((fact) => fact.type)).toEqual(["invoice.notice_resent"]);

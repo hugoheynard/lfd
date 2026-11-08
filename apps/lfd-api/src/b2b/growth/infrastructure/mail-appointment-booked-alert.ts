@@ -90,6 +90,7 @@ export class MailAppointmentBookedAlert extends AppointmentBookedAlert {
         // La page plein écran du back-office (`commercial.routes.ts`).
         appointmentUrl: base === null ? "" : `${base}/rendez-vous/${appointmentId}`,
       },
+      subjects: [{ type: "appointment", id: appointmentId }],
       // Un rendez-vous n'est pris qu'une fois : la clé ne demande rien de plus.
       idempotencyKey: `mail:appointment.booked:${appointmentId}`,
     });

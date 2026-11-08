@@ -69,8 +69,8 @@ export class SubjectRoutedCustomerIdentity extends CustomerIdentityPort {
     return this.of(subject).issuePasswordLink(subject);
   }
 
-  sendPasswordResetLink(subject: string, email: string): Promise<void> {
-    return this.of(subject).sendPasswordResetLink(subject, email);
+  sendPasswordResetLink(subject: string, email: string, userId: string): Promise<void> {
+    return this.of(subject).sendPasswordResetLink(subject, email, userId);
   }
 
   listLoginMethods(subject: string): Promise<readonly LoginMethod[]> {

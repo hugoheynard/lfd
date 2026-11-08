@@ -57,6 +57,7 @@ const DRAFT: AlertDraft = {
 const CONTEXT: AlertContext = {
   companyId: "co_1",
   companyName: "Chalet des Alpes",
+  orderId: "ord_42",
   orderNumber: "CMD-0042",
   occurredAt: new Date(0),
 };
@@ -104,6 +105,10 @@ describe("DispatchAlertChannels — le canal e-mail", () => {
           findings: ["Première commande de Pain de campagne"],
           accountUrl: "https://bo.lfc.fr/comptes-clients/co_1/alertes",
         },
+        subjects: [
+          { type: "company", id: "co_1" },
+          { type: "order", id: "ord_42" },
+        ],
         idempotencyKey: "mail:product.first_order:CMD-0042",
       },
     ]);

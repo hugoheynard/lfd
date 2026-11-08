@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { MailReceipt } from "@lfd/mailer";
 
+import type { MailSubject } from "../../../../mail/channels/requests/mail-subject.js";
 import { isMailAccepted, Mail } from "../../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { IdentitySubjectUnknownError } from "../../../../platform/shared/errors/identity-errors.js";
@@ -303,6 +304,7 @@ export class GrantAccountAccess extends AccountAccessGranter implements AccountA
           template: "customer.company-attached",
           // Son prénom à ELLE, pas celui saisi par le commercial.
           data: { firstName: known.firstName, companyName: input.companyName },
+          subjects: accessSubjects(known.userId, input.companyId),
           idempotencyKey: this.keyOf("company-attached", known.userId, input),
         }),
       );
@@ -340,6 +342,7 @@ export class GrantAccountAccess extends AccountAccessGranter implements AccountA
           to: input.email,
           template: "customer.access-opened",
           idempotencyKey: this.keyOf("access-opened", userId, input),
+          subjects: accessSubjects(userId, input.companyId),
           data: {
             firstName: input.firstName,
             companyName: input.companyName,
@@ -405,3 +408,11 @@ export class GrantAccountAccess extends AccountAccessGranter implements AccountA
  * Aucune adresse dans l'URL : la boutique ne souffle pas de `login_hint`.
  */
 const EMAIL_CODE_ENTRY_PATH = "/connexion/code";
+
+/** Les sujets d'un e-mail d'accès : le compte ouvert ou rattaché, et sa société. */
+function accessSubjects(userId: string, companyId: string): readonly MailSubject[] {
+  return [
+    { type: "account", id: userId },
+    { type: "company", id: companyId },
+  ];
+}

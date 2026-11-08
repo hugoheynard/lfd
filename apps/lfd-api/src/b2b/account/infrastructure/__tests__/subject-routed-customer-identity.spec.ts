@@ -119,8 +119,8 @@ describe("SubjectRoutedCustomerIdentity", () => {
    * qui ne le connaît pas — la panne que ce routeur existe pour supprimer.
    */
   it("route aussi l'envoi du lien de mot de passe", async () => {
-    await routeur.sendPasswordResetLink(FABRIQUE, "hugo@exemple.fr");
-    await routeur.sendPasswordResetLink(REAL, "hugo@exemple.fr");
+    await routeur.sendPasswordResetLink(FABRIQUE, "hugo@exemple.fr", "user_1");
+    await routeur.sendPasswordResetLink(REAL, "hugo@exemple.fr", "user_1");
 
     expect(vus.dev).toEqual([`envoi:${FABRIQUE}`]);
     expect(vus.auth0).toEqual([`envoi:${REAL}`]);

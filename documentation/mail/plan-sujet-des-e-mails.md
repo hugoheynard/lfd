@@ -76,7 +76,9 @@ flowchart LR
 type, id }` ; les types, décidés ici : `order`, `account`, `company`,
    `invoice`, `collection_batch`, `mandate`, `customer_request`,
    `staff_member`, `production_day`, et `appointment` (ajouté au bâti, le
-   2026-11-08 : le rendez-vous pris a un objet). La liste est fermée et déclarée par le
+   2026-11-08 : le rendez-vous pris a un objet), et `vitrine_subscriber`
+   (lot E5, 2026-11-08 : l'annonce de la vitrine part à un abonné du
+   webhook, une agence, qui n'est ni un compte ni une société). La liste est fermée et déclarée par le
    canal du bloc ; un type neuf s'ajoute par une ligne. `id` : chaîne non
    vide, 120 caractères au plus. Le bloc `mail` ne lit jamais l'objet :
    `mail → b2b` reste interdit.

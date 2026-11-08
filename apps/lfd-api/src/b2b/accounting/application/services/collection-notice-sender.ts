@@ -89,6 +89,14 @@ export class CollectionNoticeSender {
         to: state.recipient.email,
         template: "customer.collection-notice",
         data: content,
+        // Le lot qu'il annonce quand la ligne est connue, et la société débitrice.
+        // Les commandes ne sont pas sur l'avis (des numéros de facture, pas des ids).
+        subjects: [
+          ...(state.line === null
+            ? []
+            : [{ type: "collection_batch" as const, id: state.line.batchId }]),
+          { type: "company", id: state.debtorCompanyId },
+        ],
         idempotencyKey: `collection.notice:${state.id}`,
       });
       return null;

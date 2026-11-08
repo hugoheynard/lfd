@@ -64,6 +64,10 @@ describe("l'envoi d'un avis de prélèvement", () => {
         to: "compta@port.test",
         template: "customer.collection-notice",
         idempotencyKey: "collection.notice:n1",
+        subjects: [
+          { type: "collection_batch", id: "b1" },
+          { type: "company", id: "c_port" },
+        ],
         data: {
           kind: "notice",
           creditorName: "Crazeativity",

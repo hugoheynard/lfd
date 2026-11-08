@@ -61,27 +61,11 @@ const SELF = "dev-toolbox/gates/mail-subject-declared.mjs";
 export const ADMITTED = new Map();
 
 /**
- * Les envoyeurs pas encore migrés (relevé du 2026-11-08, lot E1) : ils
- * passent à leur sujet au fil du lot E5 du plan.
+ * Les envoyeurs pas encore migrés (relevé du 2026-11-08, lot E1 : 16
+ * fichiers). VIDE depuis le lot E5 (2026-11-08) : chacun nomme ses sujets.
+ * Un écart neuf échoue ; il ne s'inscrit pas ici.
  */
-export const DEBT = new Set([
-  `${SRC}/b2b/alerts/application/handlers/dispatch-alert-channels.service.ts`,
-  `${SRC}/b2b/account/application/handlers/send-login-method-linked-mail.handler.ts`,
-  `${SRC}/b2b/account/application/services/grant-account-access.service.ts`,
-  `${SRC}/b2b/account/application/services/support-requested-mail.service.ts`,
-  `${SRC}/b2b/account/infrastructure/auth0-customer-identity.ts`,
-  `${SRC}/b2b/account/infrastructure/dev-customer-identity.ts`,
-  `${SRC}/b2b/accounting/application/services/collection-notice-sender.ts`,
-  `${SRC}/b2b/accounting/application/services/invoice-notice-sender.ts`,
-  `${SRC}/b2b/contact/application/services/customer-request-mail.service.ts`,
-  `${SRC}/b2b/growth/infrastructure/mail-appointment-booked-alert.ts`,
-  `${SRC}/b2b/payments/application/commands/send-mandate.handler.ts`,
-  `${SRC}/b2b/sub-account-notices/application/services/principal-notice.sender.ts`,
-  `${SRC}/b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`,
-  `${SRC}/production/application/services/dossier-dispatch.service.ts`,
-  `${SRC}/staff/directory/application/set-staff-status.handler.ts`,
-  `${SRC}/staff/invitations/open-staff-access.service.ts`,
-]);
+export const DEBT = new Set();
 
 const INJECTION =
   /\b(?:private|protected|public|readonly)\s+(?:readonly\s+)?(\w+)\s*:\s*Mail\b(?![\w.])/g;

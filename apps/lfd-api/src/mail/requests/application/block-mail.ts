@@ -20,7 +20,7 @@ interface TypedDemand {
   readonly to: string;
   readonly data: unknown;
   readonly idempotencyKey: string;
-  readonly replyTo?: string;
+  readonly replyTo?: string | undefined;
   readonly subjects?: readonly MailSubject[];
 }
 

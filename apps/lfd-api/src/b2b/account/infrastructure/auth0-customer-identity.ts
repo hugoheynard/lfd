@@ -73,7 +73,7 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
    * `mail.requested` de la boîte d'envoi, gardé 30 jours. `sendAndAwaitReceipt` ne range
    * que le suivi, jamais les données.
    */
-  async sendPasswordResetLink(subject: string, email: string): Promise<void> {
+  async sendPasswordResetLink(subject: string, email: string, userId: string): Promise<void> {
     const passwordSetupUrl = await this.identities.issuePasswordLink(
       subject,
       this.loginUrl(),
@@ -83,6 +83,7 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
       to: email,
       template: "customer.password-reset",
       data: { passwordSetupUrl },
+      subjects: [{ type: "account", id: userId }],
       idempotencyKey: passwordResetMailKey(this.ids),
     });
   }

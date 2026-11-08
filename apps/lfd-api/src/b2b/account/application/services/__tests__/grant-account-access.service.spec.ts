@@ -144,6 +144,8 @@ interface SentMail {
   readonly greeting: unknown;
   /** L'entrée par code proposée d'abord (2026-10-09), ou `null` / absente. */
   readonly signInUrl?: unknown;
+  /** Les sujets de la demande (lot E5) : le compte et sa société. */
+  readonly subjects: MailDemand<keyof B2bMails>["subjects"];
 }
 
 /**
@@ -176,6 +178,7 @@ class GrantMails extends Mail {
       carriesPasswordLink: "passwordSetupUrl" in data,
       greeting: "firstName" in data ? String(data.firstName) : "",
       ...("signInUrl" in data ? { signInUrl: data.signInUrl } : {}),
+      subjects: demand.subjects,
     });
     return Promise.resolve({ providerId: this.options.enabled ? "re_1" : null });
   }
@@ -262,6 +265,10 @@ describe("GrantAccountAccess — personne inconnue", () => {
     expect(members.attached).toEqual([{ userId: "user_new", companyId: "cmp_1", role: "owner" }]);
     expect(sent[0]?.template).toBe("customer.access-opened");
     expect(sent[0]?.carriesPasswordLink).toBe(true);
+    expect(sent[0]?.subjects).toEqual([
+      { type: "account", id: "user_new" },
+      { type: "company", id: "cmp_1" },
+    ]);
   });
 });
 
@@ -374,6 +381,10 @@ describe("GrantAccountAccess — cliente active", () => {
     expect(identity.reissuedFor).toEqual([]);
     expect(sent[0]?.template).toBe("customer.company-attached");
     expect(sent[0]?.carriesPasswordLink).toBe(false);
+    expect(sent[0]?.subjects).toEqual([
+      { type: "account", id: "user_known" },
+      { type: "company", id: "cmp_1" },
+    ]);
   });
 
   it("aligne le rôle d'un rattachement déjà en place", async () => {

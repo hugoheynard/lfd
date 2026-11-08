@@ -322,6 +322,7 @@ describe("OpenStaffAccess — par le bloc `mail` (S2g)", () => {
         template: "staff.invited",
         idempotencyKey: `staff.invited:s1:${FIRST}`,
         data: { firstName: "Sophie", passwordSetupUrl: "https://lien/neuf" },
+        subjects: [{ type: "staff_member", id: "s1" }],
       },
     ]);
   });

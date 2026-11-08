@@ -114,6 +114,10 @@ export class DispatchAlertChannels extends AlertChannels {
         // alors le bouton plutôt que d'en rendre un qui ne mène nulle part.
         accountUrl: base === null ? "" : `${base}/comptes-clients/${context.companyId}/alertes`,
       },
+      subjects: [
+        { type: "company", id: context.companyId },
+        { type: "order", id: context.orderId },
+      ],
       // Une alerte par sorte et par commande : un fait rejoué ne demande rien de plus.
       idempotencyKey: `mail:${alertIdempotencyKey(draft.kind, context.orderNumber)}`,
     });

@@ -50,6 +50,7 @@ describe("SendVitrineNoticeHandler", () => {
       template: "agency.vitrine-notice",
       data: { subject: "Nouveau catalogue", message: "Bonjour,\nà vous." },
       idempotencyKey: "vitrine-notice:notice_000001:s1",
+      subjects: [{ type: "vitrine_subscriber", id: "s1" }],
     });
     const row = notices.rows.get(id);
     expect(row?.authorStaffId).toBe("staff-1");

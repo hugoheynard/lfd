@@ -1,6 +1,7 @@
 import { isValidReplyTo } from "@lfd/mailer";
 import { Injectable, Logger } from "@nestjs/common";
 
+import type { MailSubject } from "../../../../mail/channels/requests/mail-subject.js";
 import { Mail } from "../../../../mail/channels/requests/mail.js";
 import type { CustomerRequestReceivedEvent } from "../../domain/customer-request.events.js";
 import { presentationOf } from "../handlers/request-mail-details.js";
@@ -44,9 +45,10 @@ export class CustomerRequestMail {
     }
     await this.mail.send({
       to: event.recipientEmail,
-      ...(replyable ? { replyTo: request.author.email } : {}),
+      replyTo: replyable ? request.author.email : undefined,
       template: "staff.customer-request",
       idempotencyKey: `customer-request:${request.id}`,
+      subjects: customerRequestSubjects(request.id, request.companyId, request.userId),
       data: {
         requestId: request.id,
         ...presentationOf(request.details),
@@ -69,4 +71,17 @@ function clientLabelOf(companyId: string | null, userId: string | null): string 
     return `société ${companyId}`;
   }
   return userId === null ? "" : `compte ${userId}`;
+}
+
+/** Les sujets de l'e-mail : la demande, et le client connecté quand il y en a un. */
+function customerRequestSubjects(
+  requestId: string,
+  companyId: string | null,
+  userId: string | null,
+): readonly MailSubject[] {
+  return [
+    { type: "customer_request", id: requestId },
+    ...(companyId === null ? [] : [{ type: "company" as const, id: companyId }]),
+    ...(userId === null ? [] : [{ type: "account" as const, id: userId }]),
+  ];
 }

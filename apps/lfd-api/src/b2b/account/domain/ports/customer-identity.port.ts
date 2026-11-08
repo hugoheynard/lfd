@@ -99,9 +99,11 @@ export abstract class CustomerIdentityPort {
    * @param subject `sub` du fournisseur — l'identité visée.
    * @param email l'adresse du compte, celle de notre base : c'est à elle que le
    *   message part, jamais à une adresse reçue d'un appelant.
+   * @param userId l'identifiant de notre compte : le sujet de l'e-mail
+   *   (`account`), jamais le `sub` du tiers.
    * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
    */
-  abstract sendPasswordResetLink(subject: string, email: string): Promise<void>;
+  abstract sendPasswordResetLink(subject: string, email: string, userId: string): Promise<void>;
 
   /**
    * Les **méthodes de connexion** du compte, telles que le fournisseur les tient.

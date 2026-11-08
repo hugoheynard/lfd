@@ -26,6 +26,7 @@ describe("SendLoginMethodLinkedMail — l'alerte au titulaire", () => {
     expect(mails.queued[0]?.template).toBe("customer.login-method-linked");
     expect(mails.queued[0]?.data).toEqual({ firstName: "Camille", methodLabel: "Google" });
     expect(mails.queued[0]?.idempotencyKey).toBe("login_method.linked:u1:google-oauth2:evt_1");
+    expect(mails.queued[0]?.subjects).toEqual([{ type: "account", id: "u1" }]);
     expect(mails.awaitedReceipt).toEqual([]);
   });
 

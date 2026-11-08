@@ -85,6 +85,13 @@ export class SupportRequestedMail {
         phoneNumber: request.phoneNumber,
         message: request.message,
       },
+      // La personne qui demande, et sa société quand elle en désigne une.
+      subjects: [
+        { type: "account", id: request.requestedByUserId },
+        ...(request.companyId === null
+          ? []
+          : [{ type: "company" as const, id: request.companyId }]),
+      ],
       idempotencyKey: `mail:support.requested:${supportRequestId}`,
     });
   }
