@@ -103,10 +103,10 @@ milieu de l'écran : chaque bloc est la vraie portion d'e-mail.
 - **Les blocs** (panneau de droite) : titre, paragraphe, encadré, bouton,
   séparateur, colonnes, **image**. On ajoute, déplace, supprime les blocs
   libres ; les blocs du modèle se déplacent mais ne se suppriment pas.
-- **Les images** viennent de la médiathèque. On choisit un **format**
-  (originale, 3:2, 2:1, 1:1) et un **point focal** ; à la publication, le
-  serveur recadre et range sa propre copie, pour que l'e-mail ne dépende plus
-  de la médiathèque.
+- **Les images** viennent de la médiathèque, et d'elle seule. On choisit un
+  **format** (originale, 3:2, 2:1, 1:1) et un **point focal** ; à la
+  publication, le serveur recadre et range sa propre copie (voir « Les images
+  d'un e-mail » plus bas).
 - **Les conditions d'affichage** : un bloc qui n'apparaît que dans certains
   cas (par exemple l'itinéraire, seulement pour un retrait dont l'adresse est
   connue) porte un badge « Sous condition » et sa phrase ; l'aperçu se règle en « Retrait » ou
@@ -124,6 +124,31 @@ flowchart LR
     V --> E["les e-mails suivants<br/>partent avec elle"]
     V -. "revenir au modèle d'origine" .-> O["le modèle du code"]
 ```
+
+### Les images d'un e-mail
+
+Une image d'e-mail se **choisit dans la médiathèque** — c'est la seule source
+possible, sans réglage pour en ajouter une autre. À la **publication**, le
+serveur la télécharge, la recadre au format et au point focal choisis, et en
+range une **copie** dans le même bucket que la médiathèque, dans un dossier à
+part : `mail/`. L'e-mail envoyé pointe vers cette copie.
+
+Pourquoi une copie : un e-mail parti ne se rappelle pas. Si quelqu'un retire
+ou remplace l'image dans la médiathèque, les e-mails déjà envoyés et le
+modèle publié gardent la leur. Rien ne supprime jamais une copie.
+
+```mermaid
+flowchart LR
+    M["Médiathèque<br/>(bucket des médias)"] -- "choisie dans l'éditeur" --> D["Brouillon de l'e-mail<br/>pointe vers l'original"]
+    D -- "Publier" --> T["le serveur télécharge<br/>(médiathèque seulement)"]
+    T --> R["recadre<br/>format + point focal"]
+    R --> C["copie rangée sous<br/>médias / mail / templates"]
+    C --> E["l'e-mail envoyé<br/>pointe vers la copie"]
+```
+
+**Rien à régler** : le bucket des médias (`R2_MEDIA_*`) suffit. S'il est
+incomplet, publier un e-mail avec image est refusé, et le message nomme la
+variable qui manque.
 
 L'ancien écran **« Textes des e-mails »** (`/textes-emails`) renvoie
 désormais vers `/emails` ; son code est retiré depuis le 2026-11-07. Le droit qui ouvre l'éditeur s'appelle
@@ -178,11 +203,39 @@ Vérifié dans le code le 2026-11-07 sauf mention contraire.
   `sharp` dans `apps/lfd-api/src/mail/images/infrastructure/sharp-mail-image.reframer.ts`,
   stockage R2 dans `apps/lfd-api/src/mail/images/infrastructure/r2-mail-image.store.ts`,
   téléchargement borné dans `apps/lfd-api/src/mail/images/infrastructure/fetch-mail-image.downloader.ts`.
-  **Aucun réglage propre** (décidé le 2026-11-08) : une image ne se copie
-  **que** depuis la médiathèque (`AppConfig.mailImageOrigins`), et la copie
-  va dans le **bucket des médias**, sous `mail/templates/` — les variables
-  `R2_MEDIA_*` suffisent. Une image déjà sous `<médias>/mail/` est une copie
-  et ne se recopie pas.
+  Détail ci-dessous, « Les images : source et stockage ».
+
+### Les images : source et stockage (décidé par Hugo le 2026-11-08)
+
+Deux règles tenues **par construction** — aucune variable ne peut les
+desserrer :
+
+| Règle                                                                                        | Où                                                                                                                     | Pourquoi                                                                                                                                               |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| La source admise est l'origine de `R2_MEDIA_PUBLIC_BASE_URL`, et elle seule                  | `AppConfig.mailImageOrigins` (`apps/lfd-api/src/platform/config/app-config.ts`), vérifiée par `MailImageSource.admit`  | Publier un modèle fait télécharger le serveur : sans liste fermée, ce serait un client HTTP ouvert (SSRF). Le téléchargeur ne suit aucune redirection. |
+| La copie va dans le bucket des médias, sous `mail/templates/<sha256>.<ext>`, servie immuable | `R2MailImageStore` (`apps/lfd-api/src/mail/images/infrastructure/r2-mail-image.store.ts`), `MAIL_COPIES_ROOT = "mail"` | Un seul bucket, un seul domaine public, aucun réglage propre au mailer. Le dossier `mail/` sépare ce que le bloc écrit de ce que la médiathèque range. |
+
+Conséquences à connaître :
+
+- **« Déjà une copie »** ne vaut que sous `<médias>/mail/`
+  (`MailImageAdmission.copiesBaseUrl`, posé par `mail-images.module.ts`).
+  Sources et copies partageant le bucket, une règle sur l'adresse des médias
+  entière aurait pris toute image de la médiathèque pour une copie, et sauté
+  son recadrage. Un test du copieur le tient
+  (`mail-image-copier.service.spec.ts`, « hors de `mail/`, se copie bien »).
+- **Aucune suppression ne les atteint** : le bloc `mail` n'a pas de verbe
+  pour retirer, et la médiathèque (`discard-media.ts`, `sweep-orphan-media.ts`)
+  ne supprime que les clés inscrites dans SA table, jamais en parcourant le
+  bucket — vérifié le 2026-11-08. Une copie sous `mail/` n'y figure pas.
+- **Les accès** : le jeton `R2_MEDIA_*` écrit aussi les copies. R2 donne ses
+  droits par bucket, pas par dossier ; un bucket à part ne se justifiait que
+  par là, et ce n'est plus le choix retenu.
+- **Le refus** : sans `R2_MEDIA_*` complets, la copie refuse en nommant ce qui
+  manque ; le bulletin de démarrage le signale déjà sous les médias.
+- **Ce qui a disparu** le 2026-11-08 : `MAIL_IMAGE_ORIGINS`, `R2_MAIL_BUCKET`,
+  `R2_MAIL_ACCESS_KEY_ID`, `R2_MAIL_SECRET_ACCESS_KEY`, `R2_MAIL_ENDPOINT`,
+  `R2_MAIL_PUBLIC_BASE_URL`, et le lecteur de config qui les lisait
+  (commits `82d3df1db`, `4f6451f7b`).
 
 ### Les tables
 
