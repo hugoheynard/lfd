@@ -79,7 +79,7 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     MailRequestsSweepController,
     MailRequestsWatchController,
     MailCheckController,
-    // T1 du suivi (plan `plan-suivi-des-e-mails.md`) : le webhook Resend,
+    // T1 du suivi (`le-suivi-des-e-mails.md`) : le webhook Resend,
     // sorti de `platform/mailer/`, range et applique les retours.
     ResendWebhookController,
   ],

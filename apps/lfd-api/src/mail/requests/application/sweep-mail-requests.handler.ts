@@ -55,7 +55,7 @@ const EMPTY: MailSweepReport = {
  * Resend n'en garde qu'un (ou rend un 409, qui laisse la demande `sending`).
  *
  * Il applique aussi les retours du fournisseur rangés mais manqués (plan
- * `plan-suivi-des-e-mails.md`, décision 2) : un rebond arrivé pendant
+ * `le-suivi-des-e-mails.md`, décision 2) : un rebond arrivé pendant
  * l'écriture de l'envoi, ou dont l'application a échoué.
  *
  * @sans-journal geste machine, idempotent ; le compte rendu, rendu et

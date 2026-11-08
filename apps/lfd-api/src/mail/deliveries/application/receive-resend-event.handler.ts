@@ -22,7 +22,7 @@ import { readReceivedEmail, readResendEvent, type ResendEvent } from "./resend-e
 
 /**
  * Prouve l'origine d'un webhook Resend, **range** le retour, puis l'applique
- * aux demandes connues (plan `documentation/mail/plan-suivi-des-e-mails.md`,
+ * aux demandes connues (`documentation/mail/le-suivi-des-e-mails.md`,
  * décision 2, lot T1).
  *
  * Ranger d'abord, parce qu'un rebond rapide peut arriver avant que l'envoi

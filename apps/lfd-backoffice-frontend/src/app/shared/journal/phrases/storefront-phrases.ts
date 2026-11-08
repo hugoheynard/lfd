@@ -334,7 +334,7 @@ const RECIPIENT_REVEALED_KEYS = ['subjectLabel', 'mail', 'space'];
 
 /**
  * **L'adresse d'un envoi est révélée** (`mail.recipient_revealed`,
- * plan-suivi-des-e-mails.md, décision 7) : « Colette Martin a affiché
+ * le-suivi-des-e-mails.md, décision 7) : « Colette Martin a affiché
  * l'adresse du destinataire d'un envoi de l'e-mail customer.order-ready ». Le
  * fait ne porte jamais l'adresse ; le sujet est l'envoi.
  */

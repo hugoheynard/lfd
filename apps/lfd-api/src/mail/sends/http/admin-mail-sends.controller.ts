@@ -29,7 +29,7 @@ function dateOrNull(value: string | undefined): Date | null {
 }
 
 /**
- * **Le suivi des e-mails** (plan `documentation/mail/plan-suivi-des-e-mails.md`,
+ * **Le suivi des e-mails** (`documentation/mail/le-suivi-des-e-mails.md`,
  * lot T2), sous le droit `mail_sends` — en LECTURE seule, révélation comprise :
  * révéler une adresse est une lecture tracée, pas une écriture du suivi.
  *

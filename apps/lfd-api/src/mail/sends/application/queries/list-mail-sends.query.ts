@@ -14,7 +14,7 @@ export interface MailSendCriteria {
 }
 
 /**
- * Query : **la liste du suivi des e-mails** (plan `plan-suivi-des-e-mails.md`,
+ * Query : **la liste du suivi des e-mails** (`le-suivi-des-e-mails.md`,
  * T2) — les problèmes d'abord, l'adresse masquée, par pages.
  */
 export class ListMailSendsQuery {

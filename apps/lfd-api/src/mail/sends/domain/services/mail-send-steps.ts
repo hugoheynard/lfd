@@ -28,7 +28,7 @@ export interface MailSendTimeline {
 
 /**
  * **Les étapes horodatées d'un envoi**, dans l'ordre du temps (plan
- * `plan-suivi-des-e-mails.md`, lot T2). Une étape sans instant n'est pas
+ * `le-suivi-des-e-mails.md`, lot T2). Une étape sans instant n'est pas
  * servie. `failedAt` est le DERNIER échec ou le refus : un envoi accepté
  * après un échec garde son échec dans l'histoire. La dernière tentative
  * n'est dite que si elle n'est pas la première.

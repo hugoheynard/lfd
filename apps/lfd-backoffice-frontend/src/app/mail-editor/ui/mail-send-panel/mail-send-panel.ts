@@ -44,7 +44,7 @@ export interface MailSendPanelData {
 }
 
 /**
- * **Le détail d'un envoi** (`plan-suivi-des-e-mails.md`, lot T3) : ses étapes
+ * **Le détail d'un envoi** (`le-suivi-des-e-mails.md`, lot T3) : ses étapes
  * datées, le genre du retour, la version du document, les tentatives —
  * l'adresse masquée. « Afficher l'adresse » révèle puis lit (décision 7) :
  * la consultation est inscrite au journal et vaut 5 minutes ; la raison d'un

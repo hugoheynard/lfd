@@ -27,7 +27,7 @@ import { PrismaStaffMailConsultationsRepository } from "./infrastructure/prisma-
 import { RegistryMailProbeTemplates } from "./infrastructure/registry-mail-probe-templates.js";
 
 /**
- * **Le suivi des e-mails** (plan `documentation/mail/plan-suivi-des-e-mails.md`,
+ * **Le suivi des e-mails** (`documentation/mail/le-suivi-des-e-mails.md`,
  * lot T2) : la liste et le détail des envois sous le droit `mail_sends`,
  * l'adresse révélée sur demande, tracée et plafonnée. La purge de ses
  * consultations vit avec celle du suivi, dans `MailModule`.

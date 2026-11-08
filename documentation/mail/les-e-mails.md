@@ -51,6 +51,11 @@ sequenceDiagram
 identifiant Resend). Elle doit être effacée au bout d'un an ; la purge existe
 mais tourne **à blanc** tant que Hugo ne l'active pas.
 
+**Le suivi des envois** : chaque e-mail a une fiche — demandé, accepté par
+Resend, puis remis, rebondi ou spam —, lisible dans Email Templates › Suivi
+des envois, l'adresse masquée et sa consultation tracée. Détail :
+[`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md).
+
 **La sonde et la veille** : à chaque déploiement, la sonde envoie un e-mail
 immédiat **et** un e-mail différé, et le déploiement échoue si le second
 n'est pas parti en 75 s. En continu, une veille regarde toutes les 5 minutes
@@ -321,9 +326,10 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
 
 ### c. Décisions en suspens
 
-1. Rendre visibles les e-mails « échoués » au staff (écran du suivi) : la
-   veille sonne, mais aucun écran ne liste les envois — Service, revue cas 2.
-   Plan écrit le 2026-11-08 : [`plan-suivi-des-e-mails.md`](plan-suivi-des-e-mails.md).
+1. ~~Rendre visibles les e-mails « échoués » au staff (écran du suivi)~~ —
+   fait le 2026-11-08, avec le sens de « envoyé » (point 6) : voir
+   [`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md), qui garde son
+   propre reste (T1b, sept jours après le déploiement de T1).
 2. Les pièces jointes par URL signée (S3c) « à revoir » ; d'ici là le bloc
    `mail` lit le stockage des pièces client — Service § 22.
 3. Le dossier du fournil part encore en octets : ouvrir son stockage au bloc
@@ -333,8 +339,10 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
    2026-11-07 : le contexte des journaux du paquet porte la clé d'idempotence
    (et l'identifiant Resend une fois accepté), que `mail.mail_request` relie
    au destinataire ; la porte `log-no-email` lit aussi `packages/*/src`.
-6. Le sens de « envoyé » : un type par étape, retours Resend reliés au suivi,
-   faits `mail.delivered` / `mail.bounced` — décidé, pas bâti — Service, revue cas 5.
+6. ~~Le sens de « envoyé » : un type par étape, retours Resend reliés au suivi~~
+   — fait le 2026-11-08 ([`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md)) ;
+   reste non bâti : les faits `mail.delivered` / `mail.bounced` publiés aux
+   autres blocs — Service, revue cas 5.
 7. ~~Adresse de réponse d'un espace obligatoire, refus de `no-reply`~~ —
    tranché oui et fait le 2026-11-07 : `validateMailSenderIdentity` refuse une
    adresse absente ou qui ne reçoit rien ; une identité déjà rangée sans elle

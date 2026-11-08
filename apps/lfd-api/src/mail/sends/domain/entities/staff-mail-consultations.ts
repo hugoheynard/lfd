@@ -1,7 +1,7 @@
 import { MailConsultationLimitReachedError } from "../errors/mail-sends.errors.js";
 
 /**
- * **Le plafond horaire** des consultations (plan `plan-suivi-des-e-mails.md`,
+ * **Le plafond horaire** des consultations (`le-suivi-des-e-mails.md`,
  * décisions 7 et 8) : adresses révélées et recherches par adresse, partagé.
  */
 export const MAIL_CONSULTATIONS_PER_HOUR = 30;

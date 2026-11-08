@@ -1,6 +1,6 @@
 /**
  * E2E du **webhook Resend** — ce que devient un e-mail après son envoi (plan
- * `documentation/mail/plan-suivi-des-e-mails.md`, lot T1).
+ * `documentation/mail/le-suivi-des-e-mails.md`, lot T1).
  *
  * Ce que seule cette suite prouve, sur la vraie base :
  *

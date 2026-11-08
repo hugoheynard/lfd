@@ -18,7 +18,7 @@ export const MAIL_DELIVERY_SWEEP_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * **Applique un retour du fournisseur aux demandes qui portent son
- * identifiant** (plan `documentation/mail/plan-suivi-des-e-mails.md`,
+ * identifiant** (`documentation/mail/le-suivi-des-e-mails.md`,
  * décisions 2 et 3) : charger, `recordDelivery` (qui ne relève que vers le
  * haut), ranger. Partagé par le webhook, qui applique ce qu'il vient de
  * ranger, et par le balayeur, qui applique ce qui a été manqué.

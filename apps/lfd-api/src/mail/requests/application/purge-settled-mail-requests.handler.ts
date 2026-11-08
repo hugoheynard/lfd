@@ -25,7 +25,7 @@ export const MAIL_REQUEST_PURGE_BATCH_SIZE = 500;
  * `dry-run` par défaut — elle compte et journalise ce qu'elle supprimerait.
  *
  * Sous le même cran, les retours du fournisseur orphelins depuis 30 jours
- * (plan `plan-suivi-des-e-mails.md`, décision 2, lot T1). Le compte rendu des
+ * (`le-suivi-des-e-mails.md`, décision 2, lot T1). Le compte rendu des
  * demandes reste à la racine de la réponse ; celui des retours est à côté.
  * Et, toujours sous ce cran, les consultations du suivi (révélations et
  * recherches) de plus d'un an (lot T2).

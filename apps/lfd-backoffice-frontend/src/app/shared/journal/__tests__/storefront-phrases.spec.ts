@@ -272,7 +272,7 @@ describe('l’expéditeur d’un espace d’e-mails', () => {
   });
 });
 
-/** **Une adresse révélée** (`mail.recipient_revealed`, plan-suivi-des-e-mails.md, décision 7). */
+/** **Une adresse révélée** (`mail.recipient_revealed`, le-suivi-des-e-mails.md, décision 7). */
 describe('l’adresse d’un envoi révélée', () => {
   it('nomme l’e-mail, jamais l’adresse, sans détail restant', () => {
     const rendered = renderFact({
@@ -291,7 +291,7 @@ describe('l’adresse d’un envoi révélée', () => {
   });
 });
 
-/** **Une recherche par adresse** (`mail.recipient_searched`, plan-suivi-des-e-mails.md, décision 8). */
+/** **Une recherche par adresse** (`mail.recipient_searched`, le-suivi-des-e-mails.md, décision 8). */
 describe('la recherche des envois d’une adresse', () => {
   it('compte les envois trouvés, sans adresse, sans détail restant', () => {
     const rendered = renderFact({

@@ -147,7 +147,7 @@ export interface DeferredMailDemand<K extends DeferrableMailTemplate> extends Om
 
 /**
  * **L'étape « demandée »** — ce que rend `mail.send` (plan
- * `documentation/mail/plan-suivi-des-e-mails.md`, T4 ; revue, cas 5) : la
+ * `documentation/mail/le-suivi-des-e-mails.md`, T4 ; revue, cas 5) : la
  * demande est écrite dans la transaction de l'appelant, **rien n'est parti**.
  * Elle ne dit ni « envoyé » ni « prévenu » : un champ servi qui la lit
  * s'appelle `mailRequested` (`lint:mail-status-honest`).

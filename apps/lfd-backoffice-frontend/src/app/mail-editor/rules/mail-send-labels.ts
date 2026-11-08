@@ -11,7 +11,7 @@ import type {
 export type MailSendTone = 'neutral' | 'info' | 'warning' | 'alert' | 'success';
 
 /**
- * **Le dictionnaire du suivi des e-mails** (`plan-suivi-des-e-mails.md`,
+ * **Le dictionnaire du suivi des e-mails** (`le-suivi-des-e-mails.md`,
  * décision 12) : le serveur sert des codes anglais, l'écran les dit en
  * français. `accepted` veut dire « Resend l'a accepté », rien de plus — le
  * mot « envoyé » n'apparaît pas, il mentirait sur ce qu'on sait.

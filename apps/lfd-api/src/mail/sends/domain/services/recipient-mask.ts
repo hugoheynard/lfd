@@ -3,7 +3,7 @@ const MASK = "•••";
 
 /**
  * **L'adresse masquée** du suivi des e-mails (plan
- * `plan-suivi-des-e-mails.md`, décisions de Hugo du 2026-11-08) : la première
+ * `le-suivi-des-e-mails.md`, décisions de Hugo du 2026-11-08) : la première
  * lettre de la partie locale, puis le domaine — `colette@halles.fr` →
  * `c•••@halles.fr`. Assez pour reconnaître un envoi parmi d'autres, pas assez
  * pour écrire à quelqu'un.

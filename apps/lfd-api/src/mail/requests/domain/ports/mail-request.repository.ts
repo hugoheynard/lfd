@@ -13,7 +13,7 @@ export abstract class MailRequestRepository {
   abstract findByIdempotencyKey(key: string): Promise<MailRequest | null>;
   /**
    * Les demandes qui portent cet identifiant fournisseur — plusieurs si la
-   * base en a en double (index non unique, plan `plan-suivi-des-e-mails.md`,
+   * base en a en double (index non unique, `le-suivi-des-e-mails.md`,
    * décision 3). Sert à appliquer un retour.
    */
   abstract findByProviderId(providerId: string): Promise<readonly MailRequest[]>;

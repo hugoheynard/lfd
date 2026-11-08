@@ -66,7 +66,7 @@ export interface MailRequestSnapshot {
   readonly recipient: string;
   /**
    * L'adresse normalisée (minuscules) à laquelle une recherche compare (plan
-   * `plan-suivi-des-e-mails.md`, décision 9). Écrite par l'agrégat, jamais
+   * `le-suivi-des-e-mails.md`, décision 9). Écrite par l'agrégat, jamais
    * par l'appelant.
    */
   readonly recipientKey: string;

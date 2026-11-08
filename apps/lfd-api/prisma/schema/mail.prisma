@@ -54,7 +54,7 @@ model MailRequest {
   /// ou rien d'envoyé encore.
   documentVersion Int?      @map("document_version")
   /// L'adresse en minuscules, écrite par l'agrégat (plan
-  /// `plan-suivi-des-e-mails.md`, décision 9) ; la recherche y compare.
+  /// `le-suivi-des-e-mails.md`, décision 9) ; la recherche y compare.
   /// Nullable : une demande écrite par un binaire d'avant T1 n'en porte pas.
   recipientKey    String?   @map("recipient_key") @db.VarChar(320)
   /// Le retour du fournisseur (décision 1) : `delayed` | `delivered` |
@@ -74,7 +74,7 @@ model MailRequest {
 }
 
 /// **Un retour du fournisseur, rangé avant d'être appliqué** (plan
-/// `plan-suivi-des-e-mails.md`, décision 2) : un rebond peut arriver avant
+/// `le-suivi-des-e-mails.md`, décision 2) : un rebond peut arriver avant
 /// que la demande n'ait reçu son `provider_id`. Le webhook range d'abord ici —
 /// `svix_id` unique, c'est lui qui dédoublonne un rejeu — puis applique aux
 /// demandes connues ; la demande relit ses retours à la pose de son
@@ -102,7 +102,7 @@ model MailDeliveryEvent {
 }
 
 /// **Une adresse révélée** dans le suivi des e-mails (plan
-/// `plan-suivi-des-e-mails.md`, décision 7, T2) : qui, quel envoi, quand —
+/// `le-suivi-des-e-mails.md`, décision 7, T2) : qui, quel envoi, quand —
 /// jamais l'adresse. La lecture de l'adresse n'est permise qu'à ce membre du
 /// staff, pour cet envoi, dans les 5 minutes ; la ligne compte aussi dans le
 /// plafond de 30 consultations par heure et par personne.

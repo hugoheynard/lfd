@@ -371,7 +371,7 @@ export const COMMERCE_FACTS = {
 
   /**
    * **L'adresse du destinataire d'un envoi est révélée** dans le suivi des
-   * e-mails (`plan-suivi-des-e-mails.md`, décision 7, T2). L'acteur est celui
+   * e-mails (`le-suivi-des-e-mails.md`, décision 7, T2). L'acteur est celui
    * de la ligne ; le sujet, la demande d'e-mail (`mail_send`). L'adresse n'est
    * JAMAIS dans la charge : la trace dit « révélé », pas « ce qui a été lu ».
    * Pendant 5 minutes, relire l'adresse ne trace rien de plus.
@@ -389,7 +389,7 @@ export const COMMERCE_FACTS = {
 
   /**
    * **Les envois d'une adresse sont cherchés** dans le suivi des e-mails
-   * (`plan-suivi-des-e-mails.md`, décision 8, T2). Le sujet est la recherche
+   * (`le-suivi-des-e-mails.md`, décision 8, T2). Le sujet est la recherche
    * (`mail_recipient_search`) ; l'adresse n'est JAMAIS dans la charge — la
    * table n'en garde que l'empreinte. `found` : combien d'envois trouvés.
    */

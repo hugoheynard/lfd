@@ -47,7 +47,7 @@ export interface MailSendRecord {
 }
 
 /**
- * Port de LECTURE du suivi des envois (plan `plan-suivi-des-e-mails.md`, T2).
+ * Port de LECTURE du suivi des envois (`le-suivi-des-e-mails.md`, T2).
  * Il ne rend jamais `failure_reason` : elle peut citer l'adresse, et ne se
  * sert qu'avec une révélation ({@link MailRecipientReader}).
  */

@@ -261,7 +261,7 @@ export const routes: Routes = [
       import('./mail-editor/ui/mail-sender-page/mail-sender-page').then((m) => m.MailSenderPage),
   },
   {
-    // **Le suivi des envois** (plan `mail/plan-suivi-des-e-mails.md`, T3), sous
+    // **Le suivi des envois** (plan `mail/le-suivi-des-e-mails.md`, T3), sous
     // son droit à part, `mail_sends`. Déclaré AVANT `emails/:template` : sinon
     // « envois » serait lu comme une clé de modèle (aucune ne s'appelle ainsi —
     // les clés sont pointées, `customer.order-ready` ; vérifié le 2026-11-08).

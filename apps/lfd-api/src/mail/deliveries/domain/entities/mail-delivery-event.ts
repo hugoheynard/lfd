@@ -30,7 +30,7 @@ function required(field: string, value: string, max: number): string {
 
 /**
  * **Un retour du fournisseur, rangé avant d'être appliqué** (plan
- * `documentation/mail/plan-suivi-des-e-mails.md`, décision 2). Immuable : un
+ * `documentation/mail/le-suivi-des-e-mails.md`, décision 2). Immuable : un
  * retour reçu ne change plus, il s'applique ou se purge. Le `svixId` le rend
  * unique — un rejeu de Svix ne range pas deux fois — et le genre (`kind`)
  * est le seul mot du fournisseur qu'il garde (décision 4).

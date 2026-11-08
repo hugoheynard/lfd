@@ -15,7 +15,7 @@ import { mailSendQuery, type MailSendFilters } from '../rules/mail-send-labels';
 const BASE = `${B2B_API_BASE}/admin/mail/sends`;
 
 /**
- * **Le suivi des e-mails** (`plan-suivi-des-e-mails.md`, lot T2), muré côté
+ * **Le suivi des e-mails** (`le-suivi-des-e-mails.md`, lot T2), muré côté
  * serveur par le droit `mail_sends`.
  *
  * 🔴 Une adresse ne voyage JAMAIS dans une URL : la recherche la pose dans le

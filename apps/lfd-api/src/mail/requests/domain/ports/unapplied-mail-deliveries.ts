@@ -7,7 +7,7 @@ export interface UnappliedMailDelivery {
 }
 
 /**
- * Port de **lecture** du balayeur (plan `plan-suivi-des-e-mails.md`,
+ * Port de **lecture** du balayeur (`le-suivi-des-e-mails.md`,
  * décision 2) : les retours rangés plus graves que celui de la demande qui
  * porte leur identifiant — ceux qu'une application a manqués (le webhook est
  * arrivé entre la lecture et l'écriture de l'envoi, ou son application a

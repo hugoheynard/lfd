@@ -2591,7 +2591,7 @@
       "colonne": "mail.mail_request.recipient_key",
       "personne": "client",
       "categorie": "identite",
-      "finalite": "L'adresse du destinataire en minuscules, écrite par l'agrégat à la création (plan-suivi-des-e-mails.md, décision 9) : la recherche d'un envoi par adresse y compare. Même durée que `recipient`, et part avec la ligne. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "finalite": "L'adresse du destinataire en minuscules, écrite par l'agrégat à la création (le-suivi-des-e-mails.md, décision 9) : la recherche d'un envoi par adresse y compare. Même durée que `recipient`, et part avec la ligne. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
       "conservation": {
         "jours": 365
       },
@@ -2624,7 +2624,7 @@
       "colonne": "mail.mail_recipient_reveal.revealed_by",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Quel membre du staff a révélé l'adresse d'un envoi dans le suivi des e-mails : la lecture de l'adresse n'est permise qu'à lui, 5 minutes, et la ligne compte dans son plafond de 30 consultations par heure (plan-suivi-des-e-mails.md, décision 7). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_revealed`).",
+      "finalite": "Quel membre du staff a révélé l'adresse d'un envoi dans le suivi des e-mails : la lecture de l'adresse n'est permise qu'à lui, 5 minutes, et la ligne compte dans son plafond de 30 consultations par heure (le-suivi-des-e-mails.md, décision 7). À supprimer 1 an après la consultation (le-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_revealed`).",
       "conservation": {
         "jours": 365
       },
@@ -2635,7 +2635,7 @@
       "colonne": "mail.mail_recipient_reveal.revealed_at",
       "personne": "staff",
       "categorie": "horodatage-geste",
-      "finalite": "L'instant de la révélation : il ouvre la lecture 5 minutes et compte dans le plafond horaire de son auteur (décision 7). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_revealed`).",
+      "finalite": "L'instant de la révélation : il ouvre la lecture 5 minutes et compte dans le plafond horaire de son auteur (décision 7). À supprimer 1 an après la consultation (le-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_revealed`).",
       "conservation": {
         "jours": 365
       },
@@ -2646,7 +2646,7 @@
       "colonne": "mail.mail_recipient_search.searched_by",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Quel membre du staff a cherché les envois d'une adresse dans le suivi des e-mails : la recherche compte dans son plafond de 30 consultations par heure (plan-suivi-des-e-mails.md, décision 8). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_searched`).",
+      "finalite": "Quel membre du staff a cherché les envois d'une adresse dans le suivi des e-mails : la recherche compte dans son plafond de 30 consultations par heure (le-suivi-des-e-mails.md, décision 8). À supprimer 1 an après la consultation (le-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.recipient_searched`).",
       "conservation": {
         "jours": 365
       },
@@ -2657,7 +2657,7 @@
       "colonne": "mail.mail_recipient_search.recipient_fingerprint",
       "personne": "client",
       "categorie": "donnees-email",
-      "finalite": "L'EMPREINTE de l'adresse cherchée (HMAC-SHA256 sous une clé dérivée de FIELD_ENCRYPTION_KEY, `AppConfig.mailRecipientSearchKey`), jamais l'adresse : elle permet de dire, sur demande d'une personne, si son adresse a été cherchée, sans garder l'adresse elle-même (décision 8). À supprimer 1 an après la consultation (plan-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "finalite": "L'EMPREINTE de l'adresse cherchée (HMAC-SHA256 sous une clé dérivée de FIELD_ENCRYPTION_KEY, `AppConfig.mailRecipientSearchKey`), jamais l'adresse : elle permet de dire, sur demande d'une personne, si son adresse a été cherchée, sans garder l'adresse elle-même (décision 8). À supprimer 1 an après la consultation (le-suivi-des-e-mails.md, lot T2 : « purgées à 1 an sous le même cran que le suivi »). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
       "conservation": {
         "jours": 365
       },
@@ -2811,7 +2811,7 @@
     },
     {
       "colonne": "mail.mail_request.delivery",
-      "raison": "Le retour du fournisseur sur l'e-mail (`delayed` | `delivered` | `complained` | `bounced`, contrainte en base) : un état, sans rien de la personne (plan-suivi-des-e-mails.md, décision 1)."
+      "raison": "Le retour du fournisseur sur l'e-mail (`delayed` | `delivered` | `complained` | `bounced`, contrainte en base) : un état, sans rien de la personne (le-suivi-des-e-mails.md, décision 1)."
     },
     {
       "colonne": "mail.mail_request.delivery_at",
@@ -2819,7 +2819,7 @@
     },
     {
       "colonne": "mail.mail_request.delivery_kind",
-      "raison": "Le GENRE du retour (`Permanent`, `Permanent/General`…), jamais le texte du fournisseur, qui cite l'adresse : une contrainte en base n'admet que des lettres (plan-suivi-des-e-mails.md, décision 4)."
+      "raison": "Le GENRE du retour (`Permanent`, `Permanent/General`…), jamais le texte du fournisseur, qui cite l'adresse : une contrainte en base n'admet que des lettres (le-suivi-des-e-mails.md, décision 4)."
     },
     {
       "colonne": "mail.mail_delivery_event.id",
@@ -2839,7 +2839,7 @@
     },
     {
       "colonne": "mail.mail_delivery_event.kind",
-      "raison": "Le GENRE du retour (`Permanent/General`), jamais le texte du fournisseur (`bounce.message`, qui cite l'adresse, n'est pas lu) ; contrainte en base : des lettres seulement (plan-suivi-des-e-mails.md, décision 4)."
+      "raison": "Le GENRE du retour (`Permanent/General`), jamais le texte du fournisseur (`bounce.message`, qui cite l'adresse, n'est pas lu) ; contrainte en base : des lettres seulement (le-suivi-des-e-mails.md, décision 4)."
     },
     {
       "colonne": "mail.mail_delivery_event.occurred_at",
@@ -2907,7 +2907,7 @@
     },
     {
       "colonne": "mail.mail_recipient_search_hit.mail_request_id",
-      "raison": "L'identifiant opaque d'une demande d'e-mail trouvée par une recherche (plan-suivi-des-e-mails.md, T2) : ni adresse ni nom — l'adresse reste dans `mail.mail_request.recipient`, au registre. Supprimé avec sa recherche (ON DELETE CASCADE), donc à 1 an sous `MAIL_REQUEST_PURGE`."
+      "raison": "L'identifiant opaque d'une demande d'e-mail trouvée par une recherche (le-suivi-des-e-mails.md, T2) : ni adresse ni nom — l'adresse reste dans `mail.mail_request.recipient`, au registre. Supprimé avec sa recherche (ON DELETE CASCADE), donc à 1 an sous `MAIL_REQUEST_PURGE`."
     }
   ]
 }

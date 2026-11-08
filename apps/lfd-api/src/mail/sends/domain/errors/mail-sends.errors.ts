@@ -16,7 +16,7 @@ export class MailSendNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * Le plafond des consultations est atteint (plan `plan-suivi-des-e-mails.md`,
+ * Le plafond des consultations est atteint (`le-suivi-des-e-mails.md`,
  * décisions 7 et 8) : 30 adresses révélées ou recherches par heure et par
  * personne. Le message dit quand reprendre.
  */

@@ -1,7 +1,7 @@
 import type { MailDeliveryEvent } from "../entities/mail-delivery-event.js";
 
 /**
- * Port d'**écriture** des retours rangés (plan `plan-suivi-des-e-mails.md`,
+ * Port d'**écriture** des retours rangés (`le-suivi-des-e-mails.md`,
  * décision 2). Une seule écriture : un retour ne se modifie pas.
  */
 export abstract class MailDeliveryEventLog {

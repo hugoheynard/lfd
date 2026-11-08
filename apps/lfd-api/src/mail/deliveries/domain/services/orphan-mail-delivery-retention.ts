@@ -1,6 +1,6 @@
 /**
  * **Combien de temps un retour sans demande se garde** : 30 jours (plan
- * `documentation/mail/plan-suivi-des-e-mails.md`, décision 2). Au-delà,
+ * `documentation/mail/le-suivi-des-e-mails.md`, décision 2). Au-delà,
  * aucune demande ne viendra plus le réclamer — l'envoi qui le précède écrit
  * son identifiant en quelques secondes.
  */

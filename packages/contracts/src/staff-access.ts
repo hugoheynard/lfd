@@ -659,7 +659,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Le suivi des e-mails** — lecture seule : la liste des envois, leur
    * détail, et l'adresse révélée sur demande, tracée au journal
-   * (`documentation/mail/plan-suivi-des-e-mails.md`, décision 11, lot T2,
+   * (`documentation/mail/le-suivi-des-e-mails.md`, décision 11, lot T2,
    * 2026-11-08). Un droit à part de `mail_templates` : rédiger un e-mail ne
    * donne pas à voir à qui il est parti. Ajoutée sans être accordée : elle
    * s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.

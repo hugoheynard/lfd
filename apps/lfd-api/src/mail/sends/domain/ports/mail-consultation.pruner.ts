@@ -2,7 +2,7 @@ import type { PurgeCensus, PurgeTarget } from "../../../../platform/retention/pu
 
 /**
  * Port de **purge** des consultations du suivi — révélations et recherches
- * plus vieilles que la frontière (plan `plan-suivi-des-e-mails.md`, T2 : 1 an,
+ * plus vieilles que la frontière (`le-suivi-des-e-mails.md`, T2 : 1 an,
  * sous le cran `MAIL_REQUEST_PURGE`).
  */
 export abstract class MailConsultationPruner implements PurgeTarget {

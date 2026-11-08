@@ -1,6 +1,6 @@
 /**
  * **Les deux axes d'un envoi, tels que le suivi les sert** (plan
- * `plan-suivi-des-e-mails.md`, décisions 1, 10, 12) : l'état de la demande
+ * `le-suivi-des-e-mails.md`, décisions 1, 10, 12) : l'état de la demande
  * (notre côté) et le retour du fournisseur, en codes anglais.
  *
  * Fonctions pures : la base garde ses valeurs (`sent` ne se renomme pas), et

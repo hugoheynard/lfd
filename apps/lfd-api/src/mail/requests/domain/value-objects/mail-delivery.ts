@@ -1,6 +1,6 @@
 /**
  * **Le retour du fournisseur** sur un e-mail accepté (plan
- * `documentation/mail/plan-suivi-des-e-mails.md`, décisions 1 et 3) : le
+ * `documentation/mail/le-suivi-des-e-mails.md`, décisions 1 et 3) : le
  * second axe d'une demande, à côté de son `status`. `null` côté demande =
  * rien reçu.
  *

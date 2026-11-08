@@ -1,6 +1,6 @@
 /**
  * **Combien de temps une consultation se garde** : 1 an, comme le suivi
- * qu'elle a consulté (plan `plan-suivi-des-e-mails.md`, T2). Les deux
+ * qu'elle a consulté (`le-suivi-des-e-mails.md`, T2). Les deux
  * tables décident de l'accès ; au-delà d'un an, aucune révélation ne vaut
  * plus, et la trace se lit au journal.
  */

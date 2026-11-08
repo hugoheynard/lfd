@@ -1,5 +1,5 @@
 /**
- * E2E du **suivi des e-mails** (plan `documentation/mail/plan-suivi-des-e-mails.md`,
+ * E2E du **suivi des e-mails** (`documentation/mail/le-suivi-des-e-mails.md`,
  * lot T2) : le droit `mail_sends`, la liste masquée et triée (problèmes
  * d'abord, sonde à part), le détail sans adresse ni raison d'échec, la
  * révélation tracée qui vaut 5 minutes pour son seul auteur, le plafond de

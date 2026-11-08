@@ -15,7 +15,7 @@ import {
  * Du rebond, seul le GENRE est lu (`bounce.type`, `bounce.subType` — forme
  * relue dans les types du SDK `resend` 6.18.1 le 2026-11-08 : `EmailBounce {
  * message, subType, type }`). `bounce.message` n'est JAMAIS lu : il cite
- * souvent l'adresse (plan `plan-suivi-des-e-mails.md`, décision 4).
+ * souvent l'adresse (`le-suivi-des-e-mails.md`, décision 4).
  */
 export interface ResendEvent {
   readonly delivery: MailDelivery;

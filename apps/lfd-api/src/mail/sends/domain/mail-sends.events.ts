@@ -3,7 +3,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 
 /**
- * Les faits du suivi des e-mails (plan `plan-suivi-des-e-mails.md`, T2),
+ * Les faits du suivi des e-mails (`le-suivi-des-e-mails.md`, T2),
  * gardés au journal pour la lisibilité : la consultation se lit dans l'écran
  * Journal, parmi les autres gestes (Hugo, 2026-11-08).
  */

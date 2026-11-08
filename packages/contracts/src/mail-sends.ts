@@ -1,7 +1,7 @@
 /**
  * **Le suivi des e-mails** — ce que `GET /admin/mail/sends*` sert au
  * back-office, sous le droit `mail_sends`
- * (`documentation/mail/plan-suivi-des-e-mails.md`, lot T2).
+ * (`documentation/mail/le-suivi-des-e-mails.md`, lot T2).
  *
  * Les états sont des CODES anglais (décision 12) : le back-office les traduit.
  * `accepted` est le `sent` de la base — Resend a accepté l'e-mail, rien de

@@ -225,7 +225,7 @@ enum StaffResource {
   mail_templates
   /// LE SUIVI DES E-MAILS — lecture seule : les envois, leur détail, l'adresse
   /// révélée sur demande et tracée (2026-11-08,
-  /// `documentation/mail/plan-suivi-des-e-mails.md`, T2). Accordée à l'écran.
+  /// `documentation/mail/le-suivi-des-e-mails.md`, T2). Accordée à l'écran.
   mail_sends
   ops_health
   /// LES OPÉRATIONS APRÈS DÉPLOIEMENT — simuler (lecture), appliquer

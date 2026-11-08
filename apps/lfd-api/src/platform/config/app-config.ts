@@ -179,7 +179,7 @@ export class AppConfig {
 
   /**
    * **La clé des empreintes d'adresses recherchées dans le suivi des e-mails**
-   * (`documentation/mail/plan-suivi-des-e-mails.md`, décision 8, T2).
+   * (`documentation/mail/le-suivi-des-e-mails.md`, décision 8, T2).
    *
    * Une recherche par adresse se trace sans garder l'adresse : la trace porte
    * `HMAC-SHA256(adresse normalisée)` sous cette clé. DÉRIVÉE de la clé du

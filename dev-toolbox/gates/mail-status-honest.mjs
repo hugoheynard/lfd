@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **un champ qui dit qu'un e-mail est « parti » nomme son étape**
- * (plan `documentation/mail/plan-suivi-des-e-mails.md`, T4 ; revue du
+ * (`documentation/mail/le-suivi-des-e-mails.md`, T4 ; revue du
  * service, cas 5, `documentation/mail/plan-service-e-mails.md`, décidé avec
  * Hugo le 2026-11-06).
  *
@@ -285,7 +285,7 @@ function main() {
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
       `\n  ${failures.length} écart(s). Un champ qui dit qu'un e-mail est parti nomme son étape ` +
-        "(plan-suivi-des-e-mails.md, T4).\n",
+        "(le-suivi-des-e-mails.md, T4).\n",
     );
     process.exit(1);
   }

@@ -34,7 +34,7 @@ const NOTHING_FOUND: FoldTableEmpty = {
 };
 
 /**
- * **Le suivi des envois** (`plan-suivi-des-e-mails.md`, lot T3), sous le
+ * **Le suivi des envois** (`le-suivi-des-e-mails.md`, lot T3), sous le
  * droit `mail_sends` : chaque e-mail demandé, son état et le retour de
  * Resend, les problèmes d'abord (ordre du serveur), filtrables, page par
  * page (« Charger plus », curseur du serveur).

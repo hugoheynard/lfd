@@ -27,7 +27,7 @@ import {
 /**
  * **Les critères du suivi des envois** : espace, modèle, état, retour,
  * période, et la bascule des sondes (`scope=probes`, listées à part —
- * `plan-suivi-des-e-mails.md`, décision 10). Chaque changement rend les
+ * `le-suivi-des-e-mails.md`, décision 10). Chaque changement rend les
  * critères entiers ; la page relit la liste.
  */
 @Component({
