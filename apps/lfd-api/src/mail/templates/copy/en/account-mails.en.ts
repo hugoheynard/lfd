@@ -64,6 +64,21 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       "You did not make this request? Do not follow this link, and reply to this " +
       "email: we will look into what happened.",
   },
+  "customer.marketing-confirm": {
+    kicker: "Sign-up",
+    subject: "Confirm your sign-up to our news",
+    title: "Confirm your sign-up",
+    intro:
+      "You asked to receive offers and news from La Folie Coffee. " +
+      "Confirm that this address is yours to start receiving them.",
+    validity:
+      "The link below is valid for 7 days and works only once. Without your " +
+      "confirmation, we will not write to you.",
+    cta: "Confirm my sign-up",
+    footer:
+      "You did not ask for this? Do not follow this link: this address will receive " +
+      "no offers, and the request will expire on its own.",
+  },
   "customer.sub-account-activity": {
     kicker: "Site activity",
     title: {

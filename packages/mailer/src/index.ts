@@ -76,6 +76,7 @@ export type {
   LayoutLogo,
   LayoutRow,
   LayoutSectionId,
+  LayoutUnsubscribe,
   MailCta,
 } from "./html.js";
 export { createResendInboundReader, ResendInboundReader } from "./inbound-reader.js";

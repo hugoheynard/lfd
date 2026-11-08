@@ -40,6 +40,25 @@ function variablesOf(text) {
   return [...new Set([...text.matchAll(VARIABLE)].map((match) => match[1]))];
 }
 
+/**
+ * Les phrases SYSTÈME (plan `documentation/mail/plan-desinscription-des-e-mails.md`,
+ * B2) : posées par le bloc hors de tout modèle — le pied de désinscription —,
+ * verrouillées, recensées à part sous `system`, mêmes champs qu'un texte.
+ */
+async function systemPhrases() {
+  const { MAIL_SYSTEM_COPY, MAIL_SYSTEM_VARIABLES } = await importTs(
+    `${COPY_DIR}/mail-system-copy.ts`,
+  );
+  const texts = [];
+  flatten(MAIL_SYSTEM_COPY.fr, "", texts);
+  return Object.fromEntries(
+    texts.map(([key, fr]) => [
+      key,
+      { variables: MAIL_SYSTEM_VARIABLES[key] ?? [], required: variablesOf(fr), fr },
+    ]),
+  );
+}
+
 /** Le manifeste, et son texte JSON tel qu'il est commité. */
 export async function buildMailCopyManifest() {
   const { MAIL_COPY } = await importTs(`${COPY_DIR}/mail-copy.ts`);
@@ -57,9 +76,12 @@ export async function buildMailCopyManifest() {
       }),
     );
   }
+  const system = await systemPhrases();
+  count += Object.keys(system).length;
   const manifest = {
     $comment: `Généré par \`${REGENERATE}\` depuis ${COPY_DIR}/ — ne pas éditer à la main.`,
     mails,
+    system,
   };
   return { manifest, count, json: `${JSON.stringify(manifest, null, 2)}\n` };
 }

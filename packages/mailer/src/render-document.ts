@@ -13,7 +13,13 @@ import { charterFrameTheme } from "./document-theme.js";
 import { isFullWidthImage } from "./full-width-image.js";
 import { renderLayout, renderLayoutFrame, renderLayoutFrameRows } from "./html.js";
 import { renderLayoutHeader } from "./layout-header.js";
-import { charterFooterOf, charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
+import {
+  charterFooterOf,
+  charterOf,
+  layoutFragments,
+  supportOf,
+  unsubscribeOf,
+} from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import {
   joinParts,
@@ -147,7 +153,7 @@ export function cardContextOf(
     audience,
     radius: charter.radius,
     hasHeader: renderLayoutHeader(input, charter) !== "",
-    hasFooter: `${charterFooterOf(input)}${supportOf(input)}` !== "",
+    hasFooter: `${charterFooterOf(input)}${unsubscribeOf(input)}${supportOf(input)}` !== "",
     markSections: input.markSections === true,
   };
 }

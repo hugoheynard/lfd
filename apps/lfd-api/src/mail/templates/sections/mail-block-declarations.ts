@@ -44,6 +44,7 @@ const CHARTERS: PerMail<MailCharter> = {
   "customer.order-placed-with-your-email": "lfc",
   "customer.login-method-linked": "lfc",
   "customer.password-reset": "lfc",
+  "customer.marketing-confirm": "lfc",
   "staff.invited": "lfd",
   "staff.password-reset": "lfd",
   "staff.access-suspended": "lfd",
@@ -61,7 +62,9 @@ const CHARTERS: PerMail<MailCharter> = {
  * Les e-mails qui partent dans la langue de leur destinataire : ceux dont les
  * données portent une `locale` (lu le 2026-11-07 ; `mailFollowsLocale` le
  * revérifie au test). Les autres partent en français seul
- * (`DEFAULT_MAIL_LOCALE`) — 21 sur 32, et non 14 comme le plan l'écrivait.
+ * (`DEFAULT_MAIL_LOCALE`) — 21 sur 32, et non 14 comme le plan l'écrivait ;
+ * 21 sur 33 depuis `customer.marketing-confirm` (2026-11-08), qui suit la
+ * langue de la case cochée.
  */
 const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bMails>([
   "customer.order-ready",
@@ -75,12 +78,14 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
   "customer.order-change-applied",
   "customer.order-change-refused",
   "customer.order-shortfall",
+  "customer.marketing-confirm",
 ]);
 
 /**
  * **La nature de chaque e-mail** (plan `plan-desinscription-des-e-mails.md`,
- * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 32
- * sont des e-mails de service (Hugo, 2026-11-08) — l'annonce de la vitrine
+ * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 33
+ * sont des e-mails de service (Hugo, 2026-11-08 ; le 33ᵉ, la confirmation
+ * d'inscription de C1, en est un) — l'annonce de la vitrine
  * aussi : elle informe les agences, elle ne vend rien.
  */
 const NATURES: PerMail<MailNature> = {
@@ -105,6 +110,9 @@ const NATURES: PerMail<MailNature> = {
   "customer.order-placed-with-your-email": "transactional",
   "customer.login-method-linked": "transactional",
   "customer.password-reset": "transactional",
+  // La double confirmation d'un accord (C1) : elle répond à un geste, elle
+  // ne vend rien — et elle doit partir à une adresse sans accord.
+  "customer.marketing-confirm": "transactional",
   "staff.invited": "transactional",
   "staff.password-reset": "transactional",
   "staff.access-suspended": "transactional",

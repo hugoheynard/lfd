@@ -5,6 +5,7 @@ import type { CustomerAccessOpenedMailData } from "../../templates/customer-acce
 import type { CustomerRequestMailData } from "../../templates/customer-request-mail.js";
 import type { DeliveryEnRouteMailData } from "../../templates/delivery-en-route-mail.js";
 import type { InvoiceIssuedMailData } from "../../templates/invoice-issued-mail.js";
+import type { MarketingConfirmMailData } from "../../templates/marketing-confirm-mail.js";
 import type { MandateMailScheme } from "../../templates/mandate-to-sign-wording.js";
 import type { OrderCancelledMailData } from "../../templates/order-cancelled-mail.js";
 import type {
@@ -366,6 +367,13 @@ export interface B2bMails {
     /** Le lien à usage unique, valable une heure. */
     readonly passwordSetupUrl: string;
   };
+  /**
+   * **« Confirmez votre inscription »** — la double confirmation d'un accord
+   * aux e-mails marketing (plan `plan-desinscription-des-e-mails.md`, règle
+   * 18, C1). Transactionnel. Envoyé par le bloc `mail` lui-même, jamais par
+   * un bloc métier. Cf. `marketing-confirm-mail.ts`.
+   */
+  "customer.marketing-confirm": MarketingConfirmMailData;
   /**
    * Un accès au **back-office** vient d'être ouvert. Destinataire : **le membre
    * de l'équipe**.

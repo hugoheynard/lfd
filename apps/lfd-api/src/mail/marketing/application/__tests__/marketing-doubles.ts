@@ -1,6 +1,10 @@
 import type { MailBrandCode } from "../../../requests/domain/value-objects/mail-brand.js";
 import type { MarketingPreference } from "../../domain/entities/marketing-preference.js";
 import { AddressPrint } from "../../domain/ports/address-print.js";
+import {
+  ConsentConfirmTokens,
+  type ConsentConfirmTarget,
+} from "../../domain/ports/consent-confirm-tokens.js";
 import { MarketingPreferenceReader } from "../../domain/ports/marketing-preference.reader.js";
 import { MarketingPreferenceRepository } from "../../domain/ports/marketing-preference.repository.js";
 import { SpacePublicOrigins } from "../../domain/ports/space-public-origins.js";
@@ -46,13 +50,16 @@ export class InMemoryPreferences extends MarketingPreferenceRepository {
   }
 }
 
-/** La lecture du même registre en mémoire. */
+/** La lecture du même registre en mémoire ; `reads` compte les lectures (règle 25). */
 export class InMemoryPreferenceReader extends MarketingPreferenceReader {
+  reads = 0;
+
   constructor(private readonly preferences: InMemoryPreferences) {
     super();
   }
 
   async statusOf(space: MailBrandCode, print: string): Promise<MarketingStatus | null> {
+    this.reads += 1;
     const row = await this.preferences.load(space, print);
     return row === null ? null : row.snapshot().status;
   }
@@ -80,5 +87,23 @@ export class FixedOrigins extends SpacePublicOrigins {
 
   originOf(space: MailBrandCode): string | null {
     return this.origins[space] ?? null;
+  }
+}
+
+/** Des jetons de confirmation en clair, `espace|clé|instant` — le chiffrement s'éprouve à part. */
+export class PlainConfirmTokens extends ConsentConfirmTokens {
+  seal(target: ConsentConfirmTarget): string {
+    return `${target.space}|${target.recipientKey}|${String(target.issuedAt.getTime())}`;
+  }
+
+  open(token: string): ConsentConfirmTarget | null {
+    const [space, key, at] = token.split("|");
+    const issuedAt = Number(at);
+    return (space === "lfc" || space === "lfd") &&
+      key !== undefined &&
+      key !== "" &&
+      Number.isSafeInteger(issuedAt)
+      ? { space, recipientKey: key, issuedAt: new Date(issuedAt) }
+      : null;
   }
 }

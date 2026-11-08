@@ -79,6 +79,14 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
     });
   });
 
+  /** Le lien de confirmation d'un accord (même plan, C1) : la même route, sous l'API. */
+  it("route la confirmation d'une inscription, sur la zone, vers l'API, jeton intact", () => {
+    const token = "v1.a1b2c3d4.aXY.dGFn.Y2lwaGVy";
+    expect(
+      resolveTarget(ZONE_HOSTNAME, `${API_PREFIXES.lfd}/mail/marketing/confirm/${token}`),
+    ).toEqual({ kind: "backend", backend: "lfd", path: `/mail/marketing/confirm/${token}` });
+  });
+
   it("rend undefined sur un chemin hors périmètre", () => {
     expect(resolveTarget("gw.example", "/favicon.ico")).toBeUndefined();
   });

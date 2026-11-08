@@ -537,5 +537,17 @@
       "htmlSha256": "d8534050d0fa81ec80b7199f67264475248aeaf263e1994eb7a37f235d9b8c1a",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
+  },
+  "customer.marketing-confirm": {
+    "fr": {
+      "subject": "Confirmez votre inscription à nos nouvelles",
+      "htmlSha256": "5e8623fe9024ac6addd271c2f6fbc0c74c0b89e0c67cef1387f641d00d5dfe33",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "it": {
+      "subject": "Confermi la sua iscrizione alle nostre novità",
+      "htmlSha256": "c6bc560775d7ea8c1dcd21915ec20fbb0ac5c6b6bad8f2ad80f891769e3ab011",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
   }
 }

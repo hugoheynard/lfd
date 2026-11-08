@@ -119,7 +119,7 @@ beforeAll(async () => {
 });
 
 describe("l'aperçu par blocs : ce que les fragments portent", () => {
-  it("rend les 32 e-mails", () => {
+  it("rend les 33 e-mails", () => {
     expect(new Set(ALL.map((rendered) => rendered.template)).size).toBe(mailKeys().length);
   });
 

@@ -1,6 +1,7 @@
 import type { PurgeCensus, PurgeMode } from "../../../../platform/retention/purge-mode.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { OrphanMailDeliveryPruner } from "../../../deliveries/domain/ports/orphan-mail-delivery.pruner.js";
+import { PendingConsentPruner } from "../../../marketing/domain/ports/pending-consent.pruner.js";
 import { MailConsultationPruner } from "../../../sends/domain/ports/mail-consultation.pruner.js";
 import { MailRequestPruner } from "../../domain/ports/mail-request.pruner.js";
 import {
@@ -87,13 +88,34 @@ const RECENT_FAILED: MailRequestRetentionFacts = {
   failedAt: daysAgo(3),
 };
 
+/** Les demandes d'accord jamais confirmées (C1), par instant de demande. */
+class InMemoryPendingConsentPruner extends PendingConsentPruner {
+  readonly cutoffs: Date[] = [];
+  constructor(public requestedAt: Date[]) {
+    super();
+  }
+  census(cutoff: Date): Promise<PurgeCensus> {
+    this.cutoffs.push(cutoff);
+    return Promise.resolve({
+      count: this.requestedAt.filter((one) => one < cutoff).length,
+      oldest: null,
+    });
+  }
+  pruneBatch(cutoff: Date, limit: number): Promise<number> {
+    const doomed = this.requestedAt.filter((one) => one < cutoff).slice(0, limit);
+    this.requestedAt = this.requestedAt.filter((one) => !doomed.includes(one));
+    return Promise.resolve(doomed.length);
+  }
+}
+
 function handler(
   pruner: MailRequestPruner,
   mode: PurgeMode,
   orphans: OrphanMailDeliveryPruner = new InMemoryOrphanPruner([]),
   consultations: MailConsultationPruner = new InMemoryConsultationPruner([]),
+  pending: PendingConsentPruner = new InMemoryPendingConsentPruner([]),
 ): PurgeSettledMailRequestsHandler {
-  return new PurgeSettledMailRequestsHandler(pruner, orphans, consultations, clock, mode);
+  return new PurgeSettledMailRequestsHandler(pruner, orphans, consultations, pending, clock, mode);
 }
 
 describe("PurgeSettledMailRequestsHandler", () => {
@@ -194,6 +216,39 @@ describe("PurgeSettledMailRequestsHandler", () => {
 
       expect(report.consultations).toMatchObject({ mode: "on", purged: 1 });
       expect(consultations.at).toEqual([daysAgo(364)]);
+    });
+  });
+
+  describe("les demandes d'accord marketing jamais confirmées (plan de désinscription, C1)", () => {
+    it("dry-run : compte celles de plus de 7 jours, sans rien supprimer", async () => {
+      const pending = new InMemoryPendingConsentPruner([daysAgo(8), daysAgo(6)]);
+
+      const report = await handler(
+        new InMemoryMailRequestPruner([]),
+        "dry-run",
+        undefined,
+        undefined,
+        pending,
+      ).execute();
+
+      expect(report.pendingConsents).toMatchObject({ mode: "dry-run", eligible: 1, purged: 0 });
+      expect(pending.requestedAt).toHaveLength(2);
+      expect(pending.cutoffs).toEqual([daysAgo(7)]);
+    });
+
+    it("on : supprime celles de plus de 7 jours, sous le même cran", async () => {
+      const pending = new InMemoryPendingConsentPruner([daysAgo(8), daysAgo(6)]);
+
+      const report = await handler(
+        new InMemoryMailRequestPruner([]),
+        "on",
+        undefined,
+        undefined,
+        pending,
+      ).execute();
+
+      expect(report.pendingConsents).toMatchObject({ mode: "on", purged: 1 });
+      expect(pending.requestedAt).toEqual([daysAgo(6)]);
     });
   });
 });

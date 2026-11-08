@@ -3,6 +3,7 @@ import {
   DomainError,
   TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
+import type { MailRefusalCode } from "../value-objects/mail-refusal-code.js";
 
 /** Une demande d'e-mail mal formée : l'appelant l'a construite de travers. */
 export class InvalidMailRequestError extends DomainError {
@@ -68,6 +69,25 @@ export class MailRefusedError extends BusinessError {
       `L'e-mail a été refusé avant de partir : ${reason} ` +
         "Corriger la donnée en cause puis refaire le geste.",
       cause,
+    );
+  }
+}
+
+/**
+ * Un e-mail **marketing** arrêté avant l'appel au fournisseur (plan
+ * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 11) :
+ * l'adresse s'est désinscrite de l'espace, ou n'a pas donné son accord. Rien
+ * n'est parti ; la demande est close avec sa raison fermée.
+ */
+export class MarketingMailRefusedError extends BusinessError {
+  constructor(readonly refusalCode: MailRefusalCode) {
+    super(
+      "MAIL_MARKETING_REFUSED",
+      refusalCode === "unsubscribed"
+        ? "L'e-mail n'est pas parti : son destinataire s'est désinscrit des e-mails marketing " +
+            "de cet espace. Seul un nouvel accord du client, depuis « Mes préférences », le réinscrit."
+        : "L'e-mail n'est pas parti : son destinataire n'a pas donné son accord aux e-mails " +
+            "marketing de cet espace (ou ne l'a pas confirmé). Ne l'envoyer qu'aux adresses inscrites.",
     );
   }
 }

@@ -9,7 +9,7 @@ import {
 } from "./rendering-golden/mail-rendering.fingerprint.js";
 
 /**
- * **Non-régression du rendu des 32 e-mails, en français.**
+ * **Non-régression du rendu des 33 e-mails, en français.**
  *
  * Les empreintes de `mail-rendering.golden.json` ont été capturées le
  * 2026-10-23 AVANT que les textes quittent les gabarits pour le dictionnaire
@@ -147,10 +147,10 @@ function casesOf<K extends keyof B2bMails>(key: K): readonly (readonly [string, 
 
 const KEYS = Object.keys(MAIL_CASES) as readonly (keyof B2bMails)[];
 
-it("couvre les 32 e-mails du registre, sans en oublier un", () => {
+it("couvre les 33 e-mails du registre, sans en oublier un", () => {
   expect([...KEYS].sort()).toEqual(Object.keys(REGISTRY).sort());
   expect(Object.keys(GOLDEN).sort()).toEqual(Object.keys(REGISTRY).sort());
-  expect(KEYS).toHaveLength(32);
+  expect(KEYS).toHaveLength(33);
 });
 
 describe.each(KEYS)("le rendu de « %s »", (key) => {

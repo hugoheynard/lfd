@@ -14,6 +14,12 @@ import {
   type MailDispatchReceipt,
   type OutgoingMail,
 } from "../../domain/ports/mail-dispatch.js";
+import {
+  MarketingClearance,
+  type MarketingClearanceQuery,
+  type MarketingMarks,
+  type MarketingVerdict,
+} from "../../domain/ports/marketing-clearance.js";
 import type { StoredPdfRef } from "../../domain/services/stored-pdfs.js";
 import { MailRequestRepository } from "../../domain/ports/mail-request.repository.js";
 import { RecordedMailDeliveries } from "../../domain/ports/recorded-mail-deliveries.js";
@@ -168,21 +174,38 @@ export class FactPayloadsOf extends DurableFactPayloads {
   }
 }
 
+/**
+ * Le contrôle marketing joué par le test : un verdict par modèle,
+ * transactionnel par défaut ; chaque question est notée.
+ */
+export class ScriptedClearance extends MarketingClearance {
+  readonly asked: MarketingClearanceQuery[] = [];
+  readonly verdicts = new Map<string, MarketingVerdict>();
+
+  verdictFor(query: MarketingClearanceQuery): Promise<MarketingVerdict> {
+    this.asked.push(query);
+    return Promise.resolve(this.verdicts.get(query.template) ?? { kind: "transactional" });
+  }
+}
+
 /** L'envoi enregistré ; `failWith` fait échouer le prochain envoi. */
 export class RecordingDispatch extends MailDispatch {
   readonly sent: OutgoingMail[] = [];
+  /** Les marques de chaque envoi, dans l'ordre : `null` pour un transactionnel. */
+  readonly marks: (MarketingMarks | null)[] = [];
   failWith: Error | null = null;
 
   /** La version du document que le prochain envoi dira l'avoir composé (S4c). */
   documentVersion: number | null = null;
 
-  dispatch(mail: OutgoingMail): Promise<MailDispatchReceipt> {
+  dispatch(mail: OutgoingMail, marks: MarketingMarks | null): Promise<MailDispatchReceipt> {
     if (this.failWith !== null) {
       const error = this.failWith;
       this.failWith = null;
       return Promise.reject(error);
     }
     this.sent.push(mail);
+    this.marks.push(marks);
     return Promise.resolve({
       providerId: `re_${this.sent.length}`,
       documentVersion: this.documentVersion,
@@ -247,7 +270,8 @@ export function mailScene() {
     unitOfWork,
     clock,
   );
-  const attempt = new MailSendAttempt(dispatch, new MailAttachments(attachments), clock);
+  const clearance = new ScriptedClearance();
+  const attempt = new MailSendAttempt(dispatch, new MailAttachments(attachments), clearance, clock);
   const deferred = new DeferredMailSender(outcomes, attempt);
   const requester = new MailRequester(requests, facts, probe, clock, ids);
   const immediate = new ImmediateMailSender(requests, attempt, outcomes, probe, clock, ids);
@@ -265,6 +289,7 @@ export function mailScene() {
     applier,
     attachments,
     dispatch,
+    clearance,
     facts,
     probe,
     clock,

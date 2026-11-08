@@ -6,7 +6,7 @@ export interface MailLabel {
 }
 
 /**
- * **Les intitulés des 32 e-mails du registre** (`B2bMails`,
+ * **Les intitulés des 33 e-mails du registre** (`B2bMails`,
  * `apps/lfd-api/src/mail/channels/templates/b2b-mails.ts`) — la seule source :
  * l'écran de l'éditeur et les textes que l'API sert au staff (la cloche d'un
  * e-mail non reçu) la lisent. Un test de l'API refuse une clé du registre
@@ -110,6 +110,11 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     title: "Changement de mot de passe",
     recipient: "Le client",
     moment: "quand il le demande depuis son profil",
+  },
+  "customer.marketing-confirm": {
+    title: "Confirmation d’inscription aux offres",
+    recipient: "Le client",
+    moment: "quand il coche une case d’offres avec une adresse pas encore vérifiée",
   },
   "customer.sub-account-activity": {
     title: "Commande d’un site",

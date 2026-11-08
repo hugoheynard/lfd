@@ -86,6 +86,7 @@ export const CUSTOMER_CASE_TABLES: Pick<
   | "customer.company-attached"
   | "customer.login-method-linked"
   | "customer.password-reset"
+  | "customer.marketing-confirm"
 > = {
   "customer.collection-notice": {
     cases: [
@@ -215,4 +216,5 @@ export const CUSTOMER_CASE_TABLES: Pick<
     (data) => ({ ...data, firstName: "" }),
   ),
   "customer.password-reset": specimenOnly("customer.password-reset"),
+  "customer.marketing-confirm": specimenOnly("customer.marketing-confirm"),
 };

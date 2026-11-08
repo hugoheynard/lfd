@@ -4,13 +4,25 @@ import { BODY_TOP_PADDING_PX, bodyCellStyle } from "./card-geometry.js";
 import { textFontStack } from "./charter-styles.js";
 import { charterFrameTheme } from "./document-theme.js";
 import { renderFontHead, renderLayoutHeader } from "./layout-header.js";
-import { charterFooterOf, charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
+import {
+  charterFooterOf,
+  charterOf,
+  layoutFragments,
+  supportOf,
+  unsubscribeOf,
+} from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import { effectiveSectionOrder, joinSections } from "./layout-sections.js";
 
 export { htmlEscape } from "./escape.js";
 export type { LayoutLogo } from "./layout-header.js";
-export type { LayoutImage, LayoutInput, LayoutRow, MailCta } from "./layout-input.js";
+export type {
+  LayoutImage,
+  LayoutInput,
+  LayoutRow,
+  LayoutUnsubscribe,
+  MailCta,
+} from "./layout-input.js";
 export {
   effectiveSectionOrder,
   isLayoutSectionId,
@@ -129,7 +141,7 @@ export function renderLayoutFrameRows(
   <body${pageClass} style="margin:0;padding:24px;font-family:${textFontStack(charter)};color:${charter.colors.text};background:${charter.colors.page};">
     <table${cardClass} role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:${String(MAIL_CARD_MAX_WIDTH_PX)}px;margin:0 auto;background:${charter.colors.card};border:${String(MAIL_CARD_BORDER_PX)}px solid ${charter.colors.border};border-radius:${charter.radius};">
       ${header}
-      ${rows}${charterFooterOf(input)}
+      ${rows}${charterFooterOf(input)}${unsubscribeOf(input)}
       ${supportOf(input)}
     </table>
   </body>

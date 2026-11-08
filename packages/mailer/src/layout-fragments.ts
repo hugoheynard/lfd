@@ -124,3 +124,24 @@ export function charterFooterOf(input: LayoutInput): string {
           <p style="margin:0;${mailStylesOf(charterOf(input)).mutedText}white-space:pre-line;">${htmlEscape(footer)}</p>
         </td></tr>`;
 }
+
+/**
+ * Le pied de désinscription d'un e-mail marketing (plan de désinscription,
+ * B2), sous le pied de la charte et au-dessus du recours ; rien sans lui. Un
+ * lien qui ne se rend pas (schéma inattendu) laisse la phrase sans lien —
+ * l'en-tête `List-Unsubscribe` porte de toute façon l'adresse.
+ */
+export function unsubscribeOf(input: LayoutInput): string {
+  const footer = input.unsubscribe;
+  if (footer === undefined) {
+    return "";
+  }
+  const charter = charterOf(input);
+  const link = isRenderableUrl(footer.url)
+    ? `<a href="${htmlEscape(footer.url)}" style="color:${charter.colors.primary};text-decoration:underline;">${htmlEscape(footer.label)}</a>`
+    : htmlEscape(footer.label);
+  return `
+      <tr><td style="padding:0 32px 24px;">
+          <p style="margin:0;${mailStylesOf(charter).mutedText}" data-mail-unsubscribe="">${htmlEscape(footer.before)}${link}${htmlEscape(footer.after)}</p>
+        </td></tr>`;
+}

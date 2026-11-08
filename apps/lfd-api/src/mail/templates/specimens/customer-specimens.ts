@@ -15,6 +15,7 @@ const MANDATE = `${SPECIMEN_MARK}-RUM-0001`;
 const INVOICE = `${SPECIMEN_MARK}-FA-0001`;
 const SITE = `${SPECIMEN_MARK} — Chalet Gentiane`;
 const TICKET_URL = `${SPECIMEN_URL}/mot-de-passe`;
+const MARKETING_CONFIRM_URL = `${SPECIMEN_URL}/api/lfd/mail/marketing/confirm/exemple`;
 
 export const CUSTOMER_SPECIMENS: Pick<
   MailSpecimens,
@@ -27,6 +28,7 @@ export const CUSTOMER_SPECIMENS: Pick<
   | "customer.company-attached"
   | "customer.login-method-linked"
   | "customer.password-reset"
+  | "customer.marketing-confirm"
 > = {
   "customer.collection-notice": {
     family: "billing",
@@ -113,5 +115,9 @@ export const CUSTOMER_SPECIMENS: Pick<
   "customer.password-reset": {
     family: "account",
     data: () => ({ passwordSetupUrl: TICKET_URL }),
+  },
+  "customer.marketing-confirm": {
+    family: "account",
+    data: () => ({ confirmUrl: MARKETING_CONFIRM_URL, locale: "fr" }),
   },
 };

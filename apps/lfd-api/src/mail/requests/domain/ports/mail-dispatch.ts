@@ -1,4 +1,5 @@
 import type { MailSubject } from "../../../channels/requests/mail-subject.js";
+import type { MarketingMarks } from "./marketing-clearance.js";
 
 /** Un e-mail prêt à partir, sans type de modèle : le canal l'a déjà vérifié. */
 export interface OutgoingMail {
@@ -30,6 +31,10 @@ export interface MailDispatchReceipt {
  * Port d'**envoi** : rendre et envoyer par le mailer d'aujourd'hui
  * (`mail/templates/` depuis S3b — plan S1 : le rendu ne change pas).
  *
+ * `marks` : les marques d'un e-mail marketing autorisé (pied de
+ * désinscription, en-têtes RFC 8058), posées par le contrôle du bloc —
+ * `null` pour un transactionnel, qui part comme avant.
+ *
  * @returns l'identifiant du fournisseur et la version du document qui a
  *   composé l'e-mail.
  * @throws {MailInFlightError} un envoi de même clé est encore en cours chez le
@@ -38,5 +43,5 @@ export interface MailDispatchReceipt {
  *   erreur est technique : un nouvel essai peut réussir.
  */
 export abstract class MailDispatch {
-  abstract dispatch(mail: OutgoingMail): Promise<MailDispatchReceipt>;
+  abstract dispatch(mail: OutgoingMail, marks: MarketingMarks | null): Promise<MailDispatchReceipt>;
 }

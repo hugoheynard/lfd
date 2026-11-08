@@ -45,6 +45,7 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "customer.company-attached": {},
   "customer.login-method-linked": {},
   "customer.password-reset": { cta: { label: "Nouveau mot de passe" } },
+  "customer.marketing-confirm": { cta: { label: "Confirmer l'inscription" } },
   "customer.sub-account-activity": {},
   "customer.sub-account-gesture": {},
   "customer.order-change-applied": {},

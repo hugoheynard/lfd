@@ -14,6 +14,7 @@ import {
   renderDocumentTextOfRenderedMail,
 } from "./sections/mail-document-rendering.js";
 import { activeMailLayout, layoutOptionsOfRenderedMail } from "./sections/mail-layout-scope.js";
+import { activeMailUnsubscribe } from "./sections/mail-unsubscribe-scope.js";
 
 /**
  * **Le logo couleur de La Folie Coffee**, en tête de tous les e-mails
@@ -81,10 +82,14 @@ export type MailBody = Pick<Required<RenderedMail>, "html" | "text">;
  */
 export function renderLayoutWithLogo(input: LayoutInput): MailBody {
   const charter = activeMailCharter() ?? null;
+  // Le pied de désinscription d'un e-mail marketing (plan de désinscription,
+  // B2) : posé par l'envoi du bloc, jamais par le modèle.
+  const unsubscribe = activeMailUnsubscribe();
   const framed: LayoutInput = {
     ...input,
     logo: MAIL_LOGO,
     ...(charter === null ? {} : { charter }),
+    ...(unsubscribe === undefined ? {} : { unsubscribe }),
     ...layoutOptionsOfRenderedMail(),
   };
   // L'aperçu de l'éditeur (S5f) découpe cette entrée en blocs ; l'envoi n'ouvre jamais ce périmètre.

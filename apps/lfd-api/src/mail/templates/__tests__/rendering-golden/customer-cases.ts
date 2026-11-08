@@ -43,6 +43,7 @@ export const CUSTOMER_CASES: Pick<
   | "customer.order-placed-with-your-email"
   | "customer.login-method-linked"
   | "customer.password-reset"
+  | "customer.marketing-confirm"
 > = {
   "customer.collection-notice": {
     statement: NOTICE,
@@ -186,4 +187,8 @@ export const CUSTOMER_CASES: Pick<
     anonymous: { firstName: "", methodLabel: "Facebook" },
   },
   "customer.password-reset": { only: { passwordSetupUrl: "https://auth.test/ticket" } },
+  "customer.marketing-confirm": {
+    fr: { confirmUrl: "https://shop.test/api/lfd/mail/marketing/confirm/t", locale: "fr" },
+    it: { confirmUrl: "https://shop.test/api/lfd/mail/marketing/confirm/t", locale: "it" },
+  },
 };

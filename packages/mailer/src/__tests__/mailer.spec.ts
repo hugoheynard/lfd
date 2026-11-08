@@ -378,3 +378,24 @@ describe("l'expéditeur par message (identité d'envoi d'un espace)", () => {
     expect(calls[0]?.[0]).toMatchObject({ from: "a@b.fr" });
   });
 });
+
+describe("les en-têtes par message (RFC 8058, plan de désinscription U3)", () => {
+  it("transmet List-Unsubscribe et List-Unsubscribe-Post tels quels à Resend", async () => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    const headers = {
+      "List-Unsubscribe": "<https://shop.lfc.test/api/lfd/mail/unsubscribe/t>",
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    };
+    await new ResendMailer<TestMails>({ client, registry, fromAddress: "a@b.fr" }).send({
+      ...HELLO,
+      headers,
+    });
+    expect(calls[0]?.[0]).toMatchObject({ headers });
+  });
+
+  it("n'en pose aucun quand le message n'en donne pas", async () => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    await new ResendMailer<TestMails>({ client, registry, fromAddress: "a@b.fr" }).send(HELLO);
+    expect(calls[0]?.[0]).not.toHaveProperty("headers");
+  });
+});

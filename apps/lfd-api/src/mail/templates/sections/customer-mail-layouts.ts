@@ -49,6 +49,7 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     | "customer.company-attached"
     | "customer.login-method-linked"
     | "customer.password-reset"
+    | "customer.marketing-confirm"
     | "customer.sub-account-activity"
     | "customer.sub-account-gesture"
   >
@@ -220,6 +221,18 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
           }),
         ],
       },
+      { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "customer.marketing-confirm": {
+    ctaDestination:
+      "son lien signé pour confirmer l'inscription aux offres, valable 7 jours, une fois",
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("intro", "validity") },
       { id: "cta", texts: texts("cta") },
       { id: "footer", texts: texts("footer") },
     ],

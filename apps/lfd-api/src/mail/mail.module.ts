@@ -17,6 +17,7 @@ import { PurgeSettledMailRequestsHandler } from "./requests/application/purge-se
 import { SweepMailRequestsHandler } from "./requests/application/sweep-mail-requests.handler.js";
 import { MailAttachmentStore } from "./requests/domain/ports/mail-attachment.store.js";
 import { MailDispatch } from "./requests/domain/ports/mail-dispatch.js";
+import { MailNatures } from "./requests/domain/ports/mail-natures.js";
 import { MailRequestPruner } from "./requests/domain/ports/mail-request.pruner.js";
 import { MailRequestRepository } from "./requests/domain/ports/mail-request.repository.js";
 import { MailCheckController } from "./requests/http/mail-check.controller.js";
@@ -40,6 +41,7 @@ import { MailBacklogSurvey } from "./channels/requests/mail-backlog-survey.js";
 import { UnitOfWorkProbe } from "./requests/domain/ports/unit-of-work-probe.js";
 import { AmbientUnitOfWorkProbe } from "./requests/infrastructure/ambient-unit-of-work-probe.js";
 import { MailerMailDispatch } from "./requests/infrastructure/mailer-mail-dispatch.js";
+import { RegistryMailNatures } from "./requests/infrastructure/registry-mail-natures.js";
 import { PrismaMailRequestPruner } from "./requests/infrastructure/prisma-mail-request.pruner.js";
 import { PrismaMailRequestRepository } from "./requests/infrastructure/prisma-mail-request.repository.js";
 import { PrismaStalledMailRequests } from "./requests/infrastructure/prisma-stalled-mail-requests.js";
@@ -107,6 +109,9 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     // S2a : les pièces jointes relues au stockage, à chaque essai.
     { provide: MailAttachmentStore, useClass: StorageMailAttachmentStore },
     MailAttachments,
+    // U3 du plan de désinscription : la nature des modèles, lue par le
+    // contrôle marketing (`MarketingClearance`, servi par `MailMarketingModule`).
+    { provide: MailNatures, useClass: RegistryMailNatures },
     MailSendAttempt,
     MailRequester,
     ImmediateMailSender,
@@ -151,6 +156,7 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     { provide: MailSubjectDeliveries, useClass: PrismaMailSubjectDeliveries },
   ],
   exports: [
+    MailNatures,
     MailSubjectDeliveries,
     Mail,
     MailTemplatePreview,

@@ -347,5 +347,13 @@
     "withMessage": {
       "textSha256": "e8d6de06c31e044faa1ed70657709d07ee1786304a70bdc65cbaacd52b36811c"
     }
+  },
+  "customer.marketing-confirm": {
+    "fr": {
+      "textSha256": "b070a63540e112c6e2e3ad5d8f8e836b35e29d0c4280f4c6a756377d7ca7deca"
+    },
+    "it": {
+      "textSha256": "9337a258ab62800846ae243b75cfc6d0b26ad193ee50d373da4a5f2390fc66c9"
+    }
   }
 }

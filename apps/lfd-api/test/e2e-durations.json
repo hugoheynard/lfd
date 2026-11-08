@@ -259,6 +259,7 @@
   "test/mail-copy-default-drift.e2e-spec.ts": 5676,
   "test/mail-copy-preview.e2e-spec.ts": 7549,
   "test/mail-copy.e2e-spec.ts": 6282,
+  "test/mail-marketing.e2e-spec.ts": 15000,
   "test/mail-requests-sweep.e2e-spec.ts": 8848,
   "test/mail-requests-watch.e2e-spec.ts": 7721,
   "test/mail-requests.e2e-spec.ts": 9455,

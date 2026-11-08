@@ -106,6 +106,7 @@ const DECLARED_VARIABLES = {
     validityOneHour: ["count"],
     validityHours: ["count"],
   },
+  "customer.marketing-confirm": {},
   "customer.sub-account-activity": {
     subject: ["site", "title", "order"],
     body: ["site", "action", "order"],

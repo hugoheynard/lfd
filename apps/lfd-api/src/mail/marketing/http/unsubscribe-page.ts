@@ -1,6 +1,6 @@
 import { MAIL_LOCALES, type MailLocale } from "@lfd/mail-blocks";
 
-import { UNSUBSCRIBE_PAGE_COPY, type UnsubscribePageCopy } from "./unsubscribe-page-copy.js";
+import { UNSUBSCRIBE_PAGE_COPY } from "./unsubscribe-page-copy.js";
 
 /** Sans préférence lisible, la langue de la maison. */
 const DEFAULT_LOCALE: MailLocale = "fr";
@@ -51,12 +51,18 @@ const STYLE =
   "border-radius:.4rem;background:#1f1f1f;color:#fff;cursor:pointer}label{display:block;" +
   "margin:1rem 0}";
 
-function frame(locale: MailLocale, copy: UnsubscribePageCopy, body: string): string {
+/**
+ * Le cadre d'une page publique NEUTRE du registre (désinscription,
+ * confirmation d'un accord) : sans charte ni nom d'espace, sous la CSP
+ * {@link UNSUBSCRIBE_PAGE_CSP}. Les textes sont des constantes du code —
+ * jamais une donnée de la requête.
+ */
+export function neutralPage(locale: MailLocale, title: string, body: string): string {
   return (
     `<!doctype html><html lang="${locale}"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width,initial-scale=1">` +
-    `<meta name="robots" content="noindex"><title>${copy.title}</title>` +
-    `<style>${STYLE}</style></head><body><h1>${copy.title}</h1>${body}</body></html>`
+    `<meta name="robots" content="noindex"><title>${title}</title>` +
+    `<style>${STYLE}</style></head><body><h1>${title}</h1>${body}</body></html>`
   );
 }
 
@@ -70,9 +76,9 @@ export function confirmPage(locale: MailLocale, offerGroup: boolean): string {
     ? `<label><input type="checkbox" name="${WHOLE_GROUP_FIELD}" value="${WHOLE_GROUP_VALUE}"> ` +
       `${copy.wholeGroup}</label>`
     : "";
-  return frame(
+  return neutralPage(
     locale,
-    copy,
+    copy.title,
     `<p>${copy.ask}</p><p>${copy.keepsTransactional}</p>` +
       `<form method="post">${group}<button type="submit">${copy.confirm}</button></form>`,
   );
@@ -81,5 +87,5 @@ export function confirmPage(locale: MailLocale, offerGroup: boolean): string {
 /** La page du `POST` : la même réponse, quel que soit le jeton. */
 export function donePage(locale: MailLocale): string {
   const copy = UNSUBSCRIBE_PAGE_COPY[locale];
-  return frame(locale, copy, `<p>${copy.done}</p><p>${copy.keepsTransactional}</p>`);
+  return neutralPage(locale, copy.title, `<p>${copy.done}</p><p>${copy.keepsTransactional}</p>`);
 }

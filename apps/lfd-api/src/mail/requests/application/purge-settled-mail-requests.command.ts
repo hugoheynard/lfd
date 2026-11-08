@@ -3,11 +3,13 @@ import type { PurgeReport } from "../../../platform/retention/purge-mode.js";
 /**
  * Le compte rendu : celui des demandes à la racine (la forme d'avant, que le
  * cron et les e2e lisent), et celui des retours orphelins à côté (T1), et
- * celui des consultations du suivi (T2).
+ * celui des consultations du suivi (T2), et celui des demandes d'accord
+ * marketing jamais confirmées (plan de désinscription, C1).
  */
 export interface MailPurgeReport extends PurgeReport {
   readonly orphanDeliveries: PurgeReport;
   readonly consultations: PurgeReport;
+  readonly pendingConsents: PurgeReport;
 }
 
 /**

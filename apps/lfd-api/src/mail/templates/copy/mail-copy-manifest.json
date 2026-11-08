@@ -1414,6 +1414,43 @@
         "fr": "Vous n'avez pas fait cette demande ? Ne suivez pas ce lien et répondez à cet e-mail : nous regarderons ce qui s'est passé."
       }
     },
+    "customer.marketing-confirm": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Inscription"
+      },
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Confirmez votre inscription à nos nouvelles"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Confirmez votre inscription"
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous avez demandé à recevoir les offres et les nouvelles de La Folie Coffee. Confirmez que cette adresse est bien la vôtre pour commencer à les recevoir."
+      },
+      "validity": {
+        "variables": [],
+        "required": [],
+        "fr": "Le lien ci-dessous est valable 7 jours et ne sert qu'une fois. Sans votre confirmation, nous ne vous écrirons rien."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Confirmer mon inscription"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous n'avez rien demandé ? Ne suivez pas ce lien : cette adresse ne recevra aucune offre, et la demande s'effacera seule."
+      }
+    },
     "customer.sub-account-activity": {
       "kicker": {
         "variables": [],
@@ -2682,6 +2719,22 @@
         "required": [],
         "fr": "Un doute ou une erreur ? Appelez le fournil."
       }
+    }
+  },
+  "system": {
+    "unsubscribe.sentence": {
+      "variables": [
+        "unsubscribeUrl"
+      ],
+      "required": [
+        "unsubscribeUrl"
+      ],
+      "fr": "Vous recevez cet e-mail parce que vous avez accepté nos offres et nos nouvelles. Pour ne plus les recevoir : {unsubscribeUrl}"
+    },
+    "unsubscribe.link": {
+      "variables": [],
+      "required": [],
+      "fr": "se désinscrire"
     }
   }
 }

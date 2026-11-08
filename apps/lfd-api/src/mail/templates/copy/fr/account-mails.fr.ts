@@ -68,6 +68,21 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       "Vous n'avez pas fait cette demande ? Ne suivez pas ce lien et répondez à cet " +
       "e-mail : nous regarderons ce qui s'est passé.",
   },
+  "customer.marketing-confirm": {
+    kicker: "Inscription",
+    subject: "Confirmez votre inscription à nos nouvelles",
+    title: "Confirmez votre inscription",
+    intro:
+      "Vous avez demandé à recevoir les offres et les nouvelles de La Folie Coffee. " +
+      "Confirmez que cette adresse est bien la vôtre pour commencer à les recevoir.",
+    validity:
+      "Le lien ci-dessous est valable 7 jours et ne sert qu'une fois. Sans votre " +
+      "confirmation, nous ne vous écrirons rien.",
+    cta: "Confirmer mon inscription",
+    footer:
+      "Vous n'avez rien demandé ? Ne suivez pas ce lien : cette adresse ne recevra " +
+      "aucune offre, et la demande s'effacera seule.",
+  },
   "customer.sub-account-activity": {
     kicker: "Activité d'un site",
     title: {

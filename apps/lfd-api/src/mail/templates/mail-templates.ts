@@ -17,6 +17,7 @@ import { renderCollectionNoticeMail } from "./collection-notice-mail.js";
 import { renderCustomerRequestMail } from "./customer-request-mail.js";
 import { renderCustomerAccessOpenedMail } from "./customer-access-opened-mail.js";
 import { renderInvoiceIssuedMail } from "./invoice-issued-mail.js";
+import { renderMarketingConfirmMail } from "./marketing-confirm-mail.js";
 import { renderOrderCancelledMail } from "./order-cancelled-mail.js";
 import { orderPlacedRouteRows } from "./order-placed-route-rows.js";
 import {
@@ -514,6 +515,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.access-opened": (data) => renderCustomerAccessOpenedMail(data, customerMail),
+    "customer.marketing-confirm": (data) => renderMarketingConfirmMail(data, customerMail),
     "staff.invited": (data) => {
       const copy = local()["staff.invited"];
       return {

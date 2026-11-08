@@ -47,6 +47,25 @@ export interface LayoutImage {
   readonly caption?: string;
 }
 
+/**
+ * **Le pied de désinscription d'un e-mail marketing** (plan
+ * `documentation/mail/plan-desinscription-des-e-mails.md`, contradiction B2) :
+ * INJECTÉ par l'envoi, hors du document — un document publié ne peut ni le
+ * porter, ni le perdre. La phrase vient de l'app (sa phrase système, déjà
+ * dans la langue de l'envoi), coupée autour du lien : le HTML pose
+ * `label` en lien, le texte pose l'adresse en clair.
+ */
+export interface LayoutUnsubscribe {
+  /** La phrase avant le lien. */
+  readonly before: string;
+  /** Le libellé du lien, dans le HTML. */
+  readonly label: string;
+  /** L'adresse de désinscription — celle de l'en-tête `List-Unsubscribe`. */
+  readonly url: string;
+  /** La phrase après le lien (souvent vide). */
+  readonly after: string;
+}
+
 export interface LayoutInput {
   readonly title: string;
   /** Le corps, en texte brut. Les retours à la ligne sont préservés. */
@@ -115,4 +134,10 @@ export interface LayoutInput {
    * c'est-à-dire le rendu d'avant, à l'octet.
    */
   readonly charter?: MailRenderCharter;
+  /**
+   * Le pied de désinscription (plan de désinscription, B2) : rendu APRÈS tout
+   * le corps, à côté du pied de la charte, en HTML et en texte. Absent pour
+   * tout e-mail transactionnel — le rendu d'avant, à l'octet.
+   */
+  readonly unsubscribe?: LayoutUnsubscribe;
 }

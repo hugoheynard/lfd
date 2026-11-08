@@ -109,6 +109,7 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
   "customer.company-attached": {},
   "customer.login-method-linked": {},
   "customer.password-reset": {},
+  "customer.marketing-confirm": {},
   "customer.sub-account-activity": {
     summary: {
       label: "Récapitulatif de la commande du site",

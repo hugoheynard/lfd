@@ -9,7 +9,25 @@ import {
   type MailDispatchReceipt,
   type OutgoingMail,
 } from "../domain/ports/mail-dispatch.js";
+import type { MarketingMarks } from "../domain/ports/marketing-clearance.js";
 import { composeMail } from "../../templates/effective-copy/mail-composition.js";
+import { documentLocaleOf } from "../../templates/sections/mail-document-locale.js";
+import {
+  unsubscribeFooterOf,
+  withMailUnsubscribe,
+} from "../../templates/sections/mail-unsubscribe-scope.js";
+
+/**
+ * Les en-têtes de la RFC 8058 (plan de désinscription, règle 3) : le bouton
+ * « Se désabonner » de Gmail et d'Apple Mail, et son POST « One-Click ». Pas
+ * de `mailto:` — personne ne traiterait ces e-mails.
+ */
+export function unsubscribeHeadersOf(marks: MarketingMarks): Readonly<Record<string, string>> {
+  return {
+    "List-Unsubscribe": `<${marks.unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+}
 
 /**
  * L'envoi par le mailer d'aujourd'hui — texte effectif, journal, disjoncteur,
@@ -23,6 +41,12 @@ import { composeMail } from "../../templates/effective-copy/mail-composition.js"
  * elle revient sans type. Le contrat de chaque modèle (schéma Zod, plan C3)
  * n'existe pas encore pour la revalider : les assertions ci-dessous disent
  * cette confiance, au seul point où elle s'exerce. Elles tomberont avec C3.
+ *
+ * ## Les marques d'un e-mail marketing (plan de désinscription, U3)
+ *
+ * Posées ICI, par le bloc, jamais par l'appelant : le pied de désinscription
+ * (phrase système, dans la langue de l'envoi) est injecté au rendu par un
+ * périmètre, et les en-têtes RFC 8058 accompagnent l'envoi.
  */
 @Injectable()
 export class MailerMailDispatch extends MailDispatch {
@@ -30,18 +54,26 @@ export class MailerMailDispatch extends MailDispatch {
     super();
   }
 
-  async dispatch(mail: OutgoingMail): Promise<MailDispatchReceipt> {
+  async dispatch(mail: OutgoingMail, marks: MarketingMarks | null): Promise<MailDispatchReceipt> {
     try {
-      // La version du document qui compose l'e-mail, notée par le mailer
-      // (S4c) : la demande la garde.
-      const { result, documentVersion } = await composeMail(() =>
+      const send = (): ReturnType<B2bMailer["send"]> =>
         this.mailer.send({
           to: mail.to,
           template: mail.template as keyof B2bMails,
           data: mail.data as B2bMails[keyof B2bMails],
           idempotencyKey: mail.idempotencyKey,
           ...(mail.replyTo === undefined ? {} : { replyTo: mail.replyTo }),
-        }),
+          ...(marks === null ? {} : { headers: unsubscribeHeadersOf(marks) }),
+        });
+      // La version du document qui compose l'e-mail, notée par le mailer
+      // (S4c) : la demande la garde.
+      const { result, documentVersion } = await composeMail(() =>
+        marks === null
+          ? send()
+          : withMailUnsubscribe(
+              unsubscribeFooterOf(documentLocaleOf(mail.template, mail.data), marks.unsubscribeUrl),
+              send,
+            ),
       );
       return { providerId: result.providerId, documentVersion };
     } catch (error) {

@@ -18,7 +18,12 @@ describe("les e-mails d'exemple de l'aperçu (C6)", () => {
     expect(rendered.subject.trim()).not.toBe("");
     expect(rendered.html).toContain("<html");
     // Ce qui désigne quelqu'un dit « EXEMPLE » — sauf les e-mails qui ne citent personne.
-    const anonymous = ["customer.password-reset", "staff.access-suspended"];
+    const anonymous = [
+      "customer.password-reset",
+      "staff.access-suspended",
+      // La confirmation d'inscription (C1) ne cite personne : le lien est le bouton.
+      "customer.marketing-confirm",
+    ];
     if (!anonymous.includes(mail)) {
       expect(`${rendered.subject}${rendered.html}`).toContain(SPECIMEN_MARK);
     }

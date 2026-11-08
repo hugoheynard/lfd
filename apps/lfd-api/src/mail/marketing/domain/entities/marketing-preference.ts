@@ -115,6 +115,34 @@ export class MarketingPreference {
     return this.state.status === "unsubscribed";
   }
 
+  /** Un accord recueilli, en attente de son clic (règle 18). */
+  isPending(): boolean {
+    return this.state.status === "pending";
+  }
+
+  /**
+   * Le clic du lien de confirmation de CETTE demande (règle 18 : « une seule
+   * fois ») : le lien porte l'instant de la demande qui l'a émis, et ne
+   * confirme que la ligne `pending` de cette demande-là. Un lien rejoué
+   * après la confirmation, un lien d'une demande remplacée, un lien d'une
+   * adresse désinscrite depuis : rien ne change.
+   *
+   * @returns vrai si la ligne a changé (à ranger).
+   */
+  confirmIssued(issuedAt: Date, at: Date): boolean {
+    const { status, requestedAt } = this.state;
+    if (status !== "pending" || requestedAt?.getTime() !== issuedAt.getTime()) {
+      return false;
+    }
+    this.confirm(at);
+    return true;
+  }
+
+  /** L'instant de la demande d'accord ; `null` sans accord recueilli. */
+  get requestedAt(): Date | null {
+    return this.state.requestedAt;
+  }
+
   /**
    * Le clic du lien de confirmation (règle 18). Un accord déjà confirmé ne
    * change pas.

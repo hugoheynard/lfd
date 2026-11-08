@@ -150,12 +150,29 @@ export interface SubAccountGestureCopy {
   readonly footer: string;
 }
 
+/**
+ * **« Confirmez votre inscription »** — la double confirmation d'un accord
+ * aux e-mails marketing (plan de désinscription, règle 18, C1). Sans
+ * variable : le lien est le bouton, la durée est écrite.
+ */
+export interface MarketingConfirmCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  readonly subject: string;
+  readonly title: string;
+  readonly intro: string;
+  readonly validity: string;
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** La famille « compte client », une section par clé du registre. */
 export interface AccountMailsCopy {
   readonly "customer.access-opened": CustomerAccessOpenedCopy;
   readonly "customer.company-attached": CompanyAttachedCopy;
   readonly "customer.login-method-linked": LoginMethodLinkedCopy;
   readonly "customer.password-reset": CustomerPasswordResetCopy;
+  readonly "customer.marketing-confirm": MarketingConfirmCopy;
   readonly "customer.sub-account-activity": SubAccountActivityCopy;
   readonly "customer.sub-account-gesture": SubAccountGestureCopy;
 }

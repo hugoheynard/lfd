@@ -224,6 +224,20 @@ export class AppConfig {
   }
 
   /**
+   * **La clé des jetons de confirmation d'un accord marketing** (plan
+   * `plan-desinscription-des-e-mails.md`, règle 18, C1) : même famille que
+   * celle de désinscription, sous son étiquette propre — un jeton de
+   * désinscription ne s'ouvre pas comme une confirmation, ni l'inverse.
+   * Le lien vaut 7 jours ; une rotation de `FIELD_ENCRYPTION_KEY` éteint les
+   * liens en cours, qu'une nouvelle demande remplace.
+   */
+  mailMarketingConfirmTokenKey(): Buffer {
+    return Buffer.from(
+      hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), MAIL_MARKETING_CONFIRM_KEY_INFO, 32),
+    );
+  }
+
+  /**
    * La clé du coffre vient-elle de l'environnement, ou du repli de développement ?
    *
    * Lu par le bulletin de démarrage. La distinction compte parce qu'elle est
@@ -699,6 +713,8 @@ const MAIL_UNSUBSCRIBE_TOKEN_KEY_INFO = "lfd/mail-unsubscribe/v1";
 
 /** L'étiquette HKDF des empreintes du registre de préférence marketing. */
 const MAIL_MARKETING_PRINT_KEY_INFO = "lfd/mail-unsubscribe-print/v1";
+/** L'étiquette HKDF des jetons de confirmation d'un accord (C1) : distincte des deux autres. */
+const MAIL_MARKETING_CONFIRM_KEY_INFO = "lfd/mail-marketing-confirm/v1";
 
 /**
  * 🔴 **Une clé absente ne doit jamais équivaloir à « pas de chiffrement ».**

@@ -78,8 +78,19 @@ function supportText(input: LayoutInput): string {
 }
 
 /**
+ * Le pied de désinscription (plan de désinscription, B2) : la phrase,
+ * l'adresse en clair à la place du lien — jamais coupée, elle ne se
+ * cliquerait plus.
+ */
+function unsubscribeText(input: LayoutInput): string {
+  const footer = input.unsubscribe;
+  return footer === undefined ? "" : wrapText(`${footer.before}${footer.url}${footer.after}`);
+}
+
+/**
  * Le cadre texte autour d'un corps déjà assemblé : l'enseigne en tête, le
- * pied commun de la charte publiée et le recours en bas — les cadres du HTML.
+ * pied commun de la charte publiée, le pied de désinscription d'un e-mail
+ * marketing et le recours en bas — les cadres du HTML.
  */
 export function layoutTextFrame(input: LayoutInput, body: readonly string[]): string {
   const charterFooter = charterOf(input).footer;
@@ -87,6 +98,7 @@ export function layoutTextFrame(input: LayoutInput, body: readonly string[]): st
     wrapText(input.brand ?? ""),
     ...body,
     wrapText(charterFooter ?? ""),
+    unsubscribeText(input),
     supportText(input),
   ])}\n`;
 }
