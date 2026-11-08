@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
+import { MailDeliveryFailedEvent } from "../../channels/deliveries/mail-delivery-failed.event.js";
 import {
   MAIL_REQUEST_STATUSES,
   MailRequest,
@@ -39,8 +41,10 @@ export interface MailRequestRow {
   /**
    * Les sujets, quand la lecture les a joints (`plan-sujet-des-e-mails.md`,
    * E1). Absents d'une lecture qui ne les demande pas (la liste du suivi en
-   * SQL écrit, le balayeur) : la demande relue n'en porte alors aucun, et
-   * `save` ne les touche jamais — ils sont fixés à la demande.
+   * SQL écrit) : la demande relue n'en porte alors aucun, et `save` ne les
+   * touche jamais — ils sont fixés à la demande. 🔴 Toute lecture qui peut
+   * mener à un `save` après `recordDelivery` les joint (le balayeur depuis
+   * E4) : sans eux, l'entrée dans l'échec ne noterait aucun fait.
    */
   readonly subjects?: readonly MailRequestSubjectRow[];
 }
@@ -134,11 +138,15 @@ function subjectRowsOf(
 
 /**
  * Le suivi des demandes, dans le schéma `mail`. Passe par le client ambiant :
- * sous une unité de travail, il écrit dans la transaction de l'appelant.
+ * sous une unité de travail, il écrit dans la transaction de l'appelant —
+ * la demande ET le fait `mail.delivery_failed` qu'elle a noté.
  */
 @Injectable()
 export class PrismaMailRequestRepository extends MailRequestRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly publisher: DurablePublisher,
+  ) {
     super();
   }
 
@@ -209,6 +217,18 @@ export class PrismaMailRequestRepository extends MailRequestRepository {
         deliveryKind: row.deliveryKind,
       },
     });
+    await this.publishFailures(request);
+  }
+
+  /**
+   * Les entrées dans l'échec que l'agrégat a notées (`plan-sujet-des-e-mails.md`,
+   * règle 4), écrites à la boîte d'envoi APRÈS la demande, dans la même
+   * transaction : quel que soit le chemin qui a appliqué le retour.
+   */
+  private async publishFailures(request: MailRequest): Promise<void> {
+    for (const failure of request.pullDeliveryFailures()) {
+      await this.publisher.publish(new MailDeliveryFailedEvent(failure).durableFact());
+    }
   }
 
   private async addSubjects(request: MailRequest): Promise<void> {

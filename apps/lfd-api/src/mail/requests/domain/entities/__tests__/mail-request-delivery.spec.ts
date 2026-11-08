@@ -99,3 +99,94 @@ describe("MailRequest.recordDelivery — vers le haut seulement (décision 3)", 
     expect(request.isSettled()).toBe(true);
   });
 });
+
+describe("MailRequest.recordDelivery — l'entrée dans l'échec (plan-sujet-des-e-mails, règle 4)", () => {
+  const ORDER = { type: "order", id: "ord_1" } as const;
+
+  function sentFor(subjects: MailRequestDraft["subjects"] = [ORDER]): MailRequest {
+    const request = MailRequest.request({ ...DRAFT, subjects });
+    request.markSent("re_1", SENT_AT);
+    return request;
+  }
+
+  it("note l'entrée dans l'échec de rien vers `bounced`, avec ses sujets et sans adresse", () => {
+    const request = sentFor();
+
+    request.recordDelivery(report("bounced", 5, "Permanent/General"));
+
+    const failures = request.pullDeliveryFailures();
+    expect(failures).toEqual([
+      {
+        requestId: "mail_1",
+        template: "customer.order-ready",
+        subjects: [ORDER],
+        delivery: "bounced",
+        kind: "Permanent/General",
+        at: new Date(SENT_AT.getTime() + 5000),
+      },
+    ]);
+    expect(JSON.stringify(failures)).not.toContain("@");
+  });
+
+  it.each([
+    ["delayed", "complained"],
+    ["delivered", "bounced"],
+    ["delivered", "complained"],
+  ] as const)("note l'entrée de `%s` vers `%s`", (before, after) => {
+    const request = sentFor();
+    request.recordDelivery(report(before, 1));
+
+    request.recordDelivery(report(after, 2));
+
+    expect(request.pullDeliveryFailures().map((failure) => failure.delivery)).toEqual([after]);
+  });
+
+  it("ne note rien de `complained` vers `bounced` : la demande est déjà en échec", () => {
+    const request = sentFor();
+    request.recordDelivery(report("complained", 1));
+    request.pullDeliveryFailures();
+
+    expect(request.recordDelivery(report("bounced", 2))).toBe(true);
+    expect(request.pullDeliveryFailures()).toEqual([]);
+  });
+
+  it("ne note rien de `bounced` vers `delivered` : l'échelle ne descend pas", () => {
+    const request = sentFor();
+    request.recordDelivery(report("bounced", 1));
+    request.pullDeliveryFailures();
+
+    expect(request.recordDelivery(report("delivered", 2))).toBe(false);
+    expect(request.pullDeliveryFailures()).toEqual([]);
+  });
+
+  it("ne note rien pour une remise ni un retard", () => {
+    const request = sentFor();
+    request.recordDelivery(report("delayed", 1));
+    request.recordDelivery(report("delivered", 2));
+
+    expect(request.pullDeliveryFailures()).toEqual([]);
+  });
+
+  it("ne note rien pour une demande sans sujet : personne à prévenir", () => {
+    const request = sentFor([]);
+
+    request.recordDelivery(report("bounced", 1));
+
+    expect(request.pullDeliveryFailures()).toEqual([]);
+  });
+
+  it("rend les entrées une fois : une seconde lecture est vide", () => {
+    const request = sentFor();
+    request.recordDelivery(report("bounced", 1));
+
+    expect(request.pullDeliveryFailures()).toHaveLength(1);
+    expect(request.pullDeliveryFailures()).toEqual([]);
+  });
+
+  it("une demande relue ne porte aucune entrée en attente", () => {
+    const request = sentFor();
+    request.recordDelivery(report("bounced", 1));
+
+    expect(MailRequest.rehydrate(request.snapshot()).pullDeliveryFailures()).toEqual([]);
+  });
+});

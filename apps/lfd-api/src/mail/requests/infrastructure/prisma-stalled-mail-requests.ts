@@ -6,7 +6,7 @@ import {
   type StalledMailCriteria,
   StalledMailRequests,
 } from "../domain/ports/stalled-mail-requests.js";
-import { toDomain } from "./prisma-mail-request.repository.js";
+import { toDomain, WITH_SUBJECTS } from "./prisma-mail-request.repository.js";
 
 /**
  * Les envois différés en retard, lus par l'index `(status, last_attempt_at)`.
@@ -35,6 +35,10 @@ export class PrismaStalledMailRequests extends StalledMailRequests {
       },
       orderBy: [{ lastAttemptAt: "asc" }, { id: "asc" }],
       take: criteria.limit,
+      // Les sujets avec la demande : relancée, elle peut relire un rebond déjà
+      // rangé (`MailOutcomeRecorder`), et le fait d'échec doit les porter
+      // (`plan-sujet-des-e-mails.md`, E4).
+      include: WITH_SUBJECTS,
     });
     return rows.map(toDomain);
   }

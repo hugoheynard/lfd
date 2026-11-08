@@ -18,6 +18,21 @@ export function deliveryOutranks(next: MailDelivery, current: MailDelivery | nul
   return current === null || MAIL_DELIVERIES.indexOf(next) > MAIL_DELIVERIES.indexOf(current);
 }
 
+/**
+ * Les retours qui disent « non reçu » (`plan-sujet-des-e-mails.md`, règle 4) :
+ * personne n'a lu l'e-mail, et quelqu'un doit agir.
+ */
+export const MAIL_DELIVERY_FAILURES = ["complained", "bounced"] as const;
+
+export type MailDeliveryFailureKind = (typeof MAIL_DELIVERY_FAILURES)[number];
+
+/** Vrai si ce retour dit « non reçu ». */
+export function isDeliveryFailure(
+  delivery: MailDelivery | null,
+): delivery is MailDeliveryFailureKind {
+  return MAIL_DELIVERY_FAILURES.some((failure) => failure === delivery);
+}
+
 /** Une valeur relue (base, réseau) : le retour connu, ou `null`. */
 export function mailDeliveryOf(raw: string): MailDelivery | null {
   return MAIL_DELIVERIES.find((known) => known === raw) ?? null;

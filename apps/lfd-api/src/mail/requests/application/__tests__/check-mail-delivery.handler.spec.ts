@@ -23,7 +23,7 @@ import {
   DEFERRED_CHECK_TIMEOUT_MS,
   DeferredMailCheck,
 } from "../deferred-mail-check.service.js";
-import { InMemoryMailRequests } from "./mail-doubles.js";
+import { InMemoryMailRequests, RecordingFacts } from "./mail-doubles.js";
 
 /** La vraie configuration, dont seuls les trois réglages lus sont fixés. */
 class Settings extends AppConfig {
@@ -124,7 +124,7 @@ class PublishedSenders extends PublishedMailCopyReader {
 function setup(settings: Settings, relay: Relay = "sends", identities?: PublishedMailSenders) {
   const unitOfWork = new OpenableUnitOfWork();
   const mails = new RecordingMail(unitOfWork);
-  const requests = new InMemoryMailRequests();
+  const requests = new InMemoryMailRequests(new RecordingFacts());
   const wall = new FixedWallClock(WALL_START);
   const pause = new RelayingPause(wall, requests, mails, relay);
   const deferred = new DeferredMailCheck(mails, unitOfWork, requests, wall, pause);

@@ -4,32 +4,26 @@ import {
   MailRequestNotResumableError,
 } from "../errors/mail-request.errors.js";
 import type { MailSubject } from "../../../channels/requests/mail-subject.js";
-import { MailBrand, type MailBrandCode } from "../value-objects/mail-brand.js";
+import type { MailDeliveryFailure } from "../events/mail-delivery-failure.js";
+import { MailBrand } from "../value-objects/mail-brand.js";
 import { mailRequestSubjectsOf } from "../value-objects/mail-request-subject.js";
 import {
   deliveryOutranks,
-  type MailDelivery,
+  isDeliveryFailure,
   type MailDeliveryReport,
 } from "../value-objects/mail-delivery.js";
+import type {
+  MailRequestDraft,
+  MailRequestSnapshot,
+  MailRequestStatus,
+} from "./mail-request-state.js";
 
-/**
- * Les états d'une demande (plan `plan-service-e-mails.md`, C7) :
- *
- * - `requested` — écrite, pas encore partie ;
- * - `sending` — un envoi différé est engagé (S1b, plan § 8) : marqué dans la
- *   transaction de livraison, il part après la validation. Une demande qui y
- *   reste est un envoi orphelin (redémarrage entre les deux), que le
- *   balayeur reprend avec la même clé ;
- * - `sent` — acceptée par le fournisseur (pas « arrivée » : `CLAUDE.md` § 0) ;
- * - `failed` — l'envoi a échoué pour une raison technique ; un nouvel essai
- *   peut réussir ;
- * - `refused` — refusée pour une raison que réessayer ne changera pas.
- *
- * `sent` et `refused` sont terminaux.
- */
-export const MAIL_REQUEST_STATUSES = ["requested", "sending", "sent", "failed", "refused"] as const;
-
-export type MailRequestStatus = (typeof MAIL_REQUEST_STATUSES)[number];
+export {
+  MAIL_REQUEST_STATUSES,
+  type MailRequestDraft,
+  type MailRequestSnapshot,
+  type MailRequestStatus,
+} from "./mail-request-state.js";
 
 const TEMPLATE_MAX = 80;
 const RECIPIENT_MAX = 320;
@@ -48,64 +42,6 @@ export const MAIL_RESUME_WINDOW_MS = 23 * HOUR_MS;
 
 /** Le plafond d'essais d'un envoi différé, le premier compris. */
 export const MAX_MAIL_ATTEMPTS = 10;
-
-/** Ce qu'il faut pour demander un e-mail. */
-export interface MailRequestDraft {
-  readonly id: string;
-  readonly template: string;
-  readonly brand: string;
-  readonly recipient: string;
-  readonly locale: string | null;
-  readonly idempotencyKey: string;
-  readonly requestedAt: Date;
-  /** Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règle 2) ; absent = aucun. */
-  readonly subjects?: readonly { readonly type: string; readonly id: string }[];
-}
-
-/** L'état complet, tel que l'adaptateur le range et le relit. */
-export interface MailRequestSnapshot {
-  readonly id: string;
-  readonly template: string;
-  readonly brand: MailBrandCode;
-  readonly recipient: string;
-  /**
-   * L'adresse normalisée (minuscules) à laquelle une recherche compare (plan
-   * `le-suivi-des-e-mails.md`, décision 9). Écrite par l'agrégat, jamais
-   * par l'appelant.
-   */
-  readonly recipientKey: string;
-  readonly locale: string | null;
-  readonly idempotencyKey: string;
-  readonly status: MailRequestStatus;
-  readonly providerId: string | null;
-  readonly failureReason: string | null;
-  readonly requestedAt: Date;
-  readonly sentAt: Date | null;
-  readonly failedAt: Date | null;
-  /** L'instant du premier envoi différé engagé ; `null` sans envoi différé. */
-  readonly firstAttemptAt: Date | null;
-  /** L'instant du dernier envoi différé engagé. */
-  readonly lastAttemptAt: Date | null;
-  /** Les envois différés engagés. `sendAndAwaitReceipt` n'en compte pas : il ne passe pas par `sending`. */
-  readonly attempts: number;
-  /**
-   * La version publiée du document qui a composé l'envoi (plan
-   * `plan-editeur-par-blocs.md`, § 5, S4c) ; `null` : le document de départ,
-   * ou rien d'envoyé encore. Avec `template`, elle dit QUEL texte est parti.
-   */
-  readonly documentVersion: number | null;
-  /** Le retour du fournisseur (décision 1) ; `null` : rien reçu. */
-  readonly delivery: MailDelivery | null;
-  readonly deliveryAt: Date | null;
-  /** Le genre du retour (`Permanent/Suppressed`), jamais son texte. */
-  readonly deliveryKind: string | null;
-  /**
-   * Ce pour quoi l'e-mail part (`plan-sujet-des-e-mails.md`, règles 1 et 2),
-   * fixé à la demande et jamais changé ensuite. Vide pour une demande sans
-   * sujet, et pour toutes celles d'avant la table : rien n'est déduit.
-   */
-  readonly subjects: readonly MailSubject[];
-}
 
 /** La clé de comparaison d'une adresse : la même règle à la création et en migration (`lower`). */
 export function recipientKeyOf(recipient: string): string {
@@ -146,6 +82,9 @@ const GIVE_UP_REASON =
  * dates) et rien de plus.
  */
 export class MailRequest {
+  /** Les entrées dans l'échec notées depuis la dernière écriture ; le dépôt les vide. */
+  private failures: MailDeliveryFailure[] = [];
+
   private constructor(private state: MailRequestSnapshot) {}
 
   /** La demande neuve, refusée si elle est mal formée. */
@@ -306,11 +245,31 @@ export class MailRequest {
    * sans effet. Indépendant de `status` : une demande acceptée puis rebondie
    * n'a pas échoué de notre côté, et la reprise ne la relance pas.
    *
+   * Une demande qui porte au moins un sujet et ENTRE dans l'échec (de rien,
+   * `delayed` ou `delivered` vers `complained` ou `bounced`) note une
+   * {@link MailDeliveryFailure} (`plan-sujet-des-e-mails.md`, règle 4) ;
+   * `complained` puis `bounced` n'en note qu'une : l'échelle monte, la
+   * personne à prévenir est la même.
+   *
    * @returns `true` si la demande a changé (à ranger), `false` sinon.
    */
   recordDelivery(report: MailDeliveryReport): boolean {
     if (!deliveryOutranks(report.delivery, this.state.delivery)) {
       return false;
+    }
+    if (
+      isDeliveryFailure(report.delivery) &&
+      !isDeliveryFailure(this.state.delivery) &&
+      this.state.subjects.length > 0
+    ) {
+      this.failures.push({
+        requestId: this.state.id,
+        template: this.state.template,
+        subjects: this.state.subjects,
+        delivery: report.delivery,
+        kind: report.kind,
+        at: report.at,
+      });
     }
     this.state = {
       ...this.state,
@@ -331,6 +290,16 @@ export class MailRequest {
   markRefused(reason: string, at: Date): void {
     this.assertOpen();
     this.state = { ...this.state, status: "refused", failureReason: clipped(reason), failedAt: at };
+  }
+
+  /**
+   * Rend et oublie les entrées dans l'échec notées : le dépôt les écrit à la
+   * boîte d'envoi avec la demande, une fois.
+   */
+  pullDeliveryFailures(): readonly MailDeliveryFailure[] {
+    const pulled = this.failures;
+    this.failures = [];
+    return pulled;
   }
 
   snapshot(): MailRequestSnapshot {

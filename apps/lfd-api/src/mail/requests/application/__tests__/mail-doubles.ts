@@ -6,6 +6,7 @@ import { DurableFactPayloads } from "../../../../platform/outbox/durable-fact-pa
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { MailDeliveryFailedEvent } from "../../../channels/deliveries/mail-delivery-failed.event.js";
 import { MailRequest } from "../../domain/entities/mail-request.js";
 import { MailAttachmentStore } from "../../domain/ports/mail-attachment.store.js";
 import {
@@ -40,9 +41,16 @@ import { MailOutcomeRecorder } from "../mail-outcome-recorder.js";
 import { MailSendAttempt } from "../mail-send-attempt.js";
 import { SweepMailRequestsHandler } from "../sweep-mail-requests.handler.js";
 
-/** Le suivi en mémoire, rangé par clé d'idempotence comme en base. */
+/**
+ * Le suivi en mémoire, rangé par clé d'idempotence comme en base ; `save`
+ * écrit les entrées dans l'échec à la boîte d'envoi, comme l'adaptateur.
+ */
 export class InMemoryMailRequests extends MailRequestRepository {
   readonly rows = new Map<string, MailRequest>();
+
+  constructor(private readonly publisher: DurablePublisher) {
+    super();
+  }
 
   findByIdempotencyKey(key: string): Promise<MailRequest | null> {
     const row = this.rows.get(key);
@@ -65,9 +73,11 @@ export class InMemoryMailRequests extends MailRequestRepository {
     );
   }
 
-  save(request: MailRequest): Promise<void> {
+  async save(request: MailRequest): Promise<void> {
     this.rows.set(request.idempotencyKey, MailRequest.rehydrate(request.snapshot()));
-    return Promise.resolve();
+    for (const failure of request.pullDeliveryFailures()) {
+      await this.publisher.publish(new MailDeliveryFailedEvent(failure).durableFact());
+    }
   }
 }
 
@@ -216,9 +226,9 @@ export class SwitchableProbe extends UnitOfWorkProbe {
 
 /** Le bloc monté à la main sur ses doubles. */
 export function mailScene() {
-  const requests = new InMemoryMailRequests();
-  const dispatch = new RecordingDispatch();
   const facts = new RecordingFacts();
+  const requests = new InMemoryMailRequests(facts);
+  const dispatch = new RecordingDispatch();
   const probe = new SwitchableProbe();
   const clock = new FixedClock(new Date(0));
   const ids = new FixedIdGenerator("mail");

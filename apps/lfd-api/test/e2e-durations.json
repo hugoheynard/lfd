@@ -328,6 +328,7 @@
   "test/order-exact-ht.e2e-spec.ts": 11241,
   "test/order-guest-cancel.e2e-spec.ts": 15559,
   "test/order-handover-proof.e2e-spec.ts": 14987,
+  "test/order-mail-bell.e2e-spec.ts": 12146,
   "test/order-mails.e2e-spec.ts": 15676,
   "test/order-min-quantity.e2e-spec.ts": 15680,
   "test/order-number.e2e-spec.ts": 10315,

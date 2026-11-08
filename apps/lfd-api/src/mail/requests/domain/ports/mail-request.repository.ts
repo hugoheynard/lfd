@@ -19,6 +19,11 @@ export abstract class MailRequestRepository {
   abstract findByProviderId(providerId: string): Promise<readonly MailRequest[]>;
   /** @returns `false` si une demande de même clé existait déjà (rien n'est écrit). */
   abstract addIfAbsent(request: MailRequest): Promise<boolean>;
-  /** Range une demande, neuve ou chargée (par sa clé d'idempotence). */
+  /**
+   * Range une demande, neuve ou chargée (par sa clé d'idempotence), et écrit
+   * à la boîte d'envoi, dans la même unité de travail, chaque entrée dans
+   * l'échec qu'elle a notée (`pullDeliveryFailures`, fait
+   * `mail.delivery_failed` — `plan-sujet-des-e-mails.md`, règle 4).
+   */
   abstract save(request: MailRequest): Promise<void>;
 }

@@ -295,6 +295,7 @@ import { AdminOrderMailsController } from "./http/admin-order-mails.controller.j
 import { OrderExistenceReader } from "./domain/ports/order-existence.reader.js";
 import { PrismaOrderExistenceReader } from "./infrastructure/prisma-order-existence.reader.js";
 import { ListOrderMailsHandler } from "./application/queries/list-order-mails.handler.js";
+import { RingFailedOrderMail } from "./application/handlers/ring-failed-order-mail.handler.js";
 import { OrderDayChangePruner } from "./domain/ports/order-day-change.pruner.js";
 import { PrismaOrderDayVersionReader } from "./infrastructure/prisma-order-day-version.reader.js";
 import { PrismaOrderDayChangePruner } from "./infrastructure/prisma-order-day-change.pruner.js";
@@ -582,6 +583,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // commande prouvée, puis le canal du bloc `mail`.
     { provide: OrderExistenceReader, useClass: PrismaOrderExistenceReader },
     ListOrderMailsHandler,
+    // Un e-mail de commande non reçu sonne une cloche vers la commande (E4).
+    RingFailedOrderMail,
     { provide: OrderDayChangePruner, useClass: PrismaOrderDayChangePruner },
     ResendOrderPaymentLinkHandler,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
