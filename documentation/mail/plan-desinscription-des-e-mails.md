@@ -215,6 +215,22 @@ Ces décisions **remplacent** ce que les règles 2 à 8 disaient autrement.
 
 ### Décisions de Hugo avant le premier e-mail marketing
 
+- **Le consentement, par marque, et les « partenaires » internes** (Hugo,
+  2026-11-08). L'accord se recueille et se range **par espace** (une case
+  par marque, avec la date et le texte accepté pour la preuve) : un accord
+  donné à La Folie Coffee ne vaut pas pour La Folie Douce. En plus, une case
+  facultative et non précochée : « J'accepte de recevoir les offres des
+  partenaires », où les **partenaires sont les autres marques du groupe**
+  (internes, pas des tiers). La CNIL demande que les partenaires soient
+  identifiables : la case les nomme (« La Folie Douce ») ou renvoie à leur
+  liste, et un ajout de marque à cette liste ne vaut pas accord pour les
+  personnes déjà inscrites. La désinscription suit la même maille : le lien
+  d'un e-mail désinscrit de la marque qui l'envoie (et retire l'accord
+  « partenaires » qui l'aurait permis), et la page propose en plus « Ne plus
+  rien recevoir de nos marques ». Le statut juridique (deux sociétés, ou une
+  société et deux marques) reste à préciser par Hugo : avec deux sociétés,
+  la case « partenaires » est obligatoire pour qu'une marque écrive au
+  client de l'autre.
 - **Le consentement des particuliers** : où se recueille l'accord (case à
   l'inscription, page « Mes préférences »), comment il se prouve (date,
   texte accepté), et qu'un e-mail marketing vers un particulier sans accord
