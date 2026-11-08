@@ -2,9 +2,10 @@
 
 > 🟡 **État au 2026-11-08, vérifié dans le code.** Bâti : les retours de
 > Resend rattachés à chaque envoi, l'écran « Suivi des envois », l'adresse
-> masquée et sa révélation tracée, la porte du mot « envoyé ». Reste : T1b,
-> la bascule de la carte de santé, au moins sept jours après le déploiement
-> de T1 en production (voir « Ce qui reste »). Ce document remplace le plan
+> masquée et sa révélation tracée, la porte du mot « envoyé », et T1b — la
+> carte de santé et la veille lisent le suivi, `ops.mail_send` n'est plus
+> écrite — avancé par Hugo le 2026-11-08 pour partir dans le même
+> déploiement que T1 (la carte repart donc sans historique). Ce document remplace le plan
 > du même chantier ; ses numéros de règles et de lots sont gardés, parce que
 > le code les cite. Vue d'ensemble des e-mails : [`les-e-mails.md`](les-e-mails.md).
 
@@ -85,14 +86,23 @@ flowchart LR
    lettres) ; jamais `bounce.message`, qui cite l'adresse — ni dans le
    suivi, ni dans `ops.mail_send`. `failure_reason` n'est servi qu'avec
    l'adresse, au moment d'une révélation.
-5. **Deux déploiements pour quitter `ops.mail_send`.** Aujourd'hui (T1), le
-   webhook écrit le suivi **et** `ops.mail_send`, que la carte de santé lit
-   encore. La bascule est T1b (« Ce qui reste »).
+5. **`ops.mail_send` n'est plus écrite** (T1b, dans le même déploiement que
+   T1, décision de Hugo du 2026-11-08). La carte de santé lit le suivi par le
+   port `MailDeliveryTally` (`platform/mailer/delivery-tally/`), que le bloc
+   `mail` sert (`BlockMailDeliveryTally`) et qu'`apps/lfd-api/src/appBootstrap/mail-delivery-tally.module.ts`
+   relie : « Envoyés » compte les demandes **acceptées** (`sent` avec un
+   `provider_id`), sans la sonde ni le mode à blanc ; « sans retour »,
+   celles sans `delivery`. La veille sonne aussi pour un `bounced` /
+   `complained` arrivé depuis 24 h : une cloche par modèle (droit
+   `mail_sends:read`, lien `/emails/envois`), sonde exclue, clé
+   `mail.rejected.<modèle>:<instant du plus récent>` — elle ne resonne qu'à
+   un nouveau rebond. La table reste en base ; la purge de dev la vide
+   encore. `JournalingMailer` est retiré ; la garde réseau de l'envoi est
+   passée à `EffectiveCopyMailer`.
 6. **Les ports.** Le webhook vit dans le bloc `mail` et relaie
    `email.received` au port `InboundMailSink` de `platform/`, que
-   `b2b/contact` implémente (inchangé). `MailJournal` n'a pas été coupé : le
-   webhook n'appelle plus `rememberEvent`, que seul `send-guest-order-notice`
-   lit encore.
+   `b2b/contact` implémente (inchangé). `MailJournal` ne porte plus que
+   `rememberEvent`, que seul `send-guest-order-notice` lit.
 7. **La révélation, en deux temps.** `POST
 /admin/mail/sends/:id/recipient-reveal` range la consultation et publie
    `mail.recipient_revealed` ; `GET …/:id/recipient` ne rend l'adresse et
@@ -127,7 +137,7 @@ Le mot « envoyé » dans le code : `mail.send` rend `MailRequested
 `MailAcceptance { providerId }` (`isMailAccepted`). La porte
 `lint:mail-status-honest` refuse un champ d'étape tiré du réglage du mailer
 ou d'une simple demande ; les 37 anciens champs `mailSent` / `sent` /
-`notified` (21 fichiers, relevé du 2026-11-08) — tous issus d'une
+`notified` (21 fichiers, relevé du 2026-11-08 ; 34 dans 18 après T1b) — tous issus d'une
 acceptation réelle — sont une dette comptée. `mailSent` ne se renomme pas
 facilement : c'est aussi une valeur rangée dans les intentions déjà écrites
 (rejeu) et une colonne de la vitrine.
@@ -140,6 +150,7 @@ facilement : c'est aussi une valeur rangée dans les intentions déjà écrites
 | T2  | droit, lectures, révélation, recherche             | `58b0f5700`              | `20261108120000_le_droit_du_suivi_des_e_mails`, `20261108120100_les_consultations_du_suivi_des_e_mails` |
 | T3  | l'écran ; l'entrée du menu au seul droit du suivi  | `eb6792a8f`, `e52fa57ac` | —                                                                                                       |
 | T4  | `MailRequested` / `MailAcceptance`, la 68ᵉ porte   | `8220b4ad1`              | —                                                                                                       |
+| T1b | la carte et la veille lisent le suivi (règle 5)    | —                        | —                                                                                                       |
 
 Le plan a été contredit par `vitruve` avant le bâti (deux bloquants : un
 retour arrivé avant l'identifiant était perdu ; le texte du rebond cite
@@ -149,21 +160,9 @@ retrouver les envois) : d'où les identifiants rangés de la règle 8.
 
 ### Ce qui reste
 
-**T1b — la bascule, au moins sept jours après le déploiement de T1 en
-production** :
-
-- la carte de santé lit le suivi par un port `MailDeliveryTally` (déclaré
-  dans `platform/`, implémenté par `mail`, relié par `appBootstrap` : `ops`
-  n'importe aucun bloc) ;
-- la veille sonne aussi pour un `bounced` / `complained` des dernières 24 h,
-  une cloche par modèle, sonde exclue ;
-- `ops.mail_send` n'est plus écrite (elle reste en base) ;
-  `recordSend` / `recordOutcome` sont retirés ;
-- **dans le même lot**, retirer de la dette de `lint:mail-status-honest` les
-  entrées de `mail-readings.ts`, `mail-readings.reader.ts` et
-  `mail-journal.port.ts`, sinon la porte échoue.
-- Passé ce déploiement, un retour arrière du code retrouverait un trou dans
-  `ops.mail_send` : c'est le point qui ne se défait plus.
+**T1b est bâti** (règle 5). Passé son déploiement, un retour arrière du code
+retrouverait un trou dans `ops.mail_send` : c'est le point qui ne se défait
+plus.
 
 **À vérifier après le déploiement** : `SELECT count(*) FROM mail.mail_request
 WHERE recipient_key IS NULL` (lecture seule) vaut 0 ou presque ; un vrai

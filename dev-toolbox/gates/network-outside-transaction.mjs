@@ -104,8 +104,9 @@ export const ADMITTED = {
  */
 export const DELEGATED = {
   [`${SRC}/mail/templates/mail-transport.providers.ts`]: {
-    guard: `${SRC}/platform/mailer/journal/journaling-mailer.ts`,
-    reason: "2026-11-06 — le transport Resend n'envoie que sous JournalingMailer, qui l'enveloppe",
+    guard: `${SRC}/mail/templates/effective-copy/effective-copy-mailer.ts`,
+    reason:
+      "2026-11-08 — le transport Resend n'envoie que sous EffectiveCopyMailer, qui l'enveloppe (JournalingMailer retiré en T1b)",
   },
   [`${SRC}/platform/mailer/mailer.module.ts`]: {
     guard: `${SRC}/platform/mailer/inbound/resend-inbound-mail.reader.ts`,

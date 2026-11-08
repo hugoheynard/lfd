@@ -1,7 +1,7 @@
 import { mailReadings, webhookReading, type MailTally } from "../mail-readings.js";
 
 const tally = (over: Partial<MailTally> = {}): MailTally => ({
-  sent: 0,
+  awaitingReturn: 0,
   delayed: 0,
   delivered: 0,
   bounced: 0,
@@ -17,7 +17,7 @@ describe("mailReadings — est-ce que nos e-mails ARRIVENT", () => {
   });
 
   it("compte TOUT ce qui est parti, quel que soit son état", () => {
-    const [sent] = mailReadings(tally({ delivered: 8, bounced: 1, sent: 3 }), null);
+    const [sent] = mailReadings(tally({ delivered: 8, bounced: 1, awaitingReturn: 3 }), null);
 
     expect(sent).toMatchObject({ label: "Envoyés", value: 12 });
   });
@@ -25,7 +25,10 @@ describe("mailReadings — est-ce que nos e-mails ARRIVENT", () => {
   it("🔴 ne compte PAS « sans retour » comme un rejet", () => {
     // Resend n'a pas encore dit, ou l'événement n'est jamais venu. Le compter
     // comme un rejet ferait rougir le canal pour une lenteur.
-    const [envoyés, rejetés] = mailReadings(tally({ sent: 5, delayed: 2, delivered: 1 }), null);
+    const [envoyés, rejetés] = mailReadings(
+      tally({ awaitingReturn: 5, delayed: 2, delivered: 1 }),
+      null,
+    );
 
     expect(rejetés?.value).toBe(0);
     expect(envoyés?.hint).toContain("7 sans retour");

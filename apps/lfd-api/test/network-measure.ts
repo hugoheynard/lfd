@@ -90,7 +90,7 @@ const SELF_GUARDED: ReadonlySet<string> = new Set([
   "StripePaymentGateway",
   "StripePaymentRefunder",
   "StripeCheckoutGateway",
-  "JournalingMailer",
+  "EffectiveCopyMailer",
   "ResendInboundMailReader",
   "R2MediaStore",
   "S3DocumentStore",

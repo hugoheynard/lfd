@@ -328,8 +328,9 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
 
 1. ~~Rendre visibles les e-mails « échoués » au staff (écran du suivi)~~ —
    fait le 2026-11-08, avec le sens de « envoyé » (point 6) : voir
-   [`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md), qui garde son
-   propre reste (T1b, sept jours après le déploiement de T1).
+   [`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md) (T1b, la bascule
+   de la carte de santé, bâti le 2026-11-08 ; reste ce qui se vérifie après
+   le déploiement).
 2. Les pièces jointes par URL signée (S3c) « à revoir » ; d'ici là le bloc
    `mail` lit le stockage des pièces client — Service § 22.
 3. Le dossier du fournil part encore en octets : ouvrir son stockage au bloc

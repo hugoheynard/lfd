@@ -30,6 +30,11 @@ import { DeferredMailCheck } from "./requests/application/deferred-mail-check.se
 import { MailBacklogReader } from "./requests/domain/ports/mail-backlog.reader.js";
 import { Pause } from "./requests/domain/ports/pause.js";
 import { PrismaMailBacklogReader } from "./requests/infrastructure/prisma-mail-backlog.reader.js";
+import { BlockMailDeliveryTally } from "./requests/application/block-mail-delivery-tally.js";
+import { MailDeliveryCountsReader } from "./requests/domain/ports/mail-delivery-counts.reader.js";
+import { PrismaMailDeliveryCountsReader } from "./requests/infrastructure/prisma-mail-delivery-counts.reader.js";
+import { MailProbeTemplates } from "./sends/domain/ports/mail-probe-templates.js";
+import { RegistryMailProbeTemplates } from "./sends/infrastructure/registry-mail-probe-templates.js";
 import { TimerPause } from "./requests/infrastructure/timer-pause.js";
 import { MailBacklogSurvey } from "./channels/requests/mail-backlog-survey.js";
 import { UnitOfWorkProbe } from "./requests/domain/ports/unit-of-work-probe.js";
@@ -119,6 +124,11 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     { provide: MailBacklogReader, useClass: PrismaMailBacklogReader },
     WatchMailRequestsHandler,
     { provide: MailBacklogSurvey, useClass: BlockMailBacklogSurvey },
+    // T1b du suivi : les retours comptés, pour la veille (rebonds) et pour la
+    // carte de santé, que `appBootstrap/` relie au port de `platform/`.
+    { provide: MailDeliveryCountsReader, useClass: PrismaMailDeliveryCountsReader },
+    { provide: MailProbeTemplates, useClass: RegistryMailProbeTemplates },
+    BlockMailDeliveryTally,
     // S3b : les deux comportements des gabarits que des blocs métier
     // demandent, par le canal `mail/channels/templates/`.
     { provide: MailTemplatePreview, useClass: RegistryMailTemplatePreview },
@@ -135,6 +145,12 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     MailDeliveryApplier,
     ReceiveResendEventHandler,
   ],
-  exports: [Mail, MailTemplatePreview, ShortfallLetterDrafter, MailBacklogSurvey],
+  exports: [
+    Mail,
+    MailTemplatePreview,
+    ShortfallLetterDrafter,
+    MailBacklogSurvey,
+    BlockMailDeliveryTally,
+  ],
 })
 export class MailModule {}

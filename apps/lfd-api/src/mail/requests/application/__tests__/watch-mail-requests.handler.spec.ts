@@ -3,8 +3,15 @@ import {
   type StaffNotice,
   StaffNotifier,
 } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
+import { MailProbeTemplates } from "../../../sends/domain/ports/mail-probe-templates.js";
 import { MailBacklogReader } from "../../domain/ports/mail-backlog.reader.js";
+import { MailDeliveryCountsReader } from "../../domain/ports/mail-delivery-counts.reader.js";
 import type { MailBacklog, MailBacklogCriteria } from "../../domain/services/mail-backlog.js";
+import type {
+  MailDeliveryCounts,
+  MailDeliveryCriteria,
+  MailRejection,
+} from "../../domain/services/mail-rejections.js";
 import { WatchMailRequestsHandler } from "../watch-mail-requests.handler.js";
 
 const NOW = new Date("2026-11-07T10:42:00.000Z");
@@ -19,6 +26,32 @@ class FixedBacklog extends MailBacklogReader {
   read(criteria: MailBacklogCriteria): Promise<MailBacklog> {
     this.asked.push(criteria);
     return Promise.resolve(this.value);
+  }
+}
+
+/** Les rebonds fixés, et les critères reçus. */
+class FixedRejections extends MailDeliveryCountsReader {
+  readonly asked: MailDeliveryCriteria[] = [];
+  value: readonly MailRejection[] = [];
+  counts(): Promise<MailDeliveryCounts> {
+    return Promise.resolve({
+      awaitingReturn: 0,
+      delayed: 0,
+      delivered: 0,
+      bounced: 0,
+      complained: 0,
+    });
+  }
+  rejections(criteria: MailDeliveryCriteria): Promise<readonly MailRejection[]> {
+    this.asked.push(criteria);
+    return Promise.resolve(this.value);
+  }
+}
+
+/** La sonde de déploiement, seul modèle hors de l'éditeur. */
+class ProbeTemplates extends MailProbeTemplates {
+  keys(): readonly string[] {
+    return ["ops.deploy-check"];
   }
 }
 
@@ -39,7 +72,15 @@ function setup(value: MailBacklog) {
   const reader = new FixedBacklog(value);
   const bell = new RecordingBell();
   const clock = new FixedClock(NOW);
-  return { reader, bell, clock, handler: new WatchMailRequestsHandler(reader, bell, clock) };
+  const rejections = new FixedRejections();
+  const handler = new WatchMailRequestsHandler(
+    reader,
+    rejections,
+    new ProbeTemplates(),
+    bell,
+    clock,
+  );
+  return { reader, rejections, bell, clock, handler };
 }
 
 const STALLED: MailBacklog = {
@@ -59,6 +100,7 @@ describe("WatchMailRequestsHandler — la veille qui sonne la cloche (plan § 25
       oldestStalledMinutes: 42,
       definitiveFailures: 0,
       alarms: ["stalled"],
+      rejectedTemplates: [],
     });
     expect(bell.rung).toHaveLength(1);
     expect(bell.rung[0]).toMatchObject({
@@ -115,5 +157,80 @@ describe("WatchMailRequestsHandler — la veille qui sonne la cloche (plan § 25
     await handler.execute();
 
     expect(reader.asked[0]?.stalledBefore).toEqual(new Date(NOW.getTime() - 15 * MINUTE_MS));
+  });
+});
+
+const QUIET: MailBacklog = { stalled: 0, oldestStalledAt: null, definitiveFailures: 0 };
+const HOUR_MS = 60 * MINUTE_MS;
+
+function rejection(template: string, count: number, minutesAgo: number): MailRejection {
+  return { template, count, lastAt: new Date(NOW.getTime() - minutesAgo * MINUTE_MS) };
+}
+
+describe("WatchMailRequestsHandler — les rebonds et plaintes (T1b)", () => {
+  it("une cloche par modèle, menant au suivi, adressée à son droit", async () => {
+    const { rejections, bell, handler } = setup(QUIET);
+    rejections.value = [
+      rejection("customer.access-opened", 3, 20),
+      rejection("customer.order-ready", 1, 90),
+    ];
+
+    const report = await handler.execute();
+
+    expect(report.rejectedTemplates).toEqual(["customer.access-opened", "customer.order-ready"]);
+    expect(report.alarms).toEqual([]);
+    expect(bell.rung).toHaveLength(2);
+    expect(bell.rung[0]).toMatchObject({
+      kind: "alert.mail",
+      link: "/emails/envois",
+      audience: "mail_sends:read",
+      subject: "Courrier non reçu",
+    });
+    expect(bell.rung[0]?.body).toContain("3 e-mails ont rebondi ou été signalés");
+    expect(bell.rung[0]?.body).toContain("« customer.access-opened »");
+    expect(bell.rung[1]?.body).toContain("1 e-mail a rebondi ou été signalé depuis hier");
+  });
+
+  it("ne resonne pas à chaque passage pour le même rebond, même des heures plus tard", async () => {
+    const { rejections, bell, clock, handler } = setup(QUIET);
+    rejections.value = [rejection("customer.access-opened", 1, 20)];
+
+    await handler.execute();
+    clock.advanceMs(5 * MINUTE_MS);
+    await handler.execute();
+    clock.advanceMs(3 * HOUR_MS);
+    await handler.execute();
+
+    expect(bell.rung).toHaveLength(1);
+  });
+
+  it("resonne quand un nouveau rebond arrive sur le même modèle", async () => {
+    const { rejections, bell, clock, handler } = setup(QUIET);
+    rejections.value = [rejection("customer.access-opened", 1, 20)];
+    await handler.execute();
+
+    clock.advanceMs(HOUR_MS);
+    rejections.value = [rejection("customer.access-opened", 2, -40)];
+    await handler.execute();
+
+    expect(bell.rung).toHaveLength(2);
+    expect(bell.rung[1]?.body).toContain("2 e-mails ont rebondi");
+  });
+
+  it("demande les rebonds d'hier, la sonde de déploiement exclue", async () => {
+    const { rejections, handler } = setup(QUIET);
+
+    await handler.execute();
+
+    expect(rejections.asked).toEqual([
+      { since: new Date(NOW.getTime() - 24 * HOUR_MS), exceptTemplates: ["ops.deploy-check"] },
+    ]);
+  });
+
+  it("sans rebond ni file : ne sonne pas", async () => {
+    const { bell, handler } = setup(QUIET);
+
+    expect((await handler.execute()).rejectedTemplates).toEqual([]);
+    expect(bell.rung).toEqual([]);
   });
 });

@@ -613,16 +613,18 @@ describe("les courriels d'une commande", () => {
   }
 
   /**
-   * Les gabarits journalisés, dans l'ordre où ils sont partis.
+   * Les modèles partis, dans l'ordre où ils sont partis — lus au suivi du bloc
+   * `mail` (`mail.mail_request`) depuis T1b : `ops.mail_send` n'est plus écrite.
    *
    * On **draine d'abord** : un abonné tourne hors de la requête, et lire le
-   * journal sans l'attendre le trouverait vide une fois sur deux — le pire genre
+   * suivi sans l'attendre le trouverait vide une fois sur deux — le pire genre
    * de rouge, intermittent et qui accuse le mauvais coupable.
    */
   async function templatesSent(): Promise<readonly string[]> {
     await ctx.drain();
-    const rows = await ctx.prisma.mailSend.findMany({
-      orderBy: { sentAt: "asc" },
+    const rows = await ctx.prisma.mailRequest.findMany({
+      where: { status: "sent" },
+      orderBy: [{ sentAt: "asc" }, { requestedAt: "asc" }],
       select: { template: true },
     });
     return rows.map((row) => row.template);
@@ -632,6 +634,8 @@ describe("les courriels d'une commande", () => {
     await placeOne();
 
     expect(await templatesSent()).toContain("customer.order-placed");
+    // T1b (`le-suivi-des-e-mails.md`, règle 5) : le mailer n'écrit plus le journal d'`ops`.
+    expect(await ctx.prisma.mailSend.count()).toBe(0);
   });
 
   it("écrit à nouveau QUAND LA COMMANDE EST PRÊTE", async () => {

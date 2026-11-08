@@ -1,10 +1,6 @@
 import type { Instant } from "../../../../../platform/context/request-context.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
-import {
-  MailJournal,
-  type MailOutcome,
-  type MailSendRecord,
-} from "../../../../../platform/mailer/journal/mail-journal.port.js";
+import { MailJournal } from "../../../../../platform/mailer/journal/mail-journal.port.js";
 import { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import {
@@ -63,14 +59,6 @@ class NoticeStub extends GuestOrderNoticeReader {
 class JournalStub extends MailJournal {
   readonly keys: string[] = [];
   private readonly seen = new Set<string>();
-
-  recordSend(_record: MailSendRecord): Promise<void> {
-    return Promise.resolve();
-  }
-
-  recordOutcome(_outcome: MailOutcome): Promise<void> {
-    return Promise.resolve();
-  }
 
   rememberEvent(provider: string, externalId: string): Promise<boolean> {
     this.keys.push(`${provider}/${externalId}`);

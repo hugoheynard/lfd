@@ -9,9 +9,13 @@ import type { NodeReading } from "@lfd/ops-contract";
  * attend une invitation qui ne viendra pas.
  */
 
-/** Le décompte par état, sur la fenêtre observée. */
+/**
+ * Le décompte par retour, sur la fenêtre observée : les e-mails **acceptés**
+ * par Resend (ni la sonde, ni le mode à blanc — T1b).
+ */
 export interface MailTally {
-  readonly sent: number;
+  /** Acceptés, sans retour du fournisseur à ce stade. */
+  readonly awaitingReturn: number;
   readonly delayed: number;
   readonly delivered: number;
   readonly bounced: number;
@@ -65,7 +69,8 @@ export function mailReadings(
   tally: MailTally,
   worstTemplate: string | null,
 ): readonly NodeReading[] {
-  const total = tally.sent + tally.delayed + tally.delivered + tally.bounced + tally.complained;
+  const total =
+    tally.awaitingReturn + tally.delayed + tally.delivered + tally.bounced + tally.complained;
   if (total === 0) {
     // Aucun envoi : il n'y a rien à dire, et « 0 envoyé » se lirait comme une
     // panne alors que c'est un dimanche. Même règle que le débit de la
@@ -94,7 +99,7 @@ export function mailReadings(
  * ferait rougir le canal pour une lenteur.
  */
 function deliveryDetail(tally: MailTally): string {
-  const pending = tally.sent + tally.delayed;
+  const pending = tally.awaitingReturn + tally.delayed;
   const parts = [`${tally.delivered} délivrés`];
   if (pending > 0) {
     parts.push(`${pending} sans retour à ce stade`);

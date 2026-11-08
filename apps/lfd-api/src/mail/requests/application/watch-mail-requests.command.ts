@@ -5,6 +5,8 @@ export interface MailWatchReport {
   readonly definitiveFailures: number;
   /** Les cas présentés à la cloche à ce passage ; elle les dédoublonne par heure. */
   readonly alarms: readonly ("stalled" | "failed")[];
+  /** Les modèles rebondis ou signalés depuis hier (T1b) ; la cloche sonne une fois par rebond le plus récent. */
+  readonly rejectedTemplates: readonly string[];
 }
 
 /**

@@ -75,6 +75,7 @@ import { ImageCatalogueModule } from "./image-catalogue.module.js";
 import { MediaLibraryCensusModule } from "./media-library-census.module.js";
 import { PostDeployOperationsModule } from "./post-deploy-operations.module.js";
 import { MailBacklogReadingsModule } from "./mail-backlog-readings.module.js";
+import { MailDeliveryTallyModule } from "./mail-delivery-tally.module.js";
 import { MediaCarriersModule } from "./media-carriers.module.js";
 import { OperationImageLibraryModule } from "./operation-image-library.module.js";
 import { JournalModule } from "./journal.module.js";
@@ -213,6 +214,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     MediaLibraryCensusModule,
     PostDeployOperationsModule,
     MailBacklogReadingsModule,
+    MailDeliveryTallyModule,
     MediaCarriersModule,
     JournalModule,
     // Le signal « un rayon a changé », que tout écrivain du rayon émet (cache C1).

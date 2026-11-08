@@ -319,7 +319,9 @@ async function readinessOf(orderId: string) {
     orderBy: { key: "asc" },
     select: { key: true },
   });
-  const mails = await ctx.prisma.mailSend.count({ where: { template: "customer.order-ready" } });
+  const mails = await ctx.prisma.mailRequest.count({
+    where: { template: "customer.order-ready", status: "sent" },
+  });
   return { keys: facts.map(({ key }) => key), mails };
 }
 

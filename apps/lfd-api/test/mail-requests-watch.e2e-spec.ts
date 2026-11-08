@@ -13,6 +13,10 @@
 import { MailerIdempotencyInFlightError, type MailReceipt } from "@lfd/mailer";
 
 import { Mail, type MailDemand } from "../src/mail/channels/requests/mail.js";
+import { MailRequest } from "../src/mail/requests/domain/entities/mail-request.js";
+import { MailRequestRepository } from "../src/mail/requests/domain/ports/mail-request.repository.js";
+import type { MailDelivery } from "../src/mail/requests/domain/value-objects/mail-delivery.js";
+import { MailDeliveryTally } from "../src/platform/mailer/delivery-tally/mail-delivery-tally.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
 
@@ -33,6 +37,7 @@ interface WatchReport {
   readonly oldestStalledMinutes: number | null;
   readonly definitiveFailures: number;
   readonly alarms: readonly string[];
+  readonly rejectedTemplates: readonly string[];
 }
 
 const KEY = "staff.restored:s8";
@@ -97,6 +102,7 @@ describe("POST /admin/mail/requests/watch — la veille du courrier (S8)", () =>
       oldestStalledMinutes: null,
       definitiveFailures: 0,
       alarms: [],
+      rejectedTemplates: [],
     });
     expect(await mailAlarms()).toEqual([]);
   });
@@ -139,5 +145,84 @@ describe("POST /admin/mail/requests/watch — la veille du courrier (S8)", () =>
     expect(alarms.map((alarm) => alarm.idempotencyKey)).toEqual([
       expect.stringMatching(/^mail\.backlog\.failed:/u),
     ]);
+  });
+});
+
+/**
+ * Une demande acceptée (ou à blanc, `providerId` nul), et son retour s'il y en
+ * a un — par l'agrégat, rangée par le port d'écriture du bloc.
+ */
+async function accepted(
+  n: number,
+  template: string,
+  options: { readonly providerId?: string | null; readonly delivery?: MailDelivery } = {},
+): Promise<void> {
+  const at = new Date();
+  const request = MailRequest.request({
+    id: `mail_t1b_${n}`,
+    template,
+    brand: "lfc",
+    recipient: `client${n}@example.test`,
+    locale: "fr",
+    idempotencyKey: `t1b:${n}`,
+    requestedAt: at,
+  });
+  request.markSent(options.providerId === undefined ? `re_t1b_${n}` : options.providerId, at);
+  if (options.delivery !== undefined) {
+    request.recordDelivery({ delivery: options.delivery, kind: null, at });
+  }
+  await ctx.app.get(MailRequestRepository).save(request);
+}
+
+function rejectionAlarms() {
+  return ctx.prisma.staffNotification.findMany({
+    where: { idempotencyKey: { startsWith: "mail.rejected." } },
+    orderBy: { idempotencyKey: "asc" },
+  });
+}
+
+describe("les rebonds et plaintes d'hier font sonner la veille (T1b)", () => {
+  it("une cloche par modèle, la sonde exclue, et pas de seconde sonnerie", async () => {
+    await accepted(1, "customer.access-opened", { delivery: "bounced" });
+    await accepted(2, "customer.access-opened", { delivery: "complained" });
+    await accepted(3, "customer.order-ready", { delivery: "bounced" });
+    await accepted(4, "ops.deploy-check", { delivery: "bounced" });
+    await accepted(5, "customer.order-ready", { delivery: "delivered" });
+
+    const report = await watched();
+    await watched();
+
+    expect([...report.rejectedTemplates].sort()).toEqual([
+      "customer.access-opened",
+      "customer.order-ready",
+    ]);
+    const alarms = await rejectionAlarms();
+    expect(alarms).toHaveLength(2);
+    expect(alarms.map((alarm) => alarm.link)).toEqual(["/emails/envois", "/emails/envois"]);
+    expect(alarms.some((alarm) => alarm.body.includes("ops.deploy-check"))).toBe(false);
+  });
+});
+
+describe("MailDeliveryTally — ce que la carte de santé lit au suivi (T1b)", () => {
+  it("compte les acceptés par retour, sans la sonde ni le mode à blanc", async () => {
+    await accepted(1, "customer.access-opened", { delivery: "bounced" });
+    await accepted(2, "customer.access-opened", { delivery: "bounced" });
+    await accepted(3, "customer.order-ready", { delivery: "complained" });
+    await accepted(4, "customer.order-ready", { delivery: "delivered" });
+    await accepted(5, "customer.order-ready", { delivery: "delayed" });
+    await accepted(6, "customer.order-ready");
+    await accepted(7, "customer.order-ready", { providerId: null });
+    await accepted(8, "ops.deploy-check", { delivery: "bounced" });
+
+    const figures = await ctx.app.get(MailDeliveryTally).read(new Date(daysAgo(7)));
+
+    expect(figures).toEqual({
+      awaitingReturn: 1,
+      delayed: 1,
+      delivered: 1,
+      bounced: 2,
+      complained: 1,
+      mostRejectedTemplate: "customer.access-opened",
+    });
   });
 });

@@ -345,7 +345,9 @@ fait durable et bascule l'abonné qui compte.
   qui pose le geste. Éprouvé dans `test/shop-catalogue.e2e-spec.ts`.
 - **Le journal des envois** était cassé pour TOUT courriel parti d'un
   abonné durable (E4a compris) : l'écriture héritait d'une transaction close.
-  Corrigé à part (`journaling-mailer.ts`, après validation).
+  Corrigé à part (dans le mailer qui journalisait, après validation — ce
+  journal a disparu le 2026-11-08 avec `ops.mail_send`, cf.
+  `../mail/le-suivi-des-e-mails.md`, règle 5).
 - `lint:durable-cross-block` : **dette à zéro**.
 - Éprouvé : specs des trois faits neufs et des cinq abonnés ; 16 suites e2e,
   266 tests (`production-batch`, `shop-catalogue`, `login-methods`,

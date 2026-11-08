@@ -119,22 +119,10 @@ export const DEBT = {
     count: 1,
     reason: "2026-11-08 — même bilan, son accumulateur",
   },
-  "apps/lfd-api/src/ops/health/mail-readings.reader.ts": {
-    count: 1,
-    reason: "2026-11-08 — carte de santé : sent = état d'ops.mail_send, retiré en T1b",
-  },
-  "apps/lfd-api/src/ops/health/mail-readings.ts": {
-    count: 1,
-    reason: "2026-11-08 — même lecture, son type",
-  },
   "apps/lfd-api/src/platform/intent/once-per-intent.ts": {
     count: 3,
     reason:
       "2026-11-08 — codec de rejeu : la clé `mailSent` est aussi une VALEUR rangée dans les intentions déjà écrites",
-  },
-  "apps/lfd-api/src/platform/mailer/journal/mail-journal.port.ts": {
-    count: 1,
-    reason: "2026-11-08 — journal ops.mail_send, retiré en T1b",
   },
   "apps/lfd-api/src/production/application/services/dossier-dispatch.service.ts": {
     count: 2,

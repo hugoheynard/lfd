@@ -8,7 +8,6 @@ import {
   type InboundMailNotice,
 } from "../../../platform/mailer/inbound/inbound-mail.sink.js";
 import { InboundSinkMissingError } from "../../../platform/mailer/inbound/inbound-sink-missing.error.js";
-import { MailJournal } from "../../../platform/mailer/journal/mail-journal.port.js";
 import { verifySvixSignature } from "../../../platform/mailer/webhook/svix-signature.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { MailDeliveryApplier } from "../../requests/application/mail-delivery-applier.js";
@@ -29,8 +28,8 @@ import { readReceivedEmail, readResendEvent, type ResendEvent } from "./resend-e
  * n'ait écrit son `provider_id` : il attend alors dans
  * `mail.mail_delivery_event`, et la demande le relit en recevant son
  * identifiant (`MailOutcomeRecorder`), ou le balayeur l'applique. Le
- * `svix-id` unique de cette table dédoublonne un rejeu. `ops.mail_send` reste
- * écrite pendant la transition (décision 5) — avec le genre, jamais le texte.
+ * `svix-id` unique de cette table dédoublonne un rejeu. `ops.mail_send` n'est
+ * plus écrite depuis T1b (règle 5) : la carte de santé lit le suivi.
  *
  * On ne rejette **jamais** au-delà du refus de signature : un `5xx` ferait
  * réessayer Resend, et aucune reprise ne rendra lisible un événement
@@ -55,7 +54,6 @@ export class ReceiveResendEventHandler implements ICommandHandler<
     @Inject(AppConfig) private readonly config: Pick<AppConfig, "mailerConfig">,
     private readonly events: MailDeliveryEventLog,
     private readonly deliveries: MailDeliveryApplier,
-    private readonly journal: MailJournal,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     // Jeton explicite : sous une union `| null`, la métadonnée de type vaut
@@ -96,12 +94,6 @@ export class ReceiveResendEventHandler implements ICommandHandler<
       // Svix réessaie : appliqué deux fois, un rebond compterait double.
       return;
     }
-    await this.journal.recordOutcome({
-      providerId: event.providerId,
-      status: event.delivery,
-      at: stored.report().at,
-      detail: event.kind ?? "",
-    });
     await this.applyNow(stored);
   }
 

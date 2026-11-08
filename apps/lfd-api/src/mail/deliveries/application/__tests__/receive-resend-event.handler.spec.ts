@@ -7,11 +7,6 @@ import {
   type InboundMailNotice,
 } from "../../../../platform/mailer/inbound/inbound-mail.sink.js";
 import { InboundSinkMissingError } from "../../../../platform/mailer/inbound/inbound-sink-missing.error.js";
-import {
-  MailJournal,
-  type MailOutcome,
-  type MailSendRecord,
-} from "../../../../platform/mailer/journal/mail-journal.port.js";
 import type { SvixHeaders } from "../../../../platform/mailer/webhook/svix-signature.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { mailScene } from "../../../requests/application/__tests__/mail-doubles.js";
@@ -59,21 +54,6 @@ function config(webhookSecret: string | null): { mailerConfig(): MailerConfig } 
   };
 }
 
-/** Le journal `ops.mail_send`, toujours écrit en T1 (décision 5). */
-class JournalDouble extends MailJournal {
-  readonly outcomes: MailOutcome[] = [];
-  recordSend(_record: MailSendRecord): Promise<void> {
-    return Promise.resolve();
-  }
-  recordOutcome(outcome: MailOutcome): Promise<void> {
-    this.outcomes.push(outcome);
-    return Promise.resolve();
-  }
-  rememberEvent(): Promise<boolean> {
-    return Promise.resolve(true);
-  }
-}
-
 /** La table `mail_delivery_event` : l'unicité du `svixId`, et ce qui y a été rangé. */
 class EventLogDouble extends MailDeliveryEventLog {
   readonly stored: MailDeliveryEvent[] = [];
@@ -108,7 +88,6 @@ class SinkDouble extends InboundMailSink {
 /** Le bloc monté sur ses doubles, et le webhook branché dessus. */
 function world(options: { secret?: string | null; sink?: InboundMailSink | null } = {}) {
   const scene = mailScene();
-  const journal = new JournalDouble();
   const log = new EventLogDouble((stored) =>
     scene.deliveries.record(stored.providerId, stored.report()),
   );
@@ -116,14 +95,13 @@ function world(options: { secret?: string | null; sink?: InboundMailSink | null 
     config(options.secret === undefined ? SECRET : options.secret),
     log,
     scene.applier,
-    journal,
     new FixedIdGenerator("evt"),
     new FixedClock(NOW),
     options.sink ?? null,
   );
   const post = (body: string, id?: string) =>
     receive.execute(new ReceiveResendEventCommand(signed(body, id), body));
-  return { scene, journal, log, receive, post };
+  return { scene, log, receive, post };
 }
 
 const SUSPENDED = {
@@ -164,7 +142,7 @@ describe("ReceiveResendEventHandler — le mur", () => {
 
 describe("ReceiveResendEventHandler — ranger, puis appliquer", () => {
   it("range le retour et l'applique à la demande connue, avec son genre", async () => {
-    const { scene, journal, log, post } = world();
+    const { scene, log, post } = world();
     await sentMail(scene);
 
     expect(await post(BODY)).toBe("accepted");
@@ -176,24 +154,17 @@ describe("ReceiveResendEventHandler — ranger, puis appliquer", () => {
       deliveryKind: "Permanent/General",
       deliveryAt: new Date(NOW.getTime() - 1000),
     });
-    // `ops.mail_send` reste écrite en T1 (décision 5) — avec le genre, plus le texte.
-    expect(journal.outcomes).toEqual([
-      {
-        providerId: "re_1",
-        status: "bounced",
-        detail: "Permanent/General",
-        at: new Date(NOW.getTime() - 1000),
-      },
-    ]);
+    // `ops.mail_send` n'est plus écrite depuis T1b (règle 5) : le handler ne
+    // dépend plus du journal, et l'e2e `resend-webhook` vérifie la table.
   });
 
   it("ne range jamais le texte du fournisseur (`bounce.message`)", async () => {
-    const { scene, journal, log, post } = world();
+    const { scene, log, post } = world();
     await sentMail(scene);
 
     await post(BODY);
 
-    const everything = JSON.stringify([log.stored.map((one) => one.snapshot()), journal.outcomes]);
+    const everything = JSON.stringify(log.stored.map((one) => one.snapshot()));
     expect(everything).not.toContain("exemple.test");
     expect(everything).not.toContain("Recipient");
     expect(JSON.stringify(requestOf(scene))).not.toContain("Recipient");
@@ -213,14 +184,13 @@ describe("ReceiveResendEventHandler — ranger, puis appliquer", () => {
   });
 
   it("un webhook rejoué n'est rangé et compté qu'une fois", async () => {
-    const { scene, journal, log, post } = world();
+    const { scene, log, post } = world();
     await sentMail(scene);
 
     await post(BODY, "msg_same");
     expect(await post(BODY, "msg_same")).toBe("accepted");
 
     expect(log.stored).toHaveLength(1);
-    expect(journal.outcomes).toHaveLength(1);
   });
 
   it("un `delivered` arrivé après un `bounced` ne l'efface pas", async () => {
@@ -245,12 +215,11 @@ describe("ReceiveResendEventHandler — ranger, puis appliquer", () => {
     ["`email.opened`, qui ne nous regarde pas", event("email.opened")],
     ["`email.clicked`", event("email.clicked")],
   ])("acquitte %s sans rien ranger ni écrire", async (_label, body) => {
-    const { journal, log, post } = world();
+    const { log, post } = world();
 
     expect(await post(body)).toBe("accepted");
 
     expect(log.stored).toEqual([]);
-    expect(journal.outcomes).toEqual([]);
   });
 
   it("un retour sans demande connue est rangé et attend", async () => {

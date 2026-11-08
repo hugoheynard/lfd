@@ -11,8 +11,9 @@
  *  3. **Un retour arrivé avant l'envoi n'est pas perdu** : la demande le relit
  *     à la pose de son identifiant, ou le balayeur l'applique.
  *  4. **L'ordre d'arrivée ne détruit pas l'information** : relevé vers le haut.
- *  5. **Aucun texte du fournisseur n'est rangé** — ni au suivi, ni dans
- *     `ops.mail_send`, toujours écrite pendant la transition (décision 5).
+ *  5. **Aucun texte du fournisseur n'est rangé** au suivi.
+ *  6. **`ops.mail_send` n'est plus écrite** (T1b, règle 5) : une ligne laissée
+ *     par l'ancien binaire reste telle quelle après un retour.
  */
 import { createHmac } from "node:crypto";
 
@@ -20,7 +21,6 @@ import { MailOutcomeRecorder } from "../src/mail/requests/application/mail-outco
 import { MailRequest } from "../src/mail/requests/domain/entities/mail-request.js";
 import { MailRequestRepository } from "../src/mail/requests/domain/ports/mail-request.repository.js";
 import { AppConfig } from "../src/platform/config/app-config.js";
-import { MailJournal } from "../src/platform/mailer/journal/mail-journal.port.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
@@ -51,11 +51,18 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  await ctx.app.get(MailJournal).recordSend({
-    providerId: PROVIDER_ID,
-    template: "customer.access-opened",
-    recipient: "cliente@exemple.test",
-    at: new Date(),
+  // Une ligne d'`ops.mail_send` écrite AVANT T1b, par l'ancien binaire. Écrite
+  // en Prisma faute de mieux : plus aucun code ne l'écrit, c'est le sujet.
+  const at = new Date();
+  await ctx.prisma.mailSend.create({
+    data: {
+      id: "mailsend_legacy",
+      providerId: PROVIDER_ID,
+      template: "customer.access-opened",
+      recipient: "cliente@exemple.test",
+      sentAt: at,
+      statusAt: at,
+    },
   });
 });
 
@@ -107,11 +114,10 @@ const requestRow = () =>
     select: { delivery: true, deliveryKind: true, deliveryAt: true, recipientKey: true },
   });
 
-const journalRow = () =>
-  ctx.prisma.mailSend.findUnique({
-    where: { providerId: PROVIDER_ID },
-    select: { status: true, detail: true },
-  });
+/** La table d'avant T1b : ce que l'ancien binaire y a laissé, inchangé. */
+const legacyRows = () =>
+  ctx.prisma.mailSend.findMany({ select: { id: true, status: true, detail: true } });
+const LEGACY_UNTOUCHED = [{ id: "mailsend_legacy", status: "sent", detail: "" }];
 
 const storedEvents = () =>
   ctx.prisma.mailDeliveryEvent.findMany({ orderBy: { receivedAt: "asc" } });
@@ -121,7 +127,6 @@ describe("le mur du webhook", () => {
     await ctx.http().post(ROUTE).send(bounced).expect(401);
 
     expect(await storedEvents()).toEqual([]);
-    expect((await journalRow())?.status).toBe("sent");
   });
 
   it("🔴 refuse une signature qui ne correspond pas au corps", async () => {
@@ -142,12 +147,9 @@ describe("ranger, puis appliquer", () => {
       deliveryKind: "Permanent/General",
       recipientKey: "cliente@exemple.test",
     });
-    expect(await journalRow()).toEqual({ status: "bounced", detail: "Permanent/General" });
-    const everything = JSON.stringify([
-      await storedEvents(),
-      await requestRow(),
-      await journalRow(),
-    ]);
+    // Régression inverse de T1 : le webhook ne relève plus `ops.mail_send`.
+    expect(await legacyRows()).toEqual(LEGACY_UNTOUCHED);
+    const everything = JSON.stringify([await storedEvents(), await requestRow()]);
     expect(everything).not.toContain("boîte inconnue");
     expect(everything).not.toContain("5.1.1");
   });
@@ -166,7 +168,7 @@ describe("ranger, puis appliquer", () => {
     await post(delivered, { id: "msg_2" }).expect(200);
 
     expect((await requestRow())?.delivery).toBe("bounced");
-    expect((await journalRow())?.status).toBe("bounced");
+    expect(await legacyRows()).toEqual(LEGACY_UNTOUCHED);
     expect(await storedEvents()).toHaveLength(2);
   });
 

@@ -1,6 +1,8 @@
 import { senderHeaderOf, type MailSenderIdentity } from "@lfd/mail-blocks";
 import type { Mailer, MailReceipt, SendMailArgs, TemplateMap } from "@lfd/mailer";
 
+import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
+
 import {
   activeMailCopyOverlay,
   NO_MAIL_COPY_OVERLAY,
@@ -81,7 +83,13 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
     return this.inner.enabled;
   }
 
+  /**
+   * La garde réseau est posée ici depuis T1b : elle l'était par
+   * `JournalingMailer`, retiré avec l'écriture d'`ops.mail_send`, et ce
+   * mailer est désormais l'enveloppe extérieure du transport Resend.
+   */
   async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
+    assertOutsideTransaction("Resend.emails.send");
     const template = String(args.template);
     const overlay =
       activeMailCopyOverlay() === undefined ? await this.publishedOrCode(template) : null;
