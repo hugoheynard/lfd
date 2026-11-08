@@ -323,6 +323,7 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
 
 1. Rendre visibles les e-mails « échoués » au staff (écran du suivi) : la
    veille sonne, mais aucun écran ne liste les envois — Service, revue cas 2.
+   Plan écrit le 2026-11-08 : [`plan-suivi-des-e-mails.md`](plan-suivi-des-e-mails.md).
 2. Les pièces jointes par URL signée (S3c) « à revoir » ; d'ici là le bloc
    `mail` lit le stockage des pièces client — Service § 22.
 3. Le dossier du fournil part encore en octets : ouvrir son stockage au bloc
@@ -384,6 +385,10 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
     et répondre ; la réponse part par le bloc `mail`. Et dans Email Templates,
     l'onglet « Expéditeur » devient « Réglages », l'adresse de réponse choisie
     parmi les adresses que le Support reçoit. Route publique et données
-    personnelles : plan contredit par `vitruve` avant Hugo. Non écrit.
+    personnelles : plan contredit par `vitruve` avant Hugo. ⚠️ Corrigé le
+    2026-11-08 : ce chantier n'est pas vierge — [`../demandes-client/plan-reponses-par-e-mail.md`](../demandes-client/plan-reponses-par-e-mail.md)
+    (2026-10-28, contredit par vitruve) en couvre la réception, et le webhook
+    remet déjà `email.received` à la boîte des demandes (`b2b/contact`). À
+    relire avant d'écrire quoi que ce soit.
 11. L'e-mail de vérification d'Auth0 (« Verify your email ») part en anglais et
     hors du suivi du bloc `mail` (constaté le 2026-11-07 sur un rebond).
