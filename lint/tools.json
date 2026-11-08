@@ -7,6 +7,11 @@
       "does": "Régénère le recueil des textes de la boutique et son manifeste après un texte changé (porte shop-copy-digest)."
     },
     {
+      "name": "worktrees:clean",
+      "run": "node dev-toolbox/worktrees-clean.mjs",
+      "does": "Retire les copies de travail des agents (.claude/worktrees) propres, fusionnées par leur contenu et oubliées depuis 24 h ; garde les branches. À blanc par défaut, --apply pour retirer. Le hook post-merge le lance avec --apply."
+    },
+    {
       "name": "mail-copy:digest",
       "run": "node dev-toolbox/mail-copy-digest.mjs",
       "does": "Régénère le manifeste des textes des e-mails après un texte changé (porte mail-copy-digest)."

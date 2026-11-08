@@ -7,3 +7,6 @@ node dev-toolbox/sync-dev-db-after-git.mjs merge "$@" || true
 # Le graphe du dépôt suit le code : graphify update, détaché, jamais bloquant.
 # Cf. dev-toolbox/graphify/refresh-graph.mjs.
 node dev-toolbox/graphify/refresh-graph.mjs || true
+# Les copies de travail des agents : seules les propres, fusionnées et oubliées
+# depuis 24 h partent, branches gardées. Cf. dev-toolbox/worktrees-clean.mjs.
+node dev-toolbox/worktrees-clean.mjs --apply || true
