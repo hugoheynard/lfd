@@ -173,7 +173,7 @@ retour Resend apparaît dans `mail.mail_delivery_event` et pose `delivery`
 sur sa fiche ; l'écran, une fois le droit accordé (il n'a pas été vu en
 vrai).
 
-**Non bâti, à décider** : les faits `mail.delivered` / `mail.bounced`
+**En cours** : l'e-mail qui connaît son sujet — [`plan-sujet-des-e-mails.md`](plan-sujet-des-e-mails.md) (2026-11-08). Avant : **non bâti, à décider** : les faits `mail.delivered` / `mail.bounced`
 publiés aux autres blocs (« e-mail reçu » sur la fiche d'une commande) —
 une fiche ne connaît pas son sujet (commande, compte) aujourd'hui ; le
 filtre « rien reçu du fournisseur », que l'API ne propose pas.
