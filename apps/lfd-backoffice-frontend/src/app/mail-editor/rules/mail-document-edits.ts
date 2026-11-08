@@ -10,6 +10,7 @@ import type {
   MailDocument,
   MailLocale,
 } from '@lfd/mail-blocks';
+import type { FoldIconName } from 'fold-ng';
 
 /**
  * **Les gestes du canevas** (plan `plan-editeur-par-blocs.md`, § 6, lot S5b) —
@@ -36,20 +37,69 @@ export type LibraryItemKey =
 export interface LibraryItem {
   readonly key: LibraryItemKey;
   readonly label: string;
+  /** L'icône de sa carte dans la bibliothèque. */
+  readonly icon: FoldIconName;
+  /** Une ligne qui dit ce que fait le bloc, sous son nom. */
+  readonly description: string;
 }
 
 /** La bibliothèque, dans l'ordre où l'écran la montre. */
 export const LIBRARY_ITEMS: readonly LibraryItem[] = [
-  { key: 'heading', label: 'Titre' },
-  { key: 'paragraph', label: 'Paragraphe' },
-  { key: 'callout-info', label: 'Encadré information' },
-  { key: 'callout-warning', label: 'Encadré attention' },
-  { key: 'button', label: 'Bouton' },
-  { key: 'image', label: 'Image' },
-  { key: 'divider', label: 'Séparateur' },
-  { key: 'columns-2', label: 'Deux colonnes' },
-  { key: 'columns-3', label: 'Trois colonnes' },
+  {
+    key: 'heading',
+    label: 'Titre',
+    icon: 'hash',
+    description: 'Un intertitre pour ouvrir une partie.',
+  },
+  {
+    key: 'paragraph',
+    label: 'Paragraphe',
+    icon: 'list',
+    description: 'Un texte libre, avec ses valeurs.',
+  },
+  {
+    key: 'callout-info',
+    label: 'Encadré information',
+    icon: 'info',
+    description: 'Met en avant une précision utile.',
+  },
+  {
+    key: 'callout-warning',
+    label: 'Encadré attention',
+    icon: 'warning',
+    description: 'Signale ce qu’il ne faut pas manquer.',
+  },
+  {
+    key: 'button',
+    label: 'Bouton',
+    icon: 'arrow-right',
+    description: 'Un lien vers une page, en bouton.',
+  },
+  { key: 'image', label: 'Image', icon: 'image', description: 'Une image de la médiathèque.' },
+  {
+    key: 'divider',
+    label: 'Séparateur',
+    icon: 'minus',
+    description: 'Un trait entre deux parties.',
+  },
+  {
+    key: 'columns-2',
+    label: 'Deux colonnes',
+    icon: 'grid',
+    description: 'Deux blocs côte à côte.',
+  },
+  {
+    key: 'columns-3',
+    label: 'Trois colonnes',
+    icon: 'grid',
+    description: 'Trois blocs côte à côte.',
+  },
 ];
+
+/** La clé de bibliothèque que porte une donnée de glisser ; `null` si ce n'en est pas une. */
+export function libraryItemKeyOf(value: unknown): LibraryItemKey | null {
+  return LIBRARY_ITEMS.find((item) => item.key === value)?.key ?? null;
+}
 
 /** Ce qu'une colonne peut recevoir : la bibliothèque sans les mises en page. */
 export const CELL_LIBRARY_ITEMS: readonly LibraryItem[] = LIBRARY_ITEMS.filter(
@@ -138,6 +188,22 @@ export function moveBlock(document: MailDocument, from: number, to: number): Mai
 export function moveBlockBy(document: MailDocument, blockId: string, delta: -1 | 1): MailDocument {
   const from = document.blocks.findIndex((block) => block.id === blockId);
   return from < 0 ? document : moveBlock(document, from, from + delta);
+}
+
+/**
+ * Insère un bloc à une place du fil — le dépôt d'une carte de la
+ * bibliothèque, à l'index où la barre d'insertion l'a montré. Un index hors
+ * du fil est ramené à ses bornes.
+ */
+export function insertBlockAt(
+  document: MailDocument,
+  index: number,
+  block: FreeBlock | ColumnsBlock,
+): MailDocument {
+  const at = Math.min(Math.max(index, 0), document.blocks.length);
+  const blocks = [...document.blocks];
+  blocks.splice(at, 0, block);
+  return withBlocks(document, blocks);
 }
 
 /** Ajoute un bloc à la fin du fil de l'e-mail. */

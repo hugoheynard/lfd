@@ -6,6 +6,8 @@ import {
   appendToCell,
   findEditableBlock,
   insertBlockAfter,
+  insertBlockAt,
+  libraryItemKeyOf,
   moveBlock,
   moveBlockBy,
   newCellBlock,
@@ -186,6 +188,26 @@ describe('les gestes du canevas', () => {
       });
       expect('focal' in withImageSource(framed, 'https://m.fr/b.webp', null)).toBe(false);
     });
+  });
+
+  it('insère un bloc déposé à son index, ramené aux bornes du fil', () => {
+    const added: FreeBlock = { id: 'neuf', kind: 'divider' };
+    expect(insertBlockAt(DOCUMENT, 1, added).blocks.map((b) => b.id)).toEqual([
+      'model:title',
+      'neuf',
+      'note',
+      'model:footer',
+    ]);
+    expect(insertBlockAt(DOCUMENT, 0, added).blocks[0]?.id).toBe('neuf');
+    expect(insertBlockAt(DOCUMENT, 99, added).blocks.at(-1)?.id).toBe('neuf');
+    expect(insertBlockAt(DOCUMENT, -3, added).blocks[0]?.id).toBe('neuf');
+    expect(DOCUMENT.blocks.map((b) => b.id)).not.toContain('neuf');
+  });
+
+  it('reconnaît une clé de bibliothèque dans une donnée de glisser, et rien d’autre', () => {
+    expect(libraryItemKeyOf('columns-2')).toBe('columns-2');
+    expect(libraryItemKeyOf('model:title')).toBeNull();
+    expect(libraryItemKeyOf(undefined)).toBeNull();
   });
 
   it('ajoute sous le bloc sélectionné, sous sa mise en page s’il est en colonne, sinon à la fin', () => {

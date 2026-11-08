@@ -1,4 +1,7 @@
+import { CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import {
   modelBlockId,
   type MailDocument,
@@ -13,6 +16,7 @@ import { NotifyService } from '../../../notify.service';
 import { MailEditorService } from '../../data/mail-editor.service';
 import { MailBlockPreviewsStore } from '../../state/mail-block-previews-store';
 import { MailPhrasesStore } from '../../state/mail-phrases-store';
+import { LIBRARY_ITEMS } from '../../rules/mail-document-edits';
 import { MailCanvas } from './mail-canvas';
 
 const TEMPLATE = 'customer.order-ready';
@@ -212,6 +216,67 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     fixture.detectChanges();
     expect(element.querySelector('[data-settings-panel]')).not.toBeNull();
     element.remove();
+  });
+
+  it('le clic sur une carte insère toujours, à la fin sans sélection, et l’annonce', () => {
+    const { element, emitted } = render();
+    const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+    element.querySelector<HTMLElement>('[data-library-item="divider"]')?.click();
+    expect(ids(emitted[0])).toEqual(['model:title', 'note', 'model:footer', 'neuf']);
+    expect(announce).toHaveBeenCalledWith(
+      expect.stringContaining('« Séparateur » ajouté, position 4 sur 4'),
+      'polite',
+    );
+    element.remove();
+  });
+
+  describe('glisser une carte de la bibliothèque', () => {
+    function lists(fixture: ReturnType<typeof render>['fixture']) {
+      const canvas = fixture.debugElement
+        .query(By.css('ol[cdkDropList]'))
+        .injector.get(CdkDropList);
+      const library = fixture.debugElement
+        .query(By.css('app-mail-block-library [cdkDropList]'))
+        .injector.get(CdkDropList);
+      return { canvas, library };
+    }
+
+    it('le dépôt insère le bloc neuf à l’index de la barre, et la bibliothèque garde sa carte', () => {
+      const { fixture, element, emitted } = render();
+      const { canvas, library } = lists(fixture);
+      const item = fixture.debugElement
+        .query(By.css('[data-library-drag="image"]'))
+        .injector.get(CdkDrag);
+      canvas.dropped.emit({
+        previousIndex: 5,
+        currentIndex: 1,
+        item,
+        container: canvas,
+        previousContainer: library,
+        isPointerOverContainer: true,
+        distance: { x: 0, y: 0 },
+        dropPoint: { x: 0, y: 0 },
+        event: new MouseEvent('mouseup'),
+      });
+      expect(ids(emitted[0])).toEqual(['model:title', 'neuf', 'note', 'model:footer']);
+      expect(emitted[0]?.blocks[1]?.kind).toBe('image');
+      fixture.componentRef.setInput('document', emitted[0]);
+      fixture.detectChanges();
+      expect(element.querySelector('[data-settings-panel]')).not.toBeNull();
+      expect(element.querySelectorAll('[data-library-item]').length).toBe(LIBRARY_ITEMS.length);
+      element.remove();
+    });
+
+    it('la bibliothèque n’est connectée qu’au fil des blocs : ni l’en-tête, ni le pied n’en reçoivent', () => {
+      const { fixture, element } = render();
+      const { canvas, library } = lists(fixture);
+      expect(library.connectedTo).toEqual([canvas.id]);
+      const dropZones = element.querySelectorAll('[data-mail] .cdk-drop-list');
+      expect(dropZones.length).toBe(1);
+      expect(dropZones[0]?.tagName).toBe('OL');
+      expect(element.querySelector('[data-frame="header"]')?.closest('.cdk-drop-list')).toBeNull();
+      element.remove();
+    });
   });
 
   it('une phrase écrite sur place part en brouillon dans la langue RENDUE', () => {

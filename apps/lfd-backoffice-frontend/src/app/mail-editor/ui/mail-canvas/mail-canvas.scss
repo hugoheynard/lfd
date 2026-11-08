@@ -167,3 +167,25 @@
 .block.absent {
   opacity: 0.6;
 }
+
+// L'aperçu d'un bloc qu'on déplace : son nom sur une carte, comme une carte
+// de la bibliothèque — pas le bloc entier sous le pointeur.
+.drag-preview {
+  max-inline-size: 16rem;
+  cursor: grabbing;
+  // Au dépôt, CDK fait atterrir l'aperçu à sa place par cette transition.
+  transition: transform var(--fold-motion-slow);
+}
+
+// Pendant un glisser, CDK écarte les voisins par `transform` : la transition
+// les fait glisser au lieu de sauter.
+.block {
+  transition: transform var(--fold-motion-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block,
+  .drag-preview {
+    transition: none;
+  }
+}

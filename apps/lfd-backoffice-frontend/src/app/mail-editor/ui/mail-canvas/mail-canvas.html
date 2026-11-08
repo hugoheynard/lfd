@@ -118,6 +118,7 @@
           <ol
             class="blocks"
             cdkDropList
+            [id]="blockListId"
             aria-label="Blocs de l’e-mail, dans l’ordre — Alt + flèche pour déplacer"
             (cdkDropListDropped)="dropped($event)"
           >
@@ -149,6 +150,16 @@
                 >
                   <fold-icon name="grip" size="sm" />
                 </span>
+                <app-mail-insert-bar *cdkDragPlaceholder>
+                  @if (html !== null && html !== '' && absence === null) {
+                    <app-mail-block-fragment [html]="html" />
+                  } @else {
+                    <span class="name">{{ nameOf(block) }}</span>
+                  }
+                </app-mail-insert-bar>
+                <fold-card *cdkDragPreview padding="sm" radius="md" class="drag-preview">
+                  <fold-element-title variant="title" icon="grip" [title]="nameOf(block)" />
+                </fold-card>
                 @if (block.kind !== 'model') {
                   <button
                     foldButton
@@ -258,7 +269,7 @@
     <fold-card>
       <div class="card-body">
         <fold-element-title variant="title" title="Bibliothèque" [subtitle]="librarySubtitle()" />
-        <app-mail-block-library (picked)="add($event)" />
+        <app-mail-block-library [connectedTo]="blockListId" (picked)="add($event)" />
       </div>
     </fold-card>
     @if (selected(); as current) {

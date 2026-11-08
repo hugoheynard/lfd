@@ -1,4 +1,12 @@
-import { CdkDrag, type CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
+import {
+  CdkDrag,
+  type CdkDragDrop,
+  CdkDragHandle,
+  CdkDragPlaceholder,
+  CdkDragPreview,
+  CdkDropList,
+} from '@angular/cdk/drag-drop';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -46,6 +54,8 @@ import {
   findEditableBlock,
   FREE_BLOCK_LABELS,
   insertBlockAfter,
+  insertBlockAt,
+  libraryItemKeyOf,
   type LibraryItemKey,
   moveBlock,
   moveBlockBy,
@@ -83,7 +93,10 @@ import {
   type ColumnWidthChoice,
   MailBlockSettings,
 } from '../mail-block-settings/mail-block-settings';
+import { MailInsertBar } from '../mail-insert-bar/mail-insert-bar';
 import { MailResourcesPanel } from '../mail-resources-panel/mail-resources-panel';
+
+let nextBlockListId = 0;
 
 /** Le dernier bloc retiré : « Annuler » rend le document d'avant, tant que rien d'autre n'a changé. */
 interface Removal {
@@ -121,6 +134,8 @@ interface Removal {
   imports: [
     CdkDrag,
     CdkDragHandle,
+    CdkDragPlaceholder,
+    CdkDragPreview,
     CdkDropList,
     FoldBadgeComponent,
     FoldButtonComponent,
@@ -133,6 +148,7 @@ interface Removal {
     MailBlockFragment,
     MailBlockLibrary,
     MailBlockSettings,
+    MailInsertBar,
     MailResourcesPanel,
   ],
   templateUrl: './mail-canvas.html',
@@ -165,6 +181,14 @@ export class MailCanvas {
   protected readonly previews = inject(MailBlockPreviewsStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  private readonly announcer = inject(LiveAnnouncer);
+
+  /**
+   * L'identifiant de la liste des blocs : la bibliothèque s'y connecte pour
+   * qu'une carte s'y dépose. Seule cette liste reçoit — l'en-tête, le pied et
+   * les colonnes n'en sont pas, et n'affichent donc jamais de barre.
+   */
+  protected readonly blockListId = `mail-canvas-blocks-${nextBlockListId++}`;
 
   /** Le bloc libre ou la mise en page sélectionné. */
   protected readonly selectedId = signal<string | null>(null);
@@ -245,7 +269,9 @@ export class MailCanvas {
   /** Les pastilles de lien du bouton du modèle : il se calcule à l'envoi, l'éditeur le nomme. */
   protected readonly modelLinks = computed(() => this.resources().links);
   protected readonly librarySubtitle = computed(() =>
-    this.anchorId() === null ? 'Ajout à la fin de l’e-mail' : 'Ajout sous le bloc sélectionné',
+    this.anchorId() === null
+      ? 'Clic : à la fin de l’e-mail — ou glissez la carte à sa place'
+      : 'Clic : sous le bloc sélectionné — ou glissez la carte à sa place',
   );
 
   /** Le bloc sous lequel la bibliothèque ajoute. */
@@ -433,7 +459,19 @@ export class MailCanvas {
     }
   }
 
-  protected dropped(event: CdkDragDrop<unknown>): void {
+  /**
+   * Un dépôt dans le fil : une carte de la bibliothèque (venue d'une autre
+   * liste) devient un bloc NEUF à l'index de la barre ; un bloc du fil y est
+   * déplacé.
+   */
+  protected dropped(event: CdkDragDrop<unknown, unknown, unknown>): void {
+    if (event.previousContainer !== event.container) {
+      const key = libraryItemKeyOf(event.item.data);
+      if (key !== null) {
+        this.place(key, event.currentIndex);
+      }
+      return;
+    }
     this.emit(moveBlock(this.document(), event.previousIndex, event.currentIndex));
   }
 
@@ -441,11 +479,31 @@ export class MailCanvas {
     this.emit(moveBlockBy(this.document(), blockId, delta));
   }
 
+  /** Le clic (ou Entrée) sur une carte : sous le bloc sélectionné, sinon à la fin. */
   protected add(key: LibraryItemKey): void {
+    this.place(key, null);
+  }
+
+  /**
+   * La seule fabrique d'un bloc de la bibliothèque, pour le clic comme pour le
+   * dépôt : à `index` s'il y en a un, sinon sous l'ancre. Le bloc neuf est
+   * sélectionné, et sa place annoncée — un lecteur d'écran ne voit pas la barre.
+   */
+  private place(key: LibraryItemKey, index: number | null): void {
     const block = newLibraryBlock(key, this.newId()());
-    this.emit(insertBlockAfter(this.document(), this.anchorId(), block));
+    const before = this.document();
+    const next =
+      index === null
+        ? insertBlockAfter(before, this.anchorId(), block)
+        : insertBlockAt(before, index, block);
+    this.emit(next);
     this.selectedId.set(block.id);
     this.focus.set(null);
+    const position = next.blocks.findIndex((candidate) => candidate.id === block.id) + 1;
+    void this.announcer.announce(
+      `Bloc « ${this.titleOf(block)} » ajouté, position ${position} sur ${next.blocks.length}. Ses réglages sont ouverts.`,
+      'polite',
+    );
   }
 
   protected remove(block: MailBlock): void {

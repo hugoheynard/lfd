@@ -1,0 +1,35 @@
+@switch (block().kind) {
+  @case ('heading') {
+    <span class="text heading">Titre</span>
+  }
+  @case ('paragraph') {
+    <span class="bar"></span>
+    <span class="bar"></span>
+    <span class="bar short"></span>
+  }
+  @case ('callout') {
+    <div class="callout" [class.warning]="tone() === 'warning'">
+      <span class="bar"></span>
+      <span class="bar short"></span>
+    </div>
+  }
+  @case ('button') {
+    <span class="button">Bouton</span>
+  }
+  @case ('image') {
+    <div class="image"><fold-icon name="image" size="md" /></div>
+  }
+  @case ('divider') {
+    <hr class="divider" />
+  }
+  @case ('columns') {
+    <div class="columns">
+      @for (width of widths(); track $index) {
+        <span class="column" [style.flex-grow]="width"></span>
+      }
+    </div>
+  }
+  @default {
+    <span class="text">{{ label() }}</span>
+  }
+}

@@ -1,5 +1,25 @@
 .items {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--fold-space-xs);
+}
+
+// La barre d'insertion n'a de sens que dans l'e-mail : tant que la carte
+// tirée n'y est pas entrée, sa place dans la bibliothèque reste à sa jumelle.
+.items .placeholder {
+  display: none;
+}
+
+// L'aperçu sous le pointeur : la carte, compacte, pas un fantôme géant.
+.preview {
+  max-inline-size: 16rem;
+  cursor: grabbing;
+  // Au dépôt, CDK fait atterrir l'aperçu à sa place par cette transition.
+  transition: transform var(--fold-motion-slow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview {
+    transition: none;
+  }
 }

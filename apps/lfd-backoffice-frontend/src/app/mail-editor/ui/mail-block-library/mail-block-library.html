@@ -1,16 +1,51 @@
-<div class="items">
+<div
+  class="items"
+  cdkDropList
+  cdkDropListSortingDisabled
+  [cdkDropListConnectedTo]="targets()"
+  [cdkDropListEnterPredicate]="refuseEntry"
+>
   @for (item of items(); track item.key) {
-    <button
-      foldButton
-      size="sm"
-      emphasis="outline"
-      intent="neutral"
-      icon="plus"
-      type="button"
-      [attr.data-library-item]="item.key"
-      (click)="picked.emit(item.key)"
+    <div
+      cdkDrag
+      [cdkDragData]="item.key"
+      [attr.data-library-drag]="item.key"
+      (cdkDragStarted)="dragging.set(item.key)"
+      (cdkDragEnded)="dragging.set(null)"
     >
-      {{ item.label }}
-    </button>
+      <fold-card
+        interactive
+        padding="sm"
+        radius="md"
+        [ariaLabel]="ariaLabelOf(item)"
+        [attr.data-library-item]="item.key"
+        (activated)="picked.emit(item.key)"
+      >
+        <fold-element-title
+          variant="title"
+          [icon]="item.icon"
+          [title]="item.label"
+          [subtitle]="item.description"
+        />
+        <app-mail-insert-bar *cdkDragPlaceholder class="placeholder">
+          @if (sketches().get(item.key); as sketch) {
+            <app-mail-block-sketch [block]="sketch" />
+          }
+        </app-mail-insert-bar>
+        <fold-card *cdkDragPreview padding="sm" radius="md" class="preview">
+          <fold-element-title variant="title" [icon]="item.icon" [title]="item.label" />
+        </fold-card>
+      </fold-card>
+    </div>
+    @if (dragging() === item.key) {
+      <fold-card padding="sm" radius="md" aria-hidden="true" data-library-twin>
+        <fold-element-title
+          variant="title"
+          [icon]="item.icon"
+          [title]="item.label"
+          [subtitle]="item.description"
+        />
+      </fold-card>
+    }
   }
 </div>

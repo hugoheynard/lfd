@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding-block: var(--fold-space-xs);
+  // Les voisins s'écartent en douceur : la place glisse avec eux.
+  transition: transform var(--fold-motion-base);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.line {
+  flex: 1;
+  block-size: 2px;
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-primary);
+}
+
+.ghost {
+  padding: var(--fold-space-xs) var(--fold-space-lg);
+  border: 1px dashed var(--fold-color-primary);
+  border-radius: var(--fold-radius-sm);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition: none;
+  }
+}
