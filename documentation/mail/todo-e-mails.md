@@ -12,6 +12,13 @@
 
 ## Décisions à prendre (Hugo)
 
+- **Durcir le DMARC de `lafoliecoffee.info`** (relevé le 2026-11-08 :
+  `v=DMARC1; p=none;`, sans adresse de rapports). Poser `rua=` vers une
+  adresse qui reçoit les rapports agrégés, les lire quelques semaines, puis
+  passer à `p=quarantine`, enfin `p=reject` ; même chose pour
+  `lfd-backoffice.com`. Geste DNS de Hugo ; préalable au logo de marque dans
+  les messageries (BIMI).
+
 - **« Voir ma commande » d'un invité** mène à la page d'annulation : la
   garder, ou créer une vraie page de consultation — Éditeur § 26, n° 3.
 - **Les pièces jointes par URL signée (S3c)**, « à revoir » ; d'ici là le
@@ -22,6 +29,24 @@
   revue cas 7.
 
 ## Chantiers à bâtir
+
+- **L'origine d'un rebond, et l'adresse à vérifier** (Hugo, 2026-11-08 :
+  « certains bounce sont liés à l'antispam, il faudrait connaître
+  l'origine »). Le genre du retour est déjà rangé (`delivery_kind` =
+  `type/subType` de Resend, suivi T1). Trois familles : adresse inexistante
+  (`Permanent/General`, `Permanent/NoEmail`) → « adresse à vérifier » sur la
+  fiche du client, et seulement elle ; passager (`Transient/*` : boîte
+  pleine, message trop gros) → rien au client ; refus par l'anti-spam du
+  destinataire (`*/ContentRejected`, `*/AttachmentRejected`) → alerte à
+  l'équipe (délivrabilité), jamais au client. Le suivi affiche la famille
+  en clair. À bâtir après l'e-mail qui connaît son sujet
+  ([`plan-sujet-des-e-mails.md`](plan-sujet-des-e-mails.md)), dont il lit
+  les sujets `account`.
+- **La santé de l'envoi** (Hugo, 2026-11-08 : « besoin d'une page de suivi
+  dans mails ») : un onglet du suivi des envois avec les taux de remise, de
+  rebond et de plaintes sur 7 et 30 jours, par espace et par modèle, et des
+  seuils qui sonnent la cloche (plaintes au-delà d'environ 0,3 %, rebonds
+  au-delà de quelques pour cent — les seuils des grandes messageries).
 
 - **Les 31 autres e-mails à la règle de l'accroche** (le staff n'écrit que
   l'accroche) : 16 faciles et 4 moyens d'abord, puis les 11 « à discuter »
@@ -88,6 +113,17 @@
   [`../todos/todo-demandes-suivies.md`](../todos/todo-demandes-suivies.md).
 
 ## Pistes, pas maintenant
+
+- **Séparer le transactionnel du marketing** (Hugo, 2026-11-08) : le jour
+  où des e-mails promotionnels partent (vitrine, offres), un sous-domaine à
+  part, pour qu'une plainte sur une promo ne fasse pas passer les
+  confirmations de commande en spam ; et le désabonnement en un clic
+  (`List-Unsubscribe`, `List-Unsubscribe-Post`), exigé par Gmail et Yahoo
+  pour les envois en nombre depuis 2024.
+- **Les tests de rendu dans les vraies messageries** : Litmus ou Email on
+  Acid (plus de 90 messageries, payants, branchables par API mais lus à
+  l'œil). D'ici là : un essai sur Gmail, Outlook.com et iCloud, et une fois
+  mail-tester.com (note anti-spam, SPF, DKIM, DMARC).
 
 - **Colonnes « hybrides »** qui s'empilent sans `@media` (Gmail application,
   certains Outlook) — Hugo : « non pas là » — Éditeur § 24.
