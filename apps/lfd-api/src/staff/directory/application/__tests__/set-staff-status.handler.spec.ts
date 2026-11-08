@@ -3,6 +3,7 @@ import { RecordingJournal } from "../../../../platform/journal/__tests__/recordi
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
+  type MailRequested,
 } from "../../../../mail/channels/requests/mail.js";
 import { RecordingMail } from "../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
@@ -25,7 +26,9 @@ class InsideMail extends RecordingMail {
     super();
   }
 
-  override send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+  override send<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<MailRequested> {
     this.inside.push(this.tracking.inside);
     return super.send(demand);
   }

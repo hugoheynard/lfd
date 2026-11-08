@@ -217,7 +217,19 @@ panneau avec « Afficher l'adresse ». Le dictionnaire traduit les états.
 `complained` des dernières 24 h (une cloche par modèle, sonde exclue) ;
 `ops.mail_send` n'est plus écrite ; `recordSend` / `recordOutcome` retirés.
 
-**T4 — l'honnêteté du mot « envoyé » (porte).** `lint:mail-status-honest` et
+**T4 — l'honnêteté du mot « envoyé » (porte).** ✅ Bâti le 2026-11-08 :
+`lint:mail-status-honest` (`dev-toolbox/gates/mail-status-honest.mjs`), la
+68ᵉ porte. Inventaire de départ : 37 champs `mailSent` / `sent` / `notified`
+dans 21 fichiers, tous tirés d'une acceptation réelle par Resend — aucun ne
+mentait ; ils sont la dette de départ, comptée. Écart de nom : `MailDemand`
+désignait déjà le CONTENU d'une demande, l'étape « demandée » s'appelle donc
+`MailRequested` (`mail.send` rend `{ requestId }`) ; `MailAcceptance` et
+`isMailAccepted` pour `sendAndAwaitReceipt`. Aucun champ servi renommé :
+`mailSent` est aussi une valeur rangée dans les intentions déjà écrites
+(rejeu) et une colonne de la vitrine. **T1b devra retirer** de la dette les
+entrées de `mail-readings.ts`, `mail-readings.reader.ts` et
+`mail-journal.port.ts` en même temps qu'`ops.mail_send`, sinon la porte
+échoue. Le texte d'origine : `lint:mail-status-honest` et
 les types `MailDemand`, `MailAcceptance`, `MailDelivery` du cas 5 ; anciens
 noms en dette décroissante.
 

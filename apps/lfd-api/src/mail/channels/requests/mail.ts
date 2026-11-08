@@ -1,5 +1,4 @@
 import type { MailSpace } from "@lfd/mail-blocks";
-import type { MailReceipt } from "@lfd/mailer";
 
 import type { B2bMails } from "../templates/b2b-mails.js";
 
@@ -147,6 +146,40 @@ export interface DeferredMailDemand<K extends DeferrableMailTemplate> extends Om
 }
 
 /**
+ * **L'étape « demandée »** — ce que rend `mail.send` (plan
+ * `documentation/mail/plan-suivi-des-e-mails.md`, T4 ; revue, cas 5) : la
+ * demande est écrite dans la transaction de l'appelant, **rien n'est parti**.
+ * Elle ne dit ni « envoyé » ni « prévenu » : un champ servi qui la lit
+ * s'appelle `mailRequested` (`lint:mail-status-honest`).
+ *
+ * Le nom `MailDemand` était pris : il désigne le CONTENU d'une demande
+ * (modèle, destinataire, données), pas son étape.
+ */
+export interface MailRequested {
+  /** La demande — celle qui existait déjà pour une clé d'idempotence connue. */
+  readonly requestId: string;
+}
+
+/**
+ * **L'étape « acceptée »** — ce que rend `mail.sendAndAwaitReceipt` : Resend
+ * a pris l'e-mail, ce qui ne dit pas qu'il est arrivé. `providerId` nul :
+ * le mailer tourne à blanc, rien n'est accepté. Se lit par
+ * {@link isMailAccepted}, et un champ servi s'appelle `mailAccepted`.
+ *
+ * L'étape suivante — remise, retardée, rebondie, spam — est `MailDelivery`,
+ * le retour du fournisseur, que seul le suivi du bloc connaît (T1,
+ * `mail/requests/domain/value-objects/mail-delivery.ts`).
+ */
+export interface MailAcceptance {
+  readonly providerId: string | null;
+}
+
+/** Vrai si Resend a accepté l'e-mail — faux à blanc. */
+export function isMailAccepted(acceptance: MailAcceptance): boolean {
+  return acceptance.providerId !== null;
+}
+
+/**
  * **La porte du bloc `mail`** : envoyer un e-mail. Déclarée et implémentée
  * par le bloc ; tout bloc métier l'importe en « port uniquement » (`CLAUDE.md`
  * § 3, colonne `mail`) et l'injecte sous le nom `mail`
@@ -174,12 +207,14 @@ export abstract class Mail {
    * que Resend ne l'a pas accepté. Une seconde demande de même clé ne fait
    * rien.
    *
-   * @returns l'identifiant de la demande — celle qui existait déjà pour une
-   *   clé d'idempotence connue —, pour qu'un bloc puisse suivre son envoi.
+   * @returns l'étape « demandée » ({@link MailRequested}) — jamais une
+   *   acceptation : rien n'est parti au retour de l'appel.
    * @throws {MailRequestOutsideUnitOfWorkError} appelé hors d'une
    *   `UnitOfWork` : la demande serait écrite sans le fait qui la fait partir.
    */
-  abstract send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string>;
+  abstract send<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<MailRequested>;
 
   /**
    * **L'exception** : envoi immédiat, reçu de Resend rendu — sans outbox,
@@ -193,5 +228,5 @@ export abstract class Mail {
    */
   abstract sendAndAwaitReceipt<K extends keyof B2bMails>(
     demand: MailDemand<K>,
-  ): Promise<MailReceipt>;
+  ): Promise<MailAcceptance>;
 }

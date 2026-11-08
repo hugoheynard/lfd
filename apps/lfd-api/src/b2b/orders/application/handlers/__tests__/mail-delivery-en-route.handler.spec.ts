@@ -4,6 +4,7 @@ import { orderPageLink } from "../../commands/__tests__/customer-cancellation-do
 import type {
   DeferrableMailTemplate,
   DeferredMailDemand,
+  MailRequested,
 } from "../../../../../mail/channels/requests/mail.js";
 import {
   OpenableUnitOfWork,
@@ -115,7 +116,9 @@ class FailingFor extends RecordingMail {
     super(unitOfWork);
   }
 
-  override send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+  override send<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<MailRequested> {
     const data: unknown = demand.data;
     if (typeof data === "object" && data !== null && "reference" in data) {
       if (data.reference === this.reference) {

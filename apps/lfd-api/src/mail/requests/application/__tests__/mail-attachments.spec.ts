@@ -62,8 +62,8 @@ describe("request — rend l'identifiant de la demande", () => {
     const first = await scene.port.send(PLACED);
     const again = await scene.port.send(PLACED);
 
-    expect(first).toBe(scene.requests.rows.get(PLACED.idempotencyKey)?.id);
-    expect(again).toBe(first);
+    expect(first.requestId).toBe(scene.requests.rows.get(PLACED.idempotencyKey)?.id);
+    expect(again.requestId).toBe(first.requestId);
   });
 
   it("hors d'une unité de travail, refuse toujours avant d'écrire", async () => {

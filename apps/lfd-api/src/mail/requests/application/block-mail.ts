@@ -1,12 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import type { MailReceipt } from "@lfd/mailer";
 
 import type { B2bMails } from "../../templates/mail-templates.js";
 import { mailSpaceOf } from "../../templates/sections/mail-block-declarations.js";
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
+  type MailAcceptance,
   type MailDemand,
+  type MailRequested,
   Mail,
 } from "../../channels/requests/mail.js";
 import { ImmediateMailSender } from "./immediate-mail-sender.service.js";
@@ -49,11 +50,13 @@ export class BlockMail extends Mail {
     super();
   }
 
-  send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
-    return this.requester.request(checked(demand));
+  async send<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<MailRequested> {
+    return { requestId: await this.requester.request(checked(demand)) };
   }
 
-  sendAndAwaitReceipt<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {
+  sendAndAwaitReceipt<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailAcceptance> {
     return this.immediate.sendAndAwaitReceipt(checked(demand));
   }
 }

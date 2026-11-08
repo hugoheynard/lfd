@@ -1,6 +1,7 @@
 import type {
   DeferrableMailTemplate,
   DeferredMailDemand,
+  MailRequested,
 } from "../../../../../mail/channels/requests/mail.js";
 import {
   OpenableUnitOfWork,
@@ -91,7 +92,9 @@ class TracedMail extends RecordingMail {
     super(unitOfWork);
   }
 
-  override send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+  override send<K extends DeferrableMailTemplate>(
+    demand: DeferredMailDemand<K>,
+  ): Promise<MailRequested> {
     this.trace.push("request");
     return super.send(demand);
   }

@@ -5,7 +5,7 @@ import { IdentitySubjectUnknownError } from "../../platform/shared/errors/identi
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { Journal } from "../../platform/journal/journal.js";
 import { Clock } from "../../platform/time/clock.js";
-import { Mail } from "../../mail/channels/requests/mail.js";
+import { isMailAccepted, Mail } from "../../mail/channels/requests/mail.js";
 import { StaffIdentityPort } from "./staff-identity.port.js";
 import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
 import { staffUserInvitedFact } from "../directory/domain/staff-facts.js";
@@ -117,7 +117,7 @@ export class OpenStaffAccess {
         idempotencyKey: `${template}:${target.id}:${intentKey}`,
         data: { firstName: target.firstName, passwordSetupUrl },
       });
-      return receipt.providerId !== null;
+      return isMailAccepted(receipt);
     } catch (error) {
       this.logger.error(`Invitation non envoyée à la fiche ${target.id}`, error);
       return false;

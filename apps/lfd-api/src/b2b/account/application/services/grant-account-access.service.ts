@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { MailReceipt } from "@lfd/mailer";
 
-import { Mail } from "../../../../mail/channels/requests/mail.js";
+import { isMailAccepted, Mail } from "../../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { IdentitySubjectUnknownError } from "../../../../platform/shared/errors/identity-errors.js";
 import {
@@ -391,7 +391,7 @@ export class GrantAccountAccess extends AccountAccessGranter implements AccountA
   private async send(userId: string, deliver: () => Promise<MailReceipt>): Promise<boolean> {
     try {
       const receipt = await deliver();
-      return receipt.providerId !== null;
+      return isMailAccepted(receipt);
     } catch (error) {
       this.logger.error(`E-mail d'accès non envoyé au compte ${userId}`, error);
       return false;

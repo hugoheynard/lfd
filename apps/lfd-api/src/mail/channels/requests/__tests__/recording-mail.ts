@@ -5,6 +5,7 @@ import type { B2bMails } from "../../templates/b2b-mails.js";
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
+  type MailRequested,
   type MailDemand,
   Mail,
 } from "../mail.js";
@@ -60,7 +61,7 @@ export class RecordingMail extends Mail {
     super();
   }
 
-  send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+  send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<MailRequested> {
     if (this.unitOfWork !== null && !this.unitOfWork.open) {
       return Promise.reject(
         new MisplacedMailRequestError(`request hors transaction (${demand.template})`),
@@ -71,7 +72,7 @@ export class RecordingMail extends Mail {
       return Promise.reject(failure);
     }
     this.queued.push(demand);
-    return Promise.resolve(`mail_${this.queued.length}`);
+    return Promise.resolve({ requestId: `mail_${this.queued.length}` });
   }
 
   sendAndAwaitReceipt<K extends keyof B2bMails>(demand: MailDemand<K>): Promise<MailReceipt> {

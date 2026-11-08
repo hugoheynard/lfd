@@ -83,7 +83,10 @@ afterAll(async () => {
 const freshKey = (): string => `orders/e2e-${randomUUID()}/bon-de-commande-r0-d2.pdf`;
 
 async function request(key: string): Promise<string> {
-  return ctx.app.get(UnitOfWork).run(() => ctx.app.get(Mail).send(placedDemand(key)));
+  const requested = await ctx.app
+    .get(UnitOfWork)
+    .run(() => ctx.app.get(Mail).send(placedDemand(key)));
+  return requested.requestId;
 }
 
 describe("la pièce jointe par référence (S2a)", () => {

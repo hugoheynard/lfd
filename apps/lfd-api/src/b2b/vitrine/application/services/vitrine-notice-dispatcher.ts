@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { Mail } from "../../../../mail/channels/requests/mail.js";
+import { isMailAccepted, Mail } from "../../../../mail/channels/requests/mail.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { VitrineNoticeRepository } from "../../domain/ports/vitrine-notice.repository.js";
 import type { VitrineNotice, VitrineNoticeRecipientRow } from "../../domain/vitrine-notice.js";
@@ -54,7 +54,7 @@ export class VitrineNoticeDispatcher {
         data: { subject: notice.text.subject, message: notice.text.message },
         idempotencyKey: `vitrine-notice:${notice.id}:${subscriberId}`,
       });
-      return receipt.providerId !== null;
+      return isMailAccepted(receipt);
     } catch (error) {
       this.logger.error(
         `Annonce ${notice.id} non acceptée pour l'abonné ${subscriberId} : consignée « non envoyée ».`,

@@ -182,6 +182,13 @@
       "watch": ["apps/lfd-api/src/**"]
     },
     {
+      "name": "mail-status-honest",
+      "script": "dev-toolbox/gates/mail-status-honest.mjs",
+      "holds": "Un champ qui dit qu'un e-mail est parti nomme son étape (demandée, acceptée, remise) ; jamais tiré du réglage du mailer ni d'une simple demande ; anciens noms en dette décroissante.",
+      "since": "2026-11-08",
+      "watch": ["apps/lfd-api/src/**", "packages/contracts/src/**"]
+    },
+    {
       "name": "intent-key-gestures",
       "script": "dev-toolbox/gates/intent-key-gestures.mjs",
       "holds": "Un geste du staff qui envoie un e-mail porte la clé d'intention de l'écran (commande et contrôleur), et aucune clé d'e-mail n'est tirée au hasard hors liste.",

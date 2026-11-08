@@ -70,8 +70,9 @@ afterAll(async () => {
   await ctx.close();
 });
 
-function requestInTransaction(): Promise<string> {
-  return unitOfWork.run(() => mail.send(RESTORED));
+async function requestInTransaction(): Promise<string> {
+  const requested = await unitOfWork.run(() => mail.send(RESTORED));
+  return requested.requestId;
 }
 
 describe("request — la demande écrite avec la transaction de l'appelant", () => {

@@ -2,6 +2,7 @@ import { IdentityWithoutLoginMethods } from "../../../domain/ports/__tests__/log
 import {
   type DeferrableMailTemplate,
   type DeferredMailDemand,
+  type MailRequested,
   type MailDemand,
   Mail,
 } from "../../../../../mail/channels/requests/mail.js";
@@ -159,7 +160,7 @@ class GrantMails extends Mail {
     super();
   }
 
-  send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<string> {
+  send<K extends DeferrableMailTemplate>(demand: DeferredMailDemand<K>): Promise<MailRequested> {
     return Promise.reject(new TypeError(`request inattendu (${demand.template})`));
   }
 

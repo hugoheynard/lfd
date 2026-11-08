@@ -161,7 +161,13 @@
 >   `lint:mail-attachment-by-reference` (cas 7) : hors du bloc `mail`, une
 >   pièce jointe ne part plus en octets (`pdfBase64`) — tout document envoyé
 >   est l'exemplaire gardé, rangé au stockage et joint par `pdfStored` ; les
->   envoyeurs qui ne le font pas encore sont une dette datée. C'est la
+>   envoyeurs qui ne le font pas encore sont une dette datée. Et **68**
+>   depuis le 2026-11-08 avec `lint:mail-status-honest` (plan du suivi des
+>   e-mails, T4) : un champ qui dit qu'un e-mail est parti nomme son étape —
+>   demandée (`mail.send`), acceptée (`mail.sendAndAwaitReceipt`), remise
+>   (le suivi) — et n'est jamais tiré du réglage du mailer ni d'une simple
+>   demande ; les `mailSent` / `sent` servis sont une dette comptée qui ne
+>   peut que décroître. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1359,7 +1365,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 67 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 68 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>
