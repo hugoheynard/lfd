@@ -20,10 +20,6 @@
   bloc `mail`, ou le laisser — Service, revue cas 7.
 - **La durée de conservation des mandats** rangés au stockage — Service,
   revue cas 7.
-- **La licence web de Pogonia et de Chunk** couvre-t-elle leur envoi dans
-  des e-mails (fichiers servis par la boutique, chargés par les messageries
-  des destinataires) ? À vérifier avant de publier une charte qui les pose —
-  `les-e-mails.md`, police du texte (2026-11-08).
 
 ## Chantiers à bâtir
 

@@ -305,12 +305,16 @@ Conséquences à connaître :
 - **Les polices de la boutique** : servies sous des noms NON hachés,
   `apps/lfc-ecommerce-frontend/public/brand/fonts/chunk-400.woff2` et
   `pogonia-400/600/700.woff2` (copies de `src/styles/fonts/`), sans en-tête
-  particulier (Cloudflare Pages, comme le reste de `public/`). Leurs
+  particulier (Cloudflare Pages, comme le reste de `public/`) — Pages les
+  sert avec `access-control-allow-origin: *` (relevé sur Chunk en production
+  le 2026-11-08), ce qui laisse l'aperçu, cadre isolé d'origine nulle, les
+  charger. Leurs
   adresses se construisent depuis la racine de la boutique
   (`mail-branding.ts`, `shopFontsOf`), et `GET /admin/mail-charters/lfc` les
-  rend sous `shopFonts` ; l'espace `lfd` n'en reçoit pas. La licence web
-  des deux polices pour l'envoi en e-mail reste à vérifier
-  ([`todo-e-mails.md`](todo-e-mails.md)).
+  rend sous `shopFonts` ; l'espace `lfd` n'en reçoit pas. Sans
+  `CLIENT_BASE_URL` (le poste de dev ne le pose pas), il n'y a pas de racine
+  de boutique : le bouton ne s'affiche pas et l'aperçu garde le secours. La
+  licence couvre l'envoi en e-mail (Hugo, 2026-11-08).
 - **La clé de copie** (`imageCopyKey`) porte la largeur depuis le
   2026-11-08 : `<src>[#<format>@<x>,<y>]~<largeur>w`. Une version publiée
   avant n'a plus de clé correspondante : la republier recopie l'image, une
