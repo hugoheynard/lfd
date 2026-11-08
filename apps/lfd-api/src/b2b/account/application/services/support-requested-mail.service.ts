@@ -32,7 +32,7 @@ export function availabilityOf(request: SupportRequestView): string {
 /**
  * Le courriel `staff.support-requested` à la boîte de l'équipe, **demandé au
  * bloc `mail`** dans la transaction qui enregistre la demande de contact
- * (lot S2b du plan `documentation/editeur-de-contenu/plan-service-e-mails.md`).
+ * (lot S2b du plan `documentation/mail/plan-service-e-mails.md`).
  *
  * C'était un abonné en mémoire de `SupportRequestedEvent`, qui envoyait en
  * fond. Il ne pouvait pas le rester : un abonné en mémoire qui appelle la

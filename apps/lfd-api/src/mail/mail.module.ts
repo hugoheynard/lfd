@@ -46,7 +46,7 @@ import { PublishedShortfallLetterDrafter } from "./templates/published-shortfall
 import { RegistryMailTemplatePreview } from "./templates/registry-mail-template-preview.js";
 
 /**
- * **Le bloc des e-mails** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, S1) :
+ * **Le bloc des e-mails** (plan `documentation/mail/plan-service-e-mails.md`, S1) :
  * sa porte `Mail`, le suivi des demandes, l'abonné durable qui
  * engage l'envoi et le fait partir après la validation, et son balayeur (S1b).
  * Depuis S3b, le rendu aussi : les gabarits, le dictionnaire, le texte

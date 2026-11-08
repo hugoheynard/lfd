@@ -10,7 +10,7 @@ export function intentOptions(intentKey: string): { readonly headers: HttpHeader
 
 /**
  * **Les intentions d'un écran** — une clé par geste voulu (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, revue avec
+ * `documentation/mail/plan-service-e-mails.md`, revue avec
  * Hugo, cas 4).
  *
  * L'écran fabrique la clé à la première demande pour un sujet, et la renvoie

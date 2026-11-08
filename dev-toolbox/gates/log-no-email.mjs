@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **aucun journal n'écrit une adresse e-mail** (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, revue avec
+ * `documentation/mail/plan-service-e-mails.md`, revue avec
  * Hugo, cas 6 ; décidé le 2026-11-06).
  *
  * Un journal de production est gardé hors du registre RGPD, sans durée : une

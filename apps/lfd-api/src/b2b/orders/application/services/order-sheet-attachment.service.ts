@@ -18,7 +18,7 @@ export type OrderSheetMailReference = ByReference<OrderSheetMailDocument>;
  * `SendOrderPlacedMail` et `OrderPlacedMail`).
  *
  * **Par référence depuis le 2026-11-06** (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, S2a) : la
+ * `documentation/mail/plan-service-e-mails.md`, S2a) : la
  * demande d'e-mail ne porte que la clé du bon rangé, et le bloc `mail` le
  * relit au moment d'envoyer. Le bon doit donc être À SA PLACE avant la
  * demande — le rangement n'est plus best-effort ici.

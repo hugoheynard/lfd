@@ -1,6 +1,6 @@
 /**
  * La sonde de déploiement du courrier, contre le vrai Postgres (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, lot S2h, § 18).
+ * `documentation/mail/plan-service-e-mails.md`, lot S2h, § 18).
  *
  * Elle a quitté `platform/mailer/` pour le bloc `mail` : sa route ne change
  * pas (le workflow l'appelle par son chemin), elle part par `sendAndAwaitReceipt`, et le

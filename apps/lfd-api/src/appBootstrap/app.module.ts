@@ -245,7 +245,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PackingCommerceFeedModule,
     CitedAllergensFeedModule,
     // Le bloc des e-mails : sa porte et le suivi des demandes
-    // (plan `editeur-de-contenu/plan-service-e-mails.md`, S1).
+    // (plan `mail/plan-service-e-mails.md`, S1).
     MailModule,
     // La livraison : la flotte et le départ des tournées (lot 2 du plan de
     // tournée). Le fil relie les points de retrait du commerce à son port.

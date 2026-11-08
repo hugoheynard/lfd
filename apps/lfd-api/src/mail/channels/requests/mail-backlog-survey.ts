@@ -1,6 +1,6 @@
 /**
  * Ce que la veille du courrier sait dire, en chiffres prêts à afficher (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 25).
+ * `documentation/mail/plan-service-e-mails.md`, § 25).
  */
 export interface MailBacklogSummary {
   /** Les demandes encore en attente au-delà du seuil (15 min). */

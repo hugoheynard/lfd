@@ -5,7 +5,7 @@ export interface MailImageCopy {
 
 /**
  * Port d'**écriture** du stockage public des images d'e-mail (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 24).
+ * `documentation/mail/plan-service-e-mails.md`, § 24).
  *
  * Adressé par le contenu : la clé est le hash des octets, servie
  * `public, max-age=31536000, immutable`. Sous une même adresse l'image ne

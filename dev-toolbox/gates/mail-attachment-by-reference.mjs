@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **hors du bloc `mail`, une pièce jointe d'e-mail ne voyage plus en
- * octets** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * octets** (plan `documentation/mail/plan-service-e-mails.md`,
  * revue avec Hugo, cas 7 ; décidé le 2026-11-06 : « tout document envoyé est
  * l'exemplaire gardé »).
  *

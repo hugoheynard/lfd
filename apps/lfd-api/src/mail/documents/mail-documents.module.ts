@@ -30,7 +30,7 @@ import { SpecimenMailDocumentPreviewRenderer } from "./infrastructure/specimen-m
 /**
  * **Les documents des e-mails** — l'arrangement de chaque e-mail par blocs,
  * son brouillon, sa publication, son retour au modèle d'origine (plan
- * `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, S4c).
+ * `documentation/mail/plan-editeur-par-blocs.md`, S4c).
  *
  * Il importe `MailCopyModule` : « Publier » publie l'arrangement et les
  * phrases dans la même transaction, sous la même version, et oublie le même

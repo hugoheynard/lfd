@@ -18,7 +18,7 @@ Pour chaque canal qui prévient quelqu'un hors d'un e-mail :
 
 … dire **qui envoie**, **en direct ou par un abonné durable**, et **ce qui est
 perdu si l'API redémarre** entre le geste et l'envoi. C'est le cas 1 de la
-revue de S2 (`documentation/editeur-de-contenu/plan-service-e-mails.md`,
+revue de S2 (`documentation/mail/plan-service-e-mails.md`,
 « Revue des changements avec Hugo ») : un e-mail envoyé en fond était perdu
 sans trace ; une notification peut l'être de la même façon.
 

@@ -1,6 +1,6 @@
 /**
  * E2E de **l'éditeur d'e-mails par blocs** (plan
- * `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, lot S4c) :
+ * `documentation/mail/plan-editeur-par-blocs.md`, lot S4c) :
  * ouvrir n'écrit rien, le brouillon à révision, « Publier » qui met en
  * service l'arrangement ET les phrases de l'e-mail, l'envoi qui suit le
  * document publié, l'historique, l'aperçu fidèle, et « revenir au modèle

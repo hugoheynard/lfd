@@ -1,6 +1,6 @@
 {
   // Le contrat de l'éditeur d'e-mails par blocs (plan
-  // `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, S4a) — pur,
+  // `documentation/mail/plan-editeur-par-blocs.md`, S4a) — pur,
   // sans dépendance : importé par l'API et le back-office SEULEMENT, jamais par
   // `@lfd/contracts`, que la boutique charge. Feuille du graphe.
   "extends": "../../tsconfig/tsflags.backend.json",

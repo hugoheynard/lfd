@@ -1,6 +1,6 @@
 /**
  * E2E du **cadrage des images d'e-mail** (plan
- * `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, § 19,
+ * `documentation/mail/plan-editeur-par-blocs.md`, § 19,
  * « Format et point focal ») : la publication recadre la copie au format
  * autour du point focal, deux formats de la même image font deux copies,
  * l'aperçu d'un brouillon signale le cadrage à l'écran, un point focal hors

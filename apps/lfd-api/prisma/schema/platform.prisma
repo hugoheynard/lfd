@@ -10,7 +10,7 @@
 /// décrit : si elle tombe, il n'existe pas ; si elle passe, il existe pour
 /// toujours, sauf purge : un message dont TOUTES les livraisons sont faites
 /// depuis plus de 30 jours est éligible (décision de Hugo du 2026-11-06,
-/// `documentation/editeur-de-contenu/plan-service-e-mails.md` § 7). La purge
+/// `documentation/mail/plan-service-e-mails.md` § 7). La purge
 /// est bâtie À BLANC (`OUTBOX_PURGE`, `dry-run` par défaut) : elle compte, elle
 /// ne supprime rien tant que Hugo ne l'a pas activée. Un message mort n'est
 /// jamais éligible. L'index sur `occurred_at` borne la lecture de la purge.
@@ -66,7 +66,7 @@ model OutboxDelivery {
 
 /// **Une intention d'un geste du staff** — la clé que l'écran fabrique à
 /// l'ouverture d'un dialogue et renvoie à chaque clic (plan
-/// `documentation/editeur-de-contenu/plan-service-e-mails.md`, revue, cas 4).
+/// `documentation/mail/plan-service-e-mails.md`, revue, cas 4).
 ///
 /// Une seconde requête de même clé ne réexécute rien : elle relit `result`.
 /// L'index unique `(actor_id, key)` arbitre deux clics simultanés, comme

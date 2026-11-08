@@ -251,7 +251,7 @@ container expédie alors, depuis l'adresse configurée, un `ops.deploy-check` ve
 `BOOTSTRAP_ADMIN_EMAIL` — l'admin de secours, déjà réglé, déjà transmis. Aucune
 configuration de plus.
 
-**Depuis le 2026-11-07 (lot S8, [`plan-service-e-mails.md`](../editeur-de-contenu/plan-service-e-mails.md) § 25)**,
+**Depuis le 2026-11-07 (lot S8, [`plan-service-e-mails.md`](../mail/plan-service-e-mails.md) § 25)**,
 deux e-mails partent : l'immédiat (`sendAndAwaitReceipt`), puis un **différé**
 (`mail.send` → boîte d'envoi → relais → abonné), que la sonde attend jusqu'à
 « envoyée » pendant 75 s au plus (sous la coupure de 100 s de Cloudflare). Resté en attente, ou passé en échec : la

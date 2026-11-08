@@ -25,7 +25,7 @@ export const MAIL_DELIVERY_EN_ROUTE = "b2b.mail-delivery-en-route";
  * manqué.
  *
  * 🔴 **Les courriels sont DEMANDÉS au bloc `mail`, dans la transaction du
- * reçu** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * reçu** (plan `documentation/mail/plan-service-e-mails.md`,
  * S2a, 2026-11-06). Une demande n'est qu'une écriture : aucun appel au
  * fournisseur ne tient plus la transaction — c'était la raison (audit B1,
  * 2026-10-07) d'envoyer après la validation, au prix de perdre les envois

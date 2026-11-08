@@ -1,6 +1,6 @@
 /**
  * **Combien de temps un message livré reste dans la boîte d'envoi** — tranché
- * par Hugo le 2026-11-06 (`documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * par Hugo le 2026-11-06 (`documentation/mail/plan-service-e-mails.md`,
  * § 7) : 30 jours après sa livraison, puis il est purgé. Un message dont une
  * livraison n'est pas faite — en attente ou morte — reste, jusqu'à son rejeu.
  */

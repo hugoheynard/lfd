@@ -16,7 +16,7 @@ import { MAIL_IMAGE_ADMISSION, type MailImageAdmission } from "./mail-image-admi
 
 /**
  * **La copie d'une image de modèle** dans le stockage du bloc `mail` (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 23–24).
+ * `documentation/mail/plan-service-e-mails.md`, § 23–24).
  *
  * Le seul contrat avec la médiathèque est une adresse web : le bloc ne
  * l'importe pas. Après la copie, plus aucune dépendance — la médiathèque peut

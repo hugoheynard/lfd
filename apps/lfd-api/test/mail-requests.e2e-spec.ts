@@ -1,6 +1,6 @@
 /**
  * La porte du bloc `mail`, contre le vrai Postgres (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, S1).
+ * `documentation/mail/plan-service-e-mails.md`, S1).
  *
  * Ce qu'un test unitaire ne peut pas dire : que la demande tombe AVEC la
  * transaction de l'appelant, que la boîte d'envoi la livre une fois validée,

@@ -2,7 +2,7 @@
 /**
  * Gate : **`mail.sendAndAwaitReceipt` ne s'appelle que depuis une liste
  * admise, et la porte `Mail` s'injecte sous le nom `mail`** (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, C2 et § 21 ;
+ * `documentation/mail/plan-service-e-mails.md`, C2 et § 21 ;
  * décidé par Hugo le 2026-11-06). Elle s'est appelée `send-now-admitted`
  * jusqu'au renommage de la porte (§ 21), le même jour.
  *

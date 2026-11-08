@@ -1,6 +1,6 @@
 /**
  * E2E des **chartes des espaces d'e-mails** (plan
- * `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, § 25, lot
+ * `documentation/mail/plan-editeur-par-blocs.md`, § 25, lot
  * C1) : ouvrir n'écrit rien, le brouillon à révision, la publication qui
  * refuse un contraste trop faible, copie le logo et vaut au prochain envoi
  * pour les e-mails de l'espace — internes compris —, l'historique, l'aperçu.

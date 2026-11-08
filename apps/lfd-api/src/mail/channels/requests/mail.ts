@@ -12,7 +12,7 @@ import type { B2bMails } from "../templates/b2b-mails.js";
 export type MailBrandName = MailSpace;
 
 /**
- * **Une demande d'e-mail** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, C2) :
+ * **Une demande d'e-mail** (plan `documentation/mail/plan-service-e-mails.md`, C2) :
  * le modèle (clé du registre `B2bMails`), ses données — vérifiées par le
  * compilateur, comme `mailer.send()` —, le destinataire et une clé
  * d'idempotence. La marque n'en est plus (C3) : elle découle du modèle.

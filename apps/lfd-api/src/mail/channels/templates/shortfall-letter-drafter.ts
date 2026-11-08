@@ -7,7 +7,7 @@ export type {
 
 /**
  * **« Rédige la proposition de la lettre de manque »** (lot S3b, plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 19 bis) : ce
+ * `documentation/mail/plan-service-e-mails.md`, § 19 bis) : ce
  * qui part, ce qui manque, la suite, dans la langue demandée, par le
  * dictionnaire des e-mails et les textes PUBLIÉS — comme à l'envoi.
  *

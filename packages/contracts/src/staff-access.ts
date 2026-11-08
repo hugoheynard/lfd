@@ -650,7 +650,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les modèles d'e-mails** — l'éditeur par blocs : lire un e-mail, son
    * document et son aperçu (`read`) ; enregistrer, publier, revenir au modèle
-   * d'origine (`write`) (`documentation/editeur-de-contenu/plan-editeur-par-blocs.md`,
+   * d'origine (`write`) (`documentation/mail/plan-editeur-par-blocs.md`,
    * § 5, lot S4c, 2026-11-07). Le même droit écrit et publie (§ 9, question 3,
    * défaut). Ajoutée sans être accordée : elle s'accorde à l'écran ; la
    * graine ne la donne qu'à l'administrateur.

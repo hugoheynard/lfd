@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **un e-mail se demande au bloc `mail`** (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, lot S1).
+ * `documentation/mail/plan-service-e-mails.md`, lot S1).
  *
  * Aujourd'hui chaque bloc qui envoie un e-mail injecte le mailer lui-même
  * (`MAILER`) : il choisit le gabarit, envoie, lit le résultat. Le bloc `mail`

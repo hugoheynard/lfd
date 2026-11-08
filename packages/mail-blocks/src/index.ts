@@ -1,6 +1,6 @@
 /**
  * `@lfd/mail-blocks` — le contrat de l'éditeur d'e-mails par blocs (plan
- * `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, S4a).
+ * `documentation/mail/plan-editeur-par-blocs.md`, S4a).
  * Importé par l'API et le back-office seulement.
  */
 export {

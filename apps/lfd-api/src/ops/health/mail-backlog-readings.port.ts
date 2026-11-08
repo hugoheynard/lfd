@@ -1,6 +1,6 @@
 /**
  * Les relevés de la veille du courrier, tels que la carte de santé les
- * affiche (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * affiche (plan `documentation/mail/plan-service-e-mails.md`,
  * § 25, point 3).
  */
 export interface MailBacklogFigures {

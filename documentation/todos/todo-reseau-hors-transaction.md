@@ -1,7 +1,7 @@
 # TODO — aucun appel réseau sortant dans une transaction
 
 > 📋 **Noté le 2026-11-06**, à la revue des changements de S2 avec Hugo (cas 3,
-> `documentation/editeur-de-contenu/plan-service-e-mails.md`, « Revue des
+> `documentation/mail/plan-service-e-mails.md`, « Revue des
 > changements avec Hugo »). Rien n'est relevé ni bâti.
 >
 > Le même jour, plus tard : le relevé, le garde et la porte sont posés, et les

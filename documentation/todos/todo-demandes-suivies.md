@@ -1,7 +1,7 @@
 # Une demande entre deux blocs se suit
 
 > Chantier noté le 2026-11-06 avec Hugo, pendant la revue de S2 du service
-> d'e-mails (cas 5, [`plan-service-e-mails.md`](../editeur-de-contenu/plan-service-e-mails.md)).
+> d'e-mails (cas 5, [`plan-service-e-mails.md`](../mail/plan-service-e-mails.md)).
 > **Rien n'est bâti.** On reste d'abord sur les e-mails.
 
 ## La règle proposée

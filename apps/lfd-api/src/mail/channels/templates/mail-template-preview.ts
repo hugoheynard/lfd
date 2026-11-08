@@ -8,7 +8,7 @@ export interface MailPreview {
 
 /**
  * **« Rends-moi l'aperçu de ce modèle avec ces données »** (lot S3b, plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 19 bis).
+ * `documentation/mail/plan-service-e-mails.md`, § 19 bis).
  *
  * Déclaré par le bloc `mail` et implémenté par lui : un bloc métier qui montre
  * à l'équipe ce qui partira (l'aperçu de l'avis de vitrine) passe par ce port,

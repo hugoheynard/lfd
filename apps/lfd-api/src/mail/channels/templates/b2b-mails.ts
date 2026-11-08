@@ -22,7 +22,7 @@ import type { VitrineNoticeMailData } from "../../templates/vitrine-notice-mail.
 
 /*
  * Le CONTRAT du bloc `mail` (lot S3b, plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`) : la carte des
+ * `documentation/mail/plan-service-e-mails.md`) : la carte des
  * modèles et la forme de leurs données, ce que les blocs métier écrivent dans
  * une demande. Des types seulement — le rendu reste à l'intérieur du bloc
  * (`mail/templates/`), et chaque forme de données vit à côté du gabarit qui

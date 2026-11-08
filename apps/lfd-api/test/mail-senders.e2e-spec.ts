@@ -1,6 +1,6 @@
 /**
  * E2E de **l'identité d'envoi des espaces** (plan
- * `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, § 25, lot
+ * `documentation/mail/plan-editeur-par-blocs.md`, § 25, lot
  * C3) : la marque d'une demande est l'espace de son modèle ; la page lit
  * l'identité (ou dit le repli) ; l'enregistrement refuse un domaine non
  * vérifié, envoie un essai à l'auteur sous la nouvelle identité, n'enregistre

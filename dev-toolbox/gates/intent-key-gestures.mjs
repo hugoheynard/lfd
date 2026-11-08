@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **un geste du staff qui envoie un e-mail porte la clé d'intention de
- * l'écran** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * l'écran** (plan `documentation/mail/plan-service-e-mails.md`,
  * revue avec Hugo, cas 4 ; décidé le 2026-11-06).
  *
  * Ces gestes tiraient leur clé d'e-mail au hasard (`IdGenerator`, ou

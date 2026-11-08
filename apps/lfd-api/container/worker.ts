@@ -473,7 +473,7 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     // (`documentation/demandes-client/demandes-clients.md`, §5.3).
     "admin/contact/messages/anonymization/sweep",
     // La purge des messages livrés depuis 30 jours et du suivi des e-mails
-    // clos depuis un an (`documentation/editeur-de-contenu/plan-service-e-mails.md`,
+    // clos depuis un an (`documentation/mail/plan-service-e-mails.md`,
     // § 7) : une fois par nuit suffit à une durée qui se compte en jours. À
     // BLANC par défaut (`OUTBOX_PURGE`, `MAIL_REQUEST_PURGE` = `dry-run`) :
     // le passage compte ce qu'il supprimerait, et ne supprime rien.
@@ -558,7 +558,7 @@ async function triggerOutboxSweep(env: Env): Promise<void> {
  * Réveille le container et balaie les e-mails demandés : reprend, avec la même
  * clé d'idempotence, un envoi resté orphelin entre la validation et l'appel à
  * Resend, ou un échec reprenable ; renonce au-delà de 23 h (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 8). Sur le
+ * `documentation/mail/plan-service-e-mails.md`, § 8). Sur le
  * cron de RAFRAÎCHISSEMENT, à côté de la boîte d'envoi : même porte, même
  * jeton, idempotent.
  *

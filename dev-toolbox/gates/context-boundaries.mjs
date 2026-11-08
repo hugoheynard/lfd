@@ -86,7 +86,7 @@ const BLOCK_OF = {
   packing: "packing",
 
   // ▸ LES E-MAILS — le service que tous les blocs consomment (2026-11-06,
-  //   `documentation/editeur-de-contenu/plan-service-e-mails.md`, C1–C2). Il
+  //   `documentation/mail/plan-service-e-mails.md`, C1–C2). Il
   //   n'a pas de métier propre : il reçoit des demandes, compose, envoie et
   //   garde le suivi. Tous les blocs métier l'atteignent par
   //   `mail/channels/` SEULEMENT ; lui n'atteint que le socle (l'autorisation

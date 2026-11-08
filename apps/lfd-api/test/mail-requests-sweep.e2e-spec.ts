@@ -1,6 +1,6 @@
 /**
  * L'envoi hors de la transaction de livraison et son balayeur, contre le vrai
- * Postgres (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * Postgres (plan `documentation/mail/plan-service-e-mails.md`,
  * lot S1b, § 8).
  *
  * Ce qu'un test unitaire ne peut pas dire : que `sending` est bien rangé par

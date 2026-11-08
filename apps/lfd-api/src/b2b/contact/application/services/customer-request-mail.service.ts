@@ -11,7 +11,7 @@ const ORIGIN_LABELS = { b2b: "Espace pro", b2c: "Particulier" } as const;
 /**
  * Le courriel `staff.customer-request` à l'adresse du motif, **demandé au bloc
  * `mail`** dans la transaction qui range la demande (lot S2c du plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`).
+ * `documentation/mail/plan-service-e-mails.md`).
  *
  * **`Reply-To` = l'auteur** : répondre au courriel lui écrit directement —
  * sauf si l'adresse ne passe pas `isValidReplyTo` : le courriel est alors

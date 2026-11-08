@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **aucune clé d'idempotence d'e-mail n'est construite avec une
- * adresse** (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * adresse** (plan `documentation/mail/plan-service-e-mails.md`,
  * revue avec Hugo, cas 4 ; décidé le 2026-11-06).
  *
  * Le bloc `mail` garde une clé un an (`mail.mail_request.idempotency_key`) :

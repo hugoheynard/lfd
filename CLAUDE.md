@@ -395,7 +395,7 @@ src/
 │                   Ouvert le 2026-11-06 (plan service d'e-mails, lot S0) :
 │                   son schéma `mail`, sans métier propre. Tous les blocs
 │                   métier l'atteignent par `mail/channels/` SEULEMENT.
-│                   Cf. editeur-de-contenu/plan-service-e-mails.md
+│                   Cf. mail/plan-service-e-mails.md
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
@@ -522,7 +522,7 @@ pas qui le branche, et « Proposer » ne fait donc pas de cycle.
 
 🔴 **`mail` est consommé par TOUS les blocs métier, par son canal seulement**
 (2026-11-06, Hugo ;
-[`documentation/editeur-de-contenu/plan-service-e-mails.md`](documentation/editeur-de-contenu/plan-service-e-mails.md),
+[`documentation/mail/plan-service-e-mails.md`](documentation/mail/plan-service-e-mails.md),
 C1–C2). Le bloc n'a pas de métier propre : il reçoit des demandes
 (« l'e-mail _commande passée_, à cette personne, avec ces données »), compose,
 envoie et garde le suivi. Il DÉCLARE et IMPLÉMENTE lui-même

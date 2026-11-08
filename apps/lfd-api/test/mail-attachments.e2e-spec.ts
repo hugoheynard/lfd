@@ -1,6 +1,6 @@
 /**
  * La pièce jointe PAR RÉFÉRENCE, contre le vrai Postgres et le vrai stockage
- * (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, C2, S2a).
+ * (plan `documentation/mail/plan-service-e-mails.md`, C2, S2a).
  *
  * Ce qu'un test unitaire ne peut pas dire : que la boîte d'envoi ne porte que
  * la clé du PDF, que le bloc `mail` relit le fichier déposé au bucket des

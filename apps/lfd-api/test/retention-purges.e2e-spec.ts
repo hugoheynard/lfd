@@ -1,6 +1,6 @@
 /**
  * E2E **les purges de la boîte d'envoi (30 jours) et du suivi des e-mails
- * (1 an)** — `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 7 —
+ * (1 an)** — `documentation/mail/plan-service-e-mails.md`, § 7 —
  * sur la vraie base.
  *
  * Ce que seule cette suite prouve : le SQL des deux règles (un message mort

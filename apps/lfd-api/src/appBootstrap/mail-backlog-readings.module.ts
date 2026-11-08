@@ -30,7 +30,7 @@ export class MailChannelBacklogReadings extends MailBacklogReadings {
 
 /**
  * **La veille du courrier, reliée à la carte de santé** (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, § 25, point 3).
+ * `documentation/mail/plan-service-e-mails.md`, § 25, point 3).
  *
  * `ops` déclare le port, `mail` publie sa veille par `mail/channels/requests/` ;
  * seule la racine voit les deux. `@Global` : le port est injecté par le module

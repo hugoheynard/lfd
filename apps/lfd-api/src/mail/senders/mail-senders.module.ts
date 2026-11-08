@@ -17,7 +17,7 @@ import { ResendVerifiedSendingDomains } from "./infrastructure/resend-verified-s
 /**
  * **Les identités d'envoi des espaces d'e-mails** — nom d'expéditeur, adresse
  * d'envoi, adresse de réponse de chaque espace (`lfc`, `lfd`), rangés en base
- * (plan `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, § 25,
+ * (plan `documentation/mail/plan-editeur-par-blocs.md`, § 25,
  * C3). Un geste distinct de la charte : sa commande, son fait.
  *
  * Il importe `MailCopyModule` : changer une identité fait monter la version

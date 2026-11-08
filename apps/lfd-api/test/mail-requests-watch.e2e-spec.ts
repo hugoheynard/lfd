@@ -1,6 +1,6 @@
 /**
  * La veille du courrier différé, contre le vrai Postgres (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, lot S8, § 25).
+ * `documentation/mail/plan-service-e-mails.md`, lot S8, § 25).
  *
  * Ce qu'un test unitaire ne peut pas dire : que la vraie requête compte les
  * demandes coincées et les échecs définitifs comme la règle les nomme, que la

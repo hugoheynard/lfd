@@ -21,7 +21,7 @@ export class MissingIntentKeyError extends DomainError {
 
 /**
  * Lit la **clé d'intention** d'un geste du staff dans l'en-tête
- * `Idempotency-Key` (plan `documentation/editeur-de-contenu/plan-service-e-mails.md`,
+ * `Idempotency-Key` (plan `documentation/mail/plan-service-e-mails.md`,
  * revue, cas 4).
  *
  * L'écran la fabrique une fois par intention — à l'ouverture du dialogue ou

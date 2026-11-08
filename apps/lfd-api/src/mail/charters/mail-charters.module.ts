@@ -22,7 +22,7 @@ import { SpecimenMailCharterPreviewRenderer } from "./infrastructure/specimen-ma
 /**
  * **Les chartes des espaces d'e-mails** — la charte graphique de chaque
  * espace (`lfc`, `lfd`), son brouillon, sa publication, son historique (plan
- * `documentation/editeur-de-contenu/plan-editeur-par-blocs.md`, § 25, C1).
+ * `documentation/mail/plan-editeur-par-blocs.md`, § 25, C1).
  *
  * Il importe `MailCopyModule` : publier fait monter la version des textes,
  * l'estampille du cache que l'envoi lit (`CachedPublishedMailCopyReader.charters`),

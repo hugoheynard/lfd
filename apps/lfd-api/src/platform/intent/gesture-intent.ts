@@ -1,7 +1,7 @@
 /**
  * **Une intention d'un geste** : la clé que l'écran fabrique à l'ouverture
  * d'un dialogue et renvoie à chaque clic (plan
- * `documentation/editeur-de-contenu/plan-service-e-mails.md`, revue avec
+ * `documentation/mail/plan-service-e-mails.md`, revue avec
  * Hugo, cas 4). Le serveur s'en sert comme identifiant du geste : un double
  * clic ne réexécute rien, et un vrai renvoi fabrique une clé neuve.
  *

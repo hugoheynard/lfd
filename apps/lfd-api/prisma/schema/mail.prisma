@@ -2,7 +2,7 @@
 // MAIL — le service d'e-mails, son propre schéma (2026-11-06)
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan `documentation/editeur-de-contenu/plan-service-e-mails.md`, lot S0 : le
+// Plan `documentation/mail/plan-service-e-mails.md`, lot S0 : le
 // schéma est déclaré AVANT le premier modèle, pour que les portes le
 // connaissent avant le premier fichier du bloc `src/mail/`. S1 y pose les
 // demandes et leur suivi.

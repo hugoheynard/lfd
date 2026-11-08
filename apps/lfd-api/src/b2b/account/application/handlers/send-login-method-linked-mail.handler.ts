@@ -51,7 +51,7 @@ export const SEND_LOGIN_METHOD_LINKED_MAIL = "account.send-login-method-linked-m
  *
  * Il envoyait dans la transaction de livraison ; il y DEMANDE désormais
  * l'e-mail (`send`), qui part après la validation
- * (`documentation/editeur-de-contenu/plan-service-e-mails.md`, § 8).
+ * (`documentation/mail/plan-service-e-mails.md`, § 8).
  */
 @Injectable()
 @DurableHandler({ type: ACCOUNT_LOGIN_METHOD_LINKED, subscriber: SEND_LOGIN_METHOD_LINKED_MAIL })

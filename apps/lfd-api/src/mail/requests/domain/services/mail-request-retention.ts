@@ -2,7 +2,7 @@ import type { MailRequestStatus } from "../entities/mail-request.js";
 
 /**
  * **Combien de temps le suivi d'un envoi se garde** — tranché par Hugo le
- * 2026-11-06 (`documentation/editeur-de-contenu/plan-service-e-mails.md`, § 7) :
+ * 2026-11-06 (`documentation/mail/plan-service-e-mails.md`, § 7) :
  * un an, puis la demande est purgée, son destinataire avec elle. La durée est
  * au registre RGPD (`documentation/legal/rgpd-registre.json`).
  */

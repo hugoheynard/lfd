@@ -50,7 +50,7 @@ sequenceDiagram
   déploiement de DD1, c'est la clé de son reçu dans la boîte d'envoi. La
   garde du relais (`DurableDeliveryGuard`) le fait tourner dans la
   transaction qui pose ce reçu. **Depuis le 2026-11-06 (S2a,
-  [`plan-service-e-mails.md`](../../editeur-de-contenu/plan-service-e-mails.md))**,
+  [`plan-service-e-mails.md`](../../mail/plan-service-e-mails.md))**,
   il y **demande** un courriel par envoi au bloc `mail` (`mail.send`)
   — une écriture, aucun appel au fournisseur — et le bloc envoie après la
   validation ; son balayeur reprend un envoi interrompu. Une demande qui
