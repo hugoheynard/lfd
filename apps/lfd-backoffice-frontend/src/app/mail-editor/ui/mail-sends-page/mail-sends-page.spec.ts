@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { MailSendListItemView } from '@lfd/contracts';
+import type { MailSendListItemView, StaffPermission } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { MailSendsService } from '../../data/mail-sends.service';
 import { MailSendsPage } from './mail-sends-page';
 
@@ -19,7 +20,10 @@ const row = (id: string, template = 'customer.order-placed'): MailSendListItemVi
   problem: false,
 });
 
-async function setup(api: Partial<Record<keyof MailSendsService, unknown>>) {
+async function setup(
+  api: Partial<Record<keyof MailSendsService, unknown>>,
+  permissions: readonly StaffPermission[] = ['mail_sends:read', 'mail_templates:read'],
+) {
   const open = vi.fn();
   TestBed.configureTestingModule({
     imports: [MailSendsPage],
@@ -27,6 +31,10 @@ async function setup(api: Partial<Record<keyof MailSendsService, unknown>>) {
       provideRouter([]),
       { provide: MailSendsService, useValue: api },
       { provide: FoldPanelHostService, useValue: { open } },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (p: StaffPermission) => permissions.includes(p) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(MailSendsPage);
@@ -110,5 +118,15 @@ describe('MailSendsPage — le suivi des envois', () => {
     await settle();
     expect(element.querySelector('[data-search-error]')?.textContent).toContain('Plafond atteint');
     expect(element.textContent).toContain('Commande passée');
+  });
+
+  it('sans le droit des modèles, pas de retour vers Email Templates (Hugo, 2026-11-08)', async () => {
+    const list = vi.fn().mockResolvedValue({ items: [], nextCursor: null });
+    const withTemplates = await setup({ list });
+    expect(withTemplates.element.querySelector('fold-back-link')).not.toBeNull();
+
+    TestBed.resetTestingModule();
+    const sendsOnly = await setup({ list }, ['mail_sends:read']);
+    expect(sendsOnly.element.querySelector('fold-back-link')).toBeNull();
   });
 });

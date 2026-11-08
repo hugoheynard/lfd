@@ -326,7 +326,17 @@ export class App {
    * L'éditeur d'e-mails (S5a) — son droit, celui que les routes serveur
    * `/admin/mail-templates` opposent. Le même `computed` tient le rail et la tuile.
    */
-  protected readonly canSeeMailEditor = computed(() => this.permissions.can('mail_templates:read'));
+  protected readonly canSeeMailEditor = computed(
+    () => this.permissions.can('mail_templates:read') || this.permissions.can('mail_sends:read'),
+  );
+  /**
+   * Où mène « Email Templates » : la page des modèles pour qui les lit, sinon
+   * directement le suivi des envois (Hugo, 2026-11-08) — la page des modèles
+   * n'appelle que des routes `mail_templates`, qui refuseraient tout.
+   */
+  protected readonly mailEditorLink = computed(() =>
+    this.permissions.can('mail_templates:read') ? '/emails' : '/emails/envois',
+  );
   /** La teinte de la section Communication : le rose de la marque. */
   protected readonly communicationTint = BRAND_PINK_TINT;
 

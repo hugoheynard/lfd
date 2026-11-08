@@ -436,13 +436,13 @@
       @if (canSeeMailEditor()) {
         <!-- LES E-MAILS — l'éditeur par blocs (plan-editeur-par-blocs.md, § 6,
              S5a) : entrée de premier niveau, juste au-dessus de la
-             Médiathèque, avec sa propre icône. `mail_templates:read`, le mur
-             des routes serveur `/admin/mail-templates`. -->
+             Médiathèque, avec sa propre icône. Visible avec `mail_templates:read`
+             ou `mail_sends:read` ; sans le premier, elle mène au suivi. -->
         <a
           fold-menu-item
           icon="inbox"
           label="Email Templates"
-          routerLink="/emails"
+          [routerLink]="mailEditorLink()"
           routerLinkActive
           #mailEditorRla="routerLinkActive"
           [active]="mailEditorRla.isActive"
@@ -1206,7 +1206,7 @@
           fold-nav-tile
           icon="inbox"
           label="Email Templates"
-          routerLink="/emails"
+          [routerLink]="mailEditorLink()"
           routerLinkActive
           #mailEditorTile="routerLinkActive"
           [active]="mailEditorTile.isActive"

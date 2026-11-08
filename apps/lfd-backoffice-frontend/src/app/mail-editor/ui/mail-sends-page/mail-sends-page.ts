@@ -13,6 +13,7 @@ import {
   type FoldTableEmpty,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { MailSendsService } from '../../data/mail-sends.service';
 import {
   mailSendWhen,
@@ -64,6 +65,9 @@ const NOTHING_FOUND: FoldTableEmpty = {
 export class MailSendsPage {
   private readonly api = inject(MailSendsService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+  /** Le retour vers les modèles ne se montre qu'à qui peut les lire. */
+  protected readonly canSeeTemplates = computed(() => this.permissions.can('mail_templates:read'));
 
   protected readonly filters = signal<Filters>(NO_MAIL_SEND_FILTERS);
   protected readonly status = signal<'loading' | 'ready' | 'failed'>('loading');

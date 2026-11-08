@@ -1,5 +1,7 @@
 <fold-page-layout title="Suivi des envois" icon="inbox">
-  <fold-back-link pageEyebrow icon="arrow-back" label="Email Templates" routerLink="/emails" />
+  @if (canSeeTemplates()) {
+    <fold-back-link pageEyebrow icon="arrow-back" label="Email Templates" routerLink="/emails" />
+  }
   <p description>
     Chaque e-mail demandé, son état chez nous et le retour de Resend — les problèmes d’abord. «
     Accepté par Resend » ne dit pas que l’e-mail est arrivé : seul « Remis » le dit.
