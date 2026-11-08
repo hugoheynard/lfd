@@ -6,6 +6,7 @@ import type {
   FulfillmentPreferenceView,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
+import type { SocietyConsentAnswer } from '@lfd/contracts';
 import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
@@ -157,13 +158,15 @@ export class AccountService {
   }
 
   /** Enregistre le profil (opération → toast) ; l'état est remplacé par le compte relu. */
-  saveProfile(draft: UserProfileDraft): void {
+  saveProfile(draft: UserProfileDraft, consent?: SocietyConsentAnswer): void {
+    // La case des offres, portée par le seul geste d'inscription (lot C2).
+    const body = consent === undefined ? draft : { ...draft, marketingConsent: consent };
     this._status.set('loading');
     this.auth
       .accessToken$()
       .pipe(
         switchMap((token) =>
-          this.http.patch<Account>(`${AUTH_CONFIG.apiBaseUrl}/me/profile`, draft, headers(token)),
+          this.http.patch<Account>(`${AUTH_CONFIG.apiBaseUrl}/me/profile`, body, headers(token)),
         ),
       )
       .subscribe({
@@ -315,13 +318,18 @@ export class AccountService {
    * dans l'état visé (double clic, second onglet, rejeu). On relit `/me`, qui
    * dira sa société.
    */
-  declareEstablishment(draft: EstablishmentDraft): Promise<DeclarationOutcome> {
+  declareEstablishment(
+    draft: EstablishmentDraft,
+    consent?: SocietyConsentAnswer,
+  ): Promise<DeclarationOutcome> {
+    // La case des offres, cochée ou non sur la porte pro (lot C2).
+    const body = consent === undefined ? draft : { ...draft, marketingConsent: consent };
     return firstValueFrom(
       this.auth
         .accessToken$()
         .pipe(
           switchMap((token) =>
-            this.http.post(`${AUTH_CONFIG.apiBaseUrl}/me/establishment`, draft, headers(token)),
+            this.http.post(`${AUTH_CONFIG.apiBaseUrl}/me/establishment`, body, headers(token)),
           ),
         ),
     ).then(

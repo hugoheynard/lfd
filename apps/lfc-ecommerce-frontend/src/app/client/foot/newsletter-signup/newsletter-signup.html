@@ -1,0 +1,53 @@
+<section class="newsletter" aria-labelledby="newsletter-head">
+  <h2 id="newsletter-head" class="head">{{ copy().newsletterHead }}</h2>
+  <form class="form" novalidate (submit)="$event.preventDefault(); void submit()">
+    <div class="row">
+      <fold-input
+        class="email"
+        type="email"
+        autocomplete="email"
+        [label]="copy().newsletterEmail"
+        [errors]="errors()"
+        [touched]="errors().length > 0"
+        [(value)]="email"
+      />
+      <button
+        foldButton
+        class="send"
+        emphasis="solid"
+        intent="primary"
+        type="submit"
+        [loading]="sending()"
+      >
+        {{ sending() ? copy().newsletterSending : copy().newsletterSubmit }}
+      </button>
+    </div>
+    <!-- LE PIÈGE : hors écran (pas `display: none` seul, que certains robots
+         sautent), `aria-hidden`, hors de la tabulation, sans autocomplétion. -->
+    <div class="trap" aria-hidden="true">
+      <label>
+        {{ copy().newsletterTrap }}
+        <input
+          type="text"
+          name="website"
+          tabindex="-1"
+          autocomplete="off"
+          data-newsletter-trap
+          [value]="trap()"
+          (input)="readTrap($event)"
+        />
+      </label>
+    </div>
+    <p class="sentence">
+      {{ sentence() }}
+      <a [href]="privacyPage" target="_blank" rel="noopener" [attr.aria-label]="linkName()">{{
+        copy().privacyLink
+      }}</a>
+    </p>
+    @if (notice(); as notice) {
+      <fold-callout [variant]="notice.variant" announce data-newsletter-notice>{{
+        notice.text
+      }}</fold-callout>
+    }
+  </form>
+</section>

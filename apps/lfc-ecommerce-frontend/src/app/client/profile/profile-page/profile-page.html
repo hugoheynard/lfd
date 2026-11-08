@@ -59,6 +59,15 @@
         <app-login-methods-section />
       </fold-page-section>
 
+      <!-- LES E-MAILS : ce que la personne accepte de recevoir, société par
+           société (lot C3). Ses états à elle — elle ne dépend pas de `/me`. -->
+      <fold-page-section
+        [title]="mailCopy().preferencesTitle"
+        [description]="mailCopy().preferencesSubtitle"
+      >
+        <app-marketing-preferences-section />
+      </fold-page-section>
+
       <!-- LA PROPOSITION, en bas et après ce qu'on est venu faire : elle ne
            s'affiche qu'à qui n'a aucune société, et la section le décide
            elle-même (elle ne rend rien sinon). -->

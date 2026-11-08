@@ -11,6 +11,9 @@ import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold
 import type { PendingProfile } from '../../../auth/auth.facade';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { ClientFeatureAccess } from '../../../client/feature-access/client-feature-access.service';
+import { ClientLocale } from '../../../client/client-locale.service';
+import { societyAnswer } from '../../../client/marketing/consent-answer';
+import { MarketingConsentBox } from '../../../client/marketing/marketing-consent-box/marketing-consent-box';
 import { DoorCard } from '../door-card/door-card';
 import { RuleOu } from '../rule-ou/rule-ou';
 
@@ -43,7 +46,14 @@ import { RuleOu } from '../rule-ou/rule-ou';
 @Component({
   selector: 'app-welcome-step',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCardComponent, FoldInputComponent, DoorCard, RuleOu],
+  imports: [
+    FoldButtonComponent,
+    FoldCardComponent,
+    FoldInputComponent,
+    DoorCard,
+    MarketingConsentBox,
+    RuleOu,
+  ],
   templateUrl: './welcome-step.html',
   styleUrl: './welcome-step.scss',
 })
@@ -76,6 +86,10 @@ export class WelcomeStep {
   protected readonly email = signal('');
   protected readonly tel = signal('');
 
+  /** La case des offres de la société — non cochée d'entrée (lot C2). */
+  protected readonly marketingAccepted = signal(false);
+  private readonly locale = inject(ClientLocale);
+
   protected readonly complete = computed(
     () =>
       this.firstName().trim() !== '' &&
@@ -101,6 +115,7 @@ export class WelcomeStep {
       firstName: this.firstName().trim(),
       email: this.email().trim(),
       phone: this.tel().trim(),
+      marketingConsent: societyAnswer(this.marketingAccepted(), this.locale.current()),
     };
   }
 }

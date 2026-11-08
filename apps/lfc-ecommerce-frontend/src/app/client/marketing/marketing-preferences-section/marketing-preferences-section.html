@@ -1,0 +1,62 @@
+@switch (preferences.status()) {
+  @case ('error') {
+    <fold-empty-state tone="alert" [title]="copy().preferencesFailed">
+      <button foldButton type="button" (click)="retry()">{{ copy().preferencesRetry }}</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    <div class="list">
+      <!-- Un refus du serveur : annoncé, et les cartes restent sous les yeux. -->
+      @if (writeFailed()) {
+        <fold-callout variant="alert" announce data-marketing-write-failed>{{
+          copy().preferencesWriteFailed
+        }}</fold-callout>
+      }
+      @for (card of cards(); track card.space) {
+        <fold-card [attr.data-marketing-space]="card.space">
+          <fold-element-title variant="title" [title]="card.name" [subtitle]="card.state">
+            <button
+              titleAction
+              foldButton
+              size="sm"
+              type="button"
+              [emphasis]="card.action === 'unsubscribe' ? 'outline' : 'solid'"
+              [intent]="card.action === 'unsubscribe' ? 'neutral' : 'primary'"
+              [loading]="busy()"
+              [attr.data-marketing-action]="card.action"
+              (click)="void act(card)"
+            >
+              {{ card.actionLabel }}
+            </button>
+          </fold-element-title>
+        </fold-card>
+      }
+      @if (partnersOffered()) {
+        <fold-card data-marketing-partners>
+          <div class="partners">
+            <fold-element-title variant="title" [title]="copy().partnersTitle" />
+            <app-marketing-consent-box
+              box="partners"
+              [checked]="partnersChecked()"
+              (checkedChange)="partnersChecked.set($event)"
+            />
+            <button
+              class="partners-save"
+              foldButton
+              size="sm"
+              type="button"
+              [disabled]="!partnersChecked()"
+              [loading]="busy()"
+              (click)="void acceptPartners()"
+            >
+              {{ copy().partnersAccept }}
+            </button>
+          </div>
+        </fold-card>
+      }
+    </div>
+  }
+  @default {
+    <fold-loading [message]="copy().preferencesLoading" />
+  }
+}

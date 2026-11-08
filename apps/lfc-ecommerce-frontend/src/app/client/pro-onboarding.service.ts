@@ -122,7 +122,7 @@ export class ProOnboarding {
       enseigne: registration.enseigne,
     };
     this._declaring.set(true);
-    void this.account.declareEstablishment(draft).then((outcome) => {
+    void this.account.declareEstablishment(draft, registration.marketingConsent).then((outcome) => {
       this._declaring.set(false);
       if (outcome.kind === 'refused') {
         this._lastError.set(outcome);

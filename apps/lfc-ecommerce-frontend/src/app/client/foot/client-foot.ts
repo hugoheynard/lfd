@@ -14,6 +14,7 @@ import { ClientContent } from '../client-content.service';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
 import { LegalDocumentPanel } from '../legal-document-panel/legal-document-panel';
 import { LEGAL_YEAR } from './legal-identity';
+import { NewsletterSignup } from './newsletter-signup/newsletter-signup';
 
 /**
  * Le pied de page de l'app — quatre colonnes et une barre légale.
@@ -34,7 +35,7 @@ import { LEGAL_YEAR } from './legal-identity';
 @Component({
   selector: 'app-client-foot',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldLinkComponent, NgTemplateOutlet],
+  imports: [FoldLinkComponent, NewsletterSignup, NgTemplateOutlet],
   templateUrl: './client-foot.html',
   styleUrl: './client-foot.scss',
 })

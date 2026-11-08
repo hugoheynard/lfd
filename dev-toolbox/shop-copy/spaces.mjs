@@ -148,6 +148,13 @@ export const OTHER_SPACES = [
     file: "screens/contact-dialog.copy.ts",
     fn: "contactDialogCopy",
   },
+  {
+    kind: "screen",
+    space: "marketingConsent",
+    title: "Les cases des e-mails marketing, « Mes e-mails » et le pied de page",
+    file: "screens/marketing-consent.copy.ts",
+    fn: "marketingConsentCopy",
+  },
   { kind: "dictionary", space: "legalDocument", title: "Les documents légaux" },
   {
     kind: "screen",

@@ -135,6 +135,15 @@
           ></fold-checkbox
         >
       }
+      <!-- La case des offres de La Folie Coffee (lot C2), NON cochée : toujours
+           au visiteur — son absence dirait l'état d'une adresse (règle 17) —, au
+           client connecté seulement s'il n'a jamais répondu (`askable`). -->
+      @if (marketing.shown()) {
+        <app-marketing-consent-box
+          [checked]="marketing.checked()"
+          (checkedChange)="marketing.checked.set($event)"
+        />
+      }
     }
   </div>
 </fold-panel-body>

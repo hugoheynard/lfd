@@ -25,6 +25,13 @@
           }
         </div>
       }
+      <!-- « Recevoir nos nouvelles » (lot C5), CHARGÉ À LA VUE : le pied est
+           dans le paquet initial, et son budget \`cloudflare\` est serré. -->
+      @defer (on viewport) {
+        <app-newsletter-signup />
+      } @placeholder {
+        <div class="newsletter-slot"></div>
+      }
     </section>
 
     <!-- Les trois colonnes dans l'ordre choisi au back-office (2026-10-28) ;

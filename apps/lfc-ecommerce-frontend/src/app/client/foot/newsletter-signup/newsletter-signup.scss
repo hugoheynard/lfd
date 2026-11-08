@@ -1,0 +1,51 @@
+.newsletter,
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.head {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.email {
+  flex: 1;
+  min-width: 0;
+}
+
+.send {
+  flex: none;
+}
+
+/* Hors écran, sans taille : ni vu, ni lu, ni atteint au clavier. */
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.sentence {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-note);
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.sentence a {
+  color: var(--fold-color-text);
+}

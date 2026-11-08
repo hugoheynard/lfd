@@ -17,6 +17,8 @@ import {
 } from './client-orders.fixture';
 import { loyaltyDouble, provideLoyalty, type LoyaltyDouble } from './client-loyalty.fixture';
 import { SalesTermsConsent } from './cart/sales-terms-consent.service';
+import { CheckoutConsent } from './marketing/checkout-consent.service';
+import { MarketingPreferences } from './marketing/marketing-preferences.service';
 import { VoucherChoice } from './cart/voucher-choice.service';
 import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
@@ -919,5 +921,99 @@ describe('passer commande — le total vu', () => {
     await placing;
 
     expect(body.expectedTotalCents).toBe(cart.totals().totalCents);
+  });
+});
+
+/**
+ * La case des offres de La Folie Coffee à la commande (plan
+ * `documentation/mail/plan-desinscription-des-e-mails.md`, lot C2, règle 17) :
+ * l'invité l'envoie toujours ; le connecté seulement si elle lui a paru.
+ */
+describe('passer commande — la case des offres', () => {
+  const GUEST = { ...RECOGNISED, isAuthenticated: () => false };
+  const BUYER = { firstName: 'Jean', email: 'jean@example.com', phone: '0600000000' };
+
+  async function guestBody(http: HttpTestingController): Promise<PlaceShopOrderPayload> {
+    const placing = TestBed.inject(ClientOrders).placeAsGuest(BUYER);
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = http.expectOne((r) => r.url.endsWith('/shop/orders'));
+    const body = request.request.body as PlaceShopOrderPayload;
+    request.flush({ id: 'ord_1', orderNumber: 'CMD-0007' });
+    await placing;
+    return body;
+  }
+
+  it('l’invité envoie la case NON cochée : une réponse, pas un refus', async () => {
+    const http = boot(GUEST);
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const body = await guestBody(http);
+
+    expect(body.marketingConsent).toEqual({
+      accepted: false,
+      textVersion: 'society.v1',
+      locale: 'fr',
+    });
+  });
+
+  it('l’invité qui coche l’envoie dans la langue de l’écran', async () => {
+    const http = boot(GUEST);
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    TestBed.inject(ClientLocale).current.set('it');
+    TestBed.inject(CheckoutConsent).checked.set(true);
+
+    const body = await guestBody(http);
+
+    expect(body.marketingConsent).toEqual({
+      accepted: true,
+      textVersion: 'society.v1',
+      locale: 'it',
+    });
+  });
+
+  it('le connecté sans case (`askable` faux ou non lu) n’envoie rien', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect('marketingConsent' in body).toBe(false);
+  });
+
+  it('le connecté `askable` qui coche l’envoie', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    TestBed.inject(MarketingPreferences).load();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/me/marketing'))
+      .flush({
+        spaces: [{ space: 'lfc', state: 'not_subscribed', askable: true }],
+        partnersOffered: false,
+      });
+    await Promise.resolve();
+    expect(TestBed.inject(CheckoutConsent).shown()).toBe(true);
+    TestBed.inject(CheckoutConsent).checked.set(true);
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect(body.marketingConsent).toEqual({
+      accepted: true,
+      textVersion: 'society.v1',
+      locale: 'fr',
+    });
   });
 });

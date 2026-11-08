@@ -73,6 +73,25 @@ describe('AccountService — declareEstablishment', () => {
     http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET');
   });
 
+  it('porte la réponse à la case des offres quand l’inscription en a une (lot C2)', async () => {
+    const consent = { accepted: true, textVersion: 'society.v1', locale: 'fr' } as const;
+    const outcome = account.declareEstablishment(DRAFT, consent);
+    const request = post();
+    expect(request.request.body).toEqual({ ...DRAFT, marketingConsent: consent });
+    request.flush({ companyId: 'cmp_1' }, { status: 201, statusText: 'Created' });
+    await outcome;
+    http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET');
+  });
+
+  it('`PATCH /me/profile` porte la case de l’inscription, et elle seule', () => {
+    const draft = { firstName: 'Marie', lastName: '', email: 'm@exemple.fr', phone: '06' };
+    const consent = { accepted: false, textVersion: 'society.v1', locale: 'it' } as const;
+    account.saveProfile(draft, consent);
+    const request = http.expectOne((r) => r.url.endsWith('/me/profile'));
+    expect(request.request.body).toEqual({ ...draft, marketingConsent: consent });
+    request.flush('x', { status: 500, statusText: 'Erreur' });
+  });
+
   it('un 409 « déjà rattaché » relit `/me`, sans erreur ni toast', async () => {
     const outcome = account.declareEstablishment(DRAFT);
     refuse(

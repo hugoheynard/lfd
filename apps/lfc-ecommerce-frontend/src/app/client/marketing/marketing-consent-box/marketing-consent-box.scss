@@ -1,0 +1,9 @@
+.box {
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-note);
+}
+
+/* Le lien aux couleurs fold, pas au bleu du navigateur — comme les CGV. */
+.box a {
+  color: var(--fold-color-primary-text);
+}

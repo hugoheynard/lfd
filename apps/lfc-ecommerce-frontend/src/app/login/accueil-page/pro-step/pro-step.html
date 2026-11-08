@@ -52,6 +52,13 @@
       />
     </div>
 
+    <!-- La case des offres de La Folie Coffee, NON cochée (lot C2) : sa
+         réponse fait l'aller-retour d'Auth0 et part avec l'inscription. -->
+    <app-marketing-consent-box
+      [checked]="marketingAccepted()"
+      (checkedChange)="marketingAccepted.set($event)"
+    />
+
     <div class="submit">
       <button
         foldButton

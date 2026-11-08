@@ -141,6 +141,12 @@
   text-decoration: none;
 }
 
+/* La place du champ « nouvelles » avant qu'il arrive : un point d'ancrage
+   pour \`@defer (on viewport)\`, qui ne peut pas observer un vide. */
+.newsletter-slot {
+  min-height: var(--fold-space-4xl);
+}
+
 /* ── Les maisons ────────────────────────────────────────────────────────── */
 
 .house {

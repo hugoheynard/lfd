@@ -1,4 +1,6 @@
 import { Injectable, Injector, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import type { SocietyConsentAnswer } from '@lfd/contracts';
+import { readSocietyAnswer } from './society-consent-reader';
 
 import { isPlatformBrowser } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -513,6 +515,8 @@ export interface PendingProfile {
   readonly firstName: string;
   readonly email: string;
   readonly phone: string;
+  /** La case des offres de la société, cochée ou non sur la carte (lot C2). */
+  readonly marketingConsent?: SocietyConsentAnswer;
 }
 
 /** Prédicat de garde : `state` porte-t-il un `target` chaîne ? (sans cast). */
@@ -559,6 +563,7 @@ function readProfile(state: unknown): PendingProfile | null {
         firstName: readString(state.profile, 'firstName'),
         email,
         phone: readString(state.profile, 'phone'),
+        ...consentOf(state.profile),
       };
 }
 
@@ -572,6 +577,8 @@ export interface ProRegistration {
   readonly email: string;
   readonly phone: string;
   readonly enseigne: string;
+  /** La case des offres de la société, cochée ou non sur la porte pro (lot C2). */
+  readonly marketingConsent?: SocietyConsentAnswer;
 }
 
 /** Prédicat de garde : `state` porte-t-il une `proRegistration` ? (sans cast). */
@@ -612,5 +619,14 @@ function readProRegistration(state: unknown): ProRegistration | null {
   ) {
     return null;
   }
-  return { firstName, lastName, email, phone, enseigne };
+  return { firstName, lastName, email, phone, enseigne, ...consentOf(source) };
+}
+
+/**
+ * La réponse à la case des offres, revenue du stockage du navigateur : vérifiée
+ * champ par champ, omise si elle ne tient pas — une case vide n'est pas un refus.
+ */
+function consentOf(source: Record<string, unknown>): { marketingConsent?: SocietyConsentAnswer } {
+  const answer = readSocietyAnswer(source['marketingConsent']);
+  return answer === undefined ? {} : { marketingConsent: answer };
 }

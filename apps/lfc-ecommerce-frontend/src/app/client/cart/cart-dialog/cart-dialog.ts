@@ -44,6 +44,8 @@ import { ReservedLinesCallout } from '../reserved-lines-callout/reserved-lines-c
 import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { SalesTermsConsent } from '../sales-terms-consent.service';
+import { CheckoutConsent } from '../../marketing/checkout-consent.service';
+import { MarketingConsentBox } from '../../marketing/marketing-consent-box/marketing-consent-box';
 import { OrderDoors } from '../../shop/order-doors';
 import { pickupOffer } from '../../shop/pickup-discount';
 import { ServicePoints } from '../../shop/pickup-points.store';
@@ -98,6 +100,7 @@ const AFTER_SIGN_IN = '/boutique';
     FoldCalloutComponent,
     FoldCheckboxComponent,
     GuestIdentityForm,
+    MarketingConsentBox,
     RouterLink,
     SignInChoices,
     SignInOfferCallout,
@@ -183,10 +186,13 @@ export class CartDialog {
    * case (`SalesTermsConsent`).
    */
   protected readonly salesTerms = inject(SalesTermsConsent);
+  /** La case des offres de la société (lot C2) : toujours au visiteur, au connecté si `askable`. */
+  protected readonly marketing = inject(CheckoutConsent);
 
   constructor() {
     void this.opening.hydrate();
     this.salesTerms.load();
+    this.marketing.load();
     // La suggestion du panier ouvre la fiche de son article (Hugo,
     // 2026-10-18) : le panier s'efface pour qu'elle se voie.
     const pieces = inject(PieceRequest);

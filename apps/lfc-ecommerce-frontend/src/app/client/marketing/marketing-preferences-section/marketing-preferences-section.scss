@@ -1,0 +1,15 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.partners {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.partners-save {
+  align-self: flex-start;
+}

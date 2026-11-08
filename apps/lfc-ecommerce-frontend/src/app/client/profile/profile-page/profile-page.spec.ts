@@ -98,16 +98,17 @@ describe('ProfilePage', () => {
     expect(el().textContent).not.toContain(FR.account.profilePageLead);
   });
 
-  it('porte les deux sections, l’identité d’abord', async () => {
+  it('porte les trois sections, l’identité d’abord, les e-mails en dernier', async () => {
     boot();
     await render();
 
     const sections = Array.from(el().querySelectorAll('fold-page-section'));
-    expect(sections.length).toBe(2);
+    expect(sections.length).toBe(3);
     expect(sections[0]?.querySelector('app-identity-section')).not.toBeNull();
     expect(sections[0]?.textContent).toContain(FR.account.profileIdentityTitle);
     expect(sections[1]?.querySelector('app-login-methods-section')).not.toBeNull();
     expect(sections[1]?.textContent).toContain(FR.account.loginMethodsTitle);
+    expect(sections[2]?.querySelector('app-marketing-preferences-section')).not.toBeNull();
   });
 
   /** « Pas encore su » n'est pas « vide » : aucun champ ne se montre à blanc. */

@@ -15,6 +15,9 @@ import { ClientCopyService } from '../../copy/client-copy.service';
 import { IdentitySection } from '../identity-section/identity-section';
 import { LoginMethodsSection } from '../login-methods-section/login-methods-section';
 import { ProAccountSection } from '../pro-account-section/pro-account-section';
+import { marketingConsentCopy } from '../../copy/screens/marketing-consent.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
+import { MarketingPreferencesSection } from '../../marketing/marketing-preferences-section/marketing-preferences-section';
 
 /** Où en est la page — « pas encore su » n'est ni « vide » ni « en panne ». */
 type ProfileView = 'loading' | 'failed' | 'ready';
@@ -61,6 +64,7 @@ type ProfileView = 'loading' | 'failed' | 'ready';
     ClientBannerOutlet,
     IdentitySection,
     LoginMethodsSection,
+    MarketingPreferencesSection,
     ProAccountSection,
   ],
   templateUrl: './profile-page.html',
@@ -68,6 +72,7 @@ type ProfileView = 'loading' | 'failed' | 'ready';
 })
 export class ProfilePage {
   protected readonly t = inject(ClientCopyService).t;
+  protected readonly mailCopy = screenCopy('marketingConsent', marketingConsentCopy);
   private readonly account = inject(AccountService);
   private readonly chrome = inject(ClientChrome);
 

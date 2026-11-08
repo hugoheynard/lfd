@@ -1,0 +1,12 @@
+<!-- Le libellé est PROJETÉ : un clic sur la phrase coche, un clic sur le lien
+     le suit, et la case est nommée par la phrase (comme celle des CGV). -->
+<fold-checkbox
+  class="box"
+  data-marketing-consent
+  [checked]="checked()"
+  (checkedChange)="checkedChange.emit($event)"
+  >{{ text() }}
+  <a [href]="privacyPage" target="_blank" rel="noopener" [attr.aria-label]="linkName()">{{
+    copy().privacyLink
+  }}</a></fold-checkbox
+>

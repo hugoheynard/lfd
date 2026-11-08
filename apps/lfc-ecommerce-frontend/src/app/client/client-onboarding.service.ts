@@ -40,12 +40,15 @@ export class ClientOnboarding {
       }
       this.applied.set(true);
       this.auth.pendingProfile.set(null);
-      this.account.saveProfile({
-        firstName: profile.firstName,
-        lastName: '',
-        email: profile.email,
-        phone: profile.phone,
-      });
+      this.account.saveProfile(
+        {
+          firstName: profile.firstName,
+          lastName: '',
+          email: profile.email,
+          phone: profile.phone,
+        },
+        profile.marketingConsent,
+      );
     });
   }
 }

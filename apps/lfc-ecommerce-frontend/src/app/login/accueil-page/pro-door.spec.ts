@@ -245,6 +245,7 @@ describe('AccueilPage · porte pro', () => {
           email: 'pierre@brasserie-marchand.fr',
           phone: '06 12 44 09 87',
           enseigne: 'Brasserie Marchand',
+          marketingConsent: { accepted: false, textVersion: 'society.v1', locale: 'fr' },
         },
       },
     ]);

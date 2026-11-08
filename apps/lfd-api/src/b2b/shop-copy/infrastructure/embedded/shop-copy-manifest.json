@@ -12124,6 +12124,218 @@
       "unrecorded": []
     },
     {
+      "space": "marketingConsent",
+      "title": "Les cases des e-mails marketing, « Mes e-mails » et le pied de page",
+      "source": "screens/marketing-consent.copy.ts",
+      "journey": false,
+      "entries": [
+        {
+          "key": "marketingConsent.societyV1",
+          "fr": "J’accepte de recevoir par e-mail les nouveautés et les offres de La Folie Coffee. Je peux me désinscrire à tout moment.",
+          "en": "I agree to receive news and offers from La Folie Coffee by e-mail. I can unsubscribe at any time.",
+          "it": "Accetto di ricevere via e-mail le novità e le offerte di La Folie Coffee. Posso annullare l’iscrizione in qualsiasi momento.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.partnersV1",
+          "fr": "J’accepte de recevoir par e-mail les nouveautés et les offres des autres sociétés du groupe La Folie Douce, à qui mon adresse sera transmise. Je peux me désinscrire à tout moment.",
+          "en": "I agree to receive news and offers by e-mail from the other companies of the La Folie Douce group, to which my address will be passed on. I can unsubscribe at any time.",
+          "it": "Accetto di ricevere via e-mail le novità e le offerte delle altre società del gruppo La Folie Douce, alle quali sarà trasmesso il mio indirizzo. Posso annullare l’iscrizione in qualsiasi momento.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterV1",
+          "fr": "En vous inscrivant, vous acceptez de recevoir par e-mail les nouveautés et les offres de La Folie Coffee. Vous pourrez vous désinscrire à tout moment, depuis chaque e-mail.",
+          "en": "By signing up, you agree to receive news and offers from La Folie Coffee by e-mail. You can unsubscribe at any time, from any e-mail.",
+          "it": "Iscrivendovi, accettate di ricevere via e-mail le novità e le offerte di La Folie Coffee. Potrete annullare l’iscrizione in qualsiasi momento, da ogni e-mail.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.privacyLink",
+          "fr": "Ce que nous faisons de votre adresse",
+          "en": "What we do with your address",
+          "it": "Cosa facciamo del vostro indirizzo",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.preferencesTitle",
+          "fr": "Mes e-mails",
+          "en": "My e-mails",
+          "it": "Le mie e-mail",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.preferencesSubtitle",
+          "fr": "Les nouveautés et les offres que vous acceptez de recevoir.",
+          "en": "The news and offers you agree to receive.",
+          "it": "Le novità e le offerte che accettate di ricevere.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.preferencesLoading",
+          "fr": "Lecture de vos préférences…",
+          "en": "Reading your preferences…",
+          "it": "Lettura delle vostre preferenze…",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.preferencesFailed",
+          "fr": "Vos préférences n’ont pas pu être lues.",
+          "en": "Your preferences could not be read.",
+          "it": "Non è stato possibile leggere le vostre preferenze.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.preferencesRetry",
+          "fr": "Réessayer",
+          "en": "Try again",
+          "it": "Riprova",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.preferencesWriteFailed",
+          "fr": "Le changement n’a pas été enregistré. Réessayez dans un instant.",
+          "en": "The change was not saved. Please try again in a moment.",
+          "it": "La modifica non è stata registrata. Riprovate tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.spaceLfc",
+          "fr": "La Folie Coffee",
+          "en": "La Folie Coffee",
+          "it": "La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.stateSubscribed",
+          "fr": "Inscrit",
+          "en": "Subscribed",
+          "it": "Iscritto",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.statePending",
+          "fr": "En attente de confirmation — vérifiez votre boîte",
+          "en": "Awaiting confirmation — check your inbox",
+          "it": "In attesa di conferma — controllate la vostra casella",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.stateNotSubscribed",
+          "fr": "Non inscrit",
+          "en": "Not subscribed",
+          "it": "Non iscritto",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.stateUnsubscribed",
+          "fr": "Désinscrit",
+          "en": "Unsubscribed",
+          "it": "Iscrizione annullata",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.subscribe",
+          "fr": "S’inscrire",
+          "en": "Subscribe",
+          "it": "Iscriviti",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.unsubscribe",
+          "fr": "Se désinscrire",
+          "en": "Unsubscribe",
+          "it": "Annulla l’iscrizione",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.resubscribe",
+          "fr": "Se réinscrire",
+          "en": "Subscribe again",
+          "it": "Iscriviti di nuovo",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.partnersTitle",
+          "fr": "Les autres sociétés du groupe",
+          "en": "The other companies of the group",
+          "it": "Le altre società del gruppo",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.partnersAccept",
+          "fr": "Enregistrer",
+          "en": "Save",
+          "it": "Salva",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterHead",
+          "fr": "Recevoir nos nouvelles",
+          "en": "Get our news",
+          "it": "Ricevere le nostre novità",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterEmail",
+          "fr": "Votre adresse e-mail",
+          "en": "Your e-mail address",
+          "it": "Il vostro indirizzo e-mail",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterSubmit",
+          "fr": "S’inscrire",
+          "en": "Subscribe",
+          "it": "Iscriviti",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterSending",
+          "fr": "Envoi…",
+          "en": "Sending…",
+          "it": "Invio…",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterSent",
+          "fr": "Si cette adresse peut recevoir nos nouvelles, un e-mail de confirmation vient de partir.",
+          "en": "If this address can receive our news, a confirmation e-mail has just been sent.",
+          "it": "Se questo indirizzo può ricevere le nostre novità, è appena partita un’e-mail di conferma.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterTooMany",
+          "fr": "Trop de tentatives, réessayez dans un moment.",
+          "en": "Too many attempts, please try again in a moment.",
+          "it": "Troppi tentativi, riprovate tra un momento.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterInvalid",
+          "fr": "Cette adresse e-mail ne semble pas valide.",
+          "en": "This e-mail address does not look valid.",
+          "it": "Questo indirizzo e-mail non sembra valido.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterFailed",
+          "fr": "L’inscription n’est pas partie. Réessayez dans un instant.",
+          "en": "The sign-up did not go through. Please try again in a moment.",
+          "it": "L’iscrizione non è partita. Riprovate tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "marketingConsent.newsletterTrap",
+          "fr": "Ne pas remplir ce champ",
+          "en": "Do not fill in this field",
+          "it": "Non compilare questo campo",
+          "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
       "space": "legalDocument",
       "title": "Les documents légaux",
       "source": "fr.ts · en.ts · it.ts",

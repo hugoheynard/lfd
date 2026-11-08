@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1758 textes
+## Sommaire — 1787 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -47,9 +47,10 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
+| [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1758** |
+| **Total** | | **1787** |
 
 ## Le parcours de commande
 
@@ -2085,6 +2086,44 @@ Source : `screens/contact-dialog.copy.ts` · 25 textes.
 | `contactDialog.callSubtitle` | Choisissez qui vous voulez joindre. | Choose who you would like to reach. | Scegliete chi volete contattare. |  |
 | `contactDialog.callClose` | Fermer | Close | Chiudi |  |
 | `contactDialog.callWrite` | Écrire plutôt | Write instead | Scrivere invece |  |
+
+<a id="espace-marketingconsent"></a>
+
+### Les cases des e-mails marketing, « Mes e-mails » et le pied de page — `marketingConsent`
+
+Source : `screens/marketing-consent.copy.ts` · 29 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `marketingConsent.societyV1` | J’accepte de recevoir par e-mail les nouveautés et les offres de La Folie Coffee. Je peux me désinscrire à tout moment. | I agree to receive news and offers from La Folie Coffee by e-mail. I can unsubscribe at any time. | Accetto di ricevere via e-mail le novità e le offerte di La Folie Coffee. Posso annullare l’iscrizione in qualsiasi momento. |  |
+| `marketingConsent.partnersV1` | J’accepte de recevoir par e-mail les nouveautés et les offres des autres sociétés du groupe La Folie Douce, à qui mon adresse sera transmise. Je peux me désinscrire à tout moment. | I agree to receive news and offers by e-mail from the other companies of the La Folie Douce group, to which my address will be passed on. I can unsubscribe at any time. | Accetto di ricevere via e-mail le novità e le offerte delle altre società del gruppo La Folie Douce, alle quali sarà trasmesso il mio indirizzo. Posso annullare l’iscrizione in qualsiasi momento. |  |
+| `marketingConsent.newsletterV1` | En vous inscrivant, vous acceptez de recevoir par e-mail les nouveautés et les offres de La Folie Coffee. Vous pourrez vous désinscrire à tout moment, depuis chaque e-mail. | By signing up, you agree to receive news and offers from La Folie Coffee by e-mail. You can unsubscribe at any time, from any e-mail. | Iscrivendovi, accettate di ricevere via e-mail le novità e le offerte di La Folie Coffee. Potrete annullare l’iscrizione in qualsiasi momento, da ogni e-mail. |  |
+| `marketingConsent.privacyLink` | Ce que nous faisons de votre adresse | What we do with your address | Cosa facciamo del vostro indirizzo |  |
+| `marketingConsent.preferencesTitle` | Mes e-mails | My e-mails | Le mie e-mail |  |
+| `marketingConsent.preferencesSubtitle` | Les nouveautés et les offres que vous acceptez de recevoir. | The news and offers you agree to receive. | Le novità e le offerte che accettate di ricevere. |  |
+| `marketingConsent.preferencesLoading` | Lecture de vos préférences… | Reading your preferences… | Lettura delle vostre preferenze… |  |
+| `marketingConsent.preferencesFailed` | Vos préférences n’ont pas pu être lues. | Your preferences could not be read. | Non è stato possibile leggere le vostre preferenze. |  |
+| `marketingConsent.preferencesRetry` | Réessayer | Try again | Riprova |  |
+| `marketingConsent.preferencesWriteFailed` | Le changement n’a pas été enregistré. Réessayez dans un instant. | The change was not saved. Please try again in a moment. | La modifica non è stata registrata. Riprovate tra un istante. |  |
+| `marketingConsent.spaceLfc` | La Folie Coffee | La Folie Coffee | La Folie Coffee |  |
+| `marketingConsent.stateSubscribed` | Inscrit | Subscribed | Iscritto |  |
+| `marketingConsent.statePending` | En attente de confirmation — vérifiez votre boîte | Awaiting confirmation — check your inbox | In attesa di conferma — controllate la vostra casella |  |
+| `marketingConsent.stateNotSubscribed` | Non inscrit | Not subscribed | Non iscritto |  |
+| `marketingConsent.stateUnsubscribed` | Désinscrit | Unsubscribed | Iscrizione annullata |  |
+| `marketingConsent.subscribe` | S’inscrire | Subscribe | Iscriviti |  |
+| `marketingConsent.unsubscribe` | Se désinscrire | Unsubscribe | Annulla l’iscrizione |  |
+| `marketingConsent.resubscribe` | Se réinscrire | Subscribe again | Iscriviti di nuovo |  |
+| `marketingConsent.partnersTitle` | Les autres sociétés du groupe | The other companies of the group | Le altre società del gruppo |  |
+| `marketingConsent.partnersAccept` | Enregistrer | Save | Salva |  |
+| `marketingConsent.newsletterHead` | Recevoir nos nouvelles | Get our news | Ricevere le nostre novità |  |
+| `marketingConsent.newsletterEmail` | Votre adresse e-mail | Your e-mail address | Il vostro indirizzo e-mail |  |
+| `marketingConsent.newsletterSubmit` | S’inscrire | Subscribe | Iscriviti |  |
+| `marketingConsent.newsletterSending` | Envoi… | Sending… | Invio… |  |
+| `marketingConsent.newsletterSent` | Si cette adresse peut recevoir nos nouvelles, un e-mail de confirmation vient de partir. | If this address can receive our news, a confirmation e-mail has just been sent. | Se questo indirizzo può ricevere le nostre novità, è appena partita un’e-mail di conferma. |  |
+| `marketingConsent.newsletterTooMany` | Trop de tentatives, réessayez dans un moment. | Too many attempts, please try again in a moment. | Troppi tentativi, riprovate tra un momento. |  |
+| `marketingConsent.newsletterInvalid` | Cette adresse e-mail ne semble pas valide. | This e-mail address does not look valid. | Questo indirizzo e-mail non sembra valido. |  |
+| `marketingConsent.newsletterFailed` | L’inscription n’est pas partie. Réessayez dans un instant. | The sign-up did not go through. Please try again in a moment. | L’iscrizione non è partita. Riprovate tra un istante. |  |
+| `marketingConsent.newsletterTrap` | Ne pas remplir ce champ | Do not fill in this field | Non compilare questo campo |  |
 
 <a id="espace-legaldocument"></a>
 

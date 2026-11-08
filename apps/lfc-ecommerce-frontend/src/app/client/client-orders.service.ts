@@ -10,6 +10,7 @@ import {
   type PlaceShopOrderPayload,
   type PlacedOrderResponse,
   type ShopQuoteView,
+  type SocietyConsentAnswer,
 } from '@lfd/contracts';
 // Par le sous-chemin sans zod : ce service est chargé au démarrage.
 import {
@@ -26,6 +27,7 @@ import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientCart } from './cart/client-cart.service';
 import { SalesTermsConsent } from './cart/sales-terms-consent.service';
+import { CheckoutConsent } from './marketing/checkout-consent.service';
 import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './cart/voucher-choice.service';
 import { ClientLocale, type LocaleCode } from './client-locale.service';
 import { ClientWorkspace } from './client-workspace.service';
@@ -307,6 +309,7 @@ export class ClientOrders {
   private readonly voucher = inject(VoucherChoice);
   /** La case des CGV du panier : sa version part avec la commande, son refus la renouvelle. */
   private readonly salesTerms = inject(SalesTermsConsent);
+  private readonly checkoutConsent = inject(CheckoutConsent);
   private readonly locale = inject(ClientLocale);
   private readonly admission = inject(OrderAdmissionStore);
   private readonly points = inject(ServicePoints);
@@ -517,6 +520,7 @@ export class ClientOrders {
     const payload: PlaceShopOrderPayload = {
       ...guestContentOf(service, lines, this.attemptKey(GUEST_WORKSPACE), this.locale.current()),
       salesTerms: this.salesTerms.accepted(),
+      ...this.marketingConsent(),
       expectedTotalCents: seen.totalCents,
       buyer,
     };
@@ -535,6 +539,15 @@ export class ClientOrders {
    * trompeurs : un en-tête d'espace sur une commande qui n'appartient à aucune
    * société ferait croire à une appartenance que rien n'établit.
    */
+  /**
+   * La réponse à la case des offres, en champ du corps — omise si la case n'a
+   * pas paru. Elle n'entre pas dans l'empreinte d'idempotence (règle 21).
+   */
+  private marketingConsent(): { marketingConsent?: SocietyConsentAnswer } {
+    const answer = this.checkoutConsent.answer();
+    return answer === undefined ? {} : { marketingConsent: answer };
+  }
+
   private async sendAsGuest(
     payload: PlaceShopOrderPayload,
     seen: ShopQuoteView,
@@ -707,6 +720,8 @@ export class ClientOrders {
    * en attente du paiement de cette commande (cf. `CART_AWAITING_KEY`).
    */
   private settleCart(workspace: string, orderId: string, due: boolean): void {
+    // La commande existe : la case des offres a été posée, elle revient vide.
+    this.checkoutConsent.reset();
     if (due) {
       writeLocal(cartAwaitingKeyOf(workspace), orderId);
       return;
@@ -752,6 +767,8 @@ export class ClientOrders {
       ),
       // La version des CGV cochée au panier, `null` s'il n'y avait rien à cocher.
       salesTerms: this.salesTerms.accepted(),
+      // La case des offres, seulement si elle a paru (lot C2, règle 17).
+      ...this.marketingConsent(),
       // Omis sans bon, jamais `null` : le contrat le déclare facultatif.
       ...(voucherId === null ? {} : { voucherId }),
       // Le TTC du devis affiché : la passation refuse un autre total (T3).

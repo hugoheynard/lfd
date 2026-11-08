@@ -62,6 +62,8 @@ describe('AccueilPage', () => {
     firstName: 'Pierre',
     email: 'pierre@brasserie-marchand.fr',
     phone: '06 12 44 09 87',
+    // La case des offres, laissée vide : une réponse, pas un refus (lot C2).
+    marketingConsent: { accepted: false, textVersion: 'society.v1', locale: 'fr' },
   };
 
   const fillSignup = (): void => {

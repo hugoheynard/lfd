@@ -11,6 +11,9 @@ import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold
 
 import type { ProRegistration } from '../../../auth/auth.facade';
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
+import { ClientLocale } from '../../../client/client-locale.service';
+import { societyAnswer } from '../../../client/marketing/consent-answer';
+import { MarketingConsentBox } from '../../../client/marketing/marketing-consent-box/marketing-consent-box';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { ClientFeatureAccess } from '../../../client/feature-access/client-feature-access.service';
 import { proAccountCopy } from '../../../client/copy/screens/pro-account.copy';
@@ -37,7 +40,13 @@ import { screenCopy } from '../../../client/copy/shop-copy-composer';
 @Component({
   selector: 'app-pro-step',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallbackBlock, FoldButtonComponent, FoldCardComponent, FoldInputComponent],
+  imports: [
+    CallbackBlock,
+    FoldButtonComponent,
+    FoldCardComponent,
+    FoldInputComponent,
+    MarketingConsentBox,
+  ],
   templateUrl: './pro-step.html',
   styleUrl: './pro-step.scss',
 })
@@ -79,6 +88,10 @@ export class ProStep {
   protected readonly phone = signal('');
   protected readonly enseigne = signal('');
 
+  /** La case des offres de la société — non cochée d'entrée (lot C2). */
+  protected readonly marketingAccepted = signal(false);
+  private readonly locale = inject(ClientLocale);
+
   protected readonly complete = computed(() =>
     [this.firstName(), this.lastName(), this.email(), this.phone(), this.enseigne()].every(
       (value) => value.trim() !== '',
@@ -95,6 +108,7 @@ export class ProStep {
       email: this.email().trim(),
       phone: this.phone().trim(),
       enseigne: this.enseigne().trim(),
+      marketingConsent: societyAnswer(this.marketingAccepted(), this.locale.current()),
     });
   }
 }
