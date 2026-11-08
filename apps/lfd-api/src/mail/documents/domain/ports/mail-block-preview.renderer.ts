@@ -13,6 +13,8 @@ export interface MailBlockPreviewRendering {
   readonly header: string;
   readonly footer: string;
   readonly blocks: readonly MailBlockPreviewFragment[];
+  /** Un fragment par bloc libre d'une cellule de colonnes. */
+  readonly cellBlocks: readonly MailBlockPreviewFragment[];
 }
 
 /**

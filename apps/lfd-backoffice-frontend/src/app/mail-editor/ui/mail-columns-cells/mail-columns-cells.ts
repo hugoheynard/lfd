@@ -6,17 +6,17 @@ import {
   CdkDragPreview,
   CdkDropList,
 } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { ColumnsBlock, FreeBlock, MailLocale, MailValueResource } from '@lfd/mail-blocks';
 import {
   FoldButtonComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldIconComponent,
+  FoldLoadingStateComponent,
 } from 'fold-ng';
 
 import { type BlockContainer, cellListId, cellPercent } from '../../rules/mail-block-moves';
-import { cellFragments } from '../../rules/mail-cell-fragments';
 import { CALLOUT_TONE_LABELS, FREE_BLOCK_LABELS } from '../../rules/mail-document-edits';
 import { freeBlockFallback } from '../../rules/mail-fragments';
 import {
@@ -40,7 +40,7 @@ export interface CellBlockStep {
  * autres cellules, au fil et à la bibliothèque : on y dépose une carte, on y
  * fait entrer un bloc du fil, on le fait passer d'une colonne à l'autre ou
  * ressortir. Les blocs d'une cellule ont leur poignée ; leur rendu est celui
- * du serveur, retrouvé dans le fragment de la mise en page (`cellFragments`).
+ * du serveur, un fragment par bloc (`cellBlocks` de `block-previews`).
  *
  * Elle n'édite rien : un dépôt est rendu tel quel au canevas, qui fait LA
  * seule édition du geste. Le prédicat d'entrée vient du canevas aussi — une
@@ -60,6 +60,7 @@ export interface CellBlockStep {
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldIconComponent,
+    FoldLoadingStateComponent,
     MailBlockFragment,
     MailInsertBar,
   ],
@@ -68,8 +69,8 @@ export interface CellBlockStep {
 })
 export class MailColumnsCells {
   readonly block = input.required<ColumnsBlock>();
-  /** Le fragment de la mise en page entière, tel que le serveur l'a rendu. */
-  readonly html = input.required<string>();
+  /** Les fragments du serveur par bloc (`MailBlock.id`) — ceux des cellules compris. */
+  readonly fragments = input.required<ReadonlyMap<string, string>>();
   /** La langue rendue : un bloc vide garde sa zone d'écriture dans celle-ci. */
   readonly locale = input.required<MailLocale>();
   /** Le préfixe des listes du canevas (`cellListId`). */
@@ -97,8 +98,6 @@ export class MailColumnsCells {
   readonly freeBlockInput = output<FreeBlockInput>();
   readonly valueRefused = output<string>();
 
-  private readonly fragments = computed(() => cellFragments(this.html(), this.block()));
-
   protected idOf(cell: number): string {
     return cellListId(this.listPrefix(), this.block().id, cell);
   }
@@ -111,7 +110,7 @@ export class MailColumnsCells {
     return cellPercent(this.block().widths, cell);
   }
 
-  /** Le rendu d'un bloc ; sa zone d'écriture s'il est vide ; `null` si on ne l'a pas retrouvé. */
+  /** Le rendu d'un bloc ; sa zone d'écriture s'il est vide ; `null` tant qu'aucun rendu ne l'a vu. */
   protected fragmentOf(block: FreeBlock): string | null {
     const html = this.fragments().get(block.id);
     if (html === undefined) {

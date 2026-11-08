@@ -34,6 +34,14 @@ export interface MailDocumentParts {
   /** Le pied commun de la charte publiée, puis le recours sous son filet, dans leur table ; ou vide. */
   readonly footer: string;
   readonly blocks: readonly MailDocumentBlockFragment[];
+  /**
+   * Un fragment par bloc libre rangé dans une cellule de colonnes, dans
+   * l'ordre du document (mise en page, puis cellule, puis rang). Le fragment
+   * de la mise en page entière reste dans `blocks` ; celui-ci est le même
+   * rendu (`renderFreeBlock`, comme `renderColumns` le pose dans sa cellule),
+   * isolé pour que le canevas en fasse un élément qu'on glisse.
+   */
+  readonly cellBlocks: readonly MailDocumentBlockFragment[];
 }
 
 /** Le séparateur de `joinParts` : un bouton et son lien se suivent comme dans l'e-mail. */
@@ -114,5 +122,13 @@ export function renderMailDocumentParts(
         ? fullWidthHtml(block, placements.get(block.id), options.locale, context.radius)
         : blockHtml(block, fragments, options.declaredSections, options.locale, charterOf(input)),
     })),
+    cellBlocks: document.blocks.flatMap((block) =>
+      block.kind === "columns"
+        ? block.cells.flat().map((inner) => ({
+            blockId: inner.id,
+            html: renderFreeBlock(inner, options.locale, "canvas", charterOf(input)),
+          }))
+        : [],
+    ),
   };
 }

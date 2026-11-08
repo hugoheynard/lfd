@@ -124,6 +124,10 @@ export class SpecimenMailBlockPreviewRenderer extends MailBlockPreviewRenderer {
       header: shown(parts.header),
       footer: shown(parts.footer),
       blocks: parts.blocks.map((block) => ({ blockId: block.blockId, html: shown(block.html) })),
+      cellBlocks: parts.cellBlocks.map((block) => ({
+        blockId: block.blockId,
+        html: shown(block.html),
+      })),
     };
   }
 }

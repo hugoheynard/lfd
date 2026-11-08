@@ -24,6 +24,7 @@ function rendered(html: string): MailDocumentBlockPreviewView {
     header: '',
     footer: '',
     blocks: [{ blockId: 'b', html }],
+    cellBlocks: [{ blockId: 'dans-colonne', html: '<p>cellule</p>' }],
   };
 }
 
@@ -52,6 +53,7 @@ describe('MailBlockPreviewsStore — le rendu du canevas', () => {
     expect(blockPreviews).toHaveBeenCalledTimes(1);
     expect(blockPreviews).toHaveBeenCalledWith(TEMPLATE, { ...PAYLOAD, locale: 'en' });
     expect(store.fragments().get('b')).toBe('<p>a</p>');
+    expect(store.fragments().get('dans-colonne')).toBe('<p>cellule</p>');
   });
 
   it('jette une réponse plus ancienne arrivée après la plus récente', async () => {

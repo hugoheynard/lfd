@@ -97,6 +97,7 @@ import {
   valueRefusal,
 } from '../../rules/mail-resources';
 import { MailBlockPreviewsStore } from '../../state/mail-block-previews-store';
+import { type PointerPoint, pointerOverColumns } from '../../rules/mail-columns-drop-zone';
 import { MailPhrasesStore } from '../../state/mail-phrases-store';
 import {
   type FreeBlockInput,
@@ -174,7 +175,10 @@ interface Removal {
   ],
   templateUrl: './mail-canvas.html',
   styleUrl: './mail-canvas.scss',
-  host: { '(document:selectionchange)': 'rememberCaret()' },
+  host: {
+    '(document:selectionchange)': 'rememberCaret()',
+    '(document:pointermove)': 'trackPointer($event)',
+  },
 })
 export class MailCanvas {
   readonly document = input.required<MailDocument>();
@@ -225,6 +229,22 @@ export class MailCanvas {
 
   /** Un glisser qu'une cellule accepte est en cours : les cellules vides s'ouvrent. */
   protected readonly cellDragActive = signal(false);
+  /** Un glisser de bloc ou de carte est en cours : les poignées de colonnes laissent passer. */
+  protected readonly dragInProgress = signal(false);
+  /**
+   * Le pointeur pendant un glisser — `pointermove` part avant le `mousemove`
+   * que CDK écoute, il est donc à jour quand CDK interroge les prédicats du
+   * fil. `null` au départ d'un glisser.
+   */
+  private pointer: PointerPoint | null = null;
+
+  /**
+   * Le fil ne reçoit pas, et ne trie pas, tant que le pointeur vise une mise
+   * en page de colonnes : c'est la cellule sous lui qui reçoit
+   * (`pointerOverColumns`, symptôme du 2026-11-08).
+   */
+  protected readonly flowAccepts = (): boolean => !this.overColumns();
+  protected readonly flowMaySort = (): boolean => !this.overColumns();
   /** La cellule vide choisie : la bibliothèque y ajoute au clic. */
   protected readonly selectedCell = signal<{
     readonly columnsId: string;
@@ -572,11 +592,44 @@ export class MailCanvas {
 
   /** Un bloc du fil, tiré : les cellules vides ne s'ouvrent que s'il peut y entrer. */
   protected flowDragStarted(block: MailBlock): void {
+    this.dragging(true);
     this.cellDragActive.set(fitsInCell(block));
   }
 
   protected libraryDragging(key: LibraryItemKey | null): void {
+    this.dragging(key !== null);
     this.cellDragActive.set(key !== null && key !== 'columns-2' && key !== 'columns-3');
+  }
+
+  /** Un bloc de cellule, tiré puis lâché. */
+  protected cellDragging(active: boolean): void {
+    this.dragging(active);
+    this.cellDragActive.set(active);
+  }
+
+  protected flowDragEnded(): void {
+    this.dragging(false);
+    this.cellDragActive.set(false);
+  }
+
+  protected trackPointer(event: PointerEvent): void {
+    if (this.dragInProgress()) {
+      this.pointer = { x: event.clientX, y: event.clientY };
+    }
+  }
+
+  // Appelé AVANT que CDK interroge les listes au départ du glisser (`started`
+  // précède `start()`) : sans pointeur connu, le fil reste une destination.
+  private dragging(active: boolean): void {
+    this.pointer = null;
+    this.dragInProgress.set(active);
+  }
+
+  private overColumns(): boolean {
+    const layouts = [
+      ...this.host.nativeElement.querySelectorAll<HTMLElement>('[data-columns-layout]'),
+    ].map((element) => element.getBoundingClientRect());
+    return pointerOverColumns(this.pointer, layouts);
   }
 
   /** Alt + flèche sur un bloc de colonne : un cran dans sa cellule. */

@@ -62,13 +62,19 @@ interface GuideBoundary {
   imports: [FoldBadgeComponent],
   templateUrl: './mail-column-guides.html',
   styleUrl: './mail-column-guides.scss',
-  host: { '[class.emphasized]': 'emphasized()' },
+  host: { '[class.emphasized]': 'emphasized()', '[class.drag-through]': 'dragThrough()' },
 })
 export class MailColumnGuides {
   readonly widths = input.required<readonly ColumnWidthStep[]>();
   readonly canWrite = input(false);
   /** Le bloc est sélectionné : les repères se marquent. */
   readonly emphasized = input(false);
+  /**
+   * Un bloc est glissé dans le canevas : les poignées laissent passer le
+   * pointeur, sans quoi CDK verrait la poignée (hors de toute cellule) et
+   * ferait tomber le dépôt dans le fil.
+   */
+  readonly dragThrough = input(false);
   readonly widthsChange = output<readonly ColumnWidthStep[]>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

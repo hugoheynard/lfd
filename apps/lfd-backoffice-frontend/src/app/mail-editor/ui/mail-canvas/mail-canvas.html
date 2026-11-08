@@ -121,6 +121,8 @@
             [id]="blockListId"
             [cdkDropListData]="flow"
             [cdkDropListConnectedTo]="cellLists()"
+            [cdkDropListEnterPredicate]="flowAccepts"
+            [cdkDropListSortPredicate]="flowMaySort"
             aria-label="Blocs de l’e-mail, dans l’ordre — Alt + flèche pour déplacer"
             (cdkDropListDropped)="dropped($event)"
           >
@@ -133,13 +135,14 @@
                 class="block"
                 [cdkDragData]="{ blockId: block.id }"
                 (cdkDragStarted)="flowDragStarted(block)"
-                (cdkDragEnded)="cellDragActive.set(false)"
+                (cdkDragEnded)="flowDragEnded()"
                 tabindex="0"
                 [class.selected]="isSelected(block)"
                 [class.lit]="isLit(block)"
                 [class.absent]="absence !== null"
                 [class.full-width]="isFullWidth(block)"
                 [attr.data-block]="block.id"
+                [attr.data-columns-layout]="block.kind === 'columns' ? '' : null"
                 [attr.aria-label]="nameOf(block)"
                 [attr.aria-current]="isSelected(block) ? 'true' : null"
                 aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
@@ -208,7 +211,7 @@
                   <div class="columns-stage" data-columns-stage>
                     <app-mail-columns-cells
                       [block]="block"
-                      [html]="html"
+                      [fragments]="previews.fragments()"
                       [locale]="renderedLocale()"
                       [listPrefix]="blockListId"
                       [connectedTo]="dropTargets()"
@@ -226,7 +229,7 @@
                       (innerSelected)="selectInner($event)"
                       (cellSelected)="cellChosen(block.id, $event)"
                       (stepped)="cellStepped($event)"
-                      (dragging)="cellDragActive.set($event)"
+                      (dragging)="cellDragging($event)"
                       (phraseInput)="onPhraseInput($event)"
                       (valueRefused)="onValueRefused($event)"
                       (freeBlockInput)="onFreeBlockInput($event)"
@@ -235,6 +238,7 @@
                       [widths]="block.widths"
                       [canWrite]="canWrite()"
                       [emphasized]="isSelected(block)"
+                      [dragThrough]="dragInProgress()"
                       (widthsChange)="widthsDragged(block.id, $event)"
                     />
                   </div>

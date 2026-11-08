@@ -27,10 +27,15 @@ export class MailBlockPreviewsStore {
   /** Le dernier refus du serveur, tel qu'il l'a dit ; `null` après un rendu réussi. */
   readonly error = signal<string | null>(null);
 
-  /** Les fragments par bloc (`MailBlock.id`). */
-  readonly fragments = computed(
-    () => new Map((this.view()?.blocks ?? []).map((block) => [block.blockId, block.html])),
-  );
+  /**
+   * Les fragments par bloc (`MailBlock.id`) : ceux du fil, et ceux des blocs
+   * rangés dans une cellule de colonnes, que le serveur rend chacun à part.
+   */
+  readonly fragments = computed(() => {
+    const view = this.view();
+    const all = [...(view?.blocks ?? []), ...(view?.cellBlocks ?? [])];
+    return new Map(all.map((block) => [block.blockId, block.html]));
+  });
 
   private timer: ReturnType<typeof setTimeout> | undefined;
   private sequence = 0;

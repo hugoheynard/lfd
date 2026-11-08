@@ -503,6 +503,29 @@ describe("l'aperçu par blocs du canevas (S5f)", () => {
     );
   }
 
+  it("rend aussi un fragment par bloc rangé dans une colonne, la mise en page restant servie", async () => {
+    const view = await open(ORDER_PLACED);
+    const document: MailDocument = {
+      ...view.document,
+      blocks: [
+        {
+          id: "colonnes",
+          kind: "columns",
+          widths: [50, 50],
+          cells: [[{ id: "dans-colonne", kind: "paragraph", text: { fr: "Dedans" } }], []],
+        },
+        ...view.document.blocks,
+      ],
+    };
+    const rendered = await blocks(ORDER_PLACED, document);
+    expect(rendered.blocks[0]?.blockId).toBe("colonnes");
+    expect(rendered.cellBlocks.map((block) => block.blockId)).toEqual(["dans-colonne"]);
+    expect(rendered.cellBlocks[0]?.html).toContain(
+      '<span data-free-block="dans-colonne" data-locale="fr">Dedans</span>',
+    );
+    expect(rendered.blocks[0]?.html).toContain(rendered.cellBlocks[0]?.html ?? "absent");
+  });
+
   it("rend un fragment marqué par bloc ; chaque phrase marquée est servie par GET …/phrases", async () => {
     const view = await open(ORDER_PLACED);
     const document = arranged(view.document);

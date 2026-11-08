@@ -48,6 +48,11 @@
   anglais et hors du suivi du bloc `mail` (constaté le 2026-11-07 sur un
   rebond).
 
+- **Découper le canevas de l'éditeur** : `mail-canvas.ts` et son spec
+  dépassent 900 lignes chacun (relevé le 2026-11-08, pour une règle à 300) —
+  le glisser, les colonnes et la pleine largeur s'y sont ajoutés. À couper
+  par geste (dépôt, réglages, sélection) avant le prochain ajout.
+
 ## Architecture, à mesurer avant de décider
 
 - **Les demandes suivies entre blocs** : toute demande d'un bloc à un autre

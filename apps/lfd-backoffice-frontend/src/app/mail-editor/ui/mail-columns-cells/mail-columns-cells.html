@@ -50,7 +50,9 @@
           <fold-card *cdkDragPreview padding="sm" radius="md" class="drag-preview">
             <fold-element-title variant="title" icon="grip" [title]="titleOf(inner)" />
           </fold-card>
-          @if (html !== null && html !== '') {
+          @if (html === null) {
+            <fold-loading size="sm" message="Rendu du bloc…" data-cell-loading />
+          } @else if (html !== '') {
             <app-mail-block-fragment
               [zoneLabel]="titleOf(inner) + ' · colonne ' + (column + 1)"
               [html]="html"

@@ -97,3 +97,45 @@ describe("le document découpé en blocs (S5f)", () => {
     expect(renderLayout(INPUT)).not.toContain("data-free-block");
   });
 });
+
+describe("les blocs rangés dans des colonnes (canevas)", () => {
+  const COLUMNS: MailBlock = {
+    id: "cols-1",
+    kind: "columns",
+    widths: [50, 50],
+    cells: [
+      [
+        { id: "in-text", kind: "paragraph", text: { fr: "Gauche", en: "Left" } },
+        { id: "in-rule", kind: "divider" },
+      ],
+      [{ id: "in-image", kind: "image", src: "https://lfc.test/i.png", alt: { fr: "Pain" } }],
+    ],
+  };
+  const document: MailDocument = { template: "customer.test", blocks: [model("title"), COLUMNS] };
+  const parts = renderMailDocumentParts(INPUT, document, OPTIONS);
+
+  it("rend un fragment par bloc de cellule, identifié par l'id du bloc, dans l'ordre", () => {
+    expect(parts.cellBlocks.map((block) => block.blockId)).toEqual([
+      "in-text",
+      "in-rule",
+      "in-image",
+    ]);
+  });
+
+  it("chaque fragment de cellule est la portion même de la mise en page", () => {
+    const layout = parts.blocks.find((block) => block.blockId === "cols-1")?.html ?? "";
+    for (const block of parts.cellBlocks) {
+      expect(block.html).not.toBe("");
+      expect(layout).toContain(block.html);
+    }
+    expect(parts.cellBlocks[0]?.html).toContain('data-free-block="in-text"');
+  });
+
+  it("la mise en page entière garde son fragment", () => {
+    expect(parts.blocks.map((block) => block.blockId)).toEqual(["model:title", "cols-1"]);
+  });
+
+  it("un document sans colonnes n'a aucun fragment de cellule", () => {
+    expect(renderMailDocumentParts(INPUT, DOCUMENT, OPTIONS).cellBlocks).toEqual([]);
+  });
+});

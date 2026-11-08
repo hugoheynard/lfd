@@ -89,3 +89,8 @@
     transition: none;
   }
 }
+
+// Pendant le glisser d'un bloc, la poignée ne vole pas le dépôt de la cellule.
+:host(.drag-through) .grip {
+  pointer-events: none;
+}

@@ -152,6 +152,7 @@ export class RecordingBlockRenderer extends MailBlockPreviewRenderer {
       header: "",
       footer: "",
       blocks: document.blocks.map((block) => ({ blockId: block.id, html: "<p>bloc</p>" })),
+      cellBlocks: [],
     });
   }
 }

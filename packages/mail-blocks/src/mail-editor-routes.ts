@@ -363,6 +363,13 @@ export interface MailDocumentBlockPreviewView {
   readonly footer: string;
   /** Un fragment par bloc du document, dans son ordre. */
   readonly blocks: readonly MailBlockPreviewFragment[];
+  /**
+   * Un fragment par bloc libre rangé dans une cellule de colonnes (son
+   * `MailBlock.id`), liste plate : le canevas connaît déjà la place de chaque
+   * bloc par le document, il n'a besoin que de son rendu. La mise en page
+   * entière garde son fragment dans `blocks`.
+   */
+  readonly cellBlocks: readonly MailBlockPreviewFragment[];
   /** § 24 : la situation rendue ; `null` (ou absent) : le cas tel quel. */
   readonly situation?: MailPreviewSituation | null | undefined;
 }

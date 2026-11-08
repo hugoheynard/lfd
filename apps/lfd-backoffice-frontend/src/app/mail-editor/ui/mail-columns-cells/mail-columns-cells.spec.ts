@@ -14,13 +14,16 @@ const BLOCK: ColumnsBlock = {
     [],
   ],
 };
-const HTML =
-  '<table><tr><td><h2><span data-free-block="h">Titre</span></h2></td><td><hr data-rule /></td><td></td></tr></table>';
+// Les fragments que `block-previews` rend pour chaque bloc de cellule (`cellBlocks`).
+const FRAGMENTS: ReadonlyMap<string, string> = new Map([
+  ['h', '<h2><span data-free-block="h">Titre</span></h2>'],
+  ['d', '<hr data-rule />'],
+]);
 
-function render(acceptsDrop = false) {
+function render(acceptsDrop = false, fragments: ReadonlyMap<string, string> = FRAGMENTS) {
   const fixture = TestBed.createComponent(MailColumnsCells);
   fixture.componentRef.setInput('block', BLOCK);
-  fixture.componentRef.setInput('html', HTML);
+  fixture.componentRef.setInput('fragments', fragments);
   fixture.componentRef.setInput('locale', 'fr');
   fixture.componentRef.setInput('listPrefix', 'p');
   fixture.componentRef.setInput('canWrite', true);
@@ -42,6 +45,27 @@ describe('MailColumnsCells', () => {
     expect(cells.map((cell) => cell.style.flexBasis)).toEqual(['33%', '33%', '34%']);
     expect(element.querySelector('[data-cell-block="h"]')?.textContent).toContain('Titre');
     expect(element.querySelector('[data-cell-block="d"] hr')).not.toBeNull();
+  });
+
+  it('chaque bloc montre le fragment que le serveur a rendu pour lui, sans découper la mise en page', () => {
+    const { element } = render(
+      false,
+      new Map([
+        ['h', '<h2 data-server>Rendu serveur</h2>'],
+        ['d', '<hr data-server-rule />'],
+      ]),
+    );
+    expect(element.querySelector('[data-cell-block="h"] [data-server]')?.textContent).toBe(
+      'Rendu serveur',
+    );
+    expect(element.querySelector('[data-cell-block="d"] [data-server-rule]')).not.toBeNull();
+  });
+
+  it('un bloc dont le rendu n’est pas encore arrivé montre le chargement, pas son nom', () => {
+    const { element } = render(false, new Map([['h', '<h2>Titre</h2>']]));
+    const pending = element.querySelector('[data-cell-block="d"]')!;
+    expect(pending.querySelector('[data-cell-loading]')).not.toBeNull();
+    expect(pending.querySelector('[data-cell-name]')).toBeNull();
   });
 
   it('hors glisser, une colonne vide se choisit ; pendant, elle s’ouvre en zone de dépôt', () => {

@@ -15,6 +15,9 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  // La place de dépôt grandit vers le bas, jamais en largeur : la frontière
+  // entre colonnes ne bouge pas sous le pointeur pendant un glisser.
+  overflow-x: clip;
 }
 
 .cell:not(:last-child) {

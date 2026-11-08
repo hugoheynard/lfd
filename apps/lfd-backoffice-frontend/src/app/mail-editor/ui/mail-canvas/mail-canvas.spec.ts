@@ -83,7 +83,10 @@ function phrase(path: string, variables: readonly string[] = []): MailEditorPhra
   };
 }
 
-function rendered(blocks: Record<string, string>): MailDocumentBlockPreviewView {
+function rendered(
+  blocks: Record<string, string>,
+  cells: Record<string, string> = {},
+): MailDocumentBlockPreviewView {
   return {
     template: TEMPLATE,
     locale: 'en',
@@ -91,6 +94,7 @@ function rendered(blocks: Record<string, string>): MailDocumentBlockPreviewView 
     header: '<table role="presentation"><tr><td>LFC</td></tr></table>',
     footer: '',
     blocks: Object.entries(blocks).map(([blockId, html]) => ({ blockId, html })),
+    cellBlocks: Object.entries(cells).map(([blockId, html]) => ({ blockId, html })),
   };
 }
 
@@ -100,7 +104,11 @@ const FRAGMENTS = {
   'model:footer': '<p>Merci</p>',
 };
 
-function render(document: MailDocument = DOCUMENT, fragments: Record<string, string> = FRAGMENTS) {
+function render(
+  document: MailDocument = DOCUMENT,
+  fragments: Record<string, string> = FRAGMENTS,
+  cells: Record<string, string> = {},
+) {
   TestBed.configureTestingModule({
     providers: [
       MailPhrasesStore,
@@ -112,7 +120,7 @@ function render(document: MailDocument = DOCUMENT, fragments: Record<string, str
   const phrases = TestBed.inject(MailPhrasesStore);
   phrases.use(TEMPLATE, [phrase('subject', ['ref']), phrase('title.ready')]);
   const previews = TestBed.inject(MailBlockPreviewsStore);
-  previews.view.set(rendered(fragments));
+  previews.view.set(rendered(fragments, cells));
   const fixture = TestBed.createComponent(MailCanvas);
   fixture.componentRef.setInput('document', document);
   fixture.componentRef.setInput('declaration', DECLARATION);
@@ -548,6 +556,98 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     element.remove();
   });
 
+  it('les colonnes montrent le fragment que le serveur rend pour chaque bloc de cellule', () => {
+    const columns: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        {
+          id: 'cols',
+          kind: 'columns',
+          widths: [50, 50],
+          cells: [
+            [{ id: 'gauche', kind: 'paragraph', text: { fr: 'G' } }],
+            [{ id: 'trait', kind: 'divider' }],
+          ],
+        },
+      ],
+    };
+    // La table de la mise en page ne porte PAS ces rendus : seuls `cellBlocks` les donnent.
+    const { element } = render(
+      columns,
+      { cols: '<table><tr><td></td><td></td></tr></table>' },
+      { gauche: '<p data-from-server>Gauche serveur</p>', trait: '<hr data-from-server-rule />' },
+    );
+    expect(
+      element.querySelector('[data-cell-block="gauche"] [data-from-server]')?.textContent,
+    ).toBe('Gauche serveur');
+    expect(
+      element.querySelector('[data-cell-block="trait"] [data-from-server-rule]'),
+    ).not.toBeNull();
+    element.remove();
+  });
+
+  describe('viser une colonne (symptôme du 2026-11-08 : « je n’arrive pas à dropper dans la zone cible »)', () => {
+    const LAYOUT: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        { id: 'avant', kind: 'paragraph', text: { fr: 'Avant' } },
+        {
+          id: 'cols',
+          kind: 'columns',
+          widths: [50, 50],
+          cells: [[{ id: 'g', kind: 'divider' }], []],
+        },
+      ],
+    };
+
+    function setup() {
+      const rendered = render(
+        LAYOUT,
+        { avant: '<p>Avant</p>', cols: '<table></table>' },
+        { g: '<hr />' },
+      );
+      const layout = rendered.element.querySelector<HTMLElement>('li[data-block="cols"]')!;
+      Object.defineProperty(layout, 'getBoundingClientRect', {
+        value: () => new DOMRect(100, 200, 400, 120),
+      });
+      const flow = rendered.fixture.debugElement
+        .query(By.css('ol[cdkDropList]'))
+        .injector.get(CdkDropList);
+      const item = rendered.fixture.debugElement
+        .query(By.css('li[data-block="avant"]'))
+        .injector.get(CdkDrag);
+      rendered.fixture.debugElement
+        .query(By.css('li[data-block="avant"]'))
+        .triggerEventHandler('cdkDragStarted', {});
+      rendered.fixture.detectChanges();
+      const move = (x: number, y: number) =>
+        document.dispatchEvent(new MouseEvent('pointermove', { clientX: x, clientY: y }));
+      return { ...rendered, flow, item, move };
+    }
+
+    it('au-dessus de la mise en page, le fil ne trie pas et ne reçoit pas : la cellule visée ne s’enfuit plus', () => {
+      const { element, flow, item, move } = setup();
+      move(150, 250);
+      expect(flow.sortPredicate(1, item, flow)).toBe(false);
+      expect(flow.enterPredicate(item, flow)).toBe(false);
+      element.remove();
+    });
+
+    it('hors de sa boîte, le fil reprend son tri pour poser avant ou après', () => {
+      const { element, flow, item, move } = setup();
+      move(150, 150);
+      expect(flow.sortPredicate(0, item, flow)).toBe(true);
+      expect(flow.enterPredicate(item, flow)).toBe(true);
+      element.remove();
+    });
+
+    it('pendant un glisser, la poignée de colonnes laisse passer le pointeur', () => {
+      const { element } = setup();
+      expect(element.querySelector('app-mail-column-guides')?.classList).toContain('drag-through');
+      element.remove();
+    });
+  });
+
   it('une poignée de colonnes change les deux largeurs voisines en une seule édition', () => {
     const columns: MailDocument = {
       template: TEMPLATE,
@@ -669,9 +769,13 @@ describe('MailCanvas — l’e-mail lui-même', () => {
       wide: '<table><tr><td><img src="https://m.fr/a.webp" alt="" /></td></tr></table>',
       other: '<table><tr><td></td><td></td></tr></table>',
     };
+    // Le rendu du bloc de cellule, tel que `block-previews` le sert (`cellBlocks`).
+    const CELL_FRAGMENTS = {
+      h: '<h2><span data-free-block="h" data-locale="en">Titre</span></h2>',
+    };
 
     function setup() {
-      const rendered = render(COLUMNS, COLUMN_FRAGMENTS);
+      const rendered = render(COLUMNS, COLUMN_FRAGMENTS, CELL_FRAGMENTS);
       const list = (selector: string) =>
         rendered.fixture.debugElement
           .query(By.css(selector))
