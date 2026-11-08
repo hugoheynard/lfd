@@ -22,7 +22,8 @@ import { MailDocumentPreviewRenderer } from "../domain/ports/mail-document-previ
  * marque que le mailer, les données du cas demandé, et le document posé dans le
  * périmètre de mise en page exactement comme l'envoi le pose
  * (`MailLayoutScope.documents`), sous la charte publiée de son espace
- * (`withMailCharter`, § 25, C1). Sans repère : c'est ce qui partirait.
+ * (`withMailCharter`, § 25, C1). Sans repère : c'est ce qui partirait — sauf
+ * l'image cadrée d'un brouillon, recadrée à l'affichage faute de copie.
  */
 @Injectable()
 export class SpecimenMailDocumentPreviewRenderer extends MailDocumentPreviewRenderer {
@@ -63,7 +64,13 @@ export class SpecimenMailDocumentPreviewRenderer extends MailDocumentPreviewRend
         template,
         data,
         { [locale]: texts },
-        { orders: {}, markers: false, documents: { [template]: { document, locale } } },
+        {
+          orders: {},
+          markers: false,
+          // Un brouillon n'a pas encore de copie recadrée : l'aperçu la recadre
+          // à l'affichage. L'envoi ne pose jamais cette option.
+          documents: { [template]: { document, locale, framePreviewImages: true } },
+        },
       ),
     );
     return {

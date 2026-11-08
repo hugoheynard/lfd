@@ -48,9 +48,9 @@ function blockHtml(
         .filter((html) => html !== "")
         .join(SECTION_SEPARATOR);
     case "columns":
-      return renderColumns(block, locale, true, charter);
+      return renderColumns(block, locale, "canvas", charter);
     default:
-      return renderFreeBlock(block, locale, true, charter);
+      return renderFreeBlock(block, locale, "canvas", charter);
   }
 }
 

@@ -74,17 +74,17 @@ describe("le cadrage d'une image (§ 19, « Format et point focal »)", () => {
   });
 
   it("l'aperçu de l'éditeur le signale pour que l'écran recadre la source", () => {
-    expect(renderFreeBlock(FRAMED, "fr", true)).toContain(
+    expect(renderFreeBlock(FRAMED, "fr", "canvas")).toContain(
       'width="100%" data-image-format="3:2" data-image-focal-x="0.2" data-image-focal-y="0.8" style=',
     );
   });
 
   it("l'aperçu d'un format sans point focal signale le centre ; l'original, rien", () => {
-    expect(renderFreeBlock({ ...IMAGE, format: "1:1" }, "fr", true)).toContain(
+    expect(renderFreeBlock({ ...IMAGE, format: "1:1" }, "fr", "canvas")).toContain(
       'data-image-format="1:1" data-image-focal-x="0.5" data-image-focal-y="0.5"',
     );
     expect(
-      renderFreeBlock({ ...IMAGE, format: "original", focal: { x: 0, y: 0 } }, "fr", true),
+      renderFreeBlock({ ...IMAGE, format: "original", focal: { x: 0, y: 0 } }, "fr", "canvas"),
     ).not.toContain("data-image");
   });
 });
@@ -100,10 +100,54 @@ describe("la copie publiée et la source (copySrc)", () => {
   });
 
   it("l'aperçu de l'éditeur lit la source, que l'écran recadre", () => {
-    expect(renderFreeBlock(PUBLISHED, "fr", true)).toContain(`<img src="${SOURCE}"`);
+    expect(renderFreeBlock(PUBLISHED, "fr", "canvas")).toContain(`<img src="${SOURCE}"`);
   });
 
   it("une version publiée avant copySrc (la copie dans src) s'envoie comme avant", () => {
     expect(rendered(IMAGE)).toContain(`<img src="${SRC}"`);
+  });
+});
+
+/**
+ * Régression : une image posée en 2:1 dans un brouillon apparaissait ENTIÈRE
+ * dans l'aperçu fidèle — le brouillon n'a pas encore de copie recadrée (2026-11-08).
+ */
+describe("l'aperçu fidèle recadre l'image d'un brouillon (framePreviewImages)", () => {
+  const DRAFT: ImageBlock = { ...IMAGE, format: "2:1", focal: { x: 0.25, y: 0.75 } };
+  const CROP = "aspect-ratio:2;object-fit:cover;object-position:25% 75%;";
+
+  function previewed(block: MailBlock): string {
+    const document: MailDocument = { template: "customer.test", blocks: [block] };
+    return renderMailDocument(INPUT, document, { ...OPTIONS, framePreviewImages: true });
+  }
+
+  it("une image 2:1 sans copie s'affiche recadrée au point focal", () => {
+    expect(previewed(DRAFT)).toContain(`<img src="${SRC}"`);
+    expect(previewed(DRAFT)).toContain(`style="${IMAGE_STYLE}${CROP}"`);
+  });
+
+  it("dans une colonne aussi", () => {
+    expect(
+      previewed({ id: "c", kind: "columns", widths: [50, 50], cells: [[DRAFT], []] }),
+    ).toContain(CROP);
+  });
+
+  it("sans l'option (l'envoi), rien ne change", () => {
+    expect(rendered(DRAFT)).toContain(`style="${IMAGE_STYLE}" />`);
+    expect(rendered(DRAFT)).not.toContain("object-fit");
+  });
+
+  it("une image qui a sa copie publiée n'est pas recadrée : la copie est au format", () => {
+    const html = previewed({ ...DRAFT, copySrc: "https://mail.lfc.test/templates/copie.png" });
+    expect(html).toContain(`<img src="https://mail.lfc.test/templates/copie.png"`);
+    expect(html).not.toContain("object-fit");
+  });
+
+  it("une image en original n'est pas recadrée", () => {
+    expect(previewed({ ...DRAFT, format: "original" })).not.toContain("object-fit");
+  });
+
+  it("aucun marqueur du canevas n'y entre", () => {
+    expect(previewed(DRAFT)).not.toContain("data-image");
   });
 });

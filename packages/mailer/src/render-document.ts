@@ -36,6 +36,12 @@ export interface MailDocumentRenderOptions {
    * le lien —, et qu'on reconnaît l'ordre du code.
    */
   readonly declaredSections: readonly LayoutSectionId[];
+  /**
+   * L'aperçu fidèle d'un document seulement : recadre à l'affichage une image
+   * cadrée qui n'a pas encore de copie publiée (un brouillon). Absent pour
+   * tout envoi — l'e-mail envoyé ne change pas d'un octet.
+   */
+  readonly framePreviewImages?: boolean;
 }
 
 /**
@@ -102,10 +108,11 @@ function partsOf(
       }
       continue;
     }
+    const audience = options.framePreviewImages === true ? "preview" : "sent";
     const html =
       block.kind === "columns"
-        ? renderColumns(block, options.locale, false, charterOf(input))
-        : renderFreeBlock(block, options.locale, false, charterOf(input));
+        ? renderColumns(block, options.locale, audience, charterOf(input))
+        : renderFreeBlock(block, options.locale, audience, charterOf(input));
     if (html !== "") {
       parts.push({ kind: "free", id: block.id, html });
     }

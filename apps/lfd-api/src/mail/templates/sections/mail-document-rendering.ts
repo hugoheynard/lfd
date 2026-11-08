@@ -37,9 +37,8 @@ export function renderDocumentOfRenderedMail(input: LayoutInput): string | null 
   if (current === undefined || !isRegisteredMail(current.mail)) {
     return null;
   }
-  return renderMailDocument(
-    input,
-    current.scoped.document,
-    documentRenderOptionsOf(current.mail, current.scoped.locale),
-  );
+  return renderMailDocument(input, current.scoped.document, {
+    ...documentRenderOptionsOf(current.mail, current.scoped.locale),
+    ...(current.scoped.framePreviewImages === true ? { framePreviewImages: true } : {}),
+  });
 }

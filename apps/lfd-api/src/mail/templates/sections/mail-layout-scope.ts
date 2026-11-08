@@ -18,8 +18,9 @@ export interface MailLayoutScope {
   /**
    * Le document de chaque e-mail qui en a un, et la langue de l'envoi (plan
    * `plan-editeur-par-blocs.md`, S4b). Il prime sur l'ordre des sections du
-   * même e-mail. Aucun envoi ne le pose encore : c'est S4c qui le lira du
-   * document publié (vérifié le 2026-11-07 : seuls les tests le posent).
+   * même e-mail. Posé par l'envoi depuis S4c (`effective-copy-mailer.ts`,
+   * le document publié), par l'essai et par l'aperçu fidèle — vérifié le
+   * 2026-11-08.
    */
   readonly documents?: Readonly<Record<string, ScopedMailDocument>>;
   /**
@@ -46,6 +47,11 @@ export function isEditorRendering(): boolean {
 export interface ScopedMailDocument {
   readonly document: MailDocument;
   readonly locale: MailLocale;
+  /**
+   * L'aperçu fidèle seulement : recadre à l'affichage une image cadrée sans
+   * copie publiée (un brouillon). Jamais posé pour un envoi ni un essai.
+   */
+  readonly framePreviewImages?: boolean;
 }
 
 /** Aucun ordre, aucun repère : le rendu d'avant les sections, octet pour octet. */

@@ -1,5 +1,6 @@
 import {
   framingOf,
+  IMAGE_FORMAT_RATIOS,
   type ColumnsBlock,
   type FreeBlock,
   type ImageBlock,
@@ -31,6 +32,18 @@ import { STARTING_MAIL_CHARTER, type MailRenderCharter } from "./render-charter.
  */
 
 /** Le texte d'un bloc dans la langue de l'envoi, ou `null` s'il manque. */
+/**
+ * Pour qui un bloc libre se rend :
+ * - `sent` — l'e-mail qui part (et l'essai) : la copie publiée, rien de plus ;
+ * - `canvas` — le canevas de l'éditeur (S5f) : textes marqués, image SOURCE
+ *   signalée par `data-image-*`, que l'écran recadre en CSS ;
+ * - `preview` — l'aperçu fidèle : le rendu de l'envoi, sauf qu'une image
+ *   cadrée SANS copie publiée (un brouillon) est recadrée à l'affichage.
+ *   Le moteur ne peut pas le deviner seul : une version publiée d'avant
+ *   `copySrc` range déjà la copie recadrée dans `src`.
+ */
+export type FreeBlockAudience = "sent" | "canvas" | "preview";
+
 function textIn(text: Localized<string>, locale: MailLocale): string | null {
   const value = text[locale];
   return value === undefined || value.trim() === "" ? null : value;
@@ -105,7 +118,24 @@ function framingAttributes(block: ImageBlock): string {
  * L'image publiée est déjà au format (la publication l'a recadrée, § 19) :
  * l'e-mail ne fait rien de plus que la largeur.
  */
-function image(block: ImageBlock, locale: MailLocale, marked: boolean): string {
+/**
+ * Le recadrage à l'affichage d'une image cadrée sans copie (aperçu fidèle
+ * d'un brouillon) : c'est un navigateur qui affiche l'aperçu, il lit
+ * `aspect-ratio` et `object-fit`. Jamais dans un e-mail envoyé.
+ */
+function previewFramingStyle(block: ImageBlock): string {
+  const framing = framingOf(block);
+  if (framing === null || block.copySrc !== undefined) {
+    return "";
+  }
+  const ratio = IMAGE_FORMAT_RATIOS[framing.format];
+  const x = String(framing.focal.x * 100);
+  const y = String(framing.focal.y * 100);
+  return `aspect-ratio:${String(ratio)};object-fit:cover;object-position:${x}% ${y}%;`;
+}
+
+function image(block: ImageBlock, locale: MailLocale, audience: FreeBlockAudience): string {
+  const marked = audience === "canvas";
   const alt = block.decorative === true ? "" : textIn(block.alt, locale);
   // L'aperçu de l'éditeur montre la SOURCE (recadrée en CSS par l'écran) ;
   // l'envoi, la copie publiée — ou `src` pour une version d'avant `copySrc`.
@@ -113,7 +143,7 @@ function image(block: ImageBlock, locale: MailLocale, marked: boolean): string {
   if (alt === null || src === "" || !isRenderableUrl(src)) {
     return "";
   }
-  const img = `<img src="${htmlEscape(src)}" alt="${htmlEscape(alt)}" width="100%"${marked ? framingAttributes(block) : ""} style="${IMAGE_STYLE}" />`;
+  const img = `<img src="${htmlEscape(src)}" alt="${htmlEscape(alt)}" width="100%"${marked ? framingAttributes(block) : ""} style="${IMAGE_STYLE}${audience === "preview" ? previewFramingStyle(block) : ""}" />`;
   const linked =
     block.href !== undefined && block.decorative !== true && isRenderableUrl(block.href)
       ? `<a href="${htmlEscape(block.href)}" style="${IMAGE_LINK_STYLE}">${img}</a>`
@@ -123,13 +153,13 @@ function image(block: ImageBlock, locale: MailLocale, marked: boolean): string {
 
 /**
  * Un bloc libre hors colonnes, ou la chaîne vide s'il n'a rien à montrer.
- * `marked` : l'aperçu de l'éditeur seulement (S5f) — faux par défaut.
+ * `audience` : l'envoi par défaut (cf. `FreeBlockAudience`).
  * `charter` : celle de l'espace (C1) ; la charte de départ par défaut.
  */
 export function renderFreeBlock(
   block: FreeBlock,
   locale: MailLocale,
-  marked = false,
+  audience: FreeBlockAudience = "sent",
   charter: MailRenderCharter = STARTING_MAIL_CHARTER,
 ): string {
   const styles = mailStylesOf(charter);
@@ -137,13 +167,13 @@ export function renderFreeBlock(
     return divider(styles);
   }
   if (block.kind === "image") {
-    return image(block, locale, marked);
+    return image(block, locale, audience);
   }
   const text = textIn(block.kind === "button" ? block.label : block.text, locale);
   if (text === null) {
     return "";
   }
-  const html = textHtml(block.id, text, locale, marked);
+  const html = textHtml(block.id, text, locale, audience === "canvas");
   switch (block.kind) {
     case "heading":
       return heading(html, styles);
@@ -164,11 +194,11 @@ function column(
   widthPercent: number,
   last: boolean,
   locale: MailLocale,
-  marked: boolean,
+  audience: FreeBlockAudience,
   charter: MailRenderCharter,
 ): string {
   const padding = last ? "0" : `0 ${String(GUTTER_PX)}px 0 0`;
-  const content = cell.map((block) => renderFreeBlock(block, locale, marked, charter)).join("");
+  const content = cell.map((block) => renderFreeBlock(block, locale, audience, charter)).join("");
   return `<td class="${DOCUMENT_CLASSES.column}" width="${String(widthPercent)}%" valign="top" style="width:${String(widthPercent)}%;vertical-align:top;padding:${padding};">${content}</td>`;
 }
 
@@ -179,7 +209,7 @@ function column(
 export function renderColumns(
   block: ColumnsBlock,
   locale: MailLocale,
-  marked = false,
+  audience: FreeBlockAudience = "sent",
   charter: MailRenderCharter = STARTING_MAIL_CHARTER,
 ): string {
   const cells = block.widths.map((width, index) =>
@@ -188,7 +218,7 @@ export function renderColumns(
       width,
       index === block.widths.length - 1,
       locale,
-      marked,
+      audience,
       charter,
     ),
   );
