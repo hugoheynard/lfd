@@ -1,6 +1,7 @@
 import {
   CALLOUT_TONES,
   IMAGE_FORMATS,
+  IMAGE_WIDTHS,
   isColumnWidthStep,
   MAIL_LOCALES,
   MODEL_SECTIONS,
@@ -52,6 +53,7 @@ const imageBlock = z.strictObject({
   format: z.enum(IMAGE_FORMATS).exactOptional(),
   // La forme seulement : « entre 0 et 1 » est la règle du paquet (`image-focal-invalid`).
   focal: z.strictObject({ x: z.number(), y: z.number() }).exactOptional(),
+  width: z.enum(IMAGE_WIDTHS).exactOptional(),
   copySrc: z.string().max(HREF_MAX).exactOptional(),
 });
 

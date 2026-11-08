@@ -26,6 +26,7 @@ import type {
   MailEditorPhrasesView,
   MailEditorView,
 } from "@lfd/mail-blocks";
+import sharp from "sharp";
 
 import {
   MAIL_IMAGE_ADMISSION,
@@ -46,7 +47,13 @@ import { mailCopyScene, ORDER_PLACED } from "./mail-copy-scene.js";
 const MEDIA_ORIGIN = "https://media.lfc.test";
 /** Les copies du bloc : le dossier `mail/` du bucket des médias. */
 const MAIL_IMAGES = `${MEDIA_ORIGIN}/mail`;
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+/**
+ * Une VRAIE image PNG, petite : depuis le 2026-11-08, toute copie est décodée
+ * pour être bornée en largeur — une simple signature PNG n'y suffit plus.
+ */
+const PNG = sharp({ create: { width: 40, height: 20, channels: 3, background: "#c8a165" } })
+  .png()
+  .toBuffer();
 
 /** Le téléchargement doublé : des octets PNG, et la liste des adresses demandées. */
 class PngDownloader extends MailImageDownloader {
@@ -54,7 +61,7 @@ class PngDownloader extends MailImageDownloader {
 
   download(url: URL, _limits: DownloadLimits): Promise<Buffer> {
     this.urls.push(url.href);
-    return Promise.resolve(PNG);
+    return PNG;
   }
 }
 

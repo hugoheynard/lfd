@@ -55,11 +55,13 @@ describe("le cadrage d'une image — la forme", () => {
 });
 
 describe("framingOf et imageCopyKey", () => {
-  it("sans format ou en original : aucun cadrage, l'adresse seule pour clé", () => {
+  it("sans format ou en original : aucun cadrage, l'adresse et la largeur pour clé", () => {
     expect(framingOf(IMAGE)).toBeNull();
     expect(framingOf({ ...IMAGE, format: "original", focal: { x: 0, y: 0 } })).toBeNull();
-    expect(imageCopyKey(IMAGE)).toBe(SRC);
-    expect(imageCopyKey({ ...IMAGE, format: "original", focal: { x: 0, y: 0 } })).toBe(SRC);
+    expect(imageCopyKey(IMAGE)).toBe(`${SRC}~988w`);
+    expect(imageCopyKey({ ...IMAGE, format: "original", focal: { x: 0, y: 0 } })).toBe(
+      `${SRC}~988w`,
+    );
   });
 
   it("un format sans point focal se recadre au centre", () => {
@@ -95,7 +97,7 @@ describe("framingOf et imageCopyKey", () => {
     ]);
     expect(imageCopiesOf(rewritten)).toEqual(
       new Map([
-        [SRC, "https://mail.example/a.png"],
+        [imageCopyKey(IMAGE), "https://mail.example/a.png"],
         [imageCopyKey(square), "https://mail.example/b.png"],
       ]),
     );

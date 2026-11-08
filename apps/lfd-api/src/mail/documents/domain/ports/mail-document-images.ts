@@ -1,4 +1,4 @@
-import type { ImageFraming } from "@lfd/mail-blocks";
+import type { ImageShaping } from "@lfd/mail-blocks";
 
 /**
  * Port de **la copie des images d'un document** à sa publication (plan
@@ -11,9 +11,11 @@ import type { ImageFraming } from "@lfd/mail-blocks";
  * `TechnicalError` : téléchargement ou stockage indisponible) — l'appelant
  * les rattache au bloc qu'ils concernent.
  *
- * `framing` : le format et le point focal du bloc (§ 19, « Format et point
- * focal ») — la copie est recadrée ; `null`, l'image d'origine telle quelle.
+ * `shaping` : le format et le point focal du bloc (§ 19, « Format et point
+ * focal ») — la copie est recadrée s'il y en a un — et sa largeur maximale
+ * (deux fois la largeur affichée, pleine largeur ou dans le corps,
+ * 2026-11-08) — jamais agrandie.
  */
 export abstract class MailDocumentImages {
-  abstract copy(sourceUrl: string, framing: ImageFraming | null): Promise<string>;
+  abstract copy(sourceUrl: string, shaping: ImageShaping): Promise<string>;
 }

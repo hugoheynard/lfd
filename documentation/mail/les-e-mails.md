@@ -155,6 +155,33 @@ flowchart LR
 incomplet, publier un e-mail avec image est refusé, et le message nomme la
 variable qui manque.
 
+**Pleine largeur** (depuis le 2026-11-08, côté serveur ; le réglage à
+l'écran est le lot suivant). Une image se règle **dans le texte** (entre
+les marges, comme un paragraphe) ou **pleine largeur** : elle va alors d'un
+bord de la carte à l'autre, comme le bandeau du haut, en gardant son format
+(original, 3:2, 2:1, 1:1). Juste sous le bandeau, elle s'y colle ; tout en
+haut d'une carte sans bandeau, ou tout en bas sans pied, elle reprend
+l'arrondi de la carte ; ailleurs, un espace la sépare du texte. Une image
+pleine largeur ne va pas dans une colonne : l'enregistrement le refuse.
+
+```text
+┌──────────── carte ────────────┐
+│ bandeau                       │
+├───────────────────────────────┤
+│ image pleine largeur          │   ← bord à bord
+├───────────────────────────────┤
+│   Titre                       │   ← marges du corps
+│   ┌───────────────────────┐   │
+│   │ image dans le texte   │   │
+│   └───────────────────────┘   │
+└───────────────────────────────┘
+```
+
+**Le poids** : la copie est réduite à deux fois la largeur où elle
+s'affiche (pour les écrans haute densité), jamais agrandie — 1116 px de
+large en pleine largeur, 988 px dans le texte. La même image posée une fois
+pleine largeur et une fois dans le texte fait donc deux copies.
+
 L'ancien écran **« Textes des e-mails »** (`/textes-emails`) renvoie
 désormais vers `/emails` ; son code est retiré depuis le 2026-11-07. Le droit qui ouvre l'éditeur s'appelle
 **« Modèles d'e-mails »**.
@@ -237,6 +264,32 @@ Conséquences à connaître :
   par là, et ce n'est plus le choix retenu.
 - **Le refus** : sans `R2_MEDIA_*` complets, la copie refuse en nommant ce qui
   manque ; le bulletin de démarrage le signale déjà sous les médias.
+- **La taille des copies** (2026-11-08) : toute copie d'image de document
+  passe par `SharpMailImageReframer` avec une `ImageShaping`
+  (`imageShapingOf`, `@lfd/mail-blocks`) — le cadrage s'il y en a un, et une
+  largeur maximale de `2 × largeur affichée` : `MAIL_CARD_INNER_WIDTH_PX`
+  (558) en pleine largeur, `MAIL_BODY_WIDTH_PX` (494) dans le corps, tirées
+  de `MAIL_CARD_MAX_WIDTH_PX` (560), `MAIL_CARD_BORDER_PX` (1) et
+  `MAIL_BODY_GUTTER_PX` (32) — les mêmes constantes que `html.ts` écrit dans
+  la carte. Jamais agrandie ; une image sans cadrage déjà assez étroite garde
+  ses octets. Avant cette date, seule une image cadrée était réduite (à
+  1200 px) ; une `original` était copiée telle quelle. Le logo d'une charte
+  n'est pas concerné (copié tel quel).
+- **La clé de copie** (`imageCopyKey`) porte la largeur depuis le
+  2026-11-08 : `<src>[#<format>@<x>,<y>]~<largeur>w`. Une version publiée
+  avant n'a plus de clé correspondante : la republier recopie l'image, une
+  fois, à la bonne taille.
+- **Le rendu pleine largeur** (`packages/mailer/src/card-rows.ts`,
+  `packages/mailer/src/full-width-image.ts`) : le corps de la carte est COUPÉ à l'image — une
+  ligne `<tr>` à marges au-dessus, l'image dans sa propre ligne sans
+  marges, une autre ligne à marges en dessous. Pas de marges négatives :
+  Outlook pour Windows et Gmail les ignorent. L'`<img>` porte
+  `width="558"` en attribut (Outlook) et `width:100%;max-width:558px` en
+  style (téléphones), `display:block;border:0`, dans une cellule à
+  `font-size:0;line-height:0` (pas de liseré sous l'image). Sans image
+  pleine largeur, le corps reste une seule cellule, à l'octet comme avant —
+  l'empreinte des 32 e-mails n'a pas bougé. Le canevas reçoit la même ligne
+  dans sa table, marquée `data-image-width="full"`.
 - **Ce qui a disparu** le 2026-11-08 : `MAIL_IMAGE_ORIGINS`, `R2_MAIL_BUCKET`,
   `R2_MAIL_ACCESS_KEY_ID`, `R2_MAIL_SECRET_ACCESS_KEY`, `R2_MAIL_ENDPOINT`,
   `R2_MAIL_PUBLIC_BASE_URL`, et le lecteur de config qui les lisait

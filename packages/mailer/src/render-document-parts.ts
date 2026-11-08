@@ -1,12 +1,24 @@
-import type { MailBlock, MailDocument, MailLocale } from "@lfd/mail-blocks";
+import type { ImageBlock, MailBlock, MailDocument, MailLocale } from "@lfd/mail-blocks";
 
+import { fullWidthPlacements } from "./card-rows.js";
 import { renderColumns, renderFreeBlock } from "./document-blocks.js";
+import {
+  fullWidthImageElement,
+  fullWidthImageRow,
+  isFullWidthImage,
+  type FullWidthPlacement,
+} from "./full-width-image.js";
 import { renderLayoutHeader } from "./layout-header.js";
 import { charterFooterOf, charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import type { LayoutSectionId } from "./layout-sections.js";
 import type { MailRenderCharter } from "./render-charter.js";
-import { sectionsOfBlock, type MailDocumentRenderOptions } from "./render-document.js";
+import {
+  cardContextOf,
+  cardPiecesOf,
+  sectionsOfBlock,
+  type MailDocumentRenderOptions,
+} from "./render-document.js";
 
 /** Le rendu d'UN bloc du document, pour l'aperçu de l'éditeur. */
 export interface MailDocumentBlockFragment {
@@ -32,6 +44,25 @@ function framed(row: string): string {
   return row === ""
     ? ""
     : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${row}</table>`;
+}
+
+/**
+ * Une image pleine largeur dans le canevas : la MÊME ligne que l'e-mail
+ * (`fullWidthImageRow`, arrondis compris), dans sa table — l'écran la pose
+ * bord à bord ; `data-image-width="full"` la lui désigne. Vide si elle n'a
+ * rien à montrer.
+ */
+function fullWidthHtml(
+  block: ImageBlock,
+  placement: FullWidthPlacement | undefined,
+  locale: MailLocale,
+  radius: string,
+): string {
+  if (placement === undefined) {
+    return "";
+  }
+  const element = fullWidthImageElement(block, locale, "canvas", placement, radius);
+  return framed(fullWidthImageRow(block.id, element, placement, radius, false));
 }
 
 function blockHtml(
@@ -71,13 +102,17 @@ export function renderMailDocumentParts(
   options: MailDocumentRenderOptions,
 ): MailDocumentParts {
   const fragments = layoutFragments(input);
+  const context = cardContextOf(input, options.locale, "canvas");
+  const placements = fullWidthPlacements(cardPiecesOf(input, document, options, "canvas"), context);
   return {
     header: framed(renderLayoutHeader(input, charterOf(input))),
     // Le pied commun de la charte (C1, § 25) puis le recours, comme la coquille.
     footer: framed(`${charterFooterOf(input)}${supportOf(input)}`),
     blocks: document.blocks.map((block) => ({
       blockId: block.id,
-      html: blockHtml(block, fragments, options.declaredSections, options.locale, charterOf(input)),
+      html: isFullWidthImage(block)
+        ? fullWidthHtml(block, placements.get(block.id), options.locale, context.radius)
+        : blockHtml(block, fragments, options.declaredSections, options.locale, charterOf(input)),
     })),
   };
 }

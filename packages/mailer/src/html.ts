@@ -1,3 +1,6 @@
+import { MAIL_CARD_BORDER_PX, MAIL_CARD_MAX_WIDTH_PX } from "@lfd/mail-blocks";
+
+import { BODY_TOP_PADDING_PX, bodyCellStyle } from "./card-geometry.js";
 import { charterFrameTheme } from "./document-theme.js";
 import { renderFontHead, renderLayoutHeader } from "./layout-header.js";
 import { charterFooterOf, charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
@@ -87,6 +90,29 @@ export function renderLayoutFrame(
   content: string,
   documentTheme?: LayoutFrameTheme,
 ): string {
+  return renderLayoutFrameRows(input, bodyRow(content, BODY_TOP_PADDING_PX), documentTheme);
+}
+
+/**
+ * Une ligne de corps de la carte : le contenu entre les marges. Un document
+ * qui porte une image pleine largeur en a plusieurs, coupées par l'image
+ * (`card-rows.ts`) ; `topPx` est la marge du haut de CETTE ligne.
+ */
+export function bodyRow(content: string, topPx: number): string {
+  return `<tr><td style="${bodyCellStyle(topPx)}">
+        ${content}
+      </td></tr>`;
+}
+
+/**
+ * Le cadre autour de lignes de carte déjà assemblées (`<tr>`…) : le corps
+ * en une ligne, ou coupé par des images pleine largeur.
+ */
+export function renderLayoutFrameRows(
+  input: LayoutInput,
+  rows: string,
+  documentTheme?: LayoutFrameTheme,
+): string {
   const charter = charterOf(input);
   // Une charte publiée (C1) donne à tout e-mail le `<head>` de sa variante
   // sombre ; la charte de départ n'en pose pas — les octets d'avant.
@@ -101,11 +127,9 @@ export function renderLayoutFrame(
   return `<!doctype html>
 <html lang="${lang}">${head}
   <body${pageClass} style="margin:0;padding:24px;font-family:${TEXT_FONT_STACK};color:${charter.colors.text};background:${charter.colors.page};">
-    <table${cardClass} role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:${charter.colors.card};border:1px solid ${charter.colors.border};border-radius:${charter.radius};">
+    <table${cardClass} role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:${String(MAIL_CARD_MAX_WIDTH_PX)}px;margin:0 auto;background:${charter.colors.card};border:${String(MAIL_CARD_BORDER_PX)}px solid ${charter.colors.border};border-radius:${charter.radius};">
       ${header}
-      <tr><td style="padding:32px 32px 8px;">
-        ${content}
-      </td></tr>${charterFooterOf(input)}
+      ${rows}${charterFooterOf(input)}
       ${supportOf(input)}
     </table>
   </body>

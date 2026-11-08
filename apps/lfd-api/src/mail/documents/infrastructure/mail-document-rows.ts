@@ -102,6 +102,7 @@ function freeBlockJson(block: FreeBlock): Prisma.InputJsonValue {
         ...(block.decorative === undefined ? {} : { decorative: block.decorative }),
         ...(block.format === undefined ? {} : { format: block.format }),
         ...(block.focal === undefined ? {} : { focal: { x: block.focal.x, y: block.focal.y } }),
+        ...(block.width === undefined ? {} : { width: block.width }),
         ...(block.copySrc === undefined ? {} : { copySrc: block.copySrc }),
       };
   }

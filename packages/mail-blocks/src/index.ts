@@ -91,7 +91,23 @@ export {
   type ImageFocal,
   type ImageFormat,
   type ImageFraming,
+  imageShapingOf,
+  type ImageShaping,
 } from "./image-framing.js";
+export {
+  IMAGE_WIDTHS,
+  MAIL_BODY_GUTTER_PX,
+  MAIL_BODY_WIDTH_PX,
+  MAIL_CARD_BORDER_PX,
+  MAIL_CARD_INNER_WIDTH_PX,
+  MAIL_CARD_MAX_WIDTH_PX,
+  MAIL_IMAGE_DENSITY,
+  imageCopyWidthPx,
+  imageDisplayWidthPx,
+  imageWidthOf,
+  isImageWidth,
+  type ImageWidth,
+} from "./image-width.js";
 export { isHttpsUrl, isImageSourceUrl } from "./urls.js";
 export {
   validateMailDocument,

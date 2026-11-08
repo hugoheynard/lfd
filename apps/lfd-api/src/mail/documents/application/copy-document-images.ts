@@ -1,7 +1,7 @@
 import {
-  framingOf,
   imageBlocksOf,
   imageCopyKey,
+  imageShapingOf,
   type ImageBlock,
   type MailDocument,
 } from "@lfd/mail-blocks";
@@ -31,8 +31,9 @@ function attributed(template: string, image: MailDocumentImageRef, cause: unknow
 /**
  * **Copie les images d'un document** avant sa publication (plan
  * `plan-editeur-par-blocs.md`, § 19, S5d), une à une, dans l'ordre de
- * l'e-mail, chaque adresse une seule fois PAR CADRAGE (format et point focal,
- * § 19 : deux formats de la même image font deux copies). Rend la table clé
+ * l'e-mail, chaque adresse une seule fois PAR CADRAGE ET LARGEUR (format et
+ * point focal, § 19 ; pleine largeur ou non, 2026-11-08 : deux formats de la
+ * même image, ou deux largeurs, font deux copies). Rend la table clé
  * de copie (`imageCopyKey`) → adresse de la copie que
  * `MailTemplateDocument.publish` applique. `alreadyCopied` : les copies de
  * la version publiée — même source et même cadrage, rien n'est recopié.
@@ -59,7 +60,7 @@ export async function copyDocumentImages(
       continue;
     }
     try {
-      copies.set(key, await images.copy(image.src, framingOf(image)));
+      copies.set(key, await images.copy(image.src, imageShapingOf(image)));
     } catch (cause) {
       throw attributed(template, refOf(image, index), cause);
     }

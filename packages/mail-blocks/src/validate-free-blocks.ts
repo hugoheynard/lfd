@@ -9,7 +9,7 @@ import {
 } from "./mail-document.js";
 import { violation, type MailDocumentViolation } from "./mail-document-violation.js";
 import { isHttpsUrl } from "./urls.js";
-import { imageViolations } from "./validate-image.js";
+import { imageInColumnViolations, imageViolations } from "./validate-image.js";
 
 /** Les règles propres à un bloc libre (hors colonnes) : son adresse, son ton. */
 export function freeBlockViolations(block: FreeBlock): readonly MailDocumentViolation[] {
@@ -69,7 +69,9 @@ function cellBlockViolations(
       ),
     ];
   }
-  return freeBlockViolations(block);
+  return block.kind === "image"
+    ? [...imageInColumnViolations(block), ...freeBlockViolations(block)]
+    : freeBlockViolations(block);
 }
 
 function widthViolations(columns: ColumnsBlock): readonly MailDocumentViolation[] {

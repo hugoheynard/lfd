@@ -3,7 +3,7 @@ import {
   startingMailDocument,
   imageCopyKey,
   type ImageBlock,
-  type ImageFraming,
+  type ImageShaping,
   type MailDocument,
   type MailTemplateDeclaration,
 } from "@lfd/mail-blocks";
@@ -86,9 +86,9 @@ class WatchedImages extends RecordingDocumentImages {
     super(refused);
   }
 
-  override copy(sourceUrl: string, framing: ImageFraming | null): Promise<string> {
+  override copy(sourceUrl: string, shaping: ImageShaping): Promise<string> {
     this.insideAtCopy.push(this.uow.inside);
-    return super.copy(sourceUrl, framing);
+    return super.copy(sourceUrl, shaping);
   }
 }
 
@@ -214,6 +214,25 @@ describe("publier une image cadrée (§ 19, « Format et point focal »)", () =>
   });
 });
 
+describe("publier une image pleine largeur (2026-11-08)", () => {
+  it("la même image dans le corps et pleine largeur fait deux copies, chacune à sa largeur", async () => {
+    const w = world();
+    const full: ImageBlock = { ...image("i2", SRC), width: "full", format: "2:1" };
+    await w.draft(documentWith(image("i1", SRC), full, { ...image("i3", SRC), width: "content" }));
+
+    await w.publish();
+
+    expect(w.images.calls).toEqual([SRC, SRC]);
+    expect(w.images.widths).toEqual([988, 1116]);
+    const published = publishedOf(w);
+    expect(published === null ? [] : imageBlocksOf(published)).toEqual([
+      { ...image("i1", SRC), copySrc: COPY },
+      { ...full, copySrc: `${COPY}-2x1-w1116` },
+      { ...image("i3", SRC), width: "content", copySrc: COPY },
+    ]);
+  });
+});
+
 describe("MailTemplateDocument.publish — l'invariant des copies", () => {
   it("refuse une image cadrée dont seule la version d'origine est copiée", () => {
     const document = MailTemplateDocument.untouched(TEMPLATE);
@@ -237,8 +256,9 @@ describe("MailTemplateDocument.publish — l'invariant des copies", () => {
     expect(() => document.publish(DECLARATION, 1, stamp, new Map())).toThrow(
       MailDocumentImageNotCopiedError,
     );
-    expect(document.publish(DECLARATION, 1, stamp, new Map([[SRC, COPY]]))?.document).toEqual(
-      documentWith({ ...image("i1", SRC), copySrc: COPY }),
-    );
+    expect(
+      document.publish(DECLARATION, 1, stamp, new Map([[imageCopyKey(image("i1", SRC)), COPY]]))
+        ?.document,
+    ).toEqual(documentWith({ ...image("i1", SRC), copySrc: COPY }));
   });
 });

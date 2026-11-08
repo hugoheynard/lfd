@@ -7,10 +7,13 @@ import {
   type ModelSectionId,
 } from "@lfd/mail-blocks";
 
-import { renderColumns, renderFreeBlock } from "./document-blocks.js";
+import { renderCardRows, type CardContext, type CardPiece } from "./card-rows.js";
+import { renderColumns, renderFreeBlock, type FreeBlockAudience } from "./document-blocks.js";
 import { charterFrameTheme } from "./document-theme.js";
-import { renderLayout, renderLayoutFrame } from "./html.js";
-import { charterOf, layoutFragments } from "./layout-fragments.js";
+import { isFullWidthImage } from "./full-width-image.js";
+import { renderLayout, renderLayoutFrame, renderLayoutFrameRows } from "./html.js";
+import { renderLayoutHeader } from "./layout-header.js";
+import { charterFooterOf, charterOf, layoutFragments, supportOf } from "./layout-fragments.js";
 import type { LayoutInput } from "./layout-input.js";
 import {
   joinParts,
@@ -90,14 +93,20 @@ function renderModelOnly(
   return renderLayout({ ...input, sections: sameOrder(order, declared) ? LAYOUT_SECTIONS : order });
 }
 
-function partsOf(
+/**
+ * Les morceaux du document dans l'ordre de la carte : les sections et les
+ * blocs libres rendus, et chaque image pleine largeur laissée en bloc — elle
+ * se rend hors du corps (`card-rows.ts`), à sa place.
+ */
+export function cardPiecesOf(
   input: LayoutInput,
   document: MailDocument,
   options: MailDocumentRenderOptions,
-): readonly LayoutPart[] {
+  audience: FreeBlockAudience,
+): readonly CardPiece[] {
   const fragments = layoutFragments(input);
   const named = new Set<LayoutSectionId>();
-  const parts: LayoutPart[] = [];
+  const parts: CardPiece[] = [];
   for (const block of document.blocks) {
     if (block.kind === "model") {
       for (const id of sectionsOfBlock(block.section, options.declaredSections)) {
@@ -108,7 +117,10 @@ function partsOf(
       }
       continue;
     }
-    const audience = options.framePreviewImages === true ? "preview" : "sent";
+    if (isFullWidthImage(block)) {
+      parts.push({ kind: "full-image", id: block.id, block });
+      continue;
+    }
     const html =
       block.kind === "columns"
         ? renderColumns(block, options.locale, audience, charterOf(input))
@@ -120,10 +132,24 @@ function partsOf(
   // Les sections que le modèle ne déclare pas suivent, dans l'ordre par
   // défaut, comme `effectiveSectionOrder` les range : rien ne se perd.
   const rest = LAYOUT_SECTIONS.filter((id) => !named.has(id));
-  return [
-    ...parts,
-    ...rest.map((id): LayoutPart => ({ kind: "section", id, html: fragments[id] })),
-  ];
+  return [...parts, ...rest.map((id): CardPiece => ({ kind: "section", id, html: fragments[id] }))];
+}
+
+/** Ce que la coupe du corps lit de l'envoi : le bandeau, le pied, l'arrondi. */
+export function cardContextOf(
+  input: LayoutInput,
+  locale: MailLocale,
+  audience: FreeBlockAudience,
+): CardContext {
+  const charter = charterOf(input);
+  return {
+    locale,
+    audience,
+    radius: charter.radius,
+    hasHeader: renderLayoutHeader(input, charter) !== "",
+    hasFooter: `${charterFooterOf(input)}${supportOf(input)}` !== "",
+    markSections: input.markSections === true,
+  };
 }
 
 /**
@@ -137,6 +163,10 @@ function partsOf(
  *   de la coquille, les blocs libres avec ses constantes de style, et le cadre
  *   gagne un `<head>` : variante sombre de la charte, empilement des colonnes.
  *
+ * - Une image pleine largeur (Hugo, 2026-11-08) coupe le corps : elle se rend
+ *   bord à bord dans sa propre ligne de la carte (`card-rows.ts`). Sans elle,
+ *   le corps reste une seule cellule, à l'octet comme avant.
+ *
  * L'ordre de `input.sections` est ignoré : c'est le document qui ordonne.
  */
 export function renderMailDocument(
@@ -147,10 +177,16 @@ export function renderMailDocument(
   if (!isRearrangedDocument(document)) {
     return renderModelOnly(input, document, options.declaredSections);
   }
-  const content = joinParts(partsOf(input, document, options), input.markSections === true);
-  return renderLayoutFrame(
+  const audience = options.framePreviewImages === true ? "preview" : "sent";
+  const pieces = cardPiecesOf(input, document, options, audience);
+  const theme = charterFrameTheme(charterOf(input), options.locale, input);
+  const parts = pieces.filter((piece): piece is LayoutPart => piece.kind !== "full-image");
+  if (parts.length === pieces.length) {
+    return renderLayoutFrame(input, joinParts(parts, input.markSections === true), theme);
+  }
+  return renderLayoutFrameRows(
     input,
-    content,
-    charterFrameTheme(charterOf(input), options.locale, input),
+    renderCardRows(pieces, cardContextOf(input, options.locale, audience)),
+    theme,
   );
 }

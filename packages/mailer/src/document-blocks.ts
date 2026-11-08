@@ -1,23 +1,11 @@
-import {
-  framingOf,
-  IMAGE_FORMAT_RATIOS,
-  type ColumnsBlock,
-  type FreeBlock,
-  type ImageBlock,
-  type Localized,
-  type MailLocale,
-} from "@lfd/mail-blocks";
+import type { ColumnsBlock, FreeBlock, MailLocale } from "@lfd/mail-blocks";
 
 import { DOCUMENT_CLASSES } from "./document-theme.js";
 import { htmlEscape } from "./escape.js";
 import { isRenderableUrl } from "./layout-fragments.js";
 import { mailStylesOf, TEXT_STYLE, type MailStyles } from "./charter-styles.js";
-import {
-  CALLOUT_TEXT_STYLE,
-  IMAGE_LINK_STYLE,
-  IMAGE_SPACING_STYLE,
-  IMAGE_STYLE,
-} from "./layout-styles.js";
+import { renderContentImage, textIn, type FreeBlockAudience } from "./document-image.js";
+import { CALLOUT_TEXT_STYLE } from "./layout-styles.js";
 import { STARTING_MAIL_CHARTER, type MailRenderCharter } from "./render-charter.js";
 
 /**
@@ -31,23 +19,7 @@ import { STARTING_MAIL_CHARTER, type MailRenderCharter } from "./render-charter.
  * ce silence ne couvre qu'un document qui n'aurait pas été publié.
  */
 
-/** Le texte d'un bloc dans la langue de l'envoi, ou `null` s'il manque. */
-/**
- * Pour qui un bloc libre se rend :
- * - `sent` — l'e-mail qui part (et l'essai) : la copie publiée, rien de plus ;
- * - `canvas` — le canevas de l'éditeur (S5f) : textes marqués, image SOURCE
- *   signalée par `data-image-*`, que l'écran recadre en CSS ;
- * - `preview` — l'aperçu fidèle : le rendu de l'envoi, sauf qu'une image
- *   cadrée SANS copie publiée (un brouillon) est recadrée à l'affichage.
- *   Le moteur ne peut pas le deviner seul : une version publiée d'avant
- *   `copySrc` range déjà la copie recadrée dans `src`.
- */
-export type FreeBlockAudience = "sent" | "canvas" | "preview";
-
-function textIn(text: Localized<string>, locale: MailLocale): string | null {
-  const value = text[locale];
-  return value === undefined || value.trim() === "" ? null : value;
-}
+export type { FreeBlockAudience } from "./document-image.js";
 
 /*
  * Les quatre rendus de texte reçoivent un HTML DÉJÀ échappé (`textHtml`) :
@@ -97,61 +69,6 @@ function divider(styles: MailStyles): string {
 }
 
 /**
- * Le cadrage d'une image, dans l'aperçu de l'éditeur seulement (S5f,
- * `marked`) : un brouillon montre l'image SOURCE, et c'est l'écran qui la
- * recadre en CSS d'après `data-image-format` et `data-image-focal-x|y`
- * (fractions de 0 à 1). Rien sans cadrage, et jamais dans un e-mail envoyé.
- */
-function framingAttributes(block: ImageBlock): string {
-  const framing = framingOf(block);
-  return framing === null
-    ? ""
-    : ` data-image-format="${framing.format}" data-image-focal-x="${framing.focal.x}" data-image-focal-y="${framing.focal.y}"`;
-}
-
-/**
- * Une image, en tableau pour qu'Outlook garde sa largeur. Une image
- * décorative rend un `alt` vide, voulu ; une autre sans texte dans la langue
- * de l'envoi ne rend rien, comme un texte manquant. Sans adresse (pas encore
- * choisie) ou sur une adresse hostile : rien.
- *
- * L'image publiée est déjà au format (la publication l'a recadrée, § 19) :
- * l'e-mail ne fait rien de plus que la largeur.
- */
-/**
- * Le recadrage à l'affichage d'une image cadrée sans copie (aperçu fidèle
- * d'un brouillon) : c'est un navigateur qui affiche l'aperçu, il lit
- * `aspect-ratio` et `object-fit`. Jamais dans un e-mail envoyé.
- */
-function previewFramingStyle(block: ImageBlock): string {
-  const framing = framingOf(block);
-  if (framing === null || block.copySrc !== undefined) {
-    return "";
-  }
-  const ratio = IMAGE_FORMAT_RATIOS[framing.format];
-  const x = String(framing.focal.x * 100);
-  const y = String(framing.focal.y * 100);
-  return `aspect-ratio:${String(ratio)};object-fit:cover;object-position:${x}% ${y}%;`;
-}
-
-function image(block: ImageBlock, locale: MailLocale, audience: FreeBlockAudience): string {
-  const marked = audience === "canvas";
-  const alt = block.decorative === true ? "" : textIn(block.alt, locale);
-  // L'aperçu de l'éditeur montre la SOURCE (recadrée en CSS par l'écran) ;
-  // l'envoi, la copie publiée — ou `src` pour une version d'avant `copySrc`.
-  const src = marked ? block.src : (block.copySrc ?? block.src);
-  if (alt === null || src === "" || !isRenderableUrl(src)) {
-    return "";
-  }
-  const img = `<img src="${htmlEscape(src)}" alt="${htmlEscape(alt)}" width="100%"${marked ? framingAttributes(block) : ""} style="${IMAGE_STYLE}${audience === "preview" ? previewFramingStyle(block) : ""}" />`;
-  const linked =
-    block.href !== undefined && block.decorative !== true && isRenderableUrl(block.href)
-      ? `<a href="${htmlEscape(block.href)}" style="${IMAGE_LINK_STYLE}">${img}</a>`
-      : img;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${IMAGE_SPACING_STYLE}"><tr><td>${linked}</td></tr></table>`;
-}
-
-/**
  * Un bloc libre hors colonnes, ou la chaîne vide s'il n'a rien à montrer.
  * `audience` : l'envoi par défaut (cf. `FreeBlockAudience`).
  * `charter` : celle de l'espace (C1) ; la charte de départ par défaut.
@@ -167,7 +84,7 @@ export function renderFreeBlock(
     return divider(styles);
   }
   if (block.kind === "image") {
-    return image(block, locale, audience);
+    return renderContentImage(block, locale, audience);
   }
   const text = textIn(block.kind === "button" ? block.label : block.text, locale);
   if (text === null) {

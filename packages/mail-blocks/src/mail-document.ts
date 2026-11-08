@@ -1,4 +1,5 @@
 import type { ImageFocal, ImageFormat } from "./image-framing.js";
+import type { ImageWidth } from "./image-width.js";
 import type { ColumnWidthStep } from "./column-widths.js";
 import type { MailCharter } from "./mail-charter.js";
 import type { Localized, MailLocale } from "./mail-locales.js";
@@ -86,6 +87,12 @@ export interface ImageBlock {
   readonly decorative?: boolean;
   readonly format?: ImageFormat;
   readonly focal?: ImageFocal;
+  /**
+   * `full` : l'image va d'un bord de la carte à l'autre, comme le bandeau
+   * (Hugo, 2026-11-08), en gardant son format ; absent ou `content`, elle
+   * reste entre les marges du corps. Jamais `full` dans une colonne.
+   */
+  readonly width?: ImageWidth;
   /**
    * L'adresse de la copie que la publication a rangée (recadrée s'il y a un
    * format), posée seulement dans une version publiée. `src` reste TOUJOURS

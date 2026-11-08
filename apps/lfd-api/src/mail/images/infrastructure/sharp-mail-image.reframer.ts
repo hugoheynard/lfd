@@ -1,12 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import type { ImageFraming } from "@lfd/mail-blocks";
+import type { ImageShaping } from "@lfd/mail-blocks";
 import sharp, { type Sharp } from "sharp";
 
 import { MailImageUnreadableError } from "../domain/errors/mail-image.errors.js";
 import { MailImageReframer } from "../domain/ports/mail-image.reframer.js";
 import {
   cropRectangle,
-  MAIL_IMAGE_FRAMED_WIDTH_PX,
   MAIL_IMAGE_LOSSY_QUALITY,
 } from "../domain/value-objects/mail-image-crop.js";
 
@@ -22,13 +21,16 @@ const ENCODERS: Readonly<Record<string, (image: Sharp) => Sharp>> = {
 };
 
 /**
- * Le recadrage par `sharp` (libvips, en mémoire). L'orientation EXIF est
+ * La mise en forme par `sharp` (libvips, en mémoire). L'orientation EXIF est
  * appliquée d'abord : le point focal est posé sur l'image telle qu'on la
  * voit. Un GIF animé garde ses images, chacune recadrée pareil.
+ *
+ * Une image SANS cadrage déjà plus étroite que la borne garde ses octets :
+ * la réencoder ne la réduirait pas et lui ferait perdre en qualité.
  */
 @Injectable()
 export class SharpMailImageReframer extends MailImageReframer {
-  async reframe(bytes: Buffer, contentType: string, framing: ImageFraming): Promise<Buffer> {
+  async reframe(bytes: Buffer, contentType: string, shaping: ImageShaping): Promise<Buffer> {
     const encode = ENCODERS[contentType];
     if (encode === undefined) {
       throw new MailImageUnreadableError();
@@ -37,12 +39,16 @@ export class SharpMailImageReframer extends MailImageReframer {
       const animated = contentType === "image/gif";
       const source = sharp(bytes, { animated });
       const { width, height } = await this.visibleSize(source, animated);
-      const crop = cropRectangle(width, height, framing);
+      if (shaping.framing === null && width <= shaping.maxWidthPx) {
+        return bytes;
+      }
       const oriented = animated ? source : source.rotate();
-      const framed = oriented
-        .extract(crop)
-        .resize({ width: MAIL_IMAGE_FRAMED_WIDTH_PX, withoutEnlargement: true });
-      return await encode(framed).toBuffer();
+      const framed =
+        shaping.framing === null
+          ? oriented
+          : oriented.extract(cropRectangle(width, height, shaping.framing));
+      const resized = framed.resize({ width: shaping.maxWidthPx, withoutEnlargement: true });
+      return await encode(resized).toBuffer();
     } catch (cause) {
       throw new MailImageUnreadableError(cause);
     }

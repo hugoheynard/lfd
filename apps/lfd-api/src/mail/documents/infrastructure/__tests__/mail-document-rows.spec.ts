@@ -1,5 +1,6 @@
 import type { MailDocument } from "@lfd/mail-blocks";
 
+import { parseMailDocument } from "../../application/mail-document-shape.js";
 import { StoredMailDocumentUnreadableError } from "../../domain/mail-document-errors.js";
 import {
   mailDocumentJson,
@@ -109,5 +110,30 @@ describe("une image cadrée, rangée puis relue", () => {
     expect(
       toDocumentState(row({ draft: json, draftAt: AT, draftBy: "x" })).draft?.document,
     ).toEqual(framed);
+  });
+});
+
+describe("une image pleine largeur, rangée puis relue (2026-11-08)", () => {
+  it("garde sa largeur ; une largeur inconnue n'a pas la forme d'un document", () => {
+    const full: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        {
+          id: "i",
+          kind: "image",
+          src: "https://media.lfc.test/p.png",
+          alt: { fr: "Le fournil" },
+          format: "2:1",
+          width: "full",
+        },
+      ],
+    };
+    const json = JSON.parse(JSON.stringify(mailDocumentJson(full))) as MailDocumentRow["draft"];
+    expect(
+      toDocumentState(row({ draft: json, draftAt: AT, draftBy: "x" })).draft?.document,
+    ).toEqual(full);
+    expect(
+      parseMailDocument({ ...full, blocks: [{ ...full.blocks[0], width: "wide" }] }),
+    ).toBeNull();
   });
 });

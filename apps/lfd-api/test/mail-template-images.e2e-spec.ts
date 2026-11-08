@@ -12,8 +12,10 @@
  */
 import type {
   ImageBlock,
+  MailBlock,
   MailDocument,
   MailDocumentBlockPreviewView,
+  MailDocumentPreviewView,
   MailEditorView,
 } from "@lfd/mail-blocks";
 import sharp from "sharp";
@@ -38,19 +40,27 @@ const MEDIA_ORIGIN = "https://media.lfc.test";
 const MAIL_IMAGES = `${MEDIA_ORIGIN}/mail`;
 const SOURCE = `${MEDIA_ORIGIN}/products/vitrine.png`;
 
-/** Le téléchargement doublé : une vraie image PNG de 400 × 100, fabriquée une fois. */
+/** Une grande photo, plus large que toute copie : la publication la réduit. */
+const LARGE_SOURCE = `${MEDIA_ORIGIN}/products/fournil-large.png`;
+
+/**
+ * Le téléchargement doublé : une vraie image PNG de 400 × 100, ou de
+ * 2400 × 1200 pour {@link LARGE_SOURCE}, fabriquée une fois.
+ */
 class RealPngDownloader extends MailImageDownloader {
   readonly urls: string[] = [];
-  private png: Promise<Buffer> | null = null;
+  private readonly pngs = new Map<string, Promise<Buffer>>();
 
   download(url: URL, _limits: DownloadLimits): Promise<Buffer> {
     this.urls.push(url.href);
-    this.png ??= sharp({
-      create: { width: 400, height: 100, channels: 3, background: "#c8a165" },
-    })
-      .png()
-      .toBuffer();
-    return this.png;
+    const [width, height] = url.href === LARGE_SOURCE ? [2400, 1200] : [400, 100];
+    const png =
+      this.pngs.get(url.href) ??
+      sharp({ create: { width, height, channels: 3, background: "#c8a165" } })
+        .png()
+        .toBuffer();
+    this.pngs.set(url.href, png);
+    return png;
   }
 }
 
@@ -84,7 +94,7 @@ async function open(): Promise<MailEditorView> {
   return jsonBody<MailEditorView>(await staff().get(`${EDITOR}/${RESET}`).expect(200));
 }
 
-function withImages(starting: MailDocument, ...images: readonly ImageBlock[]): MailDocument {
+function withImages(starting: MailDocument, ...images: readonly MailBlock[]): MailDocument {
   return { template: starting.template, blocks: [...starting.blocks, ...images] };
 }
 
@@ -199,5 +209,69 @@ describe("le cadrage d'une image d'e-mail (§ 19)", () => {
       })
       .expect(400);
     expect(JSON.stringify(refusal.body)).toContain("point focal");
+  });
+});
+
+describe("l'image pleine largeur (2026-11-08)", () => {
+  const FULL: ImageBlock = {
+    id: "bord",
+    kind: "image",
+    src: LARGE_SOURCE,
+    alt: { fr: "Le fournil" },
+    width: "full",
+    format: "2:1",
+  };
+  const INSIDE: ImageBlock = { ...FULL, id: "corps", width: "content" };
+
+  it("publie deux copies bornées, l'une à 2 × la carte, l'autre à 2 × le corps", async () => {
+    const view = await open();
+    await staff()
+      .put(`${EDITOR}/${RESET}/draft`)
+      .send({ document: withImages(view.document, FULL, INSIDE), expectedRevision: 0 })
+      .expect(204);
+    await staff().post(`${EDITOR}/${RESET}/publications`).send({ expectedRevision: 1 }).expect(201);
+
+    const published = (await open()).document.blocks;
+    const copyOf = (id: string) =>
+      published.flatMap((block) =>
+        block.id === id && block.kind === "image" ? [block.copySrc ?? ""] : [],
+      )[0] ?? "";
+    expect(published).toContainEqual(expect.objectContaining({ id: "bord", width: "full" }));
+    const full = await sharp(mailImages.objects.get(copyOf("bord"))).metadata();
+    const inside = await sharp(mailImages.objects.get(copyOf("corps"))).metadata();
+    expect([full.width, full.height]).toEqual([1116, 558]);
+    expect([inside.width, inside.height]).toEqual([988, 494]);
+  });
+
+  it("l'aperçu fidèle d'un brouillon la montre bord à bord, recadrée", async () => {
+    const view = await open();
+    const preview = jsonBody<MailDocumentPreviewView>(
+      await staff()
+        .post(`${EDITOR}/${RESET}/previews`)
+        .send({ document: withImages(view.document, FULL), locale: "fr", source: "draft" })
+        .expect(200),
+    );
+    expect(preview.html).toContain(
+      `<img src="${LARGE_SOURCE}" alt="Le fournil" width="558" style="display:block;width:100%;max-width:558px;height:auto;border:0;`,
+    );
+    expect(preview.html).toContain("aspect-ratio:2;object-fit:cover;");
+    expect(downloader.urls).toEqual([]);
+  });
+
+  it("refuse une image pleine largeur dans une colonne dès l'enregistrement (400)", async () => {
+    const view = await open();
+    const refusal = await staff()
+      .put(`${EDITOR}/${RESET}/draft`)
+      .send({
+        document: withImages(view.document, {
+          id: "cols",
+          kind: "columns",
+          widths: [50, 50],
+          cells: [[FULL], []],
+        }),
+        expectedRevision: 0,
+      })
+      .expect(400);
+    expect(JSON.stringify(refusal.body)).toContain("pleine largeur");
   });
 });

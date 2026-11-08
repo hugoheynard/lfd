@@ -7,7 +7,7 @@ import {
   type DownloadLimits,
   MailImageDownloader,
 } from "../../domain/ports/mail-image.downloader.js";
-import type { ImageFraming } from "@lfd/mail-blocks";
+import type { ImageFraming, ImageShaping } from "@lfd/mail-blocks";
 
 import { MailImageReframer } from "../../domain/ports/mail-image.reframer.js";
 import { type MailImageCopy, MailImageStore } from "../../domain/ports/mail-image.store.js";
@@ -45,14 +45,19 @@ class MemoryStore extends MailImageStore {
   }
 }
 
-/** Un recadreur qui marque les octets de son cadrage : deux cadrages, deux sorties. */
+/**
+ * Un metteur en forme qui marque les octets de son cadrage et de sa largeur :
+ * deux cadrages, ou deux largeurs, deux sorties.
+ */
 class TaggingReframer extends MailImageReframer {
-  readonly calls: { contentType: string; framing: ImageFraming }[] = [];
+  readonly calls: { contentType: string; shaping: ImageShaping }[] = [];
 
-  reframe(bytes: Buffer, contentType: string, framing: ImageFraming): Promise<Buffer> {
-    this.calls.push({ contentType, framing });
-    const tag = `${framing.format}@${framing.focal.x},${framing.focal.y}`;
-    return Promise.resolve(Buffer.concat([bytes, Buffer.from(tag)]));
+  reframe(bytes: Buffer, contentType: string, shaping: ImageShaping): Promise<Buffer> {
+    this.calls.push({ contentType, shaping });
+    const framing = shaping.framing;
+    const framed =
+      framing === null ? "" : `${framing.format}@${framing.focal.x},${framing.focal.y}`;
+    return Promise.resolve(Buffer.concat([bytes, Buffer.from(`${framed}~${shaping.maxWidthPx}`)]));
   }
 }
 
@@ -161,9 +166,10 @@ describe("MailImageCopier — la copie d'une image de modèle", () => {
 });
 
 describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", () => {
-  const SQUARE: ImageFraming = { format: "1:1", focal: { x: 0.5, y: 0.5 } };
+  const SQUARE_FRAMING: ImageFraming = { format: "1:1", focal: { x: 0.5, y: 0.5 } };
+  const SQUARE: ImageShaping = { framing: SQUARE_FRAMING, maxWidthPx: 988 };
 
-  it("sans cadrage, range les octets d'origine, tels quels, sans recadrer", async () => {
+  it("sans mise en forme (le logo d'une charte), range les octets d'origine, tels quels", async () => {
     const { service, reframer } = copier(PNG);
     const copy = await service.copy(SOURCE);
     expect(copy.url).toBe(`https://media.lafoliecoffee.info/mail/templates/${PNG.toString("hex")}`);
@@ -173,7 +179,7 @@ describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", 
   it("avec un cadrage, range la version recadrée, dans le type lu sur les octets", async () => {
     const { service, reframer, store } = copier(PNG);
     const copy = await service.copy(SOURCE, SQUARE);
-    expect(reframer.calls).toEqual([{ contentType: "image/png", framing: SQUARE }]);
+    expect(reframer.calls).toEqual([{ contentType: "image/png", shaping: SQUARE }]);
     expect(copy.url).not.toBe(
       `https://media.lafoliecoffee.info/mail/templates/${PNG.toString("hex")}`,
     );
@@ -185,10 +191,24 @@ describe("MailImageCopier — le cadrage (§ 19, « Format et point focal »)", 
     const urls = new Set([
       (await service.copy(SOURCE)).url,
       (await service.copy(SOURCE, SQUARE)).url,
-      (await service.copy(SOURCE, { ...SQUARE, format: "3:2" })).url,
-      (await service.copy(SOURCE, { ...SQUARE, focal: { x: 0, y: 0 } })).url,
+      (await service.copy(SOURCE, { ...SQUARE, framing: { ...SQUARE_FRAMING, format: "3:2" } }))
+        .url,
+      (
+        await service.copy(SOURCE, {
+          ...SQUARE,
+          framing: { ...SQUARE_FRAMING, focal: { x: 0, y: 0 } },
+        })
+      ).url,
     ]);
     expect(urls.size).toBe(4);
+  });
+
+  it("deux largeurs de la même image font deux copies, et l'original est mis en forme aussi", async () => {
+    const { service, reframer } = copier(PNG);
+    const content = await service.copy(SOURCE, { framing: null, maxWidthPx: 988 });
+    const full = await service.copy(SOURCE, { framing: null, maxWidthPx: 1116 });
+    expect(content.url).not.toBe(full.url);
+    expect(reframer.calls.map((call) => call.shaping.maxWidthPx)).toEqual([988, 1116]);
   });
 
   it("ne recadre pas ce qui n'est pas une image", async () => {

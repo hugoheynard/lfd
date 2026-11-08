@@ -1,10 +1,12 @@
-import type {
-  ImageFraming,
-  MailDocument,
-  MailEditorResources,
-  MailLocale,
-  MailPreviewSituation,
-  MailTemplateDeclaration,
+import {
+  imageCopyWidthPx,
+  type ImageFraming,
+  type ImageShaping,
+  type MailDocument,
+  type MailEditorResources,
+  type MailLocale,
+  type MailPreviewSituation,
+  type MailTemplateDeclaration,
 } from "@lfd/mail-blocks";
 
 import type { MailTextsByMail } from "../../../copy/domain/mail-copy-texts.js";
@@ -184,27 +186,33 @@ export function entryOf(template: string, declaration: MailTemplateDeclaration):
 
 /**
  * La copie des images, doublée : chaque adresse rend une copie sous
- * `COPY_BASE` (suffixée du format quand elle est recadrée), une adresse de
+ * `COPY_BASE` (suffixée du format quand elle est recadrée, et de la largeur
+ * quand elle n'est pas celle du corps), une adresse de
  * `refused` rejette l'erreur donnée. Les appels sont gardés, dans l'ordre.
  */
 export class RecordingDocumentImages extends MailDocumentImages {
   static readonly COPY_BASE = "https://mail.lfc.test/templates/";
   readonly calls: string[] = [];
   readonly framings: (ImageFraming | null)[] = [];
+  readonly widths: number[] = [];
 
   constructor(private readonly refused: ReadonlyMap<string, Error> = new Map()) {
     super();
   }
 
-  copy(sourceUrl: string, framing: ImageFraming | null): Promise<string> {
+  copy(sourceUrl: string, shaping: ImageShaping): Promise<string> {
+    const framing = shaping.framing;
     this.calls.push(sourceUrl);
     this.framings.push(framing);
+    this.widths.push(shaping.maxWidthPx);
     const refusal = this.refused.get(sourceUrl);
     if (refusal !== undefined) {
       return Promise.reject(refusal);
     }
     const name = sourceUrl.split("/").at(-1) ?? "image";
-    const suffix = framing === null ? "" : `-${framing.format.replace(":", "x")}`;
+    const format = framing === null ? "" : `-${framing.format.replace(":", "x")}`;
+    const width = shaping.maxWidthPx === imageCopyWidthPx({}) ? "" : `-w${shaping.maxWidthPx}`;
+    const suffix = `${format}${width}`;
     return Promise.resolve(`${RecordingDocumentImages.COPY_BASE}${name}${suffix}`);
   }
 }

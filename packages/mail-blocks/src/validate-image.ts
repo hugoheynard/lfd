@@ -1,6 +1,7 @@
 import type { ImageBlock } from "./mail-document.js";
 import { violation, type MailDocumentViolation } from "./mail-document-violation.js";
 import { isImageFocal, isImageFormat } from "./image-framing.js";
+import { isImageWidth } from "./image-width.js";
 import { isHttpsUrl, isImageSourceUrl } from "./urls.js";
 
 /**
@@ -13,7 +14,7 @@ export function imageViolations(block: ImageBlock): readonly MailDocumentViolati
   return [...framingViolations(block), ...sourceAndLinkViolations(block)];
 }
 
-/** Un format connu, et un point focal dans l'image. */
+/** Un format connu, un point focal dans l'image, une largeur connue. */
 function framingViolations(block: ImageBlock): readonly MailDocumentViolation[] {
   const violations: MailDocumentViolation[] = [];
   if (block.format !== undefined && !isImageFormat(block.format)) {
@@ -34,7 +35,32 @@ function framingViolations(block: ImageBlock): readonly MailDocumentViolation[] 
       ),
     );
   }
+  if (block.width !== undefined && !isImageWidth(block.width)) {
+    violations.push(
+      violation(
+        "image-width-invalid",
+        block.id,
+        `La largeur « ${String(block.width)} » n'existe pas : choisissez « dans le texte » ou « pleine largeur ».`,
+      ),
+    );
+  }
   return violations;
+}
+
+/**
+ * Dans une colonne : une image pleine largeur n'a pas de bord de carte à
+ * rejoindre (Hugo, 2026-11-08).
+ */
+export function imageInColumnViolations(block: ImageBlock): readonly MailDocumentViolation[] {
+  return block.width === "full"
+    ? [
+        violation(
+          "full-width-image-in-column",
+          block.id,
+          "Une image pleine largeur ne se place pas dans une colonne : réglez-la sur « dans le texte », ou sortez-la des colonnes.",
+        ),
+      ]
+    : [];
 }
 
 function sourceAndLinkViolations(block: ImageBlock): readonly MailDocumentViolation[] {

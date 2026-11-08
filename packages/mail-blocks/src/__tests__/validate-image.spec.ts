@@ -1,3 +1,4 @@
+import { imageCopyKey } from "../image-framing.js";
 import { imageBlocksOf, withImageSources } from "../image-sources.js";
 import type {
   ImageBlock,
@@ -123,7 +124,7 @@ describe("imageBlocksOf et withImageSources", () => {
   });
 
   it("pose la copie à côté de la source, et ne touche ni les autres blocs ni l'original", () => {
-    const rewritten = withImageSources(document, new Map([[SRC, COPY]]));
+    const rewritten = withImageSources(document, new Map([[imageCopyKey(IMAGE), COPY]]));
     expect(imageBlocksOf(rewritten).map((image) => [image.src, image.copySrc])).toEqual([
       [SRC, COPY],
       [SRC, COPY],

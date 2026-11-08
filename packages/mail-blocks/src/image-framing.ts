@@ -1,3 +1,5 @@
+import { imageCopyWidthPx, type ImageWidth } from "./image-width.js";
+
 /**
  * Le cadrage d'une image d'e-mail (plan `plan-editeur-par-blocs.md`, § 19,
  * « Format et point focal ») : les messageries ne recadrent pas de façon
@@ -64,18 +66,41 @@ export function framingOf(block: {
 }
 
 /**
- * La clé d'une copie à la publication : l'adresse source, et le cadrage s'il
- * y en a un. Deux blocs sur la même image en deux formats font deux copies ;
- * une image sans cadrage garde l'adresse seule pour clé (le comportement
- * d'avant le cadrage).
+ * Ce que la copie d'une image demande à la publication : son cadrage
+ * (`null` : l'image d'origine) et sa largeur maximale en pixels
+ * (`imageCopyWidthPx` — jamais agrandie).
+ */
+export interface ImageShaping {
+  readonly framing: ImageFraming | null;
+  readonly maxWidthPx: number;
+}
+
+/** La mise en forme de la copie d'un bloc : son cadrage et sa largeur. */
+export function imageShapingOf(block: {
+  readonly format?: ImageFormat;
+  readonly focal?: ImageFocal;
+  readonly width?: ImageWidth;
+}): ImageShaping {
+  return { framing: framingOf(block), maxWidthPx: imageCopyWidthPx(block) };
+}
+
+/**
+ * La clé d'une copie à la publication : l'adresse source, le cadrage s'il y
+ * en a un, et la largeur de la copie. Deux blocs sur la même image en deux
+ * formats, ou l'un pleine largeur et l'autre non, font deux copies.
+ *
+ * La largeur y est depuis le 2026-11-08 (toute copie est bornée en largeur) :
+ * une copie rangée avant, clé sans largeur, ne correspond plus et la
+ * republication recopie — une image `original` copiée telle quelle, sans
+ * borne, ne resservira donc pas.
  */
 export function imageCopyKey(block: {
   readonly src: string;
   readonly format?: ImageFormat;
   readonly focal?: ImageFocal;
+  readonly width?: ImageWidth;
 }): string {
   const framing = framingOf(block);
-  return framing === null
-    ? block.src
-    : `${block.src}#${framing.format}@${framing.focal.x},${framing.focal.y}`;
+  const framed = framing === null ? "" : `#${framing.format}@${framing.focal.x},${framing.focal.y}`;
+  return `${block.src}${framed}~${String(imageCopyWidthPx(block))}w`;
 }

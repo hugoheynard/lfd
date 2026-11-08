@@ -25,6 +25,8 @@ export const MAIL_DOCUMENT_VIOLATION_CODES = [
   "decorative-image-link",
   "image-format-invalid",
   "image-focal-invalid",
+  "image-width-invalid",
+  "full-width-image-in-column",
 ] as const;
 
 export type MailDocumentViolationCode = (typeof MAIL_DOCUMENT_VIOLATION_CODES)[number];

@@ -1,5 +1,6 @@
 import { BODY_STYLE, mailStylesOf, TEXT_STYLE } from "./charter-styles.js";
 import { STARTING_MAIL_CHARTER } from "./render-charter.js";
+import { IMAGE_GAP_PX } from "./card-geometry.js";
 
 /**
  * **Les styles en ligne de la coquille**, sortis de `html.ts` le 2026-11-07
@@ -66,7 +67,7 @@ export const CALLOUT_TEXT_STYLE = `${BODY_STYLE}font-size:14px;`;
 export const IMAGE_STYLE = "display:block;width:100%;max-width:100%;height:auto;border:0;";
 
 /** L'espace au-dessus d'une image libre, celui d'un encadré. */
-export const IMAGE_SPACING_STYLE = "margin:20px 0 0;";
+export const IMAGE_SPACING_STYLE = `margin:${String(IMAGE_GAP_PX)}px 0 0;`;
 
 /** Le lien autour d'une image libre : aucun soulignement sous l'image. */
 export const IMAGE_LINK_STYLE = "text-decoration:none;";
