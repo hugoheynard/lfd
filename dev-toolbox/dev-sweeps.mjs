@@ -25,6 +25,8 @@ export const EVERY_FIVE_MINUTES = [
   "admin/vitrine/sweep",
   // Le balayeur des e-mails (S1b) : reprend les envois restés en route.
   "admin/mail/requests/sweep",
+  // La surveillance des envois (S8) : sonne la cloche quand Resend se tait.
+  "admin/mail/requests/watch",
 ];
 
 /** À chaque heure pile, comme le cron `0 *` du Worker (`hourlySweeps`). */
