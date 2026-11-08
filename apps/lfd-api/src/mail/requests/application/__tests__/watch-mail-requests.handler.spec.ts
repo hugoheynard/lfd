@@ -151,6 +151,24 @@ describe("WatchMailRequestsHandler — la veille qui sonne la cloche (plan § 25
     expect(bell.rung[0]?.body).toContain("2 e-mails ont échoué définitivement depuis hier");
   });
 
+  /** Hugo, 2026-11-08 : l'échec se lit au suivi, pas à la carte de santé. */
+  it("des échecs définitifs mènent au suivi, adressés à son droit ; la file bloquée reste à la carte", async () => {
+    const failed = setup({ stalled: 0, oldestStalledAt: null, definitiveFailures: 1 });
+    await failed.handler.execute();
+    expect(failed.bell.rung[0]).toMatchObject({
+      link: "/emails/envois",
+      audience: "mail_sends:read",
+    });
+
+    const stalled = setup({
+      stalled: 7,
+      oldestStalledAt: new Date(NOW.getTime() - 42 * 60_000),
+      definitiveFailures: 0,
+    });
+    await stalled.handler.execute();
+    expect(stalled.bell.rung[0]).toMatchObject({ link: "/sante", audience: "ops_health:read" });
+  });
+
   it("demande la base avec les critères calculés au Clock", async () => {
     const { reader, handler } = setup(STALLED);
 

@@ -24,9 +24,9 @@ import {
 import { type MailWatchReport, WatchMailRequestsCommand } from "./watch-mail-requests.command.js";
 
 /**
- * L'écran où mènent les alarmes de la file : la carte de santé, dont le nœud
- * courrier montre les mêmes relevés. (Écrit le 2026-11-07, quand le suivi
- * n'avait pas d'écran ; il en a un depuis T3, où mènent les rebonds.)
+ * Où mène l'alarme de la boîte d'envoi bloquée (« en attente ») : la carte de
+ * santé, dont le nœud courrier montre la file. Les e-mails en échec et les
+ * rebonds mènent au suivi (Hugo, 2026-11-08) : c'est là qu'on lit lesquels.
  */
 const MAIL_ALARM_LINK = "/sante";
 
@@ -54,8 +54,9 @@ const MAIL_ALARM_KIND = "alert.mail";
  * déploiement exclue (règle 10). Ceux-là sont partis, et personne ne les a
  * reçus — rien d'autre ne le dirait.
  *
- * Adressée au droit qui lit la carte de santé (`ops_health:read`) : c'est
- * l'écran où l'alarme se vérifie.
+ * Chaque cloche est adressée au droit de l'écran où elle mène : la file
+ * bloquée à `ops_health:read` (la carte), les échecs et les rebonds à
+ * `mail_sends:read` (le suivi) — une cloche qui ouvre un 403 ne sert à rien.
  *
  * @sans-journal geste machine, en lecture seule sur le courrier ; la cloche
  * est sa trace.
@@ -98,13 +99,16 @@ export class WatchMailRequestsHandler implements ICommandHandler<
 }
 
 function noticeOf(alarm: MailBacklogAlarm, now: Date): StaffNotice {
+  const stalled = alarm.kind === "stalled";
   return {
     kind: MAIL_ALARM_KIND,
     ...wordsOf(alarm),
-    link: MAIL_ALARM_LINK,
+    link: stalled ? MAIL_ALARM_LINK : MAIL_SENDS_LINK,
     idempotencyKey: mailBacklogAlarmKey(alarm, now),
     occurredAt: now,
-    audience: staffPermission("ops_health", "read"),
+    audience: stalled
+      ? staffPermission("ops_health", "read")
+      : staffPermission("mail_sends", "read"),
   };
 }
 
@@ -137,6 +141,6 @@ function wordsOf(alarm: MailBacklogAlarm): { readonly subject: string; readonly 
   const failed = alarm.count === 1 ? "1 e-mail a échoué" : `${alarm.count} e-mails ont échoué`;
   return {
     subject: "Courrier en échec",
-    body: `${failed} définitivement depuis hier — ils ne repartiront pas seuls : voir le suivi du courrier.`,
+    body: `${failed} définitivement depuis hier — ils ne repartiront pas seuls : voir le suivi des e-mails, filtre « échoué ».`,
   };
 }

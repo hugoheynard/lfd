@@ -96,7 +96,10 @@ flowchart LR
    `complained` arrivé depuis 24 h : une cloche par modèle (droit
    `mail_sends:read`, lien `/emails/envois`), sonde exclue, clé
    `mail.rejected.<modèle>:<instant du plus récent>` — elle ne resonne qu'à
-   un nouveau rebond. La table reste en base ; la purge de dev la vide
+   un nouveau rebond. Les e-mails en **échec définitif** mènent aussi au
+   suivi (même droit, même lien — Hugo, 2026-11-08) ; seule la boîte
+   d'envoi bloquée (« en attente ») mène à la carte de santé
+   (`ops_health:read`, `/sante`). La table reste en base ; la purge de dev la vide
    encore. `JournalingMailer` est retiré ; la garde réseau de l'envoi est
    passée à `EffectiveCopyMailer`.
 6. **Les ports.** Le webhook vit dans le bloc `mail` et relaie
