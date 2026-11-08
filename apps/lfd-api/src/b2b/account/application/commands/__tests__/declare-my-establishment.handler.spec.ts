@@ -19,6 +19,10 @@ import {
 } from "../../../domain/ports/user-profile.repository.js";
 import { DeclareMyEstablishmentCommand } from "../declare-my-establishment.command.js";
 import { DeclareMyEstablishmentHandler } from "../declare-my-establishment.handler.js";
+import { RecordingMarketingConsent } from "../../../../../mail/channels/marketing/__tests__/recording-marketing-consent.js";
+import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
+import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import { AccountMarketingConsent } from "../../services/account-marketing-consent.js";
 
 /** Un compte provisionné au vol : son adresse, et rien d'autre. */
 const PROVISIONED: UserProfileRecord = {
@@ -130,20 +134,25 @@ interface Doubles {
   readonly handler: DeclareMyEstablishmentHandler;
   readonly trail: Trail;
   readonly events: RecordingPublisher;
+  readonly marketing: RecordingMarketingConsent;
+  readonly afterCommit: HeldAfterCommit;
 }
 
 function doubles(options: { stored?: UserProfileRecord | null; attached?: boolean } = {}): Doubles {
   const trail = new Trail();
   const events = new TrailPublisher(trail);
   const stored = options.stored === undefined ? PROVISIONED : options.stored;
+  const marketing = new RecordingMarketingConsent();
+  const afterCommit = new HeldAfterCommit();
   const handler = new DeclareMyEstablishmentHandler(
     new TrailProfiles(trail, stored),
     new TrailCompanies(trail),
     new TrailLock(trail, options.attached === true),
     new TrailUnitOfWork(trail),
     events,
+    new AccountMarketingConsent(marketing, afterCommit, new BackgroundWork()),
   );
-  return { handler, trail, events };
+  return { handler, trail, events, marketing, afterCommit };
 }
 
 function command(
@@ -155,6 +164,7 @@ function command(
     overrides.lastName ?? "Rousseau",
     overrides.phone ?? "01 42 71 08 44",
     overrides.enseigne ?? "Le Pain Quotidien du Marais",
+    overrides.signupConsent ?? null,
   );
 }
 
@@ -246,5 +256,44 @@ describe("DeclareMyEstablishmentHandler", () => {
 
     await expect(handler.execute(command())).rejects.toBeInstanceOf(UserProfileNotFoundError);
     expect(trail.calls).toEqual([]);
+  });
+});
+
+/** La case de l'inscription pro (plan de désinscription, C2), après la validation. */
+describe("DeclareMyEstablishmentHandler — la case des offres", () => {
+  const answer = { accepted: true, textVersion: "society.v1", locale: "en" } as const;
+
+  it("cochée : l'accord à l'adresse du compte, référencé par le compte, après la validation", async () => {
+    const { handler, marketing, afterCommit } = doubles();
+
+    await handler.execute(command({ signupConsent: { answer, addressProven: false } }));
+    expect(marketing.calls).toEqual([]);
+    await afterCommit.commit();
+
+    expect(marketing.calls).toEqual([
+      {
+        kind: "request",
+        space: "lfc",
+        address: "camille@pqmarais.fr",
+        consent: {
+          textVersion: "society.v1",
+          locale: "en",
+          where: "signup",
+          ref: "user_1",
+          verified: false,
+        },
+      },
+    ]);
+  });
+
+  it("une déclaration refusée n'inscrit rien pour après", async () => {
+    const { handler, marketing, afterCommit } = doubles({ attached: true });
+
+    await expect(
+      handler.execute(command({ signupConsent: { answer, addressProven: true } })),
+    ).rejects.toThrow(PersonAlreadyAttachedError);
+    await afterCommit.commit();
+
+    expect(marketing.calls).toEqual([]);
   });
 });

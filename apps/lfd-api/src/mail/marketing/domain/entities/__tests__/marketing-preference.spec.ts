@@ -75,14 +75,16 @@ describe("MarketingPreference — les transitions du registre (U2)", () => {
     "une désinscription ne se lève pas par « %s »",
     (place) => {
       const row = MarketingPreference.optedOut("p1", "lfc", ADDRESS, { at: T0, source: "link" });
-      expect(() => row.resubscribe(draft(place))).toThrow(MarketingResubscriptionRefusedError);
+      expect(() => row.resubscribe(draft(place), true)).toThrow(
+        MarketingResubscriptionRefusedError,
+      );
       expect(row.isUnsubscribed()).toBe(true);
     },
   );
 
   it("« Mes préférences », connecté, réinscrit — la désinscription s'efface", () => {
     const row = MarketingPreference.optedOut("p1", "lfc", ADDRESS, { at: T0, source: "link" });
-    row.resubscribe({ ...draft("preferences"), at: T1 });
+    row.resubscribe({ ...draft("preferences"), at: T1 }, true);
     expect(row.snapshot()).toMatchObject({
       status: "accepted",
       confirmedAt: T1,

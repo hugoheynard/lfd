@@ -11,6 +11,7 @@ import {
   orderLocaleSchema,
   pickupPointIssue,
 } from "./order.js";
+import { societyConsentAnswerSchema } from "./marketing-consent.js";
 
 /**
  * **Commander sans compte** — plan
@@ -107,6 +108,12 @@ export const placeShopOrderPayloadSchema = z
     salesTerms: acceptedSalesTermsSchema,
     /** Le TTC vu au panier (`expectedTotalCentsSchema`, obligatoire depuis T3). */
     expectedTotalCents: expectedTotalCentsSchema,
+    /**
+     * La case « recevoir les offres » de la société qui vend (plan de
+     * désinscription, C2). Un invité la voit TOUJOURS (règle 17) ; hors de
+     * l'empreinte d'idempotence (règle 21). Cf. `societyConsentAnswerSchema`.
+     */
+    marketingConsent: societyConsentAnswerSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

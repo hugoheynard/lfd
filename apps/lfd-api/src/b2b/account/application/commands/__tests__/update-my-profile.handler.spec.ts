@@ -13,6 +13,10 @@ import {
 } from "../../../domain/ports/user-profile.repository.js";
 import { UpdateMyProfileCommand } from "../update-my-profile.command.js";
 import { UpdateMyProfileHandler } from "../update-my-profile.handler.js";
+import { RecordingMarketingConsent } from "../../../../../mail/channels/marketing/__tests__/recording-marketing-consent.js";
+import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
+import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import { AccountMarketingConsent } from "../../services/account-marketing-consent.js";
 import type { ProvisionedIdentity } from "../../../../../platform/shared/identity/provisioned-identity.js";
 
 const STORED: UserProfileRecord = {
@@ -32,6 +36,8 @@ interface Journal {
 interface Doubles {
   readonly handler: UpdateMyProfileHandler;
   readonly journal: Journal;
+  readonly marketing: RecordingMarketingConsent;
+  readonly afterCommit: HeldAfterCommit;
 }
 
 function doubles(
@@ -69,14 +75,19 @@ function doubles(
     },
   };
 
+  const marketing = new RecordingMarketingConsent();
+  const afterCommit = new HeldAfterCommit();
   return {
     handler: new UpdateMyProfileHandler(
       profiles,
       identity,
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new AccountMarketingConsent(marketing, afterCommit, new BackgroundWork()),
     ),
     journal,
+    marketing,
+    afterCommit,
   };
 }
 
@@ -88,8 +99,11 @@ function command(overrides: Partial<UpdateMyProfileCommand> = {}): UpdateMyProfi
     overrides.lastName ?? "Rousseau",
     overrides.email ?? "camille@ancienne.fr",
     overrides.phone ?? "",
+    overrides.signupConsent ?? null,
   );
 }
+
+const SIGNUP_ANSWER = { accepted: true, textVersion: "society.v1", locale: "fr" } as const;
 
 describe("UpdateMyProfileHandler", () => {
   it("écrit le profil sans toucher au fournisseur quand l'e-mail est inchangé", async () => {
@@ -168,5 +182,90 @@ describe("UpdateMyProfileHandler", () => {
     const { handler } = doubles({ stored: null });
 
     await expect(handler.execute(command())).rejects.toBeInstanceOf(UserProfileNotFoundError);
+  });
+});
+
+/**
+ * Le registre marketing (plan de désinscription, C2 et règle 24) : tout part
+ * APRÈS la validation, par le canal du bloc `mail`.
+ */
+describe("UpdateMyProfileHandler — le registre marketing", () => {
+  it("un changement d'adresse fait suivre l'état, seulement après la validation", async () => {
+    const { handler, marketing, afterCommit } = doubles();
+
+    await handler.execute(command({ email: "camille@nouvelle.fr" }));
+    expect(marketing.calls).toEqual([]);
+    await afterCommit.commit();
+
+    expect(marketing.calls).toEqual([
+      { kind: "move", space: null, from: "camille@ancienne.fr", to: "camille@nouvelle.fr" },
+    ]);
+  });
+
+  it("la case de l'inscription cochée, adresse prouvée : l'accord sans attente", async () => {
+    const { handler, marketing, afterCommit } = doubles();
+
+    await handler.execute(
+      command({ signupConsent: { answer: SIGNUP_ANSWER, addressProven: true } }),
+    );
+    await afterCommit.commit();
+
+    expect(marketing.calls).toEqual([
+      {
+        kind: "request",
+        space: "lfc",
+        address: "camille@ancienne.fr",
+        consent: {
+          textVersion: "society.v1",
+          locale: "fr",
+          where: "signup",
+          ref: "user_1",
+          verified: true,
+        },
+      },
+    ]);
+  });
+
+  it("la case cochée sur une adresse qui vient de changer : déménagement d'abord, et non prouvée", async () => {
+    const { handler, marketing, afterCommit } = doubles();
+
+    await handler.execute(
+      command({
+        email: "camille@nouvelle.fr",
+        signupConsent: { answer: SIGNUP_ANSWER, addressProven: true },
+      }),
+    );
+    await afterCommit.commit();
+
+    expect(marketing.calls.map((call) => call.kind)).toEqual(["move", "request"]);
+    expect(marketing.calls[1]).toMatchObject({
+      address: "camille@nouvelle.fr",
+      consent: { verified: false },
+    });
+  });
+
+  it("une case non cochée, ou absente, n'écrit rien", async () => {
+    const { handler, marketing, afterCommit } = doubles();
+
+    await handler.execute(
+      command({
+        signupConsent: { answer: { ...SIGNUP_ANSWER, accepted: false }, addressProven: true },
+      }),
+    );
+    await handler.execute(command());
+    await afterCommit.commit();
+
+    expect(marketing.calls).toEqual([]);
+  });
+
+  it("une propagation qui échoue n'inscrit rien pour après", async () => {
+    const { handler, marketing, afterCommit } = doubles({ identityFails: true });
+
+    await expect(handler.execute(command({ email: "camille@nouvelle.fr" }))).rejects.toThrow(
+      /indisponible/u,
+    );
+    await afterCommit.commit();
+
+    expect(marketing.calls).toEqual([]);
   });
 });

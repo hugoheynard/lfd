@@ -10,6 +10,7 @@ import {
 import { UserProfileUpdatedEvent } from "../../domain/events/person-acts.event.js";
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { UserProfileRepository } from "../../domain/ports/user-profile.repository.js";
+import { AccountMarketingConsent } from "../services/account-marketing-consent.js";
 import { UpdateMyProfileCommand } from "./update-my-profile.command.js";
 import { personName } from "../../domain/events/journal-names.js";
 
@@ -39,6 +40,7 @@ export class UpdateMyProfileHandler implements ICommandHandler<UpdateMyProfileCo
     private readonly identity: CustomerIdentityPort,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly marketing: AccountMarketingConsent,
   ) {}
 
   async execute(command: UpdateMyProfileCommand): Promise<void> {
@@ -67,6 +69,14 @@ export class UpdateMyProfileHandler implements ICommandHandler<UpdateMyProfileCo
           ),
         );
       }
+      // Le registre marketing, après la validation : l'état de l'ancienne
+      // adresse la suit (règle 24), et la case de l'inscription (C2).
+      this.marketing.afterAccountWritten({
+        userId: command.userId,
+        address: profile.email.value,
+        previousAddress: profile.emailChanged ? current.email : null,
+        signup: command.signupConsent,
+      });
     });
   }
 

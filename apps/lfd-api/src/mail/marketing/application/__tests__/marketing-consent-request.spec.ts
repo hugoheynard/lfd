@@ -76,7 +76,7 @@ describe("request — une adresse jamais demandée", () => {
           confirmUrl: `${SHOP_ORIGIN}/api/lfd/mail/marketing/confirm/${token}`,
           locale: "it",
         },
-        idempotencyKey: `marketing.confirm:${rowOf(world)?.id ?? ""}`,
+        idempotencyKey: `marketing.confirm:${rowOf(world)?.id ?? ""}:${String(NOW.getTime())}`,
         subjects: [],
       },
     ]);

@@ -34,10 +34,9 @@ export interface MarketingConsentRequest {
  * déclaré ET implémenté par le bloc `mail`. Le registre vit ici ; le recueil
  * chez ceux qui parlent au client (compte, commande), par ce port.
  *
- * U2 y a posé désinscrire et lire un état ; C1 y pose `request`, la demande
- * d'accord. `askable` et `moveAddress` viendront avec C2, quand un appelant
- * existera — une méthode sans appelant est une promesse que personne
- * n'éprouve.
+ * U2 y a posé désinscrire et lire un état ; C1 la demande d'accord ; C2
+ * `askable` et `moveAddress` (le compte et la commande) ; C3 la réinscription
+ * et la case « partenaires » (« Mes préférences »).
  */
 export abstract class MarketingConsent {
   /**
@@ -62,6 +61,56 @@ export abstract class MarketingConsent {
     address: string,
     consent: MarketingConsentRequest,
   ): Promise<void>;
+
+  /**
+   * **Le geste de « Mes préférences »** (C3, règle 13) : comme
+   * {@link request}, et en plus le SEUL geste qui lève une désinscription.
+   * Une adresse non vérifiée passe par la double confirmation et reste
+   * désinscrite jusqu'au clic. `consent.where` doit être `preferences`.
+   *
+   * @throws {MarketingResubscriptionRefusedError} une désinscription, et le lieu n'est pas `preferences`.
+   * @throws {MarketingConfirmationUnavailableError} comme {@link request}.
+   */
+  abstract resubscribe(
+    space: MailSpace,
+    address: string,
+    consent: MarketingConsentRequest,
+  ): Promise<void>;
+
+  /**
+   * La case « partenaires » (règles 14, 19, 20) : un accord d'origine
+   * `partners` pour chacune des AUTRES sociétés du groupe qui envoient du
+   * marketing, telles qu'elles sont À CET INSTANT. Bâtie, éteinte.
+   *
+   * @throws {MarketingPartnersNotOfferedError} le groupe n'a pas deux sociétés marketing.
+   */
+  abstract requestPartners(
+    from: MailSpace,
+    address: string,
+    consent: MarketingConsentRequest,
+  ): Promise<void>;
+
+  /**
+   * La case « partenaires » est-elle proposée ? Seulement à partir de deux
+   * sociétés marketing dans le groupe (règle 19) — aujourd'hui, non. Ne
+   * dépend d'aucune adresse.
+   */
+  abstract partnersOffered(): boolean;
+
+  /**
+   * Faut-il proposer la case de cet espace à cette adresse ? Vrai seulement
+   * sans ligne (règle 17). ⚠️ Un oracle si on le sert pour une adresse
+   * quelconque : l'appelant ne le demande que pour les adresses de la
+   * personne connectée.
+   */
+  abstract askable(space: MailSpace, address: string): Promise<boolean>;
+
+  /**
+   * Un compte change d'adresse (règle 24) : l'état de l'ancienne suit la
+   * nouvelle — dans `space`, ou dans tous les espaces (`null`). Une
+   * désinscription protège la nouvelle adresse ; un accord reste accordé.
+   */
+  abstract moveAddress(space: MailSpace | null, from: string, to: string): Promise<void>;
 
   /**
    * Désinscrit l'adresse de cet espace, idempotent. Une adresse inconnue du

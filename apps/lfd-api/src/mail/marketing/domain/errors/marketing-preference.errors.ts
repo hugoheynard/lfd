@@ -60,3 +60,20 @@ export class MarketingConfirmationUnavailableError extends TechnicalError {
     );
   }
 }
+
+/**
+ * La case « partenaires » n'existe que quand le groupe a au moins deux
+ * sociétés qui envoient du marketing (plan de désinscription, règle 19) —
+ * aujourd'hui aucune. La boutique ne la montre pas ; un appel qui l'envoie
+ * quand même est refusé, et rien n'est rangé.
+ */
+export class MarketingPartnersNotOfferedError extends BusinessError {
+  constructor() {
+    super(
+      "MAIL_MARKETING_PARTNERS_NOT_OFFERED",
+      "La case « partenaires » n'est pas proposée : aucune autre société du groupe n'envoie " +
+        "d'offres aujourd'hui. Rien n'a été enregistré ; l'inscription aux offres de la " +
+        "boutique se fait par sa propre case.",
+    );
+  }
+}

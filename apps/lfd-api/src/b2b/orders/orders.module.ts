@@ -257,6 +257,7 @@ import { PrismaGuestOrderNoticeReader } from "./infrastructure/prisma-guest-orde
 import { GuestOrderNoticeReader } from "./domain/ports/guest-order-notice.reader.js";
 import { ShopOrderIdempotencyStore } from "./domain/ports/shop-order-idempotency.store.js";
 import { PlaceShopOrderHandler } from "./application/commands/place-shop-order.handler.js";
+import { OrderMarketingConsent } from "./application/services/order-marketing-consent.js";
 import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.js";
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
@@ -665,6 +666,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     //
     // Sa route, `ShopOrdersController`, est ouverte depuis le 2026-10-11 (§6).
     PlaceShopOrderHandler,
+    // La case des offres à la passation, invité compris (plan de
+    // désinscription, C2) : le registre du bloc `mail`, après la validation.
+    OrderMarketingConsent,
     { provide: ShopOrderIdempotencyStore, useClass: PrismaShopOrderIdempotencyStore },
     { provide: GuestBuyerRegistrar, useClass: PrismaGuestBuyerRegistrar },
     { provide: GuestOrderNoticeReader, useClass: PrismaGuestOrderNoticeReader },

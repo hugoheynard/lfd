@@ -12,6 +12,9 @@ import type {
   MarketingStatus,
   UnsubscribeSource,
 } from "../domain/value-objects/marketing-vocabulary.js";
+import { MarketingPartnersNotOfferedError } from "../domain/errors/marketing-preference.errors.js";
+import { MarketingGroup } from "../domain/services/marketing-group.js";
+import { MarketingAddressMover } from "./services/marketing-address-mover.js";
 import { MarketingAddresses } from "./services/marketing-addresses.js";
 import { MarketingConsentRequester } from "./services/marketing-consent-requester.js";
 import { MarketingUnsubscriber } from "./services/marketing-unsubscriber.js";
@@ -31,6 +34,8 @@ export class BlockMarketingConsent extends MarketingConsent {
     private readonly reader: MarketingPreferenceReader,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly mover: MarketingAddressMover,
+    private readonly group: MarketingGroup,
   ) {
     super();
   }
@@ -43,6 +48,48 @@ export class BlockMarketingConsent extends MarketingConsent {
     const at = this.clock.now();
     const target = this.addresses.of(address);
     await this.uow.run(() => this.requester.request(space, target, consent, at));
+  }
+
+  async resubscribe(
+    space: MailSpace,
+    address: string,
+    consent: MarketingConsentRequest,
+  ): Promise<void> {
+    const at = this.clock.now();
+    const target = this.addresses.of(address);
+    await this.uow.run(() => this.requester.resubscribe(space, target, consent, at));
+  }
+
+  async requestPartners(
+    from: MailSpace,
+    address: string,
+    consent: MarketingConsentRequest,
+  ): Promise<void> {
+    if (!this.group.isOffered()) {
+      throw new MarketingPartnersNotOfferedError();
+    }
+    const at = this.clock.now();
+    const target = this.addresses.of(address);
+    const partners = this.group.partnersOf(from);
+    await this.uow.run(async () => {
+      for (const space of partners) {
+        await this.requester.request(space, target, consent, at, "partners");
+      }
+    });
+  }
+
+  partnersOffered(): boolean {
+    return this.group.isOffered();
+  }
+
+  async askable(space: MailSpace, address: string): Promise<boolean> {
+    return (await this.preferenceOf(space, address)) === null;
+  }
+
+  async moveAddress(space: MailSpace | null, from: string, to: string): Promise<void> {
+    const at = this.clock.now();
+    const [old, next] = [this.addresses.of(from), this.addresses.of(to)];
+    await this.uow.run(() => this.mover.move(space, old, next, at));
   }
 
   async unsubscribe(space: MailSpace, address: string, source: UnsubscribeSource): Promise<void> {

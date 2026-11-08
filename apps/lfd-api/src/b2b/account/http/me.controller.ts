@@ -1,4 +1,4 @@
-import type { LoginMethodsView } from "@lfd/contracts";
+import type { LoginMethodsView, SocietyConsentAnswer } from "@lfd/contracts";
 import {
   Body,
   Controller,
@@ -25,6 +25,7 @@ import { UpdateMyProfileCommand } from "../application/commands/update-my-profil
 import { UpdateNavPreferencesCommand } from "../application/commands/update-nav-preferences.command.js";
 import { GetMyAccountQuery } from "../application/queries/get-my-account.query.js";
 import type { AccountView } from "../domain/ports/account.reader.js";
+import type { SignupConsent } from "../application/services/account-marketing-consent.js";
 import type { NavPreferencesPatch } from "../domain/value-objects/nav-preferences.js";
 import { featureSubjectOf } from "../../feature-access/http/feature-subject.js";
 import { PasswordLinkThrottleGuard } from "./password-link-throttle.guard.js";
@@ -86,6 +87,7 @@ export class MeController {
         payload.lastName,
         payload.email,
         payload.phone,
+        signupConsentOf(payload.marketingConsent, user),
       ),
     );
     return this.queries.execute<GetMyAccountQuery, AccountView>(myAccountQuery(user));
@@ -109,6 +111,7 @@ export class MeController {
         payload.lastName,
         payload.phone,
         payload.enseigne,
+        signupConsentOf(payload.marketingConsent, user),
       ),
     );
     return { companyId };
@@ -248,6 +251,17 @@ function toNavPreferencesPatch(payload: UpdateNavPrefsPayload): NavPreferencesPa
     ...(payload.catalogueView === undefined ? {} : { catalogueView: payload.catalogueView }),
     ...(payload.workspace === undefined ? {} : { workspace: payload.workspace }),
   };
+}
+
+/**
+ * La case de l'inscription, et la preuve de l'adresse — lue en base par le
+ * principal, jamais dans le corps.
+ */
+function signupConsentOf(
+  answer: SocietyConsentAnswer | undefined,
+  user: Principal,
+): SignupConsent | null {
+  return answer === undefined ? null : { answer, addressProven: user.emailProven };
 }
 
 /**

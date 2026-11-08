@@ -616,3 +616,18 @@ export class GuestBecameAccountMeanwhileError extends BusinessError {
     );
   }
 }
+
+/**
+ * « Mes préférences » sur un compte qui n'a pas encore d'adresse (un compte né
+ * d'un jeton sans e-mail, plan de désinscription, C3) : il n'y a rien à
+ * inscrire ni à désinscrire.
+ */
+export class MarketingWithoutAddressError extends BusinessError {
+  constructor() {
+    super(
+      "ACCOUNT_MARKETING_WITHOUT_ADDRESS",
+      "Ce compte n'a pas encore d'adresse e-mail : il n'y a rien à inscrire ni à désinscrire. " +
+        "Renseigner l'adresse dans « Mon profil », puis revenir à « Mes préférences ».",
+    );
+  }
+}

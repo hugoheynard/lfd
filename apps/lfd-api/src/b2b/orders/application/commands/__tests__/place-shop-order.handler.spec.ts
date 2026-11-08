@@ -102,6 +102,7 @@ import { noSaleOperations } from "../../../../catalog/application/__tests__/sale
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { PlaceShopOrderCommand } from "../place-shop-order.command.js";
 import { SeeingPlaceShopOrderHandler, UNSEEN_TOTAL_CENTS } from "./seeing-total-handlers.js";
+import { noOrderMarketing } from "../../services/__tests__/order-marketing-doubles.js";
 import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
@@ -505,6 +506,7 @@ function scene(
     earning,
     new FakeWelcome(options.welcomeBonus ?? null),
     new CustomerCancellationDeadline(new FixedCancellationSettings(options.cancellation)),
+    noOrderMarketing(),
   );
   return { handler, sink, paid, keys, buyers, published, durable, earning };
 }

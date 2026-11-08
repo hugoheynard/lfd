@@ -24,6 +24,7 @@ import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
+import { OrderMarketingConsent } from "../services/order-marketing-consent.js";
 import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
@@ -62,6 +63,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly durable: DurablePublisher,
     private readonly intake: OrderIntake,
     private readonly cancellationDeadline: CustomerCancellationDeadline,
+    private readonly consent: OrderMarketingConsent,
   ) {}
 
   /**
@@ -251,6 +253,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         }
         const written = await this.orders.place(order);
         await this.keys.resolve(actorUserId, payload.idempotencyKey, written.id);
+        // La case des offres, pour après la validation (C2, règle 21).
+        this.consent.collect(written.id, command.consentBuyer, payload.marketingConsent);
         // La livraison situe l'adresse : un fait durable, écrit avec la commande (CA0).
         await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
         if (voucherId !== null && intent === null) {

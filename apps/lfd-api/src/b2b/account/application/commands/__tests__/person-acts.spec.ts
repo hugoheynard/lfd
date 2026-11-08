@@ -38,6 +38,19 @@ import {
   PHONE,
   RecordingRenewal,
 } from "./member-acts-doubles.js";
+import { RecordingMarketingConsent } from "../../../../../mail/channels/marketing/__tests__/recording-marketing-consent.js";
+import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
+import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import { AccountMarketingConsent } from "../../services/account-marketing-consent.js";
+
+/** Le registre marketing, hors de ce que ces tests éprouvent. */
+function noMarketing(): AccountMarketingConsent {
+  return new AccountMarketingConsent(
+    new RecordingMarketingConsent(),
+    new HeldAfterCommit(),
+    new BackgroundWork(),
+  );
+}
 
 /**
  * **Ce qu'un geste sur une personne laisse au journal** (plan
@@ -181,6 +194,7 @@ describe("le profil", () => {
       new Identity(),
       events,
       new DirectUnitOfWork(),
+      noMarketing(),
     );
 
     await handler.execute(profileCommand({ email: EMAIL, phone: PHONE }));
@@ -205,6 +219,7 @@ describe("le profil", () => {
       new Identity(),
       events,
       new DirectUnitOfWork(),
+      noMarketing(),
     );
 
     await handler.execute(profileCommand({}));
@@ -220,6 +235,7 @@ describe("le profil", () => {
       new Identity(true),
       events,
       new DirectUnitOfWork(),
+      noMarketing(),
     );
 
     await expect(handler.execute(profileCommand({ email: EMAIL }))).rejects.toThrow(

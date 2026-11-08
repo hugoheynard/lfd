@@ -45,6 +45,12 @@ export class PrismaMarketingPreferenceRepository extends MarketingPreferenceRepo
     });
   }
 
+  /** Par l'identifiant : la clé `(space, print)` est celle qui vient de changer. */
+  async relocate(preference: MarketingPreference): Promise<void> {
+    const { id, ...rest } = toPersistence(preference);
+    await this.prisma.mailMarketingPreference.update({ where: { id }, data: rest });
+  }
+
   /** L'effacement d'un accord (règle 23), et lui seul. */
   async forget(preference: MarketingPreference): Promise<void> {
     await this.prisma.mailMarketingPreference.deleteMany({ where: { id: preference.id } });

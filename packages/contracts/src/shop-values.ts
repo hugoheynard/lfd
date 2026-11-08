@@ -37,6 +37,15 @@ export {
   type OrderRevisability,
   type OrderRevisionRefusal,
 } from "./order-revision.values.js";
+export {
+  MARKETING_CONSENT_SPACES,
+  MARKETING_CONSENT_TEXT_VERSIONS,
+  SHOP_MARKETING_SPACE,
+  type MarketingConsentSpace,
+  type MarketingPreferenceState,
+  type MyMarketingPreferencesView,
+  type MyMarketingSpaceView,
+} from "./marketing-consent.values.js";
 export { SALES_TERMS_OUTDATED, type AcceptedSalesTerms } from "./sales-terms-acceptance.values.js";
 export {
   DEFAULT_ORDER_OPENING,

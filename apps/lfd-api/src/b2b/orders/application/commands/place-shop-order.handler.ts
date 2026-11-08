@@ -23,6 +23,7 @@ import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { GuestIdentity } from "../../domain/value-objects/guest-identity.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { OrderMarketingConsent } from "../services/order-marketing-consent.js";
 import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { PlaceShopOrderCommand, type PlaceShopOrderResult } from "./place-shop-order.command.js";
@@ -86,6 +87,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     private readonly earning: LoyaltyEarningPreview,
     private readonly welcome: WelcomeBonusPreview,
     private readonly cancellationDeadline: CustomerCancellationDeadline,
+    private readonly consent: OrderMarketingConsent,
   ) {}
 
   /**
@@ -241,6 +243,13 @@ export class PlaceShopOrderHandler implements ICommandHandler<
         await this.drafting.holdSupply(order, payload.requestedDeliveryDate);
         const written = await this.orders.place(order);
         await this.keys.resolve(payload.idempotencyKey, written.id);
+        // La case des offres, pour après la validation (C2, règles 17 et 21) :
+        // une adresse d'invité n'est jamais prouvée — double confirmation.
+        this.consent.collect(
+          written.id,
+          { address: payload.buyer.email, addressProven: false },
+          payload.marketingConsent,
+        );
         // La livraison situe l'adresse : un fait durable, écrit avec la commande (CA0).
         await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
         return written;

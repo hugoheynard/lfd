@@ -19,6 +19,7 @@ import type { SettlementRegime } from "./order-sheet.js";
 import type { OrderCutoffStatus } from "./order-cutoff.js";
 import { exposedHandoverToken } from "./order-settlement.values.js";
 import { contentLocales, salesTermsDocuments } from "./platform-content.defaults.js";
+import { societyConsentAnswerSchema } from "./marketing-consent.js";
 import { SALES_TERMS_REQUIRED_MESSAGE } from "./sales-terms-acceptance.values.js";
 
 /**
@@ -506,6 +507,12 @@ export const placeOrderPayloadSchema = z
     salesTerms: acceptedSalesTermsSchema,
     /** Le TTC vu au panier. Cf. {@link expectedTotalCentsSchema}. */
     expectedTotalCents: expectedTotalCentsSchema,
+    /**
+     * La case « recevoir les offres » de la société qui vend (plan de
+     * désinscription, C2), montrée seulement si `GET /me/marketing` la dit
+     * `askable`. Hors de l'empreinte d'idempotence (règle 21).
+     */
+    marketingConsent: societyConsentAnswerSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

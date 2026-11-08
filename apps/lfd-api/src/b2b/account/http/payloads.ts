@@ -1,4 +1,4 @@
-import { assignableRoleSchema } from "@lfd/contracts";
+import { assignableRoleSchema, societyConsentAnswerSchema } from "@lfd/contracts";
 import { z } from "zod";
 
 /**
@@ -16,6 +16,12 @@ export const updateProfilePayload = z.object({
   lastName: z.string(),
   email: z.string(),
   phone: z.string().default(""),
+  /**
+   * La case de la société, cochée à l'INSCRIPTION (`/bienvenue`, plan de
+   * désinscription, C2). Seul l'écran d'inscription l'envoie ; « Mes
+   * préférences » a ses propres routes (`/me/marketing`).
+   */
+  marketingConsent: societyConsentAnswerSchema.optional(),
 });
 
 export type UpdateProfilePayload = z.infer<typeof updateProfilePayload>;
@@ -105,6 +111,8 @@ export const declareEstablishmentPayload = z.object({
   lastName: z.string(),
   phone: z.string().default(""),
   enseigne: z.string(),
+  /** La case de la société, cochée à l'inscription pro (C2). */
+  marketingConsent: societyConsentAnswerSchema.optional(),
 });
 
 export type DeclareEstablishmentPayload = z.infer<typeof declareEstablishmentPayload>;

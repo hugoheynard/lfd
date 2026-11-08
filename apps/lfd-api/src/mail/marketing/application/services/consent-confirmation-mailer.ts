@@ -16,9 +16,10 @@ const CONFIRM_TEMPLATE = "customer.marketing-confirm";
  * (plan de désinscription, règle 18), demandé par la porte du bloc dans la
  * transaction de l'appelant : la ligne et l'e-mail tombent ensemble.
  *
- * La clé d'idempotence est l'identifiant de la LIGNE : une demande rejouée
- * retrouve sa ligne et ne renvoie rien ; une nouvelle demande, après la
- * purge, est une nouvelle ligne. Aucune adresse dans la clé.
+ * La clé d'idempotence est l'identifiant de la LIGNE et l'instant de la
+ * demande : une demande rejouée retrouve sa ligne et ne renvoie rien ; une
+ * réinscription de la même ligne (C3) est une demande de plus, et son
+ * e-mail part. Aucune adresse dans la clé.
  */
 @Injectable()
 export class ConsentConfirmationMailer {
@@ -55,7 +56,7 @@ export class ConsentConfirmationMailer {
       template: CONFIRM_TEMPLATE,
       to: address.key,
       data: { confirmUrl, locale },
-      idempotencyKey: `marketing.confirm:${preference.id}`,
+      idempotencyKey: `marketing.confirm:${preference.id}:${String(issuedAt.getTime())}`,
       // Aucun objet métier : la référence de l'acte est opaque et sans type.
       subjects: [],
     });

@@ -2392,6 +2392,30 @@ export type {
   UnorderedReceiptView,
 } from "./resupply-receipt.js";
 export {
+  MARKETING_CONSENT_SPACES,
+  MARKETING_CONSENT_TEXT_VERSIONS,
+  MARKETING_PREFERENCE_STATES,
+  PUBLISHED_MARKETING_TEXT_VERSIONS,
+  SHOP_MARKETING_SPACE,
+  type MarketingConsentSpace,
+  type MarketingPreferenceState,
+  type MyMarketingPreferencesView,
+  type MyMarketingSpaceView,
+} from "./marketing-consent.values.js";
+export {
+  marketingConsentSpaceSchema,
+  newsletterSignupPayloadSchema,
+  partnersConsentPayloadSchema,
+  societyConsentAnswerSchema,
+  subscribeMarketingPayloadSchema,
+  unsubscribeMarketingPayloadSchema,
+  type NewsletterSignupPayload,
+  type PartnersConsentPayload,
+  type SocietyConsentAnswer,
+  type SubscribeMarketingPayload,
+  type UnsubscribeMarketingPayload,
+} from "./marketing-consent.js";
+export {
   SALES_TERMS_OUTDATED,
   SALES_TERMS_REQUIRED_MESSAGE,
   type AcceptedSalesTerms,

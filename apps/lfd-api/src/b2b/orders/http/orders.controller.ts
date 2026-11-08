@@ -80,7 +80,10 @@ export class OrdersController {
     @ActingCompany() companyId: string | null,
   ): Promise<PlacedOrderResponse> {
     const placed = await this.commands.execute<PlaceOrderCommand, PlaceOrderResult>(
-      new PlaceOrderCommand(user.userId, payload, companyId),
+      new PlaceOrderCommand(user.userId, payload, companyId, {
+        address: user.email,
+        addressProven: user.emailProven,
+      }),
     );
     // `payment` n'est présent que si une carte est requise (pas d'entreprise, ou
     // entreprise non active / per_order) ; on ne l'ajoute que dans ce cas

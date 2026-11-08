@@ -42,6 +42,15 @@ export class InMemoryPreferences extends MarketingPreferenceRepository {
     return Promise.resolve();
   }
 
+  relocate(preference: MarketingPreference): Promise<void> {
+    for (const [key, row] of this.rows) {
+      if (row.id === preference.id) {
+        this.rows.delete(key);
+      }
+    }
+    return this.save(preference);
+  }
+
   forget(preference: MarketingPreference): Promise<void> {
     const { space, print } = preference.snapshot();
     this.rows.delete(`${space}|${print}`);

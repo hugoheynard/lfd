@@ -87,6 +87,27 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
     ).toEqual({ kind: "backend", backend: "lfd", path: `/mail/marketing/confirm/${token}` });
   });
 
+  /**
+   * La lettre du pied de page (même plan, C5) : un POST public sous l'API, et
+   * l'adresse est dans le CORPS — le chemin n'en porte aucune.
+   */
+  it("route l'inscription à la lettre, sur la zone, vers l'API", () => {
+    expect(resolveTarget(ZONE_HOSTNAME, `${API_PREFIXES.lfd}/mail/newsletter`)).toEqual({
+      kind: "backend",
+      backend: "lfd",
+      path: "/mail/newsletter",
+    });
+  });
+
+  /** « Mes préférences » (même plan, C3) : la route du client connecté, sous l'API. */
+  it("route « Mes préférences » des e-mails, sur la zone, vers l'API", () => {
+    expect(resolveTarget(ZONE_HOSTNAME, `${API_PREFIXES.lfd}/me/marketing`)).toEqual({
+      kind: "backend",
+      backend: "lfd",
+      path: "/me/marketing",
+    });
+  });
+
   it("rend undefined sur un chemin hors périmètre", () => {
     expect(resolveTarget("gw.example", "/favicon.ico")).toBeUndefined();
   });

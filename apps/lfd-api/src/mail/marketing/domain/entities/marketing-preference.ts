@@ -154,8 +154,47 @@ export class MarketingPreference {
       throw new MarketingConfirmationAfterUnsubscribeError(this.state.space);
     }
     if (this.state.status === "pending") {
-      this.state = { ...this.state, status: "accepted", confirmedAt: at };
+      // Une réinscription confirmée efface la désinscription qu'elle lève.
+      this.state = {
+        ...this.state,
+        status: "accepted",
+        confirmedAt: at,
+        unsubscribedAt: null,
+        unsubscribedSource: null,
+      };
     }
+  }
+
+  /**
+   * Une réinscription en attente de son clic (C3) : `pending`, mais la
+   * désinscription qu'elle lèvera est encore là. Seul le lien la confirme —
+   * jamais une case (règle 17) —, et si personne ne clique, la purge la rend
+   * à sa désinscription au lieu de la supprimer.
+   */
+  awaitsResubscription(): boolean {
+    return this.state.status === "pending" && this.state.unsubscribedAt !== null;
+  }
+
+  /** Ce que la désinscription a retenu ; `null` sur une ligne qui n'en porte pas. */
+  get unsubscribeAct(): UnsubscribeAct | null {
+    const { unsubscribedAt, unsubscribedSource } = this.state;
+    return unsubscribedAt === null || unsubscribedSource === null
+      ? null
+      : { at: unsubscribedAt, source: unsubscribedSource };
+  }
+
+  /** L'empreinte de l'adresse de cette ligne. */
+  get print(): string {
+    return this.state.print;
+  }
+
+  /**
+   * **L'état suit l'adresse** (règle 24) : la ligne passe à la nouvelle
+   * adresse d'un compte, état, preuve et origine compris. Une désinscription
+   * reste une désinscription, un accord reste accordé.
+   */
+  relocate(address: MarketingAddress): void {
+    this.state = { ...this.state, recipientKey: address.key, print: address.print };
   }
 
   /**
@@ -179,25 +218,28 @@ export class MarketingPreference {
 
   /**
    * La réinscription volontaire d'une adresse désinscrite (C3) : seulement
-   * depuis « Mes préférences », connecté — une adresse vérifiée, donc
-   * `accepted` d'emblée.
+   * depuis « Mes préférences », connecté. Une adresse vérifiée passe
+   * `accepted` d'emblée ; une adresse de compte NON vérifiée passe `pending`
+   * et garde sa désinscription jusqu'au clic (règle 18,
+   * {@link awaitsResubscription}).
    *
    * @throws {MarketingResubscriptionRefusedError} le geste ne vient pas de « Mes préférences ».
    */
-  resubscribe(draft: ConsentDraft): void {
+  resubscribe(draft: ConsentDraft, verified: boolean): void {
     if (draft.proof.place !== RESUBSCRIBE_PLACE) {
       throw new MarketingResubscriptionRefusedError(this.state.space, draft.proof.place);
     }
-    this.state = {
-      ...this.state,
-      status: "accepted",
-      origin: draft.origin,
-      proof: draft.proof,
-      requestedAt: draft.at,
-      confirmedAt: draft.at,
-      unsubscribedAt: null,
-      unsubscribedSource: null,
-    };
+    const proof = { origin: draft.origin, proof: draft.proof, requestedAt: draft.at };
+    this.state = verified
+      ? {
+          ...this.state,
+          ...proof,
+          status: "accepted",
+          confirmedAt: draft.at,
+          unsubscribedAt: null,
+          unsubscribedSource: null,
+        }
+      : { ...this.state, ...proof, status: "pending", confirmedAt: null };
   }
 
   /**

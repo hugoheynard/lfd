@@ -4,8 +4,10 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { PurgeCensus } from "../../../platform/retention/purge-mode.js";
 import { PendingConsentPruner } from "../domain/ports/pending-consent.pruner.js";
 
-/** La seule valeur d'état que la purge touche. */
+/** La seule valeur d'état que la purge lit. */
 const PENDING = "pending";
+/** Ce que redevient une réinscription jamais confirmée. */
+const UNSUBSCRIBED = "unsubscribed";
 
 /**
  * La purge des demandes d'accord jamais confirmées : une suppression
@@ -30,11 +32,26 @@ export class PrismaPendingConsentPruner extends PendingConsentPruner {
     return { count, oldest: oldest._min.requestedAt };
   }
 
-  pruneBatch(cutoff: Date, limit: number): Promise<number> {
-    return this.prisma.$executeRaw`
+  /**
+   * Une réinscription jamais confirmée (C3) n'est PAS supprimée : elle porte
+   * encore la désinscription qu'elle aurait levée, et redevient
+   * `unsubscribed` — la supprimer rouvrirait la question à une adresse qui
+   * a dit non. Le reste du lot part.
+   */
+  async pruneBatch(cutoff: Date, limit: number): Promise<number> {
+    const reverted = await this.prisma.$executeRaw`
+      UPDATE "mail"."mail_marketing_preference" SET "status" = ${UNSUBSCRIBED}
+       WHERE "id" IN (
+        SELECT "id" FROM "mail"."mail_marketing_preference"
+         WHERE "status" = ${PENDING} AND "requested_at" < ${cutoff}
+           AND "unsubscribed_at" IS NOT NULL
+         ORDER BY "requested_at" LIMIT ${limit})`;
+    const deleted = await this.prisma.$executeRaw`
       DELETE FROM "mail"."mail_marketing_preference" WHERE "id" IN (
         SELECT "id" FROM "mail"."mail_marketing_preference"
          WHERE "status" = ${PENDING} AND "requested_at" < ${cutoff}
-         ORDER BY "requested_at" LIMIT ${limit})`;
+           AND "unsubscribed_at" IS NULL
+         ORDER BY "requested_at" LIMIT ${Math.max(limit - reverted, 0)})`;
+    return reverted + deleted;
   }
 }

@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { AccountMarketingConsent } from "../services/account-marketing-consent.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Company, type CompanyContact } from "../../domain/entities/company.js";
 import { UserProfile } from "../../domain/entities/user-profile.js";
@@ -55,6 +56,7 @@ export class DeclareMyEstablishmentHandler implements ICommandHandler<
     private readonly attachments: PersonAttachmentLock,
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
+    private readonly marketing: AccountMarketingConsent,
   ) {}
 
   async execute(command: DeclareMyEstablishmentCommand): Promise<string> {
@@ -82,7 +84,15 @@ export class DeclareMyEstablishmentHandler implements ICommandHandler<
         throw new PersonAlreadyAttachedError(command.userId);
       }
       await this.profiles.save(command.userId, profile);
-      return this.companies.declareOwnedBy(company, command.userId);
+      const declared = await this.companies.declareOwnedBy(company, command.userId);
+      // La case de l'inscription pro, après la validation (C2).
+      this.marketing.afterAccountWritten({
+        userId: command.userId,
+        address: current.email,
+        previousAddress: null,
+        signup: command.signupConsent,
+      });
+      return declared;
     });
 
     this.events.publish(

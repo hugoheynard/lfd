@@ -10,6 +10,8 @@ import { EraseMarketingPreferencesHandler } from "../commands/erase-marketing-pr
 import { UnsubscribeByTokenHandler } from "../commands/unsubscribe-by-token.handler.js";
 import { ConsentConfirmationMailer } from "../services/consent-confirmation-mailer.js";
 import { ConsentConfirmLinks } from "../services/consent-confirm-links.js";
+import { MarketingGroup } from "../../domain/services/marketing-group.js";
+import { MarketingAddressMover } from "../services/marketing-address-mover.js";
 import { MarketingAddresses } from "../services/marketing-addresses.js";
 import { MarketingConsentRequester } from "../services/marketing-consent-requester.js";
 import { MarketingUnsubscriber } from "../services/marketing-unsubscriber.js";
@@ -28,7 +30,7 @@ export const SHOP_ORIGIN = "https://shop.lfc.test";
 export const NOW = new Date(Date.UTC(2026, 0, 1, 12));
 
 /** Le bloc du registre, monté à la main sur ses doubles. */
-export function marketingWorld() {
+export function marketingWorld(group: MarketingGroup = new MarketingGroup()) {
   const preferences = new InMemoryPreferences();
   const addresses = new MarketingAddresses(new ReadablePrint());
   const clock = new FixedClock(NOW);
@@ -59,6 +61,8 @@ export function marketingWorld() {
       new InMemoryPreferenceReader(preferences),
       clock,
       uow,
+      new MarketingAddressMover(preferences, ids),
+      group,
     ),
   };
 }

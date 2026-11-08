@@ -1,5 +1,7 @@
 import type { OrderPaymentIntent, PlaceOrderPayload, SettlementRegime } from "@lfd/contracts";
 
+import type { OrderConsentBuyer } from "../services/order-marketing-consent.js";
+
 /**
  * Passe une commande pour le client `actorUserId`.
  *
@@ -21,6 +23,12 @@ export class PlaceOrderCommand {
     readonly actorUserId: string,
     readonly payload: PlaceOrderPayload,
     readonly companyId: string | null,
+    /**
+     * L'adresse du compte et sa preuve, lues dans le principal, pour la case
+     * « recevoir les offres » (plan de désinscription, C2). `null` hors d'une
+     * requête du client (semis) : la case n'y est pas.
+     */
+    readonly consentBuyer: OrderConsentBuyer | null = null,
   ) {}
 }
 

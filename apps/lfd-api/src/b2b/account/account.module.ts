@@ -57,6 +57,7 @@ import { UpdateCompanyIdentityHandler } from "./application/commands/update-comp
 import { UpdateDeliveryAddressHandler } from "./application/commands/update-delivery-address.handler.js";
 import { RequestPaymentTermHandler } from "./application/commands/request-payment-term.handler.js";
 import { UpdateMyProfileHandler } from "./application/commands/update-my-profile.handler.js";
+import { AccountMarketingConsent } from "./application/services/account-marketing-consent.js";
 import { LinkLoginMethodHandler } from "./application/commands/link-login-method.handler.js";
 import { RequestPasswordResetHandler } from "./application/commands/request-password-reset.handler.js";
 import { RevokeLoginMethodHandler } from "./application/commands/revoke-login-method.handler.js";
@@ -191,6 +192,11 @@ import { CompanyAddressesController } from "./http/company-addresses.controller.
 import { CompanyContactsController } from "./http/company-contacts.controller.js";
 import { CompanyKbisController } from "./http/company-kbis.controller.js";
 import { MeController } from "./http/me.controller.js";
+import { MeMarketingController } from "./http/me-marketing.controller.js";
+import { AcceptMarketingPartnersHandler } from "./application/commands/accept-marketing-partners.handler.js";
+import { SubscribeMyMarketingHandler } from "./application/commands/subscribe-my-marketing.handler.js";
+import { UnsubscribeMyMarketingHandler } from "./application/commands/unsubscribe-my-marketing.handler.js";
+import { GetMyMarketingPreferencesHandler } from "./application/queries/get-my-marketing-preferences.handler.js";
 import { DeclareMyEstablishmentHandler } from "./application/commands/declare-my-establishment.handler.js";
 import { PersonAttachmentLock } from "./domain/ports/person-attachment.lock.js";
 import { PrismaPersonAttachmentLock } from "./infrastructure/prisma-person-attachment.lock.js";
@@ -247,6 +253,7 @@ import {
   imports: [PickupAddressesModule],
   controllers: [
     MeController,
+    MeMarketingController,
     CompaniesController,
     CompanyContactsController,
     CompanyKbisController,
@@ -270,6 +277,14 @@ import {
   ],
   providers: [
     UpdateMyProfileHandler,
+    // Le registre marketing après l'inscription et le changement d'adresse
+    // (plan de désinscription, C2), par le canal du bloc `mail`.
+    AccountMarketingConsent,
+    // « Mes préférences » (C3).
+    GetMyMarketingPreferencesHandler,
+    SubscribeMyMarketingHandler,
+    UnsubscribeMyMarketingHandler,
+    AcceptMarketingPartnersHandler,
     // Les méthodes de connexion (plan `plan-rattachement-depuis-le-profil.md`,
     // lot B) : la liste et les deux gestes, plus l'alerte à l'adresse du compte.
     ListMyLoginMethodsHandler,

@@ -8,12 +8,14 @@ import { EraseMarketingPreferencesHandler } from "./application/commands/erase-m
 import { UnsubscribeByTokenHandler } from "./application/commands/unsubscribe-by-token.handler.js";
 import { ConsentConfirmationMailer } from "./application/services/consent-confirmation-mailer.js";
 import { ConsentConfirmLinks } from "./application/services/consent-confirm-links.js";
+import { MarketingAddressMover } from "./application/services/marketing-address-mover.js";
 import { MarketingAddresses } from "./application/services/marketing-addresses.js";
 import { MarketingConsentRequester } from "./application/services/marketing-consent-requester.js";
 import { MarketingUnsubscriber } from "./application/services/marketing-unsubscriber.js";
 import { PreferenceMarketingClearance } from "./application/services/preference-marketing-clearance.js";
 import { UnsubscribeLinks } from "./application/services/unsubscribe-links.js";
 import { AddressPrint } from "./domain/ports/address-print.js";
+import { MarketingGroup } from "./domain/services/marketing-group.js";
 import { ConsentConfirmTokens } from "./domain/ports/consent-confirm-tokens.js";
 import { MarketingPreferenceReader } from "./domain/ports/marketing-preference.reader.js";
 import { MarketingPreferenceRepository } from "./domain/ports/marketing-preference.repository.js";
@@ -22,6 +24,8 @@ import { SpacePublicOrigins } from "./domain/ports/space-public-origins.js";
 import { UnsubscribeTokens } from "./domain/ports/unsubscribe-tokens.js";
 import { ConsentConfirmController } from "./http/consent-confirm.controller.js";
 import { UnsubscribeController } from "./http/unsubscribe.controller.js";
+import { NewsletterController } from "./http/newsletter.controller.js";
+import { SubscribeNewsletterHandler } from "./application/commands/subscribe-newsletter.handler.js";
 import { AesGcmConsentConfirmTokens } from "./infrastructure/aes-gcm-consent-confirm-tokens.js";
 import { AesGcmUnsubscribeTokens } from "./infrastructure/aes-gcm-unsubscribe-tokens.js";
 import { ConfigSpacePublicOrigins } from "./infrastructure/config-space-public-origins.js";
@@ -42,7 +46,7 @@ import { PrismaPendingConsentPruner } from "./infrastructure/prisma-pending-cons
  */
 @Global()
 @Module({
-  controllers: [UnsubscribeController, ConsentConfirmController],
+  controllers: [UnsubscribeController, ConsentConfirmController, NewsletterController],
   providers: [
     { provide: MarketingPreferenceRepository, useClass: PrismaMarketingPreferenceRepository },
     { provide: MarketingPreferenceReader, useClass: PrismaMarketingPreferenceReader },
@@ -62,7 +66,12 @@ import { PrismaPendingConsentPruner } from "./infrastructure/prisma-pending-cons
     ConsentConfirmationMailer,
     MarketingConsentRequester,
     ConfirmConsentByTokenHandler,
+    // C2, C3 : le déménagement d'adresse, et le groupe (« partenaires », éteint).
+    MarketingAddressMover,
+    { provide: MarketingGroup, useValue: new MarketingGroup() },
     { provide: MarketingConsent, useClass: BlockMarketingConsent },
+    // C5 : la lettre du pied de page de la boutique.
+    SubscribeNewsletterHandler,
     // U3 : le contrôle à l'envoi, lu par l'essai d'envoi de `MailModule`.
     { provide: MarketingClearance, useClass: PreferenceMarketingClearance },
   ],

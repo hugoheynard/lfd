@@ -22,3 +22,20 @@ const GROUP_MINIMUM = 2;
 export function groupIsOffered(spaces: readonly MailBrandCode[] = MARKETING_SPACES): boolean {
   return spaces.length >= GROUP_MINIMUM;
 }
+
+/**
+ * Le groupe tel qu'un service le lit : la liste injectée plutôt que lue en
+ * dur, pour qu'un test allume « partenaires » sans toucher la configuration.
+ */
+export class MarketingGroup {
+  constructor(readonly spaces: readonly MailBrandCode[] = MARKETING_SPACES) {}
+
+  isOffered(): boolean {
+    return groupIsOffered(this.spaces);
+  }
+
+  /** Les AUTRES sociétés du groupe, vues de `from`. */
+  partnersOf(from: MailBrandCode): readonly MailBrandCode[] {
+    return this.spaces.filter((space) => space !== from);
+  }
+}
