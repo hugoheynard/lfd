@@ -46,6 +46,7 @@ import {
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldListboxComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
@@ -55,11 +56,9 @@ import {
   findEditableBlock,
   FREE_BLOCK_LABELS,
   insertBlockAfter,
-  insertBlockAt,
   isInColumn,
   libraryItemKeyOf,
   type LibraryItemKey,
-  moveBlock,
   moveBlockBy,
   newCellBlock,
   newLibraryBlock,
@@ -69,6 +68,20 @@ import {
   setColumnWidths,
   withText,
 } from '../../rules/mail-document-edits';
+import {
+  type BlockContainer,
+  type BlockOrigin,
+  type BlockSlot,
+  cellListIds,
+  destinationValueOf,
+  draggedBlockId,
+  fitsInCell,
+  FLOW,
+  moveBlock,
+  moveDestinations,
+  narrowsImage,
+  slotOf,
+} from '../../rules/mail-block-moves';
 import { insertChipAt, variableChip } from '../../rules/mail-editable-text';
 import {
   absenceLabel,
@@ -96,6 +109,7 @@ import {
   type ColumnWidthChoice,
   MailBlockSettings,
 } from '../mail-block-settings/mail-block-settings';
+import { type CellBlockStep, MailColumnsCells } from '../mail-columns-cells/mail-columns-cells';
 import { MailColumnGuides } from '../mail-column-guides/mail-column-guides';
 import { MailInsertBar } from '../mail-insert-bar/mail-insert-bar';
 import { MailResourcesPanel } from '../mail-resources-panel/mail-resources-panel';
@@ -148,11 +162,13 @@ interface Removal {
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
+    FoldListboxComponent,
     FoldLoadingStateComponent,
     MailBlockFragment,
     MailBlockLibrary,
     MailBlockSettings,
     MailColumnGuides,
+    MailColumnsCells,
     MailInsertBar,
     MailResourcesPanel,
   ],
@@ -190,10 +206,47 @@ export class MailCanvas {
 
   /**
    * L'identifiant de la liste des blocs : la bibliothèque s'y connecte pour
-   * qu'une carte s'y dépose. Seule cette liste reçoit — l'en-tête, le pied et
-   * les colonnes n'en sont pas, et n'affichent donc jamais de barre.
+   * qu'une carte s'y dépose. Le fil et les cellules des colonnes reçoivent —
+   * l'en-tête et le pied n'en sont pas, et n'affichent donc jamais de barre.
    */
   protected readonly blockListId = `mail-canvas-blocks-${nextBlockListId++}`;
+  protected readonly flow: BlockContainer = FLOW;
+
+  /** Les listes des cellules de toutes les mises en page. */
+  protected readonly cellLists = computed(() => [
+    ...cellListIds(this.document(), this.blockListId),
+  ]);
+  /**
+   * Où une carte ou un bloc d'une cellule peut tomber : les cellules D'ABORD,
+   * le fil ensuite — CDK prend la première liste sous le pointeur, et une
+   * cellule est aussi dans le fil qui la contient.
+   */
+  protected readonly dropTargets = computed(() => [...this.cellLists(), this.blockListId]);
+
+  /** Un glisser qu'une cellule accepte est en cours : les cellules vides s'ouvrent. */
+  protected readonly cellDragActive = signal(false);
+  /** La cellule vide choisie : la bibliothèque y ajoute au clic. */
+  protected readonly selectedCell = signal<{
+    readonly columnsId: string;
+    readonly cell: number;
+  } | null>(null);
+  /** Ce que le dernier dépôt a changé de lui-même, dit sous l'e-mail. */
+  protected readonly dropNotice = signal<string | null>(null);
+
+  /**
+   * Une cellule ne reçoit ni mise en page, ni bloc du modèle : refusés à
+   * l'entrée, ils ne montrent ni barre ni aperçu.
+   */
+  protected readonly acceptsInCell = (drag: CdkDrag): boolean => {
+    const key = libraryItemKeyOf(drag.data);
+    if (key !== null) {
+      return key !== 'columns-2' && key !== 'columns-3';
+    }
+    const id = draggedBlockId(drag.data);
+    const slot = id === null ? null : slotOf(this.document(), id);
+    const block = slot === null ? null : this.blockIn(slot);
+    return block !== null && fitsInCell(block);
+  };
 
   /** Le bloc libre ou la mise en page sélectionné. */
   protected readonly selectedId = signal<string | null>(null);
@@ -273,11 +326,28 @@ export class MailCanvas {
   });
   /** Les pastilles de lien du bouton du modèle : il se calcule à l'envoi, l'éditeur le nomme. */
   protected readonly modelLinks = computed(() => this.resources().links);
-  protected readonly librarySubtitle = computed(() =>
-    this.anchorId() === null
+  protected readonly librarySubtitle = computed(() => {
+    if (this.selectedCell() !== null) {
+      return 'Clic : dans la colonne choisie — ou glissez la carte à sa place';
+    }
+    return this.anchorId() === null
       ? 'Clic : à la fin de l’e-mail — ou glissez la carte à sa place'
-      : 'Clic : sous le bloc sélectionné — ou glissez la carte à sa place',
+      : 'Clic : sous le bloc sélectionné — ou glissez la carte à sa place';
+  });
+
+  /** « Déplacer vers… » du bloc sélectionné : le geste clavier du glisser. */
+  protected readonly destinations = computed(() => {
+    const id = this.selectedId();
+    return id === null ? [] : moveDestinations(this.document(), id);
+  });
+  protected readonly destinationOptions = computed(() =>
+    this.destinations().map(({ value, label }) => ({ value, label })),
   );
+  protected readonly currentDestination = computed(() => {
+    const id = this.selectedId();
+    const slot = id === null ? null : slotOf(this.document(), id);
+    return slot === null ? null : destinationValueOf(slot.container);
+  });
 
   /** Le bloc sous lequel la bibliothèque ajoute. */
   private readonly anchorId = computed(() => {
@@ -435,6 +505,7 @@ export class MailCanvas {
   }
 
   protected select(block: MailBlock): void {
+    this.selectedCell.set(null);
     if (block.kind === 'model') {
       this.focus.set({ kind: 'block', block: block.section });
       this.selectedId.set(null);
@@ -445,11 +516,13 @@ export class MailCanvas {
   }
 
   protected selectInner(blockId: string): void {
+    this.selectedCell.set(null);
     this.selectedId.set(blockId);
     this.focus.set(null);
   }
 
   protected selectFrame(frame: MailEditorFrame): void {
+    this.selectedCell.set(null);
     this.focus.set({ kind: 'frame', frame });
     this.selectedId.set(null);
   }
@@ -477,19 +550,109 @@ export class MailCanvas {
   }
 
   /**
-   * Un dépôt dans le fil : une carte de la bibliothèque (venue d'une autre
-   * liste) devient un bloc NEUF à l'index de la barre ; un bloc du fil y est
-   * déplacé.
+   * Un dépôt, dans le fil ou dans une cellule : une carte de la bibliothèque
+   * devient un bloc NEUF à la place de la barre ; un bloc y est déplacé, d'où
+   * qu'il vienne. Une seule édition (`moveBlock`), une seule relecture.
    */
-  protected dropped(event: CdkDragDrop<unknown, unknown, unknown>): void {
-    if (event.previousContainer !== event.container) {
-      const key = libraryItemKeyOf(event.item.data);
-      if (key !== null) {
-        this.place(key, event.currentIndex);
-      }
+  protected dropped(event: CdkDragDrop<BlockContainer, BlockContainer, unknown>): void {
+    this.cellDragActive.set(false);
+    const container = event.container.data;
+    const to: BlockSlot = { container, index: event.currentIndex };
+    const key = libraryItemKeyOf(event.item.data);
+    if (key !== null) {
+      this.place(key, to);
       return;
     }
-    this.emit(moveBlock(this.document(), event.previousIndex, event.currentIndex));
+    const id = draggedBlockId(event.item.data);
+    const from = id === null ? null : slotOf(this.document(), id);
+    if (from !== null) {
+      this.relocate(from, to);
+    }
+  }
+
+  /** Un bloc du fil, tiré : les cellules vides ne s'ouvrent que s'il peut y entrer. */
+  protected flowDragStarted(block: MailBlock): void {
+    this.cellDragActive.set(fitsInCell(block));
+  }
+
+  protected libraryDragging(key: LibraryItemKey | null): void {
+    this.cellDragActive.set(key !== null && key !== 'columns-2' && key !== 'columns-3');
+  }
+
+  /** Alt + flèche sur un bloc de colonne : un cran dans sa cellule. */
+  protected cellStepped(step: CellBlockStep): void {
+    const from = slotOf(this.document(), step.blockId);
+    if (from === null || from.container.kind !== 'cell') {
+      return;
+    }
+    const index = from.index + step.delta;
+    const length = this.listLength(from.container);
+    if (index >= 0 && index < length) {
+      this.relocate(from, { container: from.container, index });
+      this.refocusInner(step.blockId);
+    }
+  }
+
+  /** « Déplacer vers… » : le bloc sélectionné va au bas de la colonne choisie, ou sous sa mise en page. */
+  protected moveTo(value: string | null): void {
+    const id = this.selectedId();
+    const destination = this.destinations().find((candidate) => candidate.value === value);
+    const from = id === null ? null : slotOf(this.document(), id);
+    if (destination !== undefined && from !== null) {
+      this.relocate(from, destination.slot);
+    }
+  }
+
+  protected cellChosen(columnsId: string, cell: number): void {
+    this.selectedId.set(null);
+    this.focus.set(null);
+    this.selectedCell.set({ columnsId, cell });
+  }
+
+  private relocate(from: BlockSlot, to: BlockSlot): void {
+    const before = this.document();
+    const block = this.blockIn(from);
+    const next = moveBlock(before, from, to);
+    if (block === null || next === before) {
+      return;
+    }
+    this.emit(next);
+    this.announceDrop(next, block, to.container);
+  }
+
+  /** Le dépôt, dit au lecteur d'écran ; la conversion d'une image, dite à tous. */
+  private announceDrop(next: MailDocument, block: MailBlock, to: BlockContainer): void {
+    const slot = slotOf(next, block.id);
+    const position = slot === null ? 0 : slot.index + 1;
+    const where =
+      to.kind === 'cell'
+        ? `dans la colonne ${String(to.cell + 1)}, position ${String(position)}`
+        : `dans l’e-mail, position ${String(position)} sur ${String(next.blocks.length)}`;
+    const narrowed = narrowsImage(block, to)
+      ? 'Image passée dans le texte : une colonne n’a pas de bord de carte.'
+      : null;
+    this.dropNotice.set(narrowed);
+    void this.announcer.announce(
+      `Bloc « ${this.titleOf(block)} » déposé ${where}.${narrowed === null ? '' : ` ${narrowed}`}`,
+      'polite',
+    );
+  }
+
+  private blockIn(slot: BlockSlot): MailBlock | null {
+    if (slot.container.kind === 'flow') {
+      return this.document().blocks[slot.index] ?? null;
+    }
+    const { columnsId, cell } = slot.container;
+    const columns = this.document().blocks.find((block) => block.id === columnsId);
+    return columns?.kind === 'columns' ? (columns.cells[cell]?.[slot.index] ?? null) : null;
+  }
+
+  private listLength(container: BlockContainer): number {
+    if (container.kind === 'flow') {
+      return this.document().blocks.length;
+    }
+    const columns = this.document().blocks.find((block) => block.id === container.columnsId);
+    return columns?.kind === 'columns' ? (columns.cells[container.cell]?.length ?? 0) : 0;
   }
 
   private move(blockId: string, delta: -1 | 1): void {
@@ -503,24 +666,54 @@ export class MailCanvas {
 
   /**
    * La seule fabrique d'un bloc de la bibliothèque, pour le clic comme pour le
-   * dépôt : à `index` s'il y en a un, sinon sous l'ancre. Le bloc neuf est
-   * sélectionné, et sa place annoncée — un lecteur d'écran ne voit pas la barre.
+   * dépôt : à `to` s'il y en a une, sinon dans la cellule choisie, sinon sous
+   * l'ancre — dans sa cellule si l'ancre est un bloc de colonne. Le bloc neuf
+   * est sélectionné, et sa place annoncée — un lecteur d'écran ne voit pas la
+   * barre.
    */
-  private place(key: LibraryItemKey, index: number | null): void {
+  private place(key: LibraryItemKey, to: BlockSlot | null): void {
     const block = newLibraryBlock(key, this.newId()());
     const before = this.document();
+    const target = to ?? this.clickSlot(block);
+    const origin: BlockOrigin = { added: block };
     const next =
-      index === null
+      target === null
         ? insertBlockAfter(before, this.anchorId(), block)
-        : insertBlockAt(before, index, block);
+        : moveBlock(before, origin, target);
+    if (next === before) {
+      return;
+    }
     this.emit(next);
+    this.selectedCell.set(null);
     this.selectedId.set(block.id);
     this.focus.set(null);
-    const position = next.blocks.findIndex((candidate) => candidate.id === block.id) + 1;
+    const slot = slotOf(next, block.id);
+    if (slot?.container.kind === 'cell') {
+      this.announceDrop(next, block, slot.container);
+      return;
+    }
+    const position = (slot?.index ?? 0) + 1;
     void this.announcer.announce(
       `Bloc « ${this.titleOf(block)} » ajouté, position ${position} sur ${next.blocks.length}. Ses réglages sont ouverts.`,
       'polite',
     );
+  }
+
+  /** La place d'un clic dans la bibliothèque, quand elle vise une colonne ; `null` pour le fil. */
+  private clickSlot(block: FreeBlock | ColumnsBlock): BlockSlot | null {
+    if (!fitsInCell(block)) {
+      return null;
+    }
+    const cell = this.selectedCell();
+    if (cell !== null) {
+      const container: BlockContainer = { kind: 'cell', ...cell };
+      return { container, index: this.listLength(container) };
+    }
+    const anchor = this.anchorId();
+    const slot = anchor === null ? null : slotOf(this.document(), anchor);
+    return slot?.container.kind === 'cell'
+      ? { container: slot.container, index: slot.index + 1 }
+      : null;
   }
 
   protected remove(block: MailBlock): void {
@@ -627,6 +820,16 @@ export class MailCanvas {
     return zone !== null && this.host.nativeElement.contains(zone) ? zone : null;
   }
 
+  private refocusInner(blockId: string): void {
+    afterNextRender(
+      () =>
+        this.host.nativeElement
+          .querySelector<HTMLElement>(`li[data-cell-block="${CSS.escape(blockId)}"]`)
+          ?.focus(),
+      { injector: this.injector },
+    );
+  }
+
   private refocus(blockId: string): void {
     afterNextRender(
       () =>
@@ -640,6 +843,7 @@ export class MailCanvas {
   private emit(next: MailDocument): void {
     if (next !== this.document()) {
       this.removal.set(null);
+      this.dropNotice.set(null);
       this.documentChange.emit(next);
     }
   }

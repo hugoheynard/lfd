@@ -1,0 +1,95 @@
+<div class="cells">
+  @for (cell of block().cells; track $index; let column = $index) {
+    <ol
+      class="cell"
+      cdkDropList
+      [id]="idOf(column)"
+      [cdkDropListData]="containerOf(column)"
+      [cdkDropListConnectedTo]="connectedTo()"
+      [cdkDropListEnterPredicate]="enterPredicate()"
+      [cdkDropListDisabled]="!canWrite()"
+      [style.flex-basis.%]="percentOf(column)"
+      [attr.aria-label]="'Colonne ' + (column + 1) + ' — Alt + flèche pour déplacer'"
+      [attr.data-cell]="column"
+      (cdkDropListDropped)="dropped.emit($event)"
+    >
+      @for (inner of cell; track inner.id) {
+        @let html = fragmentOf(inner);
+        <li
+          cdkDrag
+          class="inner"
+          tabindex="0"
+          [cdkDragData]="{ blockId: inner.id }"
+          [class.selected]="selectedId() === inner.id"
+          [attr.data-cell-block]="inner.id"
+          [attr.aria-label]="titleOf(inner) + ' · colonne ' + (column + 1)"
+          [attr.aria-current]="selectedId() === inner.id ? 'true' : null"
+          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+          (click)="$event.stopPropagation(); innerSelected.emit(inner.id)"
+          (keydown)="onKeydown($event, inner.id)"
+          (cdkDragStarted)="dragging.emit(true)"
+          (cdkDragEnded)="dragging.emit(false)"
+        >
+          <span
+            cdkDragHandle
+            class="handle"
+            role="img"
+            title="Glisser pour déplacer"
+            [attr.aria-label]="handleLabelOf(inner, column)"
+            data-cell-handle
+          >
+            <fold-icon name="grip" size="sm" />
+          </span>
+          <app-mail-insert-bar *cdkDragPlaceholder>
+            @if (html !== null && html !== '') {
+              <app-mail-block-fragment [html]="html" />
+            } @else {
+              <span class="name">{{ titleOf(inner) }}</span>
+            }
+          </app-mail-insert-bar>
+          <fold-card *cdkDragPreview padding="sm" radius="md" class="drag-preview">
+            <fold-element-title variant="title" icon="grip" [title]="titleOf(inner)" />
+          </fold-card>
+          @if (html !== null && html !== '') {
+            <app-mail-block-fragment
+              [zoneLabel]="titleOf(inner) + ' · colonne ' + (column + 1)"
+              [html]="html"
+              [canWrite]="canWrite()"
+              [phrasePaths]="phrasePaths()"
+              [freeBlockIds]="freeBlockIds()"
+              [values]="values()"
+              (phraseInput)="phraseInput.emit($event)"
+              (valueRefused)="valueRefused.emit($event)"
+              (freeBlockInput)="freeBlockInput.emit($event)"
+            />
+          } @else {
+            <span class="name" data-cell-name>{{ titleOf(inner) }}</span>
+          }
+        </li>
+      }
+      @if (cell.length === 0) {
+        @if (acceptsDrop()) {
+          <li class="dropzone" aria-hidden="true" data-cell-dropzone>Déposer un bloc ici</li>
+        } @else if (canWrite()) {
+          <li class="empty">
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              [intent]="selectedCell() === column ? 'primary' : 'neutral'"
+              type="button"
+              [attr.aria-pressed]="selectedCell() === column"
+              [attr.aria-label]="
+                'Colonne ' + (column + 1) + ' vide — choisir pour y ajouter depuis la bibliothèque'
+              "
+              (click)="$event.stopPropagation(); cellSelected.emit(column)"
+              data-cell-empty
+            >
+              Colonne vide
+            </button>
+          </li>
+        }
+      }
+    </ol>
+  }
+</div>

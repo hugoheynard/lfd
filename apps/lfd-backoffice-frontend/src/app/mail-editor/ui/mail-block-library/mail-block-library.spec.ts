@@ -61,4 +61,18 @@ describe('MailBlockLibrary', () => {
     expect(element.querySelector('[data-library-twin]')).toBeNull();
     expect(element.querySelectorAll('[data-library-item]').length).toBe(LIBRARY_ITEMS.length);
   });
+  it('se connecte à plusieurs listes, cellules d’abord, et dit quelle carte est tirée', () => {
+    const { fixture } = render();
+    fixture.componentRef.setInput('connectedTo', ['cellule', 'fil']);
+    fixture.detectChanges();
+    const list = fixture.debugElement.query(By.directive(CdkDropList)).injector.get(CdkDropList);
+    expect(list.connectedTo).toEqual(['cellule', 'fil']);
+    const dragging: (LibraryItemKey | null)[] = [];
+    fixture.componentInstance.draggingChange.subscribe((key) => dragging.push(key));
+    const drag = fixture.debugElement
+      .query(By.css('[data-library-drag="image"]'))
+      .injector.get(CdkDrag);
+    drag.started.emit({ source: drag, event: new MouseEvent('mousedown') });
+    expect(dragging).toEqual(['image']);
+  });
 });

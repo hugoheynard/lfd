@@ -1,0 +1,98 @@
+// Les colonnes côte à côte, à la largeur que le serveur leur écrit ; la
+// gouttière est portée par la colonne de gauche, comme dans l'e-mail.
+.cells {
+  display: flex;
+  align-items: stretch;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cell:not(:last-child) {
+  padding-inline-end: var(--fold-space-sm);
+}
+
+// Un bloc de colonne : son cadre ne se montre qu'au survol, au focus et à la
+// sélection, pour que la mise en page reste lisible.
+.inner {
+  position: relative;
+  padding-inline-start: var(--fold-space-lg);
+  border: 1px dashed transparent;
+  border-radius: var(--fold-radius-sm);
+  outline: none;
+  // Pendant un glisser, CDK écarte les voisins par `transform`.
+  transition: transform var(--fold-motion-base);
+}
+
+.inner:hover,
+.inner:focus-within {
+  border-color: var(--fold-color-border);
+}
+
+.inner:focus-visible,
+.inner.selected {
+  border-style: solid;
+  border-color: var(--fold-color-primary);
+}
+
+.handle {
+  position: absolute;
+  inset-block-start: var(--fold-space-xs);
+  inset-inline-start: 0;
+  display: inline-flex;
+  cursor: grab;
+  color: var(--fold-color-text-muted);
+}
+
+.name {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+// La place d'un dépôt dans une cellule vide : assez haute pour la viser.
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--fold-space-3xl);
+  padding: var(--fold-space-sm);
+  border: 1px dashed var(--fold-color-primary);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  text-align: center;
+}
+
+// Le bloc projeté est déjà dans la cellule : la zone lui laisse la place.
+.cell.cdk-drop-list-dragging .dropzone {
+  display: none;
+}
+
+.empty {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--fold-space-xs);
+}
+
+.drag-preview {
+  max-inline-size: 16rem;
+  cursor: grabbing;
+  transition: transform var(--fold-motion-slow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner,
+  .drag-preview {
+    transition: none;
+  }
+}

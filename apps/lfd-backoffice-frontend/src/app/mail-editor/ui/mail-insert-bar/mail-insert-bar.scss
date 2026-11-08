@@ -38,6 +38,16 @@
   padding-inline: 0;
 }
 
+// Dans une colonne, l'image pleine largeur passe dans le texte : sa place
+// ne déborde plus (le placeholder vient du canevas, d'où `host-context`).
+:host-context([data-cell]).full-width {
+  margin-inline: 0;
+}
+
+:host-context([data-cell]).full-width .ghost {
+  padding-inline: var(--fold-space-lg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :host {
     transition: none;

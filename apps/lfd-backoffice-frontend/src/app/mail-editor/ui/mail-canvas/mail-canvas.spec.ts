@@ -648,4 +648,178 @@ describe('MailCanvas — l’e-mail lui-même', () => {
       element.remove();
     });
   });
+  describe('glisser dans les colonnes', () => {
+    const COLUMNS: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        { id: 'note', kind: 'paragraph', text: { fr: 'Fermé le 1er mai' } },
+        {
+          id: 'cols',
+          kind: 'columns',
+          widths: [50, 50],
+          cells: [[{ id: 'h', kind: 'heading', text: { fr: 'Titre' } }], []],
+        },
+        { id: 'wide', kind: 'image', src: 'https://m.fr/a.webp', alt: {}, width: 'full' },
+        { id: 'other', kind: 'columns', widths: [50, 50], cells: [[], []] },
+      ],
+    };
+    const COLUMN_FRAGMENTS = {
+      note: FRAGMENTS.note,
+      cols: '<table><tr><td><h2><span data-free-block="h" data-locale="en">Titre</span></h2></td><td></td></tr></table>',
+      wide: '<table><tr><td><img src="https://m.fr/a.webp" alt="" /></td></tr></table>',
+      other: '<table><tr><td></td><td></td></tr></table>',
+    };
+
+    function setup() {
+      const rendered = render(COLUMNS, COLUMN_FRAGMENTS);
+      const list = (selector: string) =>
+        rendered.fixture.debugElement
+          .query(By.css(selector))
+          .injector.get<CdkDropList<unknown>>(CdkDropList);
+      const drag = (selector: string) =>
+        rendered.fixture.debugElement.query(By.css(selector)).injector.get(CdkDrag);
+      const drop = (
+        item: CdkDrag,
+        from: CdkDropList<unknown>,
+        to: CdkDropList<unknown>,
+        currentIndex: number,
+      ) =>
+        to.dropped.emit({
+          previousIndex: 0,
+          currentIndex,
+          item,
+          container: to,
+          previousContainer: from,
+          isPointerOverContainer: true,
+          distance: { x: 0, y: 0 },
+          dropPoint: { x: 0, y: 0 },
+          event: new MouseEvent('mouseup'),
+        });
+      const flow = list('ol.blocks');
+      const cell = (columns: string, index: number) =>
+        list(`li[data-block="${columns}"] ol[data-cell="${String(index)}"]`);
+      const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+      return { ...rendered, list, drag, drop, flow, cell, announce };
+    }
+
+    function cellIds(document: MailDocument | undefined, columns: string, index: number) {
+      const block = document?.blocks.find((candidate) => candidate.id === columns);
+      return block?.kind === 'columns' ? (block.cells[index] ?? []).map((inner) => inner.id) : [];
+    }
+
+    it('chaque cellule est une liste de dépôt, ses blocs ont leur poignée, et tout est connecté', () => {
+      const { element, flow, cell, list } = setup();
+      expect(element.querySelector('li[data-cell-block="h"] [data-cell-handle]')).not.toBeNull();
+      expect(element.querySelector('li[data-cell-block="h"]')?.textContent).toContain('Titre');
+      const library = list('app-mail-block-library [cdkDropList]');
+      const cells = [cell('cols', 0), cell('cols', 1), cell('other', 0), cell('other', 1)];
+      expect(flow.connectedTo).toEqual(cells.map((candidate) => candidate.id));
+      expect(library.connectedTo).toEqual([...cells.map((candidate) => candidate.id), flow.id]);
+      expect(cells[0]?.connectedTo).toEqual(library.connectedTo);
+      element.remove();
+    });
+
+    it('une carte de la bibliothèque déposée dans une cellule y devient un bloc, annoncé', () => {
+      const { element, emitted, drag, drop, list, cell, announce } = setup();
+      drop(
+        drag('[data-library-drag="button"]'),
+        list('app-mail-block-library [cdkDropList]'),
+        cell('cols', 1),
+        0,
+      );
+      expect(cellIds(emitted[0], 'cols', 1)).toEqual(['neuf']);
+      expect(announce).toHaveBeenCalledWith(
+        'Bloc « Bouton » déposé dans la colonne 2, position 1.',
+        'polite',
+      );
+      element.remove();
+    });
+
+    it('un bloc du fil entre dans une cellule, en une seule édition', () => {
+      const { element, emitted, drag, drop, flow, cell } = setup();
+      drop(drag('li[data-block="note"]'), flow, cell('cols', 0), 0);
+      expect(emitted).toHaveLength(1);
+      expect(ids(emitted[0])).toEqual(['cols', 'wide', 'other']);
+      expect(cellIds(emitted[0], 'cols', 0)).toEqual(['note', 'h']);
+      element.remove();
+    });
+
+    it('un bloc passe d’une cellule à celle d’une autre mise en page, puis ressort vers le fil', () => {
+      const { element, emitted, drag, drop, flow, cell } = setup();
+      drop(drag('li[data-cell-block="h"]'), cell('cols', 0), cell('other', 1), 0);
+      expect(cellIds(emitted[0], 'cols', 0)).toEqual([]);
+      expect(cellIds(emitted[0], 'other', 1)).toEqual(['h']);
+      drop(drag('li[data-cell-block="h"]'), cell('cols', 0), flow, 0);
+      expect(ids(emitted[1])).toEqual(['h', 'note', 'cols', 'wide', 'other']);
+      element.remove();
+    });
+
+    it('une mise en page ou un bloc du modèle est refusé à l’entrée d’une cellule', () => {
+      const { element, drag, cell } = setup();
+      const target = cell('cols', 1);
+      expect(target.enterPredicate(drag('li[data-block="other"]'), target)).toBe(false);
+      expect(target.enterPredicate(drag('[data-library-drag="columns-2"]'), target)).toBe(false);
+      expect(target.enterPredicate(drag('li[data-block="note"]'), target)).toBe(true);
+      expect(target.enterPredicate(drag('[data-library-drag="image"]'), target)).toBe(true);
+      element.remove();
+    });
+
+    it('une image pleine largeur déposée dans une cellule passe dans le texte, et l’éditeur le dit', () => {
+      const { element, emitted, fixture, drag, drop, flow, cell, announce } = setup();
+      drop(drag('li[data-block="wide"]'), flow, cell('other', 0), 0);
+      const other = emitted[0]?.blocks.find((block) => block.id === 'other');
+      expect(other?.kind === 'columns' ? other.cells[0]?.[0] : null).toEqual({
+        id: 'wide',
+        kind: 'image',
+        src: 'https://m.fr/a.webp',
+        alt: {},
+      });
+      fixture.detectChanges();
+      expect(element.querySelector('[data-drop-notice]')?.textContent).toContain(
+        'Image passée dans le texte : une colonne n’a pas de bord de carte',
+      );
+      expect(announce).toHaveBeenCalledWith(
+        expect.stringContaining('Image passée dans le texte'),
+        'polite',
+      );
+      element.remove();
+    });
+
+    it('pendant un glisser accepté, une cellule vide s’ouvre en zone de dépôt ; hors glisser, elle se choisit', () => {
+      const { element, fixture, emitted, drag } = setup();
+      expect(element.querySelector('[data-cell-dropzone]')).toBeNull();
+      element.querySelector<HTMLButtonElement>('li[data-block="other"] [data-cell-empty]')!.click();
+      fixture.detectChanges();
+      element.querySelector<HTMLElement>('[data-library-item="divider"]')?.click();
+      expect(cellIds(emitted[0], 'other', 0)).toEqual(['neuf']);
+      const note = drag('li[data-block="note"]');
+      note.started.emit({ source: note, event: new MouseEvent('mousedown') });
+      fixture.detectChanges();
+      expect(element.querySelectorAll('[data-cell-dropzone]').length).toBeGreaterThan(0);
+      expect(element.querySelector('[data-cell-dropzone]')?.textContent).toContain(
+        'Déposer un bloc ici',
+      );
+      element.remove();
+    });
+
+    it('au clavier, « Déplacer vers… » range le bloc dans une colonne ; Alt + flèche le déplace dans sa cellule', () => {
+      const { element, fixture, emitted } = setup();
+      element.querySelector<HTMLElement>('li[data-block="note"]')!.click();
+      fixture.detectChanges();
+      const listbox = fixture.debugElement.query(By.css('[data-move-to]')).componentInstance as {
+        selectionChange: { emit(value: string): void };
+      };
+      listbox.selectionChange.emit('cols#0');
+      expect(cellIds(emitted[0], 'cols', 0)).toEqual(['h', 'note']);
+      fixture.componentRef.setInput('document', emitted[0]);
+      fixture.detectChanges();
+      element
+        .querySelector('li[data-cell-block="note"]')
+        ?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }),
+        );
+      expect(cellIds(emitted[1], 'cols', 0)).toEqual(['note', 'h']);
+      element.remove();
+    });
+  });
 });

@@ -44,16 +44,25 @@ import { MailInsertBar } from '../mail-insert-bar/mail-insert-bar';
 })
 export class MailBlockLibrary {
   readonly items = input<readonly LibraryItem[]>(LIBRARY_ITEMS);
-  /** L'identifiant de la liste qui reçoit un dépôt (celle des blocs du canevas) ; aucune sans. */
-  readonly connectedTo = input<string | null>(null);
+  /**
+   * Les listes qui reçoivent un dépôt — le fil du canevas, et les cellules de
+   * ses colonnes, cellules D'ABORD : CDK prend la première liste sous le
+   * pointeur, et une cellule est aussi sous le fil qui la contient.
+   */
+  readonly connectedTo = input<string | readonly string[] | null>(null);
   readonly picked = output<LibraryItemKey>();
+  /** La carte tirée, puis `null` au lâcher : le canevas ouvre ses cellules vides. */
+  readonly draggingChange = output<LibraryItemKey | null>();
 
   /** La carte tirée : sa jumelle reste à sa place le temps du glisser. */
   protected readonly dragging = signal<LibraryItemKey | null>(null);
 
   protected readonly targets = computed<string[]>(() => {
     const target = this.connectedTo();
-    return target === null ? [] : [target];
+    if (target === null) {
+      return [];
+    }
+    return typeof target === 'string' ? [target] : [...target];
   });
 
   /** Le bloc neuf de chaque carte, de la fabrique du clic : son esquisse montre sa place. */
@@ -66,6 +75,11 @@ export class MailBlockLibrary {
 
   /** Rien n'entre dans la bibliothèque : un bloc de l'e-mail ne s'y range pas. */
   protected readonly refuseEntry = (): boolean => false;
+
+  protected startDragging(key: LibraryItemKey | null): void {
+    this.dragging.set(key);
+    this.draggingChange.emit(key);
+  }
 
   protected ariaLabelOf(item: LibraryItem): string {
     return `Ajouter le bloc « ${item.label} » — ${item.description}`;

@@ -10,8 +10,8 @@
       cdkDrag
       [cdkDragData]="item.key"
       [attr.data-library-drag]="item.key"
-      (cdkDragStarted)="dragging.set(item.key)"
-      (cdkDragEnded)="dragging.set(null)"
+      (cdkDragStarted)="startDragging(item.key)"
+      (cdkDragEnded)="startDragging(null)"
     >
       <fold-card
         interactive

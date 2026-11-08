@@ -119,6 +119,8 @@
             class="blocks"
             cdkDropList
             [id]="blockListId"
+            [cdkDropListData]="flow"
+            [cdkDropListConnectedTo]="cellLists()"
             aria-label="Blocs de l’e-mail, dans l’ordre — Alt + flèche pour déplacer"
             (cdkDropListDropped)="dropped($event)"
           >
@@ -129,6 +131,9 @@
               <li
                 cdkDrag
                 class="block"
+                [cdkDragData]="{ blockId: block.id }"
+                (cdkDragStarted)="flowDragStarted(block)"
+                (cdkDragEnded)="cellDragActive.set(false)"
                 tabindex="0"
                 [class.selected]="isSelected(block)"
                 [class.lit]="isLit(block)"
@@ -201,13 +206,27 @@
                   </p>
                 } @else if (block.kind === 'columns') {
                   <div class="columns-stage" data-columns-stage>
-                    <app-mail-block-fragment
-                      [zoneLabel]="nameOf(block)"
+                    <app-mail-columns-cells
+                      [block]="block"
                       [html]="html"
+                      [locale]="renderedLocale()"
+                      [listPrefix]="blockListId"
+                      [connectedTo]="dropTargets()"
+                      [enterPredicate]="acceptsInCell"
+                      [acceptsDrop]="cellDragActive()"
                       [canWrite]="canWrite()"
                       [phrasePaths]="phrasePaths()"
                       [freeBlockIds]="freeBlockIds()"
                       [values]="valueCards()"
+                      [selectedId]="selectedId()"
+                      [selectedCell]="
+                        selectedCell()?.columnsId === block.id ? selectedCell()!.cell : null
+                      "
+                      (dropped)="dropped($event)"
+                      (innerSelected)="selectInner($event)"
+                      (cellSelected)="cellChosen(block.id, $event)"
+                      (stepped)="cellStepped($event)"
+                      (dragging)="cellDragActive.set($event)"
                       (phraseInput)="onPhraseInput($event)"
                       (valueRefused)="onValueRefused($event)"
                       (freeBlockInput)="onFreeBlockInput($event)"
@@ -278,6 +297,10 @@
             }
           </ol>
 
+          @if (dropNotice(); as notice) {
+            <fold-callout variant="info" data-drop-notice>{{ notice }}</fold-callout>
+          }
+
           @if (view.footer !== '') {
             <app-mail-block-fragment [html]="view.footer" />
           }
@@ -290,7 +313,11 @@
     <fold-card>
       <div class="card-body">
         <fold-element-title variant="title" title="Bibliothèque" [subtitle]="librarySubtitle()" />
-        <app-mail-block-library [connectedTo]="blockListId" (picked)="add($event)" />
+        <app-mail-block-library
+          [connectedTo]="dropTargets()"
+          (picked)="add($event)"
+          (draggingChange)="libraryDragging($event)"
+        />
       </div>
     </fold-card>
     @if (selected(); as current) {
@@ -308,6 +335,17 @@
             />
           } @else {
             <p class="muted">Ce bloc s’écrit directement dans l’e-mail.</p>
+          }
+          @if (destinationOptions().length > 1) {
+            <fold-listbox
+              size="sm"
+              label="Déplacer vers…"
+              hint="Le geste clavier du glisser : dans une colonne, ou hors des colonnes."
+              [options]="destinationOptions()"
+              [value]="currentDestination()"
+              (selectionChange)="moveTo($event)"
+              data-move-to
+            />
           }
           @for (cell of selectedCells(); track $index; let column = $index) {
             @for (inner of cell; track inner.id) {

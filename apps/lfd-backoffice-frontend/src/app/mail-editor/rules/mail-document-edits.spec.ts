@@ -8,7 +8,7 @@ import {
   insertBlockAfter,
   insertBlockAt,
   libraryItemKeyOf,
-  moveBlock,
+  reorderBlock,
   moveBlockBy,
   newCellBlock,
   newLibraryBlock,
@@ -37,7 +37,7 @@ const DOCUMENT: MailDocument = {
 
 describe('les gestes du canevas', () => {
   it('déplace un bloc sans toucher au document d’origine', () => {
-    const moved = moveBlock(DOCUMENT, 0, 2);
+    const moved = reorderBlock(DOCUMENT, 0, 2);
     expect(moved.blocks.map((block) => block.id)).toEqual(['note', 'model:footer', 'model:title']);
     expect(DOCUMENT.blocks.map((block) => block.id)).toEqual([
       'model:title',

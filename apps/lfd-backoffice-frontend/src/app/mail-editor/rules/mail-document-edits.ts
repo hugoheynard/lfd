@@ -170,8 +170,8 @@ function withBlocks(document: MailDocument, blocks: readonly MailBlock[]): MailD
   return { ...document, blocks };
 }
 
-/** Déplace le bloc du rang `from` au rang `to` (le glisser-déposer). */
-export function moveBlock(document: MailDocument, from: number, to: number): MailDocument {
+/** Déplace le bloc du rang `from` au rang `to` dans le fil (le geste au clavier). */
+export function reorderBlock(document: MailDocument, from: number, to: number): MailDocument {
   const last = document.blocks.length - 1;
   if (from === to || from < 0 || from > last || to < 0 || to > last) {
     return document;
@@ -188,7 +188,7 @@ export function moveBlock(document: MailDocument, from: number, to: number): Mai
 /** Monte (`-1`) ou descend (`1`) un bloc d'un cran — le geste au clavier. */
 export function moveBlockBy(document: MailDocument, blockId: string, delta: -1 | 1): MailDocument {
   const from = document.blocks.findIndex((block) => block.id === blockId);
-  return from < 0 ? document : moveBlock(document, from, from + delta);
+  return from < 0 ? document : reorderBlock(document, from, from + delta);
 }
 
 /**
