@@ -324,80 +324,12 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
    règle demande une relecture d'ensemble avant la production — `CLAUDE.md`
    § 9 bis.
 
-### c. Décisions en suspens
+### c. Plus tard
 
-1. ~~Rendre visibles les e-mails « échoués » au staff (écran du suivi)~~ —
-   fait le 2026-11-08, avec le sens de « envoyé » (point 6) : voir
-   [`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md) (T1b, la bascule
-   de la carte de santé, bâti le 2026-11-08 ; reste ce qui se vérifie après
-   le déploiement).
-2. Les pièces jointes par URL signée (S3c) « à revoir » ; d'ici là le bloc
-   `mail` lit le stockage des pièces client — Service § 22.
-3. Le dossier du fournil part encore en octets : ouvrir son stockage au bloc
-   `mail`, ou le laisser — Service, revue cas 7.
-4. Durée de conservation des mandats rangés au stockage — Service, revue cas 7.
-5. ~~`@lfd/mailer` journalise l'adresse du destinataire~~ — fait le
-   2026-11-07 : le contexte des journaux du paquet porte la clé d'idempotence
-   (et l'identifiant Resend une fois accepté), que `mail.mail_request` relie
-   au destinataire ; la porte `log-no-email` lit aussi `packages/*/src`.
-6. ~~Le sens de « envoyé » : un type par étape, retours Resend reliés au suivi~~
-   — fait le 2026-11-08 ([`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md)) ;
-   reste non bâti : les faits `mail.delivered` / `mail.bounced` publiés aux
-   autres blocs — Service, revue cas 5.
-7. ~~Adresse de réponse d'un espace obligatoire, refus de `no-reply`~~ —
-   tranché oui et fait le 2026-11-07 : `validateMailSenderIdentity` refuse une
-   adresse absente ou qui ne reçoit rien ; une identité déjà rangée sans elle
-   reste lisible et envoie comme avant — Éditeur § 26, n° 1.
-8. ~~Marquer « sous condition » un bouton qui ne disparaît que sans adresse de
-   boutique~~ — tranché non le 2026-11-07 — Éditeur § 26, n° 2.
-9. « Voir ma commande » d'un invité mène à la page d'annulation : la garder ou
-   créer une page de consultation — Éditeur § 26, n° 3.
-10. ~~« Voir ma commande » et « Gérer ou annuler » mènent au même endroit dans
-    « Commande passée » : en retirer un~~ — fait le 2026-11-07 : un seul
-    bouton, le lien « Gérer ou annuler ma commande » est retiré — Éditeur
-    § 26, n° 4.
-11. ~~Masquer l'e-mail des anciennes inscriptions au journal~~ — fait le
-    2026-11-07 (décision RGPD) — Éditeur § 26, n° 5.
-12. ~~Refuser côté serveur l'écriture d'un libellé système (aujourd'hui seul
-    l'éditeur le cache)~~ — fait le 2026-11-07 — Éditeur § 23, écarts.
-
-### d. Chantiers notés, non bâtis
-
-1. Passer les 31 autres e-mails à la règle de l'accroche : 16 faciles et
-   4 moyens d'abord, puis les 11 « à discuter » ligne par ligne (Éditeur § 26,
-   n° 6) — Éditeur § 23, relevé.
-2. ~~L'aperçu fidèle et le canevas n'appliquent pas encore la charte publiée~~
-   — fait le 2026-11-07 — Éditeur § 25, C1 écarts.
-3. Les demandes suivies entre blocs (un identifiant de suivi pour toute
-   demande) — [`../todos/todo-demandes-suivies.md`](../todos/todo-demandes-suivies.md).
-4. Colonnes « hybrides » qui s'empilent sans `@media` (Gmail application,
-   certains Outlook) — Hugo : « non pas là » — Éditeur § 24, piste.
-5. MJML, en piste seulement : pas maintenant ; il resterait contenu dans
-   `@lfd/mailer` ; à envisager si on fait des colonnes hybrides, si un rendu
-   cassé est constaté dans Outlook ou Gmail application, ou pour des blocs
-   complexes — Service § 2, C6.
-6. ~~Retirer le code de l'ancien écran `textes-emails`~~ — fait le
-   2026-11-07 : la redirection reste ; les libellés et les règles de texte
-   que l'éditeur lisait sont dans `mail-editor/rules/`.
-7. ~~Liste des paires de contraste recopiée au back-office~~ — fait le
-   2026-11-07 : `CHARTER_CONTRAST_PAIRS` (`@lfd/mail-blocks`), lue par le
-   refus et par la carte « Contraste ».
-8. Non vérifié à l'écran : glisser-déposer des variables et des blocs, saisie
-   avec pastilles dans Safari et Firefox — Éditeur § 22.
-9. Non vérifié en vrai : le QR et l'empilement des colonnes en mode sombre de
-   Gmail et Outlook — Éditeur § 8.
-10. **Le chantier « Support »** (Hugo, 2026-11-07) : traiter dans le
-    back-office les e-mails reçus (`support@lfd-backoffice.com`, puis une
-    adresse client sur `lafoliecoffee.info`). Le webhook Resend `email.received`
-    signé vers l'API, le message rangé et relié à sa commande ou à son compte,
-    la cloche, un écran « Support » (entrée de menu et droit à part) pour lire
-    et répondre ; la réponse part par le bloc `mail`. Et dans Email Templates,
-    l'onglet « Expéditeur » devient « Réglages », l'adresse de réponse choisie
-    parmi les adresses que le Support reçoit. Route publique et données
-    personnelles : plan contredit par `vitruve` avant Hugo. ⚠️ Corrigé le
-    2026-11-08 : ce chantier n'est pas vierge — [`../demandes-client/plan-reponses-par-e-mail.md`](../demandes-client/plan-reponses-par-e-mail.md)
-    (2026-10-28, contredit par vitruve) en couvre la réception, et le webhook
-    remet déjà `email.received` à la boîte des demandes (`b2b/contact`). À
-    relire avant d'écrire quoi que ce soit.
-11. L'e-mail de vérification d'Auth0 (« Verify your email ») part en anglais et
-    hors du suivi du bloc `mail` (constaté le 2026-11-07 sur un rebond).
+Les décisions en suspens, les chantiers notés, les pistes et ce qui reste à
+voir en vrai sont rangés dans [`todo-e-mails.md`](todo-e-mails.md) depuis le
+2026-11-08. Ce qui y figurait ici et qui est fait (le suivi des envois, le
+sens de « envoyé », l'adresse de réponse obligatoire, un seul bouton dans
+« Commande passée », le libellé système refusé par le serveur, la charte
+dans l'aperçu…) se lit dans les sections au-dessus et dans
+[`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md).
