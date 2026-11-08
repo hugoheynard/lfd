@@ -2,6 +2,7 @@ import { sanitiseSubject, type LayoutInput, type LayoutRow, type RenderedMail } 
 
 import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
 import type { CollectionNoticeCopy, CollectionNoticeKind } from "./copy/mail-copy.model.js";
+import type { MailBody } from "./mail-logo.js";
 
 /** Ce que l'avis annonce — le gabarit choisit ses mots en fonction. */
 export type CollectionNoticeMailKind = CollectionNoticeKind;
@@ -38,7 +39,7 @@ export interface CollectionNoticeMailData {
 }
 
 /** La coquille client, prêtée par le registre. */
-export type NoticeShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type NoticeShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /**
  * Le rendu, à part de `mail-templates.ts` : le registre n'en garde qu'une
@@ -58,7 +59,7 @@ export function renderCollectionNoticeMail(
     subject: sanitiseSubject(
       fill(copy.subject, { title, creditor: data.creditorName, day: data.collectionDay }),
     ),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title,
       body: bodyOf(data, copy),

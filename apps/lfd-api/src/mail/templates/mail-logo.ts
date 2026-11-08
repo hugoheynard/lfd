@@ -1,5 +1,6 @@
 import {
   renderLayout,
+  renderLayoutText,
   type LayoutInput,
   type LayoutLogo,
   type MailAttachment,
@@ -8,7 +9,10 @@ import {
 } from "@lfd/mailer";
 
 import { activeMailCharter } from "./sections/mail-charter-scope.js";
-import { renderDocumentOfRenderedMail } from "./sections/mail-document-rendering.js";
+import {
+  renderDocumentOfRenderedMail,
+  renderDocumentTextOfRenderedMail,
+} from "./sections/mail-document-rendering.js";
 import { activeMailLayout, layoutOptionsOfRenderedMail } from "./sections/mail-layout-scope.js";
 
 /**
@@ -60,6 +64,13 @@ export const MAIL_LOGO_ATTACHMENT: MailAttachment = {
 };
 
 /**
+ * Le corps d'un e-mail rendu : le HTML et sa version texte (2026-11-08),
+ * fabriqués par le même rendu depuis la même entrée — ce que l'un montre,
+ * l'autre le dit.
+ */
+export type MailBody = Pick<Required<RenderedMail>, "html" | "text">;
+
+/**
  * La coquille commune, logo compris — pour que la balise et la pièce jointe ne
  * divergent pas —, avec l'ordre des sections et les repères de l'aperçu de
  * l'e-mail en cours de rendu (plan `plan-textes-des-e-mails.md`, E4). Sans
@@ -68,7 +79,7 @@ export const MAIL_LOGO_ATTACHMENT: MailAttachment = {
  * publiée de son espace (C1, § 25), si le périmètre en pose une, remplace
  * la charte de départ — et son logo, s'il en a un, le logo embarqué.
  */
-export function renderLayoutWithLogo(input: LayoutInput): string {
+export function renderLayoutWithLogo(input: LayoutInput): MailBody {
   const charter = activeMailCharter() ?? null;
   const framed: LayoutInput = {
     ...input,
@@ -78,7 +89,10 @@ export function renderLayoutWithLogo(input: LayoutInput): string {
   };
   // L'aperçu de l'éditeur (S5f) découpe cette entrée en blocs ; l'envoi n'ouvre jamais ce périmètre.
   activeMailLayout()?.editor?.capture(framed);
-  return renderDocumentOfRenderedMail(framed) ?? renderLayout(framed);
+  return {
+    html: renderDocumentOfRenderedMail(framed) ?? renderLayout(framed),
+    text: renderDocumentTextOfRenderedMail(framed) ?? renderLayoutText(framed),
+  };
 }
 
 /**

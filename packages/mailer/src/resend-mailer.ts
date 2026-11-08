@@ -53,6 +53,8 @@ export interface ResendLike {
         to: string;
         subject: string;
         html: string;
+        /** La partie `text/plain` du message, quand le rendu en fabrique une. */
+        text?: string;
         replyTo?: string;
         headers?: Record<string, string>;
         /**
@@ -102,7 +104,7 @@ function sleepFor(ms: number): Promise<void> {
 
 /**
  * Adaptateur réel — rend le gabarit (fonction pure) puis remet
- * `{ from, to, subject, html }` à Resend.
+ * `{ from, to, subject, html, text }` à Resend.
  *
  * Toute panne, qu'elle vienne du réseau (le SDK jette) ou du fournisseur (il
  * répond `error`), sort sous **une seule forme** : `MailerSendError`. L'appelant
@@ -172,7 +174,7 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
     args: SendMailArgs<M, K>,
     rendered: RenderedMail,
   ): Parameters<ResendLike["emails"]["send"]>[0] {
-    const { subject, html, attachments } = rendered;
+    const { subject, html, text, attachments } = rendered;
     // L'adresse du message l'emporte sur celle du mailer ; validée avant
     // l'en-tête parce qu'elle peut avoir été saisie par un visiteur.
     const replyTo =
@@ -182,6 +184,7 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
       to: args.to,
       subject,
       html,
+      ...(text === undefined || text === "" ? {} : { text }),
       ...(replyTo !== null ? { replyTo } : {}),
       ...(args.headers !== undefined ? { headers: { ...args.headers } } : {}),
       ...(attachments === undefined || attachments.length === 0

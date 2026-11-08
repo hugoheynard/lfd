@@ -3,6 +3,7 @@ import { sanitiseSubject, type LayoutInput, type LayoutRow, type RenderedMail } 
 
 import type { InvoiceIssuedCopy } from "./copy/mail-copy.model.js";
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données de l'e-mail **« Votre facture FA-… »** (plan
@@ -50,7 +51,7 @@ export interface InvoiceMailDocument {
 }
 
 /** La coquille client, prêtée par le registre. */
-export type InvoiceShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type InvoiceShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /**
  * Le rendu, à part de `mail-templates.ts`. Sobre : le numéro, les dates, le
@@ -65,7 +66,7 @@ export function renderInvoiceIssuedMail(
   const title = fill(copy.title, { number: data.invoiceNumber });
   return {
     subject: sanitiseSubject(fill(copy.subject, { title, seller: data.sellerName })),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title,
       body: bodyOf(data, copy),

@@ -5,8 +5,10 @@ import type { MailAttachment, RenderedMail } from "@lfd/mailer";
 /**
  * L'empreinte d'un e-mail rendu : l'objet en clair (il se relit dans un
  * diff), le HTML et les pièces jointes par leur SHA-256 (un octet de plus ou
- * de moins les change). Le texte de l'e-mail EST son HTML : `RenderedMail` ne
- * porte pas de version texte séparée (vérifié le 2026-10-23, `packages/mailer/src/types.ts`).
+ * de moins les change). La version texte, arrivée le 2026-11-08
+ * (`RenderedMail.text`), n'y entre PAS : elle a ses empreintes à part
+ * (`mail-rendering-text.golden.json`), pour que celles-ci restent celles
+ * d'avant, à l'octet.
  */
 export interface MailFingerprint {
   readonly subject: string;

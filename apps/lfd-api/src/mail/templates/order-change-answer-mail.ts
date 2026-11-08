@@ -2,6 +2,7 @@ import type { ContentLocale } from "@lfd/contracts";
 import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/mailer";
 
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données des deux e-mails qui RÉPONDENT à une demande de modification
@@ -34,7 +35,9 @@ export interface OrderChangeRefusedMailData {
 }
 
 /** La coquille client, prêtée par le registre. */
-export type OrderChangeAnswerShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type OrderChangeAnswerShell = (
+  input: Omit<LayoutInput, "brand" | "supportEmail">,
+) => MailBody;
 
 /** « Votre modification est faite. » */
 export function renderOrderChangeAppliedMail(
@@ -45,7 +48,7 @@ export function renderOrderChangeAppliedMail(
   const ref = data.reference;
   return {
     subject: sanitiseSubject(fill(copy.subject, { ref })),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title: copy.title,
       body: `${fill(copy.intro, { ref })}\n\n${totalShift(data)}\n\n${copy.where}`,
@@ -81,7 +84,7 @@ export function renderOrderChangeRefusedMail(
   const ref = data.reference;
   return {
     subject: sanitiseSubject(fill(copy.subject, { ref })),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title: copy.title,
       body: `${fill(copy.intro, { ref })}\n\n${copy.contactSales}`,

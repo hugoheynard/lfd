@@ -75,6 +75,13 @@ export interface RenderedMail {
   readonly subject: string;
   readonly html: string;
   /**
+   * La **version texte** (`text/plain`), fabriquée par le rendu à côté du HTML
+   * (`renderLayoutText`, `renderMailDocumentText`) — jamais tirée du HTML.
+   * Filtres anti-spam, montres et messageries sans HTML la lisent. Absente,
+   * le message part en HTML seul, comme avant (2026-11-08).
+   */
+  readonly text?: string;
+  /**
    * Les images en ligne du corps, s'il y en a. Absent pour l'immense majorité
    * des e-mails — un message qui n'a rien à montrer n'a rien à joindre.
    *

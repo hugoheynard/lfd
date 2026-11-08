@@ -123,7 +123,7 @@ describe("le courriel du dossier de production", () => {
     const seen: string[] = [];
     const mail = renderProductionDossierMail(DATA, (input) => {
       seen.push(input.footer ?? "");
-      return `${input.title}|${input.body}`;
+      return { html: `${input.title}|${input.body}`, text: input.body };
     });
     expect(seen[0]).toBe(
       "Cet e-mail part automatiquement à chaque arrêt du plan. Pour ne plus le recevoir, " +

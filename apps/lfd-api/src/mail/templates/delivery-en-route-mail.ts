@@ -4,6 +4,7 @@ import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/maile
 import { mailCopyOf } from "./copy/mail-copy.js";
 import type { DeliveryEnRouteCopy } from "./copy/model/order-mails.model.js";
 import { windowInWords } from "./fulfillment-window-in-words.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données du courriel **« Votre livraison est en route »**
@@ -29,7 +30,7 @@ export interface DeliveryEnRouteMailData {
 }
 
 /** La coquille client, prêtée par le registre : l'enseigne y est déjà posée. */
-export type CustomerShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type CustomerShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /**
  * Le rendu, à part de `mail-templates.ts` pour ne pas l'alourdir : le registre
@@ -49,7 +50,7 @@ export function renderDeliveryEnRouteMail(
   const address = addressWithWindow(data, copy);
   return {
     subject: sanitiseSubject(remainder ? copy.subjectRemainder : copy.subject),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title: remainder ? copy.titleRemainder : copy.title,
       body: `${remainder ? copy.introRemainder : copy.intro}\n\n${data.reference}`,

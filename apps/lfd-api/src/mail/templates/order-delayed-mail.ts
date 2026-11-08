@@ -2,6 +2,7 @@ import type { ContentLocale } from "@lfd/contracts";
 import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/mailer";
 
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données du courriel **« Votre commande prend du retard »** — le geste
@@ -19,7 +20,7 @@ export interface OrderDelayedMailData {
 }
 
 /** La coquille client, prêtée par le registre : l'enseigne y est déjà posée. */
-export type OrderDelayedShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type OrderDelayedShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /**
  * Le rendu. Ce qu'il ne dit PAS, et c'est délibéré : aucune heure — on ne sait
@@ -33,7 +34,7 @@ export function renderOrderDelayedMail(
   const copy = mailCopyOf(data.locale)["customer.order-delayed"];
   return {
     subject: sanitiseSubject(fill(copy.subject, { ref: data.reference })),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title: copy.title,
       body: `${copy.intro}\n\n${copy.apology}`,

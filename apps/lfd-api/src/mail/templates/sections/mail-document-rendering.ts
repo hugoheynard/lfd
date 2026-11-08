@@ -1,5 +1,10 @@
 import type { MailLocale } from "@lfd/mail-blocks";
-import { renderMailDocument, type LayoutInput, type MailDocumentRenderOptions } from "@lfd/mailer";
+import {
+  renderMailDocument,
+  renderMailDocumentText,
+  type LayoutInput,
+  type MailDocumentRenderOptions,
+} from "@lfd/mailer";
 
 import type { B2bMails } from "../mail-templates.js";
 import { mailBlockDeclarationOf } from "./mail-block-declarations.js";
@@ -41,4 +46,21 @@ export function renderDocumentOfRenderedMail(input: LayoutInput): string | null 
     ...documentRenderOptionsOf(current.mail, current.scoped.locale),
     ...(current.scoped.framePreviewImages === true ? { framePreviewImages: true } : {}),
   });
+}
+
+/**
+ * **La version texte du document de l'e-mail en cours** (2026-11-08) : le
+ * pendant de `renderDocumentOfRenderedMail`, depuis le même périmètre ;
+ * `null` sans document — la coquille dit alors son texte.
+ */
+export function renderDocumentTextOfRenderedMail(input: LayoutInput): string | null {
+  const current = documentOfRenderedMail();
+  if (current === undefined || !isRegisteredMail(current.mail)) {
+    return null;
+  }
+  return renderMailDocumentText(
+    input,
+    current.scoped.document,
+    documentRenderOptionsOf(current.mail, current.scoped.locale),
+  );
 }

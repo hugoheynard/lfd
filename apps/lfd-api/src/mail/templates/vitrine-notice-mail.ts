@@ -23,7 +23,7 @@ export function renderVitrineNoticeMail(
 ): RenderedMail {
   return {
     subject: sanitiseSubject(data.subject),
-    html: shell({
+    ...shell({
       kicker: mailCopyOf(DEFAULT_MAIL_LOCALE)["agency.vitrine-notice"].kicker,
       title: data.subject,
       body: data.message,

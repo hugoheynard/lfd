@@ -65,6 +65,9 @@ export type { MailStyles } from "./charter-styles.js";
 export type { DarkPalette } from "./document-theme.js";
 export { isRearrangedDocument, renderMailDocument } from "./render-document.js";
 export type { MailDocumentRenderOptions } from "./render-document.js";
+export { renderLayoutText } from "./layout-text.js";
+export { renderColumnsText, renderFreeBlockText, renderMailDocumentText } from "./document-text.js";
+export { TEXT_LINE_WIDTH } from "./text-format.js";
 export { renderMailDocumentParts } from "./render-document-parts.js";
 export type { MailDocumentBlockFragment, MailDocumentParts } from "./render-document-parts.js";
 export type {

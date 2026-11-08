@@ -3,6 +3,7 @@ import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/maile
 import { weightLabel } from "@lfd/money";
 
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * **« Écrire au client » après un départ incomplet** (plan
@@ -39,7 +40,7 @@ export interface OrderShortfallDraftData {
 }
 
 /** La coquille client, prêtée par le registre. */
-export type OrderShortfallShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type OrderShortfallShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /** « Votre commande part incomplète », avec le texte relu. */
 export function renderOrderShortfallMail(
@@ -49,7 +50,7 @@ export function renderOrderShortfallMail(
   const copy = mailCopyOf(data.locale)["customer.order-shortfall"];
   return {
     subject: sanitiseSubject(fill(copy.subject, { ref: data.reference })),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title: copy.title,
       body: data.message,

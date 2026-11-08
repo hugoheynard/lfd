@@ -1,0 +1,351 @@
+{
+  "customer.order-placed": {
+    "paidPickup": {
+      "textSha256": "1d945efa0f1a69450d300b9b312cdfc9167ac0798a3af9676eea25f95da3c0fb"
+    },
+    "dueDelivery": {
+      "textSha256": "9b651fb3924b812bfec5b5ecc508495a4e157bb8d89c3950bc15c89e636072e8"
+    },
+    "account": {
+      "textSha256": "e1726962506df998a6841e1f4df210b741c08dfd817970ec81e1803382ecb354"
+    },
+    "exactHt": {
+      "textSha256": "e387d9faf2645de2f2c101a0635d1aa7a3ca0f2951aeb2a9bd4ab1f7cc4e38b9"
+    },
+    "free": {
+      "textSha256": "2b71a488532ce04ebaafe8eafff4db487f7d8a5e5f33653d9b38fd92fdae50ae"
+    }
+  },
+  "customer.order-ready": {
+    "pickup": {
+      "textSha256": "5c5b9e2a885ff51d8c750a70ce963384299939e7fb8610824c440775049ccbf7"
+    },
+    "delivery": {
+      "textSha256": "6a4edc5d11e28b136aab578e88c77d76abeb94a5850472d5ac251adaca5b5251"
+    },
+    "reminder": {
+      "textSha256": "6bc13fcf2c88ad9bcf8c8c467cd01c12bb2fad4585138f6d2752878815fe0e65"
+    },
+    "reminderWithoutSite": {
+      "textSha256": "6ece0d947725b44229ff3332e02a8ab3eacc682d19358944d2ecf5e120fa9b94"
+    },
+    "remainderPickup": {
+      "textSha256": "a6b37765533c323ff4effb8125dbfc92faf9428725296f74bf1d53f35b6ec2ed"
+    },
+    "remainderDelivery": {
+      "textSha256": "12a8034cc1020012f6d3034eaf5f2ab3e34a07e78c6b132ff8b0766d70674865"
+    }
+  },
+  "customer.delivery-en-route": {
+    "full": {
+      "textSha256": "eb53761bc81f0e314dffbf51e327c4692733f26d7d55f88bf9530fb8cddb481c"
+    },
+    "bare": {
+      "textSha256": "651f509266e74305885c29e840fb209b91f796f65e0d5af14ebcc509cd912abc"
+    },
+    "windowBetween": {
+      "textSha256": "8f110a8b9392d49b4cbf2ec14c770684e260b68b80fd8d0393ffd6999a245ed4"
+    },
+    "windowBefore": {
+      "textSha256": "729d819022937c999b44862e3128b2eef5d9d863bee8e7227f4034f6ba9638d6"
+    },
+    "remainder": {
+      "textSha256": "6200f837a4ae8a55863d2745c98cb737c369c0b652563466fc1a05c39c8ba5c5"
+    }
+  },
+  "customer.order-delayed": {
+    "full": {
+      "textSha256": "f6341d9fcc7de8a4a9e8953c501c8e062f5b0d066e508eb67186375b263f22dd"
+    },
+    "bare": {
+      "textSha256": "3de12569c10bb22f43712750c122ef18e7b8076749597bcb97a7d2588444136e"
+    }
+  },
+  "customer.payment-failed": {
+    "withLink": {
+      "textSha256": "001a0fd2b8f9913af6efcf0cad2d6d31d1481af9db3b834076a92ce1fa6ffb85"
+    },
+    "withoutLink": {
+      "textSha256": "2ceaf237b775d4e3deb0841b89b6d075475dbb7498b8c86e69c031ac86428c46"
+    }
+  },
+  "customer.payment-expired": {
+    "only": {
+      "textSha256": "02c35732e5b90a934b5e149e11ce1266091e793757aae31351023fbf00b163bf"
+    }
+  },
+  "customer.order-cancelled": {
+    "teamPaid": {
+      "textSha256": "f91aeee419c4504af67fd3cf6e988f4c431b515231d6ce402eb168c944a3b521"
+    },
+    "teamAlreadyRefunded": {
+      "textSha256": "8d1bcb5ff998da9d84640a9b63f0d3685c7ddc80843daa2b346a172619288ed8"
+    },
+    "selfFree": {
+      "textSha256": "ba73a52b9e4eeed7426229dcdf45a5d37da9ae13756449a8eb95c19890c01d91"
+    },
+    "selfDueNoDay": {
+      "textSha256": "299b2764d1d576577a37e87f6a635d294404b708cd211c05c23886107f9796f3"
+    },
+    "memberAccount": {
+      "textSha256": "982e46c88c08f87b32e6c4652f6e997b7ef05b120f882474ad9e3644e46716e7"
+    },
+    "memberNoDay": {
+      "textSha256": "45bc462d0d61acf49675fb0c0c7fffd02ff78586a2fe602281d59067459fe10d"
+    },
+    "principalMerged": {
+      "textSha256": "49da7b0e4e291180de7f472109c7fa242fe17a3fa837ae3fd7d1252483634540"
+    },
+    "principalNoDayLapsed": {
+      "textSha256": "ad81ccbc383eed8a37eda139f4531f2ad889e47fe0d898dc7f9c7d2a51e7d8f6"
+    }
+  },
+  "customer.order-payment-link": {
+    "only": {
+      "textSha256": "e9a8f81c5fc2e191ff4b40d3de336bb544370a0dcdbda7bc1c75b7615d231220"
+    }
+  },
+  "customer.collection-notice": {
+    "statement": {
+      "textSha256": "ee76aca20c815fa47f2a813891b8ce1eb7e3c4f0135b2ebe950f5761d26a8f54"
+    },
+    "oneInvoice": {
+      "textSha256": "35cd3daa845bdc04e3ac07d7f2a90d8555a6b5d4b8b5ed19457fca439a84857f"
+    },
+    "correctionRepresented": {
+      "textSha256": "7ba5ca0bc6c8bf352962d6c6f02e216fc0f0430c521beefd25b19498be4ceb17"
+    },
+    "cancellation": {
+      "textSha256": "60f0866dc96850b488609c5a2de6fe8905414f358eb56245ec2429702d737dab"
+    }
+  },
+  "customer.invoice-issued": {
+    "full": {
+      "textSha256": "873112425a2890cf00b6cfbd2cde94ae38aab01b92b5db1f981c99d7d4eff78e"
+    },
+    "bare": {
+      "textSha256": "57d00cf488f22ff493694e1feee6b0392afd0d82ad5cb1330be2ca7a65cf663c"
+    }
+  },
+  "customer.mandate-to-sign": {
+    "core": {
+      "textSha256": "34ae235b97759129b39e0204ca0cec1e60aa4c465c8d35aacb4a57776e2160c3"
+    },
+    "b2b": {
+      "textSha256": "7f307a42e429116ed115a89628a1f595c2f162586c1c3a8837f78dbeaf179371"
+    }
+  },
+  "customer.sub-account-activity": {
+    "placed": {
+      "textSha256": "6dddcf360b6d45aac5ce513e503d2176e20c7e26da82860c1e982d057f6c896b"
+    },
+    "cancelledByTeam": {
+      "textSha256": "6e48038ca592c0a8cfb7763ca4d6d2c07c793af51760572cba9459df369fc1ea"
+    },
+    "abandoned": {
+      "textSha256": "88a179b13075c4e5d6241df871ca8d245ec1c86fc21b061883a840d79bd209f0"
+    },
+    "paymentFailed": {
+      "textSha256": "38978b5a1361f5f64f989fccc10122e7aa2f9a5c9471562e958e3ca5216f992c"
+    }
+  },
+  "customer.sub-account-gesture": {
+    "problem": {
+      "textSha256": "0f42228c8e17fdda723b769228e2618593f7d6677e3cb7b67f6e6676e7a92bfa"
+    },
+    "problemByTeam": {
+      "textSha256": "025909b1850a4ddf228d9b2644f8a10372ba738fee1209ef32ed3975a3108faa"
+    },
+    "contactWithReference": {
+      "textSha256": "6535ee371d3eb61814c1665069b9011fc4d220d8862f704be595b42e9f3dc1d5"
+    },
+    "delivery_address_added": {
+      "textSha256": "982eaf2e705abc1cdf80a12156e36736d9ca9a4aea3c644cddb8d71029b855f2"
+    },
+    "delivery_address_updated": {
+      "textSha256": "31fb057d13f0446b34bbe1fdc6e91b8e3c9af4349bffd8b4a2e955ec54c20060"
+    },
+    "delivery_address_removed": {
+      "textSha256": "73591d10ad59b3986430aea2f0c08a2a00473b76a92562b24b474f123d636f91"
+    },
+    "default_delivery_set": {
+      "textSha256": "38f8b265d708af0ad1927d1dc8500f6d0c8a83dfa8749455e5b0438acfacb242"
+    },
+    "contact_added": {
+      "textSha256": "778aec2a093620451e1ffc51e5f097fcf9449a40f69137c64c0f28b9ca9722b5"
+    },
+    "contact_updated": {
+      "textSha256": "a77adf055fed0fbbe2631a76af5a26694272d33760d85e7c5fbf6ad8c4363006"
+    },
+    "contact_removed": {
+      "textSha256": "5b67ee57139cc84bd26b61176ccd8008eebaa5a23dad526499edf7bdadbe97a0"
+    },
+    "primary_contact_changed": {
+      "textSha256": "5c8f3117e47b0a8e43cf51d3602312df3e868e82dda4d177dc876b5f558c753f"
+    },
+    "bank_account_changed": {
+      "textSha256": "d337ca3edc9793f4c6fd4d4febf7cf1a8c0deafb98bdcee82c9203aa653a3842"
+    },
+    "mandate_proof_attached": {
+      "textSha256": "b4c3681c0029f9a209c376d3d0d77ca0735a73eb719b620f5bfe469e56fb0fd3"
+    },
+    "subscription_created": {
+      "textSha256": "1c247d1b37238ed82900bfb4654a25dc7ebe0edc56ac750d49ff95fbd30fc626"
+    },
+    "subscription_paused": {
+      "textSha256": "67c06420440efd1410e95c6b053fb4bd5b110910d79eb2cd16f068fd47b24a24"
+    },
+    "subscription_resumed": {
+      "textSha256": "9b5ed5b342d4931da11859344f65225810e06638fa4d7a1926b32e132882d35d"
+    },
+    "subscription_stopped": {
+      "textSha256": "e427878bf996adb53fff7a3aa4648b99a6c42e794df68ae9ebc6896a097dba84"
+    }
+  },
+  "customer.access-opened": {
+    "code": {
+      "textSha256": "f87b6d38b24b2f8ae5d76853d4677e9bd8738714c1b8231af743aa1c899a0855"
+    },
+    "passwordOnly": {
+      "textSha256": "f4b70dba43743bba200d3a45ecfc4a8ec3eedcde9d7cb1f0d62889053db2b173"
+    }
+  },
+  "customer.company-attached": {
+    "named": {
+      "textSha256": "5c3630582c994056f9604c27f3ee9a24f00b5d26a2b73023bc913a0f9ae49047"
+    },
+    "anonymous": {
+      "textSha256": "6908ca085f332b51edddbe188bf42c1a02ff51121280a26d8e0ee2649d99a76b"
+    }
+  },
+  "customer.order-placed-with-your-email": {
+    "named": {
+      "textSha256": "0c562f7d75a58da31c3e4ca2cdabec81d95c073760e2babe2d913638e9cd9c14"
+    },
+    "anonymous": {
+      "textSha256": "2da4bdc7aee0aaa070a37ba647a62bb249d2b7a9b65b44c73a4bf6e535a3e626"
+    }
+  },
+  "customer.login-method-linked": {
+    "named": {
+      "textSha256": "057c441be386ac2c7e71361d319e4ac0dd50bc1ad0360a333f0472b9b9597e79"
+    },
+    "anonymous": {
+      "textSha256": "bb8b00289b5e013fba6dd5d49faf7dec8fa90a6563016525e6885a18a06fa209"
+    }
+  },
+  "customer.password-reset": {
+    "only": {
+      "textSha256": "6d16960a612381ae8886816c66833058c4230403a847ab605c8cc56129e4a6e0"
+    }
+  },
+  "staff.appointment-booked": {
+    "only": {
+      "textSha256": "3646c2df8ef992d115c6e60b3e51f3c6c142a42d0f85bbf431d5f63d7734aba4"
+    },
+    "noMessage": {
+      "textSha256": "07bdb4c350fbc5f5244c43e7d5fbe33d7cdbcece5141e0876cdfe1afd6ff6a01"
+    }
+  },
+  "staff.account-alert": {
+    "only": {
+      "textSha256": "45fc3570f673ae35c015057e01f3e825f359f67382a98d536fdc230becf588b9"
+    }
+  },
+  "staff.invited": {
+    "named": {
+      "textSha256": "5b2645fc2b5dd9072458729f980470b2f3a71a4c355579735fa6961d96209343"
+    },
+    "anonymous": {
+      "textSha256": "a874b24e878f4e9aa9491f713f2937380efc91cdc6713410959837a94cf3b52b"
+    }
+  },
+  "ops.deploy-check": {
+    "only": {
+      "textSha256": "50158c063e06c01f7c33535ce338352b059e470537f3f16882e42fa2f298e4c1"
+    }
+  },
+  "staff.password-reset": {
+    "named": {
+      "textSha256": "5e5d68b951deaecc9f55f4cced0ca9b58ed558f98b3fb7e456aa14771b21c9be"
+    },
+    "anonymous": {
+      "textSha256": "ef8771d82cdc6dc37eaa0ab3bad6c4239d469aa990d14e5be9097fedde13e31d"
+    }
+  },
+  "staff.access-suspended": {
+    "named": {
+      "textSha256": "48b9887ecf9d496b39509ec5ac5b9b5a895371ea4e3caa91e0c53ce8bada50d0"
+    },
+    "anonymous": {
+      "textSha256": "c31e32451db65f84817ec6381983ecf67798f54c839234f79474995e94b5354a"
+    }
+  },
+  "staff.access-restored": {
+    "named": {
+      "textSha256": "c0a49972e220bcf72267564b41f5058b3416bf3338f6829888f1201467de4190"
+    },
+    "anonymous": {
+      "textSha256": "be745c803aaf2d7a3a0452d5edd830368df3a55e1d5bf2296d460ef4270eb3c1"
+    }
+  },
+  "staff.production-dossier": {
+    "arrested": {
+      "textSha256": "23e1590090d8865e23a7402e040da887051eb7e66f74f3eb3b8325e078cf2f9f"
+    },
+    "completedAnonymous": {
+      "textSha256": "29b9d6e613a65283ed0c6c920442cf3900ae36c1781843a17a9414477c8dec0e"
+    },
+    "resupplies": {
+      "textSha256": "6fe2e868dff88bf9a36a1be81384984376743421bef3004d3f1cf181317f23d6"
+    },
+    "resuppliesSplit": {
+      "textSha256": "eadb97ea4e8a30cec207b5bc6cdccfc93c55308d731c7204c2b143496aafd30a"
+    },
+    "noSplit": {
+      "textSha256": "52d07cdae88d2982c6446b8f7fb07df8d7a1eb57f12f805fea39944b827d7fed"
+    },
+    "deliveryOnly": {
+      "textSha256": "1cc1a4299170c63ae175996fc3f1a54e51a800e347a4f64e3bb25ad24b2d5b79"
+    }
+  },
+  "staff.support-requested": {
+    "only": {
+      "textSha256": "3d712fb22d2184961d98332048957ec3eb0d9d2ef842b135d6e6d3c65443ba58"
+    }
+  },
+  "staff.customer-request": {
+    "urgent": {
+      "textSha256": "913fb2bd8c8c11739603d45bc7fba22214ad9da962e772996189904d4bdc83f5"
+    },
+    "plain": {
+      "textSha256": "5c88bb36c21c21d862093990a2366cffd4d8b6a34700e6d8ef4412bbf63b0b34"
+    }
+  },
+  "agency.vitrine-notice": {
+    "only": {
+      "textSha256": "8a148eda2747ee06f6a28b1552f6a3aa12ca2c99cd1ec36a6f6250c5e65a8475"
+    }
+  },
+  "customer.order-change-applied": {
+    "only": {
+      "textSha256": "77fa3e2531a1a25e40a16bca27a2cd9a68394ce2e3a6cf9a77eae602967db713"
+    },
+    "lower": {
+      "textSha256": "8ea2b1e53c751d41d4d328b05c0216e183038f58822599afac9540becb336144"
+    },
+    "unchanged": {
+      "textSha256": "1b857759bc75a67f150168c8dd1e24993284dc91a6102dd68068e692fc8f97dd"
+    }
+  },
+  "customer.order-change-refused": {
+    "withReason": {
+      "textSha256": "0a6934a7b348f402e78ce8245f7dc54b32b5fcb3f250061fba3f7b75c684d17a"
+    }
+  },
+  "customer.order-shortfall": {
+    "withMessage": {
+      "textSha256": "e8d6de06c31e044faa1ed70657709d07ee1786304a70bdc65cbaacd52b36811c"
+    }
+  }
+}

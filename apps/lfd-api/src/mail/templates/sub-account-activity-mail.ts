@@ -2,6 +2,7 @@ import { sanitiseSubject, type LayoutInput, type LayoutRow, type RenderedMail } 
 
 import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
 import type { SubAccountActivityCopy, SubAccountActivityKind } from "./copy/mail-copy.model.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Ce que le site a fait — un mot par ligne du courriel, pas par clé du
@@ -35,7 +36,7 @@ export interface SubAccountActivityMailData {
 /** La coquille client, prêtée par le registre. */
 export type SubAccountActivityShell = (
   input: Omit<LayoutInput, "brand" | "supportEmail">,
-) => string;
+) => MailBody;
 
 /**
  * Le rendu. Langue de repli seule : aucune langue n'est encore choisie pour
@@ -51,7 +52,7 @@ export function renderSubAccountActivityMail(
     subject: sanitiseSubject(
       fill(copy.subject, { site: data.siteName, title, order: data.orderNumber }),
     ),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title,
       body: fill(data.enteredByTeam ? copy.bodyEnteredByTeam : copy.body, {

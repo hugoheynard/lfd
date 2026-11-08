@@ -2,6 +2,7 @@ import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/maile
 
 import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
 import type { ProductionDossierCopy } from "./copy/mail-copy.model.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données du courriel **« Dossier de production »** (doc
@@ -41,7 +42,7 @@ export interface ProductionDossierMailData {
 }
 
 /** La coquille de l'équipe, prêtée par le registre : la maison y est déjà posée. */
-export type StaffShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type StaffShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /** Les mots du dossier, dans la langue de repli : l'équipe lit le français. */
 function copyOf(): ProductionDossierCopy {
@@ -123,7 +124,7 @@ export function renderProductionDossierMail(
 ): RenderedMail {
   return {
     subject: sanitiseSubject(productionDossierSubject(data)),
-    html: shell({
+    ...shell({
       kicker: copyOf().kicker,
       title: productionDossierSubject(data),
       body: productionDossierBody(data),

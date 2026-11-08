@@ -4,6 +4,7 @@ import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/maile
 import type { OrderCancelledCopy } from "./copy/mail-copy.model.js";
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
 import { dayInWords } from "./service-day-in-words.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données de l'e-mail **« Votre commande a été annulée par notre
@@ -56,7 +57,7 @@ export interface OrderCancelledMailData {
 }
 
 /** La coquille client, prêtée par le registre. */
-export type OrderCancelledShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type OrderCancelledShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /** Le rendu, à part de `mail-templates.ts`, comme la facture émise. */
 export function renderOrderCancelledMail(
@@ -66,7 +67,7 @@ export function renderOrderCancelledMail(
   const copy = mailCopyOf(data.locale)["customer.order-cancelled"];
   return {
     subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title: copy.title,
       body: bodyOf(data, copy),

@@ -2,6 +2,7 @@ import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/maile
 
 import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
 import type { CustomerRequestCopy } from "./copy/mail-copy.model.js";
+import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données du courriel d'une **demande client** (`demandes-clients.md`,
@@ -34,7 +35,7 @@ export interface CustomerRequestMailData {
 }
 
 /** La coquille de l'équipe, prêtée par le registre. */
-export type StaffShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
+export type StaffShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => MailBody;
 
 /**
  * Le rendu. Tout texte saisi passe par la coquille, qui l'échappe
@@ -71,7 +72,7 @@ export function renderCustomerRequestMail(
   const message = data.message.trim();
   return {
     subject: sanitiseSubject(subjectOf(data, copy)),
-    html: shell({
+    ...shell({
       kicker: copy.kicker,
       title: fill(copy.title, { form: data.formLabel }),
       body: message === "" ? lines : `${lines}\n\n« ${message} »`,
