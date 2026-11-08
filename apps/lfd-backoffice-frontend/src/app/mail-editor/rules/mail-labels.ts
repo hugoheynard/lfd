@@ -1,4 +1,5 @@
 import type { MailAudience, MailFamily } from '@lfd/contracts';
+import type { MailNature } from '@lfd/mail-blocks';
 
 /** Les intitulés des e-mails vivent dans `@lfd/mail-blocks` : une seule source, que l'API lit aussi. */
 export { labeledMailTemplates, mailLabel, mailWhoAndWhen, type MailLabel } from '@lfd/mail-blocks';
@@ -8,6 +9,12 @@ export const AUDIENCE_TITLES: Readonly<Record<MailAudience, string>> = {
   customer: 'Clients',
   team: 'Équipe',
   agency: 'Agence',
+};
+
+/** La pastille de la nature d'un e-mail (plan de désinscription, U1). */
+export const MAIL_NATURE_LABELS: Readonly<Record<MailNature, string>> = {
+  transactional: 'Transactionnel',
+  marketing: 'Marketing',
 };
 
 export const FAMILY_ORDER: readonly MailFamily[] = [

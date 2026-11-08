@@ -190,6 +190,22 @@ describe("GetMailSendHandler", () => {
     expect(Object.keys(view)).not.toContain("failureReason");
   });
 
+  it("sert la nature du modèle, et null pour un modèle que le registre ne connaît plus", async () => {
+    const handler = new GetMailSendHandler(
+      new FixedMailSendReader([
+        record({ id: "send_known", template: "customer.order-ready" }),
+        record({ id: "send_retired", template: "customer.retired-template" }),
+      ]),
+    );
+
+    await expect(handler.execute(new GetMailSendQuery("send_known"))).resolves.toMatchObject({
+      nature: "transactional",
+    });
+    await expect(handler.execute(new GetMailSendQuery("send_retired"))).resolves.toMatchObject({
+      nature: null,
+    });
+  });
+
   it("404 nommé pour un envoi inconnu", async () => {
     const handler = new GetMailSendHandler(new FixedMailSendReader([]));
     await expect(handler.execute(new GetMailSendQuery("absent"))).rejects.toThrow(

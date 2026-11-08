@@ -16,6 +16,7 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "cta", "footer"],
   locales: ["fr", "en"],
   charter: "lfc",
+  nature: "transactional",
 };
 const STARTING = startingMailDocument(TEMPLATE, DECLARATION);
 const AT = new Date(0);

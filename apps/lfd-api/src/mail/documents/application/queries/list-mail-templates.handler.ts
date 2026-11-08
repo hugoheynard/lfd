@@ -47,6 +47,7 @@ export class ListMailTemplatesHandler implements IQueryHandler<
           audience: entry.audience,
           family: entry.family,
           charter: entry.declaration.charter,
+          nature: entry.declaration.nature,
           space: mailSpaceOfCharter(entry.declaration.charter),
           locales: entry.declaration.locales,
           published: publishedView(state),

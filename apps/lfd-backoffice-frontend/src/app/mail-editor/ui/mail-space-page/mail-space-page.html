@@ -43,7 +43,7 @@
                     [attr.data-template]="mail.template"
                     [routerLink]="['/emails', mail.template]"
                     [badge]="badge(mail)"
-                    badgeTone="warning"
+                    [badgeTone]="badgeTone(mail)"
                   ></a>
                 }
               }

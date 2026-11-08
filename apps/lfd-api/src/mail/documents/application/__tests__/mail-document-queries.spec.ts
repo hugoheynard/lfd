@@ -49,6 +49,7 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "image", "footer"],
   locales: ["fr", "en", "it"],
   charter: "lfc",
+  nature: "transactional",
 };
 const FRENCH_ONLY = "customer.company-attached";
 const STAFF = "fiche-colette";
@@ -64,7 +65,12 @@ function world() {
   const renderer = new RecordingDocumentRenderer();
   const catalogue = new FixedCatalogue([
     entryOf(TEMPLATE, DECLARATION),
-    entryOf(FRENCH_ONLY, { modelBlocks: ["title", "footer"], locales: ["fr"], charter: "lfc" }),
+    entryOf(FRENCH_ONLY, {
+      modelBlocks: ["title", "footer"],
+      locales: ["fr"],
+      charter: "lfc",
+      nature: "transactional",
+    }),
   ]);
   const clock = new FixedClock(AT);
   const uow = new DirectUnitOfWork();

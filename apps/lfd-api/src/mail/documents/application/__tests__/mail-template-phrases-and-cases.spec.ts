@@ -37,6 +37,7 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "image", "footer"],
   locales: ["fr", "en", "it"],
   charter: "lfc",
+  nature: "transactional",
 };
 const CASES = [
   { id: "specimen", label: "Exemple" },

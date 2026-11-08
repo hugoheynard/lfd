@@ -45,7 +45,7 @@ export const MAIL_SEND_SCOPES = ["regular", "probes"] as const;
 export type MailSendScope = (typeof MAIL_SEND_SCOPES)[number];
 
 /**
- * **Ce pour quoi un e-mail est parti** (`plan-sujet-des-e-mails.md`, règles
+ * **Ce pour quoi un e-mail est parti** (`le-sujet-des-e-mails.md`, règles
  * 1 et 9) : un type de la liste fermée du bloc `mail` (`order`, `account`,
  * `company`, `invoice`, `collection_batch`, `mandate`, `customer_request`,
  * `staff_member`, `production_day`) et un identifiant opaque. Le back-office
@@ -108,6 +108,12 @@ export interface MailSendStepView {
 
 /** `GET /admin/mail/sends/:id` — sans l'adresse en clair, sans la raison d'un échec. */
 export interface MailSendDetailView extends MailSendListItemView {
+  /**
+   * La nature du modèle (plan `plan-desinscription-des-e-mails.md`, U1),
+   * lue au registre à la lecture ; `null` : un modèle que le registre ne
+   * connaît plus. Même liste que `MAIL_NATURES` de `@lfd/mail-blocks`.
+   */
+  readonly nature: "transactional" | "marketing" | null;
   /** La langue de l'e-mail ; `null` si le modèle n'en déclare pas. */
   readonly locale: string | null;
   /** Le genre du retour (`Permanent/Suppressed`), jamais son texte. */
@@ -152,7 +158,7 @@ export interface MailRecipientSearchView {
 
 /**
  * Un e-mail d'une commande, tel que son suivi le dit
- * (`plan-sujet-des-e-mails.md`, règle 7) — sans adresse ni raison d'échec.
+ * (`le-sujet-des-e-mails.md`, règle 7) — sans adresse ni raison d'échec.
  */
 export interface OrderMailView {
   /** L'identifiant de la fiche du suivi des envois. */

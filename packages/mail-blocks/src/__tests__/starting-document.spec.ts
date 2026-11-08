@@ -6,6 +6,7 @@ const ORDER_PLACED: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "summary", "image", "itinerary", "cta", "footer"],
   locales: ["fr", "en", "it"],
   charter: "lfc",
+  nature: "transactional",
 };
 
 const sectionsOf = (blocks: readonly { readonly kind: string; readonly id: string }[]) =>
@@ -54,6 +55,7 @@ describe("startingMailDocument", () => {
       modelBlocks: ["title", "body"],
       locales: ["fr"],
       charter: "internal",
+      nature: "transactional",
     };
 
     const document = startingMailDocument("ops.deploy-check", declaration, ["image", "body"]);

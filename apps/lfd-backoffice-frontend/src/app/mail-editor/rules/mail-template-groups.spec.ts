@@ -13,6 +13,7 @@ function item(
     audience,
     family,
     charter: 'lfc',
+    nature: 'transactional',
     locales: ['fr'],
     published: null,
     hasDraft: false,

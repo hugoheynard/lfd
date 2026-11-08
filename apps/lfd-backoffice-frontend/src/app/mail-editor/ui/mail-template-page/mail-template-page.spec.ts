@@ -67,7 +67,12 @@ function view(
     template: TEMPLATE,
     audience: 'customer',
     family: 'order',
-    declaration: { modelBlocks: ['title', 'footer'], locales, charter: 'lfc' },
+    declaration: {
+      modelBlocks: ['title', 'footer'],
+      locales,
+      charter: 'lfc',
+      nature: 'transactional',
+    },
     document: {
       template: TEMPLATE,
       blocks: [
@@ -152,6 +157,7 @@ describe('MailTemplatePage — la page d’un e-mail', () => {
     expect(load).toHaveBeenCalledWith(TEMPLATE);
     expect(element.querySelector('app-mail-canvas')).not.toBeNull();
     expect(element.textContent).toContain('Commande passée');
+    expect(element.querySelector('[data-nature]')?.textContent).toContain('Transactionnel');
     expect(element.querySelector('[data-save-state]')?.textContent).toContain(
       'Arrangement d’origine',
     );

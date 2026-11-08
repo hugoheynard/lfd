@@ -36,11 +36,13 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "image", "footer"],
   locales: ["fr", "en", "it"],
   charter: "lfc",
+  nature: "transactional",
 };
 const FRENCH: MailTemplateDeclaration = {
   modelBlocks: ["title", "footer"],
   locales: ["fr"],
   charter: "lfc",
+  nature: "transactional",
 };
 const STARTING = startingMailDocument(TEMPLATE, DECLARATION);
 /** La confirmation, son titre en deux variantes (`ORDER_PLACED_LAYOUT`). */

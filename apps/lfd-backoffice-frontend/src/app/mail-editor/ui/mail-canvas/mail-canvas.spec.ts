@@ -24,6 +24,7 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ['title', 'footer'],
   locales: ['fr', 'en'],
   charter: 'lfc',
+  nature: 'transactional',
 };
 const DOCUMENT: MailDocument = {
   template: TEMPLATE,

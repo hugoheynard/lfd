@@ -12,6 +12,7 @@ const ORDER_PLACED: MailEditorListItem = {
   audience: 'customer',
   family: 'order',
   charter: 'lfc',
+  nature: 'transactional',
   locales: ['fr'],
   published: null,
   hasDraft: false,
@@ -21,6 +22,7 @@ const ALERT: MailEditorListItem = {
   audience: 'team',
   family: 'team',
   charter: 'internal',
+  nature: 'transactional',
   locales: ['fr'],
   published: null,
   hasDraft: true,
@@ -55,6 +57,15 @@ describe('MailSpacePage — un espace d’e-mails', () => {
     expect(alert?.getAttribute('href')).toBe('/emails/staff.account-alert');
     expect(alert?.textContent).toContain('Brouillon');
     expect(element.querySelector('[data-group="internal"]')).not.toBeNull();
+  });
+
+  it('montre la nature de chaque e-mail en pastille (plan de désinscription, U1)', async () => {
+    const { element } = await setup('lfc', () =>
+      Promise.resolve({ mails: [ORDER_PLACED], copyPendingCount: 0 }),
+    );
+    const item = element.querySelector('[data-template="customer.order-placed"]');
+    expect(item?.textContent).toContain('Transactionnel');
+    expect(item?.textContent).not.toContain('Brouillon');
   });
 
   it('revient à la liste des espaces et montre les trois onglets de l’espace', async () => {

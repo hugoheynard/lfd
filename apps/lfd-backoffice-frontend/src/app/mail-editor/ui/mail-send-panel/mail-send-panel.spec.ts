@@ -12,6 +12,7 @@ const AT = new Date().toISOString();
 const DETAIL: MailSendDetailView = {
   id: 'm1',
   template: 'customer.order-placed',
+  nature: 'transactional',
   space: 'lfc',
   recipient: 'c•••@halles.fr',
   state: 'accepted',
@@ -62,6 +63,7 @@ describe('MailSendPanel — le détail d’un envoi', () => {
     const text = element.textContent ?? '';
     expect(text).toContain('Définitif (Suppressed)');
     expect(text).toContain('Version 3');
+    expect(element.querySelector('[data-nature]')?.textContent).toContain('Transactionnel');
     expect(text).toContain('Rebondi');
     expect(text).toContain('c•••@halles.fr');
     expect(text).toContain('inscrit la consultation au journal');

@@ -46,6 +46,7 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "image", "footer"],
   locales: ["fr", "en", "it"],
   charter: "lfc",
+  nature: "transactional",
 };
 const STARTING = startingMailDocument(TEMPLATE, DECLARATION);
 const REVERSED: MailDocument = { template: TEMPLATE, blocks: [...STARTING.blocks].reverse() };

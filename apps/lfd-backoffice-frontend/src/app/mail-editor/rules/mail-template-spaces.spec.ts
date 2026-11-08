@@ -15,6 +15,7 @@ function item(
     audience,
     family,
     charter,
+    nature: 'transactional',
     ...(space === undefined ? {} : { space }),
     locales: ['fr'],
     published: null,

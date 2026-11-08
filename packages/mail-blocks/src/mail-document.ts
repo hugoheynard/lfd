@@ -147,10 +147,21 @@ export const COLUMN_COUNTS = [2, 3] as const;
  * règle pas — ses blocs du modèle dans l'ordre de la coquille, les langues
  * dans lesquelles il part, sa charte.
  */
+/**
+ * **La nature d'un e-mail** (plan `plan-desinscription-des-e-mails.md`,
+ * règle 1) : un e-mail de service (`transactional`) part sans consentement ;
+ * un e-mail `marketing` porte d'office la désinscription. Sans valeur par
+ * défaut : chaque modèle la déclare.
+ */
+export const MAIL_NATURES = ["transactional", "marketing"] as const;
+export type MailNature = (typeof MAIL_NATURES)[number];
+
 export interface MailTemplateDeclaration {
   readonly modelBlocks: readonly ModelSectionId[];
   readonly locales: readonly MailLocale[];
   readonly charter: MailCharter;
+  /** Sa nature, déclarée par le modèle : jamais déduite. */
+  readonly nature: MailNature;
   /**
    * Les seules phrases (chemins du dictionnaire) que l'éditeur laisse
    * réécrire — l'accroche d'un e-mail qui suit la règle du § 23 du plan

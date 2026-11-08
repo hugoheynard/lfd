@@ -18,6 +18,7 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "cta", "footer"],
   locales: ["fr", "en"],
   charter: "lfc",
+  nature: "transactional",
 };
 const START = startingMailDocument(TEMPLATE, DECLARATION);
 const SRC = "https://media.lafoliedouce.fr/products/pain.png";

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **hors du bloc `mail`, chaque demande d'e-mail dit son sujet** (plan
- * `documentation/mail/plan-sujet-des-e-mails.md`, règle 3 ; décidé le
+ * `documentation/mail/le-sujet-des-e-mails.md`, règle 3 ; décidé le
  * 2026-11-08 après la contradiction de vitruve, objection S5).
  *
  * Une demande porte ce pour quoi elle part (`subjects: [{ type: "order", id }]`) :
@@ -227,7 +227,7 @@ function main() {
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
       `\n  ${failures.length} écart(s). Une demande d'e-mail dit ce pour quoi elle part ` +
-        "(plan-sujet-des-e-mails.md, règle 3).\n",
+        "(le-sujet-des-e-mails.md, règle 3).\n",
     );
     process.exit(1);
   }

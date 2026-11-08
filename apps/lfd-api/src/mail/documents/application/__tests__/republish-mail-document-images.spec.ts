@@ -38,6 +38,7 @@ const DECLARATION: MailTemplateDeclaration = {
   modelBlocks: ["title", "body", "footer"],
   locales: ["fr"],
   charter: "lfc",
+  nature: "transactional",
 };
 const STARTING = startingMailDocument(TEMPLATE, DECLARATION);
 const STAFF = "fiche-colette";

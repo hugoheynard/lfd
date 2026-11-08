@@ -2,7 +2,12 @@ import { isEditablePhrase, type MailTemplateDeclaration } from "../mail-document
 
 /** § 23 du plan de l'éditeur : une liste déclarée borne ce que l'éditeur réécrit. */
 
-const BASE: MailTemplateDeclaration = { modelBlocks: ["body"], locales: ["fr"], charter: "lfc" };
+const BASE: MailTemplateDeclaration = {
+  modelBlocks: ["body"],
+  locales: ["fr"],
+  charter: "lfc",
+  nature: "transactional",
+};
 
 describe("isEditablePhrase", () => {
   it("sans liste déclarée, toute phrase s'écrit — l'état d'avant la règle", () => {

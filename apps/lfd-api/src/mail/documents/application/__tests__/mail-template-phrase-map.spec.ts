@@ -64,7 +64,12 @@ function world() {
   const texts = new InMemoryMailCopy();
   const copy = new InMemoryAdminReader(texts);
   const catalogue = new FixedCatalogue([
-    entryOf(TEMPLATE, { modelBlocks: ["title", "footer"], locales: ["fr"], charter: "lfc" }),
+    entryOf(TEMPLATE, {
+      modelBlocks: ["title", "footer"],
+      locales: ["fr"],
+      charter: "lfc",
+      nature: "transactional",
+    }),
   ]);
   const writeAt = (at: number) =>
     new SaveMailCopyDraftHandler(

@@ -5,6 +5,7 @@ import {
   type MailCharter,
   type MailSpace,
   type MailLocale,
+  type MailNature,
   type MailTemplateDeclaration,
   type ModelSectionId,
 } from "@lfd/mail-blocks";
@@ -76,6 +77,47 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
   "customer.order-shortfall",
 ]);
 
+/**
+ * **La nature de chaque e-mail** (plan `plan-desinscription-des-e-mails.md`,
+ * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 32
+ * sont des e-mails de service (Hugo, 2026-11-08) — l'annonce de la vitrine
+ * aussi : elle informe les agences, elle ne vend rien.
+ */
+const NATURES: PerMail<MailNature> = {
+  "customer.order-ready": "transactional",
+  "customer.collection-notice": "transactional",
+  "customer.invoice-issued": "transactional",
+  "customer.delivery-en-route": "transactional",
+  "customer.order-delayed": "transactional",
+  "customer.payment-failed": "transactional",
+  "customer.payment-expired": "transactional",
+  "customer.order-cancelled": "transactional",
+  "customer.order-change-applied": "transactional",
+  "customer.order-change-refused": "transactional",
+  "customer.order-shortfall": "transactional",
+  "customer.sub-account-activity": "transactional",
+  "customer.sub-account-gesture": "transactional",
+  "customer.order-payment-link": "transactional",
+  "customer.order-placed": "transactional",
+  "customer.mandate-to-sign": "transactional",
+  "customer.access-opened": "transactional",
+  "customer.company-attached": "transactional",
+  "customer.order-placed-with-your-email": "transactional",
+  "customer.login-method-linked": "transactional",
+  "customer.password-reset": "transactional",
+  "staff.invited": "transactional",
+  "staff.password-reset": "transactional",
+  "staff.access-suspended": "transactional",
+  "staff.access-restored": "transactional",
+  "staff.production-dossier": "transactional",
+  "staff.customer-request": "transactional",
+  "agency.vitrine-notice": "transactional",
+  "staff.appointment-booked": "transactional",
+  "staff.account-alert": "transactional",
+  "ops.deploy-check": "transactional",
+  "staff.support-requested": "transactional",
+};
+
 const FRENCH_ONLY: readonly MailLocale[] = ["fr"];
 
 /**
@@ -105,6 +147,7 @@ export function mailBlockDeclarationOf(mail: keyof B2bMails): MailTemplateDeclar
     modelBlocks: modelBlocksOf(layout),
     locales: FOLLOWS_RECIPIENT_LOCALE.has(mail) ? MAIL_LOCALES : FRENCH_ONLY,
     charter: CHARTERS[mail],
+    nature: NATURES[mail],
     ...(layout.editablePhrases === undefined ? {} : { editablePhrases: layout.editablePhrases }),
     ...(layout.ctaDestination === undefined ? {} : { ctaDestination: layout.ctaDestination }),
   };
@@ -116,6 +159,20 @@ export function mailBlockDeclarationOf(mail: keyof B2bMails): MailTemplateDeclar
  */
 export function mailSpaceOf(mail: keyof B2bMails): MailSpace {
   return mailSpaceOfCharter(CHARTERS[mail]);
+}
+
+/**
+ * **La nature d'un e-mail** (règle 1 du plan de désinscription) : c'est elle
+ * que le point d'envoi lira pour poser le pied et le contrôle (U3), et que le
+ * suivi affiche. Prend la clé telle qu'elle est rangée : `null` pour une clé
+ * que le registre ne connaît plus (un envoi ancien d'un modèle retiré).
+ */
+export function natureOf(template: string): MailNature | null {
+  return hasNature(template) ? NATURES[template] : null;
+}
+
+function hasNature(template: string): template is keyof B2bMails {
+  return Object.hasOwn(NATURES, template);
 }
 
 /**

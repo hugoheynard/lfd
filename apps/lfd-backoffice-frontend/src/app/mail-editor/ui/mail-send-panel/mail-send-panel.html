@@ -24,6 +24,9 @@
           }
           <fold-field-list>
             <fold-field label="Modèle">{{ s.template }}</fold-field>
+            <fold-field label="Nature" data-nature [empty]="s.nature === null">
+              {{ s.nature === null ? '' : natureLabels[s.nature] }}
+            </fold-field>
             <fold-field label="Destinataire">{{ s.recipient }}</fold-field>
             <fold-field label="Sujet" [empty]="subjects().length === 0">
               <span class="sp-subjects">

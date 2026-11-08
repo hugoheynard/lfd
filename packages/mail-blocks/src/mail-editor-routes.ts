@@ -1,5 +1,5 @@
 import type { MailCharter } from "./mail-charter.js";
-import type { MailDocument, MailTemplateDeclaration } from "./mail-document.js";
+import type { MailDocument, MailNature, MailTemplateDeclaration } from "./mail-document.js";
 import type { MailLocale } from "./mail-locales.js";
 import type { MailSpace } from "./mail-spaces.js";
 import type { MailEditorResources, MailPreviewSituation } from "./mail-resources.js";
@@ -45,6 +45,8 @@ export interface MailEditorListItem {
   readonly audience: MailAudience;
   readonly family: MailFamily;
   readonly charter: MailCharter;
+  /** Sa nature (plan de désinscription, U1) : la liste la montre en pastille. */
+  readonly nature: MailNature;
   /**
    * C1 (§ 25) : l'espace de l'e-mail, lu de sa charte — `internal` est rangé
    * dans `lfd`. Toujours servi par l'API ; facultatif dans le type le temps

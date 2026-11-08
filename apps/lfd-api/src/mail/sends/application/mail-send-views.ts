@@ -1,5 +1,6 @@
 import type { MailSendDetailView, MailSendListItemView } from "@lfd/contracts";
 
+import { natureOf } from "../../templates/sections/mail-block-declarations.js";
 import type { MailSendRecord } from "../domain/ports/mail-send.reader.js";
 import { maskRecipient } from "../domain/services/recipient-mask.js";
 import {
@@ -29,6 +30,7 @@ export function toMailSendListItem(record: MailSendRecord): MailSendListItemView
 export function toMailSendDetail(record: MailSendRecord): MailSendDetailView {
   return {
     ...toMailSendListItem(record),
+    nature: natureOf(record.template),
     locale: record.locale,
     deliveryKind: record.deliveryKind,
     documentVersion: record.documentVersion,

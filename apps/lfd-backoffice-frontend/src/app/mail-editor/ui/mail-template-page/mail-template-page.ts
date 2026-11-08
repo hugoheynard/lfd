@@ -29,6 +29,7 @@ import {
 } from '@lfd/mail-blocks';
 import {
   FoldBackLinkComponent,
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -52,7 +53,7 @@ import type { HasPendingChanges } from '../../../pim/catalogue/product-form/pend
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { LOCALE_LABELS } from '../../../textes-boutique/rules/copy-text';
-import { mailLabel, mailWhoAndWhen } from '../../rules/mail-labels';
+import { MAIL_NATURE_LABELS, mailLabel, mailWhoAndWhen } from '../../rules/mail-labels';
 import { GestureIntents } from '../../../shared/gesture-intents';
 import { MailEditorService } from '../../data/mail-editor.service';
 import {
@@ -170,6 +171,7 @@ function savedAtLabel(at: Date): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBackLinkComponent,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -284,6 +286,10 @@ export class MailTemplatePage implements HasPendingChanges {
   protected readonly canWrite = computed(() => this.permissions.can('mail_templates:write'));
   protected readonly title = computed(() => mailLabel(this.template()).title);
   protected readonly whoAndWhen = computed(() => mailWhoAndWhen(this.template()));
+  protected readonly natureLabel = computed(() => {
+    const view = this.view();
+    return view === null ? null : MAIL_NATURE_LABELS[view.declaration.nature];
+  });
   protected readonly sourceLabel = computed(() => {
     const view = this.view();
     return view === null ? '' : SOURCE_LABELS[view.source];

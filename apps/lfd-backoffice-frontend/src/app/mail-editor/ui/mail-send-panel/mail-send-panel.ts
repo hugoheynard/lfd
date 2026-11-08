@@ -30,7 +30,7 @@ import {
 } from 'fold-ng';
 
 import { MailSendsService } from '../../data/mail-sends.service';
-import { mailLabel } from '../../rules/mail-labels';
+import { MAIL_NATURE_LABELS, mailLabel } from '../../rules/mail-labels';
 import {
   MAIL_SEND_STEP_LABELS,
   mailDeliveryKindLabel,
@@ -84,6 +84,7 @@ export class MailSendPanel implements FoldPanelContent<MailSendPanelData> {
   private readonly panel = inject<FoldPanelRef<void>>(FoldPanelRef);
   private readonly api = inject(MailSendsService);
 
+  protected readonly natureLabels = MAIL_NATURE_LABELS;
   protected readonly state = signal<'loading' | 'ready' | 'failed'>('loading');
   protected readonly error = signal<string | null>(null);
   protected readonly send = signal<MailSendDetailView | null>(null);

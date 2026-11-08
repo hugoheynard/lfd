@@ -9,6 +9,7 @@ const DECLARATION = {
   modelBlocks: ["title", "body", "cta", "footer"],
   locales: ["fr"],
   charter: "lfc",
+  nature: "transactional",
 } as const;
 const SRC = "https://media.lafoliedouce.fr/products/pain.png";
 const IMAGE: ImageBlock = { id: "i1", kind: "image", src: SRC, alt: { fr: "Un pain" } };

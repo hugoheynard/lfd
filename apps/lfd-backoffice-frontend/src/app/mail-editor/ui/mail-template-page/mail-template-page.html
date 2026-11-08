@@ -1,5 +1,8 @@
 <fold-page-layout [title]="title()" icon="inbox">
   <fold-back-link pageEyebrow icon="arrow-back" [label]="back().label" [routerLink]="back().link" />
+  @if (natureLabel(); as nature) {
+    <fold-badge titleBadge data-nature [content]="nature" variant="neutral" radius="pill" />
+  }
   @if (whoAndWhen(); as hint) {
     <p description>{{ hint }}</p>
   }

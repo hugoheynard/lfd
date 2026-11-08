@@ -22,7 +22,7 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
-import { mailLabel, mailWhoAndWhen } from '../../rules/mail-labels';
+import { MAIL_NATURE_LABELS, mailLabel, mailWhoAndWhen } from '../../rules/mail-labels';
 import { MailEditorService } from '../../data/mail-editor.service';
 import { mailSpaceListing } from '../../rules/mail-template-spaces';
 import { MailSpaceTabs } from '../mail-space-tabs/mail-space-tabs';
@@ -111,7 +111,13 @@ export class MailSpacePage {
     return whoAndWhen === '' ? mail.template : `${whoAndWhen} — ${mail.template}`;
   }
 
-  protected badge(mail: MailEditorListItem): string | undefined {
-    return mail.hasDraft ? 'Brouillon' : undefined;
+  /** La pastille : la nature du modèle (U1), et « Brouillon » s'il en a un. */
+  protected badge(mail: MailEditorListItem): string {
+    const nature = MAIL_NATURE_LABELS[mail.nature];
+    return mail.hasDraft ? `${nature} · Brouillon` : nature;
+  }
+
+  protected badgeTone(mail: MailEditorListItem): 'warning' | 'neutral' {
+    return mail.hasDraft ? 'warning' : 'neutral';
   }
 }
