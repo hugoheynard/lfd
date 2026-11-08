@@ -16,3 +16,16 @@
 # ERR_MODULE_NOT_FOUND. Constaté le 2026-08-13 en build local ; invisible en CI,
 # dont le checkout neuf n'a pas ces fichiers — donc un écart local/CI de plus.
 **/*.tsbuildinfo
+# Le graphe local de graphify (§ 10 bis de CLAUDE.md) : ~4 Go, jamais commité,
+# et rien dans l'image ne le lit. Inclus, il remplissait le disque de Docker
+# au `COPY . .` (constaté le 2026-11-08).
+graphify-out
+# L'outillage local de l'assistant (dont `.claude/worktrees/`, des copies du
+# dépôt : 83 Go le 2026-11-08), les réglages de l'IDE et les sorties jetables.
+# Rien dans l'image ne les lit ; inclus, ils remplissaient le disque de Docker
+# — et la base de dev, qui vit dessus, ne pouvait plus écrire.
+.claude
+.idea
+**/tmp
+apps/lfd-api/dist-seed
+gateway/.wrangler
