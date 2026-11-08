@@ -1,0 +1,60 @@
+<fold-card data-order-mails>
+  <fold-element-title cardHeader variant="title" icon="mail" title="E-mails" />
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des e-mails…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Les e-mails de cette commande n’ont pas pu être lus."
+        data-order-mails-error
+      >
+        <button foldButton (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (lines().length === 0) {
+        <fold-empty-state
+          title="Aucun e-mail suivi pour cette commande"
+          subtitle="Les commandes passées avant le suivi des e-mails n’en ont pas."
+          data-order-mails-empty
+        >
+          <fold-icon empty-icon name="mail" [size]="40" />
+        </fold-empty-state>
+      } @else {
+        <ol class="om-list">
+          @for (line of lines(); track line.id) {
+            <li class="om-row" [attr.data-order-mail]="line.id">
+              <div class="om-head">
+                @if (canOpenSends()) {
+                  <a
+                    class="om-title"
+                    routerLink="/emails/envois"
+                    [queryParams]="{ envoi: line.id }"
+                    [attr.title]="line.template"
+                    data-order-mail-link
+                    >{{ line.title }}</a
+                  >
+                } @else {
+                  <span class="om-title" [attr.title]="line.template">{{ line.title }}</span>
+                }
+                <fold-badge
+                  radius="square"
+                  [variant]="line.badge.tone"
+                  [content]="line.badge.label"
+                />
+              </div>
+              <p class="om-meta">Demandé le {{ line.when }}</p>
+              @if (line.failure; as failure) {
+                <fold-callout appearance="inset" variant="alert" data-order-mail-failure>{{
+                  failure
+                }}</fold-callout>
+              }
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</fold-card>

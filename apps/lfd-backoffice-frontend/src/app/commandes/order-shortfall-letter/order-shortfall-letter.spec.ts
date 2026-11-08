@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import type { AdminOrderShortfall, StaffPermission } from '@lfd/contracts';
+import type { AdminOrderShortfall, OrderMailView, StaffPermission } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { OrderMailsStore } from '../order-mails.store';
 import { AdminOrdersService } from '../orders.service';
 import { OrderShortfallLetter } from './order-shortfall-letter';
 
@@ -33,14 +34,20 @@ function mount(
   options: {
     readonly permissions?: readonly StaffPermission[];
     readonly write?: () => Promise<void>;
+    readonly mails?: readonly OrderMailView[];
   } = {},
 ) {
   const shortfallLetterDraft = vi.fn(async () => ({ message: PROPOSAL }));
   const writeShortfallLetter = vi.fn(options.write ?? (async () => undefined));
   const permissions = options.permissions ?? CAN;
+  const mails = vi.fn(async () => ({ items: options.mails ?? [] }));
   TestBed.configureTestingModule({
     providers: [
-      { provide: AdminOrdersService, useValue: { shortfallLetterDraft, writeShortfallLetter } },
+      OrderMailsStore,
+      {
+        provide: AdminOrdersService,
+        useValue: { shortfallLetterDraft, writeShortfallLetter, mails },
+      },
       {
         provide: PermissionsStore,
         useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
@@ -53,7 +60,7 @@ function mount(
   const done = vi.fn();
   fixture.componentInstance.sent.subscribe(done);
   fixture.detectChanges();
-  return { fixture, shortfallLetterDraft, writeShortfallLetter, done };
+  return { fixture, shortfallLetterDraft, writeShortfallLetter, done, mails };
 }
 
 const el = (f: ComponentFixture<OrderShortfallLetter>) => f.nativeElement as HTMLElement;
@@ -139,9 +146,34 @@ describe('« Écrire au client » (E6d)', () => {
   it('dit « Client prévenu le … par … » une fois le courriel parti, sans plus offrir le geste', () => {
     const { fixture } = mount(NOTIFIED, { permissions: ['b2b_orders:read'] });
     const text = el(fixture).querySelector('[data-shortfall-notified]')?.textContent ?? '';
-    expect(text).toContain('Client prévenu le');
+    expect(text).toContain('E-mail demandé le');
     expect(text).toContain('par');
     expect(text).toContain('Hugo Heynard');
     expect(el(fixture).querySelector('[data-shortfall-letter-open]')).toBeNull();
+  });
+
+  /** Règle 8 du plan du sujet des e-mails : l'état réel à côté de la demande. */
+  it('affiche à côté l’état réel du dernier e-mail de manque, lu une fois', async () => {
+    const mail = (id: string, delivery: OrderMailView['delivery']): OrderMailView => ({
+      id,
+      template: 'customer.order-shortfall',
+      requestedAt: '2030-01-10T06:10:00.000Z',
+      state: 'accepted',
+      delivery,
+      deliveryAt: null,
+    });
+    const { fixture, mails } = mount(NOTIFIED, {
+      mails: [mail('ms_2', 'bounced'), mail('ms_1', 'delivered')],
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const badge = el(fixture).querySelector('[data-shortfall-mail-state]');
+    expect(badge?.textContent).toContain('Rebondi');
+    expect(mails).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne lit pas les e-mails tant que le client n’a pas été prévenu', () => {
+    const { mails } = mount(DECIDED);
+    expect(mails).not.toHaveBeenCalled();
   });
 });

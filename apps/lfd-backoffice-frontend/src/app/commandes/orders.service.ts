@@ -13,6 +13,7 @@ import type {
   AdminPlacedOrderResponse,
   LineRuleReconstructionView,
   OrderHandoverProofResponse,
+  OrderMailsView,
   OrderQuotePayload,
   OrderQuoteView,
   AdminOrderView,
@@ -105,6 +106,16 @@ export class AdminOrdersService {
       this.http.get<ActivityEventView[]>(
         `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/history`,
       ),
+    );
+  }
+
+  /**
+   * **Les e-mails d'une commande** (`plan-sujet-des-e-mails.md`, règle 7) :
+   * ce que le suivi dit de chacun, les plus récents d'abord, sans adresse.
+   */
+  async mails(id: string): Promise<OrderMailsView> {
+    return firstValueFrom(
+      this.http.get<OrderMailsView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/mails`),
     );
   }
 

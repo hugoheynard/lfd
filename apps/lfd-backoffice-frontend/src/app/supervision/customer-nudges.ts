@@ -33,7 +33,10 @@ export function rowNudgeOf(row: SlotRow, nudges: CustomerNudgesView | null): Row
   const sent = nudges.orders.find((order) => order.orderId === row.orderId);
   const trace = ready ? sent?.pickupReminder : sent?.delayWarning;
   if (trace !== undefined && trace !== null) {
-    return { kind: 'sent', label: traceLabel(ready ? 'Rappel envoyé' : 'Client averti', trace) };
+    return {
+      kind: 'sent',
+      label: traceLabel(ready ? 'Rappel envoyé' : 'E-mail de retard demandé', trace),
+    };
   }
   const delay = ready ? nudges.pickupReminderDelayMinutes : nudges.delayWarningDelayMinutes;
   if (row.overdueMinutes === null || row.overdueMinutes < delay) {

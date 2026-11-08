@@ -440,8 +440,8 @@ describe('HandoverColumn — la carte de livraison', () => {
       fixture.detectChanges();
 
       expect(warned).toEqual(['o-TARD']);
-      expect(notified.success).toHaveBeenCalledWith('Client averti du retard de TARD.');
-      expect(sentLine(el, 'TARD')).toBe('Client averti');
+      expect(notified.success).toHaveBeenCalledWith('E-mail de retard demandé pour TARD.');
+      expect(sentLine(el, 'TARD')).toBe('E-mail de retard demandé');
     });
 
     it('un échec est dit, et le bouton reste', async () => {

@@ -25,6 +25,8 @@ import { OrderHistoryCard } from '../order-history-card/order-history-card';
 import { OrderRevisionsCard } from '../order-revisions-card/order-revisions-card';
 import { OrderSalesTermsCard } from '../order-sales-terms-card/order-sales-terms-card';
 import { OrderDeliveryNotesCard } from '../order-delivery-notes-card/order-delivery-notes-card';
+import { OrderMailsCard } from '../order-mails-card/order-mails-card';
+import { OrderMailsStore } from '../order-mails.store';
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
@@ -71,12 +73,15 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderSalesTermsCard,
     OrderDeliveryNotesCard,
     OrderInvoicesCard,
+    OrderMailsCard,
     OrderRefundBanner,
     OrderShortfallBanner,
     OrderShortfallDecision,
     OrderShortfallLetter,
     OrderRefundsCard,
   ],
+  // Une lecture des e-mails par fiche ouverte, partagée par la carte et la lettre de manque.
+  providers: [OrderMailsStore],
   templateUrl: './order-view.html',
 })
 export class OrderViewComponent {

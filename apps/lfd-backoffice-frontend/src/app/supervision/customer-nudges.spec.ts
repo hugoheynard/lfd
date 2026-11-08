@@ -72,7 +72,9 @@ describe('rowNudgeOf', () => {
       /^Rappel envoyé le 11 septembre 2026 à \d{2}:\d{2} par Léa Martin$/u,
     );
     const warned = rowNudgeOf(row(NOT_READY), view);
-    expect(warned?.kind === 'sent' ? warned.label : '').toMatch(/^Client averti le .+\d$/u);
+    expect(warned?.kind === 'sent' ? warned.label : '').toMatch(
+      /^E-mail de retard demandé le .+\d$/u,
+    );
   });
 
   it.each([

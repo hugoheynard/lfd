@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { MailRecipientView, MailSendDetailView } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
@@ -38,6 +39,7 @@ async function setup(api: Partial<Record<keyof MailSendsService, unknown>>) {
   TestBed.configureTestingModule({
     imports: [MailSendPanel],
     providers: [
+      provideRouter([]),
       { provide: MailSendsService, useValue: api },
       { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
     ],
@@ -98,5 +100,13 @@ describe('MailSendPanel — le détail d’un envoi', () => {
   it('un envoi illisible le dit, avec de quoi réessayer', async () => {
     const { element } = await setup({ detail: vi.fn(() => Promise.reject(new Error('x'))) });
     expect(element.textContent).toContain('Cet envoi n’a pas pu être lu');
+  });
+
+  it('mène un sujet commande à sa fiche', async () => {
+    const detail: MailSendDetailView = { ...DETAIL, subjects: [{ type: 'order', id: 'cmd_1' }] };
+    const { element } = await setup({ detail: vi.fn(() => Promise.resolve(detail)) });
+    const link = element.querySelector('[data-subject-link]');
+    expect(link?.getAttribute('href')).toBe('/commandes/cmd_1');
+    expect(link?.textContent).toContain('Commande');
   });
 });

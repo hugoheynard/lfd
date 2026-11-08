@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import type { MailSendListItemView, StaffPermission } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
@@ -24,12 +24,17 @@ const row = (id: string, template = 'customer.order-placed'): MailSendListItemVi
 async function setup(
   api: Partial<Record<keyof MailSendsService, unknown>>,
   permissions: readonly StaffPermission[] = ['mail_sends:read', 'mail_templates:read'],
+  query: Readonly<Record<string, string>> = {},
 ) {
   const open = vi.fn();
   TestBed.configureTestingModule({
     imports: [MailSendsPage],
     providers: [
       provideRouter([]),
+      {
+        provide: ActivatedRoute,
+        useValue: { snapshot: { queryParamMap: convertToParamMap(query) } },
+      },
       { provide: MailSendsService, useValue: api },
       { provide: FoldPanelHostService, useValue: { open } },
       {
@@ -129,5 +134,11 @@ describe('MailSendsPage — le suivi des envois', () => {
     TestBed.resetTestingModule();
     const sendsOnly = await setup({ list }, ['mail_sends:read']);
     expect(sendsOnly.element.querySelector('fold-back-link')).toBeNull();
+  });
+
+  it('ouvre d’emblée l’envoi nommé par `?envoi=`, l’adresse d’une fiche commande', async () => {
+    const list = vi.fn(() => Promise.resolve({ items: [row('m1')], nextCursor: null }));
+    const { open } = await setup({ list }, undefined, { envoi: 'm9' });
+    expect(open).toHaveBeenCalledWith(expect.anything(), { data: { id: 'm9' } });
   });
 });

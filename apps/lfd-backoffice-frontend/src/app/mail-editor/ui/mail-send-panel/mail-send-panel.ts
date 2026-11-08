@@ -7,6 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { MailRecipientView, MailSendDetailView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { MAIL_SPACE_LABELS } from '@lfd/mail-blocks';
@@ -37,6 +38,7 @@ import {
   mailSendTime,
   mailSendWhen,
 } from '../../rules/mail-send-labels';
+import { mailSubjectDisplay } from '../../rules/mail-subjects';
 
 /** L'envoi à ouvrir. */
 export interface MailSendPanelData {
@@ -58,6 +60,7 @@ export interface MailSendPanelData {
   selector: 'app-mail-send-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -101,6 +104,10 @@ export class MailSendPanel implements FoldPanelContent<MailSendPanelData> {
     const send = this.send();
     return send === null ? null : mailSendBadge(send);
   });
+  /** Ses sujets (règle 9 du plan du sujet) : une commande mène à sa fiche. */
+  protected readonly subjects = computed(() =>
+    (this.send()?.subjects ?? []).map(mailSubjectDisplay),
+  );
   protected readonly steps = computed<readonly FoldTimelineNode[]>(() =>
     (this.send()?.steps ?? []).map((step, index) => ({
       key: `${step.step}-${index}`,

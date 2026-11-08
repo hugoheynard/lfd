@@ -10,3 +10,9 @@
   gap: var(--fold-space-xs);
   overflow-wrap: anywhere;
 }
+
+.sp-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

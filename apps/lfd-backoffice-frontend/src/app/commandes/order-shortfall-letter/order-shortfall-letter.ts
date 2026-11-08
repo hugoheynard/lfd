@@ -3,16 +3,25 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import type { AdminOrderShortfall } from '@lfd/contracts';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
-import { FoldButtonComponent, FoldCalloutComponent, FoldTextareaComponent } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldTextareaComponent,
+} from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { mailSendBadge, type MailSendBadge } from '../../mail-editor/rules/mail-send-labels';
+import { OrderMailsStore } from '../order-mails.store';
 import { AdminOrdersService } from '../orders.service';
 
 /** La borne du texte — celle que le domaine refuse au-delà (`ShortfallLetter`). */
@@ -23,6 +32,9 @@ export const SHORTFALL_LETTER_MAX_LENGTH = 4000;
  * d'une `TechnicalError` — l'écran dit donc la phrase d'après le code.
  */
 const NOT_SENT = 'orders.shortfall_letter.not_sent';
+/** Le modèle de la lettre, au registre des e-mails. */
+const SHORTFALL_MAIL = 'customer.order-shortfall';
+
 const NOT_SENT_SENTENCE =
   "Le courriel n'est pas parti, et rien n'a été tracé. Réessayez dans un instant.";
 
@@ -39,7 +51,13 @@ const NOT_SENT_SENTENCE =
 @Component({
   selector: 'app-order-shortfall-letter',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FoldButtonComponent, FoldCalloutComponent, FoldTextareaComponent],
+  imports: [
+    DatePipe,
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldTextareaComponent,
+  ],
   templateUrl: './order-shortfall-letter.html',
   styleUrl: './order-shortfall-letter.scss',
 })
@@ -52,9 +70,15 @@ export class OrderShortfallLetter {
 
   private readonly api = inject(AdminOrdersService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly mails = inject(OrderMailsStore);
 
   protected readonly allowed = computed(() => this.permissions.can('b2b_orders_shortfall:write'));
   protected readonly decision = computed(() => this.shortfall()?.decision ?? null);
+  /** L'état réel du dernier e-mail de manque ; `null` tant qu'il n'est pas lu, ou pas suivi. */
+  protected readonly mailBadge = computed<MailSendBadge | null>(() => {
+    const mail = this.mails.latest(SHORTFALL_MAIL);
+    return mail === null ? null : mailSendBadge(mail);
+  });
   protected readonly maxLength = SHORTFALL_LETTER_MAX_LENGTH;
   /** `null` : fermé ; une chaîne : le texte en cours de relecture. */
   protected readonly draft = signal<string | null>(null);
@@ -66,6 +90,16 @@ export class OrderShortfallLetter {
   protected readonly tooLong = computed(
     () => (this.draft() ?? '').trim().length > SHORTFALL_LETTER_MAX_LENGTH,
   );
+
+  constructor() {
+    effect(() => {
+      const id = this.orderId();
+      const notified = (this.decision()?.customerNotice ?? null) !== null;
+      untracked(() => {
+        if (notified) this.mails.ensure(id);
+      });
+    });
+  }
 
   protected async open(): Promise<void> {
     this.opening.set(true);
@@ -96,6 +130,7 @@ export class OrderShortfallLetter {
     try {
       await this.api.writeShortfallLetter(this.orderId(), { message });
       this.draft.set(null);
+      void this.mails.reload(this.orderId());
       this.sent.emit();
     } catch (caught) {
       this.error.set(

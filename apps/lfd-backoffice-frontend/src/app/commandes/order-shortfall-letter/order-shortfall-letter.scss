@@ -9,3 +9,10 @@
   flex-wrap: wrap;
   gap: var(--fold-space-sm);
 }
+
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

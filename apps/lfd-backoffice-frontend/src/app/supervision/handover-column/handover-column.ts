@@ -271,7 +271,10 @@ export class HandoverColumn {
       return nudge;
     }
     if (this.justSent().has(row.orderId)) {
-      return { kind: 'sent', label: nudge.kind === 'remind' ? 'Rappel envoyé' : 'Client averti' };
+      return {
+        kind: 'sent',
+        label: nudge.kind === 'remind' ? 'Rappel envoyé' : 'E-mail de retard demandé',
+      };
     }
     return this.canNudge() ? nudge : null;
   }
@@ -290,7 +293,7 @@ export class HandoverColumn {
       this.notify.success(
         kind === 'remind'
           ? `Rappel envoyé pour ${row.reference}.`
-          : `Client averti du retard de ${row.reference}.`,
+          : `E-mail de retard demandé pour ${row.reference}.`,
       );
       this.nudged.emit();
     } catch (caught) {

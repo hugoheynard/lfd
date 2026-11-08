@@ -2,8 +2,20 @@
   <div class="letter">
     @if (d.customerNotice; as notice) {
       <fold-callout appearance="inset" variant="info" data-shortfall-notified>
-        Client prévenu le {{ notice.notifiedAt | date: "dd/MM 'à' HH:mm" }} par
-        {{ notice.notifiedByName ?? "un membre de l'équipe" }}.
+        <span class="notice">
+          <span
+            >E-mail demandé le {{ notice.notifiedAt | date: "dd/MM 'à' HH:mm" }} par
+            {{ notice.notifiedByName ?? "un membre de l'équipe" }}.</span
+          >
+          @if (mailBadge(); as badge) {
+            <fold-badge
+              radius="square"
+              data-shortfall-mail-state
+              [variant]="badge.tone"
+              [content]="badge.label"
+            />
+          }
+        </span>
       </fold-callout>
     } @else if (allowed()) {
       @if (draft() === null) {

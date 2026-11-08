@@ -25,6 +25,19 @@
           <fold-field-list>
             <fold-field label="Modèle">{{ s.template }}</fold-field>
             <fold-field label="Destinataire">{{ s.recipient }}</fold-field>
+            <fold-field label="Sujet" [empty]="subjects().length === 0">
+              <span class="sp-subjects">
+                @for (subject of subjects(); track $index) {
+                  @if (subject.kind === 'link') {
+                    <a [routerLink]="subject.path" data-subject-link (click)="close()">{{
+                      subject.label
+                    }}</a>
+                  } @else {
+                    <span data-subject-text>{{ subject.label }}</span>
+                  }
+                }
+              </span>
+            </fold-field>
             <fold-field label="Langue" [empty]="s.locale === null">{{ s.locale }}</fold-field>
             <fold-field label="Genre du retour" [empty]="s.deliveryKind === null">
               {{ s.deliveryKind === null ? '' : kindOf(s.deliveryKind) }}

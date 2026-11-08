@@ -23,5 +23,18 @@
   </ng-template>
   <ng-template foldCell="space" let-row>{{ spaceOf(row) }}</ng-template>
   <ng-template foldCell="recipient" let-row>{{ row.recipient }}</ng-template>
+  <ng-template foldCell="subjects" let-row>
+    <span class="ms-subjects">
+      @for (subject of subjectsOf(row); track $index) {
+        @if (subject.kind === 'link') {
+          <a [routerLink]="subject.path" data-subject-link (click)="$event.stopPropagation()">{{
+            subject.label
+          }}</a>
+        } @else {
+          <span data-subject-text>{{ subject.label }}</span>
+        }
+      }
+    </span>
+  </ng-template>
   <ng-template foldCell="requestedAt" let-row>{{ whenOf(row) }}</ng-template>
 </fold-data-table>

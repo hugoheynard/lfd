@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import type { MailRecipientSearchView, MailSendListItemView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -44,6 +45,10 @@ const NOTHING_FOUND: FoldTableEmpty = {
  * auteur) ; l'adresse ne quitte le champ que par le corps d'un `POST` —
  * jamais l'URL, jamais l'état de route. Un refus (plafond horaire `409`)
  * s'affiche tel que le serveur le dit, la liste reste.
+ *
+ * `?envoi=<id>` ouvre d'emblée le détail de cet envoi : c'est l'adresse
+ * qu'une fiche commande donne à chacun de ses e-mails
+ * (`plan-sujet-des-e-mails.md`, lot E3).
  */
 @Component({
   selector: 'app-mail-sends-page',
@@ -96,6 +101,10 @@ export class MailSendsPage {
 
   constructor() {
     void this.load();
+    const asked = inject(ActivatedRoute).snapshot.queryParamMap.get('envoi');
+    if (asked !== null && asked !== '') {
+      this.panels.open<MailSendPanelData>(MailSendPanel, { data: { id: asked } });
+    }
   }
 
   protected async load(): Promise<void> {
