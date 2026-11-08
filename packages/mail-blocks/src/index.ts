@@ -5,6 +5,8 @@
  */
 export {
   COLUMN_WIDTH_STEPS,
+  columnWidthStepOf,
+  twelfthsOf,
   isColumnWidthStep,
   widthsFillTheRow,
   type ColumnWidthStep,

@@ -225,11 +225,25 @@ describe("les colonnes", () => {
 
   it("se rendent en tableau, une cellule par largeur, la gouttière à gauche de la dernière", () => {
     const html = renderMailDocument(INPUT, documentOf(...STARTING.blocks, columns), OPTIONS);
-    const cells = html.match(/<td class="lfd-col" width="33%" valign="top"/gu);
+    const cells = html.match(/<td class="lfd-col" width="(\d+)%" valign="top"/gu);
 
     expect(cells).toHaveLength(3);
     expect(html).toContain("padding:0 12px 0 0;");
     expect(html.indexOf("Un")).toBeLessThan(html.indexOf("Deux"));
     expect(html.indexOf("Deux")).toBeLessThan(html.indexOf("Trois"));
+  });
+
+  /** Les crans sont des douzièmes arrondis : la dernière colonne prend le reste (2026-11-08). */
+  it("une ligne fait toujours 100 % : 33 + 33 + 34, 17 + 17 + 66", () => {
+    const widthsIn = (html: string): number[] =>
+      [...html.matchAll(/<td class="lfd-col" width="(\d+)%"/gu)].map((match) => Number(match[1]));
+
+    expect(
+      widthsIn(renderMailDocument(INPUT, documentOf(...STARTING.blocks, columns), OPTIONS)),
+    ).toEqual([33, 33, 34]);
+    const narrow: MailBlock = { ...columns, widths: [17, 17, 67] };
+    expect(
+      widthsIn(renderMailDocument(INPUT, documentOf(...STARTING.blocks, narrow), OPTIONS)),
+    ).toEqual([17, 17, 66]);
   });
 });

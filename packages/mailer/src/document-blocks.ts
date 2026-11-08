@@ -120,6 +120,18 @@ function column(
 }
 
 /**
+ * La largeur écrite d'une colonne, en pour cent : la sienne, sauf la
+ * dernière, qui prend le reste — les crans sont des douzièmes arrondis, et
+ * 33 + 33 + 33 ferait 99 %, 17 + 17 + 67 ferait 101 % (une ligne qui déborde).
+ */
+function rowWidthOf(widths: readonly number[], index: number): number {
+  if (index < widths.length - 1) {
+    return widths[index] ?? 0;
+  }
+  return 100 - widths.slice(0, -1).reduce((sum, width) => sum + width, 0);
+}
+
+/**
  * Une ligne de colonnes : une cellule par largeur, côte à côte partout, et
  * empilées sur téléphone là où la règle `@media` est lue.
  */
@@ -129,10 +141,10 @@ export function renderColumns(
   audience: FreeBlockAudience = "sent",
   charter: MailRenderCharter = STARTING_MAIL_CHARTER,
 ): string {
-  const cells = block.widths.map((width, index) =>
+  const cells = block.widths.map((_width, index) =>
     column(
       block.cells[index] ?? [],
-      width,
+      rowWidthOf(block.widths, index),
       index === block.widths.length - 1,
       locale,
       audience,
