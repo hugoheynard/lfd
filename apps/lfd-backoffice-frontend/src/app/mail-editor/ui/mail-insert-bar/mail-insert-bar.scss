@@ -28,6 +28,16 @@
   pointer-events: none;
 }
 
+// La place d'une image pleine largeur : bord à bord, comme le bloc qu'elle
+// annonce (marge négative de chevauchement, celle du bloc dans le canevas).
+:host(.full-width) {
+  margin-inline: calc(-1 * var(--fold-space-lg));
+}
+
+:host(.full-width) .ghost {
+  padding-inline: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :host {
     transition: none;

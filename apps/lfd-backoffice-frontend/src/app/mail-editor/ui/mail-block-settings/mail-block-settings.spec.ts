@@ -61,6 +61,56 @@ describe('MailBlockSettings', () => {
     expect(added).toEqual([{ cellIndex: 0, key: 'heading' }]);
   });
 
+  describe('la largeur d’une image', () => {
+    const segment = (root: HTMLElement, label: string): HTMLButtonElement =>
+      [
+        ...root.querySelectorAll<HTMLButtonElement>(
+          '[data-image-width-choice] fold-view-toggle button',
+        ),
+      ].find((button) => button.textContent?.includes(label) === true)!;
+
+    it('écrit `width: full`, et retire le champ en revenant dans le texte', () => {
+      const fixture = render({ id: 'i', kind: 'image', src: '', alt: {} });
+      const emitted: FreeBlock[] = [];
+      fixture.componentInstance.blockChange.subscribe((next) => emitted.push(next));
+      const root: HTMLElement = fixture.nativeElement;
+      expect(root.querySelector('[data-image-width-choice]')?.textContent).toContain(
+        'comme l’en-tête',
+      );
+      segment(root, 'Pleine largeur').click();
+      expect(emitted).toEqual([{ id: 'i', kind: 'image', src: '', alt: {}, width: 'full' }]);
+      fixture.componentRef.setInput('block', emitted[0]);
+      fixture.detectChanges();
+      segment(root, 'Dans le texte').click();
+      expect(emitted[1]).toEqual({ id: 'i', kind: 'image', src: '', alt: {} });
+      expect('width' in (emitted[1] ?? {})).toBe(false);
+    });
+
+    it('dans une colonne, n’offre pas la pleine largeur et dit pourquoi', () => {
+      const fixture = TestBed.createComponent(MailBlockSettings);
+      fixture.componentRef.setInput('block', {
+        id: 'i',
+        kind: 'image',
+        src: '',
+        alt: {},
+        width: 'full',
+      });
+      fixture.componentRef.setInput('locale', 'fr');
+      fixture.componentRef.setInput('inColumn', true);
+      fixture.detectChanges();
+      const root: HTMLElement = fixture.nativeElement;
+      const emitted: FreeBlock[] = [];
+      fixture.componentInstance.blockChange.subscribe((next) => emitted.push(next));
+      expect(root.querySelector('[data-image-width-choice]')?.textContent).toContain(
+        'une colonne n’en a pas',
+      );
+      expect(segment(root, 'Pleine largeur').disabled).toBe(true);
+      // Arrivée là par un déplacement : on peut toujours la remettre dans le texte.
+      segment(root, 'Dans le texte').click();
+      expect(emitted).toEqual([{ id: 'i', kind: 'image', src: '', alt: {} }]);
+    });
+  });
+
   describe('une image', () => {
     const IMAGE = { id: 'i', kind: 'image', src: '', alt: { fr: 'Une brioche' } } as const;
 

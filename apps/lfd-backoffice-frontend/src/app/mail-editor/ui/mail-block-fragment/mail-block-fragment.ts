@@ -243,6 +243,14 @@ export class MailBlockFragment {
         image.style.height = 'auto';
       }
     }
+    // Une image pleine largeur porte la largeur intérieure de la carte d'envoi
+    // (558 px) en plafond ; la carte du canevas est un peu plus large, et
+    // l'image doit en toucher les deux bords comme dans l'e-mail.
+    for (const image of element.querySelectorAll<HTMLImageElement>(
+      'img[data-image-width="full"]',
+    )) {
+      image.style.maxWidth = '100%';
+    }
     for (const chip of element.querySelectorAll('[data-var]')) {
       chip.setAttribute('contenteditable', 'false');
       labelValueChip(chip, options.values);

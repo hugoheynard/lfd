@@ -16,14 +16,18 @@ import {
   type FreeBlock,
   type ImageFocal,
   type ImageFormat,
+  type ImageWidth,
+  isImageWidth,
   type MailLocale,
 } from '@lfd/mail-blocks';
 import {
   FoldButtonComponent,
   FoldCheckboxComponent,
+  FoldFieldsetComponent,
   FoldInputComponent,
   FoldListboxComponent,
   FoldPanelHostService,
+  FoldViewToggleComponent,
 } from 'fold-ng';
 
 import {
@@ -37,8 +41,9 @@ import {
   withImageFormat,
   withImageHref,
   withImageSource,
+  withImageWidth,
 } from '../../rules/mail-document-edits';
-import { IMAGE_FORMAT_OPTIONS } from '../../rules/mail-image-framing';
+import { IMAGE_FORMAT_OPTIONS, IMAGE_WIDTH_OPTIONS } from '../../rules/mail-image-framing';
 import {
   LibraryPicker,
   type LibraryPickerData,
@@ -74,8 +79,10 @@ export interface CellAddition {
   imports: [
     FoldButtonComponent,
     FoldCheckboxComponent,
+    FoldFieldsetComponent,
     FoldInputComponent,
     FoldListboxComponent,
+    FoldViewToggleComponent,
     MailBlockLibrary,
     MailImageFocal,
   ],
@@ -86,6 +93,11 @@ export class MailBlockSettings {
   readonly block = input.required<FreeBlock | ColumnsBlock>();
   /** La langue de l'e-mail affiché : celle du texte de remplacement d'une image. */
   readonly locale = input.required<MailLocale>();
+  /**
+   * Le bloc est rangé dans une colonne : une image n'y a pas de bord de carte
+   * à rejoindre, « Pleine largeur » n'y est pas offerte.
+   */
+  readonly inColumn = input(false);
   readonly blockChange = output<FreeBlock>();
   readonly widthChange = output<ColumnWidthChoice>();
   readonly cellAddition = output<CellAddition>();
@@ -141,6 +153,32 @@ export class MailBlockSettings {
     if (block.kind === 'image') {
       this.blockChange.emit(withImageFormat(block, format));
     }
+  }
+
+  /** Les deux largeurs ; en colonne, « Pleine largeur » est grisée. */
+  protected readonly imageWidthOptions = computed(() =>
+    IMAGE_WIDTH_OPTIONS.map((option) => ({
+      ...option,
+      disabled: this.inColumn() && option.value === 'full',
+    })),
+  );
+
+  /** Ce que dit le réglage sous son titre : l'effet, ou pourquoi il est fermé. */
+  protected readonly imageWidthHint = computed(() =>
+    this.inColumn()
+      ? 'Dans une colonne, une image reste dans le texte : la pleine largeur va d’un bord de la carte à l’autre, une colonne n’en a pas.'
+      : 'Pleine largeur : l’image va d’un bord à l’autre de l’e-mail, sans marges, comme l’en-tête.',
+  );
+
+  protected setImageWidth(width: string): void {
+    const block = this.block();
+    if (block.kind === 'image' && isImageWidth(width)) {
+      this.blockChange.emit(withImageWidth(block, width));
+    }
+  }
+
+  protected widthOf(width: ImageWidth | undefined): ImageWidth {
+    return width ?? 'content';
   }
 
   protected setFocal(focal: ImageFocal): void {

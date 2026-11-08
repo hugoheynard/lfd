@@ -6,6 +6,7 @@ import type {
   ImageBlock,
   ImageFocal,
   ImageFormat,
+  ImageWidth,
   MailBlock,
   MailDocument,
   MailLocale,
@@ -404,6 +405,26 @@ export function withImageHref(block: ImageBlock, href: string): ImageBlock {
 export function withImageFormat(block: ImageBlock, format: ImageFormat): ImageBlock {
   const { format: _previous, ...rest } = block;
   return format === 'original' ? rest : { ...rest, format };
+}
+
+/**
+ * Choisit la largeur d'une image (§ 19, « pleine largeur »). `content` retire
+ * le champ — c'est le sens d'une largeur absente. Aucune garde ici : une image
+ * pleine largeur rangée dans une colonne s'écrit, et `validateMailDocument`
+ * la refuse (`full-width-image-in-column`).
+ */
+export function withImageWidth(block: ImageBlock, width: ImageWidth): ImageBlock {
+  const { width: _previous, ...rest } = block;
+  return width === 'content' ? rest : { ...rest, width };
+}
+
+/** Le bloc est rangé dans une colonne d'une mise en page du document. */
+export function isInColumn(document: MailDocument, blockId: string): boolean {
+  return document.blocks.some(
+    (block) =>
+      block.kind === 'columns' &&
+      block.cells.some((cell) => cell.some((inner) => inner.id === blockId)),
+  );
 }
 
 /**

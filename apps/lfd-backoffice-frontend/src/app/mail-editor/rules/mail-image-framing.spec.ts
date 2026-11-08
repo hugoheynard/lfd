@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { focalLabel, imageFramingStyle, nudgedFocal } from './mail-image-framing';
+import type { MailDocument } from '@lfd/mail-blocks';
+
+import {
+  focalLabel,
+  imageFramingStyle,
+  nudgedFocal,
+  reshapesFullWidthImages,
+} from './mail-image-framing';
 
 describe('le cadrage d’une image vu par l’écran', () => {
   it('déplace le repère d’un vingtième par flèche, borné à l’image, depuis le centre', () => {
@@ -29,5 +36,30 @@ describe('le cadrage d’une image vu par l’écran', () => {
     expect(imageFramingStyle('4:3', '0.2', '0.2')).toBeNull();
     expect(imageFramingStyle(null, null, null)).toBeNull();
     expect(imageFramingStyle('1:1', '2', 'abc')?.objectPosition).toBe('50% 50%');
+  });
+});
+
+describe('les images pleine largeur à relire tout de suite', () => {
+  const doc = (blocks: MailDocument['blocks']): MailDocument => ({ template: 't', blocks });
+  const WIDE = { id: 'w', kind: 'image', src: '', alt: {}, width: 'full' } as const;
+  const TEXT = { id: 'p', kind: 'paragraph', text: {} } as const;
+  const NOTE = { id: 'n', kind: 'paragraph', text: {} } as const;
+
+  it('un déplacement, un ajout ou un retrait autour d’une image pleine largeur', () => {
+    expect(reshapesFullWidthImages(doc([WIDE, TEXT]), doc([TEXT, WIDE]))).toBe(true);
+    expect(reshapesFullWidthImages(doc([WIDE]), doc([WIDE, TEXT]))).toBe(true);
+    expect(reshapesFullWidthImages(doc([WIDE, TEXT]), doc([TEXT]))).toBe(true);
+  });
+
+  it('une image qui change de largeur', () => {
+    const { width: _width, ...narrow } = WIDE;
+    expect(reshapesFullWidthImages(doc([narrow, TEXT]), doc([WIDE, TEXT]))).toBe(true);
+  });
+
+  it('pas la frappe, ni un déplacement sans image pleine largeur', () => {
+    expect(
+      reshapesFullWidthImages(doc([WIDE, TEXT]), doc([WIDE, { ...TEXT, text: { fr: 'a' } }])),
+    ).toBe(false);
+    expect(reshapesFullWidthImages(doc([NOTE, TEXT]), doc([TEXT, NOTE]))).toBe(false);
   });
 });

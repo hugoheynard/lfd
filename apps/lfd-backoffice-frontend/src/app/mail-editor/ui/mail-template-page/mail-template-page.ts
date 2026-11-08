@@ -62,6 +62,7 @@ import {
   unplacedPhrases,
 } from '../../rules/mail-phrase-places';
 import { SITUATION_LABELS } from '../../rules/mail-block-conditions';
+import { reshapesFullWidthImages } from '../../rules/mail-image-framing';
 import { EMPTY_MAIL_RESOURCES } from '../../rules/mail-resources';
 import {
   BLOCK_PREVIEW_DEBOUNCE_MS,
@@ -441,8 +442,13 @@ export class MailTemplatePage implements HasPendingChanges {
         return;
       }
       untracked(() => {
+        // Une image pleine largeur qui change de voisins (ou de largeur) se
+        // relit tout de suite : ses arrondis suivent sa place.
+        const before = this.renderedDocument;
         const delay =
-          this.renderedDocument === null || this.renderedDocument === payload.document
+          before === null ||
+          before === payload.document ||
+          reshapesFullWidthImages(before, payload.document)
             ? 0
             : BLOCK_PREVIEW_DEBOUNCE_MS;
         this.renderedDocument = payload.document;

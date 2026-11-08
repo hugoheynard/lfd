@@ -55,6 +55,7 @@ import {
   FREE_BLOCK_LABELS,
   insertBlockAfter,
   insertBlockAt,
+  isInColumn,
   libraryItemKeyOf,
   type LibraryItemKey,
   moveBlock,
@@ -401,6 +402,18 @@ export class MailCanvas {
       block.kind === 'callout' ||
       block.kind === 'columns'
     );
+  }
+
+  /**
+   * Une image pleine largeur du fil : son cadre sort des marges du corps,
+   * bord à bord de la carte, comme dans l'e-mail.
+   */
+  protected isFullWidth(block: MailBlock): boolean {
+    return block.kind === 'image' && block.width === 'full';
+  }
+
+  protected isInColumn(blockId: string): boolean {
+    return isInColumn(this.document(), blockId);
   }
 
   protected isSelected(block: MailBlock): boolean {

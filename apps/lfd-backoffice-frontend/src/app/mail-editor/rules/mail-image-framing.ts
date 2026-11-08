@@ -4,6 +4,8 @@ import {
   isImageFormat,
   type ImageFocal,
   type ImageFormat,
+  type ImageWidth,
+  type MailDocument,
 } from '@lfd/mail-blocks';
 
 /**
@@ -23,6 +25,34 @@ export const IMAGE_FORMAT_OPTIONS: readonly {
   { value: '2:1', label: 'Bandeau 2:1' },
   { value: '1:1', label: 'Carré' },
 ];
+
+/** Les deux largeurs, dans l'ordre du choix. */
+export const IMAGE_WIDTH_OPTIONS: readonly {
+  readonly value: ImageWidth;
+  readonly label: string;
+}[] = [
+  { value: 'content', label: 'Dans le texte' },
+  { value: 'full', label: 'Pleine largeur' },
+];
+
+/**
+ * Le geste a changé la place des images pleine largeur : un bloc déplacé,
+ * ajouté ou retiré dans un document qui en porte une (avant ou après), ou une
+ * image passée d'une largeur à l'autre. Leurs arrondis et leur collage au
+ * bandeau dépendent de leurs voisins : l'aperçu est à relire sans attendre la
+ * pause de l'écriture.
+ */
+export function reshapesFullWidthImages(before: MailDocument, after: MailDocument): boolean {
+  const order = (document: MailDocument): string =>
+    document.blocks.map((block) => block.id).join('\n');
+  const fullWidth = (document: MailDocument): string =>
+    document.blocks
+      .filter((block) => block.kind === 'image' && block.width === 'full')
+      .map((block) => block.id)
+      .join('\n');
+  const wide = fullWidth(after);
+  return wide !== fullWidth(before) || (wide !== '' && order(before) !== order(after));
+}
 
 /** Le pas d'une flèche : un vingtième de l'image. */
 export const FOCAL_KEY_STEP = 0.05;

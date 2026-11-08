@@ -32,6 +32,16 @@
         (selectionChange)="setFormat($event)"
         data-image-format-choice
       />
+      <fold-fieldset legend="Largeur" [hint]="imageWidthHint()" data-image-width-choice>
+        <fold-view-toggle
+          size="sm"
+          ariaLabel="Largeur de l’image"
+          activeStyle="accent"
+          [options]="imageWidthOptions()"
+          [value]="widthOf(current.width)"
+          (valueChange)="setImageWidth($event)"
+        />
+      </fold-fieldset>
       @if (current.src !== '') {
         <app-mail-image-focal
           [src]="current.src"

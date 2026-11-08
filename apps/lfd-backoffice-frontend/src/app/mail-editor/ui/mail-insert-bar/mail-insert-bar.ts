@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { FoldBadgeComponent } from 'fold-ng';
 
 /**
@@ -17,6 +17,13 @@ import { FoldBadgeComponent } from 'fold-ng';
   imports: [FoldBadgeComponent],
   templateUrl: './mail-insert-bar.html',
   styleUrl: './mail-insert-bar.scss',
-  host: { 'aria-hidden': 'true', 'data-insert-bar': '' },
+  host: {
+    'aria-hidden': 'true',
+    'data-insert-bar': '',
+    '[class.full-width]': 'fullWidth()',
+  },
 })
-export class MailInsertBar {}
+export class MailInsertBar {
+  /** Le bloc projeté est une image pleine largeur : sa place va, elle aussi, d'un bord à l'autre. */
+  readonly fullWidth = input(false);
+}

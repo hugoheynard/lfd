@@ -19,6 +19,8 @@ import {
   withDecorative,
   withImageFocal,
   withImageFormat,
+  withImageWidth,
+  isInColumn,
   withImageHref,
   withImageSource,
   withText,
@@ -134,6 +136,22 @@ describe('les gestes du canevas', () => {
       src: 'https://m.fr/a.webp',
       alt: { fr: 'Une brioche' },
     } as const;
+
+    it('pose la pleine largeur, et retire le champ en revenant dans le texte', () => {
+      const wide = withImageWidth(IMAGE, 'full');
+      expect(wide).toEqual({ ...IMAGE, width: 'full' });
+      expect('width' in withImageWidth(wide, 'content')).toBe(false);
+    });
+
+    it('sait si un bloc est rangé dans une colonne', () => {
+      const inner = { ...IMAGE, id: 'in' };
+      const document: MailDocument = {
+        template: 't',
+        blocks: [IMAGE, { id: 'k', kind: 'columns', widths: [50, 50], cells: [[inner], []] }],
+      };
+      expect(isInColumn(document, 'in')).toBe(true);
+      expect(isInColumn(document, 'i')).toBe(false);
+    });
 
     it('naît sans image ni texte, et entre dans une colonne', () => {
       expect(newLibraryBlock('image', 'i')).toEqual({ id: 'i', kind: 'image', src: '', alt: {} });

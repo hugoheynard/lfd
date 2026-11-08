@@ -163,6 +163,52 @@
   border-radius: var(--fold-radius-sm);
 }
 
+// Ce qui va d'un bord à l'autre de la carte dans l'e-mail — le bandeau, une
+// image pleine largeur — sort des marges du corps simulé : marge négative de
+// chevauchement, délibérée, égale au rembourrage de `.mail`. Le serveur rend
+// déjà la ligne sans marges (fragment `data-image-width="full"`) ; c'est son
+// cadre qui doit la laisser déborder. Les outils passent au-dessus du rendu,
+// sans prendre de place : une image qui suit le bandeau s'y colle.
+.bleed,
+.full-width {
+  margin-inline: calc(-1 * var(--fold-space-lg));
+  padding: 0;
+}
+
+.mail > .bleed:first-child,
+.mail > .blocks:first-child > .full-width:first-child {
+  margin-block-start: calc(-1 * var(--fold-space-lg));
+}
+
+.mail > .blocks:last-child > .full-width:last-child {
+  margin-block-end: calc(-1 * var(--fold-space-lg));
+}
+
+.bleed .tools,
+.full-width .tools {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: var(--fold-space-xs);
+  inset-inline-start: var(--fold-space-xl);
+  padding-inline: var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+}
+
+// La poignée et la croix tombent sur l'image : posées sur la surface de la
+// carte, elles restent lisibles.
+.full-width .handle,
+.full-width .remove {
+  z-index: 1;
+}
+
+.full-width .handle {
+  inset-inline-start: var(--fold-space-xs);
+  padding: var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+}
+
 // Un bloc que la situation de l'aperçu écarte : grisé, toujours déplaçable.
 .block.absent {
   opacity: 0.6;

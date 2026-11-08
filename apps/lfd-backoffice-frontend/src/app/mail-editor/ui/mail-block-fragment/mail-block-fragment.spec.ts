@@ -111,6 +111,19 @@ describe('MailBlockFragment — un fragment écrit sur place', () => {
     element.remove();
   });
 
+  it('recadre aussi une image pleine largeur, et la laisse toucher les bords du canevas', () => {
+    const { element } = render(
+      '<table width="100%"><tr><td><img src="https://m.fr/a.webp" alt="" data-image-width="full" ' +
+        'style="display:block;width:100%;max-width:558px;height:auto" data-image-format="3:2" ' +
+        'data-image-focal-x="0.5" data-image-focal-y="0.1" /></td></tr></table>',
+    );
+    const image = element.querySelector<HTMLImageElement>('img[data-image-width="full"]')!;
+    expect(image.style.maxWidth).toBe('100%');
+    expect(image.style.aspectRatio).toBe('1.5');
+    expect(image.style.objectPosition).toBe('50% 10%');
+    element.remove();
+  });
+
   it('refuse d’injecter un fragment dangereux, et le dit', () => {
     const { element } = render('<img src="x" onerror="alert(1)">');
     expect(element.querySelector('img')).toBeNull();

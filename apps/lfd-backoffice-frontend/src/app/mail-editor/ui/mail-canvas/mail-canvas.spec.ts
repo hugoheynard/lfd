@@ -547,4 +547,90 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     );
     element.remove();
   });
+
+  describe('une image pleine largeur', () => {
+    const WIDE: MailDocument = {
+      template: TEMPLATE,
+      blocks: [
+        {
+          id: 'wide',
+          kind: 'image',
+          src: 'https://m.fr/a.webp',
+          alt: { fr: 'Pains' },
+          width: 'full',
+        },
+        { id: 'note', kind: 'paragraph', text: { fr: 'Fermé le 1er mai' } },
+      ],
+    };
+    const WIDE_FRAGMENTS = {
+      wide: '<table width="100%"><tr><td><img src="https://m.fr/a.webp" alt="Pains" data-image-width="full" /></td></tr></table>',
+      note: FRAGMENTS.note,
+    };
+
+    it('sort des marges du corps, avec le bandeau ; un bloc dans le texte y reste', () => {
+      const { element } = render(WIDE, WIDE_FRAGMENTS);
+      const wide = element.querySelector('li[data-block="wide"]');
+      expect(wide?.classList.contains('full-width')).toBe(true);
+      expect(wide?.querySelector('img[data-image-width="full"]')).not.toBeNull();
+      expect(wide?.querySelector('[data-handle]')).not.toBeNull();
+      expect(wide?.querySelector('[data-remove]')).not.toBeNull();
+      expect(element.querySelector('li[data-block="note"]')?.classList.contains('full-width')).toBe(
+        false,
+      );
+      expect(element.querySelector('[data-frame="header"]')?.classList.contains('bleed')).toBe(
+        true,
+      );
+      element.remove();
+    });
+
+    it('réglée depuis le canevas, l’image passe pleine largeur dans le document', () => {
+      const { fixture, element, emitted } = render(
+        {
+          ...WIDE,
+          blocks: [
+            { id: 'wide', kind: 'image', src: 'https://m.fr/a.webp', alt: { fr: 'Pains' } },
+            ...WIDE.blocks.slice(1),
+          ],
+        },
+        WIDE_FRAGMENTS,
+      );
+      element.querySelector<HTMLElement>('li[data-block="wide"]')!.click();
+      fixture.detectChanges();
+      [...element.querySelectorAll<HTMLButtonElement>('[data-image-width-choice] button')]
+        .find((button) => button.textContent?.includes('Pleine largeur'))!
+        .click();
+      expect(emitted.at(-1)?.blocks[0]).toMatchObject({ id: 'wide', width: 'full' });
+      element.remove();
+    });
+
+    it('dans une colonne, le réglage est fermé et le refus du paquet est dit sous la mise en page', () => {
+      const columns: MailDocument = {
+        template: TEMPLATE,
+        blocks: [
+          {
+            id: 'cols',
+            kind: 'columns',
+            widths: [50, 50],
+            cells: [
+              [{ id: 'img', kind: 'image', src: '', alt: { fr: 'Pains' }, width: 'full' }],
+              [],
+            ],
+          },
+        ],
+      };
+      const { fixture, element } = render(columns, { cols: '<table></table>' });
+      expect(
+        element.querySelector('li[data-block="cols"] [data-block-violation]')?.textContent,
+      ).toContain('pleine largeur ne se place pas dans une colonne');
+      element.querySelector<HTMLElement>('li[data-block="cols"]')!.click();
+      fixture.detectChanges();
+      element.querySelector<HTMLButtonElement>('[data-inner="img"] [data-settings]')!.click();
+      fixture.detectChanges();
+      const full = [
+        ...element.querySelectorAll<HTMLButtonElement>('[data-image-width-choice] button'),
+      ].find((button) => button.textContent?.includes('Pleine largeur'));
+      expect(full?.disabled).toBe(true);
+      element.remove();
+    });
+  });
 });

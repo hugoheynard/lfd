@@ -89,7 +89,7 @@
         <div class="mail" data-mail>
           @if (view.header !== '') {
             <div
-              class="block frame"
+              class="block frame bleed"
               tabindex="0"
               data-frame="header"
               aria-label="En-tête · cadre de l’e-mail"
@@ -133,6 +133,7 @@
                 [class.selected]="isSelected(block)"
                 [class.lit]="isLit(block)"
                 [class.absent]="absence !== null"
+                [class.full-width]="isFullWidth(block)"
                 [attr.data-block]="block.id"
                 [attr.aria-label]="nameOf(block)"
                 [attr.aria-current]="isSelected(block) ? 'true' : null"
@@ -150,7 +151,7 @@
                 >
                   <fold-icon name="grip" size="sm" />
                 </span>
-                <app-mail-insert-bar *cdkDragPlaceholder>
+                <app-mail-insert-bar *cdkDragPlaceholder [fullWidth]="isFullWidth(block)">
                   @if (html !== null && html !== '' && absence === null) {
                     <app-mail-block-fragment [html]="html" />
                   } @else {
@@ -280,6 +281,7 @@
             <app-mail-block-settings
               [block]="current"
               [locale]="locale()"
+              [inColumn]="isInColumn(current.id)"
               (blockChange)="edited($event)"
               (widthChange)="widthChosen(current.id, $event)"
               (cellAddition)="cellAdded(current.id, $event)"
