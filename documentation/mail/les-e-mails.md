@@ -399,8 +399,9 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
    `lafoliecoffee.info` le 2026-11-07 (MX posés, vérification en attente) : les
    e-mails reçus restent dans Resend (« Inboxes ») tant que le chantier
    « Support » n'existe pas.
-5. Donner le droit « Modèles d'e-mails » aux rôles qui éditent, à l'écran des
-   rôles — Éditeur § 15.
+5. Donner les droits « Modèles d'e-mails » (éditer) et « Suivi des e-mails »
+   (lire les envois) aux rôles concernés, à l'écran des rôles — Éditeur § 15,
+   [`le-suivi-des-e-mails.md`](le-suivi-des-e-mails.md), règle 11.
 6. Activer la purge du suivi (`MAIL_REQUEST_PURGE`) le moment venu — Service § 7.
 
 ### b. Avant le prochain push ou déploiement
@@ -410,8 +411,10 @@ Une ligne par point ; le lien mène à la section du journal qui le détaille.
    verte sur `c3a51bb54` — `CLAUDE.md` § 9 bis.
 2. ~~`e2e:rebalance`~~ — fait le 2026-11-07, durées commitées (`fd10ad0a9`).
 3. Un `docker build` complet de l'API pour `sharp` (seul l'essai isolé a
-   tourné ; tenté le 2026-11-07, arrêté par le disque plein de Docker) —
-   Éditeur § 19, format et point focal.
+   tourné). Le 2026-11-08, le contexte de build est passé de 2,6 Go à 124 Mo
+   (`.dockerignore` : `.claude/`, `graphify-out`), mais la compilation
+   dépasse la mémoire du Docker local (8 Go) : la preuve viendra du build de
+   la CI au déploiement — Éditeur § 19, format et point focal.
 4. Repasser les migrations du jour (documents, chartes, identité d'envoi) au
    `lecteur-de-migrations` avant `main` : chacune a été relue au commit, la
    règle demande une relecture d'ensemble avant la production — `CLAUDE.md`
