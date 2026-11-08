@@ -1,0 +1,72 @@
+<div class="sf-filters" role="group" aria-label="Filtrer les envois">
+  <fold-listbox
+    size="sm"
+    label="Espace"
+    placeholder="Tous"
+    clearLabel="Tous les espaces"
+    allowClear
+    data-filter="space"
+    [options]="spaceOptions"
+    [value]="filters().space"
+    (valueChange)="change({ space: $event })"
+  />
+  <fold-listbox
+    size="sm"
+    label="Modèle"
+    placeholder="Tous"
+    clearLabel="Tous les modèles"
+    allowClear
+    data-filter="template"
+    [options]="templateOptions"
+    [value]="filters().template"
+    (valueChange)="change({ template: $event })"
+  />
+  <fold-listbox
+    size="sm"
+    label="État"
+    placeholder="Tous"
+    clearLabel="Tous les états"
+    allowClear
+    data-filter="state"
+    [options]="stateOptions"
+    [value]="filters().state"
+    (valueChange)="change({ state: $event })"
+  />
+  <fold-listbox
+    size="sm"
+    label="Retour du fournisseur"
+    placeholder="Tous"
+    clearLabel="Tous les retours"
+    allowClear
+    data-filter="delivery"
+    [options]="deliveryOptions"
+    [value]="filters().delivery"
+    (valueChange)="change({ delivery: $event })"
+  />
+  <fold-date
+    size="sm"
+    label="Du"
+    data-filter="from"
+    [value]="filters().from ?? ''"
+    [max]="filters().to ?? ''"
+    (valueChange)="changeDay('from', $event)"
+  />
+  <fold-date
+    size="sm"
+    label="Au"
+    data-filter="to"
+    [value]="filters().to ?? ''"
+    [min]="filters().from ?? ''"
+    (valueChange)="changeDay('to', $event)"
+  />
+  <fold-checkbox
+    label="Sondes seulement"
+    hint="L’e-mail de contrôle du déploiement, listé à part."
+    data-filter="probes"
+    [checked]="filters().scope === 'probes'"
+    (checkedChange)="changeProbes($event)"
+  />
+  <button foldButton type="button" size="sm" emphasis="soft" intent="neutral" (click)="reset()">
+    Effacer les filtres
+  </button>
+</div>

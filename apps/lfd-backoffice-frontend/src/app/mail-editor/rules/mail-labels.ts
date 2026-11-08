@@ -236,3 +236,8 @@ export function pathLabel(path: string): string {
   }
   return rest.length === 0 ? name : `${name} — ${rest.join('.')}`;
 }
+
+/** Les clés des e-mails qui ont un intitulé — les choix du filtre « Modèle » du suivi des envois. */
+export function labeledMailTemplates(): readonly string[] {
+  return Object.keys(MAIL_LABELS);
+}

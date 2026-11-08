@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   MAIL_SPACES,
@@ -61,6 +61,7 @@ interface CharterSwatch {
     FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    RouterLink,
   ],
   templateUrl: './mail-templates-page.html',
   styleUrl: './mail-templates-page.scss',
@@ -85,6 +86,8 @@ export class MailTemplatesPage {
   /** Le dernier refus de la publication de tous les e-mails, tel que le serveur l'a dit. */
   protected readonly publishError = signal<string | null>(null);
   protected readonly canWrite = computed(() => this.permissions.can('mail_templates:write'));
+  /** Le suivi des envois a son droit à part (`mail_sends`) : l'entrée ne se montre qu'avec lui. */
+  protected readonly canSeeSends = computed(() => this.permissions.can('mail_sends:read'));
   protected readonly pendingLabel = computed(() => {
     const count = this.copyPendingCount();
     return count === 1 ? '1 modification en attente' : `${count} modifications en attente`;

@@ -1,0 +1,27 @@
+<fold-data-table
+  caption="Envois d’e-mails, les problèmes d’abord"
+  narrowLayout="cards"
+  hover
+  clickable
+  [columns]="columns"
+  [rows]="rows()"
+  [rowKey]="rowKey"
+  [rowTone]="toneOf"
+  [empty]="empty()"
+  (rowClick)="opened.emit($event)"
+>
+  <ng-template foldCell="state" let-row>
+    <fold-badge
+      radius="square"
+      [attr.data-state]="row.state"
+      [variant]="badgeOf(row).tone"
+      [content]="badgeOf(row).label"
+    />
+  </ng-template>
+  <ng-template foldCell="template" let-row>
+    <span [attr.title]="row.template">{{ titleOf(row) }}</span>
+  </ng-template>
+  <ng-template foldCell="space" let-row>{{ spaceOf(row) }}</ng-template>
+  <ng-template foldCell="recipient" let-row>{{ row.recipient }}</ng-template>
+  <ng-template foldCell="requestedAt" let-row>{{ whenOf(row) }}</ng-template>
+</fold-data-table>

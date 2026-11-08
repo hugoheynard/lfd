@@ -194,4 +194,15 @@ describe('MailTemplatesPage — les e-mails', () => {
     expect(element.querySelector('[data-copy-pending]')).not.toBeNull();
     expect(element.querySelector('[data-publish-all]')).toBeNull();
   });
+
+  it('« Suivi des envois » ne se montre qu’avec le droit `mail_sends`', async () => {
+    const list = () => Promise.resolve({ mails: [ALERT], copyPendingCount: 0 });
+    const without = await setup(list, undefined, ['mail_templates:read']);
+    expect(without.element.querySelector('[data-sends-link]')).toBeNull();
+    TestBed.resetTestingModule();
+    const granted = await setup(list, undefined, ['mail_templates:read', 'mail_sends:read']);
+    expect(granted.element.querySelector('[data-sends-link]')?.getAttribute('href')).toBe(
+      '/emails/envois',
+    );
+  });
 });

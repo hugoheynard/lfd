@@ -1,0 +1,87 @@
+<fold-panel-header [title]="title()" [subtitle]="subtitle()" closeLabel="Fermer" />
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l’envoi…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="Cet envoi n’a pas pu être lu"
+        [subtitle]="error() ?? ''"
+      >
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (send(); as s) {
+        <div class="sp-body">
+          @if (badge(); as b) {
+            <div>
+              <fold-badge radius="square" data-badge [variant]="b.tone" [content]="b.label" />
+            </div>
+          }
+          <fold-field-list>
+            <fold-field label="Modèle">{{ s.template }}</fold-field>
+            <fold-field label="Destinataire">{{ s.recipient }}</fold-field>
+            <fold-field label="Langue" [empty]="s.locale === null">{{ s.locale }}</fold-field>
+            <fold-field label="Genre du retour" [empty]="s.deliveryKind === null">
+              {{ s.deliveryKind === null ? '' : kindOf(s.deliveryKind) }}
+            </fold-field>
+            <fold-field label="Version du document">
+              {{
+                s.documentVersion === null ? 'Document de départ' : 'Version ' + s.documentVersion
+              }}
+            </fold-field>
+            <fold-field label="Tentatives">{{ s.attempts }}</fold-field>
+          </fold-field-list>
+
+          <fold-timeline ariaLabel="Étapes de l’envoi" [nodes]="steps()" />
+
+          @if (revealed(); as r) {
+            <fold-callout variant="info" announce data-revealed>
+              <div class="sp-revealed">
+                <span
+                  >Adresse : <strong data-recipient>{{ r.recipient }}</strong></span
+                >
+                @if (r.failureReason !== null) {
+                  <span data-failure>Raison de l’échec : {{ r.failureReason }}</span>
+                }
+                <span>
+                  Consultation inscrite au journal, valable jusqu’à {{ until(r.revealedUntil) }}.
+                </span>
+              </div>
+            </fold-callout>
+          } @else {
+            <fold-callout variant="neutral">
+              Afficher l’adresse inscrit la consultation au journal (qui, quand, quel envoi) ; elle
+              vaut 5 minutes pour cet envoi. La raison d’un échec s’affiche avec elle.
+              <div actions>
+                <button
+                  foldButton
+                  type="button"
+                  icon="eye"
+                  data-reveal
+                  [loading]="revealing()"
+                  (click)="reveal()"
+                >
+                  Afficher l’adresse
+                </button>
+              </div>
+            </fold-callout>
+          }
+          @if (revealError(); as message) {
+            <fold-callout variant="alert" announce data-reveal-error>{{ message }}</fold-callout>
+          }
+        </div>
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton type="button" emphasis="outline" intent="neutral" (click)="close()">
+    Fermer
+  </button>
+</fold-panel-footer>

@@ -3,6 +3,20 @@
     Ce que disent les e-mails, et dans quel ordre. Rien ne change pour un client tant que rien n’est
     publié.
   </p>
+  @if (canSeeSends()) {
+    <div pageActions>
+      <a
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        icon="mail"
+        routerLink="/emails/envois"
+        data-sends-link
+      >
+        Suivi des envois
+      </a>
+    </div>
+  }
 
   @switch (status()) {
     @case ('loading') {

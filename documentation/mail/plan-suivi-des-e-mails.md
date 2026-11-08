@@ -202,7 +202,13 @@ tentatives — adresse masquée, sans `failure_reason`), `POST
 seulement. E2e : le droit, le masque, la révélation qui expire, le plafond,
 la recherche à son seul auteur, aucune adresse dans une URL ni un journal.
 
-**T3 — l'écran (back-office).** « Suivi des envois » en tête d'Email
+**T3 — l'écran (back-office).** ✅ Bâti le 2026-11-08
+(`apps/lfd-backoffice-frontend/src/app/mail-editor/ui/mail-sends-page/` et
+ses voisins `mail-sends-table/`, `mail-send-filters/`, `mail-send-panel/`) :
+la page `/emails/envois`, gardée par `mail_sends:read`, et le lien « Suivi
+des envois » dans l'en-tête d'Email Templates. Écart : le filtre « Retour »
+ne propose pas « rien reçu », que l'API ne sait pas filtrer. Non vérifié à
+l'écran. Le texte d'origine : « Suivi des envois » en tête d'Email
 Templates, page `/emails/envois` : liste, filtres, recherche ; détail en
 panneau avec « Afficher l'adresse ». Le dictionnaire traduit les états.
 

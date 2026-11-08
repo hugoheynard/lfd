@@ -1,0 +1,88 @@
+<fold-page-layout title="Suivi des envois" icon="inbox">
+  <fold-back-link pageEyebrow icon="arrow-back" label="Email Templates" routerLink="/emails" />
+  <p description>
+    Chaque e-mail demandé, son état chez nous et le retour de Resend — les problèmes d’abord. «
+    Accepté par Resend » ne dit pas que l’e-mail est arrivé : seul « Remis » le dit.
+  </p>
+
+  <form
+    class="ms-search"
+    role="search"
+    aria-label="Chercher les envois d’une adresse"
+    (submit)="searchAddress($event)"
+  >
+    <fold-input
+      size="sm"
+      type="email"
+      label="Adresse du destinataire"
+      autocomplete="off"
+      hint="La recherche est inscrite au journal, comme l’affichage d’une adresse."
+      data-search-address
+      [value]="address()"
+      (valueChange)="address.set($event)"
+    />
+    <button foldButton type="submit" size="sm" icon="search" [loading]="searching()">
+      Chercher
+    </button>
+  </form>
+
+  @if (searchError(); as message) {
+    <fold-callout variant="alert" announce data-search-error>{{ message }}</fold-callout>
+  }
+
+  @if (search() !== null) {
+    <fold-callout variant="info" announce data-search-banner>
+      Résultats pour une adresse — figés à {{ frozenAt() }}.
+      <div actions>
+        <button
+          foldButton
+          type="button"
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          (click)="leaveSearch()"
+        >
+          Revenir à la liste
+        </button>
+      </div>
+    </fold-callout>
+    <app-mail-sends-table [rows]="rows()" [empty]="empty()" (opened)="open($event)" />
+  } @else {
+    <app-mail-send-filters [filters]="filters()" (filtersChange)="changeFilters($event)" />
+    @switch (status()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des envois…" />
+      }
+      @case ('failed') {
+        <fold-empty-state
+          tone="alert"
+          title="Les envois n’ont pas pu être lus"
+          [subtitle]="error() ?? ''"
+        >
+          <button foldButton type="button" (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        <app-mail-sends-table [rows]="rows()" [empty]="empty()" (opened)="open($event)" />
+        @if (moreError(); as message) {
+          <fold-callout variant="alert" announce data-more-error>{{ message }}</fold-callout>
+        }
+        @if (nextCursor() !== null) {
+          <div>
+            <button
+              foldButton
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              data-load-more
+              [loading]="loadingMore()"
+              (click)="loadMore()"
+            >
+              Charger plus
+            </button>
+          </div>
+        }
+      }
+    }
+  }
+</fold-page-layout>
