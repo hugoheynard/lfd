@@ -225,20 +225,33 @@ Cinq aujourd'hui (recomptés par `vitruve`) : facture carte, points, accusé,
 avis à l'invité, avis au principal d'un site. Aucun ne lit
 `order.complement_paid` ; S2 dira lesquels doivent le lire.
 
-### S0.9 Le rapprochement quotidien (G4)
+### S0.9 « Vérifier chez le prestataire » — le rapprochement à la main
 
-Un balayage (`ReconcilePaymentsCommand`, cron) relit chez le prestataire,
-**pour chaque commande carte des 30 derniers jours** (premier paiement et
-compléments, par leurs identifiants chez nous) : l'intention (état, montant
-encaissé) et la liste de ses remboursements. Tout écart avec `orders`,
-`order_payment` et `order_refund` — paiement inconnu, remboursement inconnu,
-montant ou statut différent, ligne `created` de plus de 10 min — sonne la
-cloche et s'écrit au journal (`payment.reconciliation_gap`). **Par nos
-identifiants, jamais par une recherche de métadonnée** : l'id d'une commande
-n'existe pas avant son écriture (`@default(cuid())`), et une intention
-créée avant l'écriture mais jamais confirmée ne déplace aucun argent.
-Port : `PaymentGateway.retrieveIntent` existe ; `PaymentRefunder.listRefunds(intent)`
-à ajouter (l'appel existe dans `findRefund`).
+> Hugo, 2026-11-09 : « sans rapprochement pour le moment, on se base
+> uniquement sur notre donnée ». Le rapprochement **automatique** sort de S0
+> et devient un lot à part (§3.9 bis). Ce qui reste dans S0 ne demande rien de
+> plus au prestataire que ce que `findRefund` lui demande déjà.
+
+Un geste staff sur la commande, **« Vérifier chez le prestataire »**
+(ressource de « Relancer ») : relit l'intention du premier paiement et de
+chaque complément (`retrieveIntent`) et leurs remboursements
+(`PaymentRefunder.listRefunds(intent)`, l'appel qui existe dans `findRefund`),
+les compare à `orders`, `order_payment` et `order_refund`, et **affiche
+l'écart** — paiement ou remboursement inconnu chez nous, montant ou statut
+différent — sans rien écrire. Journalisé (`payment.verified`, avec l'écart
+ou « aucun »). C'est l'outil de la Supervision quand une commande « semble
+bizarre », et la seule lecture vers Stripe hors de l'exécuteur.
+
+### S0.9 bis Le rapprochement automatique — lot à part, pas maintenant
+
+Le même port, en balayage quotidien sur toutes les commandes carte des 30
+derniers jours, chaque écart sonnant la cloche. **Reporté** : à bâtir si un
+webhook perdu coûte une fois, ou avant un changement de prestataire. Le port
+doit alors accepter **deux sources** : l'API (Stripe, Lyra) ou le **relevé
+quotidien** (fichier) d'une banque sans API de lecture — sinon il serait écrit
+pour Stripe sans le dire. Ce qu'on perd sans lui, le temps qu'il manque : un
+webhook perdu (API tombée au mauvais moment, Stripe réessaie trois jours
+puis abandonne) n'est vu que si quelqu'un clique « Vérifier ».
 
 ### S0.10 Ce que S0 ne fait pas
 
@@ -371,7 +384,7 @@ fois. À concevoir dans `loyalty`, avec son propre plan.
 | **G1 inexprimable**         | montants > 0 ; `form = amount ⇔ amount_cents` ; une `remainder` par intention ; un projet non terminal par commande ; intention unique dans `order_payment` ; `source = provider ⇔ re_…` ; `settled_elsewhere ⇔ motif + staff` ; transitions par déclencheur ; `DELETE` sous `lfd.purge` seul                                                                                     |
 | **G2 refusé par l'agrégat** | carnet : `Σ succeeded ≤ encaissé` **par intention** et par commande ; `amount` ≤ reste de son intention ; projet : total recomposé = total payé                                                                                                                                                                                                                                   |
 | **G3 l'égalité**            | sur toute commande carte dont les demandes sont `refunded \| settled_elsewhere`, les compléments `paid \| closed`, aucun projet non terminal : encaissé − remboursé = `total_cents` (vivante) ou 0 (annulée). Une demande `stopped` ou un projet `ready` = **non soldée**, signalée, jamais déclarée juste. Vérifiée à la facture carte (pro) et par le balayage quotidien (tous) |
-| **G4 le rapprochement**     | §3.9                                                                                                                                                                                                                                                                                                                                                                              |
+| **G4 le prestataire**       | §3.9 à la main sur une commande ; l'automatique est reporté (§3.9 bis) — jusque-là, **notre donnée fait foi**, et un webhook perdu n'est vu que sur clic                                                                                                                                                                                                                          |
 
 ## 10. Les tests qui prouvent
 
@@ -392,8 +405,24 @@ plan) devient un e2e nommé d'après le symptôme, rouge sans le mécanisme :
   complément rendu ; panne ⇒ `ready` visible ; abandon puis paiement tardif ;
   deux projets ; webhook rejoué / désordonné.
 
-Tous contre le vrai Postgres, prestataire doublé au port ; et **un passage
-manuel en mode test Stripe** (clé de test, carte 4242) avant la production.
+Tous contre le vrai Postgres, prestataire doublé au port.
+
+**Pas de passage en mode test Stripe avant la production** (Hugo,
+2026-11-09 : « on ne pourra pas faire de test Stripe, il faut y aller au
+culot »). Ce que ça remplace, et ce qu'on fait à la place :
+
+- les **adaptateurs** Stripe sont les seules lignes que le double ne traverse
+  pas ; `refund(amount)` et `listRefunds` sont deux appels du SDK, et leurs
+  réponses sont relues par les mêmes traductions que `refundRemainder` et
+  `findRefund` (`stripe-refund-calls.ts`), déjà en production ; leurs specs
+  à transport doublé (`stripe-refund-calls.spec.ts`) couvrent montant,
+  métadonnée et issues ;
+- la **première baisse réelle** en production se fait par l'équipe, sur une
+  commande de l'équipe (quelques euros), **avec « Vérifier chez le
+  prestataire » juste après** : c'est le test Stripe, fait en vrai, borné à
+  une commande ;
+- S0 se déploie **seul** et ne change aucun comportement visible : le premier
+  déploiement n'émet aucun appel Stripe neuf.
 
 ## 11. Irréversible au premier déploiement
 
@@ -407,8 +436,9 @@ par cette reprise, et elle est datée**.
 
 ## 12. L'ordre
 
-S0 seul → déployé → une semaine de rapprochement quotidien sans écart → S1 →
-S2 → S3. C-2b quand `loyalty` aura son plan.
+S0 seul → déployé → quelques jours d'annulations ordinaires, « Vérifier »
+cliqué sur chacune → S1 → première baisse réelle par l'équipe, vérifiée → S2 →
+S3. Le rapprochement automatique (§3.9 bis) et C-2b quand leur tour vient.
 
 ## 13. À décider (Hugo)
 
@@ -418,3 +448,6 @@ S2 → S3. C-2b quand `loyalty` aura son plan.
 2. **Le délai de grâce d'une hausse** non payée : 15 min proposées.
 3. **« Rendu autrement »** : qui a le droit (une ressource `order_refunds:write`
    neuve ?) ; proposé : la même que « Relancer ».
+4. **Le rapprochement automatique** (§3.9 bis) : reporté, d'accord — à
+   quel signal le lancer ? Proposé : au premier webhook perdu constaté, ou
+   avant tout changement de prestataire.
