@@ -61,6 +61,16 @@ export const MAIL_COPY_SOURCE = domain('textes d’un essai d’e-mail', {
   published: 'Textes publiés',
 });
 
+/**
+ * La nature d'une identité d'envoi (`mail_copy.sender_changed`, U5 de
+ * `mail/la-desinscription-et-l-accord.md`) : l'expéditeur des messages de
+ * service, ou celui de la lettre d'information.
+ */
+export const MAIL_SENDER_NATURE = domain('nature d’un expéditeur d’e-mails', {
+  transactional: 'Messages de service',
+  marketing: 'Lettre d’information',
+});
+
 /** Ce qui déclenche une suggestion décidée (`staff_suggestion.*`, 2026-10-18). */
 export const SUGGESTION_TRIGGER = domain('déclencheur d’une suggestion', {
   everywhere: 'Partout',
@@ -99,6 +109,7 @@ export const COMMERCE_VALUES: ValueFamily = {
     SHOP_COPY_LOCALE,
     ALLERGEN_DISPLAY,
     MAIL_COPY_SOURCE,
+    MAIL_SENDER_NATURE,
     SUGGESTION_TRIGGER,
     SUGGESTION_PLACEMENT,
     SUGGESTION_ORDER,

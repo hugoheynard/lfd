@@ -305,6 +305,7 @@ const SENDER_CHANGED_KEYS = [
   'senderName',
   'fromDomain',
   'publicationVersion',
+  'nature',
 ];
 
 /**
@@ -316,10 +317,13 @@ const SENDER_CHANGED_KEYS = [
 const mailSenderChanged: Phrase = (fact) => {
   const name = fact.payload['senderName'];
   const domain = fact.payload['fromDomain'];
+  // Depuis U5, un espace a un expéditeur par nature ; un fait d'avant n'en
+  // porte pas, et il désignait l'expéditeur des messages de service.
+  const nature = fact.payload['nature'] === 'marketing' ? ' de la lettre d’information' : '';
   return byActor(
     fact,
     [
-      text('a changé l’expéditeur de l’espace'),
+      text(`a changé l’expéditeur${nature} de l’espace`),
       ...spaceOf(fact),
       ...(typeof name === 'string' && name.trim() !== '' ? [text(' : '), value(name)] : []),
       ...(typeof domain === 'string' && domain !== ''

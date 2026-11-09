@@ -3,6 +3,7 @@ import { GLOSSARY_C } from './glossary-c';
 import { GLOSSARY_D_H } from './glossary-d-h';
 import { GLOSSARY_I_L } from './glossary-i-l';
 import { GLOSSARY_INVOICES } from './glossary-invoices';
+import { GLOSSARY_MARKETING_CONSENT } from './glossary-marketing-consent';
 import { GLOSSARY_M_O } from './glossary-m-o';
 import { GLOSSARY_ORDER_CANCEL } from './glossary-order-cancel';
 import { GLOSSARY_ORDER_REVISION } from './glossary-order-revision';
@@ -23,6 +24,7 @@ export const SHOP_COPY_GLOSSARY: Readonly<Record<string, string>> = {
   ...GLOSSARY_ORDER_REVISION,
   ...GLOSSARY_ORDERS_SUMMARY,
   ...GLOSSARY_INVOICES,
+  ...GLOSSARY_MARKETING_CONSENT,
   ...GLOSSARY_A_B,
   ...GLOSSARY_C,
   ...GLOSSARY_D_H,
