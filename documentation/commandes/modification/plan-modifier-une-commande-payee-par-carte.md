@@ -477,7 +477,7 @@ non contredit.
 
 > **Décision de Hugo, 2026-11-09** (« donc on partirait sur un historique de
 > transaction ? » → « vas-y, écris le plan de la forme C ») : la forme de
-> Shopify — une commande, un numéro, plusieurs paiements et remboursements,
+> les grandes plateformes de commerce — une commande, un numéro, plusieurs paiements et remboursements,
 > chacun avec son montant. **Remplace la décision du §7** (le remplacement)
 > et les §9–§10. Récapitulatif :
 > [`recap-modifier-une-commande-carte.md`](recap-modifier-une-commande-carte.md).
