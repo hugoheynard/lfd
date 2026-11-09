@@ -532,3 +532,40 @@ l'équipe, vérifiée → S2 → S3. §3.11 et C-2b quand leur tour vient.
 3. **« Rendu autrement »** : la ressource de « Relancer » (proposé).
 4. **Le rapprochement automatique** : au premier webhook perdu constaté, ou
    avant un changement de prestataire (proposé).
+
+## 14. Contredit par `vitruve` (2026-11-09, sur `c1312da40`) — vers la version 3
+
+Cinq des six bloquants précédents sont intégrés ; **trois bloquants neufs**,
+dont un né de mon propre remède :
+
+| #   | Bloquant                                                                                                                                                                                                                            | Remède retenu                                                                                                                                                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Un `re_…` mort relancé « avec échéance » boucle sans borne**, et la reprise relancerait au déploiement des remboursements que l'équipe a peut-être déjà réglés en espèces (contredit Q3 : « cloche + bouton »)                    | `issued → stopped` (cloche, bouton), comme aujourd'hui ; la reprise des `failed` va en `stopped`. Mon remède de `6eef19357` était faux.                                                                                                |
+| 2   | **`lint:prisma-model-ownership` ne tient pas la frontière du §3.0** : il travaille par **bloc** (`orders`, `accounting`, `settlement` sont tous `b2b`), ne lit pas les lectures par relation (`refunds:`), et refuse deux écrivains | une **porte neuve** `lint:settlement-ownership`, armée **avant** le déménagement, qui lit `prisma.<modèle>` **et** les relations, et admet l'écrivain unique d'`accounting` ([[armer-une-porte-avant-de-demenager]])                   |
+| 3   | **`order.paid` publié par `settlement`** partirait sur une commande annulée (aujourd'hui il ne part qu'au franchissement de `markPaid`, qui exclut `cancelled`) ; §3.0 et §3.1 se contredisent sur qui appelle qui                  | le webhook reste à `orders` pour l'ordre des écritures : `markPaid` **d'abord** (`orders`), puis `settlement.recordPaid` ; `order.paid` reste publié par `orders` au franchissement ; `settlement` publie les faits d'argent seulement |
+
+**Sérieux structurants, retenus** : (S8) **séparer le déménagement
+(réversible) de la migration (irréversible)** en deux lots — S0a le module
+`settlement` à schéma constant, S0b la migration ; (S9) **trois ports
+étroits** au lieu d'un — ouvrir un paiement, demander un remboursement, lire
+la position **par lot** — le webhook et les gestes de l'équipe restent
+internes à `settlement` ; (S5) l'invariant réel est « **`orders` d'abord** »,
+le reste de l'ordre (atelier, BL, bon, demande) est celui de l'annulation
+d'aujourd'hui et ne bouge pas ; (S4) `refund_in_flight` : exclure les
+`amount`, garder tout le reste (le remède v2 était inversé) ; (S1) la fenêtre
+ancien code / nouveau schéma au déploiement : défauts compatibles et reprise
+rejouable ; (S2) les lignes `first` des annulées se reprennent `closed` ;
+(S3) une `to_issue` sans échéance est vue par la veille ; (S6) une contrainte
+croisée ou une date de resserrement pour les deux vérités du premier
+paiement ; (S7) les lecteurs par relation (`prisma-order.reader.ts`,
+`prisma-card-invoicing.reader.ts`) et une lecture de position par lot ; (S10)
+« rendu autrement » : statut `succeeded`, pas d'avoir, et le réveil de la
+facture.
+
+**Mineurs à intégrer** : `round := 1`, `attempts := 0` au changement de
+génération ; `no_payment_intent` est un `last_failure` ; `NULLS NOT DISTINCT`
+sur l'index partiel ; `purge-coverage.ts` ; la cause de la `remainder` d'un
+complément tardif ; 20 lecteurs du port de la demande, 13 du carnet.
+
+**État** : version 3 à écrire — S0 découpé en S0a (déménagement + porte) et
+S0b (migration), trois ports, les trois remèdes. Rien n'est bâti.
