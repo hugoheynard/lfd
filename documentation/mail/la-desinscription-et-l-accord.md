@@ -1,6 +1,6 @@
 # La désinscription et l'accord marketing
 
-> 🟦 **Bâti sur `dev`, pas encore déployé** (2026-11-09). Ce document remplace
+> ✅ **En production depuis le 2026-11-09** (déploiement de `d71268047`). Ce document remplace
 > le plan `plan-desinscription-des-e-mails` (écrit le 2026-11-08, contredit
 > par `vitruve` le même jour, bâti du 2026-11-08 au 2026-11-09 : U1
 > `56cc95a15`, U2 `b75170517`, U3 + C1 `5bca60823`, C2-C3-C5 `431ce5162`,

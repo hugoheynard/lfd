@@ -16,7 +16,7 @@
 > Ajout du 2026-11-09 : la nature des e-mails (transactionnel ou marketing),
 > l'accord marketing, la désinscription et l'identité d'envoi par nature ont
 > leur doc d'état, [`la-desinscription-et-l-accord.md`](la-desinscription-et-l-accord.md)
-> (🟦 sur `dev`).
+> (✅ en production depuis le 2026-11-09).
 
 ## Partie 1 — En simple
 
