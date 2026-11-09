@@ -236,6 +236,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'emails/espaces/:space/templates': 'mail_templates:read',
   'emails/espaces/:space/charte': 'mail_templates:read',
   'emails/espaces/:space/expediteur': 'mail_templates:read',
+  // Le suivi des envois et le registre des accords : lire ce qui est parti,
+  // pas écrire un modèle — d'où leur droit propre (le-suivi-des-e-mails.md,
+  // la-desinscription-et-l-accord.md, C4).
+  'emails/envois': 'mail_sends:read',
+  'emails/desinscriptions': 'mail_sends:read',
 
   // **Pied de page** et **Contact** — partis de l'espace E-commerce pour la
   // section Communication le 2026-10-15 (Hugo), chacun sous le droit qu'il y
