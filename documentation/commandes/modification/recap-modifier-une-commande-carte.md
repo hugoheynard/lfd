@@ -103,6 +103,10 @@ première version du plan essayait, et `vitruve` l'a arrêtée le 2026-10-23.
 
 ## Partie 2 — le détail technique
 
+> **Relecture complète du code, 2026-11-09** :
+> [`../reglement/relecture-paiement-et-remboursement.md`](../reglement/relecture-paiement-et-remboursement.md)
+> — à lire avant tout plan.
+
 ### Ce qui existe (vérifié le 2026-11-09)
 
 - **M1, M3, M4 bâtis** pour le compte et le total nul :
