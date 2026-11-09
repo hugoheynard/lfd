@@ -767,3 +767,50 @@ les refus déterministes de `CardRefunds` dans un abonné durable sont
 **absorbés et journalisés**, jamais rejoués ; `default_for` vit dans le
 registre mais la **valeur** `order → lfc-stripe` est posée par
 `appBootstrap`, pas par `platform`.
+
+### 15 ter. Verdict de `vitruve` sur la version 8 (2026-11-09, nuit) — pour la v9
+
+P0 inchangé (plus de bloquant). **P1 : deux bloquants**, tous deux sur le
+canal, et les remèdes retenus pour la v9 :
+
+1. **`outcome` ne couvre pas tout** : `order.refund_recorded` s'écrit pour
+   **chaque** statut (`pending`, `requires_action` compris) et exige
+   `status`, `order.refund_rejected` exige `currency` ; `position` doit être
+   l'état **après** l'écriture. → `onRefundOutcome(subject, outcome)` porte le
+   **rapport entier** du constat (`providerRef`, `amountCents`, `currency`,
+   `status`, `refundId | null`, `reason | null`), un `kind` **`recorded`** pour
+   un constat non terminal, et la `position` **recalculée après l'écriture** ;
+   le canal est donc appelé **après** les lignes, et c'est le verrou du sujet
+   (point 2) qui garantit l'ordre.
+2. **Personne ne prend le verrou du sujet en premier**, et §3.6 / §6.3 se
+   contredisent ; l'exécuteur et « rendu autrement » ne sont raccordés à
+   rien ; la facture carte se sérialise aujourd'hui sur le `FOR UPDATE` de
+   `orders` (`prisma-order-invoicing-lock.ts`). → le canal gagne
+   **`lockSubject(subject)`** (le sujet prend son `FOR UPDATE`, dans la
+   transaction ambiante), que **toute** écriture de `card-payment` sur
+   l'argent d'un sujet appelle **en premier** : webhook, exécuteur
+   (`RefundIssuanceRecorder`), « rendu autrement », `adopt`, le cron ; puis
+   ses lignes ; puis l'écriture ; puis `onRefundOutcome` avec la position
+   recalculée ; **une transaction**. L'ordre sujet → lignes est ainsi le
+   même partout que celui de l'annulation.
+
+**Sérieux retenus** : en P1, **des abonnés du même nom restent** (`orders.reopen-refund-on-reversal`,
+`orders.ring-refund-failed`, l'abonné de `provider_refund_event`) comme
+**relais vers le nouveau constat**, jusqu'à P2 — c'est ce qui ferme la fenêtre,
+pas le vidage (une lettre morte compte, et l'image P0 publie jusqu'à la
+bascule) ; l'événement en mémoire `OrderRefundRejectedEvent` part par
+**`AfterCommit`** ; un refus déterministe absorbé **sonne** (cloche de
+`card-payment`, par `describe`), il ne se contente pas du journal ;
+`requestRemainder` accepte un **sujet** et choisit le dernier paiement
+encaissé ; `journal-tracked` gagne une fonction d'audit pour les services
+qui écrivent par `Journal.append` sous `UnitOfWork` ; la borne de P0 pour les
+vieux impayés est un `claim` par ligne, **compté** avant le déploiement
+(requête SQL sur la production, lue par Hugo) ; `succeeded → canceled` reste
+**illégal** (`reversed` = `succeeded → failed` seulement) ; la clé de cloche
+d'une inversion sans demande est `subject:providerRef:reversed` ;
+`card_payment.attempt_failed` et `issued` sont **aussi** rendus au sujet par
+`onRefundOutcome(kind: attempted | issued)` pour que l'historique de la
+commande les garde.
+
+**Décision pour Hugo, citée** : le contrat `AdminOrderRefund` devient une
+liste dans le même déploiement (pré-release) — à confirmer.
