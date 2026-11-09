@@ -451,3 +451,48 @@ S3. Le rapprochement automatique (§3.9 bis) et C-2b quand leur tour vient.
 4. **Le rapprochement automatique** (§3.9 bis) : reporté, d'accord — à
    quel signal le lancer ? Proposé : au premier webhook perdu constaté, ou
    avant tout changement de prestataire.
+
+## 14. Contredit par `vitruve` (2026-11-09, sur `dfbb78189`) — S0 reste bloqué
+
+Les contradictions antérieures sont levées sauf trois points du §20 de
+l'ancien plan (baisse sur une intention en « tout le reste », `closed → paid`,
+`SET LOCAL` des semis). **Six bloquants neufs sur S0**, chacun avec le remède
+retenu, à intégrer au corps du plan avant une dernière contradiction limitée
+à S0 :
+
+| #   | Bloquant                                                                                                                                                                                                                    | Remède                                                                                                                                                                                                                                                                    |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `charged_cents` posé par `markPaid` seul : une commande **payée après annulation** (`markPaid` exclut `cancelled`) n'a pas d'encaissé, n'est jamais remboursée, et sa reprise viole le plafond                              | l'encaissé s'écrit **au webhook**, quel que soit le statut de la commande (colonne distincte du règlement) ; reprise : toute commande dont le carnet ou `paid_at` dit un encaissement                                                                                     |
+| 2   | la cloche « intention inconnue » sonnerait à **chaque lien de paiement** (sessions Checkout en `mode: payment`)                                                                                                             | l'événement réduit porte la métadonnée `paymentLinkId` ; une intention de lien n'est jamais « inconnue »                                                                                                                                                                  |
+| 3   | la reprise ne range pas l'état lu `failed` (re_… mort, génération pas rouverte) ; priorité `stopped`/`refunded` floue ; le test « état calculé = état lu » faux pour `stopped`                                              | reprise : `failed` ⇒ `to_issue`, `generation + 1`, `re_…` et `issued_at` nuls ; priorité écrite : `refunded` (carnet) > `stopped` > `to_issue` ; le test compare à la **règle écrite**, pas à l'ancien état                                                               |
+| 4   | l'ordre réel **webhook avant enregistreur** : le constat trouve une `to_issue` sans `re_…` et aucune transition ne l'admet ; Stripe rend souvent `succeeded` dès la création ; `nothing_left` d'une `remainder` sans auteur | le constat admet `to_issue → issued \| refunded` (il pose le `re_…` et vérifie la génération par la métadonnée) ; l'enregistreur admet `to_issue → refunded` quand le `re_…` revient `succeeded` ; l'enregistreur écrit `→ refunded` sur `nothing_left` d'une `remainder` |
+| 5   | `blocked` et G3 sur « encaissé − remboursé ≠ total » **toute cause confondue** : un geste commercial au tableau de bord bloque la facture pour toujours                                                                     | l'égalité et `blocked` ne lisent que les remboursements de cause **`revision`** ; les autres causes gardent facture + avoir                                                                                                                                               |
+| 6   | la machine de `order_payment` n'est écrite nulle part (renvoi vers un §3.4 inexistant) ; `closed → paid` manque                                                                                                             | §3.1 reçoit sa machine : `created → pending → paid \| failed \| closed`, `failed → paid`, **`closed → paid`** (webhook tardif, puis `remainder` automatique, cloche)                                                                                                      |
+
+**Bloquants pour S1/S2** : une baisse ne vise jamais une intention qui porte
+une `remainder` (remboursable = 0 pour B1) ; « rendu autrement » écrit **le
+montant de la demande**, pas le reste de l'intention.
+
+**Sérieux à intégrer** : le contrat `AdminOrderRefundState` (`failed`, champ
+`refund` singulier, route `/refund/retry` par commande) **casse** — S0 n'est
+pas sans comportement visible ; **quatre** lecteurs de l'encaissé, pas deux
+(`cancellation-subject.row.ts`, `revisable-order.row.ts` en plus) ;
+`refund_in_flight` vient du carnet et ne connaît pas la forme ; un `re_…`
+mort rouvert sans échéance est un arrêt qui ne dit pas son nom ; `issued →
+stopped` sans auteur ; le constat ne tient pas le bail et `save` est
+conditionné sur `claim_token` (conflit ⇒ 500) ; E1 ne garde que la colonne
+d'état ; `siteless-pickups.seed.ts` hors transaction ; l'inversion sur une
+annulée sans demande retrouvée viole l'index ⇒ rouvrir la `remainder`
+existante ; `awaiting_refund` sans réveil ; `loadByPaymentIntent` doit
+apprendre `order_payment` ; l'exécuteur de S2 n'a ni échéance ni balayage.
+
+**Sur `dfbb78189`** : `retrieveIntent` ne rend pas de montant — le port
+s'élargit pour « Vérifier » ; G3 dit encore « balayage quotidien (tous) » ;
+une ligne `created` orpheline n'a aucun identifiant chez Stripe ; et surtout
+**une veille sur nos seules données** attrape ce que « notre donnée fait foi »
+laisse passer : `issued` de plus de N jours, `pending` épargnée à la clôture,
+projet `awaiting_payment` de plus de 15 min — à ajouter à S0, sans aucun
+appel Stripe.
+
+**État** : le corps du plan (§3, §5, §6, §9, §10) est à réécrire avec ces
+remèdes, puis une contradiction **limitée à S0**. Rien n'est bâti.
