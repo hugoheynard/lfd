@@ -14,6 +14,7 @@ import type {
   StripeConfig,
   WebPushConfig,
 } from "./app-config.js";
+import type { CardAccountEnvNames, CardAccountSecrets } from "./card-accounts.js";
 
 /**
  * Les **lecteurs d'environnement** — la seule autre porte que `AppConfig` vers
@@ -336,6 +337,26 @@ export function optionalStripeConfig(): StripeConfig | null {
     );
   }
   return { secretKey, webhookSecret, publishableKey };
+}
+
+/**
+ * Les trois secrets d'un compte d'encaissement du registre (`card-accounts.ts`),
+ * lus sous les noms que le registre déclare, ou `null` si l'un manque.
+ *
+ * 🔴 **Ne refuse PAS le démarrage**, à la différence d'`optionalStripeConfig`
+ * (plan M2, §3.2 ; « la prod ne tombe jamais ») : un compte ajouté au
+ * registre avant ses secrets n'est simplement pas instancié, et le bloc
+ * `card-payment` le journalise. Pour `lfc-stripe`, les noms sont ceux de
+ * `optionalStripeConfig`, qui garde son refus du « deux sur trois ».
+ */
+export function optionalCardAccountSecrets(env: CardAccountEnvNames): CardAccountSecrets | null {
+  const secretKey = process.env[env.secretKey]?.trim() ?? "";
+  const publishableKey = process.env[env.publishableKey]?.trim() ?? "";
+  const webhookSecret = process.env[env.webhookSecret]?.trim() ?? "";
+  if (secretKey === "" || publishableKey === "" || webhookSecret === "") {
+    return null;
+  }
+  return { secretKey, publishableKey, webhookSecret };
 }
 
 export function required(name: string): string {

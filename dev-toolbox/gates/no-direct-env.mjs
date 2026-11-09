@@ -64,6 +64,7 @@ const ALLOWED_SUFFIXES = [
   "src/platform/config/env-readers.ts",
   "src/platform/config/__tests__/env-readers-media-url.spec.ts",
   "src/platform/config/__tests__/env-readers-r2.spec.ts",
+  "src/platform/config/__tests__/env-readers-card-accounts.spec.ts",
   // Les scripts `prisma/` : des CLI qui tournent HORS du runtime Nest — seeds,
   // provisionnement, clonage. `AppConfig` n'y existe pas, et lui en fabriquer
   // une pour un script jetable serait un coût sans contrepartie.

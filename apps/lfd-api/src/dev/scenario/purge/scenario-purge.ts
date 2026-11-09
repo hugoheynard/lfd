@@ -2,6 +2,7 @@ import type { DevScenarioPurgeCategory } from "@lfd/contracts";
 
 import type { PrismaClient } from "../../../platform/database/client/client.js";
 import type { StorageResetReport } from "../../seeding/storage.seed.js";
+import { purgeCardPayments } from "./card-payment.purge.js";
 import { purgeCommerce } from "./commerce.purge.js";
 import { purgeDelivery } from "./delivery.purge.js";
 import { purgeJournals } from "./journals.purge.js";
@@ -56,6 +57,9 @@ export async function purgeScenario(
   // Le suivi des e-mails compte avec la boîte d'envoi : c'est le même envoi.
   const mails = await prisma.$transaction((tx) => purgeMailRequests(tx, scope), options);
   const commerce = await prisma.$transaction((tx) => purgeCommerce(tx, scope), options);
+  // Les paiements par carte comptent avec leurs commandes ; transaction à
+  // part, parce que leur garde `SET LOCAL` ne doit rien couvrir d'autre.
+  const cardPayments = await prisma.$transaction((tx) => purgeCardPayments(tx, scope), options);
   const resupplies = await prisma.$transaction((tx) => purgeReserveResupplies(tx, scope), options);
   const journals = await prisma.$transaction((tx) => purgeJournals(tx, scope, delivery), options);
   const storage = await purgeStorage(
@@ -64,7 +68,7 @@ export async function purgeScenario(
   );
   return {
     removed: [
-      { category: "orders", rows: commerce.rows + resupplies },
+      { category: "orders", rows: commerce.rows + resupplies + cardPayments },
       { category: "production", rows: production.rows },
       { category: "packing", rows: packing },
       { category: "delivery", rows: delivery.rows },

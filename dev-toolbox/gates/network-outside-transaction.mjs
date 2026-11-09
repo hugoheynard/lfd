@@ -94,6 +94,8 @@ export const ADMITTED = {
     "2026-11-06 — les clés de signature Auth0 se lisent à la vérification du jeton, à l'entrée de la requête, avant tout handler ; jose les garde 24 h",
   [`${SRC}/b2b/payments/infrastructure/stripe-intent-translation.ts`]:
     "2026-11-06 — n'importe Stripe que pour ses classes d'erreur : aucun appel",
+  [`${SRC}/card-payment/infrastructure/stripe/stripe-intent-translation.ts`]:
+    "2026-11-09 — copie du précédent (plan M2, P0) : n'importe Stripe que pour ses classes d'erreur, aucun appel",
   [`${SRC}/dev/seeding/storage.seed.ts`]:
     "2026-11-06 — semis local du bucket de développement, hors de toute requête",
 };

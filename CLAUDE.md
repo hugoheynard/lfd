@@ -172,7 +172,13 @@
 >   bloc `mail`, un fichier qui injecte la porte `Mail` passe à chaque
 >   `send` / `sendAndAwaitReceipt` un littéral qui porte `subjects` — ni
 >   objet étalé, ni variable ; les envoyeurs pas encore migrés sont une dette
->   comptée qui ne peut que décroître. C'est la
+>   comptée qui ne peut que décroître. Et **70** depuis le 2026-11-09 avec
+>   `lint:card-accounts` (plan M2, lot P0.c1) : les comptes d'encaissement par
+>   carte du registre (`CARD_ACCOUNTS`, dans la configuration de l'API) sont
+>   exactement ceux que le `CHECK payment_account_known` de `card_payment.payment`
+>   admet — un compte au registre et absent du CHECK verrait ses paiements
+>   refusés par la base au premier encaissement, un compte admis et absent du
+>   registre laisserait des paiements qu'aucun adaptateur ne relit. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1389,7 +1395,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 69 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 70 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

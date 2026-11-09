@@ -523,6 +523,16 @@
       "holds": "Tout adaptateur qui appelle le réseau pose la garde `assertOutsideTransaction`, ou est inscrit avec sa raison datée ; tout paquet externe importé par l’API (node:* et @lfd/* compris) est classé network ou local dans lint/dependency-network-class.json, et un import non typé d’un paquet network compte comme appel sortant.",
       "since": "2026-11-06",
       "watch": ["apps/lfd-api/src/**"]
+    },
+    {
+      "name": "card-accounts",
+      "script": "dev-toolbox/gates/card-accounts.mjs",
+      "holds": "Les comptes d'encaissement par carte du registre (`platform/config/card-accounts.ts`) sont exactement ceux que le CHECK `payment_account_known` de la dernière migration qui le pose admet.",
+      "since": "2026-11-09",
+      "watch": [
+        "apps/lfd-api/src/platform/config/card-accounts.ts",
+        "apps/lfd-api/prisma/migrations/**"
+      ]
     }
   ]
 }

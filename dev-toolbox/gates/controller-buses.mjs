@@ -97,6 +97,11 @@ const SCOPE = [
   // Déménagé le 2026-11-08 (suivi des e-mails, T1) depuis `platform/mailer/webhook/`.
   "apps/lfd-api/src/mail/deliveries/http/resend-webhook.controller.ts",
   "apps/lfd-api/src/staff/notifications/http/admin-staff-push.controller.ts",
+  // Nés drainés le 2026-11-09 (plan M2, lot P0.c1) : le webhook des cartes est
+  // une commande (`RecordProviderEventCommand`), comme celui de Resend, et le
+  // rattrapage des premiers paiements n'a que son bus.
+  "apps/lfd-api/src/card-payment/http/card-payments-webhook.controller.ts",
+  "apps/lfd-api/src/card-payment/http/replay-first-payments.controller.ts",
 ];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */

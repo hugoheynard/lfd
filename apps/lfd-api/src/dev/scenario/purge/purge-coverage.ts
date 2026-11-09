@@ -184,6 +184,9 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
   },
   { table: "platform.outbox_delivery", purgedIn: "outbox.purge.ts", referencedBy: [] },
   { table: "mail.mail_request", purgedIn: "mail.purge.ts", referencedBy: [] },
+  // Plan M2, §4.1 : aucune clé étrangère vers `public` (le bloc est
+  // agnostique) ; déclarée pour que la couverture voie la table.
+  { table: "card_payment.payment", purgedIn: "card-payment.purge.ts", referencedBy: [] },
   { table: "ops.mail_send", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "growth.activity_events", purgedIn: "journals.purge.ts", referencedBy: [] },
 ];

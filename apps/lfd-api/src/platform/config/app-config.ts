@@ -6,6 +6,7 @@ import type { S3StorageConfig } from "@lfd/storage";
 import type { NetworkCallMode } from "../database/network-call-mode.js";
 import type { PurgeMode } from "../retention/purge-mode.js";
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
+import { CARD_ACCOUNTS, type CardAccountName, type CardAccountSecrets } from "./card-accounts.js";
 import {
   type RoutePlannerEndpoint,
   resolveRoutePlannerEndpoint,
@@ -14,6 +15,7 @@ import {
 import {
   optionalAdminDevBypass,
   optionalAnalyticsConfig,
+  optionalCardAccountSecrets,
   optionalCatalogueSnapshotMemory,
   optionalContainerApplicationId,
   optionalDevImpersonation,
@@ -78,6 +80,7 @@ export class AppConfig {
   private readonly clientBaseUrlValue: string | null;
   private readonly management: Auth0ManagementCredentials | null;
   private readonly stripeValue: StripeConfig | null;
+  private readonly cardAccountSecretsValue: ReadonlyMap<CardAccountName, CardAccountSecrets | null>;
   private readonly analyticsValue: AnalyticsConfig | null;
   private readonly containerApplicationIdValue: string | null;
   private readonly mailerValue: MailerConfig;
@@ -114,6 +117,9 @@ export class AppConfig {
     this.clientBaseUrlValue = optionalString("CLIENT_BASE_URL");
     this.management = optionalManagementCredentials();
     this.stripeValue = optionalStripeConfig();
+    this.cardAccountSecretsValue = new Map(
+      CARD_ACCOUNTS.map((account) => [account.name, optionalCardAccountSecrets(account.env)]),
+    );
     this.analyticsValue = optionalAnalyticsConfig();
     this.containerApplicationIdValue = optionalContainerApplicationId();
     this.mailerValue = optionalMailerConfig();
@@ -467,6 +473,16 @@ export class AppConfig {
    */
   stripeConfig(): StripeConfig | null {
     return this.stripeValue;
+  }
+
+  /**
+   * Les secrets d'un compte d'encaissement par carte du registre
+   * (`card-accounts.ts`, plan M2 §3.2), ou `null` s'ils manquent — alors le
+   * bloc `card-payment` n'instancie pas ce compte et le journalise ; le
+   * démarrage, lui, ne tombe pas.
+   */
+  cardAccountSecrets(account: CardAccountName): CardAccountSecrets | null {
+    return this.cardAccountSecretsValue.get(account) ?? null;
   }
 
   /** `null` ⇒ OPS lira des données de répétition, et l'annoncera. */
