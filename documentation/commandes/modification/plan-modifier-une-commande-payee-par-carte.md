@@ -640,3 +640,16 @@ depuis `total_cents`, les nouvelles valeurs de `OrderRefundCause`.
 **État** : la forme C est retenue ; le §11 est à réécrire avec ces quatre
 mécanismes avant d'être bâti. C-1 (le paiement à plusieurs transactions) en
 porte l'essentiel.
+
+## 13. Décisions de Hugo (2026-11-09)
+
+1. **Une baisse est remboursée tout de suite** (C4 confirmé).
+2. **Une hausse se paie tout de suite** : « si il ajoute le paiement doit
+   être direct ». Le complément se règle dans le geste même de la
+   modification ; si le client quitte sans payer, rien n'est modifié. Pas
+   d'attente de 30 minutes : le projet ne vit que le temps du règlement.
+3. **Pas de modification par carte après l'arrêt du plan** (C1 confirmé).
+   Pour le client, l'heure limite ferme déjà la modification avant l'arrêt ;
+   la règle vaut surtout pour l'équipe.
+4. **Le bon de fidélité** : si la commande modifiée coûte moins que le bon,
+   le client **garde** le reste du bon.
