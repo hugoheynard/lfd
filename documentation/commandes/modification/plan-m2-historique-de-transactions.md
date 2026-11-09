@@ -39,8 +39,8 @@ périodique** vers le prestataire.
 
 ```mermaid
 flowchart LR
-  O["orders<br/>total_cents · charged_cents<br/>stripe_payment_intent_id (le 1er)"]
-  P["order_payment<br/>un complément par ligne<br/>intention unique · montant · état"]
+  O["orders<br/>total_cents · payment_status<br/>stripe_payment_intent_id (compat)"]
+  P["order_payment<br/>le 1er paiement et chaque complément<br/>intention unique · montant · état"]
   R["order_refund_request<br/>UNE par remboursement à faire<br/>id · intention · forme · montant · état"]
   L["order_refund (le carnet)<br/>un re_… par ligne (ou manuel)<br/>intention · demande · cause"]
   O --> P
@@ -49,7 +49,8 @@ flowchart LR
   R -. "son re_…" .-> L
 ```
 
-**Encaissé** d'une commande = `charged_cents + Σ order_payment paid`.
+**Encaissé** d'une commande = `Σ order_payment paid` (le premier paiement est
+une ligne `role = first`, le reste des `complement`).
 **Remboursé** = `Σ order_refund succeeded`, dont **remboursé de révision** =
 ceux de cause `revision`. **L'égalité G3** : encaissé − remboursé de révision
 = `total_cents` sur une commande vivante soldée ; encaissé − remboursé (toute
@@ -68,6 +69,60 @@ par demande), le contrat `AdminOrderRefund` (liste), la route
 `POST admin/orders/:id/refund/retry` → `admin/refund-requests/:id/retry`. Les
 cinq géographies de ce cassage (contrat, lecteur, bandeau, route, e2e) sont
 dans le lot ; pré-release (`CLAUDE.md` §0), Hugo averti ici.
+
+### 3.0 Le module `settlement` — l'argent d'une commande, à un seul endroit
+
+> Hugo, 2026-11-09 : « est-ce qu'au niveau isolation du code on aura un
+> refund module propre avec une API ? » → oui, dans S0.
+
+Aujourd'hui le remboursement vit **dans `b2b/orders`** (agrégats, demandes,
+exécuteur, routes, 18 lecteurs), mêlé à l'annulation ; `b2b/payments` ne
+porte que les ports vers le prestataire, les liens et les mandats. S0 **crée
+le sous-contexte `b2b/payments/settlement`**, qui **possède** `order_payment`,
+`order_refund`, `order_refund_request` (et, en S2, `order_revision_proposal`
+reste aux commandes : c'est une révision, pas de l'argent). Même bloc `b2b` :
+la matrice du `CLAUDE.md` ne change pas ; c'est `lint:prisma-model-ownership`
+qui tient la frontière — ces modèles ne se lisent que depuis `settlement`.
+
+**L'API interne** (port `OrderSettlementDesk`, déclaré et implémenté par
+`settlement`, consommé par `orders` et `accounting`) :
+
+| Geste / lecture                                                                      | Appelé par                                              | Dans la transaction de l'appelant ?           |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------- | --------------------------------------------- |
+| `openFirstPayment(orderId, intent, amount)`                                          | la passation                                            | oui (ligne `created → pending`)               |
+| `recordPaid(intent, amountReceived)` / `recordFailed`                                | le webhook                                              | oui                                           |
+| `openComplement(orderId, amount, revision)` → intention                              | la hausse (S2)                                          | ligne dans la transaction, Stripe hors        |
+| `requestRemainder(orderId, intent, cause)`                                           | l'annulation, l'inversion, l'abandon tardif             | oui, sous le verrou `orders` déjà pris        |
+| `requestAmount(orderId, intent, amount, cause)`                                      | la baisse (S1), le refus de hausse                      | oui                                           |
+| `position(orderId)` → encaissé, remboursé par cause, en vol par forme, par intention | annulation, révision, facture carte                     | lecture, sous le verrou de l'appelant ou sans |
+| `settleElsewhere(requestId, staff, motif)`, `retry(requestId)`, `verify(orderId)`    | les routes staff (déménagées sous `admin/settlement/…`) | —                                             |
+
+**Les faits** que `settlement` publie (durables) : `order.paid`,
+`order.payment_failed` (inchangés, déplacés), `order.complement_paid`,
+`order.refund_succeeded | _failed | _reversed`, `order.fully_refunded`.
+`orders` garde `payment_status` et `stripe_payment_intent_id` sur sa ligne
+(les 24 lecteurs ; `payment_status` est **la vue de la commande** sur son
+règlement, écrite par `orders` sur les faits de `settlement`, comme aujourd'hui
+`markPaid`) — l'encaissé, lui, n'est plus une colonne d'`orders` : c'est la
+ligne `order_payment role = first`, **reprise** pour toute commande qui a une
+intention (montant = `total_cents` si payée/remboursée/portant un carnet ou
+une demande `paid_after_cancellation`, sinon `pending`/`failed` selon
+`payment_status`).
+
+**L'ordre des verrous** ne change pas : ligne `orders` (prise par l'appelant)
+→ tables de `settlement` → bon. Le port est appelé **dans** l'unité de travail
+de l'appelant, comme le fournil appelle le commerce.
+
+**Ce qui déménage** : les trois agrégats et leurs erreurs, l'exécuteur, le
+bail, l'enregistreur, le constat, l'inversion, « Relancer », le balayage, la
+cloche de remboursement, les faits, les routes staff, la vue admin — et les
+18 lecteurs d'`orders` deviennent des appels au port. `cancellation-subject`
+et `revisable-order` ne lisent plus le carnet : ils demandent `position()`.
+La facture carte et le rapprochement des avoirs lisent `position()` et un
+port de lecture des remboursements (`RefundsToCredit` reste à `accounting`
+pour l'écriture de `credit_note_id` / `credited_reason` : la seule écriture
+d'`accounting` dans une table de `settlement`, déclarée au gate comme
+aujourd'hui).
 
 ### 3.1 Les paiements
 
@@ -94,12 +149,11 @@ Déclencheur de transitions (comme §3.4), `(x, x)` admis.
   `markPaid` exclut une commande `cancelled`, qui garderait un encaissé nul
   et ne serait jamais remboursée). L'événement réduit `succeeded` porte
   désormais `amountCents` (`payment_intent.amount_received`) et, s'il y en a
-  une, la métadonnée `paymentLinkId`. `ConfirmOrderPaymentHandler` écrit
-  **d'abord** `orders.charged_cents := amountCents` (ou `order_payment.paid`),
-  conditionné sur `charged_cents IS NULL` et sans condition de statut, puis
-  `markPaid` comme aujourd'hui. **Reprise** : `charged_cents := total_cents`
-  pour toute commande `paid | refunded`, **ou** portant une ligne au carnet,
-  **ou** une demande de cause `paid_after_cancellation`.
+  une, la métadonnée `paymentLinkId`. `settlement.recordPaid` passe la ligne
+  `order_payment` de l'intention (`first` ou `complement`) à `paid` avec
+  `amount_cents := amountCents`, **sans condition sur le statut de la
+  commande** ; puis `orders` fait `markPaid` comme aujourd'hui (qui, lui,
+  refuse une annulée). **Reprise** de la ligne `first` : §3.0.
 - **Intention inconnue** des deux tables **et sans `paymentLinkId`** ⇒
   journal `payment.unmatched` + cloche (bloquant 2 : les liens de société
   passent par `payment_intent.succeeded` aussi). Avec `paymentLinkId` : rien,
@@ -302,6 +356,10 @@ intacte ; les semis de dev adaptés mais pas réécrits.
 
 ## 4. La frontière prestataire
 
+Le module `settlement` (§3.0) est **le seul** à parler au prestataire, par
+ses ports : changer de banque = ses adaptateurs, son contrôleur de webhook,
+et la page de règlement de la boutique.
+
 S0 n'ajoute hors de `payments/infrastructure/` que : `amountCents` et
 `listRefunds` sur `PaymentRefunder`, `amountReceivedCents` sur
 `RetrievedIntent`, `amountCents` / `paymentLinkId` sur l'événement payé,
@@ -455,8 +513,8 @@ diront.
 ## 11. Irréversible au premier déploiement
 
 À figer avant le merge de S0, relu par `lecteur-de-migrations` : la clé de
-`order_refund_request` et sa reprise (§3.2) ; `charged_cents` et sa règle de
-reprise (§3.1) ; `payment_intent_id`, `source`, `request_id` sur
+`order_refund_request` et sa reprise (§3.2) ; la ligne `order_payment role = first` et sa règle de
+reprise (§3.0) ; `payment_intent_id`, `source`, `request_id` sur
 `order_refund` ; les valeurs `remainder | amount`, `revision`, les états des
 demandes, des compléments et des projets ; `credited_reason`. Une ligne
 existante ne se réécrit que par cette reprise, datée.
