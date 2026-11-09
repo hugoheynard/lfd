@@ -86,6 +86,28 @@ figure `production/channels/commerce/`). Matrice du `CLAUDE.md` § 3 : colonne
 `card-payment` à **port uniquement** pour `b2b` ; ligne `card-payment` : ✓
 `staff` (autorisation), ✓ `platform`, ✗ le reste.
 
+### 3.1 bis Plusieurs comptes, plusieurs prestataires : le compte d'encaissement
+
+> Hugo, 2026-11-09 : « comment il sait quel Stripe ou quelle banque si on en
+> a plusieurs avec plusieurs apps ? » → **c'est l'appelant qui le nomme**.
+
+- `card-payment` tient un **registre de comptes d'encaissement** (`AppConfig`,
+  une entrée par compte) : nom (`lfc-stripe` aujourd'hui, `caisse-…` demain),
+  **type** de prestataire (`stripe` ; demain `lyra`…), ses clés, le secret de
+  **son** webhook.
+- `CardPayments.open(subject, amountCents, role, account)` : le bloc métier
+  **nomme le compte**. **Le paiement mémorise son compte** (`payment.account`,
+  colonne posée dès P0, valeur unique `lfc-stripe` pour l'existant) ; relire,
+  annuler, rembourser, vérifier partent sur **ce** compte — un remboursement
+  ne peut pas partir sur la mauvaise banque : il suit le paiement.
+- **Un webhook par compte** : `POST /payments/webhook/:account`, chacun son
+  secret ; le compte est dans l'adresse, l'événement ne peut appartenir qu'à
+  son registre. (`/payments/webhook` reste servi pour `lfc-stripe` tant que
+  Stripe pointe dessus ; bascule d'adresse datée en P2.)
+- Un **adaptateur par type** de prestataire, instancié une fois par compte ;
+  les ports ne changent pas. Ajouter un compte = une entrée de configuration
+  et des secrets ; ajouter une banque = un adaptateur.
+
 ### 3.2 La surface : trois ports, un canal, des faits
 
 Déclarés et implémentés par `card-payment`, dans `card-payment/channels/requests/` :
@@ -229,8 +251,9 @@ constante », et il lit `orders` à trois endroits).
 
 ### 4.2 La table `card_payment.payment` (additive)
 
-`id`, `subject_type`, `subject_id`, `provider_ref` (`@unique`, nul tant que
-`created`), `role`, `amount_cents` (> 0), `state`, `created_at`, `paid_at`.
+`id`, `subject_type`, `subject_id`, **`account`** (§3.1 bis), `provider_ref`
+(`@unique` **par compte** : `(account, provider_ref)`), `role`, `amount_cents`
+(> 0), `state`, `created_at`, `paid_at`.
 Index unique `(subject_type, subject_id) WHERE role = 'first'`. **Reprise** du
 `first` pour toute commande qui a une intention : `amount_cents :=
 total_cents` ; `state` par priorité : `paid` si `payment_status ∈ {paid,
