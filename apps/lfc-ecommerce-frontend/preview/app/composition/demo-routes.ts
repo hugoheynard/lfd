@@ -2,6 +2,7 @@ import type {
   ActivationGate,
   AudienceContactSettingsView,
   FeatureLevelsView,
+  MyMarketingPreferencesView,
   PlacedOrderResponse,
   PublicStorefrontPageView,
   PublishedLegalDocumentView,
@@ -28,6 +29,12 @@ import {
 import { demoMyQuote, demoQuote, readQuoteRequest } from '../demo-data/demo-quote';
 import { demoDay } from '../demo-data/demo-days';
 import type { PreviewWorld } from '../journeys/preview-world';
+
+/** La personne du parcours n'a jamais été sollicitée par la boulangerie. */
+const DEMO_MARKETING_PREFERENCES: MyMarketingPreferencesView = {
+  spaces: [{ space: 'lfc', state: 'not_subscribed', askable: true }],
+  partnersOffered: false,
+};
 
 /** Une demande, telle que le backend de démonstration la lit. */
 export interface DemoRequest {
@@ -191,6 +198,12 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/me\/loyalty$/u,
     serves: 'la fidélité du parcours',
     answer: (_request, _match, world) => ok(world.loyalty),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/me\/marketing$/u,
+    serves: 'jamais inscrit : la case de la commande est montrée',
+    answer: () => ok(DEMO_MARKETING_PREFERENCES),
   },
   {
     method: 'GET',

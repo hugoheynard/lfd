@@ -141,8 +141,8 @@
   text-decoration: none;
 }
 
-/* La place du champ « nouvelles » avant qu'il arrive : un point d'ancrage
-   pour \`@defer (on viewport)\`, qui ne peut pas observer un vide. */
+/* La place du champ « nouvelles » avant qu'il arrive : elle réserve
+   sa hauteur pour que le pied ne saute pas quand \`@defer (on idle)\` le pose. */
 .newsletter-slot {
   min-height: var(--fold-space-4xl);
 }

@@ -25,9 +25,11 @@
           }
         </div>
       }
-      <!-- « Recevoir nos nouvelles » (lot C5), CHARGÉ À LA VUE : le pied est
-           dans le paquet initial, et son budget \`cloudflare\` est serré. -->
-      @defer (on viewport) {
+      <!-- « Recevoir nos nouvelles » (lot C5), CHARGÉ À LOISIR : le pied est
+           dans le paquet initial, et son budget \`cloudflare\` est serré. Pas
+           \`on viewport\` : IntersectionObserver manque au rendu de test
+           (aperçu de la boutique, 2026-11-09). -->
+      @defer (on idle) {
         <app-newsletter-signup />
       } @placeholder {
         <div class="newsletter-slot"></div>
