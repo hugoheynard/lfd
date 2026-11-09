@@ -1,64 +1,66 @@
 <fold-panel-header title="Choisir dans la médiathèque" />
 
-<div class="picker">
-  <input
-    class="sift"
-    type="search"
-    placeholder="Chercher par étiquette"
-    [value]="search()"
-    (input)="search.set($any($event.target).value)"
-    (keydown.enter)="research()"
-    (search)="research()"
-  />
+<fold-panel-body>
+  <div class="picker">
+    <input
+      class="sift"
+      type="search"
+      placeholder="Chercher par étiquette"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+      (keydown.enter)="research()"
+      (search)="research()"
+    />
 
-  @if (loading()) {
-    <p class="state">Lecture de la médiathèque…</p>
-  } @else if (failure(); as message) {
-    <p class="state">{{ message }}</p>
-  } @else if (images().length === 0 && search().trim() !== '') {
-    <!-- Rien ne CORRESPOND — distinct d'un fonds vide, qui demande un dépôt
+    @if (loading()) {
+      <p class="state">Lecture de la médiathèque…</p>
+    } @else if (failure(); as message) {
+      <p class="state">{{ message }}</p>
+    } @else if (images().length === 0 && search().trim() !== '') {
+      <!-- Rien ne CORRESPOND — distinct d'un fonds vide, qui demande un dépôt
          là où celui-ci demande d'élargir. -->
-    <p class="state">Aucune image ne correspond à « {{ search() }} ».</p>
-  } @else if (images().length === 0) {
-    <!-- Fonds VIDE et recherche infructueuse ne se disent pas pareil : le
+      <p class="state">Aucune image ne correspond à « {{ search() }} ».</p>
+    } @else if (images().length === 0) {
+      <!-- Fonds VIDE et recherche infructueuse ne se disent pas pareil : le
          rédacteur ne dépose pas, il faut donc lui nommer qui le fait et où —
          sans quoi le panneau est une impasse muette. -->
-    <p class="state">
-      La médiathèque est vide. Les images y sont déposées et taguées depuis l'écran Médiathèque.
-    </p>
-  } @else {
-    <ul class="grid">
-      @for (image of images(); track image.url) {
-        <li>
-          <button
-            type="button"
-            class="tile"
-            [class.tile-picked]="isPicked(image.url)"
-            [class.tile-already]="isAlready(image.url)"
-            [disabled]="isAlready(image.url)"
-            [attr.aria-pressed]="isPicked(image.url)"
-            (click)="toggle(image.url)"
-          >
-            <img [src]="image.url" [alt]="label(image)" loading="lazy" />
-            <span class="caption">
-              {{ label(image) }}
-              @if (isAlready(image.url)) {
-                <span class="already">déjà porté</span>
-              }
-            </span>
-          </button>
-        </li>
+      <p class="state">
+        La médiathèque est vide. Les images y sont déposées et taguées depuis l'écran Médiathèque.
+      </p>
+    } @else {
+      <ul class="grid">
+        @for (image of images(); track image.url) {
+          <li>
+            <button
+              type="button"
+              class="tile"
+              [class.tile-picked]="isPicked(image.url)"
+              [class.tile-already]="isAlready(image.url)"
+              [disabled]="isAlready(image.url)"
+              [attr.aria-pressed]="isPicked(image.url)"
+              (click)="toggle(image.url)"
+            >
+              <img [src]="image.url" [alt]="label(image)" loading="lazy" />
+              <span class="caption">
+                {{ label(image) }}
+                @if (isAlready(image.url)) {
+                  <span class="already">déjà porté</span>
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+      @if (hasMore()) {
+        <button foldButton emphasis="soft" size="sm" [loading]="loadingMore()" (click)="more()">
+          Charger la suite
+        </button>
       }
-    </ul>
-    @if (hasMore()) {
-      <button foldButton emphasis="soft" size="sm" [loading]="loadingMore()" (click)="more()">
-        Charger la suite
-      </button>
     }
-  }
-</div>
+  </div>
+</fold-panel-body>
 
-<div class="foot">
+<fold-panel-footer>
   <button foldButton emphasis="outline" (click)="dismiss()">Annuler</button>
   <!-- Fermé tant que rien n'est retenu : un « Ajouter » qui n'ajoute rien
        laisse croire que le geste a échoué. -->
@@ -69,4 +71,4 @@
       Ajouter {{ picked().length > 0 ? '(' + picked().length + ')' : '' }}
     }
   </button>
-</div>
+</fold-panel-footer>

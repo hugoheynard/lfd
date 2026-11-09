@@ -3,6 +3,8 @@ import type { FocalPoint, LibraryMediaView, MediaFactsView } from '@lfd/pim-cont
 import {
   FoldButtonComponent,
   type FoldPanelDefaults,
+  FoldPanelBodyComponent,
+  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
 } from 'fold-ng';
@@ -77,7 +79,12 @@ const PAGE_SIZE = 100;
 @Component({
   selector: 'app-library-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldPanelBodyComponent,
+    FoldPanelFooterComponent,
+    FoldButtonComponent,
+  ],
   templateUrl: './library-picker.html',
   styleUrl: './library-picker.scss',
 })

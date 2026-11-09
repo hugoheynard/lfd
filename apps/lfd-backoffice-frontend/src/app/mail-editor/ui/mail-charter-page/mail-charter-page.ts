@@ -259,6 +259,10 @@ export class MailCharterPage implements HasPendingChanges {
   protected pickLogo(): void {
     void this.panels
       .open<LibraryPickerData, readonly PickedMedia[]>(LibraryPicker, {
+        // Un grand dialogue centré (Hugo, 2026-11-09) : la grille d'images
+        // demande de la largeur, et un panneau latéral la tassait.
+        side: 'center',
+        width: 'xl',
         data: { already: [], single: true },
       })
       .closed.then((picked) => {
