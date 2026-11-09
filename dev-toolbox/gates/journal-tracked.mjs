@@ -71,7 +71,7 @@
  *
  * Usage : `pnpm gate journal-tracked` (branché en CI).
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
@@ -202,6 +202,17 @@ const STAFF_DELEGATES = new Map([
  * se trace dans la transaction qui l'écrit.
  */
 const MONEY_ZONES = ["order-waivers", "payments", "loyalty"];
+
+/**
+ * **L'argent carte, à la racine** (2026-11-09, plan M2,
+ * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`
+ * §4.1) : le bloc `card-payment` est de premier niveau, pas sous `src/b2b/` —
+ * `MONEY_ZONES` ne peut donc pas le viser. Armée AVANT que le dossier existe :
+ * sans cette entrée, l'argent carte sortirait de l'audit en silence au
+ * déménagement. Tant que `src/card-payment/` n'existe pas, la zone est vide
+ * (garde `existsSync` dans `ZONES`) au lieu de faire planter la porte.
+ */
+const CARD_PAYMENT_ZONE = join(SRC, "card-payment");
 
 /**
  * Les séquences partagées de `payments` qui journalisent elles-mêmes, et le
@@ -543,6 +554,7 @@ const ZONES = [
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...MONEY_ZONES.map((zone) => ({ root: join(SRC, "b2b", zone), audit: auditMoney })),
+  ...(existsSync(CARD_PAYMENT_ZONE) ? [{ root: CARD_PAYMENT_ZONE, audit: auditMoney }] : []),
   {
     root: join(SRC, "b2b", CATALOG_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),

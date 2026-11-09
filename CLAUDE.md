@@ -407,6 +407,10 @@ src/
 │                   son schéma `mail`, sans métier propre. Tous les blocs
 │                   métier l'atteignent par `mail/channels/` SEULEMENT.
 │                   Cf. mail/plan-service-e-mails.md
+├── card-payment/ ▸ L'ENCAISSEMENT PAR CARTE — encaisse et rembourse pour
+│                   un sujet opaque, sans métier propre. Annoncé le 2026-11-09
+│                   (plan M2, lot P0) : portes armées, dossier pas encore créé.
+│                   Cf. commandes/modification/plan-m2-historique-de-transactions.md
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
@@ -418,21 +422,22 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `platform` |
-| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✓          |
-| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | **port uniquement** | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | **port uniquement** | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | **port uniquement** | ✓          |
-| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✓          |
-| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✓          |
-| **`mail`**         | ✓ (autorisation) | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✓          |
-| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓          |
-| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `card-payment`      | `platform` |
+| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ------------------- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | **port uniquement** | **port uniquement** | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | **port uniquement** | ✗                   | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✗                   | ✓          |
+| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✗                   | ✓          |
+| **`mail`**         | ✓ (autorisation) | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✗                   | ✓          |
+| **`card-payment`** | ✓ (autorisation) | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —                   | ✓          |
+| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✗                   | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
+| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
 
 🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
 `handover` était seul à connaître. Chacun déclare ce dont il a besoin et
@@ -545,6 +550,20 @@ aurait perdu le typage des 32 modèles. `mail` n'importe que `platform` et
 deux sens, par des fichiers distincts — la figure de `handover`. `mail → <bloc
 métier>` reste interdit : le service ne sait pas qui lui écrit. `ops` ne
 l'atteint pas.
+
+🔴 **`card-payment` encaisse et rembourse par carte pour un sujet opaque**
+(2026-11-09, Hugo ;
+[`documentation/commandes/modification/plan-m2-historique-de-transactions.md`](documentation/commandes/modification/plan-m2-historique-de-transactions.md),
+§3.1). Agnostique du contexte : il ne sait pas ce qu'est une commande, seulement
+`(subject_type, subject_id)`. Comme `mail`, il n'a pas de métier propre et les
+blocs métier ne l'atteignent que par son canal (`card-payment/channels/`) —
+aujourd'hui le seul `b2b`, d'où la case `port uniquement`. Comme `production`
+avec `channels/commerce/`, il DÉCLARE `card-payment/channels/subjects/`, que
+chaque bloc métier sujet implémente et qu'`appBootstrap` relie.
+`card-payment` n'importe que `staff` (autorisation) et `platform` ;
+`card-payment → <bloc métier>` reste interdit. **La carte seulement** : ni
+prélèvements SEPA, ni virements, ni liens de paiement. Portes armées le
+2026-11-09, avant que le dossier existe (lot P0.a).
 
 🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce

@@ -93,6 +93,15 @@ const BLOCK_OF = {
   //   de l'éditeur) et la plateforme.
   mail: "mail",
 
+  // ▸ L'ENCAISSEMENT PAR CARTE (2026-11-09,
+  //   `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+  //   §3.1, §4.1). Déclaré AVANT que le dossier existe. Sans métier propre,
+  //   comme `mail` : il encaisse et rembourse pour un sujet opaque. Il
+  //   déclare un canal qu'un autre bloc implémente (`channels/subjects/`),
+  //   comme `production/channels/commerce/`. Le commerce l'atteint par
+  //   `card-payment/channels/` SEULEMENT.
+  "card-payment": "card-payment",
+
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
   //   entre eux. Personne ne l'importe en retour : un contexte qui remonte
@@ -170,6 +179,8 @@ const ALLOWED = {
     "delivery",
     "packing",
     "mail",
+    // Depuis le 2026-11-09 (plan M2, §3.1) : par son canal SEULEMENT.
+    "card-payment",
   ]),
   production: new Set(["staff", "platform", "mail"]),
   // `delivery` depuis le 2026-10-01 (a-la-porte.md, BQ) : le retrait
@@ -194,6 +205,10 @@ const ALLOWED = {
   // Le socle pour l'autorisation de l'éditeur, la plateforme pour le reste ;
   // aucun bloc métier : `mail` ne sait pas qui lui écrit (2026-11-06).
   mail: new Set(["staff", "platform"]),
+  // Le socle (l'autorisation, les cloches) et la plateforme ; aucun bloc
+  // métier : il ne sait pas pour qui il encaisse, il déclare `channels/subjects/`
+  // et `appBootstrap` y branche chaque sujet (2026-11-09, plan M2, §3.1).
+  "card-payment": new Set(["staff", "platform"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
   root: new Set([
@@ -208,6 +223,7 @@ const ALLOWED = {
     "delivery",
     "packing",
     "mail",
+    "card-payment",
   ]),
 };
 
@@ -350,6 +366,12 @@ const PORT_SURFACE = {
   // ⚠️ `mail → <bloc métier>` reste INTERDIT : le service ne sait pas qui lui
   // écrit — sauf `staff`, pour l'autorisation de l'éditeur.
   ...Object.fromEntries(MAIL_CLIENTS.map((block) => [`${block}→mail`, "mail/channels/"])),
+  // Le commerce encaisse et rembourse par carte par les ports que
+  // `card-payment` déclare ET implémente (`channels/requests/`), et implémente
+  // le canal retour qu'il déclare (`channels/subjects/`) — la figure de
+  // `b2b→production` (2026-11-09, plan M2, §3.3). `card-payment → b2b` reste
+  // INTERDIT : il ne sait pas pour qui il encaisse.
+  "b2b→card-payment": "card-payment/channels/",
 };
 
 /**
