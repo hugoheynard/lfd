@@ -930,3 +930,317 @@ dit pas si le bon d'origine se réimpute.
 **État** : le cœur (C-1, C-2, C-3) n'a plus qu'un bloquant (3) et des
 sérieux à écrire ; **le bon (C-2b) concentre deux bloquants** et se traite à
 part, après.
+
+## 18. Le cœur, version à bâtir (2026-11-09) — amende §14 et §16
+
+> Hugo, 2026-11-09 : « oui, d'abord le cœur » puis « je veux un système
+> 10/10 infaillible, aucun angle mort ». **Fait foi** pour C-1, C-2 et C-3,
+> avec §14 et §16.2–§16.5. Le bon de modification (§16.1) sort du cœur :
+> lot **C-2b**, plus tard ; d'ici là une révision sous la part du bon reste
+> refusée (`RevisionBelowVoucherError`), au compte comme par carte.
+
+### 18.1 Les corrections du §17
+
+- **K1 — La facture d'une commande baissée** (§17 bloquant 3).
+  `cardInvoiceVerdict` (`accounting/domain/services/card-invoicing.ts`) et
+  son lecteur (`prisma-card-invoicing.reader.ts`) comptent **à part** les
+  remboursements de cause `revision` : `fully_refunded` ne lit que les
+  autres causes ; deux verdicts neufs, `awaiting_revision_refund` (une
+  demande `revision` en vol — la facture attend) et `blocked` (l'égalité G3
+  ne tient pas — cloche, jamais de facture).
+- **K2 — Une seule « tout le reste » par intention, sans 500** (sérieux 1).
+  L'annulation (P7) **saute** une intention qui a déjà une demande
+  `remainder` ; l'index R1 reste le dernier mot, et sa violation est
+  traduite en refus nommé, jamais en erreur brute.
+- **K3 — La cause du complément rendu** (sérieux 2) : `revision` aussi. Le
+  complément n'a jamais figuré sur une facture (la hausse n'est pas
+  appliquée, ou elle est remplacée) : pas d'avoir, et l'égalité G3 tient
+  (encaissé et rendu s'annulent).
+- **K4 — L'inversion sur une commande vivante** (sérieux 3) : ne rouvre
+  **que** la demande retrouvée par son `re_…` ; un `re_…` sans demande sur
+  une commande vivante sonne la cloche et **n'écrit rien** (jamais de
+  « tout le reste » d'office sur une commande à livrer).
+- **K5 — L'état d'une demande `amount`** (sérieux 4) devient une colonne :
+  `closed_at` + `close_reason` (`refunded` | `stopped`), écrite par
+  l'exécuteur et le constat. Une `amount` **arrêtée** (refus définitif) ne
+  compte plus dans R2 : la « tout le reste » d'une annulation la couvre
+  donc. La prise du bail d'une `remainder` (R3) exige qu'aucune `amount` de
+  la même intention n'ait `closed_at` nul — une condition sur la table des
+  demandes, sans lire le carnet.
+- **K6 — Les erreurs brutes de la base** pendant l'application d'une hausse
+  (sérialisation, délai de verrou) sont des **pannes** (rejouer) ; une
+  violation d'unicité aussi, puis lettre morte et cloche si elle persiste.
+
+### 18.2 Les garanties — « aucun angle mort »
+
+Un système d'argent ne peut pas promettre qu'aucune panne n'arrive (Stripe,
+la banque, le réseau). Il peut promettre qu'**aucun écart ne reste invisible
+et qu'aucun ne se résout en silence**. Quatre étages, du plus fort au plus
+faible :
+
+- **G1 — Inexprimable en base.** CHECK et index tiennent ce qu'aucun code
+  ne doit pouvoir écrire : montants > 0 ; une `remainder` par intention
+  (R1) ; une `amount` porte un montant, une `remainder` n'en porte pas ;
+  un seul projet de hausse vivant par commande ; `order_payment.intent`
+  unique ; un `re_…` sur une seule ligne du carnet.
+- **G2 — Refusé par l'agrégat.** Le carnet refuse `Σ remboursé >
+Σ encaissé` **par intention** et pour la commande ; la révision refuse un
+  total qui ne correspond pas au paiement (H3).
+- **G3 — L'égalité vérifiée en continu.** Pour toute commande carte sans
+  demande ni projet en vol : `Σ encaissé − Σ remboursé = total_cents`
+  (vivante) ou `= 0` (annulée). Contrôlée à chaque facture (K1) **et** par
+  un balayage quotidien ; toute commande qui ne la tient pas sonne la
+  cloche avec son écart.
+- **G4 — Le rapprochement avec Stripe.** Un balayage quotidien relit chez
+  Stripe les intentions et remboursements des commandes touchées les jours
+  précédents et les compare au carnet : un paiement ou un remboursement que
+  nous n'avons pas, ou un montant différent, sonne la cloche. C'est le
+  filet des cas que personne n'a prévus — webhook perdu, geste au tableau
+  de bord Stripe, bug.
+
+### 18.3 Les tests qui prouvent le cœur
+
+Chaque course trouvée par `vitruve` (§8, §10, §12, §15, §17) devient un test
+nommé d'après le symptôme, qui échoue sans le mécanisme :
+
+- deux baisses successives ; une baisse puis une annulation avant que la
+  baisse soit remboursée (montant annoncé, ordre des remboursements) ;
+- une hausse payée puis refusée (heure passée, plan arrêté, prix changé) →
+  complément rendu ; un complément payé après l'abandon du projet ;
+- un webhook rejoué, dans le désordre, ou d'un complément inconnu ;
+- un remboursement `revision` refusé, inversé, ou fait à la main chez
+  Stripe ; deux annulations simultanées ;
+- une commande baissée de 70 % facturée sur le livré, sans avoir ;
+- Stripe injoignable à chaque étape.
+
+E2e contre le vrai Postgres, Stripe doublé au port, et un passage manuel
+en mode test Stripe avant la mise en production.
+
+### 18.4 L'état, sans angle mort (Hugo, 2026-11-09 : « notre système pour gérer l'état »)
+
+**Le principe** : chaque objet d'argent a **un état stocké, une liste fermée
+de transitions**, et la base refuse toute autre. Aucun état ne se **déduit**
+de plusieurs colonnes ou du carnet (c'est ce qui a produit les bloquants 2
+du §12 et 3 du §15 : l'état d'une demande « lu au carnet ») ; aucun état ne
+s'écrit ailleurs que dans **une** méthode de son agrégat.
+
+```mermaid
+stateDiagram-v2
+  state "Paiement (premier ou complément)" as P {
+    [*] --> en_attente
+    en_attente --> encaisse
+    en_attente --> echoue
+    en_attente --> ferme
+    echoue --> encaisse
+  }
+```
+
+```mermaid
+stateDiagram-v2
+  state "Demande de remboursement" as R {
+    [*] --> a_emettre
+    a_emettre --> emise
+    a_emettre --> arretee
+    emise --> rendue
+    emise --> a_emettre
+    emise --> arretee
+    rendue --> a_emettre
+  }
+```
+
+```mermaid
+stateDiagram-v2
+  state "Projet de hausse" as H {
+    [*] --> attend_paiement
+    attend_paiement --> pret
+    attend_paiement --> abandonne
+    pret --> applique
+    pret --> refuse
+    abandonne --> rendu_tard
+  }
+```
+
+- `echoue → encaisse` : la carte réessayée sur la même intention (ce que
+  `PAID_FROM` admet aujourd'hui). `emise → a_emettre` : un remboursement
+  émis a échoué (génération suivante). `rendue → a_emettre` : une
+  inversion (K4). `abandonne → rendu_tard` : un complément payé après
+  l'abandon (H6).
+- **S1 — La colonne d'état** porte une valeur d'enum Postgres ; une
+  **table des transitions admises** (en dur dans une migration) et un
+  déclencheur `BEFORE UPDATE` refusent toute paire hors liste, et tout
+  `DELETE`. Un bug, un script ou une requête à la main ne peut pas écrire
+  une transition interdite.
+- **S2 — Chaque transition** a sa méthode dans l'agrégat (`markRefunded`,
+  `stop`, `reopen`…), qui écrit l'état **et** les colonnes qu'il implique
+  (instant, motif) ; un CHECK lie les deux (ex. `arretee` ⇔ `close_reason`
+  posé).
+- **S3 — Chaque transition s'écrit conditionnée** sur l'état lu
+  (`UPDATE … WHERE state = <attendu>`) : deux acteurs concurrents ne
+  peuvent pas franchir la même transition ; le perdant relit et se tait.
+- **S4 — Les états terminaux** (`rendue`, `arretee`, `applique`, `refuse`,
+  `rendu_tard`, `ferme`) ne sortent que par les transitions listées ;
+  la commande ne se solde qu'avec **tous** ses objets en état terminal (G3).
+- **S5 — Le test exhaustif** : pour chaque machine, un test parcourt
+  **toutes** les paires (état, transition) et vérifie que l'agrégat
+  **et** le déclencheur admettent exactement la liste — une transition
+  ajoutée d'un seul côté échoue.
+
+## 19. L'état, relu dans le code (2026-11-09) — remplace le §18.4
+
+> Le §18.4 décrivait des machines **de mémoire** ; `vitruve` en a trouvé
+> cinq contradictions avec le code (bouton « Relancer », statuts de
+> paiement existants, purge, écritures sans changement d'état, factures de
+> particuliers). Ce qui suit part des valeurs et des méthodes **ouvertes le
+> 2026-11-09** ; il remplace le §18.4 et complète le §18.
+
+### 19.1 Le règlement de la commande — la machine existe déjà
+
+`orders.payment_status` (enum `PaymentStatus` : `not_required`, `pending`,
+`paid`, `failed`, `refunded`) a ses transitions dans le dépôt
+(`prisma-order.repository.ts`) : `pending|failed → paid` (`PAID_FROM`),
+`pending → failed` (`FAILED_FROM`), `pending|failed → failed` avec
+annulation (`UNSETTLED`, abandon et expiration), `paid ↔ refunded`
+(`OrderRefundLedger.settle`). **M2 n'en ajoute aucune** et ne la garde pas
+par déclencheur dans ce chantier : elle est l'état d'un autre plan
+(règlement), et la border ici ferait casser ses chemins sans gain pour M2.
+
+Effet à refuser explicitement : une baisse **jusqu'à 0 €** ferait passer
+le règlement à `refunded` et sortir la commande de la production
+(`PAYMENTS_REFUSED`, `production-plan.ts`). → **Une révision carte ne
+descend jamais à 0 €** : refus nommé (« pour tout retirer, annulez la
+commande »).
+
+### 19.2 Les trois machines neuves (valeurs anglaises en base, libellés français à l'écran)
+
+```mermaid
+stateDiagram-v2
+  state "Complément (order_payment.status)" as P {
+    [*] --> created
+    created --> pending
+    pending --> paid
+    pending --> failed
+    failed --> paid
+    pending --> closed
+    failed --> closed
+    created --> closed
+  }
+```
+
+```mermaid
+stateDiagram-v2
+  state "Demande de remboursement (order_refund_request.state)" as R {
+    [*] --> to_issue
+    to_issue --> issued
+    to_issue --> stopped
+    issued --> refunded
+    issued --> to_issue
+    issued --> stopped
+    stopped --> to_issue
+    refunded --> to_issue
+    stopped --> settled_elsewhere
+  }
+```
+
+```mermaid
+stateDiagram-v2
+  state "Projet de hausse (order_revision_proposal.state)" as H {
+    [*] --> awaiting_payment
+    awaiting_payment --> ready
+    awaiting_payment --> abandoned
+    ready --> applied
+    ready --> refused
+    abandoned --> refunded_late
+  }
+```
+
+- **Complément `created`** : la ligne est écrite **avant** l'appel à Stripe
+  (sans intention), puis `pending` avec l'intention. Une ligne `created`
+  vieille de plus de 10 min est une intention peut-être orpheline : G4 la
+  cherche chez Stripe (§19.4). `failed → paid` : la carte réessayée sur la
+  même intention, comme `PAID_FROM`.
+- **Demande `stopped` n'est PAS terminale** : « Relancer » (le bouton
+  existant, `retry-order-refund.handler.ts`) la remet `to_issue`. Pour en
+  sortir sans Stripe, un geste neuf de l'équipe, **« rendu autrement »**
+  (virement, espèces), motif obligatoire → `settled_elsewhere`, terminal.
+  `issued → to_issue` : génération suivante après un `re_…` mort
+  (`reopenAfterFailure`) ; `refunded → to_issue` : inversion (K4).
+- **Ce qui est terminal** : complément `paid` et `closed` ; demande
+  `refunded` (sauf inversion) et `settled_elsewhere` ; projet `applied`,
+  `refused`, `refunded_late`.
+- **L'issue `nothing_left`** (`charge_already_refunded`) : succès pour une
+  `remainder`, **écart** pour une `amount` → `stopped`, motif
+  `nothing_left`, cloche. Un montant demandé supérieur au reste de
+  l'intention : `stopped`, `declined:amount_too_large`, cloche.
+
+### 19.3 Comment la base tient les machines
+
+- **E1** — Chaque colonne d'état est un enum Postgres. Un déclencheur
+  `BEFORE UPDATE` refuse une paire (ancien, nouveau) **hors** de la liste
+  ci-dessus — **les paires (x, x) sont admises** : prendre le bail, compter
+  un essai, monter le `round`, programmer une reprise, rejouer un webhook
+  n'écrivent pas d'état et doivent passer.
+- **E2** — `DELETE` refusé par un déclencheur **sauf** quand la session pose
+  `SET LOCAL lfd.purge = 'on'` — ce que font la purge du scénario de dev et
+  les semis (`dev/scenario/purge/commerce.purge.ts`,
+  `dev/seeding/siteless-pickups.seed.ts`), et rien d'autre. Un e2e éprouve
+  le refus par un `DELETE` réel (`ctx.reset()` passe par `TRUNCATE`, que le
+  déclencheur de ligne ne voit pas).
+- **E3** — Chaque transition est une méthode de l'agrégat et s'écrit
+  conditionnée (`WHERE state = <attendu>`) ; le perdant d'une course relit.
+- **E4** — CHECK de cohérence : `stopped` ⇔ `last_failure` posé ;
+  `settled_elsewhere` ⇔ motif et fiche staff posés ; `form = 'amount'` ⇔
+  `amount_cents` posé ; complément `pending|paid|failed` ⇔ intention posée.
+- **E5** — Le test exhaustif du §18 (S5) porte sur **ces** listes, agrégat
+  et déclencheur comparés paire par paire.
+
+### 19.4 Les garanties, précisées
+
+- **G2 par intention** : le carnet `order_refund` porte l'intention (R4) ;
+  l'agrégat plafonne le remboursé **de chaque intention** à son encaissé,
+  et la commande à la somme.
+- **G3 — quand elle s'applique** : sur toute commande dont les demandes
+  sont `refunded` ou `settled_elsewhere`, les compléments terminaux, et
+  aucun projet `awaiting_payment`, `ready` ou `abandoned` (ce dernier peut
+  encore recevoir un paiement tardif). Une demande `stopped` rend la
+  commande **non soldée** : G3 la signale, ne la déclare pas juste.
+- **G3 — où** : à la facture carte pour un **pro** ; un **particulier** n'a
+  pas de facture carte (`cardInvoiceVerdict` rend `not_card` pour
+  `clientele = public`) — pour lui, **seul le balayage quotidien** la
+  vérifie. Dans `cardInvoiceVerdict`, `blocked` se décide **avant**
+  `awaiting_handover` et `fully_refunded`.
+- **G4 — sans angle mort** : le balayage relit chez Stripe (1) les
+  intentions et remboursements de **toutes** les commandes carte des 30
+  derniers jours, pas seulement celles touchées, et (2) les intentions
+  créées avec la métadonnée `lfd_order_id` sur la même période (port
+  neuf `PaymentGateway.listRecentIntents`, par l'API de recherche de
+  Stripe) — une intention qu'aucune de nos lignes ne porte sonne la
+  cloche.
+- **R3 et le verrou** : la révision écrit ses demandes `amount` sous le
+  verrou de la ligne `orders`, celui que l'exécuteur prend déjà dans
+  `prepare()` (`issue-order-refund.handler.ts`, carnet chargé sous verrou) :
+  une `amount` ne peut pas naître entre la prise du bail et l'appel.
+
+## 20. Le §19 contredit par `vitruve` (2026-11-09)
+
+Les cinq bloquants du §18.4 sont levés (la purge sur le papier seulement).
+Quatre neufs : il manque `to_issue → refunded` et `stopped → refunded`
+(l'état « rendu » se déduit aujourd'hui aussi sans `re_…`,
+`order-refund-request.ts`) ; **personne n'écrit `issued → refunded`** (le
+constat `record-order-refund.handler.ts` ne charge aucune demande — l'état
+stocké demande de réécrire tout le cycle C4, dont `refundRequestStateOf`) ;
+le CHECK « `stopped` ⇔ `last_failure` » refuse `unavailable()`, « Relancer »
+et `reopenAfterFailure()` ; une baisse peut viser une intention déjà en
+remboursement « tout le reste ». Et dix sérieux (fenêtre du bail hors
+verrou, `abandoned` jamais terminal, `closed → paid`, `SET LOCAL` hors
+transaction dans les semis, K5 contre §19, `settled_elsewhere` hors carnet,
+E1 qui ne garde que la colonne d'état, reprise des lignes existantes,
+métadonnée `lfd_order_id` absente des intentions, lettre morte de H7).
+
+**Constat** : le plan est devenu une pile d'amendements (§9 à §19) écrits
+plus vite qu'ils n'étaient vérifiés ; chaque passage en corrige et en ajoute.
+L'état stocké (§18.4/§19) touche le cœur du remboursement C4, déjà en
+production. **Suite proposée** : un document neuf et unique, écrit après une
+lecture complète du module de remboursement (`b2b/orders` : demande,
+carnet, exécuteur, balayage, constat, inversion, relance, vue admin) et du
+paiement, qui remplace les §9 à §19, puis une seule contradiction de bout en
+bout.
