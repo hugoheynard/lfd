@@ -540,3 +540,55 @@ enums ; `lecteur-de-migrations` ; heure creuse ; cron de reprise 48 h) →
 quelques jours d'annulations ordinaires, « Vérifier » cliqué, la veille
 muette → **S1** → première baisse réelle vérifiée → **S2** → **S3** → **P2**.
 §6.7 et C-2b quand leur tour vient.
+
+## 15. Contredit par `vitruve` (2026-11-09, sur `eaec69258` + `f19b1720c`) — vers la version 5
+
+Les six bloquants de la v3 sont levés dans le modèle ; **cinq neufs** naissent
+du découpage P0/P1 et de la passation. Remèdes retenus :
+
+| #   | Bloquant                                                                                                                                                                                                                      | Remède retenu                                                                                                                                                                                                                                                                                                                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **En P0, le remboursement resté dans `orders` n'a plus de chemin** vers le prestataire (`PaymentRefunder` parti) ni depuis le webhook (`refund.*` arrive dans `card-payment`, qui ne peut pas appeler `b2b`)                  | P0 expose un port **transitoire et daté** `CardProviderRefunds` (= `PaymentRefunder`, retiré en P1) et publie les événements `refund.*` comme fait durable `card_payment.provider_refund_event` que `orders` écoute (son constat d'aujourd'hui, inchangé)                                                                                                        |
+| 2   | **`open` ne peut pas écrire `created` dans la transaction de passation** : l'id de la commande naît à l'insertion, et l'intention est créée **avant** la transaction (`settleOrder` puis `persist`, `cancelIntent` sur échec) | `open` en **deux temps**, l'ordre d'aujourd'hui : `prepare(account, amount)` **hors** transaction → `providerRef`, `clientSecret` ; `attach(subject, prepared)` **dans** la transaction → ligne `pending`. L'état `created` **disparaît** ; une intention orpheline (échec de la transaction) est annulée au mieux, comme aujourd'hui, et n'est jamais confirmée |
+| 3   | **La fenêtre de P0 n'a aucune reprise** : une commande passée par l'ancienne image a une intention sans ligne `payment` ; son webhook ⇒ `unmatched`, **jamais payée**                                                         | le canal gagne `claim(account, providerRef)` → le bloc métier répond « à moi : sujet X, montant Y » ou « pas à moi » ; le webhook sur une référence inconnue **demande** avant de sonner ; la commande de reprise du `first` est **rejouable** et tourne par cron **jusqu'à P2**                                                                                 |
+| 4   | **La reprise de P1 ne transporte pas `credit_note_id`** ⇒ second avoir (document légal)                                                                                                                                       | `refund.id` **conservés** ; `refund_credit (refund_id @unique, credit_note_id @unique, reason)` reprise depuis `order_refund.credit_note_id` ; `RefundReconciler` lit `refund_credit`                                                                                                                                                                            |
+| 5   | **`requestRemainder` devant une `remainder` terminale** (inversion après un `re_…` manuel qui avait soldé) : l'index l'interdit, l'abonné boucle                                                                              | index partiel `WHERE form = 'remainder' AND state IN ('to_issue','issued','stopped')` ; `requestRemainder(…, schedule: 'now' \| 'button')` : rend la non-terminale existante, sinon crée — **`button`** pour l'inversion (Q3), `now` pour l'annulation                                                                                                           |
+
+**Sérieux retenus** : aucun abonné durable ne change de **type** (les
+livraisons en file se perdraient — `outbox-relay.ts`) : `orders` continue de
+publier ses faits `order.*` depuis le canal, les abonnés d'`orders` ne
+bougent pas ; le remboursement d'un **lien** arrive en `refund.*` sur
+l'endpoint des cartes et finit `unmatched` : ce fait est **« hors de mes
+sujets »**, pas une anomalie — `b2b/payments` l'écoute et sonne comme
+aujourd'hui ; le **second secret** entre dans `RUNTIME_KEYS`, `env-readers`,
+`wrangler secret`, et l'**ordre** est : déployer les deux contrôleurs, créer
+l'endpoint chez Stripe, puis restreindre les événements du premier ;
+**armer** aussi `journal-tracked.mjs` (`MONEY_ZONES` gagne `card-payment`),
+`network-outside-transaction.mjs` (chemins), `datasource.prisma`,
+`schema-ops.counter.ts`, `purge-coverage.ts` ; `refund_credit` va dans
+`public` (la comptabilité y est) ; le cron de reprise tourne **jusqu'à P2**,
+**insère l'absent et signale le différent**, n'écrase jamais ; la copie
+initiale est **SQL** dans la migration et la commande TS porte les mêmes
+règles, un test les compare ; le webhook est **une commande** de
+`card-payment` (le contrôleur n'injecte que le bus) dont l'unité de travail
+**contient** l'appel au canal (`UnitOfWork.run` rejoint la transaction) :
+une transaction, un ordre ; le canal gagne `describe(subject)` → libellé et
+lien pour les cloches et le journal ; `CardRefunds.retry(requestId)` ;
+`onPaid` → `applied | refused | already_applied` ; `onRefundSettled` porte
+l'id du `refund` pour que `orders` publie `order.refund_succeeded` ; les 21
+e2e qui envoient `ConfirmOrderPaymentCommand` **passent** par la commande de
+webhook de `card-payment` (`test/card-payments.ts`) — « sans changement »
+était faux ; l'enum `StaffResource.card_payments` entre en **P1**.
+
+**Mineurs** : §6.6 Markdown cassé ; `refund_request.id` reprend un cuid ;
+colonnes `settled_by_staff_id`, `settled_reason` ; un `payment_failed` après
+`paid` est **périmé** (ignoré), pas refusé par le déclencheur ; la veille G3
+par périmètre (commandes des 60 derniers jours).
+
+**Décision de Hugo (2026-11-09)** : « on va sûrement avoir
+lfc-caisse-epargne dans pas longtemps » → le compte d'encaissement (§3.1 bis)
+est confirmé ; le prestataire sera **Lyra / SystemPay** (à vérifier au
+moment venu : remboursement par montant par API, notifications serveur,
+relevé).
+
+**État** : version 5 à écrire. Rien n'est bâti.
