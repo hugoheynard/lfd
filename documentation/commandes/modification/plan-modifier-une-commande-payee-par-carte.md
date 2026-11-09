@@ -653,3 +653,156 @@ porte l'essentiel.
    la règle vaut surtout pour l'équipe.
 4. **Le bon de fidélité** : si la commande modifiée coûte moins que le bon,
    le client **garde** le reste du bon.
+
+## 14. La forme C, version à bâtir (2026-11-09)
+
+> **Fait foi** à la place du §11 : il en garde le principe, y intègre les
+> remèdes du §12 et les décisions du §13. Doc-first ; rien n'est bâti.
+
+### 14.1 En une phrase
+
+Une commande carte garde son numéro et porte **plusieurs paiements et
+remboursements, chacun avec son montant** : une baisse est remboursée tout
+de suite, une hausse se paie tout de suite, et rien d'autre ne change pour
+le reste du système.
+
+### 14.2 Ce qui ne se modifie PAS par carte (choix pour rester simple)
+
+- **Une carte pas encore payée** : « réglez d'abord votre commande, ou
+  annulez-la ». _(Raison : fermer puis recréer l'intention autour d'un
+  rejugement est la course du §12 ; une carte non réglée de particulier
+  expire en 30 min de toute façon.)_
+- **Une hausse décidée par l'équipe** : seul le client peut payer un
+  complément. L'équipe baisse librement ; pour une hausse, elle le dit au
+  client ou annule. _(Raison : les liens de paiement actuels sont des
+  sessions de société, sans commande — §12.)_
+- **Après l'heure limite (client) ou l'arrêt du plan (équipe)** — §13.3,
+  jugé comme M1 (`OrderInscriptionReader`, sous le verrou de la journée).
+- **Une commande sur stock** (`supply = shelf`).
+
+### 14.3 Le paiement à plusieurs transactions (lot C-1, sans règle de modification)
+
+- **P1 — Les paiements.** Le premier reste `orders.stripe_payment_intent_id`
+  (24 lecteurs inchangés). Un complément est une ligne de `order_payment`
+  (id, commande, intention `@unique`, montant, statut, la révision qu'il
+  paie). `orders.charged_cents` fige le montant encaissé du premier à
+  `markPaid`.
+- **P2 — L'encaissé.** `charged_cents + Σ order_payment.succeeded` remplace
+  `total_cents` dans les **deux** lecteurs (`prisma-order-refund.repository.ts`,
+  `prisma-order-refund-request.reader.ts`).
+- **P3 — La demande de remboursement a son identité.** `order_refund_request`
+  quitte la clé `order_id` pour un **id propre**, et porte l'**intention**
+  visée, la **forme** (`remainder` : tout le reste de cette intention — ce
+  que fait l'annulation ; `amount` : ce montant exactement) et le montant.
+  Bail, clé d'idempotence (`lfd-order-refund:<demande>:<génération>:<tour>`),
+  métadonnée Stripe et recherche du `re_…` prennent l'id de la demande ; la
+  recherche compare aussi le montant pour une demande `amount`. Une demande
+  `amount` est **servie** quand **son** `re_…` a réussi ; une `remainder`
+  quand l'intention n'a plus rien à rendre (l'état d'aujourd'hui).
+- **P4 — Le carnet** (`order_refund`) porte l'intention, la demande et la
+  **cause**, lues sur la métadonnée du `re_…` que le constat transmet
+  désormais. Le constat retrouve la commande par le premier paiement **ou**
+  par un complément (aujourd'hui `unmatched` en silence).
+- **P5 — La comptabilité juge sur la cause, jamais sur la date.** Un
+  remboursement de cause `revision` ne fait **jamais** d'avoir ; à
+  l'émission de la facture carte, `Σ encaissé − Σ annoncé des demandes
+revision` (réussies ou en vol) doit valoir `total_cents`.
+- **P6 — L'inversion** d'un remboursement `revision` sur une commande
+  vivante rouvre sa demande (génération suivante) et sonne la cloche ;
+  aujourd'hui elle n'est traitée que sur une annulée.
+- **P7 — L'annulation** écrit une demande `remainder` **par paiement
+  encaissé** ; elle n'est plus bloquée par un remboursement `revision` en
+  vol : l'exécuteur sert la `remainder` d'une intention après les `amount`
+  en cours sur la même intention.
+
+### 14.4 La baisse (lot C-2)
+
+- **B1** — La révision M1 s'applique, dans sa transaction ; la différence
+  devient des demandes `amount`, cause `revision`, en commençant par le
+  **dernier** paiement encaissé (un complément avant le premier), une
+  demande par intention touchée.
+- **B2 — Le bon de fidélité (§13.4)** : si le nouveau total passe sous la
+  part du bon déjà déduite, la part déduite descend au nouveau total et le
+  **reste revient au bon** (le mécanisme du reliquat,
+  `LoyaltyVoucherRedemption.settleRemainder`). ⚠️ **Change M1 pour tous** :
+  aujourd'hui la révision refuse ce cas (`RevisionBelowVoucherError`), au
+  compte compris.
+
+### 14.5 La hausse, payée tout de suite (lot C-3)
+
+- **H1** — Le client valide la modification ; le serveur compose la
+  révision, l'enregistre comme **projet** (révision composée, total visé,
+  révision de base, auteur) et crée l'intention du complément (hors
+  transaction), puis le règlement s'ouvre **sur le même écran** (§13.2).
+  Un seul projet vivant par commande.
+- **H2** — S'il quitte sans payer : le projet meurt au bout de **15 min**
+  (balayage qui ferme l'intention, comme l'expiration des cartes non
+  réglées) ; la commande n'a jamais changé.
+- **H3** — Le paiement réussi : le webhook constate (`order_payment`
+  `succeeded`) et publie `order.complement_paid` ; l'abonné **marque le
+  projet prêt, rien d'autre**. Un **exécuteur à bail** (la figure de
+  l'exécuteur des remboursements) l'applique dans **sa** transaction :
+  rejugement M1 complet sous les verrous, **et le total recomposé doit
+  égaler le total payé**.
+- **H4** — Refus à l'application (heure passée, plan arrêté, stock, prix
+  changé) : dans une seconde transaction, projet `refused` et demande
+  `remainder` sur l'intention du complément ; courriel « votre modification
+  n'a pas pu être appliquée, le complément vous est remboursé ».
+- **H5** — Ni l'accusé de réception, ni l'avis à l'invité, ni l'avis au
+  principal n'écoutent `order.complement_paid` : le courriel est celui de la
+  modification.
+
+### 14.6 Écrans et courriels (lot C-4)
+
+L'historique daté des paiements et remboursements sur la commande, côté
+client et côté équipe ; les courriels « commande modifiée, X € remboursés »,
+« modification non appliquée ».
+
+### 14.7 Irréversible au premier déploiement de C-1
+
+La nouvelle identité de `order_refund_request` (les lignes existantes
+reprennent leur `order_id` comme id, l'intention de la commande, la forme
+`remainder`) ; la reprise de `charged_cents` depuis `total_cents` pour les
+commandes payées ; les valeurs `revision` (cause), `remainder` / `amount`
+(forme), et les états du projet. À figer avant le merge, migration relue
+par `lecteur-de-migrations`.
+
+## 15. Le §14 contredit par `vitruve` (2026-11-09) — trois bloquants
+
+Les quatre bloquants du §12 sont levés ; trois neufs, chacun avec son remède
+proposé (à intégrer au §14 avant de bâtir).
+
+1. **Le reste du bon (B2) ne peut pas « revenir »** : sur une commande carte
+   payée, le reliquat du bon est **déjà émis** au paiement
+   (`settle-voucher-remainders.handler.ts`), et un second reliquat est
+   refusé par construction (`loyalty-voucher-redeeming.ts`). → Rendre la
+   différence par un **bon neuf** du montant (ou un complément au reliquat
+   émis), décision de mécanisme à prendre côté fidélité ; préciser l'unité
+   (TTC pour un particulier, HT pour un pro — `order-revision.ts`). En
+   attendant, B2 sort de C-2 dans un lot à lui ; C-2 garde le refus actuel
+   (`RevisionBelowVoucherError`).
+2. **Plus rien n'empêche deux annulations d'écrire deux remboursements
+   « tout le reste »** sur la même intention, une fois la clé `order_id`
+   quittée (`cancellation-refund-requester.ts` s'y fiait). → Index unique
+   partiel `(order_id, intention)` où forme = `remainder`.
+3. **L'annulation annonce un montant faux après une baisse pas encore
+   remboursée**, et un « tout le reste » parti avant le remboursement de la
+   baisse le rend inutile (`refundPositionOf`, `stripe-refund-calls.ts`). →
+   Le remboursable d'une intention = encaissé − réussi − **annoncé des
+   demandes `amount` non soldées** ; l'exécuteur ne sert la `remainder`
+   d'une intention que quand aucune `amount` n'y est encore à émettre ou en
+   vol ; `order_refund` gagne l'intention, reprise pour l'existant depuis
+   `orders.stripe_payment_intent_id` (tous les remboursements d'aujourd'hui
+   sont sur le premier paiement).
+
+**Sérieux** : l'inversion sur une commande annulée doit retrouver sa demande
+par son `re_…` (`reopen-refund-on-reversal.handler.ts`) ; le complément payé
+après l'abandon du projet doit être remboursé (règle C8 perdue) ; H4 doit
+tracer la frontière refus / panne et faire la comparaison des totaux sous les
+verrous dans `record()` ; P5 doit nommer qui refuse la facture
+(`cardInvoiceVerdict`) et compter une demande refusée comme non rendue ; le
+§14.7 doit chiffrer le passage de `Order.refundRequest` (1:1) à une liste
+(~15 fichiers, 5 e2e) et figer les valeurs de `order_payment` et du projet.
+
+**État** : la forme est stable ; ces remèdes vont au §14, puis C-1 peut se
+bâtir.
