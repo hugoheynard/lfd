@@ -513,3 +513,47 @@ le schéma `card_payment`, la reprise, les valeurs des enums ; relu par
 S2 → S3 → P2 (resserrement de `orders.stripe_payment_intent_id`, retrait des
 anciennes tables). §4.11, §9 et le CLAUDE.md (colonne `card-payment` de la
 matrice, écrite au P0) quand leur tour vient.
+
+## 14. Contredit par `vitruve` (2026-11-09, sur `e1b7f8a75`) — vers la version 4
+
+La machine des demandes tient (B1 levé) ; la **frontière du bloc** est ce qui
+ne tient pas encore. Six bloquants, chacun avec le remède retenu :
+
+| #   | Bloquant                                                                                                                                                                                                       | Remède retenu                                                                                                                                                                                                                                            |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **P0 « à base constante » est impossible** : le carnet et la demande lisent et verrouillent `orders` (plafond, `pi_… → commande`, `payment_status`) ; sans table `payment`, le webhook ne retrouve aucun sujet | **P0 redécoupé** : il crée la table `payment` (migration **additive**, `first` repris), le canal et les ports du **paiement seul** (`open`, `cancel`, `retrieve`, webhook) ; le remboursement **ne déménage qu'en P1**, avec sa reprise                  |
+| 2   | **`accounting` écrit déjà `order_refund`** (`credit_note_id`, FK vers `invoice`) ; la porte refuse deux écrivains **avant** toute dérogation ; une FK entre blocs est interdite                                | le lien remboursement → avoir **sort du carnet** : table `accounting.refund_credit (refund_id, credit_note_id, reason)` ; `card-payment` n'a plus aucun état comptable ; un port de lecture `CardRefundsReader.succeededOf(subject)` sert le rapprocheur |
+| 3   | **Le webhook porte des événements des liens de paiement** (`link_paid`, `link_expired` → `b2b/payments`), que `card-payment` n'a pas le droit de router                                                        | **deux endpoints Stripe**, chacun son secret : `/payments/webhook` (cartes, `card-payment`) et `/payments/links/webhook` (`b2b/payments`) ; `publishableKey` des mandats lu par le port                                                                  |
+| 4   | **Plus personne n'écrirait `orders.stripe_payment_intent_id`** après P1 ; `retrieve` manque à `CardPayments`                                                                                                   | `open` rend `providerRef` ; `CardPayments.retrieve(paymentId)` ; la colonne reste écrite par `orders` jusqu'à P2                                                                                                                                         |
+| 5   | **La reprise classe mal une demande qui attend le bouton** (`re_…` nul, échéance nulle, `last_failure` nul : l'inversion) → `to_issue` sans échéance                                                           | règle (b') : `re_…` nul **et** échéance nulle ⇒ `stopped`                                                                                                                                                                                                |
+| 6   | **La fenêtre de déploiement** : l'ancienne image répond encore 1–2 min après la bascule et écrit l'ancienne table ; une reprise unique au démarrage la rate                                                    | la reprise est un **cron horaire pendant 48 h** après P1 (par id, prend l'état le plus avancé, insère l'absent), P1 déployé à une heure creuse, et l'ancienne table n'est retirée qu'en P2 après contrôle                                                |
+
+**Sérieux retenus** : nature **`null`** pour un `re_…` manuel (reprise : `return`
+seulement quand une demande le porte) et `fully_refunded` sur **toute** nature
+(comme aujourd'hui) ; priorité `paid` > `closed` dans la reprise du `first`
+(une annulée payée est `paid`) ; un seul demandeur du `return` après
+clôture — **le commerce**, sur le fait `settled` + `refused`, idempotent
+(`requestRemainder` rend l'existante) ; la veille « deux vérités » vit
+**dans `orders`** (il lit sa colonne et `positionOf`, qui rend
+`providerRef`) ; le constat d'un remboursement prend le verrou du **sujet
+d'abord** par le canal (`SubjectSettlement.onRefundSettled` → `refunded`) ;
+P0 porte une **migration d'enum** (`StaffResource.card_payments`) et n'est
+donc pas réversible au sens strict — dit ; « Relancer » reste sous
+`b2b_cancel_order:write` jusqu'à ce que la ressource soit accordée ; les
+relations Prisma `Order.refunds`, `Order.refundRequest`, `Invoice.refunds`
+sont **retirées en P1** (plus exprimables), pas en P2 ; la reprise au
+démarrage ne fait jamais échouer le démarrage ; les abonnés
+`reopen-refund-on-reversal` et `ring-refund-failed` déménagent **avec** leurs
+noms de reçu ; `OnRefundWithoutOrder` passe `@DurableHandler`.
+
+**Mineurs** : `already_cancelled` dans `cancel` ; `open`/`cancel` appellent
+le prestataire hors transaction ; `context-boundaries` : `BLOCK_OF`,
+`ALLOWED`, `"b2b→card-payment": "card-payment/channels/"` ; `mail` ne
+déclare aucun canal qu'un autre implémente — la figure est celle de
+`production → commerce`, pas de `mail`.
+
+**État** : version 4 à écrire **après lecture** des deux portes
+(`prisma-model-ownership.mjs`, `context-boundaries`), du workflow de
+déploiement, de `discovered-durable-subscribers.ts`, de
+`prisma-refunds-to-credit.ts` et de `admin-order-refunds.controller.ts`.
+Rien n'est bâti.
