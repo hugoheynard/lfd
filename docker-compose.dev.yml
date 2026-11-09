@@ -29,6 +29,13 @@ services:
     # Même logique que l'API sur 3100 pour éviter le 3000 de SH3PHERD.
     ports:
       - "5433:5432"
+    # Un checkpoint toutes les 30 s (le minimum ; 5 min par défaut). Le
+    # `TRUNCATE` du harnais e2e donne un fichier neuf à chaque table, et
+    # l'ancien n'est effacé qu'au checkpoint suivant : en 5 min, quatre bases
+    # de test en parallèle laissaient des millions de fichiers et épuisaient
+    # les inodes de la VM Docker — « No space left on device » avec 30 Go
+    # libres, puis Postgres qui ne redémarre plus (constaté le 2026-11-09).
+    command: ["postgres", "-c", "checkpoint_timeout=30s"]
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
