@@ -688,3 +688,31 @@ emplacement, l'ordre du secret des liens) — intégrés dans cette version 7 :
 **les abonnés ne bougent plus**, le canal porte `onRefundOutcome`,
 `referencesSince` borné par une ligne-témoin, `adopt` est une commande, le
 registre a deux moitiés, `CardProviders` dans `card-payment`.
+
+### 15 bis. Verdict de `vitruve` sur la version 7 (2026-11-09, soir)
+
+**P0 : plus rien ne bloque.** P1 : deux bloquants, tous deux sur la surface :
+`onRefundOutcome(subject, refundId, outcome, position)` ne porte pas ce
+qu'`orders` doit publier (`stripeRefundId`, `amountCents`, `reason` pour un
+`rejected` qui n'a pas de ligne au carnet) ; et l'inversion n'a pas de geste
+de port (`CardRefunds` ne sait pas passer une demande `refunded → stopped` par
+son `re_…`) ni de propriétaire unique. **À intégrer en v8, sections P1
+seulement** : `onRefundOutcome` porte `{ providerRef, amountCents, reason,
+refundId | null }` ; l'inversion est **à `card-payment`** (le constat, sous
+son verrou, passe `refunded → stopped` et sonne par `describe` ; l'abonné
+d'`orders` ne fait que sa vue et sa cloche de commande) ; `settled_elsewhere`
+appelle `onRefundOutcome(succeeded)` ; `provider_refund_event` et
+`checkout_event` sont **drainés** (étape du déploiement : attendre que la
+boîte d'envoi n'en porte plus, par une route de compte à ajouter) ; en P1
+`referencesSince` rend le règlement **tel que le sujet le voit** et le cron
+ne compare que « en retard », jamais « différent » sur une annulée ; le
+journal gagne `packages/contracts/src/journal-facts/card-payment.ts` et ses
+phrases ; `adopt` est appelé par une **commande** du commerce (la page de
+règlement reste une requête et rend « à adopter ») ; la borne du cron de P0
+couvre aussi les `pending | failed` antérieurs au témoin ; la décision du
+constat est **revérifiée** sous le verrou de `card-payment` ; une seule
+cloche par incident (`card-payment` sonne, `ring-refund-failed` disparaît) ;
+les refus déterministes de `CardRefunds` dans un abonné durable sont
+**absorbés et journalisés**, jamais rejoués ; `default_for` vit dans le
+registre mais la **valeur** `order → lfc-stripe` est posée par
+`appBootstrap`, pas par `platform`.
