@@ -806,3 +806,127 @@ verrous dans `record()` ; P5 doit nommer qui refuse la facture
 
 **État** : la forme est stable ; ces remèdes vont au §14, puis C-1 peut se
 bâtir.
+
+## 16. Amendements au §14 (2026-11-09) — le §15 intégré
+
+> Hugo, 2026-11-09 : « a, un nouveau bon ». Ce paragraphe **amende** le §14 ;
+> les deux ensemble font foi.
+
+### 16.1 Le bon de fidélité — remplace B2 du §14
+
+Ce que dit le code (ouvert le 2026-11-09) : le reste d'un bon est **déjà**
+un bon neuf (un reliquat, `parentVoucherId` = le bon d'origine), émis au
+règlement de la commande (`settle-voucher-remainders.handler.ts`) ; la base
+n'admet **qu'un** reliquat vivant par bon d'origine
+(`loyalty_vouchers_live_remainder_key`, migration
+`20261012800100_la_refusion_du_bon`) ; un bon neuf ne s'émet aujourd'hui que
+par conversion de points (`LoyaltyVoucher.issue`, en paliers).
+
+- **V1** — Quand la révision ferait passer le total sous la part du bon déjà
+  déduite, la part déduite descend au nouveau total (dans l'unité du bon :
+  TTC pour un particulier, HT pour un pro — celle que compare
+  `ensureVoucherCovered`), et la différence devient un **bon de
+  modification** : un bon **indépendant** (`parentVoucherId` nul — il ne
+  peut pas être un second reliquat), du même titulaire, de **valeur libre**
+  (factory neuve `LoyaltyVoucher.credit`, coût en points 0, au ratio du bon
+  d'origine), qui **expire à la date du bon d'origine** (on ne prolonge pas
+  un bon en le modifiant). Émis dans la transaction de la révision, sous le
+  verrou du titulaire.
+- **V2** — Ce bon est relié à la commande qui l'a produit
+  (`loyalty_vouchers.credited_from_order_id`, migration additive) : le
+  journal et l'écran disent d'où il vient.
+- **V3 — L'annulation** d'une commande qui a produit un bon de
+  modification : s'il est encore disponible, il est **annulé** avec elle ;
+  s'il a servi ailleurs, l'annulation est **refusée** comme pour un reliquat
+  engagé (`remainder_engaged`, le refus existant), avec son geste de sortie.
+- **V4** — S'applique **aussi au compte** (M1 le refusait :
+  `RevisionBelowVoucherError`), puisque la règle est la même pour tous.
+- **V5** — Lot à part (**C-2b**), après la baisse : C-2 garde le refus
+  actuel tant que C-2b n'est pas bâti.
+
+### 16.2 Le remboursement — complète P3, P4, P7 du §14
+
+- **R1 — Une seule « tout le reste » par intention** : index unique partiel
+  `order_refund_request (order_id, payment_intent_id) WHERE form =
+'remainder'`.
+- **R2 — Le remboursable d'une intention** = encaissé sur elle − réussi sur
+  elle − annoncé des demandes `amount` **non soldées** sur elle. C'est ce que
+  l'annulation annonce.
+- **R3 — L'ordre** : l'exécuteur ne prend une `remainder` d'une intention
+  que si aucune `amount` de cette intention n'est à émettre ou en vol
+  (condition dans la requête de prise du bail).
+- **R4 — Le carnet** `order_refund` gagne `payment_intent_id` et
+  `request_id` ; reprise des lignes existantes sur
+  `orders.stripe_payment_intent_id` (aucune commande n'a encore de
+  complément), `request_id` nul pour l'existant.
+- **R5 — La métadonnée Stripe** porte la commande (`lfd_order_id`, qui ne
+  peut plus être l'id de la demande), la demande et la génération ; la
+  cause se lit sur la demande retrouvée, pas sur Stripe.
+- **R6 — L'inversion** retrouve sa demande par le `re_…`
+  (`reopen-refund-on-reversal.handler.ts`), commande annulée ou vivante.
+
+### 16.3 La hausse — complète H2 à H4 du §14
+
+- **H6** — Un complément payé **après** l'abandon de son projet : l'abonné
+  écrit une demande `remainder` sur son intention et sonne la cloche.
+- **H7 — Refus ou panne**, tracé : est un **refus** (rembourser) ce que M1
+  lève comme `BusinessError`/`DomainError` (heure passée, inscrite,
+  révisée entre-temps, stock, total différent) ; est une **panne**
+  (rejouer, puis lettre morte et cloche) une `TechnicalError` ou un
+  `ResourceNotFoundError` du mur. Le projet garde le **contenu** saisi et la
+  révision composée ; l'application passe par une variante de
+  `ReviseOrderHandler.record()` qui compare les totaux **sous les verrous**.
+
+### 16.4 La facture — précise P5
+
+- **F1** — `cardInvoiceVerdict` (`issue-card-invoice.handler.ts`) refuse
+  (`blocked`) quand `Σ encaissé − Σ remboursé réussi (revision)` ≠
+  `total_cents` ; une demande `revision` encore en vol fait attendre la
+  facture, une demande refusée (`declined`, `stopped`) la bloque et sonne.
+
+### 16.5 Irréversible et coût — complète le §14.7
+
+`Order.refundRequest` passe de 1:1 à une liste : ~15 fichiers de `src/` et
+5 e2e (compte de `vitruve`, à recompter au bâti), dont la purge du
+scénario. Valeurs à figer : formes `remainder` / `amount`, cause
+`revision`, statuts de `order_payment`, états du projet, et la colonne
+`credited_from_order_id` des bons.
+
+## 17. Le §14+§16 contredit par `vitruve` (2026-11-09)
+
+Les remèdes du §15 sont tous écrits ; trois ne tiennent pas contre le code.
+
+**Bloquants**
+
+1. **Le bon de modification (V1) ne s'insère pas** : un bon sans parent doit
+   coûter des points et valoir des paliers entiers
+   (`loyalty_vouchers_amounts_positive`, `loyalty_vouchers_whole_steps`) ;
+   « expire à la date du bon d'origine » peut tomber avant l'émission
+   (`loyalty_vouchers_expires_after_issue`). → assouplir les deux CHECK pour
+   un bon `credited_from_order_id` (irréversible), et éteindre la
+   différence quand le bon d'origine est échu, comme un reliquat `lapsed`.
+2. **Double rendu du bon** : sur une carte, le reliquat n'est pas émis au
+   règlement mais par un **balayage différé**
+   (`settle-voucher-remainders.handler.ts`), qui lit la part imputée
+   actuelle. → pas de bon de modification tant que le bon d'origine n'est
+   pas soldé (`remainderSettledAt`) : le reliquat à venir absorbe déjà la
+   différence.
+3. **Une commande carte baissée de moitié n'est jamais facturée** :
+   `cardInvoiceVerdict` (`accounting/domain/services/card-invoicing.ts`)
+   conclut `fully_refunded` dès que `Σ remboursé ≥ total`, remboursements de
+   révision compris (`prisma-card-invoicing.reader.ts`). → exclure la cause
+   `revision` de cette somme, ajouter les verdicts « attente » et `blocked`.
+
+**Sérieux** : l'annulation écrirait une seconde « tout le reste » sur un
+complément déjà en remboursement et casserait en 500 sur l'index R1 ; la
+cause d'un complément rendu (H4, H6) n'est pas nommée et décide de l'avoir ;
+l'inversion étendue aux commandes vivantes rembourserait en entier une
+commande à livrer pour un `re_…` sans demande ; l'état « soldée » d'une
+demande `amount` n'est pas une colonne et le sort d'une `amount` refusée
+n'est pas tranché ; annuler le bon de modification demande une transition
+et une méthode de port propres ; une hausse après une baisse sous le bon ne
+dit pas si le bon d'origine se réimpute.
+
+**État** : le cœur (C-1, C-2, C-3) n'a plus qu'un bloquant (3) et des
+sérieux à écrire ; **le bon (C-2b) concentre deux bloquants** et se traite à
+part, après.
