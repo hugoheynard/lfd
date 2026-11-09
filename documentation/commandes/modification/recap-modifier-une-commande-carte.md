@@ -105,7 +105,8 @@ première version du plan essayait, et `vitruve` l'a arrêtée le 2026-10-23.
 
 > **Relecture complète du code, 2026-11-09** :
 > [`../reglement/relecture-paiement-et-remboursement.md`](../reglement/relecture-paiement-et-remboursement.md)
-> — à lire avant tout plan.
+> — à lire avant tout plan. Le plan unique qui en découle :
+> [`plan-m2-historique-de-transactions.md`](plan-m2-historique-de-transactions.md).
 
 ### Ce qui existe (vérifié le 2026-11-09)
 

@@ -235,6 +235,11 @@ remboursement) ; la dérogation d'heure limite restée sur l'ancienne.
 annulation, bon de fidélité, numérotation, courriels), qui se bâtirait en deux
 ou trois lots.
 
+> ⛔ **Les §9 à §20 ci-dessous sont REMPLACÉS** (2026-11-09) par le plan unique
+> [`plan-m2-historique-de-transactions.md`](plan-m2-historique-de-transactions.md),
+> écrit après la relecture complète du code. Ils restent pour l'historique
+> des décisions de Hugo (§7, §13) et des quatre contradictions de `vitruve`.
+
 ## 9. Le plan bâtissable (2026-11-09) — le remplacement, verrouillé
 
 > **Doc-first, 2026-11-09.** Hugo : « vas-y pour M2, fais le plan et
