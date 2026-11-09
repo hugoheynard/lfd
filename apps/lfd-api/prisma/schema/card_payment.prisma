@@ -1,0 +1,109 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// CARD_PAYMENT — l'encaissement par carte, son propre schéma (2026-11-09)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+// lot P0 (§4.1, §4.3). Propriétaire : le bloc `src/card-payment/` — À VENIR :
+// le schéma et sa table sont posés AVANT le premier fichier du bloc, pour que
+// les portes les connaissent. D'ici là, seule la migration écrit ici (la
+// reprise du §4.3).
+//
+// Le bloc est AGNOSTIQUE (§3.1) : il encaisse pour un sujet qu'il ne connaît
+// pas, `(subject_type, subject_id)` opaques. Aucune clé étrangère vers `public`,
+// et aucune ne doit en venir : une commande se référence par identifiant.
+//
+// 🔴 Ce que Prisma ne sait pas écrire vit dans le `migration.sql`
+// (`20261109030000_le_schema_de_l_encaissement_par_carte`) : les CHECK, l'index
+// unique partiel, et les deux déclencheurs. Le lire avant de toucher un modèle.
+
+/// L'état d'un paiement (§3.4). Pas d'état `created` : une intention naît hors
+/// transaction et n'a de ligne qu'une fois rattachée à son sujet.
+/// 🔴 Valeurs écrites en base : elles ne se renomment que par migration.
+enum CardPaymentState {
+  /// Intention rattachée, carte pas encore débitée.
+  pending
+  /// Débitée. Seul état d'où l'on ne revient pas (sauf à soi-même).
+  paid
+  /// Refusée ; la même intention peut encore être payée (`failed → paid`).
+  failed
+  /// Annulée chez nous (abandon, clôture) ; un webhook tardif peut encore la
+  /// dire `paid`, et le sujet demande alors le remboursement.
+  closed
+
+  @@schema("card_payment")
+}
+
+/// Le rôle d'un paiement pour son sujet (§4.3) : le premier, ou un complément
+/// (une hausse, lot S2). 🔴 Valeurs écrites en base.
+enum CardPaymentRole {
+  first
+  complement
+
+  @@schema("card_payment")
+}
+
+/// **Un paiement par carte d'un sujet** (§4.3) — table `card_payment.payment`.
+///
+/// Propriétaire : `src/card-payment/` (à venir). Aucun autre bloc n'y écrit ni
+/// n'y lit : le commerce passe par les ports du canal (§3.3).
+///
+/// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
+/// - `payment_amount_positive` : `amount_cents > 0` ;
+/// - `payment_account_known` : `account IN ('lfc-stripe')` — la liste des
+///   comptes du registre (§3.2) ; un compte neuf est une migration ;
+/// - `payment_first_per_subject_key` : index unique PARTIEL sur
+///   `(subject_type, subject_id) WHERE role = 'first'` — un seul premier
+///   paiement par sujet, autant de compléments qu'il en faut ;
+/// - le déclencheur `payment_guard` (`BEFORE UPDATE`) : les transitions de
+///   `state` hors de la machine du §3.4 sont refusées (`(x, x)` admis), et
+///   `subject_type`, `subject_id`, `account`, `role`, `amount_cents` sont
+///   immuables, comme `provider_ref` une fois posé ;
+/// - le déclencheur `payment_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
+///   `SET LOCAL card_payment.purge = 'on'` dans une transaction (purge).
+model CardPayment {
+  /// ULID posé par le code (`IdGenerator`) ; la reprise en fabrique un en SQL.
+  id          String           @id
+  /// Le type du sujet, opaque pour le bloc (`order` aujourd'hui).
+  subjectType String           @map("subject_type")
+  /// L'identifiant du sujet dans son bloc — jamais une clé étrangère.
+  subjectId   String           @map("subject_id")
+  /// Le compte d'encaissement (§3.2) qui porte l'intention : relire, annuler,
+  /// rembourser lisent le compte SUR LA LIGNE, jamais un défaut.
+  account     String
+  /// La référence chez le prestataire (`pi_…` pour Stripe). Unique PAR
+  /// compte : deux prestataires peuvent émettre la même chaîne.
+  providerRef String?          @map("provider_ref")
+  role        CardPaymentRole
+  /// Le montant demandé, en centimes, strictement positif.
+  amountCents Int              @map("amount_cents")
+  state       CardPaymentState
+  /// Le rattachement de l'intention à son sujet (pour la reprise : la
+  /// passation de la commande).
+  createdAt   DateTime         @map("created_at") @db.Timestamptz(6)
+  /// L'instant où le paiement est devenu `paid` ; `null` sinon.
+  paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
+
+  @@unique([account, providerRef])
+  @@index([subjectType, subjectId])
+  @@map("payment")
+  @@schema("card_payment")
+}
+
+/// **La ligne-témoin d'une reprise** (§4.3) — table `card_payment.takeover`.
+///
+/// Propriétaire : `src/card-payment/` (à venir). Écrite par la migration qui
+/// reprend l'existant (`P0` : les premiers paiements des commandes), elle
+/// date la reprise : la commande `ReplayFirstPayments` ne demande au sujet que
+/// ses références créées depuis `migrated_at − 1 h`. Sans témoin (une base de
+/// test après `ctx.reset()`), cette commande ne fait rien et le dit.
+///
+/// Même déclencheur `BEFORE DELETE` que `payment` : un témoin effacé ferait
+/// rebalayer tout l'existant, ou plus rien.
+model CardPaymentTakeover {
+  /// Le lot de reprise (`P0`, puis `P1`).
+  lot        String   @id
+  migratedAt DateTime @map("migrated_at") @db.Timestamptz(6)
+
+  @@map("takeover")
+  @@schema("card_payment")
+}

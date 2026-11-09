@@ -162,6 +162,10 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailCharter: "mail",
   MailCharterVersion: "mail",
   MailSenderIdentity: "mail",
+  // L'encaissement par carte (plan M2, lot P0, 2026-11-09) : les paiements et
+  // le témoin de leur reprise, posés avant le bloc `src/card-payment/`.
+  CardPayment: "card_payment",
+  CardPaymentTakeover: "card_payment",
   // Le référentiel, depuis B4. Il avait sa propre BASE : ses opérations
   // n'apparaissaient donc nulle part dans ce compteur, et le forfait qu'elles
   // consommaient se lisait sur une autre facture. Elles comptent ici désormais,

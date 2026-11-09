@@ -48,6 +48,7 @@
   "test/buyer-kind-migration.e2e-spec.ts": 8401,
   "test/cache-control.e2e-spec.ts": 6815,
   "test/card-invoices.e2e-spec.ts": 16043,
+  "test/card-payment-schema.e2e-spec.ts": 16136,
   "test/cart-suggestions.e2e-spec.ts": 9979,
   "test/catalog-batch-writes.e2e-spec.ts": 14496,
   "test/catalog-cold-shop-skus.e2e-spec.ts": 8763,
