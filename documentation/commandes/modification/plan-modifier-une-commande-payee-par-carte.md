@@ -4,6 +4,7 @@
 > [`plan-modifier-une-commande.md`](plan-modifier-une-commande.md) : M1 (commit
 > `21aae837c`) refuse une commande payable par carte. Décision de Hugo : un
 > article retiré d'une commande payée par carte est **remboursé au retrait**.
+> Récapitulatif pour décider : [`recap-modifier-une-commande-carte.md`](recap-modifier-une-commande-carte.md) (2026-11-09).
 > Le reste est choisi par l'assistant, avec sa raison. Touche **l'argent** :
 > `vitruve` avant de bâtir.
 
@@ -233,3 +234,236 @@ remboursement) ; la dérogation d'heure limite restée sur l'ancienne.
 **État** : à présenter à Hugo — c'est un chantier de taille (paiement,
 annulation, bon de fidélité, numérotation, courriels), qui se bâtirait en deux
 ou trois lots.
+
+## 9. Le plan bâtissable (2026-11-09) — le remplacement, verrouillé
+
+> **Doc-first, 2026-11-09.** Hugo : « vas-y pour M2, fais le plan et
+> vitruve ». Ce paragraphe reprend la décision du §7 (le remplacement, sous le
+> même numéro) et les pistes du §8, **relues dans le code ce jour-là** ; il
+> remplace les deux comme référence pour bâtir. Rien n'est bâti.
+
+### 9.1 Ce que le code dit aujourd'hui (ouvert le 2026-11-09)
+
+- **Le remboursement ne sait rendre que TOUT le reste d'une intention** :
+  `PaymentRefunder.refundRemainder` n'a pas de montant
+  (`payments/domain/payment-refunder.ts`). C'est la raison du remplacement :
+  une ancienne commande remboursée en entier est exactement ce qu'il sait
+  faire.
+- **Les causes d'une demande de remboursement** sont `cancellation`,
+  `paid_after_cancellation`, `refund_reversed` (enum `OrderRefundCause`,
+  `order-refund.prisma`) ; la demande est **unique par commande** (clé =
+  `order_id`), écrite par `CancellationRefundRequester` sous le verrou de la
+  ligne `orders`.
+- **Le paiement réussi** (`confirm-order-payment.handler.ts`) fait `markPaid`
+  et publie `order.paid` **durable** dans la même unité de travail. Ses
+  abonnés : l'accusé (`send-order-settled-mail`), l'avis à l'invité, le
+  remboursement d'une commande payée après annulation, les points (seulement
+  si la commande est déjà retirée), la facture carte (seulement si elle est
+  déjà retirée).
+- **Une commande carte non payée n'entre pas au fournil** : `planWhere()`
+  exclut `PAYMENTS_AWAITING` (`orders/infrastructure/plan-filter.ts`). Une
+  commande carte **payée**, si : la nouvelle, payée et pas encore basculée,
+  serait produite **en plus** de l'ancienne si la journée s'arrêtait entre
+  les deux (trou non vu au §8).
+- **Le fournil et le colisage recopient le numéro à l'inscription**
+  (`ProductionOrder.reference`, `PackingOrder.reference`) ; ni la livraison ni
+  le retrait n'en gardent une copie. Avant l'inscription, le numéro n'est
+  copié que par les **alertes** (`alerts.prisma`, `order_number` figé), les
+  **demandes clients** (`contact.prisma`, facultatif), les **factures**
+  (nées au retrait seulement) et les courriels déjà partis. Stripe ne le porte
+  pas (métadonnée `companyId` seule).
+- **Le numéro** est `ORD-<rang>` (`order-number.ts`), unique en base ; un
+  ancien format porte deux tirets (`ORD-MV84O2XA-Y9W3`).
+- **L'expiration d'une carte non payée** ne vise que le particulier sans
+  société (`unsettled-shop-order.where.ts`, clientèle `public`) : 30 min, et
+  « la nouvelle passation du même particulier annule l'ancienne non réglée »
+  (`replaceEarlier`, cause `replaced`, déjà écrite en base pour
+  `order.payment_failed`).
+- **Le noyau d'annulation** (`order-cancellation.service.ts`) ne connaît que
+  deux acteurs (staff, client) et publie `OrderCancelledEvent`, dont les
+  abonnés écrivent au client « votre commande est annulée ».
+
+### 9.2 Le principe, en une image
+
+```mermaid
+sequenceDiagram
+  participant C as Client ou équipe
+  participant O as Commerce
+  participant S as Stripe
+  participant B as Bascule (abonné durable)
+  C->>O: modifier ORD-12 (payée par carte)
+  O->>O: nouvelle commande ORD-40, « remplace ORD-12 », en attente
+  O-->>C: page de règlement de ORD-40
+  C->>S: paie le nouveau total
+  S->>O: webhook payé
+  O->>O: markPaid ORD-40 + fait order.paid
+  O->>B: order.paid (ORD-40 remplace ORD-12)
+  B->>O: une transaction : ORD-12 devient ORD-12-R1, annulée, remboursement demandé
+  B->>O: ORD-40 devient ORD-12, entre au plan
+  O-->>C: courriel « votre commande a été modifiée »
+  O->>S: remboursement intégral de l'ancien paiement
+```
+
+### 9.3 Les règles
+
+- **P1 — Quand.** Une commande **carte** (payée, ou intention en attente) se
+  remplace aux mêmes conditions qu'une révision M1 : qui (client jusqu'à
+  l'heure limite, équipe jusqu'à la préparation), quoi (R1–R7 de M1, prix
+  figés des lignes déjà présentes), et **seulement avant l'inscription au
+  plan** (`status = placed`, non inscrite). Après : la demande M4, que
+  l'équipe ne peut appliquer sur une carte qu'en annulant (pas de complément
+  après l'arrêt).
+- **P2 — La nouvelle commande.** Composée par `OrderRevising.compose` (la
+  même recomposition que M1), écrite comme une **commande neuve** par le
+  chemin de passation carte existant (intention, page de règlement), avec :
+  `replaces_order_id` → l'ancienne (migration additive), `replacement_state =
+awaiting_payment` (enum neuf, nul pour toute autre commande), son propre
+  numéro de compteur (provisoire), et **l'auteur de la modification**
+  (`replaced_by_kind` / `_user_id` / `_staff_id`), qui sera celui de la
+  bascule — il n'y a jamais d'acteur « système ».
+- **P3 — Une seule à la fois.** Index unique partiel sur `replaces_order_id`
+  où `replacement_state IN ('awaiting_payment','awaiting_swap')`. Une seconde
+  modification pendant l'attente est refusée (« une modification attend déjà
+  son règlement : réglez-la ou abandonnez-la »), avec un geste
+  « abandonner ».
+- **P4 — Invisible tant qu'elle n'a pas basculé.** `planWhere()`, le dossier
+  du jour, la file du comptoir, les listes client et staff **excluent**
+  `replacement_state IN ('awaiting_payment','awaiting_swap')`. L'ancienne
+  porte, en lecture, « modification en attente de règlement » avec le lien
+  de paiement. _(Raison : lève le trou du 9.1 — une nouvelle payée n'est
+  jamais produite avant d'avoir pris la place de l'ancienne.)_
+- **P5 — Le paiement ne fait que payer.** Le webhook reste tel quel
+  (`markPaid` + `order.paid`). Si la commande payée est un remplacement,
+  `markPaid` la passe aussi à `awaiting_swap` dans la même écriture.
+  _(§8 objection 1 : aucun refus métier dans la transaction du webhook.)_
+- **P6 — La bascule** est un abonné durable de `order.paid`
+  (`orders.swap-replacement.on-paid`), qui ne fait rien pour une commande
+  ordinaire. Dans **une** transaction, verrous dans l'ordre : ligne `orders`
+  de l'ancienne, puis de la nouvelle, puis le bon (P9) :
+  1. rejuger l'ancienne : toujours `placed`, non inscrite, non annulée ;
+  2. l'ancienne prend le numéro d'archive `<N>-R<k>` (k = nombre de
+     remplacements déjà faits + 1), `status = cancelled`, motif
+     `superseded` (valeur ajoutée à la contrainte `cancelled_by_kind`,
+     l'auteur de P2 recopié), et `superseded_by_order_id` ;
+  3. si l'ancienne était payée : demande de remboursement, cause neuve
+     `superseded`, montant = tout le remboursable, par
+     `CancellationRefundRequester` (le même exécuteur) ;
+  4. si l'ancienne était une carte non payée : son intention est fermée
+     **avant** la transaction (`cancelIntent`, hors verrou) ; `already_paid`
+     ⇒ on rejoue la bascule comme pour une payée (le webhook de l'ancienne
+     l'aura marquée payée, la demande de remboursement la couvre) ;
+     `in_progress` / `unavailable` ⇒ l'abonné échoue et la boîte d'envoi le
+     rejoue ;
+  5. la nouvelle prend le numéro `<N>` et `replacement_state = swapped` ;
+  6. faits durables : `order.superseded` (ancienne → nouvelle, auteur), et
+     `CommerceOrderCancelledFact` pour l'ancienne + le fait de passation que
+     la livraison lit pour la nouvelle (les mêmes que M1 publie pour un
+     changement d'acheminement).
+- **P7 — La bascule refusée.** Si 1. échoue (ancienne inscrite entre-temps,
+  annulée par ailleurs) : la nouvelle est annulée et intégralement
+  remboursée (cause `superseded`, même chemin), `replacement_state =
+abandoned`, et le client reçoit « votre modification n'a pas pu être
+  appliquée : votre commande ORD-12 reste telle quelle, le nouveau paiement
+  vous est remboursé ». L'équipe reçoit la cloche.
+- **P8 — L'abandon.** Une nouvelle non payée meurt comme une carte non payée,
+  **quelle que soit la clientèle** : 30 min, ou dès l'inscription de
+  l'ancienne au plan, ou au geste « abandonner » — intention fermée, puis
+  `replacement_state = abandoned`. Rien ne change pour l'ancienne.
+  `replaceEarlier` (le particulier qui repasse commande) **ignore** les
+  remplacements dans les deux sens.
+- **P9 — Le bon de fidélité.** La nouvelle est **calculée** avec le bon de
+  l'ancienne (même déduction), mais ne le **porte** pas avant la bascule ; la
+  bascule le **déplace** (colonne de l'ancienne → nouvelle) sous le verrou du
+  titulaire, sans libération ni restitution. P7 et P8 n'y touchent pas : il
+  n'a jamais quitté l'ancienne. _(§8 objection 3.)_
+- **P10 — Total nul.** Une nouvelle à total nul n'a pas de paiement : la
+  bascule se fait à sa passation, dans la même requête, par le même service.
+  _(§8 objection 5.)_
+- **P11 — Ce que dit chaque abonné de `order.paid`** pour un remplacement :
+  l'accusé de réception et l'avis à l'invité **se taisent** (le courriel est
+  celui de la bascule) ; les points et la facture carte ne changent pas
+  (la commande n'est pas retirée) ; le remboursement « payée après
+  annulation » ne voit rien (la nouvelle n'est pas annulée).
+- **P12 — Les courriels.** Un modèle neuf `customer.order-modified`
+  (« votre commande ORD-12 a été modifiée — l'ancien paiement de X € vous est
+  remboursé, sous 5 à 10 jours ») à la bascule, et
+  `customer.order-modification-failed` pour P7. Aucun « annulée ».
+- **P13 — Ce que voit chacun.** Le client : ORD-12, à jour, avec
+  « modifiée le … ; ancien paiement remboursé ». L'équipe : ORD-12 et, dans
+  son historique, ORD-12-R1 « remplacée ». Le journal porte
+  `order.superseded` avec ses deux identifiants et ses deux numéros.
+- **P14 — L'équipe qui modifie une commande carte** : la nouvelle est créée,
+  et son lien de paiement part au client (`create-payment-link`, existant) ;
+  l'écran le dit. L'équipe ne paie pas à la place du client.
+
+### 9.4 Les lots
+
+| Lot      | Contenu                                                                                                                                                                                        |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **M2.1** | Serveur : migration (colonnes, enum, index partiel, causes `superseded`), création de la nouvelle (P2–P4), `markPaid` → `awaiting_swap` (P5), bascule et refus (P6, P7), total nul (P10), P11. |
+| **M2.2** | L'abandon (P8) et le bon (P9).                                                                                                                                                                 |
+| **M2.3** | Courriels (P12, trois langues), écrans boutique et back-office (P3, P4, P13, P14).                                                                                                             |
+
+### 9.5 Ce qui reste à décider (Hugo)
+
+1. **Le client avance deux fois le montant** : il paie le nouveau total
+   avant d'être remboursé de l'ancien (5 à 10 jours selon sa banque). Un
+   plafond de carte peut refuser. Accepté ?
+2. **Le numéro d'archive** `ORD-12-R1` a deux tirets, comme l'ancien
+   format : à vérifier que rien ne le prend pour un ancien numéro ; et le
+   numéro provisoire de la nouvelle (`ORD-40`) laisse un trou dans la suite.
+   Acceptable ?
+3. **Après l'arrêt du plan**, une commande carte ne se modifie pas (P1) :
+   la demande M4 s'y applique en annulant et en repassant. D'accord ?
+
+## 10. Le §9 contredit par `vitruve` (2026-11-09) — rien n'est bâti
+
+Les cinq bloquants du §8 sont levés sur le papier ; quatre nouveaux, et sept
+sérieux.
+
+**Bloquants**
+
+1. **`ORD-12-R1` est refusé par la base** : `orders_order_number_format`
+   (`20261025120000_le_numero_de_commande_a_son_format`) n'admet que
+   `ORD-<n>` ou l'ancien format ; deux lecteurs analysent le numéro
+   (`inbound-message.ts`, `delivery-note-number.ts`).
+2. **« Non inscrite » ne se lit pas sur `orders.status`** : le fournil prend
+   ses `orderIds` à l'arrêt, le commerce les absorbe plus tard
+   (`on-production-day-closed.handler.ts`). La bascule doit passer, comme M1,
+   par `OrderInscriptionReader` sous le verrou de la journée — de l'ancienne
+   ET de la nouvelle.
+3. **La journée de la nouvelle n'est jamais rejugée** : arrêtée pendant
+   l'attente, elle bascule sans être au plan.
+4. **Une nouvelle de pro abandonnée puis payée tard** repasse à `paid`
+   (`PAID_FROM` admet `failed`), invisible, jamais remboursée.
+
+**Sérieux** : P11 oublie l'avis au principal d'un site
+(`notify-principal-on-order-paid`) ; la passation de la nouvelle publie déjà
+ses faits (journal de croissance, alertes, rattachement à la livraison) ;
+**P4 n'a pas de mécanisme** — une cinquantaine de lecteurs de `orders` ne
+passent par aucun fragment partagé (vitrine, comptoir, listes, livraison,
+croissance, fiche client) ; le motif `superseded` ne peut pas vivre dans
+`cancelled_by_kind`, qui porte l'acteur ; le bon a un index unique
+« vivant » qui impose un ordre, et sa déduction change si le nouveau total
+passe sous sa valeur ; la bascule recopierait le noyau d'annulation ; les
+valeurs d'enum sont à figer avant le merge.
+
+### Ce que ça dit du remplacement
+
+Les bloquants 1 à 4 se lèvent chacun en quelques lignes. Le coût est ailleurs :
+**une seconde ligne `orders` vivante** que cinquante lecteurs, et les faits
+de passation, voient déjà. La rendre invisible demande un fragment partagé et
+une porte qui le tienne partout — c'est la plus grosse part du chantier, et
+la plus facile à rater.
+
+**L'autre forme, à éprouver avant de choisir** : garder **la même ligne** —
+même numéro, même bon, aucune invisibilité à tenir — et ne multiplier que le
+paiement. La modification est un **projet** (lignes révisées + une nouvelle
+intention au nouveau total) ; au paiement, la révision M1 s'applique à la
+commande, et l'**ancienne intention** est remboursée en entier
+(`refundRemainder` le sait, par intention). Le coût passe dans le paiement :
+une table des intentions d'une commande (le webhook retrouve la commande par
+n'importe laquelle), une demande de remboursement par intention et non plus
+par commande, le plafond lu sur l'encaissé et non sur `total_cents`, et une
+cause qui dit au rapprochement comptable de ne pas émettre d'avoir. Non écrit,
+non contredit.
