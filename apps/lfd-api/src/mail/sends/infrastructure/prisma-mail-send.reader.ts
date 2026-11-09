@@ -45,6 +45,7 @@ function conditionsOf(filter: MailSendFilter): Prisma.Sql[] {
   } else if (filter.delivery !== null) {
     where.push(Prisma.sql`r."delivery" = ${filter.delivery}`);
   }
+  if (filter.refusal !== null) where.push(Prisma.sql`r."refusal_code" = ${filter.refusal}`);
   if (filter.from !== null) where.push(Prisma.sql`r."requested_at" >= ${filter.from}`);
   if (filter.to !== null) where.push(Prisma.sql`r."requested_at" < ${filter.to}`);
   if (filter.onlyTemplates !== null) where.push(inTemplates(filter.onlyTemplates));

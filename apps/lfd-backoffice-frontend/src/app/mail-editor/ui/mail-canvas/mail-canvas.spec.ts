@@ -158,6 +158,22 @@ describe('MailCanvas — l’e-mail lui-même', () => {
     element.remove();
   });
 
+  it('montre le pied de désinscription d’un e-mail marketing sous l’e-mail, verrouillé (U4)', () => {
+    const { fixture, element } = render();
+    expect(element.querySelector('[data-unsubscribe-footer]')).toBeNull();
+    fixture.componentRef.setInput('unsubscribeFooter', {
+      before: 'Pour ne plus recevoir nos offres, ',
+      label: 'se désinscrire',
+      after: '.',
+    });
+    fixture.detectChanges();
+    const footer = element.querySelector('[data-mail] [data-unsubscribe-footer]');
+    expect(footer?.textContent).toContain('se désinscrire');
+    expect(footer?.closest('li[data-block]')).toBeNull();
+    expect(footer?.querySelector('[contenteditable], [data-remove], [data-handle]')).toBeNull();
+    element.remove();
+  });
+
   it('montre l’objet, écrit sur place, dans la colonne de gauche', () => {
     const { element } = render();
     const subject = element.querySelector('[data-left] [data-phrase="subject"]');

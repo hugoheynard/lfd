@@ -1,0 +1,25 @@
+<fold-data-table
+  caption="Désinscriptions et accords, les plus récents d’abord"
+  narrowLayout="cards"
+  hover
+  clickable
+  [columns]="columns"
+  [rows]="rows()"
+  [rowKey]="rowKey"
+  [empty]="empty()"
+  (rowClick)="opened.emit($event)"
+>
+  <ng-template foldCell="status" let-row>
+    <fold-badge
+      radius="square"
+      [attr.data-status]="row.status"
+      [variant]="badgeOf(row).tone"
+      [content]="badgeOf(row).label"
+    />
+  </ng-template>
+  <ng-template foldCell="space" let-row>{{ spaceOf(row) }}</ng-template>
+  <ng-template foldCell="recipient" let-row>{{ recipientOf(row) }}</ng-template>
+  <ng-template foldCell="origin" let-row>{{ originOf(row) }}</ng-template>
+  <ng-template foldCell="place" let-row>{{ whereOf(row) }}</ng-template>
+  <ng-template foldCell="lastAt" let-row>{{ whenOf(row) }}</ng-template>
+</fold-data-table>

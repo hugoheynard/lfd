@@ -32,6 +32,7 @@ import {
   type MailDocument,
   type MailDocumentViolation,
   type MailEditorResources,
+  type MailEditorUnsubscribeFooter,
   type MailEditorFrame,
   type MailEditorPhrasePlace,
   type MailLocale,
@@ -114,6 +115,7 @@ import { type CellBlockStep, MailColumnsCells } from '../mail-columns-cells/mail
 import { MailColumnGuides } from '../mail-column-guides/mail-column-guides';
 import { MailInsertBar } from '../mail-insert-bar/mail-insert-bar';
 import { MailResourcesPanel } from '../mail-resources-panel/mail-resources-panel';
+import { MailUnsubscribeFooter } from '../mail-unsubscribe-footer/mail-unsubscribe-footer';
 
 let nextBlockListId = 0;
 
@@ -172,6 +174,7 @@ interface Removal {
     MailColumnsCells,
     MailInsertBar,
     MailResourcesPanel,
+    MailUnsubscribeFooter,
   ],
   templateUrl: './mail-canvas.html',
   styleUrl: './mail-canvas.scss',
@@ -190,6 +193,11 @@ export class MailCanvas {
   readonly canWrite = input(false);
   /** Les ressources de l'e-mail (`MailEditorView.resources`, § 24). */
   readonly resources = input<MailEditorResources>(EMPTY_MAIL_RESOURCES);
+  /**
+   * Le pied de désinscription d'un e-mail marketing (U4), dans la langue de
+   * l'écran ; `null` pour un transactionnel. Montré sous l'e-mail, verrouillé.
+   */
+  readonly unsubscribeFooter = input<MailEditorUnsubscribeFooter | null>(null);
   /** Fabrique l'identifiant d'un bloc neuf ; remplaçable en test. */
   readonly newId = input<() => string>(() => crypto.randomUUID());
   readonly documentChange = output<MailDocument>();

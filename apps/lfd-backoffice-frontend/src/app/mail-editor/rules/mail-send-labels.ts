@@ -1,6 +1,7 @@
 import type {
   MailSendDelivery,
   MailSendListItemView,
+  MailSendRefusalCode,
   MailSendScope,
   MailSendSpace,
   MailSendState,
@@ -46,6 +47,15 @@ export const MAIL_SEND_STEP_LABELS: Readonly<Record<MailSendStepKind, string>> =
   bounced: 'Rebondi',
 };
 
+/**
+ * **La raison fermée d'un refus** (plan `plan-desinscription-des-e-mails.md`,
+ * U4) : un e-mail marketing qui n'est pas parti, dit en toutes lettres.
+ */
+export const MAIL_SEND_REFUSAL_LABELS: Readonly<Record<MailSendRefusalCode, string>> = {
+  unsubscribed: 'Non envoyé : désinscrit',
+  no_consent: 'Non envoyé : sans consentement',
+};
+
 export const MAIL_SEND_SCOPE_LABELS: Readonly<Record<MailSendScope, string>> = {
   regular: 'Envois',
   probes: 'Sondes',
@@ -84,11 +94,19 @@ export interface MailSendBadge {
  * **La pastille d'un envoi** : l'état de la demande, puis le retour du
  * fournisseur s'il y en a un (« Accepté par Resend · Rebondi »). Le ton est
  * celui du pire des deux — un échec de notre côté l'emporte, sinon le retour.
- * Le texte dit tout : la couleur ne fait que le redoubler (RGAA 3.1).
+ * Le texte dit tout : la couleur ne fait que le redoubler (RGAA 3.1). Un
+ * refus d'e-mail marketing dit sa raison (« Non envoyé : désinscrit »).
  */
 export function mailSendBadge(
-  send: Pick<MailSendListItemView, 'state' | 'delivery'>,
+  send: Pick<MailSendListItemView, 'state' | 'delivery'> & {
+    readonly refusalCode?: MailSendRefusalCode | null | undefined;
+  },
 ): MailSendBadge {
+  // Un refus pour préférence marketing (U4) : la raison dit tout, et c'est
+  // le comportement voulu — un avertissement, pas une alerte.
+  if (send.state === 'refused' && send.refusalCode != null) {
+    return { label: MAIL_SEND_REFUSAL_LABELS[send.refusalCode], tone: 'warning' };
+  }
   const state = MAIL_SEND_STATE_LABELS[send.state];
   if (send.delivery === null) {
     return { label: state, tone: STATE_TONES[send.state] };
@@ -110,6 +128,8 @@ export interface MailSendFilters {
   readonly template: string | null;
   readonly state: MailSendState | null;
   readonly delivery: MailSendDelivery | null;
+  /** La raison fermée d'un refus (U4). */
+  readonly refusal: MailSendRefusalCode | null;
   /** Jour de début, `AAAA-MM-JJ`, compris. */
   readonly from: string | null;
   /** Jour de fin, `AAAA-MM-JJ`, compris. */
@@ -122,6 +142,7 @@ export const NO_MAIL_SEND_FILTERS: MailSendFilters = {
   template: null,
   state: null,
   delivery: null,
+  refusal: null,
   from: null,
   to: null,
   scope: 'regular',
@@ -153,6 +174,7 @@ export function mailSendQuery(
   if (filters.template !== null) params['template'] = filters.template;
   if (filters.state !== null) params['state'] = filters.state;
   if (filters.delivery !== null) params['delivery'] = filters.delivery;
+  if (filters.refusal !== null) params['refusal'] = filters.refusal;
   const from = filters.from === null ? null : localMidnight(filters.from, 0);
   const to = filters.to === null ? null : localMidnight(filters.to, 1);
   if (from !== null) params['from'] = from;

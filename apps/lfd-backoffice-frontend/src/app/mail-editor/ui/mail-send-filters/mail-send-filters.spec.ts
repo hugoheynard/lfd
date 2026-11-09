@@ -13,6 +13,7 @@ type Exposed = MailSendFilters & {
   changeProbes(probes: boolean): void;
   reset(): void;
   templateOptions: readonly { value: string; label: string }[];
+  refusalOptions: readonly { value: string; label: string }[];
 };
 
 function setup(filters: Filters) {
@@ -52,6 +53,17 @@ describe('MailSendFilters — les critères du suivi', () => {
     component.reset();
     expect(emitted[0]?.scope).toBe('regular');
     expect(emitted[1]).toEqual({ ...NO_MAIL_SEND_FILTERS, scope: 'probes' });
+  });
+
+  it('filtre les refus d’e-mail marketing par leur raison, dite en toutes lettres (U4)', () => {
+    const { component, emitted, element } = setup(NO_MAIL_SEND_FILTERS);
+    expect(component.refusalOptions).toEqual([
+      { value: 'unsubscribed', label: 'Non envoyé : désinscrit' },
+      { value: 'no_consent', label: 'Non envoyé : sans consentement' },
+    ]);
+    component.change({ refusal: 'unsubscribed' });
+    expect(emitted).toEqual([{ ...NO_MAIL_SEND_FILTERS, refusal: 'unsubscribed' }]);
+    expect(element.querySelector('[data-filter="refusal"]')).not.toBeNull();
   });
 
   it('propose les modèles par leur intitulé, la clé en valeur', () => {

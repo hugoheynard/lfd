@@ -2674,6 +2674,23 @@ export {
   type OrderMailView,
 } from "./mail-sends.js";
 export {
+  MAIL_CONSENT_ORIGINS,
+  MAIL_CONSENT_PLACES,
+  MAIL_PREFERENCE_STATUSES,
+  MAIL_UNSUBSCRIBE_SOURCES,
+  type MailConsentOrigin,
+  type MailConsentPlace,
+  type MailConsentProofView,
+  type MailPreferenceDetailView,
+  type MailPreferenceListItemView,
+  type MailPreferenceListView,
+  type MailPreferenceRecipientView,
+  type MailPreferenceSearchCreatedView,
+  type MailPreferenceSearchView,
+  type MailPreferenceStatus,
+  type MailUnsubscribeSource,
+} from "./mail-preferences.js";
+export {
   SHOP_COPY_DRAFT_STATES,
   shopCopyLocaleQuerySchema,
   shopCopyDraftPayloadSchema,

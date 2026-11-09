@@ -1,20 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import {
-  consultationWindowStart,
-  StaffMailConsultations,
-} from "../domain/entities/staff-mail-consultations.js";
+import type { StaffMailConsultations } from "../domain/entities/staff-mail-consultations.js";
 import { StaffMailConsultationsRepository } from "../domain/ports/staff-mail-consultations.repository.js";
-
-interface WindowRow {
-  readonly count: bigint;
-  readonly oldest: Date | null;
-}
+import { loadStaffConsultations } from "./staff-consultation-window.js";
 
 /**
  * Les consultations d'une personne : révélations et recherches de la
- * dernière heure, comptées ENSEMBLE (le plafond est partagé, décision 8).
+ * dernière heure, comptées ENSEMBLE avec celles du registre de préférence
+ * (le plafond est partagé, décision 8 ; C4).
  *
  * `load` pose d'abord `pg_advisory_xact_lock` sur la personne, relâché au
  * `COMMIT` ou au `ROLLBACK` : deux révélations simultanées ne lisent pas le
@@ -26,19 +20,9 @@ export class PrismaStaffMailConsultationsRepository extends StaffMailConsultatio
     super();
   }
 
-  async load(staffId: string, now: Date): Promise<StaffMailConsultations> {
-    const key = `mail-consultations:${staffId}`;
-    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
-    const since = consultationWindowStart(now);
-    const [row] = await this.prisma.$queryRaw<readonly WindowRow[]>`
-      SELECT count(*) AS "count", min(t."at") AS "oldest" FROM (
-        SELECT "revealed_at" AS "at" FROM "mail"."mail_recipient_reveal"
-         WHERE "revealed_by" = ${staffId} AND "revealed_at" > ${since}
-        UNION ALL
-        SELECT "searched_at" FROM "mail"."mail_recipient_search"
-         WHERE "searched_by" = ${staffId} AND "searched_at" > ${since}
-      ) t`;
-    return StaffMailConsultations.of(staffId, Number(row?.count ?? 0n), row?.oldest ?? null);
+  /** Le plafond partagé avec le registre de préférence (C4), sous le verrou de la personne. */
+  load(staffId: string, now: Date): Promise<StaffMailConsultations> {
+    return loadStaffConsultations(this.prisma, staffId, now);
   }
 
   /** Les révélations, puis les recherches et leurs envois trouvés — jamais une adresse. */

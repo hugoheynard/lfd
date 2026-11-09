@@ -1,0 +1,55 @@
+<fold-panel-header
+  title="Désinscrire une adresse"
+  subtitle="À la demande du client"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <form class="ua-form" id="unsubscribe-address" (submit)="submit($event)">
+    <p>
+      Plus aucun e-mail marketing de l’espace choisi ne partira à cette adresse. Seul le client
+      pourra se réinscrire, depuis « Mes préférences » ; le geste est inscrit au journal.
+    </p>
+    <fold-listbox
+      size="sm"
+      label="Espace"
+      data-space
+      [options]="spaceOptions"
+      [value]="space()"
+      (valueChange)="space.set($event)"
+    />
+    <fold-input
+      size="sm"
+      type="email"
+      label="Adresse du client"
+      autocomplete="off"
+      data-address
+      [value]="address()"
+      (valueChange)="address.set($event)"
+    />
+    @if (done()) {
+      <fold-callout variant="success" announce data-done>
+        La désinscription est enregistrée.
+      </fold-callout>
+    }
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce data-error>{{ message }}</fold-callout>
+    }
+  </form>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton type="button" emphasis="outline" intent="neutral" (click)="close()">
+    Fermer
+  </button>
+  <button
+    foldButton
+    type="submit"
+    form="unsubscribe-address"
+    intent="danger"
+    data-submit
+    [loading]="saving()"
+  >
+    Désinscrire
+  </button>
+</fold-panel-footer>

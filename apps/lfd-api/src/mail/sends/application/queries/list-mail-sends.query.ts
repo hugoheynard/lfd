@@ -1,4 +1,10 @@
-import type { MailSendDelivery, MailSendScope, MailSendSpace, MailSendState } from "@lfd/contracts";
+import type {
+  MailSendDelivery,
+  MailSendRefusalCode,
+  MailSendScope,
+  MailSendSpace,
+  MailSendState,
+} from "@lfd/contracts";
 
 /** Les critères de la liste, déjà validés dans leur forme par le contrôleur. */
 export interface MailSendCriteria {
@@ -6,6 +12,8 @@ export interface MailSendCriteria {
   readonly template: string | null;
   readonly state: MailSendState | null;
   readonly delivery: MailSendDelivery | null;
+  /** Les refus d'un e-mail marketing, par leur raison fermée (U4). */
+  readonly refusal: MailSendRefusalCode | null;
   readonly from: Date | null;
   readonly to: Date | null;
   readonly scope: MailSendScope;

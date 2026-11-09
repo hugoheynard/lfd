@@ -5,6 +5,7 @@ import {
   type MailEditorStamp,
   type MailEditorView,
 } from "@lfd/mail-blocks";
+import { editorUnsubscribeFooters } from "../../templates/sections/mail-unsubscribe-preview.js";
 import type { MailCopyManifest } from "../../copy/domain/mail-copy-manifest.js";
 import type { MailSectionOrderState } from "../../copy/domain/mail-section-order.js";
 import { replacementSectionOrders } from "../../copy/domain/mail-section-orders.js";
@@ -71,5 +72,6 @@ export function mailEditorView(
     orphans: phrases.orphans,
     resources: entry.resources,
     situations: entry.situations,
+    unsubscribeFooter: editorUnsubscribeFooters(entry.declaration.nature),
   };
 }

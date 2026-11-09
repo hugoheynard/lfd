@@ -133,6 +133,19 @@ export interface MailEditorCaseView {
 }
 
 /** Un e-mail ouvert dans l'éditeur (`GET /admin/mail-templates/:template`). */
+/**
+ * **Le pied de désinscription d'un e-mail marketing**, tel que l'éditeur le
+ * montre — grisé, verrouillé, sous le canevas (plan
+ * `plan-desinscription-des-e-mails.md`, B2 et U4). La phrase système est
+ * coupée autour de son lien ; l'adresse du lien n'est pas servie : à l'envoi,
+ * le bloc la pose pour chaque destinataire.
+ */
+export interface MailEditorUnsubscribeFooter {
+  readonly before: string;
+  readonly label: string;
+  readonly after: string;
+}
+
 export interface MailEditorView {
   readonly template: string;
   readonly audience: MailAudience;
@@ -162,6 +175,13 @@ export interface MailEditorView {
    * facultatif dans le type pour ne pas casser les doublures de l'écran.
    */
   readonly situations?: readonly MailPreviewSituation[] | undefined;
+  /**
+   * U4 : le pied de désinscription d'un modèle `marketing`, par langue ;
+   * `null` pour un modèle transactionnel. Toujours servi ; facultatif dans le
+   * type pour ne pas casser les doublures de l'écran.
+   */
+  readonly unsubscribeFooter?:
+    Readonly<Record<MailLocale, MailEditorUnsubscribeFooter>> | null | undefined;
 }
 
 /** `PUT /admin/mail-templates/:template/draft` — enregistrer le brouillon. */

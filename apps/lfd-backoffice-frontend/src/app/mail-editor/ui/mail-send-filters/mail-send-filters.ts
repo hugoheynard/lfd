@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import {
   MAIL_SEND_DELIVERIES,
+  MAIL_SEND_REFUSAL_CODES,
   MAIL_SEND_SPACES,
   MAIL_SEND_STATES,
   type MailSendDelivery,
+  type MailSendRefusalCode,
   type MailSendSpace,
   type MailSendState,
 } from '@lfd/contracts';
@@ -19,6 +21,7 @@ import {
 import { labeledMailTemplates, mailLabel } from '../../rules/mail-labels';
 import {
   MAIL_SEND_DELIVERY_LABELS,
+  MAIL_SEND_REFUSAL_LABELS,
   MAIL_SEND_STATE_LABELS,
   NO_MAIL_SEND_FILTERS,
   type MailSendFilters as Filters,
@@ -26,6 +29,7 @@ import {
 
 /**
  * **Les critères du suivi des envois** : espace, modèle, état, retour,
+ * raison d'un refus d'e-mail marketing (U4),
  * période, et la bascule des sondes (`scope=probes`, listées à part —
  * `le-suivi-des-e-mails.md`, décision 10). Chaque changement rend les
  * critères entiers ; la page relit la liste.
@@ -52,6 +56,12 @@ export class MailSendFilters {
     MAIL_SEND_DELIVERIES.map((delivery) => ({
       value: delivery,
       label: MAIL_SEND_DELIVERY_LABELS[delivery],
+    }));
+
+  protected readonly refusalOptions: readonly FoldSelectOption<MailSendRefusalCode>[] =
+    MAIL_SEND_REFUSAL_CODES.map((refusal) => ({
+      value: refusal,
+      label: MAIL_SEND_REFUSAL_LABELS[refusal],
     }));
 
   protected change(patch: Partial<Filters>): void {

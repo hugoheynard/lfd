@@ -30,7 +30,8 @@ import { RegistryMailProbeTemplates } from "./infrastructure/registry-mail-probe
  * **Le suivi des e-mails** (`documentation/mail/le-suivi-des-e-mails.md`,
  * lot T2) : la liste et le détail des envois sous le droit `mail_sends`,
  * l'adresse révélée sur demande, tracée et plafonnée. La purge de ses
- * consultations vit avec celle du suivi, dans `MailModule`.
+ * consultations vit avec celle du suivi, dans `MailModule`. L'empreinte d'une
+ * adresse cherchée est exportée au registre de préférence (C4).
  */
 @Module({
   controllers: [AdminMailSendsController],
@@ -51,5 +52,8 @@ import { RegistryMailProbeTemplates } from "./infrastructure/registry-mail-probe
     GetMailRecipientHandler,
     RevealMailRecipientHandler,
   ],
+  // Le registre de préférence vu par le staff (plan de désinscription, C4)
+  // range l'empreinte d'une adresse cherchée sous la même clé que le suivi.
+  exports: [RecipientFingerprint],
 })
 export class MailSendsModule {}

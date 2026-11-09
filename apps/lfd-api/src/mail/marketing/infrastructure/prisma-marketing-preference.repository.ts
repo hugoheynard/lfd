@@ -23,6 +23,11 @@ export class PrismaMarketingPreferenceRepository extends MarketingPreferenceRepo
     return row === null ? null : toDomain(row);
   }
 
+  async loadById(id: string): Promise<MarketingPreference | null> {
+    const row = await this.prisma.mailMarketingPreference.findUnique({ where: { id } });
+    return row === null ? null : toDomain(row);
+  }
+
   async loadAll(print: string): Promise<readonly MarketingPreference[]> {
     const rows = await this.prisma.mailMarketingPreference.findMany({
       where: { print },

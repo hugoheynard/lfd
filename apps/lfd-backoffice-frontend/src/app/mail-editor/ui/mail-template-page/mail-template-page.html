@@ -200,6 +200,7 @@
             [locale]="locale()"
             [canWrite]="canWrite()"
             [resources]="current.resources ?? noResources"
+            [unsubscribeFooter]="current.unsubscribeFooter?.[locale()] ?? null"
             [(focus)]="focus"
             (documentChange)="document.set($event)"
             (retry)="renderNow()"

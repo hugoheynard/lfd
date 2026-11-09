@@ -272,6 +272,19 @@ export const routes: Routes = [
       import('./mail-editor/ui/mail-sends-page/mail-sends-page').then((m) => m.MailSendsPage),
   },
   {
+    // **Les désinscriptions et accords** (plan
+    // `mail/plan-desinscription-des-e-mails.md`, C4) : l'onglet voisin du suivi,
+    // sous le même droit. Déclaré AVANT `emails/:template`, pour la même raison
+    // que `emails/envois`.
+    path: 'emails/desinscriptions',
+    canActivate: [permissionGuard('mail_sends:read')],
+    title: 'Désinscriptions et accords — LFC B2B admin',
+    loadComponent: () =>
+      import('./mail-editor/ui/mail-preferences-page/mail-preferences-page').then(
+        (m) => m.MailPreferencesPage,
+      ),
+  },
+  {
     path: 'emails/:template',
     canActivate: [permissionGuard('mail_templates:read')],
     // Un brouillon en cours d'enregistrement ou refusé retient la sortie une

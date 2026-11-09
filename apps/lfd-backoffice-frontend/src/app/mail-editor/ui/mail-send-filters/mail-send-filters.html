@@ -43,6 +43,17 @@
     [value]="filters().delivery"
     (valueChange)="change({ delivery: $event })"
   />
+  <fold-listbox
+    size="sm"
+    label="Raison du refus"
+    placeholder="Toutes"
+    clearLabel="Toutes les raisons"
+    allowClear
+    data-filter="refusal"
+    [options]="refusalOptions"
+    [value]="filters().refusal"
+    (valueChange)="change({ refusal: $event })"
+  />
   <fold-date
     size="sm"
     label="Du"

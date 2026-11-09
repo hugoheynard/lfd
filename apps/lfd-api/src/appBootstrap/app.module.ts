@@ -26,6 +26,7 @@ import { MailChartersModule } from "../mail/charters/mail-charters.module.js";
 import { MailSendersModule } from "../mail/senders/mail-senders.module.js";
 import { MailSendsModule } from "../mail/sends/mail-sends.module.js";
 import { MailMarketingModule } from "../mail/marketing/mail-marketing.module.js";
+import { MailMarketingAdminModule } from "../mail/marketing/mail-marketing-admin.module.js";
 import { MailDocumentsModule } from "../mail/documents/mail-documents.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
@@ -189,6 +190,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // U2 (plan de désinscription) : le registre de préférence marketing,
     // la page publique de désinscription et le canal `MarketingConsent`.
     MailMarketingModule,
+    MailMarketingAdminModule,
     InboundMailSinkModule,
     VitrineModule,
     // Annuaire back-office (isolé, source de vérité locale).

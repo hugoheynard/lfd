@@ -2782,6 +2782,39 @@
       },
       "purge": "apps/lfd-api/src/platform/outbox/prisma-outbox-pruner.ts",
       "information": false
+    },
+    {
+      "colonne": "mail.mail_preference_consultation.staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Quel membre du staff a affiché une adresse ou cherché une adresse dans les désinscriptions et accords : la lecture n'est permise qu'à lui, 5 minutes, et la ligne compte dans son plafond de 30 consultations par heure, partagé avec le suivi des e-mails. À supprimer 1 an après la consultation (plan-desinscription-des-e-mails.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.preference_recipient_revealed`, `mail.preference_recipient_searched`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_preference_consultation.consulted_at",
+      "personne": "staff",
+      "categorie": "horodatage-geste",
+      "finalite": "L'instant de la consultation : il ouvre la lecture 5 minutes et compte dans le plafond horaire de son auteur. À supprimer 1 an après la consultation (plan-desinscription-des-e-mails.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
+      "information": false
+    },
+    {
+      "colonne": "mail.mail_preference_consultation.fingerprint",
+      "personne": "client",
+      "categorie": "donnees-email",
+      "finalite": "L'EMPREINTE de l'adresse cherchée dans le registre de préférence (HMAC-SHA256 sous `AppConfig.mailRecipientSearchKey`, la clé de recherche du suivi), jamais l'adresse. À supprimer 1 an après la consultation (plan-desinscription-des-e-mails.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
+      "information": false
     }
   ],
   "exclusions": [
@@ -3044,6 +3077,14 @@
     {
       "colonne": "mail.mail_marketing_preference.space",
       "raison": "La société émettrice (`lfc`, `lfd`, contrainte en base), pas la personne."
+    },
+    {
+      "colonne": "mail.mail_preference_consultation.preference_id",
+      "raison": "L'identifiant opaque de la ligne du registre de préférence dont l'adresse a été affichée (plan-desinscription-des-e-mails.md, C4) : ni adresse ni nom — l'adresse reste dans `mail.mail_marketing_preference.recipient_key`, au registre. Purgé avec sa consultation, à 1 an sous `MAIL_REQUEST_PURGE`."
+    },
+    {
+      "colonne": "mail.mail_preference_consultation_hit.preference_id",
+      "raison": "L'identifiant opaque d'une ligne du registre de préférence trouvée par une recherche (plan-desinscription-des-e-mails.md, C4) : ni adresse ni nom. Supprimé avec sa recherche (ON DELETE CASCADE), donc à 1 an sous `MAIL_REQUEST_PURGE`."
     }
   ]
 }

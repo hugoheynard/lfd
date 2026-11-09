@@ -32,6 +32,23 @@ describe('mailSendBadge — la pastille d’un envoi', () => {
   });
 });
 
+describe('mailSendBadge — un refus d’e-mail marketing (U4)', () => {
+  it('dit la raison fermée en toutes lettres', () => {
+    expect(
+      mailSendBadge({ state: 'refused', delivery: null, refusalCode: 'unsubscribed' }),
+    ).toEqual({ label: 'Non envoyé : désinscrit', tone: 'warning' });
+    expect(
+      mailSendBadge({ state: 'refused', delivery: null, refusalCode: 'no_consent' }).label,
+    ).toBe('Non envoyé : sans consentement');
+  });
+
+  it('un autre refus garde son libellé d’état', () => {
+    expect(mailSendBadge({ state: 'refused', delivery: null, refusalCode: null }).label).toBe(
+      'Refusé',
+    );
+  });
+});
+
 describe('mailDeliveryKindLabel', () => {
   it('traduit le genre et garde le sous-genre', () => {
     expect(mailDeliveryKindLabel('Permanent/Suppressed')).toBe('Définitif (Suppressed)');
@@ -53,6 +70,13 @@ describe('mailSendQuery — les paramètres de la liste', () => {
     expect(params['from']).toBe(new Date(2026, 10, 1).toISOString());
     expect(params['to']).toBe(new Date(2026, 10, 3).toISOString());
     expect(params['cursor']).toBe('c');
+  });
+
+  it('pose la raison d’un refus quand elle est choisie (U4)', () => {
+    expect(mailSendQuery({ ...NO_MAIL_SEND_FILTERS, refusal: 'unsubscribed' }, null)).toEqual({
+      scope: 'regular',
+      refusal: 'unsubscribed',
+    });
   });
 
   it('écarte un jour mal formé plutôt que d’envoyer un instant faux', () => {

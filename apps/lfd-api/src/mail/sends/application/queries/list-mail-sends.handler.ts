@@ -53,6 +53,7 @@ export class ListMailSendsHandler implements IQueryHandler<ListMailSendsQuery, M
       template: criteria.template,
       status: criteria.state === null ? null : storedStatusOf(criteria.state),
       delivery: criteria.delivery,
+      refusal: criteria.refusal,
       from: criteria.from,
       to: criteria.to,
       onlyTemplates: criteria.scope === "probes" ? probes : null,

@@ -278,6 +278,7 @@
   "test/mandate-scheme.e2e-spec.ts": 15234,
   "test/mandate.e2e-spec.ts": 13535,
   "test/marketing-consent-collection.e2e-spec.ts": 17697,
+  "test/marketing-preferences-admin.e2e-spec.ts": 15000,
   "test/me-establishment.e2e-spec.ts": 7448,
   "test/me.e2e-spec.ts": 15799,
   "test/media-deposit-by-content.e2e-spec.ts": 5907,

@@ -1,0 +1,131 @@
+<fold-page-layout title="Désinscriptions et accords" icon="inbox">
+  @if (canSeeTemplates()) {
+    <fold-back-link pageEyebrow icon="arrow-back" label="Email Templates" routerLink="/emails" />
+  }
+  <p description>
+    Qui a accepté de recevoir les e-mails marketing de chaque espace, qui s’en est désinscrit, et la
+    preuve de chaque accord. L’adresse est masquée ; l’afficher est inscrit au journal. Le staff
+    peut désinscrire à la demande d’un client, jamais réinscrire.
+  </p>
+  @if (canWrite()) {
+    <div pageActions>
+      <button
+        foldButton
+        type="button"
+        emphasis="outline"
+        intent="danger"
+        data-unsubscribe-address
+        (click)="unsubscribeAddress()"
+      >
+        Désinscrire une adresse
+      </button>
+    </div>
+  }
+
+  <app-mail-sends-tabs />
+
+  <form
+    class="pf-filters"
+    role="search"
+    aria-label="Chercher les lignes d’une adresse"
+    (submit)="searchAddress($event)"
+  >
+    <fold-input
+      size="sm"
+      type="email"
+      label="Adresse"
+      autocomplete="off"
+      hint="La recherche est inscrite au journal, comme l’affichage d’une adresse."
+      data-search-address
+      [value]="address()"
+      (valueChange)="address.set($event)"
+    />
+    <button foldButton type="submit" size="sm" icon="search" [loading]="searching()">
+      Chercher
+    </button>
+  </form>
+
+  @if (searchError(); as message) {
+    <fold-callout variant="alert" announce data-search-error>{{ message }}</fold-callout>
+  }
+
+  @if (search() !== null) {
+    <fold-callout variant="info" announce data-search-banner>
+      Résultats pour une adresse — figés à {{ frozenAt() }}.
+      <div actions>
+        <button
+          foldButton
+          type="button"
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          (click)="leaveSearch()"
+        >
+          Revenir à la liste
+        </button>
+      </div>
+    </fold-callout>
+    <app-mail-preferences-table [rows]="rows()" [empty]="empty()" (opened)="open($event)" />
+  } @else {
+    <div class="pf-filters" role="group" aria-label="Filtrer les désinscriptions et accords">
+      <fold-listbox
+        size="sm"
+        label="Espace"
+        placeholder="Tous"
+        clearLabel="Tous les espaces"
+        allowClear
+        data-filter="space"
+        [options]="spaceOptions"
+        [value]="filters().space"
+        (valueChange)="change({ space: $event })"
+      />
+      <fold-listbox
+        size="sm"
+        label="État"
+        placeholder="Tous"
+        clearLabel="Tous les états"
+        allowClear
+        data-filter="status"
+        [options]="statusOptions"
+        [value]="filters().status"
+        (valueChange)="change({ status: $event })"
+      />
+    </div>
+
+    @switch (status()) {
+      @case ('loading') {
+        <fold-loading message="Chargement du registre…" />
+      }
+      @case ('failed') {
+        <fold-empty-state
+          tone="alert"
+          title="Le registre n’a pas pu être lu"
+          [subtitle]="error() ?? ''"
+        >
+          <button foldButton type="button" (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        <app-mail-preferences-table [rows]="rows()" [empty]="empty()" (opened)="open($event)" />
+        @if (moreError(); as message) {
+          <fold-callout variant="alert" announce data-more-error>{{ message }}</fold-callout>
+        }
+        @if (nextCursor() !== null) {
+          <div>
+            <button
+              foldButton
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              data-load-more
+              [loading]="loadingMore()"
+              (click)="loadMore()"
+            >
+              Charger plus
+            </button>
+          </div>
+        }
+      }
+    }
+  }
+</fold-page-layout>

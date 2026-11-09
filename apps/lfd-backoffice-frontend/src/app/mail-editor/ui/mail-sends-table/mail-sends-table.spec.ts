@@ -36,6 +36,13 @@ describe('MailSendsTable — la liste des envois', () => {
     expect(text).toContain('c•••@halles.fr');
   });
 
+  it('dit en toutes lettres un e-mail marketing refusé (U4)', () => {
+    const text =
+      setup([{ ...BOUNCED, state: 'refused', delivery: null, refusalCode: 'unsubscribed' }])
+        .textContent ?? '';
+    expect(text).toContain('Non envoyé : désinscrit');
+  });
+
   it('dit le vide', () => {
     expect(setup([]).textContent).toContain('Aucun envoi ne correspond');
   });

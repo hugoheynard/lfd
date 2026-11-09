@@ -308,6 +308,9 @@
           @if (view.footer !== '') {
             <app-mail-block-fragment [html]="view.footer" />
           }
+          @if (unsubscribeFooter(); as unsubscribe) {
+            <app-mail-unsubscribe-footer data-unsubscribe-footer [footer]="unsubscribe" />
+          }
         </div>
       </div>
     }

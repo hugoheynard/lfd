@@ -120,6 +120,25 @@ describe("ouvrir un e-mail", () => {
     expect(w.documents.rows.size).toBe(0);
   });
 
+  /** U4 : le canevas d'un modèle marketing montre le pied de désinscription, verrouillé. */
+  it("sert le pied de désinscription d'un modèle marketing, et aucun pour un transactionnel", async () => {
+    const documents = new InMemoryMailDocuments();
+    const marketing = new GetMailTemplateHandler(
+      new FixedCatalogue([entryOf(TEMPLATE, { ...DECLARATION, nature: "marketing" })]),
+      new InMemoryMailDocumentReader(documents),
+      new InMemoryAdminReader(new InMemoryMailCopy()),
+      MANIFEST,
+    );
+
+    const view = await marketing.execute(new GetMailTemplateQuery(TEMPLATE));
+    const transactional = await world().read.execute(new GetMailTemplateQuery(TEMPLATE));
+
+    expect(Object.keys(view.unsubscribeFooter ?? {}).sort()).toEqual(["en", "fr", "it"]);
+    expect(view.unsubscribeFooter?.fr.label).not.toBe("");
+    expect(JSON.stringify(view.unsubscribeFooter)).not.toContain("http");
+    expect(transactional.unsubscribeFooter).toBeNull();
+  });
+
   /** Le document de départ est l'ordre publié de l'ancienne table, quand il y en a un (§ 3). */
   it("part de l'ordre publié de l'ancienne table", async () => {
     const w = world();

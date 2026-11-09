@@ -312,3 +312,53 @@ describe('la recherche des envois d’une adresse', () => {
     );
   });
 });
+
+/** **Le registre vu par le staff** (plan-desinscription-des-e-mails.md, C4). */
+describe('les désinscriptions et accords', () => {
+  it('une adresse affichée nomme l’espace, jamais l’adresse', () => {
+    const rendered = renderFact({
+      ...mailFact('mail.preference_recipient_revealed', 'pref_1', { space: 'lfc' }),
+      subjectType: 'mail_marketing_preference',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a affiché l’adresse d’une ligne des désinscriptions et accords de l’espace lfc',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+
+  it('une désinscription par le staff dit si elle a changé quelque chose', () => {
+    const changed = renderFact({
+      ...mailFact('mail.marketing_unsubscribed_by_staff', 'pref_1', {
+        space: 'lfc',
+        changed: true,
+      }),
+      subjectType: 'mail_marketing_preference',
+    });
+    const already = renderFact({
+      ...mailFact('mail.marketing_unsubscribed_by_staff', 'pref_1', {
+        space: 'lfc',
+        changed: false,
+      }),
+      subjectType: 'mail_marketing_preference',
+    });
+
+    expect(changed.sentence).toBe(
+      'Colette Martin a désinscrit une adresse des e-mails marketing de l’espace lfc, à la demande du client',
+    );
+    expect(already.sentence).toContain('(elle l’était déjà)');
+    expect(changed.detail).toEqual([]);
+  });
+
+  it('une recherche par adresse compte les lignes trouvées, sans adresse', () => {
+    const rendered = renderFact({
+      ...mailFact('mail.preference_recipient_searched', 'srch_1', { found: 1 }),
+      subjectType: 'mail_preference_search',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a cherché une adresse dans les désinscriptions et accords : 1 ligne trouvée',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+});

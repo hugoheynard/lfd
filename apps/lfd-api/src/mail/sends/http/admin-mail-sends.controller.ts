@@ -55,6 +55,7 @@ export class AdminMailSendsController {
         template: params.template ?? null,
         state: params.state ?? null,
         delivery: params.delivery ?? null,
+        refusal: params.refusal ?? null,
         from: dateOrNull(params.from),
         to: dateOrNull(params.to),
         scope: params.scope,

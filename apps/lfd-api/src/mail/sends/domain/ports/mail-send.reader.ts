@@ -10,6 +10,8 @@ export interface MailSendFilter {
   readonly status: StoredMailStatus | null;
   /** Un retour du fournisseur, ou `dry_run` : acceptée sans identifiant Resend. */
   readonly delivery: StoredMailDelivery | "dry_run" | null;
+  /** La raison fermée d'un refus (`refusal_code`, plan de désinscription, U4). */
+  readonly refusal: MailRefusalCode | null;
   /** Bornes de `requested_at`, incluse puis exclue. */
   readonly from: Date | null;
   readonly to: Date | null;

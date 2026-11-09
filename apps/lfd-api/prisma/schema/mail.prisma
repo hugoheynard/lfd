@@ -340,3 +340,42 @@ model MailMarketingPreference {
   @@map("mail_marketing_preference")
   @@schema("mail")
 }
+
+/// **Une consultation du registre de préférence par le staff** (plan
+/// `plan-desinscription-des-e-mails.md`, lot C4) — la figure des
+/// consultations du suivi : `reveal` (une adresse affichée : `preference_id`)
+/// ou `search` (une recherche par adresse : `fingerprint`, l'empreinte HMAC de
+/// la clé de recherche du suivi). Jamais l'adresse. Compte dans le plafond
+/// PARTAGÉ de 30 consultations par heure et par personne ; purgée à 1 an sous
+/// `MAIL_REQUEST_PURGE`. Pas de clé étrangère vers la ligne du registre : la
+/// trace se purge de son côté.
+model MailPreferenceConsultation {
+  id           String                          @id
+  /// `reveal` | `search` (CHECK en base, avec la colonne qui va avec).
+  kind         String                          @db.VarChar(8)
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  staffId      String                          @map("staff_id")
+  /// La ligne dont l'adresse a été affichée (`reveal` seulement).
+  preferenceId String?                         @map("preference_id")
+  /// `HMAC-SHA256` de l'adresse cherchée, normalisée, 64 hexadécimaux (`search` seulement).
+  fingerprint  String?                         @db.VarChar(64)
+  consultedAt  DateTime                        @map("consulted_at") @db.Timestamptz(6)
+  hits         MailPreferenceConsultationHit[]
+
+  @@index([staffId, consultedAt])
+  @@index([staffId, preferenceId, consultedAt])
+  @@index([consultedAt])
+  @@map("mail_preference_consultation")
+  @@schema("mail")
+}
+
+/// Les lignes du registre TROUVÉES par une recherche, figées à son instant.
+model MailPreferenceConsultationHit {
+  consultationId String                     @map("consultation_id")
+  preferenceId   String                     @map("preference_id")
+  consultation   MailPreferenceConsultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@id([consultationId, preferenceId])
+  @@map("mail_preference_consultation_hit")
+  @@schema("mail")
+}

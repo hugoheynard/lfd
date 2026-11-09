@@ -396,6 +396,34 @@ export const COMMERCE_FACTS = {
   "mail.recipient_searched": fact(payload({ found: count() })),
 
   /**
+   * **L'adresse d'une ligne du registre de préférence marketing est
+   * révélée** (plan `plan-desinscription-des-e-mails.md`, lot C4) : même
+   * geste, même plafond que `mail.recipient_revealed`. Le sujet est la ligne
+   * (`mail_marketing_preference`) ; l'adresse n'est JAMAIS dans la charge.
+   */
+  "mail.preference_recipient_revealed": fact(payload({ space: z.string().min(1) })),
+
+  /**
+   * **Le staff désinscrit une adresse à la demande du client** (plan
+   * `plan-desinscription-des-e-mails.md`, règle 8, lot C4) — source `staff`.
+   * Le sujet est la ligne du registre ; l'adresse n'est JAMAIS dans la
+   * charge. `changed` : faux si la ligne était déjà désinscrite. Il n'existe
+   * pas de fait inverse : le staff ne réinscrit jamais.
+   */
+  /**
+   * **Le registre de préférence est cherché par adresse** (plan
+   * `plan-desinscription-des-e-mails.md`, lot C4) : même geste, même plafond
+   * que `mail.recipient_searched`. Le sujet est la recherche
+   * (`mail_preference_search`) ; ni l'adresse ni son empreinte ne sont dans
+   * la charge. `found` : combien de lignes trouvées.
+   */
+  "mail.preference_recipient_searched": fact(payload({ found: count() })),
+
+  "mail.marketing_unsubscribed_by_staff": fact(
+    payload({ space: z.string().min(1), changed: z.boolean() }),
+  ),
+
+  /**
    * Un prospect saisi à la main. L'e-mail en est sorti le 2026-09-19 (lot B) :
    * une coordonnée n'a rien à faire au journal, et le lead la garde sur sa
    * propre ligne. `subjectLabel` : son enseigne — la même que `businessName`.

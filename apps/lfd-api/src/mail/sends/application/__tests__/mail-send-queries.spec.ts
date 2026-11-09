@@ -28,6 +28,7 @@ function criteria(overrides: Partial<MailSendCriteria> = {}): MailSendCriteria {
     template: null,
     state: null,
     delivery: null,
+    refusal: null,
     from: null,
     to: null,
     scope: "regular",
@@ -81,6 +82,16 @@ describe("ListMailSendsHandler", () => {
     );
 
     expect(reader.calls[0]?.filter).toMatchObject({ status: "sent", delivery: "dry_run" });
+  });
+
+  it("passe la raison fermée d'un refus au lecteur (U4 : « Non envoyé : désinscrit »)", async () => {
+    const reader = new FixedMailSendReader([]);
+    const handler = new ListMailSendsHandler(reader, new FixedProbeTemplates([]));
+
+    await handler.execute(new ListMailSendsQuery(criteria({ refusal: "unsubscribed" })));
+    await handler.execute(new ListMailSendsQuery(criteria()));
+
+    expect(reader.calls.map((call) => call.filter.refusal)).toEqual(["unsubscribed", null]);
   });
 
   it("lit une ligne de plus pour savoir s'il en reste, et rend le curseur de la dernière servie", async () => {

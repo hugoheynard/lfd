@@ -31,6 +31,10 @@ export class InMemoryPreferences extends MarketingPreferenceRepository {
     return Promise.resolve(this.rows.get(`${space}|${print}`) ?? null);
   }
 
+  loadById(id: string): Promise<MarketingPreference | null> {
+    return Promise.resolve([...this.rows.values()].find((row) => row.id === id) ?? null);
+  }
+
   loadAll(print: string): Promise<readonly MarketingPreference[]> {
     return Promise.resolve([...this.rows.values()].filter((row) => row.snapshot().print === print));
   }

@@ -11,6 +11,12 @@ export abstract class MarketingPreferenceRepository {
   /** La ligne de cet espace pour cette empreinte ; `null` : jamais demandé. */
   abstract load(space: MailBrandCode, print: string): Promise<MarketingPreference | null>;
 
+  /**
+   * La ligne de cet identifiant ; `null` : inconnue. Le geste du staff
+   * (lot C4) part de la ligne qu'il a ouverte, pas d'une adresse.
+   */
+  abstract loadById(id: string): Promise<MarketingPreference | null>;
+
   /** Toutes les lignes de cette empreinte, tous espaces — « tout le groupe », l'effacement. */
   abstract loadAll(print: string): Promise<readonly MarketingPreference[]>;
 

@@ -75,6 +75,16 @@ import { PrismaPendingConsentPruner } from "./infrastructure/prisma-pending-cons
     // U3 : le contrôle à l'envoi, lu par l'essai d'envoi de `MailModule`.
     { provide: MarketingClearance, useClass: PreferenceMarketingClearance },
   ],
-  exports: [MarketingConsent, UnsubscribeLinks, MarketingClearance, PendingConsentPruner],
+  exports: [
+    MarketingConsent,
+    UnsubscribeLinks,
+    MarketingClearance,
+    PendingConsentPruner,
+    // C4 : le registre vu par le staff (`MailMarketingAdminModule`) désinscrit
+    // par la même écriture que la page et le canal.
+    MarketingPreferenceRepository,
+    MarketingAddresses,
+    MarketingUnsubscriber,
+  ],
 })
 export class MailMarketingModule {}

@@ -10,6 +10,8 @@ import { CachedPublishedMailCopyReader } from "../../copy/infrastructure/cached-
 import { resolvePublishedMailCharter } from "../../templates/effective-copy/published-mail-charter-resolution.js";
 import { PublishedMailCopyReader } from "../../templates/effective-copy/published-mail-copy.reader.js";
 import { withMailCharter } from "../../templates/sections/mail-charter-scope.js";
+import { natureOf } from "../../templates/sections/mail-block-declarations.js";
+import { withPreviewUnsubscribe } from "../../templates/sections/mail-unsubscribe-preview.js";
 import { mailBrandingOf } from "../../templates/mail-branding.js";
 import { b2bMailTemplates, type B2bMails } from "../../templates/mail-templates.js";
 import { mailCaseDataOf } from "../../templates/specimens/cases/mail-specimen-cases.js";
@@ -22,7 +24,8 @@ import { MailDocumentPreviewRenderer } from "../domain/ports/mail-document-previ
  * marque que le mailer, les données du cas demandé, et le document posé dans le
  * périmètre de mise en page exactement comme l'envoi le pose
  * (`MailLayoutScope.documents`), sous la charte publiée de son espace
- * (`withMailCharter`, § 25, C1). Sans repère : c'est ce qui partirait — sauf
+ * (`withMailCharter`, § 25, C1), et sous le pied de désinscription d'un
+ * modèle marketing (U4). Sans repère : c'est ce qui partirait — sauf
  * l'image cadrée d'un brouillon, recadrée à l'affichage faute de copie.
  */
 @Injectable()
@@ -58,19 +61,23 @@ export class SpecimenMailDocumentPreviewRenderer extends MailDocumentPreviewRend
       throw new UnknownMailCaseError(template, caseId);
     }
     const charter = await resolvePublishedMailCharter(this.published, template, data, this.log);
+    // Un modèle marketing reçoit son pied de désinscription comme à l'envoi
+    // (U4), avec une adresse d'exemple — jamais un vrai jeton.
     const rendered = withMailCharter(charter, () =>
-      renderMailData(
-        this.registry,
-        template,
-        data,
-        { [locale]: texts },
-        {
-          orders: {},
-          markers: false,
-          // Un brouillon n'a pas encore de copie recadrée : l'aperçu la recadre
-          // à l'affichage. L'envoi ne pose jamais cette option.
-          documents: { [template]: { document, locale, framePreviewImages: true } },
-        },
+      withPreviewUnsubscribe(natureOf(template), locale, () =>
+        renderMailData(
+          this.registry,
+          template,
+          data,
+          { [locale]: texts },
+          {
+            orders: {},
+            markers: false,
+            // Un brouillon n'a pas encore de copie recadrée : l'aperçu la recadre
+            // à l'affichage. L'envoi ne pose jamais cette option.
+            documents: { [template]: { document, locale, framePreviewImages: true } },
+          },
+        ),
       ),
     );
     return {

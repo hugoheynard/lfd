@@ -363,6 +363,61 @@ const mailRecipientSearched: Phrase = (fact) => {
   );
 };
 
+/**
+ * **L'adresse d'une ligne du registre de préférence est révélée**
+ * (`mail.preference_recipient_revealed`, plan-desinscription-des-e-mails.md,
+ * C4) : « Colette Martin a affiché l'adresse d'une ligne des désinscriptions
+ * et accords de l'espace lfc ». Le fait ne porte jamais l'adresse.
+ */
+const mailPreferenceRecipientRevealed: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a affiché l’adresse d’une ligne des désinscriptions et accords de l’espace'),
+      ...spaceOf(fact),
+    ],
+    ['space'],
+  );
+
+/**
+ * **Le staff désinscrit une adresse à la demande du client**
+ * (`mail.marketing_unsubscribed_by_staff`, règle 8, C4) : « Colette Martin a
+ * désinscrit une adresse des e-mails marketing de l'espace lfc, à la demande
+ * du client » ; « (elle l'était déjà) » quand rien n'a changé.
+ */
+const mailMarketingUnsubscribedByStaff: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a désinscrit une adresse des e-mails marketing de l’espace'),
+      ...spaceOf(fact),
+      text(
+        fact.payload['changed'] === false
+          ? ', à la demande du client (elle l’était déjà)'
+          : ', à la demande du client',
+      ),
+    ],
+    ['space', 'changed'],
+  );
+
+/**
+ * **Le registre est cherché par adresse** (`mail.preference_recipient_searched`,
+ * C4) : « Colette Martin a cherché une adresse dans les désinscriptions et
+ * accords : 1 ligne trouvée ». Ni l'adresse ni son empreinte au journal.
+ */
+const mailPreferenceRecipientSearched: Phrase = (fact) => {
+  const found = typeof fact.payload['found'] === 'number' ? fact.payload['found'] : 0;
+  return byActor(
+    fact,
+    [
+      text('a cherché une adresse dans les désinscriptions et accords : '),
+      (found === 0 ? null : countOf(found, 'ligne trouvée', 'lignes trouvées')) ??
+        text('aucune ligne trouvée'),
+    ],
+    ['found'],
+  );
+};
+
 export const STOREFRONT_PHRASES = {
   'storefront.saved': saved,
   'storefront.allergen_display_changed': allergenDisplayChanged,
@@ -377,4 +432,7 @@ export const STOREFRONT_PHRASES = {
   'mail_copy.sender_changed': mailSenderChanged,
   'mail.recipient_revealed': mailRecipientRevealed,
   'mail.recipient_searched': mailRecipientSearched,
+  'mail.preference_recipient_revealed': mailPreferenceRecipientRevealed,
+  'mail.marketing_unsubscribed_by_staff': mailMarketingUnsubscribedByStaff,
+  'mail.preference_recipient_searched': mailPreferenceRecipientSearched,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

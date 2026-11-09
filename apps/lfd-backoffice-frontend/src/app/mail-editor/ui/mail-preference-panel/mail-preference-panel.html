@@ -1,0 +1,152 @@
+<fold-panel-header title="Désinscription ou accord" [subtitle]="subtitle()" closeLabel="Fermer" />
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la ligne…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="Cette ligne n’a pas pu être lue"
+        [subtitle]="error() ?? ''"
+      >
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (line(); as l) {
+        <div class="pp-body">
+          @if (badge(); as b) {
+            <div>
+              <fold-badge radius="square" data-badge [variant]="b.tone" [content]="b.label" />
+            </div>
+          }
+          <fold-field-list>
+            <fold-field label="Adresse" data-recipient-masked>{{ recipient() }}</fold-field>
+            <fold-field label="Origine" [empty]="l.origin === null">
+              {{ l.origin === null ? '' : originLabels[l.origin] }}
+            </fold-field>
+            <fold-field label="Demandé le" [empty]="l.requestedAt === null">
+              {{ when(l.requestedAt) }}
+            </fold-field>
+            <fold-field label="Confirmé le" data-confirmed [empty]="l.confirmedAt === null">
+              {{ when(l.confirmedAt) }}
+            </fold-field>
+            <fold-field label="Désinscrit le" [empty]="l.unsubscribedAt === null">
+              {{ when(l.unsubscribedAt) }}
+            </fold-field>
+            <fold-field label="Désinscrit par" [empty]="l.unsubscribedSource === null">
+              {{ l.unsubscribedSource === null ? '' : sourceLabels[l.unsubscribedSource] }}
+            </fold-field>
+          </fold-field-list>
+
+          @if (l.proof; as proof) {
+            <fold-field-list data-proof>
+              <fold-field label="Texte accepté">{{ proof.textVersion }}</fold-field>
+              <fold-field label="Langue du texte">{{ proof.locale }}</fold-field>
+              <fold-field label="Lieu">{{ placeLabels[proof.place] }}</fold-field>
+              <fold-field label="Référence de l’acte" [empty]="proof.ref === null">
+                {{ proof.ref ?? '' }}
+              </fold-field>
+            </fold-field-list>
+          } @else {
+            <fold-callout variant="neutral" data-no-proof>
+              Aucun accord n’a été recueilli pour cette adresse : elle est entrée au registre
+              désinscrite.
+            </fold-callout>
+          }
+
+          @if (l.recipient !== null) {
+            @if (revealed(); as r) {
+              <fold-callout variant="info" announce data-revealed>
+                <div class="pp-revealed">
+                  <span
+                    >Adresse : <strong data-recipient>{{ r.recipient }}</strong></span
+                  >
+                  <span>
+                    Consultation inscrite au journal, valable jusqu’à {{ until(r.revealedUntil) }}.
+                  </span>
+                </div>
+              </fold-callout>
+            } @else {
+              <fold-callout variant="neutral">
+                Afficher l’adresse inscrit la consultation au journal, comme au suivi des envois ;
+                elle vaut 5 minutes et compte dans le plafond horaire.
+                <div actions>
+                  <button
+                    foldButton
+                    type="button"
+                    icon="eye"
+                    data-reveal
+                    [loading]="revealing()"
+                    (click)="reveal()"
+                  >
+                    Afficher l’adresse
+                  </button>
+                </div>
+              </fold-callout>
+            }
+            @if (revealError(); as message) {
+              <fold-callout variant="alert" announce data-reveal-error>{{ message }}</fold-callout>
+            }
+          }
+
+          @if (canWrite() && l.status !== 'unsubscribed') {
+            @if (confirming()) {
+              <fold-callout variant="warning" announce data-confirm-unsubscribe>
+                Plus aucun e-mail marketing de cet espace ne partira à cette adresse. Seul le client
+                pourra se réinscrire, depuis « Mes préférences » ; le geste est inscrit au journal.
+                <div actions>
+                  <button
+                    foldButton
+                    type="button"
+                    intent="danger"
+                    data-confirm
+                    [loading]="unsubscribing()"
+                    (click)="unsubscribe()"
+                  >
+                    Désinscrire
+                  </button>
+                  <button
+                    foldButton
+                    type="button"
+                    emphasis="outline"
+                    intent="neutral"
+                    (click)="confirming.set(false)"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </fold-callout>
+            } @else {
+              <div>
+                <button
+                  foldButton
+                  type="button"
+                  emphasis="outline"
+                  intent="danger"
+                  data-unsubscribe
+                  (click)="confirming.set(true)"
+                >
+                  Désinscrire à la demande du client
+                </button>
+              </div>
+            }
+          }
+          @if (unsubscribeError(); as message) {
+            <fold-callout variant="alert" announce data-unsubscribe-error>{{
+              message
+            }}</fold-callout>
+          }
+        </div>
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton type="button" emphasis="outline" intent="neutral" (click)="close()">
+    Fermer
+  </button>
+</fold-panel-footer>

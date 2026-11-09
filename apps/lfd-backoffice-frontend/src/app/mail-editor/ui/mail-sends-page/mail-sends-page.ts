@@ -24,6 +24,7 @@ import {
 import { MailSendFilters } from '../mail-send-filters/mail-send-filters';
 import { MailSendPanel, type MailSendPanelData } from '../mail-send-panel/mail-send-panel';
 import { MailSendsTable } from '../mail-sends-table/mail-sends-table';
+import { MailSendsTabs } from '../mail-sends-tabs/mail-sends-tabs';
 
 const NOTHING_LISTED: FoldTableEmpty = {
   title: 'Aucun envoi ne correspond',
@@ -63,6 +64,7 @@ const NOTHING_FOUND: FoldTableEmpty = {
     FoldPageLayoutComponent,
     MailSendFilters,
     MailSendsTable,
+    MailSendsTabs,
   ],
   templateUrl: './mail-sends-page.html',
   styleUrl: './mail-sends-page.scss',

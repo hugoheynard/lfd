@@ -103,6 +103,8 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   mail_copy: 'les textes des e-mails',
   mail_send: 'l’envoi d’e-mail',
   mail_recipient_search: 'la recherche d’envois par adresse',
+  mail_marketing_preference: 'la ligne des désinscriptions et accords',
+  mail_preference_search: 'la recherche par adresse des désinscriptions et accords',
   mercuriale: 'la mercuriale',
   operation: 'l’opération',
   order_cutoff: 'l’heure limite',

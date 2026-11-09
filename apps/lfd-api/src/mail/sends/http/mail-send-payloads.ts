@@ -1,5 +1,6 @@
 import {
   MAIL_SEND_DELIVERIES,
+  MAIL_SEND_REFUSAL_CODES,
   MAIL_SEND_SCOPES,
   MAIL_SEND_SPACES,
   MAIL_SEND_STATES,
@@ -19,6 +20,8 @@ export const mailSendsQuerySchema = z.strictObject({
   template: z.string().min(1).max(80).optional(),
   state: z.enum(MAIL_SEND_STATES).optional(),
   delivery: z.enum(MAIL_SEND_DELIVERIES).optional(),
+  /** La raison fermée d'un refus (plan de désinscription, U4) : les refus d'un e-mail marketing. */
+  refusal: z.enum(MAIL_SEND_REFUSAL_CODES).optional(),
   from: z.iso.datetime().optional(),
   to: z.iso.datetime().optional(),
   scope: z.enum(MAIL_SEND_SCOPES).default("regular"),

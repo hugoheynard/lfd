@@ -152,6 +152,7 @@ export {
   type MailEditorPhrasesView,
   type MailEditorPublishedView,
   type MailEditorStamp,
+  type MailEditorUnsubscribeFooter,
   type MailEditorView,
   type MailFamily,
   type MailPhraseDraftPayload,

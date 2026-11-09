@@ -151,6 +151,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailRecipientReveal: "mail",
   MailRecipientSearch: "mail",
   MailRecipientSearchHit: "mail",
+  // Le registre de préférence marketing (plan de désinscription, U2) — oublié
+  // ici à son lot ; et ses consultations par le staff (C4).
+  MailMarketingPreference: "mail",
+  MailPreferenceConsultation: "mail",
+  MailPreferenceConsultationHit: "mail",
   // L'éditeur (S4, S5, C1, C3 — 2026-11-07) : documents, chartes, identité d'envoi.
   MailDocument: "mail",
   MailDocumentVersion: "mail",
