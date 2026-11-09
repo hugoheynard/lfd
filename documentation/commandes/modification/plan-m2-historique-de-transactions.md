@@ -1,6 +1,6 @@
 # Plan M2 — modifier une commande payée par carte : l'historique de transactions
 
-> **Doc-first, 2026-11-09. Version 7** (v5 `2e64016aa` et v6 `cec227b94` contredites le même jour ; tout est intégré ici, le détail est au §15). Le plan **unique** de M2, écrit après la
+> **Doc-first, 2026-11-09. Version 8** — P0 **n'a plus de bloquant** depuis la v7 (`599b24732`) ; cette version ne touche que P1 (§3.3 la surface du canal, §3.6, §5, §6), d'après le verdict du §15 bis. Le plan **unique** de M2, écrit après la
 > relecture complète du paiement et du remboursement
 > ([`../reglement/relecture-paiement-et-remboursement.md`](../reglement/relecture-paiement-et-remboursement.md),
 > à lire d'abord), des deux portes de frontière, du workflow de déploiement,
@@ -111,8 +111,9 @@ dû a baissé).
   sonne, et une **porte CI** compare le CHECK de la colonne au fichier du
   registre ; `StripeProbe` (dans `ops`, qui lit `platform`) sonde **tous** les
   comptes du fichier.
-- **Le compte se choisit par type de sujet** (`default_for.order = lfc-stripe`,
-  dans le fichier). **L'appelant ne nomme aucun compte** (une chaîne
+- **Le compte se choisit par type de sujet** : la **forme** `default_for`
+  est dans le registre, la **valeur** `order → lfc-stripe` est posée par
+  `appBootstrap` (le seul qui connaisse les deux mots). **L'appelant ne nomme aucun compte** (une chaîne
   `"lfc-stripe"` dans `orders` serait la chaîne en dur du `CLAUDE.md` § 6).
   **Le paiement mémorise son compte** (`payment.account`, **CHECK** sur la
   liste des comptes connus — valeur persistée, migration par compte neuf) ;
@@ -135,15 +136,24 @@ Le **canal retour** `SubjectSettlement` (`card-payment/channels/subjects/`,
 un implémenteur par `subject_type`, relié dans `appBootstrap/`) :
 `onPaid(subject, paymentId, amountCents)` → `applied | refused |
 already_applied` ; `onPaymentFailed(subject, paymentId)` ;
-`onRefundOutcome(subject, refundId, outcome, position)` où `outcome` ∈
-`succeeded | failed | reversed | rejected` (le sujet pose sa vue — `refunded`
-ou la rend — et publie **ses** faits et **son** journal, comme aujourd'hui) ;
-`isCancelled(subject)` → `true | false` ; `describe(subject)` → `{ label,
+`onRefundOutcome(subject, outcome)` où `outcome` = `{ kind: succeeded | failed |
+reversed | rejected | settled_elsewhere, providerRef: string | null, refundId:
+string | null, amountCents, reason: string | null, position }` — tout ce
+qu'`orders` publie aujourd'hui (`OrderRefundSucceededFact.refundId`,
+`OrderRefundFailedFact.stripeRefundId`, `OrderRefundRejectedEvent.{stripeRefundId,
+amountCents, reason}`, les faits de journal `order.refund_*`) ; le sujet pose
+sa vue — `refunded` ou la rend — et publie **ses** faits et **son** journal ;
+un `rejected` n'a pas de ligne au carnet : `refundId` nul, `providerRef`
+posé ;
+`isCancelled(subject)` → `true | false` (lu par `card-payment` **sous le
+verrou du sujet**, que le canal prend) ; `describe(subject)` → `{ label,
 link }` (les cloches de `card-payment`) ; `claim(account, providerRef)` →
 `{ subject, amountCents, role, settled: paid | pending | failed | closed } |
 null` (« ce paiement est-il à toi, et où en es-tu ? », §4.6) ;
 `referencesSince(since)` → la liste `{ providerRef, subject, amountCents,
-settled }` des sujets du type créés depuis `since` (§4.3) ;
+settled }` des sujets du type créés depuis `since` — `settled` est **le
+règlement tel que le sujet le voit** (`payment_status`), rien de plus (§4.3,
+§5.2) ;
 `publishableKey()` est une **requête** du canal pour les mandats (§4.2).
 
 **Les faits durables** de `card-payment`, clés par sujet :
@@ -159,12 +169,19 @@ transitoire, §4.5) et, **transitoire P0**, `card_payment.provider_refund_event`
 `order.*` (`order.paid`, `order.payment_failed`, `order.paid_after_cancellation`,
 `order.refund_succeeded | _failed | _reversed`, et l'événement en mémoire
 `OrderRefundRejectedEvent`) **restent publiés par `b2b/orders`** depuis le
-canal (`onPaid`, `onRefundOutcome`), et leurs abonnés —
-`refund-paid-after-cancellation`, `reopen-refund-on-reversal`,
-`ring-refund-failed`, `ring-refund-rejected`, `reconcile-refunds-on-refund` —
-**restent dans `b2b`**, où ils appellent `CardRefunds` (`requestRemainder`
-avec `schedule`, `retry`) au lieu d'écrire le carnet. Rien à vider dans la
-boîte d'envoi, aucun abonné entre blocs.
+canal (`onPaid`, `onRefundOutcome`), et leurs abonnés **restent dans `b2b`** : `refund-paid-after-cancellation`
+(appelle `CardRefunds.requestRemainder`), `ring-refund-rejected`
+(`@EventsHandler`, n'injecte que `StaffNotifier` : la cloche de la commande),
+`reconcile-refunds-on-refund` (`accounting`, l'avoir). **Deux disparaissent** :
+`reopen-refund-on-reversal` — l'inversion appartient à `card-payment` (§6.2) —
+et `ring-refund-failed` — `card-payment` sonne, une seule cloche par incident
+(clé `requestId:generation:cause`). Les abonnés **entre blocs** sont nommés et
+`@DurableHandler` : `b2b/payments` sur `card_payment.unmatched` et
+`checkout_event`, `orders` sur `provider_refund_event` (P0 seulement). Un
+refus **déterministe** de `CardRefunds` dans un abonné durable (une autre
+demande en cours, un paiement inconnu) est **absorbé et journalisé**, jamais
+rejoué ; une panne est rejouée. L'abonné prend le verrou `orders` avant
+d'appeler `CardRefunds` (§3.6 vaut pour lui).
 
 **Le journal** : `card-payment` écrit **ses** faits sous le sujet
 `card_payment` (`card_payment.issued`, `attempt_failed`, `stopped`,
@@ -264,10 +281,12 @@ verrouille ensuite ses lignes. Les appels au prestataire (`prepare`,
 `cancel`, le remboursement) sont **hors** transaction.
 
 **Le webhook** est une commande de `card-payment` dont l'unité de travail
-**contient** l'appel au canal (`UnitOfWork.run` rejoint la transaction
+**contient** l'appel au canal — l'issue passée au canal est **relue sous le
+verrou des lignes de `card-payment`** (prises juste avant l'appel, après le
+verrou du sujet que le canal prend lui-même) : jamais une issue périmée — (`UnitOfWork.run` rejoint la transaction
 ambiante, vérifié dans `unit-of-work.ts`) : le canal d'abord (`onPaid` : le
 commerce prend `orders`, `markPaid`, publie `order.paid` au franchissement,
-ou `refused` / `already_applied` ; `onRefundSettled` : le commerce pose sa
+ou `refused` / `already_applied` ; `onRefundOutcome` : le commerce pose sa
 vue et publie `order.refund_succeeded` avec le `refundId`), **puis**
 `card-payment` écrit sa ligne et publie son fait. **Une transaction, un
 ordre.** Une annulée encaissée est `paid` chez `card-payment` et `refused` au
@@ -291,7 +310,12 @@ le jeu `root` gagne `card-payment` ;
 `datasource.prisma` : schéma `card_payment` ; `prisma-schema-layout`,
 `schema-ops.counter.ts` (`NON_PUBLIC_SCHEMA_OF_MODEL`), `purge-coverage.ts`
 (tables sans FK vers `public` : déclarées) ; `rgpd-staff` (`requested_by`,
-`settled_by_staff_id` en P1) ; la colonne dans la matrice du `CLAUDE.md`. ([[armer-une-porte-avant-de-demenager]])
+`settled_by_staff_id` en P1) ; la porte neuve `lint:card-accounts` (CHECK ↔
+registre), comptée au § 10 du `CLAUDE.md` (`lint/run.mjs` refuse de tourner
+si le compte ment) ; `journal-tracked` : une entrée `ZONES` pour
+`card-payment`, et l'exécuteur et le constat tracent sous `UnitOfWork` même
+s'ils ne sont pas des `@CommandHandler` ; la colonne dans la matrice du
+`CLAUDE.md`. ([[armer-une-porte-avant-de-demenager]])
 
 ### 4.2 Ce qui déménage
 
@@ -332,7 +356,12 @@ de tout l'existant), avec sujet, montant, rôle et **état du règlement** — e
 pour chacune : absente ⇒ insérée ; présente mais **en retard** sur le sujet
 (`pending` quand le sujet dit `paid` : un webhook traité par l'ancienne image)
 ⇒ transition **en avant seulement** (`pending|failed → paid`, `→ closed`),
-jamais en arrière ; différente autrement ⇒ signalée. **Horaire**, jusqu'à P2.
+jamais en arrière ; différente autrement ⇒ signalée — **sauf** une annulée
+que le sujet dit `failed` et la ligne `paid` (encaissée après annulation : le
+sujet ne peut pas le savoir), qui est juste. La borne couvre **aussi** toutes
+les lignes `pending | failed` antérieures au témoin (une vieille commande
+payée pendant la fenêtre). **Horaire**, jusqu'à P2. Sans témoin (base de
+test après `ctx.reset()`), la commande ne fait rien et le dit.
 Le SQL est conservateur (`pending | failed` selon `payment_status`, `closed`
 si annulée) ; seule la commande TS sait fermer par `retrieve` une intention
 annulée chez le prestataire (un pro abandonné reste `failed`, payable). Un
@@ -349,14 +378,15 @@ total_cents` (plausible : `CardOrderNotRevisableError`), `state` : `paid` si
 `markPaid` + `order.paid` ; `refused` si rien n'a franchi **et** la commande
 est annulée ; `already_applied` si rien n'a franchi parce qu'elle est déjà
 `paid` (le `cancelledOrderOf` d'aujourd'hui, inversé) ; `onPaymentFailed` ;
-`standingOf` ; `describe` ; `claim(account, providerRef)` → lit
+`isCancelled` ; `describe` ; `claim(account, providerRef)` → lit
 `orders.stripe_payment_intent_id` et rend sujet, `total_cents`, `first`.
 
 ### 4.5 Deux endpoints chez Stripe — l'ordre
 
 (1) déployer P0 : le contrôleur des cartes **et** celui des liens
 (`/payments/links/webhook`, secret `STRIPE_LINKS_WEBHOOK_SECRET` déclaré dans
-`RUNTIME_KEYS`, `env-readers`, le workflow — **vide** à ce stade : le
+`RUNTIME_KEYS`, `env-readers`, et **mappé** dans l'`env:` du workflow (une
+valeur absente y est sautée en silence) — **vide** à ce stade : le
 contrôleur des liens rend 400 et Stripe réessaie) ; (1 bis) créer l'endpoint
 chez Stripe, qui **génère** le secret, puis `wrangler secret put` ; pendant
 ce temps les `checkout.*` arrivent par les deux chemins, et
@@ -380,7 +410,10 @@ sujet la revendique, la ligne est créée **dans la transaction du webhook**,
 expiration, clôture, annulation) lisent `positionOf` — **qui n'écrit
 jamais** ; un sujet **sans ligne `first`** y est rendu tel quel, et c'est
 **le commerce** qui appelle alors la commande `CardPayments.adopt(subject,
-providerRef, amountCents, role, settled)` avant de poursuivre (il connaît
+providerRef, amountCents, role, settled)` — depuis **ses commandes**
+(abandon, expiration, clôture, annulation) ; la page de règlement et le
+rejeu, qui sont des **requêtes**, rendent « paiement à adopter » et l'écran
+envoie une commande `AdoptOrderPayment` avant de réafficher (il connaît
 `orders.stripe_payment_intent_id`). Le **cron horaire** (§4.3) rattrape le
 reste, y compris un `markPaid` fait par l'ancienne image (transition en
 avant).
@@ -448,8 +481,10 @@ provider`, `request_id` quand une demande porte ce `re_…`, `nature := return`
 paiement sans reste ⇒ `refunded` ; (b) `re_…` `failed | canceled`, **ou**
 `re_…` nul et échéance nulle ⇒ `stopped` ; (c) `re_…` posé mais **absent du
 carnet**, ou vivant ⇒ `issued` ; (d) sinon `to_issue`, échéance conservée.
-Un `re_…` émis par l'ancienne image et constaté par la nouvelle avant le cron
-est retrouvé **par sa métadonnée** (`requestId` = `order_id` = l'id repris)
+En P1, `referencesSince` ne rend que le règlement **vu du sujet** : le cron
+n'applique que « en retard », et tient pour juste une annulée `failed` dont la
+ligne est `paid`. Un `re_…` émis par l'ancienne image et constaté par la
+nouvelle avant le cron est retrouvé **par sa métadonnée** (`requestId` = `order_id` = l'id repris)
 : pas de fausse cloche. Les anciennes tables restent sans lecteur jusqu'à P2.
 
 ### 5.3 Ce qui change à l'écran
@@ -461,24 +496,34 @@ Le bandeau : plusieurs demandes par commande, plus d'état `failed`
 d'aujourd'hui `refund/retry` (sous `b2b_cancel_order:write`) appelle
 `CardRefunds.retry` jusqu'à P2.
 
-### 5.4 Ce qui déménage avec
+### 5.4 Ce qui déménage avec — et ce qui se draine
 
 L'exécuteur, le bail, l'enregistreur, le constat, le balayage, la cloche
-(avec `describe`), « Relancer », et le journal de `card-payment` (§3.3). **Les
-abonnés d'`orders` restent dans `b2b`** et appellent `CardRefunds` ;
-`CardProviderRefunds` et `provider_refund_event` sont **retirés**. Les
-anciennes tables n'ont plus d'écrivain : la porte de propriété **se tait**
-sur elles — ce qui chasse leurs lecteurs est le **retrait des relations**
-(`Order.refunds`, `Order.refundRequest`, `Invoice.refunds`) **et un test** qui
-grep `prisma.orderRefund` / `orderRefundRequest` hors de `card-payment` à
-zéro, jusqu'au retrait des modèles en P2.
+(avec `describe`, clé `requestId:generation:cause`), « Relancer », l'inversion
+(§6.2) et le journal de `card-payment` (§3.3) ; le contrat gagne
+un fichier `card-payment` **à créer** dans `packages/contracts/src/journal-facts/` et le back-office ses
+phrases (`refund-phrases.ts` garde celles d'`order.*`). **Les abonnés
+d'`orders` restent dans `b2b`** (§3.3). `CardProviderRefunds` et
+`provider_refund_event` sont **retirés** — après **drainage** : une route
+`GET admin/outbox/pending?type=…` rend le compte des livraisons non remises
+d'un type, et une étape du déploiement de P1 **attend zéro** sur
+`card_payment.provider_refund_event` avant la bascule (même étape en P2 pour
+`checkout_event`). Les anciennes tables n'ont plus d'écrivain : la porte de
+propriété **se tait** sur elles — ce qui chasse leurs lecteurs est le
+**retrait des relations** (`Order.refunds`, `Order.refundRequest`,
+`Invoice.refunds`) **et un test** qui grep `prisma.orderRefund` /
+`orderRefundRequest` hors de `card-payment` à zéro, jusqu'au retrait des
+modèles en P2.
 
 ### 5.5 « Rendu autrement »
 
 `stopped → settled_elsewhere` (motif, fiche staff) ; ligne `refund` `manual`,
 statut `succeeded`, **montant = celui de la demande** (`amount`) ou le reste
-du paiement (`remainder`) ; publie `card_payment.refund_succeeded` (réveille
-la facture) ; avoir selon la nature, comme un `re_…`.
+du paiement (`remainder`) ; **appelle le canal** `onRefundOutcome(subject,
+{ kind: settled_elsewhere, refundId, amountCents })` — c'est ainsi que le
+sujet publie `order.refund_succeeded`, que la facture se réveille et que
+l'avoir se décide (selon la nature, comme un `re_…`) ; puis publie
+`card_payment.refund_succeeded`.
 
 ## 6. Ce que le socle tient aussi
 
@@ -493,21 +538,27 @@ sur `order.refund_succeeded` (fait du commerce, inchangé ; seul
 `reconcile-refunds-on-refund` existe aujourd'hui). `RefundReconciler` : nature `adjustment` ⇒ pas d'avoir,
 `refund_credit (reason = adjustment)` ; sinon avoir. Inerte avant S1.
 
-### 6.2 L'inversion et le geste manuel
+### 6.2 L'inversion et le geste manuel — à `card-payment`
 
-Par le `re_…` (l'abonné d'`orders`, sur `order.refund_reversed`, appelle
-`CardRefunds`) : `refunded → stopped`, cloche. Sans demande : si
-`isCancelled(subject)`, `requestRemainder(…, 'button')` → une `remainder`
-**née `stopped`** (ou la vivante existante, laissée telle quelle), cloche —
-**jamais une relance seule** (Q3) ; si `live`, cloche seulement. Un `re_…`
-sans demande : constaté (`request_id`, `nature` nuls), cloche « hors
-plateforme » ; une `remainder` `to_issue | stopped` d'un paiement sans reste
-⇒ `refunded`. `refund_in_flight` : en vol **sauf** les `amount`.
+**Le constat** d'un `re_…` passé de `succeeded` à `failed | canceled`
+(`outcome = reversed`), sous le verrou du sujet puis des siennes : retrouve
+**sa** demande par le `re_…` (`provider_ref` sur `refund_request`) et la passe
+`refunded → stopped` ; sans demande (un `re_…` manuel) : si
+`isCancelled(subject)`, `requestRemainder(…, 'button')` — une `remainder`
+**née `stopped`** (ou la `stopped` existante, laissée) ; sinon rien d'écrit ;
+dans tous les cas **la cloche de `card-payment`** (par `describe`) et l'appel
+au canal `onRefundOutcome(reversed)`, par lequel `orders` publie
+`order.refund_reversed` et son journal. Plus d'abonné `reopen-refund-on-reversal`
+dans `b2b`. **Jamais une relance seule** (Q3). Un `re_…` sans demande est
+constaté (`request_id`, `nature` nuls), cloche « hors plateforme » ; une
+`remainder` `to_issue | stopped` d'un paiement sans reste ⇒ `refunded`.
+`refund_in_flight` : en vol **sauf** les `amount`.
 
 ### 6.3 Le constat d'un remboursement
 
 Retrouve le paiement par `(account, provider_ref)` (une table) ; **une
-transaction** : canal `onRefundOutcome(subject, refundId, outcome, position)` d'abord
+transaction** : verrou du sujet (par le canal), puis **les lignes de `card-payment`**, l'issue
+**relue** sous ce verrou, puis le canal `onRefundOutcome(subject, outcome)`
 (le sujet pose `refunded` quand `Σ succeeded = encaissé`, ou la rend, et
 publie ses faits `order.refund_*` et son journal), puis le carnet et le fait de `card-payment`.
 
@@ -689,7 +740,7 @@ emplacement, l'ordre du secret des liens) — intégrés dans cette version 7 :
 `referencesSince` borné par une ligne-témoin, `adopt` est une commande, le
 registre a deux moitiés, `CardProviders` dans `card-payment`.
 
-### 15 bis. Verdict de `vitruve` sur la version 7 (2026-11-09, soir)
+### 15 bis. Verdict de `vitruve` sur la version 7 (2026-11-09, soir) — intégré dans la v8
 
 **P0 : plus rien ne bloque.** P1 : deux bloquants, tous deux sur la surface :
 `onRefundOutcome(subject, refundId, outcome, position)` ne porte pas ce
@@ -706,7 +757,7 @@ appelle `onRefundOutcome(succeeded)` ; `provider_refund_event` et
 boîte d'envoi n'en porte plus, par une route de compte à ajouter) ; en P1
 `referencesSince` rend le règlement **tel que le sujet le voit** et le cron
 ne compare que « en retard », jamais « différent » sur une annulée ; le
-journal gagne `packages/contracts/src/journal-facts/card-payment.ts` et ses
+journal gagne un fichier `card-payment` **à créer** dans `packages/contracts/src/journal-facts/` et ses
 phrases ; `adopt` est appelé par une **commande** du commerce (la page de
 règlement reste une requête et rend « à adopter ») ; la borne du cron de P0
 couvre aussi les `pending | failed` antérieurs au témoin ; la décision du
