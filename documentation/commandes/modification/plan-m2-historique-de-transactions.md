@@ -1,6 +1,6 @@
 # Plan M2 — modifier une commande payée par carte : l'historique de transactions
 
-> **Doc-first, 2026-11-09. Version 6** (la v5, `2e64016aa`, contredite le même jour : deux bloquants, dix sérieux, intégrés ici). Le plan **unique** de M2, écrit après la
+> **Doc-first, 2026-11-09. Version 7** (v5 `2e64016aa` et v6 `cec227b94` contredites le même jour ; tout est intégré ici, le détail est au §15). Le plan **unique** de M2, écrit après la
 > relecture complète du paiement et du remboursement
 > ([`../reglement/relecture-paiement-et-remboursement.md`](../reglement/relecture-paiement-et-remboursement.md),
 > à lire d'abord), des deux portes de frontière, du workflow de déploiement,
@@ -91,25 +91,28 @@ dû a baissé).
 
 ### 3.2 Le compte d'encaissement
 
-- **Le registre** `CardAccounts` vit dans **`platform/config`** (`AppConfig`,
-  comme `stripeConfig()` aujourd'hui : `ops` et le rapport de démarrage n'ont
-  droit qu'à `platform`) et lit
-  `CARD_PAYMENT_ACCOUNTS` — un JSON `{ "lfc-stripe": { "type": "stripe",
-"env": "STRIPE" }, "lfc-caisse-epargne": { "type": "lyra", "env":
-"LYRA_CE" } }` — et, par compte, les variables **préfixées** `<ENV>_SECRET_KEY`,
-  `<ENV>_PUBLISHABLE_KEY`, `<ENV>_WEBHOOK_SECRET` (pour `lfc-stripe`, les trois
-  noms d'aujourd'hui). Chaque compte neuf **ajoute ses noms, littéraux**, aux trois listes que
+- **Le registre a deux moitiés.** Les **noms** des comptes, leur type de
+  prestataire, le préfixe de leurs variables et `default_for` sont **dans le
+  dépôt** (`platform/config/card-accounts.ts` : `lfc-stripe` → type `stripe`,
+  préfixe `STRIPE` ; demain `lfc-caisse-epargne` → type `lyra`, préfixe
+  `LYRA_CE`) ; les **secrets** sont dans l'environnement, par compte, sous les
+  noms **préfixés** `<PREFIXE>_SECRET_KEY`, `_PUBLISHABLE_KEY`,
+  `_WEBHOOK_SECRET` (pour `lfc-stripe`, les trois noms d'aujourd'hui).
+  `AppConfig` les lit (comme `stripeConfig()`). Chaque compte neuf **ajoute
+  ses noms, littéraux**, au fichier du registre et aux trois listes que
   `runtime-keys.spec.ts` compare (`env-readers.ts`, `RUNTIME_KEYS` de
-  `container/worker.ts`, la boucle `for name in` du workflow —
-  `CARD_PAYMENT_ACCOUNTS` compris) et se déploie : « une entrée de
-  configuration **et** un déploiement », dit. `adapterFor(account)` instancie
-  **un adaptateur par compte** (un par **type** de prestataire dans le code :
-  `stripe` aujourd'hui, `lyra` demain). Un compte présent en base et absent du registre **ne fait pas tomber la
-  production** ([[la-prod-ne-tombe-jamais]]) : la **veille** sonne, le rapport
-  de démarrage le dit, et une **porte CI** compare le CHECK de la colonne au
-  registre du dépôt ; `StripeProbe` et le rapport lisent **tous** les comptes.
-- **Le compte se choisit par type de sujet** : `accounts.default_for = {
-"order": "lfc-stripe" }`. **L'appelant ne nomme aucun compte** (une chaîne
+  `container/worker.ts`, la boucle `for name in` du workflow), et se
+  déploie : « une entrée de configuration **et** un déploiement », dit.
+- Dans `card-payment`, **`CardProviders`** (un jeton) instancie **un
+  adaptateur par compte** à partir du registre (un adaptateur par **type**
+  dans le code : `stripe` aujourd'hui, `lyra` demain) ; c'est **ce jeton** que
+  les e2e doublent. Un compte présent en base et absent du fichier **ne fait
+  pas tomber la production** ([[la-prod-ne-tombe-jamais]]) : la **veille**
+  sonne, et une **porte CI** compare le CHECK de la colonne au fichier du
+  registre ; `StripeProbe` (dans `ops`, qui lit `platform`) sonde **tous** les
+  comptes du fichier.
+- **Le compte se choisit par type de sujet** (`default_for.order = lfc-stripe`,
+  dans le fichier). **L'appelant ne nomme aucun compte** (une chaîne
   `"lfc-stripe"` dans `orders` serait la chaîne en dur du `CLAUDE.md` § 6).
   **Le paiement mémorise son compte** (`payment.account`, **CHECK** sur la
   liste des comptes connus — valeur persistée, migration par compte neuf) ;
@@ -125,19 +128,23 @@ Déclarés et implémentés par `card-payment`, dans `card-payment/channels/requ
 | Port                       | Gestes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Appelé par                                                                                   |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **`CardPayments`**         | `prepare(subjectType, amountCents)` → `{ prepared, clientSecret, publishableKey }` (**hors** transaction : le compte est choisi par type, l'intention créée) ; `attach(subject, prepared, role)` → `{ paymentId, providerRef }` (**dans** la transaction de l'appelant : ligne `pending`) ; `release(prepared)` (échec de la transaction : `cancel` au mieux, comme aujourd'hui) ; `retrieve(paymentId)` ; `cancel(paymentId)` → `cancelled \| already_cancelled \| already_paid \| in_progress \| unavailable` | passation, page de règlement, hausse, abandon, clôture                                       |
-| **`CardRefunds`**          | `requestRemainder(paymentId, nature, reason, schedule: 'now' \| 'button')` → la demande (**idempotent** : rend la `remainder` non terminale du paiement, sinon crée) ; `requestAmount(paymentId, amountCents, nature, reason)` ; `retry(requestId)` — dans la transaction de l'appelant                                                                                                                                                                                                                         | annulation, baisse, refus d'une hausse, inversion, route d'équipe d'aujourd'hui (jusqu'à P2) |
+| **`CardRefunds`**          | `requestRemainder(paymentId, nature, reason, schedule: 'now' \| 'button')` → la demande (**idempotent** : rend la `remainder` **en cours** (`to_issue \| issued`) du paiement, sinon crée — une `stopped` existante reste, et le bouton la relancera) ; `requestAmount(paymentId, amountCents, nature, reason)` ; `retry(requestId)` — dans la transaction de l'appelant                                                                                                                                        | annulation, baisse, refus d'une hausse, inversion, route d'équipe d'aujourd'hui (jusqu'à P2) |
 | **`CardSettlementReader`** | `positionOf(subjects[])` → par sujet : paiements (id, compte, `providerRef`, rôle, état, montant), encaissé, remboursé par nature, demandes non terminales (id, forme, nature, état), en vol par forme ; `succeededRefundsOf(subject)` → chaque remboursement réussi (id, montant, nature, source) — **par lot**                                                                                                                                                                                                | annulation, révision, listes, facture carte, avoirs                                          |
 
 Le **canal retour** `SubjectSettlement` (`card-payment/channels/subjects/`,
 un implémenteur par `subject_type`, relié dans `appBootstrap/`) :
 `onPaid(subject, paymentId, amountCents)` → `applied | refused |
 already_applied` ; `onPaymentFailed(subject, paymentId)` ;
-`onRefundSettled(subject, refundId, position)` ; `isCancelled(subject)` → `true | false`
-(l'inversion sans demande ne rouvre que sur une **annulée**, jamais sur une
-vente livrée) ; `describe(subject)` → `{ label, link }` (les cloches et le journal
-des demandes écrivent aujourd'hui `orderNumber` et `/commandes/:id`) ;
-`claim(account, providerRef)` → `{ subject, amountCents, role } | null` (« ce
-paiement est-il à toi ? », §4.6).
+`onRefundOutcome(subject, refundId, outcome, position)` où `outcome` ∈
+`succeeded | failed | reversed | rejected` (le sujet pose sa vue — `refunded`
+ou la rend — et publie **ses** faits et **son** journal, comme aujourd'hui) ;
+`isCancelled(subject)` → `true | false` ; `describe(subject)` → `{ label,
+link }` (les cloches de `card-payment`) ; `claim(account, providerRef)` →
+`{ subject, amountCents, role, settled: paid | pending | failed | closed } |
+null` (« ce paiement est-il à toi, et où en es-tu ? », §4.6) ;
+`referencesSince(since)` → la liste `{ providerRef, subject, amountCents,
+settled }` des sujets du type créés depuis `since` (§4.3) ;
+`publishableKey()` est une **requête** du canal pour les mandats (§4.2).
 
 **Les faits durables** de `card-payment`, clés par sujet :
 `card_payment.settled` (avec l'issue du canal), `card_payment.failed`,
@@ -146,19 +153,27 @@ paiement est-il à toi ? », §4.6).
 `card_payment.unmatched` (avec le **type d'événement** : « hors de mes
 sujets » — pas une anomalie en soi ; `b2b/payments` l'écoute et **ne sonne
 que sur un remboursement**, comme `OnRefundWithoutOrder` aujourd'hui, qui
-passe `@DurableHandler` **en P0**),
-et, **transitoire P0**, `card_payment.provider_refund_event` (§4.4). Les faits `order.*` du
-règlement (`order.paid`, `order.payment_failed`, `order.paid_after_cancellation`,
-`order.refund_succeeded`) **restent publiés par `b2b/orders`** depuis le canal,
-et leurs abonnés d'`orders` et d'`accounting` ne bougent pas. Les faits
-**du remboursement lui-même** (`refund_failed`, `refund_reversed`,
-`refund_rejected`) deviennent en P1 des faits **de `card-payment`**, et
-leurs abonnés (`reopen-refund-on-reversal`, `ring-refund-failed`, le
-`@EventsHandler` `ring-refund-rejected`) déménagent **avec l'enregistreur**
-qui les publie, en changeant de type — ce qui exige, parce que
-`outbox-relay.ts` cherche par `(type, nom)`, que **la boîte d'envoi soit vide
-de ces types au déploiement de P1** : une étape du déploiement l'attend
-(`admin/outbox/sweep` rend le compte) avant la bascule.
+passe `@DurableHandler` **en P0**), `card_payment.checkout_event` (relais
+transitoire, §4.5) et, **transitoire P0**, `card_payment.provider_refund_event`
+(§4.2). **Aucun abonné existant ne change de type ni de bloc** : les faits
+`order.*` (`order.paid`, `order.payment_failed`, `order.paid_after_cancellation`,
+`order.refund_succeeded | _failed | _reversed`, et l'événement en mémoire
+`OrderRefundRejectedEvent`) **restent publiés par `b2b/orders`** depuis le
+canal (`onPaid`, `onRefundOutcome`), et leurs abonnés —
+`refund-paid-after-cancellation`, `reopen-refund-on-reversal`,
+`ring-refund-failed`, `ring-refund-rejected`, `reconcile-refunds-on-refund` —
+**restent dans `b2b`**, où ils appellent `CardRefunds` (`requestRemainder`
+avec `schedule`, `retry`) au lieu d'écrire le carnet. Rien à vider dans la
+boîte d'envoi, aucun abonné entre blocs.
+
+**Le journal** : `card-payment` écrit **ses** faits sous le sujet
+`card_payment` (`card_payment.issued`, `attempt_failed`, `stopped`,
+`settled_elsewhere`, `verified`, `unmatched`, `reconciled`), libellé par
+`describe` ; `orders` garde les siens (`order.refund_recorded`,
+`fully_refunded`, `refund_rejected`…), écrits dans `onRefundOutcome`. Aucune
+valeur de fait n'est renommée. `journal-tracked` audite `card-payment` comme
+zone d'argent : chaque handler de ses commandes et crons trace sous
+`UnitOfWork`.
 
 **Les routes d'équipe** (`card-payment/http/`, surface `card_payments`,
 ressource `StaffResource.card_payments` **en P1**) : « Relancer », « rendu
@@ -209,7 +224,7 @@ stateDiagram-v2
   `to_issue` a une échéance.** Une demande **née** `stopped` attend le bouton.
 - Enum Postgres par machine ; déclencheur `BEFORE UPDATE` : paire hors liste
   refusée, `(x, x)` admis, **colonnes immuables** refusées — sur `payment` :
-  `subject_*`, `account`, `role`, `provider_ref` une fois posé ; sur
+  `subject_*`, `account`, `role`, `amount_cents`, `provider_ref` une fois posé ; sur
   `refund_request` : `payment_id`, `form`, `amount_cents`, `nature`, `reason` ;
   sur `refund` : `payment_id`, `account`, `provider_ref`, `amount_cents`,
   `nature`, `source` — comparées par `IS DISTINCT FROM` (colonnes nullables) ;
@@ -288,8 +303,10 @@ d'aujourd'hui ; `order.payByCard(providerRef)` **continue d'écrire**
 `orders.stripe_payment_intent_id` ; les trois handlers de passation sont
 touchés, et le rejeu lit `retrieve`), la page de règlement (`retrieve`),
 l'abandon, l'expiration, la clôture (`cancel`) ; les **mandats**
-(`admin-mandates.controller.ts`) lisent `CardPayments.publishableKey()` par le
-bus, comme toute route ; `prepare` prend un `tag` opaque (`companyId` ou
+(`admin-mandates.controller.ts`) lisent la clé publique par une **requête** du
+canal (`card-payment/channels/`, la seule surface admise), par le bus — une
+clé de carte sur l'écran SEPA parce que l'écran l'affiche, pas parce que le
+bloc l'encaisse ; `prepare` prend un `tag` opaque (`companyId` ou
 `personal`, la métadonnée d'aujourd'hui) que l'adaptateur pose chez le
 prestataire. **Le remboursement ne bouge
 pas** : il reste dans `b2b/orders`, sur ses tables, et atteint le prestataire
@@ -306,20 +323,24 @@ change de type).
 (unique par `(account, provider_ref)`), `role` (`first | complement`),
 `amount_cents` (> 0), `state`, `created_at`, `paid_at`. Index unique
 `(subject_type, subject_id) WHERE role = 'first'`. **Reprise** : le SQL de la migration (il lit `orders`, ce qu'une migration
-peut faire), **et** la commande `ReplayFirstPayments`, qui vit dans
-`card-payment` et **ne lit pas `orders`** : elle demande au canal
-`SubjectSettlement.listUnattached(account, since)` (le bloc métier rend ses
-sujets qui ont une référence sans ligne `payment`, avec montant, rôle et état
-du règlement), et insère ; **horaire**, jusqu'à P2 ; insère l'absent, signale
-le différent, n'écrase jamais ; un test compare SQL et TS sur un jeu de
-lignes **dès P0** : pour toute commande avec une intention,
-`account := lfc-stripe`, `amount_cents := total_cents` (plausible :
-`CardOrderNotRevisableError`, aucune révision carte à ce jour), `state` :
-`paid` si `payment_status ∈ {paid, refunded}` **ou** carnet non vide **ou**
-demande `paid_after_cancellation` (une annulée payée est `paid`) ; sinon
-`closed` si `status = cancelled` **ou** si l'intention est annulée chez le
-prestataire (lu à la reprise par `retrieve` : un pro abandonné est `placed` +
-`failed` avec une intention vivante — il reste `failed`, payable) ; sinon
+peut faire) pose les lignes `first` et **une ligne-témoin**
+`card_payment.takeover (lot, migrated_at)`. Puis la commande
+`ReplayFirstPayments`, dans `card-payment`, **ne lit pas `orders`** : elle
+demande au canal `referencesSince(migrated_at − 1 h)` — le bloc métier rend
+ses références créées **depuis le témoin** (borne connue : jamais un balayage
+de tout l'existant), avec sujet, montant, rôle et **état du règlement** — et,
+pour chacune : absente ⇒ insérée ; présente mais **en retard** sur le sujet
+(`pending` quand le sujet dit `paid` : un webhook traité par l'ancienne image)
+⇒ transition **en avant seulement** (`pending|failed → paid`, `→ closed`),
+jamais en arrière ; différente autrement ⇒ signalée. **Horaire**, jusqu'à P2.
+Le SQL est conservateur (`pending | failed` selon `payment_status`, `closed`
+si annulée) ; seule la commande TS sait fermer par `retrieve` une intention
+annulée chez le prestataire (un pro abandonné reste `failed`, payable). Un
+test compare SQL et TS sur le jeu de lignes **que le SQL sait juger**, dès
+P0. Règle du `first` : `account := lfc-stripe`, `amount_cents :=
+total_cents` (plausible : `CardOrderNotRevisableError`), `state` : `paid` si
+`payment_status ∈ {paid, refunded}` **ou** carnet non vide **ou** demande
+`paid_after_cancellation` ; sinon `closed` si `status = cancelled` ; sinon
 `pending | failed`.
 
 ### 4.4 Le canal, côté commerce
@@ -334,12 +355,15 @@ est annulée ; `already_applied` si rien n'a franchi parce qu'elle est déjà
 ### 4.5 Deux endpoints chez Stripe — l'ordre
 
 (1) déployer P0 : le contrôleur des cartes **et** celui des liens
-(`/payments/links/webhook`, secret `STRIPE_LINKS_WEBHOOK_SECRET` ajouté à
-`RUNTIME_KEYS`, `env-readers`, `wrangler secret`) ; le contrôleur des cartes
+(`/payments/links/webhook`, secret `STRIPE_LINKS_WEBHOOK_SECRET` déclaré dans
+`RUNTIME_KEYS`, `env-readers`, le workflow — **vide** à ce stade : le
+contrôleur des liens rend 400 et Stripe réessaie) ; (1 bis) créer l'endpoint
+chez Stripe, qui **génère** le secret, puis `wrangler secret put` ; pendant
+ce temps les `checkout.*` arrivent par les deux chemins, et
+`settle-payment-link` est idempotent (`already_paid`) ; le contrôleur des cartes
 **continue de router** `checkout.session.*` vers `b2b/payments` par le fait
 `card_payment.unmatched`-like dédié `card_payment.checkout_event` **tant que
-l'étape (2) n'est pas faite** — jamais un 200 muet ; (2) créer l'endpoint des
-liens chez Stripe ; (3) restreindre les événements de chaque endpoint ; (4)
+l'étape (2) n'est pas faite** — jamais un 200 muet ; (2) vérifier qu'un `checkout.*` passe par le nouvel endpoint ; (3) restreindre les événements de chaque endpoint ; (4)
 retirer le relais (P2). Un remboursement d'un paiement par lien arrive sur
 l'endpoint des cartes et finit `unmatched` : **normal**, `b2b/payments`
 sonne comme aujourd'hui (`OnRefundWithoutOrder`, en `@DurableHandler`). P0
@@ -349,24 +373,25 @@ schéma) — dit.
 ### 4.6 La fenêtre de déploiement de P0
 
 Une commande passée par l'ancienne image a une intention sans ligne
-`payment`. Le webhook sur une référence inconnue **appelle `claim`** ; si un
-sujet la revendique, la ligne est créée et le traitement continue ; sinon
-`unmatched`. Les autres chemins (page de règlement, rejeu, abandon,
-expiration, clôture, annulation) lisent `positionOf` ; un sujet **sans ligne
-`first`** y déclenche le même `claim` (par `orders.stripe_payment_intent_id`,
-que le commerce connaît) avant de répondre — **le cron horaire** rattrape le
-reste. Un `markPaid` fait par l'ancienne image sans ligne `payment` est
-rattrapé par le cron de reprise (`ReplayFirstPayments`, jusqu'à P2). La veille
-du commerce (§6.6) compare les deux vérités.
+`payment`. Le webhook sur une référence inconnue **appelle `claim`** ; si le
+sujet la revendique, la ligne est créée **dans la transaction du webhook**,
+à l'état que le sujet déclare, et le traitement continue ; sinon
+`unmatched`. Les chemins du commerce (page de règlement, rejeu, abandon,
+expiration, clôture, annulation) lisent `positionOf` — **qui n'écrit
+jamais** ; un sujet **sans ligne `first`** y est rendu tel quel, et c'est
+**le commerce** qui appelle alors la commande `CardPayments.adopt(subject,
+providerRef, amountCents, role, settled)` avant de poursuivre (il connaît
+`orders.stripe_payment_intent_id`). Le **cron horaire** (§4.3) rattrape le
+reste, y compris un `markPaid` fait par l'ancienne image (transition en
+avant).
 
 ### 4.7 Les tests de P0
 
 `test/card-payments.ts` et `test/order-factory.ts` (importé par ~75 e2e)
 **passent par la commande de webhook de `card-payment`** ; les ~20 e2e qui
-envoient `ConfirmOrderPaymentCommand` en direct et les ~120 qui doublent
-`PaymentGateway` par son jeton changent d'import (le port déménage) et
-doublent désormais **l'adaptateur du compte** (`CardAccounts` doublé, pas le
-port) ; `forceState` écrit aussi `payment`. Les **scénarios** ne changent
+envoient `ConfirmOrderPaymentCommand` en direct et les ~120 (131 fichiers citent `PaymentGateway`) qui le doublent
+par son jeton doublent désormais le jeton **`CardProviders`** de `card-payment`
+(le registre des adaptateurs par compte) ; `forceState` écrit aussi `payment`. Les **scénarios** ne changent
 pas ; les **helpers et les imports** si — c'est un lot de tests à part
 entière, compté dans P0.
 
@@ -381,8 +406,8 @@ secret des liens, `RUNTIME_KEYS`), deux endpoints chez Stripe, les imports.
 
 ### 5.1 Les tables
 
-- **`refund_request`** : `id` (les ids d'aujourd'hui **conservés**, des
-  cuid ; neufs en ULID), `payment_id` (non nul), `form`, `amount_cents`
+- **`refund_request`** : `id` (ULID ; pour les lignes reprises, `id := order_id`, la clé
+  d'aujourd'hui), `payment_id` (non nul), `form`, `amount_cents`
   (CHECK), `nature`, `reason` (texte borné), `state`, `settled_by_staff_id`,
   `settled_reason`, les colonnes d'aujourd'hui. Index unique partiel
   `(payment_id) WHERE form = 'remainder' AND state IN ('to_issue', 'issued')`
@@ -439,11 +464,14 @@ d'aujourd'hui `refund/retry` (sous `b2b_cancel_order:write`) appelle
 ### 5.4 Ce qui déménage avec
 
 L'exécuteur, le bail, l'enregistreur, le constat, le balayage, la cloche
-(avec `describe`), « Relancer », et les abonnés du remboursement
-(`reopen-refund-on-reversal`, `ring-refund-failed`, `ring-refund-rejected`)
-qui écoutent désormais les faits de `card-payment` (§3.3 : boîte d'envoi
-vide de l'ancien type au déploiement) ; `CardProviderRefunds` et
-`provider_refund_event` sont **retirés**.
+(avec `describe`), « Relancer », et le journal de `card-payment` (§3.3). **Les
+abonnés d'`orders` restent dans `b2b`** et appellent `CardRefunds` ;
+`CardProviderRefunds` et `provider_refund_event` sont **retirés**. Les
+anciennes tables n'ont plus d'écrivain : la porte de propriété **se tait**
+sur elles — ce qui chasse leurs lecteurs est le **retrait des relations**
+(`Order.refunds`, `Order.refundRequest`, `Invoice.refunds`) **et un test** qui
+grep `prisma.orderRefund` / `orderRefundRequest` hors de `card-payment` à
+zéro, jusqu'au retrait des modèles en P2.
 
 ### 5.5 « Rendu autrement »
 
@@ -467,7 +495,8 @@ sur `order.refund_succeeded` (fait du commerce, inchangé ; seul
 
 ### 6.2 L'inversion et le geste manuel
 
-Par le `re_…` : `refunded → stopped`, cloche. Sans demande : si
+Par le `re_…` (l'abonné d'`orders`, sur `order.refund_reversed`, appelle
+`CardRefunds`) : `refunded → stopped`, cloche. Sans demande : si
 `isCancelled(subject)`, `requestRemainder(…, 'button')` → une `remainder`
 **née `stopped`** (ou la vivante existante, laissée telle quelle), cloche —
 **jamais une relance seule** (Q3) ; si `live`, cloche seulement. Un `re_…`
@@ -478,9 +507,9 @@ plateforme » ; une `remainder` `to_issue | stopped` d'un paiement sans reste
 ### 6.3 Le constat d'un remboursement
 
 Retrouve le paiement par `(account, provider_ref)` (une table) ; **une
-transaction** : canal `onRefundSettled(subject, refundId, position)` d'abord
+transaction** : canal `onRefundOutcome(subject, refundId, outcome, position)` d'abord
 (le sujet pose `refunded` quand `Σ succeeded = encaissé`, ou la rend, et
-publie `order.refund_succeeded`), puis le carnet et le fait de `card-payment`.
+publie ses faits `order.refund_*` et son journal), puis le carnet et le fait de `card-payment`.
 
 ### 6.4 Les deux vérités du premier paiement
 
@@ -576,24 +605,24 @@ vers `/payments/webhook/lfc-stripe` — de `/payments/webhook` sans compte.
 
 ## 11. Les garanties
 
-| Étage               | Ce qui tient                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **G0 la frontière** | un seul bloc touche l'argent carte et ses prestataires ; `context-boundaries` (imports) et `prisma-model-ownership` (écrivain unique, dès P0) ; relations retirées en P1 ; aucune écriture d'un autre bloc dans `card_payment` ; `journal-tracked` audite le bloc                                                                                                                                                                                                        |
-| **G1 inexprimable** | montants > 0 ; `form = amount ⇔ amount_cents` ; une `remainder` **en cours** par paiement ; un `first` par sujet ; un projet non terminal par commande ; `(account, provider_ref)` uniques ; `account` ∈ comptes connus ; `source = provider ⇔ provider_ref` ; `settled_elsewhere ⇔ motif + staff` ; `refund_credit` : un avoir par remboursement et un remboursement par avoir ; transitions et colonnes immuables par déclencheur ; `DELETE` sous `card_payment.purge` |
-| **G2 agrégat**      | `Σ succeeded ≤ amount_cents` par paiement et par sujet ; `amount` ≤ reste ; projet : total recomposé = total payé ; un registre qui ne couvre pas la base refuse le démarrage                                                                                                                                                                                                                                                                                            |
-| **G3 l'égalité**    | sujet vivant soldé : encaissé − `adjustment` = total dû ; annulé soldé : encaissé − remboursé = 0 ; vérifiée à la facture carte (pro) et par la veille du commerce (tous, 60 j) ; `stopped` ou `stalled` = non soldé, signalé                                                                                                                                                                                                                                            |
-| **G4 prestataire**  | « Vérifier » à la main ; la veille attrape ce qui attend trop ; le rapprochement attend son signal. **Laisse passer** le contenu d'un webhook perdu                                                                                                                                                                                                                                                                                                                      |
+| Étage               | Ce qui tient                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **G0 la frontière** | un seul bloc touche l'argent carte et ses prestataires ; `context-boundaries` (imports) et `prisma-model-ownership` (écrivain unique, dès P0) ; relations retirées en P1 ; aucune écriture d'un autre bloc dans `card_payment` ; `journal-tracked` audite le bloc                                                                                                                                                                                                                                                                                        |
+| **G1 inexprimable** | montants > 0 ; `form = amount ⇔ amount_cents` ; une `remainder` **en cours** par paiement ; un `first` par sujet ; un projet non terminal par commande ; `(account, provider_ref)` uniques ; `account` ∈ comptes connus ; `source = provider ⇔ provider_ref` ; `settled_elsewhere ⇔ motif + staff` ; `refund_credit` : un avoir par remboursement et un remboursement par avoir ; transitions et colonnes immuables par déclencheur ; `DELETE` sous `card_payment.purge` (un `TRUNCATE`, trigger de table, n'est pas couvert : voulu pour `ctx.reset()`) |
+| **G2 agrégat**      | `Σ succeeded ≤ amount_cents` par paiement et par sujet ; `amount` ≤ reste ; projet : total recomposé = total payé ; un compte en base hors du fichier du registre rougit la porte CI et la veille                                                                                                                                                                                                                                                                                                                                                        |
+| **G3 l'égalité**    | sujet vivant soldé : encaissé − `adjustment` = total dû ; annulé soldé : encaissé − remboursé = 0 ; vérifiée à la facture carte (pro) et par la veille du commerce (tous, 60 j) ; `stopped` ou `stalled` = non soldé, signalé                                                                                                                                                                                                                                                                                                                            |
+| **G4 prestataire**  | « Vérifier » à la main ; la veille attrape ce qui attend trop ; le rapprochement attend son signal. **Laisse passer** le contenu d'un webhook perdu                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## 12. Les tests
 
 - **P0** : portes vertes (armées avant) ; les e2e de paiement et
-  d'annulation vertes **après le seul changement de `card-payments.ts`** ;
+  d'annulation vertes après le lot de tests du §4.7 ;
   reprise du `first` contre sa règle (payée après annulation ⇒ `paid` ;
   annulée non payée ⇒ `closed`), rejouée ; `claim` sur une référence
   inconnue revendiquée / non revendiquée ; `onPaid` `applied | refused |
 already_applied` ; événement périmé ignoré ; `provider_refund_event` →
-  constat d'`orders` ; `checkout_event` relayé ; registre incomplet ⇒
-  démarrage refusé.
+  constat d'`orders` ; `checkout_event` relayé ; compte en base hors registre ⇒ porte CI rouge et
+  veille.
 - **P1** : reprise ligne à ligne contre la règle écrite, SQL = TS sur un jeu
   de lignes, rejouée (insère, signale, n'écrase pas) ; `refund_credit`
   repris, second avoir **impossible** ; une annulation « par l'ancienne
@@ -641,14 +670,21 @@ déployé, e2e vertes, `claim` et le cron rattrapent la fenêtre → **P1**
 muette → **S1** → première baisse réelle vérifiée → **S2** → **S3** → **P2**.
 §6.7 et C-2b quand leur tour vient.
 
-## 15. Contredit par `vitruve` (2026-11-09, sur `2e64016aa`, la v5) — intégré ici
+## 15. Les contradictions de `vitruve` sur ce plan unique
 
-Deux bloquants — les abonnés du remboursement sans émetteur légal, et les
-deux commandes de reprise sans emplacement que les portes admettent — et dix
-sérieux (tests de P0 bien plus larges que le helper, fenêtre de P0 hors du
-webhook, `runtime-keys.spec.ts` et `ops`, refus au démarrage contraire à « la
-prod ne tombe jamais », `refunded` non terminal face à l'index, `unmatched`
-sans type d'événement, second avoir pendant la fenêtre de P1, immuabilité
-plus large que ses déclencheurs, `closed` non défini, portes mal armées).
-Tous intégrés dans le corps de cette version 6 ; le détail est au commit de
-la contradiction.
+Toutes du 2026-11-09, chacune intégrée dans la version suivante : v1
+(`d2632e136`) → six bloquants (`6eef19357`) ; v2 (`ca3b6c0c4`) → trois
+(`d5e5d7a49`) ; v3 (`e1b7f8a75`) → six (`c290188ed`) ; v4 (`eaec69258`) →
+cinq + le registre (`d87322030`, `68f63d17b`) ; v5 (`2e64016aa`) → deux
+bloquants (les abonnés sans émetteur, les reprises sans emplacement) et dix
+sérieux, intégrés à la v6 (`cec227b94`) ; v6 → un bloquant
+(`listUnattached` inimplémentable par `orders`) et douze sérieux (le refus au
+démarrage encore écrit, « boîte d'envoi vide » sans mécanisme,
+`ring-refund-rejected` face à `durable-cross-block`, le journal du
+remboursement, `positionOf` qui écrivait, le `markPaid` de l'ancienne image
+figé, la propriété déclarative des anciennes tables, `amount_cents` mutable,
+la règle `closed` hors SQL, le registre à deux sources, `adapterFor` sans
+emplacement, l'ordre du secret des liens) — intégrés dans cette version 7 :
+**les abonnés ne bougent plus**, le canal porte `onRefundOutcome`,
+`referencesSince` borné par une ligne-témoin, `adopt` est une commande, le
+registre a deux moitiés, `CardProviders` dans `card-payment`.
