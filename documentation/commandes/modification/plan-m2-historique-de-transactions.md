@@ -93,7 +93,7 @@ dû a baissé).
 
 - **Le registre a deux moitiés.** Les **noms** des comptes, leur type de
   prestataire, le préfixe de leurs variables et `default_for` sont **dans le
-  dépôt** (`platform/config/card-accounts.ts` : `lfc-stripe` → type `stripe`,
+  dépôt** (un fichier **à créer** dans `platform/config/`, le registre `card-accounts` : `lfc-stripe` → type `stripe`,
   préfixe `STRIPE` ; demain `lfc-caisse-epargne` → type `lyra`, préfixe
   `LYRA_CE`) ; les **secrets** sont dans l'environnement, par compte, sous les
   noms **préfixés** `<PREFIXE>_SECRET_KEY`, `_PUBLISHABLE_KEY`,
