@@ -18,13 +18,14 @@ import {
 import { activeMailCharter, withMailCharter } from "../sections/mail-charter-scope.js";
 import { activeMailSender } from "../sections/mail-sender-scope.js";
 import { documentLocaleOf } from "../sections/mail-document-locale.js";
-import { mailSpaceOf } from "../sections/mail-block-declarations.js";
+import { mailSpaceOf, natureOf } from "../sections/mail-block-declarations.js";
 import { MAIL_LAYOUTS } from "../sections/mail-layouts.js";
 import type { B2bMails } from "../mail-templates.js";
 import { resolvePublishedMailCharter } from "./published-mail-charter-resolution.js";
 import { noteComposingDocument } from "./mail-composition.js";
 import type { PublishedMailCopyReader } from "./published-mail-copy.reader.js";
 import type { PublishedMailDocumentEntry } from "./published-mail-documents.js";
+import { senderEntryFor } from "./published-mail-senders.js";
 
 function isRegisteredMail(mail: string): mail is keyof B2bMails {
   return Object.hasOwn(MAIL_LAYOUTS, mail);
@@ -71,6 +72,10 @@ export interface EffectiveCopyLog {
  * réponse — celle du message l'emporte ; sans identité rangée, ou si elle
  * est illisible (le journal le dit), l'identité par défaut du mailer. Un
  * périmètre d'identité ouvert (l'essai, la sonde) l'emporte sur l'espace.
+ * L'identité se choisit par espace ET par nature du modèle (lot U5) : un
+ * e-mail marketing prend l'identité marketing de son espace, et tant
+ * qu'elle n'est pas réglée, son identité transactionnelle
+ * (`senderEntryFor`).
  */
 export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
   constructor(
@@ -115,8 +120,9 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
       return null;
     }
     const space = mailSpaceOf(template);
+    const nature = natureOf(template) ?? "transactional";
     try {
-      const entry = (await this.published.senders())[space];
+      const entry = senderEntryFor(await this.published.senders(), space, nature);
       if (entry?.kind === "unreadable") {
         this.log.warn(
           `Identité d'envoi de l'espace « ${space} » illisible par ce code : « ${template} » part sous l'identité par défaut.`,

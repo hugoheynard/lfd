@@ -357,11 +357,15 @@ export const COMMERCE_FACTS = {
    * les autres instances voient l'identité.
    *
    * `subjectLabel` : le nom de l'espace (« La Folie Douce — équipe »).
+   * `nature` (depuis le 2026-11-09, plan `plan-desinscription-des-e-mails.md`,
+   * lot U5) : `transactional` ou `marketing` — absente des faits d'avant, qui
+   * étaient tous transactionnels.
    */
   "mail_copy.sender_changed": fact(
     payload({
       subjectLabel: subjectLabel(),
       space: z.string().min(1),
+      nature: z.enum(["transactional", "marketing"]).optional(),
       revision: count(),
       senderName: z.string().min(1),
       fromDomain: z.string().min(1),

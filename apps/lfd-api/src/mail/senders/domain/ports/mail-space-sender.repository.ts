@@ -1,4 +1,4 @@
-import type { MailSpace } from "@lfd/mail-blocks";
+import type { MailNature, MailSpace } from "@lfd/mail-blocks";
 
 import type { MailSpaceSender } from "../mail-space-sender.js";
 
@@ -10,11 +10,13 @@ import type { MailSpaceSender } from "../mail-space-sender.js";
  */
 export abstract class MailSpaceSenderRepository {
   /**
-   * L'identité de l'espace ; `unset` s'il n'en a jamais eu — rien n'est écrit pour autant.
+   * L'identité de l'espace pour cette nature ; `unset` s'il n'en a jamais
+   * eu — rien n'est écrit pour autant.
    *
    * @throws {StoredMailSenderUnreadableError} l'identité rangée ne tient plus.
+   * @throws {MailSenderNatureNotOfferedError} l'espace ne règle pas cette nature.
    */
-  abstract load(space: MailSpace): Promise<MailSpaceSender>;
+  abstract load(space: MailSpace, nature: MailNature): Promise<MailSpaceSender>;
 
   /**
    * Range l'identité sur la révision chargée.

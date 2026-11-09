@@ -5,7 +5,9 @@
  * l'identité (ou dit le repli) ; l'enregistrement refuse un domaine non
  * vérifié, envoie un essai à l'auteur sous la nouvelle identité, n'enregistre
  * rien si l'essai est refusé ; l'envoi suivant de l'espace part sous elle ;
- * la sonde de déploiement l'éprouve.
+ * la sonde de déploiement l'éprouve. Lot U5 du plan
+ * `plan-desinscription-des-e-mails.md` : l'identité marketing se règle à part,
+ * et se replie sur la transactionnelle tant qu'elle ne l'est pas.
  *
  * Resend est doublé deux fois : le transport (`MAIL_TRANSPORT`, sous le texte
  * effectif, qui retient l'expéditeur) et la liste des domaines
@@ -98,9 +100,9 @@ const LFD = {
 };
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
-async function change(space: string, expectedRevision = 0) {
+async function change(space: string, expectedRevision = 0, nature?: string) {
   return staff()
-    .put(`${SENDERS}/${space}`)
+    .put(nature === undefined ? `${SENDERS}/${space}` : `${SENDERS}/${space}/${nature}`)
     .set(INTENT_KEY, freshIntent())
     .send({ identity: LFD, expectedRevision });
 }
@@ -222,5 +224,59 @@ describe("l'identité d'envoi d'un espace (C3)", () => {
     expect(transport.sent.map((sent) => sent.from)).toContain(
       '"La Folie Douce" <no-reply@lfd-backoffice.test>',
     );
+  });
+});
+
+describe("l'identité d'envoi par nature (U5)", () => {
+  it("une identité marketing pas encore réglée dit partir de la transactionnelle", async () => {
+    await change("lfc").then((response) => expect(response.status).toBe(204));
+
+    const view = jsonBody<MailSenderView>(
+      await staff().get(`${SENDERS}/lfc/marketing`).expect(200),
+    );
+    expect(view).toMatchObject({
+      space: "lfc",
+      nature: "marketing",
+      identity: null,
+      revision: 0,
+      fallback: {
+        fromAddress: '"La Folie Douce" <no-reply@lfd-backoffice.test>',
+        source: "transactional",
+      },
+    });
+  });
+
+  it("enregistre l'identité marketing à part, sans toucher la transactionnelle", async () => {
+    await change("lfc").then((response) => expect(response.status).toBe(204));
+    await change("lfc", 0, "marketing").then((response) => expect(response.status).toBe(204));
+
+    const rows = await ctx.prisma.mailSenderIdentity.findMany({
+      select: { space: true, nature: true, revision: true },
+      orderBy: { nature: "asc" },
+    });
+    expect(rows).toEqual([
+      { space: "lfc", nature: "marketing", revision: 1 },
+      { space: "lfc", nature: "transactional", revision: 1 },
+    ]);
+    const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: {
+        type: "mail_copy.sender_changed",
+        payload: { path: ["nature"], equals: "marketing" },
+      },
+    });
+    expect(fact.payload).toMatchObject({ space: "lfc", nature: "marketing" });
+  });
+
+  /** Règle 19 : l'espace de l'équipe n'envoie jamais de marketing. */
+  it("n'offre pas d'identité marketing à l'espace de l'équipe (404 nommé)", async () => {
+    const read = await staff().get(`${SENDERS}/lfd/marketing`).expect(404);
+    expect(JSON.stringify(read.body)).toContain("n'envoie que des e-mails transactionnels");
+    expect((await change("lfd", 0, "marketing")).status).toBe(404);
+    expect(transport.sent).toEqual([]);
+    expect(await ctx.prisma.mailSenderIdentity.count()).toBe(0);
+  });
+
+  it("refuse une nature inconnue (404)", async () => {
+    await staff().get(`${SENDERS}/lfc/newsletter`).expect(404);
   });
 });

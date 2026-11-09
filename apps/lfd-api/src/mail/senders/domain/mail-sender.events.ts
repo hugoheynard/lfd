@@ -1,6 +1,7 @@
 import {
   MAIL_SPACE_LABELS,
   senderDomainOf,
+  type MailNature,
   type MailSenderIdentity,
   type MailSpace,
 } from "@lfd/mail-blocks";
@@ -20,10 +21,13 @@ export const MAIL_SENDER_FACTS = {
  * **L'identité d'envoi d'un espace est changée** — son domaine était vérifié
  * et un essai est parti sous elle. Les adresses ne vont pas au journal : le
  * domaine d'envoi dit au nom de qui l'espace écrit, la table garde le reste.
+ * La nature (lot U5) dit quels e-mails elle signe : le sujet reste l'espace,
+ * pour que l'historique d'un espace se lise d'un bloc.
  */
 export class MailSenderChangedEvent implements JournaledEvent {
   constructor(
     readonly space: MailSpace,
+    readonly nature: MailNature,
     readonly revision: number,
     readonly identity: MailSenderIdentity,
     readonly publicationVersion: number,
@@ -37,6 +41,7 @@ export class MailSenderChangedEvent implements JournaledEvent {
       payload: {
         subjectLabel: MAIL_SPACE_LABELS[this.space],
         space: this.space,
+        nature: this.nature,
         revision: this.revision,
         senderName: this.identity.senderName,
         fromDomain: senderDomainOf(this.identity.fromAddress),

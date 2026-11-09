@@ -10,6 +10,7 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   validateMailSenderIdentity,
+  type MailNature,
   type MailSenderField,
   type MailSenderIdentity,
   type MailSenderView,
@@ -62,6 +63,22 @@ export function identityOf(form: SenderForm): MailSenderIdentity {
   };
 }
 
+/** Les mots de la carte, par nature d'e-mails. */
+const NATURE_COPY: Readonly<
+  Record<MailNature, { readonly title: string; readonly subtitle: string; readonly scope: string }>
+> = {
+  transactional: {
+    title: 'Expéditeur',
+    subtitle: 'Le nom et l’adresse sous lesquels partent les e-mails de service de l’espace',
+    scope: 'tous les e-mails de service de l’espace',
+  },
+  marketing: {
+    title: 'Expéditeur marketing',
+    subtitle: 'Le nom et l’adresse sous lesquels partent les offres et lettres d’information',
+    scope: 'tous les e-mails marketing de l’espace',
+  },
+};
+
 /**
  * **L'expéditeur d'un espace** (plan `plan-editeur-par-blocs.md`, § 25, C3) :
  * l'identité sous laquelle partent ses e-mails, ou l'identité par défaut de
@@ -69,6 +86,10 @@ export function identityOf(form: SenderForm): MailSenderIdentity {
  * essai à l'auteur sous la nouvelle identité ; refusé, rien n'est enregistré.
  * Les refus de forme du paquet sont montrés avant l'envoi, ceux du serveur
  * (domaine non vérifié, essai refusé, révision) tels qu'il les écrit.
+ *
+ * Une carte par nature (lot U5) : l'expéditeur marketing pas encore réglé
+ * dit qu'il part de l'adresse transactionnelle — le serveur le sait
+ * (`fallback.source`), l'écran le répète.
  */
 @Component({
   selector: 'app-mail-sender-card',
@@ -93,6 +114,9 @@ export class MailSenderCard {
   private readonly intents = new GestureIntents();
 
   readonly space = input.required<MailSpace>();
+  readonly nature = input<MailNature>('transactional');
+
+  protected readonly copy = computed(() => NATURE_COPY[this.nature()]);
 
   protected readonly status = signal<'loading' | 'ready' | 'failed'>('loading');
   protected readonly error = signal<string | null>(null);
@@ -109,7 +133,9 @@ export class MailSenderCard {
     if (view === null) return '';
     const identity = view.identity;
     if (identity === null) {
-      return `Par défaut : ${view.fallback.fromAddress}`;
+      return view.fallback.source === 'transactional'
+        ? `Pas encore réglée : part de l’adresse transactionnelle, ${view.fallback.fromAddress}`
+        : `Par défaut : ${view.fallback.fromAddress}`;
     }
     const replyTo = identity.replyToAddress ?? identity.fromAddress;
     return `${identity.senderName} <${identity.fromAddress}> — réponses à ${replyTo}`;
@@ -146,12 +172,13 @@ export class MailSenderCard {
   protected readonly confirmMessage = computed(
     () =>
       `Un essai part vers votre adresse sous « ${identityOf(this.form()).fromAddress} ». ` +
-      'Si Resend le refuse, rien n’est enregistré ; sinon tous les e-mails de l’espace partent sous cette identité.',
+      `Si Resend le refuse, rien n’est enregistré ; sinon ${this.copy().scope} partent sous cette identité.`,
   );
 
   constructor() {
     effect(() => {
       this.space();
+      this.nature();
       void this.load();
     });
   }
@@ -159,7 +186,7 @@ export class MailSenderCard {
   async load(): Promise<void> {
     this.status.set('loading');
     try {
-      const view = await this.api.load(this.space());
+      const view = await this.api.load(this.space(), this.nature());
       this.view.set(view);
       this.form.set(formOf(view.identity));
       this.error.set(null);
@@ -185,15 +212,18 @@ export class MailSenderCard {
     const view = this.view();
     if (view === null || !this.canSave() || this.saving()) return;
     const space = this.space();
+    const nature = this.nature();
+    const intent = `${space}:${nature}`;
     this.saving.set(true);
     this.gestureError.set(null);
     try {
       await this.api.change(
         space,
+        nature,
         { identity: identityOf(this.form()), expectedRevision: view.revision },
-        this.intents.keyFor(space),
+        this.intents.keyFor(intent),
       );
-      this.intents.done(space);
+      this.intents.done(intent);
       await this.load();
       this.saved.set(true);
     } catch (error) {

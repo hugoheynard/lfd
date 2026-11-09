@@ -113,7 +113,9 @@ export class CheckMailDeliveryHandler implements ICommandHandler<
     if (this.published === undefined) {
       return new Map();
     }
-    const senders = await this.published.senders();
+    // Les identités transactionnelles seules : la sonde atteste le courrier
+    // de service ; une identité marketing n'est pas éprouvée ici (lot U5).
+    const senders = (await this.published.senders()).transactional;
     return new Map(
       MAIL_SPACES.flatMap((space) => {
         const entry = senders[space];

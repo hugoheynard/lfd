@@ -1,4 +1,4 @@
-import { isMailSpace, type MailSpace } from "@lfd/mail-blocks";
+import { isMailSpace, type MailNature, type MailSpace } from "@lfd/mail-blocks";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -13,13 +13,16 @@ export class PrismaMailSenderReader extends MailSenderReader {
     super();
   }
 
-  async stateOf(space: MailSpace): Promise<MailSpaceSenderState | null> {
-    const row = await this.prisma.mailSenderIdentity.findUnique({ where: { space } });
+  async stateOf(space: MailSpace, nature: MailNature): Promise<MailSpaceSenderState | null> {
+    const row = await this.prisma.mailSenderIdentity.findUnique({
+      where: { space_nature: { space, nature } },
+    });
     return row === null ? null : toSenderState(row);
   }
 
   async configuredSpaces(): Promise<readonly MailSpace[]> {
     const rows = await this.prisma.mailSenderIdentity.findMany({
+      where: { nature: "transactional" },
       select: { space: true },
       orderBy: { space: "asc" },
     });

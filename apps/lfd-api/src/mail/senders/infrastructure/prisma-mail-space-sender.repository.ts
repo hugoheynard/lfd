@@ -1,4 +1,4 @@
-import type { MailSpace } from "@lfd/mail-blocks";
+import type { MailNature, MailSpace } from "@lfd/mail-blocks";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -22,10 +22,12 @@ export class PrismaMailSpaceSenderRepository extends MailSpaceSenderRepository {
     super();
   }
 
-  async load(space: MailSpace): Promise<MailSpaceSender> {
-    const row = await this.prisma.mailSenderIdentity.findUnique({ where: { space } });
+  async load(space: MailSpace, nature: MailNature): Promise<MailSpaceSender> {
+    const row = await this.prisma.mailSenderIdentity.findUnique({
+      where: { space_nature: { space, nature } },
+    });
     return row === null
-      ? MailSpaceSender.unset(space)
+      ? MailSpaceSender.unset(space, nature)
       : MailSpaceSender.reconstitute(toSenderState(row));
   }
 
@@ -38,11 +40,11 @@ export class PrismaMailSpaceSenderRepository extends MailSpaceSenderRepository {
     const written =
       sender.loadedRevision === 0
         ? await this.prisma.mailSenderIdentity.createMany({
-            data: [{ space: state.space, ...columns }],
+            data: [{ space: state.space, nature: state.nature, ...columns }],
             skipDuplicates: true,
           })
         : await this.prisma.mailSenderIdentity.updateMany({
-            where: { space: state.space, revision: sender.loadedRevision },
+            where: { space: state.space, nature: state.nature, revision: sender.loadedRevision },
             data: columns,
           });
     if (written.count === 0) {

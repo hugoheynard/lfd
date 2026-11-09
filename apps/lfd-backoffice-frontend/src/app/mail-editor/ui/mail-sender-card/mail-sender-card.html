@@ -1,10 +1,6 @@
 <fold-card>
   <div class="sc-card">
-    <fold-element-title
-      variant="title"
-      title="Expéditeur"
-      subtitle="Le nom et l’adresse sous lesquels partent les e-mails de l’espace"
-    />
+    <fold-element-title variant="title" [title]="copy().title" [subtitle]="copy().subtitle" />
     @switch (status()) {
       @case ('loading') {
         <fold-loading message="Chargement de l’expéditeur…" />

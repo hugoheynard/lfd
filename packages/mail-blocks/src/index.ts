@@ -173,7 +173,9 @@ export {
   type MailValueResource,
 } from "./mail-resources.js";
 export {
+  MAIL_SENDER_NATURES,
   MAIL_SENDER_VIOLATION_CODES,
+  hasSenderNature,
   MAX_SENDER_ADDRESS_LENGTH,
   MAX_SENDER_NAME_LENGTH,
   senderDomainOf,
@@ -183,6 +185,7 @@ export {
   isUnattendedAddress,
   UNATTENDED_LOCAL_PARTS,
   type MailSenderDefaultView,
+  type MailSenderFallbackSource,
   type MailSenderField,
   type MailSenderIdentity,
   type MailSenderPayload,

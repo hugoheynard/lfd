@@ -1,4 +1,4 @@
-import type { MailSenderIdentity, MailSpace } from "@lfd/mail-blocks";
+import type { MailNature, MailSenderIdentity, MailSpace } from "@lfd/mail-blocks";
 
 import { MailSenderChangedError } from "../../domain/mail-sender-errors.js";
 import { MailSpaceSender, type MailSpaceSenderState } from "../../domain/mail-space-sender.js";
@@ -7,22 +7,33 @@ import { MailSenderTrial } from "../../domain/ports/mail-sender-trial.js";
 import { MailSpaceSenderRepository } from "../../domain/ports/mail-space-sender.repository.js";
 import { VerifiedSendingDomains } from "../../domain/ports/verified-sending-domains.js";
 
+/** La clé d'une ligne : l'espace et la nature, comme la clé primaire. */
+export function senderKey(space: MailSpace, nature: MailNature): string {
+  return `${space}:${nature}`;
+}
+
 /** Les identités en mémoire, avec le MÊME verrou que l'adaptateur. */
 export class InMemoryMailSenders extends MailSpaceSenderRepository {
-  readonly rows = new Map<MailSpace, MailSpaceSenderState>();
+  readonly rows = new Map<string, MailSpaceSenderState>();
 
-  load(space: MailSpace): Promise<MailSpaceSender> {
-    const state = this.rows.get(space);
-    return Promise.resolve(
-      state === undefined ? MailSpaceSender.unset(space) : MailSpaceSender.reconstitute(state),
-    );
+  /** Un refus de l'agrégat sort en promesse rejetée, comme de l'adaptateur. */
+  load(space: MailSpace, nature: MailNature): Promise<MailSpaceSender> {
+    return new Promise((resolve) => {
+      const state = this.rows.get(senderKey(space, nature));
+      resolve(
+        state === undefined
+          ? MailSpaceSender.unset(space, nature)
+          : MailSpaceSender.reconstitute(state),
+      );
+    });
   }
 
   save(sender: MailSpaceSender): Promise<void> {
-    if ((this.rows.get(sender.space)?.revision ?? 0) !== sender.loadedRevision) {
+    const key = senderKey(sender.space, sender.nature);
+    if ((this.rows.get(key)?.revision ?? 0) !== sender.loadedRevision) {
       return Promise.reject(new MailSenderChangedError(sender.space));
     }
-    this.rows.set(sender.space, sender.snapshot());
+    this.rows.set(key, sender.snapshot());
     return Promise.resolve();
   }
 }
@@ -33,12 +44,16 @@ export class InMemoryMailSenderReader extends MailSenderReader {
     super();
   }
 
-  stateOf(space: MailSpace): Promise<MailSpaceSenderState | null> {
-    return Promise.resolve(this.senders.rows.get(space) ?? null);
+  stateOf(space: MailSpace, nature: MailNature): Promise<MailSpaceSenderState | null> {
+    return Promise.resolve(this.senders.rows.get(senderKey(space, nature)) ?? null);
   }
 
   configuredSpaces(): Promise<readonly MailSpace[]> {
-    return Promise.resolve([...this.senders.rows.keys()]);
+    return Promise.resolve(
+      [...this.senders.rows.values()]
+        .filter((state) => state.nature === "transactional")
+        .map((state) => state.space),
+    );
   }
 }
 

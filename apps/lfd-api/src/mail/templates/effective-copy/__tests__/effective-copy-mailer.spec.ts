@@ -10,7 +10,10 @@ import { composeMail } from "../mail-composition.js";
 import { PublishedMailCopyReader } from "../published-mail-copy.reader.js";
 import type { PublishedMailDocuments } from "../published-mail-documents.js";
 import type { PublishedMailCharters } from "../published-mail-charters.js";
-import type { PublishedMailSenders } from "../published-mail-senders.js";
+import type {
+  PublishedMailSenders,
+  PublishedMailSendersByNature,
+} from "../published-mail-senders.js";
 import { withMailSender } from "../../sections/mail-sender-scope.js";
 import { mailBlockDeclarationOf } from "../../sections/mail-block-declarations.js";
 
@@ -35,10 +38,10 @@ class StaticPublished extends PublishedMailCopyReader {
   ) {
     super();
   }
-  senders(): Promise<PublishedMailSenders> {
+  senders(): Promise<PublishedMailSendersByNature> {
     return this.identities instanceof Error
       ? Promise.reject(this.identities)
-      : Promise.resolve(this.identities);
+      : Promise.resolve({ transactional: this.identities, marketing: {} });
   }
   charters(): Promise<PublishedMailCharters> {
     return Promise.resolve({});

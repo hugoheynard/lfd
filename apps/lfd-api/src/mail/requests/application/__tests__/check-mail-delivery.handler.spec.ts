@@ -2,7 +2,10 @@ import type { MailCopyOverlay } from "../../../templates/copy/mail-copy-overlay.
 import { PublishedMailCopyReader } from "../../../templates/effective-copy/published-mail-copy.reader.js";
 import type { PublishedMailCharters } from "../../../templates/effective-copy/published-mail-charters.js";
 import type { PublishedMailDocuments } from "../../../templates/effective-copy/published-mail-documents.js";
-import type { PublishedMailSenders } from "../../../templates/effective-copy/published-mail-senders.js";
+import type {
+  PublishedMailSenders,
+  PublishedMailSendersByNature,
+} from "../../../templates/effective-copy/published-mail-senders.js";
 import type { MailSectionOrders } from "../../../templates/sections/mail-layout-scope.js";
 import { AppConfig, type MailerConfig } from "../../../../platform/config/app-config.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -104,8 +107,8 @@ class PublishedSenders extends PublishedMailCopyReader {
   constructor(private readonly identities: PublishedMailSenders) {
     super();
   }
-  senders(): Promise<PublishedMailSenders> {
-    return Promise.resolve(this.identities);
+  senders(): Promise<PublishedMailSendersByNature> {
+    return Promise.resolve({ transactional: this.identities, marketing: {} });
   }
   read(): Promise<MailCopyOverlay> {
     return Promise.resolve({});

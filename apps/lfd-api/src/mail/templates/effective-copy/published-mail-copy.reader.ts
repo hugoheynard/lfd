@@ -2,7 +2,7 @@ import type { MailCopyOverlay } from "../copy/mail-copy-overlay.js";
 import type { MailSectionOrders } from "../sections/mail-layout-scope.js";
 import type { PublishedMailCharters } from "./published-mail-charters.js";
 import type { PublishedMailDocuments } from "./published-mail-documents.js";
-import type { PublishedMailSenders } from "./published-mail-senders.js";
+import type { PublishedMailSendersByNature } from "./published-mail-senders.js";
 
 /**
  * **Les textes d'e-mails publiés**, tels que le mailer les applique (plan
@@ -53,9 +53,11 @@ export abstract class PublishedMailCopyReader {
   /**
    * Les identités d'envoi des espaces (plan `plan-editeur-par-blocs.md`,
    * § 25, C3), par la même version que les textes : changer une identité la
-   * fait monter. Une identité illisible y est rendue `unreadable`.
+   * fait monter. Une identité illisible y est rendue `unreadable`. Par
+   * nature, puis par espace (lot U5) : le repli marketing → transactionnel
+   * est celui de `senderEntryFor`.
    *
    * @throws ce que la base lève : c'est l'appelant qui se replie sur l'identité par défaut.
    */
-  abstract senders(): Promise<PublishedMailSenders>;
+  abstract senders(): Promise<PublishedMailSendersByNature>;
 }

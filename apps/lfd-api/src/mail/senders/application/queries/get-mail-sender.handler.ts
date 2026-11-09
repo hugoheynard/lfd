@@ -1,4 +1,10 @@
-import type { MailSenderView } from "@lfd/mail-blocks";
+import {
+  senderHeaderOf,
+  type MailNature,
+  type MailSenderDefaultView,
+  type MailSenderView,
+  type MailSpace,
+} from "@lfd/mail-blocks";
 import { Logger } from "@nestjs/common";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -7,6 +13,7 @@ import { mailSpaceOfParam } from "../../../charters/application/mail-space-param
 import { MailSpaceSender } from "../../domain/mail-space-sender.js";
 import { MailSenderReader } from "../../domain/ports/mail-sender.reader.js";
 import { VerifiedSendingDomains } from "../../domain/ports/verified-sending-domains.js";
+import { mailNatureOfParam } from "../mail-nature-param.js";
 import { GetMailSenderQuery } from "./get-mail-sender.query.js";
 
 /**
@@ -16,6 +23,12 @@ import { GetMailSenderQuery } from "./get-mail-sender.query.js";
  * dise. Les domaines vérifiés chez Resend guident la saisie ; une liste
  * illisible n'empêche pas d'ouvrir la page (`null`), l'enregistrement le
  * dira. Rien n'est écrit.
+ *
+ * **Par nature** (lot U5) : le repli d'une identité marketing pas encore
+ * réglée est l'identité TRANSACTIONNELLE de l'espace — c'est d'elle que
+ * partent alors ses e-mails marketing, et l'écran le dit (« pas encore
+ * réglée : part de l'adresse transactionnelle ») ; sans transactionnelle
+ * non plus, la configuration.
  */
 @QueryHandler(GetMailSenderQuery)
 export class GetMailSenderHandler implements IQueryHandler<GetMailSenderQuery, MailSenderView> {
@@ -29,22 +42,48 @@ export class GetMailSenderHandler implements IQueryHandler<GetMailSenderQuery, M
 
   /**
    * @throws {UnknownMailSpaceError} l'espace n'existe pas.
+   * @throws {UnknownMailNatureError} la nature n'existe pas.
+   * @throws {MailSenderNatureNotOfferedError} l'espace ne règle pas cette nature.
    * @throws {StoredMailSenderUnreadableError} l'identité rangée ne tient plus.
    */
   async execute(query: GetMailSenderQuery): Promise<MailSenderView> {
     const space = mailSpaceOfParam(query.space);
-    const state = await this.reader.stateOf(space);
-    const sender =
-      state === null ? MailSpaceSender.unset(space) : MailSpaceSender.reconstitute(state);
-    const { identity, changed, revision } = sender.snapshot();
-    const mailer = this.config.mailerConfig();
+    const nature = mailNatureOfParam(query.nature);
+    const { identity, changed, revision } = (await this.senderOf(space, nature)).snapshot();
     return {
       space,
+      nature,
       identity,
-      fallback: { fromAddress: mailer.fromAddress, replyToAddress: mailer.replyTo },
+      fallback: await this.fallbackOf(space, nature),
       revision,
       changed: changed === null ? null : { at: changed.at.toISOString(), staffId: changed.staffId },
       verifiedDomains: await this.verifiedOrNull(),
+    };
+  }
+
+  private async senderOf(space: MailSpace, nature: MailNature): Promise<MailSpaceSender> {
+    const state = await this.reader.stateOf(space, nature);
+    return state === null
+      ? MailSpaceSender.unset(space, nature)
+      : MailSpaceSender.reconstitute(state);
+  }
+
+  private async fallbackOf(space: MailSpace, nature: MailNature): Promise<MailSenderDefaultView> {
+    if (nature === "marketing") {
+      const transactional = (await this.senderOf(space, "transactional")).snapshot().identity;
+      if (transactional !== null) {
+        return {
+          fromAddress: senderHeaderOf(transactional),
+          replyToAddress: transactional.replyToAddress ?? transactional.fromAddress,
+          source: "transactional",
+        };
+      }
+    }
+    const mailer = this.config.mailerConfig();
+    return {
+      fromAddress: mailer.fromAddress,
+      replyToAddress: mailer.replyTo,
+      source: "configuration",
     };
   }
 

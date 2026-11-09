@@ -1,4 +1,7 @@
-import type { PublishedMailSenders } from "../published-mail-senders.js";
+import {
+  NO_PUBLISHED_MAIL_SENDERS,
+  type PublishedMailSendersByNature,
+} from "../published-mail-senders.js";
 import type { MailCharterSettings } from "@lfd/mail-blocks";
 import type { Mailer, MailReceipt, SendMailArgs } from "@lfd/mailer";
 
@@ -25,8 +28,8 @@ class PublishedCharters extends PublishedMailCopyReader {
   documents(): Promise<PublishedMailDocuments> {
     return Promise.resolve({});
   }
-  senders(): Promise<PublishedMailSenders> {
-    return Promise.resolve({});
+  senders(): Promise<PublishedMailSendersByNature> {
+    return Promise.resolve(NO_PUBLISHED_MAIL_SENDERS);
   }
   charters(): Promise<PublishedMailCharters> {
     return this.published instanceof Error

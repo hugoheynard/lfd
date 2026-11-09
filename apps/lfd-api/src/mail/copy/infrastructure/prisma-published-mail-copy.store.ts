@@ -65,7 +65,13 @@ export class PrismaPublishedMailCopyStore extends PublishedMailCopyStore {
 
   async senders(): Promise<readonly StoredMailSender[]> {
     return this.prisma.mailSenderIdentity.findMany({
-      select: { space: true, senderName: true, fromAddress: true, replyToAddress: true },
+      select: {
+        space: true,
+        nature: true,
+        senderName: true,
+        fromAddress: true,
+        replyToAddress: true,
+      },
     });
   }
 }

@@ -252,13 +252,37 @@ describe("les chartes publiées des espaces, gardées en mémoire (C1)", () => {
       replyToAddress: null,
     };
     store.senderRows = [
-      { space: "lfd", ...lfd },
-      { space: "lfc", senderName: "LFC", fromAddress: "pas-une-adresse", replyToAddress: null },
-      { space: "internal", ...lfd },
+      { space: "lfd", nature: "transactional", ...lfd },
+      {
+        space: "lfc",
+        nature: "transactional",
+        senderName: "LFC",
+        fromAddress: "pas-une-adresse",
+        replyToAddress: null,
+      },
+      { space: "internal", nature: "transactional", ...lfd },
+      { space: "lfc", nature: "newsletter", ...lfd },
     ];
     expect(await cache.senders()).toEqual({
-      lfd: { kind: "servable", identity: lfd },
-      lfc: { kind: "unreadable" },
+      transactional: {
+        lfd: { kind: "servable", identity: lfd },
+        lfc: { kind: "unreadable" },
+      },
+      marketing: {},
+    });
+  });
+
+  it("range l'identité marketing à part de la transactionnelle (U5)", async () => {
+    const { store, cache } = setup();
+    const offers = {
+      senderName: "La Folie Coffee",
+      fromAddress: "offres@news.lfc.test",
+      replyToAddress: "contact@lfc.test",
+    };
+    store.senderRows = [{ space: "lfc", nature: "marketing", ...offers }];
+    expect(await cache.senders()).toEqual({
+      transactional: {},
+      marketing: { lfc: { kind: "servable", identity: offers } },
     });
   });
 

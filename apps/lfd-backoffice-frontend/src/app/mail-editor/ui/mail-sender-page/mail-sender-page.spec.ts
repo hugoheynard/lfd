@@ -25,12 +25,24 @@ function setup(space: string) {
 describe('MailSenderPage — l’onglet Expéditeur d’un espace', () => {
   it('montre la carte de l’expéditeur sous les onglets de l’espace', () => {
     const { element, api } = setup('lfc');
-    expect(api.load).toHaveBeenCalledWith('lfc');
+    expect(api.load).toHaveBeenCalledWith('lfc', 'transactional');
+    expect(api.load).toHaveBeenCalledWith('lfc', 'marketing');
     expect(element.querySelector('fold-back-link a')?.getAttribute('href')).toBe('/emails');
     expect(
       element.querySelector('app-mail-space-tabs a[href="/emails/espaces/lfc/expediteur"]'),
     ).not.toBeNull();
-    expect(element.querySelector('app-mail-sender-card')).not.toBeNull();
+    expect(
+      element.querySelector('app-mail-sender-card[data-nature="transactional"]'),
+    ).not.toBeNull();
+    expect(element.querySelector('app-mail-sender-card[data-nature="marketing"]')).not.toBeNull();
+  });
+
+  /** Règle 19 : l'espace de l'équipe n'envoie jamais de marketing — pas de réglage à proposer. */
+  it('ne propose pas d’expéditeur marketing à l’espace de l’équipe', () => {
+    const { element, api } = setup('lfd');
+    expect(api.load).toHaveBeenCalledWith('lfd', 'transactional');
+    expect(api.load).not.toHaveBeenCalledWith('lfd', 'marketing');
+    expect(element.querySelector('app-mail-sender-card[data-nature="marketing"]')).toBeNull();
   });
 
   it('refuse un segment qui n’est pas un espace, sans rien demander', () => {

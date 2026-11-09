@@ -3,6 +3,7 @@ import { MAIL_SPACE_LABELS, type MailSenderViolation, type MailSpace } from "@lf
 import {
   BusinessError,
   DomainError,
+  ResourceNotFoundError,
   TechnicalError,
 } from "../../../platform/shared/errors/app-error.js";
 
@@ -94,6 +95,30 @@ export class StoredMailSenderUnreadableError extends TechnicalError {
     super(
       "MAIL_SENDER_UNREADABLE",
       `L'identité d'envoi rangée de l'espace « ${space} » est illisible par cette version de l'API. Ses e-mails partent sous l'identité par défaut en attendant ; prévenez l'équipe technique avant toute modification.`,
+    );
+  }
+}
+
+/**
+ * L'espace ne règle pas d'identité pour cette nature (plan
+ * `plan-desinscription-des-e-mails.md`, lot U5) : `lfd`, l'espace de
+ * l'équipe, n'envoie jamais de marketing (règle 19).
+ */
+export class MailSenderNatureNotOfferedError extends ResourceNotFoundError {
+  constructor(space: MailSpace, nature: string) {
+    super(
+      "MAIL_SENDER_NATURE_NOT_OFFERED",
+      `L'espace ${named(space)} n'a pas d'identité d'envoi « ${nature} » : il n'envoie que des e-mails transactionnels. Revenez à l'onglet « Expéditeur » de l'espace pour régler son expéditeur transactionnel.`,
+    );
+  }
+}
+
+/** Une nature d'e-mail inconnue dans une route : il n'y a que `transactional` et `marketing`. */
+export class UnknownMailNatureError extends ResourceNotFoundError {
+  constructor(nature: string) {
+    super(
+      "MAIL_NATURE_UNKNOWN",
+      `La nature d'e-mail « ${nature} » n'existe pas : il n'y a que « transactional » (e-mails de service) et « marketing » (offres). Revenez à l'onglet « Expéditeur » de l'espace.`,
     );
   }
 }

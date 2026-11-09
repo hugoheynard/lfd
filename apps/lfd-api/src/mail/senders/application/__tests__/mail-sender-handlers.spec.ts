@@ -12,10 +12,12 @@ import { TrialRecipientMissingError } from "../../../copy/domain/mail-copy-error
 import { UnknownMailSpaceError } from "../../../charters/domain/mail-charter-errors.js";
 import {
   MailSenderChangedError,
+  MailSenderNatureNotOfferedError,
   MailSenderRefusedError,
   MailSenderTrialRefusedError,
   SendingDomainsUnavailableError,
   SenderDomainNotVerifiedError,
+  UnknownMailNatureError,
 } from "../../domain/mail-sender-errors.js";
 import { ChangeMailSenderCommand } from "../commands/change-mail-sender.command.js";
 import { ChangeMailSenderHandler } from "../commands/change-mail-sender.handler.js";
@@ -23,6 +25,7 @@ import {
   FixedSendingDomains,
   InMemoryMailSenders,
   RecordingSenderTrial,
+  senderKey,
 } from "./mail-sender-doubles.js";
 
 const STAFF = "fiche-colette";
@@ -71,10 +74,16 @@ function world(
 }
 
 function command(
-  overrides: Partial<{ space: string; expectedRevision: number; intentKey: string }> = {},
+  overrides: Partial<{
+    space: string;
+    nature: string;
+    expectedRevision: number;
+    intentKey: string;
+  }> = {},
 ) {
   return new ChangeMailSenderCommand(
     overrides.space ?? "lfd",
+    overrides.nature ?? "transactional",
     IDENTITY,
     overrides.expectedRevision ?? 0,
     STAFF,
@@ -90,7 +99,10 @@ describe("ChangeMailSenderHandler (C3)", () => {
     expect(w.trial.sent).toEqual([
       { space: "lfd", identity: IDENTITY, to: "colette@lfd.test", intentKey: INTENT },
     ]);
-    expect(w.senders.rows.get("lfd")).toMatchObject({ revision: 1, identity: IDENTITY });
+    expect(w.senders.rows.get(senderKey("lfd", "transactional"))).toMatchObject({
+      revision: 1,
+      identity: IDENTITY,
+    });
     expect(w.texts.version).toBe(1);
     expect(
       w.events.traced.map((event) => event.journalFact()).map((fact) => [fact.type, fact.payload]),
@@ -100,6 +112,7 @@ describe("ChangeMailSenderHandler (C3)", () => {
         {
           subjectLabel: "La Folie Douce — équipe",
           space: "lfd",
+          nature: "transactional",
           revision: 1,
           senderName: "La Folie Douce",
           fromDomain: "lfd-backoffice.com",
@@ -146,6 +159,7 @@ describe("ChangeMailSenderHandler (C3)", () => {
     const w = world();
     const bad = new ChangeMailSenderCommand(
       "lfd",
+      "transactional",
       { ...IDENTITY, fromAddress: "pas-une-adresse" },
       0,
       STAFF,
@@ -173,6 +187,45 @@ describe("ChangeMailSenderHandler (C3)", () => {
     await w.handler.execute(command());
     await w.handler.execute(command());
     expect(w.trial.sent).toHaveLength(1);
-    expect(w.senders.rows.get("lfd")?.revision).toBe(1);
+    expect(w.senders.rows.get(senderKey("lfd", "transactional"))?.revision).toBe(1);
+  });
+
+  it("règle l'identité marketing à part : la transactionnelle n'est pas touchée", async () => {
+    const w = world();
+    await w.handler.execute(command({ space: "lfc", nature: "marketing" }));
+
+    expect(w.senders.rows.get(senderKey("lfc", "marketing"))).toMatchObject({
+      nature: "marketing",
+      revision: 1,
+      identity: IDENTITY,
+    });
+    expect(w.senders.rows.has(senderKey("lfc", "transactional"))).toBe(false);
+    expect(w.events.traced.map((event) => event.journalFact().payload)).toEqual([
+      expect.objectContaining({ space: "lfc", nature: "marketing" }),
+    ]);
+  });
+
+  /** Règle 19 : l'espace de l'équipe n'envoie jamais de marketing. */
+  it("refuse une identité marketing pour l'espace de l'équipe, sans essai", async () => {
+    const w = world();
+    await expect(w.handler.execute(command({ nature: "marketing" }))).rejects.toThrow(
+      MailSenderNatureNotOfferedError,
+    );
+    expect(w.trial.sent).toEqual([]);
+    expect(w.domains.reads).toBe(0);
+  });
+
+  it("refuse une nature inconnue", async () => {
+    const w = world();
+    await expect(w.handler.execute(command({ nature: "newsletter" }))).rejects.toThrow(
+      UnknownMailNatureError,
+    );
+  });
+
+  it("l'intention se lit par espace ET par nature : régler la marketing après la transactionnelle envoie un second essai", async () => {
+    const w = world();
+    await w.handler.execute(command({ space: "lfc" }));
+    await w.handler.execute(command({ space: "lfc", nature: "marketing", intentKey: "autre" }));
+    expect(w.trial.sent).toHaveLength(2);
   });
 });

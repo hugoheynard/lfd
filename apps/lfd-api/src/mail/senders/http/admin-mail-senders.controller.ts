@@ -16,7 +16,15 @@ import { mailSenderPayloadSchema } from "./mail-sender-payloads.js";
  * `mail_templates` : `read` pour la lire, `write` pour la changer — le
  * contrôle du domaine vérifié empêche d'écrire au nom d'un domaine qui n'est
  * pas à nous. `:space` vaut `lfc` ou `lfd` ; un autre espace est un 404 nommé.
+ *
+ * `:nature` (lot U5 du plan `plan-desinscription-des-e-mails.md`) vaut
+ * `transactional` ou `marketing` ; `lfd` n'a pas d'identité marketing (404
+ * nommé). Les routes sans `:nature` restent celles de l'identité
+ * transactionnelle.
  */
+/** La nature des routes sans `:nature`, servies avant le lot U5. */
+const TRANSACTIONAL = "transactional";
+
 @Controller("admin/mail-senders")
 @AdminSurface("mail_templates")
 export class AdminMailSendersController {
@@ -28,7 +36,18 @@ export class AdminMailSendersController {
   /** L'identité de l'espace (ou aucune), celle par défaut, et les domaines vérifiés chez Resend. */
   @Get(":space")
   read(@Param("space") space: string): Promise<MailSenderView> {
-    return this.queries.execute<GetMailSenderQuery, MailSenderView>(new GetMailSenderQuery(space));
+    return this.readOfNature(space, TRANSACTIONAL);
+  }
+
+  /** L'identité de l'espace pour cette nature, son repli, et les domaines vérifiés. */
+  @Get(":space/:nature")
+  readOfNature(
+    @Param("space") space: string,
+    @Param("nature") nature: string,
+  ): Promise<MailSenderView> {
+    return this.queries.execute<GetMailSenderQuery, MailSenderView>(
+      new GetMailSenderQuery(space, nature),
+    );
   }
 
   /**
@@ -45,9 +64,23 @@ export class AdminMailSendersController {
     @StaffUserId() staffUserId: string,
     @IntentKey() intentKey: string,
   ): Promise<void> {
+    await this.changeOfNature(space, TRANSACTIONAL, payload, staffUserId, intentKey);
+  }
+
+  /** Change l'identité de l'espace pour cette nature — mêmes règles, même essai. */
+  @Put(":space/:nature")
+  @HttpCode(204)
+  async changeOfNature(
+    @Param("space") space: string,
+    @Param("nature") nature: string,
+    @Body(new ZodBody(mailSenderPayloadSchema)) payload: MailSenderPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
     await this.commands.execute<ChangeMailSenderCommand, void>(
       new ChangeMailSenderCommand(
         space,
+        nature,
         payload.identity,
         payload.expectedRevision,
         staffUserId,

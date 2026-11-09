@@ -1,3 +1,4 @@
+import type { MailNature } from "./mail-document.js";
 import type { MailEditorStamp } from "./mail-editor-routes.js";
 import type { MailSpace } from "./mail-spaces.js";
 
@@ -190,6 +191,32 @@ export function senderHeaderOf(identity: MailSenderIdentity): string {
 }
 
 /**
+ * **Les natures d'e-mail dont chaque espace règle l'identité d'envoi** (plan
+ * `plan-desinscription-des-e-mails.md`, règle 9, lot U5) : `lfc` règle une
+ * identité transactionnelle et une identité marketing ; `lfd`, l'espace de
+ * l'équipe, n'envoie jamais de marketing (règle 19, 2026-11-08 — son origine
+ * publique est nulle) et ne règle que la transactionnelle. Une table par
+ * espace : un espace de plus ne compile pas sans sa ligne.
+ */
+export const MAIL_SENDER_NATURES: Readonly<Record<MailSpace, readonly MailNature[]>> = {
+  lfc: ["transactional", "marketing"],
+  lfd: ["transactional"],
+};
+
+/** L'espace règle-t-il une identité d'envoi pour cette nature ? */
+export function hasSenderNature(space: MailSpace, nature: MailNature): boolean {
+  return MAIL_SENDER_NATURES[space].includes(nature);
+}
+
+/**
+ * D'où part un e-mail tant que son identité n'est pas réglée : la
+ * configuration de l'API (`configuration`), ou — pour une identité marketing
+ * pas encore réglée — l'identité transactionnelle de l'espace
+ * (`transactional`).
+ */
+export type MailSenderFallbackSource = "configuration" | "transactional";
+
+/**
  * L'identité par défaut, celle de la configuration de l'API
  * (`MAILER_FROM_ADDRESS`, `MAILER_REPLY_TO`) : celle d'un espace qui n'en a
  * pas. `fromAddress` est la valeur configurée telle quelle — elle peut déjà
@@ -198,10 +225,17 @@ export function senderHeaderOf(identity: MailSenderIdentity): string {
 export interface MailSenderDefaultView {
   readonly fromAddress: string;
   readonly replyToAddress: string | null;
+  /**
+   * D'où vient ce repli (U5) : la configuration, ou l'identité
+   * transactionnelle de l'espace pour une identité marketing pas encore
+   * réglée — `fromAddress` porte alors son en-tête `"Nom" <adresse>`.
+   */
+  readonly source: MailSenderFallbackSource;
 }
 
 /**
- * `GET /admin/mail-senders/:space` — rien n'est écrit, Resend est lu.
+ * `GET /admin/mail-senders/:space/:nature` — rien n'est écrit, Resend est lu
+ * (`/:space` seul : la nature `transactional`).
  *
  * `identity` : celle de l'espace, `null` s'il n'en a pas — il envoie alors
  * sous `fallback`. `verifiedDomains` : les domaines vérifiés chez Resend, pour
@@ -210,6 +244,8 @@ export interface MailSenderDefaultView {
  */
 export interface MailSenderView {
   readonly space: MailSpace;
+  /** La nature des e-mails que cette identité signe (U5). */
+  readonly nature: MailNature;
   readonly identity: MailSenderIdentity | null;
   readonly fallback: MailSenderDefaultView;
   /** La révision lue (0 : jamais réglée) — le verrou de l'enregistrement. */
@@ -219,7 +255,7 @@ export interface MailSenderView {
 }
 
 /**
- * `PUT /admin/mail-senders/:space` (en-tête `Idempotency-Key` obligatoire) —
+ * `PUT /admin/mail-senders/:space/:nature` (`/:space` seul : `transactional` ; en-tête `Idempotency-Key` obligatoire) —
  * 204 : un essai est parti vers l'auteur sous l'identité, puis elle a été
  * enregistrée ; l'écran relit. 400 forme, 409 domaine non vérifié, essai
  * refusé par Resend ou révision dépassée — rien n'est enregistré.

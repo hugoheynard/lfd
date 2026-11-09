@@ -1,13 +1,16 @@
 import type { MailSenderIdentity } from "@lfd/mail-blocks";
 
 /**
- * Command : **changer l'identité d'envoi d'un espace** (plan
- * `plan-editeur-par-blocs.md`, § 25, C3), sur la révision lue — un essai
- * part vers l'auteur sous l'identité avant qu'elle soit enregistrée.
+ * Command : **changer l'identité d'envoi d'un espace pour une nature
+ * d'e-mails** (plan `plan-editeur-par-blocs.md`, § 25, C3 ; nature : plan
+ * `plan-desinscription-des-e-mails.md`, lot U5), sur la révision lue — un
+ * essai part vers l'auteur sous l'identité avant qu'elle soit enregistrée.
  */
 export class ChangeMailSenderCommand {
   constructor(
     readonly space: string,
+    /** `transactional` ou `marketing` — un paramètre de route, relu par le handler. */
+    readonly nature: string,
     readonly identity: MailSenderIdentity,
     readonly expectedRevision: number,
     readonly staffUserId: string,

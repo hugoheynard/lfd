@@ -278,9 +278,16 @@ model MailCharterVersion {
 /// (`MAILER_FROM_ADDRESS`, `MAILER_REPLY_TO`). Enregistrée seulement si le
 /// domaine de l'adresse d'envoi est vérifié chez Resend et qu'un essai est
 /// parti sous elle.
+///
+/// Une identité par espace ET par nature (plan
+/// `plan-desinscription-des-e-mails.md`, règle 9, lot U5) : un e-mail
+/// `marketing` sans ligne `marketing` part sous l'identité `transactional` de
+/// son espace. `lfd` n'a jamais de ligne `marketing` (contrainte en base).
 model MailSenderIdentity {
   /// L'espace (`lfc`, `lfd`) ; `internal` est rangé dans `lfd`.
-  space          String   @id @db.VarChar(16)
+  space          String   @db.VarChar(16)
+  /// La nature des e-mails que l'identité signe : `transactional`, `marketing`.
+  nature         String   @default("transactional") @db.VarChar(16)
   /// Monte à chaque écriture : le verrou entre deux rédacteurs.
   revision       Int
   /// Le nom affiché devant l'adresse (« La Folie Douce »).
@@ -293,6 +300,7 @@ model MailSenderIdentity {
   /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
   changedBy      String   @map("changed_by")
 
+  @@id([space, nature])
   @@map("mail_sender_identity")
   @@schema("mail")
 }

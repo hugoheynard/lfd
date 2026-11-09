@@ -1,13 +1,16 @@
 import {
+  hasSenderNature,
   senderDomainOf,
   validateMailSenderIdentity,
   validateStoredMailSenderIdentity,
+  type MailNature,
   type MailSenderIdentity,
   type MailSpace,
 } from "@lfd/mail-blocks";
 
 import {
   MailSenderChangedError,
+  MailSenderNatureNotOfferedError,
   MailSenderRefusedError,
   SenderDomainNotVerifiedError,
   StoredMailSenderUnreadableError,
@@ -22,6 +25,8 @@ export interface MailSenderStamp {
 /** L'état complet, tel que l'adaptateur le range et le relit. */
 export interface MailSpaceSenderState {
   readonly space: MailSpace;
+  /** La nature des e-mails que l'identité signe (U5). */
+  readonly nature: MailNature;
   /** 0 = jamais réglée (aucune ligne) : l'identité par défaut. */
   readonly revision: number;
   readonly identity: MailSenderIdentity | null;
@@ -51,6 +56,13 @@ export function assertSendable(
   }
 }
 
+/** @throws {MailSenderNatureNotOfferedError} l'espace ne règle pas cette nature. */
+function assertNatureOffered(space: MailSpace, nature: MailNature): void {
+  if (!hasSenderNature(space, nature)) {
+    throw new MailSenderNatureNotOfferedError(space, nature);
+  }
+}
+
 /**
  * **L'identité d'envoi d'un espace d'e-mails** — l'agrégat (plan
  * `plan-editeur-par-blocs.md`, § 25, C3) : « une marque = un espace = une
@@ -62,6 +74,18 @@ export function assertSendable(
  * Resend ; toute écriture faite sur une révision que quelqu'un a dépassée.
  * L'essai d'envoi qui précède le changement est le travail de l'appelant :
  * l'agrégat n'envoie rien.
+ *
+ * **Une identité par espace et par nature** (plan
+ * `plan-desinscription-des-e-mails.md`, règle 9, lot U5) : `transactional`
+ * signe les e-mails de service, `marketing` les offres — sur un sous-domaine
+ * à part, pour qu'une plainte sur une offre ne fasse pas tomber les
+ * confirmations de commande en spam. 🔴 **Repli** : tant qu'aucune identité
+ * `marketing` n'est réglée pour un espace, ses e-mails marketing partent sous
+ * son identité `transactional` (le sous-domaine marketing est un geste DNS
+ * de Hugo, pas encore fait) ; c'est l'envoi qui l'applique
+ * (`EffectiveCopyMailer`). Un espace qui n'envoie pas de marketing (`lfd`,
+ * `MAIL_SENDER_NATURES`) n'a pas d'identité marketing : elle n'existe pas,
+ * ni à lire ni à écrire.
  */
 export class MailSpaceSender {
   private constructor(
@@ -69,9 +93,15 @@ export class MailSpaceSender {
     private readonly loaded: number,
   ) {}
 
-  /** Un espace jamais réglé : il envoie sous l'identité par défaut. */
-  static unset(space: MailSpace): MailSpaceSender {
-    return new MailSpaceSender({ space, revision: 0, identity: null, changed: null }, 0);
+  /**
+   * Une identité jamais réglée : l'espace envoie sous l'identité par défaut
+   * (sa transactionnelle, pour une identité marketing).
+   *
+   * @throws {MailSenderNatureNotOfferedError} l'espace ne règle pas cette nature.
+   */
+  static unset(space: MailSpace, nature: MailNature): MailSpaceSender {
+    assertNatureOffered(space, nature);
+    return new MailSpaceSender({ space, nature, revision: 0, identity: null, changed: null }, 0);
   }
 
   /**
@@ -82,8 +112,10 @@ export class MailSpaceSender {
    * enregistrement.
    *
    * @throws {StoredMailSenderUnreadableError} l'identité rangée ne tient plus.
+   * @throws {MailSenderNatureNotOfferedError} l'espace ne règle pas cette nature.
    */
   static reconstitute(state: MailSpaceSenderState): MailSpaceSender {
+    assertNatureOffered(state.space, state.nature);
     if (state.identity !== null && validateStoredMailSenderIdentity(state.identity).length > 0) {
       throw new StoredMailSenderUnreadableError(state.space);
     }
@@ -92,6 +124,10 @@ export class MailSpaceSender {
 
   get space(): MailSpace {
     return this.state.space;
+  }
+
+  get nature(): MailNature {
+    return this.state.nature;
   }
 
   /** La révision chargée : le verrou de l'enregistrement. */
@@ -127,6 +163,7 @@ export class MailSpaceSender {
     assertSendable(this.state.space, identity, verifiedDomains);
     this.state = {
       space: this.state.space,
+      nature: this.state.nature,
       revision: this.state.revision + 1,
       identity: {
         senderName: identity.senderName.trim(),

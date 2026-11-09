@@ -1,4 +1,4 @@
-import type { MailSpace } from "@lfd/mail-blocks";
+import type { MailNature, MailSpace } from "@lfd/mail-blocks";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -15,6 +15,7 @@ import { assertSendable, type MailSenderStamp } from "../../domain/mail-space-se
 import { MailSenderTrial } from "../../domain/ports/mail-sender-trial.js";
 import { MailSpaceSenderRepository } from "../../domain/ports/mail-space-sender.repository.js";
 import { VerifiedSendingDomains } from "../../domain/ports/verified-sending-domains.js";
+import { mailNatureOfParam } from "../mail-nature-param.js";
 import { ChangeMailSenderCommand } from "./change-mail-sender.command.js";
 
 /**
@@ -36,6 +37,10 @@ import { ChangeMailSenderCommand } from "./change-mail-sender.command.js";
  * reste parti : c'est le sens sans dommage.
  *
  * **Une fois par intention** : un double clic n'envoie qu'un essai.
+ *
+ * **Par nature** (plan `plan-desinscription-des-e-mails.md`, lot U5) :
+ * l'identité `marketing` d'un espace se règle comme la transactionnelle, avec
+ * les mêmes règles, et seulement pour un espace qui envoie du marketing.
  */
 @CommandHandler(ChangeMailSenderCommand)
 export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSenderCommand, void> {
@@ -54,6 +59,8 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
 
   /**
    * @throws {UnknownMailSpaceError} l'espace n'existe pas.
+   * @throws {UnknownMailNatureError} la nature n'existe pas.
+   * @throws {MailSenderNatureNotOfferedError} l'espace ne règle pas cette nature (`lfd` marketing).
    * @throws {MailSenderChangedError} la révision lue a été dépassée.
    * @throws {MailSenderRefusedError} l'identité est mal formée.
    * @throws {SendingDomainsUnavailableError} les domaines n'ont pas pu être lus.
@@ -63,27 +70,32 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
    */
   async execute(command: ChangeMailSenderCommand): Promise<void> {
     const space = mailSpaceOfParam(command.space);
+    const nature = mailNatureOfParam(command.nature);
     return this.intents.run(
       {
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "mail.sender-change",
-        subject: space,
+        subject: `${space}:${nature}`,
       },
       NOTHING_TO_REPLAY,
-      () => this.change(space, command),
+      () => this.change(space, nature, command),
     );
   }
 
-  private async change(space: MailSpace, command: ChangeMailSenderCommand): Promise<void> {
-    (await this.senders.load(space)).assertRevision(command.expectedRevision);
+  private async change(
+    space: MailSpace,
+    nature: MailNature,
+    command: ChangeMailSenderCommand,
+  ): Promise<void> {
+    (await this.senders.load(space, nature)).assertRevision(command.expectedRevision);
     const verified = await this.domains.verified();
     assertSendable(space, command.identity, verified);
     const to = await this.recipientOf(command.staffUserId);
     await this.trial.send(space, command.identity, to, command.intentKey);
     const stamp: MailSenderStamp = { at: this.clock.now(), staffId: command.staffUserId };
     await this.uow.run(async () => {
-      const sender = await this.senders.load(space);
+      const sender = await this.senders.load(space, nature);
       sender.change(command.identity, verified, command.expectedRevision, stamp);
       const release = await this.releases.load();
       release.markDocumentChange();
@@ -92,7 +104,7 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
       const { revision, identity } = sender.snapshot();
       if (identity !== null) {
         await this.events.publishTraced(
-          new MailSenderChangedEvent(space, revision, identity, release.version),
+          new MailSenderChangedEvent(space, nature, revision, identity, release.version),
         );
       }
     });

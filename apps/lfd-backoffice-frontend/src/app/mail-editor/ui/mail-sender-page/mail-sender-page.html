@@ -2,7 +2,12 @@
   <fold-back-link pageEyebrow icon="arrow-back" label="Email Templates" routerLink="/emails" />
   @if (known(); as space) {
     <app-mail-space-tabs [space]="space" />
-    <app-mail-sender-card [space]="space" />
+    <div class="sp-cards">
+      <app-mail-sender-card [space]="space" nature="transactional" data-nature="transactional" />
+      @if (sendsMarketing()) {
+        <app-mail-sender-card [space]="space" nature="marketing" data-nature="marketing" />
+      }
+    </div>
   } @else {
     <fold-empty-state
       tone="alert"

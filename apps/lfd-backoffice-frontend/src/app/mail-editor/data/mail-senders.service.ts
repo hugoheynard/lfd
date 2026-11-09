@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { MailSenderPayload, MailSenderView, MailSpace } from '@lfd/mail-blocks';
+import type { MailNature, MailSenderPayload, MailSenderView, MailSpace } from '@lfd/mail-blocks';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -14,14 +14,20 @@ const BASE = `${B2B_API_BASE}/admin/mail-senders`;
  *
  * Murées côté serveur par le droit `mail_templates` : lire demande `read`,
  * changer demande `write`.
+ *
+ * Une identité par espace ET par nature (`transactional`, `marketing` — plan
+ * `plan-desinscription-des-e-mails.md`, lot U5).
  */
 @Injectable({ providedIn: 'root' })
 export class MailSendersService {
   private readonly http = inject(HttpClient);
 
-  /** Rien n'est écrit ; Resend est lu pour les domaines vérifiés. `404` : espace inconnu. */
-  load(space: MailSpace): Promise<MailSenderView> {
-    return firstValueFrom(this.http.get<MailSenderView>(`${BASE}/${space}`));
+  /**
+   * Rien n'est écrit ; Resend est lu pour les domaines vérifiés. `404` :
+   * espace inconnu, ou nature qu'il ne règle pas (`lfd` n'a pas de marketing).
+   */
+  load(space: MailSpace, nature: MailNature): Promise<MailSenderView> {
+    return firstValueFrom(this.http.get<MailSenderView>(`${BASE}/${space}/${nature}`));
   }
 
   /**
@@ -30,9 +36,14 @@ export class MailSendersService {
    * le geste n'a pas abouti — un double clic n'envoie pas deux essais.
    * `400` forme, `409` domaine non vérifié, essai refusé, révision dépassée.
    */
-  async change(space: MailSpace, payload: MailSenderPayload, intentKey: string): Promise<void> {
+  async change(
+    space: MailSpace,
+    nature: MailNature,
+    payload: MailSenderPayload,
+    intentKey: string,
+  ): Promise<void> {
     await firstValueFrom(
-      this.http.put<unknown>(`${BASE}/${space}`, payload, intentOptions(intentKey)),
+      this.http.put<unknown>(`${BASE}/${space}/${nature}`, payload, intentOptions(intentKey)),
     );
   }
 }

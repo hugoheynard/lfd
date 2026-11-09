@@ -1,4 +1,5 @@
 import {
+  hasSenderNature,
   MAX_SENDER_NAME_LENGTH,
   senderDomainOf,
   senderHeaderOf,
@@ -107,5 +108,18 @@ describe("senderDomainOf", () => {
 describe("senderHeaderOf", () => {
   it("met le nom entre guillemets devant l'adresse", () => {
     expect(senderHeaderOf(IDENTITY)).toBe('"La Folie Douce" <no-reply@lfd-backoffice.com>');
+  });
+});
+
+describe("hasSenderNature", () => {
+  it("règle une identité marketing pour la boutique, et la transactionnelle partout", () => {
+    expect(hasSenderNature("lfc", "marketing")).toBe(true);
+    expect(hasSenderNature("lfc", "transactional")).toBe(true);
+    expect(hasSenderNature("lfd", "transactional")).toBe(true);
+  });
+
+  /** L'espace de l'équipe n'envoie jamais de marketing (règle 19) : rien à régler. */
+  it("ne propose pas d'identité marketing à l'espace de l'équipe", () => {
+    expect(hasSenderNature("lfd", "marketing")).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import type { MailNature, MailSpace } from "@lfd/mail-blocks";
 import { isLayoutSectionId } from "@lfd/mailer";
 import { Injectable } from "@nestjs/common";
 
@@ -6,7 +7,10 @@ import { PublishedMailCopyReader } from "../../templates/effective-copy/publishe
 import type { MailSectionOrders } from "../../templates/sections/mail-layout-scope.js";
 import type { PublishedMailDocuments } from "../../templates/effective-copy/published-mail-documents.js";
 import type { PublishedMailCharters } from "../../templates/effective-copy/published-mail-charters.js";
-import type { PublishedMailSenders } from "../../templates/effective-copy/published-mail-senders.js";
+import type {
+  PublishedMailSenderEntry,
+  PublishedMailSendersByNature,
+} from "../../templates/effective-copy/published-mail-senders.js";
 import { servableMailSender } from "../../senders/application/servable-mail-sender.js";
 import { servableMailCharter } from "../../charters/application/servable-mail-charter.js";
 import { servableMailDocument } from "../../documents/application/servable-mail-document.js";
@@ -74,7 +78,7 @@ export class CachedPublishedMailCopyReader
   } | null = null;
   private cachedSenders: {
     readonly version: number;
-    readonly senders: PublishedMailSenders;
+    readonly senders: PublishedMailSendersByNature;
   } | null = null;
 
   constructor(
@@ -165,18 +169,26 @@ export class CachedPublishedMailCopyReader
    * Les identités d'envoi des espaces (C3, § 25), par la même version :
    * changer une identité la fait monter. Gardées à part, comme les chartes.
    */
-  async senders(): Promise<PublishedMailSenders> {
+  async senders(): Promise<PublishedMailSendersByNature> {
     const version = await this.currentVersion();
     if (this.cachedSenders !== null && this.cachedSenders.version === version) {
       return this.cachedSenders.senders;
     }
     const stored = await this.store.senders();
-    const senders: PublishedMailSenders = Object.fromEntries(
-      stored.flatMap((row) => {
-        const entry = servableMailSender(row);
-        return entry === null ? [] : [entry];
-      }),
-    );
+    const servable = stored.flatMap((row) => {
+      const sender = servableMailSender(row);
+      return sender === null ? [] : [sender];
+    });
+    const ofNature = (nature: MailNature): Partial<Record<MailSpace, PublishedMailSenderEntry>> =>
+      Object.fromEntries(
+        servable
+          .filter((sender) => sender.nature === nature)
+          .map((sender) => [sender.space, sender.entry]),
+      );
+    const senders: PublishedMailSendersByNature = {
+      transactional: ofNature("transactional"),
+      marketing: ofNature("marketing"),
+    };
     this.cachedSenders = { version, senders };
     return senders;
   }

@@ -3,7 +3,10 @@ import type { MailSectionOrders } from "../../sections/mail-layout-scope.js";
 import type { PublishedMailCharters } from "../published-mail-charters.js";
 import { PublishedMailCopyReader } from "../published-mail-copy.reader.js";
 import type { PublishedMailDocuments } from "../published-mail-documents.js";
-import type { PublishedMailSenders } from "../published-mail-senders.js";
+import {
+  NO_PUBLISHED_MAIL_SENDERS,
+  type PublishedMailSendersByNature,
+} from "../published-mail-senders.js";
 
 /**
  * Le publié réduit à ses chartes : rien d'autre n'est publié. Une `Error`
@@ -22,8 +25,8 @@ export class PublishedChartersOnly extends PublishedMailCopyReader {
   documents(): Promise<PublishedMailDocuments> {
     return Promise.resolve({});
   }
-  senders(): Promise<PublishedMailSenders> {
-    return Promise.resolve({});
+  senders(): Promise<PublishedMailSendersByNature> {
+    return Promise.resolve(NO_PUBLISHED_MAIL_SENDERS);
   }
   charters(): Promise<PublishedMailCharters> {
     return this.published instanceof Error

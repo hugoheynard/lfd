@@ -9,8 +9,13 @@ import { identityOf, MailSenderCard } from './mail-sender-card';
 
 const FALLBACK_VIEW: MailSenderView = {
   space: 'lfd',
+  nature: 'transactional',
   identity: null,
-  fallback: { fromAddress: 'no-reply@lafoliecoffee.info', replyToAddress: null },
+  fallback: {
+    fromAddress: 'no-reply@lafoliecoffee.info',
+    replyToAddress: null,
+    source: 'configuration',
+  },
   revision: 0,
   changed: null,
   verifiedDomains: ['lafoliecoffee.info', 'lfd-backoffice.com'],
@@ -20,12 +25,14 @@ async function setup(options: {
   readonly view?: MailSenderView;
   readonly canWrite?: boolean;
   readonly change?: () => Promise<void>;
+  readonly space?: 'lfc' | 'lfd';
+  readonly nature?: 'transactional' | 'marketing';
 }) {
   const api = {
     load: vi.fn(() => Promise.resolve(options.view ?? FALLBACK_VIEW)),
-    change: vi.fn<(space: string, payload: MailSenderPayload, key: string) => Promise<void>>(
-      options.change ?? (() => Promise.resolve()),
-    ),
+    change: vi.fn<
+      (space: string, nature: string, payload: MailSenderPayload, key: string) => Promise<void>
+    >(options.change ?? (() => Promise.resolve())),
   };
   TestBed.configureTestingModule({
     imports: [MailSenderCard],
@@ -35,7 +42,8 @@ async function setup(options: {
     ],
   });
   const fixture = TestBed.createComponent(MailSenderCard);
-  fixture.componentRef.setInput('space', 'lfd');
+  fixture.componentRef.setInput('space', options.space ?? 'lfd');
+  if (options.nature !== undefined) fixture.componentRef.setInput('nature', options.nature);
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -137,7 +145,8 @@ describe('MailSenderCard — l’expéditeur d’un espace', () => {
     await settle();
     expect(api.change).toHaveBeenCalledTimes(2);
     const [first, second] = api.change.mock.calls;
-    expect(first?.[1]).toEqual({
+    expect(first?.[1]).toBe('transactional');
+    expect(first?.[2]).toEqual({
       identity: {
         senderName: 'La Folie Douce',
         fromAddress: 'no-reply@lfd-backoffice.com',
@@ -145,8 +154,45 @@ describe('MailSenderCard — l’expéditeur d’un espace', () => {
       },
       expectedRevision: 0,
     });
-    expect(second?.[2]).toBe(first?.[2]);
+    expect(second?.[3]).toBe(first?.[3]);
     expect(element.querySelector('[data-saved]')).not.toBeNull();
+  });
+
+  /** Lot U5 : le sous-domaine marketing n'est pas posé — l'écran dit d'où partent les offres. */
+  it('dit que l’expéditeur marketing pas encore réglé part de l’adresse transactionnelle', async () => {
+    const { element, api } = await setup({
+      space: 'lfc',
+      nature: 'marketing',
+      view: {
+        ...FALLBACK_VIEW,
+        space: 'lfc',
+        nature: 'marketing',
+        fallback: {
+          fromAddress: '"La Folie Coffee" <bonjour@lafoliecoffee.info>',
+          replyToAddress: 'contact@lafoliecoffee.info',
+          source: 'transactional',
+        },
+      },
+    });
+    expect(api.load).toHaveBeenCalledWith('lfc', 'marketing');
+    expect(element.textContent).toContain('Expéditeur marketing');
+    expect(element.querySelector('[data-current]')?.textContent).toContain(
+      'Pas encore réglée : part de l’adresse transactionnelle, "La Folie Coffee" <bonjour@lafoliecoffee.info>',
+    );
+  });
+
+  it('enregistre l’expéditeur marketing sous sa nature', async () => {
+    const { component, type, api, settle } = await setup({
+      space: 'lfc',
+      nature: 'marketing',
+      view: { ...FALLBACK_VIEW, space: 'lfc', nature: 'marketing' },
+    });
+    await type('[data-sender-name]', 'La Folie Coffee');
+    await type('[data-from-address]', 'offres@news.lafoliecoffee.info');
+    await type('[data-reply-to]', 'contact@lafoliecoffee.info');
+    await component.save();
+    await settle();
+    expect(api.change.mock.calls[0]?.slice(0, 2)).toEqual(['lfc', 'marketing']);
   });
 
   it('une adresse de réponse vide vaut « aucune »', () => {
