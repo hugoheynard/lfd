@@ -100,8 +100,14 @@ export const SPECIMEN_DAY_SHELVES: ReadonlyMap<string, CatalogFamilyView> = new 
 /**
  * Les tranches d'exemple de la fiche d'atelier (le calendrier du dossier,
  * 2026-11-02) : deux heures, et le pain de campagne sans échéance — il tombe
- * dans « Sans heure », comme un vrai produit sans marge réglée. Totaux : ceux
- * des commandes et réassorts d'exemple ci-dessus.
+ * dans « Sans heure ». ⚠️ Cette phrase disait « comme un vrai produit sans
+ * marge réglée » : faux depuis le 2026-10-28, où une marge non réglée compte
+ * pour zéro (`deadline-thresholds.ts`). Le seul cas réel de « Sans heure » est
+ * une commande SANS FENÊTRE — ce que la passation refuse depuis le 2026-10-14
+ * (`FulfillmentWindowRequiredError`) : il ne reste que les commandes d'avant,
+ * et un retrait par transfert dont l'arrivée au site n'est pas réglée
+ * (vérifié le 2026-11-09). L'exemple garde la colonne pour montrer ce cas
+ * hérité. Totaux : ceux des commandes et réassorts d'exemple ci-dessus.
  */
 export const SPECIMEN_DAY_TRANCHES: ReadonlyMap<string, readonly TrancheThreshold[]> = new Map([
   [
