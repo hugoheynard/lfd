@@ -1,6 +1,6 @@
 /**
  * **La durée d'une demande d'accord non confirmée** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 18) : le
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 18) : le
  * lien de confirmation vaut 7 jours, et une ligne `pending` plus vieille est
  * purgée — une commande abandonnée laisse au plus une ligne qui expire
  * (règle 21). La même durée pour les deux : un lien encore valable trouve

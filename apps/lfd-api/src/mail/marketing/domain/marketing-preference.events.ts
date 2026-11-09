@@ -4,7 +4,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 
 /**
  * Les faits du registre de préférence vu par le staff (plan
- * `plan-desinscription-des-e-mails.md`, lot C4), au journal parmi les
+ * `la-desinscription-et-l-accord.md`, lot C4), au journal parmi les
  * autres gestes. Le sujet est la ligne du registre ; l'adresse n'est
  * JAMAIS dans la charge.
  */

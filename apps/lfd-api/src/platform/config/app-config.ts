@@ -196,7 +196,7 @@ export class AppConfig {
 
   /**
    * **La clé des jetons de désinscription** (plan
-   * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 4, U2).
+   * `documentation/mail/la-desinscription-et-l-accord.md`, règle 4, U2).
    *
    * DÉRIVÉE de la clé du coffre par HKDF-SHA256 sous son étiquette, comme les
    * liens d'annulation. Les liens n'expirent pas : ils meurent à la rotation
@@ -211,7 +211,7 @@ export class AppConfig {
 
   /**
    * **La clé de l'empreinte des adresses du registre de préférence** (plan
-   * `plan-desinscription-des-e-mails.md`, contradiction : « l'effacement ne
+   * `la-desinscription-et-l-accord.md`, contradiction : « l'effacement ne
    * rouvre pas la porte »). L'empreinte survit à l'effacement de l'adresse ;
    * une clé, jamais un hachage nu qui se renverse par dictionnaire. Une
    * rotation de `FIELD_ENCRYPTION_KEY` rend les empreintes rangées
@@ -225,7 +225,7 @@ export class AppConfig {
 
   /**
    * **La clé des jetons de confirmation d'un accord marketing** (plan
-   * `plan-desinscription-des-e-mails.md`, règle 18, C1) : même famille que
+   * `la-desinscription-et-l-accord.md`, règle 18, C1) : même famille que
    * celle de désinscription, sous son étiquette propre — un jeton de
    * désinscription ne s'ouvre pas comme une confirmation, ni l'inverse.
    * Le lien vaut 7 jours ; une rotation de `FIELD_ENCRYPTION_KEY` éteint les

@@ -8,7 +8,7 @@ import { MarketingPreferences } from './marketing-preferences.service';
 
 /**
  * **La case « offres de La Folie Coffee » à la commande** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lot C2).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lot C2).
  *
  * 🔴 **Pas d'oracle** (règle 17) : un visiteur voit TOUJOURS la case, non
  * cochée — sinon son absence dirait qu'une adresse est déjà inscrite ou

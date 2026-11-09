@@ -16,7 +16,7 @@ import { mailPreferenceQuery, type MailPreferenceFilters } from '../rules/mail-p
 const BASE = `${B2B_API_BASE}/admin/mail/preferences`;
 
 /**
- * **Les désinscriptions et accords** (plan `plan-desinscription-des-e-mails.md`,
+ * **Les désinscriptions et accords** (doc `la-desinscription-et-l-accord.md`,
  * lot C4), murés côté serveur par le droit `mail_sends`.
  *
  * 🔴 Une adresse ne voyage JAMAIS dans une URL : chercher ou désinscrire une

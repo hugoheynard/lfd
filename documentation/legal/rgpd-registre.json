@@ -2624,7 +2624,7 @@
       "colonne": "mail.mail_marketing_preference.recipient_key",
       "personne": "client",
       "categorie": "identite",
-      "finalite": "L'adresse e-mail en minuscules d'une personne au registre de préférence marketing, par société émettrice (plan-desinscription-des-e-mails.md, règle 10, U2) : n'écrire d'offres qu'à qui les accepte, et jamais à qui s'est désinscrit. Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "L'adresse e-mail en minuscules d'une personne au registre de préférence marketing, par société émettrice (la-desinscription-et-l-accord.md, règle 10, U2) : n'écrire d'offres qu'à qui les accepte, et jamais à qui s'est désinscrit. Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2633,7 +2633,7 @@
       "colonne": "mail.mail_marketing_preference.print",
       "personne": "client",
       "categorie": "pseudonyme",
-      "finalite": "L'empreinte HMAC-SHA256 à clé de l'adresse (clé dérivée de `FIELD_ENCRYPTION_KEY`, étiquette `lfd/mail-unsubscribe-print/v1`) : donnée PSEUDONYME, qui survit à l'effacement pour qu'une désinscription continue de protéger (contradiction de vitruve, « l'effacement ne rouvre pas la porte »). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "L'empreinte HMAC-SHA256 à clé de l'adresse (clé dérivée de `FIELD_ENCRYPTION_KEY`, étiquette `lfd/mail-unsubscribe-print/v1`) : donnée PSEUDONYME, qui survit à l'effacement pour qu'une désinscription continue de protéger (contradiction de vitruve, « l'effacement ne rouvre pas la porte »). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2642,7 +2642,7 @@
       "colonne": "mail.mail_marketing_preference.status",
       "personne": "client",
       "categorie": "preference",
-      "finalite": "L'état de la préférence de la personne (`pending`, `accepted`, `unsubscribed`) pour cette société. Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "L'état de la préférence de la personne (`pending`, `accepted`, `unsubscribed`) pour cette société. Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2651,7 +2651,7 @@
       "colonne": "mail.mail_marketing_preference.origin",
       "personne": "client",
       "categorie": "preference",
-      "finalite": "D'où vient l'accord : la société elle-même (`direct`) ou la case « partenaires » (`partners`, règle 20). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "D'où vient l'accord : la société elle-même (`direct`) ou la case « partenaires » (`partners`, règle 20). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2660,7 +2660,7 @@
       "colonne": "mail.mail_marketing_preference.accepted_text_version",
       "personne": "client",
       "categorie": "preuve-consentement",
-      "finalite": "La version du texte de la case acceptée : la preuve que la CNIL demande (règle 18). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "La version du texte de la case acceptée : la preuve que la CNIL demande (règle 18). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2669,7 +2669,7 @@
       "colonne": "mail.mail_marketing_preference.accepted_locale",
       "personne": "client",
       "categorie": "preuve-consentement",
-      "finalite": "La langue du texte de la case acceptée (règle 18). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "La langue du texte de la case acceptée (règle 18). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2678,7 +2678,7 @@
       "colonne": "mail.mail_marketing_preference.accepted_where",
       "personne": "client",
       "categorie": "preuve-consentement",
-      "finalite": "Le lieu du recueil (`signup`, `preferences`, `order`, `newsletter`, `staff`, règle 18). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "Le lieu du recueil (`signup`, `preferences`, `order`, `newsletter`, `staff`, règle 18). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2687,7 +2687,7 @@
       "colonne": "mail.mail_marketing_preference.accepted_ref",
       "personne": "client",
       "categorie": "preuve-consentement",
-      "finalite": "La référence opaque de l'acte qui a porté l'accord (une commande, un compte, règle 18) — jamais une adresse. Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "La référence opaque de l'acte qui a porté l'accord (une commande, un compte, règle 18) — jamais une adresse. Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2696,7 +2696,7 @@
       "colonne": "mail.mail_marketing_preference.requested_at",
       "personne": "client",
       "categorie": "horodatage-geste",
-      "finalite": "L'instant où l'accord a été donné (règle 18). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "L'instant où l'accord a été donné (règle 18). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2705,7 +2705,7 @@
       "colonne": "mail.mail_marketing_preference.confirmed_at",
       "personne": "client",
       "categorie": "horodatage-geste",
-      "finalite": "L'instant de la confirmation de l'accord, par le clic du lien ou d'emblée pour une adresse vérifiée (règle 18). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "L'instant de la confirmation de l'accord, par le clic du lien ou d'emblée pour une adresse vérifiée (règle 18). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2714,7 +2714,7 @@
       "colonne": "mail.mail_marketing_preference.unsubscribed_at",
       "personne": "client",
       "categorie": "horodatage-geste",
-      "finalite": "L'instant de la désinscription. Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "L'instant de la désinscription. Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2723,7 +2723,7 @@
       "colonne": "mail.mail_marketing_preference.unsubscribed_source",
       "personne": "client",
       "categorie": "preference",
-      "finalite": "Ce qui a désinscrit : le bouton de la page (`link`), le « One-Click » d'une messagerie (`one_click`), le staff à la demande du client (`staff`), « tout le groupe » (`group`). Gardée tant que l'accord ou la désinscription vaut (plan-desinscription-des-e-mails.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
+      "finalite": "Ce qui a désinscrit : le bouton de la page (`link`), le « One-Click » d'une messagerie (`one_click`), le staff à la demande du client (`staff`), « tout le groupe » (`group`). Gardée tant que l'accord ou la désinscription vaut (la-desinscription-et-l-accord.md, règle 16) : la supprimer d'une désinscription reviendrait à réécrire à quelqu'un qui a dit non. À une demande d'effacement (règle 23, `EraseMarketingPreferencesCommand`), une ligne `pending` ou `accepted` est supprimée ; une ligne `unsubscribed` perd `recipient_key` et garde son empreinte. Le processus d'effacement du dépôt n'appelle pas encore cette commande (vérifié le 2026-11-08 : il n'en existe pas).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2787,7 +2787,7 @@
       "colonne": "mail.mail_preference_consultation.staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Quel membre du staff a affiché une adresse ou cherché une adresse dans les désinscriptions et accords : la lecture n'est permise qu'à lui, 5 minutes, et la ligne compte dans son plafond de 30 consultations par heure, partagé avec le suivi des e-mails. À supprimer 1 an après la consultation (plan-desinscription-des-e-mails.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.preference_recipient_revealed`, `mail.preference_recipient_searched`).",
+      "finalite": "Quel membre du staff a affiché une adresse ou cherché une adresse dans les désinscriptions et accords : la lecture n'est permise qu'à lui, 5 minutes, et la ligne compte dans son plafond de 30 consultations par heure, partagé avec le suivi des e-mails. À supprimer 1 an après la consultation (la-desinscription-et-l-accord.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`). La trace durable du geste est au journal d'activité (`mail.preference_recipient_revealed`, `mail.preference_recipient_searched`).",
       "conservation": {
         "jours": 365
       },
@@ -2798,7 +2798,7 @@
       "colonne": "mail.mail_preference_consultation.consulted_at",
       "personne": "staff",
       "categorie": "horodatage-geste",
-      "finalite": "L'instant de la consultation : il ouvre la lecture 5 minutes et compte dans le plafond horaire de son auteur. À supprimer 1 an après la consultation (plan-desinscription-des-e-mails.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "finalite": "L'instant de la consultation : il ouvre la lecture 5 minutes et compte dans le plafond horaire de son auteur. À supprimer 1 an après la consultation (la-desinscription-et-l-accord.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
       "conservation": {
         "jours": 365
       },
@@ -2809,7 +2809,7 @@
       "colonne": "mail.mail_preference_consultation.fingerprint",
       "personne": "client",
       "categorie": "donnees-email",
-      "finalite": "L'EMPREINTE de l'adresse cherchée dans le registre de préférence (HMAC-SHA256 sous `AppConfig.mailRecipientSearchKey`, la clé de recherche du suivi), jamais l'adresse. À supprimer 1 an après la consultation (plan-desinscription-des-e-mails.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
+      "finalite": "L'EMPREINTE de l'adresse cherchée dans le registre de préférence (HMAC-SHA256 sous `AppConfig.mailRecipientSearchKey`, la clé de recherche du suivi), jamais l'adresse. À supprimer 1 an après la consultation (la-desinscription-et-l-accord.md, lot C4 : même cran que le suivi). ⚠️ Purge NON activée (à blanc) tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` = `on`).",
       "conservation": {
         "jours": 365
       },
@@ -3068,7 +3068,7 @@
     },
     {
       "colonne": "mail.mail_request.refusal_code",
-      "raison": "La raison FERMÉE d'un refus (`unsubscribed` | `no_consent`, contrainte en base ; plan-desinscription-des-e-mails.md, U2) : un état, sans rien de la personne ; part avec la ligne."
+      "raison": "La raison FERMÉE d'un refus (`unsubscribed` | `no_consent`, contrainte en base ; la-desinscription-et-l-accord.md, U2) : un état, sans rien de la personne ; part avec la ligne."
     },
     {
       "colonne": "mail.mail_marketing_preference.id",
@@ -3080,11 +3080,11 @@
     },
     {
       "colonne": "mail.mail_preference_consultation.preference_id",
-      "raison": "L'identifiant opaque de la ligne du registre de préférence dont l'adresse a été affichée (plan-desinscription-des-e-mails.md, C4) : ni adresse ni nom — l'adresse reste dans `mail.mail_marketing_preference.recipient_key`, au registre. Purgé avec sa consultation, à 1 an sous `MAIL_REQUEST_PURGE`."
+      "raison": "L'identifiant opaque de la ligne du registre de préférence dont l'adresse a été affichée (la-desinscription-et-l-accord.md, C4) : ni adresse ni nom — l'adresse reste dans `mail.mail_marketing_preference.recipient_key`, au registre. Purgé avec sa consultation, à 1 an sous `MAIL_REQUEST_PURGE`."
     },
     {
       "colonne": "mail.mail_preference_consultation_hit.preference_id",
-      "raison": "L'identifiant opaque d'une ligne du registre de préférence trouvée par une recherche (plan-desinscription-des-e-mails.md, C4) : ni adresse ni nom. Supprimé avec sa recherche (ON DELETE CASCADE), donc à 1 an sous `MAIL_REQUEST_PURGE`."
+      "raison": "L'identifiant opaque d'une ligne du registre de préférence trouvée par une recherche (la-desinscription-et-l-accord.md, C4) : ni adresse ni nom. Supprimé avec sa recherche (ON DELETE CASCADE), donc à 1 an sous `MAIL_REQUEST_PURGE`."
     }
   ]
 }

@@ -57,7 +57,7 @@ function reasonOf(error: unknown): string {
  * balayeur la reprendra (plan § 8).
  *
  * **Le contrôle marketing vit ici** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, B3) : juste avant
+ * `documentation/mail/la-desinscription-et-l-accord.md`, B3) : juste avant
  * l'appel au fournisseur, à CHAQUE essai — l'envoi immédiat, l'envoi différé
  * et chaque reprise du balayeur passent tous par cette méthode. Un e-mail
  * marketing sans accord est clos `refused` avec sa raison fermée, et rien ne

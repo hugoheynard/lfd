@@ -7,7 +7,7 @@ import { marketingWorld, NOW, SHOP_ORIGIN } from "./marketing-world.js";
 
 /**
  * **La demande d'accord et sa double confirmation** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règles 17, 18,
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règles 17, 18,
  * 20 ; lot C1) — le bloc monté à la main sur ses doubles.
  */
 

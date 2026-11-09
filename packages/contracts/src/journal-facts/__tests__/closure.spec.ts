@@ -26,11 +26,11 @@ const UNNAMED_SUBJECTS: Readonly<Record<string, string>> = {
   "mail.recipient_searched":
     "une recherche par adresse n'a d'autre nom que l'adresse, qui ne va jamais au journal (le-suivi-des-e-mails.md, décision 8)",
   "mail.preference_recipient_revealed":
-    "une ligne du registre de préférence n'a d'autre nom que son adresse, qui ne va jamais au journal (plan-desinscription-des-e-mails.md, C4)",
+    "une ligne du registre de préférence n'a d'autre nom que son adresse, qui ne va jamais au journal (la-desinscription-et-l-accord.md, C4)",
   "mail.preference_recipient_searched":
-    "une recherche par adresse n'a d'autre nom que l'adresse, qui ne va jamais au journal (plan-desinscription-des-e-mails.md, C4)",
+    "une recherche par adresse n'a d'autre nom que l'adresse, qui ne va jamais au journal (la-desinscription-et-l-accord.md, C4)",
   "mail.marketing_unsubscribed_by_staff":
-    "une ligne du registre de préférence n'a d'autre nom que son adresse, qui ne va jamais au journal (plan-desinscription-des-e-mails.md, C4)",
+    "une ligne du registre de préférence n'a d'autre nom que son adresse, qui ne va jamais au journal (la-desinscription-et-l-accord.md, C4)",
   "subscription.status_changed": "un panier récurrent n'a pas de nom",
   "subscription.occurrence_overridden": "un panier récurrent n'a pas de nom",
   "subscription.deleted": "un panier récurrent n'a pas de nom",

@@ -357,7 +357,7 @@ export const COMMERCE_FACTS = {
    * les autres instances voient l'identité.
    *
    * `subjectLabel` : le nom de l'espace (« La Folie Douce — équipe »).
-   * `nature` (depuis le 2026-11-09, plan `plan-desinscription-des-e-mails.md`,
+   * `nature` (depuis le 2026-11-09, doc `la-desinscription-et-l-accord.md`,
    * lot U5) : `transactional` ou `marketing` — absente des faits d'avant, qui
    * étaient tous transactionnels.
    */
@@ -401,7 +401,7 @@ export const COMMERCE_FACTS = {
 
   /**
    * **L'adresse d'une ligne du registre de préférence marketing est
-   * révélée** (plan `plan-desinscription-des-e-mails.md`, lot C4) : même
+   * révélée** (doc `la-desinscription-et-l-accord.md`, lot C4) : même
    * geste, même plafond que `mail.recipient_revealed`. Le sujet est la ligne
    * (`mail_marketing_preference`) ; l'adresse n'est JAMAIS dans la charge.
    */
@@ -409,14 +409,14 @@ export const COMMERCE_FACTS = {
 
   /**
    * **Le staff désinscrit une adresse à la demande du client** (plan
-   * `plan-desinscription-des-e-mails.md`, règle 8, lot C4) — source `staff`.
+   * `la-desinscription-et-l-accord.md`, règle 8, lot C4) — source `staff`.
    * Le sujet est la ligne du registre ; l'adresse n'est JAMAIS dans la
    * charge. `changed` : faux si la ligne était déjà désinscrite. Il n'existe
    * pas de fait inverse : le staff ne réinscrit jamais.
    */
   /**
    * **Le registre de préférence est cherché par adresse** (plan
-   * `plan-desinscription-des-e-mails.md`, lot C4) : même geste, même plafond
+   * `la-desinscription-et-l-accord.md`, lot C4) : même geste, même plafond
    * que `mail.recipient_searched`. Le sujet est la recherche
    * (`mail_preference_search`) ; ni l'adresse ni son empreinte ne sont dans
    * la charge. `found` : combien de lignes trouvées.

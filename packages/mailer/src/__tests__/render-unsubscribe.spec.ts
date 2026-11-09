@@ -8,7 +8,7 @@ import { renderMailDocument, type MailDocumentRenderOptions } from "../render-do
 
 /**
  * Le pied de désinscription d'un e-mail marketing (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, B2) : injecté
+ * `documentation/mail/la-desinscription-et-l-accord.md`, B2) : injecté
  * au rendu, APRÈS tout le document, en HTML et en texte — et absent, le rendu
  * d'avant à l'octet.
  */

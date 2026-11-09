@@ -101,7 +101,7 @@ export class StoredMailSenderUnreadableError extends TechnicalError {
 
 /**
  * L'espace ne règle pas d'identité pour cette nature (plan
- * `plan-desinscription-des-e-mails.md`, lot U5) : `lfd`, l'espace de
+ * `la-desinscription-et-l-accord.md`, lot U5) : `lfd`, l'espace de
  * l'équipe, n'envoie jamais de marketing (règle 19).
  */
 export class MailSenderNatureNotOfferedError extends ResourceNotFoundError {

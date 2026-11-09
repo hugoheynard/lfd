@@ -15,7 +15,7 @@ type CurrentVersion = TextVersions[keyof TextVersions];
  * 🔴 C'est ce qui tient « le texte affiché est celui de la version envoyée » :
  * une version publiée de plus au contrat (`society.v2`) casse la compilation
  * ici tant qu'aucun texte ne la porte. Plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règles 10 et 18.
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règles 10 et 18.
  */
 export const CONSENT_TEXT_KEY = {
   'society.v1': 'societyV1',

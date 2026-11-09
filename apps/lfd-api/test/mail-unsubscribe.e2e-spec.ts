@@ -1,6 +1,6 @@
 /**
  * La désinscription par le lien d'un e-mail, contre le vrai Postgres (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lot U2).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lot U2).
  *
  * Ce qu'un test unitaire ne peut pas dire : que le GET ne désinscrit pas,
  * que le POST écrit le registre une fois, que la réponse est la même pour

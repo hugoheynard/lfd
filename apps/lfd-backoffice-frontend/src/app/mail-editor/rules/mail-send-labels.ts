@@ -48,7 +48,7 @@ export const MAIL_SEND_STEP_LABELS: Readonly<Record<MailSendStepKind, string>> =
 };
 
 /**
- * **La raison fermée d'un refus** (plan `plan-desinscription-des-e-mails.md`,
+ * **La raison fermée d'un refus** (doc `la-desinscription-et-l-accord.md`,
  * U4) : un e-mail marketing qui n'est pas parti, dit en toutes lettres.
  */
 export const MAIL_SEND_REFUSAL_LABELS: Readonly<Record<MailSendRefusalCode, string>> = {

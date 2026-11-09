@@ -20,7 +20,7 @@ import { GetMyMarketingPreferencesQuery } from "../application/queries/get-my-ma
 
 /**
  * **« Mes préférences » des e-mails d'offres** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, C2 et C3) — la
+ * `documentation/mail/la-desinscription-et-l-accord.md`, C2 et C3) — la
  * personne connectée, sous la garde du client.
  *
  * - `GET /me/marketing` → l'état de SON adresse par société, et `askable` :

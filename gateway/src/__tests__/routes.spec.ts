@@ -66,7 +66,7 @@ describe("resolveTarget — préfixes d'API vers les backends", () => {
 
   /**
    * Le lien de désinscription des e-mails (plan
-   * `plan-desinscription-des-e-mails.md`, U2) est bâti par l'API sur
+   * `la-desinscription-et-l-accord.md`, U2) est bâti par l'API sur
    * l'origine de la boutique : il doit atteindre l'API sur la ZONE, le jeton
    * intact, et ne jamais être servi par le front.
    */

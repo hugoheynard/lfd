@@ -26,7 +26,7 @@ const MINUTE_MS = 60_000;
 
 /**
  * **La confirmation d'un accord par le lien de l'e-mail** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 18, C1).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 18, C1).
  * Surface PUBLIQUE, atteinte par la passerelle sous `/api/lfd` — les mêmes
  * règles que la désinscription :
  *

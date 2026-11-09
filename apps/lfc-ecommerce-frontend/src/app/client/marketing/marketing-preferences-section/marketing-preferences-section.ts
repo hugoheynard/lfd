@@ -55,7 +55,7 @@ const SPACE_NAME_KEY: Record<MarketingConsentSpace, keyof MarketingConsentCopy> 
 /**
  * **« Mes e-mails »** — les préférences marketing de la personne connectée,
  * une carte par société qui lui écrit (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lot C3).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lot C3).
  *
  * L'état se dit en toutes lettres, et le seul bouton est le geste qui
  * convient. C'est le SEUL endroit qui réinscrit une adresse désinscrite.

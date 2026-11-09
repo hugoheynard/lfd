@@ -13,6 +13,11 @@
 > code ce jour-là, `@lfd/mail-blocks` `charter-settings.ts`, `@lfd/mailer`
 > `charter-styles.ts`).
 
+> Ajout du 2026-11-09 : la nature des e-mails (transactionnel ou marketing),
+> l'accord marketing, la désinscription et l'identité d'envoi par nature ont
+> leur doc d'état, [`la-desinscription-et-l-accord.md`](la-desinscription-et-l-accord.md)
+> (🟦 sur `dev`).
+
 ## Partie 1 — En simple
 
 ### Le service d'envoi

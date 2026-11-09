@@ -16,7 +16,7 @@ import { ThrottlerException, ThrottlerStorage } from "@nestjs/throttler";
  * publique sans compte.
  *
  * Écrit pour le POST de désinscription (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, contradiction
+ * `documentation/mail/la-desinscription-et-l-accord.md`, contradiction
  * B1) : les POST « One-Click » de Gmail et Yahoo viennent de quelques
  * serveurs, et tomberaient en 429 sous le seau par IP après un envoi en
  * nombre. La route saute donc ce seau (`@SkipThrottle()`) et se borne par

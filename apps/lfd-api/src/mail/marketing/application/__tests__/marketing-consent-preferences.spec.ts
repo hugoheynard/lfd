@@ -8,7 +8,7 @@ import { marketingWorld, NOW, SHOP_ORIGIN } from "./marketing-world.js";
 
 /**
  * **Le canal tel que C2, C3 et C5 l'appellent** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règles 13, 17, 18,
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règles 13, 17, 18,
  * 19, 24) — `askable`, la réinscription, « partenaires », le déménagement
  * d'adresse et la lettre du pied de page, sur les doubles du bloc.
  */

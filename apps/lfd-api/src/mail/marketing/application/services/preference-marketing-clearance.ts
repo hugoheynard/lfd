@@ -13,7 +13,7 @@ import { UnsubscribeLinks } from "./unsubscribe-links.js";
 
 /**
  * **Le contrôle marketing, par le registre de préférence** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règles 11 et 25,
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règles 11 et 25,
  * B3) — le seul lecteur du registre au moment d'un envoi.
  *
  * - Transactionnel (ou modèle inconnu) : rien n'est lu, l'e-mail part.

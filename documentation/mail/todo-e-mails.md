@@ -114,12 +114,11 @@
 
 ## Pistes, pas maintenant
 
-- **Séparer le transactionnel du marketing** (Hugo, 2026-11-08) : le jour
-  où des e-mails promotionnels partent (vitrine, offres), un sous-domaine à
-  part, pour qu'une plainte sur une promo ne fasse pas passer les
-  confirmations de commande en spam ; et le désabonnement en un clic
-  (`List-Unsubscribe`, `List-Unsubscribe-Post`), exigé par Gmail et Yahoo
-  pour les envois en nombre depuis 2024.
+- **Séparer le transactionnel du marketing** (Hugo, 2026-11-08) : bâti côté
+  code (identité d'envoi par nature, `List-Unsubscribe` et one-click —
+  [`la-desinscription-et-l-accord.md`](la-desinscription-et-l-accord.md)).
+  Reste le geste DNS de Hugo : le sous-domaine marketing (SPF, DKIM, DMARC),
+  puis son identité à régler à l'écran.
 - **Les tests de rendu dans les vraies messageries** : Litmus ou Email on
   Acid (plus de 90 messageries, payants, branchables par API mais lus à
   l'œil). D'ici là : un essai sur Gmail, Outlook.com et iCloud, et une fois

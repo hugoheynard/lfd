@@ -192,7 +192,7 @@ export function senderHeaderOf(identity: MailSenderIdentity): string {
 
 /**
  * **Les natures d'e-mail dont chaque espace règle l'identité d'envoi** (plan
- * `plan-desinscription-des-e-mails.md`, règle 9, lot U5) : `lfc` règle une
+ * `la-desinscription-et-l-accord.md`, règle 9, lot U5) : `lfc` règle une
  * identité transactionnelle et une identité marketing ; `lfd`, l'espace de
  * l'équipe, n'envoie jamais de marketing (règle 19, 2026-11-08 — son origine
  * publique est nulle) et ne règle que la transactionnelle. Une table par

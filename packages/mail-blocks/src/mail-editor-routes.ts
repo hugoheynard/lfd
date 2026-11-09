@@ -136,7 +136,7 @@ export interface MailEditorCaseView {
 /**
  * **Le pied de désinscription d'un e-mail marketing**, tel que l'éditeur le
  * montre — grisé, verrouillé, sous le canevas (plan
- * `plan-desinscription-des-e-mails.md`, B2 et U4). La phrase système est
+ * `la-desinscription-et-l-accord.md`, B2 et U4). La phrase système est
  * coupée autour de son lien ; l'adresse du lien n'est pas servie : à l'envoi,
  * le bloc la pose pour chaque destinataire.
  */

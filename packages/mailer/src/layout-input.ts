@@ -49,7 +49,7 @@ export interface LayoutImage {
 
 /**
  * **Le pied de désinscription d'un e-mail marketing** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, contradiction B2) :
+ * `documentation/mail/la-desinscription-et-l-accord.md`, contradiction B2) :
  * INJECTÉ par l'envoi, hors du document — un document publié ne peut ni le
  * porter, ni le perdre. La phrase vient de l'app (sa phrase système, déjà
  * dans la langue de l'envoi), coupée autour du lien : le HTML pose

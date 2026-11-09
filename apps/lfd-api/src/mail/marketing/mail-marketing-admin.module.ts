@@ -19,7 +19,7 @@ import { PrismaMarketingPreferenceAdminReader } from "./infrastructure/prisma-ma
 
 /**
  * **Les désinscriptions et accords, vus par le staff** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 8, lot C4),
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 8, lot C4),
  * sous le droit `mail_sends`. Le registre et sa désinscription viennent de
  * `MailMarketingModule` (global) ; l'empreinte d'une adresse cherchée, de
  * `MailSendsModule`. Les consultations ont leurs tables, et le plafond

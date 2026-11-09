@@ -14,7 +14,7 @@ const MINUTE_MS = 60_000;
 
 /**
  * **La lettre d'information du pied de page de la boutique** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, C5). Surface
+ * `documentation/mail/la-desinscription-et-l-accord.md`, C5). Surface
  * PUBLIQUE, atteinte par la passerelle sous `/api/lfd`.
  *
  * `POST /mail/newsletter` → `202` sans corps, TOUJOURS : adresse inconnue,

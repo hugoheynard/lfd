@@ -18,7 +18,7 @@ function isConsentLocale(value: unknown): value is SocietyConsentAnswer['locale'
  * (stockage du navigateur) : chaque champ vérifié, et seulement la version
  * COURANTE du texte — une réponse donnée à un autre texte ne se rejoue pas.
  * `undefined` sinon : rien d'écrit (une case vide n'est pas un refus).
- * Plan `documentation/mail/plan-desinscription-des-e-mails.md`, lot C2.
+ * Plan `documentation/mail/la-desinscription-et-l-accord.md`, lot C2.
  */
 export function readSocietyAnswer(value: unknown): SocietyConsentAnswer | undefined {
   if (typeof value !== 'object' || value === null) {

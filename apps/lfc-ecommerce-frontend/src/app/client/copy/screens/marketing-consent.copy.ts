@@ -2,7 +2,7 @@ import type { LocaleCode } from '../../client-locale.service';
 
 /**
  * **Ce que disent les cases du consentement marketing**, et « Mes e-mails »
- * (plan `documentation/mail/plan-desinscription-des-e-mails.md`, lots C2, C3,
+ * (doc `documentation/mail/la-desinscription-et-l-accord.md`, lots C2, C3,
  * C5).
  *
  * 🔴 **Un texte de case est une VERSION.** `societyV1` est le texte que

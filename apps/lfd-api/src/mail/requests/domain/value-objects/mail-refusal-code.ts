@@ -1,6 +1,6 @@
 /**
  * **La raison FERMÉE d'un refus** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, contradiction :
+ * `documentation/mail/la-desinscription-et-l-accord.md`, contradiction :
  * « une raison fermée » ; règle 11) : un e-mail marketing pour une adresse
  * désinscrite (`unsubscribed`) ou sans accord (`no_consent`). Le suivi
  * l'affiche sans lire `failure_reason`, un texte libre qui peut citer

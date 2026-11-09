@@ -50,7 +50,7 @@ const NOTHING_FOUND: FoldTableEmpty = {
 };
 
 /**
- * **Les désinscriptions et accords** (plan `plan-desinscription-des-e-mails.md`,
+ * **Les désinscriptions et accords** (doc `la-desinscription-et-l-accord.md`,
  * règle 8, lot C4), onglet du suivi sous le droit `mail_sends` : le registre
  * de préférence marketing par espace — état, origine, lieu, dates —, adresse
  * masquée, filtrable par espace et par état, page par page (curseur du

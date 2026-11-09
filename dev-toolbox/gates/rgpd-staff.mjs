@@ -92,7 +92,7 @@ const ALL_PERSONAL_TABLES = new Set([
   // fournisseur a répondu — une colonne neuve y est présumée personnelle.
   "mail.mail_request",
   // Le registre de préférence marketing (2026-11-08, plan
-  // `plan-desinscription-des-e-mails.md`, U2) : l'accord, sa preuve et le
+  // `la-desinscription-et-l-accord.md`, U2) : l'accord, sa preuve et le
   // retrait d'une adresse — une colonne neuve y est présumée personnelle.
   "mail.mail_marketing_preference",
   // La boîte d'envoi (2026-11-06) : sa `payload` portera les données des

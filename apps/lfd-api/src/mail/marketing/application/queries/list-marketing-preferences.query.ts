@@ -10,7 +10,7 @@ export interface MarketingPreferenceCriteria {
 
 /**
  * Query : **le registre des désinscriptions et accords**, vu par le staff
- * (plan `plan-desinscription-des-e-mails.md`, lot C4) — l'adresse masquée,
+ * (doc `la-desinscription-et-l-accord.md`, lot C4) — l'adresse masquée,
  * par pages.
  */
 export class ListMarketingPreferencesQuery {

@@ -12,7 +12,7 @@ const ITEMS: readonly FoldViewNavItem[] = [
 ];
 
 /**
- * **Les onglets du suivi** (plan `plan-desinscription-des-e-mails.md`, C4) :
+ * **Les onglets du suivi** (doc `la-desinscription-et-l-accord.md`, C4) :
  * les envois, et les désinscriptions et accords — tous deux sous le droit
  * `mail_sends`. Chaque onglet est une route. Les deux chemins ne sont pas
  * préfixes l'un de l'autre : `routerLinkActive` sans `exact` n'en allume

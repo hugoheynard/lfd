@@ -57,7 +57,7 @@ export interface MailSendSubjectView {
 }
 
 /**
- * **La raison FERMÉE d'un refus** (plan `plan-desinscription-des-e-mails.md`,
+ * **La raison FERMÉE d'un refus** (doc `la-desinscription-et-l-accord.md`,
  * U2) : « Non envoyé : désinscrit » (`unsubscribed`) ou « Non envoyé : sans
  * consentement » (`no_consent`). Un e-mail marketing seulement.
  */
@@ -122,7 +122,7 @@ export interface MailSendStepView {
 /** `GET /admin/mail/sends/:id` — sans l'adresse en clair, sans la raison d'un échec. */
 export interface MailSendDetailView extends MailSendListItemView {
   /**
-   * La nature du modèle (plan `plan-desinscription-des-e-mails.md`, U1),
+   * La nature du modèle (doc `la-desinscription-et-l-accord.md`, U1),
    * lue au registre à la lecture ; `null` : un modèle que le registre ne
    * connaît plus. Même liste que `MAIL_NATURES` de `@lfd/mail-blocks`.
    */

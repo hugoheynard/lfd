@@ -30,7 +30,7 @@ import {
 
 /**
  * **Les désinscriptions et accords**, vus par le staff (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 8, lot C4),
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 8, lot C4),
  * sous le droit `mail_sends` comme le suivi des envois.
  *
  * L'adresse est masquée partout, sauf `GET :id/recipient`, servi au seul

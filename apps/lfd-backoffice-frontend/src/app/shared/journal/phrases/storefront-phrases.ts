@@ -365,7 +365,7 @@ const mailRecipientSearched: Phrase = (fact) => {
 
 /**
  * **L'adresse d'une ligne du registre de préférence est révélée**
- * (`mail.preference_recipient_revealed`, plan-desinscription-des-e-mails.md,
+ * (`mail.preference_recipient_revealed`, la-desinscription-et-l-accord.md,
  * C4) : « Colette Martin a affiché l'adresse d'une ligne des désinscriptions
  * et accords de l'espace lfc ». Le fait ne porte jamais l'adresse.
  */

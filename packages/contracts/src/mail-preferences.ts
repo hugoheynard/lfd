@@ -3,7 +3,7 @@ import type { MailSendSpace } from "./mail-sends.js";
 /**
  * **Le registre de préférence marketing, vu par le staff** — ce que
  * `GET /admin/mail/preferences*` sert au back-office, sous le droit
- * `mail_sends` (plan `documentation/mail/plan-desinscription-des-e-mails.md`,
+ * `mail_sends` (doc `documentation/mail/la-desinscription-et-l-accord.md`,
  * règle 8 et lot C4).
  *
  * Les valeurs sont des CODES anglais, celles des contraintes CHECK de

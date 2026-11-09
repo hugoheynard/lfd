@@ -1,6 +1,6 @@
 /**
  * Le recueil du consentement marketing, contre le vrai Postgres (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lots C2, C3, C5).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lots C2, C3, C5).
  *
  * Ce qu'un test unitaire ne peut pas dire : que la case portée par le geste
  * d'inscription et par la commande d'un invité arrive au registre APRÈS la

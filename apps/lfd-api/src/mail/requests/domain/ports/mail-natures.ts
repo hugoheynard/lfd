@@ -2,7 +2,7 @@ import type { MailNature } from "@lfd/mail-blocks";
 
 /**
  * Port de **la nature d'un modèle** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 1) : le
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 1) : le
  * contrôle à l'envoi la lit pour savoir s'il doit lire le registre de
  * préférence. Un port plutôt que la table du registre en direct : un test
  * peut y déclarer un modèle marketing d'essai sans que la production en

@@ -25,7 +25,7 @@ const RESUBSCRIBE_PLACE = "preferences";
 
 /**
  * **La préférence marketing d'une adresse pour un espace** — l'agrégat du
- * registre (plan `documentation/mail/plan-desinscription-des-e-mails.md`,
+ * registre (doc `documentation/mail/la-desinscription-et-l-accord.md`,
  * règles 10, 18, 20, 22, 23).
  *
  * Il porte les règles qui peuvent refuser une écriture :

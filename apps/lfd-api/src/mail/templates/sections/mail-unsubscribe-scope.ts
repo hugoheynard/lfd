@@ -10,7 +10,7 @@ const UNSUBSCRIBE_VARIABLE = "{unsubscribeUrl}";
 
 /**
  * **Le pied de désinscription d'un e-mail marketing**, dans sa langue (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, B2) : la phrase
+ * `documentation/mail/la-desinscription-et-l-accord.md`, B2) : la phrase
  * système, coupée autour de `{unsubscribeUrl}`. Lu tel quel — ni texte publié,
  * ni repère d'aperçu : la phrase est verrouillée.
  *

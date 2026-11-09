@@ -20,7 +20,7 @@ export interface OrderConsentBuyer {
 
 /**
  * **La case « recevoir les offres » à la passation** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, C2, règles 13, 17,
+ * `documentation/mail/la-desinscription-et-l-accord.md`, C2, règles 13, 17,
  * 18, 21), invité compris.
  *
  * La réponse ne voyage pas dans la transaction de la commande : elle est

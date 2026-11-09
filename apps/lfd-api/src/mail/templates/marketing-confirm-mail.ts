@@ -6,7 +6,7 @@ import type { CustomerShell } from "./delivery-en-route-mail.js";
 
 /**
  * Les données de **« Confirmez votre inscription »** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 18, C1) —
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 18, C1) —
  * la double confirmation d'un accord recueilli sur une adresse non vérifiée.
  * Posées par le bloc `mail` lui-même (`MarketingConsent.request`).
  */

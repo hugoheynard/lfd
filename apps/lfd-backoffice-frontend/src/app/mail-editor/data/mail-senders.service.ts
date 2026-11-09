@@ -16,7 +16,7 @@ const BASE = `${B2B_API_BASE}/admin/mail-senders`;
  * changer demande `write`.
  *
  * Une identité par espace ET par nature (`transactional`, `marketing` — plan
- * `plan-desinscription-des-e-mails.md`, lot U5).
+ * `la-desinscription-et-l-accord.md`, lot U5).
  */
 @Injectable({ providedIn: 'root' })
 export class MailSendersService {

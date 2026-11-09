@@ -63,7 +63,7 @@ model MailRequest {
   deliveryAt      DateTime?            @map("delivery_at") @db.Timestamptz(6)
   /// Le GENRE du retour (`Permanent/Suppressed`), jamais son texte (décision 4).
   deliveryKind    String?              @map("delivery_kind") @db.VarChar(64)
-  /// La raison FERMÉE d'un refus (plan `plan-desinscription-des-e-mails.md`,
+  /// La raison FERMÉE d'un refus (doc `la-desinscription-et-l-accord.md`,
   /// U2) : `unsubscribed` | `no_consent` (CHECK en base) ; `null` hors de ces
   /// refus. Le suivi l'affiche sans lire `failure_reason`.
   refusalCode     String?              @map("refusal_code") @db.VarChar(16)
@@ -280,7 +280,7 @@ model MailCharterVersion {
 /// parti sous elle.
 ///
 /// Une identité par espace ET par nature (plan
-/// `plan-desinscription-des-e-mails.md`, règle 9, lot U5) : un e-mail
+/// `la-desinscription-et-l-accord.md`, règle 9, lot U5) : un e-mail
 /// `marketing` sans ligne `marketing` part sous l'identité `transactional` de
 /// son espace. `lfd` n'a jamais de ligne `marketing` (contrainte en base).
 model MailSenderIdentity {
@@ -306,7 +306,7 @@ model MailSenderIdentity {
 }
 
 /// **La préférence marketing d'une adresse pour un espace** (plan
-/// `documentation/mail/plan-desinscription-des-e-mails.md`, règles 10, 20,
+/// `documentation/mail/la-desinscription-et-l-accord.md`, règles 10, 20,
 /// 22, 23 ; lot U2) : le registre unique de l'accord et du retrait. Pas de
 /// ligne = jamais demandé. L'espace est la société émettrice (`lfc`).
 ///
@@ -350,7 +350,7 @@ model MailMarketingPreference {
 }
 
 /// **Une consultation du registre de préférence par le staff** (plan
-/// `plan-desinscription-des-e-mails.md`, lot C4) — la figure des
+/// `la-desinscription-et-l-accord.md`, lot C4) — la figure des
 /// consultations du suivi : `reveal` (une adresse affichée : `preference_id`)
 /// ou `search` (une recherche par adresse : `fingerprint`, l'empreinte HMAC de
 /// la clé de recherche du suivi). Jamais l'adresse. Compte dans le plafond

@@ -2,7 +2,7 @@ import type { ContentLocale } from "@lfd/contracts";
 
 /**
  * **Les phrases système des e-mails** — celles que le BLOC pose lui-même,
- * hors de tout modèle (plan `documentation/mail/plan-desinscription-des-e-mails.md`,
+ * hors de tout modèle (doc `documentation/mail/la-desinscription-et-l-accord.md`,
  * contradiction B2).
  *
  * Elles ne sont pas une section du dictionnaire par modèle (`MailCopy`, une

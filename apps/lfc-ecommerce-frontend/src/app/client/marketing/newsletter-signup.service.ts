@@ -16,7 +16,7 @@ const BAD_REQUEST = 400;
 
 /**
  * **« Recevoir nos nouvelles »** — `POST /mail/newsletter`, public et sans
- * jeton (plan `documentation/mail/plan-desinscription-des-e-mails.md`, lot C5).
+ * jeton (doc `documentation/mail/la-desinscription-et-l-accord.md`, lot C5).
  *
  * Le serveur répond `202` quelle que soit l'adresse : l'écran dit donc
  * toujours la même phrase. `website` est le champ piège — vide pour un humain.

@@ -28,7 +28,7 @@ export interface AccountConsentFacts {
 
 /**
  * **Le compte parle au registre marketing** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, C2, règles 18 et
+ * `documentation/mail/la-desinscription-et-l-accord.md`, C2, règles 18 et
  * 24), par le canal du bloc `mail`, APRÈS la validation du geste : le
  * registre écrit dans SA transaction, et un registre en panne ne refuse ni
  * une inscription ni un changement d'adresse — l'échec est journalisé.

@@ -23,7 +23,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * **« Recevoir nos nouvelles »**, dans le pied de page (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lot C5).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lot C5).
  *
  * 🔴 **Toujours la même réponse** après l'envoi, quelle que soit l'adresse :
  * dire « déjà inscrite » ou « désinscrite » ferait du champ un oracle

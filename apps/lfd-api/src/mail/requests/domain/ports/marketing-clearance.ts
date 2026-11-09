@@ -30,7 +30,7 @@ export type MarketingVerdict =
 
 /**
  * Port du **contrôle marketing à l'envoi** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 11 et B3) —
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 11 et B3) —
  * appelé juste avant l'appel à Resend, par l'essai d'envoi que les trois
  * chemins partagent (immédiat, différé, reprise du balayeur).
  *

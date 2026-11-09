@@ -160,7 +160,7 @@ décision 8). Une rotation rend les empreintes déjà rangées incomparables aux
 nouvelles ; aucun accès n'en dépend.
 
 **🔴 Elle dérive enfin les deux clés de la désinscription des e-mails**
-(2026-11-08, [`plan-desinscription-des-e-mails.md`](../mail/plan-desinscription-des-e-mails.md),
+(2026-11-08, [`la-desinscription-et-l-accord.md`](../mail/la-desinscription-et-l-accord.md),
 U2) : `lfd/mail-unsubscribe/v1` (`AppConfig.mailUnsubscribeTokenKey`) chiffre
 le jeton des liens « Se désinscrire », qui n'expirent pas ; et
 `lfd/mail-unsubscribe-print/v1` (`AppConfig.mailMarketingPrintKey`) calcule

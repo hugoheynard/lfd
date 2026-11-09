@@ -76,7 +76,7 @@ function assertNatureOffered(space: MailSpace, nature: MailNature): void {
  * l'agrégat n'envoie rien.
  *
  * **Une identité par espace et par nature** (plan
- * `plan-desinscription-des-e-mails.md`, règle 9, lot U5) : `transactional`
+ * `la-desinscription-et-l-accord.md`, règle 9, lot U5) : `transactional`
  * signe les e-mails de service, `marketing` les offres — sur un sous-domaine
  * à part, pour qu'une plainte sur une offre ne fasse pas tomber les
  * confirmations de commande en spam. 🔴 **Repli** : tant qu'aucune identité

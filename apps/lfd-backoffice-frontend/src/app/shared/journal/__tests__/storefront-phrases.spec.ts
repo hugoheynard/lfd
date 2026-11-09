@@ -313,7 +313,7 @@ describe('la recherche des envois d’une adresse', () => {
   });
 });
 
-/** **Le registre vu par le staff** (plan-desinscription-des-e-mails.md, C4). */
+/** **Le registre vu par le staff** (la-desinscription-et-l-accord.md, C4). */
 describe('les désinscriptions et accords', () => {
   it('une adresse affichée nomme l’espace, jamais l’adresse', () => {
     const rendered = renderFact({

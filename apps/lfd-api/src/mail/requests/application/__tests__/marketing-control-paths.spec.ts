@@ -5,7 +5,7 @@ import { mailScene } from "./mail-doubles.js";
 
 /*
  * Le contrôle marketing sur les TROIS chemins d'envoi (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, B3) : l'envoi
+ * `documentation/mail/la-desinscription-et-l-accord.md`, B3) : l'envoi
  * immédiat, l'envoi différé d'après validation, et la reprise du balayeur —
  * qui revérifie à CHAQUE tentative. Le contrôle est joué par le test ; son
  * implémentation par le registre a sa propre suite (`marketing/`).

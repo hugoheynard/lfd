@@ -20,7 +20,7 @@ import type { MailPreferencePanelResult } from '../mail-preference-panel/mail-pr
 
 /**
  * **Désinscrire une adresse à la demande du client** (plan
- * `plan-desinscription-des-e-mails.md`, règle 8, lot C4) : le client donne
+ * `la-desinscription-et-l-accord.md`, règle 8, lot C4) : le client donne
  * son adresse, le staff choisit l'espace. L'adresse part dans le CORPS ; le
  * serveur répond de même pour toute adresse — connue du registre ou non, elle
  * y entre désinscrite — et inscrit le geste au journal, jamais l'adresse.

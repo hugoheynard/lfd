@@ -369,7 +369,7 @@ export interface B2bMails {
   };
   /**
    * **« Confirmez votre inscription »** — la double confirmation d'un accord
-   * aux e-mails marketing (plan `plan-desinscription-des-e-mails.md`, règle
+   * aux e-mails marketing (doc `la-desinscription-et-l-accord.md`, règle
    * 18, C1). Transactionnel. Envoyé par le bloc `mail` lui-même, jamais par
    * un bloc métier. Cf. `marketing-confirm-mail.ts`.
    */

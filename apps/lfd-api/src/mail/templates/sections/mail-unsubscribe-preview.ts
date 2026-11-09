@@ -9,7 +9,7 @@ import { unsubscribeFooterOf, withMailUnsubscribe } from "./mail-unsubscribe-sco
 
 /**
  * **L'adresse d'exemple du pied de désinscription dans l'éditeur** (plan
- * `plan-desinscription-des-e-mails.md`, U4). Jamais un vrai jeton : un jeton
+ * `la-desinscription-et-l-accord.md`, U4). Jamais un vrai jeton : un jeton
  * se fabrique pour UNE adresse, et l'aperçu n'en a pas. Le domaine
  * `.invalid` est réservé (RFC 2606) : un clic dans l'aperçu ne mène nulle part.
  */

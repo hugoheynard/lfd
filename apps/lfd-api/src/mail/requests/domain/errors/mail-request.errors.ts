@@ -75,7 +75,7 @@ export class MailRefusedError extends BusinessError {
 
 /**
  * Un e-mail **marketing** arrêté avant l'appel au fournisseur (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 11) :
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 11) :
  * l'adresse s'est désinscrite de l'espace, ou n'a pas donné son accord. Rien
  * n'est parti ; la demande est close avec sa raison fermée.
  */

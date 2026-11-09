@@ -28,7 +28,7 @@ import {
 
 /**
  * **Tout modèle marketing a son pied, ses en-têtes et son contrôle** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, U3 ; remplace le
+ * `documentation/mail/la-desinscription-et-l-accord.md`, U3 ; remplace le
  * test U1 « aucun modèle n'est marketing »).
  *
  * Éprouvé sur les modèles marketing du registre (aucun le 2026-11-08) ET sur

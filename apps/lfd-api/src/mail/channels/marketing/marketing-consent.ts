@@ -30,7 +30,7 @@ export interface MarketingConsentRequest {
 
 /**
  * **Le registre de préférence marketing, vu des autres blocs** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 12) :
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 12) :
  * déclaré ET implémenté par le bloc `mail`. Le registre vit ici ; le recueil
  * chez ceux qui parlent au client (compte, commande), par ce port.
  *

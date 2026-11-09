@@ -1,6 +1,6 @@
 /**
  * E2E du **registre de préférence marketing vu par le staff** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règle 8, lot C4) :
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règle 8, lot C4) :
  * le droit `mail_sends`, la liste masquée et filtrée par pages, la preuve au
  * détail, « Afficher l'adresse » par la révélation tracée du suivi (même
  * table, même plafond, fait au journal), la désinscription par le staff

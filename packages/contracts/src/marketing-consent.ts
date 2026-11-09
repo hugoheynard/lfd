@@ -8,7 +8,7 @@ import { contentLocales } from "./platform-content.defaults.js";
 
 /**
  * **Les contrats du consentement marketing** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lots C2, C3, C5).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lots C2, C3, C5).
  * Les valeurs sans zod vivent dans `marketing-consent.values.ts`.
  */
 

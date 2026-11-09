@@ -1,7 +1,7 @@
 /**
  * **Les cases du consentement marketing, côté boutique** — sans zod (entrée
  * `@lfd/contracts/shop-values` comprise). Plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lots C2, C3, C5.
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lots C2, C3, C5.
  *
  * La boutique affiche le texte de chaque case depuis SON dictionnaire, dans
  * les trois langues ; l'API range la VERSION de ce texte et sa langue, c'est

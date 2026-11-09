@@ -38,7 +38,7 @@ import { ChangeMailSenderCommand } from "./change-mail-sender.command.js";
  *
  * **Une fois par intention** : un double clic n'envoie qu'un essai.
  *
- * **Par nature** (plan `plan-desinscription-des-e-mails.md`, lot U5) :
+ * **Par nature** (doc `la-desinscription-et-l-accord.md`, lot U5) :
  * l'identité `marketing` d'un espace se règle comme la transactionnelle, avec
  * les mêmes règles, et seulement pour un espace qui envoie du marketing.
  */

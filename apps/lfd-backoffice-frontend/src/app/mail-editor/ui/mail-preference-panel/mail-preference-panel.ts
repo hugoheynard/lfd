@@ -47,7 +47,7 @@ export type MailPreferencePanelResult = 'changed';
 
 /**
  * **Une ligne des désinscriptions et accords** (plan
- * `plan-desinscription-des-e-mails.md`, lot C4) : son état, son origine, ses
+ * `la-desinscription-et-l-accord.md`, lot C4) : son état, son origine, ses
  * dates, et la PREUVE de l'accord (version et langue du texte, lieu,
  * référence de l'acte, confirmation) — l'adresse masquée.
  *

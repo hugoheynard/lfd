@@ -11,7 +11,7 @@ import type { MailSendTone } from './mail-send-labels';
 
 /**
  * **Le dictionnaire des désinscriptions et accords** (plan
- * `plan-desinscription-des-e-mails.md`, lot C4) : le serveur sert les codes
+ * `la-desinscription-et-l-accord.md`, lot C4) : le serveur sert les codes
  * du registre, l'écran les dit en français.
  */
 export const MAIL_PREFERENCE_STATUS_LABELS: Readonly<Record<MailPreferenceStatus, string>> = {

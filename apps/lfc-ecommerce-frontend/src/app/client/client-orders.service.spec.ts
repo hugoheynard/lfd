@@ -926,7 +926,7 @@ describe('passer commande — le total vu', () => {
 
 /**
  * La case des offres de La Folie Coffee à la commande (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lot C2, règle 17) :
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lot C2, règle 17) :
  * l'invité l'envoie toujours ; le connecté seulement si elle lui a paru.
  */
 describe('passer commande — la case des offres', () => {

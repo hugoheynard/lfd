@@ -15,7 +15,7 @@ export type PublishedMailSenders = Readonly<Partial<Record<MailSpace, PublishedM
 
 /**
  * Les identités d'envoi par nature, puis par espace (plan
- * `plan-desinscription-des-e-mails.md`, règle 9, lot U5).
+ * `la-desinscription-et-l-accord.md`, règle 9, lot U5).
  */
 export type PublishedMailSendersByNature = Readonly<Record<MailNature, PublishedMailSenders>>;
 

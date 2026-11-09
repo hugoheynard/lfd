@@ -29,7 +29,7 @@ const MINUTE_MS = 60_000;
 
 /**
  * **La désinscription par le lien d'un e-mail** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règles 3 à 5 et
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règles 3 à 5 et
  * la contradiction de vitruve). Surface PUBLIQUE, atteinte par la passerelle
  * sous `/api/lfd`.
  *

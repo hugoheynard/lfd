@@ -1,6 +1,6 @@
 /**
  * L'e-mail marketing et le consentement, contre le vrai Postgres (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lots U3 et C1).
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lots U3 et C1).
  *
  * Ce qu'un test unitaire ne peut pas dire : que le contrôle tient sur les
  * VRAIS chemins d'envoi (immédiat, différé par la boîte d'envoi), que la

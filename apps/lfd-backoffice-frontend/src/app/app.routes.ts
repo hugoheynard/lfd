@@ -273,7 +273,7 @@ export const routes: Routes = [
   },
   {
     // **Les désinscriptions et accords** (plan
-    // `mail/plan-desinscription-des-e-mails.md`, C4) : l'onglet voisin du suivi,
+    // `mail/la-desinscription-et-l-accord.md`, C4) : l'onglet voisin du suivi,
     // sous le même droit. Déclaré AVANT `emails/:template`, pour la même raison
     // que `emails/envois`.
     path: 'emails/desinscriptions',

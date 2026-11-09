@@ -82,7 +82,7 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
 ]);
 
 /**
- * **La nature de chaque e-mail** (plan `plan-desinscription-des-e-mails.md`,
+ * **La nature de chaque e-mail** (doc `la-desinscription-et-l-accord.md`,
  * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 33
  * sont des e-mails de service (Hugo, 2026-11-08 ; le 33ᵉ, la confirmation
  * d'inscription de C1, en est un) — l'annonce de la vitrine

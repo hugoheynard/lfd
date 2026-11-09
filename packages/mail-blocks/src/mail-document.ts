@@ -148,7 +148,7 @@ export const COLUMN_COUNTS = [2, 3] as const;
  * dans lesquelles il part, sa charte.
  */
 /**
- * **La nature d'un e-mail** (plan `plan-desinscription-des-e-mails.md`,
+ * **La nature d'un e-mail** (doc `la-desinscription-et-l-accord.md`,
  * règle 1) : un e-mail de service (`transactional`) part sans consentement ;
  * un e-mail `marketing` porte d'office la désinscription. Sans valeur par
  * défaut : chaque modèle la déclare.

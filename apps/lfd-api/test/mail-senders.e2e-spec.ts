@@ -6,7 +6,7 @@
  * vérifié, envoie un essai à l'auteur sous la nouvelle identité, n'enregistre
  * rien si l'essai est refusé ; l'envoi suivant de l'espace part sous elle ;
  * la sonde de déploiement l'éprouve. Lot U5 du plan
- * `plan-desinscription-des-e-mails.md` : l'identité marketing se règle à part,
+ * `la-desinscription-et-l-accord.md` : l'identité marketing se règle à part,
  * et se replie sur la transactionnelle tant qu'elle ne l'est pas.
  *
  * Resend est doublé deux fois : le transport (`MAIL_TRANSPORT`, sous le texte

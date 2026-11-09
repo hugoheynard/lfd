@@ -1,6 +1,6 @@
 /**
  * Les listes fermées du registre de préférence marketing (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, règles 10, 18,
+ * `documentation/mail/la-desinscription-et-l-accord.md`, règles 10, 18,
  * 20 ; lot U2). Chacune a sa contrainte CHECK en base, sur la même liste.
  */
 

@@ -36,7 +36,7 @@ import { PrismaPendingConsentPruner } from "./infrastructure/prisma-pending-cons
 
 /**
  * **Le registre de préférence marketing et la désinscription** (plan
- * `documentation/mail/plan-desinscription-des-e-mails.md`, lots U2, U3, C1) :
+ * `documentation/mail/la-desinscription-et-l-accord.md`, lots U2, U3, C1) :
  * le registre, les jetons, les routes publiques (désinscrire, confirmer un
  * accord), le contrôle à l'envoi, et le canal `MarketingConsent`.
  *

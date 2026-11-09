@@ -17,7 +17,7 @@ import { mailSenderPayloadSchema } from "./mail-sender-payloads.js";
  * contrôle du domaine vérifié empêche d'écrire au nom d'un domaine qui n'est
  * pas à nous. `:space` vaut `lfc` ou `lfd` ; un autre espace est un 404 nommé.
  *
- * `:nature` (lot U5 du plan `plan-desinscription-des-e-mails.md`) vaut
+ * `:nature` (lot U5 du doc `la-desinscription-et-l-accord.md`) vaut
  * `transactional` ou `marketing` ; `lfd` n'a pas d'identité marketing (404
  * nommé). Les routes sans `:nature` restent celles de l'identité
  * transactionnelle.

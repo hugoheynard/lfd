@@ -3,7 +3,7 @@ import type { MailSenderIdentity } from "@lfd/mail-blocks";
 /**
  * Command : **changer l'identité d'envoi d'un espace pour une nature
  * d'e-mails** (plan `plan-editeur-par-blocs.md`, § 25, C3 ; nature : plan
- * `plan-desinscription-des-e-mails.md`, lot U5), sur la révision lue — un
+ * `la-desinscription-et-l-accord.md`, lot U5), sur la révision lue — un
  * essai part vers l'auteur sous l'identité avant qu'elle soit enregistrée.
  */
 export class ChangeMailSenderCommand {

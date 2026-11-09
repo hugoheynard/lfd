@@ -41,7 +41,7 @@ function variablesOf(text) {
 }
 
 /**
- * Les phrases SYSTÈME (plan `documentation/mail/plan-desinscription-des-e-mails.md`,
+ * Les phrases SYSTÈME (doc `documentation/mail/la-desinscription-et-l-accord.md`,
  * B2) : posées par le bloc hors de tout modèle — le pied de désinscription —,
  * verrouillées, recensées à part sous `system`, mêmes champs qu'un texte.
  */

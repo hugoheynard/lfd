@@ -18,7 +18,7 @@ export type MarketingPreferencesStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 /**
  * **Les préférences e-mail de la personne connectée** — `GET /me/marketing`
- * et ses trois gestes (plan `documentation/mail/plan-desinscription-des-e-mails.md`,
+ * et ses trois gestes (doc `documentation/mail/la-desinscription-et-l-accord.md`,
  * lots C2 et C3).
  *
  * Deux lecteurs : « Mes e-mails » (Mon profil), et la case de la commande,
