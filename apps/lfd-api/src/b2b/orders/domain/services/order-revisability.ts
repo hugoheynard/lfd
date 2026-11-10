@@ -16,8 +16,13 @@ import { settlementRegimeOf } from "./settlement-regime.js";
 export type RevisionBlock =
   /** R1 : la frontière de l'annulation (annulée, prête, inscrite, engagée, remboursement en vol). */
   | { readonly kind: "order"; readonly block: CancellationBlock }
-  /** §9 : une commande payable par carte — le lot M2, à concevoir. */
-  | { readonly kind: "card_settled" }
+  /**
+   * Une commande payable par carte (§9) : sur le chemin d'une DEMANDE (M4),
+   * toute carte ; sur celui d'une modification, une carte pas encore
+   * encaissée (`unsettled`) — encaissée, seule la hausse a un chemin (plan
+   * `plan-s2-la-hausse.md`, R2 ter), et l'agrégat la trie.
+   */
+  | { readonly kind: "card_settled"; readonly unsettled: boolean }
   /** Une commande d'avant les CGV figées n'a pas de quoi être recomposée. */
   | { readonly kind: "without_sales_terms" }
   /** Client seulement : le plan de la journée est arrêté. */
@@ -48,8 +53,20 @@ export type RevisionVerdict =
       readonly until: Date | null;
       /** Plan A2 : inscrite au plan — l'équipe n'en change que les quantités. */
       readonly quantitiesOnly?: true;
+      /**
+       * Plan S2 (R2 ter, R3) : payée par carte et encaissée — seule une
+       * hausse s'y fait, payée par un complément, et par le client seul.
+       */
+      readonly cardIncreaseOnly?: true;
     }
   | { readonly revisable: false; readonly block: RevisionBlock };
+
+/**
+ * **Le chemin qui demande** (plan S2, R2 ter) : `revise` — la modification,
+ * son devis, la hausse par carte ; `request` — le dépôt d'une demande M4, qui
+ * garde `card_settled` sur TOUTE carte (R4).
+ */
+export type RevisionPurpose = "revise" | "request";
 
 /** Ce que la règle lit de la commande, hors frontière de l'annulation. */
 export interface RevisionStandingSubject {
@@ -60,19 +77,29 @@ export interface RevisionStandingSubject {
 
 /**
  * **Ce qui vaut pour tous, client et équipe** : la frontière de l'annulation,
- * puis le régime (M1), puis les CGV figées. `null` : rien ne bloque.
+ * puis le régime (M1 ; plan S2, R2 ter, selon le chemin), puis les CGV figées.
+ * `null` : rien ne bloque.
  */
 export function standingBlockOf(
   decision: CancellationDecision,
   subject: RevisionStandingSubject,
+  purpose: RevisionPurpose,
 ): StandingRevisionBlock | null {
   if (!decision.cancellable) {
     return { kind: "order", block: decision.block };
   }
   if (isCardSettlement(subject.paymentStatus, subject.totalCents)) {
-    return { kind: "card_settled" };
+    const unsettled = settlementRegimeOf(subject.paymentStatus, subject.totalCents) === "due";
+    if (purpose === "request" || unsettled) {
+      return { kind: "card_settled", unsettled: purpose === "revise" };
+    }
   }
   return subject.hasSalesTerms ? null : { kind: "without_sales_terms" };
+}
+
+/** Plan S2 (R2 ter) : encaissée par carte — seule la hausse payée par un complément s'y fait. */
+export function isCardIncreaseOnly(paymentStatus: PaymentStatus, totalCents: number): boolean {
+  return settlementRegimeOf(paymentStatus, totalCents) === "paid";
 }
 
 /** §9 : règlement par carte attendu (`due`) ou encaissé (`paid`). */
@@ -93,6 +120,8 @@ export function revisabilityOf(input: {
   readonly standing: StandingRevisionBlock | null;
   readonly planClosedDay: string | null;
   readonly cutoff: OrderCutoffDecision | null;
+  /** Plan S2 (R2 ter) : une carte encaissée, que seule une hausse modifie. */
+  readonly cardIncreaseOnly?: boolean;
 }): RevisionVerdict {
   if (input.standing !== null) {
     return { revisable: false, block: input.standing };
@@ -100,13 +129,14 @@ export function revisabilityOf(input: {
   if (input.planClosedDay !== null) {
     return { revisable: false, block: { kind: "plan_closed", day: input.planClosedDay } };
   }
+  const card = input.cardIncreaseOnly === true ? ({ cardIncreaseOnly: true } as const) : {};
   if (input.cutoff === null) {
-    return { revisable: true, until: null };
+    return { revisable: true, until: null, ...card };
   }
   if (input.cutoff.status !== "open") {
     return { revisable: false, block: { kind: "past_cutoff", until: input.cutoff.limit } };
   }
-  return { revisable: true, until: input.cutoff.limit };
+  return { revisable: true, until: input.cutoff.limit, ...card };
 }
 
 export const CARD_SETTLED_REVISION_REFUSAL =

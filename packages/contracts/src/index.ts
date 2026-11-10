@@ -1222,11 +1222,14 @@ export {
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
 // Modifier une commande passée (plan `commandes/modification/plan-modifier-une-commande.md`, M1).
 export {
+  ORDER_REVISION_CARD_REFUSALS,
   ORDER_REVISION_CHANGES,
   ORDER_REVISION_REFUSALS,
   type AdminOrderRevisability,
   type OrderRevisability,
+  type OrderRevisionCardRefusal,
   type OrderRevisionChange,
+  type OrderRevisionQuoteSettlement,
   type OrderRevisionRefusal,
 } from "./order-revision.values.js";
 export type {
@@ -1236,11 +1239,14 @@ export type {
   ReplacedLineView,
 } from "./order-revision-history.js";
 export {
+  cardIncreasePayloadSchema,
   orderRevisionPayloadSchema,
   orderRevisionQuotePayloadSchema,
   requestedOrderRevisionSchema,
 } from "./order-revision.js";
 export type {
+  CardComplementPaymentView,
+  CardIncreasePayload,
   OrderRevisedResponse,
   OrderRevisionDiscountRefusal,
   OrderRevisionLineRefusal,

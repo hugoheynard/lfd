@@ -1,20 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import {
+import type {
   CardIncreaseProposal,
-  type CardIncreaseProposalState,
-  type FrozenIncreaseContent,
-  type FrozenIncreaseRules,
+  CardIncreaseProposalState,
+  FrozenIncreaseContent,
+  FrozenIncreaseRules,
 } from "../domain/entities/card-increase-proposal.js";
 import { CardIncreaseProposalRepository } from "../domain/ports/card-increase-proposal.repository.js";
-import {
-  authorColumnsOf,
-  authorOf,
-  contentOf,
-  rulesOf,
-  type ProposalRow,
-} from "./card-increase-proposal.row.js";
+import { authorColumnsOf, proposalOf } from "./card-increase-proposal.row.js";
 
 /**
  * Adaptateur Prisma de `order_revision_proposal`, par le client routé : il
@@ -65,33 +59,8 @@ export class PrismaCardIncreaseProposalRepository extends CardIncreaseProposalRe
     const row = await this.prisma.orderRevisionProposal.findUniqueOrThrow({
       where: { id: first.id },
     });
-    return toDomain(row);
+    return proposalOf(row);
   }
-}
-
-function toDomain(row: ProposalRow): CardIncreaseProposal {
-  return CardIncreaseProposal.rehydrate({
-    id: row.id,
-    orderId: row.orderId,
-    baseRevision: row.baseRevision,
-    content: contentOf(row.id, row.content),
-    rules: rulesOf(row.id, row.rules),
-    targetTotalCents: row.targetTotalCents,
-    complementCents: row.complementCents,
-    author: authorOf(row),
-    paymentId: row.paymentId,
-    state: row.state,
-    expiresAt: row.expiresAt,
-    attempts: row.attempts,
-    nextAttemptAt: row.nextAttemptAt,
-    leasedUntil: row.leasedUntil,
-    lastFailure: row.lastFailure,
-    providerChecks: row.providerChecks,
-    refusal: row.refusal,
-    createdAt: row.createdAt,
-    settledAt: row.settledAt,
-    closedAt: row.closedAt,
-  });
 }
 
 /** Ce qu'une transition peut réécrire ; le reste est figé à la naissance. */

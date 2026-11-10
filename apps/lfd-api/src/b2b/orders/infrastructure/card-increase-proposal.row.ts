@@ -1,7 +1,8 @@
 import type { OrderRevisionProposal, Prisma } from "../../../platform/database/client/client.js";
-import type {
-  FrozenIncreaseContent,
-  FrozenIncreaseRules,
+import {
+  CardIncreaseProposal,
+  type FrozenIncreaseContent,
+  type FrozenIncreaseRules,
 } from "../domain/entities/card-increase-proposal.js";
 import type { RevisionActor } from "../domain/entities/order-revision.js";
 import { UnreadableCardIncreaseProposalError } from "../domain/errors/card-increase-proposal-row.error.js";
@@ -47,4 +48,30 @@ export function rulesOf(proposalId: string, value: Prisma.JsonValue): FrozenIncr
     throw new UnreadableCardIncreaseProposalError(proposalId, "règles de l'auteur");
   }
   return { rulesOf: kind };
+}
+
+/** La ligne relue, réhydratée : ses valeurs revalident (l'état, l'auteur, les règles). */
+export function proposalOf(row: ProposalRow): CardIncreaseProposal {
+  return CardIncreaseProposal.rehydrate({
+    id: row.id,
+    orderId: row.orderId,
+    baseRevision: row.baseRevision,
+    content: contentOf(row.id, row.content),
+    rules: rulesOf(row.id, row.rules),
+    targetTotalCents: row.targetTotalCents,
+    complementCents: row.complementCents,
+    author: authorOf(row),
+    paymentId: row.paymentId,
+    state: row.state,
+    expiresAt: row.expiresAt,
+    attempts: row.attempts,
+    nextAttemptAt: row.nextAttemptAt,
+    leasedUntil: row.leasedUntil,
+    lastFailure: row.lastFailure,
+    providerChecks: row.providerChecks,
+    refusal: row.refusal,
+    createdAt: row.createdAt,
+    settledAt: row.settledAt,
+    closedAt: row.closedAt,
+  });
 }

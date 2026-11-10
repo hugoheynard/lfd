@@ -86,6 +86,8 @@ import { OrderLock } from "./domain/ports/order-lock.js";
 import { PrismaOrderLock } from "./infrastructure/prisma-order-lock.js";
 import { CardIncreaseProposalRepository } from "./domain/ports/card-increase-proposal.repository.js";
 import { PrismaCardIncreaseProposalRepository } from "./infrastructure/prisma-card-increase-proposal.repository.js";
+import { CardIncreaseProposalReader } from "./domain/ports/card-increase-proposal.reader.js";
+import { PrismaCardIncreaseProposalReader } from "./infrastructure/prisma-card-increase-proposal.reader.js";
 import { PendingRemaindersReader } from "./domain/ports/pending-remainders.reader.js";
 import { PrismaPendingRemaindersReader } from "./infrastructure/prisma-pending-remainders.reader.js";
 import { SettledOrderWriter } from "./domain/ports/settled-order.writer.js";
@@ -528,6 +530,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderLock, useClass: PrismaOrderLock },
     // Plan S2 (la hausse par carte) : le projet, sous le verrou d'`orders`.
     { provide: CardIncreaseProposalRepository, useClass: PrismaCardIncreaseProposalRepository },
+    { provide: CardIncreaseProposalReader, useClass: PrismaCardIncreaseProposalReader },
     // Le réveil de l'exécuteur : vide jusqu'au lot S2.c (plan S2, §2.10).
     { provide: CardIncreaseWake, useClass: NoCardIncreaseWake },
     OrderComplementSettlement,

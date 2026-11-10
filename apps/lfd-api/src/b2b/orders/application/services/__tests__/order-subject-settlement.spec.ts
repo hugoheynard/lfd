@@ -81,6 +81,8 @@ function build(
       afterCommit,
       wake,
       new FixedClock(new Date(0)),
+      journal,
+      standings,
     ),
   );
   return { steps, durable, journal, standings, settlement, proposals, wake, afterCommit };
@@ -304,6 +306,31 @@ describe("OrderSubjectSettlement — un complément encaissé", () => {
     expect(durable.facts).toEqual([
       new OrderComplementPaidLateEvent("ord_1", "prop_1", "pay_2", 1_200).durableFact(),
     ]);
+  });
+
+  it("R12 : chaque transition écrite part au journal, sous le numéro de la commande", async () => {
+    const paid = build({ proposal: proposalAt("awaiting_payment") });
+    await complement(paid.settlement);
+    const late = build({ proposal: proposalAt("abandoned") });
+    await complement(late.settlement);
+
+    const payload = { subjectLabel: "ORD-0001", complementCents: 1_200 };
+    expect(paid.journal.facts).toEqual([
+      { type: "order.card_increase_paid", subjectType: "order", subjectId: "ord_1", payload },
+    ]);
+    expect(late.journal.facts).toEqual([
+      { type: "order.card_increase_closed", subjectType: "order", subjectId: "ord_1", payload },
+    ]);
+  });
+
+  it("R12 : un rejeu ou une transition qui n'écrit rien ne journalise rien", async () => {
+    const replay = build({ proposal: proposalAt("ready") });
+    await complement(replay.settlement);
+    const crossed = build({ proposal: proposalAt("awaiting_payment"), proposalWritten: false });
+    await complement(crossed.settlement);
+
+    expect(replay.journal.facts).toEqual([]);
+    expect(crossed.journal.facts).toEqual([]);
   });
 
   it.each(["ready", "applied", "refused", "stalled", "closed"] as const)(

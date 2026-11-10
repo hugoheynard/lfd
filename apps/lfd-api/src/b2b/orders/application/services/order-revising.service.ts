@@ -11,9 +11,13 @@ import {
   type RevisionActor,
   ensureNoShortfallDecision,
 } from "../../domain/entities/order-revision.js";
-import { cardRefusalOf } from "../../domain/entities/revision-settlement.js";
 import {
-  CardOrderNotRevisableError,
+  settlementBy,
+  type ExpectedSettlement,
+  type RecomposedRevision,
+  type RevisionSettlement,
+} from "../../domain/entities/revision-settlement.js";
+import {
   OrderWithoutSalesTermsError,
   RevisionIntoClosedDayError,
   standingRevisionErrorOf,
@@ -27,8 +31,10 @@ import {
   type RevisionScope,
 } from "../../domain/services/revision-after-arrest.js";
 import {
+  isCardIncreaseOnly,
   revisabilityOf,
   standingBlockOf,
+  type RevisionPurpose,
   type RevisionVerdict,
   type StandingRevisionBlock,
 } from "../../domain/services/order-revisability.js";
@@ -96,9 +102,11 @@ export class OrderRevising {
    * tôt, sous verrou pour faire foi. « Inscrite » se tranche au guichet du
    * fournil, sous le verrou de la journée.
    *
-   * Puis M1 : une commande payable par carte ne se modifie pas (§9) —
-   * l'agrégat le refuse aussi, mais après une recomposition inutile. Puis les
-   * CGV figées, sans lesquelles rien ne se recompose.
+   * Puis le régime (plan `plan-s2-la-hausse.md`, R2 ter) : sur le chemin
+   * d'une modification (`revise`), une carte pas encore encaissée ; sur celui
+   * d'une demande M4 (`request`), toute carte. Une carte encaissée passe :
+   * l'agrégat trie son règlement après la composition (R2 bis). Puis les CGV
+   * figées, sans lesquelles rien ne se recompose.
    *
    * Plan A2 (§ 7) : une commande que son statut dit déjà inscrite
    * (`confirmed`) n'est pas refusée pour l'équipe sur une commande au compte —
@@ -106,17 +114,18 @@ export class OrderRevising {
    *
    * @returns la portée : `full`, ou `quantities` si la commande est déjà inscrite.
    * @throws {OrderNotRevisableError} la commande ne se modifie plus.
-   * @throws {CardOrderNotRevisableError} la commande se règle par carte.
+   * @throws {CardOrderNotRevisableError} la commande se règle par carte (selon le chemin).
    * @throws {OrderWithoutSalesTermsError} une commande d'avant les CGV figées.
    */
   async ensureRevisable(
     order: RevisableOrder,
     actorKind: RevisionActor["kind"],
+    purpose: RevisionPurpose,
   ): Promise<RevisionScope> {
     // La règle est celle de l'agrégat ; rejouée ici sous le verrou de `orders`
     // que `OrderRevisionRepository.lock` vient de poser (E6b).
     ensureNoShortfallDecision(order);
-    const standing = await this.standingOf(order, null, actorKind);
+    const standing = await this.standingOf(order, null, actorKind, purpose);
     if (standing.block !== null) {
       throw standingRevisionErrorOf(order.orderId, standing.block);
     }
@@ -134,8 +143,14 @@ export class OrderRevising {
     order: RevisableOrder,
     actorKind: RevisionActor["kind"],
     inscribedDay: string | null,
+    purpose: RevisionPurpose,
   ): Promise<RevisionVerdict> {
-    const { block: standing, scope } = await this.standingOf(order, inscribedDay, actorKind);
+    const { block: standing, scope } = await this.standingOf(
+      order,
+      inscribedDay,
+      actorKind,
+      purpose,
+    );
     if (standing === null && scope === "quantities") {
       return { revisable: true, until: null, quantitiesOnly: true };
     }
@@ -143,8 +158,10 @@ export class OrderRevising {
       // Sur la vitrine, les gardes du circuit, pour l'équipe aussi (lot L5).
       return this.shelf.verdictOf(order, actorKind);
     }
+    // Plan S2 (R2 ter, R3) : une carte encaissée ne se modifie que par une hausse payée.
+    const cardIncreaseOnly = isCardIncreaseOnly(order.paymentStatus, order.totalCents);
     if (standing !== null || actorKind === "staff" || order.serviceDay === null) {
-      return revisabilityOf({ standing, planClosedDay: null, cutoff: null });
+      return revisabilityOf({ standing, planClosedDay: null, cutoff: null, cardIncreaseOnly });
     }
     const day = order.serviceDay;
     const [closed, cutoff] = await Promise.all([
@@ -154,7 +171,12 @@ export class OrderRevising {
         day,
       ),
     ]);
-    return revisabilityOf({ standing, planClosedDay: closed ? day : null, cutoff });
+    return revisabilityOf({
+      standing,
+      planClosedDay: closed ? day : null,
+      cutoff,
+      cardIncreaseOnly,
+    });
   }
 
   /**
@@ -167,6 +189,7 @@ export class OrderRevising {
     order: RevisableOrder,
     inscribedDay: string | null,
     actorKind: RevisionActor["kind"],
+    purpose: RevisionPurpose,
   ): Promise<{ readonly block: StandingRevisionBlock | null; readonly scope: RevisionScope }> {
     const decision = cancellationOf(
       await this.rule.stateOf(subjectOf(order), inscribedDay),
@@ -186,6 +209,7 @@ export class OrderRevising {
         totalCents: order.totalCents,
         hasSalesTerms: order.salesTerms !== null,
       },
+      purpose,
     );
     return { block, scope: quantities ? "quantities" : "full" };
   }
@@ -283,14 +307,12 @@ export class OrderRevising {
         lateFee: order.lateFeeAdjustment,
       }),
     );
-    const revision = options.requireChange
-      ? Order.revise(order, input)
-      : recomposedForQuote(order, input);
+    const { revision, settlement } = recomposedOf(order, input, author, options);
     // Les remises rejouées que la révision ferait perdre, lues sur LE calcul
     // de l'agrégat — il n'est plus refait ici (L7, 2026-11-04).
     const notes = revision.pricingNotes;
     warnBeyondCap(this.logger, notes);
-    return { revision, refusals: [...loaded.keptRefusals, ...notes.refusals] };
+    return { revision, settlement, refusals: [...loaded.keptRefusals, ...notes.refusals] };
   }
 
   /**
@@ -427,11 +449,21 @@ export interface RevisionOptions {
   readonly requireChange: boolean;
   readonly rulesOf?: RevisionActor["kind"];
   readonly decidedAt: Instant;
+  /**
+   * Plan S2 (R2 bis, §2.4) : le règlement que le geste attend, quand il exige
+   * un changement — `same_settlement` (M1, par défaut) ou `card_complement`
+   * (la hausse payée par un complément). Tout autre est refusé, nommé.
+   */
+  readonly expected?: ExpectedSettlement;
 }
 
-/** Une révision chiffrée, et les refus de prix que le devis montre (§ 10.4). */
+/**
+ * Une révision chiffrée, son règlement vu par son auteur (plan S2, R3 — le
+ * devis l'annonce), et les refus de prix que le devis montre (§ 10.4).
+ */
 export interface QuotedRevision {
   readonly revision: OrderRevisionToSave;
+  readonly settlement: RevisionSettlement;
   readonly refusals: readonly RevisionPriceRefusal[];
 }
 
@@ -511,17 +543,27 @@ function subjectOf(order: RevisableOrder) {
 }
 
 /**
- * Le devis, tant que R2 ter n'est pas livré (plan S2, lot S2.b) : il refuse
- * comme aujourd'hui tout ce qui n'est pas `same_settlement` — la commande carte
- * est déjà arrêtée plus tôt par `card_settled`, ceci n'est que le filet.
+ * La recomposition selon le geste (plan S2, R2 bis, R15) : la modification
+ * exige son règlement et un changement — l'agrégat refuse ; le devis ne lève
+ * pas sur le règlement, il l'annonce (R3), vu par l'auteur.
  *
- * @throws {CardOrderNotRevisableError} le règlement n'est pas celui de la commande.
+ * @throws {CardOrderNotRevisableError} la modification, sur un règlement qui n'est pas le sien.
+ * @throws {CardIncreaseNotApplicableError} une hausse par carte sur une commande qui ne l'est pas.
  */
-function recomposedForQuote(order: RevisableOrder, input: PricedDraftInput): OrderRevisionToSave {
-  const { revision, settlement } = Order.recompose(order, input);
-  const refusal = cardRefusalOf(settlement);
-  if (refusal !== null) {
-    throw new CardOrderNotRevisableError(order.orderId, refusal);
+function recomposedOf(
+  order: RevisableOrder,
+  input: PricedDraftInput,
+  author: RevisionActor,
+  options: RevisionOptions,
+): RecomposedRevision {
+  if (!options.requireChange) {
+    const { revision, settlement } = Order.recompose(order, input);
+    return { revision, settlement: settlementBy(settlement, author.kind) };
   }
-  return revision;
+  if (options.expected === "card_complement") {
+    return Order.reviseWithComplement(order, input, author.kind);
+  }
+  return { revision: Order.revise(order, input, author.kind), settlement: SAME_SETTLEMENT };
 }
+
+const SAME_SETTLEMENT: RevisionSettlement = { kind: "same_settlement" };

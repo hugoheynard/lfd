@@ -1,4 +1,7 @@
 import {
+  type CardComplementPaymentView,
+  type CardIncreasePayload,
+  cardIncreasePayloadSchema,
   orderRevisionPayloadSchema,
   orderRevisionQuotePayloadSchema,
   type OrderRevisedResponse,
@@ -12,6 +15,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ProposeCardIncreaseCommand } from "../application/commands/propose-card-increase.command.js";
 import {
   ReviseOrderCommand,
   type ReviseOrderResult,
@@ -85,6 +89,35 @@ export class OrderRevisionsController {
     const { expectedRevision, expectedTotalCents, ...content } = payload;
     return this.commands.execute<ReviseOrderCommand, ReviseOrderResult>(
       new ReviseOrderCommand(
+        id,
+        { kind: "customer", userId: user.userId },
+        expectedRevision,
+        content,
+        expectedTotalCents,
+      ),
+    );
+  }
+
+  /**
+   * **Demander une hausse d'une commande payée par carte** (plan
+   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4) — le
+   * même corps que la modification, total vu obligatoire (R14). `200` avec le
+   * complément à payer et de quoi monter le formulaire de carte ; la commande
+   * ne change qu'une fois le complément payé. `409` : baisse ou total égal
+   * (`orders.revise.card_settled`), total changé (`orders.total_changed`),
+   * un complément d'un autre auteur en attente (`orders.card_increase.pending`).
+   * Le client seul (R15) : l'équipe n'a pas cette route.
+   */
+  @Post(":id/revisions/card-increase")
+  @HttpCode(HttpStatus.OK)
+  async proposeCardIncrease(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+    @Body(new ZodBody(cardIncreasePayloadSchema)) payload: CardIncreasePayload,
+  ): Promise<CardComplementPaymentView> {
+    const { expectedRevision, expectedTotalCents, ...content } = payload;
+    return this.commands.execute<ProposeCardIncreaseCommand, CardComplementPaymentView>(
+      new ProposeCardIncreaseCommand(
         id,
         { kind: "customer", userId: user.userId },
         expectedRevision,

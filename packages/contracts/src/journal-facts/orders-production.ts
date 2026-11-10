@@ -15,6 +15,7 @@ import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
 import { DELIVERY_TRANSFER_FACTS } from "./delivery-transfers.js";
 import { DELIVERY_ROUTING_FACTS } from "./delivery-routing.js";
 import { HANDOVER_PROOF_FACTS } from "./handover-proofs.js";
+import { ORDER_CARD_INCREASE_FACTS } from "./order-card-increases.js";
 import { ORDER_CHANGE_REQUEST_FACTS } from "./order-change-requests.js";
 import { ORDER_REFUND_FACTS } from "./order-refunds.js";
 import { ORDER_SHORTFALL_FACTS } from "./order-shortfalls.js";
@@ -757,6 +758,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...AFTER_CLOSE_REVISION_FACTS,
   /** **Les demandes de modification** après l'heure limite (plan de modification, M4). */
   ...ORDER_CHANGE_REQUEST_FACTS,
+  /** **La hausse d'une commande payée par carte** (plan S2, R12). */
+  ...ORDER_CARD_INCREASE_FACTS,
   ...PACKING_CONTAINER_FACTS,
   /** **Une sortie de réserve vers une boutique** (plan A1, lot A1.4). */
   ...PACKING_RESERVE_FACTS,

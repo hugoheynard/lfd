@@ -4,9 +4,11 @@ import { Injectable } from "@nestjs/common";
 import { OrderInscriptionReader } from "../../../../production/channels/commerce/index.js";
 import type { RevisableOrder, RevisionActor } from "../../domain/entities/order-revision.js";
 import { RevisableOrderReader } from "../../domain/ports/revisable-order.reader.js";
+import { cardRevisionRefusalWords } from "../../domain/errors/order-revision-errors.js";
 import {
   customerRevisionRefusalOf,
   revisionBlockReasonOf,
+  type RevisionPurpose,
   type RevisionVerdict,
 } from "../../domain/services/order-revisability.js";
 import { QUANTITIES_ONLY_NOTE } from "../../domain/services/revision-after-arrest.js";
@@ -33,13 +35,18 @@ export class OrderRevisabilityReading {
     private readonly revising: OrderRevising,
   ) {}
 
-  /** Le verdict pour une commande déjà lue (et déjà passée par son mur). */
+  /**
+   * Le verdict pour une commande déjà lue (et déjà passée par son mur).
+   * `purpose` : le chemin qui demande (plan S2, R2 ter) — `request` pour le
+   * dépôt d'une demande M4, `revise` pour tout le reste.
+   */
   async verdictOf(
     order: RevisableOrder,
     actorKind: RevisionActor["kind"],
+    purpose: RevisionPurpose,
   ): Promise<RevisionVerdict> {
     const inscribedDay = await this.inscriptions.inscribedDayOf(order.orderId);
-    return this.revising.revisabilityOf(order, actorKind, inscribedDay);
+    return this.revising.revisabilityOf(order, actorKind, inscribedDay, purpose);
   }
 
   /** Le verdict de l'équipe, par identifiant ; `null` si la commande est inconnue. */
@@ -48,7 +55,7 @@ export class OrderRevisabilityReading {
     if (order === null) {
       return null;
     }
-    const verdict = await this.verdictOf(order, "staff");
+    const verdict = await this.verdictOf(order, "staff", "revise");
     return { revisability: adminRevisabilityOf(verdict), revision: order.revision };
   }
 }
@@ -56,7 +63,11 @@ export class OrderRevisabilityReading {
 /** Le verdict dit au client : un code, et l'heure limite en ISO. */
 export function customerRevisabilityOf(verdict: RevisionVerdict): OrderRevisability {
   if (verdict.revisable) {
-    return { revisable: true, until: isoOrNull(verdict.until) };
+    const until = isoOrNull(verdict.until);
+    // Plan S2 (R2 ter) : dit seulement quand c'est vrai — absent = `false`.
+    return verdict.cardIncreaseOnly === true
+      ? { revisable: true, until, cardIncreaseOnly: true }
+      : { revisable: true, until };
   }
   const until = verdict.block.kind === "past_cutoff" ? verdict.block.until : null;
   return {
@@ -70,6 +81,11 @@ export function customerRevisabilityOf(verdict: RevisionVerdict): OrderRevisabil
 export function adminRevisabilityOf(verdict: RevisionVerdict): AdminOrderRevisability {
   if (!verdict.revisable) {
     return { revisable: false, reason: revisionBlockReasonOf(verdict.block) };
+  }
+  // Plan S2 (R15, Q3 a) : seule une hausse payée par le client modifie une
+  // carte encaissée — l'équipe n'en a pas le chemin, et la phrase le dit.
+  if (verdict.cardIncreaseOnly === true) {
+    return { revisable: false, reason: cardRevisionRefusalWords("increase_by_staff") };
   }
   // Plan A2, § 7 : inscrite — l'équipe n'en change que les quantités, et l'écran le dit.
   return verdict.quantitiesOnly === true

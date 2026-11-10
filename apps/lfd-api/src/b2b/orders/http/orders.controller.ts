@@ -180,7 +180,7 @@ export class OrdersController {
     const { revisability, revision } = await this.queries.execute<
       GetOrderRevisabilityQuery,
       CustomerRevisionStanding
-    >(new GetOrderRevisabilityQuery(user.userId, id));
+    >(new GetOrderRevisabilityQuery(user.userId, id, "revise"));
     return { ...order, cancellability, revisability, revision };
   }
 

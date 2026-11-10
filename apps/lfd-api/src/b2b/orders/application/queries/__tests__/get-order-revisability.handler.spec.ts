@@ -68,7 +68,7 @@ function handlerFor(
   );
 }
 
-const query = new GetOrderRevisabilityQuery("usr_1", "ord_1");
+const query = new GetOrderRevisabilityQuery("usr_1", "ord_1", "revise");
 
 describe("GetOrderRevisabilityHandler", () => {
   it("avant l'heure limite : modifiable jusqu'à elle, avec la révision courante", async () => {
@@ -105,8 +105,24 @@ describe("GetOrderRevisabilityHandler", () => {
     ).resolves.toMatchObject({ revisability: { revisable: false, code: "in_preparation" } });
   });
 
-  it("réglée par carte : le code qui dit pourquoi (lot M2)", async () => {
+  it("plan S2, R2 ter — payée par carte, pour la boutique : modifiable par une hausse seulement", async () => {
     const order = await placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
+
+    await expect(handlerFor(order).execute(query)).resolves.toMatchObject({
+      revisability: { revisable: true, cardIncreaseOnly: true },
+    });
+  });
+
+  it("plan S2, R4 — payée par carte, pour déposer une demande M4 : `card_settled`, comme avant", async () => {
+    const order = await placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
+
+    await expect(
+      handlerFor(order).execute(new GetOrderRevisabilityQuery("usr_1", "ord_1", "request")),
+    ).resolves.toMatchObject({ revisability: { revisable: false, code: "card_settled" } });
+  });
+
+  it("plan S2, R2 ter — une carte pas encore encaissée reste `card_settled` pour la boutique", async () => {
+    const order = await placedOrder({ paymentStatus: "pending", stripePaymentIntentId: "pi_1" });
 
     await expect(handlerFor(order).execute(query)).resolves.toMatchObject({
       revisability: { revisable: false, code: "card_settled" },

@@ -34,7 +34,7 @@ export class OrderChangeableOrderReader extends ChangeableOrderReader {
     const standing = await this.queries.execute<
       GetOrderRevisabilityQuery,
       CustomerRevisionStanding
-    >(new GetOrderRevisabilityQuery(actorUserId, orderId));
+    >(new GetOrderRevisabilityQuery(actorUserId, orderId, "request"));
     return {
       id: order.id,
       number: order.number,

@@ -72,7 +72,7 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
   async execute(command: ReviseOrderCommand): Promise<ReviseOrderResult> {
     const current = await this.wall.find(command.orderId, command.actor);
     ensureExpected(current, command.expectedRevision);
-    const scope = await this.revising.ensureRevisable(current, command.actor.kind);
+    const scope = await this.revising.ensureRevisable(current, command.actor.kind, "revise");
     const revision = await this.revising.compose(current, command.content, command.actor, {
       requireChange: true,
       // M1 juge à l'horloge (plan S2, R6).
@@ -100,7 +100,7 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     ensureWithinScope(
       locked,
       revision,
-      await this.revising.ensureRevisable(locked, command.actor.kind),
+      await this.revising.ensureRevisable(locked, command.actor.kind, "revise"),
     );
     // Plan du jour J, §13 : une commande sur stock n'a jamais été inscrite au
     // fournil — ni guichet (et donc ni verrou de journée), ni BL à suivre :

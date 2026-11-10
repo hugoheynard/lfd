@@ -44,8 +44,13 @@ export const LIVE_CARD_INCREASE_STATES: readonly CardIncreaseState[] = [
   "stalled",
 ];
 
-/** Pourquoi un projet en attente de paiement est abandonné (R12). */
-export type CardIncreaseAbandonCause = "expired" | "customer" | "replaced" | "order_cancelled";
+/**
+ * Pourquoi un projet en attente de paiement est abandonné (R12) — le délai,
+ * le client, l'équipe (« Abandonner » sur la fiche, §2.5), le remplacement par
+ * une nouvelle hausse, ou l'annulation de la commande.
+ */
+export type CardIncreaseAbandonCause =
+  "expired" | "customer" | "staff" | "replaced" | "order_cancelled";
 
 /** Le délai de paiement (Q1, Hugo, 2026-11-10) : 15 minutes. */
 export const CARD_INCREASE_PAYMENT_DELAY_MS = 15 * 60 * 1000;

@@ -303,7 +303,9 @@ describe("ReviseOrderHandler — une commande sur stock, aux bornes de la journ�
       shelf: mount.shelf,
     });
 
-    expect(await revising.revisabilityOf(await shelfOrder(), "staff", null)).toMatchObject({
+    expect(
+      await revising.revisabilityOf(await shelfOrder(), "staff", null, "revise"),
+    ).toMatchObject({
       revisable: false,
       block: { kind: "shelf_closed" },
     });
@@ -336,7 +338,7 @@ describe("OrderRevising.revisabilityOf — une commande sur stock (L5)", () => {
       shelf: mount.shelf,
     });
 
-    expect(await revising.revisabilityOf(await shelfOrder(), "staff", null)).toEqual({
+    expect(await revising.revisabilityOf(await shelfOrder(), "staff", null, "revise")).toEqual({
       revisable: true,
       until: null,
     });
@@ -349,7 +351,7 @@ describe("OrderRevising.revisabilityOf — une commande sur stock (L5)", () => {
       shelf: mount.shelf,
     });
 
-    const verdict = await revising.revisabilityOf(await shelfOrder(), "customer", null);
+    const verdict = await revising.revisabilityOf(await shelfOrder(), "customer", null, "revise");
 
     expect(verdict).toMatchObject({ revisable: false, block: { kind: "shelf_closed" } });
     expect(verdict.revisable ? "" : revisionBlockReasonOf(verdict.block)).toContain(

@@ -3,6 +3,7 @@ import type { OrderCutoffDecision } from "@lfd/contracts";
 import type { CancellationDecision } from "../order-cancellation.js";
 import {
   customerRevisionRefusalOf,
+  isCardIncreaseOnly,
   revisabilityOf,
   revisionBlockReasonOf,
   standingBlockOf,
@@ -27,7 +28,7 @@ function cutoff(status: OrderCutoffDecision["status"]): OrderCutoffDecision {
 
 describe("standingBlockOf — ce qui vaut pour le client comme pour l'équipe", () => {
   it("une commande au compte, libre, avec ses CGV : rien ne bloque", () => {
-    expect(standingBlockOf(OPEN, ACCOUNT)).toBeNull();
+    expect(standingBlockOf(OPEN, ACCOUNT, "revise")).toBeNull();
   });
 
   it("reprend le blocage de l'annulation tel quel (R1)", () => {
@@ -36,27 +37,46 @@ describe("standingBlockOf — ce qui vaut pour le client comme pour l'équipe", 
       block: { kind: "inscribed", day: "2026-11-10" },
     };
 
-    expect(standingBlockOf(inscribed, ACCOUNT)).toEqual({
+    expect(standingBlockOf(inscribed, ACCOUNT, "revise")).toEqual({
       kind: "order",
       block: { kind: "inscribed", day: "2026-11-10" },
     });
   });
 
-  it("refuse une commande payable par carte, payée ou attendue (§9)", () => {
-    expect(standingBlockOf(OPEN, { ...ACCOUNT, paymentStatus: "paid" })).toEqual({
+  it("plan S2, R2 ter — modifier : une carte attendue est refusée, une carte encaissée passe (l'agrégat trie)", () => {
+    expect(standingBlockOf(OPEN, { ...ACCOUNT, paymentStatus: "paid" }, "revise")).toBeNull();
+    expect(standingBlockOf(OPEN, { ...ACCOUNT, paymentStatus: "pending" }, "revise")).toEqual({
       kind: "card_settled",
+      unsettled: true,
     });
-    expect(standingBlockOf(OPEN, { ...ACCOUNT, paymentStatus: "pending" })).toEqual({
+  });
+
+  it("plan S2, R4 — demander (M4) : toute carte, payée ou attendue, reste refusée", () => {
+    expect(standingBlockOf(OPEN, { ...ACCOUNT, paymentStatus: "paid" }, "request")).toEqual({
       kind: "card_settled",
+      unsettled: false,
     });
+    expect(standingBlockOf(OPEN, { ...ACCOUNT, paymentStatus: "pending" }, "request")).toEqual({
+      kind: "card_settled",
+      unsettled: false,
+    });
+  });
+
+  it("plan S2, R2 ter — une carte encaissée ne se modifie que par une hausse", () => {
+    expect(isCardIncreaseOnly("paid", 1_200)).toBe(true);
+    expect(isCardIncreaseOnly("pending", 1_200)).toBe(false);
+    expect(isCardIncreaseOnly("not_required", 1_200)).toBe(false);
+    expect(
+      revisabilityOf({ standing: null, planClosedDay: null, cutoff: null, cardIncreaseOnly: true }),
+    ).toEqual({ revisable: true, until: null, cardIncreaseOnly: true });
   });
 
   it("une commande à total nul se modifie", () => {
-    expect(standingBlockOf(OPEN, { ...ACCOUNT, totalCents: 0 })).toBeNull();
+    expect(standingBlockOf(OPEN, { ...ACCOUNT, totalCents: 0 }, "revise")).toBeNull();
   });
 
   it("refuse une commande d'avant les CGV figées", () => {
-    expect(standingBlockOf(OPEN, { ...ACCOUNT, hasSalesTerms: false })).toEqual({
+    expect(standingBlockOf(OPEN, { ...ACCOUNT, hasSalesTerms: false }, "revise")).toEqual({
       kind: "without_sales_terms",
     });
   });
@@ -90,11 +110,11 @@ describe("revisabilityOf — le verdict", () => {
     ).toEqual({ revisable: false, block: { kind: "plan_closed", day: "2026-11-10" } });
     expect(
       revisabilityOf({
-        standing: { kind: "card_settled" },
+        standing: { kind: "card_settled", unsettled: false },
         planClosedDay: "2026-11-10",
         cutoff: cutoff("closed"),
       }),
-    ).toEqual({ revisable: false, block: { kind: "card_settled" } });
+    ).toEqual({ revisable: false, block: { kind: "card_settled", unsettled: false } });
   });
 });
 
@@ -103,9 +123,13 @@ describe("les mots du refus", () => {
     const inscribed = { kind: "order", block: { kind: "inscribed", day: "2026-11-10" } } as const;
 
     expect(revisionBlockReasonOf(inscribed)).toContain("Le fournil a déjà inscrit cette commande");
-    expect(revisionBlockReasonOf({ kind: "card_settled" })).toContain("réglée par carte");
+    expect(revisionBlockReasonOf({ kind: "card_settled", unsettled: false })).toContain(
+      "réglée par carte",
+    );
     expect(customerRevisionRefusalOf(inscribed)).toBe("in_preparation");
-    expect(customerRevisionRefusalOf({ kind: "card_settled" })).toBe("card_settled");
+    expect(customerRevisionRefusalOf({ kind: "card_settled", unsettled: false })).toBe(
+      "card_settled",
+    );
     expect(customerRevisionRefusalOf({ kind: "past_cutoff", until: LIMIT })).toBe("too_late");
     expect(customerRevisionRefusalOf({ kind: "plan_closed", day: "2026-11-10" })).toBe(
       "in_preparation",

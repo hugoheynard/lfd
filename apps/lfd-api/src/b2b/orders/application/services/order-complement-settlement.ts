@@ -5,14 +5,22 @@ import type {
   SubjectPaidOutcome,
 } from "../../../../card-payment/channels/subjects/index.js";
 import { AfterCommit } from "../../../../platform/database/after-commit.js";
+import { Journal } from "../../../../platform/journal/journal.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CardIncreaseProposal } from "../../domain/entities/card-increase-proposal.js";
+import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { ComplementWithoutProposalError } from "../../domain/errors/card-increase-proposal-errors.js";
 import { OrderComplementPaidLateEvent } from "../../domain/events/order-complement-paid-late.event.js";
 import { CardIncreaseProposalRepository } from "../../domain/ports/card-increase-proposal.repository.js";
 import { CardIncreaseWake } from "../../domain/ports/card-increase-wake.js";
+import { OrderCardStandingReader } from "../../domain/ports/order-card-standing.reader.js";
 import { OrderLock } from "../../domain/ports/order-lock.js";
+import {
+  increaseClosedFact,
+  increasePaidFact,
+  type IncreaseOrderLabel,
+} from "./card-increase-facts.js";
 
 /**
  * **Un complément de hausse est encaissé** (plan
@@ -29,6 +37,9 @@ import { OrderLock } from "../../domain/ports/order-lock.js";
  *   remboursement part après validation, jamais ici (R8) ;
  * - autre état ⇒ rejeu, rien ne franchit ;
  * - aucun projet ⇒ erreur bruyante.
+ *
+ * Chaque transition écrite part au journal dans la même transaction (R12) :
+ * `order.card_increase_paid`, `order.card_increase_closed`.
  */
 @Injectable()
 export class OrderComplementSettlement {
@@ -39,6 +50,8 @@ export class OrderComplementSettlement {
     private readonly afterCommit: AfterCommit,
     private readonly wake: CardIncreaseWake,
     private readonly clock: Clock,
+    private readonly journal: Journal,
+    private readonly standings: OrderCardStandingReader,
   ) {}
 
   /** @throws {ComplementWithoutProposalError} aucun projet de cette commande ne porte ce paiement. */
@@ -63,6 +76,7 @@ export class OrderComplementSettlement {
     if (!(await this.proposals.save(proposal))) {
       return "already_applied";
     }
+    await this.journal.append(increasePaidFact(proposal, await this.labelOf(proposal)));
     const id = proposal.id;
     this.afterCommit.defer(() => this.wake.wake(id), `card-increase.wake:${id}`);
     return "applied";
@@ -73,6 +87,7 @@ export class OrderComplementSettlement {
     if (!(await this.proposals.save(proposal))) {
       return "already_applied";
     }
+    await this.journal.append(increaseClosedFact(proposal, await this.labelOf(proposal)));
     const state = proposal.toPersistence();
     await this.durable.publish(
       new OrderComplementPaidLateEvent(
@@ -83,5 +98,18 @@ export class OrderComplementSettlement {
       ).durableFact(),
     );
     return "refused";
+  }
+
+  /**
+   * Le numéro de la commande, libellé des faits.
+   * @throws {OrderNotFoundError} la commande verrouillée a disparu — la base et le code divergent.
+   */
+  private async labelOf(proposal: CardIncreaseProposal): Promise<IncreaseOrderLabel> {
+    const orderId = proposal.toPersistence().orderId;
+    const standing = await this.standings.ofOrder(orderId);
+    if (standing === null) {
+      throw new OrderNotFoundError(orderId);
+    }
+    return { orderId, orderNumber: standing.orderNumber };
   }
 }

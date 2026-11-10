@@ -60,7 +60,19 @@ export type OrderRevisionRefusal = (typeof ORDER_REVISION_REFUSALS)[number];
  * ne s'applique ou que le refus n'a rien à voir avec l'heure.
  */
 export type OrderRevisability =
-  | { readonly revisable: true; readonly until: string | null }
+  | {
+      readonly revisable: true;
+      readonly until: string | null;
+      /**
+       * Plan `documentation/commandes/modification/plan-s2-la-hausse.md`
+       * (R2 ter, R3) : la commande est payée par carte — seule une HAUSSE s'y
+       * fait, et elle se paie par un complément (`POST
+       * /orders/:id/revisions/card-increase`) ; une baisse ou un changement à
+       * total égal ne sont pas encore possibles. Servi depuis S2.b ; absent du
+       * type tant que les écrans (S2.d) ne le lisent pas — absent = `false`.
+       */
+      readonly cardIncreaseOnly?: boolean;
+    }
   | {
       readonly revisable: false;
       readonly code: OrderRevisionRefusal;
@@ -83,3 +95,33 @@ export type AdminOrderRevisability =
       readonly quantitiesOnly?: string;
     }
   | { readonly revisable: false; readonly reason: string };
+
+/**
+ * **Pourquoi une révision d'une commande payée par carte ne se fait pas**
+ * (plan `documentation/commandes/modification/plan-s2-la-hausse.md`, R2 bis,
+ * R15) — une baisse, un total égal, un premier paiement pas encore encaissé,
+ * ou une hausse composée par l'équipe (« demandez au client de modifier sa
+ * commande, ou passez une seconde commande »).
+ */
+export const ORDER_REVISION_CARD_REFUSALS = [
+  "decrease",
+  "same_total",
+  "unsettled",
+  "increase_by_staff",
+] as const;
+export type OrderRevisionCardRefusal = (typeof ORDER_REVISION_CARD_REFUSALS)[number];
+
+/**
+ * **Comment la révision devisée se réglera** (plan S2, R3) :
+ *
+ * - `as_placed` — comme la commande (au compte, ou à total nul) : `POST
+ *   /orders/:id/revisions` ;
+ * - `card_complement` — commande payée par carte, et hausse : « 12,00 € à
+ *   payer », par `POST /orders/:id/revisions/card-increase` ;
+ * - `card_not_revisable` — commande carte, et ni l'un ni l'autre : « pas
+ *   encore possible ».
+ */
+export type OrderRevisionQuoteSettlement =
+  | { readonly kind: "as_placed" }
+  | { readonly kind: "card_complement"; readonly complementCents: number }
+  | { readonly kind: "card_not_revisable"; readonly reason: OrderRevisionCardRefusal };

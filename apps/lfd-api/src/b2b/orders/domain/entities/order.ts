@@ -18,7 +18,6 @@ import type {
 } from "@lfd/contracts";
 
 import { InvalidOrderPaymentError } from "../errors/order-errors.js";
-import { CardOrderNotRevisableError } from "../errors/order-revision-errors.js";
 
 import { ensureDraftable } from "./order-amount-guards.js";
 import { draftedAmountsOf, type DraftedAmounts } from "./order-amounts.js";
@@ -36,14 +35,14 @@ import { orderAmountsReadingOf, type OrderAmountsReading } from "./order-amounts
 import { shelfClaimOf, type ShelfClaim } from "../services/shelf-circuit.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
-  ensureChanged,
   ensureNoShortfallDecision,
   revisionOf,
   type OrderRevisionToSave,
   type RevisableOrder,
+  type RevisionActor,
 } from "./order-revision.js";
 import {
-  cardRefusalOf,
+  ensureSettlementExpected,
   revisionSettlementOf,
   type RecomposedRevision,
 } from "./revision-settlement.js";
@@ -229,16 +228,37 @@ export class Order {
    * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement sort de la cible figée d'une remise (L9).
    * @throws {ShelfOrderRouteChangeError} une commande sur stock changerait de mode, de journée ou de point.
    */
-  static revise(current: RevisableOrder, input: PricedDraftInput): OrderRevisionToSave {
-    const { revision, settlement } = Order.recompose(current, input);
+  static revise(
+    current: RevisableOrder,
+    input: PricedDraftInput,
+    by: RevisionActor["kind"] = "customer",
+  ): OrderRevisionToSave {
     // M1 ne fait que `same_settlement` (plan S2, R2 bis) : une hausse carte
-    // passe par un projet de complément, le reste attend S1.
-    const refusal = cardRefusalOf(settlement);
-    if (refusal !== null) {
-      throw new CardOrderNotRevisableError(current.orderId, refusal);
-    }
-    ensureChanged(revision);
-    return revision;
+    // passe par un projet de complément, le reste attend S1. `by` ne change
+    // que la raison d'un refus (R15 : l'équipe n'augmente pas une carte).
+    return ensureSettlementExpected(current, Order.recompose(current, input), "same_settlement", by)
+      .revision;
+  }
+
+  /**
+   * **Une hausse payée par un complément** (plan S2, §2.4) : la même
+   * recomposition, qui n'admet QUE `card_complement` — rendu avec son
+   * complément. Le client seul (R15).
+   *
+   * @throws {CardOrderNotRevisableError} baisse, total égal, carte pas encore encaissée, ou l'équipe.
+   * @throws {CardIncreaseNotApplicableError} la commande ne se règle pas par carte.
+   */
+  static reviseWithComplement(
+    current: RevisableOrder,
+    input: PricedDraftInput,
+    by: RevisionActor["kind"],
+  ): RecomposedRevision {
+    return ensureSettlementExpected(
+      current,
+      Order.recompose(current, input),
+      "card_complement",
+      by,
+    );
   }
 
   /**

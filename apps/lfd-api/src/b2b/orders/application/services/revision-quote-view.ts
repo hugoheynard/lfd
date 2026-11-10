@@ -1,10 +1,12 @@
 import type {
   OrderRevisionDiscountRefusal,
   OrderRevisionLineRefusal,
+  OrderRevisionQuoteSettlement,
   OrderRevisionQuoteView,
 } from "@lfd/contracts";
 
 import type { RevisableOrder } from "../../domain/entities/order-revision.js";
+import type { RevisionSettlement } from "../../domain/entities/revision-settlement.js";
 import type { BasketDiscountRefusal } from "../../domain/services/basket-discount-replay.js";
 import type { KeptLineRefusal } from "../../domain/services/kept-line-prices.js";
 import type { QuotedRevision } from "./order-revising.service.js";
@@ -54,7 +56,20 @@ export function quoteViewOf(
     discountRefusals: refusals.flatMap((refusal) =>
       refusal.kind === "below_threshold" ? [discountRefusalOf(refusal)] : [],
     ),
+    settlement: settlementViewOf(quoted.settlement),
   };
+}
+
+/** Plan S2 (R3) : le règlement annoncé — comme la commande, un complément, ou pas encore possible. */
+function settlementViewOf(settlement: RevisionSettlement): OrderRevisionQuoteSettlement {
+  switch (settlement.kind) {
+    case "same_settlement":
+      return { kind: "as_placed" };
+    case "card_complement":
+      return { kind: "card_complement", complementCents: settlement.complementCents };
+    case "card_not_revisable":
+      return { kind: "card_not_revisable", reason: settlement.reason };
+  }
 }
 
 function lineRefusalOf(refusal: KeptLineRefusal): OrderRevisionLineRefusal {

@@ -5,6 +5,7 @@ import type { Phrase } from '../phrase';
 import { ACCOUNTING_PHRASES } from './accounting-phrases';
 import { BILLING_MODE_PHRASES } from './billing-mode-phrases';
 import { BUNDLE_PHRASES } from './bundle-phrases';
+import { CARD_INCREASE_PHRASES } from './card-increase-phrases';
 import { CARD_PAYMENT_PHRASES } from './card-payment-phrases';
 import { ACCOUNTS_PHRASES } from './accounts-phrases';
 import { COMMERCE_PHRASES } from './commerce-phrases';
@@ -204,6 +205,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...BILLING_MODE_PHRASES,
   ...INVOICE_PHRASES,
   ...REFUND_PHRASES,
+  ...CARD_INCREASE_PHRASES,
   ...CARD_PAYMENT_PHRASES,
   ...COLLECTION_BATCH_REJECTION_PHRASES,
   ...COLLECTION_RETURN_PHRASES,

@@ -408,7 +408,7 @@ describe("GetAdminOrderHandler", () => {
       });
     });
 
-    it("une commande payable par carte se grise : c'est le lot M2", async () => {
+    it("une commande payée par carte se grise pour l'équipe, avec son geste de sortie (plan S2, R15)", async () => {
       const card = await placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
 
       const view = await adminHandler(
@@ -426,7 +426,9 @@ describe("GetAdminOrderHandler", () => {
 
       expect(view.revisability).toEqual({
         revisable: false,
-        reason: expect.stringContaining("Commande réglée par carte") as string,
+        reason: expect.stringContaining(
+          "l'équipe ne peut pas l'augmenter. Demandez au client de modifier sa commande",
+        ) as string,
       });
     });
   });

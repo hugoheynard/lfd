@@ -1,7 +1,16 @@
-import type { CardRevisionRefusal } from "../errors/order-revision-errors.js";
+import { CardIncreaseNotApplicableError } from "../errors/card-increase-proposal-errors.js";
+import {
+  CardOrderNotRevisableError,
+  type CardRevisionRefusal,
+} from "../errors/order-revision-errors.js";
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
-import type { OrderRevisionToSave, RevisableOrder } from "./order-revision.js";
+import {
+  ensureChanged,
+  type OrderRevisionToSave,
+  type RevisableOrder,
+  type RevisionActor,
+} from "./order-revision.js";
 
 /**
  * **Comment la révision se règle** (plan
@@ -53,6 +62,20 @@ export function revisionSettlementOf(
   };
 }
 
+/**
+ * Le règlement vu par son AUTEUR (plan S2, R15) : l'équipe ne fait pas de
+ * hausse carte (Q3 a, Hugo, 2026-11-10) — une hausse qu'elle compose n'a
+ * aucun chemin, et se dit `increase_by_staff`, avec son geste de sortie.
+ */
+export function settlementBy(
+  settlement: RevisionSettlement,
+  by: RevisionActor["kind"],
+): RevisionSettlement {
+  return settlement.kind === "card_complement" && by === "staff"
+    ? { kind: "card_not_revisable", reason: "increase_by_staff" }
+    : settlement;
+}
+
 /** Ce que M1 oppose à un règlement qui n'est pas le sien : la raison du refus. */
 export function cardRefusalOf(settlement: RevisionSettlement): CardRevisionRefusal | null {
   switch (settlement.kind) {
@@ -63,4 +86,34 @@ export function cardRefusalOf(settlement: RevisionSettlement): CardRevisionRefus
     case "card_not_revisable":
       return settlement.reason;
   }
+}
+
+/** Les deux chemins d'une révision : M1, ou la hausse payée par un complément (S2). */
+export type ExpectedSettlement = "same_settlement" | "card_complement";
+
+/**
+ * **Le refus de règlement, à l'agrégat** (R2 bis, R15) — la révision passe si
+ * son règlement (vu par son auteur) est celui que le geste attend, puis si
+ * elle change quelque chose (R6). Le règlement parle avant le « rien n'a
+ * changé ».
+ *
+ * @throws {CardOrderNotRevisableError} carte, et pas le chemin de ce geste (avec la raison).
+ * @throws {CardIncreaseNotApplicableError} une hausse « carte » sur une commande qui ne l'est pas.
+ * @throws {UnchangedOrderRevisionError} la révision ne change rien.
+ */
+export function ensureSettlementExpected(
+  current: RevisableOrder,
+  recomposed: RecomposedRevision,
+  expected: ExpectedSettlement,
+  by: RevisionActor["kind"],
+): RecomposedRevision {
+  const settlement = settlementBy(recomposed.settlement, by);
+  if (settlement.kind !== expected) {
+    if (settlement.kind === "same_settlement") {
+      throw new CardIncreaseNotApplicableError(current.orderId);
+    }
+    throw new CardOrderNotRevisableError(current.orderId, cardRefusalOf(settlement));
+  }
+  ensureChanged(recomposed.revision);
+  return { revision: recomposed.revision, settlement };
 }

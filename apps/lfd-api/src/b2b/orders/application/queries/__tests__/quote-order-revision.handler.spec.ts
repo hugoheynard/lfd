@@ -69,12 +69,63 @@ describe("QuoteOrderRevisionHandler", () => {
     expect(quote.changes).toEqual([]);
   });
 
-  it("refuse comme la modification une commande payable par carte", async () => {
-    const order = await placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
+  it("refuse comme la modification une commande dont la carte est attendue", async () => {
+    const order = await placedOrder({ paymentStatus: "pending", stripePaymentIntentId: "pi_1" });
 
     await expect(
       handlerFor(order).execute(new QuoteOrderRevisionQuery("ord_1", CUSTOMER, content())),
     ).rejects.toThrow(CardOrderNotRevisableError);
+  });
+
+  describe("plan S2, R3 — le devis annonce le règlement", () => {
+    const MORE = content({ lines: [{ sku: "VIE-001", quantity: 20 }] });
+    const LESS = content({ lines: [{ sku: "VIE-001", quantity: 5 }] });
+    const paid = () => placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
+    const STAFF = { kind: "staff", staffId: "stf_1" } as const;
+
+    it("une hausse sur une carte payée : le complément à payer, l'écart du devis", async () => {
+      const order = await paid();
+
+      const quote = await handlerFor(order).execute(
+        new QuoteOrderRevisionQuery("ord_1", CUSTOMER, MORE),
+      );
+
+      expect(quote.differenceCents).toBeGreaterThan(0);
+      expect(quote.settlement).toEqual({
+        kind: "card_complement",
+        complementCents: quote.differenceCents,
+      });
+    });
+
+    it("une baisse, un total égal : pas encore possible, avec la raison", async () => {
+      const order = await paid();
+      const handler = handlerFor(order);
+
+      const lower = await handler.execute(new QuoteOrderRevisionQuery("ord_1", CUSTOMER, LESS));
+      const same = await handler.execute(new QuoteOrderRevisionQuery("ord_1", CUSTOMER, content()));
+
+      expect(lower.settlement).toEqual({ kind: "card_not_revisable", reason: "decrease" });
+      expect(same.settlement).toEqual({ kind: "card_not_revisable", reason: "same_total" });
+    });
+
+    it("R15 : la hausse composée par l'équipe n'a pas de chemin, et le devis le dit", async () => {
+      const quote = await handlerFor(await paid()).execute(
+        new QuoteOrderRevisionQuery("ord_1", STAFF, MORE),
+      );
+
+      expect(quote.settlement).toEqual({
+        kind: "card_not_revisable",
+        reason: "increase_by_staff",
+      });
+    });
+
+    it("une commande au compte : réglée comme elle", async () => {
+      const quote = await handlerFor(await placedOrder()).execute(
+        new QuoteOrderRevisionQuery("ord_1", CUSTOMER, MORE),
+      );
+
+      expect(quote.settlement).toEqual({ kind: "as_placed" });
+    });
   });
 
   describe("les refus de prix, rendus au lieu d'être levés (plan des remises acquises, § 10.4)", () => {

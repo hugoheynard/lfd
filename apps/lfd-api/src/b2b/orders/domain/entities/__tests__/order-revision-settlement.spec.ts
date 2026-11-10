@@ -3,6 +3,7 @@ import {
   RevisionFreesAccountOrderError,
   RevisionRequiresPaymentError,
 } from "../../errors/order-revision-errors.js";
+import { CardIncreaseNotApplicableError } from "../../errors/card-increase-proposal-errors.js";
 import { Order } from "../order.js";
 import type { RevisableOrder } from "../order-revision.js";
 import { input, line, placed, revised } from "./revisable-order.fixture.js";
@@ -100,5 +101,67 @@ describe("Order.revise — M1 inchangé sur une carte (R2 bis)", () => {
     expect(() =>
       Order.revise(free, revised(free, { lines: [line("VIE-001", 10, 0), line("PAI-001", 1)] })),
     ).toThrow(RevisionRequiresPaymentError);
+  });
+});
+
+/** Plan S2, §2.4, R15 : la hausse payée par un complément — et l'équipe qui n'en a pas le chemin. */
+describe("Order.reviseWithComplement — la hausse par carte", () => {
+  it("une hausse sur une carte encaissée : la révision et son complément exact", () => {
+    const paid = card("paid");
+    const { revision, settlement } = Order.reviseWithComplement(
+      paid,
+      revised(paid, { lines: MORE }),
+      "customer",
+    );
+    expect(settlement).toEqual({
+      kind: "card_complement",
+      complementCents: revision.totalAfterCents - paid.totalCents,
+    });
+  });
+
+  it.each([
+    ["une baisse", "paid", LESS, "decrease"],
+    ["un total égal", "paid", TEN, "same_total"],
+    ["une carte attendue", "pending", MORE, "unsettled"],
+  ] as const)("refuse %s, nommée par sa raison", (_, status, lines, reason) => {
+    const order = card(status);
+    const attempt = () =>
+      Order.reviseWithComplement(order, revised(order, { lines, note: "porte B" }), "customer");
+    expect(attempt).toThrow(CardOrderNotRevisableError);
+    try {
+      attempt();
+    } catch (error) {
+      expect(error).toMatchObject({ reason, code: "orders.revise.card_settled" });
+    }
+  });
+
+  it("R15 : l'équipe qui augmente une carte est refusée, avec le geste de sortie", () => {
+    const paid = card("paid");
+    const attempt = () => Order.reviseWithComplement(paid, revised(paid, { lines: MORE }), "staff");
+    expect(attempt).toThrow(
+      "l'équipe ne peut pas l'augmenter. Demandez au client de modifier sa commande, ou passez une seconde commande.",
+    );
+    try {
+      attempt();
+    } catch (error) {
+      expect(error).toMatchObject({ reason: "increase_by_staff" });
+    }
+  });
+
+  it("R15 : M1 dit la même chose à l'équipe qui augmente une carte (la demande M4 appliquée)", () => {
+    const paid = card("paid");
+    const attempt = () => Order.revise(paid, revised(paid, { lines: MORE }), "staff");
+    expect(attempt).toThrow(CardOrderNotRevisableError);
+    try {
+      attempt();
+    } catch (error) {
+      expect(error).toMatchObject({ reason: "increase_by_staff" });
+    }
+  });
+
+  it("une commande au compte n'a pas de complément : refus nommé", () => {
+    expect(() =>
+      Order.reviseWithComplement(placed(), revised(placed(), { lines: MORE }), "customer"),
+    ).toThrow(CardIncreaseNotApplicableError);
   });
 });

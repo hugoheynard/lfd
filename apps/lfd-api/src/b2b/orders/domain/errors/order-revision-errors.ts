@@ -19,24 +19,41 @@ import { revisionRefusalOf } from "../services/order-revision-refusal.js";
  */
 
 /**
- * Pourquoi une révision ne se règle pas comme la commande (plan S2, R2 bis) :
- * une baisse, un total égal, un premier paiement pas encore encaissé, ou une
- * hausse — que M1 ne fait pas (elle passe par un projet de complément).
+ * Pourquoi une révision ne se règle pas comme la commande (plan S2, R2 bis,
+ * R15) : une baisse, un total égal, un premier paiement pas encore encaissé,
+ * une hausse — que M1 ne fait pas (elle passe par un projet de complément) —,
+ * ou une hausse composée par l'équipe, qui n'en a pas le chemin (Q3 a).
  */
-export type CardRevisionRefusal = "decrease" | "same_total" | "unsettled" | "increase";
+export type CardRevisionRefusal =
+  "decrease" | "same_total" | "unsettled" | "increase" | "increase_by_staff";
+
+/**
+ * R15 (plan S2, Q3 a) : la hausse composée par l'équipe nomme son geste de
+ * sortie. Les autres raisons gardent la phrase d'aujourd'hui (§2.9) : le
+ * client qui augmente passe par le complément, et l'écran le dira (S2.d).
+ */
+const STAFF_INCREASE_REFUSAL =
+  "Cette commande est payée par carte : l'équipe ne peut pas l'augmenter. " +
+  "Demandez au client de modifier sa commande, ou passez une seconde commande.";
+
+/** La phrase d'une raison de refus carte, lue par l'équipe sous le bouton grisé. */
+export function cardRevisionRefusalWords(reason: CardRevisionRefusal | null): string {
+  return reason === "increase_by_staff" ? STAFF_INCREASE_REFUSAL : CARD_SETTLED_REVISION_REFUSAL;
+}
 
 /**
  * §9 : M1 ne modifie pas une commande payable par carte. `reason` : le tri de
- * l'agrégat (plan S2, R2 bis), `null` quand le refus tombe avant la
- * composition (la frontière commune, `card_settled`). Le code et le message ne
- * changent pas : les écrans qui lisent le code le gardent (§2.9).
+ * l'agrégat (plan S2, R2 bis, R15), `null` quand le refus tombe avant la
+ * composition (la frontière commune, `card_settled`, sur le chemin d'une
+ * DEMANDE). Le code ne change pas : les écrans qui le lisent le gardent
+ * (§2.9) ; la phrase ne change que pour l'équipe qui augmente (R15).
  */
 export class CardOrderNotRevisableError extends BusinessError {
   constructor(
     readonly orderId: string,
     readonly reason: CardRevisionRefusal | null = null,
   ) {
-    super("orders.revise.card_settled", CARD_SETTLED_REVISION_REFUSAL);
+    super("orders.revise.card_settled", cardRevisionRefusalWords(reason));
   }
 }
 
@@ -153,7 +170,7 @@ export function standingRevisionErrorOf(
     case "order":
       return new OrderNotRevisableError(orderId, block.block);
     case "card_settled":
-      return new CardOrderNotRevisableError(orderId);
+      return new CardOrderNotRevisableError(orderId, block.unsettled ? "unsettled" : null);
     case "without_sales_terms":
       return new OrderWithoutSalesTermsError(orderId);
   }

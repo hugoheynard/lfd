@@ -177,6 +177,15 @@ export const REFUND_REJECTION = domain('motif de refus d’un remboursement', {
   reversed_after_success: 'Réussi puis annulé',
 });
 
+/** Pourquoi la hausse d'une commande carte est abandonnée avant paiement (`order.card_increase_abandoned`, plan S2). */
+export const CARD_INCREASE_ABANDON_CAUSE = domain('cause d’abandon d’une hausse par carte', {
+  expired: 'Délai de paiement passé',
+  customer: 'Abandonnée par le client',
+  staff: 'Abandonnée par l’équipe',
+  replaced: 'Remplacée par une nouvelle hausse',
+  order_cancelled: 'Commande annulée',
+});
+
 /** Pourquoi un remboursement réussi reste sans avoir automatique (`order.refund_not_credited`, E5b). */
 export const REFUND_NOT_CREDITED = domain('motif d’un remboursement sans avoir', {
   account_invoice: 'La commande est sur une facture par période — avoir à émettre à la main',
@@ -319,6 +328,7 @@ export const ORDERS_VALUES: ValueFamily = {
     REFUND_STATUS,
     REFUND_REJECTION,
     REFUND_NOT_CREDITED,
+    CARD_INCREASE_ABANDON_CAUSE,
     QUALITY_VERDICT,
     QUALITY_LIFTING_VERDICT,
     HANDOVER_PROOF_ERASURE_CAUSE,

@@ -33,7 +33,7 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
 
   async execute(query: QuoteOrderRevisionQuery): Promise<OrderRevisionQuoteView> {
     const current = await this.wall.find(query.orderId, query.actor);
-    const scope = await this.revising.ensureRevisable(current, query.actor.kind);
+    const scope = await this.revising.ensureRevisable(current, query.actor.kind, "revise");
     // Le devis rend les refus de prix au lieu de les lever (plan des remises
     // acquises, § 10.4) ; la modification, elle, les lève.
     const quoted = await this.revising.quote(current, query.content, query.actor, {

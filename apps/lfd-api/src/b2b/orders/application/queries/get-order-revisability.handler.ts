@@ -35,7 +35,7 @@ export class GetOrderRevisabilityHandler implements IQueryHandler<
       kind: "customer",
       userId: query.actorUserId,
     });
-    const verdict = await this.reading.verdictOf(order, "customer");
+    const verdict = await this.reading.verdictOf(order, "customer", query.purpose);
     return { revisability: customerRevisabilityOf(verdict), revision: order.revision };
   }
 }

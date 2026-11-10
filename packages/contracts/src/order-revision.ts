@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { DiscountLabelView } from "./discount-label.js";
-import type { OrderRevisionChange } from "./order-revision.values.js";
+import type { OrderRevisionChange, OrderRevisionQuoteSettlement } from "./order-revision.values.js";
 import {
   deliveryAddressIssue,
   expectedTotalCentsSchema,
@@ -153,6 +153,14 @@ export interface OrderRevisionQuoteView {
   readonly changes: readonly OrderRevisionChange[];
   /** Les remises que la modification ferait perdre — vide si aucune (§ 10.4). */
   readonly discountRefusals: readonly OrderRevisionDiscountRefusal[];
+  /**
+   * Comment la modification se réglera (plan
+   * `documentation/commandes/modification/plan-s2-la-hausse.md`, R3) : comme
+   * la commande, par un complément à payer par carte, ou pas encore possible.
+   * Servi depuis S2.b ; facultatif au type tant que les écrans (S2.d) ne le
+   * lisent pas — absent = `as_placed`.
+   */
+  readonly settlement?: OrderRevisionQuoteSettlement;
 }
 
 /** Ce que la modification rend : la commande se relit ensuite (`GET :id`). */
@@ -161,4 +169,29 @@ export interface OrderRevisedResponse {
   readonly revision: number;
   readonly totalCents: number;
   readonly previousTotalCents: number;
+}
+
+/**
+ * **Demander une hausse payée par carte** (plan
+ * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4) — le
+ * corps de `POST /orders/:id/revisions/card-increase` : exactement celui de
+ * la modification (`orderRevisionPayloadSchema`), total vu obligatoire (R14).
+ */
+export const cardIncreasePayloadSchema = orderRevisionPayloadSchema;
+export type CardIncreasePayload = OrderRevisionPayload;
+
+/**
+ * **Le complément à payer** — la réponse de `POST
+ * /orders/:id/revisions/card-increase` (§2.4) et de `GET
+ * /orders/:id/complement` (§2.5, la reprise au rechargement). La commande ne
+ * change pas tant que le complément n'est pas payé : la boutique monte le
+ * formulaire de carte avec `clientSecret` et `publishableKey`, et dit le
+ * délai (`expiresAt`, ISO — 15 minutes, raccourci à l'heure limite).
+ */
+export interface CardComplementPaymentView {
+  readonly proposalId: string;
+  readonly complementCents: number;
+  readonly clientSecret: string;
+  readonly publishableKey: string;
+  readonly expiresAt: string;
 }
