@@ -21,7 +21,7 @@ import { payByCard, pickupSite, placeOrder } from "./order-factory.js";
 
 /**
  * **La scène de la baisse carte** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, lot S1.a) —
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) —
  * partagée par les deux suites de la baisse. Seules frontières doublées : la
  * signature des jetons (le jeton EST le `sub`), le prestataire de carte
  * (`E2eCardProvider`) et l'envoi des e-mails (relevé, jamais parti).

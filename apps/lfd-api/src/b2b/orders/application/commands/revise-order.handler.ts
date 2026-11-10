@@ -39,7 +39,7 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  *    d'encaissement recalée (au compte), et les deux faits durables.
  *
  * ## Une carte encaissée (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R3 à R6)
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12)
  *
  * M1 fait la baisse (rendue sur la carte) et le total égal ; la hausse passe
  * par un complément. L'ordre, nommé (R5) : hors verrou, aucun projet de

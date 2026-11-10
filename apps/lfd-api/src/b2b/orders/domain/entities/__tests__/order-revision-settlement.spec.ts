@@ -13,7 +13,7 @@ import { input, line, placed, revised } from "./revisable-order.fixture.js";
  * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2) :
  * `recompose` rend la révision et son règlement sans lever ; M1 (`revise`)
  * admet `same_settlement` et la baisse carte rendue (`card_refund`, plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R2, R5 bis).
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12).
  */
 
 /** 10 croissants à 2 € HT, TVA 5,5 % : 21,10 €. */

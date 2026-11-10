@@ -3,7 +3,7 @@ import type { RevisionActor } from "../entities/order-revision.js";
 
 /**
  * **Les restes des paiements ne couvrent pas la baisse** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R6) — un
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) — un
  * remboursement déjà demandé sur la commande les occupe. Le geste de sortie
  * dépend de la demande qui les occupe : arrêtée, elle attend l'équipe
  * (« Relancer » ou « Rendu autrement », bandeau des remboursements de la

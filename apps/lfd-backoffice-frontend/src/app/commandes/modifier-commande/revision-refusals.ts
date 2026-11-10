@@ -62,7 +62,7 @@ export function hasRefusal(quote: OrderRevisionQuoteView): boolean {
  * Doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2 (Q3 a) :
  * l'équipe n'augmente pas une commande payée par carte — une hausse se paie
  * par le client. Une baisse se valide, la différence remboursée sur la carte
- * (plan `plan-s1-la-baisse.md`, §2.4) ; un total égal se règle comme passé.
+ * (`commandes/modification/modifier-une-commande.md`, §2.7.12) ; un total égal se règle comme passé.
  * La phrase de la hausse reprend celle du serveur (`increase_by_staff`).
  */
 export const STAFF_CARD_INCREASE_REFUSAL =

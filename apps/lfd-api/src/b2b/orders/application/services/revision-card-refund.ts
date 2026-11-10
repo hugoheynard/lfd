@@ -29,7 +29,7 @@ const NOTHING: readonly CardRefundPart[] = [];
 
 /**
  * **L'argent d'une révision carte, dans M1** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R3 à R6) — le
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) — le
  * handler l'appelle à trois moments, et l'ordre est la règle (R5) :
  *
  * 1. {@link ensureNoLiveIncrease}, hors verrou : un projet de hausse vivant

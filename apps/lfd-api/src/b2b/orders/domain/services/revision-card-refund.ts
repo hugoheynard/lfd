@@ -30,7 +30,7 @@ export interface CardRefundSplitInput {
 
 /**
  * **Répartir une baisse sur les paiements qui se rendent** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R6) — pure :
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) — pure :
  * du plus récent au plus ancien, chacun jusqu'à son reste, et la somme des
  * parts vaut EXACTEMENT `refundCents`. Un complément payé en dernier rend
  * donc d'abord (R9 : 52 − 8 = 44, la facture tombe juste).

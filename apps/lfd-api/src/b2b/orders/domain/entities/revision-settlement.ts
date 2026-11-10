@@ -21,7 +21,7 @@ import {
  *   carte encaissée à total égal aussi : aucun argent ne bouge (plan S1, Q2) ;
  * - `card_complement` — carte encaissée et hausse : un complément à payer ;
  * - `card_refund` — carte encaissée et baisse : la différence rendue sur la
- *   carte (plan `documentation/commandes/modification/plan-s1-la-baisse.md`, R2) ;
+ *   carte (plan `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) ;
  * - `card_not_revisable` — carte, et aucun de ces chemins.
  *
  * Les commandes lèvent (`CardOrderNotRevisableError`), le devis affichera.

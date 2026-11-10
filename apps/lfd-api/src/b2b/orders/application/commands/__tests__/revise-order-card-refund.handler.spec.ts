@@ -10,7 +10,7 @@ import { content, placedOrder, reviseScene } from "./revision-scene.js";
 
 /**
  * **M1 sur une carte encaissée qui baisse** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R3 à R6) —
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) —
  * l'ordre nommé : hors verrou, aucun projet vivant ; sous le verrou, le
  * projet rejugé, le premier paiement adopté, les restes lus, la répartition ;
  * PUIS l'écriture ; PUIS une demande `amount` par paiement touché. Un refus

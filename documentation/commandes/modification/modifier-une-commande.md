@@ -4,10 +4,9 @@
 > le plan de modification (M1, M3, M4), le plan A2, le plan S2 de la hausse
 > par carte — tous retirés le 2026-11-10, citations repointées ici — et
 > l'architecture des avenants d'août (retirée). Chaque phrase de la
-> partie 2 a été confrontée au code le 2026-11-10. La hausse d'une commande
-> payée par carte est en production depuis le 2026-11-10 (§2.7) ; ce qui est
-> **en cours** — la baisse par carte — est marqué comme tel et renvoie à son
-> plan.
+> partie 2 a été confrontée au code le 2026-11-10. La hausse et la baisse d'une
+> commande payée par carte sont en production depuis le 2026-11-10 (§2.7) ;
+> le plan S1 de la baisse y est fondu et retiré le 2026-11-10.
 
 ## Partie 1 — l'explication simple
 
@@ -79,14 +78,13 @@ commerciale. Une seule demande en attente par commande.
 
 ### Et la carte ?
 
-| Ce qui existe                                                                                           | État                                                         |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Payer, puis rembourser tout ou partie : le bloc `card-payment` (lots P0 et P1)                          | ✅ en production                                             |
-| Modifier une commande au compte ou à total nul                                                          | ✅ en production                                             |
-| **La hausse** : le client paie la différence sur le même écran (ci-dessous, et §2.7)                    | ✅ en production depuis le 2026-11-10                        |
-| Une baisse, ou un changement à total égal, sur une commande carte : refusée, « annulez et recommandez » | ✅ (c'est le refus qui est en production)                    |
-| **La baisse** : la différence remboursée tout de suite ([`plan-s1-la-baisse.md`](plan-s1-la-baisse.md)) | 🚧 **en cours**                                              |
-| Une baisse sous le bon de fidélité imputé (lot C-2b)                                                    | 📝 non bâti ; refusée aujourd'hui, au compte comme par carte |
+| Ce qui existe                                                                                  | État                                                         |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Payer, puis rembourser tout ou partie : le bloc `card-payment` (lots P0 et P1)                 | ✅ en production                                             |
+| Modifier une commande au compte ou à total nul                                                 | ✅ en production                                             |
+| **La hausse** : le client paie la différence sur le même écran (ci-dessous, et §2.7)           | ✅ en production depuis le 2026-11-10                        |
+| **La baisse** : la différence remboursée tout de suite, et le total égal sans argent (§2.7.12) | ✅ en production depuis le 2026-11-10                        |
+| Une baisse sous le bon de fidélité imputé (lot C-2b)                                           | 📝 non bâti ; refusée aujourd'hui, au compte comme par carte |
 
 ### La hausse payée par carte
 
@@ -321,11 +319,13 @@ transaction : port `AccountOrderRevaluation` →
 
 ### 2.7 L'argent par carte
 
-Une commande dont le règlement est carte (`isCardSettlement`) ne passe
-**jamais** par le chemin de M1 : `ReviseOrderCommand` la refuse
-(`CardOrderNotRevisableError`, avec sa raison). Le seul chemin ouvert est la
-**hausse**, en production depuis le 2026-11-10 ; la baisse est en cours
-(§2.7.12). Fichiers sous `b2b/orders/` sauf mention.
+Une commande dont le règlement est carte (`isCardSettlement`) a deux
+chemins. La **hausse** passe par un projet que le client paie (§2.7.1 à
+§2.7.11). La **baisse** et le **total égal** passent par le chemin de M1,
+`ReviseOrderCommand`, qui écrit la révision et demande le remboursement dans
+la même transaction (§2.7.12) ; une hausse y est refusée
+(`CardOrderNotRevisableError`, avec sa raison). Fichiers sous `b2b/orders/`
+sauf mention.
 
 #### 2.7.1 Le projet — `order_revision_proposal`
 
@@ -390,7 +390,7 @@ Le chemin de la demande M4 reste fermé à la carte : `GetOrderRevisabilityQuery
 porte un `purpose` (`revise` pour la boutique, `request` pour
 `order-changeable-order.reader.ts`), et `request` garde `card_settled` sur
 toute carte. Le devis et `revisabilityOf` annoncent le règlement :
-« X € à payer » sur une hausse, le refus sur une baisse.
+« X € à payer » sur une hausse, « X € vous seront remboursés » sur une baisse.
 
 #### 2.7.3 Le geste — `ProposeCardIncreaseCommand`
 
@@ -573,12 +573,68 @@ transition (`card-increase-facts.ts`).
 - Les routes de la boutique et le contrat de leur réponse.
 - `CardOrderNotRevisableError` et ses raisons, lues par les écrans.
 
-#### 2.7.12 La baisse — en cours
+#### 2.7.12 La baisse
 
-La différence remboursée tout de suite, par montant
-(`CardRefunds.requestAmount`, lot P1) :
-[`plan-s1-la-baisse.md`](plan-s1-la-baisse.md), qui **ne fait pas foi ici**.
-Le bon de fidélité sous la différence — lot C-2b, plus tard.
+En production depuis le 2026-11-10 (`1cbe78f37`). Le client a payé 40 € et
+retire une tarte : la commande passe à 32 € **tout de suite**, et 8 € sont
+rendus sur sa carte, sans geste de sa part. Pas de projet, pas d'attente :
+la modification et la demande de remboursement s'écrivent ensemble.
+
+```mermaid
+sequenceDiagram
+  participant C as Client ou équipe
+  participant O as Commande
+  participant P as Bloc carte
+  participant S as Stripe
+  C->>O: modifie, 32 € au lieu de 40 €
+  O->>O: écrit la révision, commande à 32 €
+  O->>P: rendre 8 €, demande par montant
+  O-->>C: commande modifiée, 8 € remboursés
+  P->>S: remboursement, après validation
+```
+
+- **Le tri.** `revisionSettlementOf` (`domain/entities/revision-settlement.ts`)
+  rend `{ kind: "card_refund", refundCents }` sur une baisse d'une carte
+  encaissée, `same_settlement` à total égal (aucun argent ne bouge), et
+  refuse une carte `refunded` (`card_not_revisable`, raison `refunded`).
+  `Order.revise` admet `same_settlement` et `card_refund` ; le règlement
+  remonte par `RecomposedRevision` jusqu'au handler, qui ne recalcule rien.
+- **Le périmètre.** Celui de la hausse : avant l'inscription au fournil,
+  hors stock, hors départ incomplet décidé ; le client avant l'heure limite,
+  l'équipe avant l'inscription. **L'équipe baisse aussi** une commande
+  carte ; c'est la seule différence avec la hausse.
+- **Aucune hausse vivante.** Une baisse, ou un changement à total égal, est
+  refusée tant qu'un projet de la commande est `awaiting_payment`, `ready`
+  ou `stalled` (`RevisionProposalPendingError`), relu sous le verrou par
+  `lockLiveOf`. On ne touche jamais à l'argent d'un complément que sa hausse
+  attend.
+- **Ce qui se rend.** Le premier paiement (`OrderCardPayments.firstOf`,
+  adopté d'abord par `ensureFirst` s'il date d'avant P0) et les compléments
+  des projets `applied` (`CardIncreaseProposalReader.appliedPaymentsOf`),
+  **du plus récent au plus ancien**, chacun jusqu'à son reste
+  (`splitCardRefund`, `domain/services/revision-card-refund.ts`). Une
+  hausse appliquée puis une baisse rend donc d'abord sur le complément.
+- **L'ordre**, dans `RevisionCardRefund`
+  (`application/services/revision-card-refund.ts`) : sous le verrou de la
+  commande et avant toute écriture, le projet vivant rejugé, les restes lus,
+  la répartition calculée ; puis la révision écrite ; puis une demande
+  `requestAmount` par paiement touché (nature `adjustment`, raison
+  `revision` — une valeur écrite, qui ne se renomme plus). Restes
+  insuffisants : `CardRefundNotCoveredError`, qui nomme le geste de sortie
+  (un remboursement arrêté à relancer par l'équipe, ou un remboursement en
+  cours à laisser finir).
+- **Plusieurs baisses** s'additionnent : chacune est une demande à part, sur
+  les restes du moment.
+- **Le remboursement** est celui de P1 : émis après validation, relancé
+  s'il échoue, visible dans le bandeau des remboursements de la fiche
+  (« Relancer », « Rendu autrement »).
+- **Les écrans.** La boutique et le back-office annoncent « X € vous seront
+  remboursés sur votre carte » au devis et après validation.
+
+**Ce qui reste refusé** : une carte pas encore payée ; une baisse sous la
+part d'un bon de fidélité (`RevisionBelowVoucherError`, lot C-2b, plus
+tard) ; la demande après l'heure limite (M4) sur une commande carte, qui
+demanderait de chiffrer la demande avant de la recevoir — reprise avec S3.
 
 ### 2.8 Les autres blocs
 

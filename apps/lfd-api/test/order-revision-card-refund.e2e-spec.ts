@@ -1,6 +1,6 @@
 /**
  * **La baisse d'une commande payée par carte, sur le vrai Postgres** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, lot S1.a).
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12).
  *
  * Ce que seul le vrai chemin prouve : la révision et sa demande `amount`
  * s'écrivent dans la même transaction, et le prestataire n'est appelé

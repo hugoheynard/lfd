@@ -1,7 +1,8 @@
 /**
- * **La baisse carte dans le temps, sur le vrai Postgres** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, lot S1.a, R4,
- * R6, R8, R9, R10).
+ * **La baisse carte dans le temps, sur le vrai Postgres** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12 :
+ * la répartition, les baisses qui s'additionnent, la hausse puis la baisse,
+ * le bon).
  *
  * Ce que seul le vrai chemin prouve : la baisse après une hausse appliquée
  * rend sur le complément et la facture tombe juste ; deux baisses

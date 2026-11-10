@@ -90,7 +90,7 @@ export type AdminOrderRevisability =
 /**
  * **Pourquoi une révision d'une commande payée par carte ne se fait pas**
  * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2 ;
- * plan `documentation/commandes/modification/plan-s1-la-baisse.md`, R12) — un
+ * plan `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) — un
  * premier paiement pas encore encaissé, une carte déjà remboursée en entier
  * (`refunded`), ou une hausse composée par l'équipe (« demandez au client de
  * modifier sa commande, ou passez une seconde commande »). Un total égal se

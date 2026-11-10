@@ -3,7 +3,7 @@ import { splitCardRefund, type CardRefundSplitInput } from "../revision-card-ref
 
 /**
  * **La répartition d'une baisse sur les paiements** (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R6) — pure : du
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) — pure : du
  * plus récent au plus ancien, chacun jusqu'à son reste, la somme exacte ; le
  * refus nomme le geste de sortie réel.
  */

@@ -19,7 +19,7 @@ import { RevisionCardRefund } from "../../services/revision-card-refund.js";
 
 /**
  * Doubles de l'argent d'une baisse carte dans M1 (plan
- * `documentation/commandes/modification/plan-s1-la-baisse.md`, R3 à R6),
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12),
  * écrits à la main en héritant des ports. Chaque geste est posé au `trace`
  * de la scène de révision : l'ordre lire → refuser → écrire → demander se
  * lit dessus.

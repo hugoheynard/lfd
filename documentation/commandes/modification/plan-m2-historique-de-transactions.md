@@ -10,7 +10,7 @@
 > l'admin, réouverture) sont à faire par Hugo. **S2 (la hausse)** est
 > **en production depuis le 2026-11-10** (`f55ad8e6a`) : décrite au présent dans
 > [`modifier-une-commande.md`](modifier-une-commande.md), §2.7, son plan retiré ;
-> puis S1 ([`plan-s1-la-baisse.md`](plan-s1-la-baisse.md)), S3.
+> puis S1 (`modifier-une-commande.md` §2.7.12), S3.
 
 > **Version 14, 2026-11-10** — P0 est **bâti et déployé en production** (§4.9). `vitruve` sur la v13 : **« rien ne bloque »** ; trois incohérences de texte et des précisions, corrigées ici (§15 nonies). **Le bâti de P1 commence sur cette version.** La v12 a eu un bloquant de spécification (la source du bandeau) et cinq règles manquantes (§15 octies), toutes écrites ici. La v11 a eu un bloquant de détail (une requête sur une colonne qui n'existe pas) et six sérieux de précision (§15 septies) ; `vitruve` y a déclaré conformes l'union `onRefundOutcome` et l'ordre des verrous. **Décision de Hugo (2026-11-10) : P1 se déploie BOUTIQUE FERMÉE, en pré-release** — toute la mécanique de « fenêtre de bascule » des v9 et v10 (relais, rattrapage borné, colonne miroir, abonné déménagé, champ à côté du contrat) est **retirée** et remplacée par une condition de déploiement vérifiée à la main (§5.2) ; ce que `vitruve` avait de structurel sur la v10 (§15 quinquies) est intégré (§15 sexies). Versions 7 à 10 : `599b24732`, `923f4e4cf`, v9 et v10 non commitées. Le plan **unique** de M2, écrit après la
 > relecture complète du paiement et du remboursement
