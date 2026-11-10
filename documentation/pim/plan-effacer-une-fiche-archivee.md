@@ -20,25 +20,42 @@ familles viendront sur le même socle (§4).
 
 ### Ce qu'« avoir servi » veut dire pour une fiche
 
-Une fiche a servi dès qu'**une trace d'elle existe hors du référentiel**, ou
-qu'elle a été **montrée au monde**. Elle est donc **retenue** (non effaçable)
-si l'une de ces choses est vraie :
+**Hugo, 2026-11-10 : « publiée vers la plateforme, ça ne doit pas bloquer si
+ça n'a jamais été vendu ».** Le critère est donc la **vente**, pas
+l'exposition. Les traces d'une fiche se rangent en trois familles :
 
-| Retenue                                                                          | Où ça se lit                                                                                        |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| elle n'est pas archivée                                                          | `product.status ≠ archived`                                                                         |
-| un de ses SKU (fiche ou déclinaisons) apparaît dans une ligne de commande        | `public.order_lines.sku` (texte, sans clé)                                                          |
-| un de ses SKU apparaît dans le miroir de la plateforme                           | `public.catalog_items`, `catalog_entries`, `catalog_price_history`, réservations                    |
-| elle a été publiée vers la plateforme                                            | `pim.b2b_channel_binding`                                                                           |
-| un de ses SKU figure dans une révision **publiée** du catalogue                  | `pim.catalog_revision_item` × `catalog_revision_publication`                                        |
-| un de ses SKU est cité par une mercuriale, une grille, une règle de prix, un bon | `public.price_rules.scope_id`, grilles JSON, `volume_*`, `price_floor`, `bundles`                   |
-| …par une promotion, la vitrine, une suggestion, un abonnement, un réassort       | `promotion_scope_rules.target_id`, `storefront.*`, `staff_suggestions`, `subscriptions`, `resupply` |
-| …par le fournil, le colisage, la livraison, la croissance                        | les tables à `sku` de `production`, `packing`, `delivery`, `growth`                                 |
-| elle est l'origine ou le fruit d'un détachement de déclinaison                   | `product.origin_variant_id`, `product_variant.detached_to_product` (clés `RESTRICT`)                |
-| un de ses SKU est dans une opération ou une limite de commande                   | `pim.operation_item.sku`, `pim.order_time_limit.scope_id`                                           |
+**1. Ce qui RETIENT** (la fiche ne s'efface pas) — toute trace d'une vente ou
+de ce qui en découle, et les liens de parenté :
 
-Une fiche archivée **sans aucune** de ces traces est une fiche créée par
-erreur ou en double, jamais vendue, jamais montrée : elle s'efface.
+| Retenue                                                              | Où ça se lit                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| elle n'est pas archivée                                              | `product.status ≠ archived`                                                          |
+| un de ses SKU (fiche ou déclinaisons) est dans une ligne de commande | `public.order_lines.sku` (texte, sans clé)                                           |
+| …dans une réservation du miroir                                      | `public.catalog_item_reservation` (clé `RESTRICT` vers l'article)                    |
+| …dans le fournil, le colisage, la livraison, la croissance           | les tables à `sku` de `production`, `packing`, `delivery`, `growth`                  |
+| …dans un abonnement, un réassort, un bon de livraison                | `subscriptions`, `resupply`, `delivery_notes`                                        |
+| elle est l'origine ou le fruit d'un détachement de déclinaison       | `product.origin_variant_id`, `product_variant.detached_to_product` (clés `RESTRICT`) |
+
+**2. Ce qui SE NETTOIE avec elle** — ce que le référentiel et le miroir de la
+plateforme possèdent : la fiche, ses déclinaisons et leurs satellites ; le
+**binding** de publication ; et, côté plateforme, ses lignes du miroir
+(`catalog_items`, `catalog_entries`, `catalog_price_history`, les décisions
+par article `catalog_item_override` en cascade) — par un fait durable
+`pim.catalog_product_deleted` que `b2b/catalog` écoute, avec le signal
+`ShelfChanges` (porte `shelf-writes`).
+
+**3. Ce qui RESTE ORPHELIN, listé** — les réglages qui visent le SKU par
+identifiant opaque, sans clé : règle de prix, plancher, palier, grille de
+mercuriale, promotion, placement de vitrine, suggestion, opération, limite
+de commande. **Exactement ce qu'une famille archivée laisse déjà derrière
+elle** (`settings.prisma` : « une famille retirée laisse une règle
+orpheline »). La page les affiche en **avertissement**, sans bloquer, et le
+fait `product.deleted` les inscrit au journal pour qu'on puisse les
+nettoyer ensuite.
+
+Les **révisions publiées** sont de l'histoire : elles citent le SKU en
+texte, survivent à l'effacement et se lisent encore — ni retenue, ni
+nettoyage.
 
 ### Pourquoi le référentiel ne peut pas le savoir seul, et comment il le demande
 
@@ -55,8 +72,10 @@ que **chaque bloc qui range un SKU implémente pour ses tables** (`b2b` :
 commandes, miroir, tarifs, promotions, vitrine, suggestions, abonnements,
 réassort ; `production` ; `packing` ; `delivery` ; `growth`) et
 qu'`appBootstrap` compose en un seul lecteur (`composite`, la figure de
-`composite-media-carriers.ts`). Le référentiel ajoute ses propres retenues
-(révision publiée, binding, opération, limite, détachement). Un bloc qui
+`composite-media-carriers.ts`). Le référentiel ajoute sa propre retenue (le détachement) et ses propres
+avertissements (opération, limite de commande). Le même port rend les
+**avertissements** avec leur `kind`, et c'est le genre qui dit s'il retient
+ou s'il avertit — la liste est écrite dans le canal, pas dans la page. Un bloc qui
 n'implémente pas le port n'est **pas** interrogé : c'est donc le bâti qui
 tient la liste, et un test compte les implémenteurs contre la liste des
 schémas qui ont une colonne `sku` (lue dans le catalogue Postgres, comme
@@ -82,8 +101,12 @@ transaction :
 5. **ne touche pas** `sku_registry` : le SKU reste pris pour toujours
    (`06-identifiants-et-sku.md`, « jamais libéré »), et la ligne garde
    `owner_id` comme trace ;
-6. n'émet **rien** vers la plateforme : une fiche effaçable n'y a, par
-   définition, aucune ligne.
+6. publie, **dans la même transaction**, le fait durable
+   `pim.catalog_product_deleted` (SKU de la fiche et des déclinaisons) ;
+   `b2b/catalog` l'écoute (`@DurableHandler`) et efface ses lignes du miroir
+   (`catalog_items` et ce qui en cascade, `catalog_entries`,
+   `catalog_price_history`), sous `ShelfChanges` ; une réservation vivante
+   l'aurait retenue en amont (point 2).
 
 ### Ce qui change dans les gardes
 
@@ -91,7 +114,9 @@ transaction :
   d'effacement entre dans sa **liste admise, daté, avec sa raison** (le seul
   chemin qui efface, et il ne libère pas le SKU) ; la porte gagne la
   vérification que `sku_registry` n'est **jamais** effacé par ce chemin.
-- `prisma-model-ownership` : l'écrivain des modèles du PIM reste le PIM.
+- `prisma-model-ownership` : l'écrivain des modèles du PIM reste le PIM ;
+  celui du miroir reste `b2b/catalog`, qui efface ses propres lignes sur le
+  fait.
 - Le CLAUDE.md § 3 (« pas de DELETE physique sur les agrégats métier ») gagne
   l'exception nommée : **une fiche archivée sans aucune trace**, par sa
   commande, après revérification — et dit pourquoi une archive qui n'a
@@ -103,8 +128,9 @@ transaction :
 `pim_catalog:write` pour effacer) : la liste des fiches archivées, chacune
 avec son verdict — **Effaçable**, ou **Retenue par** la liste des retenues
 (« 12 lignes de commande », « révision publiée du 2026-09-03 », « vitrine ») ;
-un bouton « Effacer » sur les effaçables seulement, avec confirmation qui
-répète le SKU et le nom ; après l'effacement, la fiche disparaît de la liste
+les avertissements (« visée par 1 promotion, 2 règles de prix ») sous le
+verdict ; un bouton « Effacer » sur les effaçables seulement, avec
+confirmation qui répète le SKU, le nom et les avertissements ; après l'effacement, la fiche disparaît de la liste
 et le journal porte `product.deleted`. Une fiche retenue ne s'efface pas
 d'ici : elle reste archivée, c'est son état final.
 
@@ -136,16 +162,23 @@ d'ici : elle reste archivée, c'est son état final.
 ### Les lots
 
 - **E1 — le canal et le verdict** : `pim/channels/holds/` (`SkuHoldsReader`,
-  `SkuHold`) ; les retenues internes du PIM ; les implémenteurs par bloc
-  (`b2b`, `production`, `packing`, `delivery`, `growth`) et le composite
-  d'`appBootstrap` ; le test « toute table à SKU a son implémenteur » ; la
-  requête `ListArchivedProductsWithHolds` ; e2e sur une fiche retenue par une
-  commande, une par une révision publiée, une effaçable.
+  `SkuHold { sku, kind, severity: retains | warns, count, label }`) ; les
+  retenues et avertissements internes du PIM ; les implémenteurs par bloc
+  (`b2b` : commandes, réservations, abonnements, réassort, bons, tarifs,
+  promotions, vitrine, suggestions ; `production` ; `packing` ; `delivery` ;
+  `growth`) et le composite d'`appBootstrap` ; le test « toute table à SKU a
+  son implémenteur » ; la requête `ListArchivedProductsWithHolds` ; e2e sur
+  une fiche retenue par une commande, une publiée jamais vendue (effaçable,
+  avec avertissements), une effaçable sans rien.
 - **E2 — l'effacement** : `DeleteArchivedProductCommand`, le dépôt (ordre des
-  satellites, verrou, journal `product.deleted` + phrase au back-office), la
-  liste admise de `sku-never-recycled`, le CLAUDE.md ; e2e : effacée, journal
-  présent, registre intact, révision encore lisible, refus nommé si une
-  retenue est apparue entre le verdict et le geste.
+  satellites, verrou, journal `product.deleted` avec les avertissements +
+  phrase au back-office), le fait `pim.catalog_product_deleted` dans
+  `pim/channels/b2b-platform/` et son abonné durable dans `b2b/catalog`
+  (effacement du miroir sous `ShelfChanges`), la liste admise de
+  `sku-never-recycled`, le CLAUDE.md ; e2e : effacée, journal présent,
+  registre intact, révision encore lisible, miroir vidé de ses lignes après
+  drainage, refus nommé si une retenue est apparue entre le verdict et le
+  geste.
 - **E3 — la page** (Angular, fold-ng) : `/pim/catalogue/archives`, verdicts,
   bouton, confirmation, rafraîchissement.
 - **Plus tard, même socle** : la déclinaison arrêtée (retenues : les mêmes
@@ -166,9 +199,8 @@ d'ici : elle reste archivée, c'est son état final.
 
 ### Ce qu'on n'efface PAS, et pourquoi
 
-Une fiche **publiée un jour puis archivée** — même jamais commandée — est
-retenue : elle a une ligne dans le miroir et dans une révision publiée. La
-retirer demanderait un fait « supprimée » que la plateforme ne connaît pas,
-et un effacement dans le miroir soumis à ses propres retenues
-(réservations, décisions de prix). C'est un **second plan**, si le besoin se
-confirme après le premier tri ; d'ici là, l'archivage est son état final.
+Une fiche **vendue une fois** — une seule ligne de commande, un seul passage
+au fournil — ne s'efface jamais : l'instantané de la commande se suffit,
+mais l'histoire du référentiel (révisions, journal) et celle de la
+plateforme (historique des prix, croissance) la citent, et l'effacer
+reviendrait à nier une vente. Elle reste archivée, c'est son état final.
