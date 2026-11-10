@@ -176,8 +176,15 @@ describe('CardComplementPayment', () => {
     expect(abandoned).not.toHaveBeenCalled();
   });
 
+  /**
+   * Régression : l'échéance était « maintenant − 1 ms », fabriquée APRÈS la
+   * création du composant, qui note l'heure à sa naissance — sur une machine
+   * lente, plus d'une milliseconde passait entre les deux, et l'échéance tombait
+   * dans le futur du composant (rouge en CI seulement, 2026-11-10). Une
+   * échéance nettement passée dit l'intention sans dépendre de la vitesse.
+   */
   it('le délai passé ferme le formulaire', async () => {
-    const { el } = await mount({ expiresInMs: -1 });
+    const { el } = await mount({ expiresInMs: -MINUTE_MS });
     expect(el.querySelector('[data-expired]')).not.toBeNull();
     expect(el.querySelector('[data-pay]')).toBeNull();
   });
