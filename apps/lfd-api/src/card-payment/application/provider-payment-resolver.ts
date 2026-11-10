@@ -2,7 +2,11 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { IdGenerator } from "../../platform/id/id-generator.js";
 import { Clock } from "../../platform/time/clock.js";
-import { SubjectSettlements, type SubjectClaim } from "../channels/subjects/index.js";
+import {
+  type SubjectClaim,
+  type SubjectSettlement,
+  SubjectSettlements,
+} from "../channels/subjects/index.js";
 import { CardPayment } from "../domain/entities/card-payment.js";
 import { CardPaymentRepository } from "../domain/ports/card-payment.repository.js";
 import type { PaymentAccount } from "../domain/value-objects/payment-account.js";
@@ -35,17 +39,26 @@ export class ProviderPaymentResolver {
     for (const settlement of this.settlements.all()) {
       const claim = await settlement.claim(account.name, providerRef);
       if (claim !== null) {
-        return this.adopt(account, providerRef, claim);
+        return this.adopt(account, providerRef, settlement, claim);
       }
     }
     return null;
   }
 
+  /**
+   * Le sujet prend SON verrou entre la revendication et l'`INSERT` (§3.3,
+   * v9) — sans quoi une commande du commerce qui tient déjà le sien et adopte
+   * la même référence s'interbloquerait avec ce webhook ; et l'état qu'il
+   * déclare est RELU sous ce verrou, jamais celui d'avant.
+   */
   private async adopt(
     account: PaymentAccount,
     providerRef: string,
-    claim: SubjectClaim,
+    settlement: SubjectSettlement,
+    claimed: SubjectClaim,
   ): Promise<CardPayment | null> {
+    await settlement.lockSubject(claimed.subject);
+    const claim = (await settlement.claim(account.name, providerRef)) ?? claimed;
     const payment = CardPayment.adopt(
       {
         id: this.ids.next(),

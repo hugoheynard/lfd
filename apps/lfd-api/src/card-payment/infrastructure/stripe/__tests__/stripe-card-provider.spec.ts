@@ -66,7 +66,7 @@ describe("StripeCardProvider.parseWebhook — vérifié avec le secret DU COMPTE
   });
 
   it.each(["refund.created", "refund.updated", "refund.failed"])(
-    "%s → refund, réduit comme RecordOrderRefundCommand le lit",
+    "%s → refund, réduit pour le constat du bloc",
     (type) => {
       expect(
         parse(type, {
@@ -91,6 +91,43 @@ describe("StripeCardProvider.parseWebhook — vérifié avec le secret DU COMPTE
       });
     },
   );
+
+  /** P1 (§3.4, §5.2) : le constat retrouve la demande par la métadonnée que NOUS posons. */
+  it("lit la demande et sa génération sur les métadonnées du remboursement", () => {
+    expect(
+      parse("refund.updated", {
+        object: "refund",
+        id: "re_1",
+        amount: 1_000,
+        currency: "eur",
+        status: "pending",
+        payment_intent: "pi_1",
+        created: CREATED,
+        metadata: { lfd_refund_request: "req_1", lfd_generation: "2", lfd_order_id: "order:ord_1" },
+      }),
+    ).toMatchObject({ kind: "refund", ours: { requestId: "req_1", generation: 2 } });
+  });
+
+  it.each([
+    ["sans métadonnée (tableau de bord)", {}],
+    ["une génération illisible", { lfd_refund_request: "req_1", lfd_generation: "deux" }],
+    ["une génération nulle", { lfd_refund_request: "req_1", lfd_generation: "0" }],
+    ["une demande vide", { lfd_refund_request: "", lfd_generation: "1" }],
+  ])("%s : pas de demande — jamais celle d'un autre", (_, metadata) => {
+    const event = parse("refund.updated", {
+      object: "refund",
+      id: "re_1",
+      amount: 1_000,
+      currency: "eur",
+      status: "pending",
+      payment_intent: "pi_1",
+      created: CREATED,
+      metadata,
+    });
+
+    expect(event).toMatchObject({ kind: "refund" });
+    expect("ours" in event).toBe(false);
+  });
 
   it("un remboursement sans intention, ou d'un statut inconnu, est `other`", () => {
     const base = { object: "refund", id: "re_1", amount: 1, currency: "eur", created: CREATED };

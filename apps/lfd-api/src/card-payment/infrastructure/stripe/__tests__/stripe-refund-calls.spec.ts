@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 
-import type { RefundRemainderParams } from "../../../domain/ports/card-provider-types.js";
+import type { RefundParams } from "../../../domain/ports/card-provider-types.js";
 import { REFUND_METADATA, StripeRefundCalls } from "../stripe-refund-calls.js";
 
 /**
@@ -53,10 +53,13 @@ class FakeStripeHttp {
 // P0) : l'intention passe à part (`PI`), la recherche et la création restent.
 const PI = "pi_1";
 
-const PARAMS: RefundRemainderParams = {
-  key: "lfd-order-refund:ord_1:2:1",
-  requestId: "ord_1",
+/** Une `remainder` : sans montant, la clé d'idempotence unique du §3.5 (v14). */
+const PARAMS: RefundParams = {
+  key: "lfd-card-refund:req_1:2:1",
+  requestId: "req_1",
   generation: 2,
+  subjectLabel: "order:ord_1",
+  amountCents: null,
 };
 
 /** 2030-01-10T09:00:00Z, en secondes Unix — comparé à rien d'autre qu'à sa conversion. */
@@ -72,9 +75,9 @@ function refundObject(overrides: Record<string, unknown> = {}) {
     payment_intent: "pi_1",
     created: CREATED,
     metadata: {
-      [REFUND_METADATA.request]: "ord_1",
+      [REFUND_METADATA.request]: "req_1",
       [REFUND_METADATA.generation]: "2",
-      [REFUND_METADATA.order]: "ord_1",
+      [REFUND_METADATA.order]: "order:ord_1",
     },
     ...overrides,
   };
@@ -94,11 +97,11 @@ function callsWith(replies: Reply[]) {
   return { http, calls: new StripeRefundCalls(client) };
 }
 
-describe("StripeRefundCalls.refundRemainder — chercher d'abord", () => {
+describe("StripeRefundCalls.refund — chercher d'abord", () => {
   it("retient un re_… de la demande ET de la génération courante, sans rien créer", async () => {
     const { http, calls } = callsWith([list([refundObject()])]);
 
-    await expect(calls.refundRemainder(PI, PARAMS)).resolves.toEqual({
+    await expect(calls.refund(PI, PARAMS)).resolves.toEqual({
       kind: "issued",
       refund: {
         refundId: "re_1",
@@ -118,7 +121,7 @@ describe("StripeRefundCalls.refundRemainder — chercher d'abord", () => {
     [
       "d'une génération précédente",
       refundObject({
-        metadata: { [REFUND_METADATA.request]: "ord_1", [REFUND_METADATA.generation]: "1" },
+        metadata: { [REFUND_METADATA.request]: "req_1", [REFUND_METADATA.generation]: "1" },
       }),
     ],
     ["échoué", refundObject({ status: "failed" })],
@@ -136,18 +139,18 @@ describe("StripeRefundCalls.refundRemainder — chercher d'abord", () => {
       { status: 200, body: refundObject({ id: "re_2" }) },
     ]);
 
-    const issuance = await calls.refundRemainder(PI, PARAMS);
+    const issuance = await calls.refund(PI, PARAMS);
 
     expect(issuance).toMatchObject({ kind: "issued", refund: { refundId: "re_2" } });
     expect(http.seen.map((request) => request.method)).toEqual(["GET", "POST"]);
   });
 });
 
-describe("StripeRefundCalls.refundRemainder — créer", () => {
+describe("StripeRefundCalls.refund — créer", () => {
   it("sous la clé d'idempotence, SANS montant, avec les métadonnées de la demande", async () => {
     const { http, calls } = callsWith([list([]), { status: 200, body: refundObject() }]);
 
-    await calls.refundRemainder(PI, PARAMS);
+    await calls.refund(PI, PARAMS);
 
     const create = http.seen[1];
     expect(create?.path).toBe("/v1/refunds");
@@ -155,9 +158,19 @@ describe("StripeRefundCalls.refundRemainder — créer", () => {
     expect(create?.body.get("payment_intent")).toBe("pi_1");
     expect(create?.body.has("amount")).toBe(false);
     expect(create?.body.get("reason")).toBe("requested_by_customer");
-    expect(create?.body.get(`metadata[${REFUND_METADATA.request}]`)).toBe("ord_1");
+    expect(create?.body.get(`metadata[${REFUND_METADATA.request}]`)).toBe("req_1");
     expect(create?.body.get(`metadata[${REFUND_METADATA.generation}]`)).toBe("2");
-    expect(create?.body.get(`metadata[${REFUND_METADATA.order}]`)).toBe("ord_1");
+    // P1 (§5.2) : le SUJET, plus l'identifiant de la demande — un ULID de demande
+    // se lirait comme un numéro de commande chez Stripe.
+    expect(create?.body.get(`metadata[${REFUND_METADATA.order}]`)).toBe("order:ord_1");
+  });
+
+  it("une `amount` porte SON montant (§3.5)", async () => {
+    const { http, calls } = callsWith([list([]), { status: 200, body: refundObject() }]);
+
+    await calls.refund(PI, { ...PARAMS, amountCents: 1_200 });
+
+    expect(http.seen[1]?.body.get("amount")).toBe("1200");
   });
 
   it.each<[string, Reply, object]>([
@@ -207,13 +220,13 @@ describe("StripeRefundCalls.refundRemainder — créer", () => {
   ])("traduit le refus « %s »", async (_, reply, expected) => {
     const { calls } = callsWith([list([]), reply]);
 
-    await expect(calls.refundRemainder(PI, PARAMS)).resolves.toMatchObject(expected);
+    await expect(calls.refund(PI, PARAMS)).resolves.toMatchObject(expected);
   });
 
   it("une recherche qui échoue — après les DEUX reprises par requête — ne crée rien : `unavailable`", async () => {
     const { http, calls } = callsWith([]);
 
-    await expect(calls.refundRemainder(PI, PARAMS)).resolves.toMatchObject({ kind: "unavailable" });
+    await expect(calls.refund(PI, PARAMS)).resolves.toMatchObject({ kind: "unavailable" });
     // Le client est construit SANS reprise : les deux viennent des options par requête (C4.7).
     expect(http.seen.map((request) => request.method)).toEqual(["GET", "GET", "GET"]);
   });

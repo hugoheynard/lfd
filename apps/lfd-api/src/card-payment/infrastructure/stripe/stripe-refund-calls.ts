@@ -6,7 +6,8 @@ import {
   type IssuedRefund,
   type RefundIssuance,
   type RefundLookup,
-  type RefundRemainderParams,
+  type RefundLookupParams,
+  type RefundParams,
 } from "../../domain/ports/card-provider-types.js";
 
 // Copié de `b2b/payments/infrastructure/stripe-refund-calls.ts` le 2026-11-09
@@ -29,9 +30,10 @@ const PAGE_SIZE = 100;
 const MS_PER_SECOND = 1000;
 
 /**
- * Les métadonnées posées sur un `re_…` que NOUS émettons — 🔴 inchangées
+ * Les métadonnées posées sur un `re_…` que NOUS émettons — 🔴 clés inchangées
  * (plan M2, §3.5) : un remboursement émis par l'image d'avant le bloc doit se
- * retrouver par la même recherche.
+ * retrouver par la même recherche. Depuis P1, `lfd_order_id` porte le SUJET
+ * (`order:ord_1`), plus l'identifiant de la demande (§5.2).
  */
 export const REFUND_METADATA = {
   request: "lfd_refund_request",
@@ -56,10 +58,7 @@ const DEAD: ReadonlySet<string> = new Set(["failed", "canceled"]);
 export class StripeRefundCalls {
   constructor(private readonly client: Stripe) {}
 
-  async refundRemainder(
-    providerRef: string,
-    params: RefundRemainderParams,
-  ): Promise<RefundIssuance> {
+  async refund(providerRef: string, params: RefundParams): Promise<RefundIssuance> {
     assertOutsideTransaction("Stripe.refunds.create");
     const found = await this.findRefund(providerRef, params);
     if (found.kind === "found") {
@@ -69,15 +68,17 @@ export class StripeRefundCalls {
       return found;
     }
     try {
-      // 🔴 Sans `amount` : Stripe rend le reste remboursable, jamais plus (C4.4).
+      // 🔴 Sans `amount` pour une `remainder` : Stripe rend le reste
+      // remboursable, jamais plus (C4.4). Avec, pour une `amount` (§3.5).
       const refund = await this.client.refunds.create(
         {
           payment_intent: providerRef,
+          ...(params.amountCents === null ? {} : { amount: params.amountCents }),
           reason: "requested_by_customer",
           metadata: {
             [REFUND_METADATA.request]: params.requestId,
             [REFUND_METADATA.generation]: String(params.generation),
-            [REFUND_METADATA.order]: params.requestId,
+            [REFUND_METADATA.order]: params.subjectLabel,
           },
         },
         { ...REFUND_CALL_OPTIONS, idempotencyKey: params.key },
@@ -98,7 +99,7 @@ export class StripeRefundCalls {
    * Tous rounds confondus, toutes pages : c'est ce qui rend le rejeu sûr après
    * un `COMMIT` perdu, et au-delà des 24 h où Stripe garde une clé.
    */
-  async findRefund(providerRef: string, params: RefundRemainderParams): Promise<RefundLookup> {
+  async findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup> {
     assertOutsideTransaction("Stripe.refunds.list");
     try {
       const pages = this.client.refunds.list(
@@ -119,7 +120,7 @@ export class StripeRefundCalls {
 }
 
 /** De cette demande, de cette génération, et vivant. */
-function isOurs(refund: Stripe.Refund, params: RefundRemainderParams): boolean {
+function isOurs(refund: Stripe.Refund, params: RefundLookupParams): boolean {
   const metadata = refund.metadata ?? {};
   return (
     metadata[REFUND_METADATA.request] === params.requestId &&

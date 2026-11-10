@@ -87,6 +87,29 @@ export interface RefundRemainderParams {
 }
 
 /**
+ * Ce qu'on demande au prestataire pour une demande de remboursement (plan M2,
+ * §3.5) : la clé, la demande et sa génération (posées en métadonnée), le sujet
+ * (posé en métadonnée `lfd_order_id`, opaque : `order:ord_1`), et le montant —
+ * `null` pour une `remainder` : le prestataire rend ce qui reste, jamais plus.
+ */
+export interface RefundParams {
+  /** `lfd-card-refund:<requestId>:<generation>:<round>` — la clé d'idempotence (§3.5, v14). */
+  readonly key: string;
+  readonly requestId: string;
+  readonly generation: number;
+  /** Le sujet, tel qu'on le lit chez le prestataire ; jamais un identifiant de demande. */
+  readonly subjectLabel: string;
+  /** `null` : le reste du paiement ; sinon le montant exact d'une `amount`, en centimes. */
+  readonly amountCents: number | null;
+}
+
+/** Ce que la recherche filtre : un remboursement de CETTE demande, de CETTE génération. */
+export interface RefundLookupParams {
+  readonly requestId: string;
+  readonly generation: number;
+}
+
+/**
  * L'issue d'une demande de remboursement — jamais une exception :
  * `issued` (trouvé ou créé), `nothing_left` (tout est déjà rendu), `declined`
  * (refus définitif), `unavailable` (réseau, 5xx, 429, clé en cours, compte

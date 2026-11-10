@@ -2,14 +2,13 @@ import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { Journal } from "../../../platform/journal/journal.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import {
   CardPaymentCheckoutEvent,
-  CardPaymentProviderRefundEvent,
   CardPaymentUnmatchedFact,
   type ProviderRefund,
 } from "../../channels/facts/index.js";
-import type { CardPayment } from "../../domain/entities/card-payment.js";
 import {
   InvalidPaymentAccountError,
   UnknownCardAccountError,
@@ -27,6 +26,8 @@ import { CardProviders } from "../../domain/ports/card-providers.js";
 import { PaymentAccount } from "../../domain/value-objects/payment-account.js";
 import { IntentOutcomeRecorder } from "../intent-outcome-recorder.js";
 import { ProviderPaymentResolver } from "../provider-payment-resolver.js";
+import { unmatchedFact } from "../refunds/card-refund-journal.js";
+import { CardRefundObservation } from "../refunds/card-refund-observation.js";
 import { RecordProviderEventCommand } from "./record-provider-event.command.js";
 
 type Recording<E extends CardProviderEvent> = (account: PaymentAccount, event: E) => Promise<void>;
@@ -41,17 +42,16 @@ type Recording<E extends CardProviderEvent> = (account: PaymentAccount, event: E
  * - **encaissé / refusé** : le paiement est retrouvé par `(compte,
  *   référence)`, ou revendiqué par un sujet (§4.6) ; l'issue est appliquée
  *   dans l'ordre du §3.6 (`IntentOutcomeRecorder`) ; personne : `unmatched` ;
- * - **remboursement** : relayé à `b2b/orders` par le fait transitoire
- *   `provider_refund_event` (§4.2) — ou `unmatched`, que `b2b/payments` sonne ;
+ * - **remboursement** : constaté par le bloc lui-même (`CardRefundObservation`,
+ *   §6.3), dans l'ordre du §3.6 — plus de relais `provider_refund_event`
+ *   vers `b2b/orders` depuis P1 ; un paiement qu'aucun sujet ne porte :
+ *   `unmatched`, que `b2b/payments` sonne ;
  * - **page hébergée d'un lien** : relayée à `b2b/payments` (`checkout_event`,
  *   §4.5) — jamais un 200 muet ;
  * - **tout le reste** : `unmatched`, avec son type.
  *
- * @sans-journal Projection d'un événement du prestataire, pas un acte d'un
- * humain — comme `ConfirmOrderPaymentHandler` qu'il remplace. Ses traces sont
- * ses faits durables, écrits dans la même transaction ; le catalogue du
- * journal de `card-payment` (`packages/contracts/src/journal-facts/`) arrive
- * avec P1 (plan M2, §15 bis).
+ * Le journal de `card-payment` s'écrit sous la même unité de travail :
+ * `card_payment.unmatched` ici, les faits du remboursement par le constat.
  */
 @CommandHandler(RecordProviderEventCommand)
 export class RecordProviderEventHandler implements ICommandHandler<
@@ -74,7 +74,9 @@ export class RecordProviderEventHandler implements ICommandHandler<
     private readonly providers: CardProviders,
     private readonly resolver: ProviderPaymentResolver,
     private readonly outcomes: IntentOutcomeRecorder,
+    private readonly refunds: CardRefundObservation,
     private readonly durable: DurablePublisher,
+    private readonly journal: Journal,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -104,19 +106,15 @@ export class RecordProviderEventHandler implements ICommandHandler<
   }
 
   private async onRefund(account: PaymentAccount, event: RefundEvent): Promise<void> {
-    const refund: ProviderRefund = {
-      refundId: event.refundId,
-      amountCents: event.amountCents,
-      currency: event.currency,
-      status: event.status,
-      refundedAt: event.createdAt,
-    };
-    const payment = await this.resolver.resolve(account, event.providerRef);
-    if (payment === null) {
-      await this.unmatched(account, event, event.providerRef, refund);
-      return;
+    if ((await this.refunds.observe(account, event)) === "unmatched") {
+      await this.unmatched(account, event, event.providerRef, {
+        refundId: event.refundId,
+        amountCents: event.amountCents,
+        currency: event.currency,
+        status: event.status,
+        refundedAt: event.createdAt,
+      });
     }
-    await this.durable.publish(refundRelay(account, event, payment, refund).durableFact());
   }
 
   private async onCheckout(account: PaymentAccount, event: CheckoutEvent): Promise<void> {
@@ -137,6 +135,7 @@ export class RecordProviderEventHandler implements ICommandHandler<
     providerRef: string | null,
     refund: ProviderRefund | null,
   ): Promise<void> {
+    await this.journal.append(unmatchedFact(account.name, event.eventId, event.eventType));
     await this.durable.publish(
       new CardPaymentUnmatchedFact(
         account.name,
@@ -175,21 +174,4 @@ export class RecordProviderEventHandler implements ICommandHandler<
     this.logger.warn(`Webhook refusé : compte d'encaissement inconnu (« ${name} »).`);
     return new UnknownCardAccountError(name);
   }
-}
-
-function refundRelay(
-  account: PaymentAccount,
-  event: RefundEvent,
-  payment: CardPayment,
-  refund: ProviderRefund,
-): CardPaymentProviderRefundEvent {
-  return new CardPaymentProviderRefundEvent(
-    account.name,
-    event.eventId,
-    payment.id,
-    event.providerRef,
-    payment.subject.type,
-    payment.subject.id,
-    refund,
-  );
 }

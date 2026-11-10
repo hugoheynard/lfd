@@ -21,4 +21,14 @@ export {
   type CheckoutOutcome,
   type ProviderRefund,
 } from "./card-payment-relay.facts.js";
+export {
+  CARD_PAYMENT_FULLY_REFUNDED,
+  CARD_PAYMENT_REFUND_FAILED,
+  CARD_PAYMENT_REFUND_REVERSED,
+  CARD_PAYMENT_REFUND_SUCCEEDED,
+  CardPaymentFullyRefundedFact,
+  CardPaymentRefundFact,
+  type CardPaymentRefundFactType,
+  type CardRefundFactSubject,
+} from "./card-payment-refund.facts.js";
 export { CardPaymentFactPayloadError } from "./fact-payload.js";

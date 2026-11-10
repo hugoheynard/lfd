@@ -115,6 +115,9 @@ import { PrismaOrderCancellationRepository } from "./infrastructure/prisma-order
 import { AdoptOrderPaymentHandler } from "./application/commands/adopt-order-payment.handler.js";
 import { OrderCardPayments } from "./application/services/order-card-payments.js";
 import { OrderSubjectSettlement } from "./application/services/order-subject-settlement.js";
+import { OrderRefundOutcomes } from "./application/services/order-refund-outcomes.js";
+import { OrderRefundStatusWriter } from "./domain/ports/order-refund-status.writer.js";
+import { PrismaOrderRefundStatusWriter } from "./infrastructure/prisma-order-refund-status.writer.js";
 import { OrderCardStandingReader } from "./domain/ports/order-card-standing.reader.js";
 import {
   OrderCardAdoption,
@@ -437,6 +440,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     AdoptOrderPaymentHandler,
     { provide: OrderCardStandingReader, useClass: PrismaOrderCardStandingReader },
     OrderSubjectSettlement,
+    // L'issue d'un remboursement par carte, rendue par `card-payment` au canal
+    // (plan M2, lot P1.b) : la vue, les faits et le journal de la commande.
+    OrderRefundOutcomes,
+    { provide: OrderRefundStatusWriter, useClass: PrismaOrderRefundStatusWriter },
     // L'annulation par l'équipe (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
     // C3) : le geste, son courriel, et ses deux ports — lire et écrire (ISP).
     // Le guichet du fournil vient de `ProductionDeskFeedModule`.

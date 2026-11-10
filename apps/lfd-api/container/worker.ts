@@ -647,6 +647,24 @@ async function triggerOrderRefundSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe les remboursements par carte dus (plan
+ * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * §6.8, `sweep-card-refunds`) : une demande dont l'exécuteur n'a pas abouti
+ * (prestataire injoignable, processus mort) est reprise ici, au plus 20 par
+ * passage. Sur le cron de RAFRAÎCHISSEMENT, À CÔTÉ de
+ * `admin/orders/refunds/sweep` jusqu'à ce que l'annulation bascule (lot P1.c)
+ * ; même porte et même jeton que la boîte d'envoi ; idempotent — le bail de
+ * l'exécuteur exclut deux appels au prestataire.
+ */
+async function triggerCardRefundSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/card-payments/sweep");
+}
+
+/**
  * Réveille le container et passe le balayage de la vitrine : la vue publique
  * comparée, par abonné, à la dernière empreinte émise, puis les notifications
  * dues envoyées, signées (doc `documentation/webhooks/vitrine.md`,
@@ -722,6 +740,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),
     triggerOrderRefundSweep(env),
+    triggerCardRefundSweep(env),
     triggerVitrineSweep(env),
   ]);
 }

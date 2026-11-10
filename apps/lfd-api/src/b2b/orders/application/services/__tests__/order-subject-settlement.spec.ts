@@ -5,8 +5,13 @@ import { OrderPaidFact } from "../../../domain/events/order-paid.fact.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
 import { CancelledOrderPaymentReader } from "../../../domain/ports/cancelled-order-payment.reader.js";
 import type { OrderCardStanding } from "../../../domain/ports/order-card-standing.reader.js";
+import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
+import { OrderRefundOutcomes } from "../order-refund-outcomes.js";
 import { OrderSubjectSettlement } from "../order-subject-settlement.js";
+import { RecordingRefundStatus } from "./order-refund-outcome-doubles.js";
 import {
   FixedStandings,
   RecordingLock,
@@ -37,6 +42,7 @@ function build(
 ) {
   const steps = new Steps();
   const durable = new RecordingDurable();
+  const journal = new RecordingJournal();
   const row = options.row === undefined ? standing() : options.row;
   const standings = new FixedStandings(row === null ? [] : [row]);
   const settlement = new OrderSubjectSettlement(
@@ -45,8 +51,16 @@ function build(
     settlingRepo(steps, options.crossed === undefined ? "ord_1" : options.crossed),
     new CancelledOrders(options.refundDue ?? null),
     durable,
+    new OrderRefundOutcomes(
+      standings,
+      new RecordingRefundStatus(),
+      journal,
+      durable,
+      new HeldAfterCommit(),
+      new RecordingPublisher(),
+    ),
   );
-  return { steps, durable, standings, settlement };
+  return { steps, durable, journal, standings, settlement };
 }
 
 /**
@@ -178,5 +192,45 @@ describe("OrderSubjectSettlement — ce que le bloc demande", () => {
       { subject: ORDER, amountCents: 2_340, role: "first", settled: "paid", providerRef: "pi_1" },
     ]);
     expect(standings.sinceAsked).toEqual([since]);
+  });
+});
+
+/** Le remboursement (plan M2, lot P1.b) : le verrou, et l'issue rendue au commerce. */
+describe("OrderSubjectSettlement — un remboursement", () => {
+  it("lockSubject prend le verrou de la commande, et rien d'autre", async () => {
+    const { steps, durable, settlement } = build();
+
+    await settlement.lockSubject(ORDER);
+
+    expect(steps.seen).toEqual(["lock:ord_1"]);
+    expect(durable.facts).toEqual([]);
+  });
+
+  it("onRefundOutcome délègue à la vue du remboursement : son journal, sous le numéro de la commande", async () => {
+    const { journal, settlement } = build();
+
+    await settlement.onRefundOutcome(ORDER, {
+      kind: "attempted",
+      requestId: "req_1",
+      generation: 1,
+      failure: "unavailable",
+      providerRef: null,
+      position: {
+        subject: ORDER,
+        chargedCents: 2_340,
+        refundedCents: 0,
+        refundedByNature: { return: 0, adjustment: 0, unattributed: 0 },
+        inFlightByForm: { remainder: 0, amount: 0, unattributed: 0 },
+      },
+    });
+
+    expect(journal.facts).toEqual([
+      {
+        type: "order.refund_attempt_failed",
+        subjectType: "order",
+        subjectId: "ord_1",
+        payload: { subjectLabel: "ORD-0001", generation: 1, failure: "unavailable" },
+      },
+    ]);
   });
 });

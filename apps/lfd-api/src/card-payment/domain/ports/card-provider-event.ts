@@ -22,8 +22,7 @@ export interface IntentFailedEvent extends ProviderEventOrigin {
 
 /**
  * Un remboursement annoncé (`refund.created`, `refund.updated`,
- * `refund.failed`) — tel que `RecordOrderRefundCommand` le lit aujourd'hui
- * (vérifié le 2026-11-09 dans `payments-webhook.controller.ts`).
+ * `refund.failed`) — ce que le constat du bloc lit (plan M2, §6.3).
  */
 export interface RefundEvent extends ProviderEventOrigin {
   readonly kind: "refund";
@@ -35,6 +34,19 @@ export interface RefundEvent extends ProviderEventOrigin {
   readonly status: CardRefundStatus;
   /** L'instant du prestataire. */
   readonly createdAt: Date;
+  /**
+   * La demande qui l'a émis, lue sur ses métadonnées (`lfd_refund_request`,
+   * `lfd_generation`, §3.4) — absente pour un remboursement fait hors de la
+   * plateforme (tableau de bord du prestataire), ou dont la métadonnée est
+   * illisible.
+   */
+  readonly ours?: RefundMetadata;
+}
+
+/** Les métadonnées que nous posons sur un remboursement que nous émettons. */
+export interface RefundMetadata {
+  readonly requestId: string;
+  readonly generation: number;
 }
 
 /**

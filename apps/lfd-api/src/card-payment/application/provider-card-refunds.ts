@@ -29,9 +29,15 @@ export class ProviderCardRefunds extends CardProviderRefunds {
     params: RefundRemainderParams,
   ): Promise<RefundIssuance> {
     const provider = this.providerOf(account);
+    // La demande d'`orders` a pour identifiant la commande : `lfd_order_id`
+    // garde donc la valeur d'avant P1 sur ce chemin transitoire (retiré en P1.c).
     return provider.kind === "unavailable"
       ? Promise.resolve(provider)
-      : provider.provider.refundRemainder(providerRef, params);
+      : provider.provider.refund(providerRef, {
+          ...params,
+          subjectLabel: params.requestId,
+          amountCents: null,
+        });
   }
 
   findRefund(

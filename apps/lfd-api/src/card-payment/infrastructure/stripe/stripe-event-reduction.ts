@@ -5,8 +5,10 @@ import type {
   CheckoutEvent,
   OtherProviderEvent,
   RefundEvent,
+  RefundMetadata,
 } from "../../domain/ports/card-provider-event.js";
 import { CARD_REFUND_STATUSES } from "../../domain/ports/card-provider-types.js";
+import { REFUND_METADATA } from "./stripe-refund-calls.js";
 
 // Réduction copiée de `b2b/payments/infrastructure/stripe-payment-gateway.ts`
 // le 2026-11-09 (plan M2, §4.2), à deux différences près : chaque événement
@@ -59,6 +61,7 @@ function reduceRefund(origin: Origin, refund: Stripe.Refund): RefundEvent | Othe
   if (providerRef === null || status === undefined) {
     return { ...origin, kind: "other" };
   }
+  const ours = metadataOf(refund);
   return {
     ...origin,
     kind: "refund",
@@ -68,7 +71,27 @@ function reduceRefund(origin: Origin, refund: Stripe.Refund): RefundEvent | Othe
     currency: refund.currency,
     status,
     createdAt: new Date(refund.created * MS_PER_SECOND),
+    ...(ours === null ? {} : { ours }),
   };
+}
+
+/** Une génération est un entier positif écrit en décimal (`String(generation)`). */
+const GENERATION = /^[1-9]\d*$/u;
+
+/**
+ * La demande qui a émis ce remboursement, lue sur SES métadonnées (plan M2,
+ * §3.4, §5.2) — `null` sans elles (un remboursement du tableau de bord), ou
+ * si elles sont illisibles : le constat le traite alors comme fait hors de la
+ * plateforme, jamais comme la demande d'un autre.
+ */
+function metadataOf(refund: Stripe.Refund): RefundMetadata | null {
+  const metadata = refund.metadata ?? {};
+  const requestId = metadata[REFUND_METADATA.request];
+  const generation = metadata[REFUND_METADATA.generation];
+  if (requestId === undefined || requestId === "" || generation === undefined) {
+    return null;
+  }
+  return GENERATION.test(generation) ? { requestId, generation: Number(generation) } : null;
 }
 
 /**

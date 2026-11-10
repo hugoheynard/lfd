@@ -110,7 +110,11 @@ describe("RecordProviderEventHandler — une référence inconnue (§4.6)", () =
 
     await receive(PAID);
 
+    // P1 (§3.3, v9) : le sujet prend SON verrou entre la revendication et
+    // l'`INSERT`, et sa réponse est relue sous ce verrou.
     expect(timeline.steps).toEqual([
+      "channel.claim:lfc-stripe:pi_1",
+      "channel.lockSubject:ord_old",
       "channel.claim:lfc-stripe:pi_1",
       "repo.add:pay_000001:pending",
       "channel.onPaid:ord_old:pay_000001:1500",
@@ -132,9 +136,39 @@ describe("RecordProviderEventHandler — une référence inconnue (§4.6)", () =
 
     await receive(PAID);
 
-    expect(timeline.steps).toEqual(["channel.claim:lfc-stripe:pi_1", "repo.add:pay_000001:paid"]);
+    expect(timeline.steps).toEqual([
+      "channel.claim:lfc-stripe:pi_1",
+      "channel.lockSubject:ord_old",
+      "channel.claim:lfc-stripe:pi_1",
+      "repo.add:pay_000001:paid",
+    ]);
     expect(repo.state("pay_000001")).toBe("paid");
     expect(durable.facts).toEqual([]);
+  });
+
+  /**
+   * `claim.settled` RELU sous le verrou du sujet (§3.3, v10) : une commande
+   * réglée entre la première réponse et le verrou fait naître la ligne à
+   * l'état d'après, jamais à celui d'avant.
+   */
+  it("🔴 l'état déclaré est celui relu SOUS le verrou du sujet, pas celui d'avant", async () => {
+    const { repo, settlement, receive } = harness();
+    const claim = {
+      subject: { type: "order", id: "ord_old" },
+      amountCents: 1_500,
+      role: "first",
+      settled: "pending",
+    } as const;
+    settlement.claims.set("pi_1", claim);
+    const lock = settlement.lockSubject.bind(settlement);
+    settlement.lockSubject = async (subject) => {
+      await lock(subject);
+      settlement.claims.set("pi_1", { ...claim, settled: "paid" });
+    };
+
+    await receive(PAID);
+
+    expect(repo.state("pay_000001")).toBe("paid");
   });
 
   it("non revendiquée : un fait `unmatched` avec le type d'événement", async () => {

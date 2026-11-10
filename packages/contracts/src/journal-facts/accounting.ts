@@ -4,6 +4,7 @@ import { billingRhythmKindSchema } from "../legal-entity.js";
 import { mandateStatusSchema } from "../payment-mandate.js";
 import { COLLECTION_FACTS } from "./collection.js";
 import { COLLECTION_TEST_FACTS } from "./collection-test.js";
+import { CARD_PAYMENT_FACTS } from "./card-payment.js";
 import { PAYMENT_REFUND_FACTS } from "./order-refunds.js";
 import {
   basisPoints,
@@ -391,4 +392,6 @@ export const ACCOUNTING_FACTS = {
   ...COLLECTION_TEST_FACTS,
   /** Un remboursement Stripe qu'aucune commande ne porte (lot R1, A11). */
   ...PAYMENT_REFUND_FACTS,
+  /** L'encaissement par carte et ses remboursements (plan M2, lot P1.b) — `card-payment.ts`. */
+  ...CARD_PAYMENT_FACTS,
 } as const satisfies JournalFactFamily;

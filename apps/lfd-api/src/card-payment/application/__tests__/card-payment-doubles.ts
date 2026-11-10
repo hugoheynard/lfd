@@ -8,6 +8,7 @@ import {
   type SubjectDescription,
   type SubjectPaidOutcome,
   type SubjectReference,
+  type SubjectRefundOutcome,
   SubjectSettlement,
 } from "../../channels/subjects/index.js";
 import { CardPayment } from "../../domain/entities/card-payment.js";
@@ -23,7 +24,8 @@ import type {
   IntentCancellation,
   RefundIssuance,
   RefundLookup,
-  RefundRemainderParams,
+  RefundLookupParams,
+  RefundParams,
   RetrievedIntent,
 } from "../../domain/ports/card-provider-types.js";
 import { CardPaymentRepository } from "../../domain/ports/card-payment.repository.js";
@@ -156,14 +158,22 @@ export class RecordingCardProvider extends CardProvider {
     return this.event;
   }
 
-  refundRemainder(providerRef: string, params: RefundRemainderParams): Promise<RefundIssuance> {
-    this.calls.push(`refundRemainder:${providerRef}:${params.key}`);
-    return Promise.resolve({ kind: "nothing_left" });
+  /** Les issues des prochains remboursements, dans l'ordre ; vide = `nothing_left`. */
+  readonly issuances: RefundIssuance[] = [];
+  /** Ce que la recherche rend. */
+  lookup: RefundLookup = { kind: "none" };
+  /** Les paramètres de chaque remboursement demandé. */
+  readonly refunds: RefundParams[] = [];
+
+  refund(providerRef: string, params: RefundParams): Promise<RefundIssuance> {
+    this.calls.push(`refund:${providerRef}:${params.key}`);
+    this.refunds.push(params);
+    return Promise.resolve(this.issuances.shift() ?? { kind: "nothing_left" });
   }
 
-  findRefund(providerRef: string, params: RefundRemainderParams): Promise<RefundLookup> {
-    this.calls.push(`findRefund:${providerRef}:${params.requestId}`);
-    return Promise.resolve({ kind: "none" });
+  findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup> {
+    this.calls.push(`findRefund:${providerRef}:${params.requestId}:${String(params.generation)}`);
+    return Promise.resolve(this.lookup);
   }
 }
 
@@ -227,6 +237,20 @@ export class TestSubjectSettlement extends SubjectSettlement {
 
   onPaymentFailed(subject: CardSubject, paymentId: string): Promise<void> {
     this.timeline.note(`channel.onPaymentFailed:${subject.id}:${paymentId}`);
+    return Promise.resolve();
+  }
+
+  /** Les issues de remboursement rendues au sujet, dans l'ordre. */
+  readonly refundOutcomes: SubjectRefundOutcome[] = [];
+
+  lockSubject(subject: CardSubject): Promise<void> {
+    this.timeline.note(`channel.lockSubject:${subject.id}`);
+    return Promise.resolve();
+  }
+
+  onRefundOutcome(subject: CardSubject, outcome: SubjectRefundOutcome): Promise<void> {
+    this.timeline.note(`channel.onRefundOutcome:${subject.id}:${outcome.kind}`);
+    this.refundOutcomes.push(outcome);
     return Promise.resolve();
   }
 

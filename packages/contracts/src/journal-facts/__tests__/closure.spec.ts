@@ -57,6 +57,8 @@ const UNNAMED_SUBJECTS: Readonly<Record<string, string>> = {
     "réglage unique : son sujet n'a pas d'autre nom que son type",
   "payment_refund.unmatched":
     "un remboursement hors commande n'a d'autre nom que son `re_…`, qui est déjà son sujet",
+  "card_payment.unmatched":
+    "un événement du prestataire hors de nos paiements n'a d'autre nom que son compte et son `evt_…`, qui sont déjà son sujet",
 };
 
 /**

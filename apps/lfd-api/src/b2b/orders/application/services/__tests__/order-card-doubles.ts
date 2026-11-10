@@ -7,6 +7,9 @@ import {
   type CardSettlementPosition,
   CardSettlementReader,
   type RetrievedCardPayment,
+  type SubjectCardRefundRequests,
+  type SubjectCardRefunds,
+  type SucceededCardRefund,
 } from "../../../../../card-payment/channels/requests/index.js";
 import type {
   CardSubject,
@@ -175,9 +178,32 @@ export class LinePositions extends CardSettlementReader {
     return Promise.resolve(
       subjects.map((subject) => {
         const line = this.payments.lines.get(subject.id);
-        return { subject, payments: line === undefined ? [] : [line], chargedCents: 0 };
+        return {
+          subject,
+          payments: line === undefined ? [] : [line],
+          chargedCents: 0,
+          refundedCents: 0,
+          refundedByNature: { return: 0, adjustment: 0, unattributed: 0 },
+          inFlightByForm: { remainder: 0, amount: 0, unattributed: 0 },
+          openRequests: [],
+        };
       }),
     );
+  }
+
+  /** Aucun remboursement : ces doubles ne servent que le premier paiement (P0). */
+  succeededRefundsOf(): Promise<readonly SucceededCardRefund[]> {
+    return Promise.resolve([]);
+  }
+
+  refundsOf(subjects: readonly CardSubject[]): Promise<readonly SubjectCardRefunds[]> {
+    return Promise.resolve(subjects.map((subject) => ({ subject, refunds: [] })));
+  }
+
+  refundRequestsOf(
+    subjects: readonly CardSubject[],
+  ): Promise<readonly SubjectCardRefundRequests[]> {
+    return Promise.resolve(subjects.map((subject) => ({ subject, requests: [] })));
   }
 }
 

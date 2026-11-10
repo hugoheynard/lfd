@@ -6,39 +6,38 @@ import {
 import { harness, NOW, PAID, payment, REFUND } from "./record-provider-event-harness.js";
 
 describe("RecordProviderEventHandler — relais", () => {
-  it("un remboursement d'un paiement connu part en `provider_refund_event`", async () => {
-    const { repo, durable, receive } = harness();
+  /**
+   * Depuis P1 (plan M2, §3.3, v11) : plus de relais `provider_refund_event`
+   * vers `orders` — le bloc constate lui-même, et le sujet reçoit l'issue au
+   * canal. Le détail du constat est éprouvé par `card-refund-observation.spec.ts`.
+   */
+  it("un remboursement d'un paiement connu est CONSTATÉ par le bloc — plus de `provider_refund_event`", async () => {
+    const { repo, durable, settlement, store, receive } = harness();
     repo.seed(payment("paid"));
 
     await receive(REFUND);
 
-    expect(durable.facts).toEqual([
-      {
-        type: "card_payment.provider_refund_event",
-        key: "card_payment.provider_refund_event:lfc-stripe:evt_refund",
-        payload: {
-          account: "lfc-stripe",
-          eventId: "evt_refund",
-          paymentId: "pay_known",
-          providerRef: "pi_1",
-          subjectType: "order",
-          subjectId: "ord_1",
-          refundId: "re_1",
-          amountCents: 1_000,
-          currency: "eur",
-          status: "succeeded",
-          refundedAt: NOW.toISOString(),
-        },
-      },
+    expect(durable.types()).toEqual(["card_payment.refund_succeeded"]);
+    expect(store.linesOf("pay_known")).toMatchObject([
+      { providerRef: "re_1", amountCents: 1_000, status: "succeeded", source: "provider" },
     ]);
+    expect(settlement.refundOutcomes.map((outcome) => outcome.kind)).toEqual(["succeeded"]);
   });
 
-  it("un remboursement hors de nos sujets part en `unmatched`, remboursement joint", async () => {
-    const { durable, receive } = harness();
+  it("un remboursement hors de nos sujets part en `unmatched`, remboursement joint, et au journal", async () => {
+    const { durable, journal, receive } = harness();
 
     await receive(REFUND);
 
     expect(durable.types()).toEqual(["card_payment.unmatched"]);
+    expect(journal.facts).toEqual([
+      {
+        type: "card_payment.unmatched",
+        subjectType: "card_payment",
+        subjectId: "lfc-stripe:evt_refund",
+        payload: { account: "lfc-stripe", eventType: "refund.updated" },
+      },
+    ]);
     expect(durable.facts[0]?.payload["refund"]).toEqual({
       refundId: "re_1",
       amountCents: 1_000,

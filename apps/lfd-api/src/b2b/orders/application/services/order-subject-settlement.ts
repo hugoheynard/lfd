@@ -6,6 +6,7 @@ import {
   type SubjectDescription,
   type SubjectPaidOutcome,
   type SubjectReference,
+  type SubjectRefundOutcome,
   SubjectSettlement,
 } from "../../../../card-payment/channels/subjects/index.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
@@ -22,6 +23,7 @@ import {
 import { OrderLock } from "../../domain/ports/order-lock.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { ORDER_CARD_SUBJECT_TYPE, orderCardSubject } from "./order-card-subject.js";
+import { OrderRefundOutcomes } from "./order-refund-outcomes.js";
 
 /** Où l'équipe ouvre une commande au back-office — comme les cloches d'`orders`. */
 const ORDER_SCREEN = "/commandes";
@@ -55,8 +57,19 @@ export class OrderSubjectSettlement extends SubjectSettlement {
     private readonly orders: OrderRepository,
     private readonly cancelled: CancelledOrderPaymentReader,
     private readonly durable: DurablePublisher,
+    private readonly refunds: OrderRefundOutcomes,
   ) {
     super();
+  }
+
+  /** Le `FOR UPDATE` d'`orders` — le même que la facture carte (`prisma-order-invoicing-lock.ts`). */
+  lockSubject(subject: CardSubject): Promise<void> {
+    return this.lock.lock(subject.id);
+  }
+
+  /** Sa vue, ses faits et son journal (`OrderRefundOutcomes`, lot P1.b). */
+  onRefundOutcome(subject: CardSubject, outcome: SubjectRefundOutcome): Promise<void> {
+    return this.refunds.apply(subject, outcome);
   }
 
   async onPaid(subject: CardSubject): Promise<SubjectPaidOutcome> {

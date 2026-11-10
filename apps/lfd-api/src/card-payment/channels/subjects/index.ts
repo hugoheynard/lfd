@@ -15,3 +15,15 @@ export {
   SubjectSettlement,
 } from "./subject-settlement.js";
 export { RegisteredSubjectSettlements, SubjectSettlements } from "./subject-settlements.js";
+export type {
+  RefundAttemptedOutcome,
+  RefundFailedOutcome,
+  RefundIssuedOutcome,
+  RefundRecordedOutcome,
+  RefundRejectedOutcome,
+  RefundReversedOutcome,
+  RefundSettledElsewhereOutcome,
+  RefundSucceededOutcome,
+  SubjectRefundOutcome,
+  SubjectRefundOutcomeDraft,
+} from "./refund-outcome.js";

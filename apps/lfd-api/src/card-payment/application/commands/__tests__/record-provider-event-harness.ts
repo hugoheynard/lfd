@@ -1,7 +1,9 @@
 /** Le banc commun des specs du webhook des cartes (`RecordProviderEventHandler`). */
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { RecordingJournal } from "../../../../platform/journal/__tests__/recording-journal.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { FixedWallClock } from "../../../../platform/time/fixed-wall-clock.js";
 import { RegisteredSubjectSettlements } from "../../../channels/subjects/index.js";
 import { CardPayment } from "../../../domain/entities/card-payment.js";
 import type { CardProviderEvent } from "../../../domain/ports/card-provider-event.js";
@@ -18,6 +20,21 @@ import {
 } from "../../__tests__/card-payment-doubles.js";
 import { IntentOutcomeRecorder } from "../../intent-outcome-recorder.js";
 import { ProviderPaymentResolver } from "../../provider-payment-resolver.js";
+import { BlockCardRefunds } from "../../refunds/block-card-refunds.js";
+import { CardRefundBell } from "../../refunds/card-refund-bell.js";
+import { CardRefundEffectsWriter } from "../../refunds/card-refund-effects.js";
+import { CardRefundObservation } from "../../refunds/card-refund-observation.js";
+import { CardRefundOutcomes } from "../../refunds/card-refund-outcomes.js";
+import { CardRefundRetrier } from "../../refunds/card-refund-retrier.js";
+import { CardRefundScope } from "../../refunds/card-refund-scope.js";
+import {
+  RecordingDispatch,
+  RecordingNotifier,
+  RefundStore,
+  StoreLedgers,
+  StorePositions,
+  StoreRequests,
+} from "../../refunds/__tests__/card-refund-doubles.js";
 import { RecordProviderEventCommand } from "../record-provider-event.command.js";
 import { RecordProviderEventHandler } from "../record-provider-event.handler.js";
 
@@ -36,19 +53,75 @@ export function harness(options: { readonly settlementType?: string } = {}) {
   const settlement = new TestSubjectSettlement(timeline, options.settlementType ?? "order");
   const settlements = new RegisteredSubjectSettlements([settlement]);
   const durable = new RecordingDurable(timeline);
+  const journal = new RecordingJournal();
   const clock = new FixedClock(NOW);
+  const resolver = new ProviderPaymentResolver(
+    repo,
+    settlements,
+    new FixedIdGenerator("pay"),
+    clock,
+  );
+  const refunds = observationOver(repo, timeline, settlements, resolver, durable, journal, clock);
   const handler = new RecordProviderEventHandler(
     providers,
-    new ProviderPaymentResolver(repo, settlements, new FixedIdGenerator("pay"), clock),
+    resolver,
     new IntentOutcomeRecorder(repo, settlements, durable, clock),
+    refunds.observation,
     durable,
+    journal,
     new DirectUnitOfWork(),
   );
   const receive = (event: CardProviderEvent, account = "lfc-stripe") => {
     provider.event = event;
     return handler.execute(new RecordProviderEventCommand(account, BODY, "sig"));
   };
-  return { timeline, repo, provider, settlement, durable, receive };
+  return { timeline, repo, provider, settlement, durable, journal, store: refunds.store, receive };
+}
+
+/** Le constat des remboursements, sur les mêmes paiements et la même chronologie. */
+function observationOver(
+  repo: InMemoryCardPayments,
+  timeline: Timeline,
+  settlements: RegisteredSubjectSettlements,
+  resolver: ProviderPaymentResolver,
+  durable: RecordingDurable,
+  journal: RecordingJournal,
+  clock: FixedClock,
+) {
+  const store = new RefundStore(repo, timeline);
+  const uow = new DirectUnitOfWork();
+  const ids = new FixedIdGenerator("ref");
+  const requests = new StoreRequests(store);
+  const ledgers = new StoreLedgers(store);
+  const positions = new StorePositions(store);
+  const dispatch = new RecordingDispatch();
+  const scope = new CardRefundScope(ledgers, settlements);
+  const effects = new CardRefundEffectsWriter(
+    journal,
+    new CardRefundBell(new RecordingNotifier(), clock),
+    new CardRefundOutcomes(positions, durable),
+  );
+  const retrier = new CardRefundRetrier(
+    scope,
+    requests,
+    effects,
+    dispatch,
+    new FixedWallClock(NOW),
+    uow,
+  );
+  const refunds = new BlockCardRefunds(scope, requests, positions, retrier, dispatch, ids, clock);
+  const observation = new CardRefundObservation(
+    resolver,
+    scope,
+    requests,
+    ledgers,
+    refunds,
+    effects,
+    ids,
+    clock,
+    uow,
+  );
+  return { store, observation };
 }
 
 /** Un paiement de la commande `ord_1`, sur `pi_1`, dans l'état voulu. */

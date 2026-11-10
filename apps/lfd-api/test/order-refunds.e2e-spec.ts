@@ -3,8 +3,9 @@
  * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`).
  *
  * Ce que seul le vrai SQL prouve :
- * - la table `order_refund`, son unicité par `stripe_refund_id` et sa
- *   contrainte de montant ; le verrou de la commande sous lequel le cumul se lit ;
+ * - le carnet `card_payment.refund` (depuis le lot P1.b du plan M2 ; avant,
+ *   `order_refund`), son unicité par `(compte, re_…)` et sa contrainte de
+ *   montant ; le verrou de la commande sous lequel le cumul se lit ;
  * - la bascule `paid` → `refunded` écrite en base, et le journal dans la même
  *   transaction ;
  * - un refus qui n'écrit rien sur la commande mais se lit au journal et à la
@@ -115,6 +116,19 @@ async function webhook(refund: Refund): Promise<void> {
   await ctx.drain();
 }
 
+/**
+ * Le paiement carte de la commande — le carnet vit sous lui depuis le lot P1.b
+ * du plan M2 (le webhook constate dans `card_payment.refund`, plus dans
+ * `public.order_refund`, qui reste sans écrivain jusqu'à P2).
+ */
+async function paymentOf(orderId: string): Promise<string> {
+  const payment = await ctx.prisma.cardPayment.findFirstOrThrow({
+    where: { subjectType: "order", subjectId: orderId },
+    select: { id: true },
+  });
+  return payment.id;
+}
+
 async function paymentStatusOf(orderId: string): Promise<PaymentStatus> {
   const row = await ctx.prisma.order.findUniqueOrThrow({
     where: { id: orderId },
@@ -142,20 +156,20 @@ describe("un remboursement partiel, puis le reste", () => {
     await webhook({ id: "re_reste", intent: "pi_rembourse", amountCents: orderTotal - 1_000 });
 
     expect(await paymentStatusOf(orderId)).toBe(PaymentStatus.refunded);
-    const refunds = await ctx.prisma.orderRefund.findMany({
-      where: { orderId },
+    const refunds = await ctx.prisma.cardRefund.findMany({
+      where: { paymentId: await paymentOf(orderId) },
       orderBy: { amountCents: "asc" },
-      select: { stripeRefundId: true, amountCents: true, status: true, refundedAt: true },
+      select: { providerRef: true, amountCents: true, status: true, refundedAt: true },
     });
     expect(refunds).toEqual([
       {
-        stripeRefundId: "re_partiel",
+        providerRef: "re_partiel",
         amountCents: 1_000,
         status: "succeeded",
         refundedAt: REFUNDED_AT,
       },
       {
-        stripeRefundId: "re_reste",
+        providerRef: "re_reste",
         amountCents: orderTotal - 1_000,
         status: "succeeded",
         refundedAt: REFUNDED_AT,
@@ -174,7 +188,9 @@ describe("un remboursement partiel, puis le reste", () => {
     await webhook({ id: "re_rejoue", intent: "pi_rejoue", amountCents: 500 });
     await webhook({ id: "re_rejoue", intent: "pi_rejoue", amountCents: 500 });
 
-    expect(await ctx.prisma.orderRefund.count({ where: { orderId } })).toBe(1);
+    expect(
+      await ctx.prisma.cardRefund.count({ where: { paymentId: await paymentOf(orderId) } }),
+    ).toBe(1);
     expect(await journalTypes()).toEqual(["order.refund_recorded"]);
   });
 });
@@ -185,7 +201,9 @@ describe("ce qui est refusé, et se voit", () => {
 
     await webhook({ id: "re_dollar", intent: "pi_dollar", amountCents: 500, currency: "usd" });
 
-    expect(await ctx.prisma.orderRefund.count({ where: { orderId } })).toBe(0);
+    expect(
+      await ctx.prisma.cardRefund.count({ where: { paymentId: await paymentOf(orderId) } }),
+    ).toBe(0);
     expect(await paymentStatusOf(orderId)).toBe(PaymentStatus.paid);
     expect(await journalTypes()).toEqual(["order.refund_rejected"]);
     expect(
@@ -196,7 +214,7 @@ describe("ce qui est refusé, et se voit", () => {
   it("un remboursement d'un paiement qu'aucune commande ne porte : noté, et la cloche sonne", async () => {
     await webhook({ id: "re_lien_libre", intent: "pi_lien_libre", amountCents: 4_000 });
 
-    expect(await ctx.prisma.orderRefund.count()).toBe(0);
+    expect(await ctx.prisma.cardRefund.count()).toBe(0);
     expect(
       await ctx.prisma.activityEvent.count({
         where: { type: "payment_refund.unmatched", subjectId: "re_lien_libre" },

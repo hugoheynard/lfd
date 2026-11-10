@@ -226,6 +226,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Un remboursement Stripe qu'aucune commande ne porte — un lien libre, le
     // plus souvent (lot R1, arbitrage A11, 2026-10-08).
     "payment_refund.",
+    // L'encaissement par carte et ses remboursements, écrits par le bloc
+    // `card-payment` (plan M2, lot P1.b, 2026-11-10) : demandes émises,
+    // arrêtées, relancées, rendues autrement — sous la ressource `card_payments`.
+    "card_payment.",
     // Le réglage de la comptabilité — aujourd'hui le plafond de ces liens.
     "accounting_settings.",
     // La fidélité, sous `b2b_accounting` : le ratio, les bons et les

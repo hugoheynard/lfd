@@ -14,7 +14,8 @@ import type {
   IntentCancellation,
   RefundIssuance,
   RefundLookup,
-  RefundRemainderParams,
+  RefundLookupParams,
+  RefundParams,
   RetrievedIntent,
 } from "../../domain/ports/card-provider-types.js";
 import { reduceEvent } from "./stripe-event-reduction.js";
@@ -121,11 +122,11 @@ export class StripeCardProvider extends CardProvider {
     return reduceEvent(event);
   }
 
-  refundRemainder(providerRef: string, params: RefundRemainderParams): Promise<RefundIssuance> {
-    return this.refunds.refundRemainder(providerRef, params);
+  refund(providerRef: string, params: RefundParams): Promise<RefundIssuance> {
+    return this.refunds.refund(providerRef, params);
   }
 
-  findRefund(providerRef: string, params: RefundRemainderParams): Promise<RefundLookup> {
+  findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup> {
     return this.refunds.findRefund(providerRef, params);
   }
 }

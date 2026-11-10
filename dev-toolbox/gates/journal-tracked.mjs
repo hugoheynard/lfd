@@ -69,6 +69,10 @@
  * **La livraison** (`delivery/**`, depuis le 2026-09-29) : même discipline —
  * cf. `DELIVERY_ZONE` plus bas.
  *
+ * **L'argent carte** (`card-payment/**`, depuis le 2026-11-10, lot P1.b du
+ * plan M2) : `journal.append` sous `UnitOfWork`, dans le handler ou dans un
+ * service audité pour lui-même — cf. `CARD_PAYMENT_SERVICES` plus bas.
+ *
  * Usage : `pnpm gate journal-tracked` (branché en CI).
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -213,6 +217,48 @@ const MONEY_ZONES = ["order-waivers", "payments", "loyalty"];
  * (garde `existsSync` dans `ZONES`) au lieu de faire planter la porte.
  */
 const CARD_PAYMENT_ZONE = join(SRC, "card-payment");
+
+/**
+ * **Les services de `card-payment` qui écrivent sur l'argent ET le journal**
+ * (plan M2, §3.3 v9, lot P1.b, 2026-11-10) — l'exécuteur, le constat,
+ * « Relancer ». Ils ne sont pas des `@CommandHandler` : le constat est appelé
+ * par le webhook, l'exécuteur par trois portes, « Relancer » par la route ET
+ * par le port `CardRefunds`. La porte les AUDITE eux-mêmes — chacun ouvre (ou
+ * rejoint) son unité de travail (`uow.run(`) et journalise, directement ou par
+ * un service de `CARD_PAYMENT_JOURNALS` ; un handler qui en injecte un est
+ * tracé par lui.
+ *
+ * Sans cette table, la porte aurait exigé `publishTraced` dans des handlers
+ * qui délèguent, ou serait restée aveugle à des services qui écrivent l'argent
+ * sans être des handlers — exactement le trou que §4.1 nommait.
+ */
+const CARD_PAYMENT_SERVICES = new Map([
+  [
+    "CardRefundIssuancePreparation",
+    join("card-payment", "application", "refunds", "card-refund-issuance-preparation.ts"),
+  ],
+  [
+    "CardRefundIssuanceRecorder",
+    join("card-payment", "application", "refunds", "card-refund-issuance-recorder.ts"),
+  ],
+  [
+    "CardRefundObservation",
+    join("card-payment", "application", "refunds", "card-refund-observation.ts"),
+  ],
+  ["CardRefundRetrier", join("card-payment", "application", "refunds", "card-refund-retrier.ts")],
+]);
+
+/**
+ * Ce qui ÉCRIT le journal de `card-payment` par `Journal.append`, dans l'unité
+ * de travail de son appelant — vérifié, comme les délégations d'ailleurs : le
+ * fichier doit appeler `journal.append(`.
+ */
+const CARD_PAYMENT_JOURNALS = new Map([
+  [
+    "CardRefundEffectsWriter",
+    join("card-payment", "application", "refunds", "card-refund-effects.ts"),
+  ],
+]);
 
 /**
  * Les séquences partagées de `payments` qui journalisent elles-mêmes, et le
@@ -512,6 +558,80 @@ function auditMoney(source, index, params, handler) {
   return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
 }
 
+/** Un journal de `CARD_PAYMENT_JOURNALS` écrit-il vraiment par `journal.append(` ? */
+function cardPaymentJournalWrites(name) {
+  return readFileSync(join(SRC, CARD_PAYMENT_JOURNALS.get(name)), "utf8").includes(
+    "journal.append(",
+  );
+}
+
+/**
+ * Un service de `CARD_PAYMENT_SERVICES` : il ouvre (ou rejoint) l'unité de
+ * travail, et journalise — lui-même, ou par un journal vérifié qu'il injecte.
+ */
+function cardPaymentServiceJournals(name) {
+  const source = readFileSync(join(SRC, CARD_PAYMENT_SERVICES.get(name)), "utf8");
+  const params = constructorParams(source, 0) ?? "";
+  const journals =
+    source.includes("journal.append(") ||
+    [...CARD_PAYMENT_JOURNALS.keys()].some(
+      (journal) => params.includes(journal) && cardPaymentJournalWrites(journal),
+    );
+  return source.includes("uow.run(") && journals;
+}
+
+/**
+ * Zone de l'argent carte : un handler trace sous unité de travail (son corps
+ * appelle `journal.append(` ou `publishTraced`, ou il injecte un journal de
+ * `CARD_PAYMENT_JOURNALS`) — ou il délègue à un service de
+ * `CARD_PAYMENT_SERVICES` qui le fait.
+ */
+function auditCardPayment(source, index, params, handler) {
+  checked += 1;
+  const delegate = [...CARD_PAYMENT_SERVICES.keys()].find((name) => params.includes(name));
+  if (delegate !== undefined) {
+    return cardPaymentServiceJournals(delegate)
+      ? { traced: true }
+      : { traced: false, missing: [`un ${delegate} qui journalise sous UnitOfWork`], handler };
+  }
+  const body = handlerBody(source, index);
+  const head = source.slice(Math.max(0, index - 1200), index);
+  const journals =
+    body.includes("journal.append(") ||
+    body.includes("publishTraced") ||
+    [...CARD_PAYMENT_JOURNALS.keys()].some(
+      (journal) => params.includes(journal) && cardPaymentJournalWrites(journal),
+    );
+  const missing = [
+    journals ? null : "un appel à journal.append (ou un service de CARD_PAYMENT_SERVICES)",
+    params.includes("UnitOfWork") || head.includes("@hors-transaction") ? null : "UnitOfWork",
+  ].filter(Boolean);
+  return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
+}
+
+/**
+ * Les services de `CARD_PAYMENT_SERVICES` sont audités pour eux-mêmes, qu'un
+ * handler les injecte ou non : `CardRefunds.retry` appelle « Relancer » sans
+ * passer par la route.
+ */
+function auditCardPaymentServices() {
+  if (!existsSync(CARD_PAYMENT_ZONE)) {
+    return;
+  }
+  for (const [name, file] of CARD_PAYMENT_SERVICES) {
+    checked += 1;
+    if (!existsSync(join(SRC, file))) {
+      offenders.push({
+        file,
+        handler: name,
+        missing: ["le fichier déclaré dans CARD_PAYMENT_SERVICES"],
+      });
+    } else if (!cardPaymentServiceJournals(name)) {
+      offenders.push({ file, handler: name, missing: ["journal.append sous uow.run"] });
+    }
+  }
+}
+
 const ZONES = [
   { root: join(SRC, STAFF_ZONE), audit: auditStaff },
   { root: join(SRC, "pim"), audit: auditWithTicket("PimJournal") },
@@ -554,7 +674,7 @@ const ZONES = [
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...MONEY_ZONES.map((zone) => ({ root: join(SRC, "b2b", zone), audit: auditMoney })),
-  ...(existsSync(CARD_PAYMENT_ZONE) ? [{ root: CARD_PAYMENT_ZONE, audit: auditMoney }] : []),
+  ...(existsSync(CARD_PAYMENT_ZONE) ? [{ root: CARD_PAYMENT_ZONE, audit: auditCardPayment }] : []),
   {
     root: join(SRC, "b2b", CATALOG_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
@@ -599,6 +719,8 @@ for (const zone of ZONES) {
     }
   }
 }
+
+auditCardPaymentServices();
 
 if (offenders.length > 0) {
   console.error("\n✖ Handlers qui écrivent SANS journaliser :\n");

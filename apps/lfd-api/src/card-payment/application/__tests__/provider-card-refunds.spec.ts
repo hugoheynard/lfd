@@ -22,9 +22,17 @@ describe("ProviderCardRefunds (transitoire, P0)", () => {
       kind: "none",
     });
     expect(provider.calls).toEqual([
-      "refundRemainder:pi_1:lfd-order-refund:ord_1:1:1",
-      "findRefund:pi_1:ord_1",
+      "refund:pi_1:lfd-order-refund:ord_1:1:1",
+      "findRefund:pi_1:ord_1:1",
     ]);
+  });
+
+  it("🔴 rembourse le RESTE (sans montant), et garde `lfd_order_id` = la demande d'`orders` jusqu'à P1.c", async () => {
+    const { provider, refunds } = harness();
+
+    await refunds.refundRemainder("lfc-stripe", "pi_1", PARAMS);
+
+    expect(provider.refunds).toEqual([{ ...PARAMS, subjectLabel: "ord_1", amountCents: null }]);
   });
 
   it.each(["lfc-inconnu", "lfc-vide", "MAL FORMÉ"])(

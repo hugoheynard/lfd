@@ -1,11 +1,11 @@
+import type { SubjectRefundOutcome } from "./refund-outcome.js";
+
 /**
  * **Le canal retour** : ce que `card-payment` demande au bloc qui possède un
  * type de sujet (plan M2, §3.3). DÉCLARÉ ici, IMPLÉMENTÉ par le bloc métier
  * (`b2b/orders` pour `order`, lot P0.c2), relié par `appBootstrap/` — la
  * figure de `production/channels/commerce/`. `card-payment` ne sait pas ce
  * qu'est une commande : il sait qu'un implémenteur en répond.
- *
- * ⚠️ `onRefundOutcome` n'est pas ici : il arrive avec le remboursement (P1).
  */
 
 /** Un sujet, tel que le canal le passe : opaque. */
@@ -75,6 +75,24 @@ export abstract class SubjectSettlement {
 
   /** **Le paiement est refusé par la banque.** Même transaction, même ordre. */
   abstract onPaymentFailed(subject: CardSubject, paymentId: string): Promise<void>;
+
+  /**
+   * **Le verrou du sujet** (§3.3, §3.6, v9) — le sujet prend SON `FOR UPDATE`
+   * dans la transaction ambiante (pour `order`, la ligne `orders`, le même que
+   * la facture carte). Toute écriture de `card-payment` sur l'argent d'un
+   * sujet l'appelle EN PREMIER, avant ses propres lignes : c'est l'ordre de
+   * l'annulation, partout. Idempotent dans une même transaction.
+   */
+  abstract lockSubject(subject: CardSubject): Promise<void>;
+
+  /**
+   * **Ce qu'un remboursement a fait** (§3.3, §3.6, v11) — appelé APRÈS que
+   * `card-payment` a écrit ses lignes et ses faits, dans la même transaction,
+   * avec la position recalculée. Le sujet pose sa vue (pour `order` :
+   * `refunded` quand Σ réussi = encaissé et qu'elle était `paid`, ou la rend),
+   * puis publie SES faits et SON journal.
+   */
+  abstract onRefundOutcome(subject: CardSubject, outcome: SubjectRefundOutcome): Promise<void>;
 
   /** Le sujet est-il annulé ? Lu dans la transaction de l'appelant. */
   abstract isCancelled(subject: CardSubject): Promise<boolean>;

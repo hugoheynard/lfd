@@ -5,7 +5,8 @@ import type {
   IntentCancellation,
   RefundIssuance,
   RefundLookup,
-  RefundRemainderParams,
+  RefundLookupParams,
+  RefundParams,
   RetrievedIntent,
 } from "./card-provider-types.js";
 
@@ -17,7 +18,8 @@ import type {
  * Une seule interface parce qu'un adaptateur par TYPE de prestataire sert
  * l'encaissement ET le remboursement d'un même compte, avec les mêmes
  * secrets ; les consommateurs, eux, ne la voient pas : ils passent par les
- * ports étroits du canal (`CardPayments`, `CardProviderRefunds`).
+ * ports étroits du canal (`CardPayments`, `CardRefunds`, et le transitoire
+ * `CardProviderRefunds`).
  *
  * 🔴 Aucune méthode ne s'appelle sous une transaction : chaque adaptateur pose
  * `assertOutsideTransaction` en tête de ses appels réseau.
@@ -50,14 +52,12 @@ export abstract class CardProvider {
   abstract parseWebhook(rawBody: Buffer, signature: string): CardProviderEvent;
 
   /**
-   * Cherche d'abord un remboursement de cette demande et de cette génération,
-   * vivant ; sinon le crée sous la clé, sans montant. Ne lève pas.
+   * **Rembourse** (plan M2, §3.5) : cherche d'abord un remboursement de cette
+   * demande et de cette génération, vivant ; sinon le crée sous la clé — sans
+   * montant pour une `remainder`, avec le sien pour une `amount`. Ne lève pas.
    */
-  abstract refundRemainder(
-    providerRef: string,
-    params: RefundRemainderParams,
-  ): Promise<RefundIssuance>;
+  abstract refund(providerRef: string, params: RefundParams): Promise<RefundIssuance>;
 
-  /** La recherche seule, même filtre. Ne lève pas. */
-  abstract findRefund(providerRef: string, params: RefundRemainderParams): Promise<RefundLookup>;
+  /** La recherche seule, par les métadonnées de la demande. Ne lève pas. */
+  abstract findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup>;
 }

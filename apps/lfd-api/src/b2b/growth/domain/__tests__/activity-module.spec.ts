@@ -185,17 +185,21 @@ describe("moduleOf — la comptabilité", () => {
     ["collection_batch_attestation.attested", "comptabilite"],
     ["collection_batch_attestation.withdrawn", "comptabilite"],
     ["payer.billing_mode_changed", "comptabilite"],
+    // L'encaissement par carte et ses remboursements (plan M2, lot P1.b, 2026-11-10).
+    ["card_payment.stopped", "comptabilite"],
+    ["card_payment.settled_elsewhere", "comptabilite"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses quinze préfixes", () => {
+  it("le filtre du module ne ramène que ses seize préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
       "payer.billing_mode",
       "payment_link.",
       "payment_refund.",
+      "card_payment.",
       "accounting_settings.",
       "loyalty_settings.",
       "loyalty.",

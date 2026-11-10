@@ -780,6 +780,47 @@ sujet publie `order.refund_succeeded`, que la facture se réveille et que
 l'avoir se décide (selon la nature, comme un `re_…`) ; puis publie
 `card_payment.refund_succeeded`.
 
+### 5.6 P1 — ce que le bâti a tranché (P1.b, 2026-11-10, sur `dev`, non commité)
+
+P1.a (`f25ed5ecf`) a posé les tables ; **P1.b** a bâti le remboursement dans
+`src/card-payment/` (domaine, canal, exécuteur, constat, routes d'équipe,
+balayage) et l'implémentation `order` de `lockSubject` / `onRefundOutcome`.
+Ce que le plan ne disait pas, tranché au plus simple :
+
+- **Ports** : `CardRefundRequestRepository` (`load` sous verrou, `ofPayment`,
+  `paymentOf` lu AVANT `lockSubject`, `save` conditionnée génération + jeton,
+  `transition` conditionnée état + génération) ; le bail
+  (`CardRefundRequestLease`) et `dueForSweep` (`CardRefundSweepReader`) sont
+  deux ports à part (ISP). `transition` n'écrit pas un « patch » de
+  primitives : l'agrégat décide, le dépôt écrit son diff sous la condition.
+- **`CardRefunds`** prend un objet (`{ nature, reason, schedule, requestedBy }`) ;
+  `retry(requestId)` sans fiche staff (l'auteur du journal vient du contexte).
+- **Journal** : `card_payment.retried` ajouté (geste d'équipe, la liste du
+  §3.3 n'en avait pas) ; `card_payment.unmatched` s'écrit pour TOUT événement
+  hors de nos sujets — un remboursement hors commande a donc deux lignes,
+  celle-ci et `payment_refund.unmatched` de `b2b/payments`.
+- **Cloches** : aucune de `card-payment` sur un `rejected` (le commerce sonne,
+  une cloche par incident) ; sans demande, `…refund_reversed:<type>:<id>:<re_…>`
+  (§6.2) et `…refund_unattributed:<type>:<id>:<re_…>` (la cloche « hors
+  plateforme » du §6.2, clé neuve).
+- **`order.refund_issued`** ne s'écrit qu'à l'écart annoncé ≠ émis (la règle
+  d'aujourd'hui) ; l'issue `issued` part au canal à chaque émission.
+- Un `re_…` d'une **génération antérieure** est attribué à sa demande au carnet
+  (`request_id`, `nature`) ; la demande ne bouge pas.
+- **Position** : `refundedByNature` et `inFlightByForm` ont un seau
+  `unattributed` (un `re_…` sans demande).
+- **L'inversion sans demande** d'un sujet annulé appelle
+  `requestRemainder({ subject }, button)` : une `remainder` née arrêtée par
+  paiement encaissé qui a un reste.
+
+🔴 **P1.b ne se déploie pas seul.** L'annulation écrit encore les anciennes
+tables par l'ancien exécuteur (P1.c bascule), alors que le webhook ne nourrit
+plus que le nouveau carnet : un remboursement d'annulation y entre sans
+demande (cloche « hors plateforme » à chaque fois), `ring-refund-failed` et
+`reopen-refund-on-reversal` écoutent encore `order.refund_failed | _reversed`
+(deux cloches, une demande dans l'ancienne table). `order-refunds.e2e-spec`
+lit désormais `card_payment.refund`.
+
 ## 6. Ce que le socle tient aussi
 
 ### 6.1 La comptabilité

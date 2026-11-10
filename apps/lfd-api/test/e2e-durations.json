@@ -51,6 +51,7 @@
   "test/card-payment-schema.e2e-spec.ts": 16136,
   "test/card-refund-schema.e2e-spec.ts": 23321,
   "test/card-refund-takeover-migration.e2e-spec.ts": 20238,
+  "test/card-refunds.e2e-spec.ts": 10745,
   "test/cart-suggestions.e2e-spec.ts": 9979,
   "test/catalog-batch-writes.e2e-spec.ts": 14496,
   "test/catalog-cold-shop-skus.e2e-spec.ts": 8763,

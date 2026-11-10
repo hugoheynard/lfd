@@ -14,7 +14,7 @@ import type {
   IntentCancellation,
   RefundIssuance,
   RefundLookup,
-  RefundRemainderParams,
+  RefundParams,
   RetrievedIntent,
 } from "../src/card-payment/domain/ports/card-provider-types.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
@@ -50,8 +50,12 @@ export class E2eCardProvider extends CardProvider {
   readonly issued: string[] = [];
   /** Les intentions dont l'annulation a été demandée. */
   readonly cancelled: string[] = [];
-  /** Les remboursements demandés : la référence et la clé. */
-  readonly refundCalls: { readonly providerRef: string; readonly key: string }[] = [];
+  /** Les remboursements demandés : la référence, la clé et ce qui est posé chez le prestataire. */
+  readonly refundCalls: {
+    readonly providerRef: string;
+    readonly key: string;
+    readonly params: RefundParams;
+  }[] = [];
   /** L'état d'une intention relue ; absente = payable. */
   readonly states = new Map<string, CardIntentState>();
   /** L'issue de la prochaine annulation. */
@@ -103,9 +107,9 @@ export class E2eCardProvider extends CardProvider {
     return event;
   }
 
-  refundRemainder(providerRef: string, params: RefundRemainderParams): Promise<RefundIssuance> {
-    assertOutsideTransaction("e2e.CardProvider.refundRemainder");
-    this.refundCalls.push({ providerRef, key: params.key });
+  refund(providerRef: string, params: RefundParams): Promise<RefundIssuance> {
+    assertOutsideTransaction("e2e.CardProvider.refund");
+    this.refundCalls.push({ providerRef, key: params.key, params });
     return Promise.resolve(
       this.refundIssuances.shift() ?? { kind: "unavailable", reason: "double e2e" },
     );
