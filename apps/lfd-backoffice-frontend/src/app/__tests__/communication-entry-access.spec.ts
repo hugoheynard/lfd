@@ -153,7 +153,7 @@ describe('App — Communication', () => {
     for (const host of [render(granted), render(granted, true)]) {
       expect(host.querySelector('a[href="/pied-de-page"]')).not.toBeNull();
       expect(host.querySelector('a[href="/b2b/contenu/app-footer"]')).toBeNull();
-      expect(host.querySelector('a[href="/lafoliecoffee/contact"]')).toBeNull();
+      expect(host.querySelector('a[href="/b2b/contact"]')).toBeNull();
     }
   });
 });

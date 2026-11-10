@@ -403,7 +403,7 @@ export const routes: Routes = [
   },
   {
     // **Contact** — la carte de contact (surtitre, titre, phrase, numéros).
-    // Partie de l'espace E-commerce (`/lafoliecoffee/contact`) pour la section
+    // Partie de l'espace E-commerce (`/b2b/contact`) pour la section
     // Communication le 2026-10-15 (Hugo). Droit INCHANGÉ : `b2b_contact:read`.
     // Hors de l'espace, elle ne demande plus aussi `b2b_settings:read`, le mur
     // de `/b2b` qu'elle cumulait. L'ancienne adresse y redirige.
@@ -411,7 +411,7 @@ export const routes: Routes = [
     canActivate: [permissionGuard('b2b_contact:read')],
     title: 'Contact — LFC B2B admin',
     loadComponent: () =>
-      import('./lafoliecoffee/contact/contact-page/contact-page').then((m) => m.ContactPage),
+      import('./b2b/contact/contact-page/contact-page').then((m) => m.ContactPage),
   },
   {
     // **Outils agent** — l'écran est l'interrupteur : les outils WebMCP du
