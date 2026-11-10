@@ -1219,6 +1219,37 @@ Pas de JSDoc sur les fonctions privées évidentes ; un commentaire de ligne suf
 quand il désamorce une surprise (un port décalé, un contournement, un ordre
 d'appel qui compte).
 
+#### 🔴 Un commentaire dit la règle au présent ; l'histoire est dans git
+
+Décidé par Hugo le 2026-11-10. Un commentaire décrit **ce qui est vrai
+aujourd'hui** et **pourquoi**, pas le chemin qui y a mené. « Jusqu'au
+2026-09-12 c'était X, corrigé le Y parce que Z » se lit une fois, puis
+s'accumule : le code devient un journal de bord, et le lecteur doit trier ce
+qui tient encore de ce qui ne tient plus. La même règle que pour la
+documentation — un plan fini devient une doc d'état au présent — vaut pour
+les commentaires.
+
+- **Écrire** : la règle, sa raison, et ce qu'elle empêche. Une décision de
+  Hugo se cite par sa date (« décidé par Hugo le 2026-11-10 ») : c'est une
+  source, pas une histoire.
+- **Ne pas écrire** : l'ancien comportement, la date d'une correction, le
+  numéro du lot qui l'a apportée, « ce commentaire disait le contraire ». Le
+  message du commit et `git log -p` les gardent.
+- **Une exception étroite** : un bug corrigé garde **une ligne** qui nomme le
+  symptôme d'origine sur son test de régression (§5, « Anti-régression ») — et
+  là seulement. Dans le code testé, le commentaire dit la règle.
+- **Un renvoi** pointe une doc d'état (`modifier-une-commande.md`, § 2.3),
+  jamais un plan, qui disparaîtra ; mieux encore, le commentaire dit la règle
+  lui-même et le renvoi n'est qu'un complément. Le 2026-11-10, plus de deux
+  cent trente commentaires ont dû être repointés parce que des plans finis
+  avaient été retirés.
+- **La justification datée** (ci-dessus) reste : elle dit jusqu'où on a
+  vérifié un fait sur du code voisin. Elle n'est pas une histoire.
+- **Un fichier touché est un fichier nettoyé** : un commentaire historique
+  qu'on croise en modifiant le code se réécrit au présent dans le même
+  commit. On ne lance pas de grand ménage d'un bloc : il se fait au fil des
+  chantiers.
+
 ### Documentation
 
 - **L'index fait foi** : [`documentation/README.md`](documentation/README.md) liste
