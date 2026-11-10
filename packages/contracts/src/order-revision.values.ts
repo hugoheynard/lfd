@@ -63,16 +63,6 @@ export type OrderRevisability =
   | {
       readonly revisable: true;
       readonly until: string | null;
-      /**
-       * Doc `documentation/commandes/modification/modifier-une-commande.md`
-       * (§2.7.2) : la commande est payée par carte — seule une HAUSSE s'y
-       * fait, et elle se paie par un complément (`POST
-       * /orders/:id/revisions/card-increase`) ; une baisse ou un changement à
-       * total égal ne sont pas encore possibles. Servi seulement quand c'est
-       * vrai (`customerRevisabilityOf`, vérifié le 2026-11-10) : absent =
-       * commande qui ne se règle pas par carte.
-       */
-      readonly cardIncreaseOnly?: true;
     }
   | {
       readonly revisable: false;
@@ -99,14 +89,17 @@ export type AdminOrderRevisability =
 
 /**
  * **Pourquoi une révision d'une commande payée par carte ne se fait pas**
- * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2) — une baisse, un total égal, un premier paiement pas encore encaissé,
- * ou une hausse composée par l'équipe (« demandez au client de modifier sa
- * commande, ou passez une seconde commande »).
+ * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2 ;
+ * plan `documentation/commandes/modification/plan-s1-la-baisse.md`, R12) — un
+ * premier paiement pas encore encaissé, une carte déjà remboursée en entier
+ * (`refunded`), ou une hausse composée par l'équipe (« demandez au client de
+ * modifier sa commande, ou passez une seconde commande »). `same_total` n'est
+ * plus servi depuis que le total égal se fait (plan S1, Q2).
  */
 export const ORDER_REVISION_CARD_REFUSALS = [
-  "decrease",
   "same_total",
   "unsettled",
+  "refunded",
   "increase_by_staff",
 ] as const;
 export type OrderRevisionCardRefusal = (typeof ORDER_REVISION_CARD_REFUSALS)[number];
@@ -118,10 +111,13 @@ export type OrderRevisionCardRefusal = (typeof ORDER_REVISION_CARD_REFUSALS)[num
  *   /orders/:id/revisions` ;
  * - `card_complement` — commande payée par carte, et hausse : « 12,00 € à
  *   payer », par `POST /orders/:id/revisions/card-increase` ;
- * - `card_not_revisable` — commande carte, et ni l'un ni l'autre : « pas
- *   encore possible ».
+ * - `card_refund` — commande payée par carte, et baisse : « 8,00 € vous
+ *   seront remboursés sur votre carte », par `POST /orders/:id/revisions`
+ *   (plan S1) ; un total égal sur une carte se dit `as_placed` ;
+ * - `card_not_revisable` — commande carte, et aucun de ces chemins.
  */
 export type OrderRevisionQuoteSettlement =
   | { readonly kind: "as_placed" }
   | { readonly kind: "card_complement"; readonly complementCents: number }
+  | { readonly kind: "card_refund"; readonly refundCents: number }
   | { readonly kind: "card_not_revisable"; readonly reason: OrderRevisionCardRefusal };

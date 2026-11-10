@@ -5857,10 +5857,10 @@
           "variables": []
         },
         {
-          "key": "orders.revision.reviseCardIncreaseNote",
-          "fr": "Payée par carte : une modification qui augmente le total se règle en payant la différence ; une baisse n’est pas encore possible.",
-          "en": "Paid by card: a change that raises the total is settled by paying the difference; lowering it is not possible yet.",
-          "it": "Pagato con carta: una modifica che aumenta il totale si regola pagando la differenza; una riduzione non è ancora possibile.",
+          "key": "orders.revision.reviseCardPaidNote",
+          "fr": "Payée par carte : la différence d’une modification se paie, ou vous est remboursée, sur votre carte.",
+          "en": "Paid by card: the difference of a change is paid, or refunded to you, on your card.",
+          "it": "Pagato con carta: la differenza di una modifica si paga, o ti viene rimborsata, sulla tua carta.",
           "variables": []
         },
         {
@@ -6347,17 +6347,31 @@
           "variables": ["amount"]
         },
         {
-          "key": "orders.revision.card.notYet",
-          "fr": "Pas encore possible pour une commande payée par carte : en ligne, seule une modification qui augmente le total se fait, en payant la différence.",
-          "en": "Not possible yet for an order paid by card: online, only a change that raises the total can be made, by paying the difference.",
-          "it": "Non ancora possibile per un ordine pagato con carta: online si fa solo una modifica che aumenta il totale, pagando la differenza.",
-          "variables": []
+          "key": "orders.revision.card.toRefund",
+          "fr": "{amount} vous seront remboursés sur votre carte.",
+          "en": "{amount} will be refunded to your card.",
+          "it": "{amount} ti saranno rimborsati sulla tua carta.",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orders.revision.card.refundedToast",
+          "fr": "Commande modifiée — {amount} vous seront remboursés sur votre carte.",
+          "en": "Order changed — {amount} will be refunded to your card.",
+          "it": "Ordine modificato — {amount} ti saranno rimborsati sulla tua carta.",
+          "variables": ["amount"]
         },
         {
           "key": "orders.revision.card.unsettled",
           "fr": "Réglez d’abord votre commande : vous pourrez la modifier ensuite.",
           "en": "Pay for your order first: you can change it afterwards.",
           "it": "Paga prima il tuo ordine: potrai modificarlo dopo.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.refunded",
+          "fr": "Cette commande a déjà été remboursée : elle ne se modifie plus. Contactez-nous.",
+          "en": "This order has already been refunded: it can no longer be changed. Contact us.",
+          "it": "Questo ordine è già stato rimborsato: non si può più modificare. Contattaci.",
           "variables": []
         },
         {

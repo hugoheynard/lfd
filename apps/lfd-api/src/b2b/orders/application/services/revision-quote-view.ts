@@ -67,6 +67,8 @@ function settlementViewOf(settlement: RevisionSettlement): OrderRevisionQuoteSet
       return { kind: "as_placed" };
     case "card_complement":
       return { kind: "card_complement", complementCents: settlement.complementCents };
+    case "card_refund":
+      return { kind: "card_refund", refundCents: settlement.refundCents };
     case "card_not_revisable":
       return { kind: "card_not_revisable", reason: settlement.reason };
   }

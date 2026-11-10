@@ -48,6 +48,8 @@ export class OrderReviseSection implements OnInit {
 
   protected readonly c = computed(() => this.copy.t().orders.revision);
   private readonly revisability = signal<OrderRevisability | null>(null);
+  /** Encaissée par carte (plan S1) : la différence se paie ou se rembourse sur la carte. */
+  private readonly paidByCard = signal(false);
   private readonly changeRequest = signal<OrderChangeRequestStatusView | null>(null);
 
   /** La dernière demande de modification, dite ; `null` sans demande. */
@@ -61,7 +63,7 @@ export class OrderReviseSection implements OnInit {
     const revisability = this.revisability();
     return revisability === null
       ? { kind: 'none' }
-      : reviseOfferOf(revisability, this.locale(), this.c());
+      : reviseOfferOf(revisability, this.locale(), this.c(), this.paidByCard());
   });
 
   protected readonly untilSaid = computed(() => {
@@ -94,6 +96,7 @@ export class OrderReviseSection implements OnInit {
       this.gateway.changeRequest(this.orderId()),
     ]);
     this.revisability.set(detail?.revisability ?? null);
+    this.paidByCard.set(detail?.paymentStatus === 'paid');
     this.changeRequest.set(request);
   }
 }

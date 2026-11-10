@@ -3,7 +3,6 @@ import type { OrderCutoffDecision } from "@lfd/contracts";
 import type { CancellationDecision } from "../order-cancellation.js";
 import {
   customerRevisionRefusalOf,
-  isCardIncreaseOnly,
   revisabilityOf,
   revisionBlockReasonOf,
   standingBlockOf,
@@ -62,13 +61,14 @@ describe("standingBlockOf — ce qui vaut pour le client comme pour l'équipe", 
     });
   });
 
-  it("plan S2, R2 ter — une carte encaissée ne se modifie que par une hausse", () => {
-    expect(isCardIncreaseOnly("paid", 1_200)).toBe(true);
-    expect(isCardIncreaseOnly("pending", 1_200)).toBe(false);
-    expect(isCardIncreaseOnly("not_required", 1_200)).toBe(false);
-    expect(
-      revisabilityOf({ standing: null, planClosedDay: null, cutoff: null, cardIncreaseOnly: true }),
-    ).toEqual({ revisable: true, until: null, cardIncreaseOnly: true });
+  it("plan S1, R12 — une carte encaissée est simplement modifiable", () => {
+    const paid = { ...ACCOUNT, paymentStatus: "paid" } as const;
+    const standing = standingBlockOf(OPEN, paid, "revise");
+    expect(standing).toBeNull();
+    expect(revisabilityOf({ standing, planClosedDay: null, cutoff: null })).toEqual({
+      revisable: true,
+      until: null,
+    });
   });
 
   it("une commande à total nul se modifie", () => {

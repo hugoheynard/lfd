@@ -161,15 +161,31 @@ describe('modifier une commande depuis le back-office', () => {
       expect(revise).not.toHaveBeenCalled();
     });
 
-    it('une baisse carte : pas encore possible', async () => {
-      quoted = { ...QUOTE, settlement: { kind: 'card_not_revisable', reason: 'decrease' } };
-      const { fixture, page } = await mount();
+    it('une baisse carte (plan S1) : le remboursement dit, et l’équipe valide', async () => {
+      quoted = { ...QUOTE, settlement: { kind: 'card_refund', refundCents: 800 } };
+      const { fixture, page, revise } = await mount();
+      await page['askQuote']();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-settlement-refund]')?.textContent).toContain(
+        'seront remboursés sur la carte du client',
+      );
+      expect(el.querySelector('[data-settlement-refusal]')).toBeNull();
+      await page['validate']();
+      expect(revise).toHaveBeenCalled();
+    });
+
+    it('une carte déjà remboursée : la phrase, et « Valider » reste fermé', async () => {
+      quoted = { ...QUOTE, settlement: { kind: 'card_not_revisable', reason: 'refunded' } };
+      const { fixture, page, revise } = await mount();
       await page['askQuote']();
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelector('[data-settlement-refusal]')?.textContent).toContain(
-        "n'est pas encore possible",
+        'déjà été remboursée',
       );
+      await page['validate']();
+      expect(revise).not.toHaveBeenCalled();
     });
   });
 

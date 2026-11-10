@@ -2,11 +2,11 @@ import type { RevisableOrder } from "../../../domain/entities/order-revision.js"
 import {
   CardComplementCancellationUnavailableError,
   CardComplementJustPaidError,
+  CardIncreaseNotApplicableError,
   CardIncreaseOnShelfOrderError,
   RevisionProposalPendingError,
 } from "../../../domain/errors/card-increase-proposal-errors.js";
 import {
-  CardOrderNotRevisableError,
   OrderNotRevisableError,
   OrderRevisedElsewhereError,
 } from "../../../domain/errors/order-revision-errors.js";
@@ -92,20 +92,23 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
   });
 
   it.each([
-    ["une baisse", LESS, "decrease"],
-    ["un total égal", content({ note: "porte B" }), "same_total"],
-  ] as const)("refuse %s, nommée, sans intention", async (_, wanted, reason) => {
-    const order = await paidOrder();
-    const { handler, steps } = increaseScene(order);
+    ["une baisse", LESS],
+    ["un total égal", content({ note: "porte B" })],
+  ] as const)(
+    "plan S1, R5 bis : refuse %s — pas de complément, sans intention",
+    async (_, wanted) => {
+      const order = await paidOrder();
+      const { handler, steps } = increaseScene(order);
 
-    const attempt = handler.execute(
-      new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 0, wanted, order.totalCents),
-    );
+      const attempt = handler.execute(
+        new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 0, wanted, order.totalCents),
+      );
 
-    await expect(attempt).rejects.toBeInstanceOf(CardOrderNotRevisableError);
-    await expect(attempt).rejects.toMatchObject({ reason });
-    expect(steps.seen).toEqual([]);
-  });
+      await expect(attempt).rejects.toBeInstanceOf(CardIncreaseNotApplicableError);
+      await expect(attempt).rejects.toMatchObject({ reason: "no_increase" });
+      expect(steps.seen).toEqual([]);
+    },
+  );
 
   it("R15 : l'équipe est refusée par le règlement, avant le total vu (un total faux exprès)", async () => {
     const order = await paidOrder();

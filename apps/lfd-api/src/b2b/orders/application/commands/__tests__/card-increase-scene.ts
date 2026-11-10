@@ -60,6 +60,14 @@ export class FixedProposalReader extends CardIncreaseProposalReader {
     this.steps.seen.push(`find:${proposalId}`);
     return Promise.resolve(this.proposal?.id === proposalId ? this.proposal : null);
   }
+
+  appliedPaymentsOf(orderId: string): Promise<readonly string[]> {
+    this.steps.seen.push(`appliedPaymentsOf:${orderId}`);
+    const proposal = this.proposal;
+    return Promise.resolve(
+      proposal?.state === "applied" ? [proposal.toPersistence().paymentId] : [],
+    );
+  }
 }
 
 /** Le bloc `card-payment`, par son canal : chaque geste noté dans la chronologie. */

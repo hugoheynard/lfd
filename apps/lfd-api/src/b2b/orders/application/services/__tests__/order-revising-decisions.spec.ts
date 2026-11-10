@@ -56,7 +56,7 @@ describe("OrderRevising — É12 : l'équipe révise une commande pro selon E1",
   it("admet l'échéance inscrite", async () => {
     const order = await placedOrder({ discountAdjustment: null, discountCents: 0 });
 
-    const revision = await revisingAt(new FixedClock(NOW)).compose(
+    const { revision } = await revisingAt(new FixedClock(NOW)).compose(
       order,
       toDelivery("10:00"),
       STAFF,
@@ -74,7 +74,7 @@ describe("OrderRevising — É12 : l'équipe révise une commande pro selon E1",
       discountCents: 0,
     });
 
-    const revision = await revisingAt(new FixedClock(NOW)).compose(
+    const { revision } = await revisingAt(new FixedClock(NOW)).compose(
       order,
       toDelivery("11:00"),
       STAFF,
@@ -101,7 +101,7 @@ describe("OrderRevising — É13 : la clientèle de la commande, pas celle du jo
       point: RESERVED,
     });
 
-    const revision = await revising.compose(order, LATER, STAFF, CHANGE);
+    const { revision } = await revising.compose(order, LATER, STAFF, CHANGE);
 
     expect(revision.state.pickupAddress?.siteId).toBe(LABO_POINT.id);
   });

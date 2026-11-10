@@ -97,15 +97,19 @@ describe("QuoteOrderRevisionHandler", () => {
       });
     });
 
-    it("une baisse, un total égal : pas encore possible, avec la raison", async () => {
+    it("plan S1, R12 : une baisse se rend, un total égal se règle comme la commande", async () => {
       const order = await paid();
       const handler = handlerFor(order);
 
       const lower = await handler.execute(new QuoteOrderRevisionQuery("ord_1", CUSTOMER, LESS));
       const same = await handler.execute(new QuoteOrderRevisionQuery("ord_1", CUSTOMER, content()));
 
-      expect(lower.settlement).toEqual({ kind: "card_not_revisable", reason: "decrease" });
-      expect(same.settlement).toEqual({ kind: "card_not_revisable", reason: "same_total" });
+      expect(lower.differenceCents).toBeLessThan(0);
+      expect(lower.settlement).toEqual({
+        kind: "card_refund",
+        refundCents: -lower.differenceCents,
+      });
+      expect(same.settlement).toEqual({ kind: "as_placed" });
     });
 
     it("R15 : la hausse composée par l'équipe n'a pas de chemin, et le devis le dit", async () => {

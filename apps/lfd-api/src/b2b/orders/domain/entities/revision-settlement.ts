@@ -18,14 +18,18 @@ import {
  * tri de l'agrégat, APRÈS la composition, sans lever :
  *
  * - `same_settlement` — au compte ou à total nul : comme la commande (M1) ;
+ *   carte encaissée à total égal aussi : aucun argent ne bouge (plan S1, Q2) ;
  * - `card_complement` — carte encaissée et hausse : un complément à payer ;
- * - `card_not_revisable` — carte, et ni l'un ni l'autre.
+ * - `card_refund` — carte encaissée et baisse : la différence rendue sur la
+ *   carte (plan `documentation/commandes/modification/plan-s1-la-baisse.md`, R2) ;
+ * - `card_not_revisable` — carte, et aucun de ces chemins.
  *
  * Les commandes lèvent (`CardOrderNotRevisableError`), le devis affichera.
  */
 export type RevisionSettlement =
   | { readonly kind: "same_settlement" }
   | { readonly kind: "card_complement"; readonly complementCents: number }
+  | { readonly kind: "card_refund"; readonly refundCents: number }
   | {
       readonly kind: "card_not_revisable";
       readonly reason: Exclude<CardRevisionRefusal, "increase">;
@@ -39,9 +43,10 @@ export interface RecomposedRevision {
 
 /**
  * Le tri du règlement, sur le total d'AVANT et celui d'après. Une commande
- * dont la carte n'est pas encaissée (`due`) ne se révise pas ; encaissée
- * (`paid`, `refunded` compris, comme `settlementRegimeOf`), seule une hausse
- * a un chemin.
+ * dont la carte n'est pas encaissée (`due`) ne se révise pas, ni une carte
+ * déjà rendue en entier (`refunded`, lu AVANT `settlementRegimeOf`, qui la
+ * classe en `paid` — plan S1, R5 bis) ; encaissée, la hausse se paie par un
+ * complément, la baisse se rend, le total égal ne bouge pas.
  */
 export function revisionSettlementOf(
   order: RevisableOrder,
@@ -50,17 +55,22 @@ export function revisionSettlementOf(
   if (!isCardSettlement(order.paymentStatus, order.totalCents)) {
     return { kind: "same_settlement" };
   }
+  if (order.paymentStatus === "refunded") {
+    return { kind: "card_not_revisable", reason: "refunded" };
+  }
   if (settlementRegimeOf(order.paymentStatus, order.totalCents) === "due") {
     return { kind: "card_not_revisable", reason: "unsettled" };
   }
   if (totalAfterCents > order.totalCents) {
     return { kind: "card_complement", complementCents: totalAfterCents - order.totalCents };
   }
-  return {
-    kind: "card_not_revisable",
-    reason: totalAfterCents === order.totalCents ? "same_total" : "decrease",
-  };
+  if (totalAfterCents < order.totalCents) {
+    return { kind: "card_refund", refundCents: order.totalCents - totalAfterCents };
+  }
+  return SAME_SETTLEMENT;
 }
+
+const SAME_SETTLEMENT: RevisionSettlement = { kind: "same_settlement" };
 
 /**
  * Le règlement vu par son AUTEUR (plan S2, R15) : l'équipe ne fait pas de
@@ -80,6 +90,7 @@ export function settlementBy(
 export function cardRefusalOf(settlement: RevisionSettlement): CardRevisionRefusal | null {
   switch (settlement.kind) {
     case "same_settlement":
+    case "card_refund":
       return null;
     case "card_complement":
       return "increase";
@@ -88,32 +99,47 @@ export function cardRefusalOf(settlement: RevisionSettlement): CardRevisionRefus
   }
 }
 
-/** Les deux chemins d'une révision : M1, ou la hausse payée par un complément (S2). */
-export type ExpectedSettlement = "same_settlement" | "card_complement";
+/** Les chemins d'une révision : M1 (comme la commande, ou rendue), ou la hausse payée (S2). */
+export type ExpectedSettlement = "same_settlement" | "card_complement" | "card_refund";
 
 /**
- * **Le refus de règlement, à l'agrégat** (R2 bis, R15) — la révision passe si
- * son règlement (vu par son auteur) est celui que le geste attend, puis si
- * elle change quelque chose (R6). Le règlement parle avant le « rien n'a
- * changé ».
+ * **Le refus de règlement, à l'agrégat** (plan S2, R2 bis, R15 ; plan S1,
+ * R5 bis) — la révision passe si son règlement (vu par son auteur) est dans
+ * l'ensemble que le geste admet, puis si elle change quelque chose (R6). Le
+ * règlement parle avant le « rien n'a changé ».
+ *
+ * Hors de l'ensemble : la raison du tri (`card_not_revisable`) ; une hausse
+ * pour M1 (`increase`) ; pour la hausse payée, qui n'admet que
+ * `card_complement`, tout chemin sans complément.
  *
  * @throws {CardOrderNotRevisableError} carte, et pas le chemin de ce geste (avec la raison).
- * @throws {CardIncreaseNotApplicableError} une hausse « carte » sur une commande qui ne l'est pas.
+ * @throws {CardIncreaseNotApplicableError} une hausse « carte » sans complément à payer.
  * @throws {UnchangedOrderRevisionError} la révision ne change rien.
  */
 export function ensureSettlementExpected(
   current: RevisableOrder,
   recomposed: RecomposedRevision,
-  expected: ExpectedSettlement,
+  expected: ReadonlySet<ExpectedSettlement>,
   by: RevisionActor["kind"],
 ): RecomposedRevision {
   const settlement = settlementBy(recomposed.settlement, by);
-  if (settlement.kind !== expected) {
-    if (settlement.kind === "same_settlement") {
-      throw new CardIncreaseNotApplicableError(current.orderId);
-    }
-    throw new CardOrderNotRevisableError(current.orderId, cardRefusalOf(settlement));
+  if (settlement.kind === "card_not_revisable" || !expected.has(settlement.kind)) {
+    throw settlementRefusalOf(current, settlement, expected);
   }
   ensureChanged(recomposed.revision);
   return { revision: recomposed.revision, settlement };
+}
+
+function settlementRefusalOf(
+  current: RevisableOrder,
+  settlement: RevisionSettlement,
+  expected: ReadonlySet<ExpectedSettlement>,
+): CardIncreaseNotApplicableError | CardOrderNotRevisableError {
+  if (settlement.kind !== "card_not_revisable" && expected.has("card_complement")) {
+    return new CardIncreaseNotApplicableError(
+      current.orderId,
+      isCardSettlement(current.paymentStatus, current.totalCents) ? "no_increase" : "not_card",
+    );
+  }
+  return new CardOrderNotRevisableError(current.orderId, cardRefusalOf(settlement));
 }

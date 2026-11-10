@@ -123,6 +123,9 @@
                 </fold-callout>
               }
 
+              @if (settlementRefund(); as message) {
+                <fold-callout variant="info" data-settlement-refund>{{ message }}</fold-callout>
+              }
               @if (settlementRefusal(); as message) {
                 <fold-callout variant="alert" announce data-settlement-refusal>{{
                   message

@@ -197,14 +197,18 @@ describe("La hausse demandée (§2.4)", () => {
   it.each([
     ["une baisse", 2, ""],
     ["un total égal", 3, "porte B"],
-  ] as const)("refuse %s : pas encore possible, nommée", async (_, quantity, note) => {
-    const order = await paidOrder();
+  ] as const)(
+    "plan S1 : refuse %s par le complément — elle se valide directement",
+    async (_, quantity, note) => {
+      const order = await paidOrder();
 
-    const refused = await propose(order, quantity, order.totalCents, note).expect(409);
+      const refused = await propose(order, quantity, order.totalCents, note).expect(409);
 
-    expect(refused.body).toMatchObject({ code: "orders.revise.card_settled" });
-    expect(await proposalsOf(order.id)).toEqual([]);
-  });
+      expect(refused.body).toMatchObject({ code: "orders.card_increase.not_card" });
+      expect(JSON.stringify(refused.body)).toContain("ne fait pas monter le total");
+      expect(await proposalsOf(order.id)).toEqual([]);
+    },
+  );
 
   it("R15 : l'équipe qui augmente une commande carte est refusée, avec le geste de sortie", async () => {
     const order = await paidOrder();
@@ -327,12 +331,13 @@ describe("La commande carte vue par la boutique et par la demande M4 (R2 ter, R4
     priority: "medium",
   };
 
-  it("la boutique : modifiable par une hausse seulement", async () => {
+  it("plan S1, R12 — la boutique : simplement modifiable, sans `cardIncreaseOnly`", async () => {
     const order = await paidOrder();
 
     const view = await buyer().get(`/orders/${order.id}`).expect(200);
 
-    expect(JSON.stringify(view.body)).toContain('"cardIncreaseOnly":true');
+    expect(JSON.stringify(view.body)).toContain('"revisable":true');
+    expect(JSON.stringify(view.body)).not.toContain("cardIncreaseOnly");
   });
 
   it("la demande M4 sur une carte, l'heure limite passée, ne se dépose pas", async () => {

@@ -12,7 +12,8 @@ import { input, line, placed, revised } from "./revisable-order.fixture.js";
  * **Le règlement d'une révision, trié par l'agrégat** (doc
  * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2) :
  * `recompose` rend la révision et son règlement sans lever ; M1 (`revise`)
- * refuse tout ce qui n'est pas `same_settlement`, comme avant.
+ * admet `same_settlement` et la baisse carte rendue (`card_refund`, plan
+ * `documentation/commandes/modification/plan-s1-la-baisse.md`, R2, R5 bis).
  */
 
 /** 10 croissants à 2 € HT, TVA 5,5 % : 21,10 €. */
@@ -47,13 +48,30 @@ describe("Order.recompose — le tri du règlement (R2 bis)", () => {
     expect(revision.onAccount).toBe(false);
   });
 
-  it.each([
-    ["une baisse", LESS, "decrease"],
-    ["un total égal", TEN, "same_total"],
-  ] as const)("carte encaissée, %s : refusée avec sa raison, sans lever", (_, lines, reason) => {
+  it("plan S1, R2 : carte encaissée, baisse : `card_refund` de l'écart exact", () => {
     const paid = card("paid");
-    const { settlement } = Order.recompose(paid, revised(paid, { lines, note: "porte B" }));
-    expect(settlement).toEqual({ kind: "card_not_revisable", reason });
+    const { revision, settlement } = Order.recompose(paid, revised(paid, { lines: LESS }));
+    expect(settlement).toEqual({
+      kind: "card_refund",
+      refundCents: paid.totalCents - revision.totalAfterCents,
+    });
+    expect(revision.onAccount).toBe(false);
+  });
+
+  it("plan S1, Q2 : carte encaissée, total égal : `same_settlement`, aucun argent ne bouge", () => {
+    const paid = card("paid");
+    const { settlement } = Order.recompose(paid, revised(paid, { lines: TEN, note: "porte B" }));
+    expect(settlement).toEqual({ kind: "same_settlement" });
+  });
+
+  it.each([
+    ["une baisse", LESS],
+    ["une hausse", MORE],
+    ["un total égal", TEN],
+  ] as const)("plan S1, R2 : carte déjà rendue en entier, %s : `refunded`", (_, lines) => {
+    const refunded = card("refunded");
+    const { settlement } = Order.recompose(refunded, revised(refunded, { lines, note: "B" }));
+    expect(settlement).toEqual({ kind: "card_not_revisable", reason: "refunded" });
   });
 
   it.each(["pending", "failed"] as const)(
@@ -67,10 +85,43 @@ describe("Order.recompose — le tri du règlement (R2 bis)", () => {
   );
 });
 
-describe("Order.revise — M1 inchangé sur une carte (R2 bis)", () => {
+describe("Order.revise — M1 sur une carte (plan S2, R2 bis ; plan S1, R5 bis)", () => {
+  it.each(["customer", "staff"] as const)(
+    "plan S1 : une baisse payée passe (%s), et son règlement remonte",
+    (by) => {
+      const paid = card("paid");
+      const { revision, settlement } = Order.revise(paid, revised(paid, { lines: LESS }), by);
+      expect(settlement).toEqual({
+        kind: "card_refund",
+        refundCents: paid.totalCents - revision.totalAfterCents,
+      });
+    },
+  );
+
+  it("plan S1, Q2 : un changement à total égal sur une carte payée passe, sans argent", () => {
+    const paid = card("paid");
+    const { settlement, revision } = Order.revise(
+      paid,
+      revised(paid, { lines: TEN, note: "porte B" }),
+    );
+    expect(settlement).toEqual({ kind: "same_settlement" });
+    expect(revision.changes).toEqual(["note"]);
+  });
+
+  it("plan S1, R1 : une carte déjà rendue en entier est refusée, avec sa phrase", () => {
+    const refunded = card("refunded");
+    const attempt = () => Order.revise(refunded, revised(refunded, { lines: LESS }));
+    expect(attempt).toThrow(CardOrderNotRevisableError);
+    expect(attempt).toThrow("Cette commande a déjà été remboursée en entier");
+    try {
+      attempt();
+    } catch (error) {
+      expect(error).toMatchObject({ reason: "refunded", code: "orders.revise.card_settled" });
+    }
+  });
+
   it.each([
     ["une hausse payée", "paid", MORE, "increase"],
-    ["une baisse payée", "paid", LESS, "decrease"],
     ["une carte attendue", "pending", MORE, "unsettled"],
   ] as const)(
     "refuse %s, avec la raison et le message d'aujourd'hui",
@@ -119,20 +170,27 @@ describe("Order.reviseWithComplement — la hausse par carte", () => {
     });
   });
 
-  it.each([
-    ["une baisse", "paid", LESS, "decrease"],
-    ["un total égal", "paid", TEN, "same_total"],
-    ["une carte attendue", "pending", MORE, "unsettled"],
-  ] as const)("refuse %s, nommée par sa raison", (_, status, lines, reason) => {
-    const order = card(status);
+  it("refuse une carte attendue, nommée par sa raison", () => {
+    const order = card("pending");
     const attempt = () =>
-      Order.reviseWithComplement(order, revised(order, { lines, note: "porte B" }), "customer");
+      Order.reviseWithComplement(order, revised(order, { lines: MORE }), "customer");
     expect(attempt).toThrow(CardOrderNotRevisableError);
     try {
       attempt();
     } catch (error) {
-      expect(error).toMatchObject({ reason, code: "orders.revise.card_settled" });
+      expect(error).toMatchObject({ reason: "unsettled", code: "orders.revise.card_settled" });
     }
+  });
+
+  it.each([
+    ["une baisse", LESS],
+    ["un total égal", TEN],
+  ] as const)("plan S1, R5 bis : refuse %s — pas de complément à payer", (_, lines) => {
+    const order = card("paid");
+    const attempt = () =>
+      Order.reviseWithComplement(order, revised(order, { lines, note: "porte B" }), "customer");
+    expect(attempt).toThrow(CardIncreaseNotApplicableError);
+    expect(attempt).toThrow("Cette modification ne fait pas monter le total");
   });
 
   it("R15 : l'équipe qui augmente une carte est refusée, avec le geste de sortie", () => {

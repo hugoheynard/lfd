@@ -45,7 +45,7 @@ describe("Order.revise — l'acheminement change : jugé contre la cible figée 
     const order = withActive(PROMO_A, [
       { promotionId: "promo_a", terms: ONLY_SITE_A, label: "Remise du Labo" },
     ]);
-    const attempt = () => Order.revise(order, revisedInput(order, "site_b"));
+    const attempt = () => Order.revise(order, revisedInput(order, "site_b")).revision;
 
     expect(attempt).toThrow(FulfillmentChangeAltersPromotionError);
     expect(attempt).toThrow(
@@ -55,7 +55,7 @@ describe("Order.revise — l'acheminement change : jugé contre la cible figée 
 
   it("accepte un autre point quand la cible figée vise tous les points", () => {
     const order = withActive(PROMO_A, [{ promotionId: "promo_a", terms: ALL_POINTS_AND_ZONES }]);
-    const revision = Order.revise(order, revisedInput(order, "site_b"));
+    const revision = Order.revise(order, revisedInput(order, "site_b")).revision;
 
     expect(revision.changes).toContain("pickup_point");
     expect(revision.state.discountPromotionId).toBe("promo_a");
@@ -64,14 +64,14 @@ describe("Order.revise — l'acheminement change : jugé contre la cible figée 
   it("refuse le passage à la livraison quand la cible ne livre pas", () => {
     const order = withActive(PROMO_A, [{ promotionId: "promo_a", terms: ONLY_SITE_A }]);
 
-    expect(() => Order.revise(order, revisedInput(order, "site_a", DELIVERY))).toThrow(
+    expect(() => Order.revise(order, revisedInput(order, "site_a", DELIVERY)).revision).toThrow(
       /retirerait la promotion/,
     );
   });
 
   it("accepte le passage à la livraison quand la cible livre partout", () => {
     const order = withActive(PROMO_A, [{ promotionId: "promo_a", terms: ALL_POINTS_AND_ZONES }]);
-    const revision = Order.revise(order, revisedInput(order, "site_a", DELIVERY));
+    const revision = Order.revise(order, revisedInput(order, "site_a", DELIVERY)).revision;
 
     expect(revision.changes).toContain("method");
     expect(revision.state.discountPromotionId).toBe("promo_a");
@@ -79,27 +79,29 @@ describe("Order.revise — l'acheminement change : jugé contre la cible figée 
 
   it("accepte un changement de point sans promotion ni avant ni après", () => {
     const order = placed(NONE);
-    expect(Order.revise(order, revisedInput(order, "site_b")).changes).toContain("pickup_point");
+    expect(Order.revise(order, revisedInput(order, "site_b")).revision.changes).toContain(
+      "pickup_point",
+    );
   });
 
   it("ne juge pas une révision qui garde l'acheminement, même sans termes figés", () => {
     const order = withActive(PROMO_A, [{ promotionId: "promo_a", terms: null }]);
     const kept = { ...revisedInput(order, "site_a"), note: "Sonner deux fois" };
 
-    expect(Order.revise(order, kept).changes).toEqual(["note"]);
+    expect(Order.revise(order, kept).revision.changes).toEqual(["note"]);
   });
 
   it("refuse un changement d'acheminement quand la cible n'est pas figée (remise pas encore reprise)", () => {
     const order = withActive(PROMO_A, [{ promotionId: "promo_a", terms: null }]);
 
-    expect(() => Order.revise(order, revisedInput(order, "site_b"))).toThrow(
+    expect(() => Order.revise(order, revisedInput(order, "site_b")).revision).toThrow(
       /retirerait la promotion/,
     );
   });
 
   it("refuse aussi une commande sans ligne en table : les colonnes ne disent pas la cible", () => {
     const order = placed(PROMO_A);
-    expect(() => Order.revise(order, revisedInput(order, "site_b"))).toThrow(
+    expect(() => Order.revise(order, revisedInput(order, "site_b")).revision).toThrow(
       /retirerait la promotion/,
     );
   });
@@ -114,7 +116,10 @@ describe("Order.revise — l'acheminement change : jugé contre la cible figée 
       saleUnit: "piece" as const,
       quantity: 1,
     };
-    const revision = Order.revise(order, revisedInput(order, "site_b", undefined, [bread]));
+    const revision = Order.revise(
+      order,
+      revisedInput(order, "site_b", undefined, [bread]),
+    ).revision;
 
     expect(revision.changes).toContain("pickup_point");
     expect(revision.state.discountPromotionId).toBeNull();
@@ -163,7 +168,7 @@ describe("Order.revise — l'adresse livrée, jugée sur les zones figées", () 
       DELIVERY,
     );
 
-    expect(() => Order.revise(order, revisedInput(order, "site_a", ELSEWHERE))).toThrow(
+    expect(() => Order.revise(order, revisedInput(order, "site_a", ELSEWHERE)).revision).toThrow(
       FulfillmentChangeAltersPromotionError,
     );
   });
@@ -174,7 +179,7 @@ describe("Order.revise — l'adresse livrée, jugée sur les zones figées", () 
       [{ promotionId: "promo_a", terms: terms("none", { zones: ["zone_1", "zone_2"] }) }],
       DELIVERY,
     );
-    const revision = Order.revise(order, revisedInput(order, "site_a", ELSEWHERE));
+    const revision = Order.revise(order, revisedInput(order, "site_a", ELSEWHERE)).revision;
 
     expect(revision.changes).toContain("delivery_address");
   });
@@ -190,7 +195,10 @@ describe("Order.revise — plusieurs remises cumulées, chacune jugée sur sa ci
       { promotionId: "promo_a", terms: ALL_POINTS_AND_ZONES },
       { promotionId: "promo_b", terms: ONLY_SITE_A },
     ]);
-    const revision = Order.revise(order, { ...revisedInput(order, "site_a"), note: "Porte B" });
+    const revision = Order.revise(order, {
+      ...revisedInput(order, "site_a"),
+      note: "Porte B",
+    }).revision;
 
     expect(revision.state.basketDiscounts.map((discount) => discount.promotionId)).toEqual([
       "promo_a",
@@ -204,7 +212,7 @@ describe("Order.revise — plusieurs remises cumulées, chacune jugée sur sa ci
       { promotionId: "promo_b", terms: ONLY_SITE_A, label: "Cumul" },
     ]);
 
-    expect(() => Order.revise(order, revisedInput(order, "site_b"))).toThrow(
+    expect(() => Order.revise(order, revisedInput(order, "site_b")).revision).toThrow(
       "retirerait la promotion « Cumul »",
     );
   });
@@ -221,7 +229,7 @@ describe("Order.revise — une remise de site d'avant les promotions", () => {
   it("refuse de l'emporter vers la livraison : L9, avant le montant", () => {
     const order = placed(PROMO_A, null);
 
-    expect(() => Order.revise(order, revisedInput(order, "site_a", DELIVERY))).toThrow(
+    expect(() => Order.revise(order, revisedInput(order, "site_a", DELIVERY)).revision).toThrow(
       FulfillmentChangeAltersPromotionError,
     );
   });
@@ -233,8 +241,10 @@ describe("Order.revise — une remise de site d'avant les promotions", () => {
       discountCents: 200,
     };
 
-    expect(() =>
-      Order.revise(order, { ...revisedInput(order, "site_a", DELIVERY), note: "Porte B" }),
+    expect(
+      () =>
+        Order.revise(order, { ...revisedInput(order, "site_a", DELIVERY), note: "Porte B" })
+          .revision,
     ).toThrow(new MisplacedPickupDiscountError("not_picked_up"));
   });
 });

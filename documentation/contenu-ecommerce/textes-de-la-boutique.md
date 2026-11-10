@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1810 textes
+## Sommaire — 1812 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 56 |
 | [La navigation](#espace-nav) | `nav` | 16 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 280 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 282 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 526 |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1810** |
+| **Total** | | **1812** |
 
 ## Le parcours de commande
 
@@ -1034,7 +1034,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 280 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 282 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1130,7 +1130,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.summary.gapCapped` | remise plafonnée au montant des articles | discount capped at the items amount | sconto limitato all’importo degli articoli |  |
 | `orders.revision.reviseAction` | Modifier ma commande | Change my order | Modifica il mio ordine |  |
 | `orders.revision.reviseCardNote` | Commande réglée par carte : pour la modifier, annulez-la et recommandez, ou demandez-nous. | Order paid by card: to change it, cancel it and order again, or ask us. | Ordine pagato con carta: per modificarlo, annullalo e ordina di nuovo, oppure chiedi a noi. |  |
-| `orders.revision.reviseCardIncreaseNote` | Payée par carte : une modification qui augmente le total se règle en payant la différence ; une baisse n’est pas encore possible. | Paid by card: a change that raises the total is settled by paying the difference; lowering it is not possible yet. | Pagato con carta: una modifica che aumenta il totale si regola pagando la differenza; una riduzione non è ancora possibile. |  |
+| `orders.revision.reviseCardPaidNote` | Payée par carte : la différence d’une modification se paie, ou vous est remboursée, sur votre carte. | Paid by card: the difference of a change is paid, or refunded to you, on your card. | Pagato con carta: la differenza di una modifica si paga, o ti viene rimborsata, sulla tua carta. |  |
 | `orders.revision.reviseUntil` | Modifiable jusqu’au {when}. | Can be changed until {when}. | Modificabile fino al {when}. | `{when}` |
 | `orders.revision.reviseWhen` | {day} à {time} | {day} at {time} | {day} alle {time} | `{day}` `{time}` |
 | `orders.revision.refusedInPreparation` | Votre commande est déjà en préparation : elle ne se modifie plus. | Your order is already being prepared: it can no longer be changed. | Il tuo ordine è già in preparazione: non si può più modificare. |  |
@@ -1200,8 +1200,10 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.revision.request.requestRefused` | La demande n’a pas pu être envoyée. | The request could not be sent. | Non è stato possibile inviare la richiesta. |  |
 | `orders.revision.request.requestSentToast` | Demande envoyée : nous vous répondons par e-mail. | Request sent: we will reply by email. | Richiesta inviata: ti rispondiamo via e-mail. |  |
 | `orders.revision.card.toPay` | {amount} à payer pour valider la modification. | {amount} to pay to confirm the change. | {amount} da pagare per confermare la modifica. | `{amount}` |
-| `orders.revision.card.notYet` | Pas encore possible pour une commande payée par carte : en ligne, seule une modification qui augmente le total se fait, en payant la différence. | Not possible yet for an order paid by card: online, only a change that raises the total can be made, by paying the difference. | Non ancora possibile per un ordine pagato con carta: online si fa solo una modifica che aumenta il totale, pagando la differenza. |  |
+| `orders.revision.card.toRefund` | {amount} vous seront remboursés sur votre carte. | {amount} will be refunded to your card. | {amount} ti saranno rimborsati sulla tua carta. | `{amount}` |
+| `orders.revision.card.refundedToast` | Commande modifiée — {amount} vous seront remboursés sur votre carte. | Order changed — {amount} will be refunded to your card. | Ordine modificato — {amount} ti saranno rimborsati sulla tua carta. | `{amount}` |
 | `orders.revision.card.unsettled` | Réglez d’abord votre commande : vous pourrez la modifier ensuite. | Pay for your order first: you can change it afterwards. | Paga prima il tuo ordine: potrai modificarlo dopo. |  |
+| `orders.revision.card.refunded` | Cette commande a déjà été remboursée : elle ne se modifie plus. Contactez-nous. | This order has already been refunded: it can no longer be changed. Contact us. | Questo ordine è già stato rimborsato: non si può più modificare. Contattaci. |  |
 | `orders.revision.card.submitCta` | Valider et payer {amount} | Confirm and pay {amount} | Conferma e paga {amount} | `{amount}` |
 | `orders.revision.card.payTitle` | Le complément à payer | The difference to pay | La differenza da pagare |  |
 | `orders.revision.card.payLead` | {amount} à payer pour valider la modification. Votre commande ne change qu’une fois ce montant payé. | {amount} to pay to confirm the change. Your order only changes once this amount is paid. | {amount} da pagare per confermare la modifica. Il tuo ordine cambia solo una volta pagato questo importo. | `{amount}` |

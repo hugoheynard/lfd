@@ -19,8 +19,8 @@ export type RevisionBlock =
   /**
    * Une commande payable par carte (§ 2.7) : sur le chemin d'une DEMANDE (M4),
    * toute carte ; sur celui d'une modification, une carte pas encore
-   * encaissée (`unsettled`) — encaissée, seule la hausse a un chemin (doc
-   * `modifier-une-commande.md`, §2.7.2), et l'agrégat la trie.
+   * encaissée (`unsettled`) — encaissée, la hausse se paie, la baisse se rend
+   * (plan S1), et l'agrégat trie le règlement.
    */
   | { readonly kind: "card_settled"; readonly unsettled: boolean }
   /** Une commande d'avant les CGV figées n'a pas de quoi être recomposée. */
@@ -53,11 +53,6 @@ export type RevisionVerdict =
       readonly until: Date | null;
       /** Plan A2 : inscrite au plan — l'équipe n'en change que les quantités. */
       readonly quantitiesOnly?: true;
-      /**
-       * Plan S2 (R2 ter, R3) : payée par carte et encaissée — seule une
-       * hausse s'y fait, payée par un complément, et par le client seul.
-       */
-      readonly cardIncreaseOnly?: true;
     }
   | { readonly revisable: false; readonly block: RevisionBlock };
 
@@ -97,11 +92,6 @@ export function standingBlockOf(
   return subject.hasSalesTerms ? null : { kind: "without_sales_terms" };
 }
 
-/** Plan S2 (R2 ter) : encaissée par carte — seule la hausse payée par un complément s'y fait. */
-export function isCardIncreaseOnly(paymentStatus: PaymentStatus, totalCents: number): boolean {
-  return settlementRegimeOf(paymentStatus, totalCents) === "paid";
-}
-
 /** § 2.7 : règlement par carte attendu (`due`) ou encaissé (`paid`). */
 export function isCardSettlement(paymentStatus: PaymentStatus, totalCents: number): boolean {
   const regime = settlementRegimeOf(paymentStatus, totalCents);
@@ -120,8 +110,6 @@ export function revisabilityOf(input: {
   readonly standing: StandingRevisionBlock | null;
   readonly planClosedDay: string | null;
   readonly cutoff: OrderCutoffDecision | null;
-  /** Plan S2 (R2 ter) : une carte encaissée, que seule une hausse modifie. */
-  readonly cardIncreaseOnly?: boolean;
 }): RevisionVerdict {
   if (input.standing !== null) {
     return { revisable: false, block: input.standing };
@@ -129,14 +117,13 @@ export function revisabilityOf(input: {
   if (input.planClosedDay !== null) {
     return { revisable: false, block: { kind: "plan_closed", day: input.planClosedDay } };
   }
-  const card = input.cardIncreaseOnly === true ? ({ cardIncreaseOnly: true } as const) : {};
   if (input.cutoff === null) {
-    return { revisable: true, until: null, ...card };
+    return { revisable: true, until: null };
   }
   if (input.cutoff.status !== "open") {
     return { revisable: false, block: { kind: "past_cutoff", until: input.cutoff.limit } };
   }
-  return { revisable: true, until: input.cutoff.limit, ...card };
+  return { revisable: true, until: input.cutoff.limit };
 }
 
 export const CARD_SETTLED_REVISION_REFUSAL =

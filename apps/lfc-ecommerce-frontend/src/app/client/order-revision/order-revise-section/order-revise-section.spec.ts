@@ -14,6 +14,7 @@ import { OrderReviseSection } from './order-revise-section';
 async function mount(
   revisability: OrderRevisability | null,
   request: OrderChangeRequestStatusView | null = null,
+  paymentStatus: CustomerOrderDetailView['paymentStatus'] = 'not_required',
 ): Promise<HTMLElement> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -23,8 +24,11 @@ async function mount(
       {
         provide: OrderRevisionGateway,
         useValue: {
-          order: (): Promise<Pick<CustomerOrderDetailView, 'revisability'> | null> =>
-            Promise.resolve(revisability === null ? null : { revisability }),
+          order: (): Promise<Pick<
+            CustomerOrderDetailView,
+            'revisability' | 'paymentStatus'
+          > | null> =>
+            Promise.resolve(revisability === null ? null : { revisability, paymentStatus }),
           changeRequest: (): Promise<OrderChangeRequestStatusView | null> =>
             Promise.resolve(request),
         },
@@ -56,15 +60,17 @@ describe('OrderReviseSection', () => {
     expect(el.querySelector('[data-until]')).toBeNull();
   });
 
-  it('payée par carte (plan S2) : le bouton, et la phrase de la hausse par complément', async () => {
-    const el = await mount({ revisable: true, until: null, cardIncreaseOnly: true });
+  it('payée par carte (plans S1, S2) : le bouton, et la différence payée ou remboursée', async () => {
+    const el = await mount({ revisable: true, until: null }, null, 'paid');
     expect(el.querySelector('[data-revise]')).not.toBeNull();
-    expect(el.querySelector('[data-card-increase]')?.textContent).toContain('payant la différence');
+    const note = el.querySelector('[data-card-paid]')?.textContent ?? '';
+    expect(note).toContain('remboursée');
+    expect(note).not.toContain('seule une hausse');
   });
 
   it('une commande au compte ne dit rien de la carte', async () => {
     const el = await mount({ revisable: true, until: null });
-    expect(el.querySelector('[data-card-increase]')).toBeNull();
+    expect(el.querySelector('[data-card-paid]')).toBeNull();
   });
 
   it('dit pourquoi une commande carte ne se modifie pas, sans bouton', async () => {

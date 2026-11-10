@@ -46,7 +46,7 @@ describe("OrderRevising — le premier jour commandable", () => {
   it("admet au client une nouvelle journée qui est le premier jour", async () => {
     const order = await placedOrder();
 
-    const revision = await revisingWithFirstDay(NEXT_DAY).compose(
+    const { revision } = await revisingWithFirstDay(NEXT_DAY).compose(
       order,
       content({ requestedDeliveryDate: NEXT_DAY }),
       CUSTOMER,
@@ -59,7 +59,7 @@ describe("OrderRevising — le premier jour commandable", () => {
   it("ne touche pas une commande déjà passée dont la journée ne change pas", async () => {
     const order = await placedOrder();
 
-    const revision = await revisingWithFirstDay(addDays(DAY, 5)).compose(
+    const { revision } = await revisingWithFirstDay(addDays(DAY, 5)).compose(
       order,
       content({ lines: [{ sku: "VIE-001", quantity: 12 }] }),
       CUSTOMER,
@@ -72,7 +72,7 @@ describe("OrderRevising — le premier jour commandable", () => {
   it("laisse l'équipe déplacer la commande avant le premier jour", async () => {
     const order = await placedOrder();
 
-    const revision = await revisingWithFirstDay(addDays(NEXT_DAY, 1)).compose(
+    const { revision } = await revisingWithFirstDay(addDays(NEXT_DAY, 1)).compose(
       order,
       content({ requestedDeliveryDate: NEXT_DAY }),
       STAFF,

@@ -436,7 +436,7 @@ describe("GetAdminOrderHandler", () => {
       });
     });
 
-    it("une commande payée par carte se grise pour l'équipe, avec son geste de sortie (plan S2, R15)", async () => {
+    it("plan S1, R12 : une commande payée par carte reste modifiable par l'équipe", async () => {
       const card = await placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
 
       const view = await adminHandler(
@@ -452,12 +452,9 @@ describe("GetAdminOrderHandler", () => {
         card,
       ).execute(new GetAdminOrderQuery("ord_1"));
 
-      expect(view.revisability).toEqual({
-        revisable: false,
-        reason: expect.stringContaining(
-          "l'équipe ne peut pas l'augmenter. Demandez au client de modifier sa commande",
-        ) as string,
-      });
+      // Plan S1 (R12, « l'équipe baisse librement ») : le verdict ne grise plus
+      // une carte encaissée ; la hausse de l'équipe est refusée par le devis.
+      expect(view.revisability).toEqual({ revisable: true });
     });
   });
 

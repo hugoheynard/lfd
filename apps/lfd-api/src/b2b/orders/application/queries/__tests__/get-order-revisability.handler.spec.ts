@@ -105,12 +105,12 @@ describe("GetOrderRevisabilityHandler", () => {
     ).resolves.toMatchObject({ revisability: { revisable: false, code: "in_preparation" } });
   });
 
-  it("plan S2, R2 ter — payée par carte, pour la boutique : modifiable par une hausse seulement", async () => {
+  it("plan S1, R12 — payée par carte, pour la boutique : simplement modifiable", async () => {
     const order = await placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
 
-    await expect(handlerFor(order).execute(query)).resolves.toMatchObject({
-      revisability: { revisable: true, cardIncreaseOnly: true },
-    });
+    const { revisability } = await handlerFor(order).execute(query);
+
+    expect(revisability).toEqual({ revisable: true, until: expect.any(String) as string });
   });
 
   it("plan S2, R4 — payée par carte, pour déposer une demande M4 : `card_settled`, comme avant", async () => {

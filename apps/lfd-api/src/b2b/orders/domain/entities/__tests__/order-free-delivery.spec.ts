@@ -260,7 +260,10 @@ describe("Order.revise — le franco rejugé contre le seuil figé", () => {
   };
 
   it("repassé sous le seuil : le frais revient, au barème figé, et le total monte", () => {
-    const revision = Order.revise(current, draftFrom(PRO, { ...frozen, lines: [line(9)] }));
+    const revision = Order.revise(
+      current,
+      draftFrom(PRO, { ...frozen, lines: [line(9)] }),
+    ).revision;
 
     expect(revision.state.freeDelivery).toBeNull();
     expect(revision.state.deliveryFeeCents).toBe(1_200);
@@ -268,7 +271,10 @@ describe("Order.revise — le franco rejugé contre le seuil figé", () => {
   });
 
   it("resté au-dessus du seuil : toujours offert, le seuil figé reconduit", () => {
-    const revision = Order.revise(current, draftFrom(PRO, { ...frozen, lines: [line(12)] }));
+    const revision = Order.revise(
+      current,
+      draftFrom(PRO, { ...frozen, lines: [line(12)] }),
+    ).revision;
 
     expect(revision.state.deliveryFeeCents).toBe(0);
     expect(revision.state.freeDelivery).toEqual({

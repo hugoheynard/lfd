@@ -88,14 +88,22 @@ export class ComplementWithoutProposalError extends TechnicalError {
 }
 
 /**
- * Une hausse « par carte » demandée sur une commande qui ne se règle pas par
- * carte (au compte, ou à total nul) : elle se modifie directement (M1).
+ * Une hausse « par carte » qui n'a pas de complément à payer : la commande ne
+ * se règle pas par carte (au compte, ou à total nul — `not_card`), ou elle se
+ * règle par carte mais la modification ne fait pas monter le total
+ * (`no_increase`, plan S1, R5 bis). Dans les deux cas elle se modifie
+ * directement (M1) ; le code ne change pas, la phrase dit le cas réel.
  */
 export class CardIncreaseNotApplicableError extends BusinessError {
-  constructor(readonly orderId: string) {
+  constructor(
+    readonly orderId: string,
+    readonly reason: "not_card" | "no_increase" = "not_card",
+  ) {
     super(
       "orders.card_increase.not_card",
-      "Cette commande ne se règle pas par carte : modifiez-la directement, sans complément à payer.",
+      reason === "not_card"
+        ? "Cette commande ne se règle pas par carte : modifiez-la directement, sans complément à payer."
+        : "Cette modification ne fait pas monter le total : validez-la directement, sans complément à payer.",
     );
   }
 }

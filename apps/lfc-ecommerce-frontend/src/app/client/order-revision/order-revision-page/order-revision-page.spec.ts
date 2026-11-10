@@ -80,6 +80,8 @@ function quoteOf(changes: OrderRevisionQuoteView['changes']): OrderRevisionQuote
 const REVISABLE: CustomerOrderDetailView = {
   ...LIVE_PICKUP,
   cancellability: { cancellable: false, code: 'too_late', until: null },
+  // Au compte : ni complément à reprendre, ni remboursement.
+  paymentStatus: 'not_required',
   revisability: { revisable: true, until: null },
   revision: 3,
 };
@@ -90,10 +92,10 @@ const TOO_LATE: CustomerOrderDetailView = {
   revisability: { revisable: false, code: 'too_late', until: null },
 };
 
-/** Payée par carte : seule une hausse se fait, par un complément (plan S2). */
+/** Encaissée par carte : la hausse se paie (plan S2), la baisse se rembourse (plan S1). */
 const CARD_PAID: CustomerOrderDetailView = {
   ...REVISABLE,
-  revisability: { revisable: true, until: null, cardIncreaseOnly: true },
+  paymentStatus: 'paid',
 };
 
 const COMPLEMENT: CardComplementPaymentView = {
@@ -110,6 +112,14 @@ const INCREASE: OrderRevisionQuoteView = {
   totalCents: 1_800,
   differenceCents: 600,
   settlement: { kind: 'card_complement', complementCents: 600 },
+};
+
+/** Un devis de baisse carte : 12 € → 4 €, 8 € remboursés (plan S1). */
+const DECREASE: OrderRevisionQuoteView = {
+  ...quoteOf(['lines']),
+  totalCents: 400,
+  differenceCents: -800,
+  settlement: { kind: 'card_refund', refundCents: 800 },
 };
 
 interface Doubles {
@@ -416,7 +426,7 @@ describe('OrderRevisionPage', () => {
     expect(el.querySelector('[data-reload]')).not.toBeNull();
   });
 
-  describe('commande payée par carte (plan S2)', () => {
+  describe('commande payée par carte (plans S1, S2)', () => {
     it('le devis d’une hausse annonce le complément, et « Valider » dit le montant', async () => {
       const { el } = await mount({
         order: CARD_PAID,
@@ -430,20 +440,92 @@ describe('OrderRevisionPage', () => {
       expect(submit?.textContent).toContain('Valider et payer 6,00');
     });
 
-    it.each(['decrease', 'same_total'] as const)(
-      'une %s : « pas encore possible », et rien ne se valide',
-      async (reason) => {
-        const { el } = await mount({
-          order: CARD_PAID,
-          quote: () => ({
-            kind: 'ok',
-            value: { ...quoteOf(['lines']), settlement: { kind: 'card_not_revisable', reason } },
-          }),
-        });
-        expect(el.querySelector('[data-settlement]')?.textContent).toContain('Pas encore possible');
-        expect(el.querySelector<HTMLButtonElement>('[data-submit]')?.disabled).toBe(true);
-      },
-    );
+    it('le devis d’une baisse annonce le remboursement, et « Valider la modification » reste ouvert', async () => {
+      const { el } = await mount({
+        order: CARD_PAID,
+        quote: () => ({ kind: 'ok', value: DECREASE }),
+      });
+      expect(el.querySelector('[data-settlement]')?.textContent).toContain(
+        '8,00 € vous seront remboursés sur votre carte',
+      );
+      const submit = el.querySelector<HTMLButtonElement>('[data-submit]');
+      expect(submit?.disabled).toBe(false);
+      expect(submit?.textContent).toContain('Valider la modification');
+    });
+
+    it('une baisse validée : la modification part, et le remboursement s’annonce', async () => {
+      const { fixture, el, gateway, navigate, success } = await mount({
+        order: CARD_PAID,
+        quote: () => ({ kind: 'ok', value: DECREASE }),
+        revise: {
+          kind: 'ok',
+          value: { id: 'ord_9', revision: 4, totalCents: 400, previousTotalCents: 1_200 },
+        },
+      });
+      el.querySelector<HTMLButtonElement>('[data-submit]')?.click();
+      await fixture.whenStable();
+      expect(gateway.proposeCardIncrease).not.toHaveBeenCalled();
+      expect(gateway.revise).toHaveBeenCalledWith(
+        'ord_9',
+        expect.objectContaining({ expectedRevision: 3, expectedTotalCents: 400 }),
+      );
+      expect(success).toHaveBeenCalledWith(
+        'Commande modifiée — 8,00 € vous seront remboursés sur votre carte.',
+      );
+      expect(navigate).toHaveBeenCalledWith(['/mes-commandes', 'ord_9']);
+    });
+
+    it('une baisse que les paiements ne couvrent pas : la phrase du serveur, sans recharger', async () => {
+      const { fixture, el } = await mount({
+        order: CARD_PAID,
+        quote: () => ({ kind: 'ok', value: DECREASE }),
+        revise: {
+          kind: 'refused',
+          refusal: {
+            code: 'orders.revise.card_refund_not_covered',
+            message: 'Le remboursement de cette baisse ne peut pas se faire en ligne.',
+          },
+        },
+      });
+      el.querySelector<HTMLButtonElement>('[data-submit]')?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(el.querySelector('[data-submit-refused]')?.textContent).toContain(
+        'ne peut pas se faire en ligne',
+      );
+      expect(el.querySelector('[data-reload]')).toBeNull();
+    });
+
+    it('un total égal sur une carte se valide comme passée, sans phrase de règlement', async () => {
+      const { fixture, el, gateway, success } = await mount({
+        order: CARD_PAID,
+        quote: () => ({ kind: 'ok', value: quoteOf(['date']) }),
+        revise: {
+          kind: 'ok',
+          value: { id: 'ord_9', revision: 4, totalCents: 1_200, previousTotalCents: 1_200 },
+        },
+      });
+      expect(el.querySelector('[data-settlement]')).toBeNull();
+      el.querySelector<HTMLButtonElement>('[data-submit]')?.click();
+      await fixture.whenStable();
+      expect(gateway.revise).toHaveBeenCalled();
+      expect(success).toHaveBeenCalledWith('Votre commande est modifiée.');
+    });
+
+    it.each([
+      ['unsettled', 'Réglez d’abord'],
+      ['refunded', 'déjà été remboursée'],
+    ] as const)('une carte %s : la phrase, et rien ne se valide', async (reason, said) => {
+      const { el } = await mount({
+        order: CARD_PAID,
+        quote: () => ({
+          kind: 'ok',
+          value: { ...quoteOf(['lines']), settlement: { kind: 'card_not_revisable', reason } },
+        }),
+      });
+      expect(el.querySelector('[data-settlement]')?.textContent).toContain(said);
+      expect(el.querySelector<HTMLButtonElement>('[data-submit]')?.disabled).toBe(true);
+    });
 
     it('« Valider » demande la hausse, monte le formulaire, puis rouvre la commande appliquée', async () => {
       const { fixture, el, gateway, navigate, success } = await mount({

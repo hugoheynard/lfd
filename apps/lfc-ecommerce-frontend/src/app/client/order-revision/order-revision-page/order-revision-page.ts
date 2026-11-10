@@ -10,10 +10,18 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import type { CardComplementPaymentView, CustomerOrderDetailView } from '@lfd/contracts';
+import type {
+  CardComplementPaymentView,
+  CustomerOrderDetailView,
+  OrderRevisedResponse,
+} from '@lfd/contracts';
 import { instantToLocal } from '@lfd/contracts';
 // Par le sous-chemin sans zod, comme la passation (`ClientOrders`).
-import { ORDER_TOTAL_CHANGED } from '@lfd/contracts/shop-values';
+import {
+  ORDER_TOTAL_CHANGED,
+  type OrderRevisionCardRefusal,
+  type OrderRevisionQuoteSettlement,
+} from '@lfd/contracts/shop-values';
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
@@ -149,9 +157,11 @@ export class OrderRevisionPage {
   protected readonly complement = signal<CardComplementPaymentView | null>(null);
 
   /**
-   * Comment le devis se réglera, dit (plan S2, R3) : « 12,00 € à payer » sur
-   * une hausse carte, « pas encore possible » sur une baisse ou un total égal ;
-   * `null` pour une commande qui se règle comme elle a été passée.
+   * Comment le devis se réglera, dit (plan S2, R3 ; plan S1, §2.4) : « 12,00 €
+   * à payer » sur une hausse carte, « 8,00 € vous seront remboursés sur votre
+   * carte » sur une baisse — qui se valide comme une commande au compte ; un
+   * refus seulement quand la carte ne le permet pas ; `null` pour une commande
+   * qui se règle comme elle a été passée (total égal compris).
    */
   protected readonly settlementSaid = computed(() => {
     const quote = this.quote();
@@ -168,11 +178,13 @@ export class OrderRevisionPage {
           blocked: false,
           text: fill(card.toPay, { amount: formatCents(settlement.complementCents) }),
         };
-      case 'card_not_revisable':
+      case 'card_refund':
         return {
-          blocked: true,
-          text: settlement.reason === 'unsettled' ? card.unsettled : card.notYet,
+          blocked: false,
+          text: fill(card.toRefund, { amount: formatCents(settlement.refundCents) }),
         };
+      case 'card_not_revisable':
+        return { blocked: true, text: this.cardNotRevisableSaid(settlement.reason) };
     }
   });
 
@@ -381,7 +393,9 @@ export class OrderRevisionPage {
       return;
     }
     // Un complément vivant se reprend : le rechargement ne perd pas le paiement.
-    if (order.revisability.revisable && order.revisability.cardIncreaseOnly === true) {
+    // Toute commande encaissée par carte peut en porter un ; sans complément,
+    // le serveur rend 409 `nothing_to_pay`, et la passerelle `null`.
+    if (order.revisability.revisable && order.paymentStatus === 'paid') {
       this.complement.set(await this.gateway.complement(this.orderId()));
     }
     const draft = draftOf(order, this.points.pickups());
@@ -450,7 +464,7 @@ export class OrderRevisionPage {
       return;
     }
     if (outcome.kind === 'ok') {
-      this.notify.success(this.c().revisedToast);
+      this.notify.success(this.revisedToastOf(quote.quote.settlement.kind, outcome.value));
       // Le tiroir de la commande relit l'historique : la nouvelle composition s'y lit.
       void this.router.navigate(['/mes-commandes', this.orderId()]);
       return;
@@ -490,6 +504,35 @@ export class OrderRevisionPage {
         ? this.cardRefusalOf(outcome.refusal)
         : { message: this.c().revisionRefused, stale: false },
     );
+  }
+
+  /**
+   * Le refus d'une commande carte, dans la langue du client. `same_total` et
+   * `increase_by_staff` n'atteignent pas la boutique (le total égal se dit
+   * `as_placed`, la hausse du client a son complément) : le repli générique.
+   */
+  private cardNotRevisableSaid(reason: OrderRevisionCardRefusal): string {
+    const card = this.c().card;
+    switch (reason) {
+      case 'unsettled':
+        return card.unsettled;
+      case 'refunded':
+        return card.refunded;
+      case 'same_total':
+      case 'increase_by_staff':
+        return this.c().revisionRefused;
+    }
+  }
+
+  /** « Commande modifiée », et sur une baisse carte ce qui sera remboursé (plan S1, §2.4). */
+  private revisedToastOf(
+    settlement: OrderRevisionQuoteSettlement['kind'],
+    revised: OrderRevisedResponse,
+  ): string {
+    const refundCents = revised.previousTotalCents - revised.totalCents;
+    return settlement === 'card_refund' && refundCents > 0
+      ? fill(this.c().card.refundedToast, { amount: formatCents(refundCents) })
+      : this.c().revisedToast;
   }
 
   /** Les refus nommés de la hausse, dans la langue du client ; les autres, par la phrase du serveur. */

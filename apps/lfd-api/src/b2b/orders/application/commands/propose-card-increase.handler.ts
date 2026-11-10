@@ -113,7 +113,7 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
       throw new CardIncreaseOnShelfOrderError(current.orderId);
     }
     await this.revising.ensureRevisable(current, command.actor.kind, "revise");
-    const revision = await this.revising.compose(current, command.content, command.actor, {
+    const { revision } = await this.revising.compose(current, command.content, command.actor, {
       requireChange: true,
       decidedAt: this.clock.now(),
       expected: "card_complement",

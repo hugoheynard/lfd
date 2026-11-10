@@ -69,6 +69,7 @@ import { OrderRevisionRecording } from "../../services/order-revision-recording.
 import { RevisionWall } from "../../services/revision-wall.js";
 import { ReviseOrderHandler } from "../revise-order.handler.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
+import { cardRefundOf, type CardRefundSetup } from "./revision-card-refund-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { openPlanGate } from "./plan-doubles.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
@@ -302,7 +303,7 @@ export async function placedOrder(over: Partial<RevisableOrder> = {}): Promise<R
     { kind: "staff", staffId: "stf_seed" },
     { requireChange: false, decidedAt: NOW },
   );
-  const { state } = draft;
+  const { state } = draft.revision;
   return {
     ...seed(),
     totalCents: state.totalCents,
@@ -559,6 +560,8 @@ export function reviseScene(
     readonly engagements?: AccountOrderEngagementReader;
     readonly catalogItems?: readonly UnsealedCatalogItem[];
     readonly shelf?: ShelfCircuit;
+    /** Plan S1 : la carte encaissée — projets, paiements, restes. */
+    readonly card?: CardRefundSetup;
   } = {},
 ) {
   const trace: string[] = [];
@@ -591,11 +594,13 @@ export function reviseScene(
     durable,
     clock,
   );
+  const card = cardRefundOf(options.card ?? {}, trace);
   const handler = new ReviseOrderHandler(
     wall,
     revising,
     revisions,
     recording,
+    card.service,
     new DirectUnitOfWork(),
     clock,
   );
@@ -612,5 +617,6 @@ export function reviseScene(
     notes,
     revaluation,
     durable,
+    cardRefunds: card.refunds,
   };
 }

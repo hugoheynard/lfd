@@ -14,4 +14,13 @@ export abstract class CardIncreaseProposalReader {
 
   /** Le projet sous cet identifiant, quel que soit son état — l'exécuteur le relit hors verrou (§2.6). */
   abstract find(proposalId: string): Promise<CardIncreaseProposal | null>;
+
+  /**
+   * Les paiements des compléments dont le projet est `applied` (plan
+   * `documentation/commandes/modification/plan-s1-la-baisse.md`, R4) : les
+   * seuls compléments qu'une baisse rend — jamais celui d'un projet
+   * `refused` ou `closed`, que ses abonnés rendent eux-mêmes. Lu par M1 sous
+   * le verrou `orders`, dans l'unité de travail ambiante.
+   */
+  abstract appliedPaymentsOf(orderId: string): Promise<readonly string[]>;
 }

@@ -15,7 +15,7 @@ export type ReviseOffer =
   | {
       readonly kind: 'revise';
       readonly until: string | null;
-      /** Payée par carte (plan S2, R2 ter) : seule une hausse se fait, en payant la différence. */
+      /** Payée par carte (plans S1, S2) : la différence se paie ou se rembourse sur la carte. */
       readonly cardNote: string | null;
     }
   /** L'heure limite est passée, la commande pas encore au plan : on DEMANDE (M4). */
@@ -33,13 +33,14 @@ export function reviseOfferOf(
   revisability: OrderRevisability,
   locale: LocaleCode,
   copy: OrderReviseCopy,
+  paidByCard: boolean,
 ): ReviseOffer {
   if (revisability.revisable) {
     const until = revisability.until;
     return {
       kind: 'revise',
       until: until === null ? null : fill(copy.reviseUntil, { when: whenOf(until, locale, copy) }),
-      cardNote: revisability.cardIncreaseOnly === true ? copy.reviseCardIncreaseNote : null,
+      cardNote: paidByCard ? copy.reviseCardPaidNote : null,
     };
   }
   const { code, until } = revisability;

@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderRevisionToSave, RevisableOrder } from "../../domain/entities/order-revision.js";
+import type { RecomposedRevision } from "../../domain/entities/revision-settlement.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import {
   OrderRevisedElsewhereError,
@@ -16,6 +17,7 @@ import {
 } from "../../domain/services/revision-after-arrest.js";
 import { OrderRevising } from "../services/order-revising.service.js";
 import { OrderRevisionRecording } from "../services/order-revision-recording.js";
+import { RevisionCardRefund } from "../services/revision-card-refund.js";
 import { RevisionWall } from "../services/revision-wall.js";
 import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.command.js";
 
@@ -36,7 +38,16 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  *    journée nouvelle tenue ouverte, l'écriture conditionnée, la ligne
  *    d'encaissement recalée (au compte), et les deux faits durables.
  *
- * Aucune carte : M1 refuse une commande payable par carte (§ 2.7, lot M2).
+ * ## Une carte encaissée (plan
+ * `documentation/commandes/modification/plan-s1-la-baisse.md`, R3 à R6)
+ *
+ * M1 fait la baisse (rendue sur la carte) et le total égal ; la hausse passe
+ * par un complément. L'ordre, nommé (R5) : hors verrou, aucun projet de
+ * hausse vivant ; sous le verrou et AVANT toute écriture, le projet rejugé,
+ * les restes lus et la répartition calculée ({@link RevisionCardRefund}) ;
+ * PUIS l'écriture ; PUIS une demande de remboursement par paiement touché,
+ * dans la même transaction. Le montant vient du règlement que la
+ * composition remonte, jamais d'un calcul ici.
  *
  * ## Une commande prise sur la vitrine (plan du jour J, §13, lot L5)
  *
@@ -58,6 +69,7 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     private readonly revising: OrderRevising,
     private readonly revisions: OrderRevisionRepository,
     private readonly recording: OrderRevisionRecording,
+    private readonly cardRefund: RevisionCardRefund,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
   ) {}
@@ -66,16 +78,18 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     const current = await this.wall.find(command.orderId, command.actor);
     ensureExpected(current, command.expectedRevision);
     const scope = await this.revising.ensureRevisable(current, command.actor.kind, "revise");
-    const revision = await this.revising.compose(current, command.content, command.actor, {
+    const recomposed = await this.revising.compose(current, command.content, command.actor, {
       requireChange: true,
       // M1 juge à l'horloge (plan S2, R6).
       decidedAt: this.clock.now(),
     });
+    const { revision } = recomposed;
     ensureWithinScope(current, revision, scope);
     // R14, R15 (plan S2) : le règlement a parlé (ensureRevisable, compose) ;
     // on ne fait pas revalider un montant qu'on refuserait de toute façon.
     ensureTotalSeen(revision.totalAfterCents, command.expectedTotalCents);
-    await this.unitOfWork.run(() => this.record(command, revision));
+    await this.cardRefund.ensureNoLiveIncrease(current);
+    await this.unitOfWork.run(() => this.record(command, recomposed));
     return {
       id: revision.orderId,
       revision: revision.toRevision,
@@ -84,7 +98,10 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     };
   }
 
-  private async record(command: ReviseOrderCommand, revision: OrderRevisionToSave): Promise<void> {
+  private async record(
+    command: ReviseOrderCommand,
+    { revision, settlement }: RecomposedRevision,
+  ): Promise<void> {
     const locked = await this.revisions.lock(command.orderId);
     if (locked === null) {
       throw new OrderNotFoundError(command.orderId);
@@ -95,7 +112,9 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       revision,
       await this.revising.ensureRevisable(locked, command.actor.kind, "revise"),
     );
+    const parts = await this.cardRefund.prepare(locked, settlement, command.actor.kind);
     await this.recording.record(locked, revision, command.actor, command.origin);
+    await this.cardRefund.request(parts, command.actor);
   }
 }
 

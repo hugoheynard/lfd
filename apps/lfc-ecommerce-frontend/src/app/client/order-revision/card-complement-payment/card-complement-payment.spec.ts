@@ -45,7 +45,7 @@ function complementOf(expiresInMs = 10 * MINUTE_MS): CardComplementPaymentView {
 const orderAt = (revision: number): CustomerOrderDetailView => ({
   ...LIVE_PICKUP,
   cancellability: { cancellable: false, code: 'too_late', until: null },
-  revisability: { revisable: true, until: null, cardIncreaseOnly: true },
+  revisability: { revisable: true, until: null },
   revision,
 });
 

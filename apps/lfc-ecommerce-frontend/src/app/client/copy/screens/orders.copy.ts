@@ -34,10 +34,14 @@ export interface RevisionRefusalCopy {
 export interface CardIncreaseCopy {
   /** Le devis d'une hausse : `{amount}` reçoit le complément. */
   readonly toPay: string;
-  /** Le devis d'une baisse ou d'un total égal. */
-  readonly notYet: string;
+  /** Le devis d'une baisse (plan S1) : `{amount}` reçoit le remboursement. */
+  readonly toRefund: string;
+  /** Après la validation d'une baisse : `{amount}` reçoit le remboursement. */
+  readonly refundedToast: string;
   /** Le premier paiement n'est pas encore encaissé. */
   readonly unsettled: string;
+  /** La carte a déjà été remboursée en entier. */
+  readonly refunded: string;
   /** Le bouton de validation d'une hausse : `{amount}` reçoit le complément. */
   readonly submitCta: string;
   readonly payTitle: string;
@@ -82,8 +86,8 @@ export interface OrderReviseCopy {
   readonly reviseAction: string;
   /** Ce que dit le tiroir d'une commande réglée par carte, à la place du bouton. */
   readonly reviseCardNote: string;
-  /** Sous le bouton, pour une commande payée par carte : seule une hausse se fait (plan S2). */
-  readonly reviseCardIncreaseNote: string;
+  /** Sous le bouton, pour une commande payée par carte : la différence se paie ou se rembourse (plans S1, S2). */
+  readonly reviseCardPaidNote: string;
   /** Sous le bouton : `{when}` reçoit l'heure limite (« 14/10 à 18:00 »). */
   readonly reviseUntil: string;
   /** La mise en forme de l'heure limite : `{day}` et `{time}`. */
@@ -159,8 +163,8 @@ const ORDER_REVISE_FR: OrderReviseCopy = {
   reviseAction: 'Modifier ma commande',
   reviseCardNote:
     'Commande réglée par carte : pour la modifier, annulez-la et recommandez, ou demandez-nous.',
-  reviseCardIncreaseNote:
-    'Payée par carte : une modification qui augmente le total se règle en payant la différence ; une baisse n’est pas encore possible.',
+  reviseCardPaidNote:
+    'Payée par carte : la différence d’une modification se paie, ou vous est remboursée, sur votre carte.',
   reviseUntil: 'Modifiable jusqu’au {when}.',
   reviseWhen: '{day} à {time}',
   refusedInPreparation: 'Votre commande est déjà en préparation : elle ne se modifie plus.',
@@ -226,9 +230,10 @@ const ORDER_REVISE_FR: OrderReviseCopy = {
   request: ORDER_CHANGE_REQUEST_FR,
   card: {
     toPay: '{amount} à payer pour valider la modification.',
-    notYet:
-      'Pas encore possible pour une commande payée par carte : en ligne, seule une modification qui augmente le total se fait, en payant la différence.',
+    toRefund: '{amount} vous seront remboursés sur votre carte.',
+    refundedToast: 'Commande modifiée — {amount} vous seront remboursés sur votre carte.',
     unsettled: 'Réglez d’abord votre commande : vous pourrez la modifier ensuite.',
+    refunded: 'Cette commande a déjà été remboursée : elle ne se modifie plus. Contactez-nous.',
     submitCta: 'Valider et payer {amount}',
     payTitle: 'Le complément à payer',
     payLead:
@@ -259,8 +264,8 @@ const ORDER_REVISE_FR: OrderReviseCopy = {
 const ORDER_REVISE_EN: OrderReviseCopy = {
   reviseAction: 'Change my order',
   reviseCardNote: 'Order paid by card: to change it, cancel it and order again, or ask us.',
-  reviseCardIncreaseNote:
-    'Paid by card: a change that raises the total is settled by paying the difference; lowering it is not possible yet.',
+  reviseCardPaidNote:
+    'Paid by card: the difference of a change is paid, or refunded to you, on your card.',
   reviseUntil: 'Can be changed until {when}.',
   reviseWhen: '{day} at {time}',
   refusedInPreparation: 'Your order is already being prepared: it can no longer be changed.',
@@ -322,9 +327,10 @@ const ORDER_REVISE_EN: OrderReviseCopy = {
   request: ORDER_CHANGE_REQUEST_EN,
   card: {
     toPay: '{amount} to pay to confirm the change.',
-    notYet:
-      'Not possible yet for an order paid by card: online, only a change that raises the total can be made, by paying the difference.',
+    toRefund: '{amount} will be refunded to your card.',
+    refundedToast: 'Order changed — {amount} will be refunded to your card.',
     unsettled: 'Pay for your order first: you can change it afterwards.',
+    refunded: 'This order has already been refunded: it can no longer be changed. Contact us.',
     submitCta: 'Confirm and pay {amount}',
     payTitle: 'The difference to pay',
     payLead:
@@ -355,8 +361,8 @@ const ORDER_REVISE_IT: OrderReviseCopy = {
   reviseAction: 'Modifica il mio ordine',
   reviseCardNote:
     'Ordine pagato con carta: per modificarlo, annullalo e ordina di nuovo, oppure chiedi a noi.',
-  reviseCardIncreaseNote:
-    'Pagato con carta: una modifica che aumenta il totale si regola pagando la differenza; una riduzione non è ancora possibile.',
+  reviseCardPaidNote:
+    'Pagato con carta: la differenza di una modifica si paga, o ti viene rimborsata, sulla tua carta.',
   reviseUntil: 'Modificabile fino al {when}.',
   reviseWhen: '{day} alle {time}',
   refusedInPreparation: 'Il tuo ordine è già in preparazione: non si può più modificare.',
@@ -420,9 +426,10 @@ const ORDER_REVISE_IT: OrderReviseCopy = {
   request: ORDER_CHANGE_REQUEST_IT,
   card: {
     toPay: '{amount} da pagare per confermare la modifica.',
-    notYet:
-      'Non ancora possibile per un ordine pagato con carta: online si fa solo una modifica che aumenta il totale, pagando la differenza.',
+    toRefund: '{amount} ti saranno rimborsati sulla tua carta.',
+    refundedToast: 'Ordine modificato — {amount} ti saranno rimborsati sulla tua carta.',
     unsettled: 'Paga prima il tuo ordine: potrai modificarlo dopo.',
+    refunded: 'Questo ordine è già stato rimborsato: non si può più modificare. Contattaci.',
     submitCta: 'Conferma e paga {amount}',
     payTitle: 'La differenza da pagare',
     payLead:

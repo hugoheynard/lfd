@@ -13,7 +13,6 @@ import {
 } from "../../domain/entities/order-revision.js";
 import {
   settlementBy,
-  type ExpectedSettlement,
   type RecomposedRevision,
   type RevisionSettlement,
 } from "../../domain/entities/revision-settlement.js";
@@ -31,7 +30,6 @@ import {
   type RevisionScope,
 } from "../../domain/services/revision-after-arrest.js";
 import {
-  isCardIncreaseOnly,
   revisabilityOf,
   standingBlockOf,
   type RevisionPurpose,
@@ -158,10 +156,8 @@ export class OrderRevising {
       // Sur la vitrine, les gardes du circuit, pour l'équipe aussi (lot L5).
       return this.shelf.verdictOf(order, actorKind);
     }
-    // Plan S2 (R2 ter, R3) : une carte encaissée ne se modifie que par une hausse payée.
-    const cardIncreaseOnly = isCardIncreaseOnly(order.paymentStatus, order.totalCents);
     if (standing !== null || actorKind === "staff" || order.serviceDay === null) {
-      return revisabilityOf({ standing, planClosedDay: null, cutoff: null, cardIncreaseOnly });
+      return revisabilityOf({ standing, planClosedDay: null, cutoff: null });
     }
     const day = order.serviceDay;
     const [closed, cutoff] = await Promise.all([
@@ -175,7 +171,6 @@ export class OrderRevising {
       standing,
       planClosedDay: closed ? day : null,
       cutoff,
-      cardIncreaseOnly,
     });
   }
 
@@ -228,13 +223,15 @@ export class OrderRevising {
     content: OrderContent,
     author: RevisionActor,
     options: RevisionOptions,
-  ): Promise<OrderRevisionToSave> {
-    const { revision, refusals } = await this.quote(order, content, author, options);
+  ): Promise<RecomposedRevision> {
+    const { revision, settlement, refusals } = await this.quote(order, content, author, options);
     const [first] = refusals;
     if (first !== undefined) {
       throw revisionPriceErrorOf(first);
     }
-    return revision;
+    // Plan S1, R5 bis : le règlement de l'agrégat remonte — seule source du
+    // montant que M1 rendra (`card_refund`).
+    return { revision, settlement };
   }
 
   /**
@@ -450,11 +447,12 @@ export interface RevisionOptions {
   readonly rulesOf?: RevisionActor["kind"];
   readonly decidedAt: Instant;
   /**
-   * Plan S2 (R2 bis, §2.4) : le règlement que le geste attend, quand il exige
-   * un changement — `same_settlement` (M1, par défaut) ou `card_complement`
-   * (la hausse payée par un complément). Tout autre est refusé, nommé.
+   * Plan S2 (R2 bis, §2.4) : le geste, quand il exige un changement — M1
+   * (par défaut : comme la commande, ou la baisse carte rendue, plan S1) ou
+   * `card_complement` (la hausse payée par un complément). Tout autre
+   * règlement est refusé, nommé, par l'agrégat.
    */
-  readonly expected?: ExpectedSettlement;
+  readonly expected?: "card_complement";
 }
 
 /**
@@ -563,7 +561,5 @@ function recomposedOf(
   if (options.expected === "card_complement") {
     return Order.reviseWithComplement(order, input, author.kind);
   }
-  return { revision: Order.revise(order, input, author.kind), settlement: SAME_SETTLEMENT };
+  return Order.revise(order, input, author.kind);
 }
-
-const SAME_SETTLEMENT: RevisionSettlement = { kind: "same_settlement" };

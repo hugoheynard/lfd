@@ -19,13 +19,15 @@ import { revisionRefusalOf } from "../services/order-revision-refusal.js";
  */
 
 /**
- * Pourquoi une révision ne se règle pas comme la commande (plan S2, R2 bis,
- * R15) : une baisse, un total égal, un premier paiement pas encore encaissé,
- * une hausse — que M1 ne fait pas (elle passe par un projet de complément) —,
- * ou une hausse composée par l'équipe, qui n'en a pas le chemin (Q3 a).
+ * Pourquoi une révision carte n'a pas de chemin (plan S2, R2 bis, R15 ; plan
+ * S1, R2, R12) : un premier paiement pas encore encaissé, une carte déjà
+ * rendue en entier, une hausse — que M1 ne fait pas (elle passe par un projet
+ * de complément) —, ou une hausse composée par l'équipe (Q3 a). `same_total`
+ * n'est plus produit par le tri depuis S1 (Q2 : total égal ouvert), et reste
+ * au contrat.
  */
 export type CardRevisionRefusal =
-  "decrease" | "same_total" | "unsettled" | "increase" | "increase_by_staff";
+  "same_total" | "unsettled" | "refunded" | "increase" | "increase_by_staff";
 
 /**
  * R15 (plan S2, Q3 a) : la hausse composée par l'équipe nomme son geste de
@@ -36,9 +38,21 @@ const STAFF_INCREASE_REFUSAL =
   "Cette commande est payée par carte : l'équipe ne peut pas l'augmenter. " +
   "Demandez au client de modifier sa commande, ou passez une seconde commande.";
 
+/** Plan S1, R1, R2 : tout est déjà rendu — il n'y a plus rien à modifier ni à rendre. */
+const REFUNDED_REVISION_REFUSAL =
+  "Cette commande a déjà été remboursée en entier : elle ne se modifie plus. " +
+  "Passez une nouvelle commande si besoin.";
+
 /** La phrase d'une raison de refus carte, lue par l'équipe sous le bouton grisé. */
 export function cardRevisionRefusalWords(reason: CardRevisionRefusal | null): string {
-  return reason === "increase_by_staff" ? STAFF_INCREASE_REFUSAL : CARD_SETTLED_REVISION_REFUSAL;
+  switch (reason) {
+    case "increase_by_staff":
+      return STAFF_INCREASE_REFUSAL;
+    case "refunded":
+      return REFUNDED_REVISION_REFUSAL;
+    default:
+      return CARD_SETTLED_REVISION_REFUSAL;
+  }
 }
 
 /**

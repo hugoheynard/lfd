@@ -69,7 +69,12 @@ import {
   revisionDraftOf,
 } from '../revision-draft';
 import { isTotalChangedRefusal } from '../../nouvelle-commande/total-changed-refusal';
-import { hasRefusal, refusalsBySku, settlementRefusalOf } from '../revision-refusals';
+import {
+  hasRefusal,
+  refusalsBySku,
+  settlementRefundOf,
+  settlementRefusalOf,
+} from '../revision-refusals';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -309,6 +314,12 @@ export class ModifierCommandePage {
     return quote === null ? null : settlementRefusalOf(quote);
   });
 
+  /** Une baisse carte : ce qui sera remboursé au client, à valider quand même (plan S1). */
+  protected readonly settlementRefund = computed(() => {
+    const quote = this.quote();
+    return quote === null ? null : settlementRefundOf(quote);
+  });
+
   /**
    * La commande ne se modifie pas, dit par le serveur (`revisability`) — dont
    * la carte encaissée (`increase_by_staff`, R15) : la phrase avant la saisie,
@@ -453,7 +464,11 @@ export class ModifierCommandePage {
         expectedRevision: quote.revision,
         expectedTotalCents: quote.totalCents,
       });
-      this.notify.success(`Commande modifiée — nouveau total ${formatCents(revised.totalCents)}.`);
+      const refund = settlementRefundOf(quote);
+      this.notify.success(
+        `Commande modifiée — nouveau total ${formatCents(revised.totalCents)}.` +
+          (refund === null ? '' : ` ${refund}`),
+      );
       await this.router.navigate(this.back());
     } catch (error) {
       if (isTotalChangedRefusal(error)) {

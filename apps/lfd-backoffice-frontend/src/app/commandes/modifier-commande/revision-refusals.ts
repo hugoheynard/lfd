@@ -60,25 +60,30 @@ export function hasRefusal(quote: OrderRevisionQuoteView): boolean {
 
 /**
  * Doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2 (Q3 a) :
- * l'équipe ne modifie pas une commande payée par carte — une hausse se paie
- * par le client, une baisse ou un total égal ne se font pas encore. La phrase
- * de la hausse reprend celle du serveur (`increase_by_staff`).
+ * l'équipe n'augmente pas une commande payée par carte — une hausse se paie
+ * par le client. Une baisse se valide, la différence remboursée sur la carte
+ * (plan `plan-s1-la-baisse.md`, §2.4) ; un total égal se règle comme passé.
+ * La phrase de la hausse reprend celle du serveur (`increase_by_staff`).
  */
 export const STAFF_CARD_INCREASE_REFUSAL =
   "Cette commande est payée par carte : l'équipe ne peut pas l'augmenter. " +
   'Demandez au client de modifier sa commande, ou passez une seconde commande.';
 
-const CARD_NOT_YET =
-  "Cette commande est payée par carte : une baisse ou un changement à total égal n'est pas encore possible.";
-
 const CARD_UNSETTLED =
   "Le paiement par carte de cette commande n'est pas encore encaissé : elle ne se modifie pas.";
+
+const CARD_REFUNDED =
+  'Cette commande a déjà été remboursée sur la carte du client : elle ne se modifie plus.';
+
+/** Repli d'une raison que le devis ne sert plus (`same_total`, plan S1, Q2). */
+const CARD_NOT_REVISABLE = 'Cette commande payée par carte ne se modifie pas.';
 
 /** Le règlement du devis qui empêche l'équipe de valider, dit ; `null` s'il se règle comme passé. */
 export function settlementRefusalOf(quote: OrderRevisionQuoteView): string | null {
   const settlement = quote.settlement;
   switch (settlement.kind) {
     case 'as_placed':
+    case 'card_refund':
       return null;
     case 'card_complement':
       return STAFF_CARD_INCREASE_REFUSAL;
@@ -88,9 +93,17 @@ export function settlementRefusalOf(quote: OrderRevisionQuoteView): string | nul
           return STAFF_CARD_INCREASE_REFUSAL;
         case 'unsettled':
           return CARD_UNSETTLED;
-        case 'decrease':
+        case 'refunded':
+          return CARD_REFUNDED;
         case 'same_total':
-          return CARD_NOT_YET;
+          return CARD_NOT_REVISABLE;
       }
   }
+}
+
+/** Le remboursement d'une baisse carte, dit à l'équipe (plan S1, §2.4) ; `null` sinon. */
+export function settlementRefundOf(quote: OrderRevisionQuoteView): string | null {
+  return quote.settlement.kind === 'card_refund'
+    ? `${formatCents(quote.settlement.refundCents)} seront remboursés sur la carte du client.`
+    : null;
 }

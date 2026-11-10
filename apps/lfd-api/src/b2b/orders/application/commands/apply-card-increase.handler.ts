@@ -99,12 +99,18 @@ export class ApplyCardIncreaseHandler implements ICommandHandler<ApplyCardIncrea
       throw new OrderNotFoundError(frozen.orderId);
     }
     ensureBase(order, frozen.baseRevision);
-    return this.revising.compose(order, frozenOrderContentOf(proposal), frozen.author, {
-      requireChange: true,
-      rulesOf: frozen.rules.rulesOf,
-      decidedAt: frozen.createdAt,
-      expected: "card_complement",
-    });
+    const { revision } = await this.revising.compose(
+      order,
+      frozenOrderContentOf(proposal),
+      frozen.author,
+      {
+        requireChange: true,
+        rulesOf: frozen.rules.rulesOf,
+        decidedAt: frozen.createdAt,
+        expected: "card_complement",
+      },
+    );
+    return revision;
   }
 
   /** Étape 3, sous `orders` puis le projet (§2.3). */

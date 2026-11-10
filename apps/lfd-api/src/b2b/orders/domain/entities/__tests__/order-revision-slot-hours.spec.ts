@@ -53,7 +53,7 @@ function reviseAt(
   day?: string,
 ) {
   const order = orderWith(hours);
-  return Order.revise(order, revisedTo(order, window, day));
+  return Order.revise(order, revisedTo(order, window, day)).revision;
 }
 
 describe("Order.revise — le créneau contre les heures figées (L9)", () => {

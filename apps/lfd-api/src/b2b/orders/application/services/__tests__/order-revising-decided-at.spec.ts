@@ -44,7 +44,7 @@ describe("OrderRevising — R6, l'heure limite au geste", () => {
   it("décidé avant l'heure limite, appliqué après : la hausse passe", async () => {
     const order = await placedOrder();
 
-    const revision = await revisingAt(new FixedClock(AFTER_CUTOFF)).compose(
+    const { revision } = await revisingAt(new FixedClock(AFTER_CUTOFF)).compose(
       order,
       content({ note: "x" }),
       CUSTOMER,

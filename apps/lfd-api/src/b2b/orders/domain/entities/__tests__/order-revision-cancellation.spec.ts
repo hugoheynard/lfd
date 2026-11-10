@@ -125,7 +125,7 @@ function placed(
 }
 
 function revisedTo(current: RevisableOrder, day: string, start: string) {
-  const { state } = Order.revise(current, input(day, start));
+  const { state } = Order.revise(current, input(day, start)).revision;
   return {
     fixed: state.customerCancellation,
     until: state.customerCancellableUntil,

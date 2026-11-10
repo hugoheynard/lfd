@@ -193,7 +193,7 @@ describe("Order.recompose — une commande sur stock garde son acheminement", ()
     const revision = Order.revise(
       placed({ supply: "shelf", today: TODAY, entryShortcut: "immediate_pickup" }),
       input({ lines: [line("VIE-001", 5), line("PAI-001", 1)] }),
-    );
+    ).revision;
 
     expect(revision.changes).toEqual(["lines"]);
     expect(revision.state).toMatchObject({ supply: "shelf", entryShortcut: "immediate_pickup" });
@@ -267,7 +267,7 @@ describe("Order.draft — d'où vient la saisie de l'équipe (Hugo, 2026-11-04)"
     const revision = Order.revise(
       placed({ supply: "planned" }, "commercial"),
       input({ lines: [line("VIE-001", 5)] }),
-    );
+    ).revision;
 
     expect(revision.state).toMatchObject({ entryOrigin: "commercial" });
   });
@@ -276,7 +276,7 @@ describe("Order.draft — d'où vient la saisie de l'équipe (Hugo, 2026-11-04)"
     const revision = Order.revise(
       placed({ supply: "planned" }),
       input({ lines: [line("VIE-001", 5)] }),
-    );
+    ).revision;
 
     expect(revision.state).toMatchObject({ entryOrigin: null });
   });

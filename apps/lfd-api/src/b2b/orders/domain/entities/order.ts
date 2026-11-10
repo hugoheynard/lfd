@@ -37,12 +37,12 @@ import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
   ensureNoShortfallDecision,
   revisionOf,
-  type OrderRevisionToSave,
   type RevisableOrder,
   type RevisionActor,
 } from "./order-revision.js";
 import {
   ensureSettlementExpected,
+  type ExpectedSettlement,
   revisionSettlementOf,
   type RecomposedRevision,
 } from "./revision-settlement.js";
@@ -87,6 +87,16 @@ export type {
 
 /** Décision de règlement : indécise (`null`), carte (intent), ou différée. */
 type Payment = { readonly status: PaymentStatus; readonly intentId: string | null } | null;
+
+/** Plan S1, R5 bis : ce que M1 admet — comme la commande, ou la baisse carte rendue. */
+const M1_SETTLEMENTS: ReadonlySet<ExpectedSettlement> = new Set<ExpectedSettlement>([
+  "same_settlement",
+  "card_refund",
+]);
+/** Plan S2, §2.4 : la hausse payée n'admet que son complément. */
+const COMPLEMENT_ONLY: ReadonlySet<ExpectedSettlement> = new Set<ExpectedSettlement>([
+  "card_complement",
+]);
 
 /**
  * **Commande** (agrégat racine). Elle possède son **argent** : sous-total, TVA
@@ -218,11 +228,11 @@ export class Order {
   /**
    * **Une révision de la commande** (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») :
    * la nouvelle composition se calcule EXACTEMENT comme à la passation
-   * (`draft`), garde le règlement de la commande (au compte ou gratuit — M1
-   * refuse la carte), puis se juge contre la révision qu'elle corrige : prix
+   * (`draft`), garde le règlement de la commande (au compte, gratuit, ou une
+   * carte encaissée qui baisse ou reste égale — plan S1), puis se juge contre la révision qu'elle corrige : prix
    * figés tenus (R3), bon imputé couvert (R4), au moins un changement (R6).
    *
-   * @throws {CardOrderNotRevisableError} la commande se règle par carte, avec la raison du tri (R2 bis).
+   * @throws {CardOrderNotRevisableError} carte, ni comme la commande ni rendue, avec la raison du tri (R2 bis).
    * @throws {ShortfallDecidedRevisionError} son départ incomplet est décidé (E6b).
    * @throws {UnchangedOrderRevisionError} la modification ne change rien.
    * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement sort de la cible figée d'une remise (L9).
@@ -232,12 +242,12 @@ export class Order {
     current: RevisableOrder,
     input: PricedDraftInput,
     by: RevisionActor["kind"] = "customer",
-  ): OrderRevisionToSave {
-    // M1 ne fait que `same_settlement` (plan S2, R2 bis) : une hausse carte
-    // passe par un projet de complément, le reste attend S1. `by` ne change
-    // que la raison d'un refus (R15 : l'équipe n'augmente pas une carte).
-    return ensureSettlementExpected(current, Order.recompose(current, input), "same_settlement", by)
-      .revision;
+  ): RecomposedRevision {
+    // M1 (plan S1, R5 bis) : comme la commande, ou une baisse carte rendue —
+    // le règlement remonte jusqu'au handler, seule source du montant à rendre.
+    // Une hausse carte passe par un projet de complément. `by` ne change que
+    // la raison d'un refus (plan S2, R15 : l'équipe n'augmente pas une carte).
+    return ensureSettlementExpected(current, Order.recompose(current, input), M1_SETTLEMENTS, by);
   }
 
   /**
@@ -245,20 +255,15 @@ export class Order {
    * recomposition, qui n'admet QUE `card_complement` — rendu avec son
    * complément. Le client seul (R15).
    *
-   * @throws {CardOrderNotRevisableError} baisse, total égal, carte pas encore encaissée, ou l'équipe.
-   * @throws {CardIncreaseNotApplicableError} la commande ne se règle pas par carte.
+   * @throws {CardOrderNotRevisableError} carte pas encore encaissée, déjà rendue, ou l'équipe.
+   * @throws {CardIncreaseNotApplicableError} pas de complément à payer (pas de carte, baisse, total égal).
    */
   static reviseWithComplement(
     current: RevisableOrder,
     input: PricedDraftInput,
     by: RevisionActor["kind"],
   ): RecomposedRevision {
-    return ensureSettlementExpected(
-      current,
-      Order.recompose(current, input),
-      "card_complement",
-      by,
-    );
+    return ensureSettlementExpected(current, Order.recompose(current, input), COMPLEMENT_ONLY, by);
   }
 
   /**
