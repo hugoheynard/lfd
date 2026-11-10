@@ -523,8 +523,8 @@ model Order {
   customerCancellationFixed       Boolean   @default(false) @map("customer_cancellation_fixed")
   customerCancellationHoursBefore Int?      @map("customer_cancellation_hours_before")
 
-  /// **La révision de la commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
-  /// M1) : `0` à la passation, `+1` à chaque modification. Toute écriture d'une
+  /// **La révision de la commande** (voir `documentation/commandes/modification/modifier-une-commande.md`,
+  /// § 2.1 « Une révision, pas des avenants ») : `0` à la passation, `+1` à chaque modification. Toute écriture d'une
   /// révision est conditionnée sur elle (R7), et la clé d'archive du bon la porte.
   revision  Int       @default(0)
   /// L'instant de la dernière révision, `NULL` tant qu'aucune : le bon le date.
@@ -561,8 +561,8 @@ model Order {
   @@schema("public")
 }
 
-/// **L'historique des révisions d'une commande** (plan
-/// `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9) : une
+/// **L'historique des révisions d'une commande** (voir
+/// `documentation/commandes/modification/modifier-une-commande.md`, § 2.1 « Une révision, pas des avenants ») : une
 /// ligne par modification, qui garde EN ENTIER la composition qu'elle a
 /// remplacée — lignes, acheminement, montants —, son auteur, sa date et
 /// l'écart de total. C'est elle seule qui fait foi du passé : les lignes de

@@ -19,8 +19,8 @@ import { REVISABLE_ORDER_SELECT, toRevisableOrder } from "./revisable-order.row.
 import { revisedCompositionOf } from "./revised-composition.js";
 
 /**
- * Adaptateur Prisma de la révision d'une commande (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9). Rejoint
+ * Adaptateur Prisma de la révision d'une commande (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.1 « Une révision, pas des avenants »). Rejoint
  * l'unité de travail ambiante : la révision, son historique, la note au
  * fournil, la ligne d'encaissement et les faits partent ensemble, ou rien.
  */

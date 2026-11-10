@@ -25,8 +25,8 @@ import { QuoteOrderChangeRequestHandler } from "../quote-order-change-request.ha
 import { QuoteOrderChangeRequestQuery } from "../quote-order-change-request.query.js";
 
 /**
- * **Le devis d'une demande de modification** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §14) — ouvert au
+ * **Le devis d'une demande de modification** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) — ouvert au
  * seul « trop tard », derrière le mur du client, chiffré par la MÊME
  * recomposition que la modification. Instants de la scène, horloge FIXE.
  */

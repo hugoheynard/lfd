@@ -12,8 +12,8 @@ import { OrderChangeRefusedMail } from "../services/order-change-refused-mail.se
 import { RefuseOrderChangeCommand } from "./refuse-order-change.command.js";
 
 /**
- * **Refuser une demande de modification** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4) : la
+ * **Refuser une demande de modification** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) : la
  * commande ne bouge pas ; la demande est traitée avec le mot adressé au
  * client, qui le reçoit par courriel et le lit sur sa commande. La ligne de
  * la demande est verrouillée, comme pour « Appliquer » : les deux réponses ne

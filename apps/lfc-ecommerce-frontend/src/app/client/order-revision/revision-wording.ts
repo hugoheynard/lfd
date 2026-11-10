@@ -24,8 +24,8 @@ export type ReviseOffer =
   | { readonly kind: 'none' };
 
 /**
- * **La modificabilité dite au client** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) — le serveur
+ * **La modificabilité dite au client** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — le serveur
  * décide par la règle du geste (`revisability` de `GET /orders/:id`), la
  * boutique ne fait que le dire dans la langue du client.
  */

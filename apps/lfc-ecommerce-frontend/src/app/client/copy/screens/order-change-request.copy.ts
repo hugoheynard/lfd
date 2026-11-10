@@ -1,7 +1,7 @@
 /**
  * **Demander une modification après l'heure limite** — le tiroir et l'écran de
- * modification en mode « demande » (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Greffé dans
+ * modification en mode « demande » (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)). Greffé dans
  * `orders.revision.request` ; à part de `orders.copy.ts` pour ne pas
  * l'allonger.
  *
@@ -29,7 +29,7 @@ export interface OrderChangeRequestCopy {
   readonly requestSendTitle: string;
   /** Ce qui se passe ensuite. */
   readonly requestSendNote: string;
-  /** Sous le nouveau total d'une demande : il est indicatif (§14, décision de Hugo du 2026-10-23). */
+  /** Sous le nouveau total d'une demande : il est indicatif (§ 2.5, décision de Hugo du 2026-10-23). */
   readonly requestQuoteIndicative: string;
   /** Le mot facultatif à l'équipe. */
   readonly requestMessageLabel: string;

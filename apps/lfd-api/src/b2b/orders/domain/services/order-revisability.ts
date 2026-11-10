@@ -5,8 +5,8 @@ import { revisionRefusalOf } from "./order-revision-refusal.js";
 import { settlementRegimeOf } from "./settlement-regime.js";
 
 /**
- * **La commande se modifie-t-elle, et sinon pourquoi** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6, §9) — pure :
+ * **La commande se modifie-t-elle, et sinon pourquoi** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.3 « Les règles », R1) — pure :
  * pas d'horloge, pas de port. Elle sert deux fois, comme `cancellationOf` : le
  * refus du geste (`OrderRevising.ensureRevisable`) et l'affichage des deux vues,
  * client et équipe, qui disent donc le même cas.
@@ -17,7 +17,7 @@ export type RevisionBlock =
   /** R1 : la frontière de l'annulation (annulée, prête, inscrite, engagée, remboursement en vol). */
   | { readonly kind: "order"; readonly block: CancellationBlock }
   /**
-   * Une commande payable par carte (§9) : sur le chemin d'une DEMANDE (M4),
+   * Une commande payable par carte (§ 2.7) : sur le chemin d'une DEMANDE (M4),
    * toute carte ; sur celui d'une modification, une carte pas encore
    * encaissée (`unsettled`) — encaissée, seule la hausse a un chemin (plan
    * `plan-s2-la-hausse.md`, R2 ter), et l'agrégat la trie.
@@ -102,7 +102,7 @@ export function isCardIncreaseOnly(paymentStatus: PaymentStatus, totalCents: num
   return settlementRegimeOf(paymentStatus, totalCents) === "paid";
 }
 
-/** §9 : règlement par carte attendu (`due`) ou encaissé (`paid`). */
+/** § 2.7 : règlement par carte attendu (`due`) ou encaissé (`paid`). */
 export function isCardSettlement(paymentStatus: PaymentStatus, totalCents: number): boolean {
   const regime = settlementRegimeOf(paymentStatus, totalCents);
   return regime === "due" || regime === "paid";

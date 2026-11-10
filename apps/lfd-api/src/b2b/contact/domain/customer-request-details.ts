@@ -34,8 +34,8 @@ export interface OrderProblemDetails {
 
 /**
  * La composition demandée — le corps d'une révision de commande, sans la
- * révision portée (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * M4). La demande ne la juge pas : c'est la révision qui la jugera, au moment
+ * révision portée (voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.5 « La demande après l'heure limite » (M4)). La demande ne la juge pas : c'est la révision qui la jugera, au moment
  * où le commerce l'applique.
  */
 export type RequestedOrderChange = OrderRevisionQuotePayload;

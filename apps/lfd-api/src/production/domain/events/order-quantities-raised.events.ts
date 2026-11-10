@@ -11,9 +11,9 @@ export const PRODUCTION_ORDER_QUANTITIES_RAISED = "production.order_quantities_r
 const JOURNAL_TYPE = "production_day.order_quantities_raised" satisfies JournalFactType;
 
 /**
- * **Une commande inscrite demande plus au four** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 2.1 et § 7) — l'équipe a monté des quantités après l'arrêt du plan ; le
+ * **Une commande inscrite demande plus au four** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — l'équipe a monté des quantités après l'arrêt du plan ; le
  * compte du jour monte d'autant, et c'est ce fait qui dit pourquoi
  * (« +2 baguettes, ORD-… »). Une baisse ne publie rien : le compte ne baisse
  * pas.

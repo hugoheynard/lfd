@@ -21,13 +21,13 @@ import { ListOrderRevisionsQuery } from "../application/queries/list-order-revis
 import { QuoteOrderRevisionQuery } from "../application/queries/quote-order-revision.query.js";
 
 /**
- * **L'équipe modifie une commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — heure limite
+ * **L'équipe modifie une commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — heure limite
  * ignorée, jusqu'à l'inscription au fournil, au compte ou à total nul
- * seulement (§9).
+ * seulement (§ 2.7).
  *
  * Sous `b2b_place_order:write`, le droit de composer une commande pour un
- * client : la modification reprend le même parcours que la saisie (§6). Le
+ * client : la modification reprend le même parcours que la saisie (§ 2.2). Le
  * plan ne nomme pas de droit à part (signalé au rapport du lot M1). L'auteur
  * vient de la porte (`@StaffUserId()`, l'id de la fiche), jamais du corps.
  */
@@ -40,7 +40,7 @@ export class AdminOrderRevisionsController {
   ) {}
 
   /**
-   * **Les versions précédentes** (§6) : chaque modification, la plus récente
+   * **Les versions précédentes** (§ 2.2) : chaque modification, la plus récente
    * en tête, avec la composition qu'elle a remplacée. Un `GET` : le droit de
    * LIRE les commandes (`b2b_orders:read`, celui de la fiche), pas celui de
    * les composer.

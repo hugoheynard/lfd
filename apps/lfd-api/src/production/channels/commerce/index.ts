@@ -82,11 +82,11 @@ export {
   type OrderWithdrawalOutcome,
 } from "./order-withdrawal.desk.js";
 export { OrderInscriptionReader } from "./order-inscription.reader.js";
-// La modification d'une commande (plan `commandes/modification/plan-modifier-une-commande.md`,
-// §9.1, 2026-10-23) : le guichet que le fournil DÉCLARE et IMPLÉMENTE pour
+// La modification d'une commande (voir `documentation/commandes/modification/modifier-une-commande.md`,
+// § 2.8 « Les autres blocs », 2026-10-23) : le guichet que le fournil DÉCLARE et IMPLÉMENTE pour
 // noter une révision sous le verrou de chaque journée qu'elle touche.
 // Depuis A2 (2026-10-25), il révise aussi le dû d'une commande inscrite sous
-// `staff_quantities` (`plan-a2-modifier-une-commande-inscrite.md`, § 7).
+// `staff_quantities` (`documentation/commandes/modification/modifier-une-commande.md`, § 2.4 « Après l'inscription » (A2)).
 export {
   OrderRevisionDesk,
   type OrderRevisionAllowance,

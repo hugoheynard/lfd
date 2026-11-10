@@ -12,8 +12,8 @@ import { DayStopsLocator } from "../day-stops-locator.js";
 export const LOCATE_ON_ORDER_REVISED = "delivery.locate-on-order-revised";
 
 /**
- * **Situer l'adresse d'une commande modifiée** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9) — la même
+ * **Situer l'adresse d'une commande modifiée** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs ») — la même
  * demande que `LocateOnOrderPlaced`, par le MÊME service, quand l'acheminement
  * a changé : une livraison qui change d'adresse ou de jour doit avoir son point
  * dans le prévisionnel. Il ne fait que DEMANDER, en fond.

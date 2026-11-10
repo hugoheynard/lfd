@@ -2,8 +2,8 @@ import { OrderCollectionTransitionError } from "../../errors/collection-errors.j
 import { OrderCollection, type OrderCollectionStateName } from "../order-collection.js";
 
 /**
- * La ligne d'encaissement d'une commande au compte MODIFIÉE (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : elle prend le
+ * La ligne d'encaissement d'une commande au compte MODIFIÉE (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.6 « L'argent au compte ») : elle prend le
  * nouveau total tant qu'elle n'est pas engagée, et refuse sinon. L'instant
  * n'est que recopié.
  */

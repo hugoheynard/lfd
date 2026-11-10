@@ -55,8 +55,8 @@ export interface AdminOrderView extends OrderView {
    */
   readonly refundRequests: readonly AdminRefundRequest[];
   /**
-   * **Peut-on la modifier, et sinon pourquoi** (plan
-   * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6) — la
+   * **Peut-on la modifier, et sinon pourquoi** (voir
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.3 « Les règles », R1) — la
    * règle de l'équipe, par la même recomposition que
    * `POST /admin/orders/:id/revisions`, sans verrou : c'est un affichage.
    */

@@ -7,8 +7,8 @@ import { RevisableOrderReader } from "../../domain/ports/revisable-order.reader.
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
 
 /**
- * **La commande à modifier, derrière son mur** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — partagé par
+ * **La commande à modifier, derrière son mur** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — partagé par
  * la modification et son devis.
  *
  * Le client ne voit que ses commandes personnelles et celles des sociétés

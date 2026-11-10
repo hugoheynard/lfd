@@ -2,8 +2,8 @@ import type { RevisionActor } from "../../domain/entities/order-revision.js";
 import type { OrderContent } from "../services/order-content.js";
 
 /**
- * **Modifier une commande passée** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — par le
+ * **Modifier une commande passée** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — par le
  * client, sous son mur et jusqu'à l'heure limite, ou par l'équipe, jusqu'à
  * l'inscription au fournil (R1).
  *

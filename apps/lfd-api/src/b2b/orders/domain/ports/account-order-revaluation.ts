@@ -1,6 +1,6 @@
 /**
- * **Le montant au compte suit la commande modifiée** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9 : « le
+ * **Le montant au compte suit la commande modifiée** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.6 « L'argent au compte » : « le
  * compte ») — port que la commande DÉCLARE et que la comptabilité implémente,
  * à côté de `AccountOrderEngagement` et pour la même raison : la ligne
  * d'encaissement appartient à la comptabilité.

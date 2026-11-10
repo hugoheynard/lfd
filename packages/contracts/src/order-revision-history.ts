@@ -4,11 +4,11 @@ import type { OrderRevisionChange } from "./order-revision.values.js";
 
 /**
  * **Les versions précédentes d'une commande** — `GET /admin/orders/:id/revisions`
- * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, §6, M3).
+ * (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
  *
  * Une entrée par modification, la plus récente en tête : qui, quand, ce qui a
  * changé, l'écart, et la composition REMPLACÉE telle qu'elle était écrite.
- * Réservé à l'équipe : le client ne voit que la commande actuelle (§6).
+ * Réservé à l'équipe : le client ne voit que la commande actuelle (partie 1).
  */
 export interface OrderRevisionEntryView {
   /** La révision remplacée : `0` est la composition de la passation. */

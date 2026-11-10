@@ -100,8 +100,8 @@ export class OrderCollection {
 
   /**
    * `due` ou `excluded` → même état, nouveau montant : sa commande au compte a
-   * été modifiée avant toute facture ni tout lot (plan
-   * `commandes/modification/plan-modifier-une-commande.md`, M1, §9). Une ligne engagée ne se
+   * été modifiée avant toute facture ni tout lot (voir
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.6 « L'argent au compte »). Une ligne engagée ne se
    * réévalue pas : le lot ou le prélèvement porte déjà l'ancien montant.
    */
   revalue(amountCents: number, at: Date): void {

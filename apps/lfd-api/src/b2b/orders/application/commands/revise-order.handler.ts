@@ -20,8 +20,8 @@ import { RevisionWall } from "../services/revision-wall.js";
 import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.command.js";
 
 /**
- * **Modifier une commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9).
+ * **Modifier une commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
  *
  * ## L'ordre des gestes
  *
@@ -32,11 +32,11 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  * 2. La transaction : ligne `orders` verrouillée et relue, révision et règle
  *    rejugées sous le verrou, puis l'écriture ({@link OrderRevisionRecording},
  *    partagée avec la hausse payée, plan S2 §2.6) : le guichet du fournil sous le verrou de
- *    chaque journée touchée (§9.1 — « inscrite » refuse et annule tout), la
+ *    chaque journée touchée (§ 2.8 — « inscrite » refuse et annule tout), la
  *    journée nouvelle tenue ouverte, l'écriture conditionnée, la ligne
  *    d'encaissement recalée (au compte), et les deux faits durables.
  *
- * Aucune carte : M1 refuse une commande payable par carte (§9, lot M2).
+ * Aucune carte : M1 refuse une commande payable par carte (§ 2.7, lot M2).
  *
  * ## Une commande prise sur la vitrine (plan du jour J, §13, lot L5)
  *

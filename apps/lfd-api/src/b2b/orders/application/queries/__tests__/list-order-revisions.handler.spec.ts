@@ -13,8 +13,8 @@ import { ListOrderRevisionsHandler } from "../list-order-revisions.handler.js";
 import { ListOrderRevisionsQuery } from "../list-order-revisions.query.js";
 
 /**
- * **Les versions précédentes d'une commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) : l'ordre du
+ * **Les versions précédentes d'une commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : l'ordre du
  * port, l'auteur staff nommé par l'annuaire, le 404 d'une commande inconnue.
  *
  * Les instants ne sont que des données rendues telles quelles.

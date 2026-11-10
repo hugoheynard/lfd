@@ -5,8 +5,8 @@ import { OrderCollectionRepository } from "../../domain/ports/order-collection.r
 
 /**
  * La comptabilité répond à la modification d'une commande au compte : sa
- * ligne d'encaissement, si elle existe déjà, prend le nouveau total (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1). Sans ligne,
+ * ligne d'encaissement, si elle existe déjà, prend le nouveau total (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.6 « L'argent au compte »). Sans ligne,
  * rien à faire : elle naîtra du total relu de la commande.
  *
  * Implémente le port que la commande déclare ; relié dans

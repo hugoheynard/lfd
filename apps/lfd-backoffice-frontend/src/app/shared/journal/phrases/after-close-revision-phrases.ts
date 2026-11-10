@@ -14,9 +14,9 @@ import {
 import { formatUnit } from '../units';
 
 /**
- * **Les quantités d'une commande changées après l'arrêt du plan** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7) — le miroir de `AFTER_CLOSE_REVISION_FACTS` dans `@lfd/contracts`.
+ * **Les quantités d'une commande changées après l'arrêt du plan** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — le miroir de `AFTER_CLOSE_REVISION_FACTS` dans `@lfd/contracts`.
  * Le fournil dit ce qui a monté (« +2 Baguette »), le colisage les lignes
  * dues de → à. L'auteur est l'équipe qui a modifié la commande.
  */

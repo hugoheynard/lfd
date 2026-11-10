@@ -1,6 +1,6 @@
 /**
- * **Ce que la modification demandée donnerait** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) — le devis de
+ * **Ce que la modification demandée donnerait** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) — le devis de
  * révision de l'équipe sur la commande telle qu'elle est, pour une demande
  * EN ATTENTE. Lu sous le droit de la boîte des demandes.
  */

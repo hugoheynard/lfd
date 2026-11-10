@@ -9,7 +9,7 @@ import type { QuoteState } from '../revision-quote/revision-quote';
 import { ChangeRequestCard } from './change-request-card';
 
 /**
- * **La carte de la demande** (plan `plan-modifier-une-commande.md`, §14) : le
+ * **La carte de la demande** (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) : le
  * devis de la demande est montré, et toujours dit INDICATIF.
  */
 

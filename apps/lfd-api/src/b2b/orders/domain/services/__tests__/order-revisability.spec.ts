@@ -10,8 +10,8 @@ import {
 } from "../order-revisability.js";
 
 /**
- * **La modificabilité d'une commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6, §9) — la
+ * **La modificabilité d'une commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.3 « Les règles », R1) — la
  * règle pure que le geste et les deux vues partagent.
  *
  * Les instants ne sont comparés qu'entre eux : la règle ne lit aucune horloge

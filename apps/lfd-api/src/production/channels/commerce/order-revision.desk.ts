@@ -16,9 +16,9 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 export type OrderRevisionOutcome = "noted" | "inscribed" | "raised" | "unchanged";
 
 /**
- * Jusqu'où la révision peut aller, décidé par le commerce (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7, B4) : `before_inscription`, la règle d'avant ; `staff_quantities`,
+ * Jusqu'où la révision peut aller, décidé par le commerce (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») : `before_inscription`, la règle d'avant ; `staff_quantities`,
  * l'équipe change les quantités d'une commande au compte, mêmes articles, même
  * jour. Une valeur PROPRE à la révision : l'autorisation de l'annulation
  * (A1) n'en sait rien. Le fournil ne sait pas pourquoi — il applique.
@@ -34,7 +34,7 @@ export interface RevisedOrderLine {
 /**
  * **Le guichet de la révision au fournil** — port que le fournil DÉCLARE et
  * IMPLÉMENTE, et que le commerce appelle quand une commande est modifiée
- * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, §9.1,
+ * (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs »,
  * 2026-10-23). Même figure que {@link OrderWithdrawalDesk}, pour la même
  * raison : la clôture et le retirage lisent les commandes du commerce AVANT
  * le verrou de la journée, et une révision validée entre les deux aurait été

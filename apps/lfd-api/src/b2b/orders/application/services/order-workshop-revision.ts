@@ -19,10 +19,10 @@ import {
 } from "../../domain/services/revision-after-arrest.js";
 
 /**
- * **La révision chez les ateliers** — le fournil, puis le colisage (plan
- * `plan-modifier-une-commande.md`, §9.1 ; plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7), dans l'unité de travail de la révision, après le verrou de la ligne
+ * **La révision chez les ateliers** — le fournil, puis le colisage (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs » ; A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription »), dans l'unité de travail de la révision, après le verrou de la ligne
  * `orders`. Même figure que `OrderWorkshopWithdrawal` (A1).
  *
  * 1. Le guichet du fournil, sous le verrou de chaque journée touchée.

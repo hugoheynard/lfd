@@ -160,8 +160,8 @@ export type OrderProblemPayload = z.infer<typeof orderProblemPayloadSchema>;
 
 /**
  * `POST /me/orders/:id/change-request` — **demander une modification** après
- * l'heure limite (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * M4). `change` est le corps d'une révision sans son total vu
+ * l'heure limite (voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.5 « La demande après l'heure limite » (M4)). `change` est le corps d'une révision sans son total vu
  * (`requestedOrderRevisionSchema`) : la commande voulue, entière, et la révision
  * sur laquelle le client a composé — c'est elle que le commerce appliquera.
  * Le mot est facultatif ; nom et e-mail sont pris au compte.

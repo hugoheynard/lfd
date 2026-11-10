@@ -19,8 +19,8 @@ import { GetOrderRevisabilityHandler } from "../get-order-revisability.handler.j
 import { GetOrderRevisabilityQuery } from "../get-order-revisability.query.js";
 
 /**
- * **La modificabilité côté client** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) — la règle du
+ * **La modificabilité côté client** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — la règle du
  * geste, montée sur la recomposition RÉELLE de la scène : la frontière
  * commune, l'arrêt du plan, l'heure limite de la date actuelle, le mur.
  *

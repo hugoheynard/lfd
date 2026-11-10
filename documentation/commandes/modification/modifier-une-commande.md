@@ -1,8 +1,8 @@
 # Modifier une commande
 
 > **Doc d'état, 2026-11-10.** Remplace, pour ce qui est bâti,
-> `plan-modifier-une-commande.md` (M1, M3, M4), `plan-a2-modifier-une-commande-inscrite.md`
-> (A2) et l'architecture des avenants d'août (retirée). Chaque phrase de la
+> le plan de modification (M1, M3, M4), le plan A2 — tous deux retirés le
+> 2026-11-10, citations repointées ici — et l'architecture des avenants d'août (retirée). Chaque phrase de la
 > partie 2 a été confrontée au code le 2026-11-10. Ce qui est **en cours** —
 > l'argent d'une commande carte — est marqué comme tel et renvoie à son plan.
 
@@ -261,8 +261,9 @@ Ce qui est en cours, et **ne fait pas foi ici** :
   remboursée tout de suite, par montant.
 - **Le bon de fidélité sous la différence** — lot C-2b, plus tard.
 
-Le §3 « L'argent » de `plan-modifier-une-commande.md` ne décrit ni l'un ni
-l'autre : il est **contredit** par les décisions de Hugo du 2026-11-09.
+Le §3 « L'argent » de l'ancien plan de modification (retiré le 2026-11-10)
+ne décrivait ni l'un ni l'autre : il était **contredit** par les décisions de
+Hugo du 2026-11-09.
 
 ### 2.8 Les autres blocs
 

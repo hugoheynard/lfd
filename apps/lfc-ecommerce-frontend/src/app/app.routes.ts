@@ -332,8 +332,8 @@ export const routes: Routes = [
           import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
       },
       {
-        // MODIFIER UNE COMMANDE PASSÉE (plan `plan-modifier-une-commande.md`,
-        // M3) : une page et non un panneau — elle compose un panier entier,
+        // MODIFIER UNE COMMANDE PASSÉE (voir `documentation/commandes/modification/modifier-une-commande.md`,
+        // § 2.2 « Le chemin d'une modification ») : une page et non un panneau — elle compose un panier entier,
         // ouvre les dialogues de retrait, et doit survivre à un rechargement.
         path: 'mes-commandes/modifier/:id',
         data: pageTitle('orderRevision'),

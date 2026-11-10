@@ -16,8 +16,8 @@ const DUE: ReadonlySet<PaymentStatus> = new Set<PaymentStatus>(["pending", "fail
  * que par `Order.deferPayment()` à la passation, et aucune écriture postérieure
  * ne part de `not_required` (`PAID_FROM`, `FAILED_FROM`, `UNSETTLED` de
  * `PrismaOrderRepository` ne partent que de `pending`/`failed`). Le total, lui,
- * est réécrit par une modification depuis le 2026-10-23 (plan
- * `plan-modifier-une-commande.md`, M1) — mais la révision refuse de faire
+ * est réécrit par une modification depuis le 2026-10-23 (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — mais la révision refuse de faire
  * passer une commande de `account` à `free` ou l'inverse (`revisionOf`,
  * vérifié le 2026-10-23). Le régime est donc figé dès la passation, et le
  * recalculer rend toujours la même valeur.

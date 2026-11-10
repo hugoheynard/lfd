@@ -81,8 +81,8 @@ import { noLinePromotionSupply } from "../../../../promotions/application/__test
 import { pointDiscountPromotions } from "../../services/__tests__/basket-promotions.doubles.js";
 
 /**
- * **La scène de la modification d'une commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — la
+ * **La scène de la modification d'une commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — la
  * recomposition RÉELLE (`OrderRevising` sur `OrderComposition`), montée sur
  * des doubles écrits à la main en héritant des ports, et un `trace` partagé
  * pour éprouver l'ordre des gestes.

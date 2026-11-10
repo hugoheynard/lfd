@@ -7,8 +7,8 @@ import type { OrderChangeAppliedEvent } from "../../domain/order-change.events.j
 /**
  * **« Votre modification est faite »** — au client qui l'a demandée, à
  * l'adresse prise à son compte, avec le nouveau total et l'écart, lus sur la
- * révision appliquée (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4, §14).
+ * révision appliquée (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)).
  *
  * **Demandé au bloc `mail`** dans la transaction qui applique la révision
  * (lot S2c, `plan-service-e-mails.md`) : la réponse et son courriel tombent

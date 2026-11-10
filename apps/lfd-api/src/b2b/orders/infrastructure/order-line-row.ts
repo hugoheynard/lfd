@@ -12,8 +12,8 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 // Sortis de `prisma-order.reader.ts` le 2026-10-23 : la révision d'une
-// commande relit ses lignes figées par les MÊMES parseurs (plan
-// `plan-modifier-une-commande.md`, M1) — une seconde lecture de la trace
+// commande relit ses lignes figées par les MÊMES parseurs (voir
+// `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — une seconde lecture de la trace
 // aurait fini par la lire autrement.
 
 /** Une ligne de commande telle que Prisma la sélectionne. */

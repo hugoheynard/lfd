@@ -13,8 +13,8 @@ import {
 import { revisionRefusalOf } from "../services/order-revision-refusal.js";
 
 /**
- * Les refus de la **modification d'une commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1). Lus par
+ * Les refus de la **modification d'une commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »). Lus par
  * l'équipe et par le client : chacun nomme le cas et le geste de sortie.
  */
 
@@ -42,7 +42,7 @@ export function cardRevisionRefusalWords(reason: CardRevisionRefusal | null): st
 }
 
 /**
- * §9 : M1 ne modifie pas une commande payable par carte. `reason` : le tri de
+ * § 2.7 : M1 ne modifie pas une commande payable par carte. `reason` : le tri de
  * l'agrégat (plan S2, R2 bis, R15), `null` quand le refus tombe avant la
  * composition (la frontière commune, `card_settled`, sur le chemin d'une
  * DEMANDE). Le code ne change pas : les écrans qui le lisent le gardent
@@ -90,7 +90,7 @@ export class UnchangedOrderRevisionError extends DomainError {
   }
 }
 
-/** §9, bon de fidélité : sa restitution partielle n'existe pas. */
+/** § 2.3 (R4), bon de fidélité : sa restitution partielle n'existe pas. */
 export class RevisionBelowVoucherError extends BusinessError {
   constructor(
     readonly orderId: string,
@@ -104,7 +104,7 @@ export class RevisionBelowVoucherError extends BusinessError {
   }
 }
 
-/** §3 et §9 : une commande gratuite qui deviendrait payante se règle par carte — lot M2. */
+/** § 2.3 (refus de règlement) : une commande gratuite qui deviendrait payante se règle par carte — lot M2. */
 export class RevisionRequiresPaymentError extends BusinessError {
   constructor(
     readonly orderId: string,
@@ -161,7 +161,7 @@ export class OrderWithoutSalesTermsError extends TechnicalError {
   }
 }
 
-/** Le refus du geste pour un blocage commun (R1, §9) — le verdict des vues, levé. */
+/** Le refus du geste pour un blocage commun (R1, § 2.3) — le verdict des vues, levé. */
 export function standingRevisionErrorOf(
   orderId: string,
   block: StandingRevisionBlock,

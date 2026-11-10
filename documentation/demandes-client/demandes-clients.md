@@ -34,9 +34,9 @@ automatiques et rafales (plus de 10 / heure / adresse) écartées. Pas encore
 ouvert : il faut les gestes du §6 du plan.
 
 **Depuis le 2026-10-23, un troisième type : `order_change`** — la demande de
-modification d'une commande après l'heure limite (plan
-[`plan-modifier-une-commande.md`](../commandes/modification/plan-modifier-une-commande.md),
-§4 et §14). Le client la compose depuis « Modifier ma commande » ; elle porte
+modification d'une commande après l'heure limite
+([`modifier-une-commande.md`](../commandes/modification/modifier-une-commande.md),
+§ 2.5). Le client la compose depuis « Modifier ma commande » ; elle porte
 la commande voulue, et l'équipe y répond par « Appliquer » (une révision de la
 commande au nom de l'équipe) ou « Refuser » avec un mot — jamais par « Marquer
 traité ». Une seule en attente par commande ; son motif est le premier motif

@@ -279,8 +279,8 @@ export const DELIVERY_VAT_MODE = domain('TVA de la livraison', {
 });
 
 /**
- * Ce qu'une modification de commande a changé (`order.revised`, plan
- * `commandes/modification/plan-modifier-une-commande.md`, M1) — les valeurs de
+ * Ce qu'une modification de commande a changé (`order.revised`, voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs ») — les valeurs de
  * `ORDER_REVISION_CHANGES`.
  */
 export const ORDER_REVISION_CHANGE = domain('ce qu’une modification a changé', {

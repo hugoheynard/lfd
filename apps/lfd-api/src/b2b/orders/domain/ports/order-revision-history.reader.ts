@@ -19,8 +19,8 @@ export interface RecordedOrderRevision {
 }
 
 /**
- * Port de **lecture** des versions précédentes d'une commande (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6, M3) — la plus
+ * Port de **lecture** des versions précédentes d'une commande (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — la plus
  * récente en tête. Séparé du port d'écriture de la révision (ISP) : seul le
  * détail staff le lit.
  *

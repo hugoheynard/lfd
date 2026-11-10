@@ -260,8 +260,8 @@ export class OrderDoors {
 
   /**
    * **La même question, sans écrire la réponse** — pour un écran qui compose
-   * un acheminement à lui (la modification d'une commande passée, plan
-   * `plan-modifier-une-commande.md`, M3) et ne doit pas toucher au choix de la
+   * un acheminement à lui (la modification d'une commande passée, voir
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») et ne doit pas toucher au choix de la
    * boutique. `null` : rien n'a été choisi.
    */
   async askChoice(day: string | null = null): Promise<ServiceChoice | null> {

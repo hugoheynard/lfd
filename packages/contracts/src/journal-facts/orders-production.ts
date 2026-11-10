@@ -460,8 +460,8 @@ export const ORDERS_PRODUCTION_FACTS = {
     }),
   ),
   /**
-   * La commande a été **modifiée** avant son inscription au fournil (plan
-   * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, 2026-10-23).
+   * La commande a été **modifiée** avant son inscription au fournil (voir
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs », 2026-10-23).
    * Le sujet est le client ; `revision` la révision devenue courante (`1` à la
    * première modification) ; `revisedBy` la fiche staff qui a modifié, sous
    * son nom du moment, ou `null` quand c'est le client — alors cité en
@@ -756,7 +756,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...AFTER_CLOSE_WITHDRAWAL_FACTS,
   /** **Quantités changées après l'arrêt du plan** (plan A2) — même famille. */
   ...AFTER_CLOSE_REVISION_FACTS,
-  /** **Les demandes de modification** après l'heure limite (plan de modification, M4). */
+  /** **Les demandes de modification** après l'heure limite (`modifier-une-commande.md` § 2.5, M4). */
   ...ORDER_CHANGE_REQUEST_FACTS,
   /** **La hausse d'une commande payée par carte** (plan S2, R12). */
   ...ORDER_CARD_INCREASE_FACTS,

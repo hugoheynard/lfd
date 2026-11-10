@@ -69,8 +69,8 @@ export interface CardIncreaseCopy {
 
 /**
  * **Modifier une commande passée** — le bouton du tiroir et l'écran de
- * modification (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * M3). Rangé ici plutôt que dans un fichier d'écran à lui : un nouveau fichier
+ * modification (voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.2 « Le chemin d'une modification »). Rangé ici plutôt que dans un fichier d'écran à lui : un nouveau fichier
  * de `screens/` est une ligne de plus au recueil (`dev-toolbox/shop-copy/spaces.mjs`),
  * et ces textes appartiennent à « Mes commandes ».
  *

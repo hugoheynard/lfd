@@ -24,13 +24,13 @@ import { revisionRowOf, type RevisionRow } from './revision-entry';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **« Versions précédentes »** sur la fiche d'une commande (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6, M3) : chaque
+ * **« Versions précédentes »** sur la fiche d'une commande (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : chaque
  * modification — qui, quand, l'écart, ce qui a changé — et, à la demande, la
  * composition qu'elle a remplacée (lignes, quantités, prix, acheminement),
  * lue dans `public.order_revision` par `GET /admin/orders/:id/revisions`.
  *
- * Le client ne voit que la commande actuelle (§6) : cette carte n'existe
+ * Le client ne voit que la commande actuelle (partie 1) : cette carte n'existe
  * qu'au back-office. Un échec de lecture reste DANS la carte.
  */
 @Component({

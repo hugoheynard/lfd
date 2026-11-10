@@ -24,11 +24,11 @@ import { QuoteOrderChangeRequestQuery } from "../application/queries/quote-order
 import { QuoteOrderRevisionQuery } from "../application/queries/quote-order-revision.query.js";
 
 /**
- * **Le client modifie sa commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — tant qu'elle
+ * **Le client modifie sa commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — tant qu'elle
  * n'est pas inscrite au fournil et avant l'heure limite de l'ancienne et de la
  * nouvelle date ; au compte ou à total nul seulement (une commande réglée par
- * carte est refusée en `409`, §9).
+ * carte est refusée en `409`, § 2.7).
  *
  * Le mur se lit sur la commande (`GET :id`) : hors mur, `404`. L'auteur vient
  * du `Principal`, jamais du corps.
@@ -58,7 +58,7 @@ export class OrderRevisionsController {
   }
 
   /**
-   * **Ce que la DEMANDE coûterait** (M4, §14) — après l'heure limite
+   * **Ce que la DEMANDE coûterait** (M4, § 2.5) — après l'heure limite
    * seulement : un devis indicatif, aux règles de l'équipe qui l'appliquera.
    * `409` hors de ce cas, `404` hors mur. Ne mute rien.
    */

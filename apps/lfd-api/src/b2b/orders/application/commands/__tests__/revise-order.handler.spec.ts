@@ -45,10 +45,10 @@ const TO_DELIVERY = {
 } as const;
 
 /**
- * **Modifier une commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * M1) — l'orchestration du geste : le mur, la révision attendue (R7), la
- * frontière de l'annulation (R1), la carte refusée (§9), l'heure limite du
- * client, le guichet du fournil sous verrou (§9.1), l'écriture conditionnée,
+ * **Modifier une commande** (voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.2 « Le chemin d'une modification ») — l'orchestration du geste : le mur, la révision attendue (R7), la
+ * frontière de l'annulation (R1), la carte refusée (§ 2.7), l'heure limite du
+ * client, le guichet du fournil sous verrou (§ 2.8), l'écriture conditionnée,
  * la ligne d'encaissement, les deux faits.
  *
  * La recomposition est la VRAIE (`OrderRevising` sur `OrderComposition`) :

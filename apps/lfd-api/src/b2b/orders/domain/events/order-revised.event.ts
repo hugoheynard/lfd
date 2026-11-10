@@ -10,8 +10,8 @@ import {
 export const ORDER_REVISED = "order.revised";
 
 /**
- * **« Une commande a été modifiée »** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §5) — écrit
+ * **« Une commande a été modifiée »** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs ») — écrit
  * dans la boîte d'envoi dans la transaction de la révision. Le journal en
  * garde le témoin (qui, quand, ce qui a changé, l'écart de total).
  *

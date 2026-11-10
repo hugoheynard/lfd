@@ -22,8 +22,8 @@ export const OrderChangeRequestThrottleGuard = perAccountThrottleGuard({
 });
 
 /**
- * **Demander une modification de commande** après l'heure limite (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) — et lire où
+ * **Demander une modification de commande** après l'heure limite (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) — et lire où
  * elle en est. La personne vient du jeton ; la société est celle de la
  * COMMANDE. Hors mur, `404`.
  */

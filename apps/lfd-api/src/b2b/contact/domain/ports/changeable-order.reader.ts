@@ -1,6 +1,6 @@
 /**
- * Où en est une commande pour une **demande de modification** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) — ce que la
+ * Où en est une commande pour une **demande de modification** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) — ce que la
  * règle de la modification en dit pour ce client, réduit à ce que la demande
  * tranche :
  *

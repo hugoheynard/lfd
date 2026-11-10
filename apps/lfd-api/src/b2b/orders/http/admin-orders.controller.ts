@@ -66,8 +66,8 @@ import type { StoredDocument } from "../../../platform/storage/document-store.js
  * 2026-10-12, doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3),
  * tant que le fournil ne l'a pas inscrite, sous son droit à part
  * (`b2b_cancel_order:write`). La MODIFIER se fait depuis le 2026-10-23 par
- * une route à part (`AdminOrderRevisionsController`, plan
- * `plan-modifier-une-commande.md`, M1), qui garde la composition remplacée
+ * une route à part (`AdminOrderRevisionsController`, voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »), qui garde la composition remplacée
  * dans l'historique des révisions.
  */
 @Controller("admin/orders")

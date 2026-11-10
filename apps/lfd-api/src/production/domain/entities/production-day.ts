@@ -261,8 +261,8 @@ export class ProductionDay extends ProductionDayState {
 
   /**
    * **Révise le dû d'une commande inscrite**
-   * (`documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
-   * § 7) : ses lignes disent la quantité révisée, dans les deux sens ; le
+   * (`documentation/commandes/modification/modifier-une-commande.md`,
+   * § 2.4 « Après l'inscription » (A2)) : ses lignes disent la quantité révisée, dans les deux sens ; le
    * compte du jour ne baisse jamais. L'appelant a matérialisé les coches
    * héritées avant ({@link materialize}), sous le verrou de la journée.
    *

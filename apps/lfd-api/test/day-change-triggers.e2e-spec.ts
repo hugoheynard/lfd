@@ -17,8 +17,8 @@
  * ⚠️ **`order_lines` n'a pas de déclencheur, et la raison a changé le
  * 2026-10-23.** La migration `20260928140000_la_version_par_journee` le
  * justifiait par « les lignes ne s'écrivent qu'à la création de la commande ».
- * C'est faux depuis la modification d'une commande (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : une révision
+ * C'est faux depuis la modification d'une commande (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : une révision
  * REMPLACE les lignes. La table reste hors surveillance parce que toute
  * révision écrit aussi `orders` (au moins `revision`, dans la même
  * transaction), dont le déclencheur marque l'ancien et le nouveau jour — ce

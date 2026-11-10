@@ -32,10 +32,10 @@ interface SendRefusal {
 
 /**
  * **« Votre demande »** — ce qui remplace le nouveau total sur l'écran de
- * modification quand l'heure limite est passée (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4).
+ * modification quand l'heure limite est passée (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)).
  *
- * Le devis est INDICATIF (§14, décision de Hugo du 2026-10-23) : le nouveau
+ * Le devis est INDICATIF (§ 2.5, décision de Hugo du 2026-10-23) : le nouveau
  * total et l'écart, aux règles de la modification, marqués « sous réserve » —
  * c'est l'équipe qui jugera la composition et recalculera en l'appliquant,
  * sur la commande telle qu'elle sera. La demande ne range aucun montant. La carte envoie la commande voulue avec

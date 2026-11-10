@@ -6,8 +6,8 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de la **demande de modification de commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Lus par un
+ * Les refus de la **demande de modification de commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)). Lus par un
  * client ou par le commerce, sans le code sous les yeux : chacun nomme le cas
  * et le geste de sortie.
  */

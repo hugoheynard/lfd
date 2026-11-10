@@ -6,8 +6,8 @@ import type { ReportedOrderRef } from "./customer-request-details.js";
 import type { AppliedOrderChange } from "./ports/order-change.applier.js";
 
 /**
- * **Les faits de la demande de modification** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Le sujet est
+ * **Les faits de la demande de modification** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)). Le sujet est
  * la COMMANDE, nommée par son numéro ; la demande y est citée par son id.
  * Rien de l'auteur : la demande s'anonymise, le journal non.
  */

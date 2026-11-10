@@ -1,7 +1,7 @@
 /**
- * **La scène de la révision après l'arrêt** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7) — une commande au compte inscrite au plan (la scène du départ
+ * **La scène de la révision après l'arrêt** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — une commande au compte inscrite au plan (la scène du départ
  * incomplet), et ce que la base en dit : le dû au fournil, le compte du jour,
  * la feuille du colisage, le BL prévu.
  */

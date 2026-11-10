@@ -277,7 +277,7 @@ Documents d'état : [`annulation/annulation-par-le-staff.md`](annulation/annulat
 [`annulation/annulation-par-le-client.md`](annulation/annulation-par-le-client.md),
 [`annulation/verrous-de-l-annulation.md`](annulation/verrous-de-l-annulation.md),
 [`reglement/architecture-abandon-du-reglement.md`](reglement/architecture-abandon-du-reglement.md),
-[`modification/plan-modifier-une-commande.md`](modification/plan-modifier-une-commande.md).
+[`modification/modifier-une-commande.md`](modification/modifier-une-commande.md).
 
 ```mermaid
 flowchart TD

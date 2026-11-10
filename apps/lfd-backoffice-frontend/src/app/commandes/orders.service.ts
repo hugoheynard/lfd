@@ -89,7 +89,7 @@ export class AdminOrdersService {
   }
 
   /**
-   * **Les versions précédentes** (plan `plan-modifier-une-commande.md`, §6) :
+   * **Les versions précédentes** (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») :
    * chaque modification, la plus récente en tête, avec la composition qu'elle
    * a remplacée.
    */
@@ -353,8 +353,8 @@ export class AdminOrdersService {
   }
 
   /**
-   * **Le devis d'une modification** (plan `plan-modifier-une-commande.md`,
-   * M1) : la commande telle qu'elle serait, l'écart avec la révision
+   * **Le devis d'une modification** (voir `documentation/commandes/modification/modifier-une-commande.md`,
+   * § 2.2 « Le chemin d'une modification ») : la commande telle qu'elle serait, l'écart avec la révision
    * courante, et le numéro de révision à renvoyer tel quel à la validation.
    * Les refus (`409 orders.revise.*`) portent leur phrase.
    */

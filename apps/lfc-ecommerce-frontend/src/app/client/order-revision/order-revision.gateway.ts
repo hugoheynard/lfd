@@ -56,8 +56,8 @@ export const CARD_INCREASE_NOTHING_TO_PAY = 'orders.card_increase.nothing_to_pay
 export const STALE_CHANGE_REQUEST = 'contact.order_change.stale_revision';
 
 /**
- * **Modifier une commande passée**, côté réseau (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1 et M3) : la
+ * **Modifier une commande passée**, côté réseau (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : la
  * commande relue, le devis de révision, la révision.
  *
  * Seul `revise` écrit, et seul un clic l'appelle. Le devis ne mute rien
@@ -92,7 +92,7 @@ export class OrderRevisionGateway {
 
   /**
    * `POST /orders/:id/revisions/change-request-quote` — après l'heure limite,
-   * ce que la DEMANDE coûterait (M4, §14) : un devis indicatif, que l'équipe
+   * ce que la DEMANDE coûterait (M4, § 2.5) : un devis indicatif, que l'équipe
    * recalculera en l'appliquant.
    */
   changeQuote(

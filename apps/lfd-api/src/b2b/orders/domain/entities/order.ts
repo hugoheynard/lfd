@@ -216,7 +216,7 @@ export class Order {
   }
 
   /**
-   * **Une révision de la commande** (plan `plan-modifier-une-commande.md`, M1) :
+   * **Une révision de la commande** (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») :
    * la nouvelle composition se calcule EXACTEMENT comme à la passation
    * (`draft`), garde le règlement de la commande (au compte ou gratuit — M1
    * refuse la carte), puis se juge contre la révision qu'elle corrige : prix

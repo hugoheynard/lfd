@@ -267,12 +267,12 @@ export class PackingSheet {
 
   /**
    * **Révise les lignes dues** — l'équipe a changé les quantités d'une
-   * commande déjà inscrite (plan A2,
-   * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
-   * § 7). Bac ouvert seulement ; aucune ligne sous ce qui est déjà au bac.
+   * commande déjà inscrite (A2,
+   * `documentation/commandes/modification/modifier-une-commande.md`,
+   * § 2.4 « Après l'inscription »). Bac ouvert seulement ; aucune ligne sous ce qui est déjà au bac.
    * Une ligne qui monte et n'est plus entièrement répartie perd sa marque
    * « au bac » ; une ligne qui descend jusqu'à ce qui est au bac la prend,
-   * signée par la révision. Un manque signalé reste écrit (§ 2.2) : fermer
+   * signée par la révision. Un manque signalé reste écrit (§ 2.4) : fermer
    * le bac complet l'effacera, comme aujourd'hui.
    *
    * @returns les lignes qui ont changé, de → à ; vide si rien.

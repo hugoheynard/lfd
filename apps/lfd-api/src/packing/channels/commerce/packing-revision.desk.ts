@@ -21,9 +21,9 @@ export interface PackingDueLine {
 }
 
 /**
- * **Le guichet de la révision au colisage** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 2.2 et § 7) — déclaré ET implémenté par le colisage, appelé par le
+ * **Le guichet de la révision au colisage** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — déclaré ET implémenté par le colisage, appelé par le
  * commerce quand l'équipe change les quantités d'une commande déjà inscrite.
  * Même figure que {@link PackingWithdrawalDesk} (A1).
  *

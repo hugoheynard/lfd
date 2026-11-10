@@ -39,8 +39,8 @@ function handled(fact: PhraseFact): Segment[] {
 const CHANGE_CONSUMED = ['subjectLabel', 'orderNumber'];
 
 /**
- * **La demande de modification d'une commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : « Jean D. a
+ * **La demande de modification d'une commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) : « Jean D. a
  * demandé une modification de la commande ORD-7 », puis « Marie D. a
  * appliqué… » ou « … a refusé… ». La demande, la révision de départ, la
  * révision produite et le mot du refus restent au détail.

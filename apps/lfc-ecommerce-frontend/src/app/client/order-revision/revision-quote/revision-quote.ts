@@ -29,8 +29,8 @@ export function differenceLabel(
 }
 
 /**
- * **Le nouveau total et l'écart** d'un devis de révision (plan
- * `plan-modifier-une-commande.md`, M3) — les montants du serveur, TTC, sans
+ * **Le nouveau total et l'écart** d'un devis de révision (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — les montants du serveur, TTC, sans
  * aucun calcul ici que le signe de l'écart.
  */
 @Component({

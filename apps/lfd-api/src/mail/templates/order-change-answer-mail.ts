@@ -6,13 +6,13 @@ import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données des deux e-mails qui RÉPONDENT à une demande de modification
- * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) :
+ * (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) :
  * appliquée, ou refusée avec le mot de l'équipe. Destinataire : l'auteur de
  * la demande, à l'adresse de son compte.
  *
  * Pas de lignes : la commande à jour se relit dans l'espace du client. Le
  * courriel « appliquée » porte en revanche le nouveau total et l'écart avec
- * l'ancien (décision de Hugo, 2026-10-23, plan §14) — lus sur la révision
+ * l'ancien (décision de Hugo, 2026-10-23, `modifier-une-commande.md` § 2.5) — lus sur la révision
  * appliquée, jamais recalculés ici : c'est ce que la boutique promet au
  * moment d'envoyer la demande (« le nouveau total vous est confirmé par
  * e-mail »).

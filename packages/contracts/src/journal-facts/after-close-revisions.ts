@@ -12,9 +12,9 @@ const revisedLine = () =>
   });
 
 /**
- * **Les quantités d'une commande changées après l'arrêt du plan** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7) — l'équipe a modifié les quantités d'une commande au compte déjà
+ * **Les quantités d'une commande changées après l'arrêt du plan** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — l'équipe a modifié les quantités d'une commande au compte déjà
  * inscrite. Deux faits, un par atelier, irréversibles dès la première
  * révision en production :
  *

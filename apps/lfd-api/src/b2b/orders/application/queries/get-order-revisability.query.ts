@@ -1,8 +1,8 @@
 import type { RevisionPurpose } from "../../domain/services/order-revisability.js";
 
 /**
- * **La commande se modifie-t-elle, pour ce client, maintenant ?** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) — avec sa
+ * **La commande se modifie-t-elle, pour ce client, maintenant ?** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — avec sa
  * révision courante. Le mur est celui de `GET /orders/:id` : hors mur, `404`.
  *
  * `purpose` (plan `plan-s2-la-hausse.md`, R2 ter) : `revise` pour la

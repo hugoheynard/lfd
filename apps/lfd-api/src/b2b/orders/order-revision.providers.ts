@@ -26,8 +26,8 @@ import { PrismaOrderRevisionRepository } from "./infrastructure/prisma-order-rev
 import { PrismaRevisableOrderReader } from "./infrastructure/prisma-revisable-order.reader.js";
 
 /**
- * Les providers du lot M1 (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`) : la modification
+ * Les providers du lot M1 (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : la modification
  * d'une commande et son devis, par le client et par l'équipe, la
  * recomposition partagée avec la passation, et leurs deux ports — lire et
  * écrire (ISP). À part du module, qui dépasse déjà la taille d'un fichier.

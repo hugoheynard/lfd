@@ -130,7 +130,7 @@ que le client a en poche.
   clé : le dessin du 2026-10-09 a la sienne, les PDF déjà rangés restent
   en stockage sous l'ancienne et ne sont plus relus. `revision` est la
   révision de la commande depuis le 2026-10-23 (`orders.revision`, `0` à la
-  passation, `+1` à chaque modification — [`plan-modifier-une-commande.md`](../modification/plan-modifier-une-commande.md), M1) :
+  passation, `+1` à chaque modification — [`modifier-une-commande.md`](../modification/modifier-une-commande.md), § 2.1) :
   une commande modifiée a un nouveau bon, l'ancien reste rangé sous sa clé.
   Il n'y aura pas d'avenants
   ([`modifier-une-commande.md`](../modification/modifier-une-commande.md)).

@@ -1,7 +1,7 @@
 /**
- * **Changer les quantités d'une commande inscrite** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7) — de la route staff jusqu'au fournil, au colisage et au BL, sur le
+ * **Changer les quantités d'une commande inscrite** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — de la route staff jusqu'au fournil, au colisage et au BL, sur le
  * vrai Postgres : le dû révisé dans les deux sens, le compte du four qui ne
  * baisse jamais, les refus nommés.
  */

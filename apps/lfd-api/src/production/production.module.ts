@@ -362,8 +362,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     DayInscribedOrderHeaderReader,
     // L'acheminement et le créneau d'une commande, pour l'étiquette d'un sac.
     DayOrderLabelHeadReader,
-    // La modification d'une commande (plan `commandes/modification/plan-modifier-une-commande.md`,
-    // §9.1) : les notes de révision, écrites par le guichet sous le verrou de
+    // La modification d'une commande (voir `documentation/commandes/modification/modifier-une-commande.md`,
+    // § 2.8 « Les autres blocs ») : les notes de révision, écrites par le guichet sous le verrou de
     // la journée. Plus aucun lecteur depuis le 2026-11-02 : la clôture et le
     // retirage lisent les commandes sous le verrou, ce qui couvre les révisions.
     { provide: OrderRevisionNoticeLedger, useClass: PrismaOrderRevisionNoticeLedger },

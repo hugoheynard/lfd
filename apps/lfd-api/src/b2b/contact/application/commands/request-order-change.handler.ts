@@ -29,8 +29,8 @@ import { RequestReasonReader } from "../../domain/ports/request-reason.reader.js
 import { RequestReasonRepository } from "../../domain/ports/request-reason.repository.js";
 
 /**
- * **Demander une modification** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4).
+ * **Demander une modification** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)).
  *
  * L'ordre : la commande par LA règle d'accès et LA règle de la modification
  * (hors périmètre → 404 ; « trop tard » est le SEUL cas admis, le reste

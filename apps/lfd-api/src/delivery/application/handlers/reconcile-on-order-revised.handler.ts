@@ -12,8 +12,8 @@ import { TransferMembership } from "../transfer-membership.js";
 export const RECONCILE_ON_ORDER_REVISED = "delivery.reconcile-transfer-on-order-revised";
 
 /**
- * **Une commande modifiée retrouve le bon transfert** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9) — la même
+ * **Une commande modifiée retrouve le bon transfert** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs ») — la même
  * question que posent la passation (`AttachOnOrderPlaced`) et l'annulation
  * (`DetachOnOrderCancelled`), par le MÊME service : sortie du transfert prévu
  * si son site ou son jour a changé, puis rattachée au bon s'il y a lieu.

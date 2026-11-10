@@ -1,8 +1,8 @@
 import type { OrderChangeRequestPayload } from "@lfd/contracts";
 
 /**
- * **Demander une modification de commande** après l'heure limite (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Rend l'id de
+ * **Demander une modification de commande** après l'heure limite (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)). Rend l'id de
  * la demande. La société qui fait foi est celle de la COMMANDE, lue par le
  * mur ; l'auteur vient du `Principal`, jamais du corps.
  */

@@ -42,8 +42,8 @@ import type {
 } from "./order-shapes.js";
 
 /**
- * **La commande telle qu'on la modifie** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : sa révision
+ * **La commande telle qu'on la modifie** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : sa révision
  * courante, ce qui ne change pas (payeur, société, clientèle, CGV, langue,
  * surtaxe), et la composition qu'une révision remplace.
  */

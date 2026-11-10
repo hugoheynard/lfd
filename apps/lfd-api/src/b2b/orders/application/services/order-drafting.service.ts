@@ -69,7 +69,7 @@ export interface DraftedOrder {
  *
  * Le calcul lui-même (prix, remise, frais, éligibilité, acheminement convenu)
  * vit depuis le 2026-10-23 dans {@link OrderComposition}, que la révision
- * d'une commande partage (plan `plan-modifier-une-commande.md`, M1). Ce
+ * d'une commande partage (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »). Ce
  * service garde ce qui n'appartient qu'à la PASSATION : le payeur, la journée
  * ouverte, l'heure limite et sa dérogation, la surtaxe, les CGV, la langue.
  * Il assemble ses deux collaborateurs à partir des mêmes ports qu'avant,

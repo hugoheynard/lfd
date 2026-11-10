@@ -40,8 +40,8 @@ type QuoteState =
   | { readonly kind: 'refused'; readonly message: string };
 
 /**
- * **Les détails d'une demande de modification de commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) — la commande,
+ * **Les détails d'une demande de modification de commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) — la commande,
  * l'écart que la modification demandée donnerait (le devis de révision de
  * l'équipe : total actuel, nouveau total, ce qui change, les lignes), puis
  * « Appliquer » ou « Refuser » avec un mot au client.

@@ -53,8 +53,8 @@ export type ComposedDraft = Pick<
 >;
 
 /**
- * **Le calcul de la passation, partagé avec la révision** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : prix
+ * **Le calcul de la passation, partagé avec la révision** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : prix
  * ré-résolus, remise de retrait, frais de zone, éligibilité figée par ligne,
  * acheminement convenu.
  *

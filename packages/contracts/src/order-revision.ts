@@ -13,8 +13,8 @@ import {
 } from "./order.js";
 
 /**
- * **Modifier une commande passée** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, lot M1) — les
+ * **Modifier une commande passée** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — les
  * formes de la révision, communes au client et à l'équipe.
  *
  * Une modification décrit la commande VOULUE, entière : le même panier que

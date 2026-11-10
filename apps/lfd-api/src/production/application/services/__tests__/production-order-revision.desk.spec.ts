@@ -19,8 +19,8 @@ import { FixedInscriptions } from "../../__tests__/withdrawal-doubles.js";
 import { ProductionOrderRevisionDesk } from "../production-order-revision.desk.js";
 
 /**
- * Le guichet de la révision (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * §9.1) : les journées verrouillées par date croissante, PUIS l'inscription,
+ * Le guichet de la révision (voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.8 « Les autres blocs ») : les journées verrouillées par date croissante, PUIS l'inscription,
  * PUIS les notes — l'ordre qui ferme la course avec la clôture.
  */
 

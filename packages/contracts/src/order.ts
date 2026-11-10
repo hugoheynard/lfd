@@ -814,8 +814,8 @@ export interface OrderView {
   /**
    * L'identifiant du point de retrait de la commande (le `siteId` figé avec
    * son adresse, lot S2), ou `null` : livraison, ou commande d'avant le lot.
-   * Ce que la modification renvoie en `pickupAddressId` (plan
-   * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3).
+   * Ce que la modification renvoie en `pickupAddressId` (voir
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
    */
   readonly pickupAddressId: string | null;
   /**

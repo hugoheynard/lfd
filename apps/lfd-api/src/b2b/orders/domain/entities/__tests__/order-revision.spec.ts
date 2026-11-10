@@ -13,8 +13,8 @@ import type { DraftSpec } from "./priced-input.fixture.js";
 import { DAY, LABO, input, line, placed, revised } from "./revisable-order.fixture.js";
 
 /**
- * **La révision d'une commande, jugée par l'agrégat** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : M1 ne sert
+ * **La révision d'une commande, jugée par l'agrégat** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») : M1 ne sert
  * que le compte et le total nul, les prix déjà présents tiennent, le bon
  * imputé reste couvert, et une révision change quelque chose.
  *

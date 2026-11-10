@@ -43,8 +43,8 @@ import { frozenPickupDiscountBaseOf } from "./pickup-discount-base.js";
  */
 
 /**
- * **La révision d'une commande, telle que le bon la date** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : `0` et
+ * **La révision d'une commande, telle que le bon la date** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs ») : `0` et
  * `revisedAt: null` à la passation, puis le numéro et l'instant de la dernière
  * modification. Lue par l'appelant à côté de la vue (`OwnedOrder.revision`) :
  * la vue de la commande ne la porte pas.

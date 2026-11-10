@@ -73,8 +73,8 @@ const LINE_SELECT = {
 } as const;
 
 /**
- * Ce qu'une révision relit d'une commande (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — partagé par la
+ * Ce qu'une révision relit d'une commande (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — partagé par la
  * lecture sans verrou et par la relecture sous `FOR UPDATE`.
  */
 export const REVISABLE_ORDER_SELECT = {

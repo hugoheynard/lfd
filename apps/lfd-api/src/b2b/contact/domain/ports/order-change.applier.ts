@@ -13,8 +13,8 @@ export interface AppliedOrderChange {
 
 /**
  * Port d'**écriture** : appliquer une modification demandée — c'est une
- * RÉVISION de la commande au nom de l'équipe (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4, R1 staff), par
+ * RÉVISION de la commande au nom de l'équipe (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)), par
  * le même geste que « Modifier la commande » au back-office, qui rejuge tout
  * sous verrou : inscrite au plan entre-temps, modifiée ailleurs (R7), carte…
  * Ses refus remontent tels quels, avec leur phrase.

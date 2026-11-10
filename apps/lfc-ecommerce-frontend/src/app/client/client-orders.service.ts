@@ -938,7 +938,7 @@ function payloadOf(
 /**
  * **L'acheminement d'un choix de service**, en champs du panier
  * (`orderContentShape`) — partagé par la passation et par la modification
- * d'une commande (plan `plan-modifier-une-commande.md`, M3), pour que les
+ * d'une commande (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »), pour que les
  * deux ne divergent pas sur un champ.
  */
 export function serviceContentOf(service: ServiceChoice) {

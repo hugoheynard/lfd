@@ -1,7 +1,7 @@
 /**
- * **Changer les quantités d'une commande inscrite : les courses** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7, S4). Les gestes vont en parallèle sur le vrai Postgres : l'ordre des
+ * **Changer les quantités d'une commande inscrite : les courses** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription »). Les gestes vont en parallèle sur le vrai Postgres : l'ordre des
  * verrous (`orders` → journée → feuille → BL) ne se prouve qu'ici. Une course
  * qui finit en interblocage rend un 500 ; aucune ne doit.
  */

@@ -122,9 +122,9 @@ export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSn
 }
 
 /**
- * **Le compte d'après l'arrêt ne baisse jamais** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7, B3) : par article, le plus grand du compte précédent et du compte
+ * **Le compte d'après l'arrêt ne baisse jamais** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») : par article, le plus grand du compte précédent et du compte
  * refait. Une commande dont la quantité baisse après l'arrêt dit son dû
  * révisé dans ses lignes ; ce qui a été demandé au four, lui, reste — le
  * surplus ira en réserve au colisage, comme pour une commande retirée (A1).

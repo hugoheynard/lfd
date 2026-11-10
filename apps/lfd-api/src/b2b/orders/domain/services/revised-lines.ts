@@ -26,7 +26,7 @@ export interface RevisedLineRequests {
 }
 
 /**
- * **R3 du plan de modification** (`documentation/commandes/modification/plan-modifier-une-commande.md`) :
+ * **R3 de la modification** (`documentation/commandes/modification/modifier-une-commande.md`, § 2.3 « Les règles ») :
  * une ligne dont le SKU était dans la révision PRÉCÉDENTE garde son prix
  * unitaire, son taux de TVA et la trace qui les explique, quelle que soit la
  * quantité ; une ligne nouvelle est tarifée au jour, par le chemin de la

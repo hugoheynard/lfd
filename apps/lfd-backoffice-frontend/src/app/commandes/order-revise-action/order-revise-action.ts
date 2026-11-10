@@ -6,8 +6,8 @@ import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 import { PermissionsStore } from '../../auth/permissions.store';
 
 /**
- * **« Modifier la commande »** depuis son détail staff (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3).
+ * **« Modifier la commande »** depuis son détail staff (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
  *
  * Absent sans `b2b_place_order:write` (le droit des routes de révision).
  * Ouvert quand le serveur dit la commande modifiable (`revisability`, la

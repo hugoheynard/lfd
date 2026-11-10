@@ -10,8 +10,8 @@ import { RevisionWall } from "../services/revision-wall.js";
 import { QuoteOrderRevisionQuery } from "./quote-order-revision.query.js";
 
 /**
- * **Le devis de révision** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * M1) : la commande telle qu'elle serait, par la MÊME recomposition que la
+ * **Le devis de révision** (voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.2 « Le chemin d'une modification ») : la commande telle qu'elle serait, par la MÊME recomposition que la
  * modification, et l'écart avec la révision courante. Ne mute rien.
  *
  * Il refuse comme la modification — mur, règle, carte, heure limite du

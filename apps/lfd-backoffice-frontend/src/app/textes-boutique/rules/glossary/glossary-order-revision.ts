@@ -1,7 +1,7 @@
 /**
  * Les segments des textes de la modification d'une commande par le client
- * (`orders.revision`, plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * M3, 2026-10-23). `loadFailedTitle` et `removeAria` sont déjà nommés
+ * (`orders.revision`, voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.2 « Le chemin d'une modification », 2026-10-23). `loadFailedTitle` et `removeAria` sont déjà nommés
  * ailleurs, et ce nom leur convient : ils ne sont pas redits ici.
  */
 export const GLOSSARY_ORDER_REVISION: Readonly<Record<string, string>> = {
@@ -57,7 +57,7 @@ export const GLOSSARY_ORDER_REVISION: Readonly<Record<string, string>> = {
   submittingCta: 'Bouton pendant l’envoi',
   revisionRefused: 'Refus — texte par défaut',
   revisedToast: 'Commande modifiée — annonce',
-  // Après l'heure limite : la demande (plan de modification, M4, 2026-10-23).
+  // Après l'heure limite : la demande (`modifier-une-commande.md` § 2.5, M4, 2026-10-23).
   request: 'Demander une modification (heure limite passée)',
   requestAction: 'Bouton « Demander une modification » du tiroir',
   requestNote: 'Sous le bouton — heure limite passée, avec l’échéance',

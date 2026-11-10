@@ -158,8 +158,8 @@ export interface B2bMails {
    */
   "customer.order-cancelled": OrderCancelledMailData;
   /**
-   * **La demande de modification est appliquée / refusée** (plan
-   * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4).
+   * **La demande de modification est appliquée / refusée** (voir
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)).
    * Destinataire : l'auteur de la demande. Cf. `order-change-answer-mail.ts`.
    */
   "customer.order-change-applied": OrderChangeAppliedMailData;

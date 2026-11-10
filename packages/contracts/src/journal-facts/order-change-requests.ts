@@ -3,8 +3,8 @@ import { z } from "zod";
 import { count, fact, payload, ref, subjectLabel } from "./fact.js";
 
 /**
- * **Les demandes de modification de commande** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4, 2026-10-23) :
+ * **Les demandes de modification de commande** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4), 2026-10-23) :
  * après l'heure limite, le client DEMANDE ; le commerce applique ou refuse.
  *
  * Le sujet est la COMMANDE, son libellé son numéro ; `requestId` désigne la

@@ -14,8 +14,8 @@ import { OrderChangeAppliedMail } from "../services/order-change-applied-mail.se
 import { ApplyOrderChangeCommand } from "./apply-order-change.command.js";
 
 /**
- * **Appliquer une demande de modification** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4) : c'est une
+ * **Appliquer une demande de modification** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) : c'est une
  * RÉVISION de la commande au nom de l'équipe, par le même geste que
  * « Modifier la commande » ({@link OrderChangeApplier}), qui rejuge tout —
  * inscrite au plan entre-temps, modifiée ailleurs depuis la demande (R7),

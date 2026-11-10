@@ -23,7 +23,7 @@ import { AccountOrderSettlement } from "../b2b/orders/domain/ports/account-order
  *
  * Depuis le 2026-10-23, un troisième token pour un second adaptateur : la
  * modification d'une commande au compte recale le montant de sa ligne
- * d'encaissement (`plan-modifier-une-commande.md`, M1).
+ * d'encaissement (`documentation/commandes/modification/modifier-une-commande.md`, § 2.6 « L'argent au compte »).
  *
  * Depuis le 2026-10-25, un quatrième : le solde d'une commande recale sa
  * ligne d'encaissement encore `due` sur le montant facturable (plan E6c2).

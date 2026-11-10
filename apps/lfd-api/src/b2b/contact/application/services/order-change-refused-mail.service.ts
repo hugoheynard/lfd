@@ -6,8 +6,8 @@ import type { OrderChangeRefusedEvent } from "../../domain/order-change.events.j
 
 /**
  * **« Nous n'avons pas pu modifier votre commande »**, avec le mot de
- * l'équipe — au client qui l'a demandée (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4).
+ * l'équipe — au client qui l'a demandée (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)).
  * Mêmes règles que `OrderChangeAppliedMail` : demandé au bloc `mail` dans la
  * transaction du refus (lot S2c).
  */

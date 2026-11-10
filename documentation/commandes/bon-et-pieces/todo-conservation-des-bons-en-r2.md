@@ -40,7 +40,7 @@ décrirait dans le runbook, sans outil.
   qu'une modification ajoute une pièce au lieu d'écraser la précédente.
 - **La révision est celle de la commande** (`orders.revision`, lue avec la vue
   — `OwnedOrder.revision`) depuis le 2026-10-23 : `0` à la passation, `+1` à
-  chaque modification ([`plan-modifier-une-commande.md`](../modification/plan-modifier-une-commande.md), M1).
+  chaque modification ([`modifier-une-commande.md`](../modification/modifier-une-commande.md), § 2.1).
 - **Écrit au premier téléchargement**, jamais à la passation
   (`OrderSheetArchive.pdfOf`), et best-effort : un R2 en panne rend le PDF sans
   l'archiver.

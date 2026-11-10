@@ -5,8 +5,8 @@ import { jsonSteps } from "./order-json.js";
 /**
  * **Une ligne de commande, telle qu'elle s'écrit** — sortie de
  * `PrismaOrderRepository.place` le 2026-10-23 : la révision d'une commande
- * réécrit ses lignes par la MÊME fonction (plan `plan-modifier-une-commande.md`,
- * M1). Deux écritures de la même ligne finiraient par figer deux choses.
+ * réécrit ses lignes par la MÊME fonction (voir `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.2 « Le chemin d'une modification »). Deux écritures de la même ligne finiraient par figer deux choses.
  */
 export function orderLineDataOf(line: OrderLineSnapshot): Prisma.OrderLineCreateWithoutOrderInput {
   return {

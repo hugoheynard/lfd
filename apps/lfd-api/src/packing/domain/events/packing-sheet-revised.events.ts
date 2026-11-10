@@ -7,9 +7,9 @@ import type { RevisedDueLine } from "../services/revised-due.js";
 const JOURNAL_TYPE = "packing_sheet.revised" satisfies JournalFactType;
 
 /**
- * **Les lignes dues d'une feuille sont révisées** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 2.2) — l'équipe a changé les quantités d'une commande déjà inscrite.
+ * **Les lignes dues d'une feuille sont révisées** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — l'équipe a changé les quantités d'une commande déjà inscrite.
  * Journalisé seulement, dans la transaction de la révision, et seulement
  * quand une ligne a changé. Le sujet est la commande, comme les contenants.
  */

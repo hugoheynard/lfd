@@ -1,9 +1,9 @@
 import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * **Les refus de la révision d'une feuille** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7) — l'équipe change les quantités d'une commande déjà inscrite.
+ * **Les refus de la révision d'une feuille** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — l'équipe change les quantités d'une commande déjà inscrite.
  */
 
 /** § 7, S1 : on ne descend pas sous ce qui est déjà au bac. */

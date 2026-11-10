@@ -1,6 +1,6 @@
 /**
- * E2E de **la demande de modification après l'heure limite** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4) :
+ * E2E de **la demande de modification après l'heure limite** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) :
  * `POST /me/orders/:id/change-request` (client), puis la boîte des demandes
  * — `GET …/order-change/quote`, `POST …/apply`, `POST …/refuse` (équipe,
  * `b2b_contact`).
@@ -13,7 +13,7 @@
  * le droit de la boîte.
  *
  * Le devis INDICATIF du client (`POST /orders/:id/revisions/change-request-quote`,
- * §14) : admis au seul « trop tard », derrière le mur.
+ * § 2.5) : admis au seul « trop tard », derrière le mur.
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`), Stripe, le mailer.
  */

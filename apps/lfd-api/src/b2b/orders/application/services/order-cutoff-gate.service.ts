@@ -16,8 +16,8 @@ import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /**
  * **L'heure limite opposée à un panier** — extraite d'`OrderDrafting` le
- * 2026-10-23 pour servir aussi la révision (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1), sans en faire
+ * 2026-10-23 pour servir aussi la révision (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.3 « Les règles », R1), sans en faire
  * une seconde copie.
  *
  * **Deux sources.** Chaque article peut porter la sienne, résolue par le
@@ -101,8 +101,8 @@ export class OrderCutoffGate {
 
   /**
    * La MÊME décision, sans refuser : ce que la vue d'une commande dit de sa
-   * modification (« jusqu'à quand », ou « trop tard » — plan
-   * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6). Aucune
+   * modification (« jusqu'à quand », ou « trop tard » — voir
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »). Aucune
    * dérogation : la révision n'en dépense pas.
    */
   async decide(skus: readonly string[], fulfillmentDate: string): Promise<OrderCutoffDecision> {

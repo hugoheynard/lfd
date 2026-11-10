@@ -7,9 +7,9 @@ import { content, DAY, placedOrder, reviseScene } from "./revision-scene.js";
 import { refusedEarly } from "./revision-seen.js";
 
 /**
- * **Changer les quantités d'une commande inscrite** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7) — l'orchestration : l'autorisation `staff_quantities` demandée au
+ * **Changer les quantités d'une commande inscrite** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — l'orchestration : l'autorisation `staff_quantities` demandée au
  * fournil, le colisage ensuite, le BL après l'écriture, et les refus nommés.
  */
 

@@ -259,8 +259,8 @@ export interface OrderProblemDetailsView {
 }
 
 /**
- * La réponse du commerce à une demande de modification (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : appliquée —
+ * La réponse du commerce à une demande de modification (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) : appliquée —
  * la révision qu'elle a produite —, ou refusée avec un mot.
  */
 export type OrderChangeDecisionView =

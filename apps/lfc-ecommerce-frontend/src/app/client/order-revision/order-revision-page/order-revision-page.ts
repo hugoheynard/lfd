@@ -76,8 +76,8 @@ interface SubmitRefusal {
 }
 
 /**
- * **Modifier une commande passée** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3, côté boutique).
+ * **Modifier une commande passée** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
  *
  * Le brouillon part de la commande telle qu'elle est ; chaque changement
  * redemande le **devis de révision**, qui dit le nouveau total et l'écart —
@@ -90,7 +90,7 @@ interface SubmitRefusal {
  * panier : modifier une commande ne touche pas à la commande suivante.
  *
  * **L'heure limite passée** (M4), la page devient une DEMANDE : même
- * composition, un devis INDICATIF (`changeQuote`, §14 — décision de Hugo du
+ * composition, un devis INDICATIF (`changeQuote`, § 2.5 — décision de Hugo du
  * 2026-10-23), et « Demander cette modification » à la place de « Valider »
  * (`ChangeRequestCard`). C'est le serveur qui le dit, par `revisability`.
  */

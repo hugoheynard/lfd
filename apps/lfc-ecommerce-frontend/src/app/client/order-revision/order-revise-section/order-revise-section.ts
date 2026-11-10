@@ -17,8 +17,8 @@ import { OrderRevisionGateway } from '../order-revision.gateway';
 import { changeRequestNoteOf, reviseOfferOf, type ReviseOffer } from '../revision-wording';
 
 /**
- * **« Modifier ma commande » dans le tiroir** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3, §6), à côté de
+ * **« Modifier ma commande » dans le tiroir** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »), à côté de
  * l'annulation et sous la même forme. Un lien : il mène à une page, qui
  * survit à un rechargement.
  *

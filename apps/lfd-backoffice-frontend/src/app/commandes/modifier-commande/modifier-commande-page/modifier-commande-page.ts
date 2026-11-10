@@ -93,8 +93,8 @@ interface QuotedRevision {
 }
 
 /**
- * **Modifier une commande passée** — le parcours de l'équipe (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6, M3).
+ * **Modifier une commande passée** — le parcours de l'équipe (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
  *
  * La saisie par l'équipe, préremplie : les mêmes sources d'articles, le même
  * panier, le même sélecteur d'acheminement — seuls l'interlocuteur et le

@@ -30,8 +30,8 @@ function changeDetails(request: ReturnType<typeof orderChange>): OrderChangeDeta
 }
 
 /**
- * La demande de modification d'une commande (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : une réponse,
+ * La demande de modification d'une commande (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)) : une réponse,
  * une seule — appliquée ou refusée avec un mot —, jamais « traitée » sans
  * réponse, et rien à appliquer une fois anonymisée.
  */

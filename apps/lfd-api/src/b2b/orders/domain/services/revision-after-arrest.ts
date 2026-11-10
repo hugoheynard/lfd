@@ -4,9 +4,9 @@ import type { RevisionChange } from "../entities/order-revision.js";
 import { settlementRegimeOf } from "./settlement-regime.js";
 
 /**
- * **Changer les quantités d'une commande inscrite** (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7) — pur. « À partir du moment où c'est parti en prod, c'est de la
+ * **Changer les quantités d'une commande inscrite** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») — pur. « À partir du moment où c'est parti en prod, c'est de la
  * quantité » (Hugo, 2026-10-25) : après l'arrêt du plan, l'équipe seule
  * change les quantités (≥ 1) des lignes d'une commande au compte. Ni date,
  * ni mode, ni lieu, ni article, ni rien d'autre — et pas les particuliers,

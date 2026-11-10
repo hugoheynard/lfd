@@ -481,7 +481,7 @@ export const routes: Routes = [
       import('./commandes/commande-page/commande-page').then((m) => m.AdminCommandePage),
   },
   {
-    // Modifier une commande passée (plan `plan-modifier-une-commande.md`, M3).
+    // Modifier une commande passée (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
     // PLEINE PAGE comme la saisie dont elle reprend le parcours, et sous le
     // droit des routes de révision. Une seule route pour les deux cadres : le
     // retour mène au dossier du compte quand la commande en a un.

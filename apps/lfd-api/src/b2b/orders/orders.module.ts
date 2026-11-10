@@ -355,7 +355,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   ],
   controllers: [
     ...CUSTOMER_CANCELLATION_CONTROLLERS,
-    // Modifier une commande (plan `plan-modifier-une-commande.md`, M1).
+    // Modifier une commande (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
     ...ORDER_REVISION_CONTROLLERS,
     ...CARD_INCREASE_CONTROLLERS,
     ...ORDER_SHORTFALL_CONTROLLERS,

@@ -1,9 +1,9 @@
 import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de la **révision d'une commande inscrite** au fournil (plan A2,
- * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
- * § 7). Le commerce les refuse avant ; ces gardes tiennent la journée si un
+ * Les refus de la **révision d'une commande inscrite** au fournil (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription »). Le commerce les refuse avant ; ces gardes tiennent la journée si un
  * appelant les oubliait.
  */
 

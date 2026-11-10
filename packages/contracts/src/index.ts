@@ -1224,7 +1224,7 @@ export {
   orderRefundStatusSchema,
 } from "./order.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
-// Modifier une commande passée (plan `commandes/modification/plan-modifier-une-commande.md`, M1).
+// Modifier une commande passée (voir `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
 export {
   ORDER_REVISION_CARD_REFUSALS,
   ORDER_REVISION_CHANGES,

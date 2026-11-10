@@ -58,8 +58,8 @@ import type { FrozenDeliveryFee } from "./pricing-context.service.js";
 import { ShelfRevising } from "./shelf-revising.service.js";
 
 /**
- * **Recomposer une commande passée** (plan
- * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — partagé par
+ * **Recomposer une commande passée** (voir
+ * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — partagé par
  * la modification et par son devis, qui disent donc le même montant.
  *
  * Le calcul est celui de la passation ({@link OrderComposition}) ; ce service
@@ -133,7 +133,7 @@ export class OrderRevising {
   }
 
   /**
-   * **Ce que les vues disent de la modification** (§6) — la MÊME règle que le
+   * **Ce que les vues disent de la modification** (§ 2.2) — la MÊME règle que le
    * geste, sans verrou : la frontière commune ({@link ensureRevisable}, avec
    * le jour d'inscription lu au fournil), puis pour le client l'arrêt du plan
    * et l'heure limite de la date actuelle, décidés comme {@link compose} les
@@ -488,7 +488,7 @@ function revisedInputOf(order: RevisableOrder, composed: ComposedDraft): PricedD
     buyerKind: order.buyerKind,
     catalogVersionId: order.catalogVersionId,
     // Le bon garde la part déjà déduite : l'agrégat la borne au nouveau total,
-    // et la révision refuse qu'elle baisse (§9). Dans l'unité de la méthode :
+    // et la révision refuse qu'elle baisse (§ 2.3, R4). Dans l'unité de la méthode :
     // la valeur faciale TTC pour `exact_ht` (relue par `toRevisableOrder`).
     voucher:
       order.voucher === null
