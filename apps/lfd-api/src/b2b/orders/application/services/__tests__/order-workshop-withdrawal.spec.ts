@@ -2,7 +2,7 @@ import {
   cancellationSubject,
   ScriptedDesk,
   ScriptedPackingDesk,
-} from "../../commands/__tests__/cancellation-doubles.js";
+} from "../../../cancellation/application/commands/__tests__/cancellation-doubles.js";
 import { OrderWorkshopWithdrawal } from "../order-workshop-withdrawal.js";
 
 /**

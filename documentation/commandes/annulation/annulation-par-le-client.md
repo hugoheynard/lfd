@@ -95,7 +95,7 @@ flowchart TD
 
 ## C6.2 Qui peut annuler — le mur
 
-`CancellationWall` (`b2b/orders/application/services/cancellation-wall.ts`) :
+`CancellationWall` (`b2b/orders/cancellation/application/services/cancellation-wall.ts`) :
 
 - **commande personnelle** : son auteur (`placedByUserId`), et lui seul ;
 - **commande de société** (saisie par l'équipe comprise) : un rattachement
@@ -166,7 +166,7 @@ Le booléen existe pour une seule raison : distinguer « passée **sans délai**
 (figée, heures NULL) de « passée **avant les colonnes** » (non figée), que
 l'instant seul confondait. Les trois sont écrits par la passation et par la
 révision (`PrismaOrderRepository`, `PrismaOrderRevisionRepository`), lus par
-`apps/lfd-api/src/b2b/orders/infrastructure/customer-cancellation.columns.ts` et nulle part ailleurs.
+`apps/lfd-api/src/b2b/orders/cancellation/infrastructure/customer-cancellation.columns.ts` et nulle part ailleurs.
 
 ### Les quatre cas
 

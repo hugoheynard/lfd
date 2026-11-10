@@ -132,7 +132,7 @@ pour qu'une méthode ajoutée demain sans garde fasse rougir.
 
 ### 2.4 L'ordre des verrous
 
-Lu dans `b2b/orders/application/services/order-cancellation.service.ts` :
+Lu dans `b2b/orders/cancellation/application/services/order-cancellation.service.ts` :
 ligne `orders` → journée du fournil (`withdrawFromBakery`) → **feuille → bac
 (`BinDesk`) → réserve, triée par SKU** (neuf, A1) → BL (`voidLiveFor`) → bon
 → remboursement. Les autres chemins qui prennent la feuille :

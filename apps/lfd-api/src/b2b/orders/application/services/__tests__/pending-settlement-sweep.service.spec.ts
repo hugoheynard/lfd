@@ -14,7 +14,7 @@ import {
 import type { SettlementSweepWindow } from "../../../domain/services/settlement-sweep.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { ScriptedCancelGateway } from "../../commands/__tests__/cancellation-doubles.js";
+import { ScriptedCancelGateway } from "../../../cancellation/application/commands/__tests__/cancellation-doubles.js";
 import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
 import { RecordingRedemption } from "../../commands/__tests__/voucher-doubles.js";
 import { PendingSettlementSweep } from "../pending-settlement-sweep.service.js";

@@ -3,7 +3,7 @@ import type request from "supertest";
 import { OrderMailOrigins } from "../src/b2b/orders/domain/ports/order-mail-origins.js";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
+import { CancelOrderCommand } from "../src/b2b/orders/cancellation/application/commands/cancel-order.command.js";
 import {
   CompanyStatus,
   CustomerRole,

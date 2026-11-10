@@ -1,7 +1,7 @@
 import type { AcceptedMember } from "../../../../account/domain/ports/accepted-members.reader.js";
 import type { CompanyStatus } from "../../../../account/domain/value-objects/company-status.js";
 import type { OrderNoticeSummary } from "../../../../orders/domain/ports/order-notice-summary.reader.js";
-import { OrderCancelledEvent } from "../../../../orders/domain/events/order-cancelled.event.js";
+import { OrderCancelledEvent } from "../../../../orders/cancellation/domain/events/order-cancelled.event.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { InMemoryNoticeRules, InMemoryNoticeSwitches } from "../../__tests__/notice-doubles.js";
 import {

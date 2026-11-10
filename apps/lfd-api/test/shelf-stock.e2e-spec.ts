@@ -18,9 +18,9 @@ import type { DayStockOverviewView, ResupplyReceiptView } from "@lfd/contracts";
 import { instantToLocal, localToInstant } from "@lfd/contracts";
 
 import { Order } from "../src/b2b/orders/domain/entities/order.js";
-import { OrderCancellationRepository } from "../src/b2b/orders/domain/ports/order-cancellation.repository.js";
+import { OrderCancellationRepository } from "../src/b2b/orders/cancellation/domain/ports/order-cancellation.repository.js";
 import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
-import { BEFORE_INSCRIPTION } from "../src/b2b/orders/domain/services/cancellation-allowance.js";
+import { BEFORE_INSCRIPTION } from "../src/b2b/orders/cancellation/domain/services/cancellation-allowance.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";

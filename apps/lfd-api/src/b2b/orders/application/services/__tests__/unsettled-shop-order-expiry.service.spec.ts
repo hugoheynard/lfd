@@ -4,7 +4,7 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
 import { OrderCardCancellation } from "../../../domain/ports/order-card-payments.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
-import { UnsettledShopOrderCanceller } from "../../../domain/ports/unsettled-shop-order.canceller.js";
+import { UnsettledShopOrderCanceller } from "../../../cancellation/domain/ports/unsettled-shop-order.canceller.js";
 import { UnsettledShopOrderReader } from "../../../domain/ports/unsettled-shop-order.reader.js";
 import type { UnsettledSettlement } from "../../../domain/ports/unsettled-settlement.reader.js";
 import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";

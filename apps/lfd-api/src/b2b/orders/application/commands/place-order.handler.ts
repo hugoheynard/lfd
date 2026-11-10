@@ -28,7 +28,7 @@ import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderMarketingConsent } from "../services/order-marketing-consent.js";
-import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
+import { CustomerCancellationDeadline } from "../../cancellation/application/services/customer-cancellation-deadline.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { OrderCardRetrieval } from "../../domain/ports/order-card-payments.js";

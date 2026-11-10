@@ -1,6 +1,6 @@
 import type { OrderCutoffDecision } from "@lfd/contracts";
 
-import type { CancellationDecision } from "../order-cancellation.js";
+import type { CancellationDecision } from "../../../cancellation/domain/services/order-cancellation.js";
 import {
   customerRevisionRefusalOf,
   revisabilityOf,

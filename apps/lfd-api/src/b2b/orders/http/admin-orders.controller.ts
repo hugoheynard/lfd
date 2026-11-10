@@ -44,7 +44,7 @@ import {
 } from "../application/commands/place-order-for-customer.command.js";
 import { SendHandoverReminderCommand } from "../application/commands/send-handover-reminder.command.js";
 import { WarnCustomerOfDelayCommand } from "../application/commands/warn-customer-of-delay.command.js";
-import { CancelOrderCommand } from "../application/commands/cancel-order.command.js";
+import { CancelOrderCommand } from "../cancellation/application/commands/cancel-order.command.js";
 import { GetAdminOrderSheetPdfQuery } from "../application/queries/get-admin-order-sheet-pdf.query.js";
 import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetAdminOrderQuery } from "../application/queries/get-admin-order.query.js";

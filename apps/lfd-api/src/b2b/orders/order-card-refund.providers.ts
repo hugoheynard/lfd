@@ -1,8 +1,8 @@
 import type { Provider } from "@nestjs/common";
 
-import { RefundPaidAfterCancellation } from "./application/handlers/refund-paid-after-cancellation.handler.js";
+import { RefundPaidAfterCancellation } from "./cancellation/application/handlers/refund-paid-after-cancellation.handler.js";
 import { AdminOrderRefundView } from "./application/services/admin-order-refund-view.js";
-import { CancellationRefundRequester } from "./application/services/cancellation-refund-requester.js";
+import { CancellationRefundRequester } from "./cancellation/application/services/cancellation-refund-requester.js";
 import { RevisionCardRefund } from "./application/services/revision-card-refund.js";
 import { OrderCardRefundReadings } from "./infrastructure/order-card-refund-readings.js";
 

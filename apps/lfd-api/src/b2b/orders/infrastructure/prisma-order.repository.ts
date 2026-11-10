@@ -7,7 +7,7 @@ import {
   PaymentStatus,
   Prisma,
 } from "../../../platform/database/client/client.js";
-import { customerCancellationColumnsOf } from "./customer-cancellation.columns.js";
+import { customerCancellationColumnsOf } from "../cancellation/infrastructure/customer-cancellation.columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";

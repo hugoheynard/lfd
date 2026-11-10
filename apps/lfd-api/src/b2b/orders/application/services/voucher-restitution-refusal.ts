@@ -2,13 +2,13 @@ import { Injectable } from "@nestjs/common";
 
 import { OrderInscriptionReader } from "../../../../production/channels/commerce/index.js";
 import type { VoucherRestitution } from "../../domain/ports/loyalty-voucher-redemption.js";
-import { CancellationSubjectReader } from "../../domain/ports/cancellation-subject.reader.js";
-import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
+import { CancellationSubjectReader } from "../../cancellation/domain/ports/cancellation-subject.reader.js";
+import { BEFORE_INSCRIPTION } from "../../cancellation/domain/services/cancellation-allowance.js";
 import {
   cancellationOf,
   type CancellationBlock,
-} from "../../domain/services/order-cancellation.js";
-import { CancellationRule } from "./cancellation-rule.js";
+} from "../../cancellation/domain/services/order-cancellation.js";
+import { CancellationRule } from "../../cancellation/application/services/cancellation-rule.js";
 
 /** La restitution refusée — les cas 5 et 6 du lot C3b. */
 export type BlockedRestitution = Extract<VoucherRestitution, { readonly kind: "blocked" }>;

@@ -20,7 +20,7 @@ import type { CardIncreaseProposal } from "../../../domain/entities/card-increas
 import type { RevisableOrder } from "../../../domain/entities/order-revision.js";
 import { CardIncreaseProposalReader } from "../../../domain/ports/card-increase-proposal.reader.js";
 import { CardIncreaseAbandonment } from "../../services/card-increase-abandonment.js";
-import { CardIncreaseCancellation } from "../../services/card-increase-cancellation.js";
+import { CardIncreaseCancellation } from "../../../cancellation/application/services/card-increase-cancellation.js";
 import { OrderCutoffGate } from "../../services/order-cutoff-gate.service.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import { RecordingProposals } from "../../services/__tests__/card-increase-doubles.js";

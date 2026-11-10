@@ -21,7 +21,7 @@ import {
   UnchangedOrderRevisionError,
 } from "../errors/order-revision-errors.js";
 import type { RevisableDiscount } from "../services/basket-discount-replay.js";
-import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
+import type { FixedCustomerCancellation } from "../../cancellation/domain/services/customer-cancellation-window.js";
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderLineSnapshot } from "../value-objects/order-line.js";

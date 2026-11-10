@@ -13,10 +13,10 @@ import {
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderCardSubjectWithoutIntentError } from "../../domain/errors/order-payment-errors.js";
-import { OrderPaidAfterCancellationEvent } from "../../domain/events/order-paid-after-cancellation.event.js";
+import { OrderPaidAfterCancellationEvent } from "../../cancellation/domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaidFact } from "../../domain/events/order-paid.fact.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
-import { CancelledOrderPaymentReader } from "../../domain/ports/cancelled-order-payment.reader.js";
+import { CancelledOrderPaymentReader } from "../../cancellation/domain/ports/cancelled-order-payment.reader.js";
 import {
   OrderCardStandingReader,
   type OrderCardStanding,

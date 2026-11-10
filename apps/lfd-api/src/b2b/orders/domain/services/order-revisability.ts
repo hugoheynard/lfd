@@ -1,6 +1,9 @@
 import type { OrderCutoffDecision, OrderRevisionRefusal, PaymentStatus } from "@lfd/contracts";
 
-import type { CancellationBlock, CancellationDecision } from "./order-cancellation.js";
+import type {
+  CancellationBlock,
+  CancellationDecision,
+} from "../../cancellation/domain/services/order-cancellation.js";
 import { revisionRefusalOf } from "./order-revision-refusal.js";
 import { settlementRegimeOf } from "./settlement-regime.js";
 

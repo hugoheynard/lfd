@@ -3,8 +3,8 @@ import type { OrderView } from "@lfd/contracts";
 import {
   customerSubject,
   orderPageLink,
-} from "../../commands/__tests__/customer-cancellation-doubles.js";
-import type { CustomerCancellationSubject } from "../../../domain/ports/customer-cancellation-subject.reader.js";
+} from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
+import type { CustomerCancellationSubject } from "../../../cancellation/domain/ports/customer-cancellation-subject.reader.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";

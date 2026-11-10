@@ -16,7 +16,7 @@ import type {
 } from "@lfd/contracts";
 import type { VatShare } from "@lfd/money";
 
-import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
+import type { FixedCustomerCancellation } from "../../cancellation/domain/services/customer-cancellation-window.js";
 import type { FrozenDiscountTerms } from "../services/frozen-discount-terms.js";
 import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";

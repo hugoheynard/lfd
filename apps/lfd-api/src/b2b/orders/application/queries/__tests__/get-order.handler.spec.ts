@@ -13,17 +13,17 @@ import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js"
 import type { OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import { OrderInscriptionReader } from "../../../../../production/channels/commerce/index.js";
-import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
+import type { CancellationSubject } from "../../../cancellation/domain/ports/cancellation-subject.reader.js";
 import {
   cancellationSubject,
   FixedSubjects,
   ScriptedEngagements,
-} from "../../commands/__tests__/cancellation-doubles.js";
+} from "../../../cancellation/application/commands/__tests__/cancellation-doubles.js";
 import type { AccountEngagement } from "../../../domain/ports/account-order-engagement.js";
 import { FixedPackingStates, previewOf } from "../../commands/__tests__/packing-state-doubles.js";
-import { CancellationRule } from "../../services/cancellation-rule.js";
-import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
-import { FixedCancellationSettings } from "../../commands/__tests__/customer-cancellation-doubles.js";
+import { CancellationRule } from "../../../cancellation/application/services/cancellation-rule.js";
+import { CancellationAllowanceGate } from "../../../cancellation/application/services/cancellation-allowance-gate.js";
+import { FixedCancellationSettings } from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";

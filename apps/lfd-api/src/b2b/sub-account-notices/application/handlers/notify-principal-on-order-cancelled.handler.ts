@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   ORDER_CANCELLED,
   OrderCancelledEvent,
-} from "../../../orders/domain/events/order-cancelled.event.js";
+} from "../../../orders/cancellation/domain/events/order-cancelled.event.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,

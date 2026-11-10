@@ -177,8 +177,8 @@ import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js"
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
-import { CustomerCancellationDeadline } from "../../services/customer-cancellation-deadline.js";
-import { FixedCancellationSettings } from "./customer-cancellation-doubles.js";
+import { CustomerCancellationDeadline } from "../../../cancellation/application/services/customer-cancellation-deadline.js";
+import { FixedCancellationSettings } from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import { intakeAt } from "./intake-doubles.js";
 import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
 import {

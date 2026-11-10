@@ -3,8 +3,8 @@ import {
   DomainError,
   TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
-import type { CancellationBlock } from "../services/order-cancellation.js";
-import { voucherEuros } from "../services/order-cancellation-voucher.js";
+import type { CancellationBlock } from "../../cancellation/domain/services/order-cancellation.js";
+import { voucherEuros } from "../../cancellation/domain/services/order-cancellation-voucher.js";
 import {
   CARD_SETTLED_REVISION_REFUSAL,
   NO_SALES_TERMS_REVISION_REFUSAL,

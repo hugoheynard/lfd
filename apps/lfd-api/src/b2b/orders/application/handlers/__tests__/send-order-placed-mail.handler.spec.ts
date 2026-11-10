@@ -23,7 +23,7 @@ import { OrderManageLink } from "../../services/order-manage-link.js";
 import {
   FixedCustomerSubjects,
   ReadableSigner,
-} from "../../commands/__tests__/customer-cancellation-doubles.js";
+} from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 
 /** Les données de la demande : le bon y est une référence au stockage. */
 type PlacedDemandData = ByReference<B2bMails["customer.order-placed"]>;

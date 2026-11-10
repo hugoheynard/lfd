@@ -104,7 +104,7 @@ const ADMITTED = new Map([
       "un booléen en sort, le `sub` jamais",
   ],
   [
-    "apps/lfd-api/src/b2b/orders/infrastructure/prisma-customer-cancellation-subject.reader.ts",
+    "apps/lfd-api/src/b2b/orders/cancellation/infrastructure/prisma-customer-cancellation-subject.reader.ts",
     "dit si l'acheteur peut se connecter : le lien d'annulation d'un invité ne vaut que sans " +
       "compte (plan d'annulation, C6.4, S3, 2026-10-13) ; un booléen en sort, le `sub` jamais",
   ],

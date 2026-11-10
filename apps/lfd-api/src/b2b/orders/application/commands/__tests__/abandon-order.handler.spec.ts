@@ -24,7 +24,7 @@ import { AbandonOrderCommand } from "../abandon-order.command.js";
 import { AbandonOrderHandler } from "../abandon-order.handler.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { ScriptedCancelGateway } from "./cancellation-doubles.js";
+import { ScriptedCancelGateway } from "../../../cancellation/application/commands/__tests__/cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { RecordingRedemption } from "./voucher-doubles.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";

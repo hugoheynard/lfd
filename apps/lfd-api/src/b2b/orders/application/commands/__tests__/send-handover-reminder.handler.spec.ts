@@ -2,7 +2,7 @@ import {
   OpenableUnitOfWork,
   RecordingMail,
 } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
-import { orderPageLink } from "./customer-cancellation-doubles.js";
+import { orderPageLink } from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderCustomerNudgesSnapshot } from "../../../domain/entities/order-customer-nudges.js";
 import {

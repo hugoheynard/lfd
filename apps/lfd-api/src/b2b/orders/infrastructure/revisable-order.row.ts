@@ -32,7 +32,7 @@ import {
   revisableDiscountOf,
   type RevisableOrderDiscountRow,
 } from "./revisable-discounts.columns.js";
-import { fixedCustomerCancellationOf } from "./customer-cancellation.columns.js";
+import { fixedCustomerCancellationOf } from "../cancellation/infrastructure/customer-cancellation.columns.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { vatMethodOf } from "./order-money-columns.js";
 import {

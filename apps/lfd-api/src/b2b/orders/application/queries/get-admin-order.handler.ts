@@ -16,7 +16,7 @@ import {
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { CardIncreaseProposalReader } from "../../domain/ports/card-increase-proposal.reader.js";
 import { AdminOrderAuthorReader } from "../../domain/ports/admin-order-author.reader.js";
-import { CancellationSubjectReader } from "../../domain/ports/cancellation-subject.reader.js";
+import { CancellationSubjectReader } from "../../cancellation/domain/ports/cancellation-subject.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { VoucherRestitution } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -25,15 +25,15 @@ import {
   type OrderShortfallReading,
 } from "../../domain/ports/order-shortfall.reader.js";
 import { VoucherRestitutionPreview } from "../../domain/ports/voucher-restitution-preview.js";
-import { cancellationVoucherSentenceOf } from "../../domain/services/order-cancellation-voucher.js";
-import { cancellationRefusalOf } from "../../domain/services/order-cancellation.js";
-import { cancellationRefundSentenceOf } from "../../domain/services/order-cancellation-refund.js";
+import { cancellationVoucherSentenceOf } from "../../cancellation/domain/services/order-cancellation-voucher.js";
+import { cancellationRefusalOf } from "../../cancellation/domain/services/order-cancellation.js";
+import { cancellationRefundSentenceOf } from "../../cancellation/domain/services/order-cancellation-refund.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
-import type { CancellationSubject } from "../../domain/ports/cancellation-subject.reader.js";
+import type { CancellationSubject } from "../../cancellation/domain/ports/cancellation-subject.reader.js";
 import { adminCardIncreaseOf } from "../services/admin-order-card-increase.js";
 import { AdminOrderRefundView } from "../services/admin-order-refund-view.js";
 import { OrderRevisabilityReading } from "../services/order-revisability-reading.js";
-import { CancellationPreview } from "../services/cancellation-preview.js";
+import { CancellationPreview } from "../../cancellation/application/services/cancellation-preview.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
 

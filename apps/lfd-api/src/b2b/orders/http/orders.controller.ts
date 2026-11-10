@@ -39,12 +39,12 @@ import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AbandonOrderCommand } from "../application/commands/abandon-order.command.js";
 import { AdoptOrderPaymentCommand } from "../application/commands/adopt-order-payment.command.js";
-import { CancelOrderByCustomerCommand } from "../application/commands/cancel-order-by-customer.command.js";
+import { CancelOrderByCustomerCommand } from "../cancellation/application/commands/cancel-order-by-customer.command.js";
 import {
   PlaceOrderCommand,
   type PlaceOrderResult,
 } from "../application/commands/place-order.command.js";
-import { GetOrderCancellabilityQuery } from "../application/queries/get-order-cancellability.query.js";
+import { GetOrderCancellabilityQuery } from "../cancellation/application/queries/get-order-cancellability.query.js";
 import type { CustomerRevisionStanding } from "../application/queries/get-order-revisability.handler.js";
 import { GetOrderRevisabilityQuery } from "../application/queries/get-order-revisability.query.js";
 import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";

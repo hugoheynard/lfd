@@ -129,7 +129,7 @@ stateDiagram-v2
   [`ConfirmOrderPaymentHandler`](../../../apps/lfd-api/src/b2b/orders/application/services/order-subject-settlement.ts)
   publie `OrderPaidAfterCancellationEvent`. Depuis le lot C4 du
   [l'annulation par le staff](../annulation/annulation-par-le-staff.md) (2026-10-12, C4.11),
-  [`RefundPaidAfterCancellation`](../../../apps/lfd-api/src/b2b/orders/application/handlers/refund-paid-after-cancellation.handler.ts)
+  [`RefundPaidAfterCancellation`](../../../apps/lfd-api/src/b2b/orders/cancellation/application/handlers/refund-paid-after-cancellation.handler.ts)
   ouvre une demande de remboursement, que l'exécuteur porte chez Stripe, pour
   toutes les clientèles ; la cloche « à rembourser » (`RingRefundDue`) est
   retirée, une cloche ne sonne plus que sur incident.

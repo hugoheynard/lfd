@@ -1,4 +1,4 @@
-import type { CancellationBlock } from "./order-cancellation.js";
+import type { CancellationBlock } from "../../cancellation/domain/services/order-cancellation.js";
 
 const MODIFY_ACCOUNTING =
   "Une commande engagée en comptabilité ne se modifie plus : voyez avec la comptabilité.";

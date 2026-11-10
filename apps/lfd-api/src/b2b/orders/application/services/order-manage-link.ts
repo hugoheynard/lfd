@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { CancellationLinkSigner } from "../../domain/ports/cancellation-link-signer.js";
-import { CustomerCancellationSubjectReader } from "../../domain/ports/customer-cancellation-subject.reader.js";
+import { CancellationLinkSigner } from "../../cancellation/domain/ports/cancellation-link-signer.js";
+import { CustomerCancellationSubjectReader } from "../../cancellation/domain/ports/customer-cancellation-subject.reader.js";
 
 /**
  * **Le lien vers CETTE commande** — « gérer ou annuler ma commande » de

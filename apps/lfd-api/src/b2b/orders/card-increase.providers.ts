@@ -8,7 +8,7 @@ import { RefundLateComplement } from "./application/handlers/refund-late-complem
 import { RefundRefusedIncrease } from "./application/handlers/refund-refused-increase.handler.js";
 import { BusCardIncreaseWake } from "./application/services/bus-card-increase-wake.js";
 import { CardIncreaseBell } from "./application/services/card-increase-bell.js";
-import { CardIncreaseCancellation } from "./application/services/card-increase-cancellation.js";
+import { CardIncreaseCancellation } from "./cancellation/application/services/card-increase-cancellation.js";
 import {
   BusCardIncreaseDispatch,
   CardIncreaseDispatch,

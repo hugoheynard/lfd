@@ -2,9 +2,9 @@ import {
   OrderPackingStateReader,
   type OrderPackingState,
 } from "../../../../../packing/channels/commerce/index.js";
-import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
-import { CancellationPreview } from "../../services/cancellation-preview.js";
-import type { CancellationRule } from "../../services/cancellation-rule.js";
+import { CancellationAllowanceGate } from "../../../cancellation/application/services/cancellation-allowance-gate.js";
+import { CancellationPreview } from "../../../cancellation/application/services/cancellation-preview.js";
+import type { CancellationRule } from "../../../cancellation/application/services/cancellation-rule.js";
 
 /**
  * L'état au colisage, donné d'avance : commande → `packed` | `withdrawn`

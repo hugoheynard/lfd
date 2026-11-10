@@ -2,7 +2,7 @@ import { OrderSettlementPayloadError } from "../../errors/order-settlement-paylo
 import {
   ORDER_PAID_AFTER_CANCELLATION,
   OrderPaidAfterCancellationEvent,
-} from "../order-paid-after-cancellation.event.js";
+} from "../../../cancellation/domain/events/order-paid-after-cancellation.event.js";
 import { ORDER_PAYMENT_FAILED, OrderPaymentFailedEvent } from "../order-payment-failed.event.js";
 
 /**

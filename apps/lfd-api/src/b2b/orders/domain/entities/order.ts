@@ -62,7 +62,7 @@ import {
   type CancellationAnchorSource,
   type CustomerCancellationPolicy,
   type FixedCustomerCancellation,
-} from "../services/customer-cancellation-window.js";
+} from "../../cancellation/domain/services/customer-cancellation-window.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";

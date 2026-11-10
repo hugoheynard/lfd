@@ -93,12 +93,12 @@ clientèles.
 
 Le staff et le client passent par **le même service applicatif**,
 `OrderCancellation.cancel(orderId, intent)`
-(`b2b/orders/application/services/order-cancellation.service.ts`). Le handler
+(`b2b/orders/cancellation/application/services/order-cancellation.service.ts`). Le handler
 staff (`CancelOrderHandler`) l'appelle directement ; les deux handlers client
 (`CancelOrderByCustomerHandler`, `CancelGuestOrderHandler`) passent par
 `CustomerOrderCancellation`, qui ajoute les refus du client puis l'appelle.
 Aucun handler n'en appelle un autre par le bus. L'intention porte l'**acteur**
-(`CancellationActor`, `b2b/orders/domain/services/cancellation-actor.ts`) :
+(`CancellationActor`, `b2b/orders/cancellation/domain/services/cancellation-actor.ts`) :
 
 | Acteur     | `orders.cancelled_by_kind` | Colonne d'auteur                                 |
 | ---------- | -------------------------- | ------------------------------------------------ |
@@ -106,7 +106,7 @@ Aucun handler n'en appelle un autre par le bus. L'intention porte l'**acteur**
 | `customer` | `customer`                 | `cancelled_by_user_id`                           |
 | `guest`    | `guest`                    | `cancelled_by_user_id` (la fiche invité)         |
 
-La règle (`cancellationOf`, `b2b/orders/domain/services/order-cancellation.ts`)
+La règle (`cancellationOf`, `b2b/orders/cancellation/domain/services/order-cancellation.ts`)
 est la même pour tous : un client a **moins** de droits, jamais plus — il
 ajoute ses refus devant elle (voir la doc client).
 

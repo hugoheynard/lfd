@@ -27,7 +27,7 @@ import { GuestIdentity } from "../../domain/value-objects/guest-identity.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderMarketingConsent } from "../services/order-marketing-consent.js";
-import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
+import { CustomerCancellationDeadline } from "../../cancellation/application/services/customer-cancellation-deadline.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { PlaceShopOrderCommand, type PlaceShopOrderResult } from "./place-shop-order.command.js";
 import { GUEST_BUYER } from "../../domain/value-objects/order-buyer-kind.js";

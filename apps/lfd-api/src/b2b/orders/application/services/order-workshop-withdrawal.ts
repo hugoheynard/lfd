@@ -6,10 +6,10 @@ import {
   ServiceDay,
   type OrderWithdrawalAllowance,
 } from "../../../../production/channels/commerce/index.js";
-import { OrderNotCancellableError } from "../../domain/errors/order-cancellation-errors.js";
-import type { CancellationSubject } from "../../domain/ports/cancellation-subject.reader.js";
-import type { CancellationActor } from "../../domain/services/cancellation-actor.js";
-import type { CancellationAllowance } from "../../domain/services/cancellation-allowance.js";
+import { OrderNotCancellableError } from "../../cancellation/domain/errors/order-cancellation-errors.js";
+import type { CancellationSubject } from "../../cancellation/domain/ports/cancellation-subject.reader.js";
+import type { CancellationActor } from "../../cancellation/domain/services/cancellation-actor.js";
+import type { CancellationAllowance } from "../../cancellation/domain/services/cancellation-allowance.js";
 
 /**
  * **Retirer la commande des ateliers** — le fournil, puis le colisage (plan A1,

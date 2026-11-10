@@ -6,7 +6,7 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
 import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
-import { UnsettledShopOrderCanceller } from "../../domain/ports/unsettled-shop-order.canceller.js";
+import { UnsettledShopOrderCanceller } from "../../cancellation/domain/ports/unsettled-shop-order.canceller.js";
 import { UnsettledShopOrderReader } from "../../domain/ports/unsettled-shop-order.reader.js";
 import type { UnsettledSettlement } from "../../domain/ports/unsettled-settlement.reader.js";
 import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js";

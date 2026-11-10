@@ -9,7 +9,7 @@ import type {
   RevisionActor,
 } from "../domain/entities/order-revision.js";
 import { OrderRevisionRepository } from "../domain/ports/order-revision.repository.js";
-import { customerCancellationColumnsOf } from "./customer-cancellation.columns.js";
+import { customerCancellationColumnsOf } from "../cancellation/infrastructure/customer-cancellation.columns.js";
 import { freeDeliveryColumnsOf } from "./free-delivery.columns.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { identifiedLinesOf, orderDiscountsWriteOf, writeCoverage } from "./order-discounts.data.js";

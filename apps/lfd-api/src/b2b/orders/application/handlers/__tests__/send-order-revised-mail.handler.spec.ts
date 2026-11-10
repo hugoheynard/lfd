@@ -15,7 +15,7 @@ import { OrderManageLink } from "../../services/order-manage-link.js";
 import {
   FixedCustomerSubjects,
   ReadableSigner,
-} from "../../commands/__tests__/customer-cancellation-doubles.js";
+} from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import { SendOrderRevisedMail } from "../send-order-revised-mail.handler.js";
 import {
   FixedOrigins,

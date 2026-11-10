@@ -52,7 +52,7 @@ import { OrderRevisionRepository } from "../../../domain/ports/order-revision.re
 import { RevisableOrderReader } from "../../../domain/ports/revisable-order.reader.js";
 import { OrderLine, type OrderLineInput } from "../../../domain/value-objects/order-line.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
-import { CancellationRule } from "../../services/cancellation-rule.js";
+import { CancellationRule } from "../../../cancellation/application/services/cancellation-rule.js";
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
 import { CustomerAudiences } from "../../services/customer-audiences.service.js";
 import { OrderComposition } from "../../services/order-composition.service.js";

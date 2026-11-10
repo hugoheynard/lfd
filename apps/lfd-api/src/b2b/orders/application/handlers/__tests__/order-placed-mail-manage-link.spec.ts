@@ -3,12 +3,12 @@ import type { OrderView } from "@lfd/contracts";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import type { ByReference } from "../../../../../mail/channels/requests/mail.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
-import type { CustomerCancellationSubject } from "../../../domain/ports/customer-cancellation-subject.reader.js";
+import type { CustomerCancellationSubject } from "../../../cancellation/domain/ports/customer-cancellation-subject.reader.js";
 import {
   customerSubject,
   FixedCustomerSubjects,
   ReadableSigner,
-} from "../../commands/__tests__/customer-cancellation-doubles.js";
+} from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import { sheetAttachment } from "../../services/__tests__/order-sheet-doubles.js";
 import { OrderManageLink } from "../../services/order-manage-link.js";
 import { OrderPlacedMail } from "../../services/order-placed-mail.service.js";

@@ -23,8 +23,8 @@ import {
 } from "../../domain/errors/order-revision-errors.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import { windowRequesterOf } from "../../domain/services/delivery-window.js";
-import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
-import { cancellationOf } from "../../domain/services/order-cancellation.js";
+import { BEFORE_INSCRIPTION } from "../../cancellation/domain/services/cancellation-allowance.js";
+import { cancellationOf } from "../../cancellation/domain/services/order-cancellation.js";
 import {
   quantitiesAfterArrestAllowed,
   type RevisionScope,
@@ -39,7 +39,7 @@ import {
 import { audienceOfSalesTerms } from "../../domain/services/sales-terms-of.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { warnBeyondCap } from "./basket-promotions.service.js";
-import { CancellationRule } from "./cancellation-rule.js";
+import { CancellationRule } from "../../cancellation/application/services/cancellation-rule.js";
 import { revisionPriceErrorOf } from "../../domain/errors/revision-price-errors.js";
 import { replayableDiscountsOf } from "../../domain/services/basket-discount-replay.js";
 import {

@@ -1,6 +1,6 @@
 import type { OrderView } from "@lfd/contracts";
 
-import { orderPageLink } from "../../commands/__tests__/customer-cancellation-doubles.js";
+import { orderPageLink } from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import type {
   DeferrableMailTemplate,
   DeferredMailDemand,

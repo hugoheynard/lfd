@@ -13,7 +13,7 @@
 import type { CustomerSheetView } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
+import { CancelOrderCommand } from "../src/b2b/orders/cancellation/application/commands/cancel-order.command.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
