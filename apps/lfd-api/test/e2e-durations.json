@@ -412,6 +412,7 @@
   "test/pim-operation-only.e2e-spec.ts": 8934,
   "test/pim-order-time-limits.e2e-spec.ts": 14402,
   "test/pim-pro-price.e2e-spec.ts": 12336,
+  "test/pim-product-deletion.e2e-spec.ts": 18348,
   "test/pim-product-history.e2e-spec.ts": 34040,
   "test/pim-product-lifecycle.e2e-spec.ts": 13568,
   "test/pim-publication-allergens.e2e-spec.ts": 10080,
