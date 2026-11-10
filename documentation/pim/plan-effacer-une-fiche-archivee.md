@@ -63,25 +63,45 @@ nettoyage.
 
 La moitié de ces traces vivent dans des blocs que le référentiel **n'a pas le
 droit de lire** (`CLAUDE.md` §3 : `pim → b2b`, `pim → production` sont ✗). Il
-**déclare** donc un canal, `pim/channels/holds/`, avec un port :
+**déclare** donc un port, `pim/channels/holds/` :
 
 ```
 SkuHoldsReader.holdsOf(skus: string[]): Promise<SkuHold[]>
-  SkuHold = { sku, kind: "order_line" | "catalog_mirror" | "pricing" | "promotion" | "storefront" | "suggestion" | "production" | "packing" | "delivery" | …, count, label }
+  SkuHold = { sku, kind, severity: "retains" | "warns", count, label }
 ```
 
-que **chaque bloc qui range un SKU implémente pour ses tables** (`b2b` :
-commandes, miroir, tarifs, promotions, vitrine, suggestions, abonnements,
-réassort ; `production` ; `packing` ; `delivery` ; `growth`) et
-qu'`appBootstrap` compose en un seul lecteur (`composite`, la figure de
-`composite-media-carriers.ts`). Le référentiel ajoute ses propres avertissements (opération, limite de
-commande) ; il n'a aucune retenue propre. Le même port rend les
-**avertissements** avec leur `kind`, et c'est le genre qui dit s'il retient
-ou s'il avertit — la liste est écrite dans le canal, pas dans la page. Un bloc qui
-n'implémente pas le port n'est **pas** interrogé : c'est donc le bâti qui
-tient la liste, et un test compte les implémenteurs contre la liste des
-schémas qui ont une colonne `sku` (lue dans le catalogue Postgres, comme
-`truncateAll`) — **une table à SKU sans implémenteur fait rougir le test**.
+**Un seul implémenteur, piloté par le schéma** (Hugo, 2026-11-10 : « un port
+par module pour dire _product used here_ est le mauvais pattern » — personne
+n'a de décision métier à prendre, la question est « cette chaîne apparaît-elle
+dans une colonne `sku` ? »). Il vit dans **`appBootstrap/`**, la racine de
+composition, seule à connaître tout le monde (la figure de
+`composite-media-carriers.ts`, avec un implémenteur au lieu de plusieurs), et
+procède comme `truncateAll` du harnais e2e ou la porte
+`prisma-model-ownership` : il **lit le catalogue Postgres** plutôt que de
+recopier la connaissance.
+
+- il lit dans `information_schema.columns`, pour les schémas du
+  `datasource`, toutes les tables qui ont une colonne `sku` / `product_sku`,
+  et celles qui ont un couple `scope_type` + `scope_id` ou `target_type` +
+  `target_id` (les réglages par identifiant opaque) ; liste en cache ;
+- pour chaque table, il compte les lignes qui portent les SKU (ou les ids)
+  demandés, par requête paramétrée ;
+- la **sévérité se lit sur la table** : les traces de vente retiennent
+  (`order_lines`, `catalog_item_reservations`, abonnements, réassort, bons,
+  et **toutes** les tables des schémas `production`, `packing`, `delivery`,
+  `growth`) ; les réglages avertissent (`price_rules`, planchers, paliers,
+  `promotion_scope_rules`, vitrine, suggestions, `pim.operation_item`,
+  `pim.order_time_limit`) ;
+- une **liste d'exclusions datées, avec leur raison**, retire ce qui ne compte
+  pas : les tables du référentiel lui-même, celles du miroir qui se
+  nettoient, l'histoire (révisions), et les grilles JSON de mercuriale (un
+  réglage, non scanné, orphelin accepté).
+
+Une table neuve à SKU est **couverte le jour où elle naît**. Le test ne
+vérifie plus « chaque bloc a implémenté », mais **« chaque table à
+SKU / scope / target du catalogue est rangée (sévérité) ou exclue (raison) »**
+— une table non rangée rougit. Un e2e vérifie que le lecteur voit bien une
+ligne de commande, une exclusivité, une ligne de fournil.
 
 ### Ce que l'effacement fait, dans l'ordre
 
@@ -167,13 +187,12 @@ d'ici : elle reste archivée, c'est son état final.
 
 - **E1 — le canal et le verdict** : `pim/channels/holds/` (`SkuHoldsReader`,
   `SkuHold { sku, kind, severity: retains | warns, count, label }`) ; les
-  retenues et avertissements internes du PIM ; les implémenteurs par bloc
-  (`b2b` : commandes, réservations, abonnements, réassort, bons, tarifs,
-  promotions, vitrine, suggestions ; `production` ; `packing` ; `delivery` ;
-  `growth`) et le composite d'`appBootstrap` ; le test « toute table à SKU a
-  son implémenteur » ; la requête `ListArchivedProductsWithHolds` ; e2e sur
-  une fiche retenue par une commande, une publiée jamais vendue (effaçable,
-  avec avertissements), une effaçable sans rien.
+  avertissements internes du PIM ; **le lecteur piloté par le schéma dans
+  `appBootstrap/`** (table de sévérité, exclusions datées) ; le test « toute
+  table à SKU est rangée ou exclue » ; la requête
+  `ListArchivedProductsWithHolds` ; e2e sur une fiche retenue par une
+  commande, une publiée jamais vendue (effaçable, avec avertissements), une
+  effaçable sans rien.
 - **E2 — l'effacement** : `DeleteArchivedProductCommand`, le dépôt (ordre des
   satellites, verrou, journal `product.deleted` avec les avertissements +
   phrase au back-office), le fait `pim.catalog_product_deleted` dans
